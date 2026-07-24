@@ -1,4 +1,4 @@
-import { expect, errors } from '@playwright/test'
+import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
@@ -217,13 +217,13 @@ export class SubscriptionHelper {
    */
   async dismissSubscriptionDialogIfOpen(): Promise<void> {
     const dialog = this.page.locator('[aria-labelledby="subscription-required"]')
+    // `expect().toBeVisible()` throws a Playwright AssertionError (not
+    // errors.TimeoutError) when the element is absent — both cases mean
+    // "dialog not present", which is the expected happy path here.
     const appeared = await expect(dialog)
       .toBeVisible({ timeout: 2000 })
       .then(() => true)
-      .catch((e: unknown) => {
-        if (e instanceof errors.TimeoutError) return false
-        throw e
-      })
+      .catch(() => false)
     if (!appeared) return
     const closeButton = dialog.getByRole('button', { name: /close/i }).first()
     if (await closeButton.isVisible()) {

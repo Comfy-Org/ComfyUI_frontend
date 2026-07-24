@@ -87,7 +87,7 @@ unsubscribedTest.describe(
 
     unsubscribedTest(
       'User popover shows subscribe when unsubscribed',
-      async ({ comfyPage, subscriptionHelper }) => {
+      async ({ subscriptionHelper }) => {
         const popover = await subscriptionHelper.openUserPopover()
         await expect(
           popover.getByRole('button', { name: /subscribe/i })
