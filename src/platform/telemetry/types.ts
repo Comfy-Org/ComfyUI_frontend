@@ -178,6 +178,19 @@ export interface WorkflowQueuedMetadata extends WorkflowExecutionContext {
   subscribe_to_run: boolean
 }
 
+type WorkflowSubmissionOutcome =
+  | 'accepted'
+  | 'account_blocked'
+  | 'prompt_rejected'
+  | 'unexpected_failure'
+
+export interface WorkflowSubmissionMetadata {
+  startTime: number
+  submittedAt: number
+  outcome: WorkflowSubmissionOutcome
+  workflowContext?: WorkflowExecutionContext
+}
+
 export interface ExecutionOutcomeMetadata {
   startTime: number
   outcome: 'success' | 'failure'
@@ -661,6 +674,7 @@ export interface TelemetryProvider {
   // Workflow execution events
   trackWorkflowExecution?(): void
   trackWorkflowQueued?(metadata: WorkflowQueuedMetadata): void
+  trackWorkflowSubmission?(metadata: WorkflowSubmissionMetadata): void
   trackExecutionOutcome?(metadata: ExecutionOutcomeMetadata): void
   trackExecutionError?(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void

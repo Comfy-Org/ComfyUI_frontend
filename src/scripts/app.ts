@@ -1731,6 +1731,13 @@ export class ComfyApp {
               partialExecutionTargets: queueNodeIds,
               previewMethod
             })
+            const submittedAt = performance.now()
+            telemetry?.trackWorkflowSubmission({
+              startTime,
+              submittedAt,
+              outcome: 'accepted',
+              ...(workflowContext && { workflowContext })
+            })
             delete api.authToken
             delete api.apiKey
             executionErrorStore.recordNodeErrors(res.node_errors ?? null)
@@ -1779,6 +1786,16 @@ export class ComfyApp {
                   exceptionMessage: preconditionResponseError.message
                 })
               : undefined
+            telemetry?.trackWorkflowSubmission({
+              startTime,
+              submittedAt: performance.now(),
+              outcome: promptPrecondition
+                ? 'account_blocked'
+                : error instanceof PromptExecutionError
+                  ? 'prompt_rejected'
+                  : 'unexpected_failure',
+              ...(workflowContext && { workflowContext })
+            })
             // Account preconditions (sign-in, subscription, credits) open their
             // own modal and must stay out of the error panel and error count.
             if (promptPrecondition) {

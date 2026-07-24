@@ -50,6 +50,45 @@ describe('DatadogRumTelemetryProvider', () => {
     })
   })
 
+  it('records workflow submission timing and outcome', () => {
+    getInternalContext.mockReturnValue({ view: { id: 'view-a' } })
+
+    new DatadogRumTelemetryProvider().trackWorkflowSubmission({
+      startTime: 42,
+      submittedAt: 92,
+      outcome: 'accepted',
+      workflowContext: {
+        workflow_type: 'custom',
+        view_mode: 'graph',
+        execution_scope: 'full',
+        total_node_count: 42,
+        executable_node_count: 12,
+        custom_node_count: 3,
+        api_node_count: 1,
+        subgraph_count: 2
+      }
+    })
+
+    expect(addDurationVital).toHaveBeenCalledWith('workflow_submission', {
+      startTime: performance.timeOrigin + 42,
+      duration: 50,
+      context: {
+        api_node_count: 1,
+        custom_node_count: 3,
+        executable_node_count: 12,
+        execution_scope: 'full',
+        origin_view_id: 'view-a',
+        outcome: 'accepted',
+        product: 'cloud_generation',
+        subgraph_count: 2,
+        timing_schema_version: 2,
+        total_node_count: 42,
+        view_mode: 'graph',
+        workflow_type: 'custom'
+      }
+    })
+  })
+
   it.for(['success', 'failure'] as const)(
     'records a workflow vital with a %s outcome',
     (outcome) => {

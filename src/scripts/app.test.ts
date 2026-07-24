@@ -313,6 +313,106 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('tracks accepted workflow submission timing', async () => {
+      prepareEmptyPromptQueue()
+      const trackWorkflowSubmission = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackWorkflowSubmission })
+      setTelemetryRegistry(registry)
+      const now = vi
+        .spyOn(performance, 'now')
+        .mockReturnValueOnce(42)
+        .mockReturnValueOnce(92)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      try {
+        await app.queuePrompt(0)
+
+        expect(trackWorkflowSubmission).toHaveBeenCalledExactlyOnceWith({
+          startTime: 42,
+          submittedAt: 92,
+          outcome: 'accepted',
+          workflowContext: expect.objectContaining({
+            workflow_type: 'custom',
+            execution_scope: 'full'
+          })
+        })
+      } finally {
+        now.mockRestore()
+        setTelemetryRegistry(null)
+      }
+    })
+
+    it.each([
+      {
+        name: 'account precondition',
+        error: new PromptExecutionError({
+          node_errors: {},
+          error: {
+            type: 'RuntimeError',
+            message: 'Unauthorized: Please login first to use this node.',
+            details: ''
+          }
+        }),
+        outcome: 'account_blocked'
+      },
+      {
+        name: 'prompt rejection',
+        error: new PromptExecutionError({
+          node_errors: {},
+          error: {
+            type: 'prompt_no_outputs',
+            message: 'Prompt has no outputs',
+            details: ''
+          }
+        }),
+        outcome: 'prompt_rejected'
+      },
+      {
+        name: 'unexpected failure',
+        error: new Error('Network client failed'),
+        outcome: 'unexpected_failure'
+      }
+    ] as const)(
+      'tracks $name submission timing',
+      async ({ error, outcome }) => {
+        prepareEmptyPromptQueue()
+        const trackWorkflowSubmission = vi.fn()
+        const registry = new TelemetryRegistry()
+        registry.registerProvider({ trackWorkflowSubmission })
+        setTelemetryRegistry(registry)
+        const now = vi
+          .spyOn(performance, 'now')
+          .mockReturnValueOnce(42)
+          .mockReturnValueOnce(92)
+        const consoleError = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {})
+        vi.spyOn(api, 'queuePrompt').mockRejectedValue(error)
+
+        try {
+          await app.queuePrompt(0)
+
+          expect(trackWorkflowSubmission).toHaveBeenCalledExactlyOnceWith({
+            startTime: 42,
+            submittedAt: 92,
+            outcome,
+            workflowContext: expect.objectContaining({
+              workflow_type: 'custom',
+              execution_scope: 'full'
+            })
+          })
+        } finally {
+          consoleError.mockRestore()
+          now.mockRestore()
+          setTelemetryRegistry(null)
+        }
+      }
+    )
+
     it('attributes telemetry to the graph selected when submission starts', async () => {
       const initialGraph = new LGraph()
       initialGraph.add(new LGraphNode('Initial node'))
