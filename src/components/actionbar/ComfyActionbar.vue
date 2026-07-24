@@ -354,6 +354,11 @@ watch(isDragging, (dragging) => {
   if (dragging) {
     // Starting to drag - undock if docked
     if (isDocked.value) {
+      const rect = panelElement.value?.getBoundingClientRect()
+      if (rect) {
+        x.value = rect.left
+        y.value = rect.top
+      }
       isDocked.value = false
     }
   } else {

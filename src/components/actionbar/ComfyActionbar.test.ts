@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -27,7 +27,7 @@ const renderActionbar = (showRunProgressBar: boolean) => {
   const pinia = createTestingPinia({ createSpy: vi.fn })
   configureSettings(pinia, showRunProgressBar)
 
-  render(ComfyActionbar, {
+  const utils = render(ComfyActionbar, {
     container: document.body.appendChild(document.createElement('div')),
     props: {
       topMenuContainer,
@@ -57,7 +57,7 @@ const renderActionbar = (showRunProgressBar: boolean) => {
     }
   })
 
-  return { topMenuContainer }
+  return { topMenuContainer, ...utils }
 }
 
 describe('ComfyActionbar', () => {
@@ -95,6 +95,51 @@ describe('ComfyActionbar', () => {
       /* eslint-enable testing-library/no-node-access */
     } finally {
       topMenuContainer.remove()
+    }
+  })
+
+  it('prevents position jumping when starting a drag from docked state', async () => {
+    const { topMenuContainer, container } = renderActionbar(true)
+
+    try {
+      await nextTick()
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- querying panel element to spy on getBoundingClientRect
+      const panel = container.querySelector('.actionbar')
+      if (!(panel instanceof HTMLElement)) {
+        throw new Error('Panel not found')
+      }
+
+      vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue({
+        x: 100,
+        y: 200,
+        width: 50,
+        height: 50,
+        top: 200,
+        right: 150,
+        bottom: 250,
+        left: 100,
+        toJSON: () => {}
+      })
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- querying drag handle element by CSS class; no ARIA role available
+      const dragHandle = container.querySelector('.drag-handle')
+      if (!dragHandle) {
+        throw new Error('Drag handle not found')
+      }
+
+      // eslint-disable-next-line testing-library/prefer-user-event -- userEvent does not easily expose a raw pointerDown to initiate vueuse drag hooks
+      await fireEvent.pointerDown(dragHandle)
+
+      await nextTick()
+
+      expect(panel.style.left).toBe('100px')
+      expect(panel.style.top).toBe('200px')
+    } finally {
+      topMenuContainer.remove()
+      // eslint-disable-next-line testing-library/no-container -- Cleanup requires direct container manipulation
+      container.remove()
+      vi.restoreAllMocks()
     }
   })
 })
