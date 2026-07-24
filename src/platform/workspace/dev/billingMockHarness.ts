@@ -70,6 +70,7 @@ interface MockCfg {
   roleChange: '200' | '500'
   multiWs: boolean
   autoReload: AutoReload
+  selfCap: 'capped' | 'exhausted' | 'uncapped'
 }
 
 interface UiState {
@@ -86,7 +87,8 @@ const DEFAULTS: MockCfg = {
   balance: 'partial',
   roleChange: '200',
   multiWs: false,
-  autoReload: 'healthy'
+  autoReload: 'healthy',
+  selfCap: 'capped'
 }
 
 const cfg: MockCfg = { ...DEFAULTS }
@@ -95,7 +97,14 @@ const cfg: MockCfg = { ...DEFAULTS }
 // validation so a persisted value that's no longer valid (e.g. after renaming
 // 'funded' → 'full') is dropped rather than silently desyncing the picker.
 const OPTIONS: Record<
-  'ws' | 'role' | 'tier' | 'state' | 'balance' | 'roleChange' | 'autoReload',
+  | 'ws'
+  | 'role'
+  | 'tier'
+  | 'state'
+  | 'balance'
+  | 'roleChange'
+  | 'autoReload'
+  | 'selfCap',
   string[]
 > = {
   ws: ['personal', 'team'],
@@ -104,7 +113,8 @@ const OPTIONS: Record<
   state: ['active', 'cancelled', 'inactive', 'changing', 'at_risk', 'paused'],
   balance: ['full', 'partial', 'low', 'empty'],
   roleChange: ['200', '500'],
-  autoReload: ['notset', 'nobudget', 'healthy', 'nearlimit', 'paused', 'off']
+  autoReload: ['notset', 'nobudget', 'healthy', 'nearlimit', 'paused', 'off'],
+  selfCap: ['capped', 'exhausted', 'uncapped']
 }
 
 function loadCfg(): void {
@@ -381,10 +391,16 @@ function members(): unknown {
             role: cfg.role === 'admin' ? 'owner' : 'member',
             is_original_owner: false,
             last_active_at: hoursAgo(1),
-            credits_used_this_month: usage(1234),
-            // Caps are Member-only; a member self-row gets one so the
-            // member-facing display (min-rule menu, popover) is exercisable.
-            monthly_credit_limit: cfg.role === 'member' ? 3000 : undefined
+            credits_used_this_month: usage(
+              cfg.selfCap === 'exhausted' ? 3000 : 1234
+            ),
+            // Caps are Member-only; the selfCap picker drives the member
+            // self-row so every display state (min-rule, edge, limit-reached,
+            // uncapped) is exercisable.
+            monthly_credit_limit:
+              cfg.role === 'member' && cfg.selfCap !== 'uncapped'
+                ? 3000
+                : undefined
           }
         ]
   // A long roster so the table overflows and scrolls under its sticky header.
