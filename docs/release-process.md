@@ -51,15 +51,11 @@ It runs on PR events and hourly — the hourly sweep is what catches strays that
 were opened while nobody was looking.
 
 The rotation itself lives in Datadog On-Call and is read at execution time, so
-handovers need no commit. `.github/release-sheriff.json` supplies the schedule
-and the Datadog-email → GitHub-login mapping:
-
-| Field                 | Purpose                                              |
-| --------------------- | ---------------------------------------------------- |
-| `datadog.site`        | Datadog site host, e.g. `datadoghq.com`              |
-| `datadog.scheduleId`  | On-Call schedule holding the sheriff rotation        |
-| `githubLoginByEmail`  | Datadog user email → GitHub login (one per sheriff)  |
-| `fallbackGithubLogin` | Used when Datadog is unreachable or user is unmapped |
+handovers need no commit. Configuration lives in the `CONFIG` object at the top
+of `scripts/release-sheriff/release-sheriff.ts`: the `scheduleId`, a
+`githubLoginByEmail` map (Datadog exposes no GitHub identity, so each sheriff's
+Datadog email is mapped to their GitHub login there), and a
+`fallbackGithubLogin` used when Datadog is unreachable or a user is unmapped.
 
 Requires repo secrets `DATADOG_API_KEY` and `DATADOG_APP_KEY` (scope:
 `on_call_read`). Without them — or with an empty `scheduleId` — the workflow
