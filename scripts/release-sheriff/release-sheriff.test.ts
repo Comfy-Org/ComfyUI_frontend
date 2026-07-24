@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { PullRequestSummary } from './release-sheriff'
 import {
+  fetchOnCallEmails,
   isSheriffPr,
   parseOnCallEmails,
   planActions,
@@ -51,6 +52,92 @@ describe('parseOnCallEmails', () => {
         included: [{ type: 'users', attributes: { email: ' ' } }]
       })
     ).toEqual([])
+  })
+})
+
+describe('fetchOnCallEmails', () => {
+  const datadog = { datadogSite: 'datadoghq.com', scheduleId: 'sched-1' }
+  const creds = { apiKey: 'api', appKey: 'app' }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('warns and skips the request when no schedule is configured', async () => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await fetchOnCallEmails(
+      { ...datadog, scheduleId: '' },
+      creds
+    )
+
+    expect(result.emails).toEqual([])
+    expect(result.warning).toMatch(/no datadog on-call schedule/i)
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('warns and skips the request when credentials are missing', async () => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await fetchOnCallEmails(datadog, { apiKey: 'api' })
+
+    expect(result.emails).toEqual([])
+    expect(result.warning).toMatch(/DATADOG_API_KEY \/ DATADOG_APP_KEY/)
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('warns on a non-ok response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable'
+      })
+    )
+
+    const result = await fetchOnCallEmails(datadog, creds)
+
+    expect(result.emails).toEqual([])
+    expect(result.warning).toMatch(/503 Service Unavailable/)
+  })
+
+  it('warns when the request is rejected', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('boom')))
+
+    const result = await fetchOnCallEmails(datadog, creds)
+
+    expect(result.emails).toEqual([])
+    expect(result.warning).toMatch(/lookup failed \(Error: boom\)/)
+  })
+
+  it('returns the parsed on-call emails and no warning on success', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          included: [
+            { type: 'users', attributes: { email: 'sheriff@comfy.org' } }
+          ]
+        })
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await fetchOnCallEmails(datadog, creds)
+
+    expect(result).toEqual({ emails: ['sheriff@comfy.org'], warning: null })
+
+    const [url, init] = fetchSpy.mock.calls[0]
+    expect(String(url)).toBe(
+      'https://api.datadoghq.com/api/v2/on-call/schedules/sched-1/responders' +
+        '?include=responders.shifts.user&filter%5Bposition%5D=current'
+    )
+    expect(init.headers).toMatchObject({
+      'DD-API-KEY': 'api',
+      'DD-APPLICATION-KEY': 'app'
+    })
   })
 })
 
