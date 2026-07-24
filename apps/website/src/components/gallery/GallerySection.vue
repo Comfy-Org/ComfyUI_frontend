@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
-import { visibleGalleryItems as items } from '../../data/gallery'
 import type { GalleryItem } from '../../data/gallery'
 import type { Locale } from '../../i18n/translations'
 import GalleryCard from './GalleryCard.vue'
 import GalleryDetailModal from './GalleryDetailModal.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { items, locale = 'en' } = defineProps<{
+  items: GalleryItem[]
+  locale?: Locale
+}>()
 
 const modalOpen = ref(false)
 const modalIndex = ref(0)
@@ -49,19 +51,24 @@ interface Row {
   startIndex: number
 }
 
-const rows: Row[] = []
-let idx = 0
-let patternIdx = 0
+function buildRows(galleryItems: GalleryItem[]): Row[] {
+  const result: Row[] = []
+  let idx = 0
+  let patternIdx = 0
 
-while (idx < items.length) {
-  const layout = LAYOUT_PATTERN[patternIdx % LAYOUT_PATTERN.length]
-  const count = ITEMS_PER_LAYOUT[layout]
-  const slice = items.slice(idx, idx + count)
-  if (slice.length === 0) break
-  rows.push({ layout, items: slice, startIndex: idx })
-  idx += slice.length
-  patternIdx++
+  while (idx < galleryItems.length) {
+    const layout = LAYOUT_PATTERN[patternIdx % LAYOUT_PATTERN.length]
+    const count = ITEMS_PER_LAYOUT[layout]
+    const slice = galleryItems.slice(idx, idx + count)
+    result.push({ layout, items: slice, startIndex: idx })
+    idx += slice.length
+    patternIdx++
+  }
+
+  return result
 }
+
+const rows = computed(() => buildRows(items))
 </script>
 
 <template>
@@ -85,7 +92,7 @@ while (idx < items.length) {
         >
           <GalleryCard
             v-for="(item, i) in row.items"
-            :key="i"
+            :key="item.id"
             :item="item"
             :locale="locale"
             :aspect="row.layout === 'full' ? '16/9' : undefined"
@@ -161,7 +168,7 @@ while (idx < items.length) {
     >
       <GalleryCard
         v-for="(item, i) in items"
-        :key="i"
+        :key="item.id"
         :item="item"
         :locale="locale"
         mobile
