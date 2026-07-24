@@ -28,14 +28,17 @@ type DialogPosition =
  */
 type DialogRenderer = 'primevue' | 'reka'
 
+/**
+ * Props read by both renderers, plus the Reka-only props. `GlobalDialog`'s
+ * Reka branch binds each of these explicitly (or forwards them to
+ * `rekaPrimeVueBridge`); the PrimeVue branch `v-bind`s the whole object.
+ */
 interface CustomDialogComponentProps {
   maximizable?: boolean
   maximized?: boolean
   onClose?: () => void
   closable?: boolean
   modal?: boolean
-  position?: DialogPosition
-  pt?: DialogPassThroughOptions
   closeOnEscape?: boolean
   dismissableMask?: boolean
   /**
@@ -46,7 +49,6 @@ interface CustomDialogComponentProps {
    * outside-pointer dismissal are unaffected. Defaults to `true`.
    */
   dismissOnFocusOutside?: boolean
-  unstyled?: boolean
   headless?: boolean
   renderer?: DialogRenderer
   size?: DialogContentSize
@@ -78,8 +80,54 @@ interface CustomDialogComponentProps {
   footerClass?: HTMLAttributes['class']
 }
 
-export type DialogComponentProps = Record<string, unknown> &
-  CustomDialogComponentProps
+/**
+ * Props only the PrimeVue `Dialog` reads. `GlobalDialog`'s Reka branch never
+ * binds them, so passing one to a Reka dialog is a silent no-op: the dialog
+ * renders at the default `size` with none of the requested chrome. That defect
+ * shipped twice (#12666) and needed two follow-up fixes (#13092, #13633), so
+ * `DialogComponentProps` makes it a compile error instead.
+ *
+ * Reka equivalents: `style`/`class`/`pt.root`/`pt.content` -> `size` +
+ * `contentClass` / `bodyClass`; `pt.mask` -> `overlayClass`; `pt.header` ->
+ * `headerClass`; `pt.footer` -> `footerClass`.
+ */
+interface PrimeVueOnlyDialogProps {
+  position?: DialogPosition
+  pt?: DialogPassThroughOptions
+  unstyled?: boolean
+  style?: HTMLAttributes['style']
+  class?: HTMLAttributes['class']
+}
+
+/**
+ * Props for a dialog on the default Reka renderer. The index signature is the
+ * escape hatch for props neither renderer declares (extension dialogs); the
+ * `never` mapping still rejects the PrimeVue-only props above, whether
+ * `renderer: 'reka'` is explicit or left to the store default.
+ */
+type RekaDialogComponentProps = Record<string, unknown> &
+  CustomDialogComponentProps & { renderer?: 'reka' } & {
+    [K in keyof PrimeVueOnlyDialogProps]?: never
+  }
+
+/** Props for a dialog opted in to the legacy PrimeVue renderer. */
+type PrimeVueDialogComponentProps = Record<string, unknown> &
+  CustomDialogComponentProps &
+  PrimeVueOnlyDialogProps & { renderer: 'primevue' }
+
+/** Author-facing dialog props, discriminated on `renderer`. */
+export type DialogComponentProps =
+  | RekaDialogComponentProps
+  | PrimeVueDialogComponentProps
+
+/**
+ * Props on a live dialog stack item, after the store has merged its defaults.
+ * `GlobalDialog` renders both branches, so it reads both renderers' props
+ * regardless of which branch is active.
+ */
+type ResolvedDialogComponentProps = Record<string, unknown> &
+  CustomDialogComponentProps &
+  PrimeVueOnlyDialogProps & { renderer?: DialogRenderer }
 
 export interface DialogInstance {
   key: string
@@ -91,7 +139,7 @@ export interface DialogInstance {
   contentProps: Record<string, unknown>
   footerComponent?: Component
   footerProps?: Record<string, unknown>
-  dialogComponentProps: DialogComponentProps
+  dialogComponentProps: ResolvedDialogComponentProps
   priority: number
 }
 
@@ -120,7 +168,7 @@ export interface ShowDialogOptions<
 interface UpdateDialogOptions {
   key: string
   contentProps?: Partial<DialogInstance['contentProps']>
-  dialogComponentProps?: Partial<DialogComponentProps>
+  dialogComponentProps?: Partial<ResolvedDialogComponentProps>
 }
 
 export const useDialogStore = defineStore('dialog', () => {
