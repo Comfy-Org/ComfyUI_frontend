@@ -22,7 +22,7 @@ state, and promoted value data lives in `WidgetValueStore` keyed by the input's
 | PreviewExposureStore    | Subgraph host node           | host node locator | host locator + exposure name                              | Display-only preview state    |
 | LinkStore               | `LLink`                      | Root graph        | `` `${targetNodeId}:${targetSlot}` `` (target input slot) | Plain `LinkTopology` object   |
 | RerouteStore            | `Reroute`                    | Root graph        | `RerouteId`                                               | Plain `RerouteChain` object   |
-| NodeBadgeStore          | `LGraphNode.badges` closures | Root graph        | `NodeId`                                                  | Plain `BadgeData` rows        |
+| NodeDataStore           | `LGraphNode` shell state     | Root graph        | `NodeId`                                                  | Plain `NodeState` object      |
 
 **Update (2026-07-05):** `LinkStore` (`src/stores/linkStore.ts`, PR #13436) and
 `RerouteStore` (`src/stores/rerouteStore.ts`, PR #13449) hold plain-data records
@@ -32,10 +32,18 @@ in a per-graph unkeyed side set. Design records:
 [Link Topology Store](link-topology-store.md),
 [Reroute Chain Store](reroute-chain-store.md).
 
-**Update (2026-07-14):** `NodeBadgeStore` (`src/stores/nodeBadgeStore.ts`,
-PR #13458) holds plain `BadgeData` rows keyed by `NodeId` in root-graph-scoped
-buckets, written by a reactive badge system rather than adopted class state.
-Design record: [Node Badge Store](node-badge-store.md).
+**Update (2026-07-22):** `NodeDataStore` (`src/stores/nodeDataStore.ts`) holds
+one plain `NodeState` per node in root-graph-scoped buckets keyed by `NodeId`.
+`LGraphNode` adopts the store's reactive proxy as its `_state` and its shell
+fields become accessors over it, so there is no copy. This deleted the
+`VueNodeData` mirror and all of `useGraphNodeManager`. Design record:
+[Node Data Store](node-data-store.md).
+
+**Update (2026-07-14, reversed):** `NodeBadgeStore` shipped in PR #13458 and was
+then deleted — badge rows are cheaper to derive on read than to store, so
+`src/systems/badgeSystem.ts` computes them from the stores that already own the
+inputs. There is no `src/stores/nodeBadgeStore.ts`. See
+[Node Badge Store](node-badge-store.md) for the reversal.
 
 ADR 0009 refines promoted-widget identity: promoted value widgets are keyed by
 the host boundary (`host node locator + SubgraphInput.name`), while interior

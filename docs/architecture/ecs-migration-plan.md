@@ -114,17 +114,22 @@ narrow accessor surface. There is no single container that fronts all entities.
 
 Shipped stores:
 
-| Store                        | File                                            |
-| ---------------------------- | ----------------------------------------------- |
-| `widgetValueStore`           | `src/stores/widgetValueStore.ts`                |
-| `domWidgetStore`             | `src/stores/domWidgetStore.ts`                  |
-| `layoutStore`                | `src/renderer/core/layout/store/layoutStore.ts` |
-| `nodeOutputStore`            | `src/stores/nodeOutputStore.ts`                 |
-| `subgraphNavigationStore`    | `src/stores/subgraphNavigationStore.ts`         |
-| `previewExposureStore`       | `src/stores/previewExposureStore.ts`            |
-| `linkStore` ✅ PR 13436      | `src/stores/linkStore.ts`                       |
-| `rerouteStore` ✅ PR 13449   | `src/stores/rerouteStore.ts`                    |
-| `nodeBadgeStore` ✅ PR 13458 | `src/stores/nodeBadgeStore.ts`                  |
+| Store                      | File                                            |
+| -------------------------- | ----------------------------------------------- |
+| `widgetValueStore`         | `src/stores/widgetValueStore.ts`                |
+| `domWidgetStore`           | `src/stores/domWidgetStore.ts`                  |
+| `layoutStore`              | `src/renderer/core/layout/store/layoutStore.ts` |
+| `nodeOutputStore`          | `src/stores/nodeOutputStore.ts`                 |
+| `subgraphNavigationStore`  | `src/stores/subgraphNavigationStore.ts`         |
+| `previewExposureStore`     | `src/stores/previewExposureStore.ts`            |
+| `linkStore` ✅ PR 13436    | `src/stores/linkStore.ts`                       |
+| `rerouteStore` ✅ PR 13449 | `src/stores/rerouteStore.ts`                    |
+| `nodeDataStore` ✅         | `src/stores/nodeDataStore.ts`                   |
+
+`nodeBadgeStore` was shipped in PR 13458 and then deleted: badge rows are
+cheaper to derive on read than to store, so `src/systems/badgeSystem.ts`
+computes them from the stores that already own the inputs. No badge store
+exists. See [Node Badge Store](node-badge-store.md) for the reversal.
 
 `linkStore` holds `LinkTopology` records (`src/types/linkTopology.ts`) keyed by
 target input slot (`` `${targetNodeId}:${targetSlot}` ``) in root-graph-scoped
@@ -192,20 +197,92 @@ host-boundary identity (`host node locator + SubgraphInput.name`). Interior
 source node/widget identity is preserved only as migration and diagnostic
 metadata.
 
-### 2c. Node metadata stores
+### 2c. Node shell state ✅ Shipped
 
-Populate node-metadata records (node type, visual, properties, execution) by
-reading from `LGraphNode` instances. These are simple property copies into the
-relevant store.
+Node shell state (`title`, `type`, `mode`, `flags`, colours, `shape`,
+`resizable`, `showAdvanced`) lives in `nodeDataStore` as one plain `NodeState`
+per node. **No copy is made.** `LGraphNode` constructs its `_state` and adopts
+the store's reactive proxy at `LGraph.add`; the class fields are accessors over
+that proxy, so class, store, and renderer read the same object. The
+`incrementVersion()` re-sync hook this phase originally anticipated is
+unnecessary — there is nothing to re-sync.
 
-**Approach:** When a node is added to the graph (`LGraph.add()`), the store
-records its metadata. When a node is removed, the store drops it. The
-`incrementVersion()` seam from Phase 0a is a candidate hook point for re-sync
-when changed.
+Registration chokepoints are `LGraph.add` / `LGraph.remove`, with
+identity-checked vacate (`toRaw` compare) so only the registered state can free
+its key. Design record: [Node Data Store](node-data-store.md).
 
-**Risk:** Medium. Must handle the full node lifecycle (add, configure, remove)
-without breaking existing behavior. Stores mirror the classes during the
-transition, which limits blast radius.
+**Risk:** taken. Shell-state fields moved from own enumerable data properties to
+prototype accessors, so `Object.keys(node)` / `{ ...node }` no longer carry them,
+and `type` is read-only. See node-data-store.md Decision 7 for the extension
+migration map.
+
+### 2d. Renderer node lifecycle ✅ Shipped
+
+`useGraphNodeManager` is **deleted**. Its four responsibilities were resolved
+rather than relocated:
+
+| Responsibility                                                | Resolution                                                                                        |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `VueNodeData` mirror + `node:property:changed` handlers       | deleted; the renderer drills the `NodeState` proxy from `nodeDataStore`                           |
+| `getNode()` / `nodeRefs` map                                  | deleted; pinned-state reads go to `nodeDataStore`, live-node lookups to `graph.getNodeById`       |
+| `shallowReactive` graft onto `inputs` / `outputs` / `widgets` | deleted; see 2e                                                                                   |
+| `layoutStore` seeding on add/remove                           | moved to `LGraph.add` / `LGraph.remove`, matching the reroute precedent in `LGraph.createReroute` |
+
+Two consequences worth recording:
+
+- The **`configuringGraph` deferral is gone.** `LGraph.add` seeds the layout
+  entry with whatever geometry the node has; the `pos`/`size` setters already
+  write through to `layoutStore`, so `configure()` updates the entry as the real
+  values land. No `onAfterGraphConfigured` chaining, no `window.app` read.
+- The **`onNodeAdded` replay loop is gone.** It re-fired `onNodeAdded` for every
+  pre-existing node on each graph switch, which leaked spurious node-added
+  notifications to unrelated subscribers (`useErrorClearingHooks` still carries
+  a guard written for exactly that). Per-graph layout bootstrap is now solely
+  `layoutStore.initializeFromLiteGraph`, called from `useVueNodeLifecycle` on
+  graph entry — which is what makes subgraph navigation seed the right nodes.
+
+`useVueNodeLifecycle` keeps only layout bootstrap and the Layout↔LiteGraph sync
+lifecycle. One monkeypatch remains: `setupEmptyGraphListener` wraps
+`onNodeAdded` to defer bootstrap when the canvas mounts before its first node.
+It dies when `LGraph` dispatches a `node:added` event — worth doing, since
+`LGraphEventMap` has `node:before-removed` but no add-side counterpart, and
+three separate call sites currently save/restore `graph.onNodeAdded` (this one,
+the minimap, and previously the manager), which is order-dependent and can
+silently clobber.
+
+### 2e. Slot reactivity ✅ Shipped
+
+Slot arrays and slot objects are reactive from construction, so the renderer
+needs no reprojection pass:
+
+- `LGraphNode.inputs` / `.outputs` are accessors over `shallowReactive` arrays
+  (`_inputs` / `_outputs`, lazily created). Assignment replaces contents in
+  place, so the array identity the renderer subscribed to survives
+  `configure()`, `clone()`, and the several call sites that do
+  `node.inputs = node.inputs.filter(…)`.
+- `NodeSlot`'s constructor returns `shallowReactive(this)`, making every
+  reference to a slot the tracked one. **Shallow is load-bearing:** nested values
+  (`boundingRect`, `_widget`, `pos`) stay raw, so identity comparisons like
+  `input._widget === widget` and the `WeakMap` slot-index cache in
+  `NodeInputSlot` keep working. A deep `reactive()` would break both.
+
+This deleted the `node:slot-label:changed` → `node.inputs = [...node.inputs]`
+reprojection. The trigger itself stays (`useResolvedSelectedInputs` listens for
+it); only the renderer's array-identity churn is gone. Renames now propagate
+because `slot.label = …` is a tracked write.
+
+**Open item:** every slot property read in the canvas draw path now goes through
+a proxy get trap. Benchmark against the Phase 4 "Render hot-path performance
+gate" below before assuming this is free.
+
+**Still class-side:** slot _identity_ has no store. `NodeSlots` reads the live
+node's arrays via `getNodeByLocatorId`. Extracting a `SlotState`
+(`nodeId`, `index`, `kind`, `name`, `localizedName?`, `label?`, `type`,
+`shape?`, `dir?`, `widgetName?`) keyed by the existing
+`getSlotKey(nodeId, index, isInput)` is the remaining work — position already
+lives in `layoutStore` and connectivity in `linkStore`, so identity is what's
+left. It also gates the badge system, which still needs `node.inputs` and
+`node.constructor.nodeData.api_node`.
 
 ### Store sunset criteria (applies to every Phase 2 concern)
 
@@ -643,7 +720,7 @@ The dedicated stores use per-concern keying strategies:
 | `subgraphNavigationStore` | subgraphId or `'root'`                                                               |
 | `linkStore`               | `` `${targetNodeId}:${targetSlot}` `` (target input slot), root-graph-scoped buckets |
 | `rerouteStore`            | `RerouteId`, root-graph-scoped buckets                                               |
-| `nodeBadgeStore`          | `NodeId`, root-graph-scoped buckets                                                  |
+| `nodeDataStore`           | `NodeId`, root-graph-scoped buckets                                                  |
 
 ADR 0009 refines the promoted-widget target: promoted value widgets should use
 host boundary identity (`host node locator + SubgraphInput.name`), not interior

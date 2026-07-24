@@ -83,7 +83,8 @@ shell changes when that lands.
 `useNodeBadge` / `usePriceBadge` stop pushing closures; their derivation
 logic moves into `computeBadges`. The manual `'badges'`
 `node:property:changed` trigger, the `badges` case in
-`useGraphNodeManager`, and `VueNodeData.badges` are deleted.
+`useGraphNodeManager` (now deleted entirely), and `VueNodeData.badges` are
+deleted.
 `usePartitionedBadges` collapses to a store query partitioned by kind;
 its manual dependency-touching (`trackNodePrice`,
 `trackSubgraphInnerNodePrices`) moves inside the system.
@@ -225,11 +226,9 @@ instead of querying a bucket), and the structure revision is coarse —
 any structural change invalidates all badge computeds, which is cheap
 because invalidation is a flag and recomputation is per-read.
 
-Slices: (A) store + `BadgeData` + system for core and credits +
-chokepoint registration; (B) consumer cutover — Vue partition query,
-legacy draw cache, trigger/`VueNodeData.badges` deletions, legacy
-surface shim; extension-facing deprecation notes. Independent of the
-pending `nodeDataStore` extraction and lands before it, shrinking its
-Decision 4/6 scope (one less `VueNodeData` field, one less property
-handler). `PartnerNodesList`'s `find(isCreditsBadge)` migrates to a
-store query by kind.
+**Outcome:** the store from slice (A) shipped and was then deleted — see
+the derive-on-read update above. `src/systems/badgeSystem.ts` computes
+badge rows from the stores that already own the inputs, and
+`PartnerNodesList` calls `graphCreditsBadges(rootGraph)` rather than
+querying a store by kind. The slice (B) consumer cutover happened as
+planned; only the store itself did not survive.
