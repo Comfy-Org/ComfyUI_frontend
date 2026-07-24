@@ -12,6 +12,20 @@ describe('resolveAsset', () => {
     )
   })
 
+  it('resolves every shipped azimuth on the eye-level medium ring exactly', () => {
+    const ring: Array<[number, string]> = [
+      [45, 'front-right-quarter-view'],
+      [90, 'right-side-view'],
+      [225, 'back-left-quarter-view'],
+      [315, 'front-left-quarter-view']
+    ]
+    for (const [azimuth, slug] of ring) {
+      expect(resolveAsset({ azimuth, elevation: 0, zoom: 5 }).src).toContain(
+        `${slug}__eye-level-shot__medium-shot`
+      )
+    }
+  })
+
   it('degrades elevation to the nearest shipped label via raw-degree tiebreak', () => {
     expect(resolveAsset({ azimuth: 0, elevation: 40, zoom: 5 }).src).toContain(
       'high-angle-shot'
@@ -24,28 +38,24 @@ describe('resolveAsset', () => {
     )
   })
 
-  it('matches the shipped distance bucket for a front pose', () => {
+  it('degrades distance to the nearest shipped label when the bucket is missing', () => {
+    // front eye-level ships only medium, so close-up and wide zooms degrade.
     expect(resolveAsset({ azimuth: 0, elevation: 0, zoom: 9 }).src).toContain(
-      'close-up'
+      'front-view__eye-level-shot__medium-shot'
     )
     expect(resolveAsset({ azimuth: 0, elevation: 0, zoom: 0 }).src).toContain(
-      'wide-shot'
+      'front-view__eye-level-shot__medium-shot'
     )
-  })
-
-  it('degrades distance to the nearest shipped label when the bucket is missing', () => {
-    // front high-angle ships only medium + wide, so a close-up zoom degrades.
+    // front high-angle ships medium + wide, so a close-up zoom degrades.
     expect(resolveAsset({ azimuth: 0, elevation: 60, zoom: 9 }).src).toContain(
       'front-view__high-angle-shot__medium-shot'
     )
   })
 
-  it('snaps unshipped azimuths to the circularly nearest asset', () => {
-    expect(resolveAsset({ azimuth: 315, elevation: 0, zoom: 5 }).src).toContain(
-      'front-view'
-    )
-    expect(resolveAsset({ azimuth: 90, elevation: 0, zoom: 8 }).src).toContain(
-      'right-side-view'
+  it('snaps unshipped poses to the circularly nearest asset', () => {
+    // back-right quarter view is unshipped; 150 degrees is nearer back view.
+    expect(resolveAsset({ azimuth: 150, elevation: 0, zoom: 5 }).src).toContain(
+      'back-view__eye-level-shot__medium-shot'
     )
     expect(resolveAsset({ azimuth: 270, elevation: 0, zoom: 8 }).src).toContain(
       'left-side-view'
