@@ -102,8 +102,7 @@ export class CameraWidget {
   private azHitProxy!: Mesh
   private elHitProxy!: Mesh
   private distHitProxy!: Mesh
-  private distDragStartY = 0
-  private distDragStartValue = 0
+  private distGrabOffset = 0
 
   private useCameraView = false
 
@@ -559,14 +558,52 @@ export class CameraWidget {
         this.isDragging = true
         this.dragTarget = h.name
         if (h.name === 'distance') {
-          this.distDragStartY = this.mouse.y
-          this.distDragStartValue = this.liveDistance
+          const offset = this.pointerTrackOffset()
+          this.distGrabOffset =
+            offset === null
+              ? 0
+              : offset - this.trackOffsetForDistance(this.liveDistance)
         }
         this.setHandleScale(h.mesh, h.glow, 1.3)
         this.renderer.domElement.style.cursor = 'grabbing'
         return
       }
     }
+  }
+
+  /** Offset of the pointer along the centre-to-camera line, via the closest
+   * point between the pointer ray and that line. */
+  private pointerTrackOffset(): number | null {
+    const dir = this.cameraIndicator.position
+      .clone()
+      .sub(this.CENTER)
+      .normalize()
+    const w0 = this.raycaster.ray.origin.clone().sub(this.CENTER)
+    const b = this.raycaster.ray.direction.dot(dir)
+    const d0 = this.raycaster.ray.direction.dot(w0)
+    const e = dir.dot(w0)
+    const denom = 1 - b * b
+    if (denom <= 1e-6) return null
+    return (e - b * d0) / denom
+  }
+
+  private trackOffsetForDistance(d: number): number {
+    return (2.6 - (d / 10) * 2.0) * (0.15 + ((10 - d) / 10) * 0.7)
+  }
+
+  /** Invert the handle's offset along the centre-to-camera line back to a
+   * distance value. The offset curve mirrors updateVisuals: the handle sits at
+   * visualDist(d) * distT(d) from the centre, which decreases monotonically
+   * from d=0 to d=10, so a binary search recovers d. */
+  private distanceFromTrackOffset(offset: number): number {
+    let lo = 0
+    let hi = 10
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2
+      if (this.trackOffsetForDistance(mid) > offset) lo = mid
+      else hi = mid
+    }
+    return (lo + hi) / 2
   }
 
   private handleTargets() {
@@ -678,14 +715,20 @@ export class CameraWidget {
         this.notifyStateChange()
       }
     } else if (this.dragTarget === 'distance') {
-      // Relative to the grab point (local modification) — upstream mapped the
-      // absolute pointer height, which made the value jump on grab.
-      const newDist =
-        this.distDragStartValue - (this.mouse.y - this.distDragStartY) * 5
-      this.liveDistance = Math.max(0, Math.min(10, newDist))
-      this.state.distance = Math.round(this.liveDistance * 10) / 10
-      this.updateVisuals()
-      this.notifyStateChange()
+      // Project the pointer ray onto the handle's track (the centre-to-camera
+      // line), subtract the grab offset, and invert the handle-position curve
+      // so the handle follows the pointer along its visible direction at
+      // every azimuth (local modification — upstream mapped absolute vertical
+      // pointer movement).
+      const offset = this.pointerTrackOffset()
+      if (offset !== null) {
+        this.liveDistance = this.distanceFromTrackOffset(
+          offset - this.distGrabOffset
+        )
+        this.state.distance = Math.round(this.liveDistance * 10) / 10
+        this.updateVisuals()
+        this.notifyStateChange()
+      }
     }
   }
 

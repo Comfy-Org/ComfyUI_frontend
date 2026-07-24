@@ -43,7 +43,9 @@ Qwen-Image-Edit-2511-Multiple-Angles-LoRA.
 - added an optional `palette` (colours + grid/glow toggles) so the marketing
   hero can render the scene in a quieter white / grey / yellow theme; defaults
   reproduce the upstream ComfyUI look exactly
-- the zoom handle drags relative to its grab point instead of mapping the
-  absolute pointer height (which made the value jump on grab)
+- the zoom handle follows the pointer along its visible track (the pointer
+  ray is projected onto the centre-to-camera line and the handle-position
+  curve inverted), instead of upstream's absolute vertical pointer mapping,
+  which jumped on grab and inverted direction at some azimuths
 - invisible oversized hit-proxy spheres make the three handles easier to grab
   than upstream's exact-mesh raycast
