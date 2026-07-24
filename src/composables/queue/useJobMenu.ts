@@ -163,7 +163,7 @@ export function useJobMenu(
     }
 
     const annotated = createAnnotatedPath(apiItem, {
-      rootFolder: apiItem.type
+      rootFolder: 'input'
     })
     const widget = node.widgets?.find((w) => w.name === widgetName)
     if (widget) {
