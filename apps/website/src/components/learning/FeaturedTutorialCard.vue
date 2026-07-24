@@ -67,13 +67,7 @@ const { tutorial, locale = 'en' } = defineProps<{
       class="group relative block aspect-video overflow-hidden rounded-3xl"
       :aria-label="`${t('player.play', locale)} ${tutorial.title[locale]}`"
     >
-      <img
-        :src="tutorial.poster"
-        alt=""
-        loading="lazy"
-        decoding="async"
-        class="size-full object-cover"
-      />
+      <img :src="tutorial.poster" alt="" class="size-full object-cover" />
       <PlayOverlay class="text-white" />
     </a>
   </article>
