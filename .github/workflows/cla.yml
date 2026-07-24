@@ -65,6 +65,11 @@ jobs:
           # PAT required to write to the centralized signatures repo.
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
+          # Signatures are stored in a separate repo; locking the PR is not needed
+          # to protect them. Disabled because it prevents contributors from commenting
+          # on their own merged PRs.
+          lock-pullrequest-aftermerge: 'false'
+
           # Where the CLA document lives (shown to contributors)
           path-to-document: https://github.com/Comfy-Org/comfy-cla/blob/main/comfyui_icla.md
 
