@@ -119,6 +119,7 @@ type AvifIlocItemExtent = {
 
 type AvifIlocItem = {
   item_ID: number
+  construction_method: number
   data_reference_index: number
   base_offset: number
   extent_count: number

@@ -10,6 +10,7 @@ import {
   mockFileReaderError
 } from './__fixtures__/helpers'
 import { getFromAvifFile } from './avif'
+import { getWorkflowDataFromFile } from './parser'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.avif')
 const nanFixturePath = path.resolve(
@@ -137,9 +138,14 @@ const buildExifBlob = (
 const buildInfeBox = (
   itemId: number,
   itemType: string,
-  version = 2
+  version = 2,
+  contentType?: string
 ): Uint8Array => {
-  const bodySize = 4 + 2 + 2 + 4 + 1 + 1
+  const itemName = itemType === 'mime' ? 'XMP' : ''
+  const itemInfo = new TextEncoder().encode(
+    `${itemName}\0${contentType === undefined ? '' : `${contentType}\0`}`
+  )
+  const bodySize = 4 + 2 + 2 + 4 + itemInfo.length
   const totalSize = 8 + bodySize
   const buf = new Uint8Array(totalSize)
   const dv = new DataView(buf.buffer)
@@ -150,6 +156,7 @@ const buildInfeBox = (
     setU16BE(dv, 12, itemId)
     setU16BE(dv, 14, 0)
     buf.set(new TextEncoder().encode(itemType.padEnd(4).slice(0, 4)), 16)
+    buf.set(itemInfo, 20)
   }
   return buf
 }
@@ -170,18 +177,66 @@ const buildIinfBox = (infeBoxes: Uint8Array[]): Uint8Array => {
   return buf
 }
 
+type IlocIntegerSize = 0 | 4 | 8
+
+interface IlocFieldSizes {
+  offset: IlocIntegerSize
+  length: IlocIntegerSize
+  baseOffset: IlocIntegerSize
+}
+
+interface TestIlocItem {
+  itemId: number
+  baseOffset: number
+  extents: { extentOffset: number; extentLength: number }[]
+}
+
+const defaultIlocFieldSizes: IlocFieldSizes = {
+  offset: 4,
+  length: 4,
+  baseOffset: 0
+}
+
+function setIlocInteger(
+  dataView: DataView,
+  offset: number,
+  value: number,
+  size: IlocIntegerSize
+) {
+  if (size === 0) return
+  if (size === 4) {
+    setU32BE(dataView, offset, value)
+    return
+  }
+  dataView.setBigUint64(offset, BigInt(value), false)
+}
+
 const buildIlocBox = (
-  items: { itemId: number; extentOffset: number; extentLength: number }[]
+  items: TestIlocItem[],
+  fieldSizes: IlocFieldSizes = defaultIlocFieldSizes
 ): Uint8Array => {
-  const perItemSize = 2 + 2 + 0 + 2 + (4 + 4)
-  const bodySize = 4 + 1 + 1 + 2 + items.length * perItemSize
+  const bodySize =
+    4 +
+    1 +
+    1 +
+    2 +
+    items.reduce(
+      (size, item) =>
+        size +
+        2 +
+        2 +
+        fieldSizes.baseOffset +
+        2 +
+        item.extents.length * (fieldSizes.offset + fieldSizes.length),
+      0
+    )
   const totalSize = 8 + bodySize
   const buf = new Uint8Array(totalSize)
   const dv = new DataView(buf.buffer)
   setU32BE(dv, 0, totalSize)
   buf.set(new TextEncoder().encode('iloc'), 4)
-  buf[12] = 0x44
-  buf[13] = 0x00
+  buf[12] = (fieldSizes.offset << 4) | fieldSizes.length
+  buf[13] = fieldSizes.baseOffset << 4
   setU16BE(dv, 14, items.length)
   let p = 16
   for (const it of items) {
@@ -189,12 +244,16 @@ const buildIlocBox = (
     p += 2
     setU16BE(dv, p, 0)
     p += 2
-    setU16BE(dv, p, 1)
+    setIlocInteger(dv, p, it.baseOffset, fieldSizes.baseOffset)
+    p += fieldSizes.baseOffset
+    setU16BE(dv, p, it.extents.length)
     p += 2
-    setU32BE(dv, p, it.extentOffset)
-    p += 4
-    setU32BE(dv, p, it.extentLength)
-    p += 4
+    for (const extent of it.extents) {
+      setIlocInteger(dv, p, extent.extentOffset, fieldSizes.offset)
+      p += fieldSizes.offset
+      setIlocInteger(dv, p, extent.extentLength, fieldSizes.length)
+      p += fieldSizes.length
+    }
   }
   return buf
 }
@@ -226,6 +285,10 @@ const buildFtypBox = (majorBrand = 'avif'): Uint8Array => {
 
 interface BuildAvifOpts {
   exifEntries?: string[]
+  xmp?: string
+  includeExif?: boolean
+  ilocFieldSizes?: IlocFieldSizes
+  splitXmpAcrossExtents?: boolean
   endian?: 'II' | 'MM'
   itemType?: string
   ftypBrand?: string
@@ -237,6 +300,10 @@ interface BuildAvifOpts {
 const buildAvifFile = (opts: BuildAvifOpts = {}): ArrayBuffer => {
   const {
     exifEntries = [],
+    xmp,
+    includeExif = true,
+    ilocFieldSizes = defaultIlocFieldSizes,
+    splitXmpAcrossExtents = false,
     endian = 'II',
     itemType = 'Exif',
     ftypBrand = 'avif',
@@ -250,35 +317,141 @@ const buildAvifFile = (opts: BuildAvifOpts = {}): ArrayBuffer => {
     return ftyp.slice().buffer as ArrayBuffer
   }
 
-  const exifData = buildExifBlob(exifEntries, endian)
-  const infe = buildInfeBox(1, itemType, infeVersion)
-  const iinf = buildIinfBox([infe])
+  const items: {
+    itemId: number
+    itemType: string
+    contentType?: string
+    data: Uint8Array
+    extentLengths: number[]
+  }[] = []
+  if (includeExif) {
+    const data = buildExifBlob(exifEntries, endian)
+    items.push({
+      itemId: items.length + 1,
+      itemType,
+      data,
+      extentLengths: [data.length]
+    })
+  }
+  if (xmp !== undefined) {
+    const data = new TextEncoder().encode(xmp)
+    const firstExtentLength = Math.floor(data.length / 2)
+    items.push({
+      itemId: items.length + 1,
+      itemType: 'mime',
+      contentType: 'application/rdf+xml',
+      data,
+      extentLengths: splitXmpAcrossExtents
+        ? [firstExtentLength, data.length - firstExtentLength]
+        : [data.length]
+    })
+  }
 
-  const realIloc = buildIlocBox([
-    { itemId: 1, extentOffset: 0, extentLength: exifData.length }
-  ])
-  const metaSize = 8 + 4 + iinf.length + (omitIloc ? 0 : realIloc.length)
-  const exifOffset = ftyp.length + metaSize
+  const iinf = buildIinfBox(
+    items.map(({ itemId, itemType, contentType }) =>
+      buildInfeBox(itemId, itemType, infeVersion, contentType)
+    )
+  )
+  const placeholderIloc = buildIlocBox(
+    items.map(({ itemId, extentLengths }) => ({
+      itemId,
+      baseOffset: 0,
+      extents: extentLengths.map((extentLength) => ({
+        extentOffset: 0,
+        extentLength
+      }))
+    })),
+    ilocFieldSizes
+  )
+  const metaSize = 8 + 4 + iinf.length + (omitIloc ? 0 : placeholderIloc.length)
+  let itemOffset = ftyp.length + metaSize
+  const itemLocations = items.map(({ itemId, data, extentLengths }) => {
+    let extentOffset = ilocFieldSizes.offset === 0 ? 0 : itemOffset
+    const location = {
+      itemId,
+      baseOffset: ilocFieldSizes.offset === 0 ? itemOffset : 0,
+      extents: extentLengths.map((extentLength) => {
+        const extent = { extentOffset, extentLength }
+        extentOffset += extentLength
+        return extent
+      })
+    }
+    itemOffset += data.length
+    return location
+  })
 
-  const finalIloc = buildIlocBox([
-    { itemId: 1, extentOffset: exifOffset, extentLength: exifData.length }
-  ])
+  const finalIloc = buildIlocBox(itemLocations, ilocFieldSizes)
   const finalInner = omitIloc ? [iinf] : [iinf, finalIloc]
   const meta = buildMetaBox(finalInner)
 
-  const total = ftyp.length + meta.length + exifData.length
+  const total =
+    ftyp.length +
+    meta.length +
+    items.reduce((length, item) => length + item.data.length, 0)
   const buf = new Uint8Array(total)
   let p = 0
   buf.set(ftyp, p)
   p += ftyp.length
   buf.set(meta, p)
   p += meta.length
-  buf.set(exifData, p)
+  for (const item of items) {
+    buf.set(item.data, p)
+    p += item.data.length
+  }
   return buf.slice().buffer as ArrayBuffer
+}
+
+function escapeXmlText(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+}
+
+function escapeXmlAttribute(value: string): string {
+  return escapeXmlText(value).replaceAll('"', '&quot;')
+}
+
+function buildXmpPacket(
+  workflow: string,
+  prompt?: string,
+  namespace = 'https://github.com/Comfy-Org/ComfyUI',
+  prefix = 'comfy'
+): string {
+  const promptAttribute =
+    prompt === undefined
+      ? ''
+      : ` ${prefix}:prompt="${escapeXmlAttribute(prompt)}"`
+
+  return [
+    '<?xpacket begin="\uFEFF" id="W5M0MpCehiHzreSzNTczkc9d"?>',
+    '<x:xmpmeta xmlns:x="adobe:ns:meta/">',
+    '  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
+    `    <rdf:Description xmlns:${prefix}="${namespace}" rdf:about=""${promptAttribute}>`,
+    `      <${prefix}:workflow>${escapeXmlText(workflow)}</${prefix}:workflow>`,
+    '    </rdf:Description>',
+    '  </rdf:RDF>',
+    '</x:xmpmeta>',
+    '<?xpacket end="w"?>'
+  ].join('\n')
 }
 
 const fileFromBuffer = (buffer: ArrayBuffer, name = 'test.avif'): File =>
   new File([buffer], name, { type: 'image/avif' })
+
+const ilocWidthCases: {
+  name: string
+  fieldSizes: IlocFieldSizes
+}[] = [
+  {
+    name: 'zero-byte extent offsets',
+    fieldSizes: { offset: 0, length: 4, baseOffset: 4 }
+  },
+  {
+    name: 'eight-byte extent offsets and lengths',
+    fieldSizes: { offset: 8, length: 8, baseOffset: 0 }
+  }
+]
 
 describe('getFromAvifFile', () => {
   beforeEach(() => {
@@ -411,5 +584,138 @@ describe('getFromAvifFile', () => {
 
     expect(result.prompt).toBe(JSON.stringify(JSON.parse(prompt)))
     expect(result.workflow).toBe(JSON.stringify(JSON.parse(workflow)))
+  })
+
+  it('imports workflow element and prompt attribute from an XMP item', async () => {
+    const workflow = '{"nodes":[],"version":1}'
+    const prompt = '{"1":{"class_type":"KSampler"}}'
+    const file = fileFromBuffer(
+      buildAvifFile({
+        includeExif: false,
+        xmp: buildXmpPacket(workflow, prompt)
+      })
+    )
+
+    const result = await getWorkflowDataFromFile(file)
+
+    expect(result).toEqual({ workflow, prompt })
+  })
+
+  it('imports ComfyUI XMP metadata with a different namespace prefix', async () => {
+    const workflow = '{"nodes":[],"version":1}'
+    const prompt = '{"1":{"class_type":"KSampler"}}'
+    const file = fileFromBuffer(
+      buildAvifFile({
+        includeExif: false,
+        xmp: buildXmpPacket(
+          workflow,
+          prompt,
+          'https://github.com/Comfy-Org/ComfyUI',
+          'alternate'
+        )
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result).toEqual({ workflow, prompt })
+  })
+
+  it('ignores prompt and workflow from a different XMP namespace', async () => {
+    const exifWorkflow = '{"source":"exif"}'
+    const exifPrompt = '{"1":{"class_type":"EXIF"}}'
+    const xmpWorkflow = '{"source":"unrelated-xmp"}'
+    const xmpPrompt = '{"1":{"class_type":"Unrelated"}}'
+    const file = fileFromBuffer(
+      buildAvifFile({
+        exifEntries: [`workflow:${exifWorkflow}`, `prompt:${exifPrompt}`],
+        xmp: buildXmpPacket(
+          xmpWorkflow,
+          xmpPrompt,
+          'https://example.com/unrelated-xmp'
+        )
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result).toEqual({ workflow: exifWorkflow, prompt: exifPrompt })
+  })
+
+  it.each(ilocWidthCases)('imports XMP with $name', async ({ fieldSizes }) => {
+    const workflow = '{"nodes":[],"version":1}'
+    const file = fileFromBuffer(
+      buildAvifFile({
+        includeExif: false,
+        ilocFieldSizes: fieldSizes,
+        xmp: buildXmpPacket(workflow)
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result.workflow).toBe(workflow)
+  })
+
+  it('joins multiple iloc extents before parsing XMP', async () => {
+    const workflow = '{"nodes":[],"source":"split-extents"}'
+    const file = fileFromBuffer(
+      buildAvifFile({
+        includeExif: false,
+        splitXmpAcrossExtents: true,
+        xmp: buildXmpPacket(workflow)
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result.workflow).toBe(workflow)
+  })
+
+  it('prefers valid XMP values while retaining EXIF-only metadata', async () => {
+    const exifWorkflow = '{"source":"exif"}'
+    const xmpWorkflow = '{"source":"xmp"}'
+    const prompt = '{"1":{"class_type":"KSampler"}}'
+    const file = fileFromBuffer(
+      buildAvifFile({
+        exifEntries: [`workflow:${exifWorkflow}`, `prompt:${prompt}`],
+        xmp: buildXmpPacket(xmpWorkflow)
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result.workflow).toBe(xmpWorkflow)
+    expect(result.prompt).toBe(prompt)
+  })
+
+  it('retains EXIF metadata when the XMP packet is malformed', async () => {
+    const workflow = '{"source":"exif"}'
+    const prompt = '{"1":{"class_type":"KSampler"}}'
+    const file = fileFromBuffer(
+      buildAvifFile({
+        exifEntries: [`workflow:${workflow}`, `prompt:${prompt}`],
+        xmp: '<x:xmpmeta'
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result).toEqual({ workflow, prompt })
+  })
+
+  it('retains EXIF metadata when XMP JSON is malformed', async () => {
+    const workflow = '{"source":"exif"}'
+    const prompt = '{"1":{"class_type":"KSampler"}}'
+    const file = fileFromBuffer(
+      buildAvifFile({
+        exifEntries: [`workflow:${workflow}`, `prompt:${prompt}`],
+        xmp: buildXmpPacket('{invalid-workflow', '{invalid-prompt')
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result).toEqual({ workflow, prompt })
   })
 })
