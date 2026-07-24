@@ -42,7 +42,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   // Prevent older status and balance responses from overwriting newer state.
   const latestBillingReadIds = { status: 0, balance: 0 }
 
-  const isActiveSubscription = computed(
+  const canAccessSubscriptionFeatures = computed(
     () => statusData.value?.is_active ?? false
   )
   const isFreeTier = computed(
@@ -330,7 +330,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
   async function requireActiveSubscription(): Promise<void> {
     await fetchStatus()
-    if (!isActiveSubscription.value) {
+    if (!canAccessSubscriptionFeatures.value) {
       subscriptionDialog.show({ reason: 'subscription_required' })
     }
   }
@@ -350,7 +350,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     currentTeamCreditStop,
     isLoading,
     error,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isFreeTier,
     billingStatus,
     subscriptionStatus,

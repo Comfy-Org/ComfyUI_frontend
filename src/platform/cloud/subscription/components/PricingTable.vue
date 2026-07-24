@@ -372,7 +372,7 @@ const tiers: PricingTierConfig[] = [
   }
 ]
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier,
   tier: subscriptionTier,
   subscription
@@ -392,7 +392,7 @@ const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
 const hasPaidSubscription = computed(
-  () => isActiveSubscription.value && !isFreeTier.value
+  () => canAccessSubscriptionFeatures.value && !isFreeTier.value
 )
 
 const currentTierKey = computed<TierKey | null>(() =>

@@ -122,7 +122,9 @@ const mockError = ref<string | null>(null)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+    canAccessSubscriptionFeatures: computed(
+      () => mockIsActiveSubscription.value
+    ),
     isFreeTier: computed(() => false),
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
@@ -133,7 +135,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     showSubscriptionDialog: mockShowSubscriptionDialog,
     manageSubscription: mockManageSubscription,
     resubscribe: mockResubscribe,
-    initialize: mockInitialize
+    initialize: mockInitialize,
+    getMaxSeats: () => 5
   })
 }))
 

@@ -25,7 +25,7 @@ describe('useSubscriptionCancellationWatcher', () => {
     baseStatus
   )
   const isActive = ref(true)
-  const isActiveSubscription = computed(() => isActive.value)
+  const canAccessSubscriptionFeatures = computed(() => isActive.value)
 
   let shouldWatch = true
   const shouldWatchCancellation = () => shouldWatch
@@ -77,7 +77,7 @@ describe('useSubscriptionCancellationWatcher', () => {
 
     const { startCancellationWatcher } = initWatcher({
       fetchStatus,
-      isActiveSubscription,
+      canAccessSubscriptionFeatures,
       subscriptionStatus,
       telemetry: telemetryMock,
       shouldWatchCancellation
@@ -107,7 +107,7 @@ describe('useSubscriptionCancellationWatcher', () => {
 
     const { startCancellationWatcher } = initWatcher({
       fetchStatus,
-      isActiveSubscription,
+      canAccessSubscriptionFeatures,
       subscriptionStatus,
       telemetry: telemetryMock,
       shouldWatchCancellation
@@ -129,7 +129,7 @@ describe('useSubscriptionCancellationWatcher', () => {
 
     const { startCancellationWatcher } = initWatcher({
       fetchStatus,
-      isActiveSubscription,
+      canAccessSubscriptionFeatures,
       subscriptionStatus,
       telemetry: telemetryMock,
       shouldWatchCancellation
@@ -154,7 +154,7 @@ describe('useSubscriptionCancellationWatcher', () => {
 
     const { startCancellationWatcher } = initWatcher({
       fetchStatus,
-      isActiveSubscription,
+      canAccessSubscriptionFeatures,
       subscriptionStatus,
       telemetry: telemetryMock,
       shouldWatchCancellation

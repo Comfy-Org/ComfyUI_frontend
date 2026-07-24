@@ -20,7 +20,7 @@ type TeamStop = CurrentTeamCreditStop
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
   subscription: null as Subscription | null,
-  isActiveSubscription: false,
+  canAccessSubscriptionFeatures: false,
   isFreeTier: false,
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
@@ -53,7 +53,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     balance: computed(() => state.balance),
     subscription: computed(() => state.subscription),
-    isActiveSubscription: computed(() => state.isActiveSubscription),
+    canAccessSubscriptionFeatures: computed(
+      () => state.canAccessSubscriptionFeatures
+    ),
     isFreeTier: computed(() => state.isFreeTier),
     currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
     isLoading: computed(() => state.isLoading),
@@ -142,7 +144,7 @@ function renderTile(props: Record<string, unknown> = {}) {
 }
 
 function activeProSubscription() {
-  state.isActiveSubscription = true
+  state.canAccessSubscriptionFeatures = true
   state.subscription = {
     tier: 'PRO',
     duration: 'MONTHLY',
@@ -160,7 +162,7 @@ describe('CreditsTile', () => {
   beforeEach(() => {
     state.balance = null
     state.subscription = null
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
     state.isFreeTier = false
     state.currentTeamCreditStop = null
     state.isLoading = false
@@ -195,7 +197,7 @@ describe('CreditsTile', () => {
   })
 
   it('uses the full annual Team grant for the credit pool total', () => {
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.subscription = {
       tier: 'TEAM',
       duration: 'ANNUAL',
@@ -215,7 +217,7 @@ describe('CreditsTile', () => {
   })
 
   it('keeps the monthly Team grant as the monthly credit pool total', () => {
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.subscription = {
       tier: 'TEAM',
       duration: 'MONTHLY',
@@ -235,7 +237,7 @@ describe('CreditsTile', () => {
   })
 
   it('uses the full annual grant for a personal tier credit pool', () => {
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.subscription = {
       tier: 'PRO',
       duration: 'ANNUAL',
@@ -284,7 +286,7 @@ describe('CreditsTile', () => {
   })
 
   it('shows only the balance with no breakdown when there is no active subscription', () => {
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
     state.balance = { amountMicros: 500 }
     const { container } = renderTile()
     expect(container.textContent).toContain('1,055')

@@ -161,7 +161,7 @@
                   <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
                 <div
-                  v-if="isActiveSubscription"
+                  v-if="canAccessSubscriptionFeatures"
                   class="text-sm text-text-secondary"
                 >
                   <template v-if="isSubscriptionCancelled">
@@ -182,7 +182,7 @@
               </div>
 
               <div
-                v-if="isActiveSubscription"
+                v-if="canAccessSubscriptionFeatures"
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
                 <Button
@@ -250,7 +250,7 @@
           </div>
 
           <div
-            v-if="isActiveSubscription || isPersonalFree"
+            v-if="canAccessSubscriptionFeatures || isPersonalFree"
             class="flex flex-col gap-2"
           >
             <i18n-t
@@ -352,7 +352,7 @@ const billingOperationStore = useBillingOperationStore()
 const isSettingUp = computed(() => billingOperationStore.isSettingUp)
 
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
   subscription,
@@ -380,7 +380,7 @@ const showSubscribePrompt = computed(() => {
     (subscription.value.planSlug || subscription.value.tier)
   )
     return false
-  if (isInPersonalWorkspace.value) return !isActiveSubscription.value
+  if (isInPersonalWorkspace.value) return !canAccessSubscriptionFeatures.value
   return !isWorkspaceSubscribed.value
 })
 
@@ -393,13 +393,13 @@ const isPersonalFree = computed(
 )
 
 const isTeamActive = computed(
-  () => isTeamPlan.value && isActiveSubscription.value
+  () => isTeamPlan.value && canAccessSubscriptionFeatures.value
 )
 
 const isMemberView = computed(
   () =>
     !permissions.value.canManageSubscription &&
-    !isActiveSubscription.value &&
+    !canAccessSubscriptionFeatures.value &&
     !isWorkspaceSubscribed.value
 )
 

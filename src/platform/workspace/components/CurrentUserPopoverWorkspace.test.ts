@@ -12,7 +12,7 @@ import enMessages from '@/locales/en/main.json'
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
 const state = vi.hoisted(() => ({
-  isActiveSubscription: true,
+  canAccessSubscriptionFeatures: true,
   isFreeTier: false,
   isCancelled: false,
   canTopUp: false,
@@ -34,7 +34,9 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: computed(() => state.isActiveSubscription),
+    canAccessSubscriptionFeatures: computed(
+      () => state.canAccessSubscriptionFeatures
+    ),
     isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({
       isCancelled: state.isCancelled
@@ -156,7 +158,7 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.isFreeTier = false
     state.isCancelled = false
     state.canTopUp = false
