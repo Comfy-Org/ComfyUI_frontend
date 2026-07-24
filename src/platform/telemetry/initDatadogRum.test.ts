@@ -25,6 +25,7 @@ import { initDatadogRum } from './initDatadogRum'
 describe('initDatadogRum', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    sessionStorage.clear()
     for (const key of Object.keys(hoisted.context)) {
       delete hoisted.context[key]
     }
@@ -229,7 +230,7 @@ describe('initDatadogRum', () => {
     expect(hoisted.init).not.toHaveBeenCalled()
   })
 
-  it('tracks user-initiated page reloads', async () => {
+  it('remembers user-initiated page reloads for the next load', async () => {
     await initDatadogRum('cloud.comfy.org')
 
     window.navigation.dispatchEvent(
@@ -239,7 +240,17 @@ describe('initDatadogRum', () => {
       })
     )
 
+    expect(sessionStorage.getItem('user_manual_refresh_pending')).toBe('true')
+    expect(hoisted.addAction).not.toHaveBeenCalled()
+  })
+
+  it('tracks a remembered user-initiated page reload', async () => {
+    sessionStorage.setItem('user_manual_refresh_pending', 'true')
+
+    await initDatadogRum('cloud.comfy.org')
+
     expect(hoisted.addAction).toHaveBeenCalledWith('user_manual_refresh')
+    expect(sessionStorage.getItem('user_manual_refresh_pending')).toBeNull()
   })
 
   it('initializes without the Navigation API', async () => {
@@ -266,6 +277,7 @@ describe('initDatadogRum', () => {
         })
       )
 
+      expect(sessionStorage.getItem('user_manual_refresh_pending')).toBeNull()
       expect(hoisted.addAction).not.toHaveBeenCalled()
     }
   )
