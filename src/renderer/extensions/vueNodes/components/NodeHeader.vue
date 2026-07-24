@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watch } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import CreditBadge from '@/components/node/CreditBadge.vue'
@@ -135,8 +135,7 @@ const resolveTitle = (info: NodeState | undefined) => {
   })
 }
 
-// Local state for title to provide immediate feedback
-const displayTitle = ref(resolveTitle(nodeData))
+const displayTitle = computed(() => resolveTitle(nodeData))
 
 const bypassed = computed(
   (): boolean => nodeData?.mode === LGraphEventMode.BYPASS
@@ -173,17 +172,6 @@ const headerShapeClass = computed(() => {
       return 'rounded-t-xl'
   }
 })
-
-// Watch for external changes to the node title or type
-watch(
-  () => [nodeData?.title, nodeData?.type] as const,
-  () => {
-    const next = resolveTitle(nodeData)
-    if (next !== displayTitle.value) {
-      displayTitle.value = next
-    }
-  }
-)
 
 // Event handlers
 const handleCollapse = () => {

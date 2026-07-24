@@ -239,7 +239,6 @@
 import { storeToRefs } from 'pinia'
 import {
   computed,
-  customRef,
   nextTick,
   onErrorCaptured,
   onMounted,
@@ -320,13 +319,9 @@ import NodeFooter from './NodeFooter.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
 
-// Extended props for main node component
-interface LGraphNodeProps {
+const { nodeData } = defineProps<{
   nodeData: NodeState
-  error?: string | null
-}
-
-const { nodeData, error = null } = defineProps<LGraphNodeProps>()
+}>()
 
 const { t } = useI18n()
 
@@ -382,7 +377,6 @@ const hasAnyError = computed((): boolean => {
   return !!(
     hasExecutionError.value ||
     node?.has_errors ||
-    error ||
     hasNodeScopedError ||
     hasContainerError
   )
@@ -758,36 +752,26 @@ const showAdvancedInputsButton = computed(() => {
   return hasAdvancedWidgets && !alwaysShowAdvanced
 })
 
-const showAdvancedState = customRef((track, trigger) => {
-  let internalState = false
+/**
+ * Reads through to `nodeDataStore`, so an external `node.showAdvanced` write is
+ * reflected here. Subgraph nodes have no advanced section of their own; toggling
+ * them opens the side panel instead.
+ */
+const showAdvancedState = computed({
+  get: () => !!nodeData.showAdvanced,
+  set(value: boolean) {
+    const node = lgraphNode.value
+    if (!node) return
 
-  const node = lgraphNode.value
-  if (node && !(node instanceof SubgraphNode)) {
-    internalState = !!node.showAdvanced
-  }
-
-  return {
-    get() {
-      track()
-      return internalState
-    },
-    set(value: boolean) {
-      const node = lgraphNode.value
-      if (!node) return
-
-      if (node instanceof SubgraphNode) {
-        // Do not modify internalState for subgraph nodes
-        if (value) {
-          rightSidePanelStore.focusSection('advanced-inputs')
-        } else {
-          rightSidePanelStore.closePanel()
-        }
+    if (node instanceof SubgraphNode) {
+      if (value) {
+        rightSidePanelStore.focusSection('advanced-inputs')
       } else {
-        node.showAdvanced = value
-        internalState = value
+        rightSidePanelStore.closePanel()
       }
-      trigger()
+      return
     }
+    node.showAdvanced = value
   }
 })
 
