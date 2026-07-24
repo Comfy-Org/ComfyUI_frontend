@@ -199,48 +199,91 @@ describe('useMaskEditorSaver', () => {
 
   it('preserves RGB beneath transparent mask pixels during upload', async () => {
     const fetchApiMock = vi.mocked(api.fetchApi)
-    const uploadedNames = [
-      'clipspace-mask-123.png',
-      'clipspace-paint-123.png',
-      'clipspace-painted-123.png',
-      'clipspace-painted-masked-123.png'
-    ]
-    fetchApiMock.mockImplementation(
-      async () =>
-        ({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              name: uploadedNames.shift(),
-              subfolder: '',
-              type: 'input'
-            })
-        }) as Response
-    )
+    const uploadedFilenames = new WeakMap<FormData, string>()
+    const append = FormData.prototype.append
+    vi.spyOn(FormData.prototype, 'append').mockImplementation(function (
+      this: FormData,
+      name: string,
+      value: string | Blob,
+      filename?: string
+    ) {
+      if (name === 'image' && filename) {
+        uploadedFilenames.set(this, filename)
+      }
+      if (typeof value === 'string') {
+        return (append as (name: string, value: string) => void).call(
+          this,
+          name,
+          value
+        )
+      }
+      return (
+        append as (name: string, value: Blob, filename?: string) => void
+      ).call(this, name, value, filename)
+    })
+    fetchApiMock.mockImplementation(async (_route, init) => {
+      const body = init?.body as FormData
+      const filename = uploadedFilenames.get(body)
+      if (!filename) throw new Error('Missing uploaded image')
+
+      return {
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            name: filename,
+            subfolder: '',
+            type: 'input'
+          })
+      } as Response
+    })
 
     const { save } = useMaskEditorSaver()
     await save()
 
-    expect(fetchApiMock.mock.calls.map(([route]) => route)).toEqual([
-      '/upload/mask',
-      '/upload/image',
-      '/upload/image',
-      '/upload/mask'
-    ])
+    const requests = fetchApiMock.mock.calls.map(([route, init], index) => ({
+      route,
+      body: init?.body as FormData,
+      index
+    }))
+    function uploadedFilename(body: FormData) {
+      return uploadedFilenames.get(body) ?? ''
+    }
+    const paintedImageRequest = requests.find(
+      ({ route, body }) =>
+        route === '/upload/image' &&
+        uploadedFilename(body).startsWith('clipspace-painted-')
+    )
+    if (!paintedImageRequest) throw new Error('Missing painted image upload')
 
-    const maskedBody = fetchApiMock.mock.calls[0][1]?.body as FormData
-    expect(JSON.parse(String(maskedBody.get('original_ref')))).toEqual({
-      filename: 'original.png',
-      subfolder: '',
-      type: 'input'
-    })
+    const maskRequests = requests.filter(
+      ({ route }) => route === '/upload/mask'
+    )
+    expect(maskRequests).toHaveLength(2)
+    const originalRefs = maskRequests.map(({ body }) =>
+      JSON.parse(String(body.get('original_ref')))
+    )
+    expect(originalRefs).toEqual(
+      expect.arrayContaining([
+        {
+          filename: 'original.png',
+          subfolder: '',
+          type: 'input'
+        },
+        {
+          filename: uploadedFilename(paintedImageRequest.body),
+          subfolder: '',
+          type: 'input'
+        }
+      ])
+    )
 
-    const paintedMaskedBody = fetchApiMock.mock.calls[3][1]?.body as FormData
-    expect(JSON.parse(String(paintedMaskedBody.get('original_ref')))).toEqual({
-      filename: 'clipspace-painted-123.png',
-      subfolder: '',
-      type: 'input'
+    const paintedMaskedRequest = maskRequests.find(({ body }) => {
+      const originalRef = JSON.parse(String(body.get('original_ref')))
+      return originalRef.filename === uploadedFilename(paintedImageRequest.body)
     })
+    expect(paintedMaskedRequest?.index).toBeGreaterThan(
+      paintedImageRequest.index
+    )
   })
 
   it('exports full internal mask coverage as zero PNG alpha', async () => {
