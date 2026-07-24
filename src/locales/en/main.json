@@ -2911,9 +2911,7 @@
         "lastActivity": "Last activity",
         "partnerNodeUsed": "Partner node used",
         "totalCreditsUsed": "Total credits used"
-      },
-      "perUserHint": "Looking for total usage per user?",
-      "seeMembers": "See Members"
+      }
     },
     "billingStatus": {
       "warning": {

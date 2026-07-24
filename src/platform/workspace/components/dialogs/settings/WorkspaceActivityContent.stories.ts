@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import { activityFixture } from '@/platform/workspace/fixtures/activityFixtures'
+import { setWorkspaceUIMock } from '@/storybook/mocks/useWorkspaceUI'
 
 import WorkspaceActivityContent from './WorkspaceActivityContent.vue'
 
@@ -12,6 +13,9 @@ const meta: Meta<typeof WorkspaceActivityContent> = {
   component: WorkspaceActivityContent,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },
+  beforeEach() {
+    setWorkspaceUIMock({})
+  },
   decorators: [
     () => ({
       template:
@@ -34,4 +38,13 @@ export const Empty: Story = {
 
 export const Searched: Story = {
   args: { events: activityFixture, search: 'partner' }
+}
+
+export const MemberScoped: Story = {
+  args: { events: activityFixture },
+  beforeEach() {
+    setWorkspaceUIMock({
+      workspaceRole: 'member'
+    })
+  }
 }
