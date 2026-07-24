@@ -14,6 +14,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import {
   inputHasLink,
@@ -38,7 +39,12 @@ import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import type { GroupId } from './LGraphGroup'
-import { LGraphNode } from './LGraphNode'
+import {
+  LGraphNode,
+  registerNodeState,
+  unregisterAllNodeStates,
+  unregisterNodeState
+} from './LGraphNode'
 import {
   LLink,
   registerLinkTopology,
@@ -487,11 +493,13 @@ export class LGraph
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(graphId)
       useRerouteStore().clearGraph(graphId)
+      useNodeDataStore().clearGraph(graphId)
     } else {
       // Subgraphs and unconfigured (zero-uuid) graphs share their store
-      // bucket with other graphs, so unregister each link individually.
+      // bucket with other graphs, so unregister each entity individually.
       unregisterAllLinkTopologies(this)
       unregisterAllRerouteChains(this)
+      unregisterAllNodeStates(this)
     }
     this.id = zeroUuid
     this.revision = 0
@@ -765,14 +773,16 @@ export class LGraph
         continue
       }
 
+      const { id } = node
+
       // add to pending nodes
-      M[node.id] = node
+      M[id] = node
 
       // num of input connections
       let num = 0
       if (node.inputs) {
         for (const slotIndex of node.inputs.keys()) {
-          if (inputHasLink(this, node.id, slotIndex)) {
+          if (inputHasLink(this, id, slotIndex)) {
             num += 1
           }
         }
@@ -785,7 +795,7 @@ export class LGraph
       } else {
         // num of input links
         if (set_level) node._level = 0
-        remaining_links[node.id] = num
+        remaining_links[id] = num
       }
     }
 
@@ -794,17 +804,19 @@ export class LGraph
       const node = S.shift()
       if (node === undefined) break
 
+      const { id } = node
+
       // add to ordered list
       L.push(node)
       // remove from the pending nodes
-      delete M[node.id]
+      delete M[id]
 
       if (!node.outputs) continue
 
       // for every output
       for (const slotIndex of node.outputs.keys()) {
         // for every connection
-        for (const link of outputLinks(this, node.id, slotIndex)) {
+        for (const link of outputLinks(this, id, slotIndex)) {
           // already visited link (ignore it)
           if (visited_links[link.id]) continue
 
@@ -813,6 +825,7 @@ export class LGraph
             visited_links[link.id] = true
             continue
           }
+          const targetId = target_node.id
 
           if (set_level) {
             node._level ??= 0
@@ -824,10 +837,10 @@ export class LGraph
           // mark as visited
           visited_links[link.id] = true
           // reduce the number of links remaining
-          remaining_links[target_node.id] -= 1
+          remaining_links[targetId] -= 1
 
           // if no more links, then add to starters array
-          if (remaining_links[target_node.id] == 0) S.push(target_node)
+          if (remaining_links[targetId] == 0) S.push(target_node)
         }
       }
     }
@@ -1084,12 +1097,15 @@ export class LGraph
       syncLastNodeId(state, node.id)
     }
 
-    // Set ghost flag before registration so VueNodeData picks it up
+    // Set ghost flag before registration so the node state carries it
     if (opts.ghost) {
       node.flags.ghost = true
     }
 
     node.graph = this
+
+    // Adopt the node-data store proxy now that the node has a valid id and graph.
+    registerNodeState(this, node)
 
     // Register all widgets with the WidgetValueStore now that node has a
     // valid ID and graph reference.
@@ -1204,12 +1220,15 @@ export class LGraph
       for (const subgraph of releasedSubgraphs) {
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
+        unregisterAllNodeStates(subgraph)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
     }
 
     // callback
     node.onRemoved?.()
+
+    unregisterNodeState(node)
 
     node.graph = null
     this.incrementVersion()
@@ -2101,10 +2120,12 @@ export class LGraph
           console.warn(
             `Cannot unpack node of type "${n_info.type}" - node type not found. Creating placeholder node.`
           )
-          node = new LGraphNode(n_info.title || n_info.type || 'Missing Node')
+          node = new LGraphNode(
+            n_info.title || n_info.type || 'Missing Node',
+            String(n_info.type)
+          )
           node.last_serialization = n_info
           node.has_errors = true
-          node.type = String(n_info.type)
         } else {
           throw new Error(
             `Cannot unpack: node type "${n_info.type}" is not registered`

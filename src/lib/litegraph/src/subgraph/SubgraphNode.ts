@@ -57,7 +57,10 @@ const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
   declare inputs: (INodeInputSlot & Partial<ISubgraphInput>)[]
 
-  override readonly type: SubgraphId
+  override get type(): SubgraphId {
+    return super.type as SubgraphId
+  }
+
   override readonly isVirtualNode = true as const
   override graph: GraphOrSubgraph | null
 
@@ -226,7 +229,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       { signal }
     )
 
-    this.type = subgraph.id
     this.configure(instanceData)
 
     this.addTitleButton({

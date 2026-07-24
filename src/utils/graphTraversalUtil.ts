@@ -13,8 +13,33 @@ import {
 } from '@/types/nodeIdentification'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
+import type { UUID } from '@/utils/uuid'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
+
+/**
+ * Reconstructs the legacy `subgraphId` (null at the root graph) from a
+ * `NodeState`'s owning `graphId`. Locator/execution-id helpers key root nodes
+ * by bare id, so a root-owned node must map to `null`, not the root graph id.
+ */
+export function subgraphIdFromGraphId(
+  graphId: UUID | undefined,
+  rootGraphId: UUID | undefined
+): string | null {
+  return graphId && graphId !== rootGraphId ? graphId : null
+}
+
+/** Builds the `{ id, subgraphId }` locator shape the traversal helpers expect from a node's shell state. */
+export function nodeLocatorFromState(
+  state: Pick<NodeState, 'id' | 'graphId'>,
+  rootGraphId: UUID | undefined
+): { id: NodeId; subgraphId: string | null } {
+  return {
+    id: state.id,
+    subgraphId: subgraphIdFromGraphId(state.graphId, rootGraphId)
+  }
+}
 
 function parseNodeIdPath(path: string[]): NodeId[] | null {
   const nodeIds = path.map(parseNodeId)

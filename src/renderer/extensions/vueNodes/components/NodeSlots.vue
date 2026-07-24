@@ -20,11 +20,11 @@
     </div>
 
     <div
-      v-if="nodeData?.outputs?.length"
+      v-if="liveOutputs.length"
       :class="cn('ml-auto flex min-w-0 flex-col', unifiedDotsClass)"
     >
       <OutputSlot
-        v-for="(output, index) in nodeData.outputs"
+        v-for="(output, index) in liveOutputs"
         :key="`output-${output.name}-${index}`"
         :slot-data="output"
         :node-type="nodeData?.type || ''"
@@ -39,37 +39,72 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
-import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlot
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { getLocatorIdFromNodeData } from '@/utils/graphTraversalUtil'
+import type { NodeState } from '@/types/nodeState'
+import {
+  getLocatorIdFromNodeData,
+  getNodeByLocatorId,
+  nodeLocatorFromState
+} from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'
 
 interface NodeSlotsProps {
-  nodeData: VueNodeData
+  nodeData: NodeState
   unified?: boolean
+  /** Slot overrides for synthetic nodes with no live graph node (previews). */
+  inputs?: INodeInputSlot[]
+  outputs?: INodeOutputSlot[]
 }
 
-const { nodeData, unified = false } = defineProps<NodeSlotsProps>()
+const {
+  nodeData,
+  unified = false,
+  inputs,
+  outputs
+} = defineProps<NodeSlotsProps>()
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
 const linkStore = useLinkStore()
-const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
+const nodeLocatorId = computed(() =>
+  getLocatorIdFromNodeData(
+    nodeLocatorFromState(nodeData, canvasStore.rootGraphId)
+  )
+)
+
+const liveNode = computed(() => {
+  const locatorId = nodeLocatorId.value
+  const rootGraph = app.isGraphReady ? app.rootGraph : null
+  return locatorId && rootGraph
+    ? getNodeByLocatorId(rootGraph, locatorId)
+    : null
+})
+const liveInputs = computed(() => inputs ?? liveNode.value?.inputs)
+const liveOutputs = computed(() => outputs ?? liveNode.value?.outputs ?? [])
 
 const linkedWidgetInputs = computed(() =>
   unified && canvasStore.rootGraphId
-    ? linkedWidgetedInputs(nodeData, canvasStore.rootGraphId)
+    ? linkedWidgetedInputs(
+        nodeData.id,
+        liveInputs.value,
+        canvasStore.rootGraphId
+      )
     : []
 )
 
@@ -86,7 +121,7 @@ function isOutputConnected(index: number): boolean {
 }
 
 const filteredInputs = computed(() => [
-  ...nonWidgetedInputs(nodeData),
+  ...nonWidgetedInputs(liveInputs.value),
   ...linkedWidgetInputs.value
 ])
 
@@ -116,10 +151,11 @@ const getActualInputIndex = (
   input: INodeSlot,
   filteredIndex: number
 ): number => {
-  if (!nodeData?.inputs) return filteredIndex
+  const inputs = liveInputs.value
+  if (!inputs) return filteredIndex
 
   // Find the actual index in the unfiltered inputs array
-  const actualIndex = nodeData.inputs.findIndex((i) => i === input)
+  const actualIndex = inputs.findIndex((i) => i === input)
   return actualIndex !== -1 ? actualIndex : filteredIndex
 }
 

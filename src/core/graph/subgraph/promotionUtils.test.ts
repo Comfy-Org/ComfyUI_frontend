@@ -215,7 +215,7 @@ describe('pruneDisconnected', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const interiorNode = new LGraphNode('PreviewImage')
-    interiorNode.type = 'PreviewImage'
+    interiorNode._state.type = 'PreviewImage'
     subgraphNode.subgraph.add(interiorNode)
 
     const hostLocator = String(subgraphNode.id)
@@ -248,7 +248,7 @@ describe('pruneDisconnected', () => {
 describe('getPromotableWidgets', () => {
   it('adds virtual canvas preview widget for PreviewImage nodes', () => {
     const node = new LGraphNode('PreviewImage')
-    node.type = 'PreviewImage'
+    node._state.type = 'PreviewImage'
 
     const widgets = getPromotableWidgets(node)
 
@@ -259,7 +259,7 @@ describe('getPromotableWidgets', () => {
 
   it('adds virtual canvas preview widget for SaveImage nodes', () => {
     const node = new LGraphNode('SaveImage')
-    node.type = 'SaveImage'
+    node._state.type = 'SaveImage'
 
     const widgets = getPromotableWidgets(node)
 
@@ -270,7 +270,7 @@ describe('getPromotableWidgets', () => {
 
   it('adds virtual canvas preview widget for GLSLShader nodes', () => {
     const node = new LGraphNode('GLSLShader')
-    node.type = 'GLSLShader'
+    node._state.type = 'GLSLShader'
 
     const widgets = getPromotableWidgets(node)
 
@@ -292,7 +292,7 @@ describe('getPromotableWidgets', () => {
 
   it('does not add virtual canvas preview widget for ImageInvert nodes', () => {
     const node = new LGraphNode('ImageInvert')
-    node.type = 'ImageInvert'
+    node._state.type = 'ImageInvert'
 
     const widgets = getPromotableWidgets(node)
 
@@ -349,7 +349,7 @@ describe('promoteRecommendedWidgets', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const glslNode = new LGraphNode('GLSLShader')
-    glslNode.type = 'GLSLShader'
+    glslNode._state.type = 'GLSLShader'
     subgraph.add(glslNode)
 
     promoteRecommendedWidgets(subgraphNode)
@@ -395,7 +395,7 @@ describe('promoteRecommendedWidgets', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const glslNode = new LGraphNode('GLSLShader')
-    glslNode.type = 'GLSLShader'
+    glslNode._state.type = 'GLSLShader'
     subgraph.add(glslNode)
 
     promoteRecommendedWidgets(subgraphNode)
@@ -425,7 +425,7 @@ describe('autoExposeKnownPreviewNodes', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const glslNode = new LGraphNode('GLSLShader')
-    glslNode.type = 'GLSLShader'
+    glslNode._state.type = 'GLSLShader'
     subgraph.add(glslNode)
 
     autoExposeKnownPreviewNodes(subgraphNode)
@@ -443,7 +443,7 @@ describe('autoExposeKnownPreviewNodes', () => {
     const subgraphNode = createTestSubgraphNode(subgraph)
     subgraphNode.properties.previewExposures = []
     const glslNode = new LGraphNode('GLSLShader')
-    glslNode.type = 'GLSLShader'
+    glslNode._state.type = 'GLSLShader'
     subgraph.add(glslNode)
 
     autoExposeKnownPreviewNodes(subgraphNode)
@@ -460,10 +460,10 @@ describe('autoExposeKnownPreviewNodes', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const glslNode = new LGraphNode('GLSLShader')
-    glslNode.type = 'GLSLShader'
+    glslNode._state.type = 'GLSLShader'
     subgraph.add(glslNode)
     const otherNode = new LGraphNode('OtherShader')
-    otherNode.type = 'GLSLShader'
+    otherNode._state.type = 'GLSLShader'
     subgraph.add(otherNode)
     subgraphNode.properties.previewExposures = [
       {

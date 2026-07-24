@@ -1,7 +1,7 @@
 import { trim } from 'es-toolkit'
 import { computed, toValue } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -21,7 +21,7 @@ function splitAroundFirstSpace(text: string): [string, string | undefined] {
  * rows, credits rows as pricing entries, and raw `node.badges`
  * extension badges appended last.
  */
-export function usePartitionedBadges(nodeData: VueNodeData) {
+export function usePartitionedBadges(nodeData: NodeState) {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
   const nodeDefStore = useNodeDefStore()

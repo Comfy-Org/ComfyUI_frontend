@@ -24,7 +24,7 @@ class TestNode extends LGraphNode {
 
   constructor(title?: string) {
     super(title ?? TEST_NODE_TYPE)
-    this.type = TEST_NODE_TYPE
+    this._state.type = TEST_NODE_TYPE
   }
 }
 

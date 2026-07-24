@@ -8,7 +8,7 @@ import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
@@ -153,19 +153,16 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
     }
   })
 }
-const mockNodeData: VueNodeData = {
+const mockNodeData: NodeState = {
   id: toNodeId('test-node-123'),
+  graphId: 'test-graph',
   title: 'Test Node',
   type: 'TestNode',
   mode: 0,
-  flags: {},
-  inputs: [],
-  outputs: [],
-  selected: false,
-  executing: false
+  flags: {}
 }
 
-const mockRerouteNodeData: VueNodeData = {
+const mockRerouteNodeData: NodeState = {
   ...mockNodeData,
   id: toNodeId('reroute-node-1'),
   title: '',
@@ -299,11 +296,11 @@ describe('LGraphNode', () => {
         { name: 'advancedWidget', type: 'number', options: { advanced: true } }
       ]
     }
+    mockData.mockLgraphNode = { has_errors: true, isSubgraphNode: () => false }
     renderLGraphNode({
       nodeData: {
         ...mockNodeData,
-        flags: { collapsed: true },
-        hasErrors: true
+        flags: { collapsed: true }
       }
     })
 

@@ -64,7 +64,7 @@ describe('SubgraphEditor', () => {
     const firstNode = new LGraphNode('FirstNode')
     const secondNode = new LGraphNode('SecondNode')
     const previewNode = new LGraphNode('PreviewImage')
-    previewNode.type = 'PreviewImage'
+    previewNode._state.type = 'PreviewImage'
     subgraph.add(firstNode)
     subgraph.add(secondNode)
     subgraph.add(previewNode)
@@ -272,7 +272,7 @@ describe('SubgraphEditor', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
     const orphanedSourceNode = new LGraphNode('OrphanedNode')
-    orphanedSourceNode.type = 'OrphanedNode'
+    orphanedSourceNode._state.type = 'OrphanedNode'
     subgraph.add(orphanedSourceNode)
 
     const previewStore = usePreviewExposureStore()

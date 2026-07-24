@@ -5674,7 +5674,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
 
     // clip if required (mask)
-    const shape = node._shape || RenderShape.BOX
+    const shape = node.shape || RenderShape.BOX
     const size = temp_vec2
     size[0] = node.renderingSize[0]
     size[1] = node.renderingSize[1]

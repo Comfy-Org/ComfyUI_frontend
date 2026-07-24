@@ -1,6 +1,6 @@
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { INodeInputSlot, INodeSlot } from '@/lib/litegraph/src/interfaces'
 import { useLinkStore } from '@/stores/linkStore'
+import type { NodeId } from '@/types/nodeId'
 import { isSlotObject } from '@/utils/typeGuardUtil'
 import type { UUID } from '@/utils/uuid'
 
@@ -17,28 +17,28 @@ function coerceINodeSlot(input: INodeInputSlot): INodeSlot {
 function inputHasWidget(input: INodeInputSlot) {
   return isSlotObject(input) && 'widget' in input && input.widget
 }
-export function nonWidgetedInputs(
-  nodeData: Pick<VueNodeData, 'inputs'> | undefined
-): INodeSlot[] {
-  if (!nodeData?.inputs) return []
 
-  return nodeData.inputs
-    .filter((input) => !inputHasWidget(input))
-    .map(coerceINodeSlot)
+export function nonWidgetedInputs(
+  inputs: INodeInputSlot[] | undefined
+): INodeSlot[] {
+  if (!inputs) return []
+
+  return inputs.filter((input) => !inputHasWidget(input)).map(coerceINodeSlot)
 }
 
 export function linkedWidgetedInputs(
-  nodeData: Pick<VueNodeData, 'id' | 'inputs'>,
+  nodeId: NodeId,
+  inputs: INodeInputSlot[] | undefined,
   graphId: UUID
 ): INodeSlot[] {
-  if (!nodeData.inputs) return []
+  if (!inputs) return []
 
   const linkStore = useLinkStore()
-  return nodeData.inputs
+  return inputs
     .filter(
       (input, index) =>
         inputHasWidget(input) &&
-        linkStore.isInputSlotConnected(graphId, nodeData.id, index)
+        linkStore.isInputSlotConnected(graphId, nodeId, index)
     )
     .map(coerceINodeSlot)
 }

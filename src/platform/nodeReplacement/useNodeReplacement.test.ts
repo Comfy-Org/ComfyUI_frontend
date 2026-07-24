@@ -15,7 +15,9 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
   LiteGraph: {
     createNode: vi.fn(),
     registered_node_types: {}
-  }
+  },
+  registerNodeState: vi.fn(),
+  unregisterNodeState: vi.fn()
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -430,8 +432,6 @@ describe('useNodeReplacement', () => {
         [],
         []
       )
-      // sanitizeNodeName strips & from type names (HTML entity chars)
-      placeholder2.type = 'ConditioningAverage'
 
       const graph = createMockGraph([placeholder1, placeholder2])
       placeholder1.graph = graph
@@ -813,7 +813,6 @@ describe('useNodeReplacement', () => {
     it('should fall back to node.type when last_serialization.type is undefined', () => {
       const node = createPlaceholderNode(1, 'FallbackType')
       node.last_serialization!.type = fromAny<string, unknown>(undefined)
-      node.type = 'FallbackType'
       const graph = createMockGraph([node])
       Object.assign(app, { rootGraph: graph })
 
@@ -842,8 +841,6 @@ describe('useNodeReplacement', () => {
       // so the predicate must fall back to checking sanitizeNodeName(originalType).
       const node = createPlaceholderNode(1, 'OldNodeSpecial')
       node.last_serialization!.type = fromAny<string, unknown>(undefined)
-      // Simulate what sanitizeNodeName does to '&' in the live type
-      node.type = 'OldNodeSpecial' // '&' already stripped by sanitizeNodeName
       const graph = createMockGraph([node])
       Object.assign(app, { rootGraph: graph })
 
