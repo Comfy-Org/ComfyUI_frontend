@@ -55,20 +55,19 @@
         <i class="icon-[lucide--trash-2] size-5" />
       </LoadingOverlay>
 
-      <!-- Action buttons overlay (top-left) -->
+      <!-- Action buttons overlay (top-right) -->
       <div
         v-if="showActionsOverlay"
-        class="absolute top-2 left-2 flex flex-wrap justify-start gap-2"
+        class="absolute top-2 right-2 z-1 flex flex-wrap justify-end gap-2"
       >
         <IconGroup background-class="bg-white">
           <Button
-            v-if="canInspect"
             variant="overlay-white"
             size="icon"
-            :aria-label="$t('mediaAsset.actions.zoom')"
-            @click.stop="handleZoomClick"
+            :aria-label="$t('mediaAsset.actions.download')"
+            @click.stop="asset && actions.downloadAssets([asset])"
           >
-            <i class="icon-[lucide--zoom-in] size-4" />
+            <i class="icon-[lucide--download] size-4" />
           </Button>
           <Button
             variant="overlay-white"

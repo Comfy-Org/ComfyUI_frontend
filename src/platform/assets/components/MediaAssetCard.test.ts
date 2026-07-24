@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -8,12 +9,16 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
+const { downloadAssets } = vi.hoisted(() => ({
+  downloadAssets: vi.fn()
+}))
+
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({ isAssetDeleting: () => false })
 }))
 
 vi.mock('../composables/useMediaAssetActions', () => ({
-  useMediaAssetActions: () => ({ downloadAssets: vi.fn() })
+  useMediaAssetActions: () => ({ downloadAssets })
 }))
 
 vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
@@ -52,9 +57,7 @@ function renderCard(
     global: {
       plugins: [i18n],
       stubs: {
-        IconGroup: true,
         LoadingOverlay: true,
-        Button: true,
         MediaTitle: true
       },
       directives: { tooltip: {} }
@@ -117,6 +120,26 @@ describe('MediaAssetCard', () => {
         expect.any(String)
       )
     })
+  })
+
+  it('keeps download and more actions independent from card selection', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderCard({ loading: false, selected: true })
+
+    await user.click(
+      screen.getByRole('button', { name: 'mediaAsset.actions.download' })
+    )
+
+    expect(downloadAssets).toHaveBeenCalledWith([asset])
+    expect(emitted().click).toBeUndefined()
+    expect(emitted().zoom).toBeUndefined()
+
+    await user.click(
+      screen.getByRole('button', { name: 'mediaAsset.actions.moreOptions' })
+    )
+    expect(emitted()['context-menu']).toHaveLength(1)
+    expect(emitted().click).toBeUndefined()
+    expect(emitted().zoom).toBeUndefined()
   })
 
   it('shows image format and dimensions without file size', () => {
