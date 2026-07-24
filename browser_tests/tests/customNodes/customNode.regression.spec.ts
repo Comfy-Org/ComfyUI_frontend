@@ -169,71 +169,76 @@ for (const entry of loadManifest()) {
       }
     })
 
-    test('T1 run: workflow executes without error', async ({ comfyPage }) => {
-      test.setTimeout(entry.timeoutMs + 15_000)
-      const objectInfo = await target.getObjectInfo(comfyPage.page)
-      const missing = missingExpectedNodes(objectInfo, entry.expectedNodes)
-      test.skip(
-        !entry.tiers.includes('run') ||
+    // Registration-gated, not runtime-skipped: a row not enrolled in the run
+    // tier generates no T1 at all, so the gates' zero-skip check keeps
+    // meaning "every enrolled tier ran" even while generated cloud rows are
+    // load+connectivity only. The runtime skip below covers only conditions
+    // of the ENVIRONMENT an enrolled row meets (pack not installed on this
+    // backend, GPU/models the runner lacks, workflow file absent locally).
+    if (entry.tiers.includes('run'))
+      test('T1 run: workflow executes without error', async ({ comfyPage }) => {
+        test.setTimeout(entry.timeoutMs + 15_000)
+        const objectInfo = await target.getObjectInfo(comfyPage.page)
+        const missing = missingExpectedNodes(objectInfo, entry.expectedNodes)
+        test.skip(
           missing.length > 0 ||
-          ('requiresGpu' in entry &&
-            (entry.requiresGpu || entry.requiresModels.length > 0)) ||
-          !entry.workflow ||
-          !existsSync(resolve(workflowRelative)),
-        `run tier unavailable for ${entry.pack}`
-      )
-      await expectNoVisibleErrors(comfyPage.page, 'at startup')
+            ('requiresGpu' in entry &&
+              (entry.requiresGpu || entry.requiresModels.length > 0)) ||
+            !existsSync(resolve(workflowRelative)),
+          `run tier unavailable for ${entry.pack}`
+        )
+        await expectNoVisibleErrors(comfyPage.page, 'at startup')
 
-      // Pack scripts can throw during workflow load or execution without
-      // any visible error surface; collect console + uncaught page errors
-      // across the whole run, filtered through the shared pack ledger.
-      const consoleErrors = collectConsoleErrors(comfyPage.page)
-      const workflow = readWorkflow(workflowRelative)
-      if (customNodesEnv() === 'cloud')
-        await uploadRunMedia(comfyPage.page, referencedRunMedia(workflow))
-      await comfyPage.workflow.loadGraphData(workflow)
-      // A drifted fixture that dropped an expected node would silently
-      // shrink the executed-set assertion (an empty id list PASSes on
-      // execution_success alone): require every expected type to actually
-      // be present in the loaded workflow before running it.
-      const expectedNodeIds: string[] = []
-      for (const type of entry.expectedNodes) {
-        const ids = await nodeIdsByType(comfyPage.page, [type])
+        // Pack scripts can throw during workflow load or execution without
+        // any visible error surface; collect console + uncaught page errors
+        // across the whole run, filtered through the shared pack ledger.
+        const consoleErrors = collectConsoleErrors(comfyPage.page)
+        const workflow = readWorkflow(workflowRelative)
+        if (customNodesEnv() === 'cloud')
+          await uploadRunMedia(comfyPage.page, referencedRunMedia(workflow))
+        await comfyPage.workflow.loadGraphData(workflow)
+        // A drifted fixture that dropped an expected node would silently
+        // shrink the executed-set assertion (an empty id list PASSes on
+        // execution_success alone): require every expected type to actually
+        // be present in the loaded workflow before running it.
+        const expectedNodeIds: string[] = []
+        for (const type of entry.expectedNodes) {
+          const ids = await nodeIdsByType(comfyPage.page, [type])
+          expect(
+            ids.length,
+            `expectedNodes drift: ${type} is not in the curated workflow ${entry.workflow}`
+          ).toBeGreaterThan(0)
+          expectedNodeIds.push(...ids)
+        }
+        const result = await target.runWorkflow(comfyPage.page, {
+          expectedNodeIds,
+          timeoutMs: entry.timeoutMs
+        })
+
+        // A run that executed and errored carries an ExecutionError; a run the
+        // backend rejected before executing (VALIDATION_FAIL) carries only the
+        // captured node_errors text in clientError - surface whichever exists so
+        // a red names the cause instead of printing an empty object.
         expect(
-          ids.length,
-          `expectedNodes drift: ${type} is not in the curated workflow ${entry.workflow}`
-        ).toBeGreaterThan(0)
-        expectedNodeIds.push(...ids)
-      }
-      const result = await target.runWorkflow(comfyPage.page, {
-        expectedNodeIds,
-        timeoutMs: entry.timeoutMs
+          result.outcome,
+          result.clientError ?? JSON.stringify(result.error ?? {})
+        ).toBe('PASS')
+        // PASS proves execution completed; the sinks prove data ARRIVED.
+        // Every display sink in the curated workflow must have emitted a ui
+        // payload through its executed event.
+        const sinkIds = await nodeIdsByType(comfyPage.page, CURATED_SINK_TYPES)
+        for (const sinkId of sinkIds)
+          expect(
+            result.outputsByNode[sinkId],
+            `sink node ${sinkId} produced no ui payload`
+          ).toBeTruthy()
+        await expectNoVisibleErrors(comfyPage.page, 'after run')
+        consoleErrors.stop()
+        expect(
+          unallowlistedErrors(entry.pack, consoleErrors.errors),
+          'console errors during curated run'
+        ).toEqual([])
       })
-
-      // A run that executed and errored carries an ExecutionError; a run the
-      // backend rejected before executing (VALIDATION_FAIL) carries only the
-      // captured node_errors text in clientError - surface whichever exists so
-      // a red names the cause instead of printing an empty object.
-      expect(
-        result.outcome,
-        result.clientError ?? JSON.stringify(result.error ?? {})
-      ).toBe('PASS')
-      // PASS proves execution completed; the sinks prove data ARRIVED.
-      // Every display sink in the curated workflow must have emitted a ui
-      // payload through its executed event.
-      const sinkIds = await nodeIdsByType(comfyPage.page, CURATED_SINK_TYPES)
-      for (const sinkId of sinkIds)
-        expect(
-          result.outputsByNode[sinkId],
-          `sink node ${sinkId} produced no ui payload`
-        ).toBeTruthy()
-      await expectNoVisibleErrors(comfyPage.page, 'after run')
-      consoleErrors.stop()
-      expect(
-        unallowlistedErrors(entry.pack, consoleErrors.errors),
-        'console errors during curated run'
-      ).toEqual([])
-    })
   })
 }
 

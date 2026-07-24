@@ -8,6 +8,7 @@ import type {
 } from '@e2e/fixtures/customNode/manifest'
 import {
   assertCloudEntry,
+  assertCloudManifestShape,
   assertCoreEntry,
   loadCloudCoreDisabledNodes,
   loadManifest,
@@ -154,9 +155,13 @@ test.describe('customNode manifest', () => {
       // exists, so selecting cloud must refuse to run - an empty manifest
       // here would generate zero tests and fake a green suite.
       process.env.CUSTOM_NODES_ENV = 'cloud'
+      // PRE-CALIBRATION assertion: INVERT to a successful load in the same
+      // commit that lands the generated customNodeManifest.cloud.json.
       expect(() => loadManifest()).toThrow(
         /customNodeManifest\.cloud\.json.*gen-cloud-manifest.*snapshot/s
       )
+      // PRE-CALIBRATION assertion: INVERT alongside the loadManifest one
+      // above when the generated manifest lands.
       expect(() => loadCloudCoreDisabledNodes()).toThrow(
         /customNodeManifest\.cloud\.json/
       )
@@ -206,5 +211,38 @@ test.describe('customNode manifest', () => {
         () => assertCloudEntry({ ...validCloudEntry(), disabledNodes: bad }, 0),
         `disabledNodes ${JSON.stringify(bad)} must be rejected`
       ).toThrow(/disabledNodes/)
+  })
+
+  test('assertCloudManifestShape names the source on malformed top-level shapes and returns valid ones', () => {
+    const valid = {
+      coreDisabledNodes: { VAESave: ['WritesToDisk'] },
+      packs: [validCloudEntry()]
+    }
+    expect(assertCloudManifestShape(valid, 'probe.json')).toBe(valid)
+    for (const bad of [
+      null,
+      42,
+      'packs',
+      [],
+      { coreDisabledNodes: {}, packs: [] },
+      { coreDisabledNodes: { NodeA: [] }, packs: [validCloudEntry()] },
+      { packs: [validCloudEntry()] },
+      { coreDisabledNodes: {}, packs: {} }
+    ])
+      expect(
+        () => assertCloudManifestShape(bad, 'probe.json'),
+        `${JSON.stringify(bad)} must be rejected`
+      ).toThrow(/probe\.json is malformed/)
+    // Pack rows still flow through assertCloudEntry, so a structurally sound
+    // manifest with a broken row reds naming the row's field.
+    expect(() =>
+      assertCloudManifestShape(
+        {
+          coreDisabledNodes: {},
+          packs: [{ ...validCloudEntry(), deployRef: 'unpinned' }]
+        },
+        'probe.json'
+      )
+    ).toThrow(/deployRef/)
   })
 })

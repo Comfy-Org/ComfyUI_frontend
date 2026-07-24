@@ -1,13 +1,15 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { parse } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 import { assertCloudEntry } from '../browser_tests/fixtures/customNode/manifest'
 import syntheticSnapshot from './__fixtures__/cloudObjectInfoSyntheticSnapshot.json'
 import supportedNodesExtract from './__fixtures__/cloudSupportedNodesExtract.json'
+import type { CuratedCloudOverlay } from './cloud-manifest'
 import {
   buildCloudManifest,
   renderCloudManifest,
+  validateCuratedCloudOverlay,
   validateObjectInfoSnapshot,
   validateSupportedNodesDoc
 } from './cloud-manifest'
@@ -22,6 +24,15 @@ function fixtureDoc() {
 
 function fixtureSnapshot() {
   return validateObjectInfoSnapshot(structuredClone(syntheticSnapshot))
+}
+
+function fixtureOverlay(): CuratedCloudOverlay {
+  return {
+    'ComfyUI-VideoHelperSuite': {
+      workflow: 'assets/customNodes/vhs_video_pipeline_cloud_run.json',
+      tiers: ['load', 'connectivity', 'run']
+    }
+  }
 }
 
 const KJ_DEPLOY_REF =
@@ -181,6 +192,121 @@ describe('buildCloudManifest', () => {
   })
 })
 
+describe('curated overlay', () => {
+  it('attaches workflow and tiers to the keyed row and leaves every other row generated', () => {
+    const manifest = buildCloudManifest(
+      fixtureDoc(),
+      fixtureSnapshot(),
+      fixtureOverlay()
+    )
+    const vhs = manifest.packs.find(
+      (row) => row.pack === 'ComfyUI-VideoHelperSuite'
+    )
+    expect(vhs?.tiers).toEqual(['load', 'connectivity', 'run'])
+    expect(vhs?.workflow).toBe(
+      'assets/customNodes/vhs_video_pipeline_cloud_run.json'
+    )
+    expect(vhs?.timeoutMs).toBe(30_000)
+    for (const row of manifest.packs.filter((row) => row !== vhs)) {
+      expect(row.tiers).toEqual(['load', 'connectivity'])
+      expect(row.workflow).toBe('')
+    }
+  })
+
+  it('applies an overlay timeoutMs override', () => {
+    const overlay = fixtureOverlay()
+    overlay['ComfyUI-VideoHelperSuite'].timeoutMs = 90_000
+    const manifest = buildCloudManifest(
+      fixtureDoc(),
+      fixtureSnapshot(),
+      overlay
+    )
+    expect(
+      manifest.packs.find((row) => row.pack === 'ComfyUI-VideoHelperSuite')
+        ?.timeoutMs
+    ).toBe(90_000)
+  })
+
+  it('emits merged rows the cloud loader validation accepts', () => {
+    const manifest = buildCloudManifest(
+      fixtureDoc(),
+      fixtureSnapshot(),
+      fixtureOverlay()
+    )
+    manifest.packs.forEach((row, index) =>
+      expect(() => assertCloudEntry(row, index)).not.toThrow()
+    )
+  })
+
+  it('fails loudly on an overlay key with no generated row, listing known packs', () => {
+    const overlay = fixtureOverlay()
+    overlay['comfyui-videohelpersuite'] = overlay['ComfyUI-VideoHelperSuite']
+    delete overlay['ComfyUI-VideoHelperSuite']
+    expect(() =>
+      buildCloudManifest(fixtureDoc(), fixtureSnapshot(), overlay)
+    ).toThrow(/comfyui-videohelpersuite.*ComfyUI-VideoHelperSuite/s)
+  })
+
+  it('validateCuratedCloudOverlay rejects malformed shapes and accepts valid ones', () => {
+    const valid = fixtureOverlay()
+    expect(validateCuratedCloudOverlay(structuredClone(valid))).toEqual(valid)
+    const withTimeout = fixtureOverlay()
+    withTimeout['ComfyUI-VideoHelperSuite'].timeoutMs = 90_000
+    expect(validateCuratedCloudOverlay(structuredClone(withTimeout))).toEqual(
+      withTimeout
+    )
+    expect(() => validateCuratedCloudOverlay(null)).toThrow(/curated overlay/)
+    expect(() => validateCuratedCloudOverlay([])).toThrow(/curated overlay/)
+    expect(() => validateCuratedCloudOverlay({ Pack: 'nope' })).toThrow(
+      /must be an object/
+    )
+    expect(() =>
+      validateCuratedCloudOverlay({
+        Pack: { workflow: 'a.json', tiers: ['run'], timeout: 5 }
+      })
+    ).toThrow(/unknown key.*timeout/)
+    expect(() =>
+      validateCuratedCloudOverlay({ Pack: { workflow: '', tiers: ['run'] } })
+    ).toThrow(/workflow/)
+    expect(() =>
+      validateCuratedCloudOverlay({ Pack: { workflow: 'a.json', tiers: [] } })
+    ).toThrow(/tiers/)
+    expect(() =>
+      validateCuratedCloudOverlay({
+        Pack: { workflow: 'a.json', tiers: 'run' }
+      })
+    ).toThrow(/tiers/)
+    for (const bad of [0, -1, Number.NaN, 'soon'])
+      expect(() =>
+        validateCuratedCloudOverlay({
+          Pack: { workflow: 'a.json', tiers: ['run'], timeoutMs: bad }
+        })
+      ).toThrow(/timeoutMs/)
+  })
+
+  it('the vendored overlay validates and every workflow it references exists', () => {
+    const vendored = validateCuratedCloudOverlay(
+      JSON.parse(
+        readFileSync(
+          'browser_tests/fixtures/data/cloud/curatedCloudWorkflows.json',
+          'utf-8'
+        )
+      )
+    )
+    expect(Object.keys(vendored).length).toBeGreaterThan(0)
+    for (const [pack, entry] of Object.entries(vendored)) {
+      expect(
+        existsSync(`browser_tests/${entry.workflow}`),
+        `${pack}: overlay workflow ${entry.workflow} is not on disk`
+      ).toBe(true)
+      expect(
+        entry.tiers,
+        `${pack}: overlay must enroll the run tier`
+      ).toContain('run')
+    }
+  })
+})
+
 describe('renderCloudManifest determinism', () => {
   it('renders byte-identical output for identical inputs', () => {
     const first = renderCloudManifest(
@@ -203,6 +329,19 @@ describe('renderCloudManifest determinism', () => {
     expect(
       renderCloudManifest(buildCloudManifest(fixtureDoc(), reversed))
     ).toBe(
+      renderCloudManifest(buildCloudManifest(fixtureDoc(), fixtureSnapshot()))
+    )
+  })
+
+  it('holds with the curated overlay applied', () => {
+    const first = renderCloudManifest(
+      buildCloudManifest(fixtureDoc(), fixtureSnapshot(), fixtureOverlay())
+    )
+    const second = renderCloudManifest(
+      buildCloudManifest(fixtureDoc(), fixtureSnapshot(), fixtureOverlay())
+    )
+    expect(second).toBe(first)
+    expect(first).not.toBe(
       renderCloudManifest(buildCloudManifest(fixtureDoc(), fixtureSnapshot()))
     )
   })

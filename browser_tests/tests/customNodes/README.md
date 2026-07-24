@@ -141,12 +141,17 @@ swapped.
   `ci-tests-custom-nodes-cloud.yaml`): the SAME suite with
   `CUSTOM_NODES_ENV=cloud` against the remote Comfy Cloud backend - no pack
   install; expectations come from the generated cloud manifest and re-float
-  when Cloud redeploys. Gated on the cloud smoke secrets
+  when Cloud redeploys. Gated on TWO preconditions: the cloud smoke secrets
   (`SMOKE_FIREBASE_API_KEY`, `SMOKE_ACCOUNT_EMAIL`, `SMOKE_ACCOUNT_PASSWORD`,
-  `CLOUD_BACKEND_URL` - configure all four to enable the gate): with any absent the
-  job emits a `::notice` naming the missing ones and no-ops green (required-safe
-  pre-calibration - it never fake-passes a green "0 tests"); with all present
-  the suite runs for real. Skipped tests are failures.
+  `CLOUD_BACKEND_URL`) all configured AND the generated
+  `customNodeManifest.cloud.json` present in the checkout. With either
+  missing the job emits a `::notice` naming exactly what and no-ops green
+  (required-safe pre-calibration - it never fake-passes a green "0 tests"
+  and never reds on the half-ready states); with both present the suite
+  runs for real. Which cloud rows carry the run tier comes from the curated
+  overlay (`browser_tests/fixtures/data/cloud/curatedCloudWorkflows.json`);
+  rows without an overlay entry register no run test. Skipped tests are
+  failures.
 - **The nightly canary** (`ci-nightly-custom-nodes-canary.yaml`,
   non-gating): where drift surfaces instead. Two jobs, one moving git
   variable each: `canary-core-drift` floats ComfyUI core with packs

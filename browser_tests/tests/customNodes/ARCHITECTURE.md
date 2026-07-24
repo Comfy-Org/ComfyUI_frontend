@@ -775,11 +775,15 @@ that a newly queued run CANCELS a pending (not in-progress) one, which is
 why this check must not be marked required until a per-run instance (open
 item: run isolation) or an in-job lock replaces group serialization; and
 because
-the cloud smoke secrets may be unset (pre-calibration, or on a fork clone), a
-gate step checks them first - absent, it emits a loud `::notice` and no-ops
-the job green without running a test; present, the suite runs for real. The
-suite cannot pass until the generated cloud manifest is committed too, so
-until then that no-op is the honest state, never a green "0 tests".
+the cloud smoke secrets may be unset (pre-calibration, or on a fork clone)
+and the generated cloud manifest may not be committed yet, a gate step
+checks BOTH first - either absent, it emits a loud `::notice` naming which
+and no-ops the job green without running a test (secrets landing before the
+manifest would otherwise red the suite at collection); both present, the
+suite runs for real. Until then that no-op is the honest state, never a
+green "0 tests". Run-tier enrollment for cloud rows comes from the curated
+overlay (`fixtures/data/cloud/curatedCloudWorkflows.json`); rows without an
+overlay entry register no run test.
 
 **Release-pipeline stage (the cloud drift leg).** Beyond the per-PR gate, this
 same cloud suite is the custom-node stage of the release pipeline - nightly
@@ -860,5 +864,5 @@ The one place where architecture names meet code symbols.
 | Dynamic-input (autogrow) tier         | `browser_tests/tests/customNodes/dynamicInputs.spec.ts`                    | `AUTOGROW_CASES` (curated cases), `consumerShape` (graph + DOM census), per-path connect/disconnect loop                                                                                                                        |
 | Parser/classifier fixtures            | `browser_tests/tests/customNodes/*.pure.spec.ts`                           | census-derived cases for both definition dialects                                                                                                                                                                               |
 | PR gate                               | `.github/workflows/ci-tests-custom-nodes.yaml`                             | gating check `custom-nodes-e2e-core`; core pin via `comfyui_ref`                                                                                                                                                                |
-| Cloud PR gate                         | `.github/workflows/ci-tests-custom-nodes-cloud.yaml`                       | gating check `custom-nodes-e2e-cloud`; `CUSTOM_NODES_ENV=cloud`; smoke-secrets no-op gate; served dist proxied to `CLOUD_BACKEND_URL`                                                                                           |
+| Cloud PR gate                         | `.github/workflows/ci-tests-custom-nodes-cloud.yaml`                       | gating check `custom-nodes-e2e-cloud`; `CUSTOM_NODES_ENV=cloud`; secrets+manifest no-op gate; served dist proxied to `CLOUD_BACKEND_URL`                                                                                        |
 | Nightly canary                        | `.github/workflows/ci-nightly-custom-nodes-canary.yaml`                    | `canary-core-drift` (core floats), `canary-pack-drift` (packs float at HEAD), label-deduped issue filing                                                                                                                        |

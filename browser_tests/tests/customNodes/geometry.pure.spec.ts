@@ -138,6 +138,8 @@ test.describe('baseline path resolution', () => {
       // No cloud baselines exist until the Phase-5 record run: the same
       // pack resolves under geometry/cloud/ and follows the existing
       // missing-baseline behavior (null; compare mode reds on it).
+      // PRE-CALIBRATION assertion: INVERT to a non-null load in the same
+      // commit that lands the recorded cloud geometry baselines.
       expect(loadPackGeometry(pack)).toBeNull()
       delete process.env.CUSTOM_NODES_ENV
       expect(loadPackGeometry(pack)).toEqual(coreBaseline)

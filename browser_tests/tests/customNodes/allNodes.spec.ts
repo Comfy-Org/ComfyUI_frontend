@@ -509,6 +509,10 @@ async function packNodeKeys(
   return { keys, defs }
 }
 
+// Invariant across manifest entries: which harness nodes the target backend
+// label-disables is a property of the backend, not of any pack row.
+const disabledHarness = disabledHarnessNodes(loadCloudCoreDisabledNodes())
+
 for (const entry of loadManifest()) {
   test.describe(`all nodes: ${entry.pack} @custom-nodes`, () => {
     test('every registered node mounts in both renderers', async ({
@@ -1075,7 +1079,6 @@ for (const entry of loadManifest()) {
         'backend still has a running prompt after a 150s drain - a genuinely wedged (non-interruptible) execution; restart the test backend'
       ).toBe(0)
 
-      const disabledHarness = disabledHarnessNodes(loadCloudCoreDisabledNodes())
       expect(
         disabledHarness,
         'Cloud label-disables auto-run harness node(s); synthesized chains cannot run without them'

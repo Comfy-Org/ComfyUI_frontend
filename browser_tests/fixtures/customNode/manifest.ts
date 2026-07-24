@@ -278,6 +278,29 @@ export function customNodesEnv(): (typeof VALID_ENVS)[number] {
   return env
 }
 
+// Exported for the pure spec's literal cases; production reads flow through
+// readCloudManifest. The cast precedes validation deliberately: every field
+// the cast asserts is checked here or in assertCloudEntry before use.
+export function assertCloudManifestShape(
+  parsed: unknown,
+  sourcePath: string
+): CloudManifest {
+  const manifest = parsed as CloudManifest
+  if (
+    typeof manifest !== 'object' ||
+    manifest === null ||
+    invalidRecordOf(manifest.coreDisabledNodes, isLabelList) ||
+    !Array.isArray(manifest.packs) ||
+    // Zero packs generate zero tests: a green run that tested nothing.
+    manifest.packs.length === 0
+  )
+    throw new Error(
+      `${sourcePath} is malformed (expected { coreDisabledNodes, packs } with at least one pack): regenerate it via 'pnpm gen:cloud-manifest'`
+    )
+  manifest.packs.forEach(assertCloudEntry)
+  return manifest
+}
+
 function readCloudManifest(): CloudManifest {
   const cloudPath = dataPath('customNodeManifest.cloud.json')
   // A missing file must never degrade to an empty manifest: zero entries
@@ -292,20 +315,10 @@ function readCloudManifest(): CloudManifest {
         `snapshot. That snapshot is the Phase-1 probe output; until the ` +
         `probe has run, the cloud suite cannot run.`
     )
-  const manifest = JSON.parse(readFileSync(cloudPath, 'utf-8')) as CloudManifest
-  if (
-    typeof manifest !== 'object' ||
-    manifest === null ||
-    invalidRecordOf(manifest.coreDisabledNodes, isLabelList) ||
-    !Array.isArray(manifest.packs) ||
-    // Zero packs generate zero tests: a green run that tested nothing.
-    manifest.packs.length === 0
+  return assertCloudManifestShape(
+    JSON.parse(readFileSync(cloudPath, 'utf-8')),
+    cloudPath
   )
-    throw new Error(
-      `${cloudPath} is malformed (expected { coreDisabledNodes, packs } with at least one pack): regenerate it via 'pnpm gen:cloud-manifest'`
-    )
-  manifest.packs.forEach(assertCloudEntry)
-  return manifest
 }
 
 // Core ComfyUI's own label-disabled nodes ride the cloud manifest top level

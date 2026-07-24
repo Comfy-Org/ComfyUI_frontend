@@ -7,3 +7,4 @@ packages/ingest-types/src/types.gen.ts linguist-generated=true
 packages/ingest-types/src/zod.gen.ts linguist-generated=true
 src/workbench/extensions/manager/types/generatedManagerTypes.ts linguist-generated=true
 browser_tests/fixtures/customNode/geometry/*.json linguist-generated=true
+browser_tests/fixtures/customNode/geometry/cloud/*.json linguist-generated=true

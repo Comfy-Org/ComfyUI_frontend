@@ -407,10 +407,11 @@ are authored differently:
 - **Cloud rows are GENERATED, never hand-edited.** `pnpm gen:cloud-manifest`
   builds `.cloud.json` by joining Cloud's `supported_nodes.yaml` (the
   Cloud-ops source of truth for which packs are deployed and how they are
-  pinned) with a Cloud `/object_info` snapshot. Do not add or edit a cloud row
-  by hand - it is overwritten on the next regeneration and a hand-edit hides
-  real drift. Fix the inputs (the vendored yaml or the snapshot) and
-  regenerate.
+  pinned) with a Cloud `/object_info` snapshot, then applying the curated
+  workflow overlay (next bullets). Do not add or edit a cloud row by hand -
+  it is overwritten on the next regeneration and a hand-edit hides real
+  drift. Fix the inputs (the vendored yaml, the snapshot, or the overlay)
+  and regenerate.
 - **Regeneration tracks Cloud deploys, not our pins.** A `.cloud.json` change
   belongs in the commit that re-vendors `supported_nodes.yaml` or re-takes the
   snapshot after Cloud redeploys; `.core.json` still tracks our own pin bumps.
@@ -421,16 +422,36 @@ are authored differently:
   ARE the mechanism (`DisabledOnCloud`, `ReadsArbitraryFile`, `WritesToDisk`,
   ...), the same "every exception carries its mechanism" rule the core ledgers
   use. The generator emits them - you do not write them.
-- **Curated cloud workflows follow this same Step 1-7 process, with
-  upload-based media.** A cloud pack still gets a hand-authored run workflow the
-  same way, but a node disabled on Cloud cannot appear in it: use the unlabeled
-  equivalent (e.g. the upload-based `VHS_LoadVideo` in place of the disabled
-  disk-path `VHS_LoadVideoPath`), and stage media by uploading it through the
-  running session, not by copying into a backend `input/` dir (there is no
-  local backend to copy into). Cloud geometry baselines record into
+- **Curated cloud workflows are AUTHORED (Steps 1-7, upload-based media),
+  then ATTACHED via the overlay.** A cloud pack still gets a hand-authored
+  run workflow the same way, but a node disabled on Cloud cannot appear in
+  it: use the unlabeled equivalent (e.g. the upload-based `VHS_LoadVideo` in
+  place of the disabled disk-path `VHS_LoadVideoPath`), and stage media by
+  uploading it through the running session, not by copying into a backend
+  `input/` dir (there is no local backend to copy into). Enrollment is NOT a
+  manifest edit: add an entry to the curated overlay
+  (`browser_tests/fixtures/data/cloud/curatedCloudWorkflows.json`, the one
+  hand-maintained generator input) and regenerate. Overlay entries are keyed
+  by the pack's snapshot dirname (= the generated row's `pack` field, the
+  same key the exclusion ledgers and geometry baselines use - not the yaml
+  pack name, whose URL-pinned form churns with every Cloud deploy sha) and
+  carry `workflow` (path relative to `browser_tests/`, same convention as
+  core rows), the row's FULL replacement `tiers` list (include `run`), and
+  optionally `timeoutMs`. An overlay key matching no generated row fails
+  generation loudly, so a Cloud rename cannot silently drop enrollment.
+  Generated rows without an overlay entry stay load+connectivity and
+  register no run test. Cloud geometry baselines record into
   `geometry/cloud/<pack>.json` via the cloud record workflow
   (`.github/workflows/record-custom-nodes-geometry-cloud.yaml`), the cloud
   sibling of Step 5b.
+- **Two pre-calibration assertions are waiting to be flipped.** The pure
+  specs currently assert the not-yet-landed artifacts are ABSENT (marked
+  `PRE-CALIBRATION assertion: INVERT`): `manifest.pure.spec.ts` expects
+  `loadManifest()` / `loadCloudCoreDisabledNodes()` to throw under
+  `CUSTOM_NODES_ENV=cloud`, and `geometry.pure.spec.ts` expects the cloud
+  baseline load to be null. Invert each in the same commit that lands its
+  artifact (the generated `.cloud.json`; the recorded cloud baselines) or
+  that commit fails the pure specs.
 
 ## Vue Nodes 2.0 compatibility policy
 
