@@ -1,0 +1,61 @@
+# Description: Assigns the on-call release sheriff to backport and release
+# version-bump PRs so they are never left unowned.
+#
+# Why: backport PRs and the nightly version-bump PR are opened by automation
+# with no assignee and no reviewer. Nobody is notified, so strays sit open for
+# days — which blocks backport-auto-merge.yaml (it needs an approval) and
+# delays nightly builds.
+#
+# The rotation lives in Datadog On-Call and is read live by the script, so a
+# handover takes effect on the next run with no commit. The hourly sweep is the
+# safety net: PR events only catch PRs the moment they are opened or labelled.
+name: 'PR: Assign Release Sheriff'
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, labeled]
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialize every run so two runs cannot race on the same PR.
+concurrency:
+  group: assign-release-sheriff
+  cancel-in-progress: false
+
+jobs:
+  assign:
+    name: Assign release sheriff
+    # A cheap gate to avoid spinning up a runner for every unrelated PR. It is
+    # deliberately broader than the real rule in release-sheriff.ts.
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      (github.event_name != 'pull_request_target' ||
+       contains(github.event.pull_request.labels.*.name, 'backport') ||
+       contains(github.event.pull_request.labels.*.name, 'Release') ||
+       contains(github.event.pull_request.title, 'backport') ||
+       startsWith(github.event.pull_request.head.ref, 'version-bump-'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # assignees are set through the issues API
+      pull-requests: write # review requests
+
+    steps:
+      # pull_request_target checks out the base branch, never PR head code.
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Assign release sheriff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
+        run: pnpm exec tsx scripts/release-sheriff/release-sheriff.ts
