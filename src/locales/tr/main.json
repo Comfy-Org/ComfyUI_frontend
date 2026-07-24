@@ -3,6 +3,9 @@
     "dockToTop": "Üste sabitle",
     "feedback": "Geri bildirim",
     "feedbackTooltip": "Geri bildirim",
+    "freeTierPartner": "Partner düğümleri için ücretli plan gerekir",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} kullanım kaldı",
+    "freeTierRunsExhausted": "Kullanım hakkı kalmadı",
     "share": "Paylaş",
     "shareTooltip": "İş akışını paylaş"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "Ücretsiz Katman Uygun",
       "freeTierDescription": "Google ile kaydolun, her ay {credits} ücretsiz kredi kazanın. Kart gerekmez.",
       "freeTierDescriptionGeneric": "Google ile kaydolun, her ay ücretsiz kredi kazanın. Kart gerekmez.",
+      "googleSsoInAppBrowserNotice": "Bunu bir uygulama içi tarayıcıdan (ör. Instagram, LinkedIn) açtıysanız, Google ile giriş çalışmayabilir. GitHub veya e-posta kullanın ya da bu sayfayı cihazınızın varsayılan tarayıcısında açın.",
       "insecureContextWarning": "Bu bağlantı güvensiz (HTTP) - giriş yapmaya devam ederseniz kimlik bilgileriniz saldırganlar tarafından ele geçirilebilir.",
       "loginButton": "Giriş Yap",
       "loginWithGithub": "Github ile giriş yap",
@@ -785,6 +789,11 @@
       "gpuUsage": "GPU Kullanımı"
     },
     "faqs": "SSS",
+    "insufficient": {
+      "memberCta": "Tamam, anladım",
+      "memberDescription": "Ekibiniz tüm kredilerini kullandı. Çalışma alanı yöneticilerinizin iş akışlarını çalıştırmak için daha fazla kredi eklemesi gerekiyor.",
+      "memberTitle": "Bu çalışma alanında kredi kalmadı"
+    },
     "invoiceHistory": "Fatura Geçmişi",
     "lastUpdated": "Son güncellenme",
     "loadEventsError": "Etkinlik yüklenemedi. Lütfen tekrar deneyin.",
@@ -1452,6 +1461,9 @@
     "noExportsInQueue": "Kuyrukta {filter} dışa aktarma yok",
     "preparingExport": "Dışa aktarım hazırlanıyor...",
     "retryDownload": "İndirmeyi tekrar dene"
+  },
+  "feedback": {
+    "title": "Geri Bildirim Paylaş"
   },
   "g": {
     "1x": "1x",
@@ -2783,7 +2795,6 @@
     "accept": "Tabii, yardımcı olacağım!",
     "description": "Bu özelliği kullanıyorsunuz. Geri bildiriminizi bizimle paylaşır mısınız?",
     "dontAskAgain": "Bir daha sorma",
-    "loadError": "Anket yüklenemedi. Lütfen daha sonra tekrar deneyin.",
     "notNow": "Şimdi değil",
     "title": "Bize Yardımcı Olun"
   },
@@ -2798,6 +2809,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2827,6 +2839,7 @@
     "ace": "ace",
     "adjustments": "ayarlar",
     "advanced": "gelişmiş",
+    "anima": "anima",
     "animate": "canlandır",
     "attention_experiments": "dikkat_deneyleri",
     "audio": "ses",
@@ -2849,6 +2862,7 @@
     "create": "oluştur",
     "custom": "özel",
     "dancer": "dansçı",
+    "dataset": "veri seti",
     "debug": "hata ayıklama",
     "detection": "tespit",
     "experimental": "deneysel",
@@ -2870,6 +2884,7 @@
     "image": "görüntü",
     "infinite talk": "sonsuz konuşma",
     "instructpix2pix": "instructpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "gizli",
     "loaders": "yükleyiciler",
@@ -2882,6 +2897,7 @@
     "mochi": "mochi",
     "model": "model",
     "model specific": "model özel",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "çoklu gpu",
     "noise": "gürültü",
@@ -3001,6 +3017,7 @@
       "appTypeNative": "Yerel uygulama",
       "appTypeWeb": "Web uygulaması",
       "deny": "İptal",
+      "detailsHeader": "Detaylar",
       "errorExpired": "Bu onay isteğinin süresi doldu veya zaten kullanıldı. Lütfen istemci uygulamasından tekrar başlatın.",
       "errorScopeBroadening": "Önceden onaylanan izinler bu isteği kapsamıyor. Yeni izinlerle tekrar yetkilendirmeniz gerekiyor.",
       "errorUnavailable": "Bu özellik şu anda kullanılamıyor. Sorun devam ederse lütfen destek ile iletişime geçin.",
@@ -3015,7 +3032,6 @@
       "sessionErrorToastSummary": "OAuth oturum açma devam ettirilemedi",
       "subtitle": "Devam etmek için {resource} hesabınızla oturum açın",
       "title": "{client} erişim istiyor",
-      "workspaceHelp": "İzinler yalnızca bu çalışma alanı için geçerlidir.",
       "workspaceLabel": "Çalışma Alanı"
     },
     "scopes": {
@@ -3998,6 +4014,7 @@
       "waitingForSubscription": "Aboneliğinizi yeni sekmede tamamlayın. İşleminiz bittiğinde otomatik olarak algılayacağız!"
     },
     "resubscribe": "Yeniden abone ol",
+    "resubscribeFailed": "Abonelik yeniden etkinleştirilemedi",
     "resubscribeSuccess": "Abonelik başarıyla yeniden etkinleştirildi",
     "resubscribeTo": "{plan} planına yeniden abone ol",
     "saveYearly": "%20 tasarruf",
@@ -4123,7 +4140,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "Filtreler:",
     "allTemplates": "Tüm Şablonlar",
     "categories": "Kategoriler",
     "category": {
@@ -4148,9 +4164,12 @@
       "Video": "Video",
       "Video API": "Video API"
     },
+    "clearAllFilters": "Tüm filtreleri temizle",
     "error": {
       "templateNotFound": "\"{templateName}\" şablonu bulunamadı"
     },
+    "filtersApplied": "{count} filtre uygulandı | {count} filtre uygulandı",
+    "filtersButton": "Filtreler",
     "licenseFilter": "Lisans",
     "loading": "Şablonlar yükleniyor...",
     "loadingMore": "Daha fazla şablon yükleniyor...",
@@ -4248,6 +4267,9 @@
     "updateRequested": "Güncelleme istendi",
     "useApiKeyTip": "İpucu: Normal girişe erişemiyor musunuz? Comfy API Anahtarı seçeneğini kullanın.",
     "userNotAuthenticated": "Kullanıcı doğrulanmadı"
+  },
+  "typeform": {
+    "loadError": "Form yüklenemedi. Lütfen daha sonra tekrar deneyin."
   },
   "userSelect": {
     "enterUsername": "Bir kullanıcı adı girin",
@@ -4384,6 +4406,32 @@
     }
   },
   "workspacePanel": {
+    "billingStatus": {
+      "ending": {
+        "body": "O zamana kadar üyeler tam erişime sahip olacak. Paylaşılan kredilerinizi ve koltuklarınızı korumak için yeniden etkinleştirin.",
+        "reactivate": "Planı yeniden etkinleştir",
+        "title": "Ekip planınız {date} tarihinde sona eriyor"
+      },
+      "outOfCredits": {
+        "addCredits": "Kredi ekle",
+        "body": "Ekibiniz tüm kredilerini kullandı. Devam etmek için daha fazla kredi ekleyin veya {date} tarihinde krediler yenilenene kadar bekleyin.",
+        "bodyNoDate": "Ekibiniz tüm kredilerini kullandı. Devam etmek için daha fazla kredi ekleyin.",
+        "dismiss": "Kapat",
+        "memberBody": "Ekibiniz tüm kredilerini kullandı. Devam etmek için çalışma alanı yöneticilerinizin daha fazla kredi eklemesi gerekiyor.",
+        "title": "Kredi kalmadı"
+      },
+      "paused": {
+        "body": "Bu çalışma alanının aboneliği duraklatıldı. Devam etmek için ödemeyi güncelleyin.",
+        "memberBody": "Bu çalışma alanının aboneliği duraklatıldı. Çalışma alanı yöneticilerinizin ödeme yöntemini güncellemesi gerekiyor.",
+        "title": "Abonelik duraklatıldı"
+      },
+      "updatePayment": "Ödemeyi güncelle",
+      "warning": {
+        "body": "Son ödemeniz gerçekleşmedi. {date} tarihinde aboneliğiniz duraklatılacak, ödeme güncellenmezse.",
+        "bodyNoDate": "Son ödemeniz gerçekleşmedi. Duraklatmayı önlemek için ödemeyi güncelleyin.",
+        "title": "Ödeme reddedildi"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "Üyeye düşür",
       "demoteMessage": "Yönetici erişimini kaybedecekler.",

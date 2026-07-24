@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "Aplicar Anima LLLite",
+    "inputs": {
+      "end_percent": {
+        "name": "porcentaje final"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "mask": {
+        "name": "máscara"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_patch": {
+        "name": "parche de modelo"
+      },
+      "start_percent": {
+        "name": "porcentaje de inicio"
+      },
+      "strength": {
+        "name": "intensidad"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "Ajusta el volumen del audio en una cantidad especificada en decibelios (dB).",
     "display_name": "Ajustar Volumen de Audio",
@@ -2010,9 +2036,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "temperature"
       },
       "prompt": {
         "name": "prompt",
@@ -5861,6 +5884,212 @@
       }
     }
   },
+  "HeyGenAvatarVideoNode": {
+    "description": "Genera un video de presentador parlante a partir de un avatar de HeyGen. Incluye los avatares públicos más populares de HeyGen; se puede proporcionar cualquier ID de look como reemplazo.",
+    "display_name": "Video de Avatar HeyGen",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "relación de aspecto",
+        "tooltip": "Relación de aspecto de salida. 'auto' sigue el metraje fuente del avatar."
+      },
+      "background_color": {
+        "name": "color de fondo",
+        "tooltip": "Color de fondo sólido opcional como código hex (ej. '#00ff00'). Déjalo vacío para usar el fondo propio del avatar."
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "custom_avatar_id": {
+        "name": "custom_avatar_id",
+        "tooltip": "ID de look de avatar de HeyGen opcional. Si se establece, reemplaza el avatar seleccionado arriba. Se puede usar cualquiera de los más de 3000 looks públicos de HeyGen (o tus avatares privados)."
+      },
+      "engine": {
+        "name": "motor",
+        "tooltip": "Motor de renderizado; cada opción muestra solo los avatares que lo soportan. 'auto' ofrece todos los avatares y elige su mejor motor (se prefiere Avatar IV). Avatar V es la mayor fidelidad, Avatar III es el más asequible."
+      },
+      "engine_avatar": {
+        "name": "avatar"
+      },
+      "resolution": {
+        "name": "resolución",
+        "tooltip": "Resolución del video de salida."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "No se envía a HeyGen; cámbiala para forzar una nueva ejecución."
+      },
+      "speech": {
+        "name": "voz",
+        "tooltip": "Haz que el avatar hable con un guion de texto (HeyGen texto a voz) o tu propio audio."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "texto"
+      },
+      "speech_voice": {
+        "name": "voz"
+      },
+      "speech_voice_speed": {
+        "name": "velocidad de voz"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "Crea tu propio avatar reutilizable de HeyGen a partir de una foto de una persona o de un prompt de texto (un personaje generado). Introduce el avatar_id resultante en custom_avatar_id de Video de Avatar HeyGen — y guarda el ID para reutilizar el avatar en futuros flujos de trabajo.",
+    "display_name": "Crear Avatar HeyGen",
+    "inputs": {
+      "source": {
+        "name": "fuente",
+        "tooltip": "Genera un nuevo personaje a partir de un prompt de texto, o crea el avatar desde una foto conectada de una persona."
+      },
+      "source_prompt": {
+        "name": "prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "avatar_id",
+        "tooltip": "ID de look de avatar. Pásalo a custom_avatar_id de Video de Avatar HeyGen; guárdalo para reutilizar el avatar más adelante."
+      },
+      "1": {
+        "name": "vista previa",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "Anima cualquier imagen de una persona en un video hablado sincronizado con los labios (HeyGen Avatar IV). Controla el avatar con un guion de texto o tu propio audio.",
+    "display_name": "HeyGen Talking Photo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "relación de aspecto",
+        "tooltip": "Relación de aspecto de salida. 'auto' sigue la imagen de entrada."
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "expressiveness": {
+        "name": "expresividad",
+        "tooltip": "Qué tan expresivo es el rostro y los gestos animados."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Imagen de una persona para animar. Se reduce automáticamente si es mayor que 2K."
+      },
+      "resolution": {
+        "name": "resolución",
+        "tooltip": "Resolución del video de salida."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "No se envía a HeyGen; cámbiala para forzar una nueva ejecución."
+      },
+      "speech": {
+        "name": "voz",
+        "tooltip": "Controla el avatar con un guion de texto (HeyGen texto a voz) o tu propio audio."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "texto"
+      },
+      "speech_voice": {
+        "name": "voz"
+      },
+      "speech_voice_speed": {
+        "name": "velocidad_de_voz"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "Genera audio de voz a partir de texto usando el motor Starfish TTS de HeyGen. Incluye las voces más populares de HeyGen en 17 idiomas.",
+    "display_name": "HeyGen Texto a Voz",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "custom_voice_id": {
+        "name": "custom_voice_id",
+        "tooltip": "ID de voz de HeyGen opcional. Si se establece, sobrescribe la voz seleccionada arriba. La voz debe ser compatible con el motor Starfish."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "No se envía a HeyGen; cámbiala para forzar una nueva ejecución."
+      },
+      "speed": {
+        "name": "velocidad",
+        "tooltip": "Multiplicador de velocidad de la voz."
+      },
+      "ssml": {
+        "name": "ssml",
+        "tooltip": "Tratar el texto como marcado SSML (para pausas, énfasis y control de pronunciación)."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "Texto para sintetizar (hasta 5000 caracteres). El audio generado debe durar al menos 1 segundo."
+      },
+      "voice": {
+        "name": "voz",
+        "tooltip": "Voz a utilizar (seleccionada de las voces más populares compatibles con Starfish de HeyGen)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "Traduce un video hablado a otro idioma. Clona la voz original del hablante y reanima la boca para que coincida con el discurso traducido.",
+    "display_name": "HeyGen Video Translate",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "'speed' es más rápido; 'precision' produce una sincronización labial de mayor calidad al doble de precio."
+      },
+      "output_language": {
+        "name": "output_language",
+        "tooltip": "Idioma de destino para el video traducido."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "No se envía a HeyGen; cámbialo para forzar una nueva ejecución."
+      },
+      "speaker_count": {
+        "name": "speaker_count",
+        "tooltip": "Número de hablantes en el video. 0 = detectar automáticamente."
+      },
+      "translate_audio_only": {
+        "name": "translate_audio_only",
+        "tooltip": "Solo intercambiar la pista de audio, manteniendo los movimientos originales de la boca (sin sincronización labial)."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video con voz para traducir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "Promedia la salida del modelo a través de múltiples posiciones desplazadas de la cuadrícula de parches durante la parte final del muestreo. Elimina costuras.",
     "display_name": "Suavizado de Costuras de Parches HiDream-O1",
@@ -9493,6 +9722,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "description": "Carga un conjunto de videos desde una carpeta especificada y devuelve una lista de videos. Formatos soportados: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "Cargar Video (desde Carpeta)",
+    "inputs": {
+      "folder": {
+        "name": "folder",
+        "tooltip": "La carpeta que contiene los archivos de video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "videos",
+        "tooltip": "Referencias de video perezosas; los fotogramas solo se decodifican cuando se necesitan más adelante."
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "Carga un conjunto de pares de videos y subtítulos de texto desde una carpeta especificada y los devuelve como una lista. Formatos soportados: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "Cargar Video-Texto (desde Carpeta)",
+    "inputs": {
+      "folder": {
+        "name": "folder",
+        "tooltip": "La carpeta que contiene los archivos de video y los subtítulos .txt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "videos",
+        "tooltip": "Referencias de video perezosas; los fotogramas solo se decodifican cuando se necesitan más adelante."
+      },
+      "1": {
+        "name": "texts",
+        "tooltip": "Lista de subtítulos de texto."
       }
     }
   },
@@ -18445,6 +18710,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "Mezcla aleatoriamente el orden de los videos en una lista.",
+    "display_name": "Mezclar Lista de Videos",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semilla aleatoria."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Lista de videos a mezclar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "videos",
+        "tooltip": "Videos mezclados"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "Mezcla aleatoriamente el orden de los pares de video-texto en una lista.",
+    "display_name": "Mezclar Pares de Video-Texto",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semilla aleatoria."
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "Lista de textos a mezclar."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Lista de videos a mezclar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "videos",
+        "tooltip": "Videos mezclados"
+      },
+      "1": {
+        "name": "texts",
+        "tooltip": "Textos mezclados"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "Versión genérica del nodo de Orientación de Capa de Salto que se puede usar en cada modelo DiT.",
     "display_name": "Orientación de Capa de Salto DiT",
@@ -19644,6 +19963,28 @@
       },
       "prompt": {
         "name": "indicación"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "imágenes"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -21644,6 +21985,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "Muestrea un número fijo de fotogramas de un video utilizando varias estrategias.",
+    "display_name": "Muestrear fotograma de video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "num_frames": {
+        "name": "num_frames",
+        "tooltip": "Número de fotogramas a muestrear."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla aleatoria (solo se usa con la estrategia 'random')."
+      },
+      "strategy": {
+        "name": "estrategia",
+        "tooltip": "uniform: espaciado uniforme, head: primeros N, tail: últimos N, random: aleatorio ordenado."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video de entrada."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": "Video muestreado."
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "OrientaciónLinealCFGVideo",
     "inputs": {
@@ -21652,6 +22024,57 @@
       },
       "model": {
         "name": "modelo"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "Recorta aleatoriamente un rango continuo de fotogramas de un video.",
+    "display_name": "Recortar video (temporal aleatorio)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "length": {
+        "name": "longitud",
+        "tooltip": "Número de fotogramas a conservar."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla aleatoria."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video de entrada."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": "Video recortado (perezoso)."
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "Recorta un rango continuo de fotogramas de un video.",
+    "display_name": "Recortar video (temporal)",
+    "inputs": {
+      "length": {
+        "name": "longitud",
+        "tooltip": "Número de fotogramas a conservar."
+      },
+      "start_frame": {
+        "name": "fotograma_inicio",
+        "tooltip": "Índice del fotograma inicial."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video de entrada."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": "Video recortado (perezoso)."
       }
     }
   },
@@ -23886,6 +24309,33 @@
       "2": {
         "name": "latente",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "Aplicar Wan Uni3C ControlNet",
+    "inputs": {
+      "end_percent": {
+        "name": "porcentaje_fin"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_patch": {
+        "name": "parche de modelo"
+      },
+      "render_video": {
+        "name": "render_video",
+        "tooltip": "El video de guía renderizado desde la trayectoria de la cámara, comúnmente renderizados de nubes de puntos deformadas de la imagen de entrada."
+      },
+      "start_percent": {
+        "name": "porcentaje_inicio"
+      },
+      "strength": {
+        "name": "fuerza"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },

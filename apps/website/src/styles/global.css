@@ -61,7 +61,13 @@
 
 @theme {
   --color-site-dropdown: #332b38;
+  --color-site-bg-soft: color-mix(
+    in srgb,
+    var(--color-primary-comfy-ink) 88%,
+    black 12%
+  );
   --color-primary-comfy-yellow: #f2ff59;
+  --color-primary-comfy-orange: #fabc25;
   --color-primary-comfy-ink: #211927;
   --color-primary-comfy-ink-light: #2a2330;
   --color-primary-comfy-canvas: #c2bfb9;
@@ -77,6 +83,7 @@
   --color-transparency-ink-t80: rgb(33 25 39 / 0.8);
   --font-formula: 'PP Formula', sans-serif;
   --font-formula-narrow: 'PP Formula Narrow', sans-serif;
+  --text-2xs: 0.6875rem;
   --text-3\.5xl: 2rem;
   --text-6\.5xl: 4.125rem;
   --radius-4xl: 2rem;
@@ -268,6 +275,6 @@ video::-webkit-media-controls-panel {
 
 :root {
   --site-bg: var(--color-primary-comfy-ink);
-  --site-bg-soft: color-mix(in srgb, var(--site-bg) 88%, black 12%);
+  --site-bg-soft: var(--color-site-bg-soft);
   --site-border-subtle: rgb(255 255 255 / 0.1);
 }

@@ -3,6 +3,9 @@
     "dockToTop": "上部にドッキング",
     "feedback": "フィードバック",
     "feedbackTooltip": "フィードバック",
+    "freeTierPartner": "パートナーノードは有料プランが必要です",
+    "freeTierRuns": "残り {available} / {MAX_AVAILABLE} 回",
+    "freeTierRunsExhausted": "残り回数なし",
     "share": "共有",
     "shareTooltip": "ワークフローを共有"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "無料プラン対象",
       "freeTierDescription": "Googleでサインアップすると、毎月{credits}の無料クレジットがもらえます。クレジットカード不要。",
       "freeTierDescriptionGeneric": "Googleでサインアップすると、毎月無料クレジットがもらえます。クレジットカード不要。",
+      "googleSsoInAppBrowserNotice": "アプリ内ブラウザ（例：Instagram、LinkedIn）から開いた場合、Googleでのサインインができないことがあります。GitHubまたはメールをご利用いただくか、デバイスの標準ブラウザでこのページを開いてください。",
       "insecureContextWarning": "この接続は安全ではありません（HTTP）- このままログインを続けると、認証情報が攻撃者に傍受される可能性があります。",
       "loginButton": "ログイン",
       "loginWithGithub": "Githubでログイン",
@@ -785,6 +789,11 @@
       "gpuUsage": "GPU利用"
     },
     "faqs": "よくある質問",
+    "insufficient": {
+      "memberCta": "了解しました",
+      "memberDescription": "チームのクレジットがすべて使用されました。ワークスペース管理者がクレジットを追加する必要があります。",
+      "memberTitle": "このワークスペースのクレジットが不足しています"
+    },
     "invoiceHistory": "請求履歴",
     "lastUpdated": "最終更新",
     "loadEventsError": "アクティビティの読み込みに失敗しました。もう一度お試しください。",
@@ -1452,6 +1461,9 @@
     "noExportsInQueue": "キューに{filter}エクスポートはありません",
     "preparingExport": "エクスポートを準備中...",
     "retryDownload": "ダウンロードを再試行"
+  },
+  "feedback": {
+    "title": "フィードバックを共有"
   },
   "g": {
     "1x": "1倍速",
@@ -2783,7 +2795,6 @@
     "accept": "はい、協力します！",
     "description": "この機能をご利用いただきありがとうございます。ご意見をお聞かせいただけますか？",
     "dontAskAgain": "今後表示しない",
-    "loadError": "アンケートの読み込みに失敗しました。後でもう一度お試しください。",
     "notNow": "今はしない",
     "title": "改善にご協力ください"
   },
@@ -2798,6 +2809,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2827,6 +2839,7 @@
     "ace": "ace",
     "adjustments": "調整",
     "advanced": "高度な機能",
+    "anima": "anima",
     "animate": "アニメート",
     "attention_experiments": "アテンション実験",
     "audio": "オーディオ",
@@ -2849,6 +2862,7 @@
     "create": "作成",
     "custom": "カスタム",
     "dancer": "ダンサー",
+    "dataset": "dataset",
     "debug": "デバッグ",
     "detection": "検出",
     "experimental": "実験的",
@@ -2870,6 +2884,7 @@
     "image": "画像",
     "infinite talk": "インフィニットトーク",
     "instructpix2pix": "インストラクションピクス2ピクス",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "潜在",
     "loaders": "ローダー",
@@ -2882,6 +2897,7 @@
     "mochi": "mochi",
     "model": "モデル",
     "model specific": "モデル固有",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "マルチGPU",
     "noise": "ノイズ",
@@ -3001,6 +3017,7 @@
       "appTypeNative": "ネイティブアプリ",
       "appTypeWeb": "ウェブアプリ",
       "deny": "キャンセル",
+      "detailsHeader": "詳細",
       "errorExpired": "この同意リクエストは期限切れ、またはすでに使用されています。クライアントアプリから再起動してください。",
       "errorScopeBroadening": "以前に承認された権限ではこのリクエストをカバーできません。新しい権限で再認可が必要です。",
       "errorUnavailable": "現在この機能は利用できません。問題が続く場合はサポートにお問い合わせください。",
@@ -3015,7 +3032,6 @@
       "sessionErrorToastSummary": "OAuthサインインを続行できませんでした",
       "subtitle": "続行するには{resource}にサインインしてください",
       "title": "{client} がアクセスを要求しています",
-      "workspaceHelp": "権限はこのワークスペースのみに適用されます。",
       "workspaceLabel": "ワークスペース"
     },
     "scopes": {
@@ -3998,6 +4014,7 @@
       "waitingForSubscription": "新しいタブで購読を完了してください。完了を自動的に検知します！"
     },
     "resubscribe": "再購読する",
+    "resubscribeFailed": "サブスクリプションの再有効化に失敗しました",
     "resubscribeSuccess": "サブスクリプションが再開されました",
     "resubscribeTo": "{plan}を再購読する",
     "saveYearly": "20%お得",
@@ -4123,7 +4140,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "フィルター:",
     "allTemplates": "すべてのテンプレート",
     "categories": "カテゴリ",
     "category": {
@@ -4148,9 +4164,12 @@
       "Video": "ビデオ",
       "Video API": "動画API"
     },
+    "clearAllFilters": "すべてのフィルターをクリア",
     "error": {
       "templateNotFound": "テンプレート「{templateName}」が見つかりません"
     },
+    "filtersApplied": "{count} 件のフィルターが適用されました",
+    "filtersButton": "フィルター",
     "licenseFilter": "ライセンス",
     "loading": "テンプレートを読み込み中...",
     "loadingMore": "さらにテンプレートを読み込み中...",
@@ -4248,6 +4267,9 @@
     "updateRequested": "更新が要求されました",
     "useApiKeyTip": "ヒント：通常のログインにアクセスできませんか？Comfy APIキーオプションを使用してください。",
     "userNotAuthenticated": "ユーザーが認証されていません"
+  },
+  "typeform": {
+    "loadError": "フォームの読み込みに失敗しました。後でもう一度お試しください。"
   },
   "userSelect": {
     "enterUsername": "ユーザー名を入力してください",
@@ -4384,6 +4406,32 @@
     }
   },
   "workspacePanel": {
+    "billingStatus": {
+      "ending": {
+        "body": "それまではメンバーはすべての機能にアクセスできます。共有クレジットとシートを維持するには再アクティベートしてください。",
+        "reactivate": "プランを再アクティベート",
+        "title": "チームプランは{date}に終了します"
+      },
+      "outOfCredits": {
+        "addCredits": "クレジットを追加",
+        "body": "チームのクレジットがすべて使用されました。クレジットを追加して生成を続けるか、{date}にクレジットが補充されるまでお待ちください。",
+        "bodyNoDate": "チームのクレジットがすべて使用されました。クレジットを追加して生成を続けてください。",
+        "dismiss": "閉じる",
+        "memberBody": "チームのクレジットがすべて使用されました。ワークスペース管理者がクレジットを追加する必要があります。",
+        "title": "クレジットが不足しています"
+      },
+      "paused": {
+        "body": "このワークスペースのサブスクリプションは一時停止されています。お支払い方法を更新して再開してください。",
+        "memberBody": "このワークスペースのサブスクリプションは一時停止されています。ワークスペース管理者がお支払い方法を更新する必要があります。",
+        "title": "サブスクリプションが一時停止中"
+      },
+      "updatePayment": "お支払い方法を更新",
+      "warning": {
+        "body": "前回のお支払いが完了しませんでした。{date}までにお支払い方法を更新しない場合、サブスクリプションが一時停止されます。",
+        "bodyNoDate": "前回のお支払いが完了しませんでした。サブスクリプションの一時停止を避けるためにお支払い方法を更新してください。",
+        "title": "支払いが拒否されました"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "メンバーに降格",
       "demoteMessage": "管理者権限が失われます。",
