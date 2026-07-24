@@ -6,6 +6,7 @@ import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationD
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -488,6 +489,27 @@ export const useDialogService = () => {
     contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
   } as const
 
+  async function showPaymentDeclinedDialog(options: {
+    origin: 'subscription' | 'topup'
+    reason: string
+  }) {
+    const { flags } = useFeatureFlags()
+    if (!flags.billingControlEnabled) return
+
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/PaymentDeclinedDialogContent.vue')
+    const dialogKey = 'payment-declined'
+    return dialogStore.showDialog({
+      key: dialogKey,
+      component,
+      props: {
+        ...options,
+        onClose: () => dialogStore.closeDialog({ key: dialogKey })
+      },
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
   async function showDeleteWorkspaceDialog(options?: {
     workspaceId?: string
     workspaceName?: string
@@ -759,6 +781,7 @@ export const useDialogService = () => {
     showPublishDialog,
     showSubscriptionRequiredDialog,
     showTopUpCreditsDialog,
+    showPaymentDeclinedDialog,
     showUpdatePasswordDialog,
     showExtensionDialog,
     showCloudNotification,

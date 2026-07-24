@@ -2564,6 +2564,13 @@
     "cancelFailed": "Failed to cancel subscription",
     "cancelTimeout": "Subscription cancellation timed out"
   },
+  "paymentDeclined": {
+    "title": "Payment declined",
+    "body": "Your card couldn't be charged. Try another card, or contact your bank if this looks wrong.",
+    "reasonLabel": "Stripe reasoning:",
+    "updatePaymentMethod": "Update payment method",
+    "portalError": "Couldn't open the billing portal. Please try again."
+  },
   "subscription": {
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
