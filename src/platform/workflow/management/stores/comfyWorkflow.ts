@@ -117,7 +117,13 @@ export class ComfyWorkflow extends UserFile {
     let draftContent: string | null = null
 
     if (draft) {
-      if (draft.updatedAt < this.lastModified) {
+      // Both timestamps are server-generated, so this stays correct under
+      // client clock skew. Drafts without a recorded base predate that field;
+      // their freshness is unknowable, so they are kept rather than discarded.
+      const serverChangedSinceDraft =
+        draft.baseLastModified !== undefined &&
+        this.lastModified > draft.baseLastModified
+      if (serverChangedSinceDraft) {
         draftStore.removeDraft(this.path)
         draft = undefined
       }

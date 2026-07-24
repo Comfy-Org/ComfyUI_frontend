@@ -106,7 +106,8 @@ export function useWorkflowPersistenceV2() {
     // Save to V2 draft store
     const saved = draftStore.saveDraft(workflowPath, workflowJson, {
       name: activeWorkflow.key,
-      isTemporary: activeWorkflow.isTemporary
+      isTemporary: activeWorkflow.isTemporary,
+      baseLastModified: activeWorkflow.lastModified
     })
 
     if (!saved) {
