@@ -128,12 +128,6 @@ vi.mock('@/services/jobOutputCache', () => ({
   getJobWorkflow: (jobId: string) => getJobWorkflowMock(jobId)
 }))
 
-const createAnnotatedPathMock = vi.fn()
-vi.mock('@/utils/createAnnotatedPath', () => ({
-  createAnnotatedPath: (filename: string, subfolder: string, type: string) =>
-    createAnnotatedPathMock(filename, subfolder, type)
-}))
-
 const appendJsonExtMock = vi.fn((value: string) =>
   value.toLowerCase().endsWith('.json') ? value : `${value}.json`
 )
@@ -201,7 +195,6 @@ describe('useJobMenu', () => {
       task,
       output
     }))
-    createAnnotatedPathMock.mockReturnValue('annotated-path')
     nodeDefStoreMock.nodeDefsByName = {
       LoadImage: { name: 'LoadImage' },
       LoadVideo: { name: 'LoadVideo' },
@@ -418,25 +411,28 @@ describe('useJobMenu', () => {
       label: 'image',
       flags: { isImage: true },
       expectedNode: 'LoadImage',
+      filename: 'foo.png',
       widget: 'image'
     },
     {
       label: 'video',
       flags: { isVideo: true },
       expectedNode: 'LoadVideo',
+      filename: 'foo.mp4',
       widget: 'file'
     },
     {
       label: 'audio',
       flags: { isAudio: true },
       expectedNode: 'LoadAudio',
+      filename: 'foo.wav',
       widget: 'audio'
     }
   ] as const
 
   it.for(previewCases)(
-    'adds loader node for %s preview output',
-    async ({ flags, expectedNode, widget }) => {
+    'adds $label preview output loader with an annotated output path',
+    async ({ flags, expectedNode, filename, widget }) => {
       const widgetCallback = vi.fn()
       const node = {
         widgets: [{ name: widget, value: null, callback: widgetCallback }],
@@ -445,7 +441,7 @@ describe('useJobMenu', () => {
       litegraphServiceMock.addNodeOnGraph.mockReturnValueOnce(node)
       const { jobMenuEntries } = mountJobMenu()
       const preview = {
-        filename: 'foo.png',
+        filename,
         subfolder: 'bar',
         type: 'output',
         url: 'http://asset',
@@ -466,8 +462,11 @@ describe('useJobMenu', () => {
         nodeDefStoreMock.nodeDefsByName[expectedNode],
         { pos: [100, 200] }
       )
-      expect(node.widgets?.[0].value).toBe('annotated-path')
-      expect(widgetCallback).toHaveBeenCalledWith('annotated-path')
+      const expectedWidgetValue = `bar/${filename} [output]`
+      expect(node.widgets.find(({ name }) => name === widget)?.value).toBe(
+        expectedWidgetValue
+      )
+      expect(widgetCallback).toHaveBeenCalledWith(expectedWidgetValue)
       expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true, true)
     }
   )
@@ -516,10 +515,9 @@ describe('useJobMenu', () => {
     await entry?.onClick?.()
 
     expect(litegraphServiceMock.addNodeOnGraph).not.toHaveBeenCalled()
-    expect(createAnnotatedPathMock).not.toHaveBeenCalled()
   })
 
-  it('skips annotating when litegraph node creation fails', async () => {
+  it('does not throw when litegraph node creation fails', async () => {
     litegraphServiceMock.addNodeOnGraph.mockReturnValueOnce(null)
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
@@ -538,10 +536,9 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'add-to-current')
-    await entry?.onClick?.()
+    await expect(entry?.onClick?.()).resolves.toBeUndefined()
 
     expect(litegraphServiceMock.addNodeOnGraph).toHaveBeenCalled()
-    expect(createAnnotatedPathMock).not.toHaveBeenCalled()
   })
 
   it('ignores add-to-current entry when preview missing entirely', async () => {
