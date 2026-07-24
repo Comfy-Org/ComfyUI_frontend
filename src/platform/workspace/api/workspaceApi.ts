@@ -287,15 +287,18 @@ export interface BillingBalanceResponse {
 interface CreateTopupRequest {
   amount_cents: number
   idempotency_key?: string
+  return_url?: string
+  cancel_url?: string
 }
 
-type TopupStatus = 'pending' | 'completed' | 'failed'
+type TopupStatus = 'pending' | 'completed' | 'failed' | 'needs_payment_method'
 
 export interface CreateTopupResponse {
   billing_op_id: string
   topup_id: string
   status: TopupStatus
   amount_cents: number
+  payment_method_url?: string
 }
 
 type BillingOpStatus = 'pending' | 'succeeded' | 'failed'
@@ -756,7 +759,11 @@ export const workspaceApi = {
    */
   async createTopup(
     amountCents: number,
-    idempotencyKey?: string
+    options: {
+      idempotencyKey?: string
+      returnUrl?: string
+      cancelUrl?: string
+    } = {}
   ): Promise<CreateTopupResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
@@ -764,7 +771,9 @@ export const workspaceApi = {
         api.apiURL('/billing/topup'),
         {
           amount_cents: amountCents,
-          idempotency_key: idempotencyKey
+          idempotency_key: options.idempotencyKey ?? crypto.randomUUID(),
+          return_url: options.returnUrl,
+          cancel_url: options.cancelUrl
         } satisfies CreateTopupRequest,
         { headers }
       )
