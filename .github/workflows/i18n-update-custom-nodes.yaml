@@ -113,7 +113,7 @@ jobs:
           git commit -m "Update locales"
 
       - name: Install SSH key For PUSH
-        uses: shimataro/ssh-key-action@d4fffb50872869abe2d9a9098a6d9c5aa7d16be4 # v2.7.0
+        uses: shimataro/ssh-key-action@87a8f067114a8ce263df83e9ed5c849953548bc3 # v2.8.1
         with:
           # PR private key from action server
           key: ${{ secrets.PR_SSH_PRIVATE_KEY }}
