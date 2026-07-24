@@ -44,6 +44,20 @@ export function useAssetSelection() {
     setAnchor(-1, null)
   }
 
+  function toggleAssetSelection(
+    asset: AssetItem,
+    index: number,
+    allAssets: AssetItem[]
+  ) {
+    if (!asset?.id || index < 0 || index >= allAssets.length) {
+      console.warn('Invalid asset selection parameters')
+      return
+    }
+
+    selectionStore.toggleSelection(asset.id)
+    setAnchor(index, asset.id)
+  }
+
   /**
    * Handle asset click with modifier keys for selection
    * @param asset The clicked asset
@@ -78,8 +92,7 @@ export function useAssetSelection() {
 
     // Ctrl/Cmd + Click: Toggle individual selection
     if (cmdOrCtrlKey.value) {
-      selectionStore.toggleSelection(assetId)
-      setAnchor(index, assetId)
+      toggleAssetSelection(asset, index, allAssets)
       return
     }
 
@@ -202,6 +215,7 @@ export function useAssetSelection() {
 
     // Selection actions
     handleAssetClick,
+    toggleAssetSelection,
     selectAll,
     setSelectedIds,
     clearSelection: () => selectionStore.clearSelection(),

@@ -180,12 +180,19 @@ describe('MediaAssetCard', () => {
     expect(emitted().zoom).toBeUndefined()
   })
 
-  it('selects the asset from the info area', async () => {
+  it('selects the asset from the info area or selection control', async () => {
     const user = userEvent.setup()
     const { emitted } = renderCard({ loading: false })
 
     await user.click(screen.getByText('PNG'))
     expect(emitted().select).toHaveLength(1)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'assetBrowser.ariaLabel.assetCard'
+      })
+    )
+    expect(emitted()['toggle-selection']).toHaveLength(1)
   })
 
   it('shows image format and dimensions without file size', () => {

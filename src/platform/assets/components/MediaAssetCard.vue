@@ -52,6 +52,31 @@
         <i class="icon-[lucide--trash-2] size-5" />
       </LoadingOverlay>
 
+      <Button
+        v-if="asset && !loading && !isDeleting"
+        variant="overlay-white"
+        size="icon"
+        :class="
+          cn(
+            'absolute top-2 left-2 z-1 size-6 rounded-full opacity-0 transition-opacity',
+            'group-hover:opacity-100 focus-visible:opacity-100'
+          )
+        "
+        :aria-label="
+          $t('assetBrowser.ariaLabel.assetCard', {
+            name: getAssetDisplayName(asset),
+            type: fileKind
+          })
+        "
+        :aria-pressed="selected ?? false"
+        @click.stop="emit('toggle-selection')"
+      >
+        <i
+          aria-hidden="true"
+          :class="cn('icon-[lucide--check] size-4', !selected && 'opacity-0')"
+        />
+      </Button>
+
       <!-- Action buttons overlay (top-right) -->
       <div
         v-if="showActionsOverlay"
@@ -193,6 +218,8 @@ const isDeleting = computed(() =>
 const emit = defineEmits<{
   // Image and info clicks use the standard selection rules.
   select: []
+  // The selection control toggles only this asset in the current selection.
+  'toggle-selection': []
   zoom: [asset: AssetItem]
   'output-count-click': []
   'context-menu': [event: MouseEvent, asset: AssetItem]

@@ -267,6 +267,33 @@ describe('useAssetSelection', () => {
     })
   })
 
+  describe('toggleAssetSelection', () => {
+    it('removes one asset without clearing the rest of the selection', () => {
+      const selection = useAssetSelection()
+      const assets = createMockAssets(3)
+
+      selection.selectAll(assets)
+      selection.toggleAssetSelection(assets[1], 1, assets)
+
+      expect(selection.isSelected('asset-0')).toBe(true)
+      expect(selection.isSelected('asset-1')).toBe(false)
+      expect(selection.isSelected('asset-2')).toBe(true)
+      expect(selection.selectedCount.value).toBe(2)
+    })
+
+    it('adds one asset without clearing the rest of the selection', () => {
+      const selection = useAssetSelection()
+      const assets = createMockAssets(3)
+
+      selection.handleAssetClick(assets[0], 0, assets)
+      selection.toggleAssetSelection(assets[1], 1, assets)
+
+      expect(selection.isSelected('asset-0')).toBe(true)
+      expect(selection.isSelected('asset-1')).toBe(true)
+      expect(selection.selectedCount.value).toBe(2)
+    })
+  })
+
   describe('selectAll', () => {
     it('selects all assets', () => {
       const { selectAll, selectedCount } = useAssetSelection()
