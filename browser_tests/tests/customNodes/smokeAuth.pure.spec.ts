@@ -4,9 +4,9 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { FIREBASE_APP_NAME } from '@e2e/fixtures/helpers/firebaseAuthStorage'
 import {
+  CLOUD_AUTH_ENV_VARS,
   identityToolkitErrorCode,
-  missingSmokeEnvVars,
-  SMOKE_ENV_VARS,
+  missingCloudAuthEnvVars,
   smokeAuthUserRecord
 } from '@e2e/fixtures/helpers/smokeAuth'
 
@@ -131,21 +131,19 @@ test.describe('identityToolkitErrorCode', () => {
   })
 })
 
-test.describe('missingSmokeEnvVars', () => {
+test.describe('missingCloudAuthEnvVars', () => {
   test('names exactly the absent or empty variables', () => {
-    expect(missingSmokeEnvVars({})).toEqual([...SMOKE_ENV_VARS])
+    expect(missingCloudAuthEnvVars({})).toEqual([...CLOUD_AUTH_ENV_VARS])
     expect(
-      missingSmokeEnvVars({
-        SMOKE_FIREBASE_API_KEY: 'key',
-        SMOKE_ACCOUNT_EMAIL: 'smoke-test@comfy.org',
-        SMOKE_ACCOUNT_PASSWORD: 'secret'
+      missingCloudAuthEnvVars({
+        CLOUD_TEST_EMAIL: 'cloud-test@comfy.org',
+        CLOUD_TEST_PASSWORD: 'secret'
       })
     ).toEqual([])
     expect(
-      missingSmokeEnvVars({
-        SMOKE_FIREBASE_API_KEY: 'key',
-        SMOKE_ACCOUNT_PASSWORD: ''
+      missingCloudAuthEnvVars({
+        CLOUD_TEST_PASSWORD: ''
       })
-    ).toEqual(['SMOKE_ACCOUNT_EMAIL', 'SMOKE_ACCOUNT_PASSWORD'])
+    ).toEqual(['CLOUD_TEST_EMAIL', 'CLOUD_TEST_PASSWORD'])
   })
 })

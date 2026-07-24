@@ -20,7 +20,7 @@
 # secrets are an operator error, not an expected pre-calibration state - the
 # job FAILS LOUD rather than silently recording nothing.
 #
-# Runs for real only once the smoke secrets AND the generated
+# Runs for real only once the cloud test credentials AND the generated
 # customNodeManifest.cloud.json exist (without the manifest the mount sweep
 # throws at collection under cloud env). Dispatch it during Phase 5
 # calibration, after the manifest lands, on the branch carrying it.
@@ -46,20 +46,16 @@ jobs:
     steps:
       # Fail loud if the operator dispatched without the cloud secrets: a record
       # that silently produced no baselines would look like a crashed run.
-      - name: Require cloud smoke secrets
+      - name: Require cloud test credentials
         env:
-          SMOKE_FIREBASE_API_KEY: ${{ secrets.SMOKE_FIREBASE_API_KEY }}
-          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
-          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
-          CLOUD_BACKEND_URL: ${{ secrets.CLOUD_BACKEND_URL }}
+          CLOUD_TEST_EMAIL: ${{ secrets.CLOUD_TEST_EMAIL }}
+          CLOUD_TEST_PASSWORD: ${{ secrets.CLOUD_TEST_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
           missing=()
-          [ -n "${SMOKE_FIREBASE_API_KEY:-}" ] || missing+=(SMOKE_FIREBASE_API_KEY)
-          [ -n "${SMOKE_ACCOUNT_EMAIL:-}" ] || missing+=(SMOKE_ACCOUNT_EMAIL)
-          [ -n "${SMOKE_ACCOUNT_PASSWORD:-}" ] || missing+=(SMOKE_ACCOUNT_PASSWORD)
-          [ -n "${CLOUD_BACKEND_URL:-}" ] || missing+=(CLOUD_BACKEND_URL)
+          [ -n "${CLOUD_TEST_EMAIL:-}" ] || missing+=(CLOUD_TEST_EMAIL)
+          [ -n "${CLOUD_TEST_PASSWORD:-}" ] || missing+=(CLOUD_TEST_PASSWORD)
           if [ ${#missing[@]} -gt 0 ]; then
             echo "::error::cloud geometry record needs these repo secrets: ${missing[*]}"
             exit 1
@@ -85,7 +81,9 @@ jobs:
       # Same served-dist-against-Cloud mechanism as the cloud gate.
       - name: Start cloud preview server
         env:
-          DEV_SERVER_COMFYUI_URL: ${{ secrets.CLOUD_BACKEND_URL }}
+          # testcloud runs Firebase project dreamboothy-dev; the seeded auth
+          # record uses that project's public DEV_CONFIG web key. Public URL.
+          DEV_SERVER_COMFYUI_URL: https://testcloud.comfy.org
         shell: bash
         run: |
           set -euo pipefail
@@ -120,9 +118,8 @@ jobs:
           CUSTOM_NODES_ENV: cloud
           CN_GEOMETRY: record
           PLAYWRIGHT_TEST_URL: http://localhost:4173
-          SMOKE_FIREBASE_API_KEY: ${{ secrets.SMOKE_FIREBASE_API_KEY }}
-          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
-          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+          CLOUD_TEST_EMAIL: ${{ secrets.CLOUD_TEST_EMAIL }}
+          CLOUD_TEST_PASSWORD: ${{ secrets.CLOUD_TEST_PASSWORD }}
         run: |
           pnpm exec playwright test browser_tests/tests/customNodes/allNodes.spec.ts \
             --project=custom-nodes --reporter=list --workers=1 --retries=0 \
