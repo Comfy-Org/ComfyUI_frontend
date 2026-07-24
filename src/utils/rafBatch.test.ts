@@ -21,7 +21,7 @@ describe('createRafCoalescer', () => {
 
     expect(apply).not.toHaveBeenCalled()
 
-    vi.advanceTimersByTime(16)
+    vi.advanceTimersToNextFrame()
 
     expect(apply).toHaveBeenCalledOnce()
     expect(apply).toHaveBeenCalledWith(3)
@@ -34,7 +34,7 @@ describe('createRafCoalescer', () => {
     coalescer.push(42)
     coalescer.cancel()
 
-    vi.advanceTimersByTime(16)
+    vi.advanceTimersToNextFrame()
 
     expect(apply).not.toHaveBeenCalled()
   })
@@ -66,7 +66,7 @@ describe('createRafCoalescer', () => {
     coalescer.push(1)
     coalescer.flush()
 
-    vi.advanceTimersByTime(16)
+    vi.advanceTimersToNextFrame()
 
     expect(apply).toHaveBeenCalledOnce()
   })
@@ -79,7 +79,7 @@ describe('createRafCoalescer', () => {
     coalescer.push(1)
     expect(coalescer.isScheduled()).toBe(true)
 
-    vi.advanceTimersByTime(16)
+    vi.advanceTimersToNextFrame()
     expect(coalescer.isScheduled()).toBe(false)
   })
 })

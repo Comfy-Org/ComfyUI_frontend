@@ -455,7 +455,7 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
       new CustomEvent('progress_state', { detail: { nodes, prompt_id: jobId } })
     )
     // Flush the RAF so the batched update is applied immediately
-    vi.advanceTimersByTime(16)
+    vi.advanceTimersToNextFrame()
   }
 
   beforeEach(() => {
@@ -1343,7 +1343,7 @@ describe('useExecutionStore - RAF batching', () => {
 
       expect(store._executingNodeProgress).toBeNull()
 
-      vi.advanceTimersByTime(16)
+      vi.advanceTimersToNextFrame()
 
       expect(store._executingNodeProgress).toEqual({
         value: 9,
@@ -1365,14 +1365,14 @@ describe('useExecutionStore - RAF batching', () => {
       const handler = getRegisteredHandler('progress')
 
       handler(makeProgressEvent(1, 10))
-      vi.advanceTimersByTime(16)
+      vi.advanceTimersToNextFrame()
 
       expect(store._executingNodeProgress).toEqual(
         expect.objectContaining({ value: 1 })
       )
 
       handler(makeProgressEvent(7, 10))
-      vi.advanceTimersByTime(16)
+      vi.advanceTimersToNextFrame()
 
       expect(store._executingNodeProgress).toEqual(
         expect.objectContaining({ value: 7 })
@@ -1413,7 +1413,7 @@ describe('useExecutionStore - RAF batching', () => {
 
       expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
 
-      vi.advanceTimersByTime(16)
+      vi.advanceTimersToNextFrame()
 
       expect(store.nodeProgressStates['1']).toEqual(
         expect.objectContaining({ value: 9, state: 'running' })
@@ -1453,7 +1453,7 @@ describe('useExecutionStore - RAF batching', () => {
         })
       )
 
-      vi.advanceTimersByTime(16)
+      vi.advanceTimersToNextFrame()
 
       expect(store._executingNodeProgress).toBeNull()
     })
@@ -1493,7 +1493,7 @@ describe('useExecutionStore - RAF batching', () => {
         })
       )
 
-      vi.advanceTimersByTime(16)
+      vi.advanceTimersToNextFrame()
 
       expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
     })
@@ -1528,7 +1528,7 @@ describe('useExecutionStore - RAF batching', () => {
         })
       )
 
-      vi.advanceTimersByTime(16)
+      vi.advanceTimersToNextFrame()
 
       expect(store._executingNodeProgress).toBeNull()
     })
@@ -1561,7 +1561,7 @@ describe('useExecutionStore - RAF batching', () => {
         })
       )
 
-      vi.advanceTimersByTime(16)
+      vi.advanceTimersToNextFrame()
 
       expect(store._executingNodeProgress).toBeNull()
     })
@@ -1578,7 +1578,7 @@ describe('useExecutionStore - RAF batching', () => {
       )
 
       store.unbindExecutionEvents()
-      vi.advanceTimersByTime(16)
+      vi.advanceTimersToNextFrame()
 
       expect(store._executingNodeProgress).toBeNull()
     })
@@ -1605,7 +1605,7 @@ describe('useExecutionStore - RAF batching', () => {
       )
 
       store.unbindExecutionEvents()
-      vi.advanceTimersByTime(16)
+      vi.advanceTimersToNextFrame()
 
       expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
     })
@@ -1914,7 +1914,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         // RAF-batched: not applied synchronously
         expect(store._executingNodeProgress).toBeNull()
 
-        vi.advanceTimersByTime(16)
+        vi.advanceTimersToNextFrame()
 
         expect(store._executingNodeProgress).toEqual(payload)
       } finally {
