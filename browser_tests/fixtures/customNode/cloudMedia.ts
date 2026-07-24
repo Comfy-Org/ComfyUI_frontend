@@ -7,17 +7,10 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
-// The run-tier media the core CI stages by cp into ComfyUI/input. The cloud
-// backend is remote (nothing to cp into), so the same file travels through
-// the frontend's own upload API instead - which also exercises the upload
-// path the VHS cloud-variant workflow depends on.
 const RUN_TIER_MEDIA: Record<string, string> = {
   'plain_video.mp4': 'video/mp4'
 }
 
-// Which staged media a workflow references: upload-based loaders store the
-// bare input-dir filename as the widget value (path-based loaders store an
-// input/ path and stay core-only, so they never match here).
 export function referencedRunMedia(workflow: ComfyWorkflowJSON): string[] {
   const widgetValues = (workflow.nodes ?? []).flatMap((node) =>
     Array.isArray(node.widgets_values) ? node.widgets_values : []
@@ -27,8 +20,7 @@ export function referencedRunMedia(workflow: ComfyWorkflowJSON): string[] {
   )
 }
 
-// Uploads via window.app.api.fetchApi so the request carries the signed-in
-// session's real auth header - a plain node-side POST would not.
+// window.app.api.fetchApi carries the signed-in session's auth header; a node-side POST would not.
 export async function uploadRunMedia(
   page: Page,
   names: string[]

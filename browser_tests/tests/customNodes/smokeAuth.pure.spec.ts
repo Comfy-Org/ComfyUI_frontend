@@ -10,10 +10,6 @@ import {
   smokeAuthUserRecord
 } from '@e2e/fixtures/helpers/smokeAuth'
 
-// The record shaping is the one seam between the identitytoolkit sign-in
-// response and the IndexedDB record the frontend's Firebase SDK restores; a
-// silent field drift here would boot the cloud suite signed out.
-
 const NOW = 1_700_000_000_000
 const SMOKE_KEY = 'smoke-project-api-key'
 
@@ -58,8 +54,6 @@ test.describe('smokeAuthUserRecord', () => {
         accessToken: 'header.payload.signature',
         expirationTime: NOW + 3600 * 1000
       },
-      // The persistence key embeds the apiKey, so the record must carry the
-      // project that minted the tokens - never a hardcoded app key.
       apiKey: SMOKE_KEY,
       appName: FIREBASE_APP_NAME
     })
@@ -93,7 +87,6 @@ test.describe('smokeAuthUserRecord', () => {
     }
     expect(thrown).toContain('idToken')
     expect(thrown).toContain('localId')
-    // The intact refreshToken value must not leak into the diagnostic.
     expect(thrown).not.toContain('refresh-opaque')
   })
 

@@ -72,8 +72,6 @@ test.describe('customNode manifest', () => {
     delete process.env.CUSTOM_NODES_ALLOW_UNPINNED
     try {
       expect(() => assertCoreEntry(validEntry(), 0)).not.toThrow()
-      // Run-enrolled rows must carry a workflow: this loader guard is what
-      // lets T1 registration trust every registered row has one.
       expect(() =>
         assertCoreEntry({ ...validEntry(), workflow: '' }, 0)
       ).toThrow(/workflow/)
@@ -160,23 +158,14 @@ test.describe('customNode manifest', () => {
       delete process.env.CUSTOM_NODES_ENV
       const defaulted = loadManifest()
       expect(defaulted.length).toBeGreaterThan(0)
-      // Core envs carry no cloud core-node exclusions - the seeding input
-      // is empty, never a file read that could throw.
       expect(loadCloudCoreDisabledNodes()).toEqual({})
       process.env.CUSTOM_NODES_ENV = 'core'
       expect(loadManifest()).toEqual(defaulted)
       expect(loadCloudCoreDisabledNodes()).toEqual({})
-      // No cloud manifest is committed until the Phase-1 probe snapshot
-      // exists, so selecting cloud must refuse to run - an empty manifest
-      // here would generate zero tests and fake a green suite.
       process.env.CUSTOM_NODES_ENV = 'cloud'
-      // PRE-CALIBRATION assertion: INVERT to a successful load in the same
-      // commit that lands the generated customNodeManifest.cloud.json.
       expect(() => loadManifest()).toThrow(
         /customNodeManifest\.cloud\.json.*gen-cloud-manifest.*snapshot/s
       )
-      // PRE-CALIBRATION assertion: INVERT alongside the loadManifest one
-      // above when the generated manifest lands.
       expect(() => loadCloudCoreDisabledNodes()).toThrow(
         /customNodeManifest\.cloud\.json/
       )
@@ -248,8 +237,6 @@ test.describe('customNode manifest', () => {
         () => assertCloudManifestShape(bad, 'probe.json'),
         `${JSON.stringify(bad)} must be rejected`
       ).toThrow(/probe\.json is malformed/)
-    // Pack rows still flow through assertCloudEntry, so a structurally sound
-    // manifest with a broken row reds naming the row's field.
     expect(() =>
       assertCloudManifestShape(
         {

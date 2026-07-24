@@ -73,8 +73,6 @@ test.describe('cloudAutoRunExclusions', () => {
 test.describe('disabledHarnessNodes', () => {
   test('flags only harness nodes, carrying their labels as the mechanism', () => {
     expect(disabledHarnessNodes({})).toEqual([])
-    // Core disables the save/training family on Cloud; none of it is
-    // harness, so the guard stays quiet.
     expect(disabledHarnessNodes({ CheckpointSave: ['WritesToDisk'] })).toEqual(
       []
     )

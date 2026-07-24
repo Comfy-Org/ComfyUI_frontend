@@ -22,8 +22,6 @@ test.describe('referencedRunMedia', () => {
         readAsset('customNodes/vhs_video_pipeline_cloud_run.json')
       )
     ).toEqual(['plain_video.mp4'])
-    // The core variant references input/plain_video.mp4 as a PATH - core CI
-    // stages that file by cp, so it must not trigger the cloud upload.
     expect(
       referencedRunMedia(readAsset('customNodes/vhs_video_pipeline_run.json'))
     ).toEqual([])
@@ -33,11 +31,6 @@ test.describe('referencedRunMedia', () => {
   })
 })
 
-// Dry check for the cloud-variant VHS workflow: it must be the core workflow
-// with EXACTLY the labeled-node swap applied - VHS_LoadVideoPath (labeled
-// ReadsArbitraryFile, disabled on Cloud) replaced by the unlabeled
-// upload-based VHS_LoadVideo, whose 1.7.9 widget layout and outputs match
-// position for position. Execution validation is the Phase-1 probe's.
 test('the VHS cloud variant differs from the core workflow only by the node swap', () => {
   const core = readAsset('customNodes/vhs_video_pipeline_run.json')
   const cloud = readAsset('customNodes/vhs_video_pipeline_cloud_run.json')

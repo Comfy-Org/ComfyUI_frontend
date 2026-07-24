@@ -5,16 +5,10 @@ import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
 
 const GEOMETRY_DIR = fileURLToPath(new URL('./geometry/', import.meta.url))
 
-// Cloud baselines are a separate set under geometry/cloud/: Cloud's pack
-// versions move with Cloud deploys, not our pins, so the two environments
-// never share a baseline file. Resolved per call so the env is read at use
-// time, exactly like the manifest loader.
 function geometryDir(): string {
   return customNodesEnv() === 'cloud' ? `${GEOMETRY_DIR}cloud/` : GEOMETRY_DIR
 }
 
-// Repo-relative counterpart for human-facing messages (the record-mode
-// commit instruction names the file to commit).
 export function packGeometryRelativePath(pack: string): string {
   const cloudSegment = customNodesEnv() === 'cloud' ? 'cloud/' : ''
   return `browser_tests/fixtures/customNode/geometry/${cloudSegment}${pack}.json`
@@ -24,21 +18,7 @@ export function packGeometryRelativePath(pack: string): string {
 // invariant to where the chunk grid placed the node. Vue values are divided
 // by the canvas scale at capture (the chunk-fit zoom), making them
 // graph-space numbers too - otherwise a pack-count change would rescale
-// whole chunks and every node in them would show phantom deltas. Values are
-// stored raw and compared with a GEOMETRY_EPSILON_PX absolute tolerance.
-// Exact equality was the original bet - a fully pinned environment renders
-// deterministically - and its own rationale said "if jitter is ever
-// observed, that red is the evidence to justify a tolerance." Run
-// 30116507105 was that evidence: on the IDENTICAL runner image
-// (ubuntu24/20260720.247) and the pinned bundled Chromium, 3187 widths
-// jittered by up to 2e-4px between two ephemeral runners - hardware/session
-// float the browser+image pin cannot reach. Tolerance is now justified per
-// that clause. 0.01px sits ~47x above the observed 2e-4px noise ceiling
-// (which had a hard gap: nothing measured between 1e-3px and the one real
-// 212px change) and still catches any shift >= 1/100th px, 100x finer than
-// a 1px move. The scale division leaves ~1e-5 float residuals in Vue
-// values, so a chunk-composition change (the pack's node count moved) still
-// forces a whole-pack re-record, which the pin-bump flow performs anyway.
+// whole chunks and every node in them would show phantom deltas.
 export interface LitegraphNodeGeometry {
   w: number
   h: number
@@ -91,11 +71,6 @@ export const GEOMETRY_UNSTABLE_NODES: Record<string, Record<string, string>> = {
     // record run and 920 in the CI compare run at identical code.
     SplineEditor: 'editor_base init race shifts widget y between runs',
     PointsEditor: 'same editor_base init race as SplineEditor',
-    // litegraph node height tracks a preview that follows the input-dir
-    // contents (the staged run-tier media), so it is content-variable, not
-    // fixed. Observed live: h measured 566 in the record run and a compare
-    // run, then 354 in another compare at identical code and runner image -
-    // the same content-variability its auto-run exclusion documents.
     LoadAndResizeImage: 'litegraph height follows input-dir preview contents'
   }
 }
@@ -118,9 +93,6 @@ export function savePackGeometry(pack: string, file: PackGeometryFile): void {
   writeFileSync(geometryPath(pack), JSON.stringify(file, null, 1) + '\n')
 }
 
-// Absolute per-value tolerance: absorbs cross-runner sub-pixel float
-// (observed ceiling ~2e-4px) while still catching any real shift >= 0.01px.
-// See the module header for the run that justified moving off exact equality.
 const GEOMETRY_EPSILON_PX = 0.01
 
 // Depth-first first-difference finder. Returns every node-level delta but

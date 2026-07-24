@@ -32,9 +32,6 @@ function isStringArray(value: unknown): value is string[] {
   )
 }
 
-// The parsed yaml is untrusted input (Cloud-ops-owned, refreshed by copy):
-// validate every field the transform reads so a moved upstream schema fails
-// here with a named reason, never as a malformed generated manifest.
 export function validateSupportedNodesDoc(value: unknown): SupportedNodesDoc {
   if (!isRecord(value) || !isStringArray(value.labels))
     throw new Error(
@@ -115,15 +112,6 @@ export function validateObjectInfoSnapshot(value: unknown): ObjectInfoSnapshot {
   return value as ObjectInfoSnapshot
 }
 
-// The curated overlay is the ONE hand-maintained input to the generator
-// (the generated .cloud.json stays machine-written): it attaches an authored
-// run-tier workflow to a generated row. Keyed by the snapshot pack dirname
-// (= the manifest row's `pack`), NOT the yaml pack name: URL-pinned yaml
-// names embed the deploy sha and churn on every re-vendor, while the dirname
-// is the identity every other hand-maintained suite surface (exclusion
-// ledgers, geometry baselines) already keys on. `tiers` is the row's FULL
-// replacement tier list; tier vocabulary is enforced by assertCloudEntry on
-// every merged row.
 interface CuratedCloudWorkflow {
   workflow: string
   tiers: CloudManifestEntry['tiers']
@@ -145,7 +133,6 @@ export function validateCuratedCloudOverlay(
   for (const [pack, entry] of Object.entries(value)) {
     if (!isRecord(entry))
       throw new Error(`curated overlay: ${pack} must be an object`)
-    // A typo'd key (say "timeout") would otherwise silently not apply.
     const unknown = Object.keys(entry).filter(
       (key) => !OVERLAY_KEYS.includes(key)
     )
@@ -161,8 +148,6 @@ export function validateCuratedCloudOverlay(
       throw new Error(
         `curated overlay: ${pack} tiers must be the row's full non-empty tier list`
       )
-    // The overlay exists to enroll authored run workflows; a workflow-carrying
-    // entry that omits 'run' would silently register no run test.
     if (!entry.tiers.includes('run'))
       throw new Error(`curated overlay: ${pack} tiers must include 'run'`)
     if (
@@ -183,12 +168,7 @@ export function validateCuratedCloudOverlay(
   return overlay
 }
 
-// The yaml keys packs by registry id or git URL while the suite keys them by
-// the custom_nodes/ directory name the snapshot reports - the two only agree
-// up to case and separator style (comfyui-videohelpersuite vs
-// ComfyUI-VideoHelperSuite), so both sides join on a lowercased alphanumeric
-// key. Collisions abort: a wrong silent join would calibrate one pack against
-// another pack's nodes.
+// yaml pack ids and snapshot dirnames agree only up to case and separators.
 function joinKeyOf(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
@@ -259,10 +239,7 @@ export function buildCloudManifest(
       unmatched.push(pack.name)
       continue
     }
-    // Subtracting label-disabled nodes here encodes the 'vanish' reading of
-    // the disabled-node semantics; CLOUD_DISABLED_SEMANTICS
-    // (browser_tests/fixtures/customNode/cloudExclusions.ts) is the coupled
-    // site - if the probe shows 'register-but-block', flip both together.
+    // Assumes 'vanish' semantics - flip with CLOUD_DISABLED_SEMANTICS (cloudExclusions.ts).
     const disabled = new Set(Object.keys(pack.node_labels ?? {}))
     const enabled = (nodesByPack.get(dirname) ?? [])
       .filter((node) => !disabled.has(node))
@@ -279,8 +256,6 @@ export function buildCloudManifest(
       workflow: curated?.workflow ?? '',
       expectedNodes: enabled.slice(0, 2),
       expectedNodeCount: enabled.length,
-      // Unknowable from the two inputs: extension names come from a boot
-      // probe of window.app.extensions (Phase-5 calibration fills them).
       expectedExtensions: [],
       disabledNodes: sortedRecordOf(pack.node_labels ?? {}),
       timeoutMs: curated?.timeoutMs ?? 30_000
@@ -291,16 +266,10 @@ export function buildCloudManifest(
       `yaml packs with no /object_info pack to join: ${unmatched.join(', ')} - ` +
         `either the snapshot predates their deploy or the dirname mapping rule broke`
     )
-  // Zero rows would flow into a manifest that generates zero tests - the
-  // fake-green class the loader also guards against.
   if (packs.length === 0)
     throw new Error(
       'no pack rows generated - the yaml contains no joinable non-core packs'
     )
-  // Checked after the join errors so a broken join reds as itself, not as
-  // its downstream orphan. An overlay key matching no generated row would
-  // otherwise vanish silently - and with it the run tier it was meant to
-  // enroll.
   const orphaned = Object.keys(overlay).filter(
     (pack) => !packs.some((row) => row.pack === pack)
   )
@@ -321,8 +290,6 @@ export function buildCloudManifest(
   }
 }
 
-// Byte-identical output for identical inputs: rows and keys are sorted by the
-// builder, key insertion order is fixed, and the file ends with one newline.
 export function renderCloudManifest(manifest: CloudManifest): string {
   return `${JSON.stringify(manifest, null, 2)}\n`
 }

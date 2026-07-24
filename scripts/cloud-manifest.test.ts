@@ -14,10 +14,6 @@ import {
   validateSupportedNodesDoc
 } from './cloud-manifest'
 
-// cloudSupportedNodesExtract.json holds five REAL entries copied from the
-// vendored supported_nodes.yaml (core, a URL@sha pack, two registry packs
-// with labels, one without); cloudObjectInfoSyntheticSnapshot.json is a
-// synthetic /object_info capture shaped like the real endpoint.
 function fixtureDoc() {
   return validateSupportedNodesDoc(structuredClone(supportedNodesExtract))
 }
@@ -83,13 +79,9 @@ describe('buildCloudManifest', () => {
     const counts = Object.fromEntries(
       manifest.packs.map((row) => [row.pack, row.expectedNodeCount])
     )
-    // KJNodes: 4 snapshot nodes, CameraPoseVisualizer labeled and present.
     expect(counts['ComfyUI-KJNodes']).toBe(3)
-    // VHS: only enabled nodes present (its labeled nodes vanished).
     expect(counts['ComfyUI-VideoHelperSuite']).toBe(2)
-    // WanVideo: 5 snapshot nodes, two labeled and present.
     expect(counts['ComfyUI-WanVideoWrapper']).toBe(3)
-    // essentials: no labels at all.
     expect(counts['ComfyUI_essentials']).toBe(3)
   })
 
@@ -358,8 +350,6 @@ describe('validateSupportedNodesDoc', () => {
   })
 
   it('parses and validates the full vendored yaml end to end', () => {
-    // Resolved from the repo root (vitest's cwd): under happy-dom
-    // import.meta.url is not a file: URL, so URL-relative resolution crashes.
     const vendored = readFileSync(
       'browser_tests/fixtures/data/cloud/supported_nodes.yaml',
       'utf-8'

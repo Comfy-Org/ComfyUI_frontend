@@ -11,9 +11,7 @@ import {
 import { loadManifest } from '@e2e/fixtures/customNode/manifest'
 
 // The differ is the geometry tier's entire failure-reporting contract:
-// every red a maintainer ever sees comes out of diffGeometry. These cases
-// pin each red path and the GEOMETRY_EPSILON_PX tolerance the tier compares
-// with (sub-0.01px cross-runner float absorbed; anything larger reds).
+// every red a maintainer ever sees comes out of diffGeometry.
 
 function node(overrides: Partial<NodeGeometry> = {}): NodeGeometry {
   return {
@@ -49,8 +47,6 @@ test.describe('diffGeometry', () => {
 
   test('sub-epsilon cross-runner float jitter is absorbed', () => {
     const measured = node()
-    // ~ the observed 2e-4px noise ceiling on a width, plus a 0.005px height
-    // wobble - both under GEOMETRY_EPSILON_PX (0.01), so neither reds.
     measured.vue!.w = 263.8437566786189 + 0.0002
     measured.litegraph.h = 106.005
     expect(diffGeometry({ A: node() }, { A: measured })).toEqual([])
@@ -144,11 +140,6 @@ test.describe('baseline path resolution', () => {
       expect(packGeometryRelativePath(pack)).toBe(
         `browser_tests/fixtures/customNode/geometry/cloud/${pack}.json`
       )
-      // No cloud baselines exist until the Phase-5 record run: the same
-      // pack resolves under geometry/cloud/ and follows the existing
-      // missing-baseline behavior (null; compare mode reds on it).
-      // PRE-CALIBRATION assertion: INVERT to a non-null load in the same
-      // commit that lands the recorded cloud geometry baselines.
       expect(loadPackGeometry(pack)).toBeNull()
       delete process.env.CUSTOM_NODES_ENV
       expect(loadPackGeometry(pack)).toEqual(coreBaseline)

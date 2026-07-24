@@ -1,19 +1,10 @@
 import type { Page } from '@playwright/test'
 
-/**
- * Single home for the Firebase persistence contract the cloud frontend reads
- * at boot: `browserLocalPersistence` stores the signed-in user in IndexedDB
- * database `firebaseLocalStorageDb`, object store `firebaseLocalStorage`,
- * keyed by `firebase:authUser:<apiKey>:<appName>`. CloudAuthHelper (mock
- * session) and smokeAuth (real smoke-user session) both seed through here so
- * the two writers can never drift apart.
- */
+// Mirrors firebase-js-sdk browserLocalPersistence internals; the SDK reads exactly these at boot.
 const FIREBASE_AUTH_DB = 'firebaseLocalStorageDb'
 const FIREBASE_AUTH_STORE = 'firebaseLocalStorage'
 
-// The app's public Firebase web key and default app name
-// (src/config/firebase.ts DEV_CONFIG): the SDK restores the record it finds
-// under exactly this key.
+// Must match src/config/firebase.ts DEV_CONFIG - the SDK restores only the record keyed under them.
 export const FIREBASE_WEB_API_KEY = 'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE'
 export const FIREBASE_APP_NAME = '[DEFAULT]'
 
@@ -40,11 +31,7 @@ export interface FirebaseAuthUserRecord {
   appName: string
 }
 
-/**
- * Write the user record into Firebase's IndexedDB persistence. Navigates to a
- * lightweight same-origin endpoint first so the write lands in the app
- * origin's storage before the app loads and Firebase reads it.
- */
+// The record must land in the app origin's storage before the app boots and Firebase reads it.
 export async function seedFirebaseAuthUser(
   page: Page,
   appUrl: string,

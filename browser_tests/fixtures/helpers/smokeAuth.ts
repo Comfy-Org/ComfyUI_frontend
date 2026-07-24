@@ -6,14 +6,6 @@ import {
   seedFirebaseAuthUser
 } from '@e2e/fixtures/helpers/firebaseAuthStorage'
 
-/**
- * Real Cloud authentication for CUSTOM_NODES_ENV=cloud runs: signs in the
- * shared smoke user against Firebase's identitytoolkit REST API (the exact
- * call Cloud's own smoke tooling makes) once per worker, and seeds the REAL
- * session through the same IndexedDB path CloudAuthHelper mocks - with none
- * of that helper's route interceptions, so the frontend's SDK restores a
- * live session and every backend call carries a real bearer token.
- */
 export const SMOKE_ENV_VARS = [
   'SMOKE_FIREBASE_API_KEY',
   'SMOKE_ACCOUNT_EMAIL',
@@ -34,11 +26,6 @@ function stringField(
   return typeof value === 'string' && value !== '' ? value : undefined
 }
 
-/**
- * Shape a signInWithPassword response into the exact IndexedDB record the
- * frontend's Firebase SDK restores (see firebaseAuthStorage.ts). Malformed
- * responses fail naming the FIELD - token values are never echoed or logged.
- */
 export function smokeAuthUserRecord(
   signInResponse: unknown,
   accountEmail: string,
@@ -81,7 +68,6 @@ export function smokeAuthUserRecord(
   return {
     uid: localId,
     email,
-    // The SDK persists displayName as null when absent, never omits it.
     displayName: displayName ?? null,
     emailVerified: true,
     isAnonymous: false,
@@ -100,9 +86,7 @@ export function smokeAuthUserRecord(
       accessToken: idToken,
       expirationTime: nowMs + lifetimeMs
     },
-    // The IndexedDB persistence key embeds this apiKey: it must be the
-    // project that minted the tokens (the smoke key), or the SDK never
-    // finds the record and the app boots signed out.
+    // Must be the token-minting project's key: the SDK's IndexedDB lookup key embeds it.
     apiKey,
     appName: FIREBASE_APP_NAME
   }
@@ -127,8 +111,7 @@ async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
     )
   const email = process.env.SMOKE_ACCOUNT_EMAIL!
   const apiKey = process.env.SMOKE_FIREBASE_API_KEY!
-  // Node's own fetch, NOT page.request: the traced transport would retain
-  // the credential inside failure trace artifacts.
+  // Node fetch, not page.request: traced transports retain the credential in failure artifacts.
   const response = await fetch(
     `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
     {
@@ -139,15 +122,11 @@ async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
         password: process.env.SMOKE_ACCOUNT_PASSWORD,
         returnSecureToken: true
       }),
-      // Node fetch has no default request timeout; a stalled sign-in would
-      // otherwise hang the memoized promise for the whole worker.
       signal: AbortSignal.timeout(30_000)
     }
   )
   const body: unknown = await response.json().catch(() => undefined)
   if (!response.ok) {
-    // identitytoolkit error codes (EMAIL_NOT_FOUND, INVALID_PASSWORD, ...)
-    // carry no token material and name the exact credential problem.
     const code = identityToolkitErrorCode(body)
     throw new Error(
       `smoke-user sign-in failed (HTTP ${response.status}${code ? `: ${code}` : ''}) - check the SMOKE_* credentials`
@@ -156,13 +135,9 @@ async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
   return smokeAuthUserRecord(body, email, apiKey, Date.now())
 }
 
-// One sign-in per worker process; every test context re-seeds the same
-// record (contexts are isolated, the session is not).
 let smokeUser: Promise<FirebaseAuthUserRecord> | undefined
 
 export async function seedSmokeAuth(page: Page, appUrl: string): Promise<void> {
-  // Cache only success: a transient sign-in failure must not poison every
-  // remaining test in the worker with the same cached rejection.
   smokeUser ??= signInSmokeUser().catch((error: unknown) => {
     smokeUser = undefined
     throw error
