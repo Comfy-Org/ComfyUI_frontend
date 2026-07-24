@@ -106,6 +106,9 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
   - Keep it extremely concise and information-dense
   - Don't use emojis or add excessive headers/sections
   - Follow the PR description template in the `.github/` folder.
+  - Comfy staff working on the Cloud-hosted frontend can follow the
+    [internal Cloud preview runbook](https://github.com/Comfy-Org/cloud/blob/main/docs/runbooks/pr-preview-environments.md).
+    It does not apply to local development or other deployment targets in this repository.
 - Quality gates:
   - `pnpm lint`
   - `pnpm typecheck`
