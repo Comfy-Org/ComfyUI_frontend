@@ -5,22 +5,17 @@ import { useRoute, useRouter } from 'vue-router'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import { TemplateOpenTrigger } from '@/platform/telemetry/types'
+import { isTemplateOpenTrigger } from '@/platform/telemetry/utils/templateOpenTrigger'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useTemplateWorkflows } from './useTemplateWorkflows'
 
 /**
- * Composable for loading templates from URL query parameters
- *
- * Supports URLs like:
- * - /?template=flux_simple (loads with default source)
- * - /?template=flux_simple&source=custom (loads from custom source)
- * - /?template=flux_simple&mode=linear (loads template in linear mode)
- *
- * Input validation:
- * - Template, source, and mode parameters must match: ^[a-zA-Z0-9_-]+$
- * - Invalid formats are rejected with console warnings
+ * Loads a template from URL query params, e.g.
+ * `/?template=flux_simple&source=custom&mode=linear`. Untrusted params are
+ * validated before use; invalid ones are rejected with a console warning.
  */
 export function useTemplateUrlLoader() {
   const route = useRoute()
@@ -33,37 +28,30 @@ export function useTemplateUrlLoader() {
   const SUPPORTED_MODES = ['linear'] as const
   type SupportedMode = (typeof SUPPORTED_MODES)[number]
 
-  /**
-   * Validates parameter format to prevent path traversal and injection attacks
-   * Allows: letters, numbers, underscores, hyphens, and dots (for version numbers)
-   * Blocks: path separators (/, \), special chars that could enable injection
-   */
+  /** Guards params against traversal/injection before they reach a fetch path. */
   const isValidParameter = (param: string): boolean => {
-    return /^[a-zA-Z0-9_.-]+$/.test(param)
+    return /^[a-zA-Z0-9_.-]+$/.test(param) && !param.includes('..')
   }
 
-  /**
-   * Type guard to check if a value is a supported mode
-   */
   const isSupportedMode = (mode: string): mode is SupportedMode => {
     return SUPPORTED_MODES.includes(mode as SupportedMode)
   }
 
-  /**
-   * Removes template, source, and mode parameters from URL
-   */
+  /** A bare or unrecognized `?open_trigger=` means a shared link; explicit callers override. */
+  const resolveOpenTrigger = (value: unknown): TemplateOpenTrigger => {
+    return isTemplateOpenTrigger(value) ? value : TemplateOpenTrigger.SharedUrl
+  }
+
   const cleanupUrlParams = () => {
     const newQuery = { ...route.query }
     delete newQuery.template
     delete newQuery.source
     delete newQuery.mode
+    delete newQuery.open_trigger
     void router.replace({ query: newQuery })
   }
 
-  /**
-   * Loads template from URL query parameters if present
-   * Handles errors internally and shows appropriate user feedback
-   */
+  /** No-op when no `?template=` is present; surfaces failures as a toast. */
   const loadTemplateFromUrl = async () => {
     const templateParam = route.query.template
 
@@ -105,12 +93,15 @@ export function useTemplateUrlLoader() {
       )
     }
 
+    const openTrigger = resolveOpenTrigger(route.query.open_trigger)
+
     try {
       await templateWorkflows.loadTemplates()
 
       const success = await templateWorkflows.loadWorkflowTemplate(
         templateParam,
-        sourceParam
+        sourceParam,
+        openTrigger
       )
 
       if (!success) {
@@ -122,7 +113,6 @@ export function useTemplateUrlLoader() {
           })
         })
       } else if (modeParam === 'linear') {
-        // Set linear mode after successful template load
         useTelemetry()?.trackEnterLinear({ source: 'template_url' })
         canvasStore.linearMode = true
       }

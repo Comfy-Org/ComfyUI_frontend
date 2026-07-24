@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { TemplateOpenTrigger } from '@/platform/telemetry/types'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type {
   TemplateGroup,
@@ -97,7 +98,11 @@ export function useTemplateWorkflows() {
   /**
    * Loads a workflow template
    */
-  const loadWorkflowTemplate = async (id: string, sourceModule: string) => {
+  const loadWorkflowTemplate = async (
+    id: string,
+    sourceModule: string,
+    openTrigger: TemplateOpenTrigger = TemplateOpenTrigger.LibraryTemplate
+  ) => {
     if (!isTemplatesLoaded.value) return false
 
     loadingTemplateId.value = id
@@ -138,7 +143,9 @@ export function useTemplateWorkflows() {
 
       dialogStore.closeDialog()
       await app.loadGraphData(json, true, true, workflowName, {
-        openSource: 'template'
+        openSource: 'template',
+        templateId: id,
+        openTrigger
       })
 
       return true

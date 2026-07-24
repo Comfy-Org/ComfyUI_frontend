@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { app } from '@/scripts/app'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
@@ -71,6 +72,7 @@ describe('useTemplateWorkflows', () => {
   beforeEach(() => {
     mockIsCloud.value = true
     mockTrackTemplate.mockClear()
+    vi.mocked(app.loadGraphData).mockClear()
 
     mockWorkflowTemplatesStore = {
       isLoaded: false,
@@ -310,6 +312,45 @@ describe('useTemplateWorkflows', () => {
       workflow_name: 'template1',
       template_source: 'default'
     })
+  })
+
+  it('passes templateId and library trigger to loadGraphData by default', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+    mockWorkflowTemplatesStore.isLoaded = true
+    await loadWorkflowTemplate('template1', 'default')
+    await flushPromises()
+
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      expect.anything(),
+      true,
+      true,
+      expect.anything(),
+      expect.objectContaining({
+        openSource: 'template',
+        templateId: 'template1',
+        openTrigger: 'library_template'
+      })
+    )
+  })
+
+  it('passes starter_template trigger when opened via deeplink', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+    mockWorkflowTemplatesStore.isLoaded = true
+    await loadWorkflowTemplate('template1', 'default', 'starter_template')
+    await flushPromises()
+
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      expect.anything(),
+      true,
+      true,
+      expect.anything(),
+      expect.objectContaining({
+        templateId: 'template1',
+        openTrigger: 'starter_template'
+      })
+    )
   })
 
   it('does not fire template telemetry in OSS builds', async () => {
