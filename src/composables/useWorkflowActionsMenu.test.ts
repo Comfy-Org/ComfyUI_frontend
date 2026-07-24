@@ -86,6 +86,10 @@ vi.mock('@/stores/appModeStore', () => ({
   useAppModeStore: vi.fn(() => mockAppModeStore)
 }))
 
+vi.mock('@/scripts/app', () => ({
+  app: { rootGraph: { id: 'root', extra: {}, nodes: [] } }
+}))
+
 vi.mock('@/composables/useErrorHandling', () => ({}))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
