@@ -31,11 +31,39 @@ export const useWorkflowTemplatesStore = defineStore(
   'workflowTemplates',
   () => {
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
+    const customNodesIndexedTemplates = shallowRef<{ [moduleName: string]: WorkflowTemplates }>({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const englishTemplates = shallowRef<WorkflowTemplates[]>([])
     const logoIndex = shallowRef<LogoIndex>({})
     const isLoaded = ref(false)
     const knownTemplateNames = ref(new Set<string>())
+
+    /**
+     * Complete custom template info from customNodesIndexedTemplates
+     */
+    function getCustomTemplateInfo(moduleName: string, name: string) {
+      const indexed = customNodesIndexedTemplates.value[moduleName]
+      if (indexed && Array.isArray(indexed.templates)) {
+        const enhanced = indexed.templates.find((t) => t.name === name)
+        if (enhanced) {
+          return {
+            name,
+            mediaType: 'image',
+            mediaSubtype: enhanced.mediaSubtype ?? 'jpg',
+            description: enhanced.description ?? name,
+            thumbnailVariant: enhanced.thumbnailVariant,
+            sourceModule: moduleName
+          }
+        }
+      }
+      return {
+        name,
+        mediaType: 'image',
+        mediaSubtype: 'jpg',
+        description: name,
+        sourceModule: moduleName
+      }
+    }
 
     const getTemplateByName = (name: string): EnhancedTemplate | undefined => {
       return enhancedTemplates.value.find((template) => template.name === name)
@@ -116,13 +144,7 @@ export const useWorkflowTemplatesStore = defineStore(
       const customTemplatesWithSourceModule = Object.entries(
         customTemplates.value
       ).flatMap(([moduleName, templates]) =>
-        templates.map((name) => ({
-          name,
-          mediaType: 'image',
-          mediaSubtype: 'jpg',
-          description: name,
-          sourceModule: moduleName
-        }))
+        templates.map((name) => getCustomTemplateInfo(moduleName, name))
       )
 
       return {
@@ -144,20 +166,18 @@ export const useWorkflowTemplatesStore = defineStore(
       const allTemplates = [
         ...coreTemplates.value.map(localizeTemplateCategory),
         ...Object.entries(customTemplates.value).map(
-          ([moduleName, templates]) => ({
-            moduleName,
-            title: moduleName,
-            localizedTitle: st(
-              `templateWorkflows.category.${normalizeI18nKey(moduleName)}`,
-              moduleName
-            ),
-            templates: templates.map((name) => ({
-              name,
-              mediaType: 'image',
-              mediaSubtype: 'jpg',
-              description: name
-            }))
-          })
+          ([moduleName, templates]) => {
+            const moduleTemplates = templates.map((name) => getCustomTemplateInfo(moduleName, name))
+            return {
+              moduleName,
+              title: moduleName,
+              localizedTitle: st(
+                `templateWorkflows.category.${normalizeI18nKey(moduleName)}`,
+                moduleName
+              ),
+              templates: moduleTemplates
+            }
+          }
         )
       ]
 
@@ -223,12 +243,18 @@ export const useWorkflowTemplatesStore = defineStore(
       Object.entries(customTemplates.value).forEach(
         ([moduleName, templates]) => {
           templates.forEach((name) => {
+            const indexed = customNodesIndexedTemplates.value[moduleName]
+            let indexedData: TemplateInfo | undefined
+            if (indexed && Array.isArray(indexed.templates)) {
+              indexedData = indexed.templates.find((t) => t.name === name)
+            }
             const enhancedTemplate: EnhancedTemplate = {
               name,
-              title: name,
-              description: name,
+              title: indexedData?.title || name,
+              description: indexedData?.description || name,
               mediaType: 'image',
-              mediaSubtype: 'jpg',
+              mediaSubtype: indexedData?.mediaSubtype || 'jpg',
+              thumbnailVariant: indexedData?.thumbnailVariant,
               sourceModule: moduleName,
               category: 'Extensions',
               categoryType: 'extension',
@@ -472,6 +498,31 @@ export const useWorkflowTemplatesStore = defineStore(
       return items
     })
 
+    /**
+    * Fetch the customization data for this module example workflows from it's index.json if existing.
+    * Will remove the index workflow in that case.
+    */
+    async function fetchIndexedCustomTemplates(customTemplatesObj: { [moduleName: string]: string[] }) {
+      const locale = i18n.global.locale.value
+      const customIndexedTemplates: { [moduleName: string]: WorkflowTemplates } = {}
+      const updatedCustomTemplates: { [moduleName: string]: string[] } = { ...customTemplatesObj }
+      const modulesWithIndex = Object.entries(customTemplatesObj)
+      .filter(([, workflowsList]) => workflowsList.includes('index'))
+
+      const results = await Promise.all(
+        modulesWithIndex.map(async ([customNodeName, workflowsList]) => {
+          const indexed = await api.getCustomIndexWorkflowTemplates(customNodeName, locale)
+          return { customNodeName, indexed, filtered: workflowsList.filter(name => name !== 'index') }
+        })
+      )
+
+      for (const { customNodeName, indexed, filtered } of results) {
+        customIndexedTemplates[customNodeName] = indexed
+        updatedCustomTemplates[customNodeName] = filtered
+      }
+      return { customIndexedTemplates, updatedCustomTemplates }
+    }
+
     async function fetchCoreTemplates() {
       const locale = i18n.global.locale.value
       const [coreResult, englishResult, logoIndexResult] = await Promise.all([
@@ -496,7 +547,10 @@ export const useWorkflowTemplatesStore = defineStore(
     async function loadWorkflowTemplates() {
       try {
         if (!isLoaded.value) {
-          customTemplates.value = await api.getWorkflowTemplates()
+          const fetchedCustomTemplates = await api.getWorkflowTemplates()
+          const { customIndexedTemplates, updatedCustomTemplates } = await fetchIndexedCustomTemplates(fetchedCustomTemplates)
+          customNodesIndexedTemplates.value = customIndexedTemplates
+          customTemplates.value = updatedCustomTemplates
           await fetchCoreTemplates()
           isLoaded.value = true
         }
