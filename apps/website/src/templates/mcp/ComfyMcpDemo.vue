@@ -40,8 +40,9 @@ const visible = useElementVisibility(root)
 function parseCssMs(value: string | undefined, fallbackMs: number) {
   const match = /^([+-]?(?:\d+|\d*\.\d+))(ms|s)$/i.exec(value?.trim() ?? '')
   if (!match) return fallbackMs
-  const amount = Number.parseFloat(match[1])
-  return match[2].toLowerCase() === 's' ? amount * 1000 : amount
+  const [, amountRaw, unit] = match
+  const amount = Number.parseFloat(amountRaw)
+  return unit.toLowerCase() === 's' ? amount * 1000 : amount
 }
 
 function cssMs(name: string, initialValue: string) {
