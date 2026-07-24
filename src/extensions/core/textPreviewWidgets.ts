@@ -66,13 +66,23 @@ export function addTextPreviewWidgets(node: LGraphNode) {
   modeWidget.serialize = false
 }
 
+function toPreviewText(text: unknown): string {
+  if (typeof text === 'string') return text
+  if (text == null) return ''
+  if (Array.isArray(text))
+    return text
+      .filter((part) => part != null)
+      .map((part) => (typeof part === 'string' ? part : String(part)))
+      .join('\n\n')
+  return String(text)
+}
+
 export function updateTextPreviewWidgets(
   node: LGraphNode,
-  message: { text?: string | string[] }
+  message: { text?: string | string[] } | null | undefined
 ) {
   const preview = node.widgets?.find((w) => w.name === PREVIEW_WIDGET_NAME)
   if (!preview) return
 
-  const text = message.text ?? ''
-  preview.value = Array.isArray(text) ? text.join('\n\n') : text
+  preview.value = toPreviewText(message?.text)
 }
