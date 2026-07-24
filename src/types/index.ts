@@ -1,4 +1,5 @@
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
+import type * as Sentry from '@sentry/vue'
 import type {
   DeviceStats,
   EmbeddingsResponse,
@@ -92,6 +93,9 @@ declare global {
 
     /** For use by extensions and in the browser console. Where possible, import `app` and access via `app.graph` instead. */
     graph?: unknown
+
+    /** Compatibility bridge for unbundled Comfy Cloud extensions. */
+    Sentry?: typeof Sentry
 
     /** For use in tests to capture WebSocket messages */
     __capturedMessages?: CapturedMessages
