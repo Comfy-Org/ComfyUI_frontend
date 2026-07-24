@@ -13,7 +13,13 @@ export interface ElectronDownload extends Pick<
   progress?: number
   savePath?: string
   status?: DownloadStatus
+  message?: string
 }
+
+const isSettled = ({ status }: ElectronDownload) =>
+  status === DownloadStatus.COMPLETED ||
+  status === DownloadStatus.ERROR ||
+  status === DownloadStatus.CANCELLED
 
 /** Electron downloads store handler */
 export const useElectronDownloadStore = defineStore('downloads', () => {
@@ -44,6 +50,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
         download.status = data.status
         download.filename = data.filename
         download.savePath = data.savePath
+        download.message = data.message
       }
     })
   }
@@ -72,6 +79,9 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     findByUrl,
     initialize,
     inProgressDownloads: computed(() =>
+      downloads.value.filter((download) => !isSettled(download))
+    ),
+    incompleteDownloads: computed(() =>
       downloads.value.filter(
         ({ status }) => status !== DownloadStatus.COMPLETED
       )
