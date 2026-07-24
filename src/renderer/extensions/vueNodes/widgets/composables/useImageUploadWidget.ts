@@ -9,15 +9,13 @@ import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { hasImageType, hasVideoType } from '@/utils/eventUtils'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
 import {
   ACCEPTED_IMAGE_TYPES,
   ACCEPTED_VIDEO_TYPES
 } from '@/utils/mediaUploadUtil'
-
-const isImageFile = (file: File) => file.type.startsWith('image/')
-const isVideoFile = (file: File) => file.type.startsWith('video/')
 
 const findFileComboWidget = (
   node: LGraphNode,
@@ -47,7 +45,7 @@ export const useImageUploadWidget = () => {
     const accept = isVideo ? ACCEPTED_VIDEO_TYPES : ACCEPTED_IMAGE_TYPES
     const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
 
-    const fileFilter = isVideo ? isVideoFile : isImageFile
+    const fileFilter = isVideo ? hasVideoType : hasImageType
     const fileComboWidget = findFileComboWidget(node, imageInputName)
     if (!fileComboWidget) {
       throw new Error(`Widget "${imageInputName}" not found on node`)
