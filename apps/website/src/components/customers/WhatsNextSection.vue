@@ -30,6 +30,8 @@ const {
         <img
           :src="image"
           :alt="title"
+          loading="lazy"
+          decoding="async"
           class="w-full rounded-4xl object-cover"
         />
       </a>

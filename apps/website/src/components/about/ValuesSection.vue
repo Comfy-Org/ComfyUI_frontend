@@ -20,6 +20,8 @@ const reasons: TranslationKey[] = [
         <img
           src="https://media.comfy.org/website/about/c-logo.webp"
           alt="Comfy logo"
+          loading="lazy"
+          decoding="async"
           class="mt-6 w-full"
         />
       </template>
@@ -27,6 +29,8 @@ const reasons: TranslationKey[] = [
         <img
           src="https://media.comfy.org/website/about/c-logo.webp"
           alt="Comfy logo"
+          loading="lazy"
+          decoding="async"
           class="mt-6 w-full max-w-xs"
         />
       </template>

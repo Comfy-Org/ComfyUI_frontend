@@ -1,10 +1,18 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
+
 import { useBannerImage } from '../../composables/useBannerImage'
 
-const { bannerUrl, iconUrl, name } = defineProps<{
+const {
+  bannerUrl,
+  iconUrl,
+  name,
+  loading = 'lazy'
+} = defineProps<{
   bannerUrl?: string
   iconUrl?: string
   name: string
+  loading?: 'lazy' | 'eager'
 }>()
 
 const {
@@ -17,6 +25,11 @@ const {
   bannerUrl: () => bannerUrl,
   iconUrl: () => iconUrl
 })
+
+const bannerLoaded = ref(false)
+watch(imgSrc, () => {
+  bannerLoaded.value = false
+})
 </script>
 
 <template>
@@ -28,23 +41,28 @@ const {
       <img
         :src="DEFAULT_BANNER"
         :alt="`${name} banner`"
+        :loading="loading"
+        decoding="async"
         class="size-full object-cover"
       />
     </div>
     <div v-else class="relative size-full">
       <div
-        v-if="imgSrc && !isImageError"
+        v-if="imgSrc && !isImageError && bannerLoaded"
         class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
         :style="{ backgroundImage: `url(${imgSrc})`, filter: 'blur(10px)' }"
       />
       <img
         :src="isImageError ? DEFAULT_BANNER : imgSrc"
         :alt="`${name} banner`"
+        :loading="loading"
+        decoding="async"
         :class="
           isImageError
             ? 'relative z-10 size-full object-cover'
             : 'relative z-10 size-full object-contain'
         "
+        @load="bannerLoaded = true"
         @error="onImageError"
       />
     </div>
