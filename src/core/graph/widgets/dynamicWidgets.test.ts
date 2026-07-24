@@ -1,11 +1,15 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test } from 'vitest'
+
+import type { DynamicGroupNode } from '@/core/graph/widgets/dynamicWidgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { HasInitialMinSize } from '@/services/litegraphService'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 setActivePinia(createTestingPinia())
 type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
@@ -45,6 +49,33 @@ function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
   addNodeInput(
     node,
     transformInputSpecV1ToV2(inputSpec, { name: namePrefix, isOptional: false })
+  )
+}
+function addDynamicGroup(
+  node: LGraphNode,
+  template: object,
+  {
+    min,
+    max,
+    name = 'g',
+    group_name
+  }: {
+    min?: number
+    max?: number
+    name?: string
+    group_name?: string
+  } = {}
+) {
+  const options: Record<string, unknown> = { template }
+  if (min !== undefined) options.min = min
+  if (max !== undefined) options.max = max
+  if (group_name !== undefined) options.group_name = group_name
+  addNodeInput(
+    node,
+    transformInputSpecV1ToV2(['COMFY_DYNAMICGROUP_V3', options] as InputSpec, {
+      name,
+      isOptional: false
+    })
   )
 }
 function addAutogrow(node: LGraphNode, template: unknown) {
@@ -285,5 +316,261 @@ describe('Autogrow', () => {
       '2.b2',
       'aa'
     ])
+  })
+})
+describe('Dynamic Groups', () => {
+  const stringTemplate = { required: { a: ['STRING', {}] } }
+  const widgetNames = (node: LGraphNode) => node.widgets!.map((w) => w.name)
+  const inputNames = (node: LGraphNode) => node.inputs.map((i) => i.name)
+  const widgetNamed = (node: LGraphNode, name: string) =>
+    node.widgets!.find((w) => w.name === name)!
+
+  test('renders min rows on creation', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 2, max: 5 })
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+    expect(inputNames(node)).toStrictEqual([])
+  })
+
+  test('add row appends a new row up to max', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 0, max: 2 })
+    expect(widgetNames(node)).toStrictEqual(['g'])
+
+    widgetNamed(node, 'g').callback?.(undefined)
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a'])
+
+    widgetNamed(node, 'g').callback?.(undefined)
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+
+    // At max, further adds are ignored.
+    widgetNamed(node, 'g').callback?.(undefined)
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+  })
+
+  test('controller disabled option set at max', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 0, max: 1 })
+    expect(widgetNamed(node, 'g').options?.disabled).toBe(false)
+    widgetNamed(node, 'g').callback?.(undefined)
+    expect(widgetNamed(node, 'g').options?.disabled).toBe(true)
+  })
+
+  test('remove row renumbers later rows', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 0, max: 5 })
+    const state = (
+      node as Parameters<typeof widgetNamed>[0] & {
+        comfyDynamic: {
+          dynamicGroup: Record<
+            string,
+            { addRow: () => void; removeRow: (r: number) => void }
+          >
+        }
+      }
+    ).comfyDynamic.dynamicGroup['g']
+    state.addRow()
+    state.addRow()
+    state.addRow()
+
+    const row0Field = widgetNamed(node, 'g.0.a')
+    const row2Field = widgetNamed(node, 'g.2.a')
+
+    state.removeRow(1)
+
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+    // Row 0 is untouched; the former row 2 shifts down into row 1.
+    expect(widgetNamed(node, 'g.0.a')).toBe(row0Field)
+    expect(widgetNamed(node, 'g.1.a')).toBe(row2Field)
+  })
+
+  test('remove row disconnects linked sockets and renumbers inputs', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 0, max: 5 })
+    const state = (
+      node as Parameters<typeof widgetNamed>[0] & {
+        comfyDynamic: {
+          dynamicGroup: Record<
+            string,
+            { addRow: () => void; removeRow: (r: number) => void }
+          >
+        }
+      }
+    ).comfyDynamic.dynamicGroup['g']
+    state.addRow()
+    state.addRow()
+    state.addRow()
+
+    const graph = new LGraph()
+    graph.add(node)
+    node.addInput('g.1.a', 'STRING')
+    const row1Index = node.inputs.findIndex((i) => i.name === 'g.1.a')
+    connectInput(node, row1Index, graph)
+    const linkId = node.inputs[row1Index].link!
+    node.addInput('g.2.a', 'STRING')
+
+    state.removeRow(1)
+
+    expect(graph.links[linkId]).toBeUndefined()
+    expect(inputNames(node)).toStrictEqual(['g.1.a'])
+    expect(node.inputs[0].link).toBeNull()
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+  })
+
+  test('rows below min cannot be removed', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 1, max: 5 })
+    const state = (
+      node as Parameters<typeof widgetNamed>[0] & {
+        comfyDynamic: {
+          dynamicGroup: Record<string, { removeRow: (r: number) => void }>
+        }
+      }
+    ).comfyDynamic.dynamicGroup['g']
+
+    // Only the minimum row remains — removing it is a no-op.
+    state.removeRow(0)
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a'])
+  })
+
+  test('the first row can be removed while above the minimum count', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 1, max: 5 })
+    const state = (node as unknown as DynamicGroupNode).comfyDynamic
+      .dynamicGroup['g']
+    state.addRow()
+    state.addRow()
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a', 'g.2.a'])
+
+    state.removeRow(0)
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+  })
+
+  test('cannot remove a row once at the minimum count', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 2, max: 5 })
+    const state = (node as unknown as DynamicGroupNode).comfyDynamic
+      .dynamicGroup['g']
+
+    state.removeRow(1)
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
+  })
+
+  test('respects max for socket-only field types', () => {
+    const node = testNode()
+    const graph = new LGraph()
+    graph.add(node)
+    addDynamicGroup(
+      node,
+      { required: { image: ['IMAGE', {}] } },
+      { min: 0, max: 2 }
+    )
+    const state = (node as unknown as DynamicGroupNode).comfyDynamic
+      .dynamicGroup['g']
+
+    for (let i = 0; i < 10; i++) state.addRow()
+
+    const groupInputs = node.inputs.filter((i) => i.name.startsWith('g.'))
+    expect(groupInputs.map((i) => i.name)).toStrictEqual([
+      'g.0.image',
+      'g.1.image'
+    ])
+  })
+
+  test('controller value setter rebuilds rows within min and max', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 1, max: 4 })
+    const controller = widgetNamed(node, 'g')
+
+    controller.value = 3
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a', 'g.2.a'])
+    expect(controller.value).toBe(3)
+
+    controller.value = 99
+    expect(widgetNames(node)).toStrictEqual([
+      'g',
+      'g.0.a',
+      'g.1.a',
+      'g.2.a',
+      'g.3.a'
+    ])
+    expect(controller.value).toBe(4)
+
+    controller.value = 0
+    expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a'])
+    expect(controller.value).toBe(1)
+  })
+
+  test('stores group_name on dynamic group state', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, {
+      min: 1,
+      max: 3,
+      name: 'loras',
+      group_name: 'Lora'
+    })
+    const state = (node as unknown as DynamicGroupNode).comfyDynamic
+      .dynamicGroup.loras
+
+    expect(state.groupName).toBe('Lora')
+  })
+
+  test('remove row renames linked input widget metadata', () => {
+    const node = testNode()
+    addDynamicGroup(node, stringTemplate, { min: 0, max: 5 })
+    const state = (node as unknown as DynamicGroupNode).comfyDynamic
+      .dynamicGroup['g']
+    state.addRow()
+    state.addRow()
+
+    const row2Input = node.addInput('g.2.a', 'STRING')
+    row2Input.widget = { name: 'g.2.a' }
+
+    state.removeRow(1)
+
+    expect(row2Input.name).toBe('g.1.a')
+    expect(row2Input.widget?.name).toBe('g.1.a')
+  })
+})
+
+describe('Dynamic Groups widget value store cleanup', () => {
+  const stringTemplate = { required: { a: ['STRING', {}] } }
+  const widgetNamed = (node: LGraphNode, name: string) =>
+    node.widgets!.find((w) => w.name === name)!
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('remove row deletes the removed entry and renumbers survivors', () => {
+    const node = testNode()
+    const graph = new LGraph()
+    graph.add(node)
+    addDynamicGroup(node, stringTemplate, { min: 0, max: 5 })
+    const state = (node as unknown as DynamicGroupNode).comfyDynamic
+      .dynamicGroup['g']
+    state.addRow()
+    state.addRow()
+    state.addRow()
+
+    widgetNamed(node, 'g.0.a').value = 'A'
+    widgetNamed(node, 'g.1.a').value = 'B'
+    widgetNamed(node, 'g.2.a').value = 'C'
+
+    state.removeRow(1)
+
+    const store = useWidgetValueStore()
+    const graphId = graph.rootGraph.id
+    const at = (name: string) =>
+      store.getWidget(widgetId(graphId, node.id, name))?.value
+
+    // Removed row's value is gone, and the former row 2 shifts into row 1.
+    expect(at('g.0.a')).toBe('A')
+    expect(at('g.1.a')).toBe('C')
+    expect(store.getWidget(widgetId(graphId, node.id, 'g.2.a'))).toBeUndefined()
+
+    // Adding a fresh row starts empty rather than leaking the old value.
+    state.addRow()
+    expect(at('g.2.a')).not.toBe('C')
   })
 })

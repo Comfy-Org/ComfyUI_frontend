@@ -198,6 +198,35 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)).toBeUndefined()
       expect(store.deleteWidget(seedA)).toBe(false)
     })
+
+    it('renameWidget moves state to the new id and preserves object identity', () => {
+      const store = useWidgetValueStore()
+      const renamed = widgetId(graphA, toNodeId('node-1'), 'renamed')
+      const original = store.registerWidget(seedA, state('number', 100))
+
+      expect(store.renameWidget(seedA, renamed)).toBe(true)
+      expect(store.getWidget(seedA)).toBeUndefined()
+
+      const moved = store.getWidget(renamed)
+      expect(moved).toBe(original)
+      expect(moved?.value).toBe(100)
+      expect(moved?.name).toBe('renamed')
+    })
+
+    it('renameWidget discards any state already stored at the target id', () => {
+      const store = useWidgetValueStore()
+      const target = widgetId(graphA, toNodeId('node-1'), 'target')
+      store.registerWidget(seedA, state('number', 1))
+      store.registerWidget(target, state('number', 2))
+
+      expect(store.renameWidget(seedA, target)).toBe(true)
+      expect(store.getWidget(target)?.value).toBe(1)
+    })
+
+    it('renameWidget returns false for an unknown source', () => {
+      const store = useWidgetValueStore()
+      expect(store.renameWidget(seedA, seedB)).toBe(false)
+    })
   })
 
   describe('direct property mutation', () => {

@@ -913,8 +913,8 @@
       "nodes": "Nodes",
       "models": "Models",
       "assets": "Assets",
-      "workflows": "Work­flows",
-      "templates": "Tem­plates",
+      "workflows": "Workflows",
+      "templates": "Templates",
       "console": "Console",
       "menu": "Menu",
       "imported": "Imported",
@@ -2286,6 +2286,12 @@
     "slots": "Node Slots Error",
     "widgets": "Node Widgets Error"
   },
+  "dynamicGroup": {
+    "addGroup": "Add {group_name}",
+    "removeGroup": "Remove {group_name}",
+    "group": "{group_name} #{index}",
+    "defaultGroupName": "Group"
+  },
   "oauth": {
     "consent": {
       "allow": "Continue",
@@ -3165,7 +3171,7 @@
     "share": "Share"
   },
   "shortcuts": {
-    "shortcuts": "Short­cuts",
+    "shortcuts": "Shortcuts",
     "essentials": "Essential",
     "viewControls": "View Controls",
     "manageShortcuts": "Manage Shortcuts",
