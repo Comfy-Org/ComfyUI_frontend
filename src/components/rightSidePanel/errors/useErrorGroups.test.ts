@@ -688,10 +688,9 @@ describe('useErrorGroups', () => {
       await nextTick()
 
       const promptGroup = groups.allErrorGroups.value.find(
-        (g) =>
-          g.type === 'execution' &&
-          g.displayTitle === "Couldn't apply agent changes"
+        (g) => g.groupKey === 'execution:prompt:agent_draft_apply_failed'
       )
+      expect(promptGroup).toBeDefined()
       const details =
         promptGroup && 'cards' in promptGroup
           ? promptGroup.cards[0]?.errors[0]?.details

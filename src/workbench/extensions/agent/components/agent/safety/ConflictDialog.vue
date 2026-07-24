@@ -26,10 +26,14 @@ const { t } = useI18n()
 function choose(choice: ConflictChoice): void {
   emit('resolve', choice)
 }
+
+function onOpenChange(value: boolean): void {
+  if (!value) choose('cancel')
+}
 </script>
 
 <template>
-  <DialogRoot :open="open">
+  <DialogRoot :open="open" @update:open="onOpenChange">
     <DialogPortal>
       <DialogOverlay class="fixed inset-0 z-50 bg-black/60" />
       <DialogContent

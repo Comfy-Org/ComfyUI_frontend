@@ -202,4 +202,44 @@ describe('useAgentConversationStore', () => {
     ).toBe(true)
     revoke.mockRestore()
   })
+
+  it('keeps a stashed background turn across reset so returning to the thread resumes it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'work'))
+    store.stashActiveTurn()
+
+    store.reset()
+    expect(store.messages).toHaveLength(0)
+
+    store.setThreadId('th')
+    store.resumeBackgroundTurn()
+
+    expect(store.entries.map((e) => e.role)).toEqual(['user', 'assistant'])
+    expect(store.messages.map((m) => m.id)).toEqual([T1])
+    expect(store.isStreaming).toBe(true)
+  })
+
+  it('keeps a stashed background turn across hydrate so returning to the thread resumes it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'work'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    expect(store.messages).toHaveLength(0)
+
+    store.setThreadId('th')
+    store.hydrate([])
+    store.resumeBackgroundTurn()
+
+    expect(store.entries.map((e) => e.role)).toEqual(['user', 'assistant'])
+    expect(store.messages.map((m) => m.id)).toEqual([T1])
+    expect(store.isStreaming).toBe(true)
+  })
 })

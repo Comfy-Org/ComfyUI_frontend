@@ -13,9 +13,8 @@ describe('MarkdownStream', () => {
   })
 
   it('renders empty text without error or content', () => {
-    const { html } = render(MarkdownStream, { props: { text: '' } })
-    expect(html()).not.toContain('<script')
-    expect(screen.queryByRole('link')).toBeNull()
+    const { container } = render(MarkdownStream, { props: { text: '' } })
+    expect(container.textContent).toBe('')
   })
 
   it('strips a script tag (XSS guard)', () => {

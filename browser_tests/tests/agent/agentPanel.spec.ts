@@ -11,6 +11,7 @@ import {
   MESSAGE_DELTA_EVENT,
   MESSAGE_DONE_EVENT,
   THINKING_EVENT,
+  THINKING_TEXT,
   TOOL_CALL_EVENT,
   agentTest
 } from '@e2e/tests/agent/agentPanelMocks'
@@ -79,16 +80,16 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(composer).toHaveValue('')
 
     pushEvent(ws, THINKING_EVENT)
-    await expect(panel.getByText('Thinking...')).toBeVisible()
+    await expect(panel.getByText(THINKING_TEXT)).toBeVisible()
 
     pushEvent(ws, TOOL_CALL_EVENT)
     await expect(panel.getByText('Ran 1 tool call')).toBeVisible()
+    await expect(panel.getByText(THINKING_TEXT)).toBeHidden()
 
     pushEvent(ws, MESSAGE_DELTA_EVENT)
     await expect(
       panel.locator('strong', { hasText: 'fully ready' })
     ).toBeVisible()
-    await expect(panel.getByText('Thinking...')).toBeHidden()
 
     pushEvent(ws, MESSAGE_DONE_EVENT)
     await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()

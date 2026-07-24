@@ -78,10 +78,13 @@ export const DRAFT_PATCH: DraftPatchData = {
   thread_id: THREAD_ID
 }
 
+export const THINKING_TEXT =
+  "I'll set the positive prompt to your red fox scene."
+
 export const THINKING_EVENT: AgentWsEvent = {
   type: 'agent_thinking',
   data: {
-    delta: "I'll set the positive prompt to your red fox scene.",
+    delta: THINKING_TEXT,
     message_id: TURN_ID,
     thread_id: THREAD_ID
   }

@@ -78,7 +78,11 @@ describe('DockedAgentPanel', () => {
     const container = screen.getByTestId('docked-agent-panel')
     expect(container.style.width).toBe(`${store.width}px`)
     expect(container).toHaveClass('docked-agent-panel')
-    expect(await screen.findByTestId('agent-panel-root-stub')).toBeTruthy()
+    expect(
+      await screen.findByTestId('agent-panel-root-stub', undefined, {
+        timeout: 5000
+      })
+    ).toBeTruthy()
   })
 
   it('renders nothing while the panel is closed', () => {

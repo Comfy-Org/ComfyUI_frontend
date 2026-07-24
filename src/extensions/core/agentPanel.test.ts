@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -62,6 +62,19 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
     vi.resetModules()
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('forces the panel on in development even while the flag is false', async () => {
+    vi.stubEnv('MODE', 'development')
+    mocks.flagEnabled = false
+
+    await loadEntryAndSetup()
+
+    expect(mocks.agentStore.enabled).toBe(true)
   })
 
   it('leaves the panel disabled while the flag is undefined', async () => {

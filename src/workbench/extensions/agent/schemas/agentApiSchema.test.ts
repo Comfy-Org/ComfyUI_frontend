@@ -105,6 +105,42 @@ describe('agentApiSchema contract subtleties', () => {
     ).toBe(true)
   })
 
+  it('accepts agent_message_done usage whether fully populated or partial', () => {
+    const usages = [
+      {
+        input_tokens: 4493,
+        output_tokens: 425,
+        total_tokens: 4918,
+        cache_read_input_tokens: 35596,
+        cache_creation_input_tokens: 0
+      },
+      { input_tokens: 1, output_tokens: 2 },
+      {}
+    ]
+
+    for (const usage of usages) {
+      const parsed = zAgentWsEvent.parse({
+        ...doneBase,
+        data: { ...doneBase.data, usage }
+      })
+
+      if (parsed.type !== 'agent_message_done') throw new Error('wrong variant')
+      expect(parsed.data.usage).toEqual(usage)
+    }
+  })
+
+  it('degrades a malformed usage instead of failing the done frame', () => {
+    for (const usage of ['nope', 42, { input_tokens: '4493' }]) {
+      const parsed = zAgentWsEvent.parse({
+        ...doneBase,
+        data: { ...doneBase.data, usage }
+      })
+
+      if (parsed.type !== 'agent_message_done') throw new Error('wrong variant')
+      expect(parsed.data.usage).toBeUndefined()
+    }
+  })
+
   it('rejects draft_patch missing base_version', () => {
     expect(
       zAgentWsEvent.safeParse({
