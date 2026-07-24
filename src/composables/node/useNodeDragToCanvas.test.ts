@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { useNodeDragToCanvas as UseNodeDragToCanvasType } from './useNodeDragToCanvas'
@@ -7,30 +8,33 @@ const {
   mockAddNodeOnGraph,
   mockConvertEventToCanvasOffset,
   mockSelectItems,
-  mockCanvas,
-  mockToastAdd
+  mockCanvasStore,
+  mockToastAdd,
+  canvasElement
 } = vi.hoisted(() => {
+  const canvasElement = document.createElement(
+    'canvas'
+  ) as HTMLCanvasElement & { getBoundingClientRect: Mock }
+  canvasElement.getBoundingClientRect = vi.fn()
   const mockConvertEventToCanvasOffset = vi.fn()
   const mockSelectItems = vi.fn()
+  const mockCanvas = {
+    canvas: canvasElement,
+    convertEventToCanvasOffset: mockConvertEventToCanvasOffset,
+    selectItems: mockSelectItems
+  }
   return {
     mockAddNodeOnGraph: vi.fn(),
     mockConvertEventToCanvasOffset,
     mockSelectItems,
     mockToastAdd: vi.fn(),
-    mockCanvas: {
-      canvas: {
-        getBoundingClientRect: vi.fn()
-      },
-      convertEventToCanvasOffset: mockConvertEventToCanvasOffset,
-      selectItems: mockSelectItems
-    }
+    canvasElement,
+    mockCanvasStore: { canvas: mockCanvas, isGhostPlacing: false }
   }
 })
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn(() => ({
-    canvas: mockCanvas
-  }))
+  useCanvasStore: vi.fn(() => mockCanvasStore)
 }))
 
 vi.mock('@/services/litegraphService', () => ({
@@ -45,8 +49,11 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
+const CANVAS_RECT = { left: 0, right: 500, top: 0, bottom: 500 }
+
 describe('useNodeDragToCanvas', () => {
   let useNodeDragToCanvas: typeof UseNodeDragToCanvasType
+  let panelElement: HTMLElement
 
   const mockNodeDef = {
     name: 'TestNode',
@@ -57,6 +64,11 @@ describe('useNodeDragToCanvas', () => {
     vi.resetModules()
     vi.resetAllMocks()
 
+    document.body.appendChild(canvasElement)
+    panelElement = document.createElement('div')
+    document.body.appendChild(panelElement)
+    mockCanvasStore.isGhostPlacing = false
+
     const module = await import('./useNodeDragToCanvas')
     useNodeDragToCanvas = module.useNodeDragToCanvas
   })
@@ -64,8 +76,23 @@ describe('useNodeDragToCanvas', () => {
   afterEach(() => {
     const { cancelDrag } = useNodeDragToCanvas()
     cancelDrag()
+    canvasElement.remove()
+    panelElement.remove()
     vi.restoreAllMocks()
   })
+
+  // The canvas is full-bleed under the sidebar/properties panels, so the click
+  // path commits based on the event target rather than geometry. Dispatch on the
+  // real element so `isCanvasTarget` (canvas.contains(target)) behaves as in the app.
+  function dispatchPointerUp(
+    x: number,
+    y: number,
+    target: EventTarget = canvasElement
+  ) {
+    target.dispatchEvent(
+      new PointerEvent('pointerup', { clientX: x, clientY: y, bubbles: true })
+    )
+  }
 
   describe('startDrag', () => {
     it('should set isDragging to true and store the node definition', () => {
@@ -93,6 +120,37 @@ describe('useNodeDragToCanvas', () => {
 
       expect(isDragging.value).toBe(false)
       expect(draggedNode.value).toBeNull()
+    })
+  })
+
+  describe('ghost placement flag', () => {
+    it('should mark ghost placement active for the duration of the drag', () => {
+      const { startDrag, cancelDrag } = useNodeDragToCanvas()
+
+      startDrag(mockNodeDef)
+      expect(mockCanvasStore.isGhostPlacing).toBe(true)
+
+      cancelDrag()
+      expect(mockCanvasStore.isGhostPlacing).toBe(false)
+    })
+
+    it('should not clear ghost placement when cancelling without a drag', () => {
+      mockCanvasStore.isGhostPlacing = true
+      const { cancelDrag } = useNodeDragToCanvas()
+
+      cancelDrag()
+
+      expect(mockCanvasStore.isGhostPlacing).toBe(true)
+    })
+
+    it('should leave node interaction intact during a native drag', () => {
+      const { startDrag, cancelDrag } = useNodeDragToCanvas()
+
+      startDrag(mockNodeDef, { mode: 'native' })
+      expect(mockCanvasStore.isGhostPlacing).toBe(false)
+
+      cancelDrag()
+      expect(mockCanvasStore.isGhostPlacing).toBe(false)
     })
   })
 
@@ -167,47 +225,42 @@ describe('useNodeDragToCanvas', () => {
   })
 
   describe('endDrag behavior', () => {
-    it('should add node when pointer is over canvas', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+    it('should add node when released over the canvas', () => {
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
-      const pointerEvent = new PointerEvent('pointerup', {
-        clientX: 250,
-        clientY: 250,
-        bubbles: true
-      })
-      document.dispatchEvent(pointerEvent)
+      dispatchPointerUp(250, 250)
 
       expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNodeDef, {
         pos: [150, 150]
       })
     })
 
-    it('should not add node when pointer is outside canvas', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+    it('should not add node when released outside the canvas', () => {
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
 
       const { startDrag, isDragging } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
-      const pointerEvent = new PointerEvent('pointerup', {
-        clientX: 600,
-        clientY: 250,
-        bubbles: true
-      })
-      document.dispatchEvent(pointerEvent)
+      dispatchPointerUp(600, 250, panelElement)
+
+      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+      expect(isDragging.value).toBe(false)
+    })
+
+    it('should not add node when released over a panel within canvas bounds', () => {
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
+
+      const { startDrag, isDragging } = useNodeDragToCanvas()
+      startDrag(mockNodeDef)
+
+      // FE-688: the panel overlays the full-bleed canvas, so a release at a
+      // point inside the canvas rect but on the panel must not place a hidden
+      // node behind the panel.
+      dispatchPointerUp(250, 250, panelElement)
 
       expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
       expect(isDragging.value).toBe(false)
@@ -236,12 +289,7 @@ describe('useNodeDragToCanvas', () => {
     })
 
     it('should select the placed node when one is returned from the graph', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
       const placedNode = { id: 1 }
       mockAddNodeOnGraph.mockReturnValue(placedNode)
@@ -249,24 +297,13 @@ describe('useNodeDragToCanvas', () => {
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
-      document.dispatchEvent(
-        new PointerEvent('pointerup', {
-          clientX: 250,
-          clientY: 250,
-          bubbles: true
-        })
-      )
+      dispatchPointerUp(250, 250)
 
       expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
     })
 
     it('should apply the requested widget values to the placed node', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
       const widget = { name: 'ckpt_name', value: '' }
       mockAddNodeOnGraph.mockReturnValue({ id: 1, widgets: [widget] })
@@ -276,24 +313,13 @@ describe('useNodeDragToCanvas', () => {
         widgetValues: { ckpt_name: 'model.safetensors' }
       })
 
-      document.dispatchEvent(
-        new PointerEvent('pointerup', {
-          clientX: 250,
-          clientY: 250,
-          bubbles: true
-        })
-      )
+      dispatchPointerUp(250, 250)
 
       expect(widget.value).toBe('model.safetensors')
     })
 
     it('should warn but still place the node when a requested widget is missing', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
       const placedNode = { id: 1, widgets: [] }
       mockAddNodeOnGraph.mockReturnValue(placedNode)
@@ -306,13 +332,7 @@ describe('useNodeDragToCanvas', () => {
         widgetValues: { ckpt_name: 'model.safetensors' }
       })
 
-      document.dispatchEvent(
-        new PointerEvent('pointerup', {
-          clientX: 250,
-          clientY: 250,
-          bubbles: true
-        })
-      )
+      dispatchPointerUp(250, 250)
 
       expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
       expect(mockToastAdd).toHaveBeenCalledWith(
@@ -327,12 +347,7 @@ describe('useNodeDragToCanvas', () => {
     })
 
     it('should show an error toast when the graph fails to add the node', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
       mockAddNodeOnGraph.mockReturnValue(null)
       vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -340,13 +355,7 @@ describe('useNodeDragToCanvas', () => {
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
-      document.dispatchEvent(
-        new PointerEvent('pointerup', {
-          clientX: 250,
-          clientY: 250,
-          bubbles: true
-        })
-      )
+      dispatchPointerUp(250, 250)
 
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -357,12 +366,7 @@ describe('useNodeDragToCanvas', () => {
     })
 
     it('should not call selectItems when graph returns no node', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
       mockAddNodeOnGraph.mockReturnValue(null)
       vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -370,35 +374,19 @@ describe('useNodeDragToCanvas', () => {
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
-      document.dispatchEvent(
-        new PointerEvent('pointerup', {
-          clientX: 250,
-          clientY: 250,
-          bubbles: true
-        })
-      )
+      dispatchPointerUp(250, 250)
 
       expect(mockSelectItems).not.toHaveBeenCalled()
     })
 
     it('should not add node on pointerup when in native drag mode', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
 
       const { startDrag, isDragging } = useNodeDragToCanvas()
       startDrag(mockNodeDef, { mode: 'native' })
 
-      const pointerEvent = new PointerEvent('pointerup', {
-        clientX: 250,
-        clientY: 250,
-        bubbles: true
-      })
-      document.dispatchEvent(pointerEvent)
+      dispatchPointerUp(250, 250)
 
       expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
       expect(isDragging.value).toBe(true)
@@ -407,12 +395,7 @@ describe('useNodeDragToCanvas', () => {
 
   describe('handleNativeDrop', () => {
     it('should add node when drop position is over canvas', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
       mockConvertEventToCanvasOffset.mockReturnValue([200, 200])
 
       const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
@@ -426,12 +409,7 @@ describe('useNodeDragToCanvas', () => {
     })
 
     it('should not add node when drop position is outside canvas', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
 
       const { startDrag, handleNativeDrop, isDragging } = useNodeDragToCanvas()
 
@@ -443,12 +421,7 @@ describe('useNodeDragToCanvas', () => {
     })
 
     it('should not add node when dragMode is click', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
       mockConvertEventToCanvasOffset.mockReturnValue([200, 200])
 
       const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
@@ -460,12 +433,7 @@ describe('useNodeDragToCanvas', () => {
     })
 
     it('should reset drag state after drop', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
       mockConvertEventToCanvasOffset.mockReturnValue([200, 200])
 
       const { startDrag, handleNativeDrop, isDragging } = useNodeDragToCanvas()
@@ -478,7 +446,11 @@ describe('useNodeDragToCanvas', () => {
   })
 
   describe('blockCommitPointerDown', () => {
-    function dispatchPointerDown(x: number, y: number) {
+    function dispatchPointerDown(
+      x: number,
+      y: number,
+      target: EventTarget = canvasElement
+    ) {
       const event = new PointerEvent('pointerdown', {
         clientX: x,
         clientY: y,
@@ -486,17 +458,12 @@ describe('useNodeDragToCanvas', () => {
         cancelable: true
       })
       const stopSpy = vi.spyOn(event, 'stopImmediatePropagation')
-      document.dispatchEvent(event)
+      target.dispatchEvent(event)
       return stopSpy
     }
 
     beforeEach(() => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
     })
 
     it('should stop propagation when in click-drag mode over canvas', () => {
@@ -521,22 +488,17 @@ describe('useNodeDragToCanvas', () => {
       expect(dispatchPointerDown(250, 250)).not.toHaveBeenCalled()
     })
 
-    it('should not stop propagation when pointer is outside canvas', () => {
+    it('should not stop propagation when pointer is over a panel', () => {
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
-      expect(dispatchPointerDown(600, 250)).not.toHaveBeenCalled()
+      expect(dispatchPointerDown(250, 250, panelElement)).not.toHaveBeenCalled()
     })
   })
 
   describe('native drag position tracking', () => {
     beforeEach(() => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
+      canvasElement.getBoundingClientRect.mockReturnValue(CANVAS_RECT)
       mockConvertEventToCanvasOffset.mockReturnValue([300, 300])
     })
 

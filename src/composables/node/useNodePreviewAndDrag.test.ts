@@ -7,11 +7,13 @@ import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
 
 const mockStartDrag = vi.fn()
 const mockHandleNativeDrop = vi.fn()
+const mockIsPlacingNode = ref(false)
 
 vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
   useNodeDragToCanvas: () => ({
     startDrag: mockStartDrag,
-    handleNativeDrop: mockHandleNativeDrop
+    handleNativeDrop: mockHandleNativeDrop,
+    isDragging: mockIsPlacingNode
   })
 }))
 
@@ -29,6 +31,7 @@ describe('useNodePreviewAndDrag', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockIsPlacingNode.value = false
   })
 
   describe('initial state', () => {
@@ -49,6 +52,17 @@ describe('useNodePreviewAndDrag', () => {
       expect(result.showPreview.value).toBe(true)
 
       result.isDragging.value = true
+      expect(result.showPreview.value).toBe(false)
+    })
+
+    it('should hide preview while a node is being placed elsewhere', () => {
+      const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
+
+      result.isHovered.value = true
+      expect(result.showPreview.value).toBe(true)
+
+      mockIsPlacingNode.value = true
       expect(result.showPreview.value).toBe(false)
     })
   })
