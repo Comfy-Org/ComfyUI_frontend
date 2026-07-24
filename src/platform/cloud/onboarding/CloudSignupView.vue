@@ -5,7 +5,7 @@
     <div class="flex w-full max-w-md flex-col items-start">
       <div class="flex w-full flex-col gap-4">
         <h1
-          class="my-0 font-inter text-xl/8 font-extrabold tracking-wide text-primary-comfy-canvas sm:text-2xl/8"
+          class="my-0 font-inter text-xl/8 font-semibold tracking-wide text-primary-comfy-canvas sm:text-2xl/8"
         >
           {{ t('auth.signup.title') }}
         </h1>
@@ -16,7 +16,7 @@
             t('auth.signup.alreadyHaveAccount')
           }}</span>
           <span
-            class="ml-1 cursor-pointer text-azure-600"
+            class="ml-1 cursor-pointer text-primary-comfy-canvas underline"
             @click="navigateToLogin"
             >{{ t('auth.signup.signIn') }}</span
           >
@@ -32,7 +32,7 @@
           <Button
             type="button"
             variant="secondary"
-            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 text-sm/4 font-medium text-primary-comfy-canvas shadow-inset-highlight hover:bg-sand-300/20"
+            class="relative h-10 w-full gap-4 rounded-md border border-solid border-primary-comfy-canvas/20 bg-primary-comfy-canvas/5 text-sm/4 font-medium text-primary-comfy-canvas hover:bg-primary-comfy-canvas/10"
             @click="signInWithGoogle"
           >
             <i class="pi pi-google text-base" />
@@ -42,7 +42,7 @@
           <Button
             type="button"
             variant="secondary"
-            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 font-inter text-sm/4 font-medium text-primary-comfy-canvas shadow-inset-highlight hover:bg-sand-300/20"
+            class="relative h-10 w-full gap-4 rounded-md border border-solid border-primary-comfy-canvas/20 bg-primary-comfy-canvas/5 font-inter text-sm/4 font-medium text-primary-comfy-canvas hover:bg-primary-comfy-canvas/10"
             @click="signInWithGithub"
           >
             <i class="pi pi-github text-base" />
@@ -92,13 +92,13 @@
       </div>
 
       <p
-        class="mx-auto my-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 py-4 text-center text-sm/5 tracking-[-0.011em] text-primary-comfy-canvas"
+        class="mx-auto my-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 py-4 text-center text-sm/5 tracking-[-0.011em] text-primary-comfy-canvas/70"
       >
         {{ t('auth.login.termsText') }}
         <a
           href="https://www.comfy.org/terms-of-service"
           target="_blank"
-          class="cursor-pointer text-azure-600 no-underline"
+          class="cursor-pointer text-primary-comfy-canvas underline"
         >
           {{ t('auth.login.termsLink') }}
         </a>
@@ -106,18 +106,18 @@
         <a
           href="https://www.comfy.org/privacy-policy"
           target="_blank"
-          class="cursor-pointer text-azure-600 no-underline"
+          class="cursor-pointer text-primary-comfy-canvas underline"
         >
           {{ t('auth.login.privacyLink') }} </a
         >.
       </p>
       <p
-        class="mx-auto mt-2 mb-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 text-center text-sm/5 tracking-[-0.011em] text-primary-comfy-canvas"
+        class="mx-auto mt-2 mb-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 text-center text-sm/5 tracking-[-0.011em] text-primary-comfy-canvas/70"
       >
         {{ t('cloudWaitlist_questionsText') }}
         <a
           href="https://support.comfy.org"
-          class="cursor-pointer text-azure-600 no-underline"
+          class="cursor-pointer text-primary-comfy-canvas underline"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -210,9 +210,9 @@ onMounted(async () => {
 </script>
 <style scoped>
 :deep(.p-inputtext) {
-  border: none !important;
+  border: 1px solid rgb(from var(--color-primary-comfy-canvas) r g b / 0.2) !important;
   box-shadow: none !important;
-  background: #2d2e32 !important;
+  background: transparent !important;
   color: var(--color-primary-comfy-canvas) !important;
   caret-color: var(--color-primary-comfy-canvas);
 }
@@ -222,15 +222,23 @@ onMounted(async () => {
 }
 
 :deep(.p-password input) {
-  border: none !important;
+  border: 1px solid rgb(from var(--color-primary-comfy-canvas) r g b / 0.2) !important;
   box-shadow: none !important;
+  background: transparent !important;
 }
 
 :deep(.p-password-toggle-mask-icon) {
   cursor: pointer;
+  color: rgb(from var(--color-primary-comfy-canvas) r g b / 0.5) !important;
 }
 :deep(.p-checkbox-checked .p-checkbox-box) {
   background-color: #f0ff41 !important;
   border-color: #f0ff41 !important;
+}
+
+:deep(.p-message-warn) {
+  background: rgb(from var(--color-gold-500) r g b / 0.12) !important;
+  border-color: rgb(from var(--color-gold-500) r g b / 0.3) !important;
+  color: var(--color-gold-500) !important;
 }
 </style>

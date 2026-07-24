@@ -6,7 +6,7 @@
         <h1 class="my-0 text-xl/normal font-medium">
           {{ t('cloudForgotPassword_title') }}
         </h1>
-        <p class="my-0 text-base text-muted">
+        <p class="my-0 text-base text-primary-comfy-canvas/70">
           {{ t('cloudForgotPassword_instructions') }}
         </p>
       </div>
@@ -42,9 +42,10 @@
         <div class="flex flex-col gap-4">
           <Button
             type="submit"
+            variant="secondary"
             :loading="loading"
             :disabled="!email || loading"
-            class="h-10 font-medium text-white"
+            class="h-10 border-none bg-primary-comfy-canvas/10 font-medium text-primary-comfy-canvas hover:bg-primary-comfy-canvas/15"
           >
             {{ t('cloudForgotPassword_sendResetLink') }}
           </Button>
@@ -52,7 +53,7 @@
           <Button
             type="button"
             variant="secondary"
-            class="h-10 bg-charcoal-500"
+            class="h-10 border border-solid border-primary-comfy-canvas/20 bg-transparent text-primary-comfy-canvas hover:bg-primary-comfy-canvas/5"
             @click="navigateToLogin"
           >
             {{ t('cloudForgotPassword_backToLogin') }}
@@ -61,7 +62,7 @@
       </form>
 
       <!-- Help text -->
-      <p class="mt-5 text-sm text-gray-600">
+      <p class="mt-5 text-sm text-primary-comfy-canvas/60">
         {{ t('cloudForgotPassword_didntReceiveEmail') }}
       </p>
     </div>
@@ -121,14 +122,20 @@ const handleSubmit = async () => {
 </script>
 <style scoped>
 :deep(.p-inputtext) {
-  border: none !important;
+  border: 1px solid rgb(from var(--color-primary-comfy-canvas) r g b / 0.2) !important;
   box-shadow: none !important;
-  background: #2d2e32 !important;
+  background: transparent !important;
   color: var(--color-primary-comfy-canvas) !important;
   caret-color: var(--color-primary-comfy-canvas);
 }
 
 :deep(.p-inputtext::placeholder) {
   color: rgb(from var(--color-primary-comfy-canvas) r g b / 0.5);
+}
+
+:deep(.p-message-success) {
+  background: rgb(from var(--color-jade-400) r g b / 0.12) !important;
+  border-color: rgb(from var(--color-jade-400) r g b / 0.2) !important;
+  color: var(--color-jade-400) !important;
 }
 </style>

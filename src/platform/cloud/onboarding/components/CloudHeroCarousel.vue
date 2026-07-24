@@ -84,7 +84,7 @@
         href="https://www.comfy.org/download"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline-flex h-8 items-center gap-2 rounded-lg border border-primary-comfy-canvas/20 bg-charcoal-500 p-2 text-xs font-medium text-primary-comfy-canvas no-underline hover:bg-charcoal-500/80"
+        class="inline-flex h-8 items-center gap-2 rounded-lg border border-primary-comfy-canvas/20 bg-transparent p-2 text-xs font-medium text-primary-comfy-canvas no-underline hover:bg-primary-comfy-canvas/5"
       >
         <i class="pi pi-download text-xs text-primary-comfy-canvas/90" />
         {{ t('cloudStart_download') }}
