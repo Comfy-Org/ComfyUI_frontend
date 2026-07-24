@@ -1,11 +1,14 @@
 # Runs the SAME custom-node regression suite as the core gate
 # (ci-tests-custom-nodes.yaml), but against the remote Comfy Cloud backend
-# instead of a local Python one. The only axis that changes is the backend:
-# `CUSTOM_NODES_ENV=cloud` selects the cloud manifest + cloud geometry
+# instead of a local Python one. Two axes change, deliberately: the backend
+# (`CUSTOM_NODES_ENV=cloud` selects the cloud manifest + cloud geometry
 # baselines, and the suite talks to Cloud through a `vite preview` of the PR's
-# built dist with `/api` proxied to CLOUD_BACKEND_URL. No ComfyUI checkout, no
-# pack install, no torch constraints - the backend is remote and already has
-# every supported pack deployed.
+# built dist with `/api` proxied to CLOUD_BACKEND_URL) and the BUILD - the
+# dist is built as the cloud distribution (build:cloud-e2e), because
+# DISTRIBUTION is a build-time constant and a localhost build would compile
+# out the isCloud code paths this gate exists to exercise. No ComfyUI
+# checkout, no pack install, no torch constraints - the backend is remote and
+# already has every supported pack deployed.
 #
 # GATING intent (same as the core gate): once calibrated and burned in this is
 # a required status check, so a red points at the PR. Skipped tests are a

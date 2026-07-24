@@ -744,11 +744,15 @@ The same suite pointed at the remote Comfy Cloud backend by
 `CUSTOM_NODES_ENV=cloud`, in `ci-tests-custom-nodes-cloud.yaml`. The core
 gate's flow above holds with its backend half swapped out - no ComfyUI
 checkout, no pack install, no torch constraints, because Cloud already runs
-every supported pack. In place of "provision a CPU backend ... install every
-pack", one step serves the PR's built dist through `vite preview` with `/api`
-proxied to the Cloud URL (the two dev-only proxy bypasses turned off, so pack
-frontend JS and real auth are exercised rather than faked), and the suite
-signs in as Cloud's shared smoke user before it runs. Everything downstream -
+every supported pack - and with one more deliberate difference: the dist is
+built as the CLOUD distribution (`build:cloud-e2e`), because `DISTRIBUTION`
+is a build-time constant and a localhost build would compile out the
+`isCloud` code paths this gate exists to exercise. In place of "provision a
+CPU backend ... install every pack", one step serves that cloud dist through
+`vite preview` with `/api` proxied to the Cloud URL (the two dev-only proxy
+bypasses turned off, so pack frontend JS and real auth are exercised rather
+than faked), and the suite signs in as Cloud's shared smoke user before it
+runs. Everything downstream -
 one worker, the skip gate, the report artifact - is identical, so the flow
 gets no second diagram: it is the same picture with the environment and
 install boxes replaced by one serve-against-Cloud box.
