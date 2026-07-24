@@ -463,7 +463,9 @@ describe('useJobMenu', () => {
         { pos: [100, 200] }
       )
       const expectedWidgetValue = `bar/${filename} [output]`
-      expect(node.widgets?.[0].value).toBe(expectedWidgetValue)
+      expect(node.widgets.find(({ name }) => name === widget)?.value).toBe(
+        expectedWidgetValue
+      )
       expect(widgetCallback).toHaveBeenCalledWith(expectedWidgetValue)
       expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true, true)
     }
