@@ -52,6 +52,7 @@ const WIDGET_TEST_DATA: {
 
 test.describe('App mode widget values in prompt', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.appMode.enableLinearMode()
   })
 

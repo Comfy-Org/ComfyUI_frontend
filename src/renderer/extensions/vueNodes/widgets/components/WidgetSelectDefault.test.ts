@@ -6,6 +6,27 @@ import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
+vi.mock('reka-ui', async () => {
+  const actual = (await vi.importActual('reka-ui')) as Record<string, unknown>
+  return {
+    ...actual,
+    ComboboxVirtualizer: defineComponent({
+      name: 'ComboboxVirtualizerStub',
+      props: {
+        options: Array,
+        estimateSize: Number,
+        textContent: Function
+      },
+      setup(props, { slots }) {
+        return () =>
+          (props.options ?? []).flatMap(
+            (option) => slots.default?.({ option }) ?? []
+          )
+      }
+    })
+  }
+})
+
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
 const i18n = createI18n({
@@ -15,6 +36,7 @@ const i18n = createI18n({
     en: {
       g: {
         noResultsFound: 'No results found',
+        loading: 'Loading...',
         search: 'Search'
       }
     }
@@ -301,6 +323,79 @@ describe('WidgetSelectDefault', () => {
         expect(viewport).toBeVisible()
       } finally {
         outsideButton.remove()
+      }
+    })
+  })
+
+  describe('loading state', () => {
+    it('displays a loading spinner and hides options when initially opened, then resolves options', async () => {
+      const options = Array.from({ length: 101 }, (_, i) => `option-${i}`)
+      renderComponent(createWidget(options))
+
+      // fireEvent required: userEvent simulates delays that skip our 0ms timeout
+      // eslint-disable-next-line testing-library/prefer-user-event
+      await fireEvent.click(screen.getByTestId('widget-select-default-trigger'))
+      await nextTick()
+
+      const icon = screen.getByTestId('widget-select-trigger-icon')
+      expect(icon).toHaveClass('animate-spin')
+      expect(screen.getByTestId('widget-select-default-loading')).toBeVisible()
+      expect(screen.queryAllByRole('option')).toHaveLength(0)
+
+      await flushPromises()
+      await nextTick()
+
+      expect(icon).not.toHaveClass('animate-spin')
+      expect(
+        screen.queryByTestId('widget-select-default-loading')
+      ).not.toBeInTheDocument()
+      expect(optionLabels()).toEqual(options)
+    })
+
+    it('cancels the pending resolve timer when the dropdown is closed early', async () => {
+      vi.useFakeTimers()
+      try {
+        const options = Array.from({ length: 101 }, (_, i) => `option-${i}`)
+        renderComponent(createWidget(options))
+
+        // eslint-disable-next-line testing-library/prefer-user-event
+        await fireEvent.click(
+          screen.getByTestId('widget-select-default-trigger')
+        )
+        await nextTick()
+
+        const icon = screen.getByTestId('widget-select-trigger-icon')
+        expect(icon).toHaveClass('animate-spin')
+
+        const pendingTimersBeforeClose = vi.getTimerCount()
+
+        const overlay = screen.getByTestId('widget-select-default-overlay')
+        // eslint-disable-next-line testing-library/prefer-user-event
+        await fireEvent.keyDown(overlay, { key: 'Escape', code: 'Escape' })
+        await nextTick()
+
+        const pendingTimersAfterClose = vi.getTimerCount()
+        expect(pendingTimersAfterClose).toBeLessThan(pendingTimersBeforeClose)
+
+        expect(
+          screen.queryByTestId('widget-select-default-loading')
+        ).not.toBeInTheDocument()
+
+        vi.advanceTimersByTime(0)
+        await nextTick()
+
+        // eslint-disable-next-line testing-library/prefer-user-event
+        await fireEvent.click(
+          screen.getByTestId('widget-select-default-trigger')
+        )
+        await nextTick()
+
+        expect(icon).toHaveClass('animate-spin')
+        expect(
+          screen.getByTestId('widget-select-default-loading')
+        ).toBeVisible()
+      } finally {
+        vi.useRealTimers()
       }
     })
   })

@@ -209,6 +209,17 @@ export class VueNodeHelpers {
   ): Promise<void> {
     const node = this.getNodeByTitle(nodeTitle)
     await node.getByRole('combobox', { name: widgetName, exact: true }).click()
+
+    const overlay = this.page.getByTestId(TestIds.widgets.selectDefaultViewport)
+    await overlay.waitFor({ state: 'visible' })
+
+    const searchInput = this.page.getByTestId(
+      TestIds.widgets.selectDefaultSearchInput
+    )
+    if (await searchInput.isVisible()) {
+      await searchInput.fill(optionName)
+    }
+
     await this.page
       .getByRole('option', { name: optionName, exact: true })
       .click()
