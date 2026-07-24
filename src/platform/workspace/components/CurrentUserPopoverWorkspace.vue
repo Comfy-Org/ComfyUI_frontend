@@ -76,19 +76,8 @@
         "
         >{{ displayedCredits }}</span
       >
-      <Button
-        v-if="!memberCap"
-        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon-sm"
-        class="mr-auto"
-        :aria-label="$t('credits.unified.tooltip')"
-        data-testid="credits-info-button"
-      >
-        <i class="icon-[lucide--circle-help]" />
-      </Button>
       <span
-        v-else-if="isEdgeState"
+        v-if="isEdgeState"
         class="mr-auto"
         @mouseenter="isEdgePopoverOpen = true"
         @mouseleave="isEdgePopoverOpen = false"
