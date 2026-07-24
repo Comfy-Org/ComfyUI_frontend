@@ -70,7 +70,8 @@ interface MockCfg {
   roleChange: '200' | '500'
   multiWs: boolean
   autoReload: AutoReload
-  selfCap: 'capped' | 'exhausted' | 'uncapped'
+  selfCap: 'capped' | 'uncapped'
+  capSpent: boolean
 }
 
 interface UiState {
@@ -88,7 +89,8 @@ const DEFAULTS: MockCfg = {
   roleChange: '200',
   multiWs: false,
   autoReload: 'healthy',
-  selfCap: 'capped'
+  selfCap: 'capped',
+  capSpent: false
 }
 
 const cfg: MockCfg = { ...DEFAULTS }
@@ -114,7 +116,7 @@ const OPTIONS: Record<
   balance: ['full', 'partial', 'low', 'empty'],
   roleChange: ['200', '500'],
   autoReload: ['notset', 'nobudget', 'healthy', 'nearlimit', 'paused', 'off'],
-  selfCap: ['capped', 'exhausted', 'uncapped']
+  selfCap: ['capped', 'uncapped']
 }
 
 function loadCfg(): void {
@@ -392,13 +394,13 @@ function members(): unknown {
             is_original_owner: false,
             last_active_at: hoursAgo(1),
             credits_used_this_month: usage(
-              cfg.selfCap === 'exhausted' ? 3000 : 1234
+              cfg.capSpent && cfg.selfCap === 'capped' ? 3000 : 1234
             ),
-            // Caps are Member-only; the selfCap picker drives the member
+            // Caps are Member-only; selfCap + capSpent drive the member
             // self-row so every display state (min-rule, edge, limit-reached,
             // uncapped) is exercisable.
             monthly_credit_limit:
-              cfg.role === 'member' && cfg.selfCap !== 'uncapped'
+              cfg.role === 'member' && cfg.selfCap === 'capped'
                 ? 3000
                 : undefined
           }
@@ -2179,6 +2181,8 @@ function buildPanel(): void {
     `<div id="cbm-body"${ui.collapsed ? ' style="display:none"' : ''}>` +
     row('workspace', 'ws', OPTIONS.ws) +
     row('role', 'role', OPTIONS.role) +
+    row('member cap', 'selfCap', OPTIONS.selfCap) +
+    `<label style="display:flex;gap:6px;margin:4px 0"><input type="checkbox" id="cbm-capSpent"${cfg.capSpent ? ' checked' : ''}/><span style="opacity:.7">cap fully spent (limit reached)</span></label>` +
     row('tier', 'tier', OPTIONS.tier) +
     row('subscription state', 'state', OPTIONS.state) +
     row('credit balance', 'balance', OPTIONS.balance) +
@@ -2247,6 +2251,12 @@ function buildPanel(): void {
     document.getElementById('cbm-multiWs') as HTMLInputElement
   ).addEventListener('change', (e) => {
     cfg.multiWs = (e.target as HTMLInputElement).checked
+    apply()
+  })
+  ;(
+    document.getElementById('cbm-capSpent') as HTMLInputElement
+  ).addEventListener('change', (e) => {
+    cfg.capSpent = (e.target as HTMLInputElement).checked
     apply()
   })
 
