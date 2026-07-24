@@ -29,18 +29,20 @@ const cards = [
     <div
       v-for="(card, i) in cards"
       :key="i"
-      class="bg-primary-comfy-ink flex flex-col justify-between rounded-3xl border border-white/10"
+      class="flex flex-col justify-between rounded-3xl border border-white/10 bg-primary-comfy-ink"
     >
       <img
         :src="card.image"
         :alt="t(card.titleKey, locale)"
+        loading="lazy"
+        decoding="async"
         class="w-full rounded-t-3xl object-contain p-8"
       />
       <div class="p-6 pt-0">
-        <h3 class="text-primary-comfy-canvas text-3xl font-medium">
+        <h3 class="text-3xl font-medium text-primary-comfy-canvas">
           {{ t(card.titleKey, locale) }}
         </h3>
-        <p class="text-primary-comfy-canvas mt-3 text-sm">
+        <p class="mt-3 text-sm text-primary-comfy-canvas">
           {{ t(card.descriptionKey, locale) }}
         </p>
       </div>

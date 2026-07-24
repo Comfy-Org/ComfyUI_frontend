@@ -203,6 +203,8 @@ function scrollToSection(id: string) {
               <img
                 :src="t(key(section.id, `block.${i}.src`), locale)"
                 :alt="t(key(section.id, `block.${i}.alt`), locale)"
+                loading="lazy"
+                decoding="async"
                 class="w-full rounded-2xl object-cover"
               />
               <figcaption class="mt-3 text-xs text-primary-comfy-canvas">

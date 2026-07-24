@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { useBannerImage } from '../../composables/useBannerImage'
 
-const { bannerUrl, iconUrl, name } = defineProps<{
+const {
+  bannerUrl,
+  iconUrl,
+  name,
+  loading = 'lazy'
+} = defineProps<{
   bannerUrl?: string
   iconUrl?: string
   name: string
+  loading?: 'lazy' | 'eager'
 }>()
 
 const {
@@ -28,6 +34,8 @@ const {
       <img
         :src="DEFAULT_BANNER"
         :alt="`${name} banner`"
+        :loading="loading"
+        decoding="async"
         class="size-full object-cover"
       />
     </div>
@@ -40,6 +48,8 @@ const {
       <img
         :src="isImageError ? DEFAULT_BANNER : imgSrc"
         :alt="`${name} banner`"
+        :loading="loading"
+        decoding="async"
         :class="
           isImageError
             ? 'relative z-10 size-full object-cover'
