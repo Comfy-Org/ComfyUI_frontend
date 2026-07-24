@@ -423,7 +423,7 @@ function members(): unknown {
     name,
     email: `${name.toLowerCase().replace(/[^a-z]+/g, '.')}@example.com`,
     joined_at: '2026-02-15T00:00:00Z',
-    role: i % 3 === 0 ? 'owner' : 'member',
+    role: i < 2 ? 'owner' : 'member',
     is_original_owner: false,
     last_active_at: hoursAgo([0.1, 2, 7, 23, 24, 72, 120][i % 7]),
     credits_used_this_month: usage(
@@ -432,8 +432,7 @@ function members(): unknown {
     // Caps are Member-only (owners never carry one). The rotation yields
     // uncapped members plus capped rows that land under, at, and over their
     // limit as the usage formula scales with i.
-    monthly_credit_limit:
-      i % 3 === 0 ? undefined : [null, 2000, 5000, null][i % 4]
+    monthly_credit_limit: i < 2 ? undefined : [null, 2000, 5000, null][i % 4]
   }))
   const list = cfg.ws === 'team' ? [creator, ...selfRow, ...team] : [creator]
   return {

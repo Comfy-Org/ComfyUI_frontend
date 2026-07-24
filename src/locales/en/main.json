@@ -3179,6 +3179,14 @@
       "failedToDeleteWorkspace": "Failed to delete workspace",
       "failedToLeaveWorkspace": "Failed to leave workspace",
       "failedToFetchWorkspaces": "Failed to load workspaces"
+    },
+    "memberCredits": {
+      "edgeExplainer": "This is what you can spend right now, not your monthly limit.",
+      "monthlyLimit": "Monthly limit: {n}",
+      "requestLimitIncrease": "Request limit increase",
+      "requestMoreCredits": "Request more credits",
+      "notifyOwner": "Notify workspace owner",
+      "requested": "Your workspace owner has been notified by email"
     }
   },
   "teamWorkspacesDialog": {

@@ -66,10 +66,18 @@
         height="1.25rem"
         class="w-full"
       />
-      <span v-else class="text-base font-semibold text-base-foreground">{{
-        displayedCredits
-      }}</span>
+      <span
+        v-else
+        :class="
+          cn(
+            'text-base font-semibold text-base-foreground',
+            (isEdgeState || isLimitReached) && 'text-amber-400'
+          )
+        "
+        >{{ displayedCredits }}</span
+      >
       <Button
+        v-if="!memberCap"
         v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
         variant="muted-textonly"
         size="icon-sm"
@@ -79,6 +87,40 @@
       >
         <i class="icon-[lucide--circle-help]" />
       </Button>
+      <span
+        v-else-if="isEdgeState"
+        class="relative mr-auto"
+        @mouseenter="isEdgePopoverOpen = true"
+        @mouseleave="isEdgePopoverOpen = false"
+        @focusin="isEdgePopoverOpen = true"
+        @focusout="isEdgePopoverOpen = false"
+      >
+        <Button
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="$t('workspacePanel.memberCredits.edgeExplainer')"
+          data-testid="member-credits-info-button"
+        >
+          <i class="icon-[lucide--info]" />
+        </Button>
+        <div
+          v-if="isEdgePopoverOpen"
+          class="absolute top-full left-0 z-50 mt-1 w-64 rounded-lg border border-border-default bg-base-background p-3 shadow-lg"
+          data-testid="member-credits-edge-popover"
+        >
+          <p class="m-0 text-sm text-base-foreground">
+            {{ $t('workspacePanel.memberCredits.edgeExplainer') }}
+          </p>
+          <p class="m-0 mt-1 text-sm text-muted-foreground">
+            {{
+              $t('workspacePanel.memberCredits.monthlyLimit', {
+                n: memberCap.limit.toLocaleString()
+              })
+            }}
+          </p>
+        </div>
+      </span>
+      <span v-else class="mr-auto" />
       <!-- Upgrade to add credits (free tier) -->
       <Button
         v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
@@ -126,6 +168,23 @@
           isCancelled
             ? $t('subscription.resubscribe')
             : $t('workspaceSwitcher.subscribe')
+        }}
+      </Button>
+    </div>
+
+    <div v-if="requestAction" class="px-4 py-1">
+      <Button
+        :variant="isLimitReached ? 'primary' : 'secondary'"
+        size="sm"
+        class="w-full"
+        :disabled="requestSent"
+        data-testid="member-credits-request-button"
+        @click="requestSent = true"
+      >
+        {{
+          requestSent
+            ? $t('workspacePanel.memberCredits.requested')
+            : $t(`workspacePanel.memberCredits.${requestAction}`)
         }}
       </Button>
     </div>
@@ -217,10 +276,15 @@ import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import {
+  centsToCredits,
+  formatCreditsFromCents
+} from '@/base/credits/comfyCredits'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
@@ -242,8 +306,13 @@ const workspaceStore = useTeamWorkspaceStore()
 const {
   initState,
   workspaceName,
+  members,
   isInPersonalWorkspace: isPersonalWorkspace
 } = storeToRefs(workspaceStore)
+
+onMounted(() => {
+  if (!isPersonalWorkspace.value) void workspaceStore.ensureMembersLoaded()
+})
 const { permissions } = useWorkspaceUI()
 const isWorkspaceSwitcherOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
@@ -282,8 +351,70 @@ const subscriptionDialog = useSubscriptionDialog()
 const { locale } = useI18n()
 const isLoadingBalance = isLoading
 
+const selfMember = computed(() =>
+  members.value.find(
+    (m) => m.email.toLowerCase() === userEmail.value?.toLowerCase()
+  )
+)
+
+const memberCap = computed(() => {
+  const m = selfMember.value
+  if (isPersonalWorkspace.value || !m || m.role !== 'member') return null
+  if (m.monthlyCreditLimit == null) return null
+  return {
+    limit: m.monthlyCreditLimit,
+    remaining: Math.max(0, m.monthlyCreditLimit - (m.creditsUsedThisMonth ?? 0))
+  }
+})
+
+const balanceCredits = computed(() =>
+  centsToCredits(
+    balance.value?.effectiveBalanceMicros ?? balance.value?.amountMicros ?? 0
+  )
+)
+
+const displayedNumber = computed(() =>
+  memberCap.value
+    ? Math.min(memberCap.value.remaining, balanceCredits.value)
+    : balanceCredits.value
+)
+
+const isWorkspaceOut = computed(() => balanceCredits.value <= 0)
+const isLimitReached = computed(
+  () =>
+    memberCap.value !== null &&
+    memberCap.value.remaining <= 0 &&
+    !isWorkspaceOut.value
+)
+const isEdgeState = computed(
+  () =>
+    memberCap.value !== null &&
+    !isWorkspaceOut.value &&
+    !isLimitReached.value &&
+    balanceCredits.value < memberCap.value.remaining
+)
+
+const REQUEST_BUTTON_FLOOR = 1500
+const isTeamMemberViewer = computed(
+  () => !isPersonalWorkspace.value && selfMember.value?.role === 'member'
+)
+const requestAction = computed(() => {
+  if (!isTeamMemberViewer.value) return null
+  if (isWorkspaceOut.value || isEdgeState.value) return 'notifyOwner' as const
+  if (memberCap.value && displayedNumber.value <= REQUEST_BUTTON_FLOOR)
+    return 'requestLimitIncrease' as const
+  if (!memberCap.value && displayedNumber.value <= REQUEST_BUTTON_FLOOR)
+    return 'requestMoreCredits' as const
+  return null
+})
+const requestSent = ref(false)
+const isEdgePopoverOpen = ref(false)
+
 const displayedCredits = computed(() => {
   if (initState.value !== 'ready') return ''
+
+  if (memberCap.value)
+    return Math.round(displayedNumber.value).toLocaleString(locale.value)
 
   // API field is named _micros but contains cents (naming inconsistency)
   const cents =
