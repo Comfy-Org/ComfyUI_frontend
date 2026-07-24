@@ -15,7 +15,7 @@ const state = vi.hoisted(() => ({
 }))
 
 const dialogMocks = vi.hoisted(() => ({
-  showCancelSubscriptionDialog: vi.fn(),
+  showCancelSubscriptionFlow: vi.fn(),
   showEditWorkspaceDialog: vi.fn(),
   showDeleteWorkspaceDialog: vi.fn(),
   showLeaveWorkspaceDialog: vi.fn()
@@ -81,9 +81,17 @@ describe('useWorkspaceMenuItems', () => {
     state.canManageSubscriptionLifecycle = true
 
     const { menuItems } = useWorkspaceMenuItems()
+    const cancelItem = menuItems.value.find(
+      (item) => item.label === 'subscription.cancelPlan'
+    )
 
-    expect(menuItems.value.map((item) => item.label)).toContain(
-      'subscription.cancelPlan'
+    cancelItem?.command?.({
+      originalEvent: new Event('click'),
+      item: cancelItem
+    })
+
+    expect(dialogMocks.showCancelSubscriptionFlow).toHaveBeenCalledWith(
+      '2026-08-01T00:00:00Z'
     )
   })
 
@@ -119,7 +127,7 @@ describe('useWorkspaceMenuItems', () => {
       item: cancelItem
     })
 
-    expect(dialogMocks.showCancelSubscriptionDialog).not.toHaveBeenCalled()
+    expect(dialogMocks.showCancelSubscriptionFlow).not.toHaveBeenCalled()
   })
 
   it('shows Leave only when workspace permission grants it', () => {

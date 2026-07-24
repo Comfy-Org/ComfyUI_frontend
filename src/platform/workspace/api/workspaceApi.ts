@@ -1,6 +1,8 @@
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
+import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
+import type { ChurnkeyAuthResponse } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
@@ -12,7 +14,7 @@ import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
-export type BillingRail = 'legacy_stripe' | 'stripe'
+export type BillingRail = 'legacy_stripe' | 'metronome' | 'stripe'
 
 interface Workspace {
   id: WorkspaceId
@@ -708,6 +710,26 @@ export const workspaceApi = {
         )
       return response.data
     } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse | null> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        api.apiURL('/billing/churnkey/auth'),
+        { headers }
+      )
+      const result = churnkeyAuthResponseSchema.safeParse(response.data)
+      return result.success ? result.data : null
+    } catch (err) {
+      if (
+        axios.isAxiosError(err) &&
+        (err.response?.status === 404 || err.response?.status === 503)
+      ) {
+        return null
+      }
       handleAxiosError(err)
     }
   },

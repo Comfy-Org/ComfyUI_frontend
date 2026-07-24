@@ -37,6 +37,7 @@ export enum ServerFeatureFlag {
   CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
+  CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile'
 }
 
@@ -229,6 +230,15 @@ export function useFeatureFlags() {
         config.free_tier_job_allowance_enabled,
         false
       )
+    },
+    get churnkeyAppId() {
+      if (!isCloud) return ''
+      const value = resolveFlag<unknown>(
+        ServerFeatureFlag.CHURNKEY_APP_ID,
+        remoteConfig.value.churnkey_app_id,
+        ''
+      )
+      return typeof value === 'string' ? value.trim() : ''
     },
     get signupTurnstileMode() {
       return resolveFlag(

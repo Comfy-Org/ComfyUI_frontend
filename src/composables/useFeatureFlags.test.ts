@@ -383,6 +383,47 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('churnkeyAppId', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfig.value = {}
+      localStorage.clear()
+    })
+
+    it('is disabled outside the cloud distribution', () => {
+      remoteConfig.value = { churnkey_app_id: 'app_test' }
+
+      expect(useFeatureFlags().flags.churnkeyAppId).toBe('')
+    })
+
+    it('reads and trims the cloud remote-config value', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfig.value = { churnkey_app_id: ' app_test ' }
+
+      expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_test')
+    })
+
+    it('falls back to the trimmed server feature value', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) =>
+          path === ServerFeatureFlag.CHURNKEY_APP_ID
+            ? ' app_server '
+            : defaultValue
+      )
+
+      expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_server')
+    })
+
+    it('uses a non-string development override to disable the flag', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfig.value = { churnkey_app_id: 'app_test' }
+      localStorage.setItem(`ff:${ServerFeatureFlag.CHURNKEY_APP_ID}`, '123')
+
+      expect(useFeatureFlags().flags.churnkeyAppId).toBe('')
+    })
+  })
+
   describe('unifiedCloudAuthEnabled', () => {
     afterEach(() => {
       localStorage.clear()

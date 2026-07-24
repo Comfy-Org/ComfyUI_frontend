@@ -60,6 +60,7 @@ import { getErrorMessage } from '@/utils/errorUtil'
 
 const props = defineProps<{
   cancelAt?: string
+  flowAlreadyOpened?: boolean
 }>()
 
 const { t } = useI18n()
@@ -92,6 +93,7 @@ function cancellationMetadata(): SubscriptionCancellationMetadata {
 }
 
 onMounted(() => {
+  if (props.flowAlreadyOpened) return
   telemetry?.trackSubscriptionCancellation(
     'flow_opened',
     cancellationMetadata()

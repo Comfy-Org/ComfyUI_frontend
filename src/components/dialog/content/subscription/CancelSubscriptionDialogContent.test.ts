@@ -103,7 +103,9 @@ vi.mock('primevue/usetoast', () => ({
   }))
 }))
 
-function renderComponent(props: { cancelAt?: string } = {}) {
+function renderComponent(
+  props: { cancelAt?: string; flowAlreadyOpened?: boolean } = {}
+) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -143,6 +145,17 @@ describe('CancelSubscriptionDialogContent', () => {
         current_tier: 'standard',
         end_date: '2026-08-01T00:00:00.000Z'
       })
+    })
+
+    it('does not duplicate flow_opened after a provider fallback', () => {
+      mockSubscription.value = null
+
+      renderComponent({ flowAlreadyOpened: true })
+
+      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
+        'flow_opened',
+        expect.anything()
+      )
     })
 
     it('tracks confirmed before the cancel request and no abandoned on success', async () => {
