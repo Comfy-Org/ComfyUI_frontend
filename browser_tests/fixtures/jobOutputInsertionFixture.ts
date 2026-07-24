@@ -19,6 +19,11 @@ export const jobOutputInsertionTest = comfyPageFixture.extend({
     const jobsApi = new JobsRouteMocker(page)
 
     async function assetsRouteHandler(route: Route) {
+      if (route.request().method().toUpperCase() !== 'GET') {
+        await route.fallback()
+        return
+      }
+
       const assets = assetRequestIncludesTag(route.request().url(), 'output')
         ? jobOutputInsertionAssets
         : []
