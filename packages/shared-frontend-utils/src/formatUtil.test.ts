@@ -5,6 +5,7 @@ import {
   ensureWorkflowSuffix,
   formatLocalizedMediumDate,
   formatLocalizedNumber,
+  generateUUID,
   getFilePathSeparatorVariants,
   getFilenameDetails,
   getMediaTypeFromFilename,
@@ -13,6 +14,7 @@ import {
   isCivitaiModelUrl,
   isCivitaiUrl,
   isPreviewableMediaType,
+  isValidUuid,
   joinFilePath,
   truncateFilename
 } from './formatUtil'
@@ -481,6 +483,59 @@ describe('formatUtil', () => {
     it('returns an em-dash for undefined or unparseable input', () => {
       expect(formatLocalizedMediumDate(undefined, 'en')).toBe('—')
       expect(formatLocalizedMediumDate('not a date', 'en')).toBe('—')
+    })
+  })
+
+  describe('isValidUuid', () => {
+    it('accepts canonical lowercase UUIDs', () => {
+      expect(isValidUuid('9cea40bb-b0cf-4b40-a758-8935cfe8d52f')).toBe(true)
+      expect(isValidUuid('00000000-0000-0000-0000-000000000000')).toBe(true)
+    })
+
+    it('accepts canonical uppercase and mixed-case UUIDs', () => {
+      expect(isValidUuid('9CEA40BB-B0CF-4B40-A758-8935CFE8D52F')).toBe(true)
+      expect(isValidUuid('9cea40BB-b0CF-4b40-A758-8935cfe8D52F')).toBe(true)
+    })
+
+    it('accepts any version and variant (not just v4)', () => {
+      expect(isValidUuid('00000000-0000-1000-0000-000000000000')).toBe(true)
+      expect(isValidUuid('ffffffff-ffff-7fff-ffff-ffffffffffff')).toBe(true)
+    })
+
+    it('recognizes generateUUID output as valid', () => {
+      for (let i = 0; i < 10; i++) {
+        expect(isValidUuid(generateUUID())).toBe(true)
+      }
+    })
+
+    it('rejects slug strings from workflow templates', () => {
+      expect(isValidUuid('video-point-prompt-example')).toBe(false)
+      expect(isValidUuid('default')).toBe(false)
+      expect(isValidUuid('my-workflow-v2')).toBe(false)
+    })
+
+    it('rejects non-string inputs', () => {
+      expect(isValidUuid(undefined)).toBe(false)
+      expect(isValidUuid(null)).toBe(false)
+      expect(isValidUuid('')).toBe(false)
+      expect(isValidUuid(0)).toBe(false)
+      expect(isValidUuid(123)).toBe(false)
+      expect(isValidUuid({})).toBe(false)
+      expect(isValidUuid([])).toBe(false)
+    })
+
+    it('rejects malformed UUID-like strings', () => {
+      expect(isValidUuid('9cea40bb-b0cf-4b40-a758-8935cfe8d52')).toBe(false)
+      expect(isValidUuid('9cea40bb-b0cf-4b40-a758-8935cfe8d52fa')).toBe(false)
+      expect(isValidUuid('9cea40bbb0cf4b40a7588935cfe8d52f')).toBe(false)
+      expect(isValidUuid('9cea40bb_b0cf_4b40_a758_8935cfe8d52f')).toBe(false)
+      expect(isValidUuid(' 9cea40bb-b0cf-4b40-a758-8935cfe8d52f')).toBe(false)
+      expect(isValidUuid('9cea40bb-b0cf-4b40-a758-8935cfe8d52f ')).toBe(false)
+    })
+
+    it('rejects strings with non-hex characters in UUID slots', () => {
+      expect(isValidUuid('gcea40bb-b0cf-4b40-a758-8935cfe8d52f')).toBe(false)
+      expect(isValidUuid('9cea40bb-b0cf-4b40-a758-8935cfe8d52z')).toBe(false)
     })
   })
 })
