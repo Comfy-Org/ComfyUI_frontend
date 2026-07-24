@@ -1492,7 +1492,7 @@ describe('useExecutionStore - RAF batching', () => {
   function getRegisteredHandler(eventName: string) {
     const calls = vi.mocked(api.addEventListener).mock.calls
     const call = calls.find(([name]) => name === eventName)
-    return call?.[1] as (e: CustomEvent) => void
+    return call![1]!
   }
 
   beforeEach(() => {
