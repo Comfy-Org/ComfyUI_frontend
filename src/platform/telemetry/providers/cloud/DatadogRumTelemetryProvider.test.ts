@@ -97,7 +97,7 @@ describe('DatadogRumTelemetryProvider', () => {
     })
   })
 
-  it.for(['success', 'failure'] as const)(
+  it.for(['success', 'failure', 'interrupted'] as const)(
     'records workflow phase timing with a %s outcome',
     (outcome) => {
       getInternalContext.mockReturnValue({ view: { id: 'view-a' } })
