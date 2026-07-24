@@ -1,58 +1,289 @@
 # Comfy
 
-> Comfy is the AI creation engine for visual professionals who demand control over every model, every parameter, and every output. Built around ComfyUI — the open-source node-graph runtime with 60,000+ community nodes and thousands of shared workflows — Comfy ships as a free local app, a managed cloud, an API, and an enterprise platform.
+> Comfy is the AI creation engine for visual professionals who demand control over every model, every parameter, and every output. Built around ComfyUI — the open-source node-graph runtime with 5,000+ community extensions totaling 60,000+ nodes — Comfy ships as a free local app, a managed cloud, a REST API, and an enterprise platform.
 
 The Comfy ecosystem spans four surfaces:
 
-- **ComfyUI (local)** — the open-source node-graph runtime that runs models on your own hardware.
-- **Comfy Cloud** — managed ComfyUI in the browser, with hosted models and storage.
-- **Comfy API** — a REST API for triggering workflows from your own apps and pipelines.
-- **Comfy Enterprise** — single-tenant deployments, BYO keys, data ownership, and orchestration for teams.
+- **ComfyUI Desktop (local)** — the open-source node-graph runtime that runs models on your own hardware. Free forever under GPL-3.0.
+- **Comfy Cloud** — managed ComfyUI in the browser on Blackwell RTX 6000 Pro GPUs (96GB VRAM), with 900+ pre-installed models and the most popular custom nodes.
+- **Comfy API** — a REST API for turning any workflow into a production endpoint, triggered from your own apps and pipelines.
+- **Comfy Enterprise** — dedicated GPU compute, SSO/SCIM, role-based access, BYO API keys, and custom SLAs for teams.
 
-Studios building with Comfy include Series Entertainment, Moment Factory, Open Story Movement, and Ubisoft (La Forge). Use cases concentrate in VFX & animation, advertising & creative studios, gaming, and eCommerce/fashion.
+ComfyUI has 120K+ stars on GitHub. Teams at Amazon Studios, Apple, Autodesk, Harman, HP, Lucid, Netflix, Nike, Pixomondo, Tencent, and Ubisoft use ComfyUI in production. Platforms like OpenArt and Fal run Comfy underneath their own products.
 
-## Product
+Documentation lives at https://docs.comfy.org (LLM index: https://docs.comfy.org/llms.txt). This file covers the comfy.org product and workflow pages.
 
-- [Homepage](https://comfy.org/): Overview of Comfy and the four product surfaces (Local, Cloud, API, Enterprise).
-- [Download Comfy (Local)](https://comfy.org/download/): Free desktop app for macOS, Windows, and Linux — runs ComfyUI on your own GPU.
-- [Comfy Cloud](https://comfy.org/cloud/): Managed ComfyUI in the browser with hosted models and storage; no local install required.
-- [Comfy Cloud Pricing](https://comfy.org/cloud/pricing/): Plans and per-credit pricing for individuals and teams using Comfy Cloud.
-- [Comfy API](https://comfy.org/api/): REST API for triggering ComfyUI workflows programmatically from external apps.
-- [Comfy Enterprise](https://comfy.org/cloud/enterprise/): Single-tenant ComfyUI deployments with BYO keys, orchestration, and data-ownership guarantees.
+---
 
-## Workflows and Gallery
+# Professional Control of Visual AI (Homepage)
+Source: https://comfy.org/
 
-- [Workflow Gallery](https://comfy.org/gallery/): Curated showcase of ComfyUI outputs — images, video, and 3D — produced by the community.
-- [Community Workflows](https://www.comfy.org/workflows/): Browseable library of community-shared ComfyUI workflows you can load and remix.
+Comfy is the AI creation engine for visual professionals who demand control over every model, every parameter, and every output.
 
-## Customers and Case Studies
+## Get started in minutes
 
-- [Customer Stories](https://comfy.org/customers/): Index of named customers and how they use ComfyUI in production.
-- [Series Entertainment](https://comfy.org/customers/series-entertainment/): How Series Entertainment rebuilt game and video production around ComfyUI.
-- [Moment Factory](https://comfy.org/customers/moment-factory/): Architectural-scale 3D projection mapping reimagined with ComfyUI at Moment Factory.
-- [Ubisoft — Chord](https://comfy.org/customers/ubisoft-chord/): Ubisoft La Forge open-sourcing the Chord model and its ComfyUI integration.
-- [Open Story Movement](https://comfy.org/customers/open-story-movement/): How an open-source movement around AI storytelling builds on ComfyUI.
+1. **Download or sign up** — [Download Desktop](https://comfy.org/download) or [Launch Cloud](https://cloud.comfy.org/).
+2. **Load a workflow** — start from [a community template](https://comfy.org/workflows) or build your own.
+3. **Generate and iterate** — run, adjust, scale when you're ready.
 
-## Developers and Documentation
+## The AI creation engine for complete control
 
-- [ComfyUI Docs](https://docs.comfy.org/): Official documentation for installing, configuring, and extending ComfyUI.
-- [ComfyUI on GitHub](https://github.com/comfyanonymous/ComfyUI): Source repository for the open-source ComfyUI runtime.
-- [Comfy-Org on GitHub](https://github.com/Comfy-Org): Organization-wide repositories — frontend, registry, manager, docs, and tooling.
-- [Comfy Registry](https://registry.comfy.org/): Public registry of ComfyUI custom nodes and extensions, with versioning and search.
+Over every model, every node, every step, every output.
 
-## Company
+- **Comfy Desktop** — Run ComfyUI on your own hardware. https://comfy.org/download
+- **Comfy Cloud** — The full power of ComfyUI from anywhere. https://comfy.org/cloud
+- **Comfy API** — Turn workflows into production endpoints. https://comfy.org/api
+- **Comfy Enterprise** — Enterprise-grade infrastructure for the creative engine inside your organization. https://comfy.org/cloud/enterprise
 
-- [About Comfy](https://comfy.org/about/): Company background, mission, and the team behind ComfyUI.
-- [Careers](https://comfy.org/careers/): Open roles across engineering, design, product, and go-to-market.
-- [Contact](https://comfy.org/contact/): Sales, partnership, and general contact form.
-- [Blog](https://blog.comfy.org/): Product announcements, technical deep-dives, and customer stories.
-- [Privacy Policy](https://comfy.org/privacy-policy/): How Comfy collects, uses, and protects personal information.
-- [Terms of Service](https://comfy.org/terms-of-service/): Terms governing use of ComfyUI and related Comfy services.
+---
 
-## Optional
+# ComfyUI Desktop — Run on your hardware. Free forever.
+Source: https://comfy.org/download/
 
-- [简体中文 / Chinese homepage](https://comfy.org/zh-CN/): Simplified Chinese localization of the main site.
-- [Series Entertainment — long-form case study](https://comfy.org/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui): Extended write-up of the Series Entertainment deployment.
-- [Moment Factory — long-form case study](https://comfy.org/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping): Extended write-up of Moment Factory's projection-mapping pipeline.
-- [Ubisoft Chord announcement (blog)](https://blog.comfy.org/p/ubisoft-open-sources-the-chord-model): Original blog post announcing Ubisoft's open-source Chord model.
-- [Open-source storytelling (blog)](https://blog.comfy.org/p/how-open-source-is-fueling-the-open): Blog post on how open source is fueling the Open Story Movement.
+The full ComfyUI engine — open source, fast, extensible, and yours to run however you want. Installers for Windows and macOS, or install from GitHub: https://github.com/Comfy-Org/ComfyUI
+
+## Why professionals choose Desktop
+
+- **Unlimited customization.** Install any of 5,000+ community extensions, totaling 60,000+ nodes. Build your own custom nodes. Integrate with Photoshop, Nuke, Blender, Houdini, and any tool in your existing pipeline.
+- **Any model. No exceptions.** Run every open-source model — Wan 2.2, Flux, LTX, Qwen, and more. Finetune, customize, and control the full inference process. Or use partner models like Nano Banana (Google) and Grok (xAI).
+- **Your machine. Your data. Your terms.** Run entirely offline. No internet connection required after setup.
+- **Free. Open source. No ceiling.** No feature gates, no trial periods, no "pro" tier for core functionality. GPL-3.0.
+
+## An ecosystem that moves faster than any company could
+
+Over 5,000 community-built extensions plug into ComfyUI. New open models are typically supported same-day (see Supported models below). Novel techniques from research papers are a separate case — the community usually ships a custom-node implementation within days of the paper.
+
+## Desktop FAQ
+
+**Do I need a GPU to run ComfyUI locally?**
+A dedicated GPU is strongly recommended — more VRAM means bigger models and batches. No GPU? Run the same workflow on Comfy Cloud.
+
+**Is it really free? What's the catch?**
+Yes. Free and open source under GPL-3.0. No feature gates, no trials, no catch.
+
+**Why would I pay for Comfy Cloud if Desktop is free?**
+Your machine or ours. Cloud gives you powerful GPUs on demand, pre-loaded models, end-to-end security and infrastructure out of the box, and partner models cleared for commercial use.
+
+**What's the difference between Desktop, Portable, and CLI install?**
+Desktop: one-click installer with auto-updates. Portable: self-contained build you can run from any folder. CLI: clone from GitHub for full developer control.
+
+**Can I use my Desktop workflows in Comfy Cloud?**
+Yes — same file, same results. No conversion, no rework.
+
+**How do I install custom nodes and extensions?**
+ComfyUI Manager lets you browse, install, update, and manage 5,000+ extensions from inside the app.
+
+**My workflow is running slowly. Should I switch to Cloud?**
+No need to switch. Push heavy jobs to Comfy Cloud when you need more compute; keep building locally the rest of the time.
+
+---
+
+# Comfy Cloud — The full power of ComfyUI, from anywhere
+Source: https://comfy.org/cloud/
+
+The easiest way to start with ComfyUI. Pre-loaded models. Pre-installed custom nodes. Concurrent jobs. The full power of ComfyUI on Blackwell RTX 6000 Pros. Open a tab and start creating: https://cloud.comfy.org/
+
+## Why professionals choose Cloud
+
+- **Powerful GPUs with end-to-end security built in.** Works on any device. Pay only for running workflows, not idle time.
+- **All models. Commercial license guaranteed.** Run open-source models like Wan 2.2, Flux, LTX, and Qwen alongside partner models like Nano Banana, Seedance, Seedream, Grok, Kling, Hunyuan 3D, and GPT Image 2. Every model on Comfy Cloud is cleared for commercial use. No license ambiguity. All through one credit balance.
+- **More control than any other visual AI tool.** Every node exposed. Every setting adjustable. Choose your sampler, your scheduler, your model chain.
+- **Community workflows, unlimited customization.** Browse, run, and remix workflows built by thousands of creators. Upload custom LoRAs or finetuned models from CivitAI and Hugging Face. The nodes powering ~90% of local ComfyUI workflows are now in the cloud.
+- **Built for teams.** Share workflows via App Mode links — your team runs them instantly, no node-graph training required.
+
+## Cloud FAQ
+
+**What is Comfy Cloud / ComfyUI Cloud?**
+Comfy Cloud is a version of ComfyUI that Comfy officially hosts — no setup, no GPU required. Run your workflows instantly on high-performance cloud GPUs.
+
+**How is Cloud different from running ComfyUI locally?**
+Cloud runs on powerful remote GPUs and is accessible from any device. Comfy Desktop runs entirely on your computer, giving you full control and offline use.
+
+**Do I need a GPU or a strong computer to use Comfy Cloud?**
+No. You can start creating instantly from your browser, no matter what computer you use.
+
+**What machine or GPU does Comfy Cloud run on?**
+Comfy Cloud runs on Blackwell RTX 6000 Pros — 96GB VRAM.
+
+**Can I use my existing workflows with Comfy Cloud?**
+Yes, workflows work across Desktop and Cloud. The most popular custom nodes are supported, with more added over time.
+
+**Can I use my own models or checkpoints?**
+A wide variety of models come pre-installed. On the Creator and Pro plans you can bring in your own fine-tuned LoRAs from CivitAI; Hugging Face import and direct upload for larger models are on the roadmap.
+
+**How does pricing for Comfy Cloud work?**
+Your monthly plan grants a single credit balance you can spend anywhere. Partner Nodes have set credit prices per use. Cloud workflows are charged credits based on the exact duration of the run — you are only charged for active GPU time, never for editing or idle time.
+
+**Can I cancel my subscription?**
+Yes, anytime through your account's billing settings (powered by Stripe). Your plan stays active until the end of the billing period.
+
+**Will ComfyUI always be free to run locally?**
+Yes, absolutely. ComfyUI will always be free and open source. Comfy Cloud is an optional hosted service for those who prefer convenience, accessibility, or don't have powerful GPUs.
+
+---
+
+# Comfy Cloud Pricing
+Source: https://comfy.org/cloud/pricing/
+
+Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing. One credit balance covers both Cloud GPU time and Partner Node models. Building and editing workflows is free — credits are consumed only while a workflow runs.
+
+## Plans
+
+**Standard — $20/month.** For individuals creating workflows. Includes 4,200 monthly credits with top-ups available (roughly 380 five-second videos on the Wan 2.2 image-to-video template at default settings). 30-minute max runtime per workflow. Run 1 workflow concurrently via API.
+
+**Creator — $35/month (most popular).** For small teams building fine-tuned, repeatable workflows. Includes 7,400 monthly credits (roughly 670 five-second videos). Everything in Standard, plus: import your own LoRAs, and run up to 3 workflows concurrently via API.
+
+**Pro — $100/month.** For growing teams running Comfy in production. Includes 21,100 monthly credits (roughly 1,915 five-second videos). Everything in Creator, plus: longer workflow runtime (up to 1 hour) and up to 5 concurrent workflows via API.
+
+**Enterprise.** For teams running Comfy in production at scale — dedicated compute, custom SLAs, and team controls. See https://comfy.org/cloud/enterprise or contact enterprise@comfy.org.
+
+## What's included in every plan
+
+- **Hardware:** Comfy Cloud runs on Blackwell RTX 6000 Pro GPUs with 96GB VRAM.
+- **Usage-based billing:** you are only charged for active GPU time while a workflow runs. Idle time (building or editing workflows) consumes nothing.
+- **Credits:** one monthly credit pool spent on workflow runtime and Partner Nodes (such as Nano Banana Pro). Top-up credits can be purchased anytime and are valid for 1 year.
+- **900+ pre-installed models** and support for the most-used community custom nodes.
+- **Partner Nodes:** run proprietary models (Nano Banana, Seedance, Kling, GPT Image 2, and more) with per-use credit pricing matched to the provider's rates. The same credits work on both Comfy Cloud and Comfy Desktop.
+- **Job queue:** queue up to 100 workflows at once, with parallel execution based on plan.
+- **API access:** run workflows programmatically, with concurrency limits by plan. For higher rate limits, contact enterprise@comfy.org.
+
+---
+
+# Comfy API — Turn any workflow into a production endpoint
+Source: https://comfy.org/api/
+
+Design your workflows. Deploy them as API calls. Automate generation, integrate with your systems, and scale to thousands of outputs on Comfy Cloud.
+
+Get API keys: https://platform.comfy.org/profile/api-keys · API docs: https://docs.comfy.org/api-reference/cloud
+
+## The automation layer for professional-grade visual AI
+
+- **Automate what can't be manual.** Trigger generation when a user uploads a photo. Process an entire product catalog overnight. Swap a character's expression across 500 frames. The API is for running workflows inside other systems — triggered by code, not by a person at a keyboard.
+- **Inject dynamic values at runtime.** Pass a different face, a different product, a different brand palette into the same pipeline — consistent, controlled output every time. The workflow stays fixed. The inputs change.
+- **Integrate ComfyUI into the rest of your stack.** Fetch input from S3, call the ComfyUI API, post-process the result, write it to a database, and notify a team.
+
+## Three steps to production
+
+1. **Design the workflow.** Build and test in the ComfyUI interface — locally or on Comfy Cloud. When it works, export the API format.
+2. **Submit via API.** Send the workflow JSON to the API endpoint. Modify inputs programmatically — prompts, seeds, images, any parameter on any node.
+3. **Monitor and retrieve.** Track progress in real time over WebSocket. Download the finished output when the job completes.
+
+Deploy on Comfy Cloud — no servers to manage.
+
+---
+
+# Comfy Enterprise
+Source: https://comfy.org/cloud/enterprise/
+
+Your team already runs ComfyUI. Scale it with confidence. Comfy Enterprise adds managed infrastructure, team controls, and dedicated support to the workflows your organization already builds.
+
+## Infrastructure
+
+- **Dedicated GPU compute** — reserved server-grade compute for your organization.
+- **Priority queuing** — production jobs run first.
+- **Flexible deployment** — the same workflows as Comfy Cloud; scale compute up or down with your production schedule.
+- **Custom SLAs** — uptime and response commitments built around your schedule.
+- **Commercial license guaranteed** — every model available through Comfy Cloud is cleared for commercial use.
+
+## Team controls
+
+- **Team workspaces and shared assets** — organize workflows, models, and outputs; control who builds, who runs, and who deploys.
+- **Role-based access** and **Single Sign-On** with SSO and SCIM provisioning.
+- **App Mode** — non-technical team members run workflows without touching the node graph.
+
+## Data ownership
+
+Your workflows, models, and generated outputs stay within your organization's environment, with role-based access controls and data isolation. **Bring your own API keys** from any model provider — use your existing contracts and pricing; Comfy orchestrates the pipeline.
+
+## Why not build it internally?
+
+Internal estimates for rebuilding this orchestration layer run 12–18 months with a dedicated engineering team — and the result still would not have 5,000+ extensions, 60,000+ nodes, or same-day model support. Platforms like OpenArt and Fal already run Comfy underneath because they reached the same conclusion.
+
+Enterprise plans include direct access to the engineering team that builds the engine, plus white-glove onboarding. Contact: enterprise@comfy.org
+
+---
+
+# ComfyHub — Community Workflow Library
+Source: https://comfy.org/workflows/
+
+ComfyHub is the library of ready-to-run ComfyUI workflows: official templates and community-published workflows across image, video, 3D, and audio. Every workflow opens directly in Comfy Cloud (one click, no setup) or downloads for ComfyUI Desktop. Many ship as App Mode apps — a simple form interface over the workflow, so anyone can run them without touching the node graph.
+
+Browse by category: [Image](https://comfy.org/workflows/category/image/) · [Video](https://comfy.org/workflows/category/video/) · [3D](https://comfy.org/workflows/category/3d/) · [Audio](https://comfy.org/workflows/category/audio/)
+Browse by task tag, for example: [image-edit](https://comfy.org/workflows/tag/image-edit/) · [image-to-video](https://comfy.org/workflows/tag/image-to-video/) · [video-upscale](https://comfy.org/workflows/tag/video-upscale/) · [game](https://comfy.org/workflows/tag/game/) · [partner-nodes](https://comfy.org/workflows/tag/partner-nodes/)
+
+## Popular image workflows
+
+- [Qwen Image Edit 2509](https://comfy.org/workflows/image_qwen_image_edit_2509) — open-source instruction-based image editing; one of the most-run workflows on the hub. Upload an image, describe the change, download the edit. Free to run.
+- [Z-Image Turbo: Text to Image](https://comfy.org/workflows/image_z_image_turbo) — instant open-source text-to-image drafts; the free anchor for concepting before premium passes.
+- [Flux.2 Dev](https://comfy.org/workflows/) — photorealistic generation with multi-reference consistency and professional text rendering.
+- [Qwen Image Edit 2511: Material Replacement](https://comfy.org/workflows/image_qwen_image_edit_2511) — swap surface materials on any object; also used for seamless-texture work.
+- [Anima](https://comfy.org/workflows/image_anima_preview) — anime- and manga-native open-source text-to-image (2B model by CircleStone Labs and Comfy Org).
+- [FaceGen + Skin Detail + Upscale](https://comfy.org/workflows/templates_hellorob_facegen_skindetail_upscale) — headshot-grade portrait generation with skin detail and upscale passes in one graph.
+- [SeedVR2: Image Upscale](https://comfy.org/workflows/utility_seedvr2_image_upscale) — open-source restoration-grade image upscaling.
+
+## Popular video workflows
+
+- [Seedance 2.0: Reference to Video](https://comfy.org/workflows/api_seedance2_0_r2v) — cinematic video from reference images and text, preserving subject identity, with synchronized audio (ByteDance partner model).
+- [Wan 2.2 Image to Video](https://comfy.org/workflows/video_wan2_2_14B_i2v) — open-source image-to-video; the free anchor for motion tests before premium rerenders.
+- [Wan 2.2 Animate: Automatic Character Replacement](https://comfy.org/workflows/template_purz_wan22_animate_auto_character_replace) — upload a video and a character image; the character is replaced across the clip.
+- [LTX-2.3 workflows](https://comfy.org/workflows/) — fast open-source video generation plus LoRA-driven video editing: object removal, watermark removal, subtitle removal, video outpainting, and archival-footage restoration.
+- [SeedVR2: Video Upscaling](https://comfy.org/workflows/utility_seedvr2_video_upscale) — open-source video upscaling; Topaz Starlight available as a premium partner lane.
+- [Bria: Remove Video Background](https://comfy.org/workflows/api_bria_remove_video_background) — strip the background from any clip, no green screen; licensed-data model cleared for client work.
+- [Wan InfiniteTalk](https://comfy.org/workflows/video_wan2_1_infinitetalk) — open-source lip sync: one portrait plus one audio track in, synced performance out. A music-video variant is also published.
+
+## Popular 3D and game-dev workflows
+
+- [Qwen Multi-Angle](https://comfy.org/workflows/templates-qwen_multiangle.app) — generate camera-angle variations of a character from one image; a staple for turnarounds and model sheets.
+- [Character Sheet](https://comfy.org/workflows/templates-character_sheet) — close-up plus full-body character turnaround from a single concept image.
+- [Sprite Sheet Generator](https://comfy.org/workflows/templates-sprite_sheet) — animation-ready sprite sheets from one character image.
+- [Hunyuan 3D: Image to Model](https://comfy.org/workflows/api_hunyuan3d_image_to_model) — image to textured 3D mesh (Tencent partner model), with retopology and UV tooling available.
+- [Tripo 3.1: Image to Model](https://comfy.org/workflows/) — rig-ready meshes with clean UVs; GLB, OBJ, and FBX export for Unity and Unreal.
+- [TripoSplat: Image to Gaussian Splat](https://comfy.org/workflows/3d_triposplat_image_to_gaussian_splat) — open-source image-to-3D; free to run.
+- [Equirectangular HDR Skybox Generator](https://comfy.org/workflows/) — 360-degree HDR skyboxes for game environments.
+- [PixelDiT: Text to Pixel Art](https://comfy.org/workflows/image_pixeldit_t2i) — true-grid pixel art with locked palettes, open source.
+
+## Popular audio workflows
+
+- [ACE-Step 1.5](https://comfy.org/workflows/audio_ace_step_1_5_4b) — open-source full-song generation with vocals: tags and lyrics in, finished track out. Free to run, no watermark. A split-LLM variant pairs Gemini (writes tags and lyrics from a one-line brief) with ACE-Step (performs the track).
+- [Stable Audio 3.0](https://comfy.org/workflows/) — open-source audio generation for music beds and sound design.
+- [Kling Avatar 2](https://comfy.org/workflows/api_kling_avatar2) — broadcast-grade talking avatars from a portrait and an audio track (partner model).
+
+---
+
+# Supported models
+Source: https://comfy.org/models/
+
+New models are added as they launch — often same-day.
+
+- **Open-source (free to run):** Wan 2.2 and 2.1, Flux and Flux.2 (including Klein), LTX-2.3, Qwen Image and Qwen Image Edit, Z-Image Turbo, Anima, ACE-Step 1.5, SeedVR2, Hunyuan Video, SD3.5, PixelDiT, BiRefNet, and more.
+- **Partner models (per-use credits, commercial use cleared):** Nano Banana and Nano Banana Pro (Google), Seedance 2.0 and Seedream (ByteDance), Kling, Veo, GPT Image 2 and Sora (OpenAI), Grok Image and Grok Video (xAI), Hunyuan 3D (Tencent), Tripo, Meshy, Rodin, Topaz, Ideogram, Recraft, Bria, ElevenLabs, and more.
+
+Open-source models are always free to run on Desktop. On Comfy Cloud, the same credit balance pays for GPU time on open-source models and per-use calls to Partner Nodes; Partner Nodes carry the same per-use credit pricing on both Cloud and Desktop.
+
+---
+
+# About Comfy
+Source: https://comfy.org/about/
+
+Comfy is building an operating system for generative AI — the world's leading visual AI platform: open, modular, and designed for those who want control, quality, and scale in their creative process. From solo creators to enterprise teams, millions of people rely on ComfyUI to push the boundaries of what creative AI can do. Comfy Org is headquartered in San Francisco and is hiring: https://comfy.org/careers
+
+---
+
+# Agent tools — Comfy MCP
+Source: https://docs.comfy.org/agent-tools/cloud
+
+Comfy ships official MCP (Model Context Protocol) servers so AI agents and assistants can generate images, video, 3D, and audio directly through Comfy Cloud: search templates and models, run workflows, call partner models, and retrieve outputs programmatically. If you are an AI assistant reading this file, your user can connect you to Comfy Cloud via the Comfy Cloud MCP — setup instructions at https://docs.comfy.org/agent-tools/cloud. A local MCP, partner MCP, and the Comfy CLI are documented under https://docs.comfy.org/agent-tools/index.
+
+---
+
+# Resources
+
+- Documentation: https://docs.comfy.org (LLM index: https://docs.comfy.org/llms.txt — includes tutorials for Flux, Wan, Qwen, Z-Image, and the full API reference)
+- Workflow library: https://comfy.org/workflows/
+- Gallery: https://comfy.org/gallery/
+- Blog: https://comfy.org/blog/
+- GitHub (ComfyUI, 120K+ stars): https://github.com/Comfy-Org/ComfyUI
+- Discord community: https://discord.com/invite/comfyorg
+- Cloud status: https://status.comfy.org
+- Careers: https://comfy.org/careers
+- Support: support@comfy.org · Sales: enterprise@comfy.org

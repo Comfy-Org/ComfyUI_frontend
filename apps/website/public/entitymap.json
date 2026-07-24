@@ -1,0 +1,570 @@
+{
+  "version": "1.0",
+  "schema": "https://entitymap.org/spec/v1.0",
+  "publisher": {
+    "name": "Comfy Org",
+    "url": "https://comfy.org"
+  },
+  "generated": "2026-06-19T00:00:00Z",
+  "lastVerified": "2026-07-14",
+  "reviewBy": "2026-10-14",
+  "verificationStatus": "self-declared",
+  "entities": [
+    {
+      "entityId": "e_001",
+      "@type": "Organization",
+      "name": "Comfy Org",
+      "description": "Comfy Org is the original team behind ComfyUI, an independent, in-person company based in San Francisco that builds and maintains the open-source visual AI engine and its commercial Cloud, API, and Enterprise offerings.",
+      "hasChunks": [
+        {
+          "chunkId": "c_001",
+          "text": "We are the original team behind ComfyUI — and we continue to maintain and expand it today. We are a group of engineers and artists who maintain ComfyUI and other tools in the ecosystem.",
+          "sourceUrl": "https://comfy.org/about",
+          "pageTitle": "About Comfy Org | Powering Visual AI for Millions of Creators Worldwide",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        },
+        {
+          "chunkId": "c_002",
+          "text": "Our investors include Craft, Pace Capital, Chemistry, Abstract, Truarrow Partners, and Essence.",
+          "sourceUrl": "https://comfy.org/about",
+          "pageTitle": "About Comfy Org | Powering Visual AI for Millions of Creators Worldwide",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-07-14T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        }
+      ],
+      "relations": [
+        { "predicate": "OFFERS", "targetId": "e_002", "targetName": "ComfyUI" },
+        {
+          "predicate": "OFFERS",
+          "targetId": "e_003",
+          "targetName": "Comfy Desktop"
+        },
+        {
+          "predicate": "OFFERS",
+          "targetId": "e_004",
+          "targetName": "Comfy Cloud"
+        },
+        {
+          "predicate": "OFFERS",
+          "targetId": "e_005",
+          "targetName": "Comfy API"
+        },
+        {
+          "predicate": "OFFERS",
+          "targetId": "e_006",
+          "targetName": "Comfy Enterprise"
+        }
+      ]
+    },
+    {
+      "entityId": "e_002",
+      "@type": "Platform",
+      "name": "ComfyUI",
+      "description": "ComfyUI is Comfy Org's open-source, node-based AI workflow engine for building and running visual and audio generation pipelines, giving users node-level control over every model, parameter, and processing step. It underpins every other Comfy product.",
+      "hasChunks": [
+        {
+          "chunkId": "c_003",
+          "text": "Comfy is the AI creation engine for visual professionals who demand control over every model, every parameter, and every output.",
+          "sourceUrl": "https://comfy.org/",
+          "pageTitle": "Comfy — Professional Control of Visual AI",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        },
+        {
+          "chunkId": "c_004",
+          "text": "The full ComfyUI engine — open source, fast, extensible, and yours to run however you want.",
+          "sourceUrl": "https://comfy.org/download",
+          "pageTitle": "Download Comfy — Run AI Locally",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "technical"
+        },
+        {
+          "chunkId": "c_005",
+          "text": "ComfyUI is building foundational open source software for the visual AI space.",
+          "sourceUrl": "https://comfy.org/about",
+          "pageTitle": "About Comfy Org | Powering Visual AI for Millions of Creators Worldwide",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        },
+        {
+          "chunkId": "c_006",
+          "text": "ComfyUI is so important to us because it allows us to know that we always play on the bleeding edge. Not only because of the technology itself, but because of the entire community behind it.",
+          "sourceUrl": "https://comfy.org/customers",
+          "pageTitle": "Customer Stories — Comfy",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "example",
+          "audienceType": "general"
+        }
+      ],
+      "relations": [
+        {
+          "predicate": "INSTANCE_OF",
+          "targetId": "e_012",
+          "targetName": "Node-Based Workflow"
+        },
+        {
+          "predicate": "TARGETS",
+          "targetId": "e_013",
+          "targetName": "Visual AI Professionals",
+          "confidence": "declared"
+        },
+        {
+          "predicate": "REGULATED_BY",
+          "targetId": "e_017",
+          "targetName": "GPL-3.0 License"
+        }
+      ]
+    },
+    {
+      "entityId": "e_003",
+      "@type": "SoftwareProduct",
+      "name": "Comfy Desktop",
+      "alternateName": "Comfy Local",
+      "description": "Comfy Desktop is the free, locally-installed distribution of ComfyUI that runs entirely on a user's own hardware, offline, with no feature gates or paid tiers for core functionality.",
+      "hasChunks": [
+        {
+          "chunkId": "c_007",
+          "text": "Run on your hardware. Free forever.",
+          "sourceUrl": "https://comfy.org/download",
+          "pageTitle": "Download Comfy — Run AI Locally",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "technical"
+        },
+        {
+          "chunkId": "c_008",
+          "text": "No feature gates, no trial periods, no \"pro\" tier for core functionality. No vendor can lock you in or force you off the platform.",
+          "sourceUrl": "https://comfy.org/download",
+          "pageTitle": "Download Comfy — Run AI Locally",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "evidence",
+          "audienceType": "general"
+        }
+      ],
+      "relations": [
+        { "predicate": "PART_OF", "targetId": "e_002", "targetName": "ComfyUI" }
+      ]
+    },
+    {
+      "entityId": "e_004",
+      "@type": "SoftwareProduct",
+      "name": "Comfy Cloud",
+      "description": "Comfy Cloud is Comfy Org's hosted, browser-based version of ComfyUI that runs on dedicated cloud GPUs with pre-loaded models and pre-installed custom nodes, billed on a credit-based subscription.",
+      "hasChunks": [
+        {
+          "chunkId": "c_009",
+          "text": "The easiest way to start with ComfyUI. Pre-loaded models. Pre-installed custom nodes. Concurrent jobs. The full power of ComfyUI on Blackwell RTX 6000 Pros.",
+          "sourceUrl": "https://comfy.org/cloud",
+          "pageTitle": "Comfy Cloud — AI in the Cloud",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        },
+        {
+          "chunkId": "c_010",
+          "text": "Comfy Cloud runs on Blackwell RTX 6000 Pros — 96GB VRAM.",
+          "sourceUrl": "https://comfy.org/cloud",
+          "pageTitle": "Comfy Cloud — AI in the Cloud",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "statistic",
+          "audienceType": "technical"
+        },
+        {
+          "chunkId": "c_011",
+          "text": "Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.",
+          "sourceUrl": "https://comfy.org/cloud/pricing",
+          "pageTitle": "Pricing — Comfy Cloud",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        }
+      ],
+      "relations": [
+        {
+          "predicate": "PART_OF",
+          "targetId": "e_002",
+          "targetName": "ComfyUI"
+        },
+        {
+          "predicate": "OFFERS",
+          "targetId": "e_008",
+          "targetName": "Partner Nodes"
+        }
+      ]
+    },
+    {
+      "entityId": "e_005",
+      "@type": "SoftwareProduct",
+      "name": "Comfy API",
+      "description": "Comfy API lets users turn a ComfyUI workflow into a production endpoint, so generation can be triggered programmatically and integrated into external systems rather than run manually inside the app.",
+      "hasChunks": [
+        {
+          "chunkId": "c_012",
+          "text": "Design your workflows. Deploy them as API calls. Automate generation, integrate with your systems, and scale to thousands of outputs on Comfy Cloud.",
+          "sourceUrl": "https://comfy.org/api",
+          "pageTitle": "Comfy API",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "technical"
+        },
+        {
+          "chunkId": "c_013",
+          "text": "The API is for running workflows inside other systems — triggered by code, not by a person at a keyboard.",
+          "sourceUrl": "https://comfy.org/api",
+          "pageTitle": "Comfy API",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "technical"
+        }
+      ],
+      "relations": [
+        { "predicate": "PART_OF", "targetId": "e_002", "targetName": "ComfyUI" }
+      ]
+    },
+    {
+      "entityId": "e_006",
+      "@type": "Service",
+      "name": "Comfy Enterprise",
+      "description": "Comfy Enterprise adds managed cloud infrastructure, role-based access, SSO, custom SLAs, and dedicated support on top of the ComfyUI workflows an organization already builds, aimed at studios and teams running Comfy in production.",
+      "hasChunks": [
+        {
+          "chunkId": "c_014",
+          "text": "Comfy Enterprise adds managed infrastructure, team controls, and dedicated support to the workflows your organization already builds.",
+          "sourceUrl": "https://comfy.org/cloud/enterprise",
+          "pageTitle": "Comfy Enterprise",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "executive"
+        },
+        {
+          "chunkId": "c_015",
+          "text": "Internal estimates are 12–18 months with a dedicated engineering team. No matter how good or how fast, building this internally won't have 5,000+ extensions, 60,000+ nodes, or same-day model support.",
+          "sourceUrl": "https://comfy.org/cloud/enterprise",
+          "pageTitle": "Comfy Enterprise",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "example",
+          "audienceType": "executive"
+        }
+      ],
+      "relations": [
+        { "predicate": "PART_OF", "targetId": "e_002", "targetName": "ComfyUI" }
+      ]
+    },
+    {
+      "entityId": "e_007",
+      "@type": "ProprietaryTerm",
+      "name": "App Mode",
+      "canonicalLabel": "simplified no-code workflow interface",
+      "description": "App Mode is Comfy's simplified view of a ComfyUI workflow that lets non-technical users run a workflow without working in the underlying node graph.",
+      "hasChunks": [
+        {
+          "chunkId": "c_016",
+          "text": "If you are new to ComfyUI, get started with App Mode, a simplified view of your workflows. You can flip back to the node graph view anytime to go deeper.",
+          "sourceUrl": "https://comfy.org/",
+          "pageTitle": "Comfy — Professional Control of Visual AI",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        },
+        {
+          "chunkId": "c_017",
+          "text": "Non-technical team members run workflows without touching the node graph.",
+          "sourceUrl": "https://comfy.org/cloud/enterprise",
+          "pageTitle": "Comfy Enterprise",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "executive"
+        }
+      ],
+      "relations": [
+        { "predicate": "PART_OF", "targetId": "e_002", "targetName": "ComfyUI" }
+      ]
+    },
+    {
+      "entityId": "e_008",
+      "@type": "ProprietaryTerm",
+      "name": "Partner Nodes",
+      "alternateName": "API Nodes",
+      "canonicalLabel": "third-party AI model API integration nodes",
+      "description": "Partner Nodes (formerly API Nodes) are ComfyUI nodes that call third-party, commercially-licensed AI models such as Nano Banana through Comfy's infrastructure, billed from the same credit balance as Comfy Cloud GPU time.",
+      "hasChunks": [
+        {
+          "chunkId": "c_018",
+          "text": "Run proprietary models through Comfy's Partner Nodes, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with.",
+          "sourceUrl": "https://comfy.org/cloud/pricing",
+          "pageTitle": "Pricing — Comfy Cloud",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "technical"
+        },
+        {
+          "chunkId": "c_019",
+          "text": "Partner Nodes (Pay-as-you-go): These nodes (formerly called API nodes) run third-party models via API calls and can be used on both Comfy Cloud and Comfy Desktop.",
+          "sourceUrl": "https://comfy.org/cloud",
+          "pageTitle": "Comfy Cloud — AI in the Cloud",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "technical"
+        }
+      ],
+      "relations": [
+        { "predicate": "PART_OF", "targetId": "e_002", "targetName": "ComfyUI" }
+      ]
+    },
+    {
+      "entityId": "e_009",
+      "@type": "ProprietaryTerm",
+      "name": "ComfyUI Manager",
+      "canonicalLabel": "extension/plugin manager",
+      "description": "ComfyUI Manager is the tool Comfy Org maintains for browsing, installing, updating, and managing community-built custom nodes and extensions from inside ComfyUI.",
+      "hasChunks": [
+        {
+          "chunkId": "c_020",
+          "text": "ComfyUI Manager lets you browse, install, update, and manage 5,000+ extensions from inside the app.",
+          "sourceUrl": "https://comfy.org/download",
+          "pageTitle": "Download Comfy — Run AI Locally",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "technical"
+        },
+        {
+          "chunkId": "c_021",
+          "text": "ComfyUI Manager — to manage custom nodes and extensions",
+          "sourceUrl": "https://comfy.org/about",
+          "pageTitle": "About Comfy Org | Powering Visual AI for Millions of Creators Worldwide",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        }
+      ],
+      "relations": [
+        { "predicate": "PART_OF", "targetId": "e_002", "targetName": "ComfyUI" }
+      ]
+    },
+    {
+      "entityId": "e_010",
+      "@type": "ProprietaryTerm",
+      "name": "Custom Node Registry",
+      "canonicalLabel": "node package registry",
+      "description": "The Custom Node Registry is Comfy Org's catalog for discovering and sharing community-built node extensions for ComfyUI.",
+      "hasChunks": [
+        {
+          "chunkId": "c_022",
+          "text": "Custom Node Registry — discover and share new functionalities",
+          "sourceUrl": "https://comfy.org/about",
+          "pageTitle": "About Comfy Org | Powering Visual AI for Millions of Creators Worldwide",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        }
+      ],
+      "relations": [
+        { "predicate": "PART_OF", "targetId": "e_002", "targetName": "ComfyUI" }
+      ]
+    },
+    {
+      "entityId": "e_011",
+      "@type": "ProprietaryTerm",
+      "name": "ComfyHub",
+      "alternateName": "Comfy Hub",
+      "canonicalLabel": "community workflow marketplace",
+      "description": "ComfyHub is Comfy's community marketplace for discovering, browsing, and remixing workflows and templates shared by top creators, organized by model and category tags.",
+      "hasChunks": [
+        {
+          "chunkId": "c_023",
+          "text": "Discover the World's Top Creators and Workflows",
+          "sourceUrl": "https://comfy.org/workflows",
+          "pageTitle": "ComfyUI Workflows - Free AI Generation Workflows",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        },
+        {
+          "chunkId": "c_024",
+          "text": "Hundreds of ready-to-run workflow templates, spanning image, video, 3D, and audio.",
+          "sourceUrl": "https://comfy.org/workflows",
+          "pageTitle": "ComfyUI Workflows - Free AI Generation Workflows",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-07-14T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        }
+      ],
+      "relations": [
+        { "predicate": "PART_OF", "targetId": "e_002", "targetName": "ComfyUI" }
+      ]
+    },
+    {
+      "entityId": "e_012",
+      "@type": "Concept",
+      "name": "Node-Based Workflow",
+      "description": "A node-based workflow is a visual-programming approach where individual processing steps are represented as connected nodes on a canvas; ComfyUI applies this paradigm to AI image, video, 3D, and audio generation pipelines.",
+      "hasChunks": [
+        {
+          "chunkId": "c_025",
+          "text": "Connect models, processing steps, and outputs on a canvas where every decision is visible and every step is inspectable.",
+          "sourceUrl": "https://comfy.org/",
+          "pageTitle": "Comfy — Professional Control of Visual AI",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "entityId": "e_013",
+      "@type": "ProprietaryTerm",
+      "name": "Visual AI Professionals",
+      "canonicalLabel": "professional creative/technical AI users",
+      "description": "Visual AI professionals are Comfy's primary audience: artists, animators, VFX teams, creative studios, and developers who need fine-grained control over AI models and parameters rather than a simple prompt box.",
+      "hasChunks": [
+        {
+          "chunkId": "c_026",
+          "text": "For those who want to generate images, video, and 3D with more control than prompt-based tools offer — without spending a weekend configuring your machine.",
+          "sourceUrl": "https://comfy.org/cloud",
+          "pageTitle": "Comfy Cloud — AI in the Cloud",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        },
+        {
+          "chunkId": "c_027",
+          "text": "No IT setup, no GPU procurement, no environment headaches. Everyone works from the same up-to-date platform.",
+          "sourceUrl": "https://comfy.org/cloud",
+          "pageTitle": "Comfy Cloud — AI in the Cloud",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "evidence",
+          "audienceType": "executive"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "entityId": "e_014",
+      "@type": "Person",
+      "name": "comfyanonymous",
+      "description": "comfyanonymous is the creator of ComfyUI and a cofounder of Comfy Org.",
+      "hasChunks": [
+        {
+          "chunkId": "c_028",
+          "text": "Comfyanonymous is the creator of ComfyUI and a cofounder of Comfy Org.",
+          "sourceUrl": "https://comfy.org/about",
+          "pageTitle": "About Comfy Org | Powering Visual AI for Millions of Creators Worldwide",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        }
+      ],
+      "relations": [
+        {
+          "predicate": "AFFILIATED_WITH",
+          "targetId": "e_001",
+          "targetName": "Comfy Org"
+        }
+      ]
+    },
+    {
+      "entityId": "e_015",
+      "@type": "Person",
+      "name": "Yoland68",
+      "description": "Yoland (yoland68) is the creator of ComfyCLI and a cofounder of Comfy Org; before Comfy Org he was a Search ML engineer at Google and a Chromium committer.",
+      "hasChunks": [
+        {
+          "chunkId": "c_029",
+          "text": "Yoland is the creator of ComfyCLI and a cofounder of ComfyOrg. Prior to Comfy Org, he was a Search ML engineer at Google and he was a Chromium committer.",
+          "sourceUrl": "https://comfy.org/about",
+          "pageTitle": "About Comfy Org | Powering Visual AI for Millions of Creators Worldwide",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        }
+      ],
+      "relations": [
+        {
+          "predicate": "AFFILIATED_WITH",
+          "targetId": "e_001",
+          "targetName": "Comfy Org"
+        }
+      ]
+    },
+    {
+      "entityId": "e_016",
+      "@type": "Person",
+      "name": "robinjhuang",
+      "description": "robinjhuang maintains the Comfy Registry and is a cofounder of Comfy Org; before Comfy Org he worked on virtual agents at Google Cloud.",
+      "hasChunks": [
+        {
+          "chunkId": "c_030",
+          "text": "Robin maintains the Comfy Registry, and is a cofounder of Comfy Org. Prior to Comfy Org, he was building virtual agents at Google Cloud.",
+          "sourceUrl": "https://comfy.org/about",
+          "pageTitle": "About Comfy Org | Powering Visual AI for Millions of Creators Worldwide",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "general"
+        }
+      ],
+      "relations": [
+        {
+          "predicate": "AFFILIATED_WITH",
+          "targetId": "e_001",
+          "targetName": "Comfy Org"
+        }
+      ]
+    },
+    {
+      "entityId": "e_017",
+      "@type": "Standard",
+      "name": "GPL-3.0 License",
+      "description": "GPL-3.0 is the open-source software license Comfy Org publishes ComfyUI under, guaranteeing the core engine remains free to run, modify, and redistribute.",
+      "hasChunks": [
+        {
+          "chunkId": "c_031",
+          "text": "Yes. Free and open source under GPL-3.0. No feature gates, no trials, no catch.",
+          "sourceUrl": "https://comfy.org/download",
+          "pageTitle": "Download Comfy — Run AI Locally",
+          "publisher": "Comfy Org",
+          "retrieved": "2026-06-19T00:00:00Z",
+          "contentType": "definition",
+          "audienceType": "technical"
+        }
+      ],
+      "relations": []
+    }
+  ]
+}

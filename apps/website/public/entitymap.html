@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="index, follow" />
+    <title>EntityMap - Comfy Org</title>
+    <meta
+      name="description"
+      content="Human-readable companion page for entitymap.json, Comfy Org's structured, entity-first knowledge index for AI agents, LLMs, and RAG pipelines. entitymap.json is the EntityMap v1.0-conformant source of truth."
+    />
+    <meta name="last-verified" content="2026-07-14" />
+    <meta name="review-by" content="2026-10-14" />
+    <link rel="alternate" type="application/json" href="/entitymap.json" />
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          sans-serif;
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem;
+        line-height: 1.55;
+        color: #1a1a1a;
+      }
+      header {
+        border-bottom: 1px solid #e2e2e2;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+      }
+      h1 {
+        font-size: 1.6rem;
+        margin: 0 0 0.25rem;
+      }
+      .meta {
+        color: #666;
+        font-size: 0.85rem;
+      }
+      section.entity {
+        border: 1px solid #e6e6e6;
+        border-radius: 8px;
+        padding: 1.25rem 1.25rem 0.5rem;
+        margin: 0 0 1.5rem;
+      }
+      h2 {
+        font-size: 1.2rem;
+        margin: 0.1rem 0 0.25rem;
+      }
+      .type {
+        display: inline-block;
+        font-size: 0.7rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        background: #f0f0f0;
+        border-radius: 4px;
+        padding: 0.15rem 0.5rem;
+        color: #444;
+        margin-left: 0.4rem;
+        vertical-align: middle;
+      }
+      .desc {
+        margin: 0.5rem 0 1rem;
+      }
+      .rels {
+        font-size: 0.9rem;
+        margin: 0.5rem 0 1rem;
+        padding: 0;
+        list-style: none;
+      }
+      .rels li {
+        margin: 0.2rem 0;
+      }
+      .pred {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.8rem;
+        background: #eef6f0;
+        color: #0a7a45;
+        padding: 0.05rem 0.35rem;
+        border-radius: 3px;
+      }
+      blockquote {
+        margin: 0.6rem 0;
+        padding: 0.6rem 0.9rem;
+        border-left: 3px solid #20ce88;
+        background: #fafafa;
+      }
+      blockquote cite {
+        display: block;
+        margin-top: 0.4rem;
+        font-size: 0.8rem;
+        color: #555;
+        font-style: normal;
+      }
+      a {
+        color: #0a7a45;
+      }
+      footer {
+        border-top: 1px solid #e2e2e2;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        font-size: 0.85rem;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>EntityMap: Comfy Org</h1>
+      <p class="meta">
+        A structured, entity-first index of what
+        <a href="https://comfy.org">Comfy Org</a> knows, published for AI
+        systems. Generated 2026-06-19T00:00:00Z, last verified 2026-07-14. This
+        is a human-readable companion view; the EntityMap v1.0-conformant source
+        of truth is <a href="/entitymap.json">entitymap.json</a>.
+      </p>
+    </header>
+    <section class="entity" id="e_001">
+      <h2>Comfy Org<span class="type">Organization</span></h2>
+      <p class="desc">
+        Comfy Org is the original team behind ComfyUI, an independent, in-person
+        company based in San Francisco that builds and maintains the open-source
+        visual AI engine and its commercial Cloud, API, and Enterprise
+        offerings.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">OFFERS</span> &rarr; <a href="#e_002">ComfyUI</a>
+        </li>
+        <li>
+          <span class="pred">OFFERS</span> &rarr;
+          <a href="#e_003">Comfy Desktop</a>
+        </li>
+        <li>
+          <span class="pred">OFFERS</span> &rarr;
+          <a href="#e_004">Comfy Cloud</a>
+        </li>
+        <li>
+          <span class="pred">OFFERS</span> &rarr; <a href="#e_005">Comfy API</a>
+        </li>
+        <li>
+          <span class="pred">OFFERS</span> &rarr;
+          <a href="#e_006">Comfy Enterprise</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        We are the original team behind ComfyUI — and we continue to maintain
+        and expand it today. We are a group of engineers and artists who
+        maintain ComfyUI and other tools in the ecosystem.
+        <cite
+          ><a href="https://comfy.org/about"
+            >About Comfy Org | Powering Visual AI for Millions of Creators
+            Worldwide</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        Our investors include Craft, Pace Capital, Chemistry, Abstract, Truarrow
+        Partners, and Essence.
+        <cite
+          ><a href="https://comfy.org/about"
+            >About Comfy Org | Powering Visual AI for Millions of Creators
+            Worldwide</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#Organization",
+          "name": "Comfy Org",
+          "description": "Comfy Org is the original team behind ComfyUI, an independent, in-person company based in San Francisco that builds and maintains the open-source visual AI engine and its commercial Cloud, API, and Enterprise offerings.",
+          "identifier": "e_001",
+          "url": "https://comfy.org/about",
+          "citation": ["https://comfy.org/about", "https://comfy.org/about"]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_002">
+      <h2>ComfyUI<span class="type">Platform</span></h2>
+      <p class="desc">
+        ComfyUI is Comfy Org&#x27;s open-source, node-based AI workflow engine
+        for building and running visual and audio generation pipelines, giving
+        users node-level control over every model, parameter, and processing
+        step. It underpins every other Comfy product.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">INSTANCE_OF</span> &rarr;
+          <a href="#e_012">Node-Based Workflow</a>
+        </li>
+        <li>
+          <span class="pred">TARGETS</span> &rarr;
+          <a href="#e_013">Visual AI Professionals</a>
+          <span class="meta">(declared)</span>
+        </li>
+        <li>
+          <span class="pred">REGULATED_BY</span> &rarr;
+          <a href="#e_017">GPL-3.0 License</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        Comfy is the AI creation engine for visual professionals who demand
+        control over every model, every parameter, and every output.
+        <cite
+          ><a href="https://comfy.org/"
+            >Comfy — Professional Control of Visual AI</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        The full ComfyUI engine — open source, fast, extensible, and yours to
+        run however you want.
+        <cite
+          ><a href="https://comfy.org/download"
+            >Download Comfy — Run AI Locally</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        ComfyUI is building foundational open source software for the visual AI
+        space.
+        <cite
+          ><a href="https://comfy.org/about"
+            >About Comfy Org | Powering Visual AI for Millions of Creators
+            Worldwide</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        ComfyUI is so important to us because it allows us to know that we
+        always play on the bleeding edge. Not only because of the technology
+        itself, but because of the entire community behind it.
+        <cite
+          ><a href="https://comfy.org/customers">Customer Stories — Comfy</a> -
+          published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#Platform",
+          "name": "ComfyUI",
+          "description": "ComfyUI is Comfy Org's open-source, node-based AI workflow engine for building and running visual and audio generation pipelines, giving users node-level control over every model, parameter, and processing step. It underpins every other Comfy product.",
+          "identifier": "e_002",
+          "url": "https://comfy.org/",
+          "citation": [
+            "https://comfy.org/",
+            "https://comfy.org/download",
+            "https://comfy.org/about",
+            "https://comfy.org/customers"
+          ]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_003">
+      <h2>Comfy Desktop<span class="type">SoftwareProduct</span></h2>
+      <p class="meta">also: Comfy Local</p>
+      <p class="desc">
+        Comfy Desktop is the free, locally-installed distribution of ComfyUI
+        that runs entirely on a user&#x27;s own hardware, offline, with no
+        feature gates or paid tiers for core functionality.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">PART_OF</span> &rarr; <a href="#e_002">ComfyUI</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        Run on your hardware. Free forever.
+        <cite
+          ><a href="https://comfy.org/download"
+            >Download Comfy — Run AI Locally</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        No feature gates, no trial periods, no &quot;pro&quot; tier for core
+        functionality. No vendor can lock you in or force you off the platform.
+        <cite
+          ><a href="https://comfy.org/download"
+            >Download Comfy — Run AI Locally</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#SoftwareProduct",
+          "name": "Comfy Desktop",
+          "description": "Comfy Desktop is the free, locally-installed distribution of ComfyUI that runs entirely on a user's own hardware, offline, with no feature gates or paid tiers for core functionality.",
+          "identifier": "e_003",
+          "alternateName": "Comfy Local",
+          "url": "https://comfy.org/download",
+          "citation": [
+            "https://comfy.org/download",
+            "https://comfy.org/download"
+          ]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_004">
+      <h2>Comfy Cloud<span class="type">SoftwareProduct</span></h2>
+      <p class="desc">
+        Comfy Cloud is Comfy Org&#x27;s hosted, browser-based version of ComfyUI
+        that runs on dedicated cloud GPUs with pre-loaded models and
+        pre-installed custom nodes, billed on a credit-based subscription.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">PART_OF</span> &rarr; <a href="#e_002">ComfyUI</a>
+        </li>
+        <li>
+          <span class="pred">OFFERS</span> &rarr;
+          <a href="#e_008">Partner Nodes</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        The easiest way to start with ComfyUI. Pre-loaded models. Pre-installed
+        custom nodes. Concurrent jobs. The full power of ComfyUI on Blackwell
+        RTX 6000 Pros.
+        <cite
+          ><a href="https://comfy.org/cloud">Comfy Cloud — AI in the Cloud</a> -
+          published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        Comfy Cloud runs on Blackwell RTX 6000 Pros — 96GB VRAM.
+        <cite
+          ><a href="https://comfy.org/cloud">Comfy Cloud — AI in the Cloud</a> -
+          published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        Access cloud-powered ComfyUI workflows with straightforward, usage-based
+        pricing.
+        <cite
+          ><a href="https://comfy.org/cloud/pricing">Pricing — Comfy Cloud</a> -
+          published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#SoftwareProduct",
+          "name": "Comfy Cloud",
+          "description": "Comfy Cloud is Comfy Org's hosted, browser-based version of ComfyUI that runs on dedicated cloud GPUs with pre-loaded models and pre-installed custom nodes, billed on a credit-based subscription.",
+          "identifier": "e_004",
+          "url": "https://comfy.org/cloud",
+          "citation": [
+            "https://comfy.org/cloud",
+            "https://comfy.org/cloud",
+            "https://comfy.org/cloud/pricing"
+          ]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_005">
+      <h2>Comfy API<span class="type">SoftwareProduct</span></h2>
+      <p class="desc">
+        Comfy API lets users turn a ComfyUI workflow into a production endpoint,
+        so generation can be triggered programmatically and integrated into
+        external systems rather than run manually inside the app.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">PART_OF</span> &rarr; <a href="#e_002">ComfyUI</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        Design your workflows. Deploy them as API calls. Automate generation,
+        integrate with your systems, and scale to thousands of outputs on Comfy
+        Cloud.
+        <cite
+          ><a href="https://comfy.org/api">Comfy API</a> - published by Comfy
+          Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        The API is for running workflows inside other systems — triggered by
+        code, not by a person at a keyboard.
+        <cite
+          ><a href="https://comfy.org/api">Comfy API</a> - published by Comfy
+          Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#SoftwareProduct",
+          "name": "Comfy API",
+          "description": "Comfy API lets users turn a ComfyUI workflow into a production endpoint, so generation can be triggered programmatically and integrated into external systems rather than run manually inside the app.",
+          "identifier": "e_005",
+          "url": "https://comfy.org/api",
+          "citation": ["https://comfy.org/api", "https://comfy.org/api"]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_006">
+      <h2>Comfy Enterprise<span class="type">Service</span></h2>
+      <p class="desc">
+        Comfy Enterprise adds managed cloud infrastructure, role-based access,
+        SSO, custom SLAs, and dedicated support on top of the ComfyUI workflows
+        an organization already builds, aimed at studios and teams running Comfy
+        in production.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">PART_OF</span> &rarr; <a href="#e_002">ComfyUI</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        Comfy Enterprise adds managed infrastructure, team controls, and
+        dedicated support to the workflows your organization already builds.
+        <cite
+          ><a href="https://comfy.org/cloud/enterprise">Comfy Enterprise</a> -
+          published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        Internal estimates are 12–18 months with a dedicated engineering team.
+        No matter how good or how fast, building this internally won&#x27;t have
+        5,000+ extensions, 60,000+ nodes, or same-day model support.
+        <cite
+          ><a href="https://comfy.org/cloud/enterprise">Comfy Enterprise</a> -
+          published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#Service",
+          "name": "Comfy Enterprise",
+          "description": "Comfy Enterprise adds managed cloud infrastructure, role-based access, SSO, custom SLAs, and dedicated support on top of the ComfyUI workflows an organization already builds, aimed at studios and teams running Comfy in production.",
+          "identifier": "e_006",
+          "url": "https://comfy.org/cloud/enterprise",
+          "citation": [
+            "https://comfy.org/cloud/enterprise",
+            "https://comfy.org/cloud/enterprise"
+          ]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_007">
+      <h2>App Mode<span class="type">ProprietaryTerm</span></h2>
+      <p class="meta">general label: simplified no-code workflow interface</p>
+      <p class="desc">
+        App Mode is Comfy&#x27;s simplified view of a ComfyUI workflow that lets
+        non-technical users run a workflow without working in the underlying
+        node graph.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">PART_OF</span> &rarr; <a href="#e_002">ComfyUI</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        If you are new to ComfyUI, get started with App Mode, a simplified view
+        of your workflows. You can flip back to the node graph view anytime to
+        go deeper.
+        <cite
+          ><a href="https://comfy.org/"
+            >Comfy — Professional Control of Visual AI</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        Non-technical team members run workflows without touching the node
+        graph.
+        <cite
+          ><a href="https://comfy.org/cloud/enterprise">Comfy Enterprise</a> -
+          published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#ProprietaryTerm",
+          "name": "App Mode",
+          "description": "App Mode is Comfy's simplified view of a ComfyUI workflow that lets non-technical users run a workflow without working in the underlying node graph.",
+          "identifier": "e_007",
+          "url": "https://comfy.org/",
+          "citation": [
+            "https://comfy.org/",
+            "https://comfy.org/cloud/enterprise"
+          ]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_008">
+      <h2>Partner Nodes<span class="type">ProprietaryTerm</span></h2>
+      <p class="meta">
+        also: API Nodes &middot; general label: third-party AI model API
+        integration nodes
+      </p>
+      <p class="desc">
+        Partner Nodes (formerly API Nodes) are ComfyUI nodes that call
+        third-party, commercially-licensed AI models such as Nano Banana through
+        Comfy&#x27;s infrastructure, billed from the same credit balance as
+        Comfy Cloud GPU time.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">PART_OF</span> &rarr; <a href="#e_002">ComfyUI</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        Run proprietary models through Comfy&#x27;s Partner Nodes, such as Nano
+        Banana. The amount of credits each node uses depends on the model and
+        parameters you set in the node, but these credits are the same ones that
+        your monthly subscription comes with.
+        <cite
+          ><a href="https://comfy.org/cloud/pricing">Pricing — Comfy Cloud</a> -
+          published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        Partner Nodes (Pay-as-you-go): These nodes (formerly called API nodes)
+        run third-party models via API calls and can be used on both Comfy Cloud
+        and Comfy Desktop.
+        <cite
+          ><a href="https://comfy.org/cloud">Comfy Cloud — AI in the Cloud</a> -
+          published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#ProprietaryTerm",
+          "name": "Partner Nodes",
+          "description": "Partner Nodes (formerly API Nodes) are ComfyUI nodes that call third-party, commercially-licensed AI models such as Nano Banana through Comfy's infrastructure, billed from the same credit balance as Comfy Cloud GPU time.",
+          "identifier": "e_008",
+          "alternateName": "API Nodes",
+          "url": "https://comfy.org/cloud/pricing",
+          "citation": [
+            "https://comfy.org/cloud/pricing",
+            "https://comfy.org/cloud"
+          ]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_009">
+      <h2>ComfyUI Manager<span class="type">ProprietaryTerm</span></h2>
+      <p class="meta">general label: extension/plugin manager</p>
+      <p class="desc">
+        ComfyUI Manager is the tool Comfy Org maintains for browsing,
+        installing, updating, and managing community-built custom nodes and
+        extensions from inside ComfyUI.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">PART_OF</span> &rarr; <a href="#e_002">ComfyUI</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        ComfyUI Manager lets you browse, install, update, and manage 5,000+
+        extensions from inside the app.
+        <cite
+          ><a href="https://comfy.org/download"
+            >Download Comfy — Run AI Locally</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        ComfyUI Manager — to manage custom nodes and extensions
+        <cite
+          ><a href="https://comfy.org/about"
+            >About Comfy Org | Powering Visual AI for Millions of Creators
+            Worldwide</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#ProprietaryTerm",
+          "name": "ComfyUI Manager",
+          "description": "ComfyUI Manager is the tool Comfy Org maintains for browsing, installing, updating, and managing community-built custom nodes and extensions from inside ComfyUI.",
+          "identifier": "e_009",
+          "url": "https://comfy.org/download",
+          "citation": ["https://comfy.org/download", "https://comfy.org/about"]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_010">
+      <h2>Custom Node Registry<span class="type">ProprietaryTerm</span></h2>
+      <p class="meta">general label: node package registry</p>
+      <p class="desc">
+        The Custom Node Registry is Comfy Org&#x27;s catalog for discovering and
+        sharing community-built node extensions for ComfyUI.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">PART_OF</span> &rarr; <a href="#e_002">ComfyUI</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        Custom Node Registry — discover and share new functionalities
+        <cite
+          ><a href="https://comfy.org/about"
+            >About Comfy Org | Powering Visual AI for Millions of Creators
+            Worldwide</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#ProprietaryTerm",
+          "name": "Custom Node Registry",
+          "description": "The Custom Node Registry is Comfy Org's catalog for discovering and sharing community-built node extensions for ComfyUI.",
+          "identifier": "e_010",
+          "url": "https://comfy.org/about",
+          "citation": ["https://comfy.org/about"]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_011">
+      <h2>ComfyHub<span class="type">ProprietaryTerm</span></h2>
+      <p class="meta">
+        also: Comfy Hub &middot; general label: community workflow marketplace
+      </p>
+      <p class="desc">
+        ComfyHub is Comfy&#x27;s community marketplace for discovering,
+        browsing, and remixing workflows and templates shared by top creators,
+        organized by model and category tags.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">PART_OF</span> &rarr; <a href="#e_002">ComfyUI</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        Discover the World&#x27;s Top Creators and Workflows
+        <cite
+          ><a href="https://comfy.org/workflows"
+            >ComfyUI Workflows - Free AI Generation Workflows</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        Hundreds of ready-to-run workflow templates, spanning image, video, 3D,
+        and audio.
+        <cite
+          ><a href="https://comfy.org/workflows"
+            >ComfyUI Workflows - Free AI Generation Workflows</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#ProprietaryTerm",
+          "name": "ComfyHub",
+          "description": "ComfyHub is Comfy's community marketplace for discovering, browsing, and remixing workflows and templates shared by top creators, organized by model and category tags.",
+          "identifier": "e_011",
+          "alternateName": "Comfy Hub",
+          "url": "https://comfy.org/workflows",
+          "citation": [
+            "https://comfy.org/workflows",
+            "https://comfy.org/workflows"
+          ]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_012">
+      <h2>Node-Based Workflow<span class="type">Concept</span></h2>
+      <p class="desc">
+        A node-based workflow is a visual-programming approach where individual
+        processing steps are represented as connected nodes on a canvas; ComfyUI
+        applies this paradigm to AI image, video, 3D, and audio generation
+        pipelines.
+      </p>
+      <blockquote data-publisher="Comfy Org">
+        Connect models, processing steps, and outputs on a canvas where every
+        decision is visible and every step is inspectable.
+        <cite
+          ><a href="https://comfy.org/"
+            >Comfy — Professional Control of Visual AI</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#Concept",
+          "name": "Node-Based Workflow",
+          "description": "A node-based workflow is a visual-programming approach where individual processing steps are represented as connected nodes on a canvas; ComfyUI applies this paradigm to AI image, video, 3D, and audio generation pipelines.",
+          "identifier": "e_012",
+          "url": "https://comfy.org/",
+          "citation": ["https://comfy.org/"]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_013">
+      <h2>Visual AI Professionals<span class="type">ProprietaryTerm</span></h2>
+      <p class="meta">
+        general label: professional creative/technical AI users
+      </p>
+      <p class="desc">
+        Visual AI professionals are Comfy&#x27;s primary audience: artists,
+        animators, VFX teams, creative studios, and developers who need
+        fine-grained control over AI models and parameters rather than a simple
+        prompt box.
+      </p>
+      <blockquote data-publisher="Comfy Org">
+        For those who want to generate images, video, and 3D with more control
+        than prompt-based tools offer — without spending a weekend configuring
+        your machine.
+        <cite
+          ><a href="https://comfy.org/cloud">Comfy Cloud — AI in the Cloud</a> -
+          published by Comfy Org</cite
+        >
+      </blockquote>
+      <blockquote data-publisher="Comfy Org">
+        No IT setup, no GPU procurement, no environment headaches. Everyone
+        works from the same up-to-date platform.
+        <cite
+          ><a href="https://comfy.org/cloud">Comfy Cloud — AI in the Cloud</a> -
+          published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#ProprietaryTerm",
+          "name": "Visual AI Professionals",
+          "description": "Visual AI professionals are Comfy's primary audience: artists, animators, VFX teams, creative studios, and developers who need fine-grained control over AI models and parameters rather than a simple prompt box.",
+          "identifier": "e_013",
+          "url": "https://comfy.org/cloud",
+          "citation": ["https://comfy.org/cloud", "https://comfy.org/cloud"]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_014">
+      <h2>comfyanonymous<span class="type">Person</span></h2>
+      <p class="desc">
+        comfyanonymous is the creator of ComfyUI and a cofounder of Comfy Org.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">AFFILIATED_WITH</span> &rarr;
+          <a href="#e_001">Comfy Org</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        Comfyanonymous is the creator of ComfyUI and a cofounder of Comfy Org.
+        <cite
+          ><a href="https://comfy.org/about"
+            >About Comfy Org | Powering Visual AI for Millions of Creators
+            Worldwide</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#Person",
+          "name": "comfyanonymous",
+          "description": "comfyanonymous is the creator of ComfyUI and a cofounder of Comfy Org.",
+          "identifier": "e_014",
+          "url": "https://comfy.org/about",
+          "citation": ["https://comfy.org/about"]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_015">
+      <h2>Yoland68<span class="type">Person</span></h2>
+      <p class="desc">
+        Yoland (yoland68) is the creator of ComfyCLI and a cofounder of Comfy
+        Org; before Comfy Org he was a Search ML engineer at Google and a
+        Chromium committer.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">AFFILIATED_WITH</span> &rarr;
+          <a href="#e_001">Comfy Org</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        Yoland is the creator of ComfyCLI and a cofounder of ComfyOrg. Prior to
+        Comfy Org, he was a Search ML engineer at Google and he was a Chromium
+        committer.
+        <cite
+          ><a href="https://comfy.org/about"
+            >About Comfy Org | Powering Visual AI for Millions of Creators
+            Worldwide</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#Person",
+          "name": "Yoland68",
+          "description": "Yoland (yoland68) is the creator of ComfyCLI and a cofounder of Comfy Org; before Comfy Org he was a Search ML engineer at Google and a Chromium committer.",
+          "identifier": "e_015",
+          "url": "https://comfy.org/about",
+          "citation": ["https://comfy.org/about"]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_016">
+      <h2>robinjhuang<span class="type">Person</span></h2>
+      <p class="desc">
+        robinjhuang maintains the Comfy Registry and is a cofounder of Comfy
+        Org; before Comfy Org he worked on virtual agents at Google Cloud.
+      </p>
+      <ul class="rels">
+        <li>
+          <span class="pred">AFFILIATED_WITH</span> &rarr;
+          <a href="#e_001">Comfy Org</a>
+        </li>
+      </ul>
+      <blockquote data-publisher="Comfy Org">
+        Robin maintains the Comfy Registry, and is a cofounder of Comfy Org.
+        Prior to Comfy Org, he was building virtual agents at Google Cloud.
+        <cite
+          ><a href="https://comfy.org/about"
+            >About Comfy Org | Powering Visual AI for Millions of Creators
+            Worldwide</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#Person",
+          "name": "robinjhuang",
+          "description": "robinjhuang maintains the Comfy Registry and is a cofounder of Comfy Org; before Comfy Org he worked on virtual agents at Google Cloud.",
+          "identifier": "e_016",
+          "url": "https://comfy.org/about",
+          "citation": ["https://comfy.org/about"]
+        }
+      </script>
+    </section>
+    <section class="entity" id="e_017">
+      <h2>GPL-3.0 License<span class="type">Standard</span></h2>
+      <p class="desc">
+        GPL-3.0 is the open-source software license Comfy Org publishes ComfyUI
+        under, guaranteeing the core engine remains free to run, modify, and
+        redistribute.
+      </p>
+      <blockquote data-publisher="Comfy Org">
+        Yes. Free and open source under GPL-3.0. No feature gates, no trials, no
+        catch.
+        <cite
+          ><a href="https://comfy.org/download"
+            >Download Comfy — Run AI Locally</a
+          >
+          - published by Comfy Org</cite
+        >
+      </blockquote>
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Thing",
+          "additionalType": "https://entitymap.org/spec/v1.0#Standard",
+          "name": "GPL-3.0 License",
+          "description": "GPL-3.0 is the open-source software license Comfy Org publishes ComfyUI under, guaranteeing the core engine remains free to run, modify, and redistribute.",
+          "identifier": "e_017",
+          "url": "https://comfy.org/download",
+          "citation": ["https://comfy.org/download"]
+        }
+      </script>
+    </section>
+    <footer>
+      Published by Comfy Org. This is a hand-maintained, human-readable
+      companion to <a href="/entitymap.json">entitymap.json</a>, the EntityMap
+      v1.0-conformant source of truth — keep both files in sync when editing
+      either one. Last verified 2026-07-14; next review due 2026-10-14.
+    </footer>
+  </body>
+</html>
