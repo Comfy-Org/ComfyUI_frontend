@@ -6,7 +6,14 @@ import { createI18n } from 'vue-i18n'
 
 import SecretFormDialog from './SecretFormDialog.vue'
 
-const mockState = vi.hoisted(() => ({ inputType: 'text' as string }))
+const mockState = vi.hoisted(() => ({
+  inputType: 'text' as string,
+  credentialOptions: [] as {
+    credential_type: string
+    input_type: string
+    label: string
+  }[]
+}))
 
 vi.mock('../composables/useSecretForm', () => ({
   useSecretForm: () => ({
@@ -17,6 +24,8 @@ vi.mock('../composables/useSecretForm', () => ({
     providerOptions: [],
     providerHelp: '',
     selectedInputType: computed(() => mockState.inputType),
+    credentialOptions: computed(() => mockState.credentialOptions),
+    credentialType: ref<string | null>(null),
     fileName: ref(''),
     loadSecretFromFile: vi.fn(),
     handleSubmit: vi.fn()
@@ -90,6 +99,7 @@ describe('SecretFormDialog', () => {
   beforeEach(() => {
     capturedPointerDownOutside = null
     mockState.inputType = 'text'
+    mockState.credentialOptions = []
   })
 
   it('prevents backdrop pointer-down-outside from closing the dialog', () => {
@@ -151,5 +161,64 @@ describe('SecretFormDialog', () => {
     await userEvent.keyboard('{Enter}')
 
     expect(fileClickSpy).toHaveBeenCalledOnce()
+  })
+
+  it('renders no credential-type selector when the provider advertises one option', () => {
+    mockState.credentialOptions = [
+      { credential_type: 'api_key', input_type: 'text', label: 'API key' }
+    ]
+
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true }
+    })
+
+    expect(screen.queryByText('secrets.credentialType')).toBeNull()
+  })
+
+  it('renders a credential-type selector with the server labels when a provider advertises two options', () => {
+    mockState.credentialOptions = [
+      {
+        credential_type: 'api_key',
+        input_type: 'text',
+        label: 'API key (Google AI Studio)'
+      },
+      {
+        credential_type: 'gcp_service_account',
+        input_type: 'json_file',
+        label: 'Service account (Vertex AI)'
+      }
+    ]
+
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true }
+    })
+
+    expect(screen.getByText('secrets.credentialType')).toBeTruthy()
+    // Option labels come from the server, not a frontend registry.
+    expect(screen.getByText('API key (Google AI Studio)')).toBeTruthy()
+    expect(screen.getByText('Service account (Vertex AI)')).toBeTruthy()
+  })
+
+  it('renders no credential-type selector in edit mode', () => {
+    mockState.credentialOptions = [
+      { credential_type: 'api_key', input_type: 'text', label: 'API key' },
+      {
+        credential_type: 'gcp_service_account',
+        input_type: 'json_file',
+        label: 'Service account'
+      }
+    ]
+
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true, mode: 'edit' }
+    })
+
+    // The class is immutable on update; defaulting it to the stored class is
+    // tracked separately, so the control stays hidden rather than showing a
+    // value that may not match what is stored.
+    expect(screen.queryByText('secrets.credentialType')).toBeNull()
   })
 })

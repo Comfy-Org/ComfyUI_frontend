@@ -11,6 +11,8 @@ import {
   getProviderLogo
 } from '../providers'
 import type {
+  SecretCredentialOption,
+  SecretCredentialType,
   SecretErrorCode,
   SecretInputType,
   SecretMetadata,
@@ -79,6 +81,10 @@ export function useSecretForm(options: UseSecretFormOptions) {
   const apiErrorMessage = ref<string | null>(null)
   // Name of the uploaded credential file (json_file providers), for display.
   const fileName = ref('')
+  // Which credential class the user is entering. Null when the selected provider
+  // advertises no options, in which case `credential_type` is omitted on create
+  // and the server applies its own default.
+  const credentialType = ref<SecretCredentialType | null>(null)
 
   const form = reactive<SecretFormState>({
     name: '',
@@ -134,18 +140,28 @@ export function useSecretForm(options: UseSecretFormOptions) {
     }))
   })
 
-  // How the selected provider's credential is entered, read from the provider's
-  // first advertised credential option. Providers advertising none (and any
-  // unlisted selection) default to a single-line secret.
+  // The credential-entry options the server advertises for the selected
+  // provider. Empty means a single implicit api_key/text credential (the common
+  // case), so callers render no sub-selection.
+  const credentialOptions = computed<SecretCredentialOption[]>(() => {
+    if (!form.provider) return []
+    return providerInfoById.value.get(form.provider)?.credential_options ?? []
+  })
+
+  // How the selected provider's credential is entered: the selected credential
+  // class wins; otherwise the provider's first advertised option; otherwise a
+  // single-line secret.
   //
-  // Taking the first option preserves the pre-`credential_options` behaviour of
-  // one input type per provider. Rendering a sub-selection when a provider
-  // advertises more than one (e.g. Gemini's AI Studio key vs Vertex service
-  // account) is deliberately out of scope here.
+  // Edit mode intentionally follows the same path here. Deriving the input from
+  // the *stored* credential class (which the server treats as immutable on
+  // update) is tracked separately.
   const selectedInputType = computed<SecretInputType>(() => {
-    if (!form.provider) return 'text'
-    const provider = providerInfoById.value.get(form.provider)
-    return provider?.credential_options?.[0]?.input_type ?? 'text'
+    const options = credentialOptions.value
+    if (!options.length) return 'text'
+    const selected = options.find(
+      (o) => o.credential_type === credentialType.value
+    )
+    return (selected ?? options[0]).input_type
   })
 
   // Once the server allowlist resolves, drop a selection the resolved list no
@@ -189,6 +205,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
       form.provider = null
     }
     fileName.value = ''
+    credentialType.value = defaultCredentialType()
     errors.name = ''
     errors.secretValue = ''
     errors.provider = ''
@@ -220,17 +237,35 @@ export function useSecretForm(options: UseSecretFormOptions) {
     }
   }
 
+  // The credential class to preselect for the current provider: its first
+  // advertised option, or null when it advertises none.
+  function defaultCredentialType(): SecretCredentialType | null {
+    return credentialOptions.value[0]?.credential_type ?? null
+  }
+
   // Switching providers discards any entered or uploaded credential so a value
   // captured for one provider (e.g. an uploaded JSON key) can't be submitted
-  // under another, and invalidates any in-flight file read.
+  // under another, invalidates any in-flight file read, and preselects the new
+  // provider's default credential class.
   watch(
     () => form.provider,
     () => {
       latestFileReadId++
       form.secretValue = ''
       fileName.value = ''
+      credentialType.value = defaultCredentialType()
     }
   )
+
+  // Switching credential class within one provider must also discard the value:
+  // an uploaded service-account JSON must never be submittable as an api_key
+  // (or vice versa), since the class determines both the upstream and how the
+  // server validates the value.
+  watch(credentialType, () => {
+    latestFileReadId++
+    form.secretValue = ''
+    fileName.value = ''
+  })
 
   whenever(() => visible.value, resetForm)
 
@@ -276,10 +311,16 @@ export function useSecretForm(options: UseSecretFormOptions) {
     try {
       const secret = toValue(secretRef)
       if (mode === 'create') {
+        // `credential_type` is sent only when the provider advertises options.
+        // Omitting it for single-credential providers keeps the payload
+        // byte-identical to before for huggingface/civitai/runway.
         await createSecret({
           name: form.name.trim(),
           secret_value: form.secretValue,
-          provider: form.provider!
+          provider: form.provider!,
+          ...(credentialType.value
+            ? { credential_type: credentialType.value }
+            : {})
         })
       } else if (secret) {
         const updatePayload: { name: string; secret_value?: string } = {
@@ -310,6 +351,8 @@ export function useSecretForm(options: UseSecretFormOptions) {
     providerOptions,
     providerHelp,
     selectedInputType,
+    credentialOptions,
+    credentialType,
     fileName,
     loadSecretFromFile,
     handleSubmit

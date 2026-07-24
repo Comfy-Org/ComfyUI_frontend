@@ -72,6 +72,41 @@
             </small>
           </div>
 
+          <!--
+            Credential-class sub-selection, rendered only when the server
+            advertises more than one option for the provider (e.g. Gemini's AI
+            Studio key vs a Vertex service account). Labels come from the
+            server so adding a provider option needs no frontend change.
+
+            Create-only: the class is immutable once stored, and defaulting the
+            control to the stored class on edit is tracked separately.
+          -->
+          <div
+            v-if="mode === 'create' && credentialOptions.length > 1"
+            class="flex flex-col gap-1"
+          >
+            <label for="secret-credential-type" class="text-sm font-medium">
+              {{ $t('secrets.credentialType') }}
+            </label>
+            <Select v-model="credentialType">
+              <SelectTrigger id="secret-credential-type" class="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent disable-portal>
+                <SelectItem
+                  v-for="option in credentialOptions"
+                  :key="option.credential_type"
+                  :value="option.credential_type"
+                >
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <small class="text-muted">
+              {{ $t('secrets.credentialTypeHint') }}
+            </small>
+          </div>
+
           <div class="flex flex-col gap-1">
             <label for="secret-value" class="text-sm font-medium">
               {{ $t('secrets.secretValue') }}
@@ -205,6 +240,8 @@ const {
   providerOptions,
   providerHelp,
   selectedInputType,
+  credentialOptions,
+  credentialType,
   fileName,
   loadSecretFromFile,
   handleSubmit
