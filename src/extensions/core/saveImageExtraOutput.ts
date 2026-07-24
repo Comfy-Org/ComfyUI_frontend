@@ -44,13 +44,15 @@ app.registerExtension({
             onNodeCreated.apply(this, arguments)
           : undefined
 
-        // @ts-expect-error fixme ts strict error
-        const widget = this.widgets.find((w) => w.name === 'filename_prefix')
-        // @ts-expect-error fixme ts strict error
+        const widget = this.widgets?.find((w) => w.name === 'filename_prefix')
+        if (!widget) return r
+
         widget.serializeValue = () => {
-          // @ts-expect-error fixme ts strict error
-          return applyTextReplacements(app.graph, widget.value)
+          return typeof widget.value === 'string'
+            ? applyTextReplacements(app.graph, widget.value)
+            : widget.value
         }
+        widget.syncToWorkflow = false
 
         return r
       }

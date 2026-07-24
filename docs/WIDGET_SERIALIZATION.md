@@ -1,12 +1,33 @@
-# Widget Serialization: `widget.serialize` vs `widget.options.serialize`
+# Widget Serialization Controls
 
-Two properties named `serialize` exist at different levels of a widget object. They control different serialization layers and are checked by completely different code paths.
+Two properties named `serialize` and the related `syncToWorkflow` property control different serialization layers.
 
 **`widget.serialize`** — Controls **workflow persistence**. Checked by `LGraphNode.serialize()` and `configure()` when reading/writing `widgets_values` in the workflow JSON. When `false`, the widget is skipped in both serialization and deserialization. Used for UI-only widgets (image previews, progress text, audio players). Typed as `IBaseWidget.serialize` in `src/lib/litegraph/src/types/widgets.ts`.
 
 **`widget.options.serialize`** — Controls **prompt/API serialization**. Checked by `executionUtil.ts` when building the API payload sent to the backend. When `false`, the widget is excluded from prompt inputs. Used for client-side-only controls (`control_after_generate`, combo filter lists) that the server doesn't need. Typed as `IWidgetOptions.serialize` in `src/lib/litegraph/src/types/widgets.ts`.
 
-These correspond to the two data formats in `ComfyMetadata` embedded in output files (PNG, GLTF, WebM, AVIF, etc.): `widget.serialize` → `ComfyMetadataTags.WORKFLOW`, `widget.options.serialize` → `ComfyMetadataTags.PROMPT`.
+**`widget.syncToWorkflow`** — Controls whether an explicit `widget.serializeValue()` result is copied into the execution workflow snapshot returned by `graphToPrompt()` and embedded in output metadata. It defaults to `true`. This does not mutate the live widget value or change workflow persistence through a normal `graph.serialize()` call.
+
+The two `serialize` properties correspond to the two data formats in `ComfyMetadata` embedded in output files (PNG, GLTF, WebM, AVIF, etc.): `widget.serialize` → `ComfyMetadataTags.WORKFLOW`, `widget.options.serialize` → `ComfyMetadataTags.PROMPT`.
+
+## Execution workflow synchronization
+
+`graphToPrompt()` first serializes the graph, then resolves widget values for execution. For widgets with an explicit `serializeValue()`, the resolved value is copied into that serialized execution snapshot by default. Set `syncToWorkflow = false` when the transform is only meaningful for the current execution.
+
+For example, `saveImageExtraOutput` keeps a `filename_prefix` template such as `ComfyUI_%date:yyyy-MM-dd%` in the workflow while sending a resolved value such as `ComfyUI_2026-07-24` in the prompt:
+
+```ts
+widget.serializeValue = () =>
+  typeof widget.value === 'string'
+    ? applyTextReplacements(app.graph, widget.value)
+    : widget.value
+widget.syncToWorkflow = false
+```
+
+Snapshot synchronization respects the existing `widgets_values` shape:
+
+- Array-based `widgets_values` are updated by widget index.
+- VHS-style record-based `widgets_values` are updated only when an existing key matches the widget name. Unrelated keys are preserved, and missing widget-name keys are not added.
 
 ## Permutation table
 
@@ -20,9 +41,10 @@ These correspond to the two data formats in `ComfyMetadata` embedded in output f
 ## Gotchas
 
 - `addWidget('combo', name, value, cb, { serialize: false })` puts `serialize` into `widget.options`, **not** onto `widget` directly. These are different properties consumed by different systems.
-- `LGraphNode.serialize()` checks `widget.serialize === false` (line 967). It does **not** check `widget.options.serialize`. A widget with `options.serialize = false` is still included in `widgets_values`.
+- `LGraphNode.serialize()` checks `widget.serialize === false`. It does **not** check `widget.options.serialize`. A widget with `options.serialize = false` is still included in `widgets_values`.
 - `LGraphNode.serialize()` only writes `widgets_values` if `this.widgets` is truthy. Nodes that create widgets dynamically (like `PrimitiveNode`) will have no `widgets_values` in serialized output if serialized before widget creation — even if `this.widgets_values` exists on the instance from a prior `configure()` call.
 - `widget.options.serialize` is typed as `IWidgetOptions.serialize` — both properties share the name `serialize` but live at different levels of the widget object.
+- `widget.syncToWorkflow` has no effect unless the widget defines `serializeValue()`.
 
 ## PrimitiveNode and copy/paste
 
@@ -50,7 +72,9 @@ See [ADR-0006](adr/0006-primitive-node-copy-paste-lifecycle.md) for proposed fix
 
 - `widget.serialize` checked: `src/lib/litegraph/src/LGraphNode.ts` serialize() and configure()
 - `widget.options.serialize` checked: `src/utils/executionUtil.ts`
+- `widget.syncToWorkflow` checked: `src/utils/executionUtil.ts`
 - `widget.options.serialize` set: `src/scripts/widgets.ts` addValueControlWidgets()
+- `widget.syncToWorkflow` set: `src/extensions/core/saveImageExtraOutput.ts`
 - `widget.serialize` set: `src/composables/node/useNodeImage.ts`, `src/extensions/core/previewAny.ts`, etc.
 - Metadata types: `src/types/metadataTypes.ts`
 - PrimitiveNode: `src/extensions/core/widgetInputs.ts`
