@@ -21,6 +21,7 @@
   </div>
 
   <GlobalToast />
+  <FirstRunTourGate />
   <InviteAcceptedToast />
   <RerouteMigrationToast />
   <ModelImportProgressDialog />
@@ -52,6 +53,7 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
+import FirstRunTourGate from '@/renderer/extensions/firstRunTour/FirstRunTourGate.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'

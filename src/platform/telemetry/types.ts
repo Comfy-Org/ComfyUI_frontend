@@ -99,6 +99,10 @@ export type OnboardingTourStage =
   | 'step_shown'
   | 'completed'
   | 'skipped'
+  | 'run_triggered'
+  | 'upgrade_shown'
+  | 'nudge_shown'
+  | 'explore_templates_clicked'
 
 export type OnboardingTourSkipReason =
   | 'user'
@@ -109,15 +113,37 @@ export type OnboardingTourSkipReason =
  * `step_number` is 1-based and matches the "Step N of M" indicator the user
  * sees, with `step_count` as M. Both `step_number` and `coach_id` are absent
  * for steps with no numbered spotlight (e.g. the landing). `skip_reason` is
- * present only on the `skipped` stage.
+ * present only on the `skipped` stage. `step_count` is absent on `nudge_shown`
+ * and `explore_templates_clicked`, which fire outside the step sequence.
+ * The first-run tour adds `template_id`/`shape`/`entry`/`step_key`/`status`,
+ * gated on `tour: 'firstRun'`; none carries user content or a share id, so no PII.
  */
-export interface OnboardingTourMetadata {
-  tour: string
-  step_count: number
+export type OnboardingTourMetadata<Tour extends string = string> = {
+  tour: Tour
+  step_count?: number
   step_number?: number
   coach_id?: string
   skip_reason?: OnboardingTourSkipReason
-}
+} & (Tour extends 'firstRun'
+  ? {
+      template_id?: string
+      shape?: OnboardingTourShape
+      entry?: OnboardingTourEntry
+      step_key?: OnboardingTourStepKey
+      status?: OnboardingTourRunStatus
+    }
+  : unknown)
+
+/** `shape` labels the role-derived sequence, not the template — `'other'` is the
+ * honest bucket for graphs the resolver handles best-effort but that aren't a
+ * named shape. */
+export type OnboardingTourShape = 't2i' | 'i2v' | 'image-edit' | 'other'
+export type OnboardingTourEntry =
+  | 'getting_started'
+  | 'share_url'
+  | 'template_url'
+export type OnboardingTourStepKey = 'upload' | 'prompt' | 'run' | 'result'
+export type OnboardingTourRunStatus = 'success' | 'error' | 'interrupted'
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
@@ -610,9 +636,9 @@ export interface TelemetryProvider {
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 
   // Onboarding coachmark tour events
-  trackOnboardingTour?(
+  trackOnboardingTour?<const Tour extends string>(
     stage: OnboardingTourStage,
-    metadata: OnboardingTourMetadata
+    metadata: OnboardingTourMetadata<Tour>
   ): void
 
   // Email verification events
@@ -721,11 +747,16 @@ export const TelemetryEvents = {
   USER_SURVEY_OPENED: 'app:user_survey_opened',
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
 
-  // Onboarding Coachmarks
+  // Onboarding Tour
   ONBOARDING_TOUR_STARTED: 'app:onboarding_tour_started',
   ONBOARDING_TOUR_STEP_SHOWN: 'app:onboarding_tour_step_shown',
   ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
   ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
+  ONBOARDING_TOUR_RUN_TRIGGERED: 'app:onboarding_tour_run_triggered',
+  ONBOARDING_TOUR_UPGRADE_SHOWN: 'app:onboarding_tour_upgrade_shown',
+  ONBOARDING_TOUR_NUDGE_SHOWN: 'app:onboarding_tour_nudge_shown',
+  ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED:
+    'app:onboarding_tour_explore_templates_clicked',
 
   // Email Verification
   USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
@@ -797,7 +828,12 @@ export const OnboardingTourEvents: Record<
   started: TelemetryEvents.ONBOARDING_TOUR_STARTED,
   step_shown: TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
   completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,
-  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED
+  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED,
+  run_triggered: TelemetryEvents.ONBOARDING_TOUR_RUN_TRIGGERED,
+  upgrade_shown: TelemetryEvents.ONBOARDING_TOUR_UPGRADE_SHOWN,
+  nudge_shown: TelemetryEvents.ONBOARDING_TOUR_NUDGE_SHOWN,
+  explore_templates_clicked:
+    TelemetryEvents.ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED
 }
 
 export const CANCELLATION_STAGE_EVENTS = {
@@ -819,8 +855,8 @@ export type ExecutionTriggerSource =
  */
 export type TelemetryEventProperties =
   | AuthMetadata
-  | OnboardingTourMetadata
   | AuthErrorMetadata
+  | OnboardingTourMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext

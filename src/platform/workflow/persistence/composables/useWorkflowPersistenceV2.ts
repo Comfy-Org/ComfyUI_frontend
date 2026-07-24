@@ -16,11 +16,14 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useDesktopLayout } from '@/composables/useDesktopLayout'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -28,9 +31,16 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useNewUserService } from '@/services/useNewUserService'
+
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import { clearAllV2Storage } from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
+import type { OnboardingCandidateDeps } from '../onboardingEntryStore'
+import {
+  isOnboardingCandidate,
+  useOnboardingEntryStore
+} from '../onboardingEntryStore'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
@@ -52,6 +62,13 @@ export function useWorkflowPersistenceV2() {
   const draftStore = useWorkflowDraftStoreV2()
   const tabState = useWorkflowTabState()
   const toast = useToast()
+  const entryStore = useOnboardingEntryStore()
+  const onboardingDeps: OnboardingCandidateDeps = {
+    subscription: useSubscription(),
+    newUserService: useNewUserService(),
+    featureFlags: useFeatureFlags(),
+    desktop: useDesktopLayout()
+  }
   const { onUserLogout } = useCurrentUser()
 
   // Run migration on module load, passing clientId for tab state migration
@@ -63,20 +80,6 @@ export function useWorkflowPersistenceV2() {
       clearAllV2Storage()
     }
   })
-
-  const ensureTemplateQueryFromIntent = async () => {
-    hydratePreservedQuery(TEMPLATE_NAMESPACE)
-    const mergedQuery = mergePreservedQueryIntoQuery(
-      TEMPLATE_NAMESPACE,
-      route.query
-    )
-
-    if (mergedQuery) {
-      await router.replace({ query: mergedQuery })
-    }
-
-    return mergedQuery ?? route.query
-  }
 
   const workflowPersistenceEnabled = computed(() =>
     settingStore.get('Comfy.Workflow.Persist')
@@ -175,14 +178,19 @@ export function useWorkflowPersistenceV2() {
     hasPreservedIntent(TEMPLATE_NAMESPACE, 'template')
 
   const loadDefaultWorkflow = async () => {
-    if (!settingStore.get('Comfy.TutorialCompleted')) {
-      await settingStore.set('Comfy.TutorialCompleted', true)
-      await useWorkflowService().loadBlankWorkflow()
-      if (!hasSharedWorkflowIntent() && !hasTemplateUrlIntent()) {
-        await useCommandStore().execute('Comfy.BrowseTemplates')
-      }
-    } else {
+    if (settingStore.get('Comfy.TutorialCompleted')) {
       await comfyApp.loadGraphData()
+      return
+    }
+
+    await settingStore.set('Comfy.TutorialCompleted', true)
+    await useWorkflowService().loadBlankWorkflow()
+    if (hasSharedWorkflowIntent() || hasTemplateUrlIntent()) return
+
+    if (isOnboardingCandidate(onboardingDeps)) {
+      entryStore.showGettingStarted()
+    } else {
+      await useCommandStore().execute('Comfy.BrowseTemplates')
     }
   }
 
@@ -223,12 +231,11 @@ export function useWorkflowPersistenceV2() {
   }
 
   const loadTemplateFromUrlIfPresent = async () => {
-    const query = await ensureTemplateQueryFromIntent()
-    const hasTemplateUrl = query.template && typeof query.template === 'string'
+    hydratePreservedQuery(TEMPLATE_NAMESPACE)
+    const query = mergePreservedQueryIntoQuery(TEMPLATE_NAMESPACE, route.query)
+    if (query) await router.replace({ query })
 
-    if (hasTemplateUrl) {
-      await templateUrlLoader.loadTemplateFromUrl()
-    }
+    return templateUrlLoader.loadTemplateFromUrl()
   }
 
   const loadSharedWorkflowFromUrlIfPresent = async () => {

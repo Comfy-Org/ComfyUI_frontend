@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, readonly, ref, shallowRef, watch } from 'vue'
 
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -51,7 +51,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     skipReason?: OnboardingTourSkipReason
   ) {
     const tour = activeTour.value
-    if (!tour) return
+    // Definition-driven tours (firstRun) aren't in TOURS and report their own telemetry.
+    if (!tour || !TOURS[tour]) return
     telemetry?.trackOnboardingTour(stage, {
       tour,
       step_count: countedSteps.value.length,
@@ -192,10 +193,18 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     void settingStore.set(TOUR_SEEN_SETTING, [...seen, entryPath])
   }
 
-  function startTour(entryPath: EntryPath, force = false) {
+  function startTour(
+    entryPath: EntryPath,
+    {
+      force = false,
+      definition
+    }: { force?: boolean; definition?: CoachStep[] } = {}
+  ) {
     if (steps.value.length) return
     if (!force && hasSeenTour(entryPath)) return
-    const resolved = resolveSteps(TOURS[entryPath], targetMounted)
+    const def = definition ?? TOURS[entryPath]
+    if (!def) return
+    const resolved = resolveSteps(def, targetMounted)
     if (!resolved.length) return
     steps.value = resolved
     activeTour.value = entryPath
@@ -204,7 +213,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   }
 
   function replayTour(entryPath: EntryPath) {
-    startTour(entryPath, true)
+    startTour(entryPath, { force: true })
   }
 
   return {
@@ -219,6 +228,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     countedStepIdx,
     countedStepsTotal,
     waitingForTarget,
+    activeTour: readonly(activeTour),
+    startTour,
     replayTour,
     next,
     back,

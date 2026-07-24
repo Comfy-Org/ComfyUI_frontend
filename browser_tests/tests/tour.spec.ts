@@ -97,7 +97,6 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       await comfyPage.page.keyboard.press('Shift+Tab')
       await expect(step1.locator(':focus')).toBeVisible()
 
-      // Advancing to the next step moves focus onto its primary action.
       await coach.cardNextButton.click()
       await expect(coach.cardForStep(2)).toBeVisible()
       await expect(coach.cardNextButton).toBeFocused()

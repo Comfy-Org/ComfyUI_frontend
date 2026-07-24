@@ -2317,6 +2317,91 @@
       "member": "Member"
     }
   },
+  "onboardingTour": {
+    "overlayLabel": "Getting started tour",
+    "preparing": "Building your template…",
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "complete": "Finish",
+    "stepCounter": "{current} of {total}",
+    "step": {
+      "upload": {
+        "t2i": {
+          "title": "Start with an image",
+          "body": "This image feeds the workflow. Swap in your own whenever you like."
+        },
+        "i2v": {
+          "title": "Start with an image",
+          "body": "This picture is your first frame. Swap in your own whenever you like."
+        },
+        "image-edit": {
+          "title": "Start with an image",
+          "body": "This is the picture you'll edit. Swap in your own whenever you like."
+        },
+        "other": {
+          "title": "Start with an image",
+          "body": "This image feeds the workflow. Swap in your own whenever you like."
+        }
+      },
+      "prompt": {
+        "t2i": {
+          "title": "Describe what you want",
+          "body": "Your image gets built from this description. Try anything you like."
+        },
+        "i2v": {
+          "title": "Describe how it should move",
+          "body": "The image sets the scene. This tells it what happens next."
+        },
+        "image-edit": {
+          "title": "Say what to change",
+          "body": "Your image stays as it is. Describe what you want different."
+        },
+        "other": {
+          "title": "Tell it what to make",
+          "body": "This is your prompt. Change it to change your result."
+        }
+      },
+      "run": {
+        "title": "Run your workflow",
+        "body": "Press Run to start generating your result"
+      },
+      "result": {
+        "image": {
+          "title": "And there it is",
+          "body": "Your new image lands right here — ready to download or share."
+        },
+        "video": {
+          "title": "And there it is",
+          "body": "Your new video lands right here — ready to download or share."
+        }
+      }
+    },
+    "generating": "Generating…",
+    "gettingStarted": {
+      "title": "Get started with graph",
+      "subtitle": "Start a workflow from scratch or load one that's ready to go.",
+      "loadFailed": "Failed to load templates",
+      "screenLabel": "Get started with graph",
+      "tabsLabel": "Getting started options",
+      "tabs": {
+        "templates": "Templates",
+        "tutorials": "Tutorials"
+      },
+      "tutorials": {
+        "interfaceOverview": "Interface overview",
+        "textToImage": "Text to image",
+        "imageToImage": "Image to image",
+        "inpaint": "Inpainting"
+      }
+    },
+    "nudge": {
+      "title": "That was one of hundreds",
+      "body": "You just made your first. Explore what else you can build.",
+      "dismiss": "Not now",
+      "explore": "Explore templates"
+    }
+  },
   "auth": {
     "apiKey": {
       "title": "API Key",
