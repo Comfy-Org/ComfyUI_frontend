@@ -44,6 +44,31 @@ Prefer Vue native options when available:
   `:deep()` selectors are allowed. Add a brief inline comment explaining why the
   exception is required.
 
+## Props, Slots & Reactivity
+
+- Use `watch`/`watchEffect` for side effects; avoid a `ref` + `watch` when a `computed` would work instead
+- Use `provide`/`inject` for dependency injection — but not when a Store or a shared composable would be simpler
+- Use the Vue 3.5 TypeScript style of default prop declaration:
+
+  ```typescript
+  const { nodes, showTotal = true } = defineProps<{
+    nodes: ApiNodeCost[]
+    showTotal?: boolean
+  }>()
+  ```
+
+  - Prefer reactive props destructuring to `const props = defineProps<...>`
+  - Do not use `withDefaults` or runtime props declaration
+  - Do not import Vue macros unnecessarily
+
+- Define slots via template usage, not `defineSlots`
+- Use same-name shorthand for slot prop bindings: `:isExpanded` instead of `:is-expanded="isExpanded"`
+- Derive component types using `vue-component-type-helpers` (`ComponentProps`, `ComponentSlots`) instead of separate type files
+- Be judicious with new refs or other state:
+  - If a prop alone accomplishes the design goal, don't add a `ref`
+  - If the `ref` or prop can be used directly, don't add a `computed`
+  - If a `computed` can name and reuse a derived value, don't use a `watch`
+
 ## Best Practices
 
 - Extract complex conditionals to `computed`
