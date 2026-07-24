@@ -2241,6 +2241,7 @@
     "errorSaveSetting": "Error saving setting {id}: {err}",
     "errorCopyImage": "Error copying image: {error}",
     "errorOpenImage": "Error opening image: {error}",
+    "errorSaveImage": "Error saving image: {error}",
     "noTemplatesToExport": "No templates to export",
     "invalidTemplateData": "Failed to load node template: invalid data",
     "failedToFetchLogs": "Failed to fetch server logs",
