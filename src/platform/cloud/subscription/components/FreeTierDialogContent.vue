@@ -56,16 +56,22 @@
             class="m-0 text-sm text-text-secondary"
           >
             {{
-              freeTierCredits
-                ? $t('subscription.freeTier.description', {
-                    credits: freeTierCredits.toLocaleString()
+              quotaEnabled
+                ? $t('subscription.freeTier.descriptionQuota', {
+                    runs: maxAvailable
                   })
-                : $t('subscription.freeTier.descriptionGeneric')
+                : freeTierCredits
+                  ? $t('subscription.freeTier.description', {
+                      credits: freeTierCredits.toLocaleString()
+                    })
+                  : $t('subscription.freeTier.descriptionGeneric')
             }}
           </p>
 
           <p
-            v-if="!isCreditsBlockedVariant && formattedRenewalDate"
+            v-if="
+              !isCreditsBlockedVariant && !quotaEnabled && formattedRenewalDate
+            "
             class="m-0 text-sm text-text-secondary"
           >
             {{
@@ -102,6 +108,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
+import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 
 const { reason } = defineProps<{
@@ -114,6 +121,7 @@ defineEmits<{
 }>()
 
 const { renewalDate } = useBillingContext()
+const { quotaEnabled, maxAvailable } = useFreeTierQuota()
 
 const formattedRenewalDate = computed(() => {
   if (!renewalDate.value) return ''
