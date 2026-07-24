@@ -572,7 +572,7 @@ onMounted(async () => {
     () => canvasStore.updateSelectedItems()
   )
 
-  // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing)
+  // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing, ?topup)
   await runUrlActionLoaders()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)

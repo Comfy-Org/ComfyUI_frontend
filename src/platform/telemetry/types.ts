@@ -481,7 +481,11 @@ export interface SubscriptionMetadata {
 }
 
 export interface AddCreditsClickMetadata {
-  source: 'credits_panel' | 'avatar_menu' | 'settings_billing_panel'
+  source:
+    | 'credits_panel'
+    | 'avatar_menu'
+    | 'settings_billing_panel'
+    | 'deep_link'
 }
 
 export interface SubscriptionCancellationMetadata {
