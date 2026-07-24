@@ -503,6 +503,40 @@ describe(assetService.getAssetModels, () => {
     expect(models).toEqual([{ name: 'a.safetensors', pathIndex: 0 }])
   })
 
+  it('re-walks when supports_model_type_tags flips after the first walk', async () => {
+    // The flag arrives asynchronously over the websocket handshake. A first
+    // walk before it lands (flag still false) buckets a model_type: tag as a
+    // literal folder, so 'checkpoints' comes back empty.
+    mockSupportsModelTypeTags.value = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'a',
+          name: 'a.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        })
+      ])
+    )
+    expect(await assetService.getAssetModels('checkpoints')).toEqual([])
+
+    // Once the flag lands, the stale cache must be discarded and re-walked so
+    // the asset buckets under 'checkpoints' instead of staying invisible.
+    mockSupportsModelTypeTags.value = true
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'a',
+          name: 'a.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        })
+      ])
+    )
+    expect(await assetService.getAssetModels('checkpoints')).toEqual([
+      { name: 'a.safetensors', pathIndex: 0 }
+    ])
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+
   it('drops uncategorized model assets with a warning', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     fetchApiMock.mockResolvedValueOnce(

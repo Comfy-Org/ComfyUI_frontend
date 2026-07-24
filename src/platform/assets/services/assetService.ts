@@ -325,6 +325,11 @@ function createAssetService() {
   let modelBuckets: Map<string, AssetItem[]> | null = null
   let modelBucketsRequestId = 0
   let pendingModelBuckets: Promise<Map<string, AssetItem[]>> | null = null
+  // The supports_model_type_tags value the cached buckets were built under.
+  // The flag arrives asynchronously over the websocket handshake, so a cache
+  // built before it lands (or surviving a reconnect that flips it) groups tags
+  // by the wrong scheme and must be discarded.
+  let modelBucketsMode: boolean | null = null
 
   /**
    * Discards the cached model buckets so the next read re-walks the models
@@ -405,9 +410,10 @@ function createAssetService() {
    * `/experiment/models`; models with no category tag are dropped with a warning
    * rather than hidden silently.
    */
-  async function buildModelBuckets(): Promise<Map<string, AssetItem[]>> {
+  async function buildModelBuckets(
+    modelTypeMode: boolean
+  ): Promise<Map<string, AssetItem[]>> {
     const assets = await getAllAssetsByTag(MODELS_TAG, true)
-    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
     const buckets = new Map<string, AssetItem[]>()
 
     for (const asset of assets) {
@@ -464,13 +470,18 @@ function createAssetService() {
 
   /** Returns the memoized model buckets, walking the models tag on first read. */
   async function loadModelBuckets(): Promise<Map<string, AssetItem[]>> {
+    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
+    // Discard a cache (or in-flight walk) built under a different flag value:
+    // the buckets would key tags by the wrong scheme otherwise.
+    if (modelBucketsMode !== modelTypeMode) invalidateModelBuckets()
     if (modelBuckets) return modelBuckets
     if (pendingModelBuckets) return pendingModelBuckets
 
+    modelBucketsMode = modelTypeMode
     const requestId = ++modelBucketsRequestId
     const walk = async () => {
       try {
-        const buckets = await buildModelBuckets()
+        const buckets = await buildModelBuckets(modelTypeMode)
         if (requestId === modelBucketsRequestId) {
           modelBuckets = buckets
         }
