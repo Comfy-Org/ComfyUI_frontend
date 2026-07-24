@@ -1075,10 +1075,10 @@ describe('clearWidgetRelatedErrors parameter routing', () => {
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
-  it('passes widgetName (not errorInputName) for model lookup', () => {
+  it('routes validation and missing-asset widget names separately', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
-    const widget = node.addWidget('number', 'steps', 42, () => undefined, {
+    const widget = node.addWidget('number', 'store_name', 42, () => undefined, {
       min: 0,
       max: 100
     })
@@ -1089,12 +1089,12 @@ describe('clearWidgetRelatedErrors parameter routing', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
     const clearSpy = vi.spyOn(store, 'clearWidgetRelatedErrors')
 
-    node.onWidgetChanged!.call(node, 'steps', 42, 0, widget)
+    node.onWidgetChanged!.call(node, 'display_name', 42, 0, widget)
 
     expect(clearSpy).toHaveBeenCalledWith(
       String(node.id),
-      'steps',
-      'steps',
+      'display_name',
+      'store_name',
       42,
       { min: 0, max: 100 }
     )

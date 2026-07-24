@@ -12,6 +12,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { clearWidgetRelatedErrorScopes } from '@/composables/graph/widgetErrorClearing'
 import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
@@ -248,25 +249,20 @@ function clearWidgetErrors(
   const executionId = getExecutionIdByNode(rootGraph, widgetNode)
   if (!executionId) return
 
-  const options = { min: widget.options?.min, max: widget.options?.max }
+  const range = { min: widget.options?.min, max: widget.options?.max }
   const source = resolvePromotedWidgetSource(rootGraph, widgetNode, widget)
-  if (source?.sourceExecutionId) {
-    executionErrorStore.clearWidgetRelatedErrors(
-      source.sourceExecutionId,
-      source.sourceWidgetName,
-      source.sourceWidgetName,
-      value,
-      options
-    )
-  }
-
-  executionErrorStore.clearWidgetRelatedErrors(
-    executionId,
-    widget.name,
-    widget.name,
+  clearWidgetRelatedErrorScopes({
+    clearWidgetRelatedErrors: executionErrorStore.clearWidgetRelatedErrors,
+    host: { executionId, widgetName: widget.name },
+    source: source?.sourceExecutionId
+      ? {
+          executionId: source.sourceExecutionId,
+          widgetName: source.sourceWidgetName
+        }
+      : undefined,
     value,
-    options
-  )
+    range
+  })
 }
 
 function setWidgetValue(

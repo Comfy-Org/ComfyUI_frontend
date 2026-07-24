@@ -7,6 +7,7 @@ import type {
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
+import { clearWidgetRelatedErrorScopes } from '@/composables/graph/widgetErrorClearing'
 import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
@@ -102,24 +103,19 @@ function createWidgetUpdateHandler(
   return (newValue: WidgetValue) => {
     if (widgetState) widgetState.value = newValue
     widget.callback?.(newValue)
-    const options = { min: widgetOptions?.min, max: widgetOptions?.max }
-    if (widget.sourceExecutionId) {
-      const sourceWidgetName = widget.sourceWidgetName ?? widget.name
-      executionErrorStore.clearWidgetRelatedErrors(
-        widget.sourceExecutionId,
-        sourceWidgetName,
-        sourceWidgetName,
-        newValue,
-        options
-      )
-    }
-    executionErrorStore.clearWidgetRelatedErrors(
-      nodeExecId,
-      widget.name,
-      widget.name,
-      newValue,
-      options
-    )
+    const range = { min: widgetOptions?.min, max: widgetOptions?.max }
+    clearWidgetRelatedErrorScopes({
+      clearWidgetRelatedErrors: executionErrorStore.clearWidgetRelatedErrors,
+      host: { executionId: nodeExecId, widgetName: widget.name },
+      source: widget.sourceExecutionId
+        ? {
+            executionId: widget.sourceExecutionId,
+            widgetName: widget.sourceWidgetName ?? widget.name
+          }
+        : undefined,
+      value: newValue,
+      range
+    })
   }
 }
 
