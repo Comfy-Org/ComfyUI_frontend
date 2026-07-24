@@ -165,5 +165,39 @@ test.describe(
         })
       }
     )
+
+    test.describe('App Mode Round-Trip', { tag: ['@vue-nodes'] }, () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.appMode.enableLinearMode()
+        await comfyPage.appMode.suppressVueNodeSwitchPopup()
+      })
+
+      test('Promoted DOM widget stays visible after graph → app → graph round-trip', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+
+        const promotedTextarea = comfyPage.vueNodes
+          .getNodeLocator('11')
+          .getByRole('textbox', { name: 'text' })
+        await expect(promotedTextarea).toBeVisible()
+
+        const graphContainer = comfyPage.page.locator('#graph-canvas-container')
+
+        // Enter app mode — the canvas is hidden via v-show so updateWidgets()
+        // never runs and widgetState.visible goes stale.
+        await comfyPage.appMode.toggleAppMode()
+        await expect(graphContainer).toBeHidden()
+
+        // Return to graph mode — the fix must restore visibility synchronously.
+        await comfyPage.appMode.toggleAppMode()
+        await expect(graphContainer).toBeVisible()
+
+        await expect(promotedTextarea).toBeVisible()
+        await expect(promotedTextarea).toHaveCount(1)
+      })
+    })
   }
 )
