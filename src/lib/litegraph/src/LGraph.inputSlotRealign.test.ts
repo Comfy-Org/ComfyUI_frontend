@@ -253,7 +253,7 @@ function assertLinksRealigned(graph: LGraph, targetNodeId: NodeId) {
   }
 }
 
-describe('LGraph.configure realigns links after input definition order changes (#3348)', () => {
+describe('LGraph.configure input slot realignment (#3348)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('test/RealignSource', SourceNode)

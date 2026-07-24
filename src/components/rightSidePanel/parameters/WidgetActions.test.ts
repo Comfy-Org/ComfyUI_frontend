@@ -12,6 +12,8 @@ import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 import WidgetActions from './WidgetActions.vue'
 
 const { mockGetInputSpecForWidget, mockIsFavorited, mockToggleFavorite } =
@@ -161,6 +163,21 @@ describe('WidgetActions', () => {
     renderWidgetActions(widget, node)
 
     expect(screen.getByRole('button', { name: /Reset/ })).toBeDisabled()
+  })
+
+  it('keeps reset enabled when the store value is null and differs from the default', () => {
+    const node = createMockNode()
+    const id = widgetId('graph-test', node.id, 'test_widget')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: null,
+      options: {}
+    })
+    const widget = { ...createMockWidget(42), widgetId: id } as IBaseWidget
+
+    renderWidgetActions(widget, node)
+
+    expect(screen.getByRole('button', { name: /Reset/ })).toBeEnabled()
   })
 
   it('does not show reset button when no default value exists', () => {

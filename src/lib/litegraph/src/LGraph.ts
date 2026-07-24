@@ -25,7 +25,7 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
 
 import {
   groupLinksByTuple,
@@ -85,6 +85,7 @@ import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import {
+  findReleasableSubgraphs,
   findUsedSubgraphIds,
   getBoundaryLinks,
   groupResolvedByOutput,
@@ -112,6 +113,7 @@ import type {
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import {
+  collectReservedRerouteIds,
   deduplicateSubgraphNodeIds,
   deduplicateSubgraphRerouteIds,
   topologicalSortSubgraphs
@@ -1195,21 +1197,14 @@ export class LGraph
     }
 
     if (node.isSubgraphNode()) {
-      const allGraphs = [this.rootGraph, ...this.rootGraph.subgraphs.values()]
-      const hasRemainingReferences = allGraphs.some((graph) =>
-        graph.nodes.some(
-          (candidate) =>
-            candidate !== node &&
-            candidate.isSubgraphNode() &&
-            candidate.type === node.subgraph.id
-        )
-      )
-
-      if (!hasRemainingReferences) {
-        forEachNode(node.subgraph, fireNodeRemovalLifecycle)
-        unregisterAllLinkTopologies(node.subgraph)
-        unregisterAllRerouteChains(node.subgraph)
-        this.rootGraph.subgraphs.delete(node.subgraph.id)
+      const releasedSubgraphs = findReleasableSubgraphs(this.rootGraph, node)
+      for (const subgraph of releasedSubgraphs) {
+        visitGraphNodes(subgraph, fireNodeRemovalLifecycle)
+      }
+      for (const subgraph of releasedSubgraphs) {
+        unregisterAllLinkTopologies(subgraph)
+        unregisterAllRerouteChains(subgraph)
+        this.rootGraph.subgraphs.delete(subgraph.id)
       }
     }
 
@@ -1749,8 +1744,9 @@ export class LGraph
 
   /**
    * Removes duplicate links that share the same connection tuple
-   * (origin_id, origin_slot, target_id, target_slot). Keeps the link registered
-   * to the target input slot and removes orphaned duplicates from the graph.
+   * (origin_id, origin_slot, target_id, target_slot). Keeps the link
+   * referenced by the serialized input data and removes orphaned duplicates
+   * from the link store and the graph's _links map.
    *
    * Three phases: group links by tuple, select the survivor, purge duplicates.
    * @returns A map from each purged duplicate id to the survivor kept in its
@@ -2637,15 +2633,9 @@ export class LGraph
           : undefined
 
         if (deduplicated) {
-          const reservedRerouteIds = new Set<number>()
-          for (const reroute of this.reroutes.values())
-            reservedRerouteIds.add(Number(reroute.id))
-          for (const sg of this.subgraphs.values())
-            for (const reroute of sg.reroutes.values())
-              reservedRerouteIds.add(Number(reroute.id))
           deduplicateSubgraphRerouteIds(
             deduplicated.subgraphs,
-            reservedRerouteIds,
+            collectReservedRerouteIds(this),
             this.state
           )
         }
@@ -2726,7 +2716,7 @@ export class LGraph
         }
       }
 
-      // Remove duplicate links: links in output.links that share the same
+      // Remove duplicate links: links that share the same
       // (origin_id, origin_slot, target_id, target_slot) tuple.
       // This repairs corrupted data where extra link objects were created
       // without proper cleanup of the previous connection.

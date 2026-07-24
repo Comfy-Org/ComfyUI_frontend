@@ -2,7 +2,11 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  createUuidv4
+} from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -545,15 +549,23 @@ export const useWorkflowService = () => {
     const workflowJSON = toRaw(loadedWorkflow.initialState)
     const old = localStorage.getItem('litegrapheditor_clipboard')
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
-    // serialisation schema.
-    const graph = new LGraph(workflowJSON as unknown as SerialisableGraph)
+    // serialisation schema. The synthetic id keeps the scratch graph out of
+    // the open workflow's root-scoped store buckets.
+    const graph = new LGraph({
+      ...(workflowJSON as unknown as SerialisableGraph),
+      id: createUuidv4()
+    })
     const canvasElement = document.createElement('canvas')
     const canvas = new LGraphCanvas(canvasElement, graph, {
       skip_events: true,
       skip_render: true
     })
-    canvas.selectItems()
-    canvas.copyToClipboard()
+    try {
+      canvas.selectItems()
+      canvas.copyToClipboard()
+    } finally {
+      graph.clear()
+    }
     app.canvas.pasteFromClipboard(options)
     if (old !== null) {
       localStorage.setItem('litegrapheditor_clipboard', old)

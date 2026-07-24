@@ -1,4 +1,4 @@
-import type { LGraphState } from '../LGraph'
+import type { LGraph, LGraphState } from '../LGraph'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -151,6 +151,25 @@ function patchPromotedWidgets(
     const newId = remappedIds.get(toNodeId(widget.id))
     if (newId !== undefined) widget.id = newId
   }
+}
+
+/**
+ * Collects every reroute ID in use by a root graph and its subgraphs, for
+ * use as the reserved set of {@link deduplicateSubgraphRerouteIds}.
+ */
+export function collectReservedRerouteIds(
+  graph: Pick<LGraph, 'reroutes' | 'subgraphs'>
+): Set<number> {
+  const reserved = new Set<number>()
+  for (const reroute of graph.reroutes.values()) {
+    reserved.add(Number(reroute.id))
+  }
+  for (const subgraph of graph.subgraphs.values()) {
+    for (const reroute of subgraph.reroutes.values()) {
+      reserved.add(Number(reroute.id))
+    }
+  }
+  return reserved
 }
 
 /**
