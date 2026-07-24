@@ -4,9 +4,12 @@ name: 'i18n: Update Core'
 on:
   # Manual dispatch for urgent translation updates
   workflow_dispatch:
-  # Only trigger on PRs to main/master - additional branch filtering in job condition
+  # Trigger on PRs to main and to release branches (core/x.y, cloud/x.y).
+  # Release branches need this so translations for backported locale keys are
+  # regenerated and baked into the version-bump PR, mirroring main. Additional
+  # branch filtering (version-bump-* head) is in the job condition below.
   pull_request:
-    branches: [main]
+    branches: [main, 'core/**', 'cloud/**']
     types: [opened, synchronize, reopened]
 
 jobs:

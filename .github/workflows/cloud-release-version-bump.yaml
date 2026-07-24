@@ -1,0 +1,140 @@
+# Description: Cadenced patch bump for active cloud release branch(es).
+#
+# Why this exists:
+#   New localization keys land on `main` and get backported to `cloud/x.y`, but
+#   `i18n-update-core.yaml` only runs for version-bump PRs, and nothing was
+#   driving version bumps on the cloud line on a cadence. A manual bump on the
+#   cloud branch (e.g. #14066) was inert because it did not open a version-bump
+#   PR that i18n would pick up. This workflow closes that gap: on a cadence it
+#   dispatches the existing `release-version-bump.yaml` against the active cloud
+#   branch, which opens a `version-bump-*` PR. `i18n-update-core.yaml` (now
+#   allowed to run for `cloud/**` PRs) then regenerates translations for any new
+#   backported keys and commits them INTO that same PR, so the patch bump and
+#   the regenerated locale JSON merge to the cloud branch together as one
+#   trackable "this was deployed" commit. lobe-i18n only translates missing
+#   keys, so already-translated keys are never re-translated on later runs.
+#
+# Decision reference: #frontend-releases (Christian Byrne + Austin Mroz).
+# Companion change: `i18n-update-core.yaml` triggers on `cloud/**` PRs.
+
+name: 'Cloud Release: Patch Bump + i18n Regen'
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Cloud branch to bump (blank = auto-detect latest cloud/x.y)'
+        required: false
+        default: ''
+        type: string
+      force:
+        description: 'Bump even if no new commits since the last version bump'
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    # Daily at 07:00 UTC. Offset from the main nightly bump (00:00 UTC) so the
+    # two do not contend. Aligns roughly with the daily cloud backport deploys.
+    - cron: '0 7 * * *'
+
+concurrency:
+  group: cloud-release-version-bump
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  bump-cloud:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    env:
+      # PAT so the dispatched release-version-bump run (and the PR it opens)
+      # actually triggers downstream workflows; GITHUB_TOKEN-triggered events do
+      # not start new workflow runs.
+      GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch cloud branches
+        run: git fetch --no-tags origin '+refs/heads/cloud/*:refs/remotes/origin/cloud/*'
+
+      - name: Resolve target branch(es)
+        id: resolve
+        env:
+          INPUT_BRANCH: ${{ github.event.inputs.branch }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${INPUT_BRANCH:-}" ]]; then
+            # Explicit override from workflow_dispatch.
+            if ! git show-ref --verify --quiet "refs/remotes/origin/${INPUT_BRANCH}"; then
+              echo "::error::Branch '${INPUT_BRANCH}' not found on origin"
+              exit 1
+            fi
+            BRANCHES="$INPUT_BRANCH"
+          else
+            # Auto-detect the newest cloud/x.y line. Older cloud branches are
+            # EOL once a newer minor is cut, so only the latest is bumped.
+            BRANCHES=$(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/cloud/*' \
+              | sed -n 's#^origin/\(cloud/[0-9]\+\.[0-9]\+\)$#\1#p' \
+              | sort -t/ -k2 -V \
+              | tail -n1)
+          fi
+          if [[ -z "$BRANCHES" ]]; then
+            echo "::error::No active cloud/x.y branch found"
+            exit 1
+          fi
+          echo "Resolved cloud branch(es): $BRANCHES"
+          {
+            echo 'branches<<EOF'
+            echo "$BRANCHES"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch patch bump for each active cloud branch
+        env:
+          BRANCHES: ${{ steps.resolve.outputs.branches }}
+          FORCE: ${{ github.event.inputs.force }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r BRANCH; do
+            [[ -z "$BRANCH" ]] && continue
+
+            # Idempotency gate A: never stack a second bump PR on a branch that
+            # already has one open and awaiting merge.
+            OPEN=$(gh pr list --repo "$GITHUB_REPOSITORY" --base "$BRANCH" \
+              --state open --json headRefName \
+              --jq '[.[] | select(.headRefName | startswith("version-bump-"))] | length')
+            if [[ "$OPEN" -gt 0 ]]; then
+              echo "⏭️  $BRANCH: a version-bump PR is already open; skipping."
+              continue
+            fi
+
+            # Idempotency gate B: skip when nothing merged since the last bump,
+            # so quiet days do not churn empty patch bumps. `force` overrides.
+            # If the last bump commit can't be found, proceed (fail open so we
+            # never silently stop regenerating translations).
+            LAST_BUMP=$(git log -1 --format='%H' -G'"version":' "origin/$BRANCH" -- package.json || true)
+            if [[ "${FORCE:-false}" != "true" && -n "$LAST_BUMP" ]]; then
+              NEW=$(git rev-list --count "$LAST_BUMP..origin/$BRANCH")
+              if [[ "$NEW" -eq 0 ]]; then
+                echo "⏭️  $BRANCH: no new commits since last bump; skipping."
+                continue
+              fi
+              echo "ℹ️  $BRANCH: $NEW commit(s) since last bump."
+            fi
+
+            # Dispatch the main definition of release-version-bump (it checks out
+            # and bumps the `branch` input); do NOT run the cloud branch's older
+            # copy, which predates the `branch` input.
+            echo "🚀 $BRANCH: dispatching patch bump."
+            gh workflow run release-version-bump.yaml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref main \
+              -f version_type=patch \
+              -f branch="$BRANCH"
+          done <<< "$BRANCHES"
