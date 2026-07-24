@@ -11,6 +11,8 @@ const zAsset = z.object({
   tags: z.array(z.string()).optional().default([]),
   preview_id: z.string().nullable().optional(),
   display_name: z.string().optional(),
+  /** Path within the model's category folder, i.e. the value a loader widget expects. */
+  loader_path: z.string().nullish(),
   preview_url: z.string().optional(),
   thumbnail_url: z.string().optional(),
   created_at: z.string().optional(),
@@ -26,11 +28,6 @@ const zAssetResponse = zListAssetsResponse
   .extend({
     assets: z.array(zAsset)
   })
-
-const zModelFolder = z.object({
-  name: z.string(),
-  folders: z.array(z.string())
-})
 
 // Zod schema for ModelFile to align with interface
 const zModelFile = z.object({
@@ -73,13 +70,15 @@ const zAsyncUploadResponse = z.discriminatedUnion('type', [
   z.object({ type: z.literal('async'), task: zAsyncUploadTask })
 ])
 
-// Filename validation schema
+// Filename validation schema. Trim runs FIRST so the anchored checks see the
+// trimmed value — trailing-position trim let ' /etc/passwd' bypass the
+// absolute-path block.
 export const assetFilenameSchema = z
   .string()
+  .trim()
   .min(1, 'Filename cannot be empty')
   .regex(/^[^\\:*?"<>|]+$/, 'Invalid filename characters') // Allow forward slashes, block backslashes and other unsafe chars
   .regex(/^(?!\/|.*\.\.)/, 'Path must not start with / or contain ..') // Prevent absolute paths and directory traversal
-  .trim()
 
 // Export schemas following repository patterns
 export const assetItemSchema = zAsset
@@ -100,7 +99,6 @@ export type AssetItem = z.infer<typeof zAsset>
 export type AssetResponse = z.infer<typeof zAssetResponse>
 export type AssetMetadata = z.infer<typeof zAssetMetadata>
 export type AsyncUploadResponse = z.infer<typeof zAsyncUploadResponse>
-export type ModelFolder = z.infer<typeof zModelFolder>
 export type ModelFile = z.infer<typeof zModelFile>
 
 /** Payload for updating an asset via PUT /assets/:id */
@@ -132,4 +130,10 @@ export type TagsOperationResult = z.infer<typeof tagsOperationResultSchema>
 export interface ModelFolderInfo {
   name: string
   folders: string[]
+  /**
+   * The folder's raw registered extension allowlist from
+   * `/experiment/models`. An empty array means match-all; absent on older
+   * backends.
+   */
+  extensions?: string[]
 }

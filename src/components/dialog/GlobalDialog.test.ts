@@ -426,7 +426,7 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it.for(['p-dialog', 'p-select-overlay'])(
+  it.for(['p-dialog', 'p-select-overlay', 'p-toast'])(
     'focus-outside on a sibling %s portal does not dismiss the parent',
     (className) => {
       const overlay = document.createElement('div')
