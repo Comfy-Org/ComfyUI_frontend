@@ -196,7 +196,7 @@ export interface ExecutionOutcomeMetadata {
   submittedAt?: number
   executionStartedAt?: number
   terminalAt: number
-  outcome: 'success' | 'failure'
+  outcome: 'success' | 'failure' | 'interrupted'
   workflowContext?: WorkflowExecutionContext
 }
 

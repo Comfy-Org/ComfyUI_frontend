@@ -685,11 +685,20 @@ describe('useExecutionStore - workflowStatus', () => {
     expect(store.getWorkflowStatus(workflowA)).toBe('failed')
   })
 
-  it('drops pending status on interrupt before storeJob', () => {
+  it('flushes interrupted timing when storeJob arrives after WS', () => {
+    const performanceNow = vi.spyOn(performance, 'now').mockReturnValue(92)
     fireExecutionStart('job-1')
+    performanceNow.mockReturnValue(192)
     fireExecutionInterrupted('job-1')
 
     callStoreJob('job-1', workflowA)
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
+      startTime: 42,
+      submittedAt: 142,
+      executionStartedAt: 92,
+      terminalAt: 192,
+      outcome: 'interrupted'
+    })
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 
@@ -756,9 +765,18 @@ describe('useExecutionStore - workflowStatus', () => {
 
   it('skips status badge on user-initiated interrupt', () => {
     callStoreJob('job-1', workflowA)
+    const performanceNow = vi.spyOn(performance, 'now').mockReturnValue(142)
     fireExecutionStart('job-1')
+    performanceNow.mockReturnValue(242)
     fireExecutionInterrupted('job-1')
 
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
+      startTime: 42,
+      submittedAt: 142,
+      executionStartedAt: 142,
+      terminalAt: 242,
+      outcome: 'interrupted'
+    })
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 

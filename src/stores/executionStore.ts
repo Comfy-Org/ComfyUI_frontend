@@ -49,11 +49,17 @@ interface ExecutionNodeInfo {
   type?: string | null
 }
 
-interface PendingWorkflowStatus {
-  status: WorkflowExecutionStatus
-  terminalAt?: number
-  executionStartedAt?: number
-}
+type PendingWorkflowStatus =
+  | {
+      status: WorkflowExecutionStatus
+      terminalAt?: number
+      executionStartedAt?: number
+    }
+  | {
+      outcome: 'interrupted'
+      terminalAt: number
+      executionStartedAt?: number
+    }
 
 interface QueuedJob {
   /**
@@ -453,8 +459,17 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const jobId = e.detail.prompt_id
+    const terminalAt = performance.now()
+    if (!trackExecutionOutcome(jobId, 'interrupted', terminalAt)) {
+      bufferPendingWorkflowStatus(jobId, {
+        outcome: 'interrupted',
+        terminalAt,
+        ...(queuedJobs.value[jobId]?.executionStartedAt !== undefined && {
+          executionStartedAt: queuedJobs.value[jobId].executionStartedAt
+        })
+      })
+    }
     // User-initiated stop is not a failure — drop the badge entirely.
-    pendingWorkflowStatusByJobId.delete(jobId)
     const workflow = jobIdToWorkflow.get(jobId)
     if (workflow) clearWorkflowStatus(workflow)
     if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
@@ -822,6 +837,15 @@ export const useExecutionStore = defineStore('execution', () => {
     const pending = pendingWorkflowStatusByJobId.get(jobId)
     if (pending === undefined || !workflow) return
     pendingWorkflowStatusByJobId.delete(jobId)
+    if ('outcome' in pending) {
+      if (pending.executionStartedAt !== undefined) {
+        queuedJobs.value[jobId].executionStartedAt = pending.executionStartedAt
+      }
+      trackExecutionOutcome(jobId, pending.outcome, pending.terminalAt)
+      delete queuedJobs.value[jobId]
+      jobIdToWorkflow.delete(jobId)
+      return
+    }
     // Don't let a stale 'running' overwrite a terminal status already set.
     if (pending.status === 'running' && workflowStatus.value.has(workflow))
       return
