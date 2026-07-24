@@ -1,14 +1,28 @@
-export interface ReleaseSheriffConfig {
-  datadog: {
-    /** Datadog site host suffix, e.g. `datadoghq.com` or `us5.datadoghq.com`. */
-    site: string
-    /** Datadog On-Call schedule holding the release sheriff rotation. */
-    scheduleId: string
-  }
-  /** Used when Datadog is unreachable or the on-call user is unmapped. */
-  fallbackGithubLogin: string
-  /** Datadog user email to GitHub login. */
-  githubLoginByEmail: Record<string, string>
+// Assigns the on-call release sheriff to backport and release version-bump PRs
+// so they are never left unowned. Run by pr-assign-release-sheriff.yaml.
+//
+// Ask Datadog who is on call right now, map that person to a GitHub login, then
+// assign them (and request their review) on every in-scope PR that has no owner
+// yet. The rotation is read live, so a handover takes effect on the next run
+// with no commit and no PR.
+import { execFileSync } from 'node:child_process'
+import { appendFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
+// The rotation lives in Datadog On-Call. `githubLoginByEmail` is the one piece
+// maintained by hand: Datadog stores no GitHub identity, and GitHub's
+// email->user search only resolves *public* commit emails (org members keep
+// theirs private), so mapping the on-call person's Datadog email to their
+// GitHub login needs this table — add an entry when someone joins the rotation.
+// `fallbackGithubLogin` owns PRs when Datadog is unreachable/unconfigured or the
+// on-call user is unmapped, so a PR is never left without an owner.
+const CONFIG = {
+  datadogSite: 'datadoghq.com',
+  // Empty until the Datadog schedule is created; while empty the workflow
+  // falls back to `fallbackGithubLogin`.
+  scheduleId: '',
+  fallbackGithubLogin: 'christian-byrne',
+  githubLoginByEmail: {} as Record<string, string>
 }
 
 export interface PullRequestSummary {
@@ -21,6 +35,10 @@ export interface PullRequestSummary {
   reviewRequests: { login?: string }[]
   reviewDecision: string | null
   author: { login: string } | null
+}
+
+function warn(message: string) {
+  process.stderr.write(`::warning::${message}\n`)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -39,7 +57,6 @@ export function parseOnCallEmails(payload: unknown): string[] {
   const emails = payload.included.flatMap((resource) => {
     if (!isRecord(resource) || resource.type !== 'users') return []
     if (!isRecord(resource.attributes)) return []
-
     const { email } = resource.attributes
     return typeof email === 'string' && email.trim() ? [email.trim()] : []
   })
@@ -47,47 +64,27 @@ export function parseOnCallEmails(payload: unknown): string[] {
   return [...new Set(emails)]
 }
 
-const ONCALL_TIMEOUT_MS = 15_000
-
-export interface DatadogCredentials {
-  apiKey: string | undefined
-  appKey: string | undefined
-}
-
-export interface OnCallLookup {
-  emails: string[]
-  /** Set whenever the lookup could not produce an answer. */
-  warning: string | null
-}
-
 /**
- * Ask Datadog who is on call right now. Every failure mode degrades to an
- * empty result with a warning rather than throwing: an unreachable rotation
- * must leave PRs with the fallback owner, never unowned.
+ * Ask Datadog who is on call right now. Every failure mode degrades to an empty
+ * list plus a warning rather than throwing: an unreachable rotation must leave
+ * PRs with the fallback owner, never unowned.
  */
-export async function fetchOnCallEmails(
-  config: ReleaseSheriffConfig,
-  { apiKey, appKey }: DatadogCredentials
-): Promise<OnCallLookup> {
-  const { site, scheduleId } = config.datadog
+async function fetchOnCallEmails(): Promise<string[]> {
+  const { datadogSite, scheduleId } = CONFIG
+  const apiKey = process.env.DATADOG_API_KEY
+  const appKey = process.env.DATADOG_APP_KEY
 
   if (!scheduleId) {
-    return {
-      emails: [],
-      warning:
-        'No Datadog On-Call schedule configured in .github/release-sheriff.json'
-    }
+    warn('No Datadog On-Call schedule configured — using the fallback sheriff.')
+    return []
   }
-
   if (!apiKey || !appKey) {
-    return {
-      emails: [],
-      warning: 'DATADOG_API_KEY / DATADOG_APP_KEY are not available'
-    }
+    warn('DATADOG_API_KEY / DATADOG_APP_KEY unavailable — using the fallback.')
+    return []
   }
 
   const url = new URL(
-    `https://api.${site}/api/v2/on-call/schedules/${scheduleId}/responders`
+    `https://api.${datadogSite}/api/v2/on-call/schedules/${scheduleId}/responders`
   )
   url.searchParams.set('include', 'responders.shifts.user')
   url.searchParams.set('filter[position]', 'current')
@@ -99,37 +96,33 @@ export async function fetchOnCallEmails(
         'DD-API-KEY': apiKey,
         'DD-APPLICATION-KEY': appKey
       },
-      signal: AbortSignal.timeout(ONCALL_TIMEOUT_MS)
+      signal: AbortSignal.timeout(15_000)
     })
-
     if (!response.ok) {
-      return {
-        emails: [],
-        warning: `Datadog On-Call responded ${response.status} ${response.statusText}`
-      }
+      warn(
+        `Datadog On-Call responded ${response.status} ${response.statusText} — using the fallback.`
+      )
+      return []
     }
-
-    return { emails: parseOnCallEmails(await response.json()), warning: null }
+    return parseOnCallEmails(await response.json())
   } catch (error) {
-    return {
-      emails: [],
-      warning: `Datadog On-Call lookup failed (${String(error)})`
-    }
+    warn(
+      `Datadog On-Call lookup failed (${String(error)}) — using the fallback.`
+    )
+    return []
   }
 }
 
-export type SheriffSource = 'datadog' | 'fallback' | 'none'
-
 export interface SheriffResolution {
   login: string | null
-  source: SheriffSource
-  email: string | null
+  source: 'datadog' | 'fallback' | 'none'
   unmappedEmails: string[]
 }
 
+/** Map the first on-call email that has a GitHub login; otherwise fall back. */
 export function resolveSheriff(
   emails: string[],
-  config: ReleaseSheriffConfig
+  config: Pick<typeof CONFIG, 'fallbackGithubLogin' | 'githubLoginByEmail'>
 ): SheriffResolution {
   const loginByEmail = new Map(
     Object.entries(config.githubLoginByEmail).map(([email, login]) => [
@@ -141,60 +134,49 @@ export function resolveSheriff(
   const unmappedEmails: string[] = []
   for (const email of emails) {
     const login = loginByEmail.get(email.toLowerCase())
-    if (login) return { login, source: 'datadog', email, unmappedEmails }
+    if (login) return { login, source: 'datadog', unmappedEmails }
     unmappedEmails.push(email)
   }
 
   const fallback = config.fallbackGithubLogin.trim()
   return fallback
-    ? { login: fallback, source: 'fallback', email: null, unmappedEmails }
-    : { login: null, source: 'none', email: null, unmappedEmails }
+    ? { login: fallback, source: 'fallback', unmappedEmails }
+    : { login: null, source: 'none', unmappedEmails }
 }
 
-export type SheriffScope =
-  | 'backport-label'
-  | 'backport-title'
-  | 'release-label'
-  | 'version-bump-branch'
-
-/**
- * `release-version-bump.yaml` names its branch after the new version, so the
- * version must be matched too — plain `version-bump-*` also catches ordinary
- * feature branches like `version-bump-fix-subscription-i18n`.
- */
+// `release-version-bump.yaml` names its branch after the new version, so the
+// version number must be matched — a plain `version-bump-*` prefix also catches
+// ordinary feature branches like `version-bump-fix-subscription-i18n`.
 const VERSION_BUMP_BRANCH = /^version-bump-\d+\.\d+\.\d+/
 
-export function sheriffScopeOf(pr: PullRequestSummary): SheriffScope | null {
+/** A PR the sheriff should own: a backport, or a release version-bump PR. */
+export function isSheriffPr(pr: PullRequestSummary): boolean {
   const labels = pr.labels.map((label) => label.name.toLowerCase())
-
-  if (labels.includes('backport')) return 'backport-label'
-  if (pr.title.toLowerCase().includes('backport')) return 'backport-title'
-  if (labels.includes('release')) return 'release-label'
-  if (VERSION_BUMP_BRANCH.test(pr.headRefName)) return 'version-bump-branch'
-  return null
+  return (
+    labels.includes('backport') ||
+    pr.title.toLowerCase().includes('backport') ||
+    labels.includes('release') ||
+    VERSION_BUMP_BRANCH.test(pr.headRefName)
+  )
 }
 
 export interface SheriffAction {
   number: number
-  scope: SheriffScope
   assign: boolean
   requestReview: boolean
 }
 
 /**
- * Decide what to do with each PR. Existing assignees and existing review
- * requests are left alone so a human who has already picked the PR up is
- * never overwritten, and a rotation handover does not churn open PRs.
+ * Decide what to do with each PR. Existing assignees and review requests are
+ * left alone so a human who already picked the PR up is never overwritten and a
+ * rotation handover does not churn open PRs.
  */
-export function planSheriffActions(
+export function planActions(
   prs: PullRequestSummary[],
   sheriffLogin: string
 ): SheriffAction[] {
   return prs.flatMap((pr) => {
-    if (pr.isDraft) return []
-
-    const scope = sheriffScopeOf(pr)
-    if (!scope) return []
+    if (pr.isDraft || !isSheriffPr(pr)) return []
 
     const assign = pr.assignees.length === 0
     const requestReview =
@@ -202,7 +184,97 @@ export function planSheriffActions(
       pr.reviewDecision !== 'APPROVED' &&
       pr.author?.login !== sheriffLogin
 
-    if (!assign && !requestReview) return []
-    return [{ number: pr.number, scope, assign, requestReview }]
+    return assign || requestReview
+      ? [{ number: pr.number, assign, requestReview }]
+      : []
   })
+}
+
+const PR_FIELDS =
+  'number,title,isDraft,headRefName,labels,assignees,reviewRequests,reviewDecision,author'
+
+function gh(args: string[]): string {
+  return execFileSync('gh', args, { encoding: 'utf8' })
+}
+
+function ghPrList(selector: string[]): PullRequestSummary[] {
+  const fixed = ['pr', 'list', '--state', 'open', '--limit', '100', '--json']
+  return JSON.parse(gh([...fixed, PR_FIELDS, ...selector]))
+}
+
+/**
+ * The repo carries hundreds of open PRs, so instead of listing them all we run
+ * a few narrow queries and merge. `head:version-bump-` also matches feature
+ * branches; `isSheriffPr` filters those back out with the version-number rule.
+ */
+function collectCandidatePrs(): PullRequestSummary[] {
+  const found = [
+    ...ghPrList(['--label', 'backport']),
+    ...ghPrList(['--label', 'Release']),
+    ...ghPrList(['--search', 'backport in:title']),
+    ...ghPrList(['--search', 'head:version-bump-'])
+  ]
+  const byNumber = new Map(found.map((pr) => [pr.number, pr]))
+  return [...byNumber.values()]
+}
+
+function summary(line: string) {
+  const file = process.env.GITHUB_STEP_SUMMARY
+  if (file) appendFileSync(file, `${line}\n`)
+}
+
+function ghPost(path: string, field: string): boolean {
+  try {
+    gh(['api', '--method', 'POST', path, '-f', field, '--silent'])
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function main() {
+  const repo = process.env.GH_REPO
+  if (!repo) throw new Error('GH_REPO is required')
+
+  const { login, source, unmappedEmails } = resolveSheriff(
+    await fetchOnCallEmails(),
+    CONFIG
+  )
+  for (const email of unmappedEmails) {
+    warn(`Datadog on-call user ${email} has no githubLoginByEmail entry.`)
+  }
+  if (!login) {
+    warn('No release sheriff could be resolved — nothing will be assigned.')
+    return
+  }
+
+  const actions = planActions(collectCandidatePrs(), login)
+  summary(`### Release sheriff: \`${login}\` (via ${source})`)
+  if (actions.length === 0) {
+    summary('Nothing to do — every candidate PR already has an owner.')
+    return
+  }
+
+  for (const { number, assign, requestReview } of actions) {
+    if (assign) {
+      const path = `repos/${repo}/issues/${number}/assignees`
+      if (ghPost(path, `assignees[]=${login}`)) summary(`- Assigned #${number}`)
+      else warn(`Could not assign #${number} to ${login}`)
+    }
+
+    // A review request can legitimately fail (e.g. the sheriff is not a
+    // collaborator on a fork PR) and must not undo the assignment above.
+    if (requestReview) {
+      const path = `repos/${repo}/pulls/${number}/requested_reviewers`
+      if (ghPost(path, `reviewers[]=${login}`)) {
+        summary(`- Requested review on #${number}`)
+      } else {
+        warn(`Could not request review from ${login} on #${number}`)
+      }
+    }
+  }
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  await main()
 }
