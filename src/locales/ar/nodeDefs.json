@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "تطبيق Anima LLLite",
+    "inputs": {
+      "end_percent": {
+        "name": "نسبة النهاية"
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "mask": {
+        "name": "القناع"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_patch": {
+        "name": "تصحيح النموذج"
+      },
+      "start_percent": {
+        "name": "نسبة البداية"
+      },
+      "strength": {
+        "name": "القوة"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "ضبط مستوى صوت الملف الصوتي بمقدار محدد بوحدة ديسيبل (dB).",
     "display_name": "ضبط مستوى الصوت",
@@ -2010,9 +2036,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "temperature"
       },
       "prompt": {
         "name": "prompt",
@@ -5861,6 +5884,212 @@
       }
     }
   },
+  "HeyGenAvatarVideoNode": {
+    "description": "إنشاء فيديو مقدم يتحدث باستخدام HeyGen avatar. يتضمن أشهر الصور الرمزية العامة من HeyGen؛ يمكن تزويد معرف مظهر كبديل.",
+    "display_name": "فيديو HeyGen Avatar",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع",
+        "tooltip": "نسبة العرض إلى الارتفاع للفيديو الناتج. 'تلقائي' يتبع مصدر الفيديو للصورة الرمزية."
+      },
+      "background_color": {
+        "name": "لون الخلفية",
+        "tooltip": "لون خلفية صلبة اختياري كرمز hex (مثال: '#00ff00'). اتركه فارغاً لاستخدام خلفية الصورة الرمزية نفسها."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "custom_avatar_id": {
+        "name": "معرف الصورة الرمزية المخصص",
+        "tooltip": "معرف مظهر HeyGen اختياري. عند تعيينه، يتجاوز الصورة الرمزية المحددة أعلاه. يمكن استخدام أي من أكثر من ٣٠٠٠ مظهر عام من HeyGen (أو صورك الرمزية الخاصة)."
+      },
+      "engine": {
+        "name": "المحرك",
+        "tooltip": "محرك التصيير؛ كل خيار يعرض فقط الصور الرمزية التي يدعمها. 'تلقائي' يعرض جميع الصور الرمزية ويختار أفضل محرك لها (يفضل Avatar IV). Avatar V هو الأعلى دقة، وAvatar III هو الأكثر توفيراً."
+      },
+      "engine_avatar": {
+        "name": "الصورة الرمزية"
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "دقة الفيديو الناتج."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "لن يتم إرسالها إلى HeyGen؛ غيّرها لإعادة التشغيل."
+      },
+      "speech": {
+        "name": "الكلام",
+        "tooltip": "تحريك الصورة الرمزية بنص (تحويل النص إلى كلام من HeyGen) أو صوتك الخاص."
+      },
+      "speech_custom_voice_id": {
+        "name": "معرف الصوت المخصص"
+      },
+      "speech_text": {
+        "name": "النص"
+      },
+      "speech_voice": {
+        "name": "الصوت"
+      },
+      "speech_voice_speed": {
+        "name": "سرعة الصوت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "أنشئ صورتك الرمزية القابلة لإعادة الاستخدام من HeyGen من صورة شخص أو من نص (شخصية مولدة). أدخل avatar_id الناتج في custom_avatar_id لفيديو HeyGen Avatar — واحتفظ بالمعرف لإعادة استخدام الصورة الرمزية في سير العمل مستقبلاً.",
+    "display_name": "إنشاء HeyGen Avatar",
+    "inputs": {
+      "source": {
+        "name": "المصدر",
+        "tooltip": "أنشئ شخصية جديدة من نص، أو أنشئ الصورة الرمزية من صورة متصلة لشخص."
+      },
+      "source_prompt": {
+        "name": "المطالبة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرف الصورة الرمزية",
+        "tooltip": "معرف مظهر الصورة الرمزية. مرره إلى custom_avatar_id لفيديو HeyGen Avatar؛ واحتفظ به لإعادة استخدام الصورة الرمزية لاحقاً."
+      },
+      "1": {
+        "name": "المعاينة",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "حوّل أي صورة لشخص إلى فيديو متكلم متزامن مع حركة الشفاه (HeyGen Avatar IV). يمكنك تحريكها بنص مكتوب أو صوتك الخاص.",
+    "display_name": "HeyGen صورة متحركة ناطقة",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع",
+        "tooltip": "نسبة العرض إلى الارتفاع للفيديو الناتج. 'تلقائي' يتبع صورة الإدخال."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "expressiveness": {
+        "name": "التعبيرية",
+        "tooltip": "مدى تعبير الوجه والإيماءات المتحركة."
+      },
+      "image": {
+        "name": "صورة",
+        "tooltip": "صورة الشخص المراد تحريكها. سيتم تصغيرها تلقائيًا إذا كانت أكبر من 2K."
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "دقة الفيديو الناتج."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "لن يتم إرسالها إلى HeyGen؛ غيّرها لإعادة التشغيل."
+      },
+      "speech": {
+        "name": "الصوت",
+        "tooltip": "حرّك الصورة بنص مكتوب (تحويل النص إلى كلام من HeyGen) أو صوتك الخاص."
+      },
+      "speech_custom_voice_id": {
+        "name": "معرّف الصوت المخصص"
+      },
+      "speech_text": {
+        "name": "النص"
+      },
+      "speech_voice": {
+        "name": "الصوت"
+      },
+      "speech_voice_speed": {
+        "name": "سرعة الصوت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "أنشئ صوتًا من نص باستخدام محرك HeyGen Starfish TTS. يشمل أشهر أصوات HeyGen عبر ١٧ لغة.",
+    "display_name": "HeyGen تحويل النص إلى كلام",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "custom_voice_id": {
+        "name": "معرّف الصوت المخصص",
+        "tooltip": "معرّف صوت HeyGen اختياري. عند تعيينه، يتجاوز الصوت المحدد أعلاه. يجب أن يدعم الصوت محرك Starfish."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "لن يتم إرسالها إلى HeyGen؛ غيّرها لإعادة التشغيل."
+      },
+      "speed": {
+        "name": "السرعة",
+        "tooltip": "معامل سرعة الكلام."
+      },
+      "ssml": {
+        "name": "SSML",
+        "tooltip": "تعامل مع النص كعلامات SSML (للوقفات، والتأكيد، والتحكم في النطق)."
+      },
+      "text": {
+        "name": "النص",
+        "tooltip": "النص المراد تحويله إلى صوت (حتى ٥٠٠٠ حرف). يجب أن يكون الصوت الناتج أطول من ثانية واحدة."
+      },
+      "voice": {
+        "name": "الصوت",
+        "tooltip": "الصوت المستخدم (مختار من أشهر الأصوات المتوافقة مع Starfish من HeyGen)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "ترجم فيديو منطوق إلى لغة أخرى. يقوم باستنساخ صوت المتحدث الأصلي ويعيد تحريك الفم ليتطابق مع الكلام المترجم.",
+    "display_name": "HeyGen ترجمة الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "mode": {
+        "name": "الوضع",
+        "tooltip": "'السرعة' أسرع؛ 'الدقة' تنتج مزامنة شفاه بجودة أعلى ولكن بتكلفة مضاعفة."
+      },
+      "output_language": {
+        "name": "اللغة المستهدفة",
+        "tooltip": "اللغة الهدف للفيديو المترجم."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "لن يتم إرسالها إلى HeyGen؛ غيّرها لإعادة التشغيل القسري."
+      },
+      "speaker_count": {
+        "name": "عدد المتحدثين",
+        "tooltip": "عدد المتحدثين في الفيديو. 0 = اكتشاف تلقائي."
+      },
+      "translate_audio_only": {
+        "name": "ترجمة الصوت فقط",
+        "tooltip": "استبدال المسار الصوتي فقط مع الحفاظ على حركات الفم الأصلية (بدون مزامنة شفاه)."
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "فيديو يحتوي على كلام لترجمته."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "يتم حساب متوسط مخرجات النموذج عبر عدة مواضع لشبكة الباتشات المحوّلة خلال الجزء الأخير من عملية التوليد. يلغي الحواف.",
     "display_name": "تنعيم حواف الباتش HiDream-O1",
@@ -9493,6 +9722,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "description": "تحميل مجموعة بيانات من الفيديوهات من مجلد محدد وإرجاع قائمة بالفيديوهات. الصيغ المدعومة: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "تحميل فيديو (من مجلد)",
+    "inputs": {
+      "folder": {
+        "name": "المجلد",
+        "tooltip": "المجلد الذي يحتوي على ملفات الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فيديوهات",
+        "tooltip": "مراجع فيديو كسولة؛ يتم فك ترميز الإطارات فقط عند الحاجة في المراحل التالية."
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "تحميل مجموعة بيانات من أزواج الفيديو والنصوص من مجلد محدد وإرجاعها كقائمة. الصيغ المدعومة: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "تحميل فيديو-نص (من مجلد)",
+    "inputs": {
+      "folder": {
+        "name": "المجلد",
+        "tooltip": "المجلد الذي يحتوي على ملفات الفيديو وملفات الترجمة النصية .txt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فيديوهات",
+        "tooltip": "مراجع فيديو كسولة؛ يتم فك ترميز الإطارات فقط عند الحاجة في المراحل التالية."
+      },
+      "1": {
+        "name": "نصوص",
+        "tooltip": "قائمة بالنصوص التوضيحية."
       }
     }
   },
@@ -18445,6 +18710,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "خلط ترتيب الفيديوهات في القائمة بشكل عشوائي.",
+    "display_name": "خلط قائمة الفيديوهات",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة التوليد العشوائي."
+      },
+      "videos": {
+        "name": "فيديوهات",
+        "tooltip": "قائمة الفيديوهات المراد خلطها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فيديوهات",
+        "tooltip": "فيديوهات مخلوطة"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "خلط ترتيب أزواج الفيديو والنص في القائمة بشكل عشوائي.",
+    "display_name": "خلط أزواج فيديو-نص",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة التوليد العشوائي."
+      },
+      "texts": {
+        "name": "نصوص",
+        "tooltip": "قائمة النصوص المراد خلطها."
+      },
+      "videos": {
+        "name": "فيديوهات",
+        "tooltip": "قائمة الفيديوهات المراد خلطها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فيديوهات",
+        "tooltip": "فيديوهات مخلوطة"
+      },
+      "1": {
+        "name": "نصوص",
+        "tooltip": "نصوص مخلوطة"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "نسخة عامة من عقدة SkipLayerGuidance يمكن استخدامها مع كل نموذج DiT.",
     "display_name": "توجيه تخطي الطبقة DiT",
@@ -19644,6 +19963,28 @@
       },
       "prompt": {
         "name": "الموجه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -21644,6 +21985,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "استخلاص عدد ثابت من الإطارات من فيديو باستخدام استراتيجيات متنوعة.",
+    "display_name": "استخلاص إطار من الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "num_frames": {
+        "name": "عدد الإطارات",
+        "tooltip": "عدد الإطارات المراد استخلاصها."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة عشوائية (تستخدم فقط مع استراتيجية 'random')."
+      },
+      "strategy": {
+        "name": "الاستراتيجية",
+        "tooltip": "uniform: متباعدة بالتساوي، head: أول N، tail: آخر N، random: عشوائي مرتب."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "فيديو الإدخال."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المستخلص."
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "توجيه VideoLinearCFG",
     "inputs": {
@@ -21652,6 +22024,57 @@
       },
       "model": {
         "name": "النموذج"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "قص عشوائي لمجموعة متتالية من الإطارات من فيديو.",
+    "display_name": "قص الفيديو (زمني عشوائي)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات المراد الاحتفاظ بها."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة عشوائية."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "فيديو الإدخال."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المقصوص (كسول)."
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "قص مجموعة متتالية من الإطارات من فيديو.",
+    "display_name": "قص الفيديو (زمني)",
+    "inputs": {
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات المراد الاحتفاظ بها."
+      },
+      "start_frame": {
+        "name": "إطار البداية",
+        "tooltip": "فهرس إطار البداية."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "فيديو الإدخال."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المقصوص (كسول)."
       }
     }
   },
@@ -23886,6 +24309,33 @@
       "2": {
         "name": "كامن",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "تطبيق Wan Uni3C ControlNet",
+    "inputs": {
+      "end_percent": {
+        "name": "نسبة النهاية"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_patch": {
+        "name": "تصحيح النموذج"
+      },
+      "render_video": {
+        "name": "فيديو التوجيه",
+        "tooltip": "فيديو التوجيه الناتج من مسار الكاميرا، وغالبًا ما يكون عرضًا مشوهًا لسحابة النقاط من صورة الإدخال."
+      },
+      "start_percent": {
+        "name": "نسبة البداية"
+      },
+      "strength": {
+        "name": "القوة"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },

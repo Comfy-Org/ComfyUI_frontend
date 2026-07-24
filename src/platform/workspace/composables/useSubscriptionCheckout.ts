@@ -23,7 +23,19 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
-type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+
+export type SubscriptionCheckoutSelection =
+  | {
+      planMode: 'personal'
+      tierKey: CheckoutTierKey
+      billingCycle: BillingCycle
+    }
+  | {
+      planMode: 'team'
+      stop: TeamPlanSelection
+      billingCycle: BillingCycle
+    }
 
 interface SelectedTeamCheckout {
   stop: TeamPlanSelection
@@ -69,8 +81,14 @@ export function useSubscriptionCheckout(
 ) {
   const { t } = useI18n()
   const toast = useToast()
-  const { subscribe, previewSubscribe, plans, isTeamPlan, resubscribe } =
-    useBillingContext()
+  const {
+    subscribe,
+    previewSubscribe,
+    plans,
+    fetchPlans,
+    isTeamPlan,
+    resubscribe
+  } = useBillingContext()
   const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
@@ -156,7 +174,11 @@ export function useSubscriptionCheckout(
     selectedBillingCycle.value = billingCycle
 
     try {
-      const planSlug = getApiPlanSlug(tierKey, billingCycle)
+      let planSlug = getApiPlanSlug(tierKey, billingCycle)
+      if (!planSlug) {
+        await fetchPlans()
+        planSlug = getApiPlanSlug(tierKey, billingCycle)
+      }
       if (!planSlug) {
         toast.add({
           severity: 'error',

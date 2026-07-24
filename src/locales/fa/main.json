@@ -3,6 +3,9 @@
     "dockToTop": "چسباندن به بالا",
     "feedback": "بازخورد",
     "feedbackTooltip": "بازخورد",
+    "freeTierPartner": "نودهای Partner نیاز به پلن پولی دارند",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} اجرا باقی مانده",
+    "freeTierRunsExhausted": "اجرایی باقی نمانده است",
     "share": "اشتراک‌گذاری",
     "shareTooltip": "اشتراک‌گذاری گردش‌کار"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "واجد شرایط طرح رایگان",
       "freeTierDescription": "با ثبت‌نام از طریق Google هر ماه {credits} اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
       "freeTierDescriptionGeneric": "با ثبت‌نام از طریق Google هر ماه اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
+      "googleSsoInAppBrowserNotice": "اگر این صفحه را از طریق مرورگر داخلی برنامه (مانند اینستاگرام یا لینکدین) باز کرده‌اید، ورود با Google ممکن است کار نکند. لطفاً از GitHub یا ایمیل استفاده کنید یا این صفحه را در مرورگر پیش‌فرض دستگاه خود باز کنید.",
       "insecureContextWarning": "این اتصال ناامن است (HTTP) - در صورت ادامه ورود، اطلاعات شما ممکن است توسط مهاجمان رهگیری شود.",
       "loginButton": "ورود",
       "loginWithGithub": "ورود با Github",
@@ -785,6 +789,11 @@
       "gpuUsage": "استفاده از GPU"
     },
     "faqs": "سؤالات متداول",
+    "insufficient": {
+      "memberCta": "متوجه شدم",
+      "memberDescription": "تیم شما همه اعتبار خود را مصرف کرده است. مدیران ورک‌اسپیس باید اعتبار بیشتری اضافه کنند تا ورک‌فلوها اجرا شوند.",
+      "memberTitle": "اعتبار این ورک‌اسپیس به پایان رسیده است"
+    },
     "invoiceHistory": "تاریخچه فاکتورها",
     "lastUpdated": "آخرین به‌روزرسانی",
     "loadEventsError": "بارگذاری فعالیت ناموفق بود. لطفاً دوباره تلاش کنید.",
@@ -1452,6 +1461,9 @@
     "noExportsInQueue": "هیچ خروجی {filter} در صف نیست",
     "preparingExport": "در حال آماده‌سازی خروجی...",
     "retryDownload": "تلاش مجدد برای دانلود"
+  },
+  "feedback": {
+    "title": "ارسال بازخورد"
   },
   "g": {
     "1x": "۱x",
@@ -2783,7 +2795,6 @@
     "accept": "بله، کمک می‌کنم!",
     "description": "شما از این قابلیت استفاده کرده‌اید. آیا مایل هستید بازخورد خود را با ما به اشتراک بگذارید؟",
     "dontAskAgain": "دیگر نمایش نده",
-    "loadError": "بارگذاری نظرسنجی ناموفق بود. لطفاً بعداً دوباره تلاش کنید.",
     "notNow": "فعلاً نه",
     "title": "به ما در بهبود کمک کنید"
   },
@@ -2798,6 +2809,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2827,6 +2839,7 @@
     "ace": "ace",
     "adjustments": "تنظیمات",
     "advanced": "پیشرفته",
+    "anima": "anima",
     "animate": "انیمیت",
     "attention_experiments": "آزمایش‌های توجه",
     "audio": "صدا",
@@ -2849,6 +2862,7 @@
     "create": "ایجاد",
     "custom": "سفارشی",
     "dancer": "رقصنده",
+    "dataset": "dataset",
     "debug": "اشکال‌زدایی",
     "detection": "شناسایی",
     "experimental": "آزمایشی",
@@ -2870,6 +2884,7 @@
     "image": "تصویر",
     "infinite talk": "گفتگوی بی‌نهایت",
     "instructpix2pix": "instructpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "لاتنت",
     "loaders": "بارگذارها",
@@ -2882,6 +2897,7 @@
     "mochi": "mochi",
     "model": "مدل",
     "model specific": "مدل خاص",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "چند GPU",
     "noise": "نویز",
@@ -3001,6 +3017,7 @@
       "appTypeNative": "برنامه بومی",
       "appTypeWeb": "برنامه وب",
       "deny": "لغو",
+      "detailsHeader": "جزئیات",
       "errorExpired": "این درخواست تأیید منقضی شده یا قبلاً استفاده شده است. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
       "errorScopeBroadening": "دسترسی‌های قبلاً تأییدشده این درخواست را پوشش نمی‌دهند. لازم است با دسترسی‌های جدید مجدداً تأیید کنید.",
       "errorUnavailable": "این قابلیت در حال حاضر در دسترس نیست. در صورت تداوم مشکل با پشتیبانی تماس بگیرید.",
@@ -3015,7 +3032,6 @@
       "sessionErrorToastSummary": "ورود با OAuth ادامه نیافت",
       "subtitle": "برای ادامه وارد {resource} شوید",
       "title": "{client} درخواست دسترسی دارد",
-      "workspaceHelp": "دسترسی‌ها فقط برای این ورک‌اسپیس اعمال می‌شوند.",
       "workspaceLabel": "ورک‌اسپیس"
     },
     "scopes": {
@@ -4010,6 +4026,7 @@
       "waitingForSubscription": "اشتراک خود را در تب جدید تکمیل کنید. ما به صورت خودکار اتمام را تشخیص می‌دهیم!"
     },
     "resubscribe": "تمدید اشتراک",
+    "resubscribeFailed": "فعال‌سازی مجدد اشتراک ناموفق بود",
     "resubscribeSuccess": "اشتراک با موفقیت فعال شد",
     "resubscribeTo": "تمدید اشتراک {plan}",
     "saveYearly": "٪۲۰ صرفه‌جویی",
@@ -4135,7 +4152,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "فیلترها:",
     "allTemplates": "همه قالب‌ها",
     "categories": "دسته‌بندی‌ها",
     "category": {
@@ -4160,9 +4176,12 @@
       "Video": "ویدیو",
       "Video API": "رابط برنامه‌نویسی ویدیو"
     },
+    "clearAllFilters": "حذف همه فیلترها",
     "error": {
       "templateNotFound": "قالب \"{templateName}\" یافت نشد"
     },
+    "filtersApplied": "{count} فیلتر اعمال شد | {count} فیلتر اعمال شدند",
+    "filtersButton": "فیلترها",
     "licenseFilter": "مجوز",
     "loading": "در حال بارگذاری قالب‌ها...",
     "loadingMore": "در حال بارگذاری قالب‌های بیشتر...",
@@ -4260,6 +4279,9 @@
     "updateRequested": "درخواست به‌روزرسانی ثبت شد",
     "useApiKeyTip": "نکته: به ورود عادی دسترسی ندارید؟ از گزینه Comfy API Key استفاده کنید.",
     "userNotAuthenticated": "کاربر احراز هویت نشده است"
+  },
+  "typeform": {
+    "loadError": "بارگذاری فرم ناموفق بود. لطفاً بعداً دوباره تلاش کنید."
   },
   "userSelect": {
     "enterUsername": "نام کاربری را وارد کنید",
@@ -4396,6 +4418,32 @@
     }
   },
   "workspacePanel": {
+    "billingStatus": {
+      "ending": {
+        "body": "اعضا تا آن زمان دسترسی کامل خواهند داشت. برای حفظ اعتبار و ظرفیت اشتراکی، پلن را مجدداً فعال کنید.",
+        "reactivate": "فعال‌سازی مجدد پلن",
+        "title": "پلن تیم شما در تاریخ {date} به پایان می‌رسد"
+      },
+      "outOfCredits": {
+        "addCredits": "افزودن اعتبار",
+        "body": "تیم شما همه اعتبار خود را مصرف کرده است. برای ادامه تولید، اعتبار بیشتری اضافه کنید یا تا تاریخ {date} منتظر بمانید تا اعتبار شارژ شود.",
+        "bodyNoDate": "تیم شما همه اعتبار خود را مصرف کرده است. برای ادامه تولید، اعتبار بیشتری اضافه کنید.",
+        "dismiss": "بستن",
+        "memberBody": "تیم شما همه اعتبار خود را مصرف کرده است. مدیران ورک‌اسپیس باید اعتبار بیشتری اضافه کنند تا تولید ادامه یابد.",
+        "title": "اعتبار به پایان رسیده است"
+      },
+      "paused": {
+        "body": "اشتراک این ورک‌اسپیس متوقف شده است. برای ادامه، پرداخت را به‌روزرسانی کنید.",
+        "memberBody": "اشتراک این ورک‌اسپیس متوقف شده است. مدیران ورک‌اسپیس باید روش پرداخت را به‌روزرسانی کنند.",
+        "title": "اشتراک متوقف شده است"
+      },
+      "updatePayment": "به‌روزرسانی پرداخت",
+      "warning": {
+        "body": "آخرین پرداخت شما انجام نشد. اشتراک شما در تاریخ {date} متوقف می‌شود مگر اینکه پرداخت به‌روزرسانی شود.",
+        "bodyNoDate": "آخرین پرداخت شما انجام نشد. برای جلوگیری از توقف، پرداخت را به‌روزرسانی کنید.",
+        "title": "پرداخت ناموفق بود"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "تنزل به عضو",
       "demoteMessage": "دسترسی مدیریتی را از دست خواهد داد.",
