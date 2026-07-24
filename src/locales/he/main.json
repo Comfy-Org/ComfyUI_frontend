@@ -3886,6 +3886,7 @@
     "freeTier": {
       "description": "המסלול החינמי שלך כולל {credits} קרדיטים בכל חודש להתנסות ב-Comfy Cloud.",
       "descriptionGeneric": "המסלול החינמי שלך כולל מכסת קרדיטים חודשית להתנסות ב-Comfy Cloud.",
+      "descriptionQuota": "התוכנית החינמית שלך כוללת {runs} הרצות כדי להתחיל עם Comfy Cloud — ללא צורך בכרטיס אשראי.",
       "nextRefresh": "הקרדיטים שלך מתחדשים ב-{date}.",
       "outOfCredits": {
         "subtitle": "הירשם כדי לפתוח טעינות ועוד",

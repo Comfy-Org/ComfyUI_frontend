@@ -3874,6 +3874,7 @@
     "freeTier": {
       "description": "您的免費方案每月包含 {credits} 點數，可體驗 Comfy Cloud。",
       "descriptionGeneric": "您的免費方案每月包含點數額度，可體驗 Comfy Cloud。",
+      "descriptionQuota": "您的免費方案包含 {runs} 次執行，讓您開始體驗 Comfy Cloud，無需信用卡。",
       "nextRefresh": "您的點數將於 {date} 重置。",
       "outOfCredits": {
         "subtitle": "訂閱以解鎖加值與更多功能",

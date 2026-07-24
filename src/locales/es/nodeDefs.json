@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "Volumen. 0 = normal, 100 = 2.0x, -50 = 0.5x."
       },
+      "model": {
+        "name": "modelo",
+        "tooltip": "seed-audio-1.0-multilingual: 20 idiomas (inglés, chino, japonés, coreano, español mexicano y castellano, indonesio, alemán, portugués brasileño, francés, tailandés, vietnamita, malayo, filipino, italiano, ruso, neerlandés, polaco, turco, sueco) además de control de tiempo por frase mediante marcas de tiempo como \"[5.5s:8.0s] ...\". seed-audio-1.0: solo inglés y chino, sin control de tiempo."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "Desplazamiento de tono en semitonos (-12 a 12)."

@@ -3874,6 +3874,7 @@
     "freeTier": {
       "description": "무료 플랜에는 Comfy Cloud를 체험할 수 있도록 매월 {credits} 크레딧이 포함되어 있습니다.",
       "descriptionGeneric": "무료 플랜에는 Comfy Cloud를 체험할 수 있는 월간 크레딧이 포함되어 있습니다.",
+      "descriptionQuota": "Comfy Cloud의 무료 플랜에는 {runs}회의 실행이 포함되어 있습니다. 카드가 필요하지 않습니다.",
       "nextRefresh": "크레딧은 {date}에 새로 고침됩니다.",
       "outOfCredits": {
         "subtitle": "충전 및 추가 혜택을 위해 구독하세요",

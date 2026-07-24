@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "Ses yüksekliği. 0 = normal, 100 = 2.0x, -50 = 0.5x."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: 20 dil (İngilizce, Çince, Japonca, Korece, Meksika & Kastilya İspanyolcası, Endonezce, Almanca, Brezilya Portekizcesi, Fransızca, Tayca, Vietnamca, Malayca, Filipince, İtalyanca, Rusça, Hollandaca, Lehçe, Türkçe, İsveççe) ve ayrıca cümle başına zamanlama kontrolü için \"[5.5s:8.0s] ...\" zaman damgaları. seed-audio-1.0: Sadece İngilizce ve Çince, zamanlama kontrolü yok."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "Ton kaydırma (yarım ses olarak, -12 ile 12 arası)."

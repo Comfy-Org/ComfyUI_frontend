@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "Volume. 0 = normal, 100 = 2,0x, -50 = 0,5x."
       },
+      "model": {
+        "name": "modèle",
+        "tooltip": "seed-audio-1.0-multilingual : 20 langues (anglais, chinois, japonais, coréen, espagnol mexicain et castillan, indonésien, allemand, portugais brésilien, français, thaï, vietnamien, malais, filipino, italien, russe, néerlandais, polonais, turc, suédois) ainsi que le contrôle du timing par phrase via des horodatages « [5.5s:8.0s] ... ». seed-audio-1.0 : anglais et chinois uniquement, sans contrôle du timing."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "Décalage de hauteur en demi-tons (-12 à 12)."
