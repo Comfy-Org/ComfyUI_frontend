@@ -4,6 +4,7 @@ const hoisted = vi.hoisted(() => {
   const context: Record<string, unknown> = {}
 
   return {
+    addAction: vi.fn(),
     context,
     fetch: vi.fn<typeof fetch>(),
     getInitConfiguration: vi.fn(),
@@ -33,6 +34,7 @@ describe('initDatadogRum', () => {
     hoisted.fetch.mockResolvedValue(new Response(null, { status: 503 }))
     hoisted.getInitConfiguration.mockReturnValue(undefined)
     vi.stubGlobal('fetch', hoisted.fetch)
+    vi.stubGlobal('navigation', new EventTarget())
   })
 
   afterEach(() => {
@@ -226,4 +228,45 @@ describe('initDatadogRum', () => {
 
     expect(hoisted.init).not.toHaveBeenCalled()
   })
+
+  it('tracks user-initiated page reloads', async () => {
+    await initDatadogRum('cloud.comfy.org')
+
+    window.navigation.dispatchEvent(
+      Object.assign(new Event('navigate'), {
+        navigationType: 'reload',
+        userInitiated: true
+      })
+    )
+
+    expect(hoisted.addAction).toHaveBeenCalledWith('user_manual_refresh')
+  })
+
+  it('initializes without the Navigation API', async () => {
+    vi.stubGlobal('navigation', undefined)
+
+    await initDatadogRum('cloud.comfy.org')
+
+    expect(hoisted.init).toHaveBeenCalledOnce()
+    expect(hoisted.addAction).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { navigationType: 'reload', userInitiated: false },
+    { navigationType: 'push', userInitiated: true }
+  ])(
+    'ignores $navigationType navigations when userInitiated is $userInitiated',
+    async ({ navigationType, userInitiated }) => {
+      await initDatadogRum('cloud.comfy.org')
+
+      window.navigation.dispatchEvent(
+        Object.assign(new Event('navigate'), {
+          navigationType,
+          userInitiated
+        })
+      )
+
+      expect(hoisted.addAction).not.toHaveBeenCalled()
+    }
+  )
 })

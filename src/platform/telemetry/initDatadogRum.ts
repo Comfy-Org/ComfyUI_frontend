@@ -10,6 +10,17 @@ const DATADOG_ENV_BY_HOSTNAME = new Map([
 const FRONTEND_CONTEXT_FETCH_TIMEOUT_MS = 1_000
 let initializationPromise: Promise<void> | undefined
 
+function trackUserManualRefresh(): void {
+  const navigation = window.navigation
+  if (!navigation) return
+
+  navigation.addEventListener('navigate', (event) => {
+    if (event.navigationType !== 'reload' || !event.userInitiated) return
+
+    datadogRum.addAction('user_manual_refresh')
+  })
+}
+
 async function setFrontendContext(): Promise<void> {
   const response = await fetch(window.location.origin, {
     method: 'HEAD',
@@ -44,6 +55,7 @@ async function initializeDatadogRum(env: string): Promise<void> {
     sessionReplaySampleRate: 0,
     allowedTracingUrls: [/^https:\/\/[^/]+\.comfy\.org/]
   })
+  trackUserManualRefresh()
 }
 
 export function initDatadogRum(
