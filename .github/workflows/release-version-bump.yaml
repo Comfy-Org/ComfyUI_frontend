@@ -24,7 +24,8 @@ on:
     # Nightly PATCH bump on main (proposal PR only; a patch bump never triggers
     # a release-branch cut). 00:00 UTC ≈ 4:00 PM PST / 5:00 PM PDT the prior day.
     - cron: '0 0 * * *'
-    # Weekly RC cut: MINOR bump on main every Monday 20:00 UTC (noon PT), aligned
+    # Weekly RC cut: MINOR bump on main every Monday 20:00 UTC (noon PST /
+    # 13:00 PDT), aligned
     # with the release freeze in release-biweekly-comfyui.yaml. Merging this minor
     # `Release` PR advances main to the next dev minor AND makes
     # release-branch-create.yaml cut the outgoing core/x.y + cloud/x.y pair. This

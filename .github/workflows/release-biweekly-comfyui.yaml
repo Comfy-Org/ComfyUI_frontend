@@ -3,7 +3,7 @@
 name: 'Release: ComfyUI'
 
 on:
-  # Weekly release freeze: every Monday at 20:00 UTC (noon PT).
+  # Weekly release freeze: every Monday at 20:00 UTC (noon PST / 13:00 PDT).
   # Noon-PT freeze lets the release sheriff draft/socialize the QA test plan
   # during business hours and hand off to QA right after the branch is frozen
   # (weekly cadence: Monday freeze/QA → Thursday cloud deploy). Decided in
