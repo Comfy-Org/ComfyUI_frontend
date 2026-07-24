@@ -694,6 +694,37 @@ describe('useExecutionStore - workflowStatus', () => {
     expect(store.getWorkflowStatus(workflowA)).toBe('completed')
   })
 
+  it('tracks completion with the workflow context captured for the job', () => {
+    const workflowContext = {
+      workflow_type: 'custom',
+      view_mode: 'graph',
+      execution_scope: 'partial',
+      total_node_count: 42,
+      executable_node_count: 12,
+      custom_node_count: 3,
+      api_node_count: 1,
+      subgraph_count: 2,
+      complexity_bucket: 'medium',
+      dependency_profile: 'mixed'
+    } as const
+
+    store.storeJob({
+      nodes: ['1'],
+      id: 'job-1',
+      promptOutput: { '1': createPromptNode('Node', 'TestNode') },
+      startTime: 42,
+      workflow: workflowA,
+      workflowContext
+    })
+    fireExecutionSuccess('job-1')
+
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
+      startTime: 42,
+      outcome: 'success',
+      workflowContext
+    })
+  })
+
   it('sets failed on execution_error', () => {
     callStoreJob('job-1', workflowA)
     fireExecutionStart('job-1')

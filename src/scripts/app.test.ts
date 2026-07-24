@@ -22,6 +22,8 @@ import {
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { setTelemetryRegistry } from '@/platform/telemetry'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -260,10 +262,126 @@ describe('ComfyApp', () => {
       expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
       expect(errorStore.isErrorOverlayOpen).toBe(true)
       expect(executionStore.queuedJobs['job-1']?.nodes).toEqual({ '1': false })
+      expect(executionStore.queuedJobs['job-1']?.workflowContext).toEqual({
+        workflow_type: 'custom',
+        view_mode: 'graph',
+        execution_scope: 'full',
+        total_node_count: 0,
+        executable_node_count: 1,
+        custom_node_count: 0,
+        api_node_count: 0,
+        subgraph_count: 0,
+        complexity_bucket: 'small',
+        dependency_profile: 'core_only'
+      })
       expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
         'workflows/review.json'
       )
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+    })
+
+    it('captures workflow context from the graph queued before a tab switch', async () => {
+      const queuedGraph = new LGraph()
+      queuedGraph.add(new LGraphNode('Queued node'))
+      const queuedWorkflow = new ComfyWorkflow({
+        path: 'workflows/queued.json',
+        modified: 0,
+        size: 0
+      })
+      const nextWorkflow = new ComfyWorkflow({
+        path: 'workflows/next.json',
+        modified: 0,
+        size: 0
+      })
+      const promptOutput: ComfyApiWorkflow = {
+        '1': {
+          class_type: 'PreviewAny',
+          inputs: {},
+          _meta: { title: 'PreviewAny' }
+        }
+      }
+      Reflect.set(app, 'rootGraphInternal', queuedGraph)
+      mockWorkspaceWorkflow.activeWorkflow = queuedWorkflow
+      vi.spyOn(app, 'graphToPrompt').mockImplementation(async () => {
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        mockWorkspaceWorkflow.activeWorkflow = nextWorkflow
+        return {
+          output: promptOutput,
+          workflow: createWorkflowGraphData()
+        }
+      })
+      vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      await app.queuePrompt(0)
+
+      expect(
+        useExecutionStore().queuedJobs['job-1']?.workflowContext
+          ?.total_node_count
+      ).toBe(1)
+    })
+
+    it('tracks unexpected handled submit errors with workflow context', async () => {
+      prepareEmptyPromptQueue()
+      const error = new Error('Network client failed')
+      const trackWorkflowError = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackWorkflowError })
+      setTelemetryRegistry(registry)
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(error)
+
+      try {
+        await app.queuePrompt(0)
+
+        expect(trackWorkflowError).toHaveBeenCalledWith({
+          error,
+          operation: 'workflow_queue',
+          phase: 'submit',
+          workflowContext: {
+            workflow_type: 'custom',
+            view_mode: 'graph',
+            execution_scope: 'full',
+            total_node_count: 0,
+            executable_node_count: 0,
+            custom_node_count: 0,
+            api_node_count: 0,
+            subgraph_count: 0,
+            complexity_bucket: 'small',
+            dependency_profile: 'core_only'
+          }
+        })
+      } finally {
+        setTelemetryRegistry(null)
+      }
+    })
+
+    it('does not track prompt validation failures as frontend errors', async () => {
+      prepareEmptyPromptQueue()
+      const trackWorkflowError = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackWorkflowError })
+      setTelemetryRegistry(registry)
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          node_errors: {},
+          error: {
+            type: 'prompt_no_outputs',
+            message: 'Prompt has no outputs',
+            details: ''
+          }
+        })
+      )
+
+      try {
+        await app.queuePrompt(0)
+
+        expect(trackWorkflowError).not.toHaveBeenCalled()
+      } finally {
+        setTelemetryRegistry(null)
+      }
     })
 
     it('preserves a failed result when prompt errors include an empty node error record', async () => {

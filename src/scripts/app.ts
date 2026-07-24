@@ -29,8 +29,13 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
-import type { WorkflowOpenSource } from '@/platform/telemetry/types'
+import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
+import type {
+  WorkflowExecutionContext,
+  WorkflowOpenSource
+} from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -114,6 +119,7 @@ import {
   verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
 
+import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import {
   collectAllNodes,
@@ -1673,13 +1679,30 @@ export class ComfyApp {
             })
           })
 
-          // Capture workflow before await — activeWorkflow may change if the
-          // user switches tabs while the request is in flight.
+          // Capture the graph and workflow before await in case the user
+          // switches tabs while the request is in flight.
+          const queuedGraph = this.rootGraph
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
           const startTime = performance.now()
-          const p = await this.graphToPrompt(this.rootGraph)
-          const queuedNodes = collectAllNodes(this.rootGraph)
+          const p = await this.graphToPrompt(queuedGraph)
+          const queuedNodes = collectAllNodes(queuedGraph)
+          let workflowContext: WorkflowExecutionContext | undefined
+          try {
+            workflowContext = toWorkflowExecutionContext(
+              getExecutionContext(queuedGraph, queuedWorkflow),
+              {
+                executableNodeCount: Object.keys(p.output).length,
+                executionScope: isPartialExecution ? 'partial' : 'full',
+                viewMode: getWorkflowMode(queuedWorkflow)
+              }
+            )
+          } catch (error) {
+            console.error(
+              '[Telemetry] Workflow context collection failed',
+              error
+            )
+          }
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
@@ -1698,7 +1721,8 @@ export class ComfyApp {
                   nodes: Object.keys(p.output),
                   promptOutput: p.output,
                   startTime,
-                  workflow: queuedWorkflow
+                  workflow: queuedWorkflow,
+                  workflowContext
                 })
               }
             } catch (error) {
@@ -1714,6 +1738,14 @@ export class ComfyApp {
               this.canvas.draw(true, true)
             }
           } catch (error: unknown) {
+            if (!(error instanceof PromptExecutionError) && workflowContext) {
+              useTelemetry()?.trackWorkflowError({
+                error,
+                operation: 'workflow_queue',
+                phase: 'submit',
+                workflowContext
+              })
+            }
             const preconditionResponseError =
               error instanceof PromptExecutionError &&
               typeof error.response.error === 'object'

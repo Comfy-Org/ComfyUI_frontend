@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
     is_template: false,
     workflow_name: 'Desktop workflow',
     custom_node_count: 2,
+    api_node_count: 1,
     total_node_count: 4,
     subgraph_count: 1,
     has_api_nodes: true,
@@ -29,6 +30,10 @@ vi.mock('@/composables/useAppMode', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => state.telemetry
+}))
+
+vi.mock('@/scripts/app', () => ({
+  app: { rootGraph: {} }
 }))
 
 vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
@@ -65,6 +70,7 @@ describe('useRunButtonTelemetry', () => {
       workflow_type: 'custom',
       workflow_name: 'Desktop workflow',
       custom_node_count: 2,
+      api_node_count: 1,
       total_node_count: 4,
       subgraph_count: 1,
       has_api_nodes: true,
@@ -72,6 +78,7 @@ describe('useRunButtonTelemetry', () => {
       has_toolkit_nodes: false,
       toolkit_node_names: [],
       trigger_source: 'button',
+      execution_scope: 'full',
       view_mode: 'graph',
       is_app_mode: false,
       dock_state: 'floating'
