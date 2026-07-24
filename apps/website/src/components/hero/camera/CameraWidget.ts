@@ -99,6 +99,12 @@ export class CameraWidget {
   private raycaster = new Raycaster()
   private mouse = new Vector2()
 
+  private azHitProxy!: Mesh
+  private elHitProxy!: Mesh
+  private distHitProxy!: Mesh
+  private distDragStartY = 0
+  private distDragStartValue = 0
+
   private useCameraView = false
 
   private isOrbitDragging = false
@@ -185,7 +191,28 @@ export class CameraWidget {
     this.createAzimuthRing()
     this.createElevationArc()
     this.createDistanceHandle()
+    this.createHitProxies()
     this.updateVisuals()
+  }
+
+  /** Invisible, oversized raycast targets so the small handles are easy to
+   * grab (local modification — upstream raycasts the visible spheres only). */
+  private createHitProxies(): void {
+    const makeProxy = (radius: number) => {
+      const proxy = new Mesh(
+        new SphereGeometry(radius, 8, 8),
+        new MeshBasicMaterial({
+          transparent: true,
+          opacity: 0,
+          depthWrite: false
+        })
+      )
+      this.scene.add(proxy)
+      return proxy
+    }
+    this.azHitProxy = makeProxy(0.34)
+    this.elHitProxy = makeProxy(0.34)
+    this.distHitProxy = makeProxy(0.3)
   }
 
   private createGridTexture(): CanvasTexture {
@@ -434,6 +461,10 @@ export class CameraWidget {
     )
     this.distGlow.position.copy(this.distanceHandle.position)
 
+    this.azHitProxy.position.copy(this.azimuthHandle.position)
+    this.elHitProxy.position.copy(this.elevationHandle.position)
+    this.distHitProxy.position.copy(this.distanceHandle.position)
+
     this.updateDistanceLine(
       this.CENTER.clone(),
       this.cameraIndicator.position.clone()
@@ -523,21 +554,42 @@ export class CameraWidget {
 
     this.raycaster.setFromCamera(this.mouse, this.camera)
 
-    const handles = [
-      { mesh: this.azimuthHandle, glow: this.azGlow, name: 'azimuth' },
-      { mesh: this.elevationHandle, glow: this.elGlow, name: 'elevation' },
-      { mesh: this.distanceHandle, glow: this.distGlow, name: 'distance' }
-    ]
-
-    for (const h of handles) {
-      if (this.raycaster.intersectObject(h.mesh).length > 0) {
+    for (const h of this.handleTargets()) {
+      if (this.raycaster.intersectObject(h.hit).length > 0) {
         this.isDragging = true
         this.dragTarget = h.name
+        if (h.name === 'distance') {
+          this.distDragStartY = this.mouse.y
+          this.distDragStartValue = this.liveDistance
+        }
         this.setHandleScale(h.mesh, h.glow, 1.3)
         this.renderer.domElement.style.cursor = 'grabbing'
         return
       }
     }
+  }
+
+  private handleTargets() {
+    return [
+      {
+        hit: this.azHitProxy,
+        mesh: this.azimuthHandle,
+        glow: this.azGlow,
+        name: 'azimuth'
+      },
+      {
+        hit: this.elHitProxy,
+        mesh: this.elevationHandle,
+        glow: this.elGlow,
+        name: 'elevation'
+      },
+      {
+        hit: this.distHitProxy,
+        mesh: this.distanceHandle,
+        glow: this.distGlow,
+        name: 'distance'
+      }
+    ]
   }
 
   private onPointerMove(event: MouseEvent): void {
@@ -568,15 +620,11 @@ export class CameraWidget {
     this.raycaster.setFromCamera(this.mouse, this.camera)
 
     if (!this.isDragging) {
-      const handles = [
-        { mesh: this.azimuthHandle, glow: this.azGlow, name: 'azimuth' },
-        { mesh: this.elevationHandle, glow: this.elGlow, name: 'elevation' },
-        { mesh: this.distanceHandle, glow: this.distGlow, name: 'distance' }
-      ]
+      const handles = this.handleTargets()
 
       let foundHover: (typeof handles)[0] | null = null
       for (const h of handles) {
-        if (this.raycaster.intersectObject(h.mesh).length > 0) {
+        if (this.raycaster.intersectObject(h.hit).length > 0) {
           foundHover = h
           break
         }
@@ -630,7 +678,10 @@ export class CameraWidget {
         this.notifyStateChange()
       }
     } else if (this.dragTarget === 'distance') {
-      const newDist = 5 - this.mouse.y * 5
+      // Relative to the grab point (local modification) — upstream mapped the
+      // absolute pointer height, which made the value jump on grab.
+      const newDist =
+        this.distDragStartValue - (this.mouse.y - this.distDragStartY) * 5
       this.liveDistance = Math.max(0, Math.min(10, newDist))
       this.state.distance = Math.round(this.liveDistance * 10) / 10
       this.updateVisuals()
@@ -778,6 +829,9 @@ export class CameraWidget {
     this.glowRing.visible = gizmosVisible
     this.gridHelper.visible = gizmosVisible
     this.imageFrame.visible = gizmosVisible
+    this.azHitProxy.visible = gizmosVisible
+    this.elHitProxy.visible = gizmosVisible
+    this.distHitProxy.visible = gizmosVisible
     this.renderer.domElement.style.cursor = enabled ? 'grab' : 'default'
   }
 

@@ -1,9 +1,16 @@
 <script setup lang="ts">
-const { src, alt, label, filter } = defineProps<{
+const {
+  src,
+  alt,
+  label,
+  filter,
+  dot = false
+} = defineProps<{
   src: string
   alt: string
   label?: string
   filter?: string
+  dot?: boolean
 }>()
 </script>
 
@@ -28,6 +35,12 @@ const { src, alt, label, filter } = defineProps<{
         decoding="async"
       />
     </Transition>
+
+    <!-- Wire anchor; its centre must match PORTS.inputOut in graphLayout.ts -->
+    <span
+      v-if="dot"
+      class="bg-primary-comfy-yellow absolute top-[1.325em] right-[1.225em] size-[0.55em] rounded-full"
+    />
 
     <span
       v-if="label"

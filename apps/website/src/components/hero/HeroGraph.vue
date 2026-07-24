@@ -150,6 +150,7 @@ function wrapperStyle(key: ElementKey) {
           v-if="key === 'input'"
           src="/hero/input.webp"
           alt="Input image: two robotic hands reaching toward each other through glowing rings"
+          dot
         />
         <AngleNode
           v-else-if="key === 'angle'"

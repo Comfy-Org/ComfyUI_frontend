@@ -45,11 +45,21 @@ const lineGap = 'mt-[0.33em]'
         style="filter: url(#hero-goo)"
         aria-hidden="true"
       >
-        <span :class="cn(pill, 'bg-primary-comfy-yellow text-transparent')">
+        <span
+          :class="
+            cn(pill, 'bg-primary-comfy-yellow skew-x-[-8deg] text-transparent')
+          "
+        >
           {{ lines[0] }}
         </span>
         <span
-          :class="cn(pill, 'bg-primary-comfy-yellow text-transparent', lineGap)"
+          :class="
+            cn(
+              pill,
+              'bg-primary-comfy-yellow skew-x-[-8deg] text-transparent',
+              lineGap
+            )
+          "
         >
           {{ lines[1] }}
         </span>
