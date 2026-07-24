@@ -52,6 +52,57 @@ export class FeatureFlagHelper {
   }
 
   /**
+   * Force server feature flags (the WS `feature_flags` handshake payload) on
+   * the running app by merging into `api.serverFeatureFlags`. The `ff:`
+   * localStorage override is dev-only (tree-shaken from production builds),
+   * so this is the way to control `api.serverSupportsFeature()` in e2e.
+   *
+   * Note: this merges the injected flags at call time. A subsequent WS
+   * reconnect or a late `feature_flags` handshake will full-replace
+   * `serverFeatureFlags`, dropping the overrides. For flags that must survive
+   * reconnects, use `setServerFlagsPersistent()`, which re-applies on each
+   * handshake. (`mockServerFeatures()` does not help: it intercepts
+   * /api/features, which never populates `serverFeatureFlags`.)
+   */
+  async setServerFlags(flags: Record<string, unknown>): Promise<void> {
+    await this.page.evaluate((flagMap: Record<string, unknown>) => {
+      window.app!.api.serverFeatureFlags.value = {
+        ...window.app!.api.serverFeatureFlags.value,
+        ...flagMap
+      }
+    }, flags)
+  }
+
+  /**
+   * Force server feature flags and keep them applied across websocket
+   * reconnects. Merges the flags into `api.serverFeatureFlags` now, and
+   * re-merges on every subsequent `feature_flags` handshake message.
+   *
+   * The server replies to the client's handshake with a `feature_flags`
+   * message on every socket open (including reconnects), and the handler
+   * full-replaces `serverFeatureFlags` with that payload, so a plain
+   * `setServerFlags` merge is dropped by any later handshake. Re-applying on
+   * each `feature_flags` event survives that. `mockServerFeatures` does not
+   * help here: it intercepts `/api/features`, which never populates
+   * `serverFeatureFlags`.
+   */
+  async setServerFlagsPersistent(
+    flags: Record<string, unknown>
+  ): Promise<void> {
+    await this.page.evaluate((flagMap: Record<string, unknown>) => {
+      const api = window.app!.api
+      const apply = () => {
+        api.serverFeatureFlags.value = {
+          ...api.serverFeatureFlags.value,
+          ...flagMap
+        }
+      }
+      apply()
+      api.addEventListener('feature_flags', apply)
+    }, flags)
+  }
+
+  /**
    * Mock server feature flags via route interception on /api/features.
    */
   async mockServerFeatures(features: Record<string, unknown>): Promise<void> {
