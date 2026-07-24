@@ -107,7 +107,7 @@ jobs:
             # Idempotency gate A: never stack a second bump PR on a branch that
             # already has one open and awaiting merge.
             OPEN=$(gh pr list --repo "$GITHUB_REPOSITORY" --base "$BRANCH" \
-              --state open --json headRefName \
+              --state open --limit 1000 --json headRefName \
               --jq '[.[] | select(.headRefName | startswith("version-bump-"))] | length')
             if [[ "$OPEN" -gt 0 ]]; then
               echo "⏭️  $BRANCH: a version-bump PR is already open; skipping."
