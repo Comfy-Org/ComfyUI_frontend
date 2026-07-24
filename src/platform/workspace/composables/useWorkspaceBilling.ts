@@ -401,7 +401,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function requireActiveSubscription(): Promise<void> {
     await fetchStatus()
     if (!canAccessSubscriptionFeatures.value) {
-      subscriptionDialog.show()
+      subscriptionDialog.show({ reason: 'subscription_required' })
     }
   }
 

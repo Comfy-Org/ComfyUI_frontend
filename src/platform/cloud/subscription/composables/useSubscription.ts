@@ -270,7 +270,7 @@ function useSubscriptionInternal() {
     await fetchSubscriptionStatus()
 
     if (!canAccessSubscriptionFeatures.value) {
-      showSubscriptionDialog()
+      showSubscriptionDialog({ reason: 'subscription_required' })
     }
   }
 

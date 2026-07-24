@@ -192,7 +192,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
   async function requireActiveSubscription(): Promise<void> {
     await fetchStatus()
     if (!canAccessSubscriptionFeatures.value) {
-      legacyShowSubscriptionDialog()
+      legacyShowSubscriptionDialog({ reason: 'subscription_required' })
     }
   }
 
