@@ -93,17 +93,6 @@ describe('SubgraphConversion', () => {
       ).toBe(1)
     })
 
-    it('keeps converted nodes registered in the badge store', () => {
-      const rootGraph = createTestRootGraph()
-      enableSubgraphNodeCreation(rootGraph)
-
-      const origin = createTestNode(rootGraph, [], ['number'])
-      const target = createTestNode(rootGraph, ['number'])
-      origin.connect(0, target, 0)
-
-      rootGraph.convertToSubgraph(new Set<Positionable>([target, origin]))
-    })
-
     it('preserves widget values on interior nodes through conversion', () => {
       const rootGraph = createTestRootGraph()
       enableSubgraphNodeCreation(rootGraph)
