@@ -83,7 +83,15 @@ export function useAssetSelection() {
       return
     }
 
-    // Normal Click: Single selection
+    // Clicking the only selected asset does not clear the selection
+    if (
+      selectionStore.isSelected(assetId) &&
+      selectionStore.selectedCount === 1
+    ) {
+      return
+    }
+
+    // Otherwise, a normal click collapses the selection to this asset
     selectionStore.clearSelection()
     selectionStore.addToSelection(assetId)
     setAnchor(index, assetId)

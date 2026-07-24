@@ -13,7 +13,7 @@
           :selected="isSelected(item.asset.id)"
           :show-output-count="showOutputCount(item.asset)"
           :output-count="getOutputCount(item.asset)"
-          @click="emit('select-asset', item.asset)"
+          @select="emit('select-asset', item.asset)"
           @context-menu="emit('context-menu', $event, item.asset)"
           @zoom="emit('zoom', item.asset)"
           @output-count-click="emit('output-count-click', item.asset)"
