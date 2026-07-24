@@ -16,6 +16,7 @@ function jsonResponse(body: unknown, init: Partial<Response> = {}): Response {
     status: 200,
     statusText: 'OK',
     json: () => Promise.resolve(body),
+    text: () => Promise.resolve(JSON.stringify(body)),
     ...init
   } as Response
 }
@@ -72,6 +73,22 @@ describe('listSecretProviders', () => {
       name: 'SecretsApiError',
       status: 503,
       message: 'unavailable'
+    })
+  })
+
+  it('preserves a recognized error code on SecretsApiError', async () => {
+    mockFetchApi.mockResolvedValue(
+      jsonResponse(
+        { code: 'DUPLICATE_NAME', message: 'exists' },
+        { ok: false, status: 409, statusText: 'Conflict' }
+      )
+    )
+
+    await expect(listSecretProviders()).rejects.toMatchObject({
+      name: 'SecretsApiError',
+      status: 409,
+      code: 'DUPLICATE_NAME',
+      message: 'exists'
     })
   })
 })

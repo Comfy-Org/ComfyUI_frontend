@@ -24,6 +24,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 
 export interface PaginationOptions {
   limit?: number
@@ -721,10 +722,8 @@ function createAssetService() {
     )
 
     if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}))
-      throw new Error(
-        getLocalizedErrorMessage(errorData.code || 'UNKNOWN_ERROR')
-      )
+      const { code } = await parseErrorResponse(res)
+      throw new Error(getLocalizedErrorMessage(code))
     }
 
     const data: AssetMetadata = await res.json()

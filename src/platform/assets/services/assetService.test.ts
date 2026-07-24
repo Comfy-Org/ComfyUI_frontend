@@ -69,7 +69,8 @@ function buildResponse(
   return {
     ok: init.ok ?? true,
     status: init.status ?? 200,
-    json: vi.fn().mockResolvedValue(body)
+    json: vi.fn().mockResolvedValue(body),
+    text: vi.fn().mockResolvedValue(JSON.stringify(body))
   } as unknown as Response
 }
 

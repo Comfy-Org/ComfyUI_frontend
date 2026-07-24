@@ -9,6 +9,7 @@ import type {
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
+import { errorResponseFromBody } from '@/platform/remote/comfyui/errors'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
@@ -355,7 +356,7 @@ async function getAuthHeaderOrThrow() {
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
-    const message = err.response?.data?.message ?? err.message
+    const { message } = errorResponseFromBody(err.response?.data, err.message)
     throw new WorkspaceApiError(message, status)
   }
   throw err

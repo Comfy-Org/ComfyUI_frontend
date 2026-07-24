@@ -16,7 +16,9 @@ import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
 } from '@/platform/telemetry/types'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+
 import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
@@ -97,24 +99,11 @@ export async function performSubscriptionCheckout(
   )
 
   if (!response.ok) {
-    let errorMessage = 'Failed to initiate checkout'
-    try {
-      const errorData = await response.json()
-      errorMessage = errorData.message || errorMessage
-    } catch {
-      // If JSON parsing fails, try to get text response or use HTTP status
-      try {
-        const errorText = await response.text()
-        errorMessage =
-          errorText || `HTTP ${response.status} ${response.statusText}`
-      } catch {
-        errorMessage = `HTTP ${response.status} ${response.statusText}`
-      }
-    }
+    const { message } = await parseErrorResponse(response)
 
     throw new AuthStoreError(
       t('toastMessages.failedToInitiateSubscription', {
-        error: errorMessage
+        error: message
       })
     )
   }

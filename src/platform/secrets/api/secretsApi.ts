@@ -4,6 +4,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import { api } from '@/scripts/api'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 
 import type {
   SecretCreateRequest,
@@ -13,11 +14,6 @@ import type {
   SecretUpdateRequest
 } from '../types'
 import { SECRET_ERROR_CODES } from '../types'
-
-interface ErrorResponse {
-  message?: string
-  code?: string
-}
 
 export class SecretsApiError extends Error {
   constructor(
@@ -32,22 +28,13 @@ export class SecretsApiError extends Error {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    let errorData: ErrorResponse = {}
-    try {
-      errorData = await response.json()
-    } catch {
-      // Response body is not JSON
-    }
+    const errorData = await parseErrorResponse(response)
     const code = SECRET_ERROR_CODES.includes(
       errorData.code as (typeof SECRET_ERROR_CODES)[number]
     )
       ? (errorData.code as SecretErrorCode)
       : undefined
-    throw new SecretsApiError(
-      errorData.message ?? response.statusText,
-      response.status,
-      code
-    )
+    throw new SecretsApiError(errorData.message, response.status, code)
   }
   return response.json()
 }
