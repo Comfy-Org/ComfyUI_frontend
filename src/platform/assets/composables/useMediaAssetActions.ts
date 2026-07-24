@@ -92,7 +92,9 @@ export function useMediaAssetActions() {
     asset: AssetItem,
     assetType: string
   ): Promise<void> => {
-    if (assetType === 'output') {
+    // Temp files (e.g. preview-node outputs) are history-backed outputs that
+    // happen to live in the temp dir, so they delete via the history API too.
+    if (assetType === 'output' || assetType === 'temp') {
       const jobId =
         getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
       if (!jobId) {
@@ -729,9 +731,10 @@ export function useMediaAssetActions() {
               })
 
               // Update stores after deletions
-              const hasOutputAssets = assetArray.some(
-                (a) => getAssetType(a) === 'output'
-              )
+              const hasOutputAssets = assetArray.some((a) => {
+                const type = getAssetType(a)
+                return type === 'output' || type === 'temp'
+              })
               const hasInputAssets = assetArray.some(
                 (a) => getAssetType(a) === 'input'
               )
