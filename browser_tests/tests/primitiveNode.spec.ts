@@ -31,6 +31,52 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     )
   })
 
+  test('Preserves widget value in API workflow export', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'PR #10705 - PrimitiveNode value missing from API workflow export'
+    })
+
+    await comfyPage.workflow.loadWorkflow(
+      'primitive/primitive_node_unconnected'
+    )
+    const primitiveNode: NodeReference =
+      await comfyPage.nodeOps.getNodeRefById(1)
+    const ksamplerNode: NodeReference =
+      await comfyPage.nodeOps.getNodeRefById(2)
+
+    await primitiveNode.connectWidget(0, ksamplerNode, 0)
+
+    const primitiveValue = 12345
+    await expect
+      .poll(async () =>
+        comfyPage.page.evaluate(
+          ({ nodeId, value }) => {
+            const node = window.app!.graph.getNodeById(nodeId)
+            const widget = node?.widgets?.[0]
+            if (!widget) return undefined
+
+            widget.value = value
+            return widget.value
+          },
+          { nodeId: primitiveNode.id, value: primitiveValue }
+        )
+      )
+      .toBe(primitiveValue)
+
+    const apiWorkflow = await comfyPage.workflow.getExportedWorkflow({
+      api: true
+    })
+
+    expect(apiWorkflow[String(ksamplerNode.id)].inputs.seed).toBe(
+      primitiveValue
+    )
+    expect(apiWorkflow[String(primitiveNode.id)]).toBeUndefined()
+  })
+
   test('Can connect to dom widget', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow(
       'primitive/primitive_node_unconnected_dom_widget'
