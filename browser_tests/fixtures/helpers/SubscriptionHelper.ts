@@ -98,7 +98,10 @@ export class SubscriptionHelper {
     const featuresHandler = async (route: Route) => {
       await route.fulfill({ json: { subscription_required: true } })
     }
-    this.routeHandlers.push({ pattern: featuresPattern, handler: featuresHandler })
+    this.routeHandlers.push({
+      pattern: featuresPattern,
+      handler: featuresHandler
+    })
     await this.page.route(featuresPattern, featuresHandler)
 
     const statusPattern = '**/customers/cloud-subscription-status'
@@ -112,7 +115,10 @@ export class SubscriptionHelper {
     const balanceHandler = async (route: Route) => {
       await route.fulfill({ json: this.balanceResponse })
     }
-    this.routeHandlers.push({ pattern: balancePattern, handler: balanceHandler })
+    this.routeHandlers.push({
+      pattern: balancePattern,
+      handler: balanceHandler
+    })
     await this.page.route(balancePattern, balanceHandler)
 
     const checkoutPattern = '**/customers/cloud-subscription-checkout**'
@@ -121,18 +127,18 @@ export class SubscriptionHelper {
         json: { checkout_url: 'https://checkout.stripe.com/mock' }
       })
     }
-    this.routeHandlers.push({ pattern: checkoutPattern, handler: checkoutHandler })
+    this.routeHandlers.push({
+      pattern: checkoutPattern,
+      handler: checkoutHandler
+    })
     await this.page.route(checkoutPattern, checkoutHandler)
   }
 
   configure(...operators: SubscriptionOperator[]): void {
-    const config = operators.reduce<SubscriptionConfig>(
-      (cfg, op) => op(cfg),
-      {
-        status: { ...this.statusResponse },
-        balance: { ...this.balanceResponse }
-      }
-    )
+    const config = operators.reduce<SubscriptionConfig>((cfg, op) => op(cfg), {
+      status: { ...this.statusResponse },
+      balance: { ...this.balanceResponse }
+    })
     this.statusResponse = { ...config.status }
     this.balanceResponse = { ...config.balance }
   }
@@ -190,7 +196,9 @@ export class SubscriptionHelper {
    * initial page load.
    */
   async openUserPopover() {
-    await this.page.getByTestId(TestIds.user.currentUserButton).dispatchEvent('click')
+    await this.page
+      .getByTestId(TestIds.user.currentUserButton)
+      .dispatchEvent('click')
     const popover = this.page.getByTestId(TestIds.user.currentUserPopover)
     await expect(popover).toBeVisible()
     return popover
@@ -216,7 +224,9 @@ export class SubscriptionHelper {
    * so we poll briefly; absence is not a failure.
    */
   async dismissSubscriptionDialogIfOpen(): Promise<void> {
-    const dialog = this.page.locator('[aria-labelledby="subscription-required"]')
+    const dialog = this.page.locator(
+      '[aria-labelledby="subscription-required"]'
+    )
     // `expect().toBeVisible()` throws a Playwright AssertionError (not
     // errors.TimeoutError) when the element is absent — both cases mean
     // "dialog not present", which is the expected happy path here.
