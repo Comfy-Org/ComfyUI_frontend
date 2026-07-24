@@ -1,16 +1,10 @@
 <template>
+  <!--
+    Root @click.stop keeps clicks outside the explicit selection regions from
+    reaching the panel's empty-space deselection handler.
+  -->
   <div
     ref="cardContainerRef"
-    role="button"
-    :aria-label="
-      asset
-        ? $t('assetBrowser.ariaLabel.assetCard', {
-            name: getAssetDisplayName(asset),
-            type: fileKind
-          })
-        : $t('assetBrowser.ariaLabel.loadingAsset')
-    "
-    :tabindex="loading ? -1 : 0"
     :class="
       cn(
         'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
@@ -23,14 +17,18 @@
     :data-selected="selected"
     :data-asset-id="asset?.id"
     :draggable="true"
-    @click.stop="$emit('click')"
+    @click.stop
     @contextmenu.prevent.stop="
       asset ? emit('context-menu', $event, asset) : undefined
     "
     @dragstart="dragStart"
   >
     <!-- Top Area: Media Preview -->
-    <div class="relative aspect-square overflow-hidden p-0">
+    <div
+      class="relative aspect-square overflow-hidden p-0"
+      @click.stop="fileKind !== 'video' && emit('select')"
+      @dblclick.stop="fileKind === 'image' && handleZoomClick()"
+    >
       <!-- Loading State -->
       <div
         v-if="loading"
@@ -44,7 +42,6 @@
         :asset="adaptedAsset"
         :context="{ type: assetType }"
         class="absolute inset-0"
-        @view="handleZoomClick"
         @download="asset && actions.downloadAssets([asset])"
         @video-playing-state-changed="isVideoPlaying = $event"
         @video-controls-changed="showVideoControls = $event"
@@ -55,20 +52,44 @@
         <i class="icon-[lucide--trash-2] size-5" />
       </LoadingOverlay>
 
-      <!-- Action buttons overlay (top-left) -->
+      <Button
+        v-if="asset && !loading && !isDeleting"
+        variant="overlay-white"
+        size="icon"
+        :class="
+          cn(
+            'absolute top-2 left-2 z-1 size-6 rounded-full opacity-0 transition-opacity',
+            'group-hover:opacity-100 focus-visible:opacity-100'
+          )
+        "
+        :aria-label="
+          $t('assetBrowser.ariaLabel.assetCard', {
+            name: getAssetDisplayName(asset),
+            type: fileKind
+          })
+        "
+        :aria-pressed="selected ?? false"
+        @click.stop="emit('toggle-selection')"
+      >
+        <i
+          aria-hidden="true"
+          :class="cn('icon-[lucide--check] size-4', !selected && 'opacity-0')"
+        />
+      </Button>
+
+      <!-- Action buttons overlay (top-right) -->
       <div
         v-if="showActionsOverlay"
-        class="absolute top-2 left-2 flex flex-wrap justify-start gap-2"
+        class="absolute top-2 right-2 z-1 flex flex-wrap justify-end gap-2"
       >
         <IconGroup background-class="bg-white">
           <Button
-            v-if="canInspect"
             variant="overlay-white"
             size="icon"
-            :aria-label="$t('mediaAsset.actions.zoom')"
-            @click.stop="handleZoomClick"
+            :aria-label="$t('mediaAsset.actions.download')"
+            @click.stop="asset && actions.downloadAssets([asset])"
           >
-            <i class="icon-[lucide--zoom-in] size-4" />
+            <i class="icon-[lucide--download] size-4" />
           </Button>
           <Button
             variant="overlay-white"
@@ -105,19 +126,15 @@
       <div
         v-else-if="asset && adaptedAsset"
         class="flex items-end justify-between gap-1.5"
+        @click.stop="emit('select')"
       >
-        <!-- Left side: Media name and metadata -->
-        <div class="flex flex-col gap-1">
-          <!-- Title -->
+        <div class="flex min-w-0 flex-col gap-1">
           <MediaTitle :file-name="fileName" />
-          <!-- Metadata -->
-          <div class="flex gap-1.5 text-xs text-muted-foreground">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span v-if="formattedDuration">{{ formattedDuration }}</span>
             <span v-if="metaInfo">{{ metaInfo }}</span>
           </div>
         </div>
-
-        <!-- Right side: Output count -->
         <div v-if="showOutputCount" class="shrink-0">
           <Button
             v-tooltip.top.pt:pointer-events-none="
@@ -199,7 +216,10 @@ const isDeleting = computed(() =>
 )
 
 const emit = defineEmits<{
-  click: []
+  // Image and info clicks use the standard selection rules.
+  select: []
+  // The selection control toggles only this asset in the current selection.
+  'toggle-selection': []
   zoom: [asset: AssetItem]
   'output-count-click': []
   'context-menu': [event: MouseEvent, asset: AssetItem]
@@ -286,16 +306,25 @@ const displayImageDimensions = computed(() =>
   resolveDisplayImageDimensions(asset, imageDimensions.value)
 )
 
-// Get metadata info based on file kind
+const format = computed(() => {
+  const suffix = getFilenameDetails(asset?.name ?? '').suffix
+  return suffix ? suffix.toUpperCase() : ''
+})
+
 const metaInfo = computed(() => {
   if (!asset) return ''
+  const parts: string[] = []
+  if (format.value) parts.push(format.value)
+
   if (fileKind.value === 'image' && displayImageDimensions.value) {
-    return `${displayImageDimensions.value.width}x${displayImageDimensions.value.height}`
+    parts.push(
+      `${displayImageDimensions.value.width}x${displayImageDimensions.value.height}`
+    )
+  } else if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
+    parts.push(formatSize(asset.size))
   }
-  if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
-    return formatSize(asset.size)
-  }
-  return ''
+
+  return parts.join(' ')
 })
 
 const showActionsOverlay = computed(() => {
@@ -316,6 +345,7 @@ const handleImageLoaded = (width: number, height: number) => {
 const handleOutputCountClick = () => {
   emit('output-count-click')
 }
+
 function dragStart(e: DragEvent) {
   if (e.ctrlKey || e.metaKey) {
     e.preventDefault()

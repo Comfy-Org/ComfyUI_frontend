@@ -13,7 +13,8 @@
           :selected="isSelected(item.asset.id)"
           :show-output-count="showOutputCount(item.asset)"
           :output-count="getOutputCount(item.asset)"
-          @click="emit('select-asset', item.asset)"
+          @select="emit('select-asset', item.asset)"
+          @toggle-selection="emit('toggle-asset-selection', item.asset)"
           @context-menu="emit('context-menu', $event, item.asset)"
           @zoom="emit('zoom', item.asset)"
           @output-count-click="emit('output-count-click', item.asset)"
@@ -39,6 +40,7 @@ const { assets, isSelected, showOutputCount, getOutputCount } = defineProps<{
 
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem): void
+  (e: 'toggle-asset-selection', asset: AssetItem): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void
   (e: 'zoom', asset: AssetItem): void
