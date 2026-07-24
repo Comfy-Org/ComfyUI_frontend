@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { parse } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 import { assertCloudEntry } from '../browser_tests/fixtures/customNode/manifest'
@@ -138,6 +140,32 @@ describe('buildCloudManifest', () => {
     )
   })
 
+  it('fails loudly when the yaml contains no joinable non-core packs', () => {
+    const doc = fixtureDoc()
+    doc.node_packs = doc.node_packs.filter((pack) => pack.name === 'core')
+    expect(() => buildCloudManifest(doc, fixtureSnapshot())).toThrow(
+      /no pack rows/
+    )
+  })
+
+  it('joins a .git-suffixed URL pack to its snapshot dirname', () => {
+    const doc = fixtureDoc()
+    const kj = doc.node_packs.find((pack) => pack.name === KJ_DEPLOY_REF)
+    kj!.name = KJ_DEPLOY_REF.replace('@', '.git@')
+    const manifest = buildCloudManifest(doc, fixtureSnapshot())
+    expect(manifest.packs.some((row) => row.pack === 'ComfyUI-KJNodes')).toBe(
+      true
+    )
+  })
+
+  it('fails loudly when two yaml packs collide on one join key', () => {
+    const doc = fixtureDoc()
+    doc.node_packs.push({ name: 'ComfyUI-KJNODES', version: '9.9.9' })
+    expect(() => buildCloudManifest(doc, fixtureSnapshot())).toThrow(
+      /collide on join key/
+    )
+  })
+
   it('fails loudly when every snapshot node of a pack is disabled', () => {
     const snapshot = fixtureSnapshot()
     snapshot['VHS_Stub'] = { ...snapshot['VHS_LoadVideo'] }
@@ -183,6 +211,28 @@ describe('renderCloudManifest determinism', () => {
 describe('validateSupportedNodesDoc', () => {
   it('accepts the real vendored entries', () => {
     expect(() => fixtureDoc()).not.toThrow()
+  })
+
+  it('parses and validates the full vendored yaml end to end', () => {
+    // Resolved from the repo root (vitest's cwd): under happy-dom
+    // import.meta.url is not a file: URL, so URL-relative resolution crashes.
+    const vendored = readFileSync(
+      'browser_tests/fixtures/data/cloud/supported_nodes.yaml',
+      'utf-8'
+    )
+    const doc = validateSupportedNodesDoc(parse(vendored))
+    expect(doc.node_packs.length).toBeGreaterThan(80)
+    expect(doc.node_packs.some((pack) => pack.name === 'core')).toBe(true)
+  })
+
+  it('rejects a node carrying a duplicate label', () => {
+    const doc = fixtureDoc()
+    const kj = doc.node_packs.find((pack) => pack.name === KJ_DEPLOY_REF)
+    kj!.node_labels!['CameraPoseVisualizer'] = [
+      'DisabledOnCloud',
+      'DisabledOnCloud'
+    ]
+    expect(() => validateSupportedNodesDoc(doc)).toThrow(/duplicate label/)
   })
 
   it('rejects labels missing from the declared list', () => {

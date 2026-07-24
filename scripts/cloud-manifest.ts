@@ -73,6 +73,10 @@ export function validateSupportedNodesDoc(value: unknown): SupportedNodesDoc {
           throw new Error(
             `supported_nodes.yaml: ${name} node ${node} must carry a non-empty label list`
           )
+        if (new Set(labels).size !== labels.length)
+          throw new Error(
+            `supported_nodes.yaml: ${name} node ${node} carries a duplicate label`
+          )
         for (const label of labels)
           if (!declared.has(label))
             throw new Error(
@@ -123,7 +127,10 @@ function joinKeyOf(name: string): string {
 
 function yamlJoinKeyOf(pack: SupportedNodesPack): string {
   if (!pack.name.startsWith('http')) return joinKeyOf(pack.name)
-  const repo = pack.name.replace(URL_PIN, '').replace(/\/+$/, '')
+  const repo = pack.name
+    .replace(URL_PIN, '')
+    .replace(/\/+$/, '')
+    .replace(/\.git$/, '')
   return joinKeyOf(repo.slice(repo.lastIndexOf('/') + 1))
 }
 
@@ -168,9 +175,17 @@ export function buildCloudManifest(
 
   const unmatched: string[] = []
   const packs: CloudManifestEntry[] = []
+  const seenYamlPacks = new Map<string, string>()
   for (const pack of doc.node_packs) {
     if (pack.name === 'core') continue
-    const dirname = dirnameByJoinKey.get(yamlJoinKeyOf(pack))
+    const key = yamlJoinKeyOf(pack)
+    const prior = seenYamlPacks.get(key)
+    if (prior !== undefined)
+      throw new Error(
+        `yaml packs ${prior} and ${pack.name} collide on join key ${key}`
+      )
+    seenYamlPacks.set(key, pack.name)
+    const dirname = dirnameByJoinKey.get(key)
     if (dirname === undefined) {
       unmatched.push(pack.name)
       continue
@@ -202,8 +217,14 @@ export function buildCloudManifest(
       `yaml packs with no /object_info pack to join: ${unmatched.join(', ')} - ` +
         `either the snapshot predates their deploy or the dirname mapping rule broke`
     )
+  // Zero rows would flow into a manifest that generates zero tests - the
+  // fake-green class the loader also guards against.
+  if (packs.length === 0)
+    throw new Error(
+      'no pack rows generated - the yaml contains no joinable non-core packs'
+    )
 
-  packs.sort((a, b) => (a.pack < b.pack ? -1 : 1))
+  packs.sort((a, b) => (a.pack < b.pack ? -1 : a.pack > b.pack ? 1 : 0))
   packs.forEach(assertCloudEntry)
 
   const core = doc.node_packs.find((pack) => pack.name === 'core')

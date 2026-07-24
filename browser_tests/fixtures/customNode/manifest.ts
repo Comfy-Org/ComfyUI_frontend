@@ -291,11 +291,15 @@ function loadCloudManifest(): CloudManifestEntry[] {
     )
   const manifest = JSON.parse(readFileSync(cloudPath, 'utf-8')) as CloudManifest
   if (
+    typeof manifest !== 'object' ||
+    manifest === null ||
     invalidRecordOf(manifest.coreDisabledNodes, isLabelList) ||
-    !Array.isArray(manifest.packs)
+    !Array.isArray(manifest.packs) ||
+    // Zero packs generate zero tests: a green run that tested nothing.
+    manifest.packs.length === 0
   )
     throw new Error(
-      `${cloudPath} is malformed (expected { coreDisabledNodes, packs }): regenerate it via 'pnpm gen:cloud-manifest'`
+      `${cloudPath} is malformed (expected { coreDisabledNodes, packs } with at least one pack): regenerate it via 'pnpm gen:cloud-manifest'`
     )
   manifest.packs.forEach(assertCloudEntry)
   return manifest.packs
