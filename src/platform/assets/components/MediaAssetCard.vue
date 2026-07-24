@@ -18,9 +18,7 @@
     :data-asset-id="asset?.id"
     :draggable="true"
     @click.stop
-    @contextmenu.prevent.stop="
-      asset ? emit('context-menu', $event, asset) : undefined
-    "
+    @contextmenu.prevent.stop="handleContextMenu"
     @dragstart="dragStart"
   >
     <!-- Top Area: Media Preview -->
@@ -42,7 +40,7 @@
         :asset="adaptedAsset"
         :context="{ type: assetType }"
         class="absolute inset-0"
-        @download="asset && actions.downloadAssets([asset])"
+        @download="handleDownload"
         @video-playing-state-changed="isVideoPlaying = $event"
         @video-controls-changed="showVideoControls = $event"
         @image-loaded="handleImageLoaded"
@@ -58,8 +56,9 @@
         size="icon"
         :class="
           cn(
-            'absolute top-2 left-2 z-1 size-6 rounded-full opacity-0 transition-opacity',
-            'group-hover:opacity-100 focus-visible:opacity-100'
+            'pointer-events-none absolute top-2 left-2 z-1 size-6 rounded-full opacity-0 transition-opacity',
+            'group-hover:pointer-events-auto group-hover:opacity-100',
+            'focus-visible:pointer-events-auto focus-visible:opacity-100'
           )
         "
         :aria-label="
@@ -87,7 +86,7 @@
             variant="overlay-white"
             size="icon"
             :aria-label="$t('mediaAsset.actions.download')"
-            @click.stop="asset && actions.downloadAssets([asset])"
+            @click.stop="handleDownload"
           >
             <i class="icon-[lucide--download] size-4" />
           </Button>
@@ -95,9 +94,7 @@
             variant="overlay-white"
             size="icon"
             :aria-label="$t('mediaAsset.actions.moreOptions')"
-            @click.stop="
-              asset ? emit('context-menu', $event, asset) : undefined
-            "
+            @click.stop="handleContextMenu"
           >
             <i class="icon-[lucide--ellipsis] size-4" />
           </Button>
@@ -344,6 +341,16 @@ const handleImageLoaded = (width: number, height: number) => {
 
 const handleOutputCountClick = () => {
   emit('output-count-click')
+}
+
+function handleContextMenu(event: MouseEvent) {
+  if (!asset) return
+  emit('context-menu', event, asset)
+}
+
+function handleDownload() {
+  if (!asset) return
+  actions.downloadAssets([asset])
 }
 
 function dragStart(e: DragEvent) {

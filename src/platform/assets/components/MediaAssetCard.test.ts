@@ -195,6 +195,19 @@ describe('MediaAssetCard', () => {
     expect(emitted()['toggle-selection']).toHaveLength(1)
   })
 
+  it('does not let the hidden selection control intercept pointer input', () => {
+    renderCard({ loading: false })
+
+    const selectionControl = screen.getByRole('button', {
+      name: 'assetBrowser.ariaLabel.assetCard'
+    })
+    expect(selectionControl).toHaveClass(
+      'pointer-events-none',
+      'group-hover:pointer-events-auto',
+      'focus-visible:pointer-events-auto'
+    )
+  })
+
   it('shows image format and dimensions without file size', () => {
     renderCard({
       loading: false,
