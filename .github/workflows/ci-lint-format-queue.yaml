@@ -4,9 +4,12 @@
 # so branch protection resolves a single required check in both the
 # pull_request and merge_group contexts. This file runs verify-only steps
 # with a read-only token; auto-fix and PR comments live in the PR workflow.
-# The push trigger catches merge-skew accumulation: PR and merge_group checks
-# only evaluate a single PR's diff, so failures (e.g. unused exports) can
-# accumulate on main that no individual check ever evaluates together.
+# The push trigger catches merge-skew accumulation. Pre-merge checks only look
+# at proposed state: pull_request evaluates a single PR's diff, and merge_group
+# evaluates the temporary merge-queue ref (the projected post-merge result of
+# the queued PRs). The push trigger instead validates the already-merged branch
+# state, catching failures (e.g. unused exports) that accumulate on a branch and
+# that no pre-merge check ever evaluates together.
 name: 'CI: Lint Format'
 
 on:
