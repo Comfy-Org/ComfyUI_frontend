@@ -48,6 +48,8 @@ export const useAgentConversationStore = defineStore(
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
     const backgroundTurns = new Map<string, BackgroundTurn>()
+    let hydratedMessageIds = new Set<string>()
+    let hydratedAssistantTurnIds = new Set<TurnId>()
     const activeIndex = ref(-1)
 
     function replaceActive(message: AssistantMessage): void {
@@ -141,12 +143,17 @@ export const useAgentConversationStore = defineStore(
       const entry = backgroundTurns.get(threadId.value)
       if (!entry) return
       backgroundTurns.delete(threadId.value)
+      // The stash keys a turn by its message_id while hydrate() re-keys the same
+      // turn by the server's turn_id; row.id bridges the two. Matching turns by
+      // identity, not by shared user text, is what stops a repeated prompt from
+      // colliding with an unrelated turn.
       const kept = messages.value.filter((m) => m.id !== entry.turnId)
       const last = kept.at(-1)
       let poppedHydratedCopy = false
       if (
         kept.length === messages.value.length &&
         last &&
+        !hydratedAssistantTurnIds.has(last.id) &&
         entry.userText !== undefined &&
         userTexts.value.get(last.id) === entry.userText
       ) {
@@ -154,13 +161,12 @@ export const useAgentConversationStore = defineStore(
         userTexts.value.delete(last.id)
         poppedHydratedCopy = true
       }
-      if (entry.settled && !poppedHydratedCopy) {
-        if (entry.userText === undefined) return
-        const hydratedElsewhere = [...userTexts.value.values()].includes(
-          entry.userText
-        )
-        if (hydratedElsewhere) return
-      }
+      if (
+        entry.settled &&
+        !poppedHydratedCopy &&
+        hydratedMessageIds.has(entry.turnId)
+      )
+        return
       if (entry.userText !== undefined && !userTexts.value.has(entry.turnId))
         userTexts.value.set(entry.turnId, entry.userText)
       const index = kept.push(entry.message) - 1
@@ -208,6 +214,8 @@ export const useAgentConversationStore = defineStore(
       userTags.value = new Map()
       dropAttachmentPreviews()
       threadId.value = null
+      hydratedMessageIds = new Set()
+      hydratedAssistantTurnIds = new Set()
       clearActive()
     }
 
@@ -217,8 +225,10 @@ export const useAgentConversationStore = defineStore(
       const assistants = new Map<TurnId, AssistantMessage>()
       const turnOrder: TurnId[] = []
       const seenTurns = new Set<TurnId>()
+      const rowIds = new Set<string>()
       for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
         const turnId = row.turn_id as TurnId
+        rowIds.add(row.id)
         if (!seenTurns.has(turnId)) {
           seenTurns.add(turnId)
           turnOrder.push(turnId)
@@ -245,6 +255,8 @@ export const useAgentConversationStore = defineStore(
       })
       userTexts.value = texts
       userTags.value = new Map()
+      hydratedMessageIds = rowIds
+      hydratedAssistantTurnIds = new Set(assistants.keys())
       dropAttachmentPreviews()
     }
 

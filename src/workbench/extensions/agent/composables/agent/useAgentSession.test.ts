@@ -117,9 +117,10 @@ const historyRow = (
   seq: number,
   role: 'user' | 'assistant',
   turnId: string,
-  text: string
+  text: string,
+  id: string = `row-${seq}`
 ): AgentMessages[number] => ({
-  id: `row-${seq}`,
+  id,
   thread_id: 'th-1',
   seq,
   role,
@@ -769,7 +770,7 @@ describe('useAgentSession (v1 composition root)', () => {
         threadId === 'th-1'
           ? [
               historyRow(1, 'user', 'turn-A', 'go'),
-              historyRow(2, 'assistant', 'turn-A', 'done deal')
+              historyRow(2, 'assistant', 'turn-A', 'done deal', 'msg-1')
             ]
           : []
     )
@@ -1117,7 +1118,7 @@ describe('useAgentSession (v1 composition root)', () => {
         threadId === 'th-1'
           ? [
               historyRow(1, 'user', 'turn-A', 'go'),
-              historyRow(2, 'assistant', 'turn-A', 'the reply'),
+              historyRow(2, 'assistant', 'turn-A', 'the reply', 'msg-1'),
               historyRow(3, 'user', 'turn-B', 'newer question'),
               historyRow(4, 'assistant', 'turn-B', 'newer reply')
             ]
