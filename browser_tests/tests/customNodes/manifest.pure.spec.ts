@@ -78,7 +78,14 @@ test.describe('customNode manifest', () => {
         assertCoreEntry({ ...validEntry(), workflow: '' }, 0)
       ).toThrow(/workflow/)
       expect(() =>
-        assertCloudEntry({ ...validCloudEntry(), workflow: '' }, 0)
+        assertCloudEntry(
+          {
+            ...validCloudEntry(),
+            tiers: ['load', 'connectivity', 'run'],
+            workflow: ''
+          },
+          0
+        )
       ).toThrow(/workflow/)
       expect(() => assertCoreEntry({ ...validEntry(), pin: '' }, 0)).toThrow(
         /pin/
