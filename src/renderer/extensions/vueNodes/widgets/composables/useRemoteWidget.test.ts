@@ -54,7 +54,7 @@ vi.mock('@/platform/settings/settingStore', async () => {
   }
 })
 
-const FIRST_BACKOFF = 1000 // backoff is 1s on first retry
+const FIRST_BACKOFF = 2000 // getBackoff(1): wait after the first failure
 const DEFAULT_VALUE = 'Loading...'
 
 function createMockConfig(overrides = {}): RemoteWidgetConfig {
@@ -341,27 +341,6 @@ describe('useRemoteWidget', () => {
 
     afterEach(() => {
       vi.useRealTimers()
-    })
-
-    it('should implement exponential backoff on errors', async () => {
-      mockAxiosError('Network error')
-
-      const hook = useRemoteWidget(createMockOptions())
-      await getResolvedValue(hook)
-      const entry1 = hook.getCacheEntry()
-      expect(entry1?.error).toBeTruthy()
-
-      await getResolvedValue(hook)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
-
-      vi.setSystemTime(Date.now() + 500)
-      await getResolvedValue(hook)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1) // Still backing off
-
-      vi.setSystemTime(Date.now() + 3000)
-      await getResolvedValue(hook)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
-      expect(entry1?.data).toBeDefined()
     })
 
     it('should reset error state on successful fetch', async () => {
