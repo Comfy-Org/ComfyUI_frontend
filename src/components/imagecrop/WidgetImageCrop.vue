@@ -29,8 +29,6 @@
           :alt="$t('imageCrop.cropPreviewAlt')"
           draggable="false"
           class="block size-full object-contain select-none"
-          @load="handleImageLoad"
-          @error="handleImageError"
           @dragstart.prevent
         />
 
@@ -181,8 +179,6 @@ const {
   cropBoxStyle,
   resizeHandles,
 
-  handleImageLoad,
-  handleImageError,
   handleDragStart,
   handleDragMove,
   handleDragEnd,

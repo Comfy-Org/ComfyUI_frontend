@@ -99,7 +99,6 @@
         draggable="false"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
-        @error="handleImageError"
       />
 
       <!-- Floating Action Buttons (appear on hover and focus) -->
@@ -195,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementSize, useTimeoutFn } from '@vueuse/core'
+import { useElementSize, useImage, useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -243,7 +242,6 @@ const currentIndex = ref(0)
 const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
 const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
-const imageError = ref(false)
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
 
@@ -271,6 +269,20 @@ const gridCols = computed(() => {
   return Math.max(Math.round(Math.sqrt(imageUrls.length * bias)), 1)
 })
 
+// Use useImage for error detection only. Load handling stays on the rendered
+// <img> @load handler so syncLegacyNodeImgs receives the actual DOM element.
+const { error: imageError } = useImage(
+  computed(() => ({ src: currentImageUrl.value, alt: imageAltText.value }))
+)
+
+watch(imageError, (err) => {
+  if (err) {
+    stopDelayedLoader()
+    showLoader.value = false
+    actualDimensions.value = null
+  }
+})
+
 watch(
   () => imageUrls,
   (newUrls, oldUrls) => {
@@ -287,11 +299,11 @@ watch(
       currentIndex.value = 0
     }
 
-    // Reset loading and error states when URLs change
+    // Reset loading and dimensions when URLs change. `imageError` is reset
+    // automatically by `useImage` when the source changes.
     actualDimensions.value = null
 
     viewMode.value = defaultViewMode(newUrls)
-    imageError.value = false
     if (newUrls.length > 0) startDelayedLoader()
   },
   { immediate: true }
@@ -302,7 +314,6 @@ function handleImageLoad(event: Event) {
   const img = event.target
   stopDelayedLoader()
   showLoader.value = false
-  imageError.value = false
   if (img.naturalWidth && img.naturalHeight) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
@@ -318,13 +329,6 @@ function updateAspectRatio(event: Event, index: number) {
   if (naturalWidth && naturalHeight) {
     imageAspectRatio.value = naturalWidth / naturalHeight
   }
-}
-
-function handleImageError() {
-  stopDelayedLoader()
-  showLoader.value = false
-  imageError.value = true
-  actualDimensions.value = null
 }
 
 function handleEditMask() {
@@ -351,7 +355,6 @@ function setCurrentIndex(index: number) {
   if (index >= 0 && index < imageUrls.length) {
     const urlChanged = imageUrls[index] !== currentImageUrl.value
     currentIndex.value = index
-    imageError.value = false
     if (urlChanged) startDelayedLoader()
   }
 }
