@@ -12,6 +12,14 @@ function isPromptRequest(request: Request): boolean {
   )
 }
 
+async function waitForPromptRequest(page: Page, timeout: number) {
+  await page
+    .waitForRequest(isPromptRequest, { timeout })
+    .catch((error: unknown) => {
+      if (!(error instanceof errors.TimeoutError)) throw error
+    })
+}
+
 export class ComfyActionbar {
   public readonly root: Locator
   public readonly queueButton: ComfyQueueButton
@@ -45,11 +53,10 @@ export class ComfyActionbar {
     try {
       await action()
       if (requests.length === 0) {
-        await this.page
-          .waitForRequest(isPromptRequest, { timeout })
-          .catch((error: unknown) => {
-            if (!(error instanceof errors.TimeoutError)) throw error
-          })
+        await waitForPromptRequest(this.page, timeout)
+      }
+      if (requests.length === 1) {
+        await waitForPromptRequest(this.page, timeout)
       }
       return requests
     } finally {

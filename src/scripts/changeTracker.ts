@@ -48,6 +48,7 @@ const nonExecutionGraphProperties = new Set([
 const nonExecutionNodeProperties = new Set([
   'pos',
   'size',
+  // Node flags, including skip_repeated_outputs, only affect the editor.
   'flags',
   'order',
   'color',
@@ -324,12 +325,8 @@ export class ChangeTracker {
   updateModified(previousState?: ComfyWorkflowJSON) {
     api.dispatchCustomEvent('graphChanged', this.activeState)
     if (previousState) {
-      const previousExecutionState = clone(
-        getExecutionGraphState(previousState)
-      )
-      const currentExecutionState = clone(
-        getExecutionGraphState(this.activeState)
-      )
+      const previousExecutionState = getExecutionGraphState(previousState)
+      const currentExecutionState = getExecutionGraphState(this.activeState)
       if (!_.isEqual(previousExecutionState, currentExecutionState)) {
         api.dispatchCustomEvent('executionGraphChanged', this.activeState)
       }

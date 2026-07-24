@@ -1,8 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  createNestedSubgraphs,
   createTestRootGraph,
   createTestSubgraphData,
   createTestSubgraphNode,
@@ -107,14 +108,16 @@ function createState(nodeCount = 0): ComfyWorkflowJSON {
     config: {},
     version: 0.4,
     last_node_id: nodeIdCounter,
-    last_link_id: 0,
-    definitions: undefined
+    last_link_id: 0
   }
 }
 
 function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
   const state = initialState ?? createState()
-  const workflow = { path: '/test/workflow.json' } as never
+  const testName = expect.getState().currentTestName ?? 'unknown-test'
+  const workflow = {
+    path: `/test/${encodeURIComponent(testName)}.json`
+  } as never
   const tracker = new ChangeTracker(workflow, state)
   mockWorkflowStore.activeWorkflow = { changeTracker: tracker }
   return tracker
@@ -122,6 +125,14 @@ function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
 
 function mockCanvasState(state: ComfyWorkflowJSON) {
   vi.mocked(app.rootGraph.serialize).mockReturnValue(state as never)
+}
+
+async function requireValidWorkflow(value: unknown) {
+  const state = await validateComfyWorkflow(value, (error) => {
+    throw new Error(error)
+  })
+  if (!state) throw new Error('invalid workflow fixture')
+  return JSON.parse(JSON.stringify(state)) as ComfyWorkflowJSON
 }
 
 async function createSubgraphState(
@@ -147,11 +158,7 @@ async function createSubgraphState(
     subgraph.outputNode.slots[0].connect(output, interior)
   }
 
-  const state = await validateComfyWorkflow(rootGraph.serialize(), (error) => {
-    throw new Error(error)
-  })
-  if (!state) throw new Error('invalid subgraph fixture')
-  return state
+  return await requireValidWorkflow(rootGraph.serialize())
 }
 
 type ExportedSubgraphWithNodes = ExportedSubgraph &
@@ -166,6 +173,18 @@ function isExportedSubgraph(
     'nodes' in value &&
     Array.isArray(value.nodes)
   )
+}
+
+function findSubgraphDefinition(
+  state: ComfyWorkflowJSON | ExportedSubgraphWithNodes,
+  id: string
+): ExportedSubgraphWithNodes | undefined {
+  for (const subgraph of state.definitions?.subgraphs ?? []) {
+    if (!isExportedSubgraph(subgraph)) continue
+    if (subgraph.id === id) return subgraph
+    const nested = findSubgraphDefinition(subgraph, id)
+    if (nested) return nested
+  }
 }
 
 function getSubgraphDefinition(state: ComfyWorkflowJSON, index = 0) {
@@ -187,12 +206,18 @@ function omitOptionalSubgraphCollections(state: ComfyWorkflowJSON) {
 describe('ChangeTracker', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.useFakeTimers()
     setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
     nodeIdCounter = 0
     ChangeTracker.isLoadingGraph = false
     mockWorkflowStore.activeWorkflow = null
     mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
+  })
+
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
   })
 
   describe('captureCanvasState', () => {
@@ -271,6 +296,57 @@ describe('ChangeTracker', () => {
           changed
         )
       })
+
+      it('squashes late serialized updates into the captured state', async () => {
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        const squashed = structuredClone(changed)
+        squashed.nodes[0].widgets_values = [3]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+        mockCanvasState(squashed)
+        await vi.advanceTimersByTimeAsync(50)
+
+        expect(tracker.activeState).toEqual(squashed)
+        expect(tracker.undoQueue).toEqual([initial])
+        expect(api.dispatchCustomEvent).toHaveBeenCalledTimes(2)
+      })
+
+      it.for([
+        {
+          name: 'tracker becomes inactive',
+          blockSquash: () => {
+            mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+          }
+        },
+        {
+          name: 'graph loading starts',
+          blockSquash: () => {
+            ChangeTracker.isLoadingGraph = true
+          }
+        }
+      ])(
+        'does not squash when $name before the debounce finishes',
+        async ({ blockSquash }) => {
+          const initial = createState(1)
+          const changed = structuredClone(initial)
+          changed.nodes[0].widgets_values = [2]
+          const lateState = structuredClone(changed)
+          lateState.nodes[0].widgets_values = [3]
+          const tracker = createTracker(initial)
+          mockCanvasState(changed)
+
+          tracker.captureCanvasState()
+          mockCanvasState(lateState)
+          blockSquash()
+          await vi.advanceTimersByTimeAsync(50)
+
+          expect(tracker.activeState).toEqual(changed)
+        }
+      )
 
       it('does not push when state is identical', () => {
         const state = createState()
@@ -397,6 +473,20 @@ describe('ChangeTracker', () => {
           mutate: (state: ComfyWorkflowJSON) => {
             state.links = [[1, state.nodes[0].id, 0, state.nodes[1].id, 0, '*']]
           }
+        },
+        {
+          name: 'node addition',
+          mutate: (state: ComfyWorkflowJSON) => {
+            const addedNode = structuredClone(state.nodes[0])
+            addedNode.id = 999
+            state.nodes.push(addedNode)
+          }
+        },
+        {
+          name: 'node removal',
+          mutate: (state: ComfyWorkflowJSON) => {
+            state.nodes.pop()
+          }
         }
       ])(
         'dispatches executionGraphChanged for a $name change',
@@ -445,6 +535,42 @@ describe('ChangeTracker', () => {
         const interior = getSubgraphDefinition(changed).nodes[0]
         if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'executionGraphChanged',
+          changed
+        )
+      })
+
+      it('detects widget changes inside a nested subgraph', async () => {
+        const nested = createNestedSubgraphs({
+          depth: 2,
+          nodesPerLevel: 1
+        })
+        const leafNode = nested.leafSubgraph?.nodes[0]
+        if (!leafNode) throw new Error('nested leaf node missing')
+        for (const subgraph of nested.subgraphs) {
+          nested.rootGraph.subgraphs.set(subgraph.id, subgraph)
+        }
+        const initial = await requireValidWorkflow(nested.rootGraph.serialize())
+        const leafId = nested.leafSubgraph?.id
+        if (!leafId) throw new Error('nested leaf id missing')
+        const initialLeaf = findSubgraphDefinition(initial, leafId)
+        if (!initialLeaf) throw new Error('nested leaf definition missing')
+        const initialLeafNode = initialLeaf.nodes[0]
+        if (!initialLeafNode) throw new Error('nested leaf node missing')
+        initialLeafNode.widgets_values = [1]
+        const tracker = createTracker(initial)
+
+        const changed = structuredClone(initial)
+        const changedLeaf = findSubgraphDefinition(changed, leafId)
+        if (!changedLeaf) throw new Error('nested leaf definition missing')
+        const changedLeafNode = changedLeaf.nodes[0]
+        if (!changedLeafNode) throw new Error('nested leaf node missing')
+        changedLeafNode.widgets_values = [2]
         mockCanvasState(changed)
 
         tracker.captureCanvasState()
