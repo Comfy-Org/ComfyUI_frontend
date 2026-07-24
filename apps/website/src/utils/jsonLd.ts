@@ -355,6 +355,36 @@ export function productNode(input: ProductInput): JsonLdNode {
   }
 }
 
+export interface VideoObjectInput {
+  siteUrl: string
+  /** Fragment @id, typically jsonLdId(pageUrl, 'video'). */
+  id: string
+  pageUrl: string
+  name: string
+  description: string
+  thumbnailUrl: string
+  contentUrl: string
+  uploadDate: string
+  locale: Locale
+  embedUrl?: string
+}
+
+export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
+  return {
+    '@type': 'VideoObject',
+    '@id': input.id,
+    name: input.name,
+    description: input.description,
+    thumbnailUrl: input.thumbnailUrl,
+    contentUrl: input.contentUrl,
+    embedUrl: input.embedUrl,
+    uploadDate: input.uploadDate,
+    inLanguage: input.locale,
+    publisher: { '@id': organizationId(input.siteUrl) },
+    isPartOf: { '@id': jsonLdId(input.pageUrl, 'webpage') }
+  }
+}
+
 export interface PageGraphInput {
   url: string
   name: string
