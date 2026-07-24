@@ -32,9 +32,10 @@ async function openMembersTab(page: Page): Promise<Locator> {
     .click()
   const dialog = page.getByTestId('settings-dialog')
   await expect(dialog).toBeVisible()
-  await dialog.locator('nav').getByRole('button', { name: 'Members' }).click()
+  await dialog.locator('nav').getByRole('button', { name: 'Workspace' }).click()
 
   const content = dialog.getByRole('main')
+  await content.getByRole('tab', { name: /Members/ }).click()
   await expect(content.getByText('4 of 30 members')).toBeVisible()
   return content
 }
