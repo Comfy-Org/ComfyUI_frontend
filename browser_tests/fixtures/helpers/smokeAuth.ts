@@ -120,7 +120,8 @@ async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
       body: JSON.stringify({
         email,
         password: process.env.CLOUD_TEST_PASSWORD,
-        returnSecureToken: true
+        returnSecureToken: true,
+        clientType: 'CLIENT_TYPE_WEB'
       }),
       signal: AbortSignal.timeout(30_000)
     }
