@@ -1,9 +1,10 @@
+import { cloneDeep } from 'es-toolkit'
+
 import type {
   ExecutableLGraphNode,
   ExecutionId,
   LGraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import {
   ExecutableNodeDTO,
   LGraphEventMode
@@ -14,6 +15,32 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import { compressWidgetInputSlots } from './litegraphUtil'
+
+function cloneWorkflowWidgetValue(value: unknown): unknown {
+  return value != null && typeof value === 'object'
+    ? cloneDeep(value)
+    : (value ?? null)
+}
+
+function isWidgetValueRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function syncWorkflowWidgetValue(
+  widgetValues: unknown,
+  widgetName: string,
+  widgetIndex: number,
+  value: unknown
+): void {
+  if (Array.isArray(widgetValues)) {
+    widgetValues[widgetIndex] = cloneWorkflowWidgetValue(value)
+  } else if (
+    isWidgetValueRecord(widgetValues) &&
+    Object.hasOwn(widgetValues, widgetName)
+  ) {
+    widgetValues[widgetName] = cloneWorkflowWidgetValue(value)
+  }
+}
 
 /**
  * Converts the current graph workflow for sending to the API.
@@ -57,13 +84,10 @@ export const graphToPrompt = async (
   workflow.extra ??= {}
   workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
 
-  // Build a lookup from node ID to serialized workflow node so that
-  // serializeValue results can be synced back into extra_pnginfo.
-  // Keys are stringified because ExecutableNodeDTO.id is always a string
-  // (e.g. "3") while workflow node IDs may be numbers.
-  const workflowNodeById = new Map<string, ISerialisedNode>()
-  for (const wfNode of workflow.nodes) {
-    workflowNodeById.set(String(wfNode.id), wfNode)
+  // DTO IDs are strings, while workflow node IDs may be numbers.
+  const workflowNodeById = new Map<string, { widgets_values?: unknown }>()
+  for (const workflowNode of workflow.nodes) {
+    workflowNodeById.set(String(workflowNode.id), workflowNode)
   }
 
   const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
@@ -107,10 +131,7 @@ export const graphToPrompt = async (
     // Note: widget.options.serialize controls prompt inclusion (checked here).
     // widget.serialize controls workflow persistence (checked by LGraphNode).
     if (widgets) {
-      // Find the matching workflow node to keep extra_pnginfo in sync.
-      // For root-graph nodes the DTO id is the plain node ID; subgraph
-      // inner nodes use a colon-separated path and are not present in the
-      // root workflow node list.
+      // Inner subgraph DTO IDs are absent from the root workflow snapshot.
       const wfNode = workflowNodeById.get(String(node.id))
 
       for (const [i, widget] of widgets.entries()) {
@@ -119,20 +140,21 @@ export const graphToPrompt = async (
         const widgetValue = widget.serializeValue
           ? await widget.serializeValue(node, i)
           : widget.value
+        const workflowWidgetValues = wfNode?.widgets_values
 
-        // Sync the resolved value back into the workflow metadata so that
-        // extra_pnginfo accurately reflects what was sent for execution.
-        // This covers widgets whose serializeValue transforms the value
-        // (e.g. dynamic prompts, randomised seeds) and also guards against
-        // any drift between widget.value and the serialized workflow
-        // snapshot captured earlier via graph.serialize().
-        // Only update widgets that are persisted in the workflow
-        // (widget.serialize !== false).
-        if (wfNode?.widgets_values && widget.serialize !== false) {
-          wfNode.widgets_values[i] =
-            widgetValue != null && typeof widgetValue === 'object'
-              ? JSON.parse(JSON.stringify(widgetValue))
-              : (widgetValue ?? null)
+        // graph.serialize() precedes DTO creation and value resolution, so
+        // patch its snapshot in place.
+        if (
+          widget.serializeValue &&
+          widget.serialize !== false &&
+          widget.syncToWorkflow !== false
+        ) {
+          syncWorkflowWidgetValue(
+            workflowWidgetValues,
+            widget.name,
+            i,
+            widgetValue
+          )
         }
 
         // By default, Array values are reserved to represent node connections.

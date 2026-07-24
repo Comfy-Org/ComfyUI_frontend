@@ -221,25 +221,32 @@ test.describe('Workflows sidebar', () => {
     await comfyPage.workflow.loadWorkflow('default')
 
     const snapshots = await comfyPage.page.evaluate(async () => {
-      const node = window.app!.graph.getNodeById(3)
-      const seedWidget = node?.widgets?.find((widget) => widget.name === 'seed')
+      const node = window.app!.graph.nodes.find(
+        (node) => node.type === 'KSampler'
+      )
+      if (!node) throw new Error('KSampler node not found in default workflow')
+
+      const seedWidget = node.widgets?.find((widget) => widget.name === 'seed')
       if (!seedWidget) throw new Error('KSampler seed widget not found')
+      const nodeId = String(node.id)
 
       const seeds = [1001, 2002, 3003]
       let callCount = 0
       seedWidget.serializeValue = () => seeds[callCount++]
 
-      const results: Array<{
-        apiSeed: unknown
-        workflowSeed: unknown
-      }> = []
+      const results = []
 
       for (let i = 0; i < seeds.length; i++) {
         const { output, workflow } = await window.app!.graphToPrompt()
-        const workflowNode = workflow.nodes.find((node) => node.id === 3)
+        const workflowNode = workflow.nodes.find(
+          (workflowNode) => String(workflowNode.id) === nodeId
+        )
+        if (!Array.isArray(workflowNode?.widgets_values)) {
+          throw new Error('KSampler workflow widget values not found')
+        }
         results.push({
-          apiSeed: output['3'].inputs.seed,
-          workflowSeed: workflowNode?.widgets_values?.[0]
+          apiSeed: output[nodeId].inputs.seed,
+          workflowSeed: workflowNode.widgets_values[0]
         })
       }
 
