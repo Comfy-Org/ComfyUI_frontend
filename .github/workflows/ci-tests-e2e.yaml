@@ -79,7 +79,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Download built frontend
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: frontend-dist
           path: dist/
@@ -137,7 +137,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Download built frontend
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ (matrix.browser == 'cloud' || matrix.browser == 'mobile-safari') && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
@@ -184,7 +184,7 @@ jobs:
           version: 10
 
       - name: Download blob reports
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: ./all-blob-reports
           pattern: blob-report-chromium-*
@@ -271,7 +271,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download all playwright reports
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: playwright-report-*
           path: reports
