@@ -40,7 +40,7 @@ test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
     )
     await expect(missingNodeCard.getByText('Unknown pack')).toBeVisible()
     await expect(
-      missingNodeCard.getByRole('button', { name: 'UNKNOWN NODE' })
+      missingNodeCard.getByRole('button', { name: 'UNKNOWN NODE', exact: true })
     ).toBeVisible()
   })
 
@@ -57,7 +57,8 @@ test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
     )
     await expect(
       missingNodeCard.getByRole('button', {
-        name: 'MISSING_NODE_TYPE_IN_SUBGRAPH'
+        name: 'MISSING_NODE_TYPE_IN_SUBGRAPH',
+        exact: true
       })
     ).toBeVisible()
   })
@@ -73,7 +74,9 @@ test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
     await comfyPage.canvasOps.pan({ x: -800, y: -800 })
     const offsetBeforeLocate = await comfyPage.canvasOps.getOffset()
 
-    await missingNodeCard.getByRole('button', { name: 'UNKNOWN NODE' }).click()
+    await missingNodeCard
+      .getByRole('button', { name: 'UNKNOWN NODE', exact: true })
+      .click()
 
     await expect
       .poll(() => comfyPage.canvasOps.getOffset())
@@ -98,10 +101,12 @@ test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
       TestIds.dialogs.missingNodePackExpand
     )
     const firstNode = missingNodeCard.getByRole('button', {
-      name: 'TEST_MISSING_PACK_NODE_A'
+      name: 'TEST_MISSING_PACK_NODE_A',
+      exact: true
     })
     const secondNode = missingNodeCard.getByRole('button', {
-      name: 'TEST_MISSING_PACK_NODE_B'
+      name: 'TEST_MISSING_PACK_NODE_B',
+      exact: true
     })
 
     await expect(packTitle).toBeVisible()

@@ -252,11 +252,8 @@
                         <i class="icon-[lucide--info] size-3.5" />
                       </Button>
                     </span>
-                    <Button
-                      variant="textonly"
-                      size="icon-sm"
-                      class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
-                      :aria-label="
+                    <LocateNodeButton
+                      :label="
                         t(
                           'rightSidePanel.locateNodeFor',
                           {
@@ -265,10 +262,8 @@
                           { escapeParameter: false }
                         )
                       "
-                      @click.stop="handleLocateNode(item.nodeId)"
-                    >
-                      <i class="icon-[lucide--locate] size-4" />
-                    </Button>
+                      @locate="handleLocateNode(item.nodeId)"
+                    />
                   </div>
                   <TransitionCollapse>
                     <p
@@ -340,6 +335,7 @@ import TransitionCollapse from '../layout/TransitionCollapse.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import ErrorCardSection from './ErrorCardSection.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
+import LocateNodeButton from './LocateNodeButton.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'

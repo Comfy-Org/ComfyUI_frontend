@@ -82,6 +82,7 @@ describe('ErrorNodeCard.vue', () => {
           },
           rightSidePanel: {
             locateNode: 'Locate Node',
+            locateNodeFor: 'Locate {item}',
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues for related problems',
             getHelpTooltip:
@@ -252,6 +253,14 @@ describe('ErrorNodeCard.vue', () => {
     await user.click(screen.getByRole('button', { name: 'KSampler' }))
 
     expect(onLocateNode).toHaveBeenCalledWith('10')
+  })
+
+  it('exposes a node-specific accessible name on the locate button', () => {
+    renderCard(makeRuntimeErrorCard())
+
+    expect(
+      screen.getByRole('button', { name: 'Locate KSampler' })
+    ).toBeInTheDocument()
   })
 
   it('does not generate report for non-runtime errors', async () => {
