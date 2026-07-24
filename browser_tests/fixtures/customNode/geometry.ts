@@ -1,7 +1,24 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
+import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
+
 const GEOMETRY_DIR = fileURLToPath(new URL('./geometry/', import.meta.url))
+
+// Cloud baselines are a separate set under geometry/cloud/: Cloud's pack
+// versions move with Cloud deploys, not our pins, so the two environments
+// never share a baseline file. Resolved per call so the env is read at use
+// time, exactly like the manifest loader.
+function geometryDir(): string {
+  return customNodesEnv() === 'cloud' ? `${GEOMETRY_DIR}cloud/` : GEOMETRY_DIR
+}
+
+// Repo-relative counterpart for human-facing messages (the record-mode
+// commit instruction names the file to commit).
+export function packGeometryRelativePath(pack: string): string {
+  const cloudSegment = customNodesEnv() === 'cloud' ? 'cloud/' : ''
+  return `browser_tests/fixtures/customNode/geometry/${cloudSegment}${pack}.json`
+}
 
 // Every value is relative to the node's own origin, so baselines are
 // invariant to where the chunk grid placed the node. Vue values are divided
@@ -73,7 +90,7 @@ export const GEOMETRY_UNSTABLE_NODES: Record<string, Record<string, string>> = {
 }
 
 function geometryPath(pack: string): string {
-  return `${GEOMETRY_DIR}${pack}.json`
+  return `${geometryDir()}${pack}.json`
 }
 
 // null = no baseline recorded yet; the caller decides whether that reds
@@ -86,7 +103,7 @@ export function loadPackGeometry(pack: string): PackGeometryFile | null {
 }
 
 export function savePackGeometry(pack: string, file: PackGeometryFile): void {
-  mkdirSync(GEOMETRY_DIR, { recursive: true })
+  mkdirSync(geometryDir(), { recursive: true })
   writeFileSync(geometryPath(pack), JSON.stringify(file, null, 1) + '\n')
 }
 

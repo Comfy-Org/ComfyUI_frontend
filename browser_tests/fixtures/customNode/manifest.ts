@@ -262,7 +262,10 @@ export function rendererPassesFor(
   return entry.vueNodesCompatible === false ? [false] : [false, true]
 }
 
-function customNodesEnv(): (typeof VALID_ENVS)[number] {
+// Exported as the ONE place the suite parses CUSTOM_NODES_ENV: consumers
+// (geometry paths, fixture auth, run-tier media) share the typo validation
+// instead of re-reading the raw variable.
+export function customNodesEnv(): (typeof VALID_ENVS)[number] {
   const raw = process.env.CUSTOM_NODES_ENV || 'core'
   const env = VALID_ENVS.find((candidate) => candidate === raw)
   // A typo (CUSTOM_NODES_ENV=clod) silently running the core suite would
@@ -275,7 +278,7 @@ function customNodesEnv(): (typeof VALID_ENVS)[number] {
   return env
 }
 
-function loadCloudManifest(): CloudManifestEntry[] {
+function readCloudManifest(): CloudManifest {
   const cloudPath = dataPath('customNodeManifest.cloud.json')
   // A missing file must never degrade to an empty manifest: zero entries
   // generate zero tests, and the run would pass green while testing nothing.
@@ -302,11 +305,20 @@ function loadCloudManifest(): CloudManifestEntry[] {
       `${cloudPath} is malformed (expected { coreDisabledNodes, packs } with at least one pack): regenerate it via 'pnpm gen:cloud-manifest'`
     )
   manifest.packs.forEach(assertCloudEntry)
-  return manifest.packs
+  return manifest
+}
+
+// Core ComfyUI's own label-disabled nodes ride the cloud manifest top level
+// (the yaml `core` entry is not a pack row) and seed the execution-exclusion
+// checks. Empty under the core env so callers stay unconditional.
+export function loadCloudCoreDisabledNodes(): Record<string, string[]> {
+  return customNodesEnv() === 'cloud'
+    ? readCloudManifest().coreDisabledNodes
+    : {}
 }
 
 export function loadManifest(): (CoreManifestEntry | CloudManifestEntry)[] {
-  if (customNodesEnv() === 'cloud') return loadCloudManifest()
+  if (customNodesEnv() === 'cloud') return readCloudManifest().packs
   const entries = JSON.parse(
     readFileSync(dataPath('customNodeManifest.core.json'), 'utf-8')
   ) as CoreManifestEntry[]

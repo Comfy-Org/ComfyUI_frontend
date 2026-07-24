@@ -9,6 +9,7 @@ import type {
 import {
   assertCloudEntry,
   assertCoreEntry,
+  loadCloudCoreDisabledNodes,
   loadManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
@@ -143,14 +144,21 @@ test.describe('customNode manifest', () => {
       delete process.env.CUSTOM_NODES_ENV
       const defaulted = loadManifest()
       expect(defaulted.length).toBeGreaterThan(0)
+      // Core envs carry no cloud core-node exclusions - the seeding input
+      // is empty, never a file read that could throw.
+      expect(loadCloudCoreDisabledNodes()).toEqual({})
       process.env.CUSTOM_NODES_ENV = 'core'
       expect(loadManifest()).toEqual(defaulted)
+      expect(loadCloudCoreDisabledNodes()).toEqual({})
       // No cloud manifest is committed until the Phase-1 probe snapshot
       // exists, so selecting cloud must refuse to run - an empty manifest
       // here would generate zero tests and fake a green suite.
       process.env.CUSTOM_NODES_ENV = 'cloud'
       expect(() => loadManifest()).toThrow(
         /customNodeManifest\.cloud\.json.*gen-cloud-manifest.*snapshot/s
+      )
+      expect(() => loadCloudCoreDisabledNodes()).toThrow(
+        /customNodeManifest\.cloud\.json/
       )
       process.env.CUSTOM_NODES_ENV = 'clod'
       expect(() => loadManifest()).toThrow(/CUSTOM_NODES_ENV/)

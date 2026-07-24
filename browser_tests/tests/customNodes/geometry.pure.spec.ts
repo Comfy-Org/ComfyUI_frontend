@@ -3,7 +3,12 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { NodeGeometry } from '@e2e/fixtures/customNode/geometry'
-import { diffGeometry } from '@e2e/fixtures/customNode/geometry'
+import {
+  diffGeometry,
+  loadPackGeometry,
+  packGeometryRelativePath
+} from '@e2e/fixtures/customNode/geometry'
+import { loadManifest } from '@e2e/fixtures/customNode/manifest'
 
 // The differ is the geometry tier's entire failure-reporting contract:
 // every red a maintainer ever sees comes out of diffGeometry. These cases
@@ -112,5 +117,33 @@ test.describe('diffGeometry', () => {
     expect(
       diffGeometry({ A: node(), B: node() }, { A: measured, B: measured })
     ).toHaveLength(2)
+  })
+})
+
+test.describe('baseline path resolution', () => {
+  test('cloud resolves a separate baseline set; core paths are untouched', () => {
+    const prior = process.env.CUSTOM_NODES_ENV
+    try {
+      delete process.env.CUSTOM_NODES_ENV
+      const pack = loadManifest()[0].pack
+      const coreBaseline = loadPackGeometry(pack)
+      expect(coreBaseline).not.toBeNull()
+      expect(packGeometryRelativePath(pack)).toBe(
+        `browser_tests/fixtures/customNode/geometry/${pack}.json`
+      )
+      process.env.CUSTOM_NODES_ENV = 'cloud'
+      expect(packGeometryRelativePath(pack)).toBe(
+        `browser_tests/fixtures/customNode/geometry/cloud/${pack}.json`
+      )
+      // No cloud baselines exist until the Phase-5 record run: the same
+      // pack resolves under geometry/cloud/ and follows the existing
+      // missing-baseline behavior (null; compare mode reds on it).
+      expect(loadPackGeometry(pack)).toBeNull()
+      delete process.env.CUSTOM_NODES_ENV
+      expect(loadPackGeometry(pack)).toEqual(coreBaseline)
+    } finally {
+      if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
+      else process.env.CUSTOM_NODES_ENV = prior
+    }
   })
 })
