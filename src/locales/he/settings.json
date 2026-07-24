@@ -1,0 +1,511 @@
+{
+  "Comfy-Desktop_AutoUpdate": {
+    "name": "בדיקה אוטומטית של עדכונים"
+  },
+  "Comfy-Desktop_SendStatistics": {
+    "name": "שליחת נתוני שימוש אנונימיים"
+  },
+  "Comfy-Desktop_UV_PypiInstallMirror": {
+    "name": "מראה (Mirror) להתקנה מ-Pypi",
+    "tooltip": "מראה ברירת המחדל להתקנה באמצעות pip"
+  },
+  "Comfy-Desktop_UV_PythonInstallMirror": {
+    "name": "מראה (Mirror) להתקנת Python",
+    "tooltip": "התקנות Python מנוהלות מורדות מפרויקט python-build-standalone של Astral. ניתן להגדיר משתנה זה לכתובת URL של מראה כדי להשתמש במקור חלופי להתקנות Python. הכתובת שתסופק תחליף את https://github.com/astral-sh/python-build-standalone/releases/download בכתובות כגון https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. ניתן לקרוא הפצות מתיקייה מקומית באמצעות סכמת הכתובת file://."
+  },
+  "Comfy-Desktop_UV_TorchInstallMirror": {
+    "name": "מראה (Mirror) להתקנת Torch",
+    "tooltip": "מראה להתקנת pytorch באמצעות pip"
+  },
+  "Comfy-Desktop_WindowStyle": {
+    "name": "סגנון החלון",
+    "tooltip": "מותאם אישית: החלפת שורת הכותרת של המערכת בתפריט העליון של ComfyUI",
+    "options": {
+      "default": "ברירת מחדל",
+      "custom": "מותאם אישית"
+    }
+  },
+  "Comfy_Appearance_DisableAnimations": {
+    "name": "השבתת אנימציות",
+    "tooltip": "מכבה את רוב האנימציות והמעברים של CSS. מזרז את ההסקה כאשר ה-GPU של התצוגה משמש גם ליצירה."
+  },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "תמונת רקע לקנבס",
+    "tooltip": "כתובת URL של תמונה לרקע הקנבס. ניתן ללחוץ לחיצה ימנית על תמונה בפאנל הפלטים ולבחור \"הגדר כרקע\" כדי להשתמש בה, או להעלות תמונה משלך באמצעות כפתור ההעלאה."
+  },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "התנהגות לחיצה שמאלית בעכבר",
+    "options": {
+      "Panning": "הזזת התצוגה",
+      "Select": "בחירה"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "גלילה בגלגל העכבר",
+    "options": {
+      "Panning": "הזזת התצוגה",
+      "Zoom in/out": "התקרבות/התרחקות"
+    }
+  },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "מצב ניווט",
+    "options": {
+      "Standard (New)": "רגיל (חדש)",
+      "Drag Navigation": "ניווט בגרירה",
+      "Custom": "מותאם אישית"
+    }
+  },
+  "Comfy_Canvas_SelectionToolbox": {
+    "name": "הצגת ארגז כלי הבחירה",
+    "tooltip": "מציג סרגל כלים צף כאשר צמתים נבחרים, המספק גישה מהירה לפעולות נפוצות."
+  },
+  "Comfy_ConfirmClear": {
+    "name": "דרישת אישור בעת ניקוי תהליך העבודה"
+  },
+  "Comfy_DevMode": {
+    "name": "הפעלת אפשרויות מצב פיתוח (שמירת API וכו')"
+  },
+  "Comfy_DisableFloatRounding": {
+    "name": "השבתת עיגול ברירת המחדל בפקדי מספרים עשרוניים.",
+    "tooltip": "(דורש טעינה מחדש של הדף) לא ניתן להשבית עיגול כאשר הוא מוגדר על-ידי הצומת בצד השרת."
+  },
+  "Comfy_DisableSliders": {
+    "name": "השבתת מחווני הגרירה (sliders) בפקדי הצמתים"
+  },
+  "Comfy_DOMClippingEnabled": {
+    "name": "הפעלת חיתוך רכיבי DOM (הפעלה עלולה לפגוע בביצועים)"
+  },
+  "Comfy_EditAttention_Delta": {
+    "name": "דיוק Ctrl+מעלה/מטה"
+  },
+  "Comfy_EnableTooltips": {
+    "name": "הפעלת הסברים קופצים (Tooltips)"
+  },
+  "Comfy_EnableWorkflowViewRestore": {
+    "name": "שמירה ושחזור של מיקום הקנבס ורמת הזום בתהליכי העבודה"
+  },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "שיטת תצוגה מקדימה חיה",
+    "tooltip": "שיטת התצוגה המקדימה החיה במהלך יצירת התמונה. \"ברירת מחדל\" משתמשת בהגדרת ה-CLI של השרת.",
+    "options": {
+      "default": "ברירת מחדל",
+      "none": "ללא",
+      "auto": "אוטומטי",
+      "latent2rgb": "latent2rgb",
+      "taesd": "taesd"
+    }
+  },
+  "Comfy_FloatRoundingPrecision": {
+    "name": "מספר ספרות אחרי הנקודה בפקדי מספרים עשרוניים [0 = אוטומטי].",
+    "tooltip": "(דורש טעינה מחדש של הדף)"
+  },
+  "Comfy_Graph_AutoPanSpeed": {
+    "name": "מהירות הזזה אוטומטית",
+    "tooltip": "המהירות המרבית בעת הזזה אוטומטית של התצוגה על-ידי גרירה לקצה הקנבס. הגדר ל-0 כדי לבטל את ההזזה האוטומטית."
+  },
+  "Comfy_Graph_CanvasInfo": {
+    "name": "הצגת מידע על הקנבס בפינה השמאלית התחתונה (fps וכו')"
+  },
+  "Comfy_Graph_CanvasMenu": {
+    "name": "הצגת תפריט הקנבס של הגרף"
+  },
+  "Comfy_Graph_CtrlShiftZoom": {
+    "name": "הפעלת קיצור הזום המהיר (Ctrl + Shift + גרירה)"
+  },
+  "Comfy_Graph_DeduplicateSubgraphNodeIds": {
+    "name": "מניעת כפילויות במזהי הצמתים של תת-גרפים",
+    "tooltip": "הקצאה מחדש אוטומטית של מזהי צמתים כפולים בתת-גרפים בעת טעינת תהליך עבודה."
+  },
+  "Comfy_Graph_LinkMarkers": {
+    "name": "סמני נקודת אמצע בקישורים",
+    "options": {
+      "None": "ללא",
+      "Circle": "עיגול",
+      "Arrow": "חץ"
+    }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "בחירה חיה",
+    "tooltip": "כאשר מופעל, צמתים נבחרים/מבוטלים בזמן אמת תוך כדי גרירת מלבן הבחירה, בדומה לכלי עיצוב אחרים."
+  },
+  "Comfy_Graph_ZoomSpeed": {
+    "name": "מהירות הזום של הקנבס"
+  },
+  "Comfy_Group_DoubleClickTitleToEdit": {
+    "name": "לחיצה כפולה על כותרת הקבוצה לעריכה"
+  },
+  "Comfy_GroupSelectedNodes_Padding": {
+    "name": "ריווח בעת קיבוץ צמתים נבחרים"
+  },
+  "Comfy_LinkRelease_Action": {
+    "name": "פעולה בעת שחרור קישור (ללא מקש)",
+    "options": {
+      "context menu": "תפריט הקשר",
+      "search box": "תיבת חיפוש",
+      "no action": "ללא פעולה"
+    }
+  },
+  "Comfy_LinkRelease_ActionShift": {
+    "name": "פעולה בעת שחרור קישור (Shift)",
+    "options": {
+      "context menu": "תפריט הקשר",
+      "search box": "תיבת חיפוש",
+      "no action": "ללא פעולה"
+    }
+  },
+  "Comfy_LinkRenderMode": {
+    "name": "מצב הצגת הקישורים",
+    "tooltip": "שולט במראה ובנראות של קישורי החיבור בין הצמתים בקנבס.",
+    "options": {
+      "Straight": "ישר",
+      "Linear": "לינארי",
+      "Spline": "עקומה (Spline)",
+      "Hidden": "מוסתר"
+    }
+  },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "הפעלת מציג תלת-ממד (בטא)",
+    "tooltip": "מפעיל את מציג התלת-ממד (בטא) עבור צמתים נבחרים. תכונה זו מאפשרת להציג מודלים תלת-ממדיים ולתקשר איתם ישירות בתוך מציג התלת-ממד בגודל מלא."
+  },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "צבע רקע התחלתי",
+    "tooltip": "שולט בצבע הרקע ברירת המחדל של הסצנה התלת-ממדית. הגדרה זו קובעת את מראה הרקע בעת יצירת פקד תלת-ממד חדש, אך ניתן להתאים אותה בנפרד לכל פקד לאחר היצירה."
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "סוג מצלמה התחלתי",
+    "tooltip": "שולט בשאלה האם המצלמה היא בפרספקטיבה או אורתוגרפית כברירת מחדל בעת יצירת פקד תלת-ממד חדש. ברירת מחדל זו ניתנת לשינוי בנפרד עבור כל פקד לאחר היצירה.",
+    "options": {
+      "perspective": "פרספקטיבה",
+      "orthographic": "אורתוגרפית"
+    }
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "צעד כוונון התאורה",
+    "tooltip": "שולט בגודל הצעד בעת כוונון עוצמת התאורה בסצנות תלת-ממד. ערך צעד קטן יותר מאפשר שליטה עדינה יותר בכוונון התאורה, בעוד ערך גדול יותר מביא לשינויים בולטים יותר בכל כוונון."
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "עוצמת תאורה התחלתית",
+    "tooltip": "קובע את רמת הבהירות ברירת המחדל של התאורה בסצנה התלת-ממדית. ערך זה קובע באיזו עוצמה האורות מאירים את האובייקטים בעת יצירת פקד תלת-ממד חדש, אך ניתן להתאים אותו בנפרד לכל פקד לאחר היצירה."
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "עוצמת תאורה מרבית",
+    "tooltip": "קובע את ערך עוצמת התאורה המרבי המותר בסצנות תלת-ממד. ערך זה מגדיר את גבול הבהירות העליון שניתן לקבוע בעת כוונון התאורה בכל פקד תלת-ממד."
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "עוצמת תאורה מזערית",
+    "tooltip": "קובע את ערך עוצמת התאורה המזערי המותר בסצנות תלת-ממד. ערך זה מגדיר את גבול הבהירות התחתון שניתן לקבוע בעת כוונון התאורה בכל פקד תלת-ממד."
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "מנוע ענן נקודות",
+    "tooltip": "בחר את המנוע לטעינת קובצי ענן נקודות מסוג PLY. \"threejs\" משתמש ב-PLYLoader המקורי של Three.js (תומך בבינארי + ASCII, ויכול ליצור רשת). \"fastply\" משתמש במנתח מותאם לקובצי PLY מסוג ASCII. קובצי PLY מסוג 3D Gaussian Splat מזוהים אוטומטית ותמיד מעובדים באמצעות sparkjs ללא תלות בהגדרה זו.",
+    "options": {
+      "threejs": "threejs",
+      "fastply": "fastply"
+    }
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "נראות רשת התחלתית",
+    "tooltip": "שולט בשאלה האם הרשת גלויה כברירת מחדל בעת יצירת פקד תלת-ממד חדש. ברירת מחדל זו ניתנת לשינוי בנפרד עבור כל פקד לאחר היצירה."
+  },
+  "Comfy_Locale": {
+    "name": "שפה"
+  },
+  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+    "name": "מכפיל מהירות כוונון המברשת",
+    "tooltip": "שולט במהירות שינוי הגודל והקשיות של המברשת בעת כוונון. ערכים גבוהים יותר משמעם שינויים מהירים יותר."
+  },
+  "Comfy_MaskEditor_UseDominantAxis": {
+    "name": "נעילת כוונון המברשת לציר הדומיננטי",
+    "tooltip": "כאשר מופעל, כוונון המברשת ישפיע רק על הגודל או על הקשיות, בהתאם לכיוון שבו אתה זז יותר"
+  },
+  "Comfy_ModelLibrary_AutoLoadAll": {
+    "name": "טעינה אוטומטית של כל תיקיות המודלים",
+    "tooltip": "אם מופעל, כל התיקיות ייטענו מיד עם פתיחת ספריית המודלים (הדבר עלול לגרום לעיכובים בזמן הטעינה). אם כבוי, תיקיות מודלים ברמת השורש ייטענו רק בלחיצה עליהן."
+  },
+  "Comfy_ModelLibrary_NameFormat": {
+    "name": "איזה שם להציג בתצוגת העץ של ספריית המודלים",
+    "tooltip": "בחר \"שם קובץ\" כדי להציג תצוגה מפושטת של שם הקובץ הגולמי (ללא נתיב התיקייה וללא הסיומת \".safetensors\") ברשימת המודלים. בחר \"כותרת\" כדי להציג את כותרת המטא-נתונים הניתנת להגדרה של המודל.",
+    "options": {
+      "filename": "שם קובץ",
+      "title": "כותרת"
+    }
+  },
+  "Comfy_Node_AllowImageSizeDraw": {
+    "name": "הצגת רוחב × גובה מתחת לתצוגה המקדימה של התמונה"
+  },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "הצגת פקדים מתקדמים תמיד בכל הצמתים",
+    "tooltip": "כאשר מופעל, פקדים מתקדמים גלויים תמיד בכל הצמתים ללא צורך להרחיב אותם בנפרד."
+  },
+  "Comfy_Node_AutoSnapLinkToSlot": {
+    "name": "הצמדה אוטומטית של קישור לחריץ הצומת",
+    "tooltip": "בעת גרירת קישור מעל צומת, הקישור נצמד אוטומטית לחריץ קלט מתאים בצומת"
+  },
+  "Comfy_Node_BypassAllLinksOnDelete": {
+    "name": "שמירת כל הקישורים בעת מחיקת צמתים",
+    "tooltip": "בעת מחיקת צומת, מתבצע ניסיון לחבר מחדש את כל קישורי הקלט והפלט שלו (תוך עקיפת הצומת שנמחק)"
+  },
+  "Comfy_Node_DoubleClickTitleToEdit": {
+    "name": "לחיצה כפולה על כותרת הצומת לעריכה"
+  },
+  "Comfy_Node_MiddleClickRerouteNode": {
+    "name": "לחיצה אמצעית יוצרת צומת ניתוב (Reroute) חדש"
+  },
+  "Comfy_Node_Opacity": {
+    "name": "אטימות הצומת"
+  },
+  "Comfy_Node_ShowDeprecated": {
+    "name": "הצגת צמתים מיושנים בחיפוש",
+    "tooltip": "צמתים מיושנים מוסתרים כברירת מחדל בממשק, אך נותרים פעילים בתהליכי עבודה קיימים המשתמשים בהם."
+  },
+  "Comfy_Node_ShowExperimental": {
+    "name": "הצגת צמתים ניסיוניים בחיפוש",
+    "tooltip": "צמתים ניסיוניים מסומנים ככאלה בממשק ועשויים להשתנות באופן משמעותי או להוסר בגרסאות עתידיות. השתמש בזהירות בתהליכי עבודה בסביבת ייצור"
+  },
+  "Comfy_Node_SnapHighlightsNode": {
+    "name": "ההצמדה מדגישה את הצומת",
+    "tooltip": "בעת גרירת קישור מעל צומת בעל חריץ קלט מתאים, הדגש את הצומת"
+  },
+  "Comfy_NodeBadge_NodeIdBadgeMode": {
+    "name": "מצב תג מזהה הצומת",
+    "options": {
+      "None": "ללא",
+      "Show all": "הצג הכול"
+    }
+  },
+  "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
+    "name": "מצב תג מחזור החיים של הצומת",
+    "options": {
+      "None": "ללא",
+      "Show all": "הצג הכול"
+    }
+  },
+  "Comfy_NodeBadge_NodeSourceBadgeMode": {
+    "name": "מצב תג מקור הצומת",
+    "options": {
+      "None": "ללא",
+      "Show all": "הצג הכול",
+      "Hide built-in": "הסתר מובנים"
+    }
+  },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "הצגת תג תמחור עבור צמתי API"
+  },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "עיצוב חדש לספריית הצמתים",
+    "tooltip": "הפעלת סרגל הצד המעוצב מחדש של ספריית הצמתים עם כרטיסיות (בסיסי, הכול, מותאם), חיפוש משופר ותצוגות מקדימות בריחוף."
+  },
+  "Comfy_NodeReplacement_Enabled": {
+    "name": "הפעלת הצעות להחלפת צמתים",
+    "tooltip": "כאשר מופעל, צמתים חסרים שקיימות להם חלופות ידועות יוצגו כניתנים להחלפה בחלון הצמתים החסרים, ויאפשרו לך לבחון ולהחיל החלפות."
+  },
+  "Comfy_NodeSearchBoxImpl": {
+    "name": "מימוש תיבת חיפוש הצמתים",
+    "options": {
+      "default": "ברירת מחדל",
+      "v1 (legacy)": "v1 (גרסה ישנה)",
+      "litegraph (legacy)": "litegraph (גרסה ישנה)"
+    }
+  },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "צמתים שנוספו עוקבים אחר הסמן",
+    "tooltip": "כאשר מופעל, צמתים שנוספו מתיבת החיפוש עוקבים אחר הסמן עד שלוחצים כדי למקם אותם. חל רק על מימוש ברירת המחדל."
+  },
+  "Comfy_NodeSearchBoxImpl_NodePreview": {
+    "name": "תצוגה מקדימה של צומת",
+    "tooltip": "חל רק על מימוש ברירת המחדל"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowCategory": {
+    "name": "הצגת קטגוריית הצומת בתוצאות החיפוש",
+    "tooltip": "חל רק על v1 (גרסה ישנה)"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowIdName": {
+    "name": "הצגת שם המזהה של הצומת בתוצאות החיפוש",
+    "tooltip": "לא חל על litegraph (גרסה ישנה)"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
+    "name": "הצגת תדירות השימוש בצומת בתוצאות החיפוש",
+    "tooltip": "חל רק על v1 (גרסה ישנה)"
+  },
+  "Comfy_NodeSuggestions_number": {
+    "name": "מספר הצעות הצמתים",
+    "tooltip": "רק עבור תיבת החיפוש / תפריט ההקשר של litegraph"
+  },
+  "Comfy_Notification_ShowVersionUpdates": {
+    "name": "הצגת עדכוני גרסה",
+    "tooltip": "הצגת עדכונים על מודלים חדשים ותכונות מרכזיות חדשות."
+  },
+  "Comfy_Pointer_ClickBufferTime": {
+    "name": "השהיית סחיפת לחיצת המצביע",
+    "tooltip": "לאחר לחיצה על כפתור המצביע, זהו הזמן המרבי (באלפיות שנייה) שבמהלכו ניתן להתעלם מתנועת המצביע.\n\nמסייע למנוע הזזה לא מכוונת של אובייקטים אם המצביע זז תוך כדי לחיצה.\n\nסף המרחק (סחיפת לחיצת המצביע) כבר מבחין בין לחיצות לגרירות; סף הזמן הזה רלוונטי רק כאשר המצביע מוחזק במקום ואז משוחרר. השהיה ארוכה כאן מכריחה כל לחיצה להמתין לפני שמתחילה גרירה, מה שמרגיש איטי בעת לחיצה+גרירה של צומת שאינו נבחר. כ-2 פריימים ב-60fps מספיקים בהחלט."
+  },
+  "Comfy_Pointer_ClickDrift": {
+    "name": "סחיפת לחיצת המצביע (מרחק מרבי)",
+    "tooltip": "אם המצביע זז יותר מהמרחק הזה בזמן לחיצה על כפתור, הדבר נחשב כגרירה (ולא כלחיצה).\n\nמסייע למנוע הזזה לא מכוונת של אובייקטים אם המצביע זז תוך כדי לחיצה."
+  },
+  "Comfy_Pointer_DoubleClickTime": {
+    "name": "מרווח הלחיצה הכפולה (מרבי)",
+    "tooltip": "הזמן המרבי באלפיות שנייה בין שתי הלחיצות של לחיצה כפולה. הגדלת ערך זה עשויה לסייע אם לחיצות כפולות אינן נקלטות לעיתים."
+  },
+  "Comfy_PreviewFormat": {
+    "name": "פורמט תמונת התצוגה המקדימה",
+    "tooltip": "בעת הצגת תצוגה מקדימה בפקד התמונה, המר אותה לתמונה קלת משקל, למשל webp, jpeg, webp;50 וכו'."
+  },
+  "Comfy_PromptFilename": {
+    "name": "בקשת שם קובץ בעת שמירת תהליך העבודה"
+  },
+  "Comfy_Queue_MaxHistoryItems": {
+    "name": "גודל היסטוריית התור",
+    "tooltip": "המספר המרבי של משימות המוצגות בהיסטוריית התור."
+  },
+  "Comfy_Queue_QPOV2": {
+    "name": "פאנל היסטוריית/תור משימות מעוגן",
+    "tooltip": "מחליף את פאנל תור המשימות הצף בתור משימות מקביל המוטמע בפאנל הצד של היסטוריית המשימות. ניתן להשבית זאת כדי לחזור לפריסת הפאנל הצף."
+  },
+  "Comfy_QueueButton_BatchCountLimit": {
+    "name": "מגבלת מספר האצוות (Batch)",
+    "tooltip": "המספר המרבי של משימות הנוספות לתור בלחיצת כפתור אחת"
+  },
+  "Comfy_RightSidePanel_ShowErrorsTab": {
+    "name": "הצגת כרטיסיית שגיאות בפאנל הצד",
+    "tooltip": "כאשר מופעל, כרטיסיית שגיאות מוצגת בפאנל הצד הימני כדי להציג שגיאות בהרצת תהליך העבודה במבט מהיר."
+  },
+  "Comfy_Sidebar_Location": {
+    "name": "מיקום סרגל הצד",
+    "options": {
+      "left": "שמאל",
+      "right": "ימין"
+    }
+  },
+  "Comfy_Sidebar_Size": {
+    "name": "גודל סרגל הצד",
+    "options": {
+      "normal": "רגיל",
+      "small": "קטן"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "סגנון סרגל הצד",
+    "options": {
+      "floating": "צף",
+      "connected": "מחובר"
+    }
+  },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "רוחב אחיד לסרגל הצד"
+  },
+  "Comfy_SnapToGrid_GridSize": {
+    "name": "גודל הצמדה לרשת",
+    "tooltip": "בעת גרירה ושינוי גודל של צמתים תוך החזקת Shift, הם ייושרו לרשת. הגדרה זו שולטת בגודל הרשת."
+  },
+  "Comfy_TextareaWidget_FontSize": {
+    "name": "גודל הגופן בפקד אזור הטקסט"
+  },
+  "Comfy_TextareaWidget_Spellcheck": {
+    "name": "בדיקת איות בפקד אזור הטקסט"
+  },
+  "Comfy_TreeExplorer_ItemPadding": {
+    "name": "ריווח פריטים בסייר העץ"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "name": "פריסת שורת הכרטיסיות",
+    "tooltip": "שולט ברכיבים הכלולים בשורת הכרטיסיות המשולבת.",
+    "options": {
+      "Default": "ברירת מחדל",
+      "Legacy": "גרסה ישנה"
+    }
+  },
+  "Comfy_UseNewMenu": {
+    "name": "שימוש בתפריט החדש",
+    "tooltip": "הפעלת שורת התפריט העליונה המעוצבת מחדש.",
+    "options": {
+      "Disabled": "מושבת",
+      "Top": "עליון"
+    }
+  },
+  "Comfy_Validation_Workflows": {
+    "name": "אימות תהליכי עבודה"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "התאמת קנה מידה אוטומטית לפריסה (Nodes 2.0)",
+    "tooltip": "התאמת קנה מידה אוטומטית של מיקומי הצמתים בעת מעבר לעיבוד Nodes 2.0 כדי למנוע חפיפה"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "עיצוב צמתים מודרני (Nodes 2.0)",
+    "tooltip": "מודרני: עיבוד מבוסס DOM עם אינטראקטיביות משופרת, תכונות דפדפן מקוריות ועיצוב חזותי מעודכן. קלאסי: עיבוד מסורתי מבוסס קנבס."
+  },
+  "Comfy_WidgetControlMode": {
+    "name": "מצב בקרת הפקדים",
+    "tooltip": "שולט במועד עדכון ערכי הפקדים (אקראי/הגדלה/הקטנה), לפני שתהליך העבודה נוסף לתור או אחריו.",
+    "options": {
+      "before": "לפני",
+      "after": "אחרי"
+    }
+  },
+  "Comfy_Window_UnloadConfirmation": {
+    "name": "הצגת אישור בעת סגירת החלון"
+  },
+  "Comfy_Workflow_AutoSave": {
+    "name": "שמירה אוטומטית",
+    "options": {
+      "off": "כבוי",
+      "after delay": "לאחר השהיה"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "השהיית השמירה האוטומטית (אלפיות שנייה)",
+    "tooltip": "חל רק אם השמירה האוטומטית מוגדרת ל\"לאחר השהיה\"."
+  },
+  "Comfy_Workflow_ConfirmDelete": {
+    "name": "הצגת אישור בעת מחיקת תהליכי עבודה"
+  },
+  "Comfy_Workflow_Persist": {
+    "name": "שמירת מצב תהליך העבודה ושחזורו בעת (טעינה מחדש של) הדף"
+  },
+  "Comfy_Workflow_ShowMissingModelsWarning": {
+    "name": "הצגת אזהרה על מודלים חסרים"
+  },
+  "Comfy_Workflow_SortNodeIdOnSave": {
+    "name": "מיון מזהי הצמתים בעת שמירת תהליך העבודה"
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "דרישת אישור לדריסת תבנית (blueprint) קיימת של תת-גרף"
+  },
+  "Comfy_Workflow_WorkflowTabsPosition": {
+    "name": "מיקום תהליכי העבודה הפתוחים",
+    "options": {
+      "Sidebar": "סרגל צד",
+      "Topbar": "שורה עליונה"
+    }
+  },
+  "LiteGraph_Canvas_MaximumFps": {
+    "name": "FPS מרבי",
+    "tooltip": "מספר הפריימים המרבי לשנייה שהקנבס רשאי לעבד. מגביל את השימוש ב-GPU במחיר של חלקות. אם 0, נעשה שימוש בקצב הרענון של המסך. ברירת מחדל: 0"
+  },
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "רמת פירוט הצומת בזום - סף גודל הגופן",
+    "tooltip": "שולט במועד שבו הצמתים עוברים לעיבוד באיכות נמוכה (LOD). משתמש בגודל הגופן בפיקסלים כדי לקבוע מתי לעבור. הגדר ל-0 כדי לבטל. ערכים 1-24 קובעים את סף גודל הגופן המזערי ל-LOD - ערכים גבוהים יותר (24px) = מעבר מוקדם יותר של הצמתים לעיבוד מפושט בעת התרחקות, ערכים נמוכים יותר (1px) = שמירה על איכות מלאה של הצמתים למשך זמן רב יותר."
+  },
+  "LiteGraph_ContextMenu_Scaling": {
+    "name": "התאמת קנה מידה של תפריטי פקדי הבחירה (רשימות) בצמתים בעת התקרבות"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "בחירת תכולת הקבוצה בלחיצה",
+    "tooltip": "כאשר מופעל, לחיצה על קבוצה בוחרת את כל הצמתים והפריטים שבתוכה"
+  },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "כווץ תמיד צמתים חדשים",
+    "tooltip": "שינוי גודל הצמתים לגודל הקטן ביותר האפשרי בעת היצירה. כאשר מושבת, צומת חדש שנוסף יורחב מעט כדי להציג את ערכי הפקדים."
+  },
+  "LiteGraph_Node_TooltipDelay": {
+    "name": "השהיית ההסבר הקופץ"
+  },
+  "LiteGraph_Reroute_SplineOffset": {
+    "name": "היסט עקומת צומת הניתוב",
+    "tooltip": "היסט נקודת הבקרה של עקומת בזייה מנקודת המרכז של צומת הניתוב"
+  },
+  "pysssss_SnapToGrid": {
+    "name": "הצמדה תמיד לרשת",
+    "tooltip": "כאשר מופעל, צמתים ייושרו אוטומטית לרשת בעת הזזה או שינוי גודל."
+  }
+}

@@ -1,10 +1,10 @@
 <!-- A generalized form item for rendering in a form. -->
 <template>
-  <div class="flex flex-row items-center gap-2">
+  <div class="flex min-h-8 flex-row items-center gap-2">
     <div class="form-label flex grow items-center">
       <span
         :id="`${props.id}-label`"
-        class="text-muted"
+        class="text-sm text-muted"
         :class="props.labelClass"
       >
         <slot name="name-prefix" />
@@ -33,7 +33,6 @@
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
-import ToggleSwitch from 'primevue/toggleswitch'
 import { markRaw } from 'vue'
 import type { Component } from 'vue'
 
@@ -45,6 +44,7 @@ import FormRadioGroup from '@/components/common/FormRadioGroup.vue'
 import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
+import Switch from '@/components/ui/switch/Switch.vue'
 import type { FormItem } from '@/platform/settings/types'
 
 const formValue = defineModel<unknown>('formValue')
@@ -91,7 +91,7 @@ function getFormComponent(item: FormItem): Component {
   }
   switch (item.type) {
     case 'boolean':
-      return ToggleSwitch
+      return Switch
     case 'number':
       return InputNumber
     case 'slider':

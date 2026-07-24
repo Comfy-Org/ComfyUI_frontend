@@ -10,9 +10,18 @@ export const zPublishRecordResponse = z.object({
   assets: z.array(zAssetInfo).optional()
 })
 
+const zPrefillTag = z
+  .object({ name: z.string(), display_name: z.string() })
+  .transform((label) => label.display_name)
+  .or(z.string())
+
+const zPrefillTagList = z
+  .array(zPrefillTag.optional().catch(undefined))
+  .transform((tags) => tags.filter((tag): tag is string => tag !== undefined))
+
 export const zHubWorkflowPrefillResponse = z.object({
   description: z.string().nullish(),
-  tags: z.array(z.string()).nullish(),
+  tags: zPrefillTagList.nullish(),
   sample_image_urls: z.array(z.string()).nullish(),
   thumbnail_type: z.enum(['image', 'video', 'image_comparison']).nullish(),
   thumbnail_url: z.string().nullish(),

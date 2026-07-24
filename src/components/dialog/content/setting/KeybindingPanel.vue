@@ -1,10 +1,14 @@
 <template>
-  <div class="keybinding-panel flex flex-col gap-2">
+  <div
+    :ref="primeVueOverlay.overlayScopeRef"
+    class="keybinding-panel flex min-w-0 flex-col gap-2 overflow-x-hidden"
+  >
     <Teleport defer to="#keybinding-panel-header">
       <SearchInput
         v-model="filters['global'].value"
         class="max-w-96"
         size="lg"
+        autofocus
         :placeholder="
           $t('g.searchPlaceholder', { subject: $t('g.keybindings') })
         "
@@ -15,14 +19,18 @@
       <div class="flex items-center gap-2">
         <KeybindingPresetToolbar
           :preset-names="presetNames"
+          :content-style="keybindingOverlayContentStyle"
           @presets-changed="refreshPresetList"
         />
         <DropdownMenu
           :entries="menuEntries"
+          :style="keybindingOverlayContentStyle"
           icon="icon-[lucide--ellipsis]"
           item-class="text-sm gap-2"
           button-size="unset"
           button-class="size-10"
+          to="#keybinding-panel-actions"
+          align="end"
         >
           <template #button>
             <Button
@@ -39,7 +47,10 @@
 
     <ContextMenuRoot>
       <ContextMenuTrigger as-child>
-        <div @contextmenu.capture="clearContextMenuTarget">
+        <div
+          class="min-w-0 overflow-x-hidden"
+          @contextmenu.capture="clearContextMenuTarget"
+        >
           <DataTable
             v-model:selection="selectedCommandData"
             v-model:expanded-rows="expandedRows"
@@ -53,6 +64,7 @@
             selection-mode="single"
             context-menu
             striped-rows
+            :table-style="{ tableLayout: 'fixed', width: '100%' }"
             :pt="{
               header: 'px-0'
             }"
@@ -64,12 +76,11 @@
               field="id"
               :header="$t('g.command')"
               sortable
-              class="max-w-64 2xl:max-w-full"
               :pt="{ bodyCell: 'p-1 min-h-8' }"
             >
               <template #body="slotProps">
                 <div
-                  class="flex items-center gap-1 truncate"
+                  class="flex min-w-0 items-center gap-1 truncate"
                   :class="slotProps.data.keybindings.length < 2 && 'pl-5'"
                   :title="slotProps.data.id"
                 >
@@ -96,53 +107,38 @@
             <Column
               field="keybindings"
               :header="$t('g.keybinding')"
+              :style="{ width: '30%' }"
               :pt="{ bodyCell: 'p-1 min-h-8' }"
             >
               <template #body="slotProps">
-                <div
-                  v-if="slotProps.data.keybindings.length > 0"
-                  class="flex items-center gap-1"
-                >
-                  <template
-                    v-for="(binding, idx) in (
-                      slotProps.data as ICommandData
-                    ).keybindings.slice(0, 2)"
-                    :key="binding.combo.serialize()"
-                  >
-                    <span v-if="idx > 0" class="text-muted-foreground">,</span>
-                    <KeyComboDisplay
-                      :key-combo="binding.combo"
-                      :is-modified="slotProps.data.isModified"
-                    />
-                  </template>
-                  <span
-                    v-if="slotProps.data.keybindings.length > 2"
-                    class="rounded-sm px-1.5 py-0.5 text-xs text-muted-foreground"
-                  >
-                    {{
-                      $t('g.nMoreKeybindings', {
-                        count: slotProps.data.keybindings.length - 2
-                      })
-                    }}
-                  </span>
-                </div>
-                <span v-else>-</span>
+                <KeybindingList
+                  :keybindings="slotProps.data.keybindings"
+                  :is-modified="slotProps.data.isModified"
+                />
               </template>
             </Column>
             <Column
               field="source"
               :header="$t('g.source')"
+              :style="{ width: '16%' }"
               :pt="{ bodyCell: 'p-1 min-h-8' }"
             >
               <template #body="slotProps">
-                <span class="overflow-hidden text-ellipsis">{{
+                <span class="block truncate" :title="slotProps.data.source">{{
                   slotProps.data.source || '-'
                 }}</span>
               </template>
             </Column>
-            <Column field="actions" header="" :pt="{ bodyCell: 'p-1 min-h-8' }">
+            <Column
+              field="actions"
+              header=""
+              :style="{ width: '9rem' }"
+              :pt="{ bodyCell: 'p-1 min-h-8 whitespace-nowrap' }"
+            >
               <template #body="slotProps">
-                <div class="actions flex flex-row justify-end">
+                <div
+                  class="actions flex flex-row justify-end whitespace-nowrap"
+                >
                   <Button
                     v-if="slotProps.data.keybindings.length === 1"
                     v-tooltip="$t('g.edit')"
@@ -191,11 +187,12 @@
               </template>
             </Column>
             <template #expansion="slotProps">
-              <div class="pl-4">
+              <div class="pl-4" data-testid="keybinding-expansion-content">
                 <div
                   v-for="(binding, idx) in (slotProps.data as ICommandData)
                     .keybindings"
                   :key="binding.combo.serialize()"
+                  data-testid="keybinding-expansion-binding"
                   class="flex items-center justify-between border-b border-border-subtle py-1.5 last:border-b-0"
                 >
                   <div class="flex items-center gap-4">
@@ -235,7 +232,8 @@
       </ContextMenuTrigger>
       <ContextMenuPortal>
         <ContextMenuContent
-          class="z-1200 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
+          :style="keybindingOverlayContentStyle"
+          class="z-1800 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
         >
           <ContextMenuItem
             class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered data-disabled:cursor-default data-disabled:opacity-50"
@@ -311,6 +309,7 @@ import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
+import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -320,6 +319,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
+import KeybindingList from './keybinding/KeybindingList.vue'
 import KeybindingPresetToolbar from './keybinding/KeybindingPresetToolbar.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
 
@@ -334,6 +334,8 @@ const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const { t } = useI18n()
+const primeVueOverlay = usePrimeVueOverlayChildStyle()
+const keybindingOverlayContentStyle = primeVueOverlay.contentStyle
 
 const presetNames = ref<string[]>([])
 
@@ -427,7 +429,7 @@ const commandsData = computed<ICommandData[]>(() => {
     id: command.id,
     label: t(
       `commands.${normalizeI18nKey(command.id)}.label`,
-      command.label ?? ''
+      command.label ?? command.id
     ),
     keybindings: keybindingStore.getKeybindingsByCommandId(command.id),
     source: command.source,

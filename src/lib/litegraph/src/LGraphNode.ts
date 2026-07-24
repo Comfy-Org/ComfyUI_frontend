@@ -7,7 +7,12 @@ import {
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { isSizeEqual } from '@/renderer/core/layout/utils/geometry'
+import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
@@ -16,7 +21,10 @@ import {
   toClass
 } from '@/lib/litegraph/src/utils/type'
 
-import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
@@ -51,7 +59,8 @@ import type {
   Positionable,
   ReadOnlyRect,
   Rect,
-  Size
+  Size,
+  SlotIndex
 } from './interfaces'
 import { LiteGraph, Subgraph } from './litegraph'
 import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
@@ -97,9 +106,19 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
 
-export type NodeId = number | string
-
 export type NodeProperty = string | number | boolean | object
+
+/** TypedArray methods that mutate in place, so must trigger a layout commit. */
+const MUTATING_SIZE_METHODS = new Set([
+  'set',
+  'fill',
+  'copyWithin',
+  'reverse',
+  'sort'
+])
+
+/** Captures only the {@link layoutStore} singleton, so shared across nodes. */
+const layoutMutations = useLayoutMutations()
 
 interface INodePropertyInfo {
   name?: string
@@ -497,10 +516,10 @@ export class LGraphNode
 
     this._pos[0] = value[0]
     this._pos[1] = value[1]
+    if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Canvas)
-    mutations.moveNode(String(this.id), { x: value[0], y: value[1] })
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.moveNode(this.id, { x: value[0], y: value[1] })
   }
 
   /**
@@ -510,8 +529,48 @@ export class LGraphNode
     this.pos = [x, y]
   }
 
-  public get size() {
-    return this._size
+  private _sizeProxy?: Size
+
+  /**
+   * A Proxy over {@link _size} so that element mutations (`node.size[1] = h`) —
+   * the idiom many custom nodes use to grow a node at runtime — commit to the
+   * layout store, exactly like assigning `node.size = [w, h]`. Without this a
+   * bare element write bypasses the setter and a Vue node keeps its stale
+   * height until a manual resize.
+   *
+   * The Proxy is created once and reused; index writes pass straight through to
+   * the backing `Float64Array`, and function/length access is forwarded to the
+   * real typed array so spread, iteration and `.length` keep working. In-place
+   * mutating methods ({@link MUTATING_SIZE_METHODS}) also commit, so growing the
+   * node via `node.size.set(...)` reflows just like a bare element write.
+   *
+   * TODO(litegraph-stable-resize-api): interim shim — remove once a stable resize
+   * API replaces direct typed-array size access.
+   */
+  public get size(): Size {
+    return (this._sizeProxy ??= new Proxy(this._size, {
+      get: (target, prop, receiver) => {
+        const value = Reflect.get(target, prop, target)
+        if (typeof value !== 'function') return value
+        if (typeof prop !== 'string' || !MUTATING_SIZE_METHODS.has(prop))
+          return value.bind(target)
+
+        // `set`/`fill`/etc. mutate the backing array without hitting the set
+        // trap, so commit through the same path a bare element write would.
+        // `fill`/`copyWithin`/`reverse`/`sort` return the backing array; hand
+        // back the Proxy so a chained index write still routes through the trap.
+        return (...args: unknown[]) => {
+          const result = Reflect.apply(value, target, args)
+          this._sizeUpdated()
+          return result === target ? receiver : result
+        }
+      },
+      set: (target, prop, value) => {
+        const result = Reflect.set(target, prop, value)
+        if (prop === '0' || prop === '1') this._sizeUpdated()
+        return result
+      }
+    }))
   }
 
   public set size(value) {
@@ -519,13 +578,19 @@ export class LGraphNode
 
     this._size[0] = value[0]
     this._size[1] = value[1]
+    this._sizeUpdated()
+  }
 
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Canvas)
-    mutations.resizeNode(String(this.id), {
-      width: value[0],
-      height: value[1]
-    })
+  /** Mirror the current {@link _size} into the layout store for Vue nodes. */
+  private _sizeUpdated(): void {
+    if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
+
+    const size = { width: this._size[0], height: this._size[1] }
+    const layout = layoutStore.getNodeLayoutRef(this.id).value
+    if (layout && isSizeEqual(layout.size, size)) return
+
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.resizeNode(this.id, size)
   }
 
   /**
@@ -809,7 +874,7 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
-    this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : -1
+    this.id = UNASSIGNED_NODE_ID
     this.title = title || 'Unnamed'
     this.type = type ?? ''
     this.size = [LiteGraph.NODE_WIDTH, 60]
@@ -830,9 +895,8 @@ export class LGraphNode
    */
   configure(info: ISerialisedNode): void {
     if (this.graph) {
-      this.graph._version++
+      this.graph.incrementVersion()
     }
-    if (info.id === -1) info.id = this.id
     for (const j in info) {
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
@@ -840,6 +904,12 @@ export class LGraphNode
           this.properties[k] = info.properties[k]
           this.onPropertyChanged?.(k, info.properties[k])
         }
+        continue
+      }
+
+      if (j === 'id') {
+        const id = toNodeId(info.id)
+        if (id !== UNASSIGNED_NODE_ID) this.id = id
         continue
       }
 
@@ -943,7 +1013,7 @@ export class LGraphNode
   serialize(): ISerialisedNode {
     // create serialization object
     const o: ISerialisedNode = {
-      id: this.id,
+      id: serializeNodeId(this.id),
       type: this.type,
       pos: [this.pos[0], this.pos[1]],
       size: [this.size[0], this.size[1]],
@@ -996,7 +1066,6 @@ export class LGraphNode
     return o
   }
 
-  /* Creates a clone of this node */
   clone(): LGraphNode | null {
     if (this.type == null) return null
     const node = LiteGraph.createNode(this.type)
@@ -1022,8 +1091,7 @@ export class LGraphNode
     // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
     data.id = undefined
 
-    if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
-
+    node.id = this.id
     node.configure(data)
 
     return node
@@ -1106,7 +1174,7 @@ export class LGraphNode
   /**
    * sets the output data type, useful when you want to be able to overwrite the data type
    */
-  setOutputDataType(slot: number, type: ISlotType): void {
+  setOutputDataType(slot: SlotIndex, type: ISlotType): void {
     const { outputs } = this
     if (!outputs || slot == -1 || slot >= outputs.length) return
 
@@ -1164,7 +1232,7 @@ export class LGraphNode
    * @param slot
    * @returns datatype in string format
    */
-  getInputDataType(slot: number): ISlotType | null {
+  getInputDataType(slot: SlotIndex): ISlotType | null {
     if (!this.inputs) return null
     if (slot >= this.inputs.length || this.inputs[slot].link == null)
       return null
@@ -1399,7 +1467,6 @@ export class LGraphNode
 
       default:
         return false
-        break
     }
     this.mode = modeTo
     return true
@@ -2003,7 +2070,7 @@ export class LGraphNode
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens
     // when the node is added via LGraph.add() -> node.onAdded.
-    if (this.id !== -1 && isNodeBindable(widget)) {
+    if (this.id !== UNASSIGNED_NODE_ID && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
 
@@ -2088,7 +2155,10 @@ export class LGraphNode
 
     out[0] = this.pos[0]
     out[1] = this.pos[1] + -titleHeight
-    if (!this.flags?.collapsed) {
+    // In Vue mode, `this.size` is kept in sync with the DOM-measured
+    // collapsed dimensions via ResizeObserver → layoutStore → useLayoutSync,
+    // so the expanded branch produces correct bounds for collapsed nodes too.
+    if (!this.flags?.collapsed || LiteGraph.vueNodesMode) {
       out[2] = this.size[0]
       out[3] = this.size[1] + titleHeight
     } else {
@@ -2929,8 +2999,11 @@ export class LGraphNode
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
 
+    const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+    graph.state.lastLinkId = linkId
+
     const link = new LLink(
-      ++graph.state.lastLinkId,
+      linkId,
       maybeCommonType || input.type || output.type,
       this.id,
       outputIndex,
@@ -2986,7 +3059,7 @@ export class LGraphNode
         }
       }
     }
-    graph._version++
+    graph.incrementVersion()
 
     // link has been created now, so its updated
     this.onConnectionsChange?.(
@@ -3040,7 +3113,7 @@ export class LGraphNode
     // Adding from an output, or a floating reroute that is NOT the tip of an existing floating chain
     if (afterRerouteId == null || !fromLastFloatingReroute) {
       const link = new LLink(
-        -1,
+        toLinkId(-1),
         slot.type,
         outputIndex === -1 ? -1 : id,
         outputIndex,
@@ -3135,7 +3208,7 @@ export class LGraphNode
 
         // remove the link from the links pool
         link_info.disconnect(graph, 'input')
-        graph._version++
+        graph.incrementVersion()
 
         // link_info hasn't been modified so its ok
         target.onConnectionsChange?.(
@@ -3173,7 +3246,7 @@ export class LGraphNode
         }
 
         const target = graph.getNodeById(link_info.target_id)
-        graph._version++
+        graph.incrementVersion()
 
         if (target) {
           const input = target.inputs[link_info.target_slot]
@@ -3271,7 +3344,7 @@ export class LGraphNode
       const link_info = graph._links.get(link_id)
       if (link_info) {
         // Let SubgraphInput do the disconnect.
-        if (link_info.origin_id === -10 && 'inputNode' in graph) {
+        if (link_info.origin_id === SUBGRAPH_INPUT_ID && 'inputNode' in graph) {
           graph.inputNode._disconnectNodeInput(this, input, link_info)
           return true
         }
@@ -3301,7 +3374,7 @@ export class LGraphNode
         }
 
         link_info.disconnect(graph, keepReroutes ? 'output' : undefined)
-        if (graph) graph._version++
+        if (graph) graph.incrementVersion()
 
         this.onConnectionsChange?.(
           NodeSlotType.INPUT,
@@ -3445,7 +3518,7 @@ export class LGraphNode
    * @param outputSlotIndex Output slot index
    * @returns Position of the output slot
    */
-  getOutputPos(outputSlotIndex: number): Point {
+  getOutputPos(outputSlotIndex: SlotIndex): Point {
     return getSlotPosition(this, outputSlotIndex, false)
   }
 
@@ -3536,7 +3609,7 @@ export class LGraphNode
   collapse(force?: boolean): void {
     if (!this.collapsible && !force) return
     if (!this.graph) throw new NullGraphError()
-    this.graph._version++
+    this.graph.incrementVersion()
     this.flags.collapsed = !this.flags.collapsed
     this.setDirtyCanvas(true, true)
   }
@@ -3547,7 +3620,7 @@ export class LGraphNode
   toggleAdvanced() {
     if (!this.hasAdvancedWidgets()) return
     if (!this.graph) throw new NullGraphError()
-    this.graph._version++
+    this.graph.incrementVersion()
     this.showAdvanced = !this.showAdvanced
     this.expandToFitContent()
     this.setDirtyCanvas(true, true)
@@ -3564,7 +3637,7 @@ export class LGraphNode
   pin(v?: boolean): void {
     if (!this.graph) throw new NullGraphError()
 
-    this.graph._version++
+    this.graph.incrementVersion()
     this.flags.pinned = v ?? !this.flags.pinned
     this.resizable = !this.pinned
     if (!this.pinned) this.flags.pinned = undefined
@@ -4236,7 +4309,9 @@ export class LGraphNode
       if (!widget) continue
 
       const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      slot.pos = [offset, widget.y + offset]
+      const pos: [number, number] = [offset, widget.y + offset]
+      slot.pos = pos
+      this.inputs[i].pos = pos
       this._measureSlot(slot, i, true)
     }
   }

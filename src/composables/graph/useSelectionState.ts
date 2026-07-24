@@ -1,21 +1,23 @@
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
-import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { isImageNode, isLGraphNode, isLoad3dNode } from '@/utils/litegraphUtil'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import {
+  isImageNode,
+  isLGraphGroup,
+  isLGraphNode,
+  isLoad3dNode
+} from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 export interface NodeSelectionState {
   collapsed: boolean
   pinned: boolean
-  bypassed: boolean
 }
 
 /**
@@ -25,9 +27,8 @@ export interface NodeSelectionState {
 export function useSelectionState() {
   const canvasStore = useCanvasStore()
   const nodeDefStore = useNodeDefStore()
-  const sidebarTabStore = useSidebarTabStore()
-  const nodeHelpStore = useNodeHelpStore()
-  const { id: nodeLibraryTabId } = useNodeLibrarySidebarTab()
+  const settingStore = useSettingStore()
+  const rightSidePanelStore = useRightSidePanelStore()
 
   const { selectedItems } = storeToRefs(canvasStore)
 
@@ -45,6 +46,11 @@ export function useSelectionState() {
   const hasAnySelection = computed(() => selectedItems.value.length > 0)
   const hasSingleSelection = computed(() => selectedItems.value.length === 1)
   const hasMultipleSelection = computed(() => selectedItems.value.length > 1)
+  const hasGroupedNodesSelection = computed(() =>
+    selectedItems.value.some(
+      (item) => isLGraphGroup(item) && [...item.children].some(isLGraphNode)
+    )
+  )
 
   const isSingleNode = computed(
     () => hasSingleSelection.value && isLGraphNode(selectedItems.value[0])
@@ -64,7 +70,7 @@ export function useSelectionState() {
   )
 
   const hasAny3DNodeSelected = computed(() => {
-    const enable3DViewer = useSettingStore().get('Comfy.Load3D.3DViewerEnable')
+    const enable3DViewer = settingStore.get('Comfy.Load3D.3DViewerEnable')
     return (
       selectedNodes.value.length === 1 &&
       selectedNodes.value.some(isLoad3dNode) &&
@@ -81,12 +87,10 @@ export function useSelectionState() {
   const computeSelectionStatesFromNodes = (
     nodes: LGraphNode[]
   ): NodeSelectionState => {
-    if (!nodes.length)
-      return { collapsed: false, pinned: false, bypassed: false }
+    if (!nodes.length) return { collapsed: false, pinned: false }
     return {
       collapsed: nodes.some((n) => n.flags?.collapsed),
-      pinned: nodes.some((n) => n.pinned),
-      bypassed: nodes.some((n) => n.mode === LGraphEventMode.BYPASS)
+      pinned: nodes.some((n) => n.pinned)
     }
   }
 
@@ -98,36 +102,27 @@ export function useSelectionState() {
   const computeSelectionFlags = (): NodeSelectionState =>
     computeSelectionStatesFromNodes(selectedNodes.value)
 
-  /** Toggle node help sidebar/panel for the single selected node (if any). */
-  const showNodeHelp = () => {
-    const def = nodeDef.value
-    if (!def) return
+  const canOpenNodeInfo = computed(
+    () =>
+      Boolean(nodeDef.value) &&
+      settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
+  )
 
-    const isSidebarActive =
-      sidebarTabStore.activeSidebarTabId === nodeLibraryTabId
-    const currentHelpNode = nodeHelpStore.currentHelpNode
-    const isSameNodeHelpOpen =
-      isSidebarActive &&
-      nodeHelpStore.isHelpOpen &&
-      currentHelpNode?.nodePath === def.nodePath
-
-    if (isSameNodeHelpOpen) {
-      nodeHelpStore.closeHelp()
-      sidebarTabStore.toggleSidebarTab(nodeLibraryTabId)
-      return
-    }
-
-    if (!isSidebarActive) sidebarTabStore.toggleSidebarTab(nodeLibraryTabId)
-    nodeHelpStore.openHelp(def)
+  const openNodeInfo = () => {
+    if (!canOpenNodeInfo.value) return false
+    rightSidePanelStore.openPanel('info')
+    return true
   }
 
   return {
     selectedItems,
     selectedNodes,
     nodeDef,
-    showNodeHelp,
+    canOpenNodeInfo,
+    openNodeInfo,
     hasAny3DNodeSelected,
     hasAnySelection,
+    hasGroupedNodesSelection,
     hasSingleSelection,
     hasMultipleSelection,
     isSingleNode,

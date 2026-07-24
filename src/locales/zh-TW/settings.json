@@ -199,7 +199,6 @@
     "name": "PLY 引擎",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "選擇用於載入 PLY 檔案的引擎。「threejs」使用原生 Three.js PLYLoader（適合網格 PLY 檔案）。「fastply」使用優化的 ASCII 點雲 PLY 檔案載入器。「sparkjs」使用 Spark.js 處理 3D Gaussian Splatting PLY 檔案。"
@@ -271,6 +270,10 @@
       "litegraph (legacy)": "litegraph（舊版）",
       "v1 (legacy)": "v1（舊版）"
     }
+  },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "新增節點跟隨游標",
+    "tooltip": "啟用後，從搜尋框新增的節點會跟隨游標，直到點擊以放置。僅適用於預設實作。"
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "節點預覽",
@@ -424,11 +427,11 @@
     "name": "驗證工作流程"
   },
   "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "自動縮放佈局 (Vue 節點)",
+    "name": "自動縮放佈局 (Nodes 2.0)",
     "tooltip": "切換至 Vue 渲染時自動縮放節點位置以防止重疊"
   },
   "Comfy_VueNodes_Enabled": {
-    "name": "現代節點設計 (Vue 節點)",
+    "name": "現代節點設計 (Nodes 2.0)",
     "tooltip": "現代：基於 DOM 的渲染，具備增強的互動性、原生瀏覽器功能和更新的視覺設計。經典：傳統畫布渲染。"
   },
   "Comfy_WidgetControlMode": {

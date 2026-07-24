@@ -1,14 +1,22 @@
 import { useAsyncState, whenever } from '@vueuse/core'
-import { difference } from 'es-toolkit'
+import { delay, difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, shallowReactive } from 'vue'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
 } from '@/platform/assets/composables/media/assetMappers'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { assetService } from '@/platform/assets/services/assetService'
-import type { PaginationOptions } from '@/platform/assets/services/assetService'
+import type {
+  AssetItem,
+  AssetResponse,
+  TagsOperationResult
+} from '@/platform/assets/schemas/assetSchema'
+import {
+  INPUT_TAG,
+  OUTPUT_TAG,
+  assetService
+} from '@/platform/assets/services/assetService'
+import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
@@ -43,7 +51,7 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
  * Fetch input files from cloud service
  */
 async function fetchInputFilesFromCloud(): Promise<AssetItem[]> {
-  return await assetService.getAssetsByTag('input', false, {
+  return await assetService.getAssetsByTag(INPUT_TAG, false, {
     limit: INPUT_LIMIT
   })
 }
@@ -86,6 +94,7 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
 const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
+const FLAT_OUTPUT_PAGE_SIZE = 200
 
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
@@ -123,7 +132,7 @@ export const useAssetsStore = defineStore('assets', () => {
     state: inputAssets,
     isLoading: inputLoading,
     error: inputError,
-    execute: updateInputs
+    execute: executeUpdateInputs
   } = useAsyncState(fetchInputFiles, [], {
     immediate: false,
     resetOnExecute: false,
@@ -131,6 +140,12 @@ export const useAssetsStore = defineStore('assets', () => {
       console.error('Error fetching input assets:', err)
     }
   })
+
+  const updateInputs = async () => {
+    const result = await executeUpdateInputs()
+    assetService.invalidateInputAssetsIncludingPublic()
+    return result
+  }
 
   /**
    * Fetch history assets with pagination support
@@ -246,15 +261,112 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
 
+  const flatOutputAssets = ref<AssetItem[]>([])
+  const flatOutputLoading = ref(false)
+  const flatOutputError = ref<unknown>(null)
+  const flatOutputOffset = ref(0)
+  const flatOutputHasMore = ref(true)
+  const flatOutputIsLoadingMore = ref(false)
+  const flatOutputSeenIds = new Set<string>()
+  let flatOutputNextCursor: string | undefined
+  let flatOutputInFlight: Promise<AssetItem[]> | null = null
+
+  async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
+    if (flatOutputInFlight) return flatOutputInFlight
+
+    if (loadMore) {
+      if (!flatOutputHasMore.value) return flatOutputAssets.value
+      flatOutputIsLoadingMore.value = true
+    } else {
+      flatOutputLoading.value = true
+      flatOutputOffset.value = 0
+      flatOutputNextCursor = undefined
+      flatOutputHasMore.value = true
+      flatOutputSeenIds.clear()
+    }
+    flatOutputError.value = null
+
+    flatOutputInFlight = (async () => {
+      const requestedAfter = loadMore ? flatOutputNextCursor : undefined
+      try {
+        const page = await assetService.getAssetsPageByTag(OUTPUT_TAG, true, {
+          limit: FLAT_OUTPUT_PAGE_SIZE,
+          ...(requestedAfter !== undefined
+            ? { after: requestedAfter }
+            : { offset: flatOutputOffset.value })
+        })
+        const batch = page.assets
+        const fresh = loadMore
+          ? batch.filter((asset) => !flatOutputSeenIds.has(asset.id))
+          : batch
+        for (const asset of fresh) flatOutputSeenIds.add(asset.id)
+        flatOutputAssets.value = loadMore
+          ? [...flatOutputAssets.value, ...fresh]
+          : batch
+        flatOutputOffset.value += batch.length
+        const nextCursor = page.next_cursor
+        const cursorStuck =
+          nextCursor !== undefined && nextCursor === requestedAfter
+        flatOutputNextCursor = cursorStuck ? undefined : nextCursor
+        flatOutputHasMore.value =
+          fresh.length > 0 && page.has_more && !cursorStuck
+        return flatOutputAssets.value
+      } catch (err) {
+        flatOutputError.value = err
+        console.error('Failed to fetch output assets:', err)
+        return loadMore ? flatOutputAssets.value : []
+      } finally {
+        if (loadMore) flatOutputIsLoadingMore.value = false
+        else flatOutputLoading.value = false
+        flatOutputInFlight = null
+      }
+    })()
+
+    return flatOutputInFlight
+  }
+
+  const updateFlatOutputs = () => fetchFlatOutputs(false)
+  const loadMoreFlatOutputs = async () => {
+    if (flatOutputIsLoadingMore.value) return
+    await fetchFlatOutputs(true)
+  }
+
+  /**
+   * Patch preview_id/preview_url for a single asset already in memory,
+   * matched by name. Used after persistThumbnail succeeds so an open Asset
+   * panel reflects the new thumbnail without refetching the whole history.
+   * Match by name because the cloud assets API and the history API use
+   * different id spaces; name is the stable cross-API identifier.
+   */
+  const setAssetPreview = (
+    name: string,
+    previewId: string,
+    previewUrl: string
+  ) => {
+    const patch = (list: AssetItem[]) => {
+      const idx = list.findIndex((a) => a.name === name)
+      if (idx < 0) return
+      list[idx] = {
+        ...list[idx],
+        preview_id: previewId,
+        preview_url: previewUrl
+      }
+    }
+    patch(historyAssets.value)
+    patch(allHistoryItems.value)
+    patch(inputAssets.value)
+  }
+
   /**
    * Map of asset hash filename to asset item for O(1) lookup
-   * Cloud assets use asset_hash for the hash-based filename
+   * Cloud assets use hash for the hash-based filename
    */
   const inputAssetsByFilename = computed(() => {
     const map = new Map<string, AssetItem>()
     for (const asset of inputAssets.value) {
-      if (asset.asset_hash) {
-        map.set(asset.asset_hash, asset)
+      const hash = asset.hash
+      if (hash) {
+        map.set(hash, asset)
       }
     }
     return map
@@ -270,9 +382,24 @@ export const useAssetsStore = defineStore('assets', () => {
 
   const MODEL_BATCH_SIZE = 500
 
+  // Defensive backstop against a server that never signals exhaustion (e.g.
+  // emits an unbounded stream of unique cursors). At MODEL_BATCH_SIZE per
+  // batch this caps a single walk at 500k assets — far beyond any real
+  // category — so it only ever trips on pathological pagination.
+  const MAX_PAGINATION_BATCHES = 1000
+
   interface ModelPaginationState {
     assets: Map<string, AssetItem>
+    /**
+     * Count of assets fetched so far. Only drives the request `offset` when
+     * the backend is cursor-less (no `next_cursor` in responses).
+     */
     offset: number
+    /**
+     * Keyset cursor from the latest response's `next_cursor`. When set,
+     * subsequent batches resume with `after` instead of `offset`.
+     */
+    nextCursor?: string
     hasMore: boolean
     isLoading: boolean
     error?: Error
@@ -296,6 +423,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
       const pendingRequestByCategory = new Map<string, ModelPaginationState>()
       const pendingPromiseByCategory = new Map<string, Promise<void>>()
+      const abortByCategory = new Map<string, AbortController>()
 
       function createState(
         existingAssets?: Map<string, AssetItem>
@@ -304,6 +432,7 @@ export const useAssetsStore = defineStore('assets', () => {
         return reactive({
           assets,
           offset: 0,
+          nextCursor: undefined,
           hasMore: true,
           isLoading: true
         })
@@ -399,7 +528,7 @@ export const useAssetsStore = defineStore('assets', () => {
        */
       async function updateModelsForCategory(
         category: string,
-        fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
+        fetcher: (options: AssetPaginationOptions) => Promise<AssetResponse>
       ): Promise<void> {
         if (pendingPromiseByCategory.has(category)) {
           return pendingPromiseByCategory.get(category)!
@@ -407,6 +536,10 @@ export const useAssetsStore = defineStore('assets', () => {
 
         const existingState = modelStateByCategory.value.get(category)
         const state = createState(existingState?.assets)
+
+        abortByCategory.get(category)?.abort()
+        const controller = new AbortController()
+        abortByCategory.set(category, controller)
 
         const seenIds = new Set<string>()
 
@@ -420,16 +553,43 @@ export const useAssetsStore = defineStore('assets', () => {
         }
 
         async function loadBatches(): Promise<void> {
+          let isFirstBatch = true
+          // Only prune unseen cached ids when the walk reaches a genuine end
+          // of list; bailing out on an anomaly (empty page, cursor cycle,
+          // batch cap) must not delete assets we simply never re-fetched.
+          let walkCompleted = false
+          // Cursors already requested this walk. A repeat means the server is
+          // cycling (immediate A->A or alternating A->B->A...), so we stop.
+          const seenCursors = new Set<string>()
+          let batchCount = 0
           while (state.hasMore) {
+            if (batchCount++ >= MAX_PAGINATION_BATCHES) {
+              state.hasMore = false
+              break
+            }
             try {
-              const newAssets = await fetcher({
-                limit: MODEL_BATCH_SIZE,
-                offset: state.offset
-              })
+              // Keyset cursor walk when the server provides one (stable under
+              // concurrent inserts/deletes); offset walk otherwise. The first
+              // batch sends offset 0, which the service omits from the request.
+              const after = state.nextCursor
+              const response = await fetcher(
+                after !== undefined
+                  ? {
+                      limit: MODEL_BATCH_SIZE,
+                      after,
+                      signal: controller.signal
+                    }
+                  : {
+                      limit: MODEL_BATCH_SIZE,
+                      offset: state.offset,
+                      signal: controller.signal
+                    }
+              )
 
               if (isStale(category, state)) return
 
-              const isFirstBatch = state.offset === 0
+              const newAssets = response.assets
+
               if (isFirstBatch) {
                 assetsArrayCache.delete(category)
                 if (hasExistingData) {
@@ -446,16 +606,49 @@ export const useAssetsStore = defineStore('assets', () => {
               state.assets = new Map(state.assets)
 
               state.offset += newAssets.length
-              state.hasMore = newAssets.length === MODEL_BATCH_SIZE
+
+              if (!response.has_more) {
+                // Server signalled a genuine end of list — safe to prune ids
+                // that no longer exist server-side.
+                state.hasMore = false
+                walkCompleted = true
+              } else if (newAssets.length === 0) {
+                // Anomaly: server claims more but returned an empty page. Stop,
+                // but do not prune — unseen cached assets may still live on a
+                // page we never received.
+                state.hasMore = false
+              } else if (response.next_cursor !== undefined) {
+                if (seenCursors.has(response.next_cursor)) {
+                  // Repeated cursor: the server is cycling. Stop without
+                  // pruning rather than loop forever.
+                  state.hasMore = false
+                } else {
+                  seenCursors.add(response.next_cursor)
+                  state.nextCursor = response.next_cursor
+                }
+              } else {
+                // Cursor-less backend: legacy offset walk. A short page is the
+                // reliable natural end of the list, so it is safe to prune.
+                state.nextCursor = undefined
+                if (newAssets.length < MODEL_BATCH_SIZE) {
+                  state.hasMore = false
+                  walkCompleted = true
+                }
+              }
 
               if (isFirstBatch) {
                 state.isLoading = false
+                isFirstBatch = false
               }
 
               if (state.hasMore) {
-                await new Promise((resolve) => setTimeout(resolve, 50))
+                await delay(50, { signal: controller.signal })
               }
             } catch (err) {
+              if (controller.signal.aborted) {
+                if (isFirstBatch) state.isLoading = false
+                return
+              }
               if (isStale(category, state)) return
               console.error(`Error loading batch for ${category}:`, err)
 
@@ -468,21 +661,36 @@ export const useAssetsStore = defineStore('assets', () => {
             }
           }
 
-          const staleIds = [...state.assets.keys()].filter(
-            (id) => !seenIds.has(id)
-          )
-          for (const id of staleIds) {
-            state.assets.delete(id)
+          // Prune ids that vanished server-side, but only after a complete
+          // walk — an early bail-out hasn't seen the whole list, so unseen
+          // cached assets must be kept rather than deleted.
+          if (walkCompleted) {
+            const staleIds = [...state.assets.keys()].filter(
+              (id) => !seenIds.has(id)
+            )
+            for (const id of staleIds) {
+              state.assets.delete(id)
+            }
           }
           assetsArrayCache.delete(category)
           pendingRequestByCategory.delete(category)
         }
 
-        const promise = loadBatches().finally(() => {
-          pendingPromiseByCategory.delete(category)
-        })
+        const promise = loadBatches()
         pendingPromiseByCategory.set(category, promise)
-        await promise
+        try {
+          await promise
+        } finally {
+          // Only clear the guards if this walk still owns them — an
+          // invalidateCategory() + fresh walk can register a newer promise and
+          // controller for the same category before this teardown runs.
+          if (pendingPromiseByCategory.get(category) === promise) {
+            pendingPromiseByCategory.delete(category)
+          }
+          if (abortByCategory.get(category) === controller) {
+            abortByCategory.delete(category)
+          }
+        }
       }
 
       /**
@@ -497,7 +705,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
         // Use category as cache key but fetch using nodeType for API compatibility
         await updateModelsForCategory(category, (opts) =>
-          assetService.getAssetsForNodeType(nodeType, opts)
+          assetService.getAssetsPageForNodeType(nodeType, opts)
         )
       }
 
@@ -508,7 +716,7 @@ export const useAssetsStore = defineStore('assets', () => {
       async function updateModelsForTag(tag: string): Promise<void> {
         const category = `tag:${tag}`
         await updateModelsForCategory(category, (opts) =>
-          assetService.getAssetsByTag(tag, true, opts)
+          assetService.getAssetsPageByTag(tag, true, opts)
         )
       }
 
@@ -518,6 +726,8 @@ export const useAssetsStore = defineStore('assets', () => {
        * @param category The category to invalidate (e.g., 'checkpoints', 'loras')
        */
       function invalidateCategory(category: string): void {
+        abortByCategory.get(category)?.abort()
+        abortByCategory.delete(category)
         modelStateByCategory.value.delete(category)
         assetsArrayCache.delete(category)
         pendingRequestByCategory.delete(category)
@@ -604,11 +814,16 @@ export const useAssetsStore = defineStore('assets', () => {
 
         updateAssetInCache(asset.id, { tags: newTags }, cacheKey)
 
+        let removedTagsOnServer: string[] = []
         try {
-          const removeResult =
-            tagsToRemove.length > 0
-              ? await assetService.removeAssetTags(asset.id, tagsToRemove)
-              : undefined
+          let removeResult: TagsOperationResult | undefined
+          if (tagsToRemove.length > 0) {
+            removeResult = await assetService.removeAssetTags(
+              asset.id,
+              tagsToRemove
+            )
+            removedTagsOnServer = removeResult.removed ?? tagsToRemove
+          }
 
           const addResult =
             tagsToAdd.length > 0
@@ -622,6 +837,33 @@ export const useAssetsStore = defineStore('assets', () => {
         } catch (error) {
           console.error('Failed to update asset tags:', error)
           updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
+
+          if (removedTagsOnServer.length > 0) {
+            try {
+              await assetService.addAssetTags(asset.id, removedTagsOnServer)
+            } catch (compensationError) {
+              console.error(
+                'Failed to restore tags after partial failure; invalidating cache to force refetch:',
+                compensationError
+              )
+              const categoriesToInvalidate = new Set<string>()
+              const resolved = cacheKey ? resolveCategory(cacheKey) : undefined
+              if (resolved) {
+                categoriesToInvalidate.add(resolved)
+              }
+              for (const [
+                category,
+                state
+              ] of modelStateByCategory.value.entries()) {
+                if (state.assets?.has(asset.id)) {
+                  categoriesToInvalidate.add(category)
+                }
+              }
+              for (const category of categoriesToInvalidate) {
+                invalidateCategory(category)
+              }
+            }
+          }
         }
       }
 
@@ -741,6 +983,16 @@ export const useAssetsStore = defineStore('assets', () => {
     updateInputs,
     updateHistory,
     loadMoreHistory,
+    setAssetPreview,
+
+    // Flat output assets (cloud-only, tag-based)
+    flatOutputAssets,
+    flatOutputLoading,
+    flatOutputError,
+    flatOutputHasMore,
+    flatOutputIsLoadingMore,
+    updateFlatOutputs,
+    loadMoreFlatOutputs,
 
     // Input mapping helpers
     inputAssetsByFilename,

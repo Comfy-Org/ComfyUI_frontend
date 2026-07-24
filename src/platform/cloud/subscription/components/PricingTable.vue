@@ -30,9 +30,9 @@
             <span>{{ option.label }}</span>
             <div
               v-if="option.value === 'yearly'"
-              class="flex items-center rounded-full bg-primary-background px-1 py-0.5 text-2xs font-bold text-white"
+              class="flex items-center rounded-full bg-primary-background px-2 py-0.5 text-2xs font-bold whitespace-nowrap text-white"
             >
-              -20%
+              {{ t('subscription.saveYearly') }}
             </div>
           </div>
         </template>
@@ -67,15 +67,15 @@
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-baseline gap-2">
                 <span
-                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground"
+                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
                 >
+                  ${{ getPrice(tier) }}
                   <span
                     v-show="currentBillingCycle === 'yearly'"
                     class="text-2xl text-muted-foreground line-through"
                   >
                     ${{ tier.pricing.monthly }}
                   </span>
-                  ${{ getPrice(tier) }}
                 </span>
                 <span class="font-inter text-xl/normal text-base-foreground">
                   {{ t('subscription.usdPerMonth') }}
@@ -122,9 +122,12 @@
                 }}
               </span>
               <div class="flex flex-row items-center gap-1">
-                <i class="icon-[lucide--component] text-sm text-amber-400" />
+                <i
+                  class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
+                  aria-hidden="true"
+                />
                 <span
-                  class="font-inter text-sm/normal font-bold text-base-foreground"
+                  class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                 >
                   {{ n(getCreditsDisplay(tier)) }}
                 </span>
@@ -136,7 +139,7 @@
                 {{ t('subscription.maxDurationLabel') }}
               </span>
               <span
-                class="font-inter text-sm/normal font-bold text-base-foreground"
+                class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
               >
                 {{ tier.maxDuration }}
               </span>
@@ -186,7 +189,7 @@
                   </div>
                 </div>
                 <span
-                  class="font-inter text-sm/normal font-bold text-base-foreground"
+                  class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                 >
                   ~{{ n(tier.pricing.videoEstimate) }}
                 </span>
@@ -263,26 +266,32 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
   TIER_PRICING,
   TIER_TO_KEY
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
+  SubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  recordPendingSubscriptionCheckoutAttempt,
+  withPendingCheckoutAttemptId
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
+import type {
+  CheckoutAttributionMetadata,
+  PaymentIntentSource
+} from '@/platform/telemetry/types'
 import { useAuthStore } from '@/stores/authStore'
-import type { components } from '@/types/comfyRegistryTypes'
 
-type SubscriptionTier = components['schemas']['SubscriptionTier']
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
 
@@ -317,6 +326,10 @@ interface PricingTierConfig {
   customLoRAs: boolean
   isPopular?: boolean
 }
+
+const { reason } = defineProps<{
+  reason?: PaymentIntentSource
+}>()
 
 const emit = defineEmits<{
   chooseTeamWorkspace: []
@@ -361,9 +374,13 @@ const tiers: PricingTierConfig[] = [
 const {
   isActiveSubscription,
   isFreeTier,
-  subscriptionTier,
-  isYearlySubscription
-} = useSubscription()
+  tier: subscriptionTier,
+  subscription
+} = useBillingContext()
+
+const isYearlySubscription = computed(
+  () => subscription.value?.duration === 'ANNUAL'
+)
 const telemetry = useTelemetry()
 const { userId } = storeToRefs(useAuthStore())
 const { accessBillingPortal, reportError } = useAuthActions()
@@ -450,44 +467,70 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     try {
       if (hasPaidSubscription.value) {
-        const checkoutAttribution = await getCheckoutAttributionForCloud()
-        if (userId.value) {
-          telemetry?.trackBeginCheckout({
-            user_id: userId.value,
-            tier: tierKey,
-            cycle: currentBillingCycle.value,
-            checkout_type: 'change',
-            ...checkoutAttribution,
-            ...(currentTierKey.value
-              ? { previous_tier: currentTierKey.value }
-              : {})
-          })
-        }
-        // Pass the target tier to create a deep link to subscription update confirmation
-        const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
         const targetPlan = {
           tierKey,
           billingCycle: currentBillingCycle.value
-        }
+        } as const
+        const previousPlan = currentPlanDescriptor.value
+        const checkoutAttribution = await getCheckoutAttributionForCloud()
+        const beginCheckoutMetadata = userId.value
+          ? {
+              user_id: userId.value,
+              tier: targetPlan.tierKey,
+              cycle: targetPlan.billingCycle,
+              checkout_type: 'change' as const,
+              ...(reason ? { payment_intent_source: reason } : {}),
+              ...checkoutAttribution,
+              ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {})
+            }
+          : null
+        // Pass the target tier to create a deep link to subscription update confirmation
+        const checkoutTier = getCheckoutTier(
+          targetPlan.tierKey,
+          targetPlan.billingCycle
+        )
         const downgrade =
-          currentPlanDescriptor.value &&
+          previousPlan &&
           isPlanDowngrade({
-            current: currentPlanDescriptor.value,
+            current: previousPlan,
             target: targetPlan
           })
 
         if (downgrade) {
           // TODO(COMFY-StripeProration): Remove once backend checkout creation mirrors portal proration ("change at billing end")
-          await accessBillingPortal()
+          const didOpenPortal = await accessBillingPortal()
+          if (didOpenPortal && beginCheckoutMetadata) {
+            telemetry?.trackBeginCheckout(beginCheckoutMetadata)
+          }
         } else {
-          await accessBillingPortal(checkoutTier)
+          const didOpenPortal = await accessBillingPortal(checkoutTier)
+          if (!didOpenPortal) {
+            return
+          }
+
+          const pendingAttempt = recordPendingSubscriptionCheckoutAttempt({
+            tier: targetPlan.tierKey,
+            cycle: targetPlan.billingCycle,
+            checkout_type: 'change',
+            payment_intent_source: reason,
+            ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {}),
+            ...(previousPlan
+              ? { previous_cycle: previousPlan.billingCycle }
+              : {})
+          })
+          if (beginCheckoutMetadata) {
+            telemetry?.trackBeginCheckout(
+              withPendingCheckoutAttemptId(
+                beginCheckoutMetadata,
+                pendingAttempt
+              )
+            )
+          }
         }
       } else {
-        await performSubscriptionCheckout(
-          tierKey,
-          currentBillingCycle.value,
-          true
-        )
+        await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
+          paymentIntentSource: reason
+        })
       }
     } finally {
       isLoading.value = false

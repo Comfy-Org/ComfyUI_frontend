@@ -12,7 +12,7 @@
 import type { ChartData, ChartOptions } from 'chart.js'
 import { computed, ref, toRef } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { useChart } from './useChart'
 

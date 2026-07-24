@@ -4,11 +4,12 @@ This guide provides an overview of testing approaches used in the ComfyUI Fronte
 
 ## Testing Documentation
 
-Documentation for unit tests is organized into three guides:
+Documentation for unit tests is organized into four guides:
 
 - [Component Testing](./component-testing.md) - How to test Vue components
 - [Unit Testing](./unit-testing.md) - How to test utility functions, composables, and other non-component code
 - [Store Testing](./store-testing.md) - How to test Pinia stores specifically
+- [LiteGraph Testing](./litegraph-testing.md) - How to test LiteGraph graph, node, link, and workflow behavior
 
 ## Testing Structure
 
@@ -31,7 +32,7 @@ Our tests use the following frameworks and libraries:
 - [Vitest](https://vitest.dev/) - Test runner and assertion library
 - [@testing-library/vue](https://testing-library.com/docs/vue-testing-library/intro/) - Preferred for user-centric component testing
 - [@testing-library/user-event](https://testing-library.com/docs/user-event/intro/) - Realistic user interaction simulation
-- [@vue/test-utils](https://test-utils.vuejs.org/) - Vue component testing utilities (also accepted)
+- [@vue/test-utils](https://test-utils.vuejs.org/) - Vue component testing utilities (legacy; new tests must use @testing-library/vue)
 - [Pinia](https://pinia.vuejs.org/cookbook/testing.html) - For store testing
 
 ## Getting Started
@@ -43,10 +44,10 @@ To run the tests locally:
 pnpm test:unit
 
 # Run a specific test file
-pnpm test:unit -- src/path/to/file.test.ts
+pnpm test:unit src/path/to/file.test.ts
 
 # Run unit tests in watch mode
-pnpm test:unit -- --watch
+pnpm test:unit --watch
 ```
 
 Refer to the specific guides for more detailed information on each testing type.

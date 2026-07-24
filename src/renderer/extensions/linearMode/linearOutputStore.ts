@@ -6,7 +6,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage, JobId } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -23,8 +23,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const resolvedOutputsCache = new Map<string, ResultItemImpl[]>()
   const selectedId = ref<string | null>(null)
   const isFollowing = ref(true)
-  const trackedJobId = ref<string | null>(null)
-  const pendingResolve = ref(new Set<string>())
+  const trackedJobId = ref<JobId | null>(null)
+  const pendingResolve = ref(new Set<JobId>())
   const executedNodeIds = new Set<string>()
 
   const activeWorkflowInProgressItems = computed(() => {
@@ -38,7 +38,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   let nextSeq = 0
 
-  function makeItemId(jobId: string): string {
+  function makeItemId(jobId: JobId): string {
     return `job-${jobId}-${nextSeq++}`
   }
 
@@ -55,7 +55,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   const currentSkeletonId = shallowRef<string | null>(null)
 
-  function onJobStart(jobId: string) {
+  function onJobStart(jobId: JobId) {
     executedNodeIds.clear()
 
     const item: InProgressItem = {
@@ -71,7 +71,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   }
 
   let raf: number | null = null
-  function onLatentPreview(jobId: string, url: string, nodeId?: string) {
+  function onLatentPreview(jobId: JobId, url: string, nodeId?: string) {
     if (nodeId && executedNodeIds.has(nodeId)) return
 
     // Issue in Firefox where it doesnt seem to always re-render, wrapping in RAF fixes it
@@ -107,7 +107,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     })
   }
 
-  function onNodeExecuted(jobId: string, detail: ExecutedWsMessage) {
+  function onNodeExecuted(jobId: JobId, detail: ExecutedWsMessage) {
     const nodeId = String(detail.display_node || detail.node)
     executedNodeIds.add(nodeId)
     if (raf) {
@@ -166,7 +166,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     inProgressItems.value = [...newItems, ...inProgressItems.value]
   }
 
-  function onJobComplete(jobId: string) {
+  function onJobComplete(jobId: JobId) {
     // On any job complete, remove all pending resolve items.
     if (pendingResolve.value.size > 0) {
       for (const oldJobId of pendingResolve.value) {
@@ -199,7 +199,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     }
   }
 
-  function removeJobItems(jobId: string) {
+  function removeJobItems(jobId: JobId) {
     const removed = inProgressItems.value.filter((i) => i.jobId === jobId)
     inProgressItems.value = inProgressItems.value.filter(
       (i) => i.jobId !== jobId
@@ -213,7 +213,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     }
   }
 
-  function resolveIfReady(jobId: string, historyLoaded: boolean) {
+  function resolveIfReady(jobId: JobId, historyLoaded: boolean) {
     if (!pendingResolve.value.has(jobId)) return
     if (!historyLoaded) return
 
@@ -234,19 +234,19 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     isFollowing.value = true
   }
 
-  function isJobForActiveWorkflow(jobId: string): boolean {
+  function isJobForActiveWorkflow(jobId: JobId): boolean {
     return (
       executionStore.jobIdToSessionWorkflowPath.get(jobId) ===
       workflowStore.activeWorkflow?.path
     )
   }
 
-  function autoSelect(slotId: string, jobId: string) {
+  function autoSelect(slotId: string, jobId: JobId) {
     // Only auto-select if the job belongs to the active workflow
     if (!isJobForActiveWorkflow(jobId)) return
 
     const sel = selectedId.value
-    if (!sel || sel.startsWith('slot:') || isFollowing.value) {
+    if (!sel || isFollowing.value) {
       selectedId.value = slotId
       isFollowing.value = true
       return

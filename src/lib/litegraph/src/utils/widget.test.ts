@@ -73,21 +73,21 @@ describe('resolveNodeRootGraphId', () => {
 })
 
 describe('evaluateInput', () => {
-  test.each([
+  test.for<[string, number]>([
     ['42', 42],
     ['3.14', 3.14],
     ['-7', -7],
     ['0', 0]
-  ])('plain number: "%s" = %d', (input, expected) => {
+  ])('plain number: "%s" = %d', ([input, expected]) => {
     expect(evaluateInput(input)).toBe(expected)
   })
 
-  test.each([
+  test.for<[string, number]>([
     ['2+3', 5],
     ['(4+2)*3', 18],
     ['3.14*2', 6.28],
     ['10/2+3', 8]
-  ])('expression: "%s" = %d', (input, expected) => {
+  ])('expression: "%s" = %d', ([input, expected]) => {
     expect(evaluateInput(input)).toBe(expected)
   })
 
@@ -95,7 +95,7 @@ describe('evaluateInput', () => {
     expect(evaluateInput('')).toBe(0)
   })
 
-  test.each(['abc', 'hello world'])(
+  test.for(['abc', 'hello world'])(
     'invalid input returns undefined: "%s"',
     (input) => {
       expect(evaluateInput(input)).toBeUndefined()
@@ -118,7 +118,7 @@ describe('evaluateInput', () => {
     expect(evaluateInput('0xff')).toBe(255)
   })
 
-  test.each(['Infinity', '-Infinity'])(
+  test.for(['Infinity', '-Infinity'])(
     '"%s" returns undefined (non-finite rejected)',
     (input) => {
       expect(evaluateInput(input)).toBeUndefined()

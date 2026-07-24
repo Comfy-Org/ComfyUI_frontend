@@ -1,23 +1,19 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
-import PrimeVue from 'primevue/config'
-import type { SelectProps } from 'primevue/select'
+import { render, screen, fireEvent } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
+import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
+import { createMockWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: {} }
 })
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
-import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
-import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
-import { createMockWidget } from './widgetTestUtils'
 
 // Mock state for asset service
 const mockShouldUseAssetBrowser = vi.hoisted(() => vi.fn(() => false))
@@ -30,6 +26,45 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
+const WidgetSelectDropdownStub = defineComponent({
+  name: 'WidgetSelectDropdown',
+  props: {
+    widget: { type: Object, default: () => ({}) },
+    modelValue: { type: String, default: undefined },
+    nodeType: { type: String, default: '' },
+    assetKind: { type: String, default: '' },
+    allowUpload: { type: Boolean, default: false },
+    uploadFolder: { type: String, default: '' },
+    uploadSubfolder: { type: String, default: '' },
+    isAssetMode: { type: Boolean, default: false },
+    defaultLayoutMode: { type: String, default: '' }
+  },
+  template:
+    '<div data-testid="widget-select-dropdown" :data-node-type="nodeType" :data-asset-kind="assetKind" :data-allow-upload="String(allowUpload)" :data-upload-folder="uploadFolder" :data-upload-subfolder="uploadSubfolder || \'\'" />'
+})
+
+const WidgetSelectDefaultStub = defineComponent({
+  name: 'WidgetSelectDefault',
+  props: {
+    widget: { type: Object, default: () => ({}) },
+    modelValue: { type: String, default: undefined }
+  },
+  emits: ['update:modelValue'],
+  template:
+    '<div data-testid="widget-select-default"><input data-testid="select-input" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" /></div>'
+})
+
+const globalConfig = {
+  plugins: [createTestingPinia(), i18n],
+  stubs: {
+    WidgetSelectDropdown: WidgetSelectDropdownStub,
+    WidgetSelectDefault: WidgetSelectDefaultStub,
+    WidgetWithControl: {
+      template: '<div data-testid="widget-with-control" />'
+    }
+  }
+}
+
 describe('WidgetSelect Value Binding', () => {
   beforeEach(() => {
     mockShouldUseAssetBrowser.mockReturnValue(false)
@@ -37,11 +72,14 @@ describe('WidgetSelect Value Binding', () => {
     vi.clearAllMocks()
   })
 
+  type SelectWidgetOptions = {
+    values?: string[]
+    return_index?: boolean
+  }
+
   const createSelectWidget = (
     value: string = 'option1',
-    options: Partial<
-      SelectProps & { values?: string[]; return_index?: boolean }
-    > = {},
+    options: SelectWidgetOptions = {},
     callback?: (value: string | undefined) => void,
     spec?: ComboInputSpec
   ) =>
@@ -57,152 +95,33 @@ describe('WidgetSelect Value Binding', () => {
       spec
     })
 
-  const mountComponent = (
+  const renderComponent = (
     widget: SimplifiedWidget<string | undefined>,
     modelValue: string | undefined,
-    readonly = false
+    extraProps: Record<string, unknown> = {}
   ) => {
-    return mount(WidgetSelect, {
+    const onModelUpdate = vi.fn()
+    render(WidgetSelect, {
       props: {
         widget,
         modelValue,
-        readonly
+        'onUpdate:modelValue': onModelUpdate,
+        ...extraProps
       },
-      global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n],
-        components: { SelectPlus }
-      }
+      global: globalConfig
     })
-  }
-
-  const setSelectValueAndEmit = async (
-    wrapper: ReturnType<typeof mount>,
-    value: string
-  ) => {
-    const select = wrapper.findComponent({ name: 'SelectPlus' })
-    await select.setValue(value)
-    return wrapper.emitted('update:modelValue')
+    return onModelUpdate
   }
 
   describe('Vue Event Emission', () => {
-    it('emits Vue event when selection changes', async () => {
+    it('forwards model updates from the default select', async () => {
       const widget = createSelectWidget('option1')
-      const wrapper = mountComponent(widget, 'option1')
+      const onModelUpdate = renderComponent(widget, 'option1')
 
-      const emitted = await setSelectValueAndEmit(wrapper, 'option2')
+      const input = screen.getByTestId('select-input')
+      await fireEvent.update(input, 'option2')
 
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('option2')
-    })
-
-    it('emits string value for different options', async () => {
-      const widget = createSelectWidget('option1')
-      const wrapper = mountComponent(widget, 'option1')
-
-      const emitted = await setSelectValueAndEmit(wrapper, 'option3')
-
-      expect(emitted).toBeDefined()
-      // Should emit the string value
-      expect(emitted![0]).toContain('option3')
-    })
-
-    it('handles custom option values', async () => {
-      const customOptions = ['custom_a', 'custom_b', 'custom_c']
-      const widget = createSelectWidget('custom_a', { values: customOptions })
-      const wrapper = mountComponent(widget, 'custom_a')
-
-      const emitted = await setSelectValueAndEmit(wrapper, 'custom_b')
-
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('custom_b')
-    })
-
-    it('handles missing callback gracefully', async () => {
-      const widget = createSelectWidget('option1', {}, undefined)
-      const wrapper = mountComponent(widget, 'option1')
-
-      const emitted = await setSelectValueAndEmit(wrapper, 'option2')
-
-      // Should emit Vue event
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('option2')
-    })
-
-    it('handles value changes gracefully', async () => {
-      const widget = createSelectWidget('option1')
-      const wrapper = mountComponent(widget, 'option1')
-
-      const emitted = await setSelectValueAndEmit(wrapper, 'option2')
-
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('option2')
-    })
-  })
-
-  describe('Option Handling', () => {
-    it('handles empty options array', async () => {
-      const widget = createSelectWidget('', { values: [] })
-      const wrapper = mountComponent(widget, '')
-
-      const select = wrapper.findComponent({ name: 'SelectPlus' })
-      expect(select.props('options')).toEqual([])
-    })
-
-    it('handles single option', async () => {
-      const widget = createSelectWidget('only_option', {
-        values: ['only_option']
-      })
-      const wrapper = mountComponent(widget, 'only_option')
-
-      const select = wrapper.findComponent({ name: 'SelectPlus' })
-      const options = select.props('options')
-      expect(options).toHaveLength(1)
-      expect(options[0]).toEqual('only_option')
-    })
-
-    it('handles options with special characters', async () => {
-      const specialOptions = [
-        'option with spaces',
-        'option@#$%',
-        'option/with\\slashes'
-      ]
-      const widget = createSelectWidget(specialOptions[0], {
-        values: specialOptions
-      })
-      const wrapper = mountComponent(widget, specialOptions[0])
-
-      const emitted = await setSelectValueAndEmit(wrapper, specialOptions[1])
-
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(specialOptions[1])
-    })
-  })
-
-  describe('Edge Cases', () => {
-    it('handles selection of non-existent option gracefully', async () => {
-      const widget = createSelectWidget('option1')
-      const wrapper = mountComponent(widget, 'option1')
-
-      const emitted = await setSelectValueAndEmit(
-        wrapper,
-        'non_existent_option'
-      )
-
-      // Should still emit Vue event with the value
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('non_existent_option')
-    })
-
-    it('handles numeric string options correctly', async () => {
-      const numericOptions = ['1', '2', '10', '100']
-      const widget = createSelectWidget('1', { values: numericOptions })
-      const wrapper = mountComponent(widget, '1')
-
-      const emitted = await setSelectValueAndEmit(wrapper, '100')
-
-      // Should maintain string type in emitted event
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('100')
+      expect(onModelUpdate).toHaveBeenCalledWith('option2')
     })
   })
 
@@ -214,39 +133,23 @@ describe('WidgetSelect Value Binding', () => {
         image_upload: true
       }
       const widget = createSelectWidget('option1', {}, undefined, spec)
-      const wrapper = mount(WidgetSelect, {
-        props: {
-          widget,
-          modelValue: 'option1',
-          nodeType: 'CheckpointLoaderSimple'
-        },
-        global: {
-          plugins: [PrimeVue, createTestingPinia(), i18n],
-          components: { SelectPlus }
-        }
+      renderComponent(widget, 'option1', {
+        nodeType: 'CheckpointLoaderSimple'
       })
 
-      const dropdown = wrapper.findComponent(WidgetSelectDropdown)
-      expect(dropdown.exists()).toBe(true)
-      expect(dropdown.props('nodeType')).toBe('CheckpointLoaderSimple')
+      const dropdown = screen.getByTestId('widget-select-dropdown')
+      expect(dropdown).toBeInTheDocument()
+      expect(dropdown.dataset.nodeType).toBe('CheckpointLoaderSimple')
     })
 
     it('does not pass node-type prop to WidgetSelectDefault', () => {
       const widget = createSelectWidget('option1')
-      const wrapper = mount(WidgetSelect, {
-        props: {
-          widget,
-          modelValue: 'option1',
-          nodeType: 'KSampler'
-        },
-        global: {
-          plugins: [PrimeVue, createTestingPinia(), i18n],
-          components: { SelectPlus }
-        }
-      })
+      renderComponent(widget, 'option1', { nodeType: 'KSampler' })
 
-      const defaultSelect = wrapper.findComponent(WidgetSelectDefault)
-      expect(defaultSelect.exists()).toBe(true)
+      expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('widget-select-dropdown')
+      ).not.toBeInTheDocument()
     })
   })
 
@@ -255,38 +158,22 @@ describe('WidgetSelect Value Binding', () => {
       mockShouldUseAssetBrowser.mockReturnValue(true)
 
       const widget = createSelectWidget('test.safetensors')
-      const wrapper = mount(WidgetSelect, {
-        props: {
-          widget,
-          modelValue: 'test.safetensors',
-          nodeType: 'CheckpointLoaderSimple'
-        },
-        global: {
-          plugins: [PrimeVue, createTestingPinia(), i18n],
-          components: { SelectPlus }
-        }
+      renderComponent(widget, 'test.safetensors', {
+        nodeType: 'CheckpointLoaderSimple'
       })
 
-      expect(wrapper.findComponent(WidgetSelectDropdown).exists()).toBe(true)
+      expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
     })
 
     it('disables asset mode when shouldUseAssetBrowser returns false', () => {
       mockShouldUseAssetBrowser.mockReturnValue(false)
 
       const widget = createSelectWidget('test.safetensors')
-      const wrapper = mount(WidgetSelect, {
-        props: {
-          widget,
-          modelValue: 'test.safetensors',
-          nodeType: 'CheckpointLoaderSimple'
-        },
-        global: {
-          plugins: [PrimeVue, createTestingPinia(), i18n],
-          components: { SelectPlus }
-        }
+      renderComponent(widget, 'test.safetensors', {
+        nodeType: 'CheckpointLoaderSimple'
       })
 
-      expect(wrapper.findComponent(WidgetSelectDefault).exists()).toBe(true)
+      expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
     })
   })
 
@@ -298,10 +185,12 @@ describe('WidgetSelect Value Binding', () => {
         image_upload: true
       }
       const widget = createSelectWidget('option1', {}, undefined, spec)
-      const wrapper = mountComponent(widget, 'option1')
+      renderComponent(widget, 'option1')
 
-      expect(wrapper.findComponent(WidgetSelectDropdown).exists()).toBe(true)
-      expect(wrapper.findComponent(WidgetSelectDefault).exists()).toBe(false)
+      expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('widget-select-default')
+      ).not.toBeInTheDocument()
     })
 
     it('uses dropdown variant for audio uploads', (context) => {
@@ -312,12 +201,12 @@ describe('WidgetSelect Value Binding', () => {
         audio_upload: true
       }
       const widget = createSelectWidget('clip.wav', {}, undefined, spec)
-      const wrapper = mountComponent(widget, 'clip.wav')
-      const dropdown = wrapper.findComponent(WidgetSelectDropdown)
+      renderComponent(widget, 'clip.wav')
 
-      expect(dropdown.exists()).toBe(true)
-      expect(dropdown.props('assetKind')).toBe('audio')
-      expect(dropdown.props('allowUpload')).toBe(false)
+      const dropdown = screen.getByTestId('widget-select-dropdown')
+      expect(dropdown).toBeInTheDocument()
+      expect(dropdown.dataset.assetKind).toBe('audio')
+      expect(dropdown.dataset.allowUpload).toBe('false')
     })
 
     it('uses dropdown variant for mesh uploads via spec', () => {
@@ -328,24 +217,26 @@ describe('WidgetSelect Value Binding', () => {
         upload_subfolder: '3d'
       }
       const widget = createSelectWidget('model.glb', {}, undefined, spec)
-      const wrapper = mountComponent(widget, 'model.glb')
-      const dropdown = wrapper.findComponent(WidgetSelectDropdown)
+      renderComponent(widget, 'model.glb')
 
-      expect(dropdown.exists()).toBe(true)
-      expect(dropdown.props('assetKind')).toBe('mesh')
-      expect(dropdown.props('allowUpload')).toBe(true)
-      expect(dropdown.props('uploadFolder')).toBe('input')
-      expect(dropdown.props('uploadSubfolder')).toBe('3d')
+      const dropdown = screen.getByTestId('widget-select-dropdown')
+      expect(dropdown).toBeInTheDocument()
+      expect(dropdown.dataset.assetKind).toBe('mesh')
+      expect(dropdown.dataset.allowUpload).toBe('true')
+      expect(dropdown.dataset.uploadFolder).toBe('input')
+      expect(dropdown.dataset.uploadSubfolder).toBe('3d')
     })
 
     it('keeps default select when no spec or media hints are present', () => {
       const widget = createSelectWidget('plain', {
         values: ['plain', 'text']
       })
-      const wrapper = mountComponent(widget, 'plain')
+      renderComponent(widget, 'plain')
 
-      expect(wrapper.findComponent(WidgetSelectDefault).exists()).toBe(true)
-      expect(wrapper.findComponent(WidgetSelectDropdown).exists()).toBe(false)
+      expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('widget-select-dropdown')
+      ).not.toBeInTheDocument()
     })
   })
 })

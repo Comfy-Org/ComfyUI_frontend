@@ -4,19 +4,18 @@ import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
-import FormSearchInput from '../FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import { DROPDOWN_PANEL_CLASS } from './shared'
 import type { LayoutMode, SortOption } from './types'
 
 const { t } = useI18n()
-const overlayProps = useTransformCompatOverlayProps()
 
 defineProps<{
   sortOptions: SortOption[]
@@ -24,6 +23,10 @@ defineProps<{
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
+  candidateLabel?: string
+}>()
+const emit = defineEmits<{
+  (e: 'search-enter'): void
 }>()
 
 const layoutMode = defineModel<LayoutMode>('layoutMode')
@@ -33,7 +36,7 @@ const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected', {
   default: 'all'
 })
 const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
-  default: new Set()
+  default: () => new Set()
 })
 
 const actionButtonStyle = cn(
@@ -97,11 +100,16 @@ function toggleBaseModelSelection(item: FilterOption) {
     ? new Set([...current].filter((v) => v !== item.value))
     : new Set([...current, item.value])
 }
+
+function handleSearchEnter(event: KeyboardEvent) {
+  event.preventDefault()
+  emit('search-enter')
+}
 </script>
 
 <template>
   <div class="text-secondary flex gap-2 px-4">
-    <FormSearchInput
+    <AsyncSearchInput
       v-model="searchQuery"
       autofocus
       :class="
@@ -111,10 +119,22 @@ function toggleBaseModelSelection(item: FilterOption) {
           'focus-within:ring-0 focus-within:outline-component-node-widget-background-highlighted/80'
         )
       "
+      @enter="handleSearchEnter"
     />
+    <span
+      v-if="candidateLabel"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      class="sr-only"
+    >
+      {{ t('widgets.uploadSelect.topResult', { result: candidateLabel }) }}
+    </span>
 
     <Button
       ref="sortTriggerRef"
+      :aria-label="t('assetBrowser.sortBy')"
+      :title="t('assetBrowser.sortBy')"
       variant="textonly"
       size="icon"
       :class="
@@ -135,11 +155,10 @@ function toggleBaseModelSelection(item: FilterOption) {
       ref="sortPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
       unstyled
       :pt="{
         root: {
-          class: 'absolute z-50'
+          class: ['absolute z-50', DROPDOWN_PANEL_CLASS]
         },
         content: {
           class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
@@ -198,11 +217,10 @@ function toggleBaseModelSelection(item: FilterOption) {
       ref="ownershipPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
       unstyled
       :pt="{
         root: {
-          class: 'absolute z-50'
+          class: ['absolute z-50', DROPDOWN_PANEL_CLASS]
         },
         content: {
           class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
@@ -261,11 +279,10 @@ function toggleBaseModelSelection(item: FilterOption) {
       ref="baseModelPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
       unstyled
       :pt="{
         root: {
-          class: 'absolute z-50'
+          class: ['absolute z-50', DROPDOWN_PANEL_CLASS]
         },
         content: {
           class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
@@ -317,6 +334,8 @@ function toggleBaseModelSelection(item: FilterOption) {
       "
     >
       <Button
+        :aria-label="t('assetBrowser.listView')"
+        :title="t('assetBrowser.listView')"
         variant="textonly"
         size="unset"
         :class="
@@ -330,6 +349,8 @@ function toggleBaseModelSelection(item: FilterOption) {
         <i class="icon-[lucide--list] size-4" />
       </Button>
       <Button
+        :aria-label="t('assetBrowser.gridView')"
+        :title="t('assetBrowser.gridView')"
         variant="textonly"
         size="unset"
         :class="

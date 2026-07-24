@@ -1,105 +1,94 @@
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import MarqueeLine from './MarqueeLine.vue'
 import TextTickerMultiLine from './TextTickerMultiLine.vue'
 
-type Callback = () => void
-
-const resizeCallbacks: Callback[] = []
-const mutationCallbacks: Callback[] = []
+const hoisted = vi.hoisted(() => ({
+  widths: [] as { value: number }[]
+}))
 
 vi.mock('@vueuse/core', async () => {
   const actual = await vi.importActual('@vueuse/core')
+  const { ref } = await import('vue')
   return {
     ...actual,
-    useResizeObserver: (_target: unknown, cb: Callback) => {
-      resizeCallbacks.push(cb)
-      return { stop: vi.fn() }
-    },
-    useMutationObserver: (_target: unknown, cb: Callback) => {
-      mutationCallbacks.push(cb)
-      return { stop: vi.fn() }
+    useElementSize: () => {
+      const width = ref(0)
+      hoisted.widths.push(width)
+      return { width, height: ref(0) }
     }
   }
 })
 
-function mockElementSize(
-  el: HTMLElement,
-  clientWidth: number,
-  scrollWidth: number
-) {
-  Object.defineProperty(el, 'clientWidth', {
-    value: clientWidth,
-    configurable: true
-  })
-  Object.defineProperty(el, 'scrollWidth', {
-    value: scrollWidth,
-    configurable: true
-  })
-}
-
 describe(TextTickerMultiLine, () => {
-  let wrapper: ReturnType<typeof mount>
+  let unmountFn: () => void
 
   afterEach(() => {
-    wrapper?.unmount()
-    resizeCallbacks.length = 0
-    mutationCallbacks.length = 0
+    unmountFn?.()
+    hoisted.widths.length = 0
   })
 
-  function mountComponent(text: string) {
-    wrapper = mount(TextTickerMultiLine, {
-      slots: { default: text }
+  function renderComponent(text: string) {
+    const result = render(TextTickerMultiLine, {
+      props: { text }
     })
-    return wrapper
+    unmountFn = result.unmount
+    return {
+      ...result,
+      container: result.container as HTMLElement
+    }
   }
 
-  function getMeasureEl(): HTMLElement {
-    return wrapper.find('[aria-hidden="true"]').element as HTMLElement
+  function getMeasureEl(container: HTMLElement): HTMLElement {
+    // eslint-disable-next-line testing-library/no-node-access
+    return container.querySelector('[aria-hidden="true"]') as HTMLElement
   }
 
-  async function triggerSplitLines() {
-    resizeCallbacks.forEach((cb) => cb())
+  function getVisibleLines(container: HTMLElement): HTMLElement[] {
+    /* eslint-disable testing-library/no-node-access */
+    return Array.from(
+      container.querySelectorAll<HTMLElement>(
+        'div.overflow-hidden:not([aria-hidden])'
+      )
+    )
+    /* eslint-enable testing-library/no-node-access */
+  }
+
+  async function setWidths(textWidth: number, containerWidth: number) {
+    const [text, container] = hoisted.widths
+    text.value = textWidth
+    container.value = containerWidth
     await nextTick()
   }
 
-  it('renders slot content', () => {
-    mountComponent('Load Checkpoint')
-    expect(wrapper.text()).toContain('Load Checkpoint')
+  it('renders a single line when text fits', async () => {
+    const { container } = renderComponent('Short')
+    await setWidths(100, 200)
+
+    expect(getVisibleLines(container)).toHaveLength(1)
   })
 
-  it('renders a single MarqueeLine when text fits', async () => {
-    mountComponent('Short')
-    mockElementSize(getMeasureEl(), 200, 100)
-    await triggerSplitLines()
+  it('renders two lines when text overflows', async () => {
+    const { container } = renderComponent('Load Checkpoint Loader Simple')
+    await setWidths(300, 100)
 
-    expect(wrapper.findAllComponents(MarqueeLine)).toHaveLength(1)
-  })
-
-  it('renders two MarqueeLines when text overflows', async () => {
-    mountComponent('Load Checkpoint Loader Simple')
-    mockElementSize(getMeasureEl(), 100, 300)
-    await triggerSplitLines()
-
-    expect(wrapper.findAllComponents(MarqueeLine)).toHaveLength(2)
+    expect(getVisibleLines(container)).toHaveLength(2)
   })
 
   it('splits text at word boundary when overflowing', async () => {
-    mountComponent('Load Checkpoint Loader')
-    mockElementSize(getMeasureEl(), 100, 200)
-    await triggerSplitLines()
+    const { container } = renderComponent('Load Checkpoint Loader')
+    await setWidths(200, 100)
 
-    const lines = wrapper.findAllComponents(MarqueeLine)
-    expect(lines[0].text()).toBe('Load')
-    expect(lines[1].text()).toBe('Checkpoint Loader')
+    const lines = getVisibleLines(container)
+    expect(lines[0].textContent).toBe('Load')
+    expect(lines[1].textContent).toBe('Checkpoint Loader')
   })
 
   it('has hidden measurement element with aria-hidden', () => {
-    mountComponent('Test')
-    const measureEl = wrapper.find('[aria-hidden="true"]')
-    expect(measureEl.exists()).toBe(true)
-    expect(measureEl.classes()).toContain('invisible')
+    const { container } = renderComponent('Test')
+    const measureEl = getMeasureEl(container)
+    expect(measureEl).toBeInTheDocument()
+    expect(measureEl).toHaveClass('invisible')
   })
 })

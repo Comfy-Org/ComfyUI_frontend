@@ -7,7 +7,7 @@
       :pt="{
         root: {
           class: useSearchBoxV2
-            ? 'w-4/5 min-w-[32rem] max-w-[56rem] border-0 bg-transparent mt-[10vh] max-md:w-[95%] max-md:min-w-0 overflow-visible'
+            ? 'w-full max-w-[56rem] min-w-[32rem] max-md:min-w-0 bg-transparent border-0 overflow-visible'
             : 'invisible-dialog-root'
         },
         mask: {
@@ -36,7 +36,9 @@
             v-if="hoveredNodeDef && enableNodePreview"
             :key="hoveredNodeDef.name"
             :node-def="hoveredNodeDef"
+            :scale-factor="0.625"
             show-category-path
+            inert
             class="absolute top-0 left-full ml-3"
           />
         </div>
@@ -64,6 +66,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -127,10 +130,13 @@ function closeDialog() {
 const canvasStore = useCanvasStore()
 
 function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
-  const node = litegraphService.addNodeOnGraph(
-    nodeDef,
-    { pos: getNewNodeLocation() },
-    { ghost: useSearchBoxV2.value, dragEvent }
+  const followCursor = settingStore.get('Comfy.NodeSearchBoxImpl.FollowCursor')
+  const node = withNodeAddSource('search_modal', () =>
+    litegraphService.addNodeOnGraph(
+      nodeDef,
+      { pos: getNewNodeLocation() },
+      { ghost: useSearchBoxV2.value && followCursor, dragEvent }
+    )
   )
   if (!node) return
 
@@ -143,7 +149,7 @@ function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
   disconnectOnReset = false
 
   // Notify changeTracker - new step should be added
-  useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
+  useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
   window.requestAnimationFrame(closeDialog)
 }
 

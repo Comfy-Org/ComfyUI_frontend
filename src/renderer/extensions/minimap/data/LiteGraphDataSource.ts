@@ -14,7 +14,7 @@ export class LiteGraphDataSource extends AbstractMinimapDataSource {
     const nodeProgressStates = executionStore.nodeProgressStates
 
     return this.graph._nodes.map((node) => {
-      const nodeId = String(node.id)
+      const nodeId = node.id
       const executionState = nodeProgressStates[nodeId]?.state ?? null
 
       return {

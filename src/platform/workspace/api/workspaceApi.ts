@@ -1,14 +1,21 @@
 import axios from 'axios'
 
-import { t } from '@/i18n'
+import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
+import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import type {
+  WorkspaceId,
+  WorkspaceInviteId
+} from '@/platform/workspace/workspaceTypes'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
+import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
+export type BillingRail = 'legacy_stripe' | 'stripe'
 
 interface Workspace {
-  id: string
+  id: WorkspaceId
   name: string
   type: WorkspaceType
   created_at: string
@@ -21,11 +28,16 @@ export interface WorkspaceWithRole extends Workspace {
 }
 
 export interface Member {
-  id: string
+  id: UserId
   name: string
   email: string
   joined_at: string
   role: WorkspaceRole
+  // True when this member is the workspace's original owner/creator
+  // (member.id == workspace.created_by_user_id). Used for personal creator
+  // protections and Team-to-personal downgrade eligibility.
+  // Optional: the cloud OpenAPI does not carry this field yet.
+  is_original_owner?: boolean
 }
 
 interface PaginationInfo {
@@ -45,9 +57,8 @@ export interface ListMembersParams {
 }
 
 export interface PendingInvite {
-  id: string
+  id: WorkspaceInviteId
   email: string
-  token: string
   invited_at: string
   expires_at: string
 }
@@ -61,7 +72,7 @@ interface CreateInviteRequest {
 }
 
 interface AcceptInviteResponse {
-  workspace_id: string
+  workspace_id: WorkspaceId
   workspace_name: string
 }
 
@@ -77,12 +88,7 @@ interface ListWorkspacesResponse {
   workspaces: WorkspaceWithRole[]
 }
 
-export type SubscriptionTier =
-  | 'FREE'
-  | 'STANDARD'
-  | 'CREATOR'
-  | 'PRO'
-  | 'FOUNDERS_EDITION'
+export type { SubscriptionTier }
 export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
 type PlanAvailabilityReason =
   | 'same_plan'
@@ -113,9 +119,27 @@ export interface Plan {
   seat_summary: PlanSeatSummary
 }
 
+interface TeamCreditStopPrice {
+  list_price_cents: number
+  price_cents: number
+}
+
+interface TeamCreditStop {
+  id: string
+  credits: number
+  monthly: TeamCreditStopPrice
+  yearly: TeamCreditStopPrice
+}
+
+export interface TeamCreditStops {
+  default_stop_index: number
+  stops: TeamCreditStop[]
+}
+
 interface BillingPlansResponse {
   current_plan_slug?: string
   plans: Plan[]
+  team_credit_stops?: TeamCreditStops
 }
 
 type SubscriptionTransitionType =
@@ -126,13 +150,32 @@ type SubscriptionTransitionType =
 
 interface PreviewSubscribeRequest {
   plan_slug: string
+  team_credit_stop_id?: string
+  billing_cycle?: SubscribeBillingCycle
 }
+
+type SubscribeBillingCycle = 'monthly' | 'yearly'
 
 interface SubscribeRequest {
   plan_slug: string
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
+  /** Required for the per-credit Team plan; selects the slider stop. */
+  team_credit_stop_id?: string
+  billing_cycle?: SubscribeBillingCycle
+}
+
+export interface SubscribeOptions {
+  returnUrl?: string
+  cancelUrl?: string
+  teamCreditStopId?: string
+  billingCycle?: SubscribeBillingCycle
+}
+
+export interface PreviewSubscribeOptions {
+  teamCreditStopId?: string
+  billingCycle?: SubscribeBillingCycle
 }
 
 type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
@@ -196,17 +239,31 @@ export interface PreviewSubscribeResponse {
   new_plan: PreviewPlanInfo
 }
 
-type BillingSubscriptionStatus = 'active' | 'scheduled' | 'ended' | 'canceled'
+export type BillingSubscriptionStatus =
+  | 'active'
+  | 'scheduled'
+  | 'ended'
+  | 'canceled'
 
-type BillingStatus =
+export type BillingStatus =
   | 'awaiting_payment_method'
   | 'pending_payment'
   | 'paid'
   | 'payment_failed'
+  // A Stripe-paused subscription stays `active` on the activity axis; the pause
+  // is a payment-lifecycle fact. Not emitted until cloud#5075 ships.
+  | 'paused'
   | 'inactive'
+
+export interface CurrentTeamCreditStop {
+  id: string
+  credits_monthly: number
+  stop_usd: number
+}
 
 export interface BillingStatusResponse {
   is_active: boolean
+  billing_rail?: BillingRail
   subscription_status?: BillingSubscriptionStatus
   subscription_tier?: SubscriptionTier
   subscription_duration?: SubscriptionDuration
@@ -215,6 +272,7 @@ export interface BillingStatusResponse {
   has_funds: boolean
   cancel_at?: string
   renewal_date?: string
+  team_credit_stop?: CurrentTeamCreditStop
 }
 
 export interface BillingBalanceResponse {
@@ -233,7 +291,7 @@ interface CreateTopupRequest {
 
 type TopupStatus = 'pending' | 'completed' | 'failed'
 
-interface CreateTopupResponse {
+export interface CreateTopupResponse {
   billing_op_id: string
   topup_id: string
   status: TopupStatus
@@ -287,28 +345,11 @@ const workspaceApiClient = axios.create({
   }
 })
 
-async function getAuthHeaderOrThrow() {
-  const authHeader = await useAuthStore().getAuthHeader()
-  if (!authHeader) {
-    throw new WorkspaceApiError(
-      t('toastMessages.userNotAuthenticated'),
-      401,
-      'NOT_AUTHENTICATED'
-    )
-  }
-  return authHeader
-}
+// acceptInvite opts out via __skipUnifiedRemint (it is deliberately Firebase-authed).
+attachUnifiedRemintInterceptor(workspaceApiClient)
 
-async function getFirebaseHeaderOrThrow() {
-  const authHeader = await useAuthStore().getFirebaseAuthHeader()
-  if (!authHeader) {
-    throw new WorkspaceApiError(
-      t('toastMessages.userNotAuthenticated'),
-      401,
-      'NOT_AUTHENTICATED'
-    )
-  }
-  return authHeader
+async function getAuthHeaderOrThrow() {
+  return useAuthStore().getAuthHeaderOrThrow()
 }
 
 function handleAxiosError(err: unknown): never {
@@ -361,7 +402,7 @@ export const workspaceApi = {
    * PATCH /api/workspaces/:id
    */
   async update(
-    workspaceId: string,
+    workspaceId: WorkspaceId,
     payload: UpdateWorkspacePayload
   ): Promise<WorkspaceWithRole> {
     const headers = await getAuthHeaderOrThrow()
@@ -381,7 +422,7 @@ export const workspaceApi = {
    * Delete a workspace (owner only)
    * DELETE /api/workspaces/:id
    */
-  async delete(workspaceId: string): Promise<void> {
+  async delete(workspaceId: WorkspaceId): Promise<void> {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(
@@ -431,13 +472,31 @@ export const workspaceApi = {
    * Remove a member from the workspace.
    * DELETE /api/workspace/members/:userId
    */
-  async removeMember(userId: string): Promise<void> {
+  async removeMember(userId: UserId): Promise<void> {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(
         api.apiURL(`/workspace/members/${userId}`),
         { headers }
       )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Change a member's role (member ↔ owner).
+   * PATCH /api/workspace/members/:userId
+   */
+  async updateMemberRole(userId: UserId, role: WorkspaceRole): Promise<Member> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.patch<Member>(
+        api.apiURL(`/workspace/members/${userId}`),
+        { role },
+        { headers }
+      )
+      return response.data
     } catch (err) {
       handleAxiosError(err)
     }
@@ -482,7 +541,7 @@ export const workspaceApi = {
    * Revoke a pending invite.
    * DELETE /api/workspace/invites/:inviteId
    */
-  async revokeInvite(inviteId: string): Promise<void> {
+  async revokeInvite(inviteId: WorkspaceInviteId): Promise<void> {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(
@@ -494,18 +553,32 @@ export const workspaceApi = {
     }
   },
 
+  async resendInvite(inviteId: WorkspaceInviteId): Promise<PendingInvite> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<PendingInvite>(
+        api.apiURL(`/workspace/invites/${encodeURIComponent(inviteId)}/resend`),
+        null,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
   /**
    * Accept a workspace invite.
    * POST /api/invites/:token/accept
    * Uses Firebase auth (user identity) since the user isn't yet a workspace member.
    */
   async acceptInvite(token: string): Promise<AcceptInviteResponse> {
-    const headers = await getFirebaseHeaderOrThrow()
+    const headers = await useAuthStore().getFirebaseAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         api.apiURL(`/invites/${token}/accept`),
         null,
-        { headers }
+        { headers, __skipUnifiedRemint: true }
       )
       return response.data
     } catch (err) {
@@ -568,12 +641,19 @@ export const workspaceApi = {
    * Preview subscription change
    * POST /api/billing/preview-subscribe
    */
-  async previewSubscribe(planSlug: string): Promise<PreviewSubscribeResponse> {
+  async previewSubscribe(
+    planSlug: string,
+    options: PreviewSubscribeOptions = {}
+  ): Promise<PreviewSubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<PreviewSubscribeResponse>(
         api.apiURL('/billing/preview-subscribe'),
-        { plan_slug: planSlug } satisfies PreviewSubscribeRequest,
+        {
+          plan_slug: planSlug,
+          team_credit_stop_id: options.teamCreditStopId,
+          billing_cycle: options.billingCycle
+        } satisfies PreviewSubscribeRequest,
         { headers }
       )
       return response.data
@@ -588,8 +668,7 @@ export const workspaceApi = {
    */
   async subscribe(
     planSlug: string,
-    returnUrl?: string,
-    cancelUrl?: string
+    options: SubscribeOptions = {}
   ): Promise<SubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
@@ -597,8 +676,10 @@ export const workspaceApi = {
         api.apiURL('/billing/subscribe'),
         {
           plan_slug: planSlug,
-          return_url: returnUrl,
-          cancel_url: cancelUrl
+          return_url: options.returnUrl,
+          cancel_url: options.cancelUrl,
+          team_credit_stop_id: options.teamCreditStopId,
+          billing_cycle: options.billingCycle
         } satisfies SubscribeRequest,
         { headers }
       )

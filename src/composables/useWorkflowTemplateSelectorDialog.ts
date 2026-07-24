@@ -36,6 +36,15 @@ export const useWorkflowTemplateSelectorDialog = () => {
           options?.afterClose?.()
         },
         initialCategory
+      },
+      // The template browser is a wide layout. Without an explicit size the
+      // Reka DialogContent falls back to size 'md' (max-w-xl), clipping the
+      // filter bar so the Clear Filters button lands outside the viewport.
+      // Size it like the other large dialogs (Settings/Manager).
+      dialogComponentProps: {
+        size: 'full',
+        contentClass:
+          'w-[90vw] max-w-[1400px] sm:max-w-[1400px] h-[80vh] rounded-2xl overflow-hidden'
       }
     })
   }

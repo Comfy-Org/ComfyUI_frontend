@@ -340,7 +340,7 @@ describe('useComfyManagerStore', () => {
   ]
 
   describe('isPackEnabled', () => {
-    it.each(testCases)(
+    it.for(testCases)(
       '$expectState when $desc',
       async ({ installed, expectState, packName }) => {
         packName ??= 'name'

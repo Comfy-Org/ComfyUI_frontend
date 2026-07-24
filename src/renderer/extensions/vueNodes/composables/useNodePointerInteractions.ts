@@ -1,17 +1,22 @@
 import { onScopeDispose, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import {
+  isMiddleButtonEvent,
+  isMiddleButtonHeld,
+  isMiddlePointerInput
+} from '@/base/pointerUtils'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { NodeId } from '@/types/nodeId'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 
 export function useNodePointerInteractions(
-  nodeIdRef: MaybeRefOrGetter<string>
+  nodeIdRef: MaybeRefOrGetter<NodeId>
 ) {
   const { startDrag, endDrag, handleDrag } = useNodeDrag()
   // Use canvas interactions for proper wheel event handling and pointer event capture control
@@ -21,8 +26,15 @@ export function useNodePointerInteractions(
     useNodeEventHandlers()
   const { nodeManager } = useVueNodeLifecycle()
 
-  const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
-    if (!isMiddlePointerInput(event)) return false
+  function isPinnedNode(nodeId: NodeId): boolean {
+    return nodeManager.value?.getNode(nodeId)?.flags?.pinned ?? false
+  }
+
+  const forwardMiddlePointerIfNeeded = (
+    event: PointerEvent,
+    isMiddleInput: (event: PointerEvent) => boolean
+  ) => {
+    if (!isMiddleInput(event)) return false
     forwardEventToCanvas(event)
     return true
   }
@@ -32,7 +44,7 @@ export function useNodePointerInteractions(
   const dragGuard = useClickDragGuard(3)
 
   function onPointerdown(event: PointerEvent) {
-    if (forwardMiddlePointerIfNeeded(event)) return
+    if (forwardMiddlePointerIfNeeded(event, isMiddlePointerInput)) return
 
     // Only start drag on left-click (button 0)
     if (event.button !== 0) return
@@ -52,7 +64,7 @@ export function useNodePointerInteractions(
     }
 
     // IMPORTANT: Read from actual LGraphNode to get correct state
-    if (nodeManager.value?.getNode(nodeId)?.flags?.pinned) {
+    if (isPinnedNode(nodeId)) {
       return
     }
 
@@ -62,21 +74,26 @@ export function useNodePointerInteractions(
   }
 
   function onPointermove(event: PointerEvent) {
-    if (forwardMiddlePointerIfNeeded(event)) return
+    if (forwardMiddlePointerIfNeeded(event, isMiddleButtonHeld)) return
 
     // Don't activate drag while resizing
     if (layoutStore.isResizingVueNodes.value) return
 
     const nodeId = toValue(nodeIdRef)
 
-    if (nodeManager.value?.getNode(nodeId)?.flags?.pinned) {
+    if (isPinnedNode(nodeId)) {
       return
     }
 
     const multiSelect = isMultiSelectKey(event)
 
     const lmbDown = event.buttons & 1
-    if (lmbDown && multiSelect && !layoutStore.isDraggingVueNodes.value) {
+    if (
+      lmbDown &&
+      multiSelect &&
+      !layoutStore.isDraggingVueNodes.value &&
+      dragGuard.wasDragged(event)
+    ) {
       layoutStore.isDraggingVueNodes.value = true
       handleNodeSelect(event, nodeId)
       safeDragStart(event, nodeId)
@@ -99,7 +116,7 @@ export function useNodePointerInteractions(
     layoutStore.isDraggingVueNodes.value = false
   }
 
-  function safeDragStart(event: PointerEvent, nodeId: string) {
+  function safeDragStart(event: PointerEvent, nodeId: NodeId) {
     try {
       startDrag(event, nodeId)
     } finally {
@@ -120,7 +137,7 @@ export function useNodePointerInteractions(
   }
 
   function onPointerup(event: PointerEvent) {
-    if (forwardMiddlePointerIfNeeded(event)) return
+    if (forwardMiddlePointerIfNeeded(event, isMiddleButtonEvent)) return
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
     const canHandlePointer = shouldHandleNodePointerEvents.value
     if (!canHandlePointer) {

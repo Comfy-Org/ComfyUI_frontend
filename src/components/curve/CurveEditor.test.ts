@@ -1,86 +1,91 @@
-import { mount } from '@vue/test-utils'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { CurvePoint } from './types'
 
 import CurveEditor from './CurveEditor.vue'
 
-function mountEditor(points: CurvePoint[], extraProps = {}) {
-  return mount(CurveEditor, {
+function renderEditor(points: CurvePoint[], extraProps = {}) {
+  const { container } = render(CurveEditor, {
     props: { modelValue: points, ...extraProps }
   })
+  return { container }
 }
 
-function getCurvePath(wrapper: ReturnType<typeof mount>) {
-  return wrapper.find('[data-testid="curve-path"]')
+function getCurvePath() {
+  return screen.getByTestId('curve-path')
 }
 
 describe('CurveEditor', () => {
   it('renders SVG with curve path', () => {
-    const wrapper = mountEditor([
+    const { container } = renderEditor([
       [0, 0],
       [1, 1]
     ])
-    expect(wrapper.find('svg').exists()).toBe(true)
-    const curvePath = getCurvePath(wrapper)
-    expect(curvePath.exists()).toBe(true)
-    expect(curvePath.attributes('d')).toBeTruthy()
+    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    expect(container.querySelector('svg')).toBeInTheDocument()
+    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    const curvePath = getCurvePath()
+    expect(curvePath).toBeInTheDocument()
+    expect(curvePath.getAttribute('d')).toBeTruthy()
   })
 
   it('renders a circle for each control point', () => {
-    const wrapper = mountEditor([
+    const { container } = renderEditor([
       [0, 0],
       [0.5, 0.7],
       [1, 1]
     ])
-    expect(wrapper.findAll('circle')).toHaveLength(3)
+    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    expect(container.querySelectorAll('circle')).toHaveLength(3)
+    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
   })
 
   it('renders histogram path when provided', () => {
     const histogram = new Uint32Array(256)
     for (let i = 0; i < 256; i++) histogram[i] = i + 1
-    const wrapper = mountEditor(
+    renderEditor(
       [
         [0, 0],
         [1, 1]
       ],
       { histogram }
     )
-    const histogramPath = wrapper.find('[data-testid="histogram-path"]')
-    expect(histogramPath.exists()).toBe(true)
-    expect(histogramPath.attributes('d')).toContain('M0,1')
+    const histogramPath = screen.getByTestId('histogram-path')
+    expect(histogramPath).toBeInTheDocument()
+    expect(histogramPath.getAttribute('d')).toContain('M0,1')
   })
 
   it('does not render histogram path when not provided', () => {
-    const wrapper = mountEditor([
+    renderEditor([
       [0, 0],
       [1, 1]
     ])
-    expect(wrapper.find('[data-testid="histogram-path"]').exists()).toBe(false)
+    expect(screen.queryByTestId('histogram-path')).not.toBeInTheDocument()
   })
 
   it('returns empty path with fewer than 2 points', () => {
-    const wrapper = mountEditor([[0.5, 0.5]])
-    expect(getCurvePath(wrapper).attributes('d')).toBe('')
+    renderEditor([[0.5, 0.5]])
+    expect(getCurvePath().getAttribute('d')).toBe('')
   })
 
   it('generates path starting with M and containing L segments', () => {
-    const wrapper = mountEditor([
+    renderEditor([
       [0, 0],
       [0.5, 0.8],
       [1, 1]
     ])
-    const d = getCurvePath(wrapper).attributes('d')!
+    const d = getCurvePath().getAttribute('d')!
     expect(d).toMatch(/^M/)
     expect(d).toContain('L')
   })
 
   it('curve path only spans the x-range of control points', () => {
-    const wrapper = mountEditor([
+    renderEditor([
       [0.2, 0.3],
       [0.8, 0.9]
     ])
-    const d = getCurvePath(wrapper).attributes('d')!
+    const d = getCurvePath().getAttribute('d')!
     const xValues = d
       .split(/[ML]/)
       .filter(Boolean)
@@ -95,19 +100,22 @@ describe('CurveEditor', () => {
       [0.5, 0.5],
       [1, 1]
     ]
-    const wrapper = mountEditor(points)
-    expect(wrapper.findAll('circle')).toHaveLength(3)
+    const { container } = renderEditor(points)
 
-    await wrapper.findAll('circle')[1].trigger('pointerdown', {
+    /* eslint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
+    expect(container.querySelectorAll('circle')).toHaveLength(3)
+
+    await fireEvent.pointerDown(container.querySelectorAll('circle')[1], {
       button: 2,
       pointerId: 1
     })
-    expect(wrapper.findAll('circle')).toHaveLength(2)
+    expect(container.querySelectorAll('circle')).toHaveLength(2)
 
-    await wrapper.findAll('circle')[0].trigger('pointerdown', {
+    await fireEvent.pointerDown(container.querySelectorAll('circle')[0], {
       button: 2,
       pointerId: 1
     })
-    expect(wrapper.findAll('circle')).toHaveLength(2)
+    expect(container.querySelectorAll('circle')).toHaveLength(2)
+    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
   })
 })

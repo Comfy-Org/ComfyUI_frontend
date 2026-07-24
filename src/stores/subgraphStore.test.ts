@@ -1,22 +1,22 @@
+import { createTestingPinia } from '@pinia/testing'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import type { GlobalSubgraphData } from '@/scripts/api'
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import { api } from '@/scripts/api'
-import { app as comfyApp } from '@/scripts/app'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSubgraphStore } from '@/stores/subgraphStore'
-
-import { useLitegraphService } from '@/services/litegraphService'
 
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { createTestingPinia } from '@pinia/testing'
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { GlobalSubgraphData } from '@/scripts/api'
+import { api } from '@/scripts/api'
+import { app as comfyApp } from '@/scripts/app'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
+import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false,
@@ -108,12 +108,12 @@ describe('useSubgraphStore', () => {
     graph.add(subgraphNode)
     vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
     vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => {
-      const serializedSubgraph = {
+      const serializedSubgraph = fromPartial<ExportedSubgraph>({
         ...subgraph.serialize(),
         links: [],
         groups: [],
         version: 1
-      } as Partial<ExportedSubgraph> as ExportedSubgraph
+      })
       return {
         nodes: [subgraphNode.serialize()],
         subgraphs: [serializedSubgraph]
@@ -144,7 +144,7 @@ describe('useSubgraphStore', () => {
   })
   it('should allow subgraphs to be edited', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    await store.editBlueprint(store.typePrefix + 'test')
+    await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     //check active graph
     expect(comfyApp.loadGraphData).toHaveBeenCalled()
   })
@@ -158,11 +158,11 @@ describe('useSubgraphStore', () => {
   })
   it('should return a deep copy from getBlueprint so mutations do not corrupt the cache', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    const first = store.getBlueprint(store.typePrefix + 'test')
+    const first = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     first.nodes[0].id = -1
     first.definitions!.subgraphs![0].id = 'corrupted'
 
-    const second = store.getBlueprint(store.typePrefix + 'test')
+    const second = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     expect(second.nodes[0].id).not.toBe(-1)
     expect(second.definitions!.subgraphs![0].id).toBe('123')
   })
@@ -186,6 +186,35 @@ describe('useSubgraphStore', () => {
   it('should return false for non-existent blueprints', async () => {
     await mockFetch({ 'test.json': mockGraph })
     expect(store.isGlobalBlueprint('nonexistent')).toBe(false)
+  })
+
+  describe('isUserBlueprint', () => {
+    it('should return true for user blueprints', async () => {
+      await mockFetch({ 'test.json': mockGraph })
+      expect(store.isUserBlueprint('SubgraphBlueprint.test')).toBe(true)
+    })
+
+    it('should return false for global blueprints', async () => {
+      await mockFetch(
+        {},
+        {
+          global_bp: {
+            name: 'Global Blueprint',
+            info: { node_pack: 'comfy_essentials' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+      expect(store.isUserBlueprint('SubgraphBlueprint.global_bp')).toBe(false)
+    })
+
+    it('should return false for non-blueprint node types', () => {
+      expect(store.isUserBlueprint('KSampler')).toBe(false)
+    })
+
+    it('should return false for undefined', () => {
+      expect(store.isUserBlueprint(undefined)).toBe(false)
+    })
   })
 
   describe('blueprint badge display', () => {
@@ -264,7 +293,9 @@ describe('useSubgraphStore', () => {
         failing_blueprint: {
           name: 'Failing Blueprint',
           info: { node_pack: 'test_pack' },
-          data: Promise.reject(new Error('Network error')) as unknown as string
+          data: fromAny<string, unknown>(
+            Promise.reject(new Error('Network error'))
+          )
         }
       }
     )
@@ -389,12 +420,12 @@ describe('useSubgraphStore', () => {
 
       vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
       vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => {
-        const serializedSubgraph = {
+        const serializedSubgraph = fromPartial<ExportedSubgraph>({
           ...subgraph.serialize(),
           links: [],
           groups: [],
           version: 1
-        } as Partial<ExportedSubgraph> as ExportedSubgraph
+        })
         return {
           nodes: [subgraphNode.serialize()],
           subgraphs: [serializedSubgraph]
@@ -553,7 +584,7 @@ describe('useSubgraphStore', () => {
       const nodeDef = useNodeDefStore().nodeDefs.find(
         (d) => d.name === 'SubgraphBlueprint.bp_precedence'
       )
-      expect(nodeDef?.essentials_category).toBe('video generation')
+      expect(nodeDef?.essentials_category).toBe('Video Generation')
     })
 
     it('should pass essentials_category from GlobalSubgraphData to node def', async () => {
@@ -572,55 +603,7 @@ describe('useSubgraphStore', () => {
         (d) => d.name === 'SubgraphBlueprint.bp_essentials'
       )
       expect(nodeDef).toBeDefined()
-      expect(nodeDef?.essentials_category).toBe('image generation')
-    })
-
-    it('should extract essentials_category from subgraph definition as fallback', async () => {
-      const graphWithEssentials = {
-        ...mockGraph,
-        definitions: {
-          subgraphs: [
-            {
-              ...mockGraph.definitions?.subgraphs?.[0],
-              essentials_category: 'Image Tools'
-            }
-          ]
-        }
-      }
-      await mockFetch(
-        {},
-        {
-          bp_fallback: {
-            name: 'Fallback Blueprint',
-            info: { node_pack: 'test_pack' },
-            data: JSON.stringify(graphWithEssentials)
-          }
-        }
-      )
-      const nodeDef = useNodeDefStore().nodeDefs.find(
-        (d) => d.name === 'SubgraphBlueprint.bp_fallback'
-      )
-      expect(nodeDef).toBeDefined()
-      expect(nodeDef?.essentials_category).toBe('image tools')
-    })
-
-    it('should normalize title-cased essentials_category to canonical form', async () => {
-      await mockFetch(
-        {},
-        {
-          bp_3d: {
-            name: 'Test 3D Blueprint',
-            info: { node_pack: 'test_pack', category: 'Test Category' },
-            data: JSON.stringify(mockGraph),
-            essentials_category: '3d'
-          }
-        }
-      )
-      const nodeDef = useNodeDefStore().nodeDefs.find(
-        (d) => d.name === 'SubgraphBlueprint.bp_3d'
-      )
-      expect(nodeDef).toBeDefined()
-      expect(nodeDef?.essentials_category).toBe('3D')
+      expect(nodeDef?.essentials_category).toBe('Image Generation')
     })
   })
 

@@ -13,7 +13,8 @@
     "src/**/*.ts",
     "src/**/*.vue",
     "src/**/*.d.ts",
-    "vite.config.mts"
+    "vite.config.mts",
+    "vitest.config.mts"
   ],
   "references": []
 }

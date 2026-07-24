@@ -101,43 +101,6 @@ describe('SubgraphNode Memory Management', () => {
   })
 
   describe('Widget Promotion Memory Management', () => {
-    it('should not mutate manually injected widget references', () => {
-      const subgraph = createTestSubgraph({
-        inputs: [{ name: 'testInput', type: 'number' }]
-      })
-      const subgraphNode = createTestSubgraphNode(subgraph)
-
-      const input = subgraphNode.inputs[0]
-      const mockWidget = {
-        type: 'number',
-        name: 'promoted_widget',
-        value: 123,
-        options: {},
-        y: 0,
-        draw: vi.fn(),
-        mouse: vi.fn(),
-        computeSize: vi.fn(),
-        createCopyForNode: vi.fn().mockReturnValue({
-          type: 'number',
-          name: 'promoted_widget',
-          value: 123
-        })
-      } as Partial<IWidget> as IWidget
-
-      input._widget = mockWidget
-      input.widget = { name: 'promoted_widget' }
-      subgraphNode.widgets.push(mockWidget)
-
-      expect(input._widget).toBe(mockWidget)
-      expect(input.widget).toBeDefined()
-      expect(subgraphNode.widgets).toContain(mockWidget)
-
-      subgraphNode.removeWidget(mockWidget)
-
-      // removeWidget only affects managed promoted widgets, not manually injected entries.
-      expect(subgraphNode.widgets).toContain(mockWidget)
-    })
-
     it('should not leak widgets during reconfiguration', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'input1', type: 'number' }]

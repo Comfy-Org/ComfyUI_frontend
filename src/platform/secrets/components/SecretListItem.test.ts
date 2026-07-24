@@ -1,5 +1,8 @@
-import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { createI18n } from 'vue-i18n'
 
 import type { SecretMetadata } from '../types'
 import SecretListItem from './SecretListItem.vue'
@@ -12,6 +15,28 @@ vi.mock('../providers', () => ({
   },
   getProviderLogo: () => undefined
 }))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  escapeParameter: true,
+  messages: {
+    en: {
+      g: {
+        edit: 'Edit',
+        delete: 'Delete'
+      },
+      secrets: {
+        createdAt: 'Created {date}',
+        lastUsed: 'Last used {date}'
+      }
+    }
+  }
+})
+
+function formatExpectedDate(dateString: string): string {
+  return i18n.global.d(new Date(dateString), { dateStyle: 'medium' })
+}
 
 function createMockSecret(
   overrides: Partial<SecretMetadata> = {}
@@ -26,14 +51,15 @@ function createMockSecret(
   }
 }
 
-function mountComponent(props: {
+function renderComponent(props: {
   secret: SecretMetadata
   loading?: boolean
   disabled?: boolean
 }) {
-  return mount(SecretListItem, {
+  return render(SecretListItem, {
     props,
     global: {
+      plugins: [i18n],
       stubs: {
         Button: {
           template:
@@ -43,10 +69,6 @@ function mountComponent(props: {
       },
       directives: {
         tooltip: () => {}
-      },
-      mocks: {
-        $t: (key: string, params?: object) =>
-          `${key}${params ? JSON.stringify(params) : ''}`
       }
     }
   })
@@ -56,123 +78,207 @@ describe('SecretListItem', () => {
   describe('rendering', () => {
     it('displays secret name', () => {
       const secret = createMockSecret({ name: 'My API Key' })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).toContain('My API Key')
+      expect(screen.getByText('My API Key')).toBeInTheDocument()
     })
 
     it('displays provider label when provider exists', () => {
       const secret = createMockSecret({ provider: 'huggingface' })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).toContain('HuggingFace')
+      expect(screen.getByText('HuggingFace')).toBeInTheDocument()
     })
 
     it('displays Civitai provider label', () => {
       const secret = createMockSecret({ provider: 'civitai' })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).toContain('Civitai')
+      expect(screen.getByText('Civitai')).toBeInTheDocument()
     })
 
     it('hides provider badge when no provider', () => {
       const secret = createMockSecret({ provider: undefined })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).not.toContain('HuggingFace')
-      expect(wrapper.text()).not.toContain('Civitai')
+      expect(screen.queryByText('HuggingFace')).not.toBeInTheDocument()
+      expect(screen.queryByText('Civitai')).not.toBeInTheDocument()
     })
 
     it('displays created date', () => {
       const secret = createMockSecret({ created_at: '2024-01-15T10:00:00Z' })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).toContain('secrets.createdAt')
+      expect(
+        screen.getByText(`Created ${formatExpectedDate(secret.created_at)}`)
+      ).toBeInTheDocument()
     })
 
     it('displays last used date when available', () => {
       const secret = createMockSecret({ last_used_at: '2024-01-20T10:00:00Z' })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).toContain('secrets.lastUsed')
+      expect(
+        screen.getByText(
+          `Last used ${formatExpectedDate(secret.last_used_at!)}`
+        )
+      ).toBeInTheDocument()
     })
 
     it('hides last used when not available', () => {
       const secret = createMockSecret({ last_used_at: undefined })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).not.toContain('secrets.lastUsed')
+      expect(screen.queryByText(/^Last used /)).not.toBeInTheDocument()
+    })
+
+    it('renders formatted dates without escaped slash entities', () => {
+      const secret = createMockSecret({
+        created_at: '2026-02-06T10:00:00Z',
+        last_used_at: '2026-04-17T10:00:00Z'
+      })
+      renderComponent({ secret })
+
+      expect(screen.queryByText(/&#x2F;/)).not.toBeInTheDocument()
+      expect(
+        screen.getByText(`Created ${formatExpectedDate(secret.created_at)}`)
+      ).toBeInTheDocument()
+    })
+
+    it('renders created date for ISO string with 4-digit fractional seconds', () => {
+      const secret = createMockSecret({
+        created_at: '2026-04-18T10:04:55.6513Z'
+      })
+      renderComponent({ secret })
+
+      expect(
+        screen.getByText(`Created ${formatExpectedDate(secret.created_at)}`)
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
+    })
+
+    it('renders created date for ISO string with 1-digit fractional seconds', () => {
+      const secret = createMockSecret({
+        created_at: '2026-04-18T10:04:55.6Z'
+      })
+      renderComponent({ secret })
+
+      expect(
+        screen.getByText(`Created ${formatExpectedDate(secret.created_at)}`)
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
+    })
+
+    it('hides created line when the timestamp is unparseable', () => {
+      const secret = createMockSecret({ created_at: 'not-a-date' })
+      renderComponent({ secret })
+
+      expect(screen.queryByText(/^Created /)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
+    })
+
+    it('hides last used line when the timestamp is unparseable', () => {
+      const secret = createMockSecret({ last_used_at: 'not-a-date' })
+      renderComponent({ secret })
+
+      expect(screen.queryByText(/^Last used /)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
+    })
+
+    it('renders last used date for 4-digit fractional seconds', () => {
+      const secret = createMockSecret({
+        last_used_at: '2026-04-18T11:00:00.6513Z'
+      })
+      renderComponent({ secret })
+
+      expect(
+        screen.getByText(
+          `Last used ${formatExpectedDate(secret.last_used_at!)}`
+        )
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
   })
 
   describe('loading state', () => {
     it('shows spinner when loading', () => {
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret, loading: true })
+      const { container } = renderComponent({ secret, loading: true })
 
-      expect(wrapper.find('.pi-spinner').exists()).toBe(true)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+      expect(container.querySelector('.pi-spinner')).toBeInTheDocument()
     })
 
     it('hides action buttons when loading', () => {
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret, loading: true })
+      const { container } = renderComponent({ secret, loading: true })
 
-      expect(wrapper.find('.pi-pen-to-square').exists()).toBe(false)
-      expect(wrapper.find('.pi-trash').exists()).toBe(false)
+      expect(
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+        container.querySelector('.pi-pen-to-square')
+      ).not.toBeInTheDocument()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+      expect(container.querySelector('.pi-trash')).not.toBeInTheDocument()
     })
 
     it('shows action buttons when not loading', () => {
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret, loading: false })
+      const { container } = renderComponent({ secret, loading: false })
 
-      expect(wrapper.find('.pi-pen-to-square').exists()).toBe(true)
-      expect(wrapper.find('.pi-trash').exists()).toBe(true)
+      expect(
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+        container.querySelector('.pi-pen-to-square')
+      ).toBeInTheDocument()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+      expect(container.querySelector('.pi-trash')).toBeInTheDocument()
     })
   })
 
   describe('disabled state', () => {
     it('disables buttons when disabled prop is true', () => {
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret, disabled: true })
+      renderComponent({ secret, disabled: true })
 
-      const buttons = wrapper.findAll('button')
+      const buttons = screen.getAllByRole('button')
       buttons.forEach((button) => {
-        expect(button.attributes('disabled')).toBeDefined()
+        expect(button).toBeDisabled()
       })
     })
 
     it('enables buttons when disabled prop is false', () => {
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret, disabled: false })
+      renderComponent({ secret, disabled: false })
 
-      const buttons = wrapper.findAll('button')
+      const buttons = screen.getAllByRole('button')
       buttons.forEach((button) => {
-        expect(button.attributes('disabled')).toBeUndefined()
+        expect(button).toBeEnabled()
       })
     })
   })
 
   describe('events', () => {
     it('emits edit event when edit button clicked', async () => {
+      const user = userEvent.setup()
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret })
+      const { emitted } = renderComponent({ secret })
 
-      const editButton = wrapper.findAll('button')[0]
-      await editButton.trigger('click')
+      const buttons = screen.getAllByRole('button')
+      await user.click(buttons[0])
 
-      expect(wrapper.emitted('edit')).toBeDefined()
-      expect(wrapper.emitted('edit')!.length).toBeGreaterThanOrEqual(1)
+      expect(emitted()['edit']).toBeDefined()
+      expect(emitted()['edit']!.length).toBeGreaterThanOrEqual(1)
     })
 
     it('emits delete event when delete button clicked', async () => {
+      const user = userEvent.setup()
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret })
+      const { emitted } = renderComponent({ secret })
 
-      const deleteButton = wrapper.findAll('button')[1]
-      await deleteButton.trigger('click')
+      const buttons = screen.getAllByRole('button')
+      await user.click(buttons[1])
 
-      expect(wrapper.emitted('delete')).toBeDefined()
-      expect(wrapper.emitted('delete')!.length).toBeGreaterThanOrEqual(1)
+      expect(emitted()['delete']).toBeDefined()
+      expect(emitted()['delete']!.length).toBeGreaterThanOrEqual(1)
     })
   })
 })

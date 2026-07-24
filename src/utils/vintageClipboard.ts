@@ -1,68 +1,6 @@
-import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-
-/**
- * Serialises an array of nodes using a modified version of the old Litegraph copy (& paste) function
- * @param nodes All nodes to be serialised
- * @param graph The graph we are working in
- * @returns A serialised string of all nodes, and their connections
- * @deprecated Format not in use anywhere else.
- */
-export function serialise(nodes: LGraphNode[], graph: LGraph): string {
-  const serialisable = {
-    nodes: [],
-    links: []
-  }
-  let index = 0
-  const cloneable: LGraphNode[] = []
-
-  for (const node of nodes) {
-    if (node.clonable === false) continue
-
-    node._relative_id = index++
-    cloneable.push(node)
-  }
-
-  // Clone the node
-  for (const node of cloneable) {
-    const cloned = node.clone()
-    if (!cloned) {
-      console.warn('node type not found: ' + node.type)
-      continue
-    }
-
-    // @ts-expect-error fixme ts strict error
-    serialisable.nodes.push(cloned.serialize())
-    if (!node.inputs?.length) continue
-
-    // For inputs only, gather link details of every connection
-    for (const input of node.inputs) {
-      if (!input || input.link == null) continue
-
-      const link = graph.links.get(input.link)
-      if (!link) continue
-
-      const outNode = graph.getNodeById(link.origin_id)
-      if (!outNode) continue
-
-      // Special format for old Litegraph copy & paste only
-      // @ts-expect-error fixme ts strict error
-      serialisable.links.push([
-        outNode._relative_id,
-        link.origin_slot,
-        node._relative_id,
-        link.target_slot,
-        outNode.id
-      ])
-    }
-  }
-
-  return JSON.stringify(serialisable)
-}
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 
 /**
  * Deserialises nodes and links using a modified version of the old Litegraph (copy &) paste function
@@ -106,7 +44,7 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
       node.pos[1] += graph_mouse[1] - topLeft[1]
 
       // @ts-expect-error fixme ts strict error
-      graph.add(node, true)
+      withNodeAddSource('paste', () => graph.add(node, true))
       nodes.push(node)
     }
 

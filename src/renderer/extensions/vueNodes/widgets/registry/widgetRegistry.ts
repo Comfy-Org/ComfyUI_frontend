@@ -39,6 +39,9 @@ const WidgetGalleria = defineAsyncComponent(
 const WidgetMarkdown = defineAsyncComponent(
   () => import('../components/WidgetMarkdown.vue')
 )
+const WidgetTextPreview = defineAsyncComponent(
+  () => import('../components/WidgetTextPreview.vue')
+)
 const WidgetLegacy = defineAsyncComponent(
   () => import('../components/WidgetLegacy.vue')
 )
@@ -51,6 +54,9 @@ const AudioPreviewPlayer = defineAsyncComponent(
 const Load3D = defineAsyncComponent(
   () => import('@/components/load3d/Load3D.vue')
 )
+const Load3DAdvanced = defineAsyncComponent(
+  () => import('@/components/load3d/Load3DAdvanced.vue')
+)
 const WidgetImageCrop = defineAsyncComponent(
   () => import('@/components/imagecrop/WidgetImageCrop.vue')
 )
@@ -62,6 +68,15 @@ const WidgetCurve = defineAsyncComponent(
 )
 const WidgetPainter = defineAsyncComponent(
   () => import('@/components/painter/WidgetPainter.vue')
+)
+const WidgetRange = defineAsyncComponent(
+  () => import('@/components/range/WidgetRange.vue')
+)
+const WidgetBoundingBoxes = defineAsyncComponent(
+  () => import('@/components/boundingBoxes/WidgetBoundingBoxes.vue')
+)
+const WidgetColors = defineAsyncComponent(
+  () => import('@/components/palette/WidgetColors.vue')
 )
 
 export const FOR_TESTING = {
@@ -148,6 +163,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       essential: false
     }
   ],
+  [
+    'textPreview',
+    {
+      component: WidgetTextPreview,
+      aliases: ['TEXT_PREVIEW'],
+      essential: false
+    }
+  ],
   ['legacy', { component: WidgetLegacy, aliases: [], essential: true }],
   [
     'audiorecord',
@@ -166,6 +189,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   ['load3D', { component: Load3D, aliases: ['LOAD_3D'], essential: false }],
+  [
+    'load3DAdvanced',
+    {
+      component: Load3DAdvanced,
+      aliases: ['LOAD_3D_ADVANCED'],
+      essential: false
+    }
+  ],
   [
     'imagecrop',
     {
@@ -195,6 +226,30 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     {
       component: WidgetPainter,
       aliases: ['PAINTER'],
+      essential: false
+    }
+  ],
+  [
+    'range',
+    {
+      component: WidgetRange,
+      aliases: ['RANGE'],
+      essential: false
+    }
+  ],
+  [
+    'boundingboxes',
+    {
+      component: WidgetBoundingBoxes,
+      aliases: ['BOUNDING_BOXES'],
+      essential: false
+    }
+  ],
+  [
+    'colors',
+    {
+      component: WidgetColors,
+      aliases: ['COLORS'],
       essential: false
     }
   ]
@@ -231,9 +286,14 @@ export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
 const EXPANDING_TYPES = [
   'textarea',
   'markdown',
+  'textPreview',
   'load3D',
+  'load3DAdvanced',
   'curve',
-  'painter'
+  'painter',
+  'imagecompare',
+  'range',
+  'boundingboxes'
 ] as const
 
 export function shouldExpand(type: string): boolean {

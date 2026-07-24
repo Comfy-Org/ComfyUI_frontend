@@ -36,6 +36,7 @@ const settings = {
       alwaysTryTypes: true,
       project: [
         './tsconfig.json',
+        './browser_tests/tsconfig.json',
         './apps/*/tsconfig.json',
         './packages/*/tsconfig.json'
       ],
@@ -75,7 +76,6 @@ export default defineConfig([
   {
     ignores: [
       '.i18nrc.cjs',
-      '.nx/*',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
       'components.d.ts',
@@ -145,9 +145,7 @@ export default defineConfig([
   eslintConfigPrettier,
   // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types
   storybookConfigs['flat/recommended'],
-  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.recommended,
-  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.typescript,
   {
     plugins: {
@@ -231,23 +229,46 @@ export default defineConfig([
     }
   },
   {
-    files: ['tests-ui/**/*'],
+    name: 'comfy/no-unsafe-error-assertion',
+    files: [
+      'src/**/*.ts',
+      'src/**/*.tsx',
+      'src/**/*.vue',
+      'apps/*/src/**/*.ts',
+      'apps/*/src/**/*.tsx',
+      'apps/*/src/**/*.vue'
+    ],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
-      '@typescript-eslint/consistent-type-imports': [
+      'no-restricted-syntax': [
         'error',
-        { disallowTypeAnnotations: false }
+        {
+          // Bans `value as Error` and `value as Error & { ... }`.
+          // Use `error instanceof Error` narrowing or `toError()` from
+          // @/utils/errorUtil instead — see issue #11429.
+          selector: "TSAsExpression TSTypeReference[typeName.name='Error']",
+          message:
+            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+        },
+        {
+          // Bans `<Error>value` and `<Error & { ... }>value`.
+          selector: "TSTypeAssertion TSTypeReference[typeName.name='Error']",
+          message:
+            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+        }
       ]
     }
   },
   {
     files: ['**/*.spec.ts'],
-    ignores: ['browser_tests/tests/**/*.spec.ts'],
+    ignores: ['browser_tests/tests/**/*.spec.ts', 'apps/*/e2e/**/*.spec.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
           selector: 'Program',
-          message: '.spec.ts files are only allowed under browser_tests/tests/'
+          message:
+            '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
         }
       ]
     }
@@ -292,7 +313,13 @@ export default defineConfig([
           message:
             'Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md'
         }
-      ]
+      ],
+      // Tests routinely define stub and harness components side-by-side with
+      // the system under test and stub emits for documentation only — these
+      // production-SFC rules are noise in a test file.
+      'vue/one-component-per-file': 'off',
+      'vue/no-reserved-component-names': 'off',
+      'vue/no-unused-emit-declarations': 'off'
     }
   },
   {
@@ -344,7 +371,8 @@ export default defineConfig([
     files: [
       'src/base/**/*.{ts,vue}',
       'src/platform/**/*.{ts,vue}',
-      'src/workbench/**/*.{ts,vue}'
+      'src/workbench/**/*.{ts,vue}',
+      'src/world/**/*.{ts,vue}'
     ],
     rules: {
       'import-x/no-restricted-paths': [
@@ -372,6 +400,12 @@ export default defineConfig([
               from: './src/renderer/**',
               message:
                 'workbench/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            {
+              target: './src/world/**',
+              from: './src/lib/litegraph/**',
+              message:
+                'src/world/ must remain free of litegraph dependencies. The world layer owns canonical entity identity and must not depend on litegraph types or values.'
             }
           ]
         }
@@ -386,7 +420,14 @@ export default defineConfig([
       '@intlify/vue-i18n/no-raw-text': 'off'
     }
   },
-
+  // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
+  // TypeScript resolver cannot see but are valid at build time.
+  {
+    files: ['apps/website/**/*.{ts,mts,vue}'],
+    rules: {
+      'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
+    }
+  },
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {
@@ -408,26 +449,6 @@ export default defineConfig([
       ]
     }
   },
-  // Browser tests must use comfyPageFixture, not raw @playwright/test test
-  {
-    files: ['browser_tests/tests/**/*.spec.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: '@playwright/test',
-              importNames: ['test'],
-              message:
-                "Use `comfyPageFixture as test` from the ComfyPage fixture module instead of raw `test` from '@playwright/test'."
-            }
-          ]
-        }
-      ]
-    }
-  },
-
   // Non-composable .ts files must use the global t/d/te, not useI18n()
   {
     files: ['**/*.ts'],
@@ -457,6 +478,76 @@ export default defineConfig([
         'error',
         {
           paths: [useVirtualListRestriction]
+        }
+      ]
+    }
+  },
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@vue/test-utils',
+              message:
+                'Use @testing-library/vue with @testing-library/user-event instead.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  // Browser tests must use comfyPageFixture, not raw @playwright/test test
+  {
+    files: ['browser_tests/tests/**/*.spec.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@playwright/test',
+              importNames: ['test'],
+              message:
+                "Use `comfyPageFixture as test` from the ComfyPage fixture module instead of raw `test` from '@playwright/test'."
+            }
+          ],
+          patterns: [
+            {
+              group: ['./**', '../**'],
+              message: 'Use the @e2e/ path alias instead of relative imports.'
+            },
+            {
+              group: ['@e2e/helpers', '@e2e/helpers/*'],
+              message:
+                'browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  // Enforce @e2e/ alias — no relative imports in browser_tests (non-spec files)
+  {
+    files: ['browser_tests/**/*.ts'],
+    ignores: ['browser_tests/tests/**/*.spec.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['./**', '../**'],
+              message: 'Use the @e2e/ path alias instead of relative imports.'
+            },
+            {
+              group: ['@e2e/helpers', '@e2e/helpers/*'],
+              message:
+                'browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead.'
+            }
+          ]
         }
       ]
     }

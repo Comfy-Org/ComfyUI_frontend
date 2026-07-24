@@ -1,6 +1,7 @@
 import ConfirmBody from '@/components/dialog/confirm/ConfirmBody.vue'
 import ConfirmFooter from '@/components/dialog/confirm/ConfirmFooter.vue'
 import ConfirmHeader from '@/components/dialog/confirm/ConfirmHeader.vue'
+import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
@@ -11,7 +12,9 @@ interface ConfirmDialogOptions {
   footerProps?: ComponentAttrs<typeof ConfirmFooter>
 }
 
-export function showConfirmDialog(options: ConfirmDialogOptions = {}) {
+export function showConfirmDialog(
+  options: ConfirmDialogOptions = {}
+): DialogInstance {
   const dialogStore = useDialogStore()
   const { key, headerProps, props, footerProps } = options
   return dialogStore.showDialog({
@@ -23,11 +26,13 @@ export function showConfirmDialog(options: ConfirmDialogOptions = {}) {
     props,
     footerProps,
     dialogComponentProps: {
-      pt: {
-        header: 'py-0! px-0!',
-        content: 'p-0!',
-        footer: 'p-0!'
-      }
+      renderer: 'reka',
+      size: 'md',
+      // Confirm sections carry their own padding — zero out the dialog
+      // chrome padding, like the PrimeVue `pt` overrides did.
+      headerClass: 'p-0',
+      bodyClass: 'p-0',
+      footerClass: 'p-0'
     }
   })
 }

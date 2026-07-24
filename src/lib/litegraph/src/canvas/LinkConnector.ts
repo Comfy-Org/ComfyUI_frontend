@@ -873,10 +873,10 @@ export class LinkConnector {
   }
 
   dropOnNothing(event: CanvasPointerEvent): void {
-    remove(
+    remove<RenderLinkUnion>(
       this.renderLinks,
-      (link) => link instanceof MovingInputLink && link.disconnectOnDrop
-    ).forEach((link) => (link as MovingLinkBase).disconnect())
+      (link: RenderLink) => !!link.disconnectOnDrop
+    ).forEach((link) => (link as { disconnect(): void }).disconnect())
     if (this.renderLinks.length === 0) return
     // For external event only.
     const mayContinue = this.events.dispatch('dropped-on-canvas', event)

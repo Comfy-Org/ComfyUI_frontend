@@ -1,18 +1,31 @@
-# Automated bi-weekly workflow to bump ComfyUI frontend RC releases
-name: 'Release: Bi-weekly ComfyUI'
+# Release workflow for ComfyUI frontend: version bump → PyPI publish → ComfyUI PR.
+# Runs on a bi-weekly schedule for minor releases, or manually for patch/hotfix releases.
+name: 'Release: ComfyUI'
 
 on:
-  # Schedule for Monday at 12:00 PM PST (20:00 UTC)
+  # Bi-weekly schedule: Monday at 20:00 UTC
   schedule:
     - cron: '0 20 * * 1'
 
-  # Allow manual triggering (bypasses bi-weekly check)
+  # Manual trigger for both on-demand minor and patch/hotfix releases
   workflow_dispatch:
     inputs:
+      release_type:
+        description: 'minor = next minor version (bi-weekly cadence), patch = hotfix for current production version'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - minor
+          - patch
       comfyui_fork:
         description: 'ComfyUI fork to use for PR (e.g., Comfy-Org/ComfyUI)'
         required: false
         default: 'Comfy-Org/ComfyUI'
+        type: string
+      target_branch:
+        description: 'Optional: force a specific release branch, e.g. core/1.47 or core/2.0. Overrides the pin-derived target — use to skip a dead minor or do an out-of-cadence / major release.'
+        required: false
         type: string
 
 jobs:
@@ -40,11 +53,15 @@ jobs:
           fi
 
       - name: Summary
+        env:
+          TARGET_BRANCH_OVERRIDE: ${{ inputs.target_branch }}
         run: |
-          echo "## Bi-weekly Check" >> $GITHUB_STEP_SUMMARY
+          echo "## Release Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Is release week: ${{ steps.check.outputs.is_release_week }}" >> $GITHUB_STEP_SUMMARY
           echo "- Manual trigger: ${{ github.event_name == 'workflow_dispatch' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Release type: ${{ inputs.release_type || 'minor (scheduled)' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Target branch override: ${TARGET_BRANCH_OVERRIDE:-(none — pin-derived)}" >> $GITHUB_STEP_SUMMARY
 
   resolve-version:
     needs: check-release-week
@@ -76,6 +93,8 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          package_json_file: frontend/package.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -89,6 +108,9 @@ jobs:
       - name: Resolve release information
         id: resolve
         working-directory: frontend
+        env:
+          RELEASE_TYPE: ${{ inputs.release_type || 'minor' }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
         run: |
           set -euo pipefail
 

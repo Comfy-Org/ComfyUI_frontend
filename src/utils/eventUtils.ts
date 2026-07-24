@@ -1,3 +1,5 @@
+import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
+
 export async function extractFilesFromDragEvent(
   event: DragEvent
 ): Promise<File[]> {
@@ -9,6 +11,9 @@ export async function extractFilesFromDragEvent(
   )
 
   if (files.length > 0) return files
+
+  const asset = parseAssetInfo(event.dataTransfer)
+  const assetName = asset?.display_name ?? asset?.filename
 
   // Try loading the first URI in the transfer list
   const validTypes = ['text/uri-list', 'text/x-moz-url']
@@ -23,7 +28,7 @@ export async function extractFilesFromDragEvent(
   try {
     const response = await fetch(uri)
     const blob = await response.blob()
-    return [new File([blob], uri, { type: blob.type })]
+    return [new File([blob], assetName ?? uri, { type: blob.type })]
   } catch {
     return []
   }

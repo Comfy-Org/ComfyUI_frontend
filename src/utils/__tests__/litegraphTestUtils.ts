@@ -16,6 +16,9 @@ import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
+import type { LinkId } from '@/types/linkId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 
 /**
  * Creates a mock LGraphNode with minimal required properties
@@ -24,7 +27,7 @@ export function createMockLGraphNode(
   overrides: Partial<LGraphNode> | Record<string, unknown> = {}
 ): LGraphNode {
   const partial: Partial<LGraphNode> = {
-    id: 1,
+    id: toNodeId(1),
     pos: [0, 0],
     size: [100, 100],
     title: 'Test Node',
@@ -41,7 +44,7 @@ export function createMockPositionable(
   overrides: Partial<Positionable> = {}
 ): Positionable {
   const partial: Partial<Positionable> = {
-    id: 1,
+    id: toLinkId(1),
     pos: [0, 0],
     ...overrides
   }
@@ -55,7 +58,7 @@ export function createMockLGraphGroup(
   overrides: Partial<LGraphGroup> = {}
 ): LGraphGroup {
   const partial: Partial<LGraphGroup> = {
-    id: 1,
+    id: toLinkId(1),
     pos: [0, 0],
     boundingRect: new Rectangle(0, 0, 100, 100),
     ...overrides
@@ -179,8 +182,12 @@ export function createMockNodeInputSlot(
   overrides: Partial<INodeInputSlot> = {}
 ): INodeInputSlot {
   return {
+    name: 'input',
+    type: '*',
+    boundingRect: [0, 0, 0, 0],
+    link: null,
     ...overrides
-  } as INodeInputSlot
+  }
 }
 
 /**
@@ -190,8 +197,12 @@ export function createMockNodeOutputSlot(
   overrides: Partial<INodeOutputSlot> = {}
 ): INodeOutputSlot {
   return {
+    name: 'output',
+    type: '*',
+    boundingRect: [0, 0, 0, 0],
+    links: null,
     ...overrides
-  } as INodeOutputSlot
+  }
 }
 
 /**
@@ -256,7 +267,10 @@ export function createMockChangeTracker(
     undoQueue: [],
     redoQueue: [],
     changeCount: 0,
+    captureCanvasState: vi.fn(),
     checkState: vi.fn(),
+    deactivate: vi.fn(),
+    prepareForSave: vi.fn(),
     reset: vi.fn(),
     restore: vi.fn(),
     store: vi.fn(),
@@ -327,11 +341,11 @@ export function createMockCanvas2DContext(
 
 export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
   const partial: Partial<LLink> = {
-    id: 1,
+    id: toLinkId(1),
     type: '*',
-    origin_id: 1,
+    origin_id: toNodeId(1),
     origin_slot: 0,
-    target_id: 2,
+    target_id: toNodeId(2),
     target_slot: 0,
     _pos: [0, 0],
     ...overrides
@@ -340,7 +354,7 @@ export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
 }
 
 export function createMockLinks(links: LLink[]): LGraph['links'] {
-  const map = new Map<number, LLink>()
+  const map = new Map<LinkId, LLink>()
   const record: Record<number, LLink> = {}
   for (const link of links) {
     map.set(link.id, link)

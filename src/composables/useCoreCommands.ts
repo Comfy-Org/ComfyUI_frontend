@@ -2,8 +2,10 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
+import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
+import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
@@ -20,7 +22,8 @@ import {
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
-import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
+import { isCloud } from '@/platform/distribution/types'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
@@ -40,6 +43,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import {
   useQueueSettingsStore,
@@ -82,7 +86,10 @@ export function useCoreCommands(): ComfyCommand[] {
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
+  const modelStore = useModelStore()
+  const missingModelStore = useMissingModelStore()
   const telemetry = useTelemetry()
+  const { trackRunButton } = useRunButtonTelemetry()
   const { staticUrls, buildDocsUrl } = useExternalLink()
   const settingStore = useSettingStore()
 
@@ -306,7 +313,10 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Refresh Node Definitions',
       category: 'essentials' as const,
       function: async () => {
-        await app.refreshComboInNodes()
+        await Promise.all([app.refreshComboInNodes(), modelStore.refresh()])
+        if (!isCloud) {
+          await missingModelStore.refreshMissingModels({ reloadDefs: false })
+        }
       }
     },
     {
@@ -410,7 +420,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Canvas Toggle Lock',
       category: 'view-controls' as const,
       function: () => {
-        app.canvas.state.readOnly = !app.canvas.state.readOnly
+        app.canvas.read_only = !app.canvas.read_only
       }
     },
     {
@@ -419,7 +429,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Lock Canvas',
       category: 'view-controls' as const,
       function: () => {
-        app.canvas.state.readOnly = true
+        app.canvas.read_only = true
       }
     },
     {
@@ -427,7 +437,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-lock-open',
       label: 'Unlock Canvas',
       function: () => {
-        app.canvas.state.readOnly = false
+        app.canvas.read_only = false
       }
     },
     {
@@ -497,9 +507,9 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        useTelemetry()?.trackRunButton(metadata)
+        trackRunButton(metadata)
         if (!isActiveSubscription.value) {
-          showSubscriptionDialog()
+          showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
 
@@ -520,9 +530,9 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        useTelemetry()?.trackRunButton(metadata)
+        trackRunButton(metadata)
         if (!isActiveSubscription.value) {
-          showSubscriptionDialog()
+          showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
 
@@ -542,9 +552,9 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        useTelemetry()?.trackRunButton(metadata)
+        trackRunButton(metadata)
         if (!isActiveSubscription.value) {
-          showSubscriptionDialog()
+          showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
 
@@ -1164,7 +1174,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (description === null) return
 
         extra.BlueprintDescription = description.trim() || undefined
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
       }
     },
     {
@@ -1201,7 +1211,7 @@ export function useCoreCommands(): ComfyCommand[] {
         }
 
         extra.BlueprintSearchAliases = aliases.length > 0 ? aliases : undefined
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
       }
     },
     {
@@ -1303,14 +1313,14 @@ export function useCoreCommands(): ComfyCommand[] {
           assetType: 'models',
           title: t('sideToolbar.modelLibrary'),
           onAssetSelected: (asset) => {
-            const result = createModelNodeFromAsset(asset)
-            if (!result.success) {
+            const error = startModelNodeDragFromAsset(asset, 'asset_browser')
+            if (error) {
               toastStore.add({
                 severity: 'error',
                 summary: t('g.error'),
                 detail: t('assetBrowser.failedToCreateNode')
               })
-              console.error('Node creation failed:', result.error)
+              console.error('Node creation failed:', error)
             }
           }
         })

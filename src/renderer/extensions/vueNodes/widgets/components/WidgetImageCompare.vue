@@ -26,6 +26,7 @@
     <div
       v-if="beforeImage || afterImage"
       ref="containerRef"
+      data-testid="image-compare-viewport"
       class="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-node-component-surface py-4"
     >
       <img
@@ -33,7 +34,7 @@
         :src="afterImage"
         :alt="afterAlt"
         draggable="false"
-        class="absolute inset-0 size-full object-cover"
+        class="absolute inset-0 size-full object-contain"
       />
 
       <img
@@ -41,7 +42,7 @@
         :src="beforeImage"
         :alt="beforeAlt"
         draggable="false"
-        class="absolute inset-0 size-full object-cover"
+        class="absolute inset-0 size-full object-contain"
         :style="
           hasCompareImages
             ? { clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }
@@ -52,13 +53,27 @@
       <!-- Circular drag handle -->
       <div
         v-if="hasCompareImages"
-        class="pointer-events-none absolute top-1/2 z-10 size-6 -translate-1/2 rounded-full border-2 border-white bg-white/30 shadow-lg backdrop-blur-sm"
+        class="pointer-events-none absolute top-0 z-10 h-full w-6"
         :style="{ left: `${sliderPosition}%` }"
         role="presentation"
-      />
+      >
+        <div
+          class="absolute top-0 h-[calc(50%-var(--spacing)*3)] w-0.25 bg-white/30 backdrop-blur-sm"
+        />
+        <div
+          class="absolute top-1/2 size-6 -translate-1/2 rounded-full border-2 bg-white/30 shadow-lg backdrop-blur-sm"
+        />
+        <div
+          class="absolute bottom-0 h-[calc(50%-var(--spacing)*3)] w-0.25 bg-white/30 backdrop-blur-sm"
+        />
+      </div>
     </div>
 
-    <div v-else class="flex min-h-0 flex-1 items-center justify-center">
+    <div
+      v-else
+      class="flex min-h-0 flex-1 items-center justify-center"
+      data-testid="image-compare-empty"
+    >
       {{ $t('imageCompare.noImages') }}
     </div>
   </div>

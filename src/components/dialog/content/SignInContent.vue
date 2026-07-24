@@ -37,7 +37,7 @@
         <Message v-if="userIsInChina" severity="warn" class="mb-4">
           {{ t('auth.signup.regionRestrictionChina') }}
         </Message>
-        <SignUpForm v-else @submit="signUpWithEmail" />
+        <SignUpForm v-else ref="signUpForm" @submit="signUpWithEmail" />
       </template>
 
       <!-- Divider -->
@@ -75,6 +75,14 @@
                 : t('auth.signup.signUpWithGithub')
             }}
           </Button>
+
+          <p
+            v-if="showGoogleSsoInAppBrowserNotice"
+            class="my-0 text-xs text-muted"
+            data-testid="google-sso-in-app-browser-notice"
+          >
+            {{ t('auth.login.googleSsoInAppBrowserNotice') }}
+          </p>
         </template>
 
         <template v-if="!isCloud">
@@ -125,7 +133,7 @@
         </a>
         {{ t('auth.login.andText') }}
         <a
-          href="https://www.comfy.org/privacy"
+          href="https://www.comfy.org/privacy-policy"
           target="_blank"
           class="cursor-pointer text-blue-500"
         >
@@ -146,6 +154,7 @@ import Message from 'primevue/message'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isEmbeddedWebView } from '@/base/webviewDetection'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
@@ -172,6 +181,7 @@ const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
 const ssoAllowed = isHostWhitelisted(normalizeHost(window.location.hostname))
+const showGoogleSsoInAppBrowserNotice = isEmbeddedWebView()
 const comfyPlatformBaseUrl = computed(() =>
   configValueOrDefault(
     remoteConfig.value,
@@ -203,9 +213,21 @@ const signInWithEmail = async (values: SignInData) => {
   }
 }
 
-const signUpWithEmail = async (values: SignUpData) => {
-  if (await authActions.signUpWithEmail(values.email, values.password)) {
+const signUpForm = ref<InstanceType<typeof SignUpForm> | null>(null)
+
+const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
+  if (
+    await authActions.signUpWithEmail(
+      values.email,
+      values.password,
+      turnstileToken
+    )
+  ) {
     onSuccess()
+  } else {
+    // Signup failed while the form is still mounted: re-arm the single-use
+    // Turnstile token so the next attempt sends a fresh one.
+    signUpForm.value?.resetTurnstile()
   }
 }
 

@@ -1,0 +1,23 @@
+coverage:
+  status:
+    patch:
+      default:
+        informational: true
+
+comment:
+  layout: 'header, diff, flags, files'
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+# Carry forward the last known coverage for a flag when its upload is missing or
+# late. The `e2e` flag is uploaded by a separate workflow_run job that can fail
+# or arrive after Codecov has already computed the patch status; without this,
+# E2E-only code paths show up as patch misses and the patch status fails. See
+# https://docs.codecov.com/docs/carryforward-flags
+flags:
+  unit:
+    carryforward: true
+  e2e:
+    carryforward: true

@@ -196,12 +196,11 @@
     "tooltip": "Sets the minimum allowable light intensity value for 3D scenes. This defines the lower brightness limit that can be set when adjusting lighting in any 3D widget."
   },
   "Comfy_Load3D_PLYEngine": {
-    "name": "PLY Engine",
-    "tooltip": "Select the engine for loading PLY files. \"threejs\" uses the native Three.js PLYLoader (best for mesh PLY files). \"fastply\" uses an optimized loader for ASCII point cloud PLY files. \"sparkjs\" uses Spark.js for 3D Gaussian Splatting PLY files.",
+    "name": "Point Cloud Engine",
+    "tooltip": "Select the engine for loading point cloud PLY files. \"threejs\" uses the native Three.js PLYLoader (handles binary + ASCII, mesh-capable). \"fastply\" uses an optimized parser for ASCII PLY files. 3D Gaussian Splat PLYs are detected automatically and always rendered via sparkjs regardless of this setting.",
     "options": {
       "threejs": "threejs",
-      "fastply": "fastply",
-      "sparkjs": "sparkjs"
+      "fastply": "fastply"
     }
   },
   "Comfy_Load3D_ShowGrid": {
@@ -308,6 +307,10 @@
       "litegraph (legacy)": "litegraph (legacy)"
     }
   },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "Added nodes follow the cursor",
+    "tooltip": "When enabled, nodes added from the search box follow the cursor until clicked to place. Only applies to the default implementation."
+  },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "Node preview",
     "tooltip": "Only applies to the default implementation"
@@ -334,7 +337,7 @@
   },
   "Comfy_Pointer_ClickBufferTime": {
     "name": "Pointer click drift delay",
-    "tooltip": "After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking."
+    "tooltip": "After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.\n\nThe distance threshold (Pointer click drift) already disambiguates clicks from drags; this time threshold only matters when the pointer is held still then released. A long delay here forces every pointerdown to wait before drag begins, which feels laggy when click+dragging an unselected node. ~2 frames at 60fps is plenty."
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "Pointer click drift (maximum distance)",
@@ -422,10 +425,6 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "Validate workflows"
-  },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Auto-scale layout (Nodes 2.0)",
-    "tooltip": "Automatically scale node positions when switching to Nodes 2.0 rendering to prevent overlap"
   },
   "Comfy_VueNodes_Enabled": {
     "name": "Modern Node Design (Nodes 2.0)",

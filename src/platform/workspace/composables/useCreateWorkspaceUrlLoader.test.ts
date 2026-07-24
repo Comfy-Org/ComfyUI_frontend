@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCreateWorkspaceUrlLoader } from './useCreateWorkspaceUrlLoader'
@@ -119,7 +120,7 @@ describe('useCreateWorkspaceUrlLoader', () => {
 
     it('ignores non-string param', async () => {
       mockRouteQuery.value = {
-        create_workspace: ['array'] as unknown as string
+        create_workspace: fromAny<string, unknown>(['array'])
       }
 
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()

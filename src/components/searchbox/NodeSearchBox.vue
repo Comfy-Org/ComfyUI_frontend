@@ -92,6 +92,7 @@ import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
@@ -125,6 +126,8 @@ const placeholder = computed(() => {
 
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
+
+useSearchQueryTracking('node_modal', currentQuery, suggestions)
 
 // Debounced search tracking (500ms as per implementation plan)
 const debouncedTrackSearch = debounce((query: string) => {

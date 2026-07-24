@@ -3,6 +3,9 @@
     "dockToTop": "停靠到顶部",
     "feedback": "反馈",
     "feedbackTooltip": "反馈",
+    "freeTierPartner": "合作节点需要付费套餐",
+    "freeTierRuns": "剩余 {available} / {MAX_AVAILABLE} 次运行",
+    "freeTierRunsExhausted": "没有剩余运行次数",
     "share": "分享",
     "shareTooltip": "分享工作流"
   },
@@ -92,6 +95,7 @@
     "errorUserTokenAccessDenied": "您的 API 密钥无权访问此资源。请检查密钥权限。",
     "errorUserTokenInvalid": "您保存的 API 密钥无效或已过期。请在设置中更新密钥。",
     "failedToCreateNode": "创建节点失败。请重试或查看控制台获取详细信息。",
+    "failedToSetModelValue": "节点已添加，但其模型未能自动设置。详情请查看控制台。",
     "fileFormats": "文件格式",
     "fileName": "文件名",
     "fileSize": "文件大小",
@@ -99,6 +103,7 @@
     "findInLibrary": "模型在模型库的{type}区里",
     "finish": "完成",
     "genericLinkPlaceholder": "粘贴链接到这",
+    "gridView": "网格视图",
     "importAnother": "导入其他",
     "imported": "已导入",
     "invalidAsset": "无效资源",
@@ -106,6 +111,7 @@
     "invalidFilename": "无效文件名",
     "invalidFilenameDetail": "无法确定资源文件名。请重试。",
     "jobId": "任务ID",
+    "listView": "列表视图",
     "loadingModels": "正在加载{type}...",
     "maxFileSize": "最大文件大小：{size}",
     "maxFileSizeValue": "1 GB",
@@ -113,6 +119,13 @@
       "audioPlaceholder": "音频",
       "threeDModelPlaceholder": "3D 模型"
     },
+    "missingModelImportTypeLocked": "由于缺少模型，已锁定为{type}",
+    "missingModelImportTypeMismatchAlreadyImported": "此文件已作为{actual}导入。",
+    "missingModelImportTypeMismatchNextAction": "请尝试导入此节点可用的其他{required}模型。",
+    "missingModelImportTypeMismatchRequired": "此节点需要{required}，因此此导入无法解决缺少的模型问题。",
+    "missingModelImportTypeMismatchTitle": "此模型无法解决缺少的模型问题。",
+    "missingModelImportUnknownType": "其他模型类型",
+    "missingModelImportWillReplace": "此导入将在以下位置替换{model}：",
     "modelAssociatedWithLink": "您提供的链接的模型：",
     "modelInfo": {
       "addBaseModel": "添加基础模型...",
@@ -168,6 +181,7 @@
     "sortDefault": "默认",
     "sortPopular": "最受欢迎",
     "sortRecent": "最近",
+    "sortUnsorted": "未排序",
     "sortZA": "Z-A",
     "sortingType": "排序类型",
     "tags": "标签",
@@ -230,10 +244,13 @@
       "auth/user-disabled": "此账户已被禁用。请联系客服。",
       "auth/user-not-found": "未找到使用此电子邮件的账户。您想要创建一个新账户吗？",
       "auth/weak-password": "密码强度太弱。请使用至少6个字符的更强密码。",
-      "auth/wrong-password": "您输入的密码不正确，请重试。"
+      "auth/wrong-password": "您输入的密码不正确，请重试。",
+      "generic": "登录时出现问题，请重试。",
+      "signupBlocked": "我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。"
     },
     "login": {
       "andText": "和",
+      "backToGithubLogin": "改用 Github 注册",
       "backToLogin": "返回登录",
       "backToSocialLogin": "改用 Google 或 Github 注册",
       "confirmPasswordLabel": "确认密码",
@@ -247,6 +264,7 @@
       "freeTierBadge": "可享免费套餐",
       "freeTierDescription": "使用 Google 注册，每月可获得 {credits} 免费积分。无需绑定银行卡。",
       "freeTierDescriptionGeneric": "使用 Google 注册，每月可获得免费积分。无需绑定银行卡。",
+      "googleSsoInAppBrowserNotice": "如果您是从应用内浏览器（如 Instagram、LinkedIn）打开的，Google 登录可能无法使用。请使用 GitHub 或邮箱登录，或在设备默认浏览器中打开此页面。",
       "insecureContextWarning": "此连接不安全（HTTP）—如果继续登录，您的凭据可能会被攻击者拦截。",
       "loginButton": "登录",
       "loginWithGithub": "使用Github登录",
@@ -289,7 +307,9 @@
       "title": "需要重新认证"
     },
     "signOut": {
+      "saveFailed": "由于保存“{workflow}”失败，已取消退出登录。",
       "signOut": "退出登录",
+      "signOutAnyway": "仍然退出登录",
       "success": "成功退出登录",
       "successDetail": "您已成功退出账户。",
       "unsavedChangesMessage": "您有未保存的更改，注销后这些更改将会丢失。是否继续？",
@@ -309,12 +329,19 @@
       "signUpWithGithub": "使用Github注册",
       "signUpWithGoogle": "使用Google注册",
       "title": "创建一个账户"
+    },
+    "turnstile": {
+      "expired": "验证已过期。请重新完成验证。",
+      "failed": "验证失败。请重试。",
+      "submitBlockedHint": "请先完成上方的验证挑战以启用注册。"
     }
   },
   "batch": {
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "cancelFailed": "取消订阅失败",
+    "cancelTimeout": "订阅取消超时",
     "subscriptionFailed": "订阅更新失败",
     "subscriptionProcessing": "正在处理付款 — 正在设置您的工作区...",
     "subscriptionSuccess": "订阅更新成功",
@@ -330,8 +357,22 @@
     "x": "X",
     "y": "Y"
   },
+  "boundingBoxes": {
+    "clearAll": "全部清除",
+    "clickRegionToEdit": "点击区域进行编辑。",
+    "colors": "调色板",
+    "descLabel": "描述",
+    "descPlaceholder": "该区域的描述",
+    "grid": "网格",
+    "textLabel": "文本",
+    "textPlaceholder": "要渲染的文本（原文）",
+    "typeObj": "obj",
+    "typeText": "text"
+  },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode}模式，工作流操作",
     "app": "应用",
+    "blueprint": "蓝图",
     "clearWorkflow": "清除工作流",
     "deleteBlueprint": "删除蓝图",
     "deleteWorkflow": "删除工作流",
@@ -400,10 +441,32 @@
   "cloudForgotPassword_passwordResetSent": "密码重置邮件已发送",
   "cloudForgotPassword_sendResetLink": "发送重置链接",
   "cloudForgotPassword_title": "忘记密码",
+  "cloudHero": {
+    "nextSlide": "下一张幻灯片",
+    "previousSlide": "上一张幻灯片",
+    "slidePagerLabel": "跳转到第 {index} 张幻灯片",
+    "slides": {
+      "cloud": {
+        "description": "适合大多数希望随时随地使用、并需要经过商业授权验证模型的用户。",
+        "title": "云端"
+      },
+      "models": {
+        "description": "精选、具备商业授权的模型，开箱即用，无需配置。",
+        "title": "模型"
+      },
+      "team": {
+        "description": "立即邀请您的团队加入。可在组织内共享工作流和资源。",
+        "title": "团队"
+      },
+      "workflows": {
+        "description": "从创意到成果只需几分钟。可并排生成多个变体。",
+        "title": "工作流"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "本地继续",
     "exploreCloud": "免费试用云端",
-    "feature1Title": "每月 400 免费积分",
     "feature2Title": "随时随地，立即可用",
     "feature3Title": "模型即刻可用",
     "feature4Title": "顶级自定义节点包预装",
@@ -457,54 +520,53 @@
       "wantToRun": "想在本机运行 ComfyUI 吗？"
     },
     "survey": {
+      "errors": {
+        "answerTooLong": "请将您的回答控制在 {max} 个字符以内。",
+        "chooseAnOption": "请选择一个选项。",
+        "describeAnswer": "请描述您的答案。",
+        "selectAtLeastOne": "请至少选择一个选项。"
+      },
+      "intro": "帮助我们为您定制 ComfyUI 体验。",
       "options": {
-        "familiarity": {
-          "advanced": "高级用户（自定义工作流）",
-          "basics": "熟练掌握基础知识",
-          "expert": "专家（帮助他人）",
-          "new": "ComfyUI 新手（从未使用过）",
-          "starting": "刚刚开始（正在学习教程）"
+        "experience": {
+          "new": "ComfyUI 新手",
+          "pro": "我是高级用户",
+          "some": "我已经熟悉操作"
         },
-        "industry": {
-          "architecture": "架构",
-          "education": "教育",
-          "film_tv_animation": "电影、电视与动画",
-          "fine_art": "美术与插画",
-          "gaming": "游戏",
-          "marketing": "营销与广告",
+        "focus": {
+          "custom_nodes": "自定义节点",
+          "pipelines": "自动化流程",
+          "products": "为他人制作产品"
+        },
+        "intent": {
+          "apps_api": "应用和 API",
+          "exploring": "只是探索一下",
+          "images": "图像",
           "other": "其他",
-          "otherPlaceholder": "请指定",
-          "product_design": "产品与平面设计",
-          "software": "软件与技术"
+          "otherPlaceholder": "你想做什么？",
+          "video": "视频",
+          "workflows": "自定义工作流或流程"
         },
-        "making": {
-          "3d": "3D 资产",
-          "audio": "音频 / 音乐",
-          "custom_nodes": "自定义节点和工作流",
-          "images": "图片",
-          "video": "视频与动画"
+        "source": {
+          "community": "社区或论坛",
+          "friend": "朋友或同事",
+          "other": "其他",
+          "otherPlaceholder": "你是从哪里了解到我们的？",
+          "search": "Google / 搜索",
+          "social": "社交媒体"
         },
-        "purpose": {
-          "client": "客户工作（自由职业）",
-          "community": "社区贡献（节点、工作流等）",
-          "inhouse": "我自己的工作场所（内部）",
-          "personal": "个人项目 / 爱好",
-          "research": "学术研究"
+        "source_social": {
+          "discord": "Discord",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "reddit": "Reddit",
+          "tiktok": "TikTok",
+          "twitter": "X（推特）",
+          "youtube": "YouTube"
         }
       },
+      "otherPlaceholder": "请告诉我们更多",
       "placeholder": "调查问题占位符",
-      "questions": {
-        "familiarity": "你对 ComfyUI 有多熟悉？",
-        "industry": "您的主要行业是什么？",
-        "making": "你打算做什么？",
-        "purpose": "您主要将使用 ComfyUI 做什么？"
-      },
-      "steps": {
-        "familiarity": "你对 ComfyUI 有多熟悉？",
-        "industry": "您的主要行业是什么？",
-        "making": "你打算做什么？",
-        "purpose": "您将主要使用 ComfyUI 做什么？"
-      },
       "title": "云调研"
     }
   },
@@ -517,10 +579,11 @@
   "cloudStart_learnAboutButton": "了解云服务",
   "cloudStart_title": "几秒钟内开始创作",
   "cloudStart_wantToRun": "想在本地运行 ComfyUI 吗？",
-  "cloudSurvey_steps_familiarity": "你对 ComfyUI 有多熟悉？",
-  "cloudSurvey_steps_industry": "您的主要行业是什么？",
-  "cloudSurvey_steps_making": "你打算做什么？",
-  "cloudSurvey_steps_purpose": "您将主要使用 ComfyUI 做什么？",
+  "cloudSurvey_steps_experience": "你对 ComfyUI 有多了解？",
+  "cloudSurvey_steps_focus": "你正在构建什么？",
+  "cloudSurvey_steps_intent": "您希望用 ComfyUI 创作什么？",
+  "cloudSurvey_steps_source": "您是从哪里了解到 ComfyUI 的？",
+  "cloudSurvey_steps_source_social": "你是在哪个平台上看到的？",
   "cloudWaitlist_contactLink": "这里",
   "cloudWaitlist_questionsText": "有问题？联系我们",
   "color": {
@@ -560,10 +623,13 @@
     "namePlaceholder": "请输入你的姓名",
     "profileCreationNav": "个人资料创建",
     "startPublishingButton": "开始发布",
+    "startUpdatingButton": "更新工作流",
     "successDescription": "你现在可以上传你的工作流到创作者主页",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "你的个人主页已上线：",
     "successTitle": "看起来不错，{'@'}{username}！",
+    "updateIntroDescription": "将您的最新更改推送到 ComfyHub。分享链接和统计数据保持不变。",
+    "updateIntroTitle": "更新您的 ComfyHub 工作流",
     "uploadCover": "+ 上传封面",
     "uploadProfilePicture": "+ 上传头像",
     "uploadWorkflowButton": "上传我的工作流",
@@ -584,7 +650,11 @@
     "publishButton": "发布到 ComfyHub",
     "publishFailedDescription": "发布您的工作流时出现问题。请重试。",
     "publishFailedTitle": "发布失败",
+    "publishSuccessDescription": "您的工作流已在 ComfyHub 上上线。",
+    "publishSuccessTitle": "发布成功",
     "removeExampleImage": "移除示例图像",
+    "renameFailedDescription": "您的工作流已成功发布，但本地文件重命名失败。请再次重命名以保持一致。",
+    "renameFailedTitle": "重命名失败",
     "selectAThumbnail": "选择缩略图",
     "shareAs": "分享为",
     "showLessTags": "显示更少...",
@@ -602,6 +672,7 @@
     "thumbnailVideo": "视频",
     "title": "发布到 ComfyHub",
     "unsavedDescription": "在发布到 ComfyHub 之前，您必须先保存您的工作流。请先保存以继续。",
+    "updateButton": "更新工作流",
     "uploadAnImage": "点击浏览或拖拽图片",
     "uploadComparison": "上传前后对比",
     "uploadComparisonAfterPrompt": "后",
@@ -651,7 +722,6 @@
     "Collapse": "折叠",
     "Color": "颜色",
     "Colors": "颜色",
-    "Convert to Group Node": "转换为组节点",
     "Convert to Subgraph": "转换为子工作流",
     "Copy": "复制",
     "Copy (Clipspace)": "复制 (Clipspace)",
@@ -668,7 +738,6 @@
     "Inputs": "输入",
     "Left": "左侧",
     "Manage": "管理",
-    "Manage Group Nodes": "管理组节点",
     "Minimize Node": "最小化节点",
     "Mode": "模式",
     "Node Info": "节点信息",
@@ -712,9 +781,23 @@
     "creditsAvailable": "积分可用",
     "details": "详情",
     "eventType": "事件类型",
+    "eventTypes": {
+      "accountCreated": "账户已创建",
+      "apiNodeUsage": "合作节点使用",
+      "apiUsage": "API 使用",
+      "creditAdded": "已添加积分",
+      "gpuUsage": "GPU 使用"
+    },
     "faqs": "常见问题",
+    "insufficient": {
+      "memberCta": "好的，知道了",
+      "memberDescription": "您的团队已用完所有积分。工作区管理员需要添加更多积分以运行工作流。",
+      "memberTitle": "此工作区积分已用完"
+    },
     "invoiceHistory": "发票历史",
     "lastUpdated": "最近更新",
+    "loadEventsError": "活动加载失败。请重试。",
+    "loadEventsUnknownError": "加载活动时出现问题。请刷新后重试。",
     "messageSupport": "联系客服",
     "model": "模型",
     "purchaseCredits": "购买积分",
@@ -768,17 +851,21 @@
   },
   "dataTypes": {
     "*": "*",
+    "ARRAY": "数组",
     "AUDIO": "音频",
     "AUDIO_ENCODER": "音频编码器",
     "AUDIO_ENCODER_OUTPUT": "音频编码器输出",
     "AUDIO_RECORD": "音频录制",
+    "BACKGROUND_REMOVAL": "背景移除",
     "BOOLEAN": "布尔",
     "BOUNDING_BOX": "边界框",
+    "BOUNDING_BOXES": "边界框",
     "CAMERA_CONTROL": "相机控制",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP视觉",
     "CLIP_VISION_OUTPUT": "CLIP视觉输出",
     "COLOR": "颜色",
+    "COLORS": "颜色",
     "COMBO": "组合",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -786,12 +873,23 @@
     "CONDITIONING": "条件",
     "CONTROL_NET": "ControlNet",
     "CURVE": "曲线",
+    "DA3_GEOMETRY": "DA3_GEOMETRY",
+    "DA3_MODEL": "DA3_MODEL",
+    "DICT": "字典",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "人脸检测模型",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "浮点",
@@ -802,17 +900,22 @@
     "HISTOGRAM": "直方图",
     "HOOKS": "约束",
     "HOOK_KEYFRAMES": "约束关键帧",
+    "IC_LORA_PARAMETERS": "IC_LORA参数",
     "IMAGE": "图像",
     "IMAGECOMPARE": "图像对比",
     "INT": "整数",
+    "INTERP_MODEL": "插值模型",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "Latent",
     "LATENT_OPERATION": "Latent操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "加载3D相机",
+    "LOAD3D_MODEL_INFO": "加载3D模型信息",
     "LOAD_3D": "加载3D",
     "LORA_MODEL": "LORA模型",
     "LOSS_MAP": "损失图",
     "LUMA_CONCEPTS": "Luma 概念",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "Luma 参考",
     "MASK": "遮罩",
     "MESH": "网格",
@@ -821,9 +924,12 @@
     "MODEL": "模型",
     "MODEL_PATCH": "模型补丁",
     "MODEL_TASK_ID": "模型任务ID",
+    "MOGE_GEOMETRY": "MOGE几何",
+    "MOGE_MODEL": "MOGE模型",
     "NOISE": "噪波",
     "OPENAI_CHAT_CONFIG": "OpenAI对话文件",
     "OPENAI_INPUT_FILES": "OpenAI输入文件",
+    "OPTICAL_FLOW": "光流",
     "PHOTOMAKER": "PhotoMaker",
     "PIXVERSE_TEMPLATE": "Pixverse 模板",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -832,8 +938,12 @@
     "RECRAFT_V3_STYLE": "Recraft V3 风格",
     "RETARGET_TASK_ID": "重定向任务ID",
     "RIG_TASK_ID": "RIG_TASK_ID",
+    "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
+    "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "采样器",
     "SIGMAS": "Sigmas",
+    "SPLAT": "SPLAT",
     "STRING": "字符串",
     "STYLE_MODEL": "风格模型",
     "SVG": "SVG",
@@ -854,6 +964,16 @@
       "message": "提供的对话 ID 无效。",
       "title": "无效对话框"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUI 桌面应用正在等待使用您的账户登录。仅当您刚刚在 ComfyUI 桌面应用中开始登录时才继续。",
+    "confirmSummary": "批准桌面端登录？",
+    "expiredDetail": "登录请求已过期或已被使用。请在 ComfyUI 桌面应用中重新开始登录。",
+    "expiredSummary": "桌面端登录失败",
+    "failedDetail": "完成桌面端登录时出现问题。请在 ComfyUI 桌面应用中重新开始登录。",
+    "failedSummary": "桌面端登录失败",
+    "successDetail": "您可以返回 ComfyUI 桌面应用。",
+    "successSummary": "登录成功"
   },
   "desktopMenu": {
     "confirmQuit": "有未保存的工作流开启；任何未保存的更改都将丢失。忽略此警告并退出？",
@@ -890,64 +1010,430 @@
     "paused": "已暂停",
     "resume": "恢复下载"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "未知输入",
+      "nodeName": "此节点"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "所需的媒体输入未选择文件。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastMessageMany": "请在运行此工作流前选择缺失的媒体输入。",
+        "toastMessageWithNode": "{nodeName} 缺少所需的媒体文件。",
+        "toastTitleMany": "缺少媒体输入",
+        "toastTitleOne": "缺少媒体输入"
+      },
+      "missing_model": {
+        "displayMessageCloud": "请导入模型，或打开节点进行替换。",
+        "displayMessageOss": "请下载模型，或打开节点进行替换。",
+        "toastMessageManyCloud": "部分模型不支持，请选择其他模型。",
+        "toastMessageManyOss": "缺少 {count} 个模型文件。",
+        "toastMessageOneCloud": "此模型不支持，请选择其他模型。",
+        "toastMessageOneOss": "{nodeName} 缺少所需的模型文件。",
+        "toastTitleMany": "缺少模型",
+        "toastTitleManyCloud": "模型在云端不可用",
+        "toastTitleOneCloud": "{modelName} 在云端不可用",
+        "toastTitleOneOss": "{modelName} 缺失"
+      },
+      "missing_node": {
+        "displayMessageCloud": "所需的自定义节点在云端不支持。请用支持的节点替换。",
+        "displayMessageOss": "请安装缺失的包以使用此工作流。",
+        "toastMessageManyCloud": "此工作流使用的节点在云端不支持。",
+        "toastMessageManyOss": "{count} 个节点需要缺失的节点包。",
+        "toastMessageOneCloud": "此节点在云端不支持。",
+        "toastMessageOneOss": "此工作流使用了未安装的自定义节点。请从注册表安装或替换该节点。",
+        "toastTitleManyCloud": "节点在云端不可用",
+        "toastTitleManyOss": "缺少节点",
+        "toastTitleOneCloud": "{nodeType} 在云端不可用",
+        "toastTitleOneOss": "缺少节点：{nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "部分节点可以用其他节点替换",
+        "toastMessageMany": "{count} 种节点类型可用兼容节点替换。",
+        "toastMessageOne": "请在错误面板中用 {replacementNodeType} 替换。",
+        "toastTitleMany": "节点可被替换",
+        "toastTitleOne": "{nodeType} 可被替换"
+      }
+    },
+    "promptErrors": {
+      "missing_node_type": {
+        "desc": "缺少或不可用的节点类型。工作流可能已损坏或需要自定义节点。",
+        "title": "缺少节点类型"
+      },
+      "no_prompt": {
+        "desc": "发送到服务器的工作流数据为空。这可能是系统的意外错误。",
+        "title": "工作流数据为空"
+      },
+      "prompt_no_outputs": {
+        "desc": "工作流未包含任何输出节点（如保存图像、预览图像），无法生成结果。",
+        "title": "提示无输出"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "工作流存在无效的节点输入。请修正高亮节点后重试。",
+        "title": "提示校验失败"
+      },
+      "server_error_cloud": {
+        "desc": "服务器遇到意外错误。请稍后再试。",
+        "title": "服务器错误"
+      },
+      "server_error_local": {
+        "desc": "服务器遇到意外错误。请检查服务器日志。",
+        "title": "服务器错误"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "本次运行需要当前账户没有的访问权限。",
+        "title": "需要访问权限",
+        "toastMessage": "本次运行需要当前账户没有的访问权限。",
+        "toastTitle": "需要访问权限"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "该请求被内容审核系统拦截。请尝试更改提示词或输入内容。",
+        "title": "内容被拦截",
+        "toastMessage": "该请求被内容审核系统拦截。请尝试更改提示词或输入内容。",
+        "toastTitle": "内容被拦截"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "节点在执行过程中发生错误。",
+        "title": "执行失败",
+        "toastMessage": "该节点在执行过程中发生错误。请检查其输入或尝试其他配置。",
+        "toastTitle": "{nodeName} 执行失败"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "此工作流停止进展。请重新运行。",
+        "title": "生成停滞",
+        "toastMessage": "此工作流停止进展。请重新运行。",
+        "toastTitle": "生成停滞"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "系统无法加载此图像。",
+        "title": "图像未加载",
+        "toastMessage": "{nodeName} 的图像无法加载。请重新添加。",
+        "toastTitle": "输入图像无法加载"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "请为您的账户充值以使用此节点。",
+        "title": "余额不足",
+        "toastMessage": "请为您的账户充值以使用此节点。",
+        "toastTitle": "余额不足"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "CLIP 输入缺失或无效。请检查已连接的 checkpoint 或 CLIP 加载器。",
+        "title": "无效的 CLIP 输入",
+        "toastMessage": "{nodeName} 缺失或无效的 CLIP 输入。",
+        "toastTitle": "无效的 CLIP 输入"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "请在运行此工作流前输入提示词。",
+        "title": "提示词为空",
+        "toastMessage": "请在运行此工作流前输入提示词。",
+        "toastTitle": "提示词为空"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "工作流请求无效。请检查工作流后重试。",
+        "title": "无效的工作流请求",
+        "toastMessage": "工作流请求无效。请检查工作流后重试。",
+        "toastTitle": "无效的工作流请求"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "一个或多个所需模型无法访问。",
+        "title": "需要模型访问权限",
+        "toastMessage": "一个或多个所需模型无法访问。",
+        "toastTitle": "需要模型访问权限"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "模型无法下载。请重试。",
+        "title": "模型下载失败",
+        "toastMessage": "模型无法下载。请重试。",
+        "toastTitle": "模型下载失败"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "GPU 显存不足。请尝试降低图像分辨率或批量大小后重新运行。",
+        "title": "生成失败",
+        "toastMessage": "GPU 显存不足。请尝试降低图像分辨率或批量大小后重新运行。",
+        "toastTitle": "生成失败"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "无法准备工作流。请重新运行。",
+        "title": "准备失败",
+        "toastMessage": "无法准备工作流。请重新运行。",
+        "toastTitle": "准备失败"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "工作流准备时间过长。请重新运行。",
+        "title": "准备超时",
+        "toastMessage": "工作流准备时间过长。请重新运行。",
+        "toastTitle": "准备超时"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "当前访问量较高。请稍后重试。",
+        "title": "服务器繁忙",
+        "toastMessage": "当前访问量较高。请稍后重试。",
+        "toastTitle": "服务器繁忙"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "请求在运行完成前失败。请重试。",
+        "title": "请求失败",
+        "toastMessage": "请求在运行完成前失败。请重试。",
+        "toastTitle": "请求失败"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "运行意外结束。请重试。",
+        "title": "运行意外结束",
+        "toastMessage": "运行意外结束。请重试。",
+        "toastTitle": "运行意外结束"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "无法启动运行。请重试。",
+        "title": "无法启动运行",
+        "toastMessage": "无法启动运行。请重试。",
+        "toastTitle": "无法启动运行"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "服务器当前繁忙。请稍后重试。",
+        "title": "服务器繁忙",
+        "toastMessage": "服务器当前繁忙。请稍后重试。",
+        "toastTitle": "服务器繁忙"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "服务器在运行此工作流时停止。请重试。",
+        "title": "服务器崩溃",
+        "toastMessage": "服务器在运行此工作流时停止。请重试。",
+        "toastTitle": "服务器崩溃"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "合作节点需要 Comfy 账户。请登录以继续。",
+        "title": "需要登录",
+        "toastMessage": "合作节点需要 Comfy 账户。请登录以继续。",
+        "toastTitle": "登录以使用此节点"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "请订阅套餐以继续运行此工作流。",
+        "title": "需要订阅",
+        "toastMessage": "请订阅套餐以继续运行此工作流。",
+        "toastTitle": "需要订阅"
+      },
+      "subscription_upgrade_required": {
+        "details": "私有模型需要升级订阅：{modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "请升级您的订阅以使用此工作流中的私有模型。",
+        "title": "需要升级订阅",
+        "toastMessage": "请升级您的订阅以使用这些私有模型：{modelNames}。",
+        "toastTitle": "需要升级订阅"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "此工作流已达到最大运行时间。请尝试降低图像分辨率、批量大小或缩短工作流后重试。",
+        "title": "生成超时",
+        "toastMessage": "此工作流已达到最大运行时间。请尝试降低图像分辨率、批量大小或缩短工作流后重试。",
+        "toastTitle": "生成超时"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "服务遇到意外错误。请重试。",
+        "title": "服务错误",
+        "toastMessage": "服务遇到意外错误。请重试。",
+        "toastTitle": "服务错误"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "请为您的工作区充值以继续使用。",
+        "title": "余额不足",
+        "toastMessage": "请为您的工作区充值以继续使用。",
+        "toastTitle": "余额不足"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} 的 {inputName} 连接无效。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "无法正确读取节点连接。",
+        "title": "无效连接",
+        "toastMessage": "{nodeName} 的 {inputName} 连接无效。",
+        "toastTitle": "无效连接"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} 拒绝了 {inputName} 的值。",
+        "detailsWithRawDetails": "{nodeName} 自定义校验失败：{rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "节点拒绝了一个或多个输入值。",
+        "title": "无效输入",
+        "toastMessage": "{nodeName} 拒绝了 {inputName} 的值。",
+        "toastTitle": "无效输入"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} 是循环连接的一部分。",
+        "detailsWithRawDetails": "{nodeName} 是循环连接的一部分：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "工作流存在循环节点连接。",
+        "title": "无效工作流",
+        "toastMessage": "{nodeName} 是循环连接的一部分。",
+        "toastTitle": "无效工作流"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} 无法校验 {inputName}。",
+        "detailsWithRawDetails": "{nodeName} 无法校验 {inputName}：{rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "工作流无法校验已连接的节点。",
+        "title": "校验失败",
+        "toastMessage": "{nodeName} 无法校验 {inputName}。",
+        "toastMessageWithRawDetails": "{nodeName} 无法校验 {inputName}：{rawDetails}",
+        "toastTitle": "校验失败"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} 校验时失败。",
+        "detailsWithRawDetails": "{nodeName} 校验时失败：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "由于节点校验检查意外失败，工作流无法通过校验。",
+        "title": "校验失败",
+        "toastMessage": "{nodeName} 校验时失败。",
+        "toastMessageWithRawDetails": "{nodeName} 校验时失败：{rawDetails}",
+        "toastTitle": "校验失败"
+      },
+      "image_not_loaded": {
+        "details": "{nodeName} 的图像无法加载。请尝试重新添加。",
+        "itemLabel": "{nodeName}",
+        "message": "系统无法加载该图像。",
+        "title": "图像未加载",
+        "toastMessage": "{nodeName} 的图像无法加载。请尝试重新添加。",
+        "toastTitle": "输入图像无法加载"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} 无法将 {inputName} 转换为期望类型。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 无法转换为 {expectedType}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "输入值类型错误。",
+        "title": "无效输入",
+        "toastMessage": "{nodeName} 无法将 {inputName} 转换为期望类型。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 无法转换为 {expectedType}。",
+        "toastTitle": "无效输入"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} 缺少必需的输入：{inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "必需的输入插槽没有连接。",
+        "title": "缺少连接",
+        "toastMessage": "{nodeName} 缺少必需的输入：{inputName}",
+        "toastTitle": "缺少必需输入"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} 的 {inputName} 连接类型不兼容。",
+        "detailsWithTypes": "{nodeName} 的 {inputName} 输入需要 {expectedType}，但连接的输出为 {receivedType}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "已连接的节点输入输出类型不兼容。",
+        "title": "无效连接",
+        "toastMessage": "{nodeName} 的 {inputName} 连接类型不兼容。",
+        "toastMessageWithTypes": "{nodeName} 的 {inputName} 输入需要 {expectedType}，但连接的输出为 {receivedType}。",
+        "toastTitle": "无效连接"
+      },
+      "unknown_validation_error": {
+        "details": "{nodeName} 返回了无法识别的验证错误：{errorType}",
+        "detailsWithRawDetails": "{nodeName} 返回了无法识别的验证错误（{errorType}）：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "某个节点返回了 ComfyUI 无法识别的验证错误。",
+        "title": "验证失败",
+        "toastMessage": "{nodeName} 返回了无法识别的验证错误。",
+        "toastTitle": "验证失败"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} 的 {inputName} 值高于最大值。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 高于最大值 {maxValue}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分输入值超出允许范围。",
+        "title": "输入超出范围",
+        "toastMessage": "{nodeName} 的 {inputName} 值高于最大值。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 高于最大值 {maxValue}。",
+        "toastTitle": "输入超出范围"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} 的 {inputName} 值不被支持。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 不可用。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分输入值不适用于该节点。",
+        "title": "无效输入",
+        "toastMessage": "{nodeName} 的 {inputName} 值不被支持。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 不可用。",
+        "toastTitle": "无效输入"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} 的 {inputName} 值低于最小值。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 低于最小值 {minValue}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分输入值超出允许范围。",
+        "title": "输入超出范围",
+        "toastMessage": "{nodeName} 的 {inputName} 值低于最小值。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 低于最小值 {minValue}。",
+        "toastTitle": "输入超出范围"
+      }
+    }
+  },
   "errorDialog": {
-    "accessRestrictedMessage": "Your account is not authorized for this feature.",
-    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "您的账户无权使用此功能。",
+    "accessRestrictedTitle": "访问受限",
     "defaultTitle": "发生错误",
     "extensionFileHint": "这可能是由于以下脚本",
     "loadWorkflowTitle": "由于重新加载工作流数据出错，加载被中止",
     "noStackTrace": "无可用堆栈跟踪",
-    "promptExecutionError": "提示执行失败"
+    "promptExecutionError": "提示执行失败",
+    "queueOpenWorkflowFailedTitle": "打开工作流失败"
   },
   "errorOverlay": {
-    "errorCount": "{count}个错误",
     "missingMedia": "部分节点缺少所需输入",
     "missingModels": "缺少 {count} 个所需模型",
     "missingNodes": "部分节点缺失，需要安装",
-    "seeErrors": "查看错误",
-    "showMissingMedia": "显示缺失输入",
-    "showMissingModels": "显示缺失模型",
-    "showMissingNodes": "显示缺失节点",
-    "showSwapNodes": "显示可替换节点",
-    "swapNodes": "部分节点可以用替代项替换"
+    "multipleErrorCount": "发现 {count} 个错误",
+    "multipleErrorsMessage": "请在运行工作流前解决这些问题。",
+    "viewDetails": "查看详情"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "提交反馈",
+    "ctaText": "新的错误面板感觉如何？"
   },
   "essentials": {
-    "batchImage": "批量图像",
-    "canny": "Canny",
-    "cannyToImage": "Canny转图像",
-    "cannyToVideo": "Canny转视频",
-    "cropImage": "裁剪图像",
-    "depthToImage": "深度转图像",
-    "depthToVideo": "深度转视频",
-    "extractFrame": "提取帧",
-    "imageCompare": "图像对比",
-    "imageTo3DModel": "图像转3D模型",
-    "imageToImage": "图像转图像",
-    "imageToVideo": "图像转视频",
-    "inpaintImage": "图像修复",
-    "invert": "反转",
-    "lipsync": "唇形同步",
-    "load3DModel": "加载3D模型",
-    "loadAudio": "加载音频",
-    "loadImage": "加载图像",
-    "loadStyleLora": "加载风格（LoRA）",
-    "loadVideo": "加载视频",
-    "musicGeneration": "音乐生成",
-    "outpaintImage": "图像扩展",
-    "poseToImage": "姿态转图像",
-    "poseToVideo": "姿态转视频",
-    "removeBackground": "移除背景",
-    "resizeImage": "调整图像大小",
-    "rotate": "旋转",
-    "save3DModel": "保存3D模型",
-    "saveAudio": "保存音频",
-    "saveImage": "保存图像",
-    "saveVideo": "保存视频",
-    "text": "文本",
-    "textGenerationLLM": "文本生成（LLM）",
-    "textTo3DModel": "文本转3D模型",
-    "textToImage": "文本转图像",
-    "textToVideo": "文本转视频"
+    "3d-transform": "3D 变换",
+    "control-guidance": "控制与引导",
+    "control-image": "图像控制",
+    "editing-utilities": "编辑与工具",
+    "generate": "生成",
+    "generate-3d": "3D",
+    "generate-audio": "音频",
+    "generate-image": "图像",
+    "generate-text": "文本",
+    "generate-video": "视频",
+    "image-color": "图像色彩",
+    "image-filters-effects": "图像滤镜与特效",
+    "image-selection-masking": "图像选择与蒙版",
+    "image-transform": "图像变换",
+    "image-utilities": "图像工具",
+    "inputs-outputs": "输入与输出",
+    "jumpTo": "跳转到",
+    "video-compose": "视频合成",
+    "video-selection-masking": "视频选择与蒙版",
+    "video-transform": "视频变换"
   },
   "execution": {
     "decoding": "正在解码…",
@@ -976,6 +1462,9 @@
     "preparingExport": "正在准备导出...",
     "retryDownload": "重试下载"
   },
+  "feedback": {
+    "title": "分享反馈"
+  },
   "g": {
     "1x": "1倍",
     "2x": "2倍",
@@ -989,6 +1478,11 @@
     "amount": "数量",
     "apply": "应用",
     "architecture": "架构",
+    "arrange": "排列",
+    "arrangeAsGrid": "网格排列",
+    "arrangeHorizontally": "水平排列",
+    "arrangeSpacing": "排列间距",
+    "arrangeVertically": "垂直排列",
     "asset": "{count} 个资源",
     "audioFailedToLoad": "音频加载失败",
     "audioProgress": "音频进度",
@@ -996,13 +1490,16 @@
     "back": "返回",
     "batchRename": "批量重命名",
     "beta": "测试版",
+    "blueprints": "蓝图",
     "bookmark": "保存到库",
+    "bookmarked": "已收藏",
     "browserReservedKeybinding": "此快捷键被部分浏览器保留，可能导致意外结果。",
     "browserReservedKeybindingTooltip": "此快捷键与浏览器保留的快捷键冲突",
     "calculatingDimensions": "正在计算尺寸",
     "cancel": "取消",
     "cancelled": "已取消",
     "capture": "捕获",
+    "categories": "分类",
     "category": "类别",
     "changeKeybinding": "更改快捷键",
     "chart": "图表",
@@ -1018,6 +1515,7 @@
     "comfy": "舒适",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 徽标",
+    "comfyPackageOutdated": "已安装的 {name} 版本 {installedVersion} 低于所需版本 {requiredVersion}。",
     "comingSoon": "即将推出",
     "command": "指令",
     "commandProhibited": "命令 {command} 被禁止。请联系管理员了解更多信息。",
@@ -1050,6 +1548,7 @@
     "deleteImage": "删除图片",
     "deprecated": "已弃用",
     "description": "描述",
+    "details": "详情",
     "devOnly": "开发专用",
     "devices": "设备",
     "disableAll": "禁用全部",
@@ -1093,6 +1592,7 @@
     "extensions": "扩展",
     "failed": "失败",
     "failedToCopyJobId": "未能复制队列 ID",
+    "failedToDownloadFile": "文件下载失败",
     "failedToDownloadImage": "图片下载失败",
     "failedToDownloadVideo": "视频下载失败",
     "favorites": "收藏夹",
@@ -1139,6 +1639,7 @@
     "jobIdCopied": "队列 ID 已复制到剪贴板",
     "keybinding": "按键绑定",
     "keybindingAlreadyExists": "快捷键已存在",
+    "keybindingListAriaLabel": "快捷键：{combos}",
     "keybindingPresets": {
       "default": "默认预设",
       "deletePreset": "删除预设",
@@ -1178,6 +1679,7 @@
     "logs": "日志",
     "manageExtensions": "管理扩展",
     "markdown": "markdown",
+    "maximizeDialog": "最大化对话框",
     "micPermissionDenied": "麦克风权限被拒绝",
     "migrate": "迁移",
     "missing": "缺失",
@@ -1188,6 +1690,7 @@
     "mostRelevant": "最相关",
     "multiSelectDropdown": "多选下拉框",
     "nMoreKeybindings": "还有 + {count} 个",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "名称",
     "newFolder": "新文件夹",
     "next": "下一个",
@@ -1214,13 +1717,16 @@
     "nothingToDelete": "没有可以删除的内容",
     "nothingToDuplicate": "Nothing to duplicate",
     "nothingToRename": "没有可以重命名的内容",
+    "off": "关",
     "ok": "确定",
+    "on": "开",
     "openManager": "打开管理器",
     "openNewIssue": "打开新问题",
     "or": "或",
     "output": "输出",
     "overwrite": "覆盖",
     "partner": "合作伙伴",
+    "partnerNodes": "合作节点",
     "pause": "暂停",
     "play": "播放",
     "playPause": "开启/暂停",
@@ -1275,6 +1781,7 @@
     "resizeFromTopLeft": "从左上角调整大小",
     "resizeFromTopRight": "从右上角调整大小",
     "restart": "重新启动",
+    "restoreDialog": "还原对话框",
     "resultsCount": "找到 {count} 个结果",
     "running": "正在运行",
     "save": "保存",
@@ -1318,7 +1825,19 @@
     "switchToGridView": "切换到网格视图",
     "switchToSingleView": "切换到单图视图",
     "systemInfo": "系统信息",
+    "systemStatsArguments": "启动参数",
+    "systemStatsCloudVersion": "云端版本",
+    "systemStatsComfyUIVersion": "ComfyUI 版本",
+    "systemStatsEmbeddedPython": "嵌入式 Python",
+    "systemStatsFrontendVersion": "前端版本",
+    "systemStatsOS": "操作系统",
+    "systemStatsPyTorchVersion": "PyTorch 版本",
+    "systemStatsPythonVersion": "Python 版本",
+    "systemStatsRAMFree": "可用内存",
+    "systemStatsRAMTotal": "总内存",
+    "systemStatsTemplatesVersion": "模板版本",
     "terminal": "终端",
+    "textFailedToLoad": "文本加载失败",
     "title": "标题",
     "triggerPhrase": "触发短语",
     "unknownError": "未知错误",
@@ -1331,6 +1850,7 @@
     "updating": "更新中",
     "upload": "上传",
     "uploadAlreadyInProgress": "上传已在进行中",
+    "uploadTimedOut": "上传超时。请重试。",
     "usageHint": "使用提示",
     "use": "使用",
     "user": "用户",
@@ -1364,9 +1884,34 @@
     "zoomOptions": "缩放选项",
     "zoomOut": "缩小"
   },
-  "groupNode": {
-    "create": "创建组节点",
-    "enterName": "输入名称"
+  "hdrViewer": {
+    "channel": "通道",
+    "channels": {
+      "a": "Alpha",
+      "b": "B",
+      "g": "G",
+      "luminance": "亮度",
+      "r": "R",
+      "rgb": "RGB"
+    },
+    "clipWarnings": "裁剪警告",
+    "dither": "抖动",
+    "exposure": "曝光",
+    "failedToLoad": "HDR 图像加载失败",
+    "fitView": "适应",
+    "hdrImage": "HDR 图像",
+    "histogram": "直方图",
+    "inf": "无穷大",
+    "max": "最大值",
+    "mean": "均值",
+    "min": "最小值",
+    "nan": "NaN",
+    "normalizeExposure": "自动曝光",
+    "openInHdrViewer": "在 HDR 查看器中打开",
+    "resolution": "分辨率",
+    "sourceGamut": "源色域",
+    "stdDev": "标准差",
+    "title": "HDR 查看器"
   },
   "help": {
     "helpCenterMenu": "帮助中心菜单",
@@ -1546,7 +2091,10 @@
       "appBuilder": "应用构建器",
       "apps": "应用",
       "appsEmptyMessage": "已保存的应用会显示在这里。\n点击下方开始构建你的第一个应用。",
-      "appsEmptyMessageAction": "点击下方开始构建你的第一个应用。"
+      "appsEmptyMessageAction": "点击下方开始构建你的第一个应用。",
+      "buildAnApp": "构建应用",
+      "create": "创建",
+      "createApp": "创建应用"
     },
     "arrange": {
       "atLeastOne": "至少一个",
@@ -1559,8 +2107,6 @@
       "switchToOutputsButton": "切换到输出"
     },
     "backToWorkflow": "返回工作流",
-    "beta": "App 模式测试版 - 提供反馈",
-    "buildAnApp": "构建应用",
     "builder": {
       "exit": "退出构建器",
       "exitConfirmMessage": "您有未保存的更改将会丢失\n确定不保存直接退出吗？",
@@ -1598,6 +2144,7 @@
       "requiresGraph": "生成过程中出现问题。可能由于无效的隐藏输入、缺失资源或工作流配置问题导致。",
       "support": "联系我们的支持团队"
     },
+    "feedbackLoadError": "反馈表单加载失败，请稍后再试。",
     "giveFeedback": "提供反馈",
     "graphMode": "图形模式",
     "hasCreditCost": "需要额外积分",
@@ -1633,6 +2180,7 @@
       "orthographic": "正交",
       "perspective": "透视"
     },
+    "centerCameraOnModel": "将相机居中到模型",
     "clearRecording": "清除录制",
     "dropToLoad": "拖放 3D 模型以加载",
     "edgeThreshold": "边缘阈值",
@@ -1640,13 +2188,32 @@
     "exportModel": "导出模型",
     "exportRecording": "导出录制",
     "exportingModel": "正在导出模型...",
+    "fitToViewer": "适应视图",
     "fov": "视场",
+    "gizmo": {
+      "label": "控件",
+      "reset": "重置变换",
+      "rotate": "旋转",
+      "scale": "缩放",
+      "toggle": "控件",
+      "translate": "移动"
+    },
+    "hdri": {
+      "changeFile": "更换HDRI",
+      "intensity": "强度",
+      "label": "HDRI环境",
+      "removeFile": "移除HDRI",
+      "showAsBackground": "作为背景显示",
+      "uploadFile": "上传HDRI（.hdr, .exr）"
+    },
     "light": "灯光",
     "lightIntensity": "光照强度",
     "loadingBackgroundImage": "正在加载背景图像",
+    "loadingHDRI": "正在加载HDRI...",
     "loadingModel": "正在加载3D模型...",
     "materialMode": "材质模式",
     "materialModes": {
+      "clay": "陶土",
       "depth": "深度",
       "lineart": "线稿",
       "normal": "法线",
@@ -1654,7 +2221,29 @@
       "pointCloud": "点云",
       "wireframe": "线框"
     },
+    "menuBar": {
+      "bgColor": "背景颜色",
+      "bgImage": "背景图片",
+      "deleteRecording": "删除录制视频",
+      "downloadRecording": "下载录制视频",
+      "fov": "视场角",
+      "intensity": "强度",
+      "material": "材质",
+      "originalMaterialOnly": "仅原始材质",
+      "panorama": "全景",
+      "record": "录制",
+      "recording": "正在录制",
+      "removeBackground": "移除背景",
+      "showGrid": "显示网格",
+      "skeleton": "骨骼",
+      "startNewRecording": "开始新录制",
+      "stopRecording": "停止录制",
+      "switchProjection": "切换投影",
+      "upDirection": "上方向",
+      "videoRecordingTooltip": "场景视频录制 [mp4]"
+    },
     "model": "模型",
+    "model3d": "3D模型",
     "openIn3DViewer": "在 3D 查看器中打开",
     "panoramaMode": "全景",
     "previewOutput": "预览输出",
@@ -1694,6 +2283,10 @@
     "outdatedVersion": "这个工作流由新版 ComfyUI（{version}）创建，部分节点可能无法正常运行。",
     "outdatedVersionGeneric": "这个工作流由新版 ComfyUI 创建，部分节点可能无法正常运行。",
     "unknownVersion": "未知"
+  },
+  "logsTerminal": {
+    "loadError": "无法加载日志，请确保已更新您的ComfyUI后端。",
+    "resyncError": "后端重新连接后无法重新同步日志。请重新打开控制台以重试。"
   },
   "maintenance": {
     "None": "无",
@@ -1798,6 +2391,10 @@
     "gettingInfo": "正在获取信息...",
     "importFailedGenericError": "软件包导入失败。请查看控制台获取更多信息。",
     "inWorkflow": "在工作流中",
+    "incompatibleVersion": {
+      "message": "请将 ComfyUI-Manager 升级到 4.2.1 或更高版本。\n• 桌面端：更新 ComfyUI 桌面应用\n• 独立版：运行 pip install -U comfyui-manager 并重启\n了解更多：https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "需要升级 ComfyUI-Manager"
+    },
     "infoPanelEmpty": "点击一个项目查看信息",
     "installAllMissingNodes": "安装所有缺失节点",
     "installError": "安装错误",
@@ -1858,6 +2455,11 @@
       "importFailed": "安装错误",
       "pending": "待定",
       "unknown": "未知"
+    },
+    "survey": {
+      "error": "无法加载此调查问卷。请稍后再试。",
+      "intro": "自定义节点安装功能即将上线 Comfy Cloud。请回答几个简单问题，加入候补名单并参与功能优化。",
+      "title": "加入候补名单"
     },
     "title": "自定义节点管理器",
     "toFinishSetup": "以完成设置",
@@ -2043,7 +2645,6 @@
     "ComfyUI Issues": "ComfyUI 问题",
     "Contact Support": "联系支持",
     "Convert Selection to Subgraph": "将选中内容转换为子工作流",
-    "Convert selected nodes to group node": "将选中节点转换为组节点",
     "Copy": "复制",
     "Custom Nodes (Legacy)": "自定义节点（旧版）",
     "Custom Nodes Manager": "自定义节点管理器",
@@ -2071,7 +2672,6 @@
     "Job History": "任务历史",
     "Load Default Workflow": "加载默认工作流",
     "Lock Canvas": "锁定画布",
-    "Manage group nodes": "管理组节点",
     "Manager": "管理器",
     "Manager Menu (Legacy)": "管理菜单（旧版）",
     "Minimap": "小地图",
@@ -2137,7 +2737,6 @@
     "Toggle View Controls Bottom Panel": "切换视图控制底部面板",
     "Toggle promotion of hovered widget": "切换悬停小部件的提升",
     "Undo": "撤销",
-    "Ungroup selected group nodes": "解散选中组节点",
     "Unload Models": "卸载模型",
     "Unload Models and Execution Cache": "卸载模型和执行缓存",
     "Unlock Canvas": "解除锁定画布",
@@ -2196,38 +2795,40 @@
     "accept": "好的，我来帮忙！",
     "description": "您一直在使用此功能。能否花一点时间分享您的反馈？",
     "dontAskAgain": "不再询问",
-    "loadError": "加载问卷失败。请稍后再试。",
     "notNow": "暂不",
     "title": "帮助我们改进"
   },
   "nodeCategories": {
     "": "",
     "3d": "3d",
-    "3d_models": "3D模型",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "字节跳动",
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
     "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
+    "Sonilo": "Sonilo",
     "Sora": "Sora",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -2235,81 +2836,113 @@
     "Vidu": "Vidu",
     "Wan": "Wan万相",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_用于测试",
+    "ace": "ace",
+    "adjustments": "调整",
     "advanced": "高级",
-    "animation": "动画",
-    "api": "API",
-    "api node": "api 节点",
+    "anima": "anima",
+    "animate": "动画",
     "attention_experiments": "注意力实验",
     "audio": "音频",
+    "autoregressive": "自回归",
+    "background removal": "背景移除",
     "batch": "批处理",
+    "bernini": "bernini",
+    "boogu": "boogu",
     "camera": "相机",
-    "chroma_radiance": "chroma_radiance",
+    "chroma radiance": "chroma radiance",
     "clip": "CLIP",
+    "color": "颜色",
     "combine": "组合",
     "compositing": "合成",
     "cond pair": "条件对",
     "cond single": "条件单",
     "conditioning": "条件",
-    "context": "上下文",
     "controlnet": "ControlNet",
+    "cosmos": "cosmos",
     "create": "创建",
-    "custom_sampling": "自定义采样",
-    "dataset": "dataset",
+    "custom": "自定义",
+    "dancer": "舞者",
+    "dataset": "数据集",
     "debug": "调试",
-    "deprecated": "已弃用",
     "detection": "检测",
-    "edit_models": "编辑模型",
+    "experimental": "实验性",
+    "filters": "滤镜",
     "flux": "Flux",
+    "fun control": "趣味控制",
+    "fun inpaint": "趣味修复",
+    "geometry estimation": "几何估算",
     "gligen": "GLIGEN",
     "guidance": "引导",
     "guiders": "引导器",
+    "hidream": "HiDream",
     "hooks": "约束",
+    "humo": "humo",
+    "hunyhuan video": "混幻视频",
+    "hunyuan 3d": "混元3D",
+    "hunyuan image": "混元图像",
+    "hunyuan video": "混元视频",
     "image": "图像",
-    "inpaint": "局部重绘",
+    "infinite talk": "无限对话",
     "instructpix2pix": "InstructPix2Pix",
-    "kandinsky5": "kandinsky5",
+    "joyimage": "joyimage",
+    "kandinsky": "kandinsky",
     "latent": "Latent",
     "loaders": "加载器",
     "logic": "逻辑",
     "lotus": "lotus",
     "ltxv": "LTXV",
+    "lumina": "lumina",
     "mask": "遮罩",
-    "math": "数学",
+    "merging": "合并",
+    "mochi": "mochi",
     "model": "模型",
-    "model_merging": "模型合并",
-    "model_patches": "模型微调",
-    "model_specific": "模型特定",
+    "model specific": "模型专用",
+    "model_patches": "model_patches",
+    "move": "move",
+    "multigpu": "多GPU",
     "noise": "噪波",
     "operations": "操作",
+    "partner": "合作伙伴",
+    "patch": "补丁",
+    "phantom subject": "幻影主体",
     "photomaker": "PhotoMaker",
-    "postprocessing": "后处理",
+    "pixart": "pixart",
+    "post-processors": "后处理器",
+    "pre-processors": "预处理器",
     "preprocessors": "预处理器",
     "primitive": "基础",
     "qwen": "Qwen千问",
+    "qwen image": "qwen 图像",
     "samplers": "采样器",
     "sampling": "采样",
-    "save": "保存",
+    "scail": "scail",
     "schedulers": "调度器",
     "scheduling": "调度",
-    "sd": "sd",
-    "sd3": "SD3",
     "shader": "shader",
     "sigmas": "Sigmas",
-    "stable_cascade": "StableCascade",
-    "string": "字符串",
-    "style_model": "风格模型",
+    "sound": "声音",
+    "splat": "splat",
+    "stable audio": "stable audio",
+    "stable cascade": "stable cascade",
+    "stable diffusion": "stable diffusion",
+    "stable diffusion upscaler": "stable diffusion 放大器",
+    "stable video": "stable video",
+    "stable video 3d": "stable video 3D",
+    "stable zero123": "stable zero123",
+    "supir": "supir",
+    "sync_so": "sync.so",
     "text": "文本",
-    "textgen": "textgen",
     "training": "训练",
     "transform": "变换",
+    "triposplat": "triposplat",
     "unet": "U-Net",
-    "upscale_diffusion": "放大扩散",
     "upscaling": "放大",
-    "utils": "工具",
+    "utilities": "实用工具",
+    "vace": "vace",
     "video": "视频",
-    "video_models": "视频模型",
-    "zimage": "zimage"
+    "void": "void",
+    "wan": "wan",
+    "z-image": "z-image"
   },
   "nodeErrors": {
     "content": "节点内容错误",
@@ -2357,7 +2990,6 @@
     "replacedNode": "已替换节点：{nodeType}",
     "selectAll": "全选",
     "skipForNow": "暂时跳过",
-    "swapNodesGuide": "以下节点可以自动替换为兼容的替代项。",
     "swapNodesTitle": "交换节点",
     "unknownNode": "未知",
     "willBeReplacedBy": "此节点将被替换为："
@@ -2379,6 +3011,43 @@
     },
     "title": "您的设备不受支持"
   },
+  "oauth": {
+    "consent": {
+      "allow": "继续",
+      "appTypeNative": "本地应用",
+      "appTypeWeb": "网页应用",
+      "deny": "取消",
+      "detailsHeader": "详情",
+      "errorExpired": "此授权请求已过期或已被使用。请从客户端应用重新开始。",
+      "errorScopeBroadening": "之前批准的权限不包含此次请求。您需要使用新权限重新授权。",
+      "errorUnavailable": "此功能当前不可用。如问题持续，请联系支持。",
+      "genericError": "OAuth 请求失败。请从客户端应用重新开始。",
+      "loading": "正在加载授权请求…",
+      "missingRequest": "缺少此授权请求。请从客户端应用重新开始。",
+      "noWorkspaces": "此请求没有可用的工作区。",
+      "permissionsHeader": "权限",
+      "redirectNotice": "您将被重定向到",
+      "resourceFallback": "此应用",
+      "sessionError": "建立会话失败。请重试。",
+      "sessionErrorToastSummary": "无法继续 OAuth 登录",
+      "subtitle": "登录 {resource} 以继续",
+      "title": "{client} 请求访问权限",
+      "workspaceLabel": "工作区"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "代表您运行工作流"
+      },
+      "mcp:tools:read": {
+        "label": "查看可用的工作流工具"
+      }
+    },
+    "workspace": {
+      "member": "成员",
+      "owner": "所有者",
+      "personal": "个人"
+    }
+  },
   "openSharedWorkflow": {
     "author": "作者：",
     "copyAssetsAndOpen": "导入资源并打开工作流",
@@ -2389,7 +3058,8 @@
     "nonPublicAssetsWarningLine1": "此工作流包含非公开资源。",
     "nonPublicAssetsWarningLine2": "打开工作流时，这些资源将被导入到你的库中",
     "openWithoutImporting": "不导入直接打开",
-    "openWorkflow": "打开工作流"
+    "openWorkflow": "打开工作流",
+    "opening": "正在打开共享工作流..."
   },
   "painter": {
     "background": "背景",
@@ -2403,6 +3073,10 @@
     "tool": "工具",
     "uploadError": "上传绘图图像失败：{status} - {statusText}",
     "width": "宽度"
+  },
+  "palette": {
+    "addColor": "添加颜色",
+    "swatchTitle": "点击编辑 · 拖动排序 · 右键移除"
   },
   "progressToast": {
     "allDownloadsCompleted": "所有下载已完成",
@@ -2484,13 +3158,21 @@
     "addFavorite": "收藏",
     "advancedInputs": "高级输入",
     "bypass": "忽略",
+    "collapse": "收起",
     "color": "节点颜色",
-    "enterSubgraph": "进入子图",
+    "editSubgraph": "编辑子图",
+    "editTitle": "编辑标题",
     "errorHelp": "如需更多帮助，请{github}或{support}",
     "errorHelpGithub": "提交 GitHub 问题",
     "errorHelpSupport": "联系我们的支持团队",
+    "errorLog": "错误日志",
+    "errorNodeSummary": "{nodes} 个节点 — {count} 个错误 | {nodes} 个节点 — {count} 个错误",
+    "errorNodesSummary": "{nodes} 个节点 — {count} 个错误 | {nodes} 个节点 — {count} 个错误",
     "errors": "错误",
+    "errorsDetected": "检测到错误",
+    "errorsSummary": "{count} 个错误 | {count} 个错误",
     "executionErrorOccurred": "执行过程中发生错误。请查看“错误”标签获取详情。",
+    "expand": "展开",
     "fallbackGroupTitle": "分组",
     "fallbackNodeTitle": "节点",
     "favorites": "已收藏输入",
@@ -2523,51 +3205,40 @@
     "hideAdvancedShort": "隐藏高级选项",
     "hideInput": "隐藏输入",
     "info": "信息",
+    "infoFor": "{item} 信息",
     "inputs": "输入",
     "inputsNone": "无输入",
     "inputsNoneTooltip": "节点没有输入",
     "locateNode": "在画布上定位节点",
+    "locateNodeFor": "定位 {item}",
+    "missingMedia": {
+      "missingMediaTitle": "缺少输入"
+    },
     "missingModels": {
-      "alreadyExistsInCategory": "该模型已存在于“{category}”中",
-      "assetLoadTimeout": "模型检测超时。请尝试重新加载工作流。",
-      "cancelSelection": "取消选择",
-      "clearUrl": "清除链接",
       "collapseNodes": "隐藏引用节点",
-      "confirmSelection": "确认选择",
       "copyModelName": "复制模型名称",
       "copyUrl": "复制链接",
       "customNodeDownloadDisabled": "云环境不支持在此部分为自定义节点导入模型。请使用标准加载节点或在下方库中选择模型替代。",
       "downloadAll": "全部下载",
       "expandNodes": "显示引用节点",
       "import": "导入",
-      "importAnyway": "仍然导入",
-      "importFailed": "导入失败",
       "importNotSupported": "不支持导入",
-      "imported": "已导入",
       "importing": "正在导入...",
       "locateNode": "在画布上定位节点",
-      "metadataFetchFailed": "获取元数据失败。请检查链接后重试。",
       "missingModelsTitle": "缺失模型",
-      "or": "或",
-      "typeMismatch": "该模型似乎是“{detectedType}”。你确定要继续吗？",
-      "unknownCategory": "未知",
-      "unsupportedUrl": "仅支持 Civitai 和 Hugging Face 链接。",
-      "urlPlaceholder": "粘贴模型链接（Civitai 或 Hugging Face）",
-      "useFromLibrary": "从库中使用",
-      "usingFromLibrary": "正在从库中使用"
+      "refresh": "刷新",
+      "refreshFailed": "刷新缺失模型失败。请重试。",
+      "refreshing": "正在刷新缺失模型。",
+      "unknownCategory": "未知"
     },
     "missingNodePacks": {
       "applyChanges": "应用更改",
-      "cloudMessage": "此工作流需要 Comfy Cloud 上尚未提供的自定义节点。",
       "collapse": "收起",
       "expand": "展开",
       "installAll": "全部安装",
-      "installNodePack": "安装节点包",
       "installed": "已安装",
       "installing": "正在安装...",
       "ossManagerDisabledHint": "要安装缺失的节点，请先在你的 Python 环境中运行 {pipCmd} 安装 Node Manager，然后使用 {flag} 参数重启 ComfyUI。",
-      "ossMessage": "此工作流使用了你尚未安装的自定义节点。",
-      "searchInManager": "在节点管理器中搜索",
       "title": "缺失节点包",
       "unknownPack": "未知包",
       "unsupportedTitle": "不支持的节点包",
@@ -2583,25 +3254,14 @@
     "normal": "正常",
     "parameters": "参数",
     "pinned": "顶固",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "发送到服务器的工作流数据为空。这可能是一个意外的系统错误。"
-      },
-      "prompt_no_outputs": {
-        "desc": "工作流中没有包含任何输出节点（例如：保存图像、预览图像），无法生成结果。"
-      },
-      "server_error_cloud": {
-        "desc": "服务器遇到意外错误。请稍后再试。"
-      },
-      "server_error_local": {
-        "desc": "服务器遇到意外错误。请检查服务器日志。"
-      }
-    },
     "properties": "属性",
     "removeFavorite": "取消收藏",
     "resetAllParameters": "重置所有参数",
     "resetToDefault": "重置为默认值",
+    "resolveBeforeRun": "请在运行工作流前解决",
     "seeError": "查看错误",
+    "selectedNodeErrors": "{node} — {count} 个错误 | {node} — {count} 个错误",
+    "selectedNodesErrors": "{nodes} 个节点已选 — {count} 个错误 | {nodes} 个节点已选 — {count} 个错误",
     "settings": "设置",
     "showAdvancedInputsButton": "显示高级输入",
     "showAdvancedShort": "显示高级选项",
@@ -2621,24 +3281,35 @@
     "errors": {
       "duplicateName": "已存在同名机密",
       "duplicateProvider": "该提供商的机密已存在",
+      "fileReadFailed": "无法读取所选文件",
+      "fileTooLarge": "文件过大。请上传小于1 MB的JSON凭证",
+      "invalidJson": "文件必须包含有效的JSON对象",
       "nameRequired": "名称为必填项",
       "nameTooLong": "名称长度不能超过 255 个字符",
       "providerRequired": "提供商为必填项",
       "secretValueRequired": "机密值为必填项"
     },
+    "jsonFileHint": "粘贴JSON或上传文件。它将被加密，无法再次查看。",
+    "jsonFileHintEdit": "留空以保留当前值，或上传新JSON文件进行替换。",
+    "jsonFilePlaceholder": "上传或粘贴提供者的JSON凭证",
     "lastUsed": "上次使用 {date}",
     "modelProviders": "模型提供商",
     "name": "名称",
     "namePlaceholder": "例如：我的 API 密钥",
     "noSecrets": "尚未存储任何机密。添加您的第一个 API 密钥以开始使用。",
     "provider": "提供商",
+    "providerHelp": {
+      "gemini": "请输入您的 Google Gemini API 密钥。您可以在 Google AI Studio 生成。",
+      "runway": "请输入您的 Runway API 密钥。您可以在 Runway 账户设置的 API 密钥中找到。"
+    },
     "providerHint": "可选。选择提供商可自动使用令牌。",
     "secretValue": "机密值",
     "secretValueHint": "该值将被加密，之后无法再次查看。",
     "secretValueHintEdit": "如需保留当前值，请留空。",
     "secretValuePlaceholder": "请输入您的 API 密钥",
     "secretValuePlaceholderEdit": "输入新值以更改",
-    "title": "API 密钥与机密"
+    "title": "API 密钥与机密",
+    "uploadJsonFile": "上传JSON文件"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "绕过分组节点",
@@ -2853,6 +3524,7 @@
     "Other": "其他",
     "PLY": "PLY",
     "PlanCredits": "计划与积分",
+    "PointCloud": "点云",
     "Pointer": "指针",
     "Queue": "队列",
     "QueueButton": "执行按钮",
@@ -2989,7 +3661,6 @@
       "blueprints": "蓝图",
       "custom": "自定义",
       "essentials": "基础",
-      "filter": "筛选",
       "filterOptions": {
         "blueprints": "蓝图",
         "comfyNodes": "Comfy 节点",
@@ -3006,11 +3677,13 @@
         "sourceDesc": "按来源类型分组（核心，自定义，API）"
       },
       "noBookmarkedNodes": "暂无收藏",
+      "noMatchingNodes": "没有与“{query}”匹配的节点",
       "resetView": "重置视图为默认",
       "sections": {
         "bookmarked": "已收藏",
         "comfyBlueprints": "Comfy 蓝图",
         "comfyNodes": "Comfy 节点",
+        "essentialNodes": "基础节点",
         "extensions": "扩展",
         "favoriteNode": "收藏节点",
         "favorites": "收藏夹",
@@ -3094,6 +3767,7 @@
       "deleteFailedTitle": "删除失败",
       "deleted": "工作流已删除",
       "dirtyClose": "以下文件已被更改。您想在关闭之前保存它们吗？",
+      "dirtyCloseAnyway": "仍然关闭",
       "dirtyCloseHint": "按住 Shift 关闭而不提示",
       "dirtyCloseTitle": "保存更改？",
       "workflowTreeType": {
@@ -3135,6 +3809,10 @@
     "addApiCredits": "添加API额度",
     "addCredits": "添加积分",
     "addCreditsLabel": "随时获取更多积分",
+    "additionalCredits": "额外点数",
+    "additionalCreditsInUse": "正在使用",
+    "additionalCreditsInfo": "关于额外点数",
+    "additionalCreditsTooltip": "您在套餐基础上添加的点数。月度点数用完后使用。每次购买后一年内有效。",
     "benefits": {
       "benefit1": "合作伙伴节点的月度积分 — 按需充值",
       "benefit1FreeTier": "每月更多积分，随时补充",
@@ -3156,26 +3834,55 @@
       "keepSubscription": "保留订阅",
       "title": "取消订阅"
     },
-    "cancelSubscription": "取消订阅",
+    "cancelPlan": "取消套餐",
     "cancelSuccess": "订阅取消成功",
     "canceled": "已取消",
     "canceledCard": {
       "description": "您将不再被扣费。您的功能将在 {date} 前保持激活。",
       "title": "您的订阅已被取消"
     },
+    "changePlan": "更改套餐",
     "changeTo": "更改为 {plan}",
     "comfyCloud": "Comfy 云",
     "comfyCloudLogo": "Comfy Cloud Logo",
     "contactOwnerToSubscribe": "请联系工作区所有者进行订阅",
     "contactUs": "联系我们",
+    "creditSliderSave": "节省 {percent}%（{amount}）",
+    "creditsLeftOfTotal": "剩余 {remaining}，共 {total}",
     "creditsRemainingThisMonth": "本月剩余积分",
     "creditsRemainingThisYear": "今年剩余积分",
+    "creditsUsed": "已用 {used}",
     "creditsYouveAdded": "你获得的积分",
     "currentPlan": "当前订阅计划",
     "customLoRAsLabel": "导入您的 Lora",
     "description": "选择最适合您的订阅计划",
     "descriptionWorkspace": "为您的工作区选择最佳方案",
+    "downgrade": {
+      "body": "该工作区的所有其他成员将被立即移除。",
+      "confirm": "更改方案",
+      "confirmationPhrase": "我已了解",
+      "confirmationPrompt": "请输入“{phrase}”以确认。",
+      "failed": "更改方案失败",
+      "failedAfterMemberRemoval": "团队成员已被移除，但方案更改未完成 — 请重试或联系客服",
+      "memberRemovalFailed": "无法将 {email} 从团队移除 — 部分成员可能已被移除，您的方案未更改",
+      "notAllowed": "无法进行此方案更改",
+      "paymentMethodRequired": "更改方案需要添加支付方式",
+      "paymentPageBlocked": "无法打开支付页面 — 请重试",
+      "title": "切换到 {plan} 方案？"
+    },
+    "endsOnDate": "将于 {date} 结束",
+    "enterprise": {
+      "cta": "了解更多",
+      "flexibility": "需要更多灵活性或定制功能？",
+      "name": "企业版",
+      "needMoreMembers": "需要更多成员？",
+      "reachOut": "请联系我们，安排沟通。"
+    },
+    "everythingInPlus": "包含 {plan} 的所有内容，并额外提供：",
     "expiresDate": "于 {date} 过期",
+    "freePerks": {
+      "maxRuntime": "最长运行时长 {duration}"
+    },
     "freeTier": {
       "description": "您的免费套餐每月包含 {credits} 积分，可体验 Comfy Cloud。",
       "descriptionGeneric": "您的免费套餐每月包含积分额度，可体验 Comfy Cloud。",
@@ -3193,10 +3900,17 @@
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "对企业级有疑问？",
+    "inactive": {
+      "memberCta": "好的，知道了",
+      "memberDescription": "请联系您的工作区所有者，重新激活订阅以运行工作流。",
+      "memberRunTooltip": "请联系您的工作区所有者重新订阅",
+      "memberTitle": "此工作区的订阅已失效",
+      "runLabel": "运行"
+    },
     "inviteUpTo": "可邀请多达",
     "invoiceHistory": "发票历史",
     "learnMore": "了解更多",
-    "managePayment": "管理付款",
+    "manageBilling": "管理账单",
     "managePlan": "管理订阅",
     "manageSubscription": "管理订阅",
     "maxDuration": {
@@ -3210,50 +3924,99 @@
     "maxMembersLabel": "最大成员数",
     "member": "成员",
     "memberCount": "{count} 名成员",
-    "membersLabel": "最多 {count} 名成员",
     "messageSupport": "消息支持",
     "monthly": "月度",
     "monthlyBonusDescription": "每月积分奖励",
+    "monthlyCredits": "每月积分",
     "monthlyCreditsInfo": "积分每月刷新，不会保留",
     "monthlyCreditsLabel": "每月积分",
     "monthlyCreditsPerMemberLabel": "每成员每月积分",
     "monthlyCreditsRollover": "这些积分将结转到下个月",
+    "monthlyCreditsUsedUpDescription": "您现在正在消耗额外点数。",
+    "monthlyCreditsUsedUpTitle": "本月点数已用完。补充 {date}",
+    "monthlyCreditsUsedUpTitleNoDate": "本月点数已用完",
+    "monthlyUsageProgress": "本月已用 {used} / {total} 点数",
     "mostPopular": "最受欢迎",
     "needTeamWorkspace": "需要团队工作区？",
     "nextBillingCycle": "下一个计费周期",
-    "nextMonthInvoice": "下月账单",
+    "outOfCreditsDescription": "请添加更多点数以继续生成。",
+    "outOfCreditsTitle": "您的点数已用完。点数将于 {date} 补充",
+    "outOfCreditsTitleNoDate": "您的点数已用完",
     "partnerNodesBalance": "\"合作伙伴节点\"积分余额",
     "partnerNodesCredits": "合作伙伴节点积分",
     "partnerNodesDescription": "用于运行商业/专有模型",
+    "partnerNodesPricingTable": "合作节点价格表",
     "perMonth": "美元 / 月",
+    "personalHeader": "个人方案仅限个人使用。{action}",
+    "personalHeaderAction": "如需添加团队成员，请订阅团队方案。",
     "personalWorkspace": "个人工作区",
+    "planLoadError": "无法加载您的套餐详情。",
+    "planLoadErrorRetry": "重试",
+    "planScope": {
+      "personal": "个人使用",
+      "team": "团队使用"
+    },
     "plansAndPricing": "订阅和定价",
     "plansForWorkspace": "{workspace} 的套餐",
     "prepaidCreditsInfo": "单独购买且不会过期的积分",
     "prepaidDescription": "预付款额度",
     "preview": {
       "addCreditCard": "添加信用卡",
+      "afterThat": "之后",
       "backToAllPlans": "返回所有方案",
+      "billedEachMonth": "每月收取 {amount}。随时可取消。",
+      "commitment": "承诺",
       "confirm": "确认",
+      "confirmChange": "确认更改",
+      "confirmChangeTitle": "查看您的计划变更",
       "confirmPayment": "确认付款",
       "confirmPlanChange": "确认更改方案",
+      "confirmUpgradeCta": "确认升级",
+      "confirmUpgradeTitle": "确认您的升级",
+      "creditFromCurrent": "当前 {plan} 的点数",
+      "creditsRefillMonthlyTo": "每月点数补充为",
+      "creditsRefillTo": "积分补充至",
+      "creditsYoullGetToday": "您今天将获得的点数",
+      "currentMonthly": "月度套餐",
       "eachMonthCreditsRefill": "每月积分补充至",
+      "eachYearCreditsRefill": "每年点数补充为",
       "ends": "{date} 结束",
+      "everyMonthStarting": "每月从 {date} 开始",
       "hideFeatures": "隐藏功能",
+      "newMonthlySubscription": "新月度订阅",
       "nextPaymentDue": "下次付款截止日期 {date}。可随时取消。",
+      "paymentPopupBlocked": "无法打开支付页面 — 请允许弹窗后重试。",
       "perMember": "/ 每成员",
       "privacyPolicy": "隐私政策",
       "proratedCharge": "{plan} 按比例收费",
       "proratedRefund": "{plan} 按比例退款",
+      "refillReplacesNote": "替换您的月度补充。现有余额保留。",
       "showMoreFeatures": "显示更多功能",
       "starting": "{date} 开始",
       "startingToday": "今日开始",
+      "startsOn": "开始于 {date}",
+      "stayOnUntil": "您将在 {plan} 保持至 {date}。",
+      "subscribeToPlan": "订阅 {plan}",
+      "switchToPlan": "切换到 {plan}",
+      "switchesToday": "今日切换次数",
       "terms": "条款",
       "termsAgreement": "继续操作即表示您同意 Comfy Org 的{terms}和{privacy}。",
-      "totalDueToday": "今日应付总额"
+      "totalDueToday": "今日应付总额",
+      "yearlySubscription": "年度订阅",
+      "youllBeCharged": "您将被收取"
     },
+    "pricingBlurb": "*基于此模板，{seeDetails}。如有{questions}或{enterpriseDiscussions}，请联系我们。更多价格详情，{clickHere}。",
+    "pricingBlurbClickHere": "点击这里",
+    "pricingBlurbEnterprise": "企业合作",
+    "pricingBlurbQuestions": "问题咨询",
+    "pricingBlurbSeeDetails": "查看详情",
+    "reactivatePlan": "重新激活套餐",
+    "refillsDate": "补充 {date}",
+    "refillsNextCycle": "下个周期补充",
     "refreshCredits": "刷新额度",
+    "remaining": "剩余",
     "renewsDate": "将于 {date} 续订",
+    "renewsOnDate": "将于 {date} 自动续订",
     "required": {
       "pollingFailed": "订阅激活失败",
       "pollingSuccess": "订阅激活成功！",
@@ -3263,9 +4026,14 @@
       "waitingForSubscription": "请在新标签页中完成订阅。我们会自动检测到您已完成！"
     },
     "resubscribe": "重新订阅",
+    "resubscribeFailed": "重新激活订阅失败",
     "resubscribeSuccess": "订阅已成功重新激活",
     "resubscribeTo": "重新订阅 {plan}",
+    "saveYearly": "立省 20%",
+    "saveYearlyUpTo": "最高可节省 20%",
     "soloUseOnly": "仅限个人使用",
+    "subscribe": "订阅",
+    "subscribeFailed": "订阅失败",
     "subscribeForMore": "升级",
     "subscribeNow": "立即订阅",
     "subscribeTo": "订阅 {plan}",
@@ -3273,10 +4041,46 @@
     "subscribeToRun": "订阅",
     "subscribeToRunFull": "订阅 Run",
     "subscriptionRequiredMessage": "成员在云端运行工作流需要订阅",
+    "success": {
+      "allSet": "设置完成",
+      "inviteEmailsPlaceholder": "输入邮箱，多个用逗号分隔",
+      "inviteSubtext": "您也可以稍后在设置中邀请成员",
+      "inviteTitle": "邀请您的团队",
+      "planUpdated": "您的方案已成功更新。",
+      "receiptEmailed": "收据已发送至您的邮箱。",
+      "sendInvites": "发送邀请"
+    },
+    "teamHeader": "适合希望协作的团队。需要更多成员？{learnMore} 了解企业版。",
+    "teamHeaderLearnMore": "了解更多",
+    "teamPerks": {
+      "concurrentRuns": "成员可同时运行工作流",
+      "inviteMembers": "邀请成员",
+      "rolePermissions": "基于角色的权限",
+      "sharedCreditPool": "所有成员共享积分池"
+    },
+    "teamPlan": {
+      "changePlan": "更改方案",
+      "comingSoonLabel": "即将上线：",
+      "cta": "订阅团队年付方案",
+      "ctaMonthly": "订阅团队月付方案",
+      "currentPlan": "当前方案",
+      "detailsTitle": "详情",
+      "name": "团队方案",
+      "perkConcurrentRuns": "成员可同时运行多个工作流",
+      "perkInviteMembers": "邀请团队成员",
+      "perkProjectAssets": "项目与资产管理",
+      "perkRolePermissions": "基于角色的权限管理",
+      "perkSharedPool": "所有成员共享积分池",
+      "tagline": "自定义每月积分订阅。订阅更多积分可享更大折扣。",
+      "unavailable": "该团队套餐当前不可用。"
+    },
+    "teamPlanIncludes": "您的套餐包含 {plan} 的所有内容，以及：",
+    "teamPlanName": "团队",
     "teamWorkspace": "团队工作区",
     "tierNameYearly": "{name} 年度",
     "tiers": {
       "creator": {
+        "feature1": "导入您自己的模型",
         "name": "Creator"
       },
       "founder": {
@@ -3286,9 +4090,12 @@
         "name": "免费"
       },
       "pro": {
+        "feature1": "更长的工作流运行时间（最长 1 小时）",
         "name": "Pro"
       },
       "standard": {
+        "feature1": "最长 30 分钟工作流运行时间",
+        "feature2": "可随时增加积分",
         "name": "Standard"
       }
     },
@@ -3301,6 +4108,8 @@
     "upgradeToAddCredits": "升级以添加积分",
     "usdPerMonth": "USD / mo",
     "usdPerMonthPerMember": "美元 / 月 / 每成员",
+    "usedAfterMonthly": "月度用完后使用",
+    "videoEstimate": "可生成约 {count} 个 5 秒视频*",
     "videoEstimateExplanation": "这些预估基于 Wan Fun Control 生成 5 秒视频。",
     "videoEstimateHelp": "这是什么？",
     "videoEstimateLabel": "可使用  Wan Fun Control 模板生成 5 秒视频的数量",
@@ -3310,10 +4119,10 @@
     "viewMoreDetails": "查看更多详情",
     "viewMoreDetailsPlans": "查看有关订阅和定价的更多信息",
     "viewUsageHistory": "查看使用历史",
+    "whatsIncluded": "包含内容：",
     "workspaceNotSubscribed": "此工作区未订阅",
     "yearly": "年度",
     "yearlyCreditsLabel": "总共年度积分",
-    "yearlyDiscount": "20% 减免",
     "yourPlanIncludes": "您的计划包括："
   },
   "tabMenu": {
@@ -3343,7 +4152,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "筛选条件：",
     "allTemplates": "全部模板",
     "categories": "分类",
     "category": {
@@ -3368,9 +4176,12 @@
       "Video": "视频生成",
       "Video API": "视频 API"
     },
+    "clearAllFilters": "清除所有筛选器",
     "error": {
       "templateNotFound": "未找到模板 \"{templateName}\""
     },
+    "filtersApplied": "已应用 {count} 个筛选器",
+    "filtersButton": "筛选器",
     "licenseFilter": "许可证",
     "loading": "正在加载模板...",
     "loadingMore": "正在加载更多模板...",
@@ -3378,7 +4189,6 @@
     "modelsSelected": "已选 {count} 个模型",
     "noResults": "未找到模板",
     "noResultsHint": "请尝试调整搜索或筛选条件",
-    "resetFilters": "清除筛选",
     "resultsCount": "显示 {count} / 共 {total} 个模板",
     "runsOnFilter": "运行于",
     "runsOnSelected": "{count} 次运行",
@@ -3390,8 +4200,8 @@
       "newest": "最新",
       "popular": "热门",
       "recommended": "推荐",
-      "searchPlaceholder": "搜索...",
-      "vramLowToHigh": "VRAM 使用量（从低到高）"
+      "relevance": "相关性",
+      "searchPlaceholder": "搜索..."
     },
     "sorting": "排序方式",
     "title": "从模板开始",
@@ -3425,11 +4235,14 @@
     "failedToInitiateCreditPurchase": "发起积分购买失败：{error}",
     "failedToInitiateSubscription": "订阅启动失败：{error}",
     "failedToLoadBackgroundImage": "无法加载背景图片",
+    "failedToLoadHDRI": "HDRI文件加载失败",
     "failedToLoadModel": "无法加载3D模型",
     "failedToPurchaseCredits": "购买积分失败：{error}",
     "failedToQueue": "排队失败",
     "failedToSaveDraft": "保存工作流草稿失败",
+    "failedToSetGizmoMode": "设置控件模式失败",
     "failedToToggleCamera": "切换镜头失败",
+    "failedToToggleGizmo": "切换控件失败",
     "failedToToggleGrid": "切换网格失败",
     "failedToUpdateBackgroundColor": "更新背景色失败",
     "failedToUpdateBackgroundImage": "更新背景图像失败",
@@ -3444,6 +4257,7 @@
     "fileTooLarge": "文件过大（{size} MB）。最大支持大小为 {maxSize} MB",
     "fileUploadFailed": "文件上传失败",
     "interrupted": "执行已被中断",
+    "invalidTemplateData": "加载节点模板失败：数据无效",
     "legacyMaskEditorDeprecated": "旧版遮罩编辑器已弃用，即将删除。",
     "migrateToLitegraphReroute": "将来的版本中将删除重定向节点。点击以迁移到litegraph-native重定向。",
     "missingModelVerificationFailed": "验证缺失模型失败。部分模型可能不会在错误标签页中显示。",
@@ -3451,6 +4265,7 @@
     "no3dScene": "没有3D场景可以应用纹理",
     "no3dSceneToExport": "没有3D场景可以导出",
     "noTemplatesToExport": "没有模板可以导出",
+    "nodeDefinitionsUpdateFailed": "节点定义更新失败",
     "nodeDefinitionsUpdated": "节点定义已更新",
     "nothingSelected": "未选择任何内容",
     "nothingToGroup": "没有可分组的内容",
@@ -3460,9 +4275,13 @@
     "pleaseSelectOutputNodes": "请选择输出节点",
     "unableToGetModelFilePath": "无法获取模型文件路径",
     "unauthorizedDomain": "您的域名 {domain} 未被授权使用此服务。请联系 {email} 将您的域名添加到白名单。",
+    "unsupportedHDRIFormat": "不支持的文件格式。请上传.hdr或.exr文件。",
     "updateRequested": "已请求更新",
     "useApiKeyTip": "提示：无法正常登录？请使用 Comfy API Key 选项。",
     "userNotAuthenticated": "用户未认证"
+  },
+  "typeform": {
+    "loadError": "表单加载失败，请稍后再试。"
   },
   "userSelect": {
     "enterUsername": "输入用户名",
@@ -3550,7 +4369,8 @@
       "placeholderMesh": "选择网格...",
       "placeholderModel": "请选择模型...",
       "placeholderUnknown": "请选择媒体...",
-      "placeholderVideo": "请选择视频..."
+      "placeholderVideo": "请选择视频...",
+      "topResult": "最佳结果：{result}"
     },
     "valueControl": {
       "decrement": "递减值",
@@ -3598,6 +4418,45 @@
     }
   },
   "workspacePanel": {
+    "billingStatus": {
+      "ending": {
+        "body": "在此之前成员可保持全部访问权限。重新激活以保留共享积分和席位。",
+        "reactivate": "重新激活套餐",
+        "title": "您的团队套餐将于 {date} 结束"
+      },
+      "outOfCredits": {
+        "addCredits": "添加积分",
+        "body": "您的团队已用完所有积分。请添加更多积分以继续生成，或等待积分在 {date} 自动补充。",
+        "bodyNoDate": "您的团队已用完所有积分。请添加更多积分以继续生成。",
+        "dismiss": "忽略",
+        "memberBody": "您的团队已用完所有积分。工作区管理员需要添加更多积分以继续生成。",
+        "title": "积分已用完"
+      },
+      "paused": {
+        "body": "此工作区的订阅已暂停。请更新付款方式以恢复。",
+        "memberBody": "此工作区的订阅已暂停。工作区管理员需要更新付款方式。",
+        "title": "订阅已暂停"
+      },
+      "updatePayment": "更新付款方式",
+      "warning": {
+        "body": "您的上一次付款未成功。如未更新付款方式，订阅将在 {date} 暂停。",
+        "bodyNoDate": "您的上一次付款未成功。请更新付款方式以避免暂停。",
+        "title": "付款被拒绝"
+      }
+    },
+    "changeRoleDialog": {
+      "demoteConfirm": "降级为成员",
+      "demoteMessage": "他们将失去管理员权限。",
+      "demoteTitle": "将{name}降级为成员？",
+      "error": "角色更新失败",
+      "promoteConfirm": "设为拥有者",
+      "promoteIntro": "他们将能够：",
+      "promotePermissionCredits": "添加额外积分",
+      "promotePermissionManage": "管理成员、支付方式和工作区设置",
+      "promotePermissionRoles": "提升或降级其他拥有者（除工作区创建者外）。",
+      "promoteTitle": "将{name}设为拥有者？",
+      "success": "角色已更新"
+    },
     "createWorkspaceDialog": {
       "create": "创建",
       "message": "工作区让成员共享积分池。创建后您将成为所有者。",
@@ -3622,17 +4481,11 @@
     "inviteLimitReached": "您已达到最多 50 名成员的上限",
     "inviteMember": "邀请成员",
     "inviteMemberDialog": {
-      "createLink": "创建链接",
-      "linkCopied": "已复制",
-      "linkCopyFailed": "复制链接失败",
-      "linkStep": {
-        "copyLink": "复制链接",
-        "done": "完成",
-        "message": "请确保其账号使用的是该邮箱。",
-        "title": "将此链接发送给对方"
-      },
-      "message": "创建一个可分享的邀请链接发送给他人",
+      "failedCount": "无法发送 {count} 个邀请，请重试。",
+      "invalidEmailCount": "{count} 个无效邮箱地址",
+      "invitedMessage": "已向 {emails} 发送邀请",
       "placeholder": "输入对方邮箱",
+      "seatLimitReached": "最多可邀请 {count} 位队友。",
       "title": "邀请他人加入此工作区"
     },
     "inviteUpsellDialog": {
@@ -3640,8 +4493,7 @@
       "messageSingleSeat": "Standard 套餐仅包含一个工作区所有者席位。如需邀请更多成员，请升级到 Creator 及以上套餐以解锁多席位功能。",
       "titleNotSubscribed": "邀请成员需要订阅套餐",
       "titleSingleSeat": "您当前的套餐仅支持单人席位",
-      "upgradeToCreator": "升级到 Creator",
-      "viewPlans": "查看套餐"
+      "upgradeToTeam": "升级到团队版"
     },
     "leaveDialog": {
       "leave": "离开",
@@ -3650,30 +4502,35 @@
     },
     "members": {
       "actions": {
-        "copyLink": "复制邀请链接",
+        "cancelInvite": "取消邀请",
+        "changeRole": "更改角色",
         "removeMember": "移除成员",
-        "revokeInvite": "撤销邀请"
+        "resendInvite": "重新发送邀请"
       },
       "columns": {
         "expiryDate": "过期日期",
         "inviteDate": "邀请日期",
-        "joinDate": "加入日期"
+        "role": "角色"
       },
-      "createNewWorkspace": "创建新工作区。",
+      "contactUs": "联系我们",
+      "header": "成员",
       "membersCount": "{count}/50 名成员",
+      "needMoreMembers": "需要更多成员？",
       "noInvites": "暂无待处理邀请",
       "noMembers": "暂无成员",
       "pendingInvitesCount": "{count} 个待处理邀请",
-      "personalWorkspaceMessage": "您目前无法邀请其他成员加入您的个人工作区。如需添加成员，请",
+      "reactivateTeam": "重新激活团队版",
+      "searchPlaceholder": "搜索...",
       "tabs": {
         "active": "已激活",
         "pendingCount": "待处理（{count}）"
       },
-      "upsellBannerSubscribe": "订阅 Creator 及以上套餐以邀请团队成员加入此工作区。",
-      "upsellBannerUpgrade": "升级到 Creator 及以上套餐以邀请更多团队成员。",
-      "viewPlans": "查看套餐"
+      "upgradeToTeam": "升级到团队版",
+      "upsellBanner": "如需添加队友，请升级您的套餐。",
+      "upsellBannerReactivate": "如需添加更多队友，请重新激活您的套餐。"
     },
     "menu": {
+      "creatorCannotLeave": "工作区创建者无法离开他们创建的工作区",
       "deleteWorkspace": "删除工作区",
       "deleteWorkspaceDisabledTooltip": "请先取消工作区的有效订阅",
       "editWorkspace": "编辑工作区详情",
@@ -3702,6 +4559,8 @@
       "failedToFetchWorkspaces": "加载工作区失败",
       "failedToLeaveWorkspace": "离开工作区失败",
       "failedToUpdateWorkspace": "更新工作区失败",
+      "inviteResendFailed": "重新发送邀请失败",
+      "inviteResent": "邀请已重新发送",
       "workspaceCreated": {
         "message": "订阅套餐，邀请队友，开始协作。",
         "subscribe": "订阅",

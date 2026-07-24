@@ -72,7 +72,7 @@
 import { computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
 import PackBanner from '@/workbench/extensions/manager/components/manager/packBanner/PackBanner.vue'
 import PackCardFooter from '@/workbench/extensions/manager/components/manager/packCard/PackCardFooter.vue'

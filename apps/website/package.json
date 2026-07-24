@@ -5,76 +5,52 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
+    "dev:no-toolbar": "cross-env NO_TOOLBAR=1 astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "typecheck": "astro check",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test",
+    "test:visual": "playwright test --project visual",
+    "test:visual:update": "playwright test --project visual --update-snapshots",
+    "ashby:refresh-snapshot": "tsx ./scripts/refresh-ashby-snapshot.ts",
+    "cloud-nodes:refresh-snapshot": "tsx ./scripts/refresh-cloud-nodes-snapshot.ts",
+    "generate:models": "tsx ./scripts/generate-models.ts",
+    "validate:jsonld": "tsx ./scripts/validate-jsonld.ts"
   },
   "dependencies": {
+    "@astrojs/sitemap": "catalog:",
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/object-info-parser": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@comfyorg/tailwind-utils": "workspace:*",
+    "@lucide/vue": "catalog:",
     "@vercel/analytics": "catalog:",
-    "vue": "catalog:"
+    "@vueuse/core": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cva": "catalog:",
+    "gsap": "catalog:",
+    "lenis": "catalog:",
+    "posthog-js": "catalog:",
+    "reka-ui": "catalog:",
+    "three": "catalog:",
+    "vue": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
+    "@astrojs/check": "catalog:",
+    "@astrojs/mdx": "catalog:",
     "@astrojs/vue": "catalog:",
+    "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "astro": "catalog:",
     "tailwindcss": "catalog:",
-    "typescript": "catalog:"
-  },
-  "nx": {
-    "tags": [
-      "scope:website",
-      "type:app"
-    ],
-    "targets": {
-      "dev": {
-        "executor": "nx:run-commands",
-        "continuous": true,
-        "options": {
-          "cwd": "apps/website",
-          "command": "astro dev"
-        }
-      },
-      "serve": {
-        "executor": "nx:run-commands",
-        "continuous": true,
-        "options": {
-          "cwd": "apps/website",
-          "command": "astro dev"
-        }
-      },
-      "build": {
-        "executor": "nx:run-commands",
-        "cache": true,
-        "dependsOn": [
-          "^build"
-        ],
-        "options": {
-          "cwd": "apps/website",
-          "command": "astro build"
-        },
-        "outputs": [
-          "{projectRoot}/dist"
-        ]
-      },
-      "preview": {
-        "executor": "nx:run-commands",
-        "continuous": true,
-        "dependsOn": [
-          "build"
-        ],
-        "options": {
-          "cwd": "apps/website",
-          "command": "astro preview"
-        }
-      },
-      "typecheck": {
-        "executor": "nx:run-commands",
-        "cache": true,
-        "options": {
-          "cwd": "apps/website",
-          "command": "astro check"
-        }
-      }
-    }
+    "tsx": "catalog:",
+    "tw-animate-css": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "vue-component-type-helpers": "catalog:"
   }
 }

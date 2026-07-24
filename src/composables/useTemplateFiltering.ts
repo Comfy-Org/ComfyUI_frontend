@@ -1,35 +1,71 @@
-import { refDebounced, watchDebounced } from '@vueuse/core'
-import Fuse from 'fuse.js'
-import type { IFuseOptions } from 'fuse.js'
+import { watchDebounced } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import {
+  createTemplateSearchIndex,
+  searchTemplates
+} from '@/composables/templateSearchConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import { debounce } from 'es-toolkit/compat'
-import { api } from '@/scripts/api'
 
-// Fuse.js configuration for fuzzy search
-const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
-  keys: [
-    { name: 'name', weight: 0.3 },
-    { name: 'title', weight: 0.3 },
-    { name: 'description', weight: 0.1 },
-    { name: 'tags', weight: 0.2 },
-    { name: 'models', weight: 0.3 }
-  ],
-  threshold: 0.33,
-  includeScore: true,
-  includeMatches: true
+type TemplateBrowseSort =
+  | 'default'
+  | 'recommended'
+  | 'popular'
+  | 'alphabetical'
+  | 'newest'
+  | 'vram-low-to-high'
+  | 'model-size-low-to-high'
+
+export type TemplateSortMode = TemplateBrowseSort | 'relevance'
+
+/** The title shown on the card, trimmed for stable sorting. */
+function displayTitle(template: TemplateInfo): string {
+  return (
+    template.localizedTitle ||
+    template.title ||
+    template.name ||
+    ''
+  ).trim()
+}
+
+/** A→Z by displayed title, with number-prefixed titles grouped after letters. */
+function compareAlphabetical(a: TemplateInfo, b: TemplateInfo): number {
+  const titleA = displayTitle(a)
+  const titleB = displayTitle(b)
+  const numericA = /^\d/.test(titleA)
+  const numericB = /^\d/.test(titleB)
+  if (numericA !== numericB) return numericA ? 1 : -1
+  return titleA.localeCompare(titleB, undefined, {
+    numeric: true,
+    sensitivity: 'base'
+  })
+}
+
+/**
+ * Checks whether a template is visible for the given set of distributions.
+ * Templates without `includeOnDistributions` are visible everywhere.
+ */
+function isTemplateVisibleForDistributions(
+  template: TemplateInfo,
+  distributions: TemplateIncludeOnDistributionEnum[]
+): boolean {
+  if (!template.includeOnDistributions?.length) return true
+  return distributions.some((d) => template.includeOnDistributions!.includes(d))
 }
 
 export function useTemplateFiltering(
-  templates: Ref<TemplateInfo[]> | TemplateInfo[],
-  currentScope?: Ref<string | null>
+  templates: Ref<TemplateInfo[]> | TemplateInfo[]
 ) {
   const settingStore = useSettingStore()
+  const systemStatsStore = useSystemStatsStore()
   const rankingStore = useTemplateRankingStore()
 
   const searchQuery = ref('')
@@ -42,28 +78,49 @@ export function useTemplateFiltering(
   const selectedRunsOn = ref<string[]>(
     settingStore.get('Comfy.Templates.SelectedRunsOn')
   )
-  const sortBy = ref<
-    | 'default'
-    | 'recommended'
-    | 'popular'
-    | 'alphabetical'
-    | 'newest'
-    | 'vram-low-to-high'
-    | 'model-size-low-to-high'
-  >(settingStore.get('Comfy.Templates.SortBy'))
-
-  const fuseOptions = ref<IFuseOptions<TemplateInfo>>(defaultFuseOptions)
+  const sortBy = ref<TemplateBrowseSort>(
+    settingStore.get('Comfy.Templates.SortBy')
+  )
 
   const templatesArray = computed(() => {
     const templateData = 'value' in templates ? templates.value : templates
     return Array.isArray(templateData) ? templateData : []
   })
 
-  const fuse = computed(() => new Fuse(templatesArray.value, fuseOptions.value))
+  const distributions = computed<TemplateIncludeOnDistributionEnum[]>(() => {
+    switch (__DISTRIBUTION__) {
+      case 'cloud':
+        return [TemplateIncludeOnDistributionEnum.Cloud]
+      case 'localhost':
+        return [TemplateIncludeOnDistributionEnum.Local]
+      case 'desktop':
+      default:
+        if (systemStatsStore.systemStats?.system.os === 'darwin') {
+          return [
+            TemplateIncludeOnDistributionEnum.Desktop,
+            TemplateIncludeOnDistributionEnum.Mac
+          ]
+        }
+        return [
+          TemplateIncludeOnDistributionEnum.Desktop,
+          TemplateIncludeOnDistributionEnum.Windows
+        ]
+    }
+  })
+
+  const visibleTemplates = computed(() => {
+    return templatesArray.value.filter((t) =>
+      isTemplateVisibleForDistributions(t, distributions.value)
+    )
+  })
+
+  const searchIndex = computed(() =>
+    createTemplateSearchIndex(visibleTemplates.value)
+  )
 
   const availableModels = computed(() => {
     const modelSet = new Set<string>()
-    templatesArray.value.forEach((template) => {
+    visibleTemplates.value.forEach((template) => {
       if (Array.isArray(template.models)) {
         template.models.forEach((model) => modelSet.add(model))
       }
@@ -73,7 +130,7 @@ export function useTemplateFiltering(
 
   const availableUseCases = computed(() => {
     const tagSet = new Set<string>()
-    templatesArray.value.forEach((template) => {
+    visibleTemplates.value.forEach((template) => {
       if (template.tags && Array.isArray(template.tags)) {
         template.tags.forEach((tag) => tagSet.add(tag))
       }
@@ -86,48 +143,60 @@ export function useTemplateFiltering(
   })
 
   // Compute which selected filters are actually applicable to the current scope
-  const activeModels = computed(() => {
-    if (!currentScope) {
-      return selectedModels.value
-    }
-    return selectedModels.value.filter((model) =>
+  const activeModels = computed(() =>
+    selectedModels.value.filter((model) =>
       availableModels.value.includes(model)
     )
-  })
+  )
 
-  const activeUseCases = computed(() => {
-    if (!currentScope) {
-      return selectedUseCases.value
-    }
-    return selectedUseCases.value.filter((useCase) =>
+  const activeUseCases = computed(() =>
+    selectedUseCases.value.filter((useCase) =>
       availableUseCases.value.includes(useCase)
     )
-  })
+  )
 
-  // Track which filters are inactive (selected but not applicable)
-  const inactiveModels = computed(() => {
-    if (!currentScope) return []
-    return selectedModels.value.filter(
+  const inactiveModels = computed(() =>
+    selectedModels.value.filter(
       (model) => !availableModels.value.includes(model)
     )
-  })
+  )
 
-  const inactiveUseCases = computed(() => {
-    if (!currentScope) return []
-    return selectedUseCases.value.filter(
+  const inactiveUseCases = computed(() =>
+    selectedUseCases.value.filter(
       (useCase) => !availableUseCases.value.includes(useCase)
     )
+  )
+
+  const hasActiveQuery = computed(() => searchQuery.value.trim().length > 0)
+  const searchSort = ref<TemplateSortMode>('relevance')
+  watch(hasActiveQuery, (searching) => {
+    if (searching) searchSort.value = 'relevance'
+  })
+  const activeSort = computed(() =>
+    hasActiveQuery.value ? searchSort.value : sortBy.value
+  )
+
+  const sortSelection = computed<TemplateSortMode>({
+    get: () => activeSort.value,
+    set: (value) => {
+      // relevance is search-only; a browse sort chosen mid-search stays ephemeral.
+      if (value === 'relevance' || hasActiveQuery.value)
+        searchSort.value = value
+      else sortBy.value = value
+    }
   })
 
-  const debouncedSearchQuery = refDebounced(searchQuery, 150)
-
   const filteredBySearch = computed(() => {
-    if (!debouncedSearchQuery.value.trim()) {
-      return templatesArray.value
+    if (!hasActiveQuery.value) {
+      return visibleTemplates.value
     }
 
-    const results = fuse.value.search(debouncedSearchQuery.value)
-    return results.map((result) => result.item)
+    const templatesByName = new Map(
+      visibleTemplates.value.map((template) => [template.name, template])
+    )
+    return searchTemplates(searchIndex.value, searchQuery.value)
+      .map((name) => templatesByName.get(name))
+      .filter((template): template is TemplateInfo => template !== undefined)
   })
 
   const filteredByModels = computed(() => {
@@ -186,22 +255,12 @@ export function useTemplateFiltering(
     })
   })
 
-  const getVramMetric = (template: TemplateInfo) => {
-    if (
-      typeof template.vram === 'number' &&
-      Number.isFinite(template.vram) &&
-      template.vram > 0
-    ) {
-      return template.vram
-    }
-    return Number.POSITIVE_INFINITY
-  }
-
   watch(
     filteredByRunsOn,
     (templates) => {
-      rankingStore.largestUsageScore = Math.max(
-        ...templates.map((t) => t.usage || 0)
+      rankingStore.largestUsageScore = templates.reduce(
+        (max, template) => Math.max(max, template.usage ?? 0),
+        0
       )
     },
     { immediate: true }
@@ -210,7 +269,9 @@ export function useTemplateFiltering(
   const sortedTemplates = computed(() => {
     const templates = [...filteredByRunsOn.value]
 
-    switch (sortBy.value) {
+    switch (activeSort.value) {
+      case 'relevance':
+        return templates
       case 'recommended':
         // Curated: usage × 0.5 + internal × 0.3 + freshness × 0.2
         return templates.sort((a, b) => {
@@ -227,39 +288,14 @@ export function useTemplateFiltering(
           return scoreB - scoreA
         })
       case 'popular':
-        // User-driven: usage × 0.9 + freshness × 0.1
-        return templates.sort((a, b) => {
-          const scoreA = rankingStore.computePopularScore(a.date, a.usage)
-          const scoreB = rankingStore.computePopularScore(b.date, b.usage)
-          return scoreB - scoreA
-        })
+        return templates.sort((a, b) => (b.usage ?? 0) - (a.usage ?? 0))
       case 'alphabetical':
-        return templates.sort((a, b) => {
-          const nameA = a.title || a.name || ''
-          const nameB = b.title || b.name || ''
-          return nameA.localeCompare(nameB)
-        })
+        return templates.sort(compareAlphabetical)
       case 'newest':
         return templates.sort((a, b) => {
           const dateA = new Date(a.date || '1970-01-01')
           const dateB = new Date(b.date || '1970-01-01')
           return dateB.getTime() - dateA.getTime()
-        })
-      case 'vram-low-to-high':
-        return templates.sort((a, b) => {
-          const vramA = getVramMetric(a)
-          const vramB = getVramMetric(b)
-
-          if (vramA === vramB) {
-            const nameA = a.title || a.name || ''
-            const nameB = b.title || b.name || ''
-            return nameA.localeCompare(nameB)
-          }
-
-          if (vramA === Number.POSITIVE_INFINITY) return 1
-          if (vramB === Number.POSITIVE_INFINITY) return -1
-
-          return vramA - vramB
         })
       case 'model-size-low-to-high':
         return templates.sort((a, b) => {
@@ -284,6 +320,7 @@ export function useTemplateFiltering(
     selectedUseCases.value = []
     selectedRunsOn.value = []
     sortBy.value = 'default'
+    searchSort.value = 'relevance'
   }
 
   const removeModelFilter = (model: string) => {
@@ -299,7 +336,8 @@ export function useTemplateFiltering(
   }
 
   const filteredCount = computed(() => filteredTemplates.value.length)
-  const totalCount = computed(() => templatesArray.value.length)
+  const totalCount = computed(() => visibleTemplates.value.length)
+  useSearchQueryTracking('templates', searchQuery, filteredTemplates)
 
   // Template filter tracking (debounced to avoid excessive events)
   const debouncedTrackFilterChange = debounce(() => {
@@ -308,22 +346,15 @@ export function useTemplateFiltering(
       selected_models: selectedModels.value,
       selected_use_cases: selectedUseCases.value,
       selected_runs_on: selectedRunsOn.value,
-      sort_by: sortBy.value,
+      sort_by: activeSort.value,
       filtered_count: filteredCount.value,
       total_count: totalCount.value
     })
   }, 500)
 
-  const loadFuseOptions = async () => {
-    const fetchedOptions = await api.getFuseOptions()
-    if (fetchedOptions) {
-      fuseOptions.value = fetchedOptions
-    }
-  }
-
   // Watch for filter changes and track them
   watch(
-    [searchQuery, selectedModels, selectedUseCases, selectedRunsOn, sortBy],
+    [searchQuery, selectedModels, selectedUseCases, selectedRunsOn, activeSort],
     () => {
       // Only track if at least one filter is active (to avoid tracking initial state)
       const hasActiveFilters =
@@ -331,7 +362,7 @@ export function useTemplateFiltering(
         selectedModels.value.length > 0 ||
         selectedUseCases.value.length > 0 ||
         selectedRunsOn.value.length > 0 ||
-        sortBy.value !== 'default'
+        activeSort.value !== 'default'
 
       if (hasActiveFilters) {
         debouncedTrackFilterChange()
@@ -380,6 +411,8 @@ export function useTemplateFiltering(
     selectedUseCases,
     selectedRunsOn,
     sortBy,
+    sortSelection,
+    hasActiveQuery,
 
     // Computed - Active filters (actually applied)
     activeModels,
@@ -401,7 +434,6 @@ export function useTemplateFiltering(
     resetFilters,
     removeModelFilter,
     removeUseCaseFilter,
-    removeRunsOnFilter,
-    loadFuseOptions
+    removeRunsOnFilter
   }
 }

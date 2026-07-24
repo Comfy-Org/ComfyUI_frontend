@@ -1,10 +1,13 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { isEqual } from 'es-toolkit'
+import type { LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import { toLinkId } from '@/types/linkId'
+import { toRerouteId } from '@/types/rerouteId'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -21,11 +24,11 @@ import type {
   SerialisableLLink,
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 import type { GraphOrSubgraph } from './Subgraph'
 import type { SubgraphInput } from './SubgraphInput'
 import { SubgraphInputNode } from './SubgraphInputNode'
+import type { SubgraphNode } from './SubgraphNode'
 import type { SubgraphOutput } from './SubgraphOutput'
 import { SubgraphOutputNode } from './SubgraphOutputNode'
 
@@ -116,7 +119,7 @@ export function getBoundaryLinks(
 
           if (input.link == null) continue
 
-          const resolved = LLink.resolve(input.link, graph)
+          const resolved = LLink.resolve(toLinkId(input.link), graph)
           if (!resolved) {
             console.warn(`Failed to resolve link ID [${input.link}]`)
             continue
@@ -144,7 +147,7 @@ export function getBoundaryLinks(
 
           if (!output.links) continue
 
-          const many = LLink.resolveMany(output.links, graph)
+          const many = LLink.resolveMany(output.links.map(toLinkId), graph)
           for (const { link, inputNode } of many) {
             if (
               // Subgraph output node
@@ -266,12 +269,16 @@ function mapReroutes(
 ) {
   let child: SerialisableLLink | Reroute = link
   let nextReroute =
-    child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+    child.parentId === undefined
+      ? undefined
+      : reroutes.get(toRerouteId(child.parentId))
 
   while (child.parentId !== undefined && nextReroute) {
     child = nextReroute
     nextReroute =
-      child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+      child.parentId === undefined
+        ? undefined
+        : reroutes.get(toRerouteId(child.parentId))
   }
 
   const lastId = child.parentId
@@ -299,7 +306,8 @@ export function mapSubgraphInputsAndLinks(
       if (!input) continue
 
       const linkData = link.asSerialisable()
-      link.parentId = mapReroutes(link, reroutes)
+      const parentId = mapReroutes(link, reroutes)
+      link.parentId = parentId === undefined ? undefined : toRerouteId(parentId)
       linkData.origin_id = SUBGRAPH_INPUT_ID
       linkData.origin_slot = inputs.length
 
@@ -438,8 +446,8 @@ export function mapSubgraphOutputsAndLinks(
  * @param graph The graph to check for subgraph nodes
  * @returns Set of subgraph IDs used in this graph
  */
-export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<UUID> {
-  const subgraphIds = new Set<UUID>()
+export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<SubgraphId> {
+  const subgraphIds = new Set<SubgraphId>()
 
   for (const node of graph._nodes) {
     if (node.isSubgraphNode()) {
@@ -458,9 +466,9 @@ export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<UUID> {
  */
 export function findUsedSubgraphIds(
   rootGraph: GraphOrSubgraph,
-  subgraphRegistry: Map<UUID, GraphOrSubgraph>
-): Set<UUID> {
-  const usedSubgraphIds = new Set<UUID>()
+  subgraphRegistry: Map<SubgraphId, GraphOrSubgraph>
+): Set<SubgraphId> {
+  const usedSubgraphIds = new Set<SubgraphId>()
   const toVisit: GraphOrSubgraph[] = [rootGraph]
 
   while (toVisit.length > 0) {
@@ -479,6 +487,71 @@ export function findUsedSubgraphIds(
   }
 
   return usedSubgraphIds
+}
+
+function reorderInPlace<T>(arr: T[], indices: readonly number[]): void {
+  arr.splice(0, arr.length, ...indices.flatMap((i) => arr[i] ?? []))
+}
+
+function* indexedLinks<S>(
+  slots: readonly S[],
+  resolve: (slot: S) => Iterable<LLink | undefined>
+): Generator<readonly [number, LLink]> {
+  for (const [index, slot] of slots.entries()) {
+    for (const link of resolve(slot)) {
+      if (link) yield [index, link] as const
+    }
+  }
+}
+
+export function reorderSubgraphInputs(
+  subgraphNode: SubgraphNode,
+  orderedIndices: readonly number[]
+): void {
+  const subgraph = subgraphNode.subgraph
+  if (!subgraph) return
+
+  const n = subgraph.inputs.length
+  if (
+    orderedIndices.length !== n ||
+    new Set(orderedIndices).size !== orderedIndices.length ||
+    orderedIndices.some((i) => i < 0 || i >= n)
+  ) {
+    console.error(
+      `reorderSubgraphInputs: orderedIndices must be a permutation of 0..${n - 1}`,
+      orderedIndices
+    )
+    return
+  }
+
+  const oldOrder = subgraph.inputs.map((i) => i.id)
+
+  reorderInPlace(subgraph.inputs, orderedIndices)
+  reorderInPlace(subgraphNode.inputs, orderedIndices)
+  subgraphNode.invalidatePromotedViews()
+
+  function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
+    for (const id of input.linkIds) yield subgraph.getLink(id)
+  }
+  for (const [slot, link] of indexedLinks(subgraph.inputs, innerLinks)) {
+    link.origin_slot = slot
+  }
+
+  function* outerLink(input: INodeInputSlot): Generator<LLink | undefined> {
+    if (input.link != null) yield subgraphNode.graph?.getLink(input.link)
+  }
+  for (const [slot, link] of indexedLinks(subgraphNode.inputs, outerLink)) {
+    link.target_slot = slot
+  }
+
+  const newOrder = subgraph.inputs.map((i) => i.id)
+  if (!isEqual(oldOrder, newOrder)) {
+    subgraph.events.dispatch('inputs-reordered', {
+      subgraph,
+      oldOrder,
+      newOrder
+    })
+  }
 }
 
 /**

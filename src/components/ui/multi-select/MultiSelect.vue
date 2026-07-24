@@ -1,0 +1,275 @@
+<template>
+  <ComboboxRoot
+    v-model="selectedItems"
+    v-model:open="isOpen"
+    multiple
+    by="value"
+    :disabled
+    ignore-filter
+    :reset-search-term-on-select="false"
+  >
+    <ComboboxAnchor as-child>
+      <ComboboxTrigger
+        v-bind="attrsWithoutClass"
+        :aria-label="label || t('g.multiSelectDropdown')"
+        :class="
+          cn(
+            selectTriggerVariants({
+              size,
+              border: selectedCount > 0 ? 'active' : 'none'
+            }),
+            attrsClass
+          )
+        "
+      >
+        <div
+          class="flex flex-1 items-center overflow-hidden py-2 pl-2 whitespace-nowrap"
+        >
+          <span :class="size === 'md' ? 'text-xs' : 'text-sm'">
+            {{ label }}
+          </span>
+          <span
+            v-if="selectedCount > 0"
+            :class="
+              cn(
+                'pointer-events-none absolute -top-1.5 -right-1.5 z-10',
+                selectCountBadgeClass
+              )
+            "
+          >
+            {{ selectedCount }}
+          </span>
+        </div>
+        <div :class="selectDropdownClass">
+          <i class="icon-[lucide--chevron-down] text-muted-foreground" />
+        </div>
+      </ComboboxTrigger>
+    </ComboboxAnchor>
+
+    <ComboboxPortal>
+      <ComboboxContent
+        position="popper"
+        :side-offset="8"
+        align="start"
+        :style="[popoverStyle, contentStyle, liftedContentStyle]"
+        :class="cn(selectContentClass, 'flex flex-col')"
+        @keydown="onContentKeydown"
+        @focus-outside="preventFocusDismiss"
+      >
+        <div v-if="showSearchBox" class="px-2 pt-2 pb-0">
+          <div
+            class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
+          >
+            <i
+              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+            />
+            <ComboboxInput
+              v-model="searchQuery"
+              :placeholder="searchPlaceholder ?? t('g.search')"
+              class="w-full border-none bg-transparent text-sm outline-none"
+            />
+          </div>
+        </div>
+
+        <div
+          v-if="hasActions"
+          :class="
+            cn(
+              'flex shrink-0 items-center justify-between px-2',
+              actionsPlacement === 'header'
+                ? 'mt-2 border-b border-border-default pb-4'
+                : 'order-last mt-2 border-t border-border-default pt-3 pb-1'
+            )
+          "
+        >
+          <span
+            v-if="showSelectedCount"
+            class="px-1 text-sm text-muted-foreground"
+          >
+            {{ $t('g.itemsSelected', { count: selectedCount }) }}
+          </span>
+          <Button
+            v-if="showClearButton"
+            variant="textonly"
+            size="md"
+            @click.stop="selectedItems = []"
+          >
+            {{ $t('g.clearAll') }}
+          </Button>
+        </div>
+
+        <ComboboxViewport
+          :class="
+            cn(
+              'flex flex-col gap-0 p-0 text-sm',
+              'scrollbar-custom overflow-y-auto',
+              'min-w-(--reka-combobox-trigger-width)'
+            )
+          "
+          :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
+        >
+          <ComboboxItem
+            v-for="opt in filteredOptions"
+            :key="opt.value"
+            :value="opt"
+            :class="cn('group', selectItemVariants({ layout: 'multi' }))"
+          >
+            <div
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
+            >
+              <ComboboxItemIndicator>
+                <i
+                  class="icon-[lucide--check] text-xs font-bold text-base-foreground"
+                />
+              </ComboboxItemIndicator>
+            </div>
+            <span>{{ opt.name }}</span>
+          </ComboboxItem>
+          <ComboboxEmpty :class="selectEmptyMessageClass">
+            {{ $t('g.noResultsFound') }}
+          </ComboboxEmpty>
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+
+<script setup lang="ts">
+import { useFuse } from '@vueuse/integrations/useFuse'
+import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
+import type { FocusOutsideEvent } from 'reka-ui'
+import {
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxItemIndicator,
+  ComboboxPortal,
+  ComboboxRoot,
+  ComboboxTrigger,
+  ComboboxViewport
+} from 'reka-ui'
+import { computed, ref } from 'vue'
+import type { StyleValue } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+
+import {
+  selectContentClass,
+  selectCountBadgeClass,
+  selectDropdownClass,
+  selectEmptyMessageClass,
+  selectItemVariants,
+  selectTriggerVariants,
+  stopEscapeToDocument
+} from '@/components/ui/select/select.variants'
+import type { SelectOption } from '@/components/ui/select/types'
+import { useAttrsClass } from '@/composables/useAttrsClass'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+import { usePopoverSizing } from '@/composables/usePopoverSizing'
+import { cn } from '@comfyorg/tailwind-utils'
+
+defineOptions({
+  inheritAttrs: false
+})
+
+const { attrsClass, attrsWithoutClass } = useAttrsClass()
+
+const {
+  label,
+  options = [],
+  size = 'lg',
+  disabled = false,
+  showSearchBox = false,
+  showSelectedCount = false,
+  showClearButton = false,
+  actionsPlacement = 'header',
+  searchPlaceholder,
+  listMaxHeight = '28rem',
+  popoverMinWidth,
+  popoverMaxWidth,
+  contentStyle
+} = defineProps<{
+  /** Input label shown on the trigger button */
+  label?: string
+  /** Available options */
+  options?: SelectOption[]
+  /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
+  size?: 'lg' | 'md'
+  /** Disable the select */
+  disabled?: boolean
+  /** Show search box in the panel header */
+  showSearchBox?: boolean
+  /** Show selected count text in the panel header */
+  showSelectedCount?: boolean
+  /** Show "Clear all" action in the panel header */
+  showClearButton?: boolean
+  actionsPlacement?: 'header' | 'footer'
+  /** Placeholder for the search input */
+  searchPlaceholder?: string
+  /** Maximum height of the dropdown panel (default: 28rem) */
+  listMaxHeight?: string
+  /** Minimum width of the popover (default: auto) */
+  popoverMinWidth?: string
+  /** Maximum width of the popover (default: auto) */
+  popoverMaxWidth?: string
+  contentStyle?: StyleValue
+}>()
+
+const selectedItems = defineModel<SelectOption[]>({
+  required: true
+})
+const searchQuery = defineModel<string>('searchQuery', { default: '' })
+
+const { t } = useI18n()
+const isOpen = ref(false)
+const liftedContentStyle = useModalLiftedZIndex(isOpen)
+const selectedCount = computed(() => selectedItems.value.length)
+const hasActions = computed(() => showSelectedCount || showClearButton)
+
+function onContentKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    stopEscapeToDocument(event)
+    isOpen.value = false
+  }
+}
+
+function preventFocusDismiss(event: FocusOutsideEvent) {
+  event.preventDefault()
+}
+
+const popoverStyle = usePopoverSizing({
+  minWidth: popoverMinWidth,
+  maxWidth: popoverMaxWidth
+})
+
+const fuseOptions: UseFuseOptions<SelectOption> = {
+  fuseOptions: {
+    keys: ['name', 'value'],
+    threshold: 0.3,
+    includeScore: false
+  },
+  matchAllWhenSearchEmpty: true
+}
+
+const { results } = useFuse(searchQuery, () => options, fuseOptions)
+
+const filteredOptions = computed(() => {
+  if (!searchQuery.value || searchQuery.value.trim() === '') {
+    return options
+  }
+
+  const searchResults = results.value.map(
+    (result: { item: SelectOption }) => result.item
+  )
+
+  const selectedButNotInResults = selectedItems.value.filter(
+    (item) =>
+      !searchResults.some((result: SelectOption) => result.value === item.value)
+  )
+
+  return [...selectedButNotInResults, ...searchResults]
+})
+</script>

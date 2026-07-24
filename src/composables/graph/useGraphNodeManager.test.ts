@@ -1,21 +1,20 @@
-import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { widgetId } from '@/types/widgetId'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import { app } from '@/scripts/app'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { usePromotionStore } from '@/stores/promotionStore'
+import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('Node Reactivity', () => {
@@ -46,9 +45,10 @@ describe('Node Reactivity', () => {
     expect((widget as BaseWidget).node.id).toBe(node.id)
 
     // Initial value should be in store after setNodeId was called
-    expect(store.getWidget(graph.id, node.id, 'testnum')?.value).toBe(2)
+    const id = widgetId(graph.id, node.id, 'testnum')
+    expect(store.getWidget(id)?.value).toBe(2)
 
-    const state = store.getWidget(graph.id, node.id, 'testnum')
+    const state = store.getWidget(id)
     if (!state) throw new Error('Expected widget state to exist')
 
     const onValueChange = vi.fn()
@@ -68,12 +68,12 @@ describe('Node Reactivity', () => {
     const onValueChange = vi.fn()
 
     graph.trigger('node:slot-links:changed', {
-      nodeId: String(node.id),
+      nodeId: node.id,
       slotType: NodeSlotType.INPUT
     })
     await nextTick()
 
-    const state = store.getWidget(graph.id, node.id, 'testnum')
+    const state = store.getWidget(widgetId(graph.id, node.id, 'testnum'))
     if (!state) throw new Error('Expected widget state to exist')
 
     const widgetValue = computed(() => state.value)
@@ -101,19 +101,22 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const input = node.addInput('prompt', 'STRING')
     // Associate the input slot with the widget (as widgetInputs extension does)
     input.widget = { name: 'prompt' }
-
-    // Start with a connected link
-    input.link = 42
-
     graph.add(node)
-    return { graph, node }
+
+    const upstream = new LGraphNode('upstream')
+    upstream.addOutput('out', 'STRING')
+    graph.add(upstream)
+    const link = upstream.connect(0, node, 0)
+    if (!link) throw new Error('Expected upstream.connect to produce a link')
+
+    return { graph, node, upstream, linkId: link.id }
   }
 
   it('sets slotMetadata.linked to true when input has a link', () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(String(node.id))
+    const nodeData = vueNodeData.get(node.id)
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
 
     expect(widgetData?.slotMetadata).toBeDefined()
@@ -124,7 +127,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(String(node.id))
+    const nodeData = vueNodeData.get(node.id)
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
 
     // Verify initially linked
@@ -152,7 +155,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(String(node.id))!
+    const nodeData = vueNodeData.get(node.id)!
 
     // Mimic what processedWidgets does in NodeWidgets.vue:
     // derive disabled from slotMetadata.linked
@@ -186,126 +189,60 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     expect(onChange).toHaveBeenCalledTimes(1)
   })
 
-  it('updates slotMetadata for promoted widgets where SafeWidgetData.name differs from input.widget.name', async () => {
-    // Set up a subgraph with an interior node that has a "prompt" widget.
-    // createPromotedWidgetView resolves against this interior node.
-    const subgraph = createTestSubgraph()
-    const interiorNode = new LGraphNode('interior')
-    interiorNode.id = 10
-    interiorNode.addWidget('string', 'prompt', 'hello', () => undefined, {})
-    subgraph.add(interiorNode)
-
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
-
-    // Create a PromotedWidgetView with identityName="value" (subgraph input
-    // slot name) and sourceWidgetName="prompt" (interior widget name).
-    // PromotedWidgetView.name returns "value" (identity), safeWidgetMapper
-    // sets SafeWidgetData.name to sourceWidgetName ("prompt").
-    const promotedView = createPromotedWidgetView(
-      subgraphNode,
-      '10',
-      'prompt',
-      'value',
-      undefined,
-      'value'
-    )
-
-    // Host the promoted view on a regular node so we can control widgets
-    // directly (SubgraphNode.widgets is a synthetic getter).
-    const graph = new LGraph()
-    const hostNode = new LGraphNode('host')
-    hostNode.widgets = [promotedView]
-    const input = hostNode.addInput('value', 'STRING')
-    input.widget = { name: 'value' }
-    input.link = 42
-    graph.add(hostNode)
-
-    const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(hostNode.id))
-
-    // SafeWidgetData.name is "prompt" (sourceWidgetName), but the
-    // input slot widget name is "value" — slotName bridges this gap.
-    const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
-    expect(widgetData).toBeDefined()
-    expect(widgetData?.slotName).toBe('value')
-    expect(widgetData?.slotMetadata?.linked).toBe(true)
-
-    // Disconnect
-    hostNode.inputs[0].link = null
-    graph.trigger('node:slot-links:changed', {
-      nodeId: hostNode.id,
-      slotType: NodeSlotType.INPUT,
-      slotIndex: 0,
-      connected: false,
-      linkId: 42
+  it('marks a widget input slot as linked when connected to a SubgraphInput', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'prompt', type: 'STRING' }]
     })
+    const node = new LGraphNode('test')
+    node.addWidget('string', 'prompt', 'hello', () => undefined, {})
+    const input = node.addInput('prompt', 'STRING')
+    input.widget = { name: 'prompt' }
+    subgraph.add(node)
 
-    await nextTick()
+    const link = subgraph.inputNode.slots[0].connect(input, node)
+    if (!link)
+      throw new Error('Expected SubgraphInput.connect to produce a link')
 
-    expect(widgetData?.slotMetadata?.linked).toBe(false)
+    const { vueNodeData } = useGraphNodeManager(subgraph)
+    const nodeData = vueNodeData.get(node.id)
+    const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
+
+    expect(widgetData?.slotMetadata?.linked).toBe(true)
   })
 
-  it('prefers exact _widget input matches before same-name fallbacks for promoted widgets', () => {
+  it('names promoted widgets after the subgraph input slot and exposes the interior source name', () => {
+    // Subgraph input named "value" promotes an interior "prompt" widget. The
+    // projected widget's name is the input slot name "value"; the interior
+    // source widget name "prompt" is carried separately for backend lookups.
     const subgraph = createTestSubgraph({
-      inputs: [
-        { name: 'seed', type: '*' },
-        { name: 'seed', type: '*' }
-      ]
+      inputs: [{ name: 'value', type: 'STRING' }]
     })
+    const interiorNode = new LGraphNode('interior')
+    const interiorInput = interiorNode.addInput('value', 'STRING')
+    interiorNode.addWidget('string', 'prompt', 'hello', () => undefined, {})
+    interiorInput.widget = { name: 'prompt' }
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
 
-    const firstNode = new LGraphNode('FirstNode')
-    const firstInput = firstNode.addInput('seed', '*')
-    firstNode.addWidget('number', 'seed', 1, () => undefined, {})
-    firstInput.widget = { name: 'seed' }
-    subgraph.add(firstNode)
-
-    const secondNode = new LGraphNode('SecondNode')
-    const secondInput = secondNode.addInput('seed', '*')
-    secondNode.addWidget('number', 'seed', 2, () => undefined, {})
-    secondInput.widget = { name: 'seed' }
-    subgraph.add(secondNode)
-
-    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
-    subgraph.inputNode.slots[1].connect(secondInput, secondNode)
-
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 124 })
-    const graph = subgraphNode.graph
-    if (!graph) throw new Error('Expected subgraph node graph')
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
+    subgraphNode._internalConfigureAfterSlots()
+    const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
-    const promotedViews = subgraphNode.widgets
-    const secondPromotedView = promotedViews[1]
-    if (!secondPromotedView) throw new Error('Expected second promoted view')
-
-    ;(
-      secondPromotedView as unknown as {
-        sourceNodeId: string
-        sourceWidgetName: string
-      }
-    ).sourceNodeId = '9999'
-    ;(
-      secondPromotedView as unknown as {
-        sourceNodeId: string
-        sourceWidgetName: string
-      }
-    ).sourceWidgetName = 'stale_widget'
-
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(subgraphNode.id))
-    const secondMappedWidget = nodeData?.widgets?.find(
-      (widget) => widget.slotMetadata?.index === 1
-    )
-    if (!secondMappedWidget)
-      throw new Error('Expected mapped widget for slot 1')
+    const nodeData = vueNodeData.get(subgraphNode.id)
 
-    expect(secondMappedWidget.name).not.toBe('stale_widget')
+    const widgetData = nodeData?.widgets?.find((w) => w.name === 'value')
+    expect(widgetData).toBeDefined()
+    expect(widgetData?.sourceWidgetName).toBe('prompt')
+    expect(widgetData?.slotMetadata).toBeDefined()
   })
 
   it('clears stale slotMetadata when input no longer matches widget', async () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(String(node.id))!
+    const nodeData = vueNodeData.get(node.id)!
     const widgetData = nodeData.widgets!.find((w) => w.name === 'prompt')!
 
     expect(widgetData.slotMetadata?.linked).toBe(true)
@@ -341,7 +278,7 @@ describe('Subgraph output slot label reactivity', () => {
     graph.add(node)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeId = String(node.id)
+    const nodeId = node.id
     const nodeData = vueNodeData.get(nodeId)
     if (!nodeData?.outputs) throw new Error('Expected output data to exist')
 
@@ -369,7 +306,7 @@ describe('Subgraph output slot label reactivity', () => {
     graph.add(node)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeId = String(node.id)
+    const nodeId = node.id
     const nodeData = vueNodeData.get(nodeId)
     if (!nodeData?.inputs) throw new Error('Expected input data to exist')
 
@@ -397,37 +334,6 @@ describe('Subgraph output slot label reactivity', () => {
         slotType: NodeSlotType.OUTPUT
       })
     ).not.toThrow()
-  })
-})
-
-describe('Subgraph Promoted Pseudo Widgets', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  it('marks promoted $$ widgets as canvasOnly for Vue widget rendering', () => {
-    const subgraph = createTestSubgraph()
-    const interiorNode = new LGraphNode('interior')
-    interiorNode.id = 10
-    subgraph.add(interiorNode)
-
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
-    const graph = subgraphNode.graph as LGraph
-    graph.add(subgraphNode)
-
-    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
-      sourceNodeId: '10',
-      sourceWidgetName: '$$canvas-image-preview'
-    })
-
-    const { vueNodeData } = useGraphNodeManager(graph)
-    const vueNode = vueNodeData.get(String(subgraphNode.id))
-    const promotedWidget = vueNode?.widgets?.find(
-      (widget) => widget.name === '$$canvas-image-preview'
-    )
-
-    expect(promotedWidget).toBeDefined()
-    expect(promotedWidget?.options?.canvasOnly).toBe(true)
   })
 })
 
@@ -463,127 +369,54 @@ describe('Nested promoted widget mapping', () => {
     graph.add(subgraphNodeB)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(subgraphNodeB.id))
+    const nodeData = vueNodeData.get(subgraphNodeB.id)
     const mappedWidget = nodeData?.widgets?.[0]
 
     expect(mappedWidget).toBeDefined()
     expect(mappedWidget?.type).toBe('combo')
-    expect(mappedWidget?.storeName).toBe('picker')
-    expect(mappedWidget?.storeNodeId).toBe(
-      `${subgraphNodeB.subgraph.id}:${innerNode.id}`
+    expect(mappedWidget?.widgetId).toBe(
+      widgetId(graph.id, subgraphNodeB.id, 'b_input')
     )
   })
 
-  it('keeps linked and independent same-name promotions as distinct sources', () => {
+  it('preserves distinct store identity for duplicate-named promoted widgets', () => {
     const subgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
+      inputs: [
+        { name: 'first_seed', type: '*' },
+        { name: 'second_seed', type: '*' }
+      ]
     })
 
-    const linkedNode = new LGraphNode('LinkedNode')
-    const linkedInput = linkedNode.addInput('string_a', '*')
-    linkedNode.addWidget('text', 'string_a', 'linked', () => undefined, {})
-    linkedInput.widget = { name: 'string_a' }
-    subgraph.add(linkedNode)
-    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
+    const firstNode = new LGraphNode('FirstNode')
+    const firstInput = firstNode.addInput('seed', '*')
+    firstNode.addWidget('number', 'seed', 1, () => undefined)
+    firstInput.widget = { name: 'seed' }
+    subgraph.add(firstNode)
+    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
 
-    const independentNode = new LGraphNode('IndependentNode')
-    independentNode.addWidget(
-      'text',
-      'string_a',
-      'independent',
-      () => undefined,
-      {}
-    )
-    subgraph.add(independentNode)
+    const secondNode = new LGraphNode('SecondNode')
+    const secondInput = secondNode.addInput('seed', '*')
+    secondNode.addWidget('number', 'seed', 2, () => undefined)
+    secondInput.widget = { name: 'seed' }
+    subgraph.add(secondNode)
+    subgraph.inputNode.slots[1].connect(secondInput, secondNode)
 
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 109 })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 100 })
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
-    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
-      sourceNodeId: String(independentNode.id),
-      sourceWidgetName: 'string_a'
-    })
-
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(subgraphNode.id))
-    const promotedWidgets = nodeData?.widgets?.filter(
-      (widget) => widget.name === 'string_a'
+    const nodeData = vueNodeData.get(subgraphNode.id)
+    const widgets = nodeData?.widgets
+
+    expect(widgets).toHaveLength(2)
+    expect(widgets?.[0]?.widgetId).toBe(
+      widgetId(graph.id, subgraphNode.id, 'first_seed')
     )
-
-    expect(promotedWidgets).toHaveLength(2)
-    expect(
-      new Set(promotedWidgets?.map((widget) => widget.storeNodeId))
-    ).toEqual(
-      new Set([
-        `${subgraph.id}:${linkedNode.id}`,
-        `${subgraph.id}:${independentNode.id}`
-      ])
+    expect(widgets?.[1]?.widgetId).toBe(
+      widgetId(graph.id, subgraphNode.id, 'second_seed')
     )
-  })
-
-  it('maps duplicate-name promoted views from same intermediate node to distinct store identities', () => {
-    const innerSubgraph = createTestSubgraph()
-    const firstTextNode = new LGraphNode('FirstTextNode')
-    firstTextNode.addWidget('text', 'text', '11111111111', () => undefined)
-    innerSubgraph.add(firstTextNode)
-
-    const secondTextNode = new LGraphNode('SecondTextNode')
-    secondTextNode.addWidget('text', 'text', '22222222222', () => undefined)
-    innerSubgraph.add(secondTextNode)
-
-    const outerSubgraph = createTestSubgraph()
-    const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
-      id: 3,
-      parentGraph: outerSubgraph
-    })
-    outerSubgraph.add(innerSubgraphNode)
-
-    const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, { id: 4 })
-    const graph = outerSubgraphNode.graph as LGraph
-    graph.add(outerSubgraphNode)
-
-    usePromotionStore().setPromotions(
-      innerSubgraphNode.rootGraph.id,
-      innerSubgraphNode.id,
-      [
-        { sourceNodeId: String(firstTextNode.id), sourceWidgetName: 'text' },
-        { sourceNodeId: String(secondTextNode.id), sourceWidgetName: 'text' }
-      ]
-    )
-
-    usePromotionStore().setPromotions(
-      outerSubgraphNode.rootGraph.id,
-      outerSubgraphNode.id,
-      [
-        {
-          sourceNodeId: String(innerSubgraphNode.id),
-          sourceWidgetName: 'text',
-          disambiguatingSourceNodeId: String(firstTextNode.id)
-        },
-        {
-          sourceNodeId: String(innerSubgraphNode.id),
-          sourceWidgetName: 'text',
-          disambiguatingSourceNodeId: String(secondTextNode.id)
-        }
-      ]
-    )
-
-    const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(outerSubgraphNode.id))
-    const promotedWidgets = nodeData?.widgets?.filter(
-      (widget) => widget.name === 'text'
-    )
-
-    expect(promotedWidgets).toHaveLength(2)
-    expect(
-      new Set(promotedWidgets?.map((widget) => widget.storeNodeId))
-    ).toEqual(
-      new Set([
-        `${outerSubgraphNode.subgraph.id}:${firstTextNode.id}`,
-        `${outerSubgraphNode.subgraph.id}:${secondTextNode.id}`
-      ])
-    )
+    expect(widgets?.[0]?.widgetId).not.toBe(widgets?.[1]?.widgetId)
   })
 })
 
@@ -619,12 +452,13 @@ describe('Promoted widget sourceExecutionId', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const nodeData = vueNodeData.get(subgraphNode.id)
     const promotedWidget = nodeData?.widgets?.find(
-      (w) => w.name === 'ckpt_name'
+      (w) => w.name === 'ckpt_input'
     )
 
     expect(promotedWidget).toBeDefined()
+    expect(promotedWidget?.sourceWidgetName).toBe('ckpt_name')
     // The interior node is inside subgraphNode (id=65),
     // so its execution ID should be "65:<interiorNodeId>"
     expect(promotedWidget?.sourceExecutionId).toBe(
@@ -641,7 +475,7 @@ describe('Promoted widget sourceExecutionId', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(node.id))
+    const nodeData = vueNodeData.get(node.id)
     const widget = nodeData?.widgets?.find((w) => w.name === 'steps')
 
     expect(widget).toBeDefined()
@@ -680,7 +514,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('sets has_errors on nodes referenced in lastNodeErrors', async () => {
     const { nodeA, nodeB, store } = setupGraphWithStore()
 
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(nodeA.id)]: {
         errors: [
           {
@@ -693,7 +527,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'KSampler'
       }
-    }
+    })
     await nextTick()
 
     expect(nodeA.has_errors).toBe(true)
@@ -703,7 +537,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('sets slot hasErrors for inputs matching error input_name', async () => {
     const { nodeA, store } = setupGraphWithStore()
 
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(nodeA.id)]: {
         errors: [
           {
@@ -716,7 +550,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'KSampler'
       }
-    }
+    })
     await nextTick()
 
     expect(nodeA.inputs[0].hasErrors).toBe(true)
@@ -726,7 +560,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('clears has_errors and slot hasErrors when errors are removed', async () => {
     const { nodeA, store } = setupGraphWithStore()
 
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(nodeA.id)]: {
         errors: [
           {
@@ -739,12 +573,12 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'KSampler'
       }
-    }
+    })
     await nextTick()
     expect(nodeA.has_errors).toBe(true)
     expect(nodeA.inputs[1].hasErrors).toBe(true)
 
-    store.lastNodeErrors = null
+    store.recordNodeErrors(null)
     await nextTick()
 
     expect(nodeA.has_errors).toBeFalsy()
@@ -769,7 +603,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     // Error on interior node: execution ID = "50:<interiorNodeId>"
     const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [interiorExecId]: {
         errors: [
           {
@@ -782,7 +616,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'InnerNode'
       }
-    }
+    })
     await nextTick()
 
     // Interior node should have the error
@@ -790,6 +624,56 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     expect(interiorNode.inputs[0].hasErrors).toBe(true)
     // Parent subgraph node should also be flagged
     expect(subgraphNode.has_errors).toBe(true)
+  })
+
+  it('merges slot errors when execution IDs resolve to the same node', async () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('InnerNode')
+    interiorNode.addInput('first', 'INT')
+    interiorNode.addInput('second', 'INT')
+    subgraph.add(interiorNode)
+
+    const firstInstance = createTestSubgraphNode(subgraph, { id: 50 })
+    const secondInstance = createTestSubgraphNode(subgraph, { id: 51 })
+    const graph = firstInstance.graph as LGraph
+    graph.add(firstInstance)
+    graph.add(secondInstance)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+
+    useGraphNodeManager(graph)
+    const store = useExecutionErrorStore()
+    store.recordNodeErrors({
+      [`${firstInstance.id}:${interiorNode.id}`]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing first',
+            details: '',
+            extra_info: { input_name: 'first' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'InnerNode'
+      },
+      [`${secondInstance.id}:${interiorNode.id}`]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing second',
+            details: '',
+            extra_info: { input_name: 'second' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'InnerNode'
+      }
+    })
+    await nextTick()
+
+    expect(interiorNode.inputs[0].hasErrors).toBe(true)
+    expect(interiorNode.inputs[1].hasErrors).toBe(true)
   })
 
   it('sets has_errors on nodes with missing models', async () => {
@@ -867,5 +751,58 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     expect(interiorNode.has_errors).toBe(true)
     expect(subgraphNode.has_errors).toBe(true)
+  })
+})
+
+describe('Pre-remove vueNodeData drain', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('drops vueNodeData entry before node.onRemoved fires', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const id = node.id
+
+    expect(vueNodeData.has(id)).toBe(true)
+
+    let dataPresentInOnRemoved: boolean | undefined
+    node.onRemoved = () => {
+      dataPresentInOnRemoved = vueNodeData.has(id)
+    }
+
+    graph.remove(node)
+
+    expect(
+      dataPresentInOnRemoved,
+      'vueNodeData entry must be cleared before node.onRemoved fires so reactive consumers cannot observe the detached node'
+    ).toBe(false)
+  })
+
+  it('clears vueNodeData when LGraph.clear() dispatches node:before-removed for each node', () => {
+    const graph = new LGraph()
+    const nodeA = new LGraphNode('a')
+    const nodeB = new LGraphNode('b')
+    graph.add(nodeA)
+    graph.add(nodeB)
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    expect(vueNodeData.size).toBe(2)
+
+    const beforeRemovedSpy = vi.fn()
+    graph.events.addEventListener('node:before-removed', beforeRemovedSpy)
+
+    graph.clear()
+
+    expect(
+      beforeRemovedSpy,
+      'clear() must dispatch node:before-removed so reactive consumers can drop refs before nodes detach'
+    ).toHaveBeenCalledTimes(2)
+    expect(
+      vueNodeData.size,
+      'node:before-removed listener must drain vueNodeData when clear() removes every node'
+    ).toBe(0)
   })
 })

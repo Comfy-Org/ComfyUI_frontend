@@ -1,0 +1,55 @@
+# Description: Team-gated multi-model Cursor review — a thin caller for the
+# reusable workflow in Comfy-Org/github-workflows, which is the single source of
+# truth for the panel, judge, prompts, and scripts. Triggered by the
+# 'cursor-review' label.
+#
+# Access control (team-only, two layers):
+#   1. Only users with triage permission or higher can apply a label in a public
+#      repo, so the public cannot trigger this.
+#   2. The reusable workflow's secret-bearing jobs do not run on fork PRs (forks
+#      get no secrets), so CURSOR_API_KEY is reachable only on internal branches.
+name: 'PR: Cursor Review'
+
+on:
+  pull_request:
+    types: [labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  # Re-labeling cancels an in-flight run for the same PR + label.
+  group: cursor-review-pr-${{ github.event.pull_request.number }}-${{ github.event.label.name }}
+  cancel-in-progress: true
+
+jobs:
+  cursor-review:
+    if: github.event.action == 'labeled' && github.event.label.name == 'cursor-review'
+    # SHA-pinned per zizmor `unpinned-uses: hash-pin`. Bump this SHA to pick up
+    # upstream changes; keep `workflows_ref` matching so prompts/scripts load
+    # from the same commit as the workflow definition.
+    uses: Comfy-Org/github-workflows/.github/workflows/cursor-review.yml@964d5aad37cbfb57c5b23961d42c2fd85868bf1d # github-workflows main (964d5aa)
+    with:
+      # Overriding diff_excludes replaces the reusable default wholesale, so
+      # this restates the generated/vendored defaults and adds this repo's heavy
+      # paths (Playwright snapshots, generated manager types).
+      diff_excludes: >-
+        :!**/package-lock.json
+        :!**/yarn.lock
+        :!**/pnpm-lock.yaml
+        :!**/node_modules/**
+        :!**/.claude/**
+        :!**/dist/**
+        :!**/vendor/**
+        :!**/*.generated.*
+        :!**/*.min.js
+        :!**/*.min.css
+        :!**/*-snapshots/**
+        :!src/workbench/extensions/manager/types/generatedManagerTypes.ts
+      # Load the prompts/scripts from the same ref as `uses:`.
+      workflows_ref: 964d5aad37cbfb57c5b23961d42c2fd85868bf1d
+    secrets:
+      CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+      # Optional — enables start/complete Slack DMs to the triggerer.
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

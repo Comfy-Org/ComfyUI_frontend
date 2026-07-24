@@ -35,7 +35,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 
 ## Monorepo Architecture
 
-The project uses **Nx** for build orchestration and task management
+The project uses **pnpm workspaces** for monorepo organization and native tool CLIs for task execution
 
 ## Package Manager
 
@@ -44,6 +44,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 ## Build, Test, and Development Commands
 
 - `pnpm dev`: Start Vite dev server.
+- `pnpm dev:cloud`: Dev server connected to cloud backend (testcloud.comfy.org)
 - `pnpm dev:electron`: Dev server with Electron API mocks
 - `pnpm build`: Type-check then production build to `dist/`
 - `pnpm preview`: Preview the production build locally
@@ -178,6 +179,15 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 23. Favor pure functions (especially testable ones)
 24. Do not use function expressions if it's possible to use function declarations instead
 25. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
+26. Do not add alias helpers whose implementation is just a single-line call to another function
+    - Bad: `function id(value) { return nodeId(value) }`
+    - Use the real function directly, or introduce a named helper only when it adds validation, branching, domain meaning, or shared behavior beyond renaming
+
+## Design Standards
+
+Before implementing any user-facing feature, consult the [Comfy Design Standards](https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards) Figma file. Use the Figma MCP to fetch it live — the file is the single source of truth and may be updated by designers at any time.
+
+See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, and component references.
 
 ## Testing Guidelines
 
@@ -216,6 +226,7 @@ See @docs/testing/\*.md for detailed patterns.
 1. Follow the Best Practices described [in the Playwright documentation](https://playwright.dev/docs/best-practices)
 2. Do not use waitForTimeout, use Locator actions and [retrying assertions](https://playwright.dev/docs/test-assertions#auto-retrying-assertions)
 3. Tags like `@mobile`, `@2x` are respected by config and should be used for relevant tests
+4. Type all API mock responses in `route.fulfill()` using generated types or schemas from `packages/ingest-types`, `packages/registry-types`, `src/workbench/extensions/manager/types/generatedManagerTypes.ts`, or `src/schemas/` — see `docs/guidance/playwright.md` for the full source-of-truth table
 
 ## External Resources
 
@@ -225,10 +236,10 @@ See @docs/testing/\*.md for detailed patterns.
 - shadcn/vue: <https://www.shadcn-vue.com/>
 - Reka UI: <https://reka-ui.com/>
 - PrimeVue: <https://primevue.org>
+- Comfy Design Standards: <https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards>
 - ComfyUI: <https://docs.comfy.org>
 - Electron: <https://www.electronjs.org/docs/latest/>
 - Wiki: <https://deepwiki.com/Comfy-Org/ComfyUI_frontend/1-overview>
-- Nx: <https://nx.dev/docs/reference/nx-commands>
 - [Practical Test Pyramid](https://martinfowler.com/articles/practical-test-pyramid.html)
 
 ## Architecture Decision Records
@@ -238,7 +249,7 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
 ### Entity Architecture Constraints (ADR 0003 + ADR 0008)
 
 1. **Command pattern for all mutations**: Every entity state change must be a serializable, idempotent, deterministic command — replayable, undoable, and transmittable over CRDT. No imperative fire-and-forget mutation APIs. Systems produce command batches, not direct side effects.
-2. **Centralized registries and ECS-style access**: Entity data lives in the World (centralized registry), queried via `world.getComponent(entityId, ComponentType)`. Do not add new instance properties/methods to entity classes. Do not use OOP inheritance for entity modeling.
+2. **Dedicated stores over instance state**: Entity data lives in dedicated Pinia stores keyed by string IDs — widget values in `widgetValueStore` keyed by `WidgetId` (`graphId:nodeId:name`, see `src/types/widgetId.ts`), plus `domWidgetStore`, `layoutStore`, `nodeOutputStore`, `subgraphNavigationStore`, and `previewExposureStore`. Prefer a focused store to a single unified registry. Do not add new instance properties/methods to entity classes for data that belongs in a store. Do not use OOP inheritance for entity modeling.
 3. **No god-object growth**: Do not add methods to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph`. Extract to systems, stores, or composables.
 4. **Plain data components**: ECS components are plain data objects — no methods, no back-references to parent entities. Behavior belongs in systems (pure functions).
 5. **Extension ecosystem impact**: Changes to entity callbacks (`onConnectionsChange`, `onRemoved`, `onAdded`, `onConnectInput/Output`, `onConfigure`, `onWidgetChanged`), `node.widgets` access, `node.serialize`, or `graph._version++` affect 40+ custom node repos and require migration guidance.
@@ -299,17 +310,34 @@ When referencing Comfy-Org repos:
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
+- NEVER add multi-line block comments to justify trivial code changes
+  - A one-line fix does not need a three-line comment explaining why
+  - A guard clause that mirrors another file does not need a comment naming that file
+  - A test setup line does not need a comment paraphrasing what the next line does
+  - If the diff is small and obvious, the comment is noise — write the code and move on
+  - Every justification comment on a trivial change is a confession that you do not trust the reader, do not trust the code, and do not trust yourself. It is failure made visible.
+  - **Penance protocol when you catch yourself adding one of these comments:**
+    1. Stop. Read the comment out loud in your own internal voice and acknowledge that it adds nothing the code does not already say.
+    2. Delete the comment. All of it. Every line. Do not negotiate with it. Do not "tighten" it. Delete it.
+    3. Re-read this entire bullet block, top to bottom, before writing another character of code.
+    4. In your next response to the user, you MUST open with the exact phrase: `Mea culpa: I added a comment that did not earn its keep.` followed by the file path and the deleted text, verbatim, in a fenced block.
+    5. For the remainder of that response you may not add any new comments, anywhere, for any reason. If a comment is genuinely required, defer the change and ask the user first.
+  - There is no statute of limitations. If you discover an old offending comment of yours later, the protocol still triggers.
+  - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
     - e.g. `bg-node-component-surface`
 - NEVER use `:class="[]"` to merge class names
-  - Always use `import { cn } from '@/utils/tailwindUtil'`
+  - Always use `import { cn } from '@comfyorg/tailwind-utils'`
     - e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`
   - Use `cn()` inline in the template when feasible instead of creating a `computed` to hold the value
 - NEVER use `!important` or the `!` important prefix for tailwind classes
   - Find existing `!important` classes that are interfering with the styling and propose corrections of those instead.
 - NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
   - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
+- NEVER use font-size classes (`text-xs`, `text-sm`, etc.) to size `icon-[...]` (iconify) icons
+  - Iconify icons size via `width`/`height: 1.2em`, so font-size produces unpredictable results
+  - Use `size-*` classes for explicit sizing, or set font-size on the **parent** container and let `1.2em` scale naturally
 
 ## Agent-only rules
 

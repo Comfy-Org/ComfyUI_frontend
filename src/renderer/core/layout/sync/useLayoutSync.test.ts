@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
@@ -41,9 +41,12 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
 
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 
+let syncApi: ReturnType<typeof useLayoutSync>
+
 const LayoutSyncHarness = defineComponent({
   setup() {
-    return useLayoutSync()
+    syncApi = useLayoutSync()
+    return syncApi
   },
   template: '<div />'
 })
@@ -85,9 +88,9 @@ describe('useLayoutSync', () => {
       size: { width: 120, height: 70 }
     })
 
-    const wrapper = mount(LayoutSyncHarness)
+    const { unmount } = render(LayoutSyncHarness)
 
-    wrapper.vm.startSync(canvas as never)
+    syncApi.startSync(canvas as never)
 
     testState.listener?.({ nodeIds: ['1'], source: LayoutSource.External })
     testState.listener?.({ nodeIds: ['1'], source: LayoutSource.External })
@@ -102,7 +105,7 @@ describe('useLayoutSync', () => {
     expect(liteNode.pos).toEqual([10, 15])
     expect(liteNode.size).toEqual([120, 70])
 
-    wrapper.unmount()
+    unmount()
   })
 
   it('flushes interactive updates in a microtask without waiting for raf', () => {
@@ -123,9 +126,9 @@ describe('useLayoutSync', () => {
       size: { width: 120, height: 70 }
     })
 
-    const wrapper = mount(LayoutSyncHarness)
+    const { unmount } = render(LayoutSyncHarness)
 
-    wrapper.vm.startSync(canvas as never)
+    syncApi.startSync(canvas as never)
     testState.listener?.({ nodeIds: ['1'], source: LayoutSource.Vue })
 
     expect(testState.rafCallback).toBeNull()
@@ -136,7 +139,7 @@ describe('useLayoutSync', () => {
     expect(canvas.setDirty).toHaveBeenCalledTimes(1)
     expect(liteNode.pos).toEqual([20, 30])
 
-    wrapper.unmount()
+    unmount()
   })
 
   it('promotes queued raf work to microtask when interactive changes arrive', () => {
@@ -156,9 +159,9 @@ describe('useLayoutSync', () => {
       size: { width: 100, height: 50 }
     })
 
-    const wrapper = mount(LayoutSyncHarness)
+    const { unmount } = render(LayoutSyncHarness)
 
-    wrapper.vm.startSync(canvas as never)
+    syncApi.startSync(canvas as never)
     testState.listener?.({ nodeIds: ['1'], source: LayoutSource.External })
     expect(testState.rafCallback).toBeTruthy()
 
@@ -167,6 +170,6 @@ describe('useLayoutSync', () => {
     expect(testState.cancelAnimationFrame).toHaveBeenCalledWith(1)
     expect(testState.microtaskCallback).toBeTruthy()
 
-    wrapper.unmount()
+    unmount()
   })
 })

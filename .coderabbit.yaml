@@ -2,6 +2,7 @@ issue_enrichment:
   auto_enrich:
     enabled: true
 reviews:
+  profile: assertive
   high_level_summary: false
   request_changes_workflow: true
   auto_review:
@@ -15,19 +16,35 @@ reviews:
       - github-actions[bot]
   pre_merge_checks:
     override_requested_reviewers_only: true
+    # Explicitly disable the built-in docstring coverage check, which is
+    # enabled via organization-level settings. This repo opts out at the
+    # repo level without affecting other org repos.
+    docstrings:
+      mode: 'off'
     custom_checks:
       - name: End-to-end regression coverage for fixes
         mode: error
         instructions: |
-          Use only PR metadata already available in the review context: the PR title, commit subjects in this PR, the files changed in this PR relative to the PR base (equivalent to `base...head`), and the PR description.
-          Do not rely on shell commands. Do not inspect reverse diffs, files changed only on the base branch, or files outside this PR. If the changed-file list or commit subjects are unavailable, mark the check inconclusive instead of guessing.
+          Use only PR metadata already available in the review context:
+            - the PR title
+            - commit subjects in this PR
+            - The files changed in this PR relative to the PR base (equivalent to `base...head`)
+            - the PR description.
+          Do not rely on shell commands.
+          Do not inspect reverse diffs, files changed only on the base branch, or files outside this PR.
+          If the changed-file list or commit subjects are unavailable, mark the check inconclusive instead of guessing.
 
-          Pass if at least one of the following is true:
-          1. Neither the PR title nor any commit subject in the PR uses bug-fix language such as `fix`, `fixed`, `fixes`, `fixing`, `bugfix`, or `hotfix`.
-          2. The PR changes at least one file under `browser_tests/`.
-          3. The PR description includes a concrete, non-placeholder explanation of why an end-to-end regression test was not added.
+          Fail if all of the following are true:
+          1. The PR title and/or any commit subject in the PR uses bug-fix language such as `fix`, `fixed`, `fixes`, `fixing`, `bugfix`, or `hotfix`.
+          2. The PR changes files under `src/` or `packages/` related to the main frontend application but the PR does not change at least one file under `browser_tests/`.
+          3. The PR description lacks a concrete explanation of why an end-to-end regression test was not added.
 
-          Fail otherwise. When failing, mention which bug-fix signal you found and ask the author to either add or update a Playwright regression test under `browser_tests/` or add a concrete explanation in the PR description of why an end-to-end regression test is not practical.
+          Do not fail if the changes are exclusively in `apps/website`, just documentation changes, or changes related to CI processes.
+          The goal is to make sure that fixes include End-to-End regression tests. Do not insist on tests when the PR is not fixing a bug.
+
+          Pass otherwise.
+          When failing, mention which bug-fix signal you found and ask the author to either add or update a Playwright regression test under `browser_tests/` or add a concrete explanation in the PR description of why an end-to-end regression test is not practical.
+
       - name: ADR compliance for entity/litegraph changes
         mode: warning
         instructions: |
@@ -46,3 +63,14 @@ reviews:
           Pass if none of these patterns are found in the diff.
 
           When warning, reference the specific ADR by number and link to `docs/adr/` for context. Frame findings as directional guidance since ADR 0003 and 0008 are in Proposed status.
+
+  path_instructions:
+    - path: '**/*.test.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed Vitest test file.
+    - path: 'src/lib/litegraph/**/*.test.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, `docs/guidance/vitest.md`, and `docs/testing/litegraph-testing.md` as required review context for every changed litegraph Vitest test file.
+    - path: '{browser_tests,apps/website/e2e}/**/*.spec.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/playwright.md` as required review context for every changed Playwright test file.

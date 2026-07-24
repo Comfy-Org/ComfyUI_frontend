@@ -1,7 +1,10 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { logMeasurement, recordMeasurement } from '../helpers/perfReporter'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  logMeasurement,
+  recordMeasurement
+} from '@e2e/fixtures/utils/perfReporter'
 
 test.describe('Performance', { tag: ['@perf'] }, () => {
   test('canvas idle style recalculations', async ({ comfyPage }) => {
@@ -202,6 +205,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       'domNodes'
     ])
   })
+
   test('subgraph DOM widget clipping during node selection', async ({
     comfyPage
   }) => {
@@ -327,8 +331,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       // Verify we actually entered the culling regime.
       // isNodeTooSmall triggers when max(width, height) * scale < 4px.
       // Typical nodes are ~200px wide, so scale must be < 0.02.
-      const scale = await comfyPage.canvasOps.getScale()
-      expect(scale).toBeLessThan(0.02)
+      await expect.poll(() => comfyPage.canvasOps.getScale()).toBeLessThan(0.02)
 
       // Idle at extreme zoom-out — most nodes should be culled
       for (let i = 0; i < 60; i++) {
@@ -348,6 +351,45 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     })
   })
 
+  test(
+    'subgraph transition (enter and exit)',
+    { tag: ['@vue-nodes'] },
+    async ({ comfyPage }, testInfo) => {
+      // Heaviest perf test: loads an 80-node subgraph and pays ~30s/repeat.
+      // The signal is dominated by N=80 mount cost, so a single sample per
+      // CI invocation is sufficient — early-return on subsequent repeats.
+      if (testInfo.repeatEachIndex > 0) return
+
+      // Load workflow with a subgraph containing 80 interior nodes.
+      // Entering the subgraph unmounts root nodes and mounts all 80 interior
+      // nodes synchronously — this is the bottleneck we're measuring.
+      await comfyPage.workflow.loadWorkflow('subgraphs/large-subgraph-80-nodes')
+
+      await comfyPage.idleFrames(30)
+
+      await comfyPage.vueNodes.enterSubgraph()
+      await comfyPage.vueNodes.waitForNodes(80)
+      await comfyPage.idleFrames(30)
+
+      // Exit back to root graph before measuring a fresh enter/exit cycle
+      await comfyPage.subgraph.exitViaBreadcrumb()
+      await comfyPage.idleFrames(10)
+
+      // Start measuring the enter transition
+      await comfyPage.perf.startMeasuring()
+
+      await comfyPage.vueNodes.enterSubgraph()
+      await comfyPage.vueNodes.waitForNodes(80)
+      await comfyPage.idleFrames(30)
+
+      const m = await comfyPage.perf.stopMeasuring('subgraph-transition-enter')
+      recordMeasurement(m)
+      console.log(
+        `Subgraph enter (80 nodes): ${m.taskDurationMs.toFixed(0)}ms task, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+      )
+    }
+  )
+
   test('workflow execution', async ({ comfyPage }) => {
     // Uses lightweight PrimitiveString → PreviewAny workflow (no GPU needed)
     await comfyPage.workflow.loadWorkflow('execution/partial_execution')
@@ -358,9 +400,11 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
 
     // Wait for the output widget to populate (execution_success)
     const outputNode = await comfyPage.nodeOps.getNodeRefById(1)
-    await expect(async () => {
-      expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
-    }).toPass({ timeout: 10000 })
+    await expect
+      .poll(async () => (await outputNode.getWidget(0)).getValue(), {
+        timeout: 10000
+      })
+      .toBe('foo')
 
     const m = await comfyPage.perf.stopMeasuring('workflow-execution')
     recordMeasurement(m)

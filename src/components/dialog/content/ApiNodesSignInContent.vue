@@ -1,5 +1,8 @@
 <template>
-  <div class="flex h-110 max-w-96 flex-col gap-4 p-2">
+  <div
+    data-testid="api-signin-dialog"
+    class="flex h-110 max-w-96 flex-col gap-4 p-2"
+  >
     <div class="mb-2 text-2xl font-medium">
       {{ t('apiNodesSignInDialog.title') }}
     </div>
@@ -29,6 +32,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import ApiNodesList from '@/components/common/ApiNodesList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 

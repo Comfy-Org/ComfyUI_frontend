@@ -1,3 +1,4 @@
+import { FBXExporter } from '@comfyorg/fbx-exporter-three'
 import * as THREE from 'three'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
 import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter'
@@ -38,6 +39,9 @@ export class ModelExporter {
   ): Promise<void> {
     try {
       const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`Failed to download file (HTTP ${response.status})`)
+      }
       const blob = await response.blob()
       downloadBlob(desiredFilename, blob)
     } catch (error) {
@@ -116,6 +120,41 @@ export class ModelExporter {
     }
   }
 
+  static async exportFBX(
+    model: THREE.Object3D,
+    filename: string = 'model.fbx',
+    originalURL?: string | null
+  ): Promise<void> {
+    if (originalURL && ModelExporter.canUseDirectURL(originalURL, 'fbx')) {
+      return ModelExporter.downloadFromURL(originalURL, filename)
+    }
+
+    const exporter = new FBXExporter()
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      const bytes = await exporter.parseAsync(model)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      // FBXExporter returns Uint8Array — wrap into ArrayBuffer for download.
+      ModelExporter.saveArrayBuffer(
+        bytes.buffer.slice(
+          bytes.byteOffset,
+          bytes.byteOffset + bytes.byteLength
+        ) as ArrayBuffer,
+        filename
+      )
+    } catch (error) {
+      console.error('Error exporting FBX:', error)
+      useToastStore().addAlert(
+        t('toastMessages.failedToExportModel', { format: 'FBX' })
+      )
+      throw error
+    }
+  }
+
   static async exportSTL(
     model: THREE.Object3D,
     filename: string = 'model.stl',
@@ -143,6 +182,18 @@ export class ModelExporter {
       )
       throw error
     }
+  }
+
+  static async exportDirect(
+    originalURL: string | null | undefined,
+    filename: string,
+    format: string
+  ): Promise<void> {
+    if (!originalURL) {
+      throw new Error(`No source file available to export as ${format}`)
+    }
+
+    return ModelExporter.downloadFromURL(originalURL, filename)
   }
 
   private static saveArrayBuffer(buffer: ArrayBuffer, filename: string): void {

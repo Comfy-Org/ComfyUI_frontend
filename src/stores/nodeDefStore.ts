@@ -4,8 +4,8 @@ import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
 import { t } from '@/i18n'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveInputType } from '@/core/graph/widgets/dynamicTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -24,7 +24,7 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { ESSENTIALS_CATEGORY_CANONICAL } from '@/constants/essentialsNodes'
+import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
@@ -137,8 +137,8 @@ export class ComfyNodeDefImpl
     const obj = ComfyNodeDefImpl._migrateDefaultInput(def)
 
     /**
-     * Assign extra fields to `this` for compatibility with group node feature.
-     * TODO: Remove this once group node feature is removed.
+     * Copy fields that are declared on this class but not explicitly assigned
+     * below (e.g. `search_aliases`) straight from the source definition.
      */
     Object.assign(this, obj)
 
@@ -163,11 +163,8 @@ export class ComfyNodeDefImpl
     this.output_tooltips = obj.output_tooltips
     this.input_order = obj.input_order
     this.price_badge = obj.price_badge
-    this.essentials_category = obj.essentials_category
-      ? (ESSENTIALS_CATEGORY_CANONICAL.get(
-          obj.essentials_category.toLowerCase()
-        ) ?? obj.essentials_category)
-      : undefined
+    this.essentials_category =
+      NODE_TO_ESSENTIALS_CATEGORY[obj.name] ?? obj.essentials_category
     this.isGlobal = obj.isGlobal
     this.isCoreNode = CORE_NODE_MODULES.includes(
       this.python_module.split('.')[0]
@@ -212,7 +209,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   PrimitiveNode: {
     name: 'PrimitiveNode',
     display_name: 'Primitive',
-    category: 'utils',
+    category: 'utilities/primitive',
     input: { required: {}, optional: {} },
     output: ['*'],
     output_name: ['connect to widget input'],
@@ -224,7 +221,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   Reroute: {
     name: 'Reroute',
     display_name: 'Reroute',
-    category: 'utils',
+    category: 'utilities',
     input: { required: { '': ['*', {}] }, optional: {} },
     output: ['*'],
     output_name: [''],
@@ -236,7 +233,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   Note: {
     name: 'Note',
     display_name: 'Note',
-    category: 'utils',
+    category: 'utilities',
     input: {
       required: { text: ['STRING', { multiline: true }] },
       optional: {}
@@ -251,7 +248,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   MarkdownNote: {
     name: 'MarkdownNote',
     display_name: 'Markdown Note',
-    category: 'utils',
+    category: 'utilities',
     input: {
       required: { text: ['STRING', { multiline: true }] },
       optional: {}
@@ -377,6 +374,9 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
     return map
   })
+  const allNodeDefsByDisplayName = computed(() => {
+    return Object.fromEntries(nodeDefs.value.map((d) => [d.display_name, d]))
+  })
 
   const visibleNodeDefs = computed(() => {
     return nodeDefs.value.filter((nodeDef) =>
@@ -427,13 +427,22 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
       return nodeDef.inputs[widgetName]
     }
-    const widget = node.widgets?.find((w) => w.name === widgetName)
-    if (!widget || !isPromotedWidgetView(widget)) return undefined
-
-    const sourceWidget = resolvePromotedWidgetSource(node, widget)
-    if (!sourceWidget) return undefined
-
-    return getInputSpecForWidget(sourceWidget.node, sourceWidget.widget.name)
+    // A subgraph node's widget is a promoted input named after its slot; resolve
+    // the interior source and read its real spec instead of fabricating one.
+    const input = node.inputs.find((i) => i.name === widgetName)
+    if (!input) return undefined
+    const source = promotedInputSource(node, input)
+    if (!source) return undefined
+    const resolution = resolveConcretePromotedWidget(
+      node,
+      source.nodeId,
+      source.widgetName
+    )
+    if (resolution.status !== 'resolved') return undefined
+    return getInputSpecForWidget(
+      resolution.resolved.node,
+      resolution.resolved.widget.name
+    )
   }
 
   /**
@@ -502,6 +511,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     nodeDefsByName,
     nodeDefsByDisplayName,
     allNodeDefsByName,
+    allNodeDefsByDisplayName,
     showDeprecated,
     showExperimental,
     showDevOnly,

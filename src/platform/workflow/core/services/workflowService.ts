@@ -6,7 +6,11 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+import {
+  normalizePendingWarnings,
+  updatePendingWarnings
+} from '@/platform/workflow/core/utils/pendingWarnings'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -19,18 +23,20 @@ import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
-import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   appendJsonExt,
   appendWorkflowJsonExt,
   generateUUID
 } from '@/utils/formatUtil'
+import type { AppMode } from '@/utils/appMode'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
@@ -44,9 +50,43 @@ export const useWorkflowService = () => {
   const dialogService = useDialogService()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
-  const executionErrorStore = useExecutionErrorStore()
   const missingNodesErrorStore = useMissingNodesErrorStore()
-  const workflowDraftStore = useWorkflowDraftStore()
+  const workflowDraftStore = useWorkflowDraftStoreV2()
+
+  const showFailedToSaveDraftToast = () => {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('toastMessages.failedToSaveDraft')
+    })
+  }
+
+  const persistActiveWorkflowDraft = (activeWorkflow: ComfyWorkflow) => {
+    if (!settingStore.get('Comfy.Workflow.Persist') || !activeWorkflow.path) {
+      return
+    }
+
+    const activeState = activeWorkflow.activeState
+    if (!activeState) return
+
+    try {
+      const saved = workflowDraftStore.saveDraft(
+        activeWorkflow.path,
+        JSON.stringify(activeState),
+        {
+          name: activeWorkflow.key,
+          isTemporary: activeWorkflow.isTemporary
+        }
+      )
+
+      if (!saved) {
+        showFailedToSaveDraftToast()
+      }
+    } catch (err) {
+      console.error('Failed to persist active workflow draft', err)
+      showFailedToSaveDraftToast()
+    }
+  }
 
   function confirmOverwrite(targetPath: string) {
     return dialogService.confirm({
@@ -139,8 +179,9 @@ export const useWorkflowService = () => {
     }
 
     if (isSelfOverwrite) {
-      workflow.changeTracker?.checkState()
-      await saveWorkflow(workflow)
+      workflow.changeTracker?.prepareForSave()
+      // Call workflowStore.saveWorkflow directly: saveWorkflowAs emits its own is_new:true event below, so delegating to saveWorkflow() would also fire is_new:false and run prepareForSave a second time.
+      await workflowStore.saveWorkflow(workflow)
     } else {
       let target: ComfyWorkflow
       if (workflow.isTemporary) {
@@ -156,8 +197,7 @@ export const useWorkflowService = () => {
         app.rootGraph.extra.linearMode = isApp
         target.initialMode = isApp ? 'app' : 'graph'
       }
-      target.changeTracker?.checkState()
-
+      target.changeTracker?.prepareForSave()
       await workflowStore.saveWorkflow(target)
     }
 
@@ -169,41 +209,39 @@ export const useWorkflowService = () => {
    * Save a workflow
    * @param workflow The workflow to save
    */
-  const saveWorkflow = async (workflow: ComfyWorkflow) => {
+  const saveWorkflow = async (workflow: ComfyWorkflow): Promise<boolean> => {
     if (workflow.isTemporary) {
-      await saveWorkflowAs(workflow)
-    } else {
-      workflow.changeTracker?.checkState()
-
-      const isApp = workflow.initialMode === 'app'
-      const expectedPath =
-        workflow.directory +
-        '/' +
-        appendWorkflowJsonExt(workflow.filename, isApp)
-      if (workflow.path !== expectedPath) {
-        const existing = workflowStore.getWorkflowByPath(expectedPath)
-        if (existing && !existing.isTemporary) {
-          if ((await confirmOverwrite(expectedPath)) !== true) {
-            await workflowStore.saveWorkflow(workflow)
-            return
-          }
-          await deleteWorkflow(existing, true)
-        }
-        await renameWorkflow(workflow, expectedPath)
-        toastStore.add({
-          severity: 'info',
-          summary: t(
-            isApp
-              ? 'workflowService.savedAsApp'
-              : 'workflowService.savedAsWorkflow'
-          ),
-          life: 3000
-        })
-      }
-
-      await workflowStore.saveWorkflow(workflow)
-      useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: false })
+      return await saveWorkflowAs(workflow)
     }
+
+    workflow.changeTracker?.prepareForSave()
+    const isApp = workflow.initialMode === 'app'
+    const expectedPath =
+      workflow.directory + '/' + appendWorkflowJsonExt(workflow.filename, isApp)
+    if (workflow.path !== expectedPath) {
+      const existing = workflowStore.getWorkflowByPath(expectedPath)
+      if (existing && !existing.isTemporary) {
+        if ((await confirmOverwrite(expectedPath)) !== true) {
+          await workflowStore.saveWorkflow(workflow)
+          return true
+        }
+        await deleteWorkflow(existing, true)
+      }
+      await renameWorkflow(workflow, expectedPath)
+      toastStore.add({
+        severity: 'info',
+        summary: t(
+          isApp
+            ? 'workflowService.savedAsApp'
+            : 'workflowService.savedAsWorkflow'
+        ),
+        life: 3000
+      })
+    }
+
+    await workflowStore.saveWorkflow(workflow)
+    useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: false })
+    return true
   }
 
   /**
@@ -253,13 +291,14 @@ export const useWorkflowService = () => {
       /* restore_view=*/ true,
       workflow,
       {
-        showMissingModels: loadFromRemote,
-        showMissingNodes: true,
         checkForRerouteMigration: false,
-        deferWarnings: true
+        deferWarnings: true,
+        skipAssetScans: !loadFromRemote && !options.force
       }
     )
-    showPendingWarnings()
+    showPendingWarnings(undefined, {
+      silent: !loadFromRemote && !options.force
+    })
   }
 
   /**
@@ -279,13 +318,15 @@ export const useWorkflowService = () => {
         type: 'dirtyClose',
         message: t('sideToolbar.workflowTab.dirtyClose'),
         itemList: [workflow.path],
-        hint: options.hint
+        hint: options.hint,
+        denyLabel: t('sideToolbar.workflowTab.dirtyCloseAnyway')
       })
       // Cancel
       if (confirmed === null) return false
 
       if (confirmed === true) {
-        await saveWorkflow(workflow)
+        const saved = await saveWorkflow(workflow)
+        if (!saved) return false
       }
     }
 
@@ -368,27 +409,20 @@ export const useWorkflowService = () => {
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
-      activeWorkflow.changeTracker.store()
-      if (settingStore.get('Comfy.Workflow.Persist') && activeWorkflow.path) {
-        const activeState = activeWorkflow.activeState
-        if (activeState) {
-          try {
-            const workflowJson = JSON.stringify(activeState)
-            workflowDraftStore.saveDraft(activeWorkflow.path, {
-              data: workflowJson,
-              updatedAt: Date.now(),
-              name: activeWorkflow.key,
-              isTemporary: activeWorkflow.isTemporary
-            })
-          } catch {
-            toastStore.add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('toastMessages.failedToSaveDraft')
-            })
-          }
-        }
-      }
+      activeWorkflow.changeTracker?.deactivate()
+      persistActiveWorkflowDraft(activeWorkflow)
+      // Cache missing model/media/node state for restore on tab switch.
+      // Always overwrite to reflect the current store state (e.g. after
+      // muting a node cleared its errors).
+      const modelCandidates = useMissingModelStore().missingModelCandidates
+      const mediaCandidates = useMissingMediaStore().missingMediaCandidates
+      const nodeTypes = missingNodesErrorStore.missingNodesError?.nodeTypes
+      updatePendingWarnings(activeWorkflow, {
+        missingNodeTypes: nodeTypes?.length ? [...nodeTypes] : undefined,
+        missingModelCandidates: modelCandidates ?? undefined,
+        missingMediaCandidates: mediaCandidates ?? undefined
+      })
+
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
       domWidgetStore.clear()
@@ -411,7 +445,8 @@ export const useWorkflowService = () => {
    */
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
-    workflowData: ComfyWorkflowJSON
+    workflowData: ComfyWorkflowJSON,
+    shareId?: string
   ) => {
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
@@ -465,6 +500,9 @@ export const useWorkflowService = () => {
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
+          if (shareId) {
+            loadedWorkflow.shareId = shareId
+          }
           loadedWorkflow.changeTracker.reset(workflowData)
           loadedWorkflow.changeTracker.restore()
           return
@@ -476,12 +514,18 @@ export const useWorkflowService = () => {
         workflowData
       )
       tempWorkflow.initialMode = freshLoadMode
+      if (shareId) {
+        tempWorkflow.shareId = shareId
+      }
       trackIfEnteringApp(tempWorkflow)
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (shareId) {
+      loadedWorkflow.shareId = shareId
+    }
     if (loadedWorkflow.initialMode === undefined) {
       loadedWorkflow.initialMode = freshLoadMode
       trackIfEnteringApp(loadedWorkflow)
@@ -550,17 +594,43 @@ export const useWorkflowService = () => {
    * active workflow. Called after a workflow becomes visible so dialogs don't
    * overlap with subsequent loads.
    */
-  function showPendingWarnings(workflow?: ComfyWorkflow | null) {
+  function showPendingWarnings(
+    workflow?: ComfyWorkflow | null,
+    options?: { silent?: boolean }
+  ) {
     const wf = workflow ?? workflowStore.activeWorkflow
-    if (!wf?.pendingWarnings) return
+    if (!wf) return
 
-    const { missingNodeTypes } = wf.pendingWarnings
-    wf.pendingWarnings = null
+    const { missingNodeTypes, missingModelCandidates, missingMediaCandidates } =
+      wf.pendingWarnings ?? {}
 
-    if (missingNodeTypes?.length) {
-      if (missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes)) {
-        executionErrorStore.showErrorOverlay()
-      }
+    // Always sync missing nodes store (clear when empty).
+    if (
+      missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&
+      !options?.silent
+    ) {
+      useExecutionErrorStore().showErrorOverlay()
+    }
+    if (missingModelCandidates?.length) {
+      useMissingModelStore().setMissingModels(missingModelCandidates)
+    }
+    if (missingMediaCandidates?.length) {
+      useMissingMediaStore().setMissingMedia(missingMediaCandidates)
+    }
+
+    // Keep cache for future tab switches
+    if (
+      missingNodeTypes?.length ||
+      missingModelCandidates?.length ||
+      missingMediaCandidates?.length
+    ) {
+      wf.pendingWarnings = normalizePendingWarnings({
+        missingNodeTypes,
+        missingModelCandidates,
+        missingMediaCandidates
+      })
+    } else {
+      wf.pendingWarnings = null
     }
   }
 

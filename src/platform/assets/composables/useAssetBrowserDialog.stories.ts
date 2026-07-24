@@ -117,7 +117,7 @@ const DialogDemoComponent = {
       >
         <div class="w-[80vw] h-[80vh] max-w-[80vw] max-h-[80vh] rounded-2xl overflow-hidden">
           <AssetBrowserModal
-            :assets="mockAssets"
+            :override-assets="mockAssets"
             :node-type="currentNodeType"
             :input-name="currentInputName"
             :current-value="currentValue"

@@ -61,7 +61,7 @@ const _useWorkflowPacks = () => {
 
     // Check if node is a core node
     const nodeDef = nodeDefStore.nodeDefsByName[nodeName]
-    if (nodeDef?.nodeSource.type === 'core') {
+    if (nodeDef?.isCoreNode) {
       if (!systemStatsStore.systemStats) {
         await systemStatsStore.refetchSystemStats()
       }

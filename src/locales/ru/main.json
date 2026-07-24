@@ -3,6 +3,9 @@
     "dockToTop": "Закрепить сверху",
     "feedback": "Обратная связь",
     "feedbackTooltip": "Обратная связь",
+    "freeTierPartner": "Партнёрские узлы требуют платного плана",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} запусков осталось",
+    "freeTierRunsExhausted": "Запуски закончились",
     "share": "Поделиться",
     "shareTooltip": "Поделиться рабочим процессом"
   },
@@ -92,6 +95,7 @@
     "errorUserTokenAccessDenied": "Ваш API-токен не имеет доступа к этому ресурсу. Проверьте права доступа токена.",
     "errorUserTokenInvalid": "Ваш сохранённый API-токен недействителен или истёк. Обновите токен в настройках.",
     "failedToCreateNode": "Не удалось создать узел. Попробуйте ещё раз или проверьте консоль для подробностей.",
+    "failedToSetModelValue": "Узел добавлен, но его модель не удалось установить автоматически. Проверьте консоль для подробностей.",
     "fileFormats": "Форматы файлов",
     "fileName": "Имя файла",
     "fileSize": "Размер файла",
@@ -99,6 +103,7 @@
     "findInLibrary": "Найдите это в разделе {type} библиотеки моделей.",
     "finish": "Готово",
     "genericLinkPlaceholder": "Вставьте ссылку сюда",
+    "gridView": "Вид сеткой",
     "importAnother": "Импортировать другой",
     "imported": "Импортировано",
     "invalidAsset": "Недопустимый ресурс",
@@ -106,6 +111,7 @@
     "invalidFilename": "Недопустимое имя файла",
     "invalidFilenameDetail": "Не удалось определить имя файла ресурса. Пожалуйста, попробуйте еще раз.",
     "jobId": "ID задачи",
+    "listView": "Вид списком",
     "loadingModels": "Загрузка {type}...",
     "maxFileSize": "Максимальный размер файла: {size}",
     "maxFileSizeValue": "1 ГБ",
@@ -113,6 +119,13 @@
       "audioPlaceholder": "Аудио",
       "threeDModelPlaceholder": "3D-модель"
     },
+    "missingModelImportTypeLocked": "Заблокировано на {type} для этой отсутствующей модели",
+    "missingModelImportTypeMismatchAlreadyImported": "Этот файл уже импортирован как {actual}.",
+    "missingModelImportTypeMismatchNextAction": "Попробуйте импортировать другую модель {required}, которую может использовать этот узел.",
+    "missingModelImportTypeMismatchRequired": "Этот узел требует {required}, поэтому этот импорт не может решить проблему отсутствующей модели.",
+    "missingModelImportTypeMismatchTitle": "Эта модель не может решить проблему отсутствующей модели.",
+    "missingModelImportUnknownType": "другой тип модели",
+    "missingModelImportWillReplace": "Этот импорт заменит {model} в:",
     "modelAssociatedWithLink": "Модель, связанная с предоставленной вами ссылкой:",
     "modelInfo": {
       "addBaseModel": "Добавить базовую модель...",
@@ -168,6 +181,7 @@
     "sortDefault": "По умолчанию",
     "sortPopular": "Популярные",
     "sortRecent": "Недавние",
+    "sortUnsorted": "Без сортировки",
     "sortZA": "Я-А",
     "sortingType": "Тип сортировки",
     "tags": "Теги",
@@ -230,10 +244,13 @@
       "auth/user-disabled": "Эта учетная запись отключена. Пожалуйста, обратитесь в службу поддержки.",
       "auth/user-not-found": "Учетная запись с этим email не найдена. Хотите создать новую учетную запись?",
       "auth/weak-password": "Пароль слишком слабый. Пожалуйста, используйте более надежный пароль длиной не менее 6 символов.",
-      "auth/wrong-password": "Введенный пароль неверен. Пожалуйста, попробуйте еще раз."
+      "auth/wrong-password": "Введенный пароль неверен. Пожалуйста, попробуйте еще раз.",
+      "generic": "Произошла ошибка при входе в систему. Пожалуйста, попробуйте еще раз.",
+      "signupBlocked": "Сейчас не удалось создать ваш аккаунт. Пожалуйста, попробуйте позже. Если проблема повторяется, напишите на support@comfy.org."
     },
     "login": {
       "andText": "и",
+      "backToGithubLogin": "Зарегистрироваться через Github",
       "backToLogin": "Вернуться к входу",
       "backToSocialLogin": "Зарегистрируйтесь через Google или Github",
       "confirmPasswordLabel": "Подтвердите пароль",
@@ -247,6 +264,7 @@
       "freeTierBadge": "Доступен бесплатный тариф",
       "freeTierDescription": "Зарегистрируйтесь через Google и получите {credits} бесплатных кредитов каждый месяц. Карта не требуется.",
       "freeTierDescriptionGeneric": "Зарегистрируйтесь через Google и получайте бесплатные кредиты каждый месяц. Карта не требуется.",
+      "googleSsoInAppBrowserNotice": "Если вы открыли это из встроенного браузера приложения (например, Instagram, LinkedIn), вход через Google может не работать. Используйте GitHub или электронную почту, либо откройте эту страницу в стандартном браузере вашего устройства.",
       "insecureContextWarning": "Это соединение небезопасно (HTTP) — ваши учетные данные могут быть перехвачены злоумышленниками, если вы продолжите вход.",
       "loginButton": "Войти",
       "loginWithGithub": "Войти через Github",
@@ -289,7 +307,9 @@
       "title": "Требуется повторная аутентификация"
     },
     "signOut": {
+      "saveFailed": "Выход отменён, так как не удалось сохранить «{workflow}».",
       "signOut": "Выйти",
+      "signOutAnyway": "Выйти всё равно",
       "success": "Вы успешно вышли из системы",
       "successDetail": "Вы вышли из своей учетной записи.",
       "unsavedChangesMessage": "У вас есть несохранённые изменения, которые будут потеряны при выходе из системы. Вы хотите продолжить?",
@@ -309,12 +329,19 @@
       "signUpWithGithub": "Зарегистрироваться через Github",
       "signUpWithGoogle": "Зарегистрироваться через Google",
       "title": "Создать аккаунт"
+    },
+    "turnstile": {
+      "expired": "Срок действия проверки истек. Пожалуйста, выполните проверку снова.",
+      "failed": "Проверка не пройдена. Пожалуйста, попробуйте еще раз.",
+      "submitBlockedHint": "Завершите проверку выше, чтобы включить регистрацию."
     }
   },
   "batch": {
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "cancelFailed": "Не удалось отменить подписку",
+    "cancelTimeout": "Время ожидания отмены подписки истекло",
     "subscriptionFailed": "Не удалось обновить подписку",
     "subscriptionProcessing": "Обработка платежа — настройка вашего рабочего пространства...",
     "subscriptionSuccess": "Подписка успешно обновлена",
@@ -330,8 +357,22 @@
     "x": "X",
     "y": "Y"
   },
+  "boundingBoxes": {
+    "clearAll": "Очистить всё",
+    "clickRegionToEdit": "Кликните по области для редактирования.",
+    "colors": "палитра_цветов",
+    "descLabel": "описание",
+    "descPlaceholder": "описание этой области",
+    "grid": "Сетка",
+    "textLabel": "Текст",
+    "textPlaceholder": "текст для отображения (дословно)",
+    "typeObj": "объект",
+    "typeText": "текст"
+  },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode} режим, действия с рабочим процессом",
     "app": "Приложение",
+    "blueprint": "Чертёж",
     "clearWorkflow": "Очистить рабочий процесс",
     "deleteBlueprint": "Удалить схему",
     "deleteWorkflow": "Удалить рабочий процесс",
@@ -400,10 +441,32 @@
   "cloudForgotPassword_passwordResetSent": "Запрос на сброс пароля отправлен",
   "cloudForgotPassword_sendResetLink": "Отправить ссылку для сброса",
   "cloudForgotPassword_title": "Забыли пароль",
+  "cloudHero": {
+    "nextSlide": "Следующий слайд",
+    "previousSlide": "Предыдущий слайд",
+    "slidePagerLabel": "Перейти к слайду {index}",
+    "slides": {
+      "cloud": {
+        "description": "Лучший выбор для большинства пользователей, которые хотят работать из любой точки мира с моделями, проверенными на коммерческую лицензию.",
+        "title": "Облако"
+      },
+      "models": {
+        "description": "Отобранные, коммерчески лицензированные модели, готовые к запуску без дополнительной настройки.",
+        "title": "Модели"
+      },
+      "team": {
+        "description": "Подключите свою команду уже сегодня. Делитесь рабочими процессами и ресурсами внутри вашей организации.",
+        "title": "Команда"
+      },
+      "workflows": {
+        "description": "От идеи до результата за считанные минуты. Генерируйте несколько вариантов одновременно.",
+        "title": "Рабочие процессы"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Продолжить локально",
     "exploreCloud": "Попробовать облако бесплатно",
-    "feature1Title": "400 бесплатных кредитов в месяц",
     "feature2Title": "Работает везде и мгновенно",
     "feature3Title": "Модели готовы к использованию",
     "feature4Title": "Лучшие пользовательские пакеты узлов предустановлены",
@@ -457,54 +520,53 @@
       "wantToRun": "Хотите запустить ComfyUI локально?"
     },
     "survey": {
+      "errors": {
+        "answerTooLong": "Пожалуйста, сократите ваш ответ до {max} символов.",
+        "chooseAnOption": "Пожалуйста, выберите вариант.",
+        "describeAnswer": "Пожалуйста, опишите ваш ответ.",
+        "selectAtLeastOne": "Пожалуйста, выберите хотя бы один вариант."
+      },
+      "intro": "Помогите нам адаптировать ваш опыт работы с ComfyUI.",
       "options": {
-        "familiarity": {
-          "advanced": "Продвинутый пользователь (пользовательские рабочие процессы)",
-          "basics": "Уверенно владею основами",
-          "expert": "Эксперт (помогаю другим)",
-          "new": "Новичок в ComfyUI (никогда не использовал)",
-          "starting": "Только начинаю (следую руководствам)"
+        "experience": {
+          "new": "Впервые в ComfyUI",
+          "pro": "Я опытный пользователь",
+          "some": "Я немного знаком(а)"
         },
-        "industry": {
-          "architecture": "Архитектура",
-          "education": "Образование",
-          "film_tv_animation": "Кино, ТВ и анимация",
-          "fine_art": "Изобразительное искусство и иллюстрация",
-          "gaming": "Игровая индустрия",
-          "marketing": "Маркетинг и реклама",
-          "other": "Другое",
-          "otherPlaceholder": "Пожалуйста, уточните",
-          "product_design": "Продуктовый и графический дизайн",
-          "software": "Программное обеспечение и технологии"
+        "focus": {
+          "custom_nodes": "Пользовательские узлы",
+          "pipelines": "Автоматизированные пайплайны",
+          "products": "Продукты для других"
         },
-        "making": {
-          "3d": "3D-ресурсы",
-          "audio": "Аудио / музыка",
-          "custom_nodes": "Пользовательские узлы и рабочие процессы",
+        "intent": {
+          "apps_api": "Приложения и API",
+          "exploring": "Просто изучаю",
           "images": "Изображения",
-          "video": "Видео и анимация"
+          "other": "Другое",
+          "otherPlaceholder": "Что вы хотите создать?",
+          "video": "Видео",
+          "workflows": "Пользовательские workflow или pipeline"
         },
-        "purpose": {
-          "client": "Работа с клиентами (фриланс)",
-          "community": "Вклад в сообщество (узлы, рабочие процессы и т.д.)",
-          "inhouse": "Моё рабочее место (внутреннее использование)",
-          "personal": "Личные проекты / хобби",
-          "research": "Академические исследования"
+        "source": {
+          "community": "Сообщество или форум",
+          "friend": "Друг или коллега",
+          "other": "Другое",
+          "otherPlaceholder": "Где вы о нас узнали?",
+          "search": "Google / поиск",
+          "social": "Социальные сети"
+        },
+        "source_social": {
+          "discord": "Discord",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "reddit": "Reddit",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
+          "youtube": "YouTube"
         }
       },
+      "otherPlaceholder": "Расскажите подробнее",
       "placeholder": "Вопросы для опроса",
-      "questions": {
-        "familiarity": "Насколько вы знакомы с ComfyUI?",
-        "industry": "В какой отрасли вы работаете?",
-        "making": "Что вы планируете создавать?",
-        "purpose": "Для чего вы в основном будетете использовать ComfyUI?"
-      },
-      "steps": {
-        "familiarity": "Насколько вы знакомы с ComfyUI?",
-        "industry": "В какой отрасли вы работаете?",
-        "making": "Что вы планируете создавать?",
-        "purpose": "Для чего вы в основном будете использовать ComfyUI?"
-      },
       "title": "Облачный опрос"
     }
   },
@@ -517,10 +579,11 @@
   "cloudStart_learnAboutButton": "Узнать о Cloud",
   "cloudStart_title": "начать создавать за секунды",
   "cloudStart_wantToRun": "Хотите запустить ComfyUI локально?",
-  "cloudSurvey_steps_familiarity": "Насколько вы знакомы с ComfyUI?",
-  "cloudSurvey_steps_industry": "В какой отрасли вы работаете?",
-  "cloudSurvey_steps_making": "Что вы планируете создавать?",
-  "cloudSurvey_steps_purpose": "Для чего вы в основном будете использовать ComfyUI?",
+  "cloudSurvey_steps_experience": "Насколько хорошо вы знаете ComfyUI?",
+  "cloudSurvey_steps_focus": "Что вы создаёте?",
+  "cloudSurvey_steps_intent": "Что вы хотите создавать с помощью ComfyUI?",
+  "cloudSurvey_steps_source": "Где вы узнали о ComfyUI?",
+  "cloudSurvey_steps_source_social": "На какой платформе?",
   "cloudWaitlist_contactLink": "здесь",
   "cloudWaitlist_questionsText": "Есть вопросы? Свяжитесь с нами",
   "color": {
@@ -560,10 +623,13 @@
     "namePlaceholder": "Введите ваше имя",
     "profileCreationNav": "Создание профиля",
     "startPublishingButton": "Начать публикацию",
+    "startUpdatingButton": "Обновить workflow",
     "successDescription": "Теперь вы можете загрузить свой workflow на страницу автора",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "Ваша страница профиля доступна по адресу",
     "successTitle": "Отлично, {'@'}{username}!",
+    "updateIntroDescription": "Отправьте ваши последние изменения в ComfyHub. Ваша ссылка для обмена и статистика останутся прежними.",
+    "updateIntroTitle": "Обновите ваш workflow в ComfyHub",
     "uploadCover": "+ Загрузить обложку",
     "uploadProfilePicture": "+ Загрузить фото профиля",
     "uploadWorkflowButton": "Загрузить мой workflow",
@@ -584,7 +650,11 @@
     "publishButton": "Опубликовать в ComfyHub",
     "publishFailedDescription": "Произошла ошибка при публикации вашего рабочего процесса. Пожалуйста, попробуйте еще раз.",
     "publishFailedTitle": "Ошибка публикации",
+    "publishSuccessDescription": "Ваш рабочий процесс теперь доступен на ComfyHub.",
+    "publishSuccessTitle": "Успешно опубликовано",
     "removeExampleImage": "Удалить пример изображения",
+    "renameFailedDescription": "Ваш workflow был успешно опубликован, но не удалось переименовать локальный файл. Переименуйте его снова, чтобы совпадало.",
+    "renameFailedTitle": "Не удалось переименовать",
     "selectAThumbnail": "Выберите миниатюру",
     "shareAs": "Поделиться как",
     "showLessTags": "Показать меньше...",
@@ -602,6 +672,7 @@
     "thumbnailVideo": "Видео",
     "title": "Публикация в ComfyHub",
     "unsavedDescription": "Вы должны сохранить свой рабочий процесс перед публикацией в ComfyHub. Сохраните его сейчас, чтобы продолжить.",
+    "updateButton": "Обновить workflow",
     "uploadAnImage": "Нажмите для выбора или перетащите изображение",
     "uploadComparison": "Загрузить до и после",
     "uploadComparisonAfterPrompt": "После",
@@ -651,7 +722,6 @@
     "Collapse": "Свернуть",
     "Color": "Цвет",
     "Colors": "Цвета",
-    "Convert to Group Node": "Преобразовать в групповой узел",
     "Convert to Subgraph": "Преобразовать в подграф",
     "Copy": "Копировать",
     "Copy (Clipspace)": "Копировать (Clipspace)",
@@ -668,7 +738,6 @@
     "Inputs": "Входы",
     "Left": "Влево",
     "Manage": "Управлять",
-    "Manage Group Nodes": "Управление групповыми узлами",
     "Minimize Node": "Свернуть ноду",
     "Mode": "Режим",
     "Node Info": "Информация о ноде",
@@ -712,9 +781,23 @@
     "creditsAvailable": "Доступно кредитов",
     "details": "Детали",
     "eventType": "Тип события",
+    "eventTypes": {
+      "accountCreated": "Аккаунт создан",
+      "apiNodeUsage": "Использование партнерского узла",
+      "apiUsage": "Использование API",
+      "creditAdded": "Кредиты добавлены",
+      "gpuUsage": "Использование GPU"
+    },
     "faqs": "Часто задаваемые вопросы",
+    "insufficient": {
+      "memberCta": "Понятно",
+      "memberDescription": "Ваша команда использовала все кредиты. Администраторы рабочего пространства должны добавить больше кредитов для запуска рабочих процессов.",
+      "memberTitle": "В этом рабочем пространстве закончились кредиты"
+    },
     "invoiceHistory": "История счетов",
     "lastUpdated": "Последнее обновление",
+    "loadEventsError": "Не удалось загрузить активность. Пожалуйста, попробуйте снова.",
+    "loadEventsUnknownError": "Произошла ошибка при загрузке активности. Пожалуйста, обновите страницу и попробуйте снова.",
     "messageSupport": "Связаться с поддержкой",
     "model": "Модель",
     "purchaseCredits": "Купить кредиты",
@@ -768,17 +851,21 @@
   },
   "dataTypes": {
     "*": "*",
+    "ARRAY": "Массив",
     "AUDIO": "АУДИО",
     "AUDIO_ENCODER": "АУДИО_КОДЕР",
     "AUDIO_ENCODER_OUTPUT": "ВЫХОД_АУДИО_КОДЕРА",
     "AUDIO_RECORD": "АУДИО_ЗАПИСЬ",
+    "BACKGROUND_REMOVAL": "УДАЛЕНИЕ_ФОНА",
     "BOOLEAN": "БУЛЕВО",
     "BOUNDING_BOX": "BOUNDING_BOX",
+    "BOUNDING_BOXES": "Границы",
     "CAMERA_CONTROL": "УПРАВЛЕНИЕ_КАМЕРОЙ",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
     "COLOR": "ЦВЕТ",
+    "COLORS": "Цвета",
     "COMBO": "КОМБО",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -786,12 +873,23 @@
     "CONDITIONING": "КОНДИЦИОНИРОВАНИЕ",
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "КРИВАЯ",
+    "DA3_GEOMETRY": "DA3_GEOMETRY",
+    "DA3_MODEL": "DA3_MODEL",
+    "DICT": "Словарь",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "МОДЕЛЬ_ОПРЕДЕЛЕНИЯ_ЛИЦА",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "ПЛАВАЮЩИЙ",
@@ -802,17 +900,22 @@
     "HISTOGRAM": "ГИСТОГРАММА",
     "HOOKS": "ХУКИ",
     "HOOK_KEYFRAMES": "КЛЮЧЕВЫЕ_КАДРЫ_ХУКА",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "ИЗОБРАЖЕНИЕ",
     "IMAGECOMPARE": "СРАВНЕНИЕ_ИЗОБРАЖЕНИЙ",
     "INT": "ЦЕЛОЕ",
+    "INTERP_MODEL": "ИНТЕРП_МОДЕЛЬ",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "ЛАТЕНТНЫЙ",
     "LATENT_OPERATION": "ЛАТЕНТНАЯ_ОПЕРАЦИЯ",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "ЗАГРУЗИТЬ3D_КАМЕРУ",
+    "LOAD3D_MODEL_INFO": "ЗАГРУЗИТЬ_ИНФОРМАЦИЮ_3D_МОДЕЛИ",
     "LOAD_3D": "ЗАГРУЗИТЬ_3D",
     "LORA_MODEL": "МОДЕЛЬ_LORA",
     "LOSS_MAP": "КАРТА_ПОТЕРЬ",
     "LUMA_CONCEPTS": "LUMA_CONCEPTS",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "LUMA_REF",
     "MASK": "МАСКА",
     "MESH": "СЕТКА",
@@ -821,9 +924,12 @@
     "MODEL": "МОДЕЛЬ",
     "MODEL_PATCH": "ПАТЧ_МОДЕЛИ",
     "MODEL_TASK_ID": "ID_ЗАДАЧИ_МОДЕЛИ",
+    "MOGE_GEOMETRY": "MOGE_ГЕОМЕТРИЯ",
+    "MOGE_MODEL": "MOGE_МОДЕЛЬ",
     "NOISE": "ШУМ",
     "OPENAI_CHAT_CONFIG": "КОНФИГУРАЦИЯ_ЧАТА_OPENAI",
     "OPENAI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_OPENAI",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "ШАБЛОН_PIXVERSE",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -832,8 +938,12 @@
     "RECRAFT_V3_STYLE": "RECRAFT_V3_СТИЛЬ",
     "RETARGET_TASK_ID": "ID_ЗАДАЧИ_РЕТАРГЕТИНГА",
     "RIG_TASK_ID": "RIG_TASK_ID",
+    "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
+    "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "СЭМПЛЕР",
     "SIGMAS": "СИГМЫ",
+    "SPLAT": "SPLAT",
     "STRING": "СТРОКА",
     "STYLE_MODEL": "МОДЕЛЬ_СТИЛЯ",
     "SVG": "SVG",
@@ -854,6 +964,16 @@
       "message": "Был предоставлен неверный ID диалога.",
       "title": "Неверный диалог"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "Приложение ComfyUI для рабочего стола ожидает входа в ваш аккаунт. Продолжайте только если вы только что начали вход из приложения ComfyUI для рабочего стола.",
+    "confirmSummary": "Подтвердить вход на рабочем столе?",
+    "expiredDetail": "Запрос на вход истёк или уже был использован. Начните вход заново из приложения ComfyUI для рабочего стола.",
+    "expiredSummary": "Не удалось войти на рабочем столе",
+    "failedDetail": "Произошла ошибка при завершении входа на рабочем столе. Начните вход заново из приложения ComfyUI для рабочего стола.",
+    "failedSummary": "Не удалось войти на рабочем столе",
+    "successDetail": "Вы можете вернуться в приложение ComfyUI для рабочего стола.",
+    "successSummary": "Вход выполнен"
   },
   "desktopMenu": {
     "confirmQuit": "Открыты несохраненные рабочие процессы; все несохраненные изменения будут потеряны. Проигнорировать это и выйти?",
@@ -890,6 +1010,387 @@
     "paused": "Приостановлено",
     "resume": "Возобновить загрузку"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "неизвестный вход",
+      "nodeName": "Этот узел"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "Для обязательного медиа-входа не выбран файл.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastMessageMany": "Пожалуйста, выберите отсутствующие медиа-входы перед запуском этого рабочего процесса.",
+        "toastMessageWithNode": "В узле {nodeName} отсутствует необходимый медиа-файл.",
+        "toastTitleMany": "Отсутствуют медиа-входы",
+        "toastTitleOne": "Отсутствует медиа-вход"
+      },
+      "missing_model": {
+        "displayMessageCloud": "Импортируйте модель или откройте узел для замены.",
+        "displayMessageOss": "Скачайте модель или откройте узел для замены.",
+        "toastMessageManyCloud": "Некоторые модели не поддерживаются. Выберите другие.",
+        "toastMessageManyOss": "Отсутствует {count} файлов моделей.",
+        "toastMessageOneCloud": "Эта модель не поддерживается. Выберите другую.",
+        "toastMessageOneOss": "В узле {nodeName} отсутствует необходимый файл модели.",
+        "toastTitleMany": "Отсутствуют модели",
+        "toastTitleManyCloud": "Модели недоступны в облаке",
+        "toastTitleOneCloud": "{modelName} недоступна в облаке",
+        "toastTitleOneOss": "{modelName} отсутствует"
+      },
+      "missing_node": {
+        "displayMessageCloud": "Требуемые пользовательские узлы не поддерживаются в облаке. Замените их на поддерживаемые.",
+        "displayMessageOss": "Установите отсутствующие пакеты для использования этого рабочего процесса.",
+        "toastMessageManyCloud": "В этом рабочем процессе используются узлы, которые не поддерживаются в облаке.",
+        "toastMessageManyOss": "{count} узлов требуют отсутствующих пакетов узлов.",
+        "toastMessageOneCloud": "Этот узел не поддерживается в облаке.",
+        "toastMessageOneOss": "В этом рабочем процессе используется пользовательский узел, который не установлен. Установите его из реестра или замените узел.",
+        "toastTitleManyCloud": "Узлы недоступны в облаке",
+        "toastTitleManyOss": "Отсутствуют узлы",
+        "toastTitleOneCloud": "{nodeType} недоступен в облаке",
+        "toastTitleOneOss": "Отсутствует узел: {nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "Некоторые узлы можно заменить альтернативами",
+        "toastMessageMany": "{count} типов узлов можно заменить совместимыми альтернативами.",
+        "toastMessageOne": "Замените на {replacementNodeType} из панели ошибок.",
+        "toastTitleMany": "Узлы можно заменить",
+        "toastTitleOne": "{nodeType} можно заменить"
+      }
+    },
+    "promptErrors": {
+      "missing_node_type": {
+        "desc": "Тип узла отсутствует или недоступен. Рабочий процесс может быть повреждён или требует пользовательский узел.",
+        "title": "Отсутствует тип узла"
+      },
+      "no_prompt": {
+        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой.",
+        "title": "Данные рабочего процесса отсутствуют"
+      },
+      "prompt_no_outputs": {
+        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Просмотр изображения) для получения результата.",
+        "title": "В запросе нет выходных данных"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "В рабочем процессе недопустимые входные данные узлов. Исправьте выделенные узлы перед повторным запуском.",
+        "title": "Ошибка проверки запроса"
+      },
+      "server_error_cloud": {
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.",
+        "title": "Ошибка сервера"
+      },
+      "server_error_local": {
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте журналы сервера.",
+        "title": "Ошибка сервера"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Для этого запуска требуется доступ, который недоступен для текущего аккаунта.",
+        "title": "Требуется доступ",
+        "toastMessage": "Для этого запуска требуется доступ, который недоступен для текущего аккаунта.",
+        "toastTitle": "Требуется доступ"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "Этот запрос был заблокирован системой модерации контента. Попробуйте изменить промпт или входные данные.",
+        "title": "Контент заблокирован",
+        "toastMessage": "Этот запрос был заблокирован системой модерации контента. Попробуйте изменить промпт или входные данные.",
+        "toastTitle": "Контент заблокирован"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Узел вызвал ошибку во время выполнения.",
+        "title": "Ошибка выполнения",
+        "toastMessage": "Этот узел вызвал ошибку во время выполнения. Проверьте его входные данные или попробуйте другую конфигурацию.",
+        "toastTitle": "{nodeName} завершился с ошибкой"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "Этот workflow перестал продвигаться. Попробуйте запустить его снова.",
+        "title": "Генерация остановилась",
+        "toastMessage": "Этот workflow перестал продвигаться. Попробуйте запустить его снова.",
+        "toastTitle": "Генерация остановилась"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "Системе не удалось загрузить это изображение.",
+        "title": "Изображение не загружено",
+        "toastMessage": "Изображение для {nodeName} не удалось загрузить. Попробуйте добавить его снова.",
+        "toastTitle": "Не удалось загрузить входное изображение"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Пополните баланс аккаунта, чтобы использовать этот узел.",
+        "title": "Недостаточно кредитов",
+        "toastMessage": "Пополните баланс аккаунта, чтобы использовать этот узел.",
+        "toastTitle": "Недостаточно кредитов"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "Ввод CLIP отсутствует или недействителен. Проверьте подключённый checkpoint или загрузчик CLIP.",
+        "title": "Недопустимый ввод CLIP",
+        "toastMessage": "У {nodeName} отсутствует или недействительный ввод CLIP.",
+        "toastTitle": "Недопустимый ввод CLIP"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "Введите промпт перед запуском этого workflow.",
+        "title": "Пустой промпт",
+        "toastMessage": "Введите промпт перед запуском этого workflow.",
+        "toastTitle": "Пустой промпт"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "Запрос workflow недействителен. Проверьте workflow и попробуйте снова.",
+        "title": "Недопустимый запрос workflow",
+        "toastMessage": "Запрос workflow недействителен. Проверьте workflow и попробуйте снова.",
+        "toastTitle": "Недопустимый запрос workflow"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "Одна или несколько необходимых моделей недоступны.",
+        "title": "Требуется доступ к модели",
+        "toastMessage": "Одна или несколько необходимых моделей недоступны.",
+        "toastTitle": "Требуется доступ к модели"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Не удалось загрузить модель. Попробуйте снова.",
+        "title": "Ошибка загрузки модели",
+        "toastMessage": "Не удалось загрузить модель. Попробуйте снова.",
+        "toastTitle": "Ошибка загрузки модели"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "Недостаточно памяти GPU. Попробуйте уменьшить разрешение изображения или размер пакета и запустите снова.",
+        "title": "Ошибка генерации",
+        "toastMessage": "Недостаточно памяти GPU. Попробуйте уменьшить разрешение изображения или размер пакета и запустите снова.",
+        "toastTitle": "Ошибка генерации"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Не удалось подготовить workflow. Попробуйте запустить его снова.",
+        "title": "Ошибка подготовки",
+        "toastMessage": "Не удалось подготовить workflow. Попробуйте запустить его снова.",
+        "toastTitle": "Ошибка подготовки"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "Подготовка workflow заняла слишком много времени. Попробуйте запустить его снова.",
+        "title": "Время подготовки истекло",
+        "toastMessage": "Подготовка workflow заняла слишком много времени. Попробуйте запустить его снова.",
+        "toastTitle": "Время подготовки истекло"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "Сейчас высокий спрос. Попробуйте снова через минуту.",
+        "title": "Серверы заняты",
+        "toastMessage": "Сейчас высокий спрос. Попробуйте снова через минуту.",
+        "toastTitle": "Серверы заняты"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Запрос завершился с ошибкой до завершения выполнения. Попробуйте снова.",
+        "title": "Ошибка запроса",
+        "toastMessage": "Запрос завершился с ошибкой до завершения выполнения. Попробуйте снова.",
+        "toastTitle": "Ошибка запроса"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "Выполнение завершилось неожиданно. Попробуйте снова.",
+        "title": "Выполнение завершилось неожиданно",
+        "toastMessage": "Выполнение завершилось неожиданно. Попробуйте снова.",
+        "toastTitle": "Выполнение завершилось неожиданно"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Не удалось запустить выполнение. Попробуйте снова.",
+        "title": "Не удалось запустить выполнение",
+        "toastMessage": "Не удалось запустить выполнение. Попробуйте снова.",
+        "toastTitle": "Не удалось запустить выполнение"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "Серверы сейчас заняты. Попробуйте снова через минуту.",
+        "title": "Серверы заняты",
+        "toastMessage": "Серверы сейчас заняты. Попробуйте снова через минуту.",
+        "toastTitle": "Серверы заняты"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "Сервер остановился во время выполнения этого workflow. Попробуйте снова.",
+        "title": "Сервер аварийно завершил работу",
+        "toastMessage": "Сервер остановился во время выполнения этого workflow. Попробуйте снова.",
+        "toastTitle": "Сервер аварийно завершил работу"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Партнёрские узлы требуют аккаунта Comfy. Войдите, чтобы продолжить.",
+        "title": "Требуется вход",
+        "toastMessage": "Партнёрские узлы требуют аккаунта Comfy. Войдите, чтобы продолжить.",
+        "toastTitle": "Войдите, чтобы использовать этот узел"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Оформите подписку, чтобы продолжить выполнение этого workflow.",
+        "title": "Требуется подписка",
+        "toastMessage": "Оформите подписку, чтобы продолжить выполнение этого workflow.",
+        "toastTitle": "Требуется подписка"
+      },
+      "subscription_upgrade_required": {
+        "details": "Для приватных моделей требуется обновление подписки: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "Обновите подписку, чтобы использовать приватные модели в этом workflow.",
+        "title": "Требуется обновление подписки",
+        "toastMessage": "Обновите подписку, чтобы использовать эти приватные модели: {modelNames}.",
+        "toastTitle": "Требуется обновление подписки"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "Этот workflow достиг максимального времени выполнения. Попробуйте уменьшить разрешение изображения, размер пакета или длину workflow и запустите снова.",
+        "title": "Время генерации истекло",
+        "toastMessage": "Этот workflow достиг максимального времени выполнения. Попробуйте уменьшить разрешение изображения, размер пакета или длину workflow и запустите снова.",
+        "toastTitle": "Время генерации истекло"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "В сервисе произошла непредвиденная ошибка. Попробуйте снова.",
+        "title": "Ошибка сервиса",
+        "toastMessage": "В сервисе произошла непредвиденная ошибка. Попробуйте снова.",
+        "toastTitle": "Ошибка сервиса"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Пополните баланс рабочего пространства для продолжения.",
+        "title": "Недостаточно кредитов",
+        "toastMessage": "Пополните баланс рабочего пространства для продолжения.",
+        "toastTitle": "Недостаточно кредитов"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} имеет недопустимое соединение для {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Соединение между узлами не удалось корректно прочитать.",
+        "title": "Недопустимое соединение",
+        "toastMessage": "{nodeName} имеет недопустимое соединение для {inputName}.",
+        "toastTitle": "Недопустимое соединение"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} отклонил значение для {inputName}.",
+        "detailsWithRawDetails": "{nodeName} не прошёл пользовательскую проверку: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Узел отклонил одно или несколько входных значений.",
+        "title": "Недопустимый ввод",
+        "toastMessage": "{nodeName} отклонил значение для {inputName}.",
+        "toastTitle": "Недопустимый ввод"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} является частью циклического соединения.",
+        "detailsWithRawDetails": "{nodeName} является частью циклического соединения: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "В рабочем процессе обнаружено циклическое соединение узлов.",
+        "title": "Недопустимый рабочий процесс",
+        "toastMessage": "{nodeName} является частью циклического соединения.",
+        "toastTitle": "Недопустимый рабочий процесс"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} не удалось проверить {inputName}.",
+        "detailsWithRawDetails": "{nodeName} не удалось проверить {inputName}: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Не удалось проверить подключённый узел в рабочем процессе.",
+        "title": "Ошибка проверки",
+        "toastMessage": "{nodeName} не удалось проверить {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} не удалось проверить {inputName}: {rawDetails}",
+        "toastTitle": "Ошибка проверки"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} завершился с ошибкой во время проверки.",
+        "detailsWithRawDetails": "{nodeName} завершился с ошибкой во время проверки: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Не удалось проверить рабочий процесс, так как проверка узла завершилась с ошибкой.",
+        "title": "Ошибка проверки",
+        "toastMessage": "{nodeName} завершился с ошибкой во время проверки.",
+        "toastMessageWithRawDetails": "{nodeName} завершился с ошибкой во время проверки: {rawDetails}",
+        "toastTitle": "Ошибка проверки"
+      },
+      "image_not_loaded": {
+        "details": "Изображение для {nodeName} не удалось загрузить. Попробуйте добавить его снова.",
+        "itemLabel": "{nodeName}",
+        "message": "Системе не удалось загрузить это изображение.",
+        "title": "Изображение не загружено",
+        "toastMessage": "Изображение для {nodeName} не удалось загрузить. Попробуйте добавить его снова.",
+        "toastTitle": "Не удалось загрузить входное изображение"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} не удалось преобразовать {inputName} к ожидаемому типу.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} не удалось преобразовать в {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Введено значение неверного типа.",
+        "title": "Недопустимый ввод",
+        "toastMessage": "{nodeName} не удалось преобразовать {inputName} к ожидаемому типу.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} не удалось преобразовать в {expectedType}.",
+        "toastTitle": "Недопустимый ввод"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} отсутствует обязательный вход: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Требуемые входные слоты не имеют подключений.",
+        "title": "Отсутствует соединение",
+        "toastMessage": "{nodeName} отсутствует обязательный вход: {inputName}",
+        "toastTitle": "Отсутствует обязательный вход"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} имеет несовместимое соединение для {inputName}.",
+        "detailsWithTypes": "Вход {inputName} узла {nodeName} ожидает {expectedType}, но подключённый выход — {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Подключённые узлы используют несовместимые типы входа и выхода.",
+        "title": "Недопустимое соединение",
+        "toastMessage": "{nodeName} имеет несовместимое соединение для {inputName}.",
+        "toastMessageWithTypes": "Вход {inputName} узла {nodeName} ожидает {expectedType}, но подключённый выход — {receivedType}.",
+        "toastTitle": "Недопустимое соединение"
+      },
+      "unknown_validation_error": {
+        "details": "{nodeName} вернул нераспознанную ошибку валидации: {errorType}",
+        "detailsWithRawDetails": "{nodeName} вернул нераспознанную ошибку валидации ({errorType}): {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Узел вернул ошибку валидации, которую ComfyUI не распознаёт.",
+        "title": "Ошибка валидации",
+        "toastMessage": "{nodeName} вернул нераспознанную ошибку валидации.",
+        "toastTitle": "Ошибка валидации"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} имеет значение выше максимального для {inputName}.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} выше максимального {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Некоторые значения вне допустимого диапазона.",
+        "title": "Ввод вне диапазона",
+        "toastMessage": "{nodeName} имеет значение выше максимального для {inputName}.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} выше максимального {maxValue}.",
+        "toastTitle": "Ввод вне диапазона"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} имеет неподдерживаемое значение для {inputName}.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} недоступно.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Некоторые значения недоступны для этого узла.",
+        "title": "Недопустимый ввод",
+        "toastMessage": "{nodeName} имеет неподдерживаемое значение для {inputName}.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} недоступно.",
+        "toastTitle": "Недопустимый ввод"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} имеет значение ниже минимального для {inputName}.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} ниже минимального {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Некоторые значения вне допустимого диапазона.",
+        "title": "Ввод вне диапазона",
+        "toastMessage": "{nodeName} имеет значение ниже минимального для {inputName}.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} ниже минимального {minValue}.",
+        "toastTitle": "Ввод вне диапазона"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -897,57 +1398,42 @@
     "extensionFileHint": "Это может быть связано со следующим скриптом",
     "loadWorkflowTitle": "Загрузка прервана из-за ошибки при перезагрузке данных рабочего процесса",
     "noStackTrace": "Стек вызовов недоступен",
-    "promptExecutionError": "Ошибка выполнения запроса"
+    "promptExecutionError": "Ошибка выполнения запроса",
+    "queueOpenWorkflowFailedTitle": "Не удалось открыть рабочий процесс"
   },
   "errorOverlay": {
-    "errorCount": "{count} ОШИБОК | {count} ОШИБКА | {count} ОШИБКИ",
     "missingMedia": "Некоторым узлам не хватает необходимых входных данных",
     "missingModels": "{count} необходимая модель отсутствует | {count} необходимых моделей отсутствуют",
     "missingNodes": "Некоторые узлы отсутствуют и требуют установки",
-    "seeErrors": "Посмотреть ошибки",
-    "showMissingMedia": "Показать отсутствующие входные данные",
-    "showMissingModels": "Показать отсутствующие модели",
-    "showMissingNodes": "Показать отсутствующие узлы",
-    "showSwapNodes": "Показать заменяемые узлы",
-    "swapNodes": "Некоторые узлы можно заменить альтернативами"
+    "multipleErrorCount": "Обнаружена {count} ошибка | Обнаружено {count} ошибок",
+    "multipleErrorsMessage": "Устраните их перед запуском рабочего процесса.",
+    "viewDetails": "Просмотреть детали"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Оставить отзыв",
+    "ctaText": "Как вам новая панель ошибок?"
   },
   "essentials": {
-    "batchImage": "Пакетная обработка изображений",
-    "canny": "Canny",
-    "cannyToImage": "Canny в изображение",
-    "cannyToVideo": "Canny в видео",
-    "cropImage": "Обрезать изображение",
-    "depthToImage": "Глубина в изображение",
-    "depthToVideo": "Глубина в видео",
-    "extractFrame": "Извлечь кадр",
-    "imageCompare": "Сравнение изображений",
-    "imageTo3DModel": "Изображение в 3D-модель",
-    "imageToImage": "Изображение в изображение",
-    "imageToVideo": "Изображение в видео",
-    "inpaintImage": "Инпейтинг изображения",
-    "invert": "Инвертировать",
-    "lipsync": "Синхронизация губ",
-    "load3DModel": "Загрузить 3D-модель",
-    "loadAudio": "Загрузить аудио",
-    "loadImage": "Загрузить изображение",
-    "loadStyleLora": "Загрузить стиль (LoRA)",
-    "loadVideo": "Загрузить видео",
-    "musicGeneration": "Генерация музыки",
-    "outpaintImage": "Аутпейтинг изображения",
-    "poseToImage": "Поза в изображение",
-    "poseToVideo": "Поза в видео",
-    "removeBackground": "Удалить фон",
-    "resizeImage": "Изменить размер изображения",
-    "rotate": "Повернуть",
-    "save3DModel": "Сохранить 3D-модель",
-    "saveAudio": "Сохранить аудио",
-    "saveImage": "Сохранить изображение",
-    "saveVideo": "Сохранить видео",
-    "text": "Текст",
-    "textGenerationLLM": "Генерация текста (LLM)",
-    "textTo3DModel": "Текст в 3D-модель",
-    "textToImage": "Текст в изображение",
-    "textToVideo": "Текст в видео"
+    "3d-transform": "Преобразование 3D",
+    "control-guidance": "Контроль и управление",
+    "control-image": "Контроль изображения",
+    "editing-utilities": "Редактирование и утилиты",
+    "generate": "Генерировать",
+    "generate-3d": "3D",
+    "generate-audio": "Аудио",
+    "generate-image": "Изображение",
+    "generate-text": "Текст",
+    "generate-video": "Видео",
+    "image-color": "Цвет изображения",
+    "image-filters-effects": "Фильтры и эффекты для изображений",
+    "image-selection-masking": "Выделение и маскирование изображения",
+    "image-transform": "Преобразование изображения",
+    "image-utilities": "Утилиты для изображений",
+    "inputs-outputs": "Входы и выходы",
+    "jumpTo": "Перейти к",
+    "video-compose": "Композиция видео",
+    "video-selection-masking": "Выделение и маскирование видео",
+    "video-transform": "Преобразование видео"
   },
   "execution": {
     "decoding": "Декодирование…",
@@ -976,6 +1462,9 @@
     "preparingExport": "Подготовка к экспорту...",
     "retryDownload": "Повторить загрузку"
   },
+  "feedback": {
+    "title": "Оставить отзыв"
+  },
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -989,6 +1478,11 @@
     "amount": "Количество",
     "apply": "Применить",
     "architecture": "Архитектура",
+    "arrange": "Упорядочить",
+    "arrangeAsGrid": "Упорядочить в виде сетки",
+    "arrangeHorizontally": "Упорядочить горизонтально",
+    "arrangeSpacing": "Интервал между элементами",
+    "arrangeVertically": "Упорядочить вертикально",
     "asset": "{count} ресурсов | {count} ресурс | {count} ресурса",
     "audioFailedToLoad": "Не удалось загрузить аудио",
     "audioProgress": "Прогресс аудио",
@@ -996,13 +1490,16 @@
     "back": "Назад",
     "batchRename": "Пакетное переименование",
     "beta": "БЕТА",
+    "blueprints": "Чертежи",
     "bookmark": "Сохранить в библиотеку",
+    "bookmarked": "В избранном",
     "browserReservedKeybinding": "Это сочетание клавиш зарезервировано некоторыми браузерами и может привести к неожиданным результатам.",
     "browserReservedKeybindingTooltip": "Это сочетание конфликтует с зарезервированными сочетаниями браузера",
     "calculatingDimensions": "Расчёт размеров",
     "cancel": "Отмена",
     "cancelled": "Отменено",
     "capture": "захват",
+    "categories": "Категории",
     "category": "Категория",
     "changeKeybinding": "Изменить сочетание клавиш",
     "chart": "Диаграмма",
@@ -1018,6 +1515,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Логотип ComfyOrg",
+    "comfyPackageOutdated": "Установленная версия {name} ({installedVersion}) ниже требуемой версии ({requiredVersion}).",
     "comingSoon": "Скоро будет",
     "command": "Команда",
     "commandProhibited": "Команда {command} запрещена. Свяжитесь с администратором для получения дополнительной информации.",
@@ -1050,6 +1548,7 @@
     "deleteImage": "Удалить изображение",
     "deprecated": "Устарело",
     "description": "Описание",
+    "details": "Детали",
     "devOnly": "Только для разработчиков",
     "devices": "Устройства",
     "disableAll": "Отключить все",
@@ -1093,6 +1592,7 @@
     "extensions": "Расширения",
     "failed": "Ошибка",
     "failedToCopyJobId": "Не удалось скопировать ID задания",
+    "failedToDownloadFile": "Не удалось загрузить файл",
     "failedToDownloadImage": "Не удалось скачать изображение",
     "failedToDownloadVideo": "Не удалось скачать видео",
     "favorites": "Избранное",
@@ -1139,6 +1639,7 @@
     "jobIdCopied": "ID задания скопирован в буфер обмена",
     "keybinding": "Привязка клавиш",
     "keybindingAlreadyExists": "Горячая клавиша уже существует",
+    "keybindingListAriaLabel": "Горячие клавиши: {combos}",
     "keybindingPresets": {
       "default": "Стандартный пресет",
       "deletePreset": "Удалить пресет",
@@ -1178,6 +1679,7 @@
     "logs": "Логи",
     "manageExtensions": "Управление расширениями",
     "markdown": "markdown",
+    "maximizeDialog": "Развернуть диалоговое окно",
     "micPermissionDenied": "Доступ к микрофону запрещён",
     "migrate": "Мигрировать",
     "missing": "Отсутствует",
@@ -1188,6 +1690,7 @@
     "mostRelevant": "Наиболее релевантные",
     "multiSelectDropdown": "Выпадающий список множественного выбора",
     "nMoreKeybindings": "+ ещё {count}",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "Имя",
     "newFolder": "Новая папка",
     "next": "Далее",
@@ -1214,13 +1717,16 @@
     "nothingToDelete": "Нечего удалять",
     "nothingToDuplicate": "Нечего дублировать",
     "nothingToRename": "Нечего переименовывать",
+    "off": "Выкл",
     "ok": "ОК",
+    "on": "Вкл",
     "openManager": "Открыть менеджер",
     "openNewIssue": "Открыть новую проблему",
     "or": "или",
     "output": "Выход",
     "overwrite": "Перезаписать",
     "partner": "Партнёр",
+    "partnerNodes": "Партнёрские узлы",
     "pause": "Пауза",
     "play": "Воспроизвести",
     "playPause": "Воспроизвести/Пауза",
@@ -1275,6 +1781,7 @@
     "resizeFromTopLeft": "Изменять размер из левого верхнего угла",
     "resizeFromTopRight": "Изменять размер из правого верхнего угла",
     "restart": "Перезапустить",
+    "restoreDialog": "Восстановить диалоговое окно",
     "resultsCount": "Найдено {count} результатов",
     "running": "Выполняется",
     "save": "Сохранить",
@@ -1318,7 +1825,19 @@
     "switchToGridView": "Переключиться на вид сетки",
     "switchToSingleView": "Переключиться на одиночный вид",
     "systemInfo": "Информация о системе",
+    "systemStatsArguments": "Аргументы",
+    "systemStatsCloudVersion": "Версия облака",
+    "systemStatsComfyUIVersion": "Версия ComfyUI",
+    "systemStatsEmbeddedPython": "Встроенный Python",
+    "systemStatsFrontendVersion": "Версия фронтенда",
+    "systemStatsOS": "ОС",
+    "systemStatsPyTorchVersion": "Версия PyTorch",
+    "systemStatsPythonVersion": "Версия Python",
+    "systemStatsRAMFree": "Свободно ОЗУ",
+    "systemStatsRAMTotal": "Всего ОЗУ",
+    "systemStatsTemplatesVersion": "Версия шаблонов",
     "terminal": "Терминал",
+    "textFailedToLoad": "Не удалось загрузить текст",
     "title": "Заголовок",
     "triggerPhrase": "Триггерная фраза",
     "unknownError": "Неизвестная ошибка",
@@ -1331,6 +1850,7 @@
     "updating": "Обновление",
     "upload": "Загрузить",
     "uploadAlreadyInProgress": "Загрузка уже выполняется",
+    "uploadTimedOut": "Время загрузки истекло. Пожалуйста, попробуйте еще раз.",
     "usageHint": "Подсказка по использованию",
     "use": "Использовать",
     "user": "Пользователь",
@@ -1364,9 +1884,34 @@
     "zoomOptions": "Параметры масштабирования",
     "zoomOut": "Уменьшить"
   },
-  "groupNode": {
-    "create": "Создать ноду группы",
-    "enterName": "Введите название"
+  "hdrViewer": {
+    "channel": "Канал",
+    "channels": {
+      "a": "Альфа",
+      "b": "B",
+      "g": "G",
+      "luminance": "Яркость",
+      "r": "R",
+      "rgb": "RGB"
+    },
+    "clipWarnings": "Предупреждения о клиппинге",
+    "dither": "Дизеринг",
+    "exposure": "Экспозиция",
+    "failedToLoad": "Не удалось загрузить HDR изображение",
+    "fitView": "Вписать",
+    "hdrImage": "HDR изображение",
+    "histogram": "Гистограмма",
+    "inf": "Беск.",
+    "max": "Макс.",
+    "mean": "Среднее",
+    "min": "Мин.",
+    "nan": "NaN",
+    "normalizeExposure": "Автоэкспозиция",
+    "openInHdrViewer": "Открыть в HDR просмотрщике",
+    "resolution": "Разрешение",
+    "sourceGamut": "Исходный цветовой охват",
+    "stdDev": "Ст. отклонение",
+    "title": "HDR Просмотрщик"
   },
   "help": {
     "helpCenterMenu": "Меню справочного центра",
@@ -1546,7 +2091,10 @@
       "appBuilder": "Конструктор приложений",
       "apps": "Приложения",
       "appsEmptyMessage": "Сохранённые приложения появятся здесь.\nНажмите ниже, чтобы создать своё первое приложение.",
-      "appsEmptyMessageAction": "Нажмите ниже, чтобы создать первое приложение."
+      "appsEmptyMessageAction": "Нажмите ниже, чтобы создать первое приложение.",
+      "buildAnApp": "Создать приложение",
+      "create": "Создать",
+      "createApp": "Создать приложение"
     },
     "arrange": {
       "atLeastOne": "хотя бы один",
@@ -1559,8 +2107,6 @@
       "switchToOutputsButton": "Перейти к выводам"
     },
     "backToWorkflow": "Вернуться к рабочему процессу",
-    "beta": "Режим приложения Бета - Оставить отзыв",
-    "buildAnApp": "Создать приложение",
     "builder": {
       "exit": "Выйти из конструктора",
       "exitConfirmMessage": "У вас есть несохранённые изменения, которые будут потеряны\nВыйти без сохранения?",
@@ -1598,6 +2144,7 @@
       "requiresGraph": "Что-то пошло не так во время генерации. Возможные причины: неверные скрытые входные данные, отсутствующие ресурсы или ошибки конфигурации рабочего процесса.",
       "support": "связаться с поддержкой"
     },
+    "feedbackLoadError": "Не удалось загрузить форму обратной связи. Пожалуйста, попробуйте позже.",
     "giveFeedback": "Оставить отзыв",
     "graphMode": "Графовый режим",
     "hasCreditCost": "Требуются дополнительные кредиты",
@@ -1633,6 +2180,7 @@
       "orthographic": "Ортографическая",
       "perspective": "Перспектива"
     },
+    "centerCameraOnModel": "Центрировать камеру на модели",
     "clearRecording": "Очистить запись",
     "dropToLoad": "Перетащите 3D-модель для загрузки",
     "edgeThreshold": "Порог края",
@@ -1640,13 +2188,32 @@
     "exportModel": "Экспорт модели",
     "exportRecording": "Экспортировать запись",
     "exportingModel": "Экспорт модели...",
+    "fitToViewer": "Подогнать к просмотру",
     "fov": "Угол обзора",
+    "gizmo": {
+      "label": "Гизмо",
+      "reset": "Сбросить трансформацию",
+      "rotate": "Повернуть",
+      "scale": "Масштабировать",
+      "toggle": "Гизмо",
+      "translate": "Переместить"
+    },
+    "hdri": {
+      "changeFile": "Сменить HDRI",
+      "intensity": "Интенсивность",
+      "label": "HDRI-окружение",
+      "removeFile": "Удалить HDRI",
+      "showAsBackground": "Показать как фон",
+      "uploadFile": "Загрузить HDRI (.hdr, .exr)"
+    },
     "light": "Свет",
     "lightIntensity": "Интенсивность света",
     "loadingBackgroundImage": "Загрузка фонового изображения",
+    "loadingHDRI": "Загрузка HDRI...",
     "loadingModel": "Загрузка 3D модели...",
     "materialMode": "Режим Материала",
     "materialModes": {
+      "clay": "Глина",
       "depth": "Глубина",
       "lineart": "Линейный арт",
       "normal": "Нормальный",
@@ -1654,7 +2221,29 @@
       "pointCloud": "Облако точек",
       "wireframe": "Каркас"
     },
+    "menuBar": {
+      "bgColor": "Цвет фона",
+      "bgImage": "Фоновое изображение",
+      "deleteRecording": "Удалить запись",
+      "downloadRecording": "Скачать запись",
+      "fov": "Угол обзора",
+      "intensity": "Интенсивность",
+      "material": "Материал",
+      "originalMaterialOnly": "Только оригинальный материал",
+      "panorama": "Панорама",
+      "record": "Запись",
+      "recording": "Идёт запись",
+      "removeBackground": "Удалить фон",
+      "showGrid": "Показать сетку",
+      "skeleton": "Скелет",
+      "startNewRecording": "Начать новую запись",
+      "stopRecording": "Остановить запись",
+      "switchProjection": "Сменить проекцию",
+      "upDirection": "Направление вверх",
+      "videoRecordingTooltip": "Видеозапись сцены [mp4]"
+    },
     "model": "Модель",
+    "model3d": "3D-модель",
     "openIn3DViewer": "Открыть в 3D просмотрщике",
     "panoramaMode": "Панорама",
     "previewOutput": "Предварительный просмотр",
@@ -1694,6 +2283,10 @@
     "outdatedVersion": "Этот рабочий процесс был создан в более новой версии ComfyUI ({version}). Некоторые узлы могут работать некорректно.",
     "outdatedVersionGeneric": "Этот рабочий процесс был создан в более новой версии ComfyUI. Некоторые узлы могут работать некорректно.",
     "unknownVersion": "неизвестно"
+  },
+  "logsTerminal": {
+    "loadError": "Не удалось загрузить логи, пожалуйста, убедитесь, что вы обновили ваш ComfyUI backend.",
+    "resyncError": "Не удалось повторно синхронизировать логи после переподключения backend. Откройте консоль заново, чтобы повторить попытку."
   },
   "maintenance": {
     "None": "Нет",
@@ -1798,6 +2391,10 @@
     "gettingInfo": "Получение информации...",
     "importFailedGenericError": "Не удалось импортировать пакет. Проверьте консоль для получения дополнительной информации.",
     "inWorkflow": "В рабочем процессе",
+    "incompatibleVersion": {
+      "message": "Пожалуйста, обновите ComfyUI-Manager до версии 4.2.1 или выше.\n• Для Desktop: обновите приложение ComfyUI Desktop\n• Для Standalone: выполните pip install -U comfyui-manager и перезапустите\nПодробнее: https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "Требуется обновление ComfyUI-Manager"
+    },
     "infoPanelEmpty": "Нажмите на элемент, чтобы увидеть информацию",
     "installAllMissingNodes": "Установить все отсутствующие узлы",
     "installError": "Ошибка установки",
@@ -1858,6 +2455,11 @@
       "importFailed": "Ошибка установки",
       "pending": "В ожидании",
       "unknown": "Неизвестно"
+    },
+    "survey": {
+      "error": "Не удалось загрузить опрос. Пожалуйста, попробуйте позже.",
+      "intro": "Установка пользовательских узлов скоро появится в Comfy Cloud. Ответьте на несколько коротких вопросов, чтобы попасть в список ожидания и помочь сформировать эту функцию.",
+      "title": "Присоединяйтесь к списку ожидания"
     },
     "title": "Менеджер Пользовательских Узлов",
     "toFinishSetup": "чтобы завершить настройку",
@@ -2043,7 +2645,6 @@
     "ComfyUI Issues": "Проблемы ComfyUI",
     "Contact Support": "Связаться с поддержкой",
     "Convert Selection to Subgraph": "Преобразовать выделенное в подграф",
-    "Convert selected nodes to group node": "Преобразовать выбранные ноды в групповую ноду",
     "Copy": "Копировать",
     "Custom Nodes (Legacy)": "Пользовательские узлы (устаревшие)",
     "Custom Nodes Manager": "Менеджер Пользовательских Узлов",
@@ -2071,7 +2672,6 @@
     "Job History": "История заданий",
     "Load Default Workflow": "Загрузить стандартный рабочий процесс",
     "Lock Canvas": "Заблокировать холст",
-    "Manage group nodes": "Управление групповыми нодами",
     "Manager": "Менеджер",
     "Manager Menu (Legacy)": "Меню управления (устаревшее)",
     "Minimap": "Мини-карта",
@@ -2137,7 +2737,6 @@
     "Toggle View Controls Bottom Panel": "Показать/скрыть нижнюю панель элементов управления",
     "Toggle promotion of hovered widget": "Переключить повышение выделенного виджета",
     "Undo": "Отменить",
-    "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
     "Unload Models": "Выгрузить модели",
     "Unload Models and Execution Cache": "Выгрузить модели и кэш выполнения",
     "Unlock Canvas": "Разблокировать холст",
@@ -2196,38 +2795,40 @@
     "accept": "Конечно, помогу!",
     "description": "Вы использовали эту функцию. Не могли бы вы уделить минуту, чтобы поделиться своим мнением?",
     "dontAskAgain": "Больше не спрашивать",
-    "loadError": "Не удалось загрузить опрос. Пожалуйста, попробуйте позже.",
     "notNow": "Не сейчас",
     "title": "Помогите нам стать лучше"
   },
   "nodeCategories": {
     "": "",
     "3d": "3d",
-    "3d_models": "3d_модели",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
     "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
+    "Sonilo": "Sonilo",
     "Sora": "Sora",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -2235,81 +2836,113 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_для_тестирования",
+    "ace": "ace",
+    "adjustments": "корректировки",
     "advanced": "расширенный",
-    "animation": "анимация",
-    "api": "api",
-    "api node": "api-узел",
+    "anima": "anima",
+    "animate": "анимировать",
     "attention_experiments": "эксперименты_внимания",
     "audio": "аудио",
+    "autoregressive": "авторегрессивный",
+    "background removal": "удаление фона",
     "batch": "пакет",
+    "bernini": "bernini",
+    "boogu": "boogu",
     "camera": "камера",
-    "chroma_radiance": "chroma_radiance",
+    "chroma radiance": "chroma radiance",
     "clip": "clip",
+    "color": "цвет",
     "combine": "объединить",
     "compositing": "композиционирование",
     "cond pair": "условие_пара",
     "cond single": "условие_одиночное",
     "conditioning": "условие",
-    "context": "контекст",
     "controlnet": "controlnet",
+    "cosmos": "cosmos",
     "create": "создать",
-    "custom_sampling": "пользовательский_семплинг",
+    "custom": "пользовательский",
+    "dancer": "танцор",
     "dataset": "dataset",
     "debug": "отладка",
-    "deprecated": "устаревший",
     "detection": "детекция",
-    "edit_models": "редактировать_модели",
+    "experimental": "экспериментальное",
+    "filters": "фильтры",
     "flux": "flux",
+    "fun control": "fun control",
+    "fun inpaint": "fun inpaint",
+    "geometry estimation": "оценка геометрии",
     "gligen": "gligen",
     "guidance": "направление",
     "guiders": "направляющие",
+    "hidream": "HiDream",
     "hooks": "хуки",
+    "humo": "humo",
+    "hunyhuan video": "hunyhuan video",
+    "hunyuan 3d": "hunyuan 3d",
+    "hunyuan image": "hunyuan image",
+    "hunyuan video": "hunyuan video",
     "image": "изображение",
-    "inpaint": "восстановление",
+    "infinite talk": "бесконечный разговор",
     "instructpix2pix": "instructpix2pix",
-    "kandinsky5": "kandinsky5",
+    "joyimage": "joyimage",
+    "kandinsky": "kandinsky",
     "latent": "латентный",
     "loaders": "загрузчики",
     "logic": "логика",
     "lotus": "lotus",
     "ltxv": "ltxv",
+    "lumina": "lumina",
     "mask": "маска",
-    "math": "математика",
+    "merging": "слияние",
+    "mochi": "mochi",
     "model": "модель",
-    "model_merging": "слияние_моделей",
-    "model_patches": "патчи_моделей",
-    "model_specific": "специфичная_модель",
+    "model specific": "модель-специфичный",
+    "model_patches": "model_patches",
+    "move": "move",
+    "multigpu": "multigpu",
     "noise": "шум",
     "operations": "операции",
+    "partner": "партнёр",
+    "patch": "патч",
+    "phantom subject": "фантомный объект",
     "photomaker": "photomaker",
-    "postprocessing": "постобработка",
+    "pixart": "pixart",
+    "post-processors": "постпроцессоры",
+    "pre-processors": "препроцессоры",
     "preprocessors": "предобработчики",
     "primitive": "примитив",
     "qwen": "qwen",
+    "qwen image": "qwen image",
     "samplers": "семплеры",
     "sampling": "выборка",
-    "save": "сохранить",
+    "scail": "scail",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
-    "sd": "sd",
-    "sd3": "sd3",
     "shader": "шейдер",
     "sigmas": "сигмы",
-    "stable_cascade": "стабильная_каскадная",
-    "string": "строка",
-    "style_model": "модель_стиля",
+    "sound": "звук",
+    "splat": "splat",
+    "stable audio": "stable audio",
+    "stable cascade": "stable cascade",
+    "stable diffusion": "stable diffusion",
+    "stable diffusion upscaler": "stable diffusion upscaler",
+    "stable video": "stable video",
+    "stable video 3d": "stable video 3d",
+    "stable zero123": "stable zero123",
+    "supir": "supir",
+    "sync_so": "sync.so",
     "text": "текст",
-    "textgen": "textgen",
     "training": "обучение",
     "transform": "преобразование",
+    "triposplat": "triposplat",
     "unet": "unet",
-    "upscale_diffusion": "диффузии_апскейла",
     "upscaling": "апскейл",
-    "utils": "утилиты",
+    "utilities": "утилиты",
+    "vace": "vace",
     "video": "видео",
-    "video_models": "видеомодели",
-    "zimage": "zimage"
+    "void": "void",
+    "wan": "wan",
+    "z-image": "z-image"
   },
   "nodeErrors": {
     "content": "Ошибка содержимого узла",
@@ -2357,7 +2990,6 @@
     "replacedNode": "Заменённый узел: {nodeType}",
     "selectAll": "Выбрать все",
     "skipForNow": "Пропустить сейчас",
-    "swapNodesGuide": "Следующие узлы могут быть автоматически заменены совместимыми альтернативами.",
     "swapNodesTitle": "Заменить узлы",
     "unknownNode": "Неизвестно",
     "willBeReplacedBy": "Этот узел будет заменён на:"
@@ -2379,6 +3011,43 @@
     },
     "title": "Ваше устройство не поддерживается"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Продолжить",
+      "appTypeNative": "Нативное приложение",
+      "appTypeWeb": "Веб-приложение",
+      "deny": "Отмена",
+      "detailsHeader": "Детали",
+      "errorExpired": "Этот запрос на согласие истёк или уже был использован. Пожалуйста, перезапустите из клиентского приложения.",
+      "errorScopeBroadening": "Ранее одобренные разрешения не покрывают этот запрос. Необходимо повторно авторизоваться с новыми разрешениями.",
+      "errorUnavailable": "Эта функция сейчас недоступна. Если проблема сохраняется, обратитесь в поддержку.",
+      "genericError": "Ошибка OAuth-запроса. Пожалуйста, перезапустите из клиентского приложения.",
+      "loading": "Загрузка запроса авторизации…",
+      "missingRequest": "Этот запрос авторизации отсутствует. Пожалуйста, перезапустите из клиентского приложения.",
+      "noWorkspaces": "Нет доступных рабочих пространств для этого запроса.",
+      "permissionsHeader": "Разрешения",
+      "redirectNotice": "Вы будете перенаправлены на",
+      "resourceFallback": "это приложение",
+      "sessionError": "Не удалось установить сессию. Пожалуйста, попробуйте ещё раз.",
+      "sessionErrorToastSummary": "Не удалось продолжить вход через OAuth",
+      "subtitle": "Войдите в {resource}, чтобы продолжить",
+      "title": "{client} запрашивает доступ",
+      "workspaceLabel": "Рабочее пространство"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Запуск workflow от вашего имени"
+      },
+      "mcp:tools:read": {
+        "label": "Просмотр доступных инструментов workflow"
+      }
+    },
+    "workspace": {
+      "member": "Участник",
+      "owner": "Владелец",
+      "personal": "Личное"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Автор:",
     "copyAssetsAndOpen": "Импортировать ресурсы и открыть рабочий процесс",
@@ -2389,7 +3058,8 @@
     "nonPublicAssetsWarningLine1": "Этот рабочий процесс содержит непубличные ресурсы.",
     "nonPublicAssetsWarningLine2": "Они будут импортированы в вашу библиотеку при открытии рабочего процесса",
     "openWithoutImporting": "Открыть без импорта",
-    "openWorkflow": "Открыть рабочий процесс"
+    "openWorkflow": "Открыть рабочий процесс",
+    "opening": "Открытие общего рабочего процесса..."
   },
   "painter": {
     "background": "Фон",
@@ -2403,6 +3073,10 @@
     "tool": "Инструмент",
     "uploadError": "Не удалось загрузить изображение: {status} - {statusText}",
     "width": "Ширина"
+  },
+  "palette": {
+    "addColor": "Добавить цвет",
+    "swatchTitle": "Клик — редактировать · перетащить — изменить порядок · ПКМ — удалить"
   },
   "progressToast": {
     "allDownloadsCompleted": "Все загрузки завершены",
@@ -2484,13 +3158,21 @@
     "addFavorite": "В избранное",
     "advancedInputs": "РАСШИРЕННЫЕ ВХОДНЫЕ ДАННЫЕ",
     "bypass": "Обход",
+    "collapse": "Свернуть",
     "color": "Цвет узла",
-    "enterSubgraph": "Войти в подграф",
+    "editSubgraph": "Редактировать подграф",
+    "editTitle": "Редактировать название",
     "errorHelp": "Для получения дополнительной помощи {github} или {support}",
     "errorHelpGithub": "создайте issue на GitHub",
     "errorHelpSupport": "свяжитесь с нашей поддержкой",
+    "errorLog": "Журнал ошибок",
+    "errorNodeSummary": "{nodes} узел — {count} ошибка | {nodes} узел — {count} ошибки | {nodes} узел — {count} ошибок",
+    "errorNodesSummary": "{nodes} узлов — {count} ошибка | {nodes} узлов — {count} ошибки | {nodes} узлов — {count} ошибок",
     "errors": "Ошибки",
+    "errorsDetected": "Обнаружена ошибка | Обнаружены ошибки",
+    "errorsSummary": "{count} ошибка | {count} ошибки | {count} ошибок",
     "executionErrorOccurred": "Произошла ошибка во время выполнения. Подробности смотрите на вкладке Ошибки.",
+    "expand": "Развернуть",
     "fallbackGroupTitle": "Группа",
     "fallbackNodeTitle": "Узел",
     "favorites": "ИЗБРАННЫЕ ВХОДЫ",
@@ -2523,51 +3205,40 @@
     "hideAdvancedShort": "Скрыть расширенные",
     "hideInput": "Скрыть вход",
     "info": "Информация",
+    "infoFor": "Информация о {item}",
     "inputs": "ВХОДЫ",
     "inputsNone": "НЕТ ВХОДОВ",
     "inputsNoneTooltip": "Узел не имеет входов",
     "locateNode": "Найти узел на холсте",
+    "locateNodeFor": "Найти {item}",
+    "missingMedia": {
+      "missingMediaTitle": "Отсутствующие входные данные"
+    },
     "missingModels": {
-      "alreadyExistsInCategory": "Эта модель уже существует в «{category}»",
-      "assetLoadTimeout": "Время ожидания обнаружения модели истекло. Попробуйте перезагрузить рабочий процесс.",
-      "cancelSelection": "Отменить выбор",
-      "clearUrl": "Очистить URL",
       "collapseNodes": "Скрыть ссылающиеся узлы",
-      "confirmSelection": "Подтвердить выбор",
       "copyModelName": "Скопировать имя модели",
       "copyUrl": "Копировать URL",
       "customNodeDownloadDisabled": "В облачной среде импорт моделей для пользовательских узлов в этом разделе не поддерживается. Пожалуйста, используйте стандартные загрузочные узлы или выберите модель из библиотеки ниже.",
       "downloadAll": "Скачать всё",
       "expandNodes": "Показать ссылающиеся узлы",
       "import": "Импортировать",
-      "importAnyway": "Импортировать в любом случае",
-      "importFailed": "Ошибка импорта",
       "importNotSupported": "Импорт не поддерживается",
-      "imported": "Импортировано",
       "importing": "Импортируется...",
       "locateNode": "Найти узел на холсте",
-      "metadataFetchFailed": "Не удалось получить метаданные. Проверьте ссылку и попробуйте снова.",
       "missingModelsTitle": "Отсутствующие модели",
-      "or": "ИЛИ",
-      "typeMismatch": "Похоже, эта модель — «{detectedType}». Вы уверены?",
-      "unknownCategory": "Неизвестно",
-      "unsupportedUrl": "Поддерживаются только URL Civitai и Hugging Face.",
-      "urlPlaceholder": "Вставьте URL модели (Civitai или Hugging Face)",
-      "useFromLibrary": "Использовать из библиотеки",
-      "usingFromLibrary": "Используется из библиотеки"
+      "refresh": "Обновить",
+      "refreshFailed": "Не удалось обновить отсутствующие модели. Пожалуйста, попробуйте ещё раз.",
+      "refreshing": "Обновление отсутствующих моделей.",
+      "unknownCategory": "Неизвестно"
     },
     "missingNodePacks": {
       "applyChanges": "Применить изменения",
-      "cloudMessage": "Для этого рабочего процесса требуются пользовательские узлы, которые ещё недоступны в Comfy Cloud.",
       "collapse": "Свернуть",
       "expand": "Развернуть",
       "installAll": "Установить все",
-      "installNodePack": "Установить пакет узлов",
       "installed": "Установлено",
       "installing": "Установка...",
       "ossManagerDisabledHint": "Чтобы установить отсутствующие узлы, сначала выполните {pipCmd} в вашей среде Python для установки Node Manager, затем перезапустите ComfyUI с флагом {flag}.",
-      "ossMessage": "В этом рабочем процессе используются пользовательские узлы, которые вы ещё не установили.",
-      "searchInManager": "Поиск в менеджере узлов",
       "title": "Отсутствующие пакеты узлов",
       "unknownPack": "Неизвестный пакет",
       "unsupportedTitle": "Неподдерживаемые пакеты узлов",
@@ -2583,25 +3254,14 @@
     "normal": "Обычный",
     "parameters": "Параметры",
     "pinned": "Закреплено",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой."
-      },
-      "prompt_no_outputs": {
-        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Предпросмотр изображения) для получения результата."
-      },
-      "server_error_cloud": {
-        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже."
-      },
-      "server_error_local": {
-        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте логи сервера."
-      }
-    },
     "properties": "Свойства",
     "removeFavorite": "Убрать из избранного",
     "resetAllParameters": "Сбросить все параметры",
     "resetToDefault": "Сбросить по умолчанию",
+    "resolveBeforeRun": "Устраните перед запуском рабочего процесса",
     "seeError": "Посмотреть ошибку",
+    "selectedNodeErrors": "{node} — {count} ошибка | {node} — {count} ошибки | {node} — {count} ошибок",
+    "selectedNodesErrors": "{nodes} узлов выбрано — {count} ошибка | {nodes} узлов выбрано — {count} ошибки | {nodes} узлов выбрано — {count} ошибок",
     "settings": "Настройки",
     "showAdvancedInputsButton": "Показать расширенные входные данные",
     "showAdvancedShort": "Показать расширенные",
@@ -2621,24 +3281,35 @@
     "errors": {
       "duplicateName": "Секрет с таким именем уже существует",
       "duplicateProvider": "Секрет для этого провайдера уже существует",
+      "fileReadFailed": "Не удалось прочитать выбранный файл.",
+      "fileTooLarge": "Файл слишком большой. Загрузите JSON-учётные данные размером до 1 МБ",
+      "invalidJson": "Файл должен содержать корректный JSON-объект",
       "nameRequired": "Имя обязательно",
       "nameTooLong": "Имя должно содержать не более 255 символов",
       "providerRequired": "Провайдер обязателен",
       "secretValueRequired": "Значение секрета обязательно"
     },
+    "jsonFileHint": "Вставьте JSON или загрузите файл. Он будет зашифрован и не может быть просмотрен повторно.",
+    "jsonFileHintEdit": "Оставьте пустым, чтобы сохранить текущее значение, или загрузите новый JSON-файл для замены.",
+    "jsonFilePlaceholder": "Загрузите или вставьте JSON-учётные данные провайдера",
     "lastUsed": "Последнее использование {date}",
     "modelProviders": "Провайдеры моделей",
     "name": "Имя",
     "namePlaceholder": "например, Мой API-ключ",
     "noSecrets": "Секреты не сохранены. Добавьте свой первый API-ключ, чтобы начать.",
     "provider": "Провайдер",
+    "providerHelp": {
+      "gemini": "Введите ваш API-ключ Google Gemini. Вы можете сгенерировать его в Google AI Studio.",
+      "runway": "Введите ваш API-ключ Runway. Вы можете найти его в настройках аккаунта Runway в разделе API keys."
+    },
     "providerHint": "Необязательно. Выбор провайдера позволяет использовать токен автоматически.",
     "secretValue": "Значение секрета",
     "secretValueHint": "Это значение будет зашифровано и не может быть просмотрено повторно.",
     "secretValueHintEdit": "Оставьте пустым, чтобы сохранить текущее значение.",
     "secretValuePlaceholder": "Введите ваш API-ключ",
     "secretValuePlaceholderEdit": "Введите новое значение для изменения",
-    "title": "API-ключи и секреты"
+    "title": "API-ключи и секреты",
+    "uploadJsonFile": "Загрузить JSON-файл"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Обойти групповые узлы",
@@ -2853,6 +3524,7 @@
     "Other": "Другое",
     "PLY": "PLY",
     "PlanCredits": "План и кредиты",
+    "PointCloud": "Облако точек",
     "Pointer": "Указатель",
     "Queue": "Очередь",
     "QueueButton": "Кнопка очереди",
@@ -2977,7 +3649,6 @@
       "blueprints": "Чертежи",
       "custom": "Пользовательские",
       "essentials": "Основное",
-      "filter": "Фильтр",
       "filterOptions": {
         "blueprints": "Чертежи",
         "comfyNodes": "Comfy-узлы",
@@ -2994,11 +3665,13 @@
         "sourceDesc": "Группировать по типу источника (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Избранных пока нет",
+      "noMatchingNodes": "Нет узлов, соответствующих «{query}»",
       "resetView": "Сбросить вид по умолчанию",
       "sections": {
         "bookmarked": "Избранное",
         "comfyBlueprints": "Comfy-чертежи",
         "comfyNodes": "Comfy-узлы",
+        "essentialNodes": "Основные узлы",
         "extensions": "Расширения",
         "favoriteNode": "Избранный узел",
         "favorites": "Избранное",
@@ -3082,6 +3755,7 @@
       "deleteFailedTitle": "Не удалось удалить",
       "deleted": "Рабочий процесс удалён",
       "dirtyClose": "Файлы ниже были изменены. Вы хотите сохранить их перед закрытием?",
+      "dirtyCloseAnyway": "Закрыть всё равно",
       "dirtyCloseHint": "Удерживайте Shift, чтобы закрыть без подсказки",
       "dirtyCloseTitle": "Сохранить изменения?",
       "workflowTreeType": {
@@ -3123,6 +3797,10 @@
     "addApiCredits": "Пополнить API-кредиты",
     "addCredits": "Добавить кредиты",
     "addCreditsLabel": "Добавляйте кредиты в любое время",
+    "additionalCredits": "Дополнительные кредиты",
+    "additionalCreditsInUse": "Используются",
+    "additionalCreditsInfo": "О дополнительных кредитах",
+    "additionalCreditsTooltip": "Кредиты, которые вы добавляете сверх вашего плана. Используются после окончания месячных кредитов. Каждый истекает через год после покупки.",
     "benefits": {
       "benefit1": "Ежемесячные кредиты для Партнёрских узлов — пополняйте по необходимости",
       "benefit1FreeTier": "Больше кредитов в месяц, пополнение в любое время",
@@ -3144,26 +3822,55 @@
       "keepSubscription": "Сохранить подписку",
       "title": "Отмена подписки"
     },
-    "cancelSubscription": "Отменить подписку",
+    "cancelPlan": "Отменить тариф",
     "cancelSuccess": "Подписка успешно отменена",
     "canceled": "Отменено",
     "canceledCard": {
       "description": "С вас больше не будет взиматься плата. Ваши функции останутся активными до {date}.",
       "title": "Ваша подписка отменена"
     },
+    "changePlan": "Сменить тариф",
     "changeTo": "Перейти на {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Логотип Comfy Cloud",
     "contactOwnerToSubscribe": "Свяжитесь с владельцем рабочего пространства для оформления подписки",
     "contactUs": "Связаться с нами",
+    "creditSliderSave": "Сохранить {percent}% ({amount})",
+    "creditsLeftOfTotal": "Осталось {remaining} из {total}",
     "creditsRemainingThisMonth": "Кредитов осталось в этом месяце",
     "creditsRemainingThisYear": "Кредитов осталось в этом году",
+    "creditsUsed": "Использовано: {used}",
     "creditsYouveAdded": "Добавленные вами кредиты",
     "currentPlan": "Текущий план",
     "customLoRAsLabel": "Импортируйте свои LoRA",
     "description": "Выберите лучший план для себя",
     "descriptionWorkspace": "Выберите лучший тариф для вашего рабочего пространства",
+    "downgrade": {
+      "body": "Все остальные участники этой рабочей области будут немедленно удалены.",
+      "confirm": "Сменить тариф",
+      "confirmationPhrase": "Я понимаю",
+      "confirmationPrompt": "Введите «{phrase}» для подтверждения.",
+      "failed": "Не удалось сменить тариф",
+      "failedAfterMemberRemoval": "Участники команды были удалены, но смена тарифа не завершена — попробуйте еще раз или обратитесь в поддержку",
+      "memberRemovalFailed": "Не удалось удалить {email} из команды — некоторые участники могли быть уже удалены, и ваш тариф не был изменён",
+      "notAllowed": "Смена этого тарифа недоступна",
+      "paymentMethodRequired": "Для смены тарифа требуется способ оплаты",
+      "paymentPageBlocked": "Не удалось открыть страницу оплаты — попробуйте еще раз",
+      "title": "Перейти на тариф {plan}?"
+    },
+    "endsOnDate": "Заканчивается {date}",
+    "enterprise": {
+      "cta": "Узнать больше",
+      "flexibility": "Нужна большая гибкость или индивидуальные функции?",
+      "name": "Корпоративный тариф",
+      "needMoreMembers": "Нужно больше участников?",
+      "reachOut": "Свяжитесь с нами, чтобы назначить встречу."
+    },
+    "everythingInPlus": "Всё в {plan}, плюс:",
     "expiresDate": "Истекает {date}",
+    "freePerks": {
+      "maxRuntime": "Максимальное время выполнения: {duration}"
+    },
     "freeTier": {
       "description": "Ваш бесплатный тариф включает {credits} кредитов каждый месяц для использования Comfy Cloud.",
       "descriptionGeneric": "Ваш бесплатный тариф включает ежемесячный лимит кредитов для использования Comfy Cloud.",
@@ -3181,10 +3888,17 @@
     },
     "gpuLabel": "RTX 6000 Pro (96ГБ VRAM)",
     "haveQuestions": "Есть вопросы или интересует корпоративное решение?",
+    "inactive": {
+      "memberCta": "Ок, понятно",
+      "memberDescription": "Попросите владельца рабочего пространства возобновить подписку, чтобы запускать рабочие процессы.",
+      "memberRunTooltip": "Свяжитесь с владельцем рабочего пространства для повторной подписки",
+      "memberTitle": "Подписка этого рабочего пространства неактивна",
+      "runLabel": "Запустить"
+    },
     "inviteUpTo": "Пригласить до",
     "invoiceHistory": "История счетов",
     "learnMore": "Узнать больше",
-    "managePayment": "Управление оплатой",
+    "manageBilling": "Управление оплатой",
     "managePlan": "Управление планом",
     "manageSubscription": "Управление подпиской",
     "maxDuration": {
@@ -3198,50 +3912,99 @@
     "maxMembersLabel": "Макс. участников",
     "member": "участник",
     "memberCount": "{count} участник | {count} участников",
-    "membersLabel": "До {count} участников",
     "messageSupport": "Написать в поддержку",
     "monthly": "Ежемесячно",
     "monthlyBonusDescription": "Ежемесячный бонус кредитов",
+    "monthlyCredits": "кредитов в месяц",
     "monthlyCreditsInfo": "Эти кредиты обновляются ежемесячно и не переносятся",
     "monthlyCreditsLabel": "Ежемесячные кредиты",
     "monthlyCreditsPerMemberLabel": "Ежемесячные кредиты / участник",
     "monthlyCreditsRollover": "Эти кредиты переносятся на следующий месяц",
+    "monthlyCreditsUsedUpDescription": "Теперь используются дополнительные кредиты.",
+    "monthlyCreditsUsedUpTitle": "Ежемесячные кредиты израсходованы. Пополнение {date}",
+    "monthlyCreditsUsedUpTitleNoDate": "Ежемесячные кредиты израсходованы",
+    "monthlyUsageProgress": "Использовано {used} из {total} ежемесячных кредитов",
     "mostPopular": "Самый популярный",
     "needTeamWorkspace": "Нужно командное рабочее пространство?",
     "nextBillingCycle": "следующий платёжный цикл",
-    "nextMonthInvoice": "Счет на следующий месяц",
+    "outOfCreditsDescription": "Добавьте кредиты, чтобы продолжить генерацию.",
+    "outOfCreditsTitle": "Кредиты закончились. Пополнение {date}",
+    "outOfCreditsTitleNoDate": "Кредиты закончились",
     "partnerNodesBalance": "Баланс кредитов \"Партнёрских узлов\"",
     "partnerNodesCredits": "Кредиты партнёрских узлов",
     "partnerNodesDescription": "Для запуска коммерческих/проприетарных моделей",
+    "partnerNodesPricingTable": "Таблица цен на Partner Nodes",
     "perMonth": "USD / месяц",
+    "personalHeader": "Личные тарифы предназначены только для индивидуального использования. {action}",
+    "personalHeaderAction": "Чтобы добавить участников, оформите командный тариф.",
     "personalWorkspace": "Личное рабочее пространство",
+    "planLoadError": "Не удалось загрузить детали вашего тарифа.",
+    "planLoadErrorRetry": "Попробовать снова",
+    "planScope": {
+      "personal": "Для личного использования",
+      "team": "Для команд"
+    },
     "plansAndPricing": "Планы и цены",
     "plansForWorkspace": "Тарифы для {workspace}",
     "prepaidCreditsInfo": "Кредиты, приобретённые отдельно и не имеющие срока действия",
     "prepaidDescription": "Предоплаченные кредиты",
     "preview": {
       "addCreditCard": "Добавить банковскую карту",
+      "afterThat": "После этого",
       "backToAllPlans": "Назад ко всем тарифам",
+      "billedEachMonth": "{amount} списывается каждый месяц. Можно отменить в любое время.",
+      "commitment": "обязательство",
       "confirm": "Подтвердить",
+      "confirmChange": "Подтвердить изменение",
+      "confirmChangeTitle": "Проверьте запланированное изменение",
       "confirmPayment": "Подтвердите оплату",
       "confirmPlanChange": "Подтвердите смену тарифа",
+      "confirmUpgradeCta": "Подтвердить обновление",
+      "confirmUpgradeTitle": "Подтвердите обновление",
+      "creditFromCurrent": "Кредит с текущего {plan}",
+      "creditsRefillMonthlyTo": "Кредиты пополняются ежемесячно до",
+      "creditsRefillTo": "Кредиты пополняются до",
+      "creditsYoullGetToday": "Кредиты, которые вы получите сегодня",
+      "currentMonthly": "месячный план",
       "eachMonthCreditsRefill": "Ежемесячное пополнение кредитов до",
+      "eachYearCreditsRefill": "Каждый год кредиты пополняются до",
       "ends": "Заканчивается {date}",
+      "everyMonthStarting": "Каждый месяц начиная с {date}",
       "hideFeatures": "Скрыть функции",
+      "newMonthlySubscription": "Новая месячная подписка",
       "nextPaymentDue": "Следующий платеж {date}. Отменить можно в любое время.",
+      "paymentPopupBlocked": "Не удалось открыть страницу оплаты — разрешите всплывающие окна и попробуйте снова.",
       "perMember": "/ участник",
       "privacyPolicy": "Политика конфиденциальности",
       "proratedCharge": "Пропорциональная оплата за {plan}",
       "proratedRefund": "Пропорциональный возврат за {plan}",
+      "refillReplacesNote": "Заменяет ваше ежемесячное пополнение. Текущий баланс сохраняется.",
       "showMoreFeatures": "Показать больше функций",
       "starting": "Начинается {date}",
       "startingToday": "Начинается сегодня",
+      "startsOn": "Начинается {date}",
+      "stayOnUntil": "Вы останетесь на {plan} до {date}.",
+      "subscribeToPlan": "Подписаться на {plan}",
+      "switchToPlan": "Перейти на {plan}",
+      "switchesToday": "Переключений сегодня",
       "terms": "Условия",
       "termsAgreement": "Продолжая, вы соглашаетесь с {terms} и {privacy} Comfy Org.",
-      "totalDueToday": "Итого к оплате сегодня"
+      "totalDueToday": "Итого к оплате сегодня",
+      "yearlySubscription": "Годовая подписка",
+      "youllBeCharged": "С вас будет списано"
     },
+    "pricingBlurb": "*Основано на этом шаблоне, {seeDetails}. Свяжитесь с нами по {questions} или для {enterpriseDiscussions}. Для подробной информации о ценах {clickHere}.",
+    "pricingBlurbClickHere": "нажмите здесь",
+    "pricingBlurbEnterprise": "корпоративным обсуждениям",
+    "pricingBlurbQuestions": "вопросам",
+    "pricingBlurbSeeDetails": "подробнее",
+    "reactivatePlan": "Возобновить тариф",
+    "refillsDate": "Пополнение {date}",
+    "refillsNextCycle": "Пополнение в следующем цикле",
     "refreshCredits": "Обновить кредиты",
+    "remaining": "осталось",
     "renewsDate": "Обновляется {date}",
+    "renewsOnDate": "Продлевается {date}",
     "required": {
       "pollingFailed": "Не удалось активировать подписку",
       "pollingSuccess": "Подписка успешно активирована!",
@@ -3251,9 +4014,14 @@
       "waitingForSubscription": "Завершите оформление подписки в новой вкладке. Мы автоматически определим, когда вы закончите!"
     },
     "resubscribe": "Возобновить подписку",
+    "resubscribeFailed": "Не удалось повторно активировать подписку",
     "resubscribeSuccess": "Подписка успешно возобновлена",
     "resubscribeTo": "Возобновить подписку на {plan}",
+    "saveYearly": "Экономия 20%",
+    "saveYearlyUpTo": "Экономьте до 20%",
     "soloUseOnly": "Только для индивидуального использования",
+    "subscribe": "Подписаться",
+    "subscribeFailed": "Не удалось подписаться",
     "subscribeForMore": "Обновить",
     "subscribeNow": "Подписаться сейчас",
     "subscribeTo": "Подписаться на {plan}",
@@ -3261,10 +4029,46 @@
     "subscribeToRun": "Подписаться",
     "subscribeToRunFull": "Подписаться для запуска",
     "subscriptionRequiredMessage": "Для запуска рабочих процессов в облаке участникам требуется подписка",
+    "success": {
+      "allSet": "Всё готово",
+      "inviteEmailsPlaceholder": "Введите email-адреса через запятую",
+      "inviteSubtext": "Вы также можете пригласить людей позже в Настройках",
+      "inviteTitle": "Пригласить команду",
+      "planUpdated": "Ваш тариф успешно обновлён.",
+      "receiptEmailed": "Квитанция отправлена на вашу электронную почту.",
+      "sendInvites": "Отправить приглашения"
+    },
+    "teamHeader": "Для команд, желающих сотрудничать. Нужно больше участников? {learnMore} о корпоративных возможностях.",
+    "teamHeaderLearnMore": "Узнать больше",
+    "teamPerks": {
+      "concurrentRuns": "Участники могут запускать рабочие процессы одновременно",
+      "inviteMembers": "Приглашение участников",
+      "rolePermissions": "Разрешения на основе ролей",
+      "sharedCreditPool": "Общий кредитный пул для всех участников"
+    },
+    "teamPlan": {
+      "changePlan": "Сменить тариф",
+      "comingSoonLabel": "Скоро появится:",
+      "cta": "Оформить командную годовую подписку",
+      "ctaMonthly": "Оформить командную месячную подписку",
+      "currentPlan": "Текущий тариф",
+      "detailsTitle": "Детали",
+      "name": "Командный тариф",
+      "perkConcurrentRuns": "Участники могут запускать рабочие процессы одновременно",
+      "perkInviteMembers": "Приглашайте участников команды",
+      "perkProjectAssets": "Управление проектами и ресурсами",
+      "perkRolePermissions": "Ролевые разрешения",
+      "perkSharedPool": "Общий пул кредитов для всех участников",
+      "tagline": "Выберите собственную ежемесячную подписку на кредиты. Чем больше кредитов — тем больше скидка.",
+      "unavailable": "Этот командный план сейчас недоступен."
+    },
+    "teamPlanIncludes": "Ваш тариф включает всё из {plan}, а также:",
+    "teamPlanName": "Команда",
     "teamWorkspace": "Командное рабочее пространство",
     "tierNameYearly": "{name} Ежегодно",
     "tiers": {
       "creator": {
+        "feature1": "Импортируйте собственные модели",
         "name": "Creator"
       },
       "founder": {
@@ -3274,9 +4078,12 @@
         "name": "Бесплатно"
       },
       "pro": {
+        "feature1": "Более длительное выполнение рабочего процесса (до 1 часа)",
         "name": "Pro"
       },
       "standard": {
+        "feature1": "Максимальное время выполнения рабочего процесса — 30 минут",
+        "feature2": "Добавляйте кредиты в любое время",
         "name": "Standard"
       }
     },
@@ -3289,6 +4096,8 @@
     "upgradeToAddCredits": "Обновите, чтобы добавить кредиты",
     "usdPerMonth": "USD / мес",
     "usdPerMonthPerMember": "USD / мес / участник",
+    "usedAfterMonthly": "Используются после окончания месячных",
+    "videoEstimate": "Генерирует ~{count} 5-секундных видео*",
     "videoEstimateExplanation": "Эти оценки основаны на шаблоне Wan 2.2 Image-to-Video с настройками по умолчанию (5 секунд, 640x640, 16 кадров/с, 4 шага семплирования).",
     "videoEstimateHelp": "Подробнее об этом шаблоне",
     "videoEstimateLabel": "Примерное количество 5-секундных видео, созданных с помощью шаблона Wan 2.2 Image-to-Video",
@@ -3298,10 +4107,10 @@
     "viewMoreDetails": "Подробнее",
     "viewMoreDetailsPlans": "Подробнее о планах и ценах",
     "viewUsageHistory": "История использования",
+    "whatsIncluded": "Что входит:",
     "workspaceNotSubscribed": "Это рабочее пространство не имеет подписки",
     "yearly": "Ежегодно",
     "yearlyCreditsLabel": "Годовые кредиты",
-    "yearlyDiscount": "СКИДКА 20%",
     "yourPlanIncludes": "Ваш план включает:"
   },
   "tabMenu": {
@@ -3331,7 +4140,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "Фильтры:",
     "allTemplates": "Все шаблоны",
     "categories": "Категории",
     "category": {
@@ -3356,9 +4164,12 @@
       "Video": "Видео",
       "Video API": "Video API"
     },
+    "clearAllFilters": "Сбросить все фильтры",
     "error": {
       "templateNotFound": "Шаблон \"{templateName}\" не найден"
     },
+    "filtersApplied": "{count} фильтр применён | {count} фильтра применено | {count} фильтров применено",
+    "filtersButton": "Фильтры",
     "licenseFilter": "Лицензия",
     "loading": "Загрузка шаблонов...",
     "loadingMore": "Загрузка дополнительных шаблонов...",
@@ -3366,7 +4177,6 @@
     "modelsSelected": "{count} моделей",
     "noResults": "Шаблоны не найдены",
     "noResultsHint": "Попробуйте изменить параметры поиска или фильтры",
-    "resetFilters": "Очистить фильтры",
     "resultsCount": "Показано {count} из {total} шаблонов",
     "runsOnFilter": "Запускается на",
     "runsOnSelected": "{count} запусков на",
@@ -3378,8 +4188,8 @@
       "newest": "Новейшие",
       "popular": "Популярные",
       "recommended": "Рекомендуемые",
-      "searchPlaceholder": "Поиск...",
-      "vramLowToHigh": "Использование VRAM (от низкого к высокому)"
+      "relevance": "Актуальность",
+      "searchPlaceholder": "Поиск..."
     },
     "sorting": "Сортировать по",
     "title": "Начните с шаблона",
@@ -3413,11 +4223,14 @@
     "failedToInitiateCreditPurchase": "Не удалось начать покупку кредитов: {error}",
     "failedToInitiateSubscription": "Не удалось инициировать подписку: {error}",
     "failedToLoadBackgroundImage": "Не удалось загрузить фоновое изображение",
+    "failedToLoadHDRI": "Не удалось загрузить файл HDRI",
     "failedToLoadModel": "Не удалось загрузить 3D-модель",
     "failedToPurchaseCredits": "Не удалось купить кредиты: {error}",
     "failedToQueue": "Не удалось поставить в очередь",
     "failedToSaveDraft": "Не удалось сохранить черновик рабочего процесса",
+    "failedToSetGizmoMode": "Не удалось установить режим гизмо",
     "failedToToggleCamera": "Не удалось переключить камеру",
+    "failedToToggleGizmo": "Не удалось переключить гизмо",
     "failedToToggleGrid": "Не удалось переключить сетку",
     "failedToUpdateBackgroundColor": "Не удалось обновить цвет фона",
     "failedToUpdateBackgroundImage": "Не удалось обновить фоновое изображение",
@@ -3432,6 +4245,7 @@
     "fileTooLarge": "Файл слишком большой ({size} МБ). Максимально поддерживаемый размер — {maxSize} МБ",
     "fileUploadFailed": "Не удалось загрузить файл",
     "interrupted": "Выполнение было прервано",
+    "invalidTemplateData": "Не удалось загрузить шаблон узла: неверные данные",
     "legacyMaskEditorDeprecated": "Устаревший редактор масок будет скоро удалён.",
     "migrateToLitegraphReroute": "Узлы перенаправления будут удалены в будущих версиях. Нажмите, чтобы перейти на litegraph-native reroute.",
     "missingModelVerificationFailed": "Не удалось проверить отсутствующие модели. Некоторые модели могут не отображаться на вкладке Ошибки.",
@@ -3439,6 +4253,7 @@
     "no3dScene": "Нет 3D сцены для применения текстуры",
     "no3dSceneToExport": "Нет 3D сцены для экспорта",
     "noTemplatesToExport": "Нет шаблонов для экспорта",
+    "nodeDefinitionsUpdateFailed": "Не удалось обновить определения узлов",
     "nodeDefinitionsUpdated": "Определения узлов обновлены",
     "nothingSelected": "Ничего не выбрано",
     "nothingToGroup": "Нечего группировать",
@@ -3448,9 +4263,13 @@
     "pleaseSelectOutputNodes": "Пожалуйста, выберите выходные узлы",
     "unableToGetModelFilePath": "Не удалось получить путь к файлу модели",
     "unauthorizedDomain": "Ваш домен {domain} не авторизован для использования этого сервиса. Пожалуйста, свяжитесь с {email}, чтобы добавить ваш домен в белый список.",
+    "unsupportedHDRIFormat": "Неподдерживаемый формат файла. Пожалуйста, загрузите файл .hdr или .exr.",
     "updateRequested": "Запрошено обновление",
     "useApiKeyTip": "Совет: Нет доступа к обычному входу? Используйте опцию Comfy API Key.",
     "userNotAuthenticated": "Пользователь не аутентифицирован"
+  },
+  "typeform": {
+    "loadError": "Не удалось загрузить форму. Пожалуйста, попробуйте позже."
   },
   "userSelect": {
     "enterUsername": "Введите имя пользователя",
@@ -3538,7 +4357,8 @@
       "placeholderMesh": "Выберите mesh...",
       "placeholderModel": "Выбрать модель...",
       "placeholderUnknown": "Выбрать медиа...",
-      "placeholderVideo": "Выбрать видео..."
+      "placeholderVideo": "Выбрать видео...",
+      "topResult": "Лучший результат: {result}"
     },
     "valueControl": {
       "decrement": "Уменьшить значение",
@@ -3586,6 +4406,45 @@
     }
   },
   "workspacePanel": {
+    "billingStatus": {
+      "ending": {
+        "body": "Участники сохраняют полный доступ до этого времени. Активируйте снова, чтобы сохранить общие кредиты и места.",
+        "reactivate": "Активировать план",
+        "title": "План вашей команды заканчивается {date}"
+      },
+      "outOfCredits": {
+        "addCredits": "Добавить кредиты",
+        "body": "Ваша команда использовала все кредиты. Добавьте кредиты для продолжения генерации или дождитесь пополнения {date}.",
+        "bodyNoDate": "Ваша команда использовала все кредиты. Добавьте кредиты для продолжения генерации.",
+        "dismiss": "Закрыть",
+        "memberBody": "Ваша команда использовала все кредиты. Администраторы должны добавить кредиты для продолжения генерации.",
+        "title": "Кредиты закончились"
+      },
+      "paused": {
+        "body": "Подписка этого рабочего пространства приостановлена. Обновите платёж для возобновления.",
+        "memberBody": "Подписка этого рабочего пространства приостановлена. Администраторы должны обновить способ оплаты.",
+        "title": "Подписка приостановлена"
+      },
+      "updatePayment": "Обновить платёж",
+      "warning": {
+        "body": "Ваш последний платёж не прошёл. Ваша подписка будет приостановлена {date}, если платёж не будет обновлён.",
+        "bodyNoDate": "Ваш последний платёж не прошёл. Обновите платёж, чтобы избежать приостановки.",
+        "title": "Платёж отклонён"
+      }
+    },
+    "changeRoleDialog": {
+      "demoteConfirm": "Понизить до участника",
+      "demoteMessage": "Он(а) потеряет права администратора.",
+      "demoteTitle": "Понизить {name} до участника?",
+      "error": "Не удалось обновить роль",
+      "promoteConfirm": "Сделать владельцем",
+      "promoteIntro": "Он(а) сможет:",
+      "promotePermissionCredits": "Добавлять дополнительные кредиты",
+      "promotePermissionManage": "Управлять участниками, способами оплаты и настройками рабочей области",
+      "promotePermissionRoles": "Повышать и понижать других владельцев (кроме создателя рабочей области).",
+      "promoteTitle": "Сделать {name} владельцем?",
+      "success": "Роль обновлена"
+    },
     "createWorkspaceDialog": {
       "create": "Создать",
       "message": "Рабочие пространства позволяют участникам использовать общий пул кредитов. После создания вы станете владельцем.",
@@ -3610,17 +4469,11 @@
     "inviteLimitReached": "Достигнут лимит в 50 участников",
     "inviteMember": "Пригласить участника",
     "inviteMemberDialog": {
-      "createLink": "Создать ссылку",
-      "linkCopied": "Скопировано",
-      "linkCopyFailed": "Не удалось скопировать ссылку",
-      "linkStep": {
-        "copyLink": "Скопировать ссылку",
-        "done": "Готово",
-        "message": "Убедитесь, что его аккаунт использует этот email.",
-        "title": "Отправьте эту ссылку человеку"
-      },
-      "message": "Создайте ссылку-приглашение для отправки человеку",
+      "failedCount": "Не удалось отправить {count} приглашение. Попробуйте еще раз. | Не удалось отправить {count} приглашения. Попробуйте еще раз. | Не удалось отправить {count} приглашений. Попробуйте еще раз.",
+      "invalidEmailCount": "{count} некорректный адрес электронной почты | {count} некорректных адреса электронной почты | {count} некорректных адресов электронной почты",
+      "invitedMessage": "Приглашение отправлено на {emails} | Приглашения отправлены на {emails}",
       "placeholder": "Введите email человека",
+      "seatLimitReached": "Вы можете пригласить до {count} участника. | Вы можете пригласить до {count} участников.",
       "title": "Пригласить человека в это рабочее пространство"
     },
     "inviteUpsellDialog": {
@@ -3628,8 +4481,7 @@
       "messageSingleSeat": "Тариф Standard включает одно место для владельца рабочего пространства. Чтобы пригласить дополнительных участников, обновите тариф до Creator или выше для открытия нескольких мест.",
       "titleNotSubscribed": "Для приглашения участников требуется подписка",
       "titleSingleSeat": "Ваш текущий тариф поддерживает только одно место",
-      "upgradeToCreator": "Обновить до Creator",
-      "viewPlans": "Посмотреть тарифы"
+      "upgradeToTeam": "Обновить до Team"
     },
     "leaveDialog": {
       "leave": "Покинуть",
@@ -3638,30 +4490,35 @@
     },
     "members": {
       "actions": {
-        "copyLink": "Скопировать ссылку приглашения",
+        "cancelInvite": "Отменить приглашение",
+        "changeRole": "Изменить роль",
         "removeMember": "Удалить участника",
-        "revokeInvite": "Отозвать приглашение"
+        "resendInvite": "Повторно отправить приглашение"
       },
       "columns": {
         "expiryDate": "Дата истечения",
         "inviteDate": "Дата приглашения",
-        "joinDate": "Дата вступления"
+        "role": "Роль"
       },
-      "createNewWorkspace": "создайте новое.",
+      "contactUs": "Связаться с нами",
+      "header": "Участники",
       "membersCount": "{count}/50 участников",
+      "needMoreMembers": "Нужно больше участников?",
       "noInvites": "Нет ожидающих приглашений",
       "noMembers": "Нет участников",
       "pendingInvitesCount": "{count} ожидающее приглашение | {count} ожидающих приглашений",
-      "personalWorkspaceMessage": "Вы не можете приглашать других участников в ваше личное рабочее пространство. Чтобы добавить участников,",
+      "reactivateTeam": "Активировать Team",
+      "searchPlaceholder": "Поиск...",
       "tabs": {
         "active": "Активные",
         "pendingCount": "Ожидают ({count})"
       },
-      "upsellBannerSubscribe": "Оформите подписку на тариф Creator или выше, чтобы пригласить участников в это рабочее пространство.",
-      "upsellBannerUpgrade": "Обновите тариф до Creator или выше, чтобы пригласить дополнительных участников.",
-      "viewPlans": "Посмотреть тарифы"
+      "upgradeToTeam": "Обновить до Team",
+      "upsellBanner": "Чтобы добавить участников, обновите ваш тарифный план.",
+      "upsellBannerReactivate": "Чтобы добавить больше участников, активируйте ваш тарифный план."
     },
     "menu": {
+      "creatorCannotLeave": "Создатель рабочей области не может покинуть созданную им рабочую область",
       "deleteWorkspace": "Удалить рабочее пространство",
       "deleteWorkspaceDisabledTooltip": "Сначала отмените активную подписку рабочего пространства",
       "editWorkspace": "Редактировать детали рабочего пространства",
@@ -3690,6 +4547,8 @@
       "failedToFetchWorkspaces": "Не удалось загрузить рабочие пространства",
       "failedToLeaveWorkspace": "Не удалось покинуть рабочее пространство",
       "failedToUpdateWorkspace": "Не удалось обновить рабочее пространство",
+      "inviteResendFailed": "Не удалось повторно отправить приглашение",
+      "inviteResent": "Приглашение повторно отправлено",
       "workspaceCreated": {
         "message": "Оформите подписку, пригласите коллег и начните совместную работу.",
         "subscribe": "Оформить подписку",

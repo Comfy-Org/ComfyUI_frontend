@@ -26,7 +26,6 @@ export const useAudioService = () => {
       currentStream.getTracks().forEach((track) => {
         track.stop()
       })
-      currentStream = null
     }
   }
 

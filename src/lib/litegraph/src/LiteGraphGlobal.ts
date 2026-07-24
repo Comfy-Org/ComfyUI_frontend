@@ -28,7 +28,7 @@ import {
   RenderShape,
   TitleMode
 } from './types/globalEnums'
-import { createUuidv4 } from './utils/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 
 /**
  * The Global Scope. It contains all the registered node classes.
@@ -77,7 +77,6 @@ export class LiteGraphGlobal {
 
   WIDGET_BGCOLOR = '#222'
   WIDGET_OUTLINE_COLOR = '#666'
-  WIDGET_PROMOTED_OUTLINE_COLOR = '#BF00FF'
   WIDGET_ADVANCED_OUTLINE_COLOR = 'rgba(56, 139, 253, 0.8)'
   WIDGET_TEXT_COLOR = '#DDD'
   WIDGET_SECONDARY_TEXT_COLOR = '#999'
@@ -266,10 +265,6 @@ export class LiteGraphGlobal {
    * with the inputs of the newly pasted nodes
    */
   ctrl_shift_v_paste_connect_unselected_outputs = true
-
-  // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
-  // use this if you must have node IDs that are unique across all graphs and subgraphs.
-  use_uuids = false
 
   // Whether to highlight the bounding box of selected groups
   highlight_selected_group = true
@@ -480,7 +475,7 @@ export class LiteGraphGlobal {
     // @ts-expect-error Confirm this function no longer supports string types - base_class should always be an instance not a constructor.
     const class_type = base_class.constructor.type
 
-    let allTypes = []
+    let allTypes: string[]
     if (typeof slot_type === 'string') {
       allTypes = slot_type.split(',')
     } else if (slot_type == this.EVENT || slot_type == this.ACTION) {
@@ -540,7 +535,7 @@ export class LiteGraphGlobal {
 
     title = title || base_class.title || type
 
-    let node = null
+    let node: LGraphNode
 
     if (this.catch_exceptions) {
       try {

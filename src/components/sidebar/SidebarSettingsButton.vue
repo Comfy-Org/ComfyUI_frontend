@@ -30,7 +30,8 @@ const tooltipText = computed(
 const showSettingsDialog = () => {
   command.function()
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'sidebar_settings_button_clicked'
+    button_id: 'sidebar_settings_button_clicked',
+    element_group: 'sidebar'
   })
 }
 </script>

@@ -1,37 +1,18 @@
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { h } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
-// Mock all firebase modules
-vi.mock('firebase/app', () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock('firebase/auth', () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn()
-}))
-
-// Mock pinia
-vi.mock('pinia')
-
-// Mock showSettingsDialog and showTopUpCreditsDialog
 const mockShowSettingsDialog = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 
-// Mock the settings dialog composable
 vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   useSettingsDialog: vi.fn(() => ({
     show: mockShowSettingsDialog,
@@ -40,7 +21,6 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   }))
 }))
 
-// Mock window.open
 const originalWindowOpen = window.open
 beforeEach(() => {
   window.open = vi.fn()
@@ -50,7 +30,6 @@ afterAll(() => {
   window.open = originalWindowOpen
 })
 
-// Mock the useCurrentUser composable
 const mockHandleSignOut = vi.fn()
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: vi.fn(() => ({
@@ -61,58 +40,50 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   }))
 }))
 
-// Mock the useAuthActions composable
-const mockLogout = vi.fn()
-vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: vi.fn(() => ({
-    fetchBalance: vi.fn().mockResolvedValue(undefined),
-    logout: mockLogout
-  }))
-}))
-
-// Mock the dialog service
 vi.mock('@/services/dialogService', () => ({
   useDialogService: vi.fn(() => ({
     showTopUpCreditsDialog: mockShowTopUpCreditsDialog
   }))
 }))
 
-// Mock the authStore with hoisted state for per-test manipulation
-const mockAuthStoreState = vi.hoisted(() => ({
-  balance: {
-    amount_micros: 100_000,
-    effective_balance_micros: 100_000,
-    currency: 'usd'
-  } as {
-    amount_micros?: number
-    effective_balance_micros?: number
-    currency: string
-  },
-  isFetchingBalance: false
-}))
+function makeSubscription(
+  overrides: Partial<SubscriptionInfo> = {}
+): SubscriptionInfo {
+  return {
+    isActive: true,
+    tier: 'CREATOR',
+    duration: 'MONTHLY',
+    planSlug: null,
+    renewalDate: null,
+    endDate: null,
+    isCancelled: false,
+    hasFunds: true,
+    ...overrides
+  }
+}
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => ({
-    getAuthHeader: vi
-      .fn()
-      .mockResolvedValue({ Authorization: 'Bearer mock-token' }),
-    balance: mockAuthStoreState.balance,
-    isFetchingBalance: mockAuthStoreState.isFetchingBalance
-  }))
-}))
-
-// Mock the useSubscription composable
 const mockFetchStatus = vi.fn().mockResolvedValue(undefined)
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: vi.fn(() => ({
-    isActiveSubscription: { value: true },
-    subscriptionTierName: { value: 'Creator' },
-    subscriptionTier: { value: 'CREATOR' },
-    fetchStatus: mockFetchStatus
+const mockFetchBalance = vi.fn().mockResolvedValue(undefined)
+const mockIsActiveSubscription = ref(true)
+const mockIsFreeTier = ref(false)
+const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
+const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
+const mockBalance = ref<BalanceInfo | null>(null)
+const mockIsLoading = ref(false)
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: vi.fn(() => ({
+    isActiveSubscription: mockIsActiveSubscription,
+    isFreeTier: mockIsFreeTier,
+    tier: mockTier,
+    subscription: mockSubscription,
+    balance: mockBalance,
+    isLoading: mockIsLoading,
+    fetchStatus: mockFetchStatus,
+    fetchBalance: mockFetchBalance
   }))
 }))
 
-// Mock the useSubscriptionDialog composable
 const mockShowPricingTable = vi.fn()
 vi.mock(
   '@/platform/cloud/subscription/composables/useSubscriptionDialog',
@@ -125,7 +96,6 @@ vi.mock(
   })
 )
 
-// Mock UserAvatar component
 vi.mock('@/components/common/UserAvatar.vue', () => ({
   default: {
     name: 'UserAvatarMock',
@@ -135,22 +105,10 @@ vi.mock('@/components/common/UserAvatar.vue', () => ({
   }
 }))
 
-// Mock UserCredit component
-vi.mock('@/components/common/UserCredit.vue', () => ({
-  default: {
-    name: 'UserCreditMock',
-    render() {
-      return h('div', 'Credit: 100')
-    }
-  }
-}))
-
-// Mock formatCreditsFromCents
 vi.mock('@/base/credits/comfyCredits', () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
 }))
 
-// Mock useExternalLink
 vi.mock('@/composables/useExternalLink', () => ({
   useExternalLink: vi.fn(() => ({
     buildDocsUrl: vi.fn((path) => `https://docs.comfy.org${path}`),
@@ -160,14 +118,12 @@ vi.mock('@/composables/useExternalLink', () => ({
   }))
 }))
 
-// Mock useTelemetry
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
     trackAddApiCreditButtonClicked: vi.fn()
   }))
 }))
 
-// Mock isCloud with hoisted state for per-test toggling
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -176,52 +132,112 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 vi.mock('@/platform/cloud/subscription/components/SubscribeButton.vue', () => ({
-  default: {
+  default: defineComponent({
     name: 'SubscribeButtonMock',
-    render() {
-      return h('div', 'Subscribe Button')
+    emits: ['subscribed'],
+    setup(_, { emit }) {
+      return () =>
+        h(
+          'button',
+          {
+            'data-testid': 'subscribe-button-mock',
+            onClick: () => emit('subscribed')
+          },
+          'Subscribe Button'
+        )
     }
-  }
+  })
 }))
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsCloud.value = true
-    mockAuthStoreState.balance = {
-      amount_micros: 100_000,
-      effective_balance_micros: 100_000,
+    mockIsActiveSubscription.value = true
+    mockIsFreeTier.value = false
+    mockTier.value = 'CREATOR'
+    mockSubscription.value = makeSubscription()
+    mockBalance.value = {
+      amountMicros: 100_000,
+      effectiveBalanceMicros: 100_000,
       currency: 'usd'
     }
-    mockAuthStoreState.isFetchingBalance = false
+    mockIsLoading.value = false
   })
 
-  const mountComponent = (): VueWrapper => {
+  function renderComponent() {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
       messages: { en: enMessages }
     })
+    const onClose = vi.fn()
+    const user = userEvent.setup()
 
-    return mount(CurrentUserPopoverLegacy, {
+    render(CurrentUserPopoverLegacy, {
       global: {
         plugins: [i18n],
         stubs: {
           Divider: true
         }
+      },
+      props: {
+        onClose
       }
     })
+
+    return { user, onClose }
   }
 
   it('renders user information correctly', () => {
-    const wrapper = mountComponent()
+    renderComponent()
 
-    expect(wrapper.text()).toContain('Test User')
-    expect(wrapper.text()).toContain('test@example.com')
+    expect(screen.getByText('Test User')).toBeInTheDocument()
+    expect(screen.getByText('test@example.com')).toBeInTheDocument()
   })
 
-  it('calls formatCreditsFromCents with correct parameters and displays formatted credits', () => {
-    const wrapper = mountComponent()
+  it('fetches the balance through the billing facade on mount', () => {
+    renderComponent()
+
+    expect(mockFetchBalance).toHaveBeenCalled()
+  })
+
+  it('refreshes subscription status through the billing facade after subscribing', async () => {
+    mockIsActiveSubscription.value = false
+    const { user } = renderComponent()
+
+    await user.click(screen.getByTestId('subscribe-button-mock'))
+
+    expect(mockFetchStatus).toHaveBeenCalled()
+  })
+
+  describe('subscription tier badge', () => {
+    it('renders the tier name derived from the facade tier', () => {
+      renderComponent()
+
+      expect(screen.getByText('Creator')).toBeInTheDocument()
+    })
+
+    it('renders the yearly tier name when the facade subscription is annual', () => {
+      mockSubscription.value = makeSubscription({ duration: 'ANNUAL' })
+
+      renderComponent()
+
+      expect(screen.getByText('Creator Yearly')).toBeInTheDocument()
+    })
+
+    it('hides the badge when the facade reports no tier', () => {
+      mockTier.value = null
+      mockSubscription.value = null
+
+      renderComponent()
+
+      expect(screen.queryByText('Creator')).not.toBeInTheDocument()
+    })
+  })
+
+  it('formats and displays the facade balance', () => {
+    renderComponent()
 
     expect(formatCreditsFromCents).toHaveBeenCalledWith({
       cents: 100_000,
@@ -232,114 +248,105 @@ describe('CurrentUserPopoverLegacy', () => {
       }
     })
 
-    // Verify the formatted credit string (1000) is rendered in the DOM
-    expect(wrapper.text()).toContain('1000')
+    expect(screen.getByText('1000')).toBeInTheDocument()
+  })
+
+  it('shows a skeleton instead of the balance while billing is loading', () => {
+    mockIsLoading.value = true
+
+    renderComponent()
+
+    expect(screen.queryByText('1000')).not.toBeInTheDocument()
   })
 
   it('renders logout menu item with correct text', () => {
-    const wrapper = mountComponent()
+    renderComponent()
 
-    const logoutItem = wrapper.find('[data-testid="logout-menu-item"]')
-    expect(logoutItem.exists()).toBe(true)
-    expect(wrapper.text()).toContain('Log Out')
+    expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
+    expect(screen.getByText('Log Out')).toBeInTheDocument()
+  })
+
+  describe('credits help icon (FE-617)', () => {
+    it('renders the credits help icon as an interactive button with the unified-credits tooltip as its accessible name', () => {
+      renderComponent()
+
+      const helpButton = screen.getByTestId('credits-info-button')
+      expect(helpButton).toBeInTheDocument()
+      expect(helpButton.tagName).toBe('BUTTON')
+      expect(helpButton).toHaveAttribute(
+        'aria-label',
+        enMessages.credits.unified.tooltip
+      )
+    })
   })
 
   it('opens user settings and emits close event when settings item is clicked', async () => {
-    const wrapper = mountComponent()
+    const { user, onClose } = renderComponent()
 
-    const settingsItem = wrapper.find('[data-testid="user-settings-menu-item"]')
-    expect(settingsItem.exists()).toBe(true)
+    expect(screen.getByTestId('user-settings-menu-item')).toBeInTheDocument()
 
-    await settingsItem.trigger('click')
+    await user.click(screen.getByTestId('user-settings-menu-item'))
 
-    // Verify showSettingsDialog was called with 'user'
     expect(mockShowSettingsDialog).toHaveBeenCalledWith('user')
-
-    // Verify close event was emitted
-    expect(wrapper.emitted('close')).toBeTruthy()
-    expect(wrapper.emitted('close')!.length).toBe(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('calls logout function and emits close event when logout item is clicked', async () => {
-    const wrapper = mountComponent()
+    const { user, onClose } = renderComponent()
 
-    const logoutItem = wrapper.find('[data-testid="logout-menu-item"]')
-    expect(logoutItem.exists()).toBe(true)
+    expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
 
-    await logoutItem.trigger('click')
+    await user.click(screen.getByTestId('logout-menu-item'))
 
-    // Verify handleSignOut was called
     expect(mockHandleSignOut).toHaveBeenCalled()
-
-    // Verify close event was emitted
-    expect(wrapper.emitted('close')).toBeTruthy()
-    expect(wrapper.emitted('close')!.length).toBe(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('opens API pricing docs and emits close event when partner nodes item is clicked', async () => {
-    const wrapper = mountComponent()
+    const { user, onClose } = renderComponent()
 
-    const partnerNodesItem = wrapper.find(
-      '[data-testid="partner-nodes-menu-item"]'
-    )
-    expect(partnerNodesItem.exists()).toBe(true)
+    expect(screen.getByTestId('partner-nodes-menu-item')).toBeInTheDocument()
 
-    await partnerNodesItem.trigger('click')
+    await user.click(screen.getByTestId('partner-nodes-menu-item'))
 
-    // Verify window.open was called with the correct URL
     expect(window.open).toHaveBeenCalledWith(
       'https://docs.comfy.org/tutorials/partner-nodes/pricing',
       '_blank'
     )
-
-    // Verify close event was emitted
-    expect(wrapper.emitted('close')).toBeTruthy()
-    expect(wrapper.emitted('close')!.length).toBe(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('opens top-up dialog and emits close event when top-up button is clicked', async () => {
-    const wrapper = mountComponent()
+    const { user, onClose } = renderComponent()
 
-    const topUpButton = wrapper.find('[data-testid="add-credits-button"]')
-    expect(topUpButton.exists()).toBe(true)
+    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
 
-    await topUpButton.trigger('click')
+    await user.click(screen.getByTestId('add-credits-button'))
 
-    // Verify showTopUpCreditsDialog was called
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalled()
-
-    // Verify close event was emitted
-    expect(wrapper.emitted('close')).toBeTruthy()
-    expect(wrapper.emitted('close')!.length).toBe(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('opens subscription dialog and emits close event when plans & pricing item is clicked', async () => {
-    const wrapper = mountComponent()
+    const { user, onClose } = renderComponent()
 
-    const plansPricingItem = wrapper.find(
-      '[data-testid="plans-pricing-menu-item"]'
-    )
-    expect(plansPricingItem.exists()).toBe(true)
+    expect(screen.getByTestId('plans-pricing-menu-item')).toBeInTheDocument()
 
-    await plansPricingItem.trigger('click')
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
-    // Verify showPricingTable was called
     expect(mockShowPricingTable).toHaveBeenCalled()
-
-    // Verify close event was emitted
-    expect(wrapper.emitted('close')).toBeTruthy()
-    expect(wrapper.emitted('close')!.length).toBe(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  describe('effective_balance_micros handling', () => {
-    it('uses effective_balance_micros when present (positive balance)', () => {
-      mockAuthStoreState.balance = {
-        amount_micros: 200_000,
-        effective_balance_micros: 150_000,
+  describe('facade balance handling', () => {
+    it('uses effectiveBalanceMicros when present (positive balance)', () => {
+      mockBalance.value = {
+        amountMicros: 200_000,
+        effectiveBalanceMicros: 150_000,
         currency: 'usd'
       }
 
-      const wrapper = mountComponent()
+      renderComponent()
 
       expect(formatCreditsFromCents).toHaveBeenCalledWith({
         cents: 150_000,
@@ -349,17 +356,17 @@ describe('CurrentUserPopoverLegacy', () => {
           maximumFractionDigits: 2
         }
       })
-      expect(wrapper.text()).toContain('1500')
+      expect(screen.getByText('1500')).toBeInTheDocument()
     })
 
-    it('uses effective_balance_micros when zero', () => {
-      mockAuthStoreState.balance = {
-        amount_micros: 100_000,
-        effective_balance_micros: 0,
+    it('uses effectiveBalanceMicros when zero', () => {
+      mockBalance.value = {
+        amountMicros: 100_000,
+        effectiveBalanceMicros: 0,
         currency: 'usd'
       }
 
-      const wrapper = mountComponent()
+      renderComponent()
 
       expect(formatCreditsFromCents).toHaveBeenCalledWith({
         cents: 0,
@@ -369,17 +376,17 @@ describe('CurrentUserPopoverLegacy', () => {
           maximumFractionDigits: 2
         }
       })
-      expect(wrapper.text()).toContain('0')
+      expect(screen.getByText('0')).toBeInTheDocument()
     })
 
-    it('uses effective_balance_micros when negative', () => {
-      mockAuthStoreState.balance = {
-        amount_micros: 0,
-        effective_balance_micros: -50_000,
+    it('uses effectiveBalanceMicros when negative', () => {
+      mockBalance.value = {
+        amountMicros: 0,
+        effectiveBalanceMicros: -50_000,
         currency: 'usd'
       }
 
-      const wrapper = mountComponent()
+      renderComponent()
 
       expect(formatCreditsFromCents).toHaveBeenCalledWith({
         cents: -50_000,
@@ -389,16 +396,16 @@ describe('CurrentUserPopoverLegacy', () => {
           maximumFractionDigits: 2
         }
       })
-      expect(wrapper.text()).toContain('-500')
+      expect(screen.getByText('-500')).toBeInTheDocument()
     })
 
-    it('falls back to amount_micros when effective_balance_micros is missing', () => {
-      mockAuthStoreState.balance = {
-        amount_micros: 100_000,
+    it('falls back to amountMicros when effectiveBalanceMicros is missing', () => {
+      mockBalance.value = {
+        amountMicros: 100_000,
         currency: 'usd'
       }
 
-      const wrapper = mountComponent()
+      renderComponent()
 
       expect(formatCreditsFromCents).toHaveBeenCalledWith({
         cents: 100_000,
@@ -408,15 +415,13 @@ describe('CurrentUserPopoverLegacy', () => {
           maximumFractionDigits: 2
         }
       })
-      expect(wrapper.text()).toContain('1000')
+      expect(screen.getByText('1000')).toBeInTheDocument()
     })
 
-    it('falls back to 0 when both effective_balance_micros and amount_micros are missing', () => {
-      mockAuthStoreState.balance = {
-        currency: 'usd'
-      }
+    it('falls back to 0 when the facade reports no balance', () => {
+      mockBalance.value = null
 
-      const wrapper = mountComponent()
+      renderComponent()
 
       expect(formatCreditsFromCents).toHaveBeenCalledWith({
         cents: 0,
@@ -426,7 +431,22 @@ describe('CurrentUserPopoverLegacy', () => {
           maximumFractionDigits: 2
         }
       })
-      expect(wrapper.text()).toContain('0')
+      expect(screen.getByText('0')).toBeInTheDocument()
+    })
+  })
+
+  describe('cloud free tier', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockIsFreeTier.value = true
+    })
+
+    it('shows upgrade-to-add-credits button and hides add-credits button', () => {
+      renderComponent()
+      expect(
+        screen.getByTestId('upgrade-to-add-credits-button')
+      ).toBeInTheDocument()
+      expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
     })
   })
 
@@ -435,54 +455,61 @@ describe('CurrentUserPopoverLegacy', () => {
       mockIsCloud.value = false
     })
 
-    it('hides credits section', () => {
-      const wrapper = mountComponent()
-      expect(wrapper.find('[data-testid="add-credits-button"]').exists()).toBe(
-        false
-      )
+    it('still shows credits balance', () => {
+      renderComponent()
+      expect(screen.getByText('1000')).toBeInTheDocument()
+    })
+
+    it('shows add-credits button and hides upgrade-to-add-credits button', () => {
+      renderComponent()
+      expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
       expect(
-        wrapper.find('[data-testid="upgrade-to-add-credits-button"]').exists()
-      ).toBe(false)
+        screen.queryByTestId('upgrade-to-add-credits-button')
+      ).not.toBeInTheDocument()
+    })
+
+    it('hides upgrade-to-add-credits button even when on free tier', () => {
+      mockIsFreeTier.value = true
+      renderComponent()
+      expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('upgrade-to-add-credits-button')
+      ).not.toBeInTheDocument()
     })
 
     it('hides subscribe button', () => {
-      const wrapper = mountComponent()
-      expect(wrapper.text()).not.toContain('Subscribe Button')
+      mockIsActiveSubscription.value = false
+      renderComponent()
+      expect(
+        screen.queryByTestId('subscribe-button-mock')
+      ).not.toBeInTheDocument()
     })
 
-    it('hides partner nodes menu item', () => {
-      const wrapper = mountComponent()
-      expect(
-        wrapper.find('[data-testid="partner-nodes-menu-item"]').exists()
-      ).toBe(false)
+    it('still shows partner nodes menu item', () => {
+      renderComponent()
+      expect(screen.getByTestId('partner-nodes-menu-item')).toBeInTheDocument()
     })
 
     it('hides plans & pricing menu item', () => {
-      const wrapper = mountComponent()
+      renderComponent()
       expect(
-        wrapper.find('[data-testid="plans-pricing-menu-item"]').exists()
-      ).toBe(false)
+        screen.queryByTestId('plans-pricing-menu-item')
+      ).not.toBeInTheDocument()
     })
 
-    it('hides manage plan menu item', () => {
-      const wrapper = mountComponent()
-      expect(
-        wrapper.find('[data-testid="manage-plan-menu-item"]').exists()
-      ).toBe(false)
+    it('still shows manage plan menu item', () => {
+      renderComponent()
+      expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
     })
 
     it('still shows user settings menu item', () => {
-      const wrapper = mountComponent()
-      expect(
-        wrapper.find('[data-testid="user-settings-menu-item"]').exists()
-      ).toBe(true)
+      renderComponent()
+      expect(screen.getByTestId('user-settings-menu-item')).toBeInTheDocument()
     })
 
     it('still shows logout menu item', () => {
-      const wrapper = mountComponent()
-      expect(wrapper.find('[data-testid="logout-menu-item"]').exists()).toBe(
-        true
-      )
+      renderComponent()
+      expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
     })
   })
 })

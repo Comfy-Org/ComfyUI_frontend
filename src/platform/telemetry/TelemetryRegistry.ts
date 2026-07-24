@@ -1,23 +1,34 @@
 import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
+  AddCreditsClickMetadata,
+  AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ShareFlowMetadata,
   ExecutionErrorMetadata,
+  ExecutionOutcomeMetadata,
   ExecutionSuccessMetadata,
-  ExecutionTriggerSource,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  ResubscribeClickMetadata,
+  RunButtonProperties,
+  ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
   SettingChangedMetadata,
+  SharedWorkflowRunMetadata,
+  ShellLayoutMetadata,
+  SubscriptionCancellationMetadata,
   SubscriptionMetadata,
+  SubscriptionSuccessMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryDispatcher,
@@ -29,7 +40,8 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from './types'
 
 /**
@@ -65,6 +77,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAuth?.(metadata))
   }
 
+  trackAuthFailed(metadata: AuthErrorMetadata): void {
+    this.dispatch((provider) => provider.trackAuthFailed?.(metadata))
+  }
+
   trackUserLoggedIn(): void {
     this.dispatch((provider) => provider.trackUserLoggedIn?.())
   }
@@ -80,16 +96,35 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackBeginCheckout?.(metadata))
   }
 
-  trackMonthlySubscriptionSucceeded(): void {
-    this.dispatch((provider) => provider.trackMonthlySubscriptionSucceeded?.())
+  trackMonthlySubscriptionSucceeded(
+    metadata?: SubscriptionSuccessMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackMonthlySubscriptionSucceeded?.(metadata)
+    )
   }
 
   trackMonthlySubscriptionCancelled(): void {
     this.dispatch((provider) => provider.trackMonthlySubscriptionCancelled?.())
   }
 
-  trackAddApiCreditButtonClicked(): void {
-    this.dispatch((provider) => provider.trackAddApiCreditButtonClicked?.())
+  trackSubscriptionCancellation(
+    event: 'flow_opened' | 'confirmed' | 'abandoned' | 'failed',
+    metadata?: SubscriptionCancellationMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackSubscriptionCancellation?.(event, metadata)
+    )
+  }
+
+  trackResubscribeClicked(metadata: ResubscribeClickMetadata): void {
+    this.dispatch((provider) => provider.trackResubscribeClicked?.(metadata))
+  }
+
+  trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackAddApiCreditButtonClicked?.(metadata)
+    )
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
@@ -102,11 +137,12 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackApiCreditTopupSucceeded?.())
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    this.dispatch((provider) => provider.trackRunButton?.(options))
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    this.dispatch((provider) => provider.trackWorkspaceInviteSent?.(metadata))
+  }
+
+  trackRunButton(properties: RunButtonProperties): void {
+    this.dispatch((provider) => provider.trackRunButton?.(properties))
   }
 
   startTopupTracking(): void {
@@ -175,12 +211,20 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackShareFlow?.(metadata))
   }
 
+  trackShareLinkOpened(metadata: ShareLinkOpenedMetadata): void {
+    this.dispatch((provider) => provider.trackShareLinkOpened?.(metadata))
+  }
+
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.dispatch((provider) => provider.trackPageVisibilityChanged?.(metadata))
   }
 
   trackTabCount(metadata: TabCountMetadata): void {
     this.dispatch((provider) => provider.trackTabCount?.(metadata))
+  }
+
+  trackShellLayout(metadata: ShellLayoutMetadata): void {
+    this.dispatch((provider) => provider.trackShellLayout?.(metadata))
   }
 
   trackNodeSearch(metadata: NodeSearchMetadata): void {
@@ -191,6 +235,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) =>
       provider.trackNodeSearchResultSelected?.(metadata)
     )
+  }
+
+  trackSearchQuery(metadata: SearchQueryMetadata): void {
+    this.dispatch((provider) => provider.trackSearchQuery?.(metadata))
+  }
+
+  trackNodeAdded(metadata: NodeAddedMetadata): void {
+    this.dispatch((provider) => provider.trackNodeAdded?.(metadata))
   }
 
   trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {
@@ -217,12 +269,20 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackWorkflowExecution?.())
   }
 
+  trackExecutionOutcome(metadata: ExecutionOutcomeMetadata): void {
+    this.dispatch((provider) => provider.trackExecutionOutcome?.(metadata))
+  }
+
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
     this.dispatch((provider) => provider.trackExecutionError?.(metadata))
   }
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
     this.dispatch((provider) => provider.trackExecutionSuccess?.(metadata))
+  }
+
+  trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {
+    this.dispatch((provider) => provider.trackSharedWorkflowRun?.(metadata))
   }
 
   trackSettingChanged(metadata: SettingChangedMetadata): void {

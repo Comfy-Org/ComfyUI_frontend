@@ -81,6 +81,7 @@
     </Button>
     <div
       v-if="isIntegratedTabBar"
+      data-testid="integrated-tab-bar-actions"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
@@ -95,7 +96,10 @@
         <i class="icon-[lucide--message-square-text]" />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
-      <LoginButton v-else-if="isDesktop" class="p-1" />
+      <LoginButton
+        v-else-if="flags.showSignInButton ?? isDesktop"
+        class="p-1"
+      />
     </div>
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
@@ -112,9 +116,11 @@ import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildFeedbackUrl } from '@/platform/support/config'
+import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -141,14 +147,17 @@ const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
 
+// Dismiss a tab's terminal status badge once it has been viewed
+useWorkflowStatusDismissal()
+const { flags } = useFeatureFlags()
+
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
 const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
 
-const feedbackUrl = buildFeedbackUrl()
 function openFeedback() {
-  window.open(feedbackUrl, '_blank', 'noopener,noreferrer')
+  openFeedbackDialog('topbar')
 }
 
 const containerRef = ref<HTMLElement | null>(null)

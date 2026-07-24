@@ -1,4 +1,5 @@
-import { shallowMount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
@@ -7,10 +8,23 @@ import type {
   WorkflowMenuItem
 } from '@/types/workflowMenuItem'
 
-function createWrapper(items: WorkflowMenuItem[]) {
-  return shallowMount(WorkflowActionsList, {
-    props: { items },
-    global: { renderStubDefaultSlot: true }
+const MenuItemStub = {
+  template:
+    '<div data-testid="menu-item" @click="$emit(\'select\')"><slot /></div>',
+  emits: ['select']
+}
+
+const SeparatorStub = {
+  template: '<hr data-testid="menu-separator" />'
+}
+
+function renderList(items: WorkflowMenuItem[]) {
+  return render(WorkflowActionsList, {
+    props: {
+      items,
+      itemComponent: MenuItemStub,
+      separatorComponent: SeparatorStub
+    }
   })
 }
 
@@ -20,10 +34,9 @@ describe('WorkflowActionsList', () => {
       { id: 'save', label: 'Save', icon: 'pi pi-save', command: vi.fn() }
     ]
 
-    const wrapper = createWrapper(items)
+    renderList(items)
 
-    expect(wrapper.text()).toContain('Save')
-    expect(wrapper.find('.pi-save').exists()).toBe(true)
+    expect(screen.getByText('Save')).toBeInTheDocument()
   })
 
   it('renders separator items', () => {
@@ -33,24 +46,23 @@ describe('WorkflowActionsList', () => {
       { id: 'after', label: 'After', icon: 'pi pi-b', command: vi.fn() }
     ]
 
-    const wrapper = createWrapper(items)
-    const html = wrapper.html()
+    renderList(items)
 
-    expect(html).toContain('dropdown-menu-separator-stub')
-    expect(wrapper.text()).toContain('Before')
-    expect(wrapper.text()).toContain('After')
+    screen.getByTestId('menu-separator')
+    screen.getByText('Before')
+    screen.getByText('After')
   })
 
   it('dispatches command on select', async () => {
+    const user = userEvent.setup()
     const command = vi.fn()
     const items: WorkflowMenuItem[] = [
       { id: 'action', label: 'Action', icon: 'pi pi-play', command }
     ]
 
-    const wrapper = createWrapper(items)
-    const item = wrapper.findComponent({ name: 'DropdownMenuItem' })
-    await item.vm.$emit('select')
+    renderList(items)
 
+    await user.click(screen.getByTestId('menu-item'))
     expect(command).toHaveBeenCalledOnce()
   })
 
@@ -65,9 +77,9 @@ describe('WorkflowActionsList', () => {
       }
     ]
 
-    const wrapper = createWrapper(items)
+    renderList(items)
 
-    expect(wrapper.text()).toContain('NEW')
+    screen.getByText('NEW')
   })
 
   it('does not render items with visible set to false', () => {
@@ -82,10 +94,10 @@ describe('WorkflowActionsList', () => {
       { id: 'shown', label: 'Shown Item', icon: 'pi pi-eye', command: vi.fn() }
     ]
 
-    const wrapper = createWrapper(items)
+    renderList(items)
 
-    expect(wrapper.text()).not.toContain('Hidden Item')
-    expect(wrapper.text()).toContain('Shown Item')
+    expect(screen.queryByText('Hidden Item')).toBeNull()
+    screen.getByText('Shown Item')
   })
 
   it('does not render badge when absent', () => {
@@ -93,8 +105,8 @@ describe('WorkflowActionsList', () => {
       { id: 'plain', label: 'Plain', icon: 'pi pi-check', command: vi.fn() }
     ]
 
-    const wrapper = createWrapper(items)
+    renderList(items)
 
-    expect(wrapper.text()).not.toContain('NEW')
+    expect(screen.queryByText('NEW')).toBeNull()
   })
 })

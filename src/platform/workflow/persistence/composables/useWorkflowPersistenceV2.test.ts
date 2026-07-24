@@ -1,7 +1,8 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as I18n from 'vue-i18n'
+import { createApp, defineComponent, nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
@@ -48,16 +49,6 @@ vi.mock(
   })
 )
 
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal<typeof I18n>()
-  return {
-    ...actual,
-    useI18n: () => ({
-      t: (key: string) => key
-    })
-  }
-})
-
 const openWorkflowMock = vi.fn()
 const loadBlankWorkflowMock = vi.fn()
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
@@ -76,15 +67,25 @@ vi.mock(
   })
 )
 
+const commandStoreMocks = vi.hoisted(() => ({
+  execute: vi.fn()
+}))
+
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({
-    execute: vi.fn()
+    execute: commandStoreMocks.execute
   })
+}))
+
+const routeMocks = vi.hoisted(() => ({
+  query: {} as Record<string, unknown>
 }))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({
-    query: {}
+    get query() {
+      return routeMocks.query
+    }
   }),
   useRouter: () => ({
     replace: vi.fn()
@@ -97,13 +98,30 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
+const preservedQueryMocks = vi.hoisted(() => ({
+  payloads: {} as Record<string, Record<string, string> | undefined>
+}))
+
 vi.mock('@/platform/navigation/preservedQueryManager', () => ({
   hydratePreservedQuery: vi.fn(),
-  mergePreservedQueryIntoQuery: vi.fn(() => null)
+  mergePreservedQueryIntoQuery: vi.fn(
+    (namespace: string, query: Record<string, unknown> = {}) => {
+      const payload = preservedQueryMocks.payloads[namespace]
+      if (!payload) return undefined
+      const next: Record<string, unknown> = { ...query }
+      let changed = false
+      for (const [key, value] of Object.entries(payload)) {
+        if (typeof next[key] === 'string') continue
+        next[key] = value
+        changed = true
+      }
+      return changed ? next : undefined
+    }
+  )
 }))
 
 vi.mock('@/platform/navigation/preservedQueryNamespaces', () => ({
-  PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template' }
+  PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template', SHARE: 'share' }
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -153,7 +171,14 @@ vi.mock('@/scripts/api', () => ({
   api: mocks.apiMock
 }))
 
+type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
+
 describe('useWorkflowPersistenceV2', () => {
+  const mountedApps: Array<{
+    app: ReturnType<typeof createApp>
+    container: HTMLElement
+  }> = []
+
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2025-01-01T00:00:00Z'))
@@ -178,11 +203,54 @@ describe('useWorkflowPersistenceV2', () => {
     mocks.apiMock.removeEventListener.mockImplementation(() => {})
     openWorkflowMock.mockReset()
     loadBlankWorkflowMock.mockReset()
+    commandStoreMocks.execute.mockReset()
+    routeMocks.query = {}
+    preservedQueryMocks.payloads = {}
   })
 
   afterEach(() => {
+    for (const { app, container } of mountedApps.splice(0)) {
+      app.unmount()
+      container.remove()
+    }
     vi.useRealTimers()
   })
+
+  function mountWorkflowPersistence(): WorkflowPersistence {
+    let persistence: WorkflowPersistence | undefined
+    const HostComponent = defineComponent({
+      setup() {
+        persistence = useWorkflowPersistenceV2()
+        return () => null
+      }
+    })
+    const app = createApp(HostComponent)
+    app.use(
+      createI18n({
+        // Empty messages make t(key) return the key, matching the old i18n mock.
+        legacy: false,
+        locale: 'en',
+        messages: { en: {} },
+        missingWarn: false,
+        fallbackWarn: false
+      })
+    )
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    try {
+      app.mount(container)
+      mountedApps.push({ app, container })
+    } catch (error) {
+      container.remove()
+      throw error
+    }
+
+    if (!persistence) {
+      throw new Error('Failed to mount workflow persistence composable')
+    }
+
+    return persistence
+  }
 
   function writeTabState(paths: string[], activeIndex: number) {
     const pointer = {
@@ -207,15 +275,79 @@ describe('useWorkflowPersistenceV2', () => {
     )
   }
 
+  function createDeferred<T = void>() {
+    let resolve!: (value: T | PromiseLike<T>) => void
+    const promise = new Promise<T>((res) => {
+      resolve = res
+    })
+    return { promise, resolve }
+  }
+
+  describe('persistence toggle', () => {
+    it('resets the V2 draft store only after workflow persistence is disabled', async () => {
+      const draftStore = useWorkflowDraftStoreV2()
+      const resetSpy = vi.spyOn(draftStore, 'reset')
+
+      mountWorkflowPersistence()
+      expect(resetSpy).not.toHaveBeenCalled()
+
+      settingMocks.persistRef!.value = false
+      await nextTick()
+
+      expect(resetSpy).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('loadPreviousWorkflowFromStorage', () => {
+    it('does not restore the active workflow early when open tab state exists', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const workflowA = workflowStore.createTemporary('WorkflowA.json')
+      const workflowB = workflowStore.createTemporary('WorkflowB.json')
+
+      writeTabState([workflowA.path, workflowB.path], 0)
+      writeActivePath(workflowB.path)
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+    })
+
+    it('waits for workflow metadata before restoring the session workflow', async () => {
+      const workflowStore = useWorkflowStore()
+      const loadWorkflowsSpy = vi.spyOn(workflowStore, 'loadWorkflows')
+      const savedWorkflow = workflowStore.createTemporary('SavedWorkflow.json')
+      writeActivePath(savedWorkflow.path)
+
+      const gate = createDeferred<void>()
+      loadWorkflowsSpy.mockReturnValue(gate.promise)
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      const pending = initializeWorkflow()
+
+      await Promise.resolve()
+
+      expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+
+      gate.resolve()
+      await pending
+
+      expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow)
+    })
+
     it('loads saved workflow when draft is missing for session path', async () => {
       const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
       const savedWorkflow = workflowStore.createTemporary('SavedWorkflow.json')
 
       // Set session path to the saved workflow but do NOT create a draft
       writeActivePath(savedWorkflow.path)
 
-      const { initializeWorkflow } = useWorkflowPersistenceV2()
+      const { initializeWorkflow } = mountWorkflowPersistence()
       await initializeWorkflow()
 
       // Should call workflowService.openWorkflow with the saved workflow
@@ -226,6 +358,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     it('prefers draft over saved workflow when draft exists', async () => {
       const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
       const draftStore = useWorkflowDraftStoreV2()
 
       const workflow = workflowStore.createTemporary('DraftWorkflow.json')
@@ -238,7 +371,7 @@ describe('useWorkflowPersistenceV2', () => {
 
       mocks.loadGraphDataMock.mockResolvedValue(undefined)
 
-      const { initializeWorkflow } = useWorkflowPersistenceV2()
+      const { initializeWorkflow } = mountWorkflowPersistence()
       await initializeWorkflow()
 
       // Should load draft via loadGraphData, not via workflowService.openWorkflow
@@ -247,6 +380,7 @@ describe('useWorkflowPersistenceV2', () => {
     })
 
     it('falls back to latest draft only when no session path exists', async () => {
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
       const draftStore = useWorkflowDraftStoreV2()
 
       // No session path set, but a draft exists
@@ -258,7 +392,7 @@ describe('useWorkflowPersistenceV2', () => {
 
       mocks.loadGraphDataMock.mockResolvedValue(undefined)
 
-      const { initializeWorkflow } = useWorkflowPersistenceV2()
+      const { initializeWorkflow } = mountWorkflowPersistence()
       await initializeWorkflow()
 
       // Should load via fallbackToLatestDraft
@@ -268,8 +402,48 @@ describe('useWorkflowPersistenceV2', () => {
   })
 
   describe('restoreWorkflowTabsState', () => {
+    it('waits for workflow metadata before restoring tab pointers', async () => {
+      const workflowStore = useWorkflowStore()
+      const loadWorkflowsSpy = vi.spyOn(workflowStore, 'loadWorkflows')
+      const workflowA = workflowStore.createTemporary('WorkflowA.json')
+      const workflowB = workflowStore.createTemporary('WorkflowB.json')
+      writeTabState([workflowA.path, workflowB.path], 1)
+
+      const gate = createDeferred<void>()
+      loadWorkflowsSpy.mockReturnValue(gate.promise)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      const pending = restoreWorkflowTabsState()
+
+      await Promise.resolve()
+
+      expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+
+      gate.resolve()
+      await pending
+
+      expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+    })
+
+    it('falls back to the default workflow when metadata loading fails', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.spyOn(workflowStore, 'loadWorkflows').mockRejectedValue(
+        new Error('metadata failed')
+      )
+      writeTabState(['workflows/WorkflowA.json'], 0)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
+
     it('activates the correct workflow at storedActiveIndex', async () => {
       const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
       const draftStore = useWorkflowDraftStoreV2()
 
       // Create two temporary workflows with drafts
@@ -288,7 +462,7 @@ describe('useWorkflowPersistenceV2', () => {
       // storedActiveIndex = 1 → WorkflowB should be activated
       writeTabState([workflowA.path, workflowB.path], 1)
 
-      const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
@@ -296,6 +470,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     it('activates first tab when storedActiveIndex is 0', async () => {
       const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
       const draftStore = useWorkflowDraftStoreV2()
 
       const workflowA = workflowStore.createTemporary('WorkflowA.json')
@@ -312,22 +487,42 @@ describe('useWorkflowPersistenceV2', () => {
 
       writeTabState([workflowA.path, workflowB.path], 0)
 
-      const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowA)
     })
 
     it('does not call openWorkflow when no restorable state', async () => {
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
       // No tab state written to sessionStorage
-      const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).not.toHaveBeenCalled()
     })
 
+    it('does not restore tab state with an out-of-range activeIndex', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const openInBackgroundSpy = vi.spyOn(
+        workflowStore,
+        'openWorkflowsInBackground'
+      )
+      const workflowA = workflowStore.createTemporary('WorkflowA.json')
+
+      writeTabState([workflowA.path], 1)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+
+      expect(openInBackgroundSpy).not.toHaveBeenCalled()
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
+
     it('restores temporary workflows and adds them to tabs', async () => {
       const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
       const draftStore = useWorkflowDraftStoreV2()
 
       // Save a draft for a workflow that doesn't exist in the store yet
@@ -339,7 +534,7 @@ describe('useWorkflowPersistenceV2', () => {
 
       writeTabState([path], 0)
 
-      const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
       const restored = workflowStore.getWorkflowByPath(path)
@@ -350,11 +545,77 @@ describe('useWorkflowPersistenceV2', () => {
 
     it('skips activation when persistence is disabled', async () => {
       settingMocks.persistRef!.value = false
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
 
-      const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('loadDefaultWorkflow', () => {
+    it('opens templates browser for first-time users', async () => {
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(commandStoreMocks.execute).toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('does not open templates browser when share param is in URL', async () => {
+      routeMocks.query = { share: 'test-share-id' }
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('does not open templates browser when share intent is preserved across /user-select redirect', async () => {
+      // No-local-user flow: ?share=... was captured into sessionStorage and the
+      // URL query was dropped during the /user-select redirect before
+      // initializeWorkflow() runs.
+      preservedQueryMocks.payloads.share = { share: 'test-share-id' }
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('does not open templates browser when template param is in URL', async () => {
+      routeMocks.query = { template: 'default-template-id' }
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('does not open templates browser when template intent is preserved across /user-select redirect', async () => {
+      preservedQueryMocks.payloads.template = {
+        template: 'default-template-id'
+      }
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
     })
   })
 })

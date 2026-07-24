@@ -30,6 +30,69 @@ const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 
+const CRITICAL_COVERAGE_DIRS = [
+  'src/base',
+  'src/composables',
+  'src/core',
+  'src/lib/litegraph/src/node',
+  'src/lib/litegraph/src/subgraph',
+  'src/lib/litegraph/src/utils',
+  'src/platform/assets/composables',
+  'src/platform/assets/mappings',
+  'src/platform/assets/schemas',
+  'src/platform/assets/services',
+  'src/platform/assets/utils',
+  'src/platform/errorCatalog',
+  'src/platform/keybindings',
+  'src/platform/missingMedia',
+  'src/platform/missingModel',
+  'src/platform/navigation',
+  'src/platform/nodeReplacement',
+  'src/platform/remote',
+  'src/platform/remoteConfig',
+  'src/platform/secrets',
+  'src/platform/settings',
+  'src/platform/workflow',
+  'src/platform/workspace/api',
+  'src/platform/workspace/auth',
+  'src/platform/workspace/composables',
+  'src/platform/workspace/stores',
+  'src/platform/workspace/utils',
+  'src/schemas',
+  'src/scripts',
+  'src/services',
+  'src/stores',
+  'src/utils',
+  'src/workbench/extensions/manager/composables',
+  'src/workbench/extensions/manager/services',
+  'src/workbench/extensions/manager/stores',
+  'src/workbench/extensions/manager/utils',
+  'src/workbench/utils'
+]
+
+// A single glob key so vitest aggregates all critical dirs into one
+// thresholds bucket instead of one bucket per glob
+const CRITICAL_COVERAGE_GLOB = `{${CRITICAL_COVERAGE_DIRS.join(',')}}/**/*.{ts,vue}`
+
+const CRITICAL_COVERAGE_THRESHOLDS = {
+  statements: 69,
+  branches: 60,
+  functions: 67,
+  lines: 70
+}
+
+const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
+  'src/lib/litegraph/imgs/**',
+  'src/lib/litegraph/public/**',
+  'src/lib/litegraph/src/*.{ts,vue}',
+  'src/lib/litegraph/src/__fixtures__/**',
+  'src/lib/litegraph/src/__snapshots__/**',
+  'src/lib/litegraph/src/canvas/**',
+  'src/lib/litegraph/src/infrastructure/**',
+  'src/lib/litegraph/src/types/**',
+  'src/lib/litegraph/src/widgets/**'
+]
+
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
 const VITE_OG_TITLE =
@@ -63,7 +126,10 @@ const IS_NIGHTLY = process.env.IS_NIGHTLY === 'true'
 let GIT_COMMIT = process.env.FRONTEND_COMMIT_HASH || ''
 if (!GIT_COMMIT) {
   try {
-    GIT_COMMIT = execSync('git rev-parse HEAD', { timeout: 5000 })
+    GIT_COMMIT = execSync('git rev-parse HEAD', {
+      timeout: 5000,
+      windowsHide: true
+    })
       .toString()
       .trim()
   } catch {
@@ -153,6 +219,13 @@ const gcsRedirectProxyConfig: ProxyOptions = {
   }
 }
 
+// Disabling absolute asset-URL transforms under Vitest keeps `/assets/...` as
+// string literals, avoiding rootless `file:///assets/...` imports that crash
+// Vitest's `createRequire` on Windows.
+const vuePluginOptions = process.env.VITEST
+  ? { template: { transformAssetUrls: { includeAbsolute: false } } }
+  : undefined
+
 export default defineConfig({
   base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
@@ -161,13 +234,11 @@ export default defineConfig({
       ignored: [
         './browser_tests/**',
         './node_modules/**',
-        './tests-ui/**',
         '.eslintcache',
         '.oxlintrc.json',
         '*.config.{ts,mts}',
         '**/.git/**',
         '**/.github/**',
-        '**/.nx/**',
         '**/*.{test,spec,stories}.ts',
         '**/coverage/**',
         '**/dist/**',
@@ -208,6 +279,18 @@ export default defineConfig({
             return false
           }
 
+          return null
+        }
+      },
+
+      '/oauth': {
+        target: DEV_SERVER_COMFYUI_URL,
+        ...cloudProxyConfig,
+        bypass: (req) => {
+          const path = (req.url ?? '').split('?')[0]
+          if (path === '/oauth/consent' || path.startsWith('/oauth/consent/')) {
+            return req.url
+          }
           return null
         }
       },
@@ -253,8 +336,8 @@ export default defineConfig({
 
   plugins: [
     ...(!DISABLE_VUE_PLUGINS
-      ? [vueDevTools(), vue(), createHtmlPlugin({})]
-      : [vue()]),
+      ? [vueDevTools(), vue(vuePluginOptions), createHtmlPlugin({})]
+      : [vue(vuePluginOptions)]),
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
@@ -531,6 +614,11 @@ export default defineConfig({
               test: /[\\/]node_modules[\\/]@sentry[\\/]/,
               priority: 15
             },
+            {
+              name: 'vendor-datadog',
+              test: /[\\/]node_modules[\\/]@datadog[\\/]/,
+              priority: 15
+            },
 
             // UI component libraries
             {
@@ -653,7 +741,21 @@ export default defineConfig({
       'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
-      reporter: ['text', 'json', 'html']
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
+      include: ['src/**/*.{ts,vue}'],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.spec.ts',
+        'src/**/*.stories.ts',
+        'src/**/*.d.ts',
+        'src/locales/**',
+        'src/assets/**',
+        ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
+      ],
+      thresholds: {
+        [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS
+      }
     },
     exclude: [
       '**/node_modules/**',

@@ -45,6 +45,7 @@
     "errorLoadingImage": "Error loading image",
     "errorLoadingVideo": "Error loading video",
     "failedToDownloadImage": "Failed to download image",
+    "failedToDownloadFile": "Failed to download file",
     "failedToDownloadVideo": "Failed to download video",
     "calculatingDimensions": "Calculating dimensions",
     "import": "Import",
@@ -58,12 +59,24 @@
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
     "audioFailedToLoad": "Audio failed to load",
+    "textFailedToLoad": "Text failed to load",
     "liveSamplingPreview": "Live sampling preview",
     "extensionName": "Extension Name",
     "reloadToApplyChanges": "Reload to apply changes",
     "insert": "Insert",
     "systemInfo": "System Info",
     "devices": "Devices",
+    "systemStatsOS": "OS",
+    "systemStatsPythonVersion": "Python Version",
+    "systemStatsEmbeddedPython": "Embedded Python",
+    "systemStatsPyTorchVersion": "PyTorch Version",
+    "systemStatsArguments": "Arguments",
+    "systemStatsRAMTotal": "RAM Total",
+    "systemStatsRAMFree": "RAM Free",
+    "systemStatsTemplatesVersion": "Templates Version",
+    "systemStatsCloudVersion": "Cloud Version",
+    "systemStatsComfyUIVersion": "ComfyUI Version",
+    "systemStatsFrontendVersion": "Frontend Version",
     "about": "About",
     "add": "Add",
     "confirm": "Confirm",
@@ -83,12 +96,14 @@
     "resetToDefault": "Reset to default",
     "removeKeybinding": "Remove keybinding",
     "nMoreKeybindings": "+ {count} more",
+    "nMoreKeybindingsCompact": "+ {count}",
+    "keybindingListAriaLabel": "Keybindings: {combos}",
     "customizeFolder": "Customize Folder",
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
     "enter": "Enter",
-    "enterSubgraph": "Enter Subgraph",
+    "enterSubgraph": "Enter subgraph",
     "inSubgraph": "in subgraph '{name}'",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
@@ -129,6 +144,8 @@
     "saveAnyway": "Save Anyway",
     "saving": "Saving",
     "no": "No",
+    "on": "On",
+    "off": "Off",
     "cancel": "Cancel",
     "close": "Close",
     "closeDialog": "Close dialog",
@@ -136,6 +153,8 @@
     "hideLeftPanel": "Hide left panel",
     "showRightPanel": "Show right panel",
     "hideRightPanel": "Hide right panel",
+    "maximizeDialog": "Maximize dialog",
+    "restoreDialog": "Restore dialog",
     "or": "or",
     "defaultBanner": "default banner",
     "enableOrDisablePack": "Enable or disable pack",
@@ -199,6 +218,7 @@
     "control_before_generate": "control before generate",
     "choose_file_to_upload": "choose file to upload",
     "uploadAlreadyInProgress": "Upload already in progress",
+    "uploadTimedOut": "Upload timed out. Please try again.",
     "capture": "capture",
     "nodes": "Nodes",
     "nodesCount": "{count} node | {count} nodes",
@@ -207,6 +227,7 @@
     "filterByType": "Filter by {type}...",
     "mostRelevant": "Most relevant",
     "favorites": "Favorites",
+    "bookmarked": "Bookmarked",
     "essentials": "Essentials",
     "input": "Input",
     "output": "Output",
@@ -216,6 +237,7 @@
     "versionMismatchWarningMessage": "{warning}: {detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.",
     "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires {requiredVersion} or higher.",
     "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
+    "comfyPackageOutdated": "Installed {name} version {installedVersion} is lower than the required version {requiredVersion}.",
     "updateFrontend": "Update Frontend",
     "dismiss": "Dismiss",
     "update": "Update",
@@ -226,6 +248,7 @@
     "warning": "Warning",
     "name": "Name",
     "category": "Category",
+    "categories": "Categories",
     "sort": "Sort",
     "source": "Source",
     "filter": "Filter",
@@ -260,6 +283,7 @@
     "title": "Title",
     "edit": "Edit",
     "copy": "Copy",
+    "details": "Details",
     "copyJobId": "Copy Job ID",
     "copied": "Copied",
     "relativeTime": {
@@ -342,6 +366,11 @@
     "nodeSlotsError": "Node Slots Error",
     "nodeWidgetsError": "Node Widgets Error",
     "frameNodes": "Frame Nodes",
+    "arrange": "Arrange",
+    "arrangeVertically": "Arrange vertically",
+    "arrangeHorizontally": "Arrange horizontally",
+    "arrangeAsGrid": "Arrange as grid",
+    "arrangeSpacing": "Arrangement spacing",
     "listening": "Listening...",
     "ready": "Ready",
     "play": "Play",
@@ -366,16 +395,56 @@
     "preloadErrorTitle": "Loading Error",
     "recents": "Recents",
     "partner": "Partner",
+    "blueprints": "Blueprints",
+    "partnerNodes": "Partner Nodes",
     "collapseAll": "Collapse all",
     "expandAll": "Expand all"
   },
+  "hdrViewer": {
+    "title": "HDR Viewer",
+    "openInHdrViewer": "Open in HDR Viewer",
+    "hdrImage": "HDR image",
+    "failedToLoad": "Failed to load HDR image",
+    "exposure": "Exposure",
+    "normalizeExposure": "Auto exposure",
+    "channel": "Channel",
+    "channels": {
+      "rgb": "RGB",
+      "r": "R",
+      "g": "G",
+      "b": "B",
+      "a": "Alpha",
+      "luminance": "Luminance"
+    },
+    "sourceGamut": "Source gamut",
+    "dither": "Dither",
+    "clipWarnings": "Clip warnings",
+    "fitView": "Fit",
+    "histogram": "Histogram",
+    "resolution": "Resolution",
+    "min": "Min",
+    "max": "Max",
+    "mean": "Mean",
+    "stdDev": "Std dev",
+    "nan": "NaN",
+    "inf": "Inf"
+  },
   "manager": {
     "title": "Nodes Manager",
+    "survey": {
+      "title": "Join the waitlist",
+      "intro": "Installing custom nodes is coming soon to Comfy Cloud. Answer a few quick questions to join the waitlist and help shape this feature.",
+      "error": "This survey couldn't be loaded. Please try again later."
+    },
     "nodePackInfo": "Node Pack Info",
     "basicInfo": "Basic Info",
     "actions": "Actions",
     "selected": "Selected",
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
+    "incompatibleVersion": {
+      "title": "ComfyUI-Manager upgrade required",
+      "message": "Please upgrade ComfyUI-Manager to version 4.2.1 or higher.\n• Desktop: Update the ComfyUI Desktop app\n• Standalone: Run pip install -U comfyui-manager and restart\nLearn more: https://github.com/Comfy-Org/ComfyUI-Manager"
+    },
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
     "legacyManagerSearchTip": "Looking for ComfyUI-Manager? You can enable the legacy manager UI by starting ComfyUI with the --enable-manager-legacy-ui flag.",
@@ -572,8 +641,6 @@
     "Copy (Clipspace)": "Copy (Clipspace)",
     "Add Node": "Add Node",
     "Add Group": "Add Group",
-    "Convert to Group Node": "Convert to Group Node",
-    "Manage Group Nodes": "Manage Group Nodes",
     "Add Group For Selected Nodes": "Add Group For Selected Nodes",
     "Save Selected as Template": "Save Selected as Template",
     "Node Templates": "Node Templates",
@@ -846,8 +913,8 @@
       "nodes": "Nodes",
       "models": "Models",
       "assets": "Assets",
-      "workflows": "Workflows",
-      "templates": "Templates",
+      "workflows": "Work­flows",
+      "templates": "Tem­plates",
       "console": "Console",
       "menu": "Menu",
       "imported": "Imported",
@@ -865,14 +932,13 @@
     "newBlankWorkflow": "Create a new blank workflow",
     "nodeLibraryTab": {
       "essentials": "Essentials",
-      "allNodes": "All",
+      "allNodes": "All nodes",
       "blueprints": "Blueprints",
       "custom": "Custom",
-      "filter": "Filter",
       "filterOptions": {
         "blueprints": "Blueprints",
-        "partnerNodes": "Partner Nodes",
         "comfyNodes": "Comfy Nodes",
+        "partnerNodes": "Partner Nodes",
         "extensions": "Extensions"
       },
       "groupBy": "Group By",
@@ -892,6 +958,7 @@
         "alphabetical": "A-Z",
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
+      "noMatchingNodes": "No nodes match \"{query}\"",
       "sections": {
         "favorites": "Bookmarks",
         "favoriteNode": "Bookmark Node",
@@ -900,8 +967,9 @@
         "subgraphBlueprints": "Subgraph Blueprints",
         "myBlueprints": "My Blueprints",
         "comfyBlueprints": "Comfy Blueprints",
-        "partnerNodes": "Partner Nodes",
         "comfyNodes": "Comfy Nodes",
+        "essentialNodes": "Essential Nodes",
+        "partnerNodes": "Partner Nodes",
         "extensions": "Extensions"
       },
       "noBookmarkedNodes": "No bookmarks yet"
@@ -968,6 +1036,7 @@
       "dirtyCloseTitle": "Save Changes?",
       "dirtyClose": "The files below have been changed.  Would you like to save them before closing?",
       "dirtyCloseHint": "Hold Shift to close without prompt",
+      "dirtyCloseAnyway": "Close anyway",
       "confirmOverwriteTitle": "Overwrite existing file?",
       "confirmOverwrite": "The file below already exists. Would you like to overwrite it?",
       "workflowTreeType": {
@@ -1078,9 +1147,10 @@
       "Generation Type": "Generation Type"
     },
     "categories": "Categories",
-    "resetFilters": "Clear Filters",
+    "clearAllFilters": "Clear all filters",
+    "filtersApplied": "{count} filter applied | {count} filters applied",
+    "filtersButton": "Filters",
     "sorting": "Sort by",
-    "activeFilters": "Filters:",
     "loading": "Loading templates...",
     "noResults": "No templates found",
     "noResultsHint": "Try adjusting your search or filters",
@@ -1094,12 +1164,12 @@
     "runsOnFilter": "Runs on",
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
+      "relevance": "Relevance",
       "recommended": "Recommended",
       "popular": "Popular",
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
-      "vramLowToHigh": "VRAM Usage (Low to High)",
       "modelSizeLowToHigh": "Model Size (Low to High)",
       "default": "Default"
     },
@@ -1139,13 +1209,13 @@
     "showMinimap": "Show Minimap",
     "hideMinimap": "Hide Minimap"
   },
-  "groupNode": {
-    "create": "Create group node",
-    "enterName": "Enter name"
-  },
   "nodeTemplates": {
     "saveAsTemplate": "Save as template",
     "enterName": "Enter name"
+  },
+  "logsTerminal": {
+    "loadError": "Unable to load logs, please ensure you have updated your ComfyUI backend.",
+    "resyncError": "Unable to resync logs after the backend reconnected. Reopen the console to retry."
   },
   "workflowService": {
     "exportWorkflow": "Export Workflow",
@@ -1364,9 +1434,6 @@
     "Group Selected Nodes": "Group Selected Nodes",
     "Toggle promotion of hovered widget": "Toggle promotion of hovered widget",
     "Unpack the selected Subgraph": "Unpack the selected Subgraph",
-    "Convert selected nodes to group node": "Convert selected nodes to group node",
-    "Manage group nodes": "Manage group nodes",
-    "Ungroup selected group nodes": "Ungroup selected group nodes",
     "About ComfyUI": "About ComfyUI",
     "Comfy-Org Discord": "Comfy-Org Discord",
     "ComfyUI Docs": "ComfyUI Docs",
@@ -1502,7 +1569,8 @@
     "Error System": "Error System",
     "Other": "Other",
     "Secrets": "Secrets",
-    "Node Library": "Node Library"
+    "Node Library": "Node Library",
+    "PointCloud": "Point Cloud"
   },
   "serverConfigItems": {
     "listen": {
@@ -1638,129 +1706,168 @@
     "Directories": "Directories"
   },
   "nodeCategories": {
-    "_for_testing": "_for_testing",
-    "custom_sampling": "custom_sampling",
-    "noise": "noise",
-    "dataset": "dataset",
-    "text": "text",
-    "image": "image",
-    "sampling": "sampling",
-    "schedulers": "schedulers",
-    "audio": "audio",
-    "conditioning": "conditioning",
-    "loaders": "loaders",
-    "guiders": "guiders",
-    "latent": "latent",
-    "mask": "mask",
-    "api node": "api node",
-    "Bria": "Bria",
-    "video": "video",
-    "ByteDance": "ByteDance",
-    "preprocessors": "preprocessors",
-    "utils": "utils",
-    "string": "string",
-    "advanced": "advanced",
-    "guidance": "guidance",
-    "model_merging": "model_merging",
-    "model_patches": "model_patches",
-    "chroma_radiance": "chroma_radiance",
-    "attention_experiments": "attention_experiments",
-    "flux": "flux",
-    "kandinsky5": "kandinsky5",
-    "hooks": "hooks",
-    "combine": "combine",
-    "math": "math",
-    "logic": "logic",
-    "cond single": "cond single",
-    "context": "context",
-    "controlnet": "controlnet",
-    "inpaint": "inpaint",
-    "scheduling": "scheduling",
-    "create": "create",
-    "deprecated": "deprecated",
-    "detection": "detection",
-    "": "",
-    "debug": "debug",
     "model": "model",
-    "ElevenLabs": "ElevenLabs",
-    "3d": "3d",
-    "ltxv": "ltxv",
-    "qwen": "qwen",
-    "sd3": "sd3",
-    "unet": "unet",
-    "sigmas": "sigmas",
-    "BFL": "BFL",
-    "Gemini": "Gemini",
-    "video_models": "video_models",
-    "gligen": "gligen",
-    "shader": "shader",
-    "Grok": "Grok",
-    "HitPaw": "HitPaw",
-    "sd": "sd",
-    "Ideogram": "Ideogram",
-    "postprocessing": "postprocessing",
-    "transform": "transform",
+    "sampling": "sampling",
+    "loaders": "loaders",
+    "conditioning": "conditioning",
+    "latent": "latent",
     "batch": "batch",
+    "image": "image",
     "upscaling": "upscaling",
-    "instructpix2pix": "instructpix2pix",
-    "compositing": "compositing",
-    "Kling": "Kling",
-    "samplers": "samplers",
+    "color": "color",
+    "transform": "transform",
+    "experimental": "experimental",
+    "controlnet": "controlnet",
+    "gligen": "gligen",
+    "advanced": "advanced",
     "operations": "operations",
+    "filters": "filters",
+    "mask": "mask",
+    "compositing": "compositing",
+    "merging": "merging",
+    "patch": "patch",
+    "unet": "unet",
+    "stable diffusion": "stable diffusion",
+    "custom": "custom",
+    "guiders": "guiders",
+    "schedulers": "schedulers",
+    "samplers": "samplers",
+    "sigmas": "sigmas",
+    "noise": "noise",
+    "stable cascade": "stable cascade",
+    "flux": "flux",
+    "debug": "debug",
+    "utilities": "utilities",
+    "primitive": "primitive",
+    "stable video": "stable video",
+    "text": "text",
     "training": "training",
+    "video": "video",
+    "adjustments": "adjustments",
+    "dataset": "dataset",
+    "stable zero123": "stable zero123",
+    "stable video 3d": "stable video 3d",
+    "stable diffusion upscaler": "stable diffusion upscaler",
+    "photomaker": "photomaker",
+    "pixart": "pixart",
+    "instructpix2pix": "instructpix2pix",
+    "model specific": "model specific",
+    "attention_experiments": "attention_experiments",
+    "audio": "audio",
+    "stable audio": "stable audio",
+    "guidance": "guidance",
+    "hunyuan image": "hunyuan image",
+    "hunyuan video": "hunyuan video",
+    "hunyhuan video": "hunyhuan video",
+    "mochi": "mochi",
+    "ltxv": "ltxv",
+    "preprocessors": "preprocessors",
+    "hooks": "hooks",
+    "create": "create",
+    "scheduling": "scheduling",
+    "combine": "combine",
+    "cond single": "cond single",
+    "cond pair": "cond pair",
+    "clip": "clip",
+    "multigpu": "multigpu",
+    "3d": "3d",
+    "cosmos": "cosmos",
+    "lumina": "lumina",
+    "wan": "wan",
+    "move": "move",
+    "fun control": "fun control",
+    "fun inpaint": "fun inpaint",
+    "vace": "vace",
+    "camera": "camera",
+    "phantom subject": "phantom subject",
+    "sound": "sound",
+    "humo": "humo",
+    "animate": "animate",
+    "infinite talk": "infinite talk",
+    "bernini": "bernini",
     "lotus": "lotus",
+    "hunyuan 3d": "hunyuan 3d",
+    "hidream": "hidream",
+    "ace": "ace",
+    "pre-processors": "pre-processors",
+    "post-processors": "post-processors",
+    "qwen image": "qwen image",
+    "qwen": "qwen",
+    "joyimage": "joyimage",
+    "boogu": "boogu",
+    "chroma radiance": "chroma radiance",
+    "z-image": "z-image",
+    "supir": "supir",
+    "model_patches": "model_patches",
+    "anima": "anima",
+    "logic": "logic",
+    "": "",
+    "kandinsky": "kandinsky",
+    "autoregressive": "autoregressive",
+    "shader": "shader",
+    "detection": "detection",
+    "background removal": "background removal",
+    "scail": "scail",
+    "void": "void",
+    "dancer": "dancer",
+    "geometry estimation": "geometry estimation",
+    "splat": "splat",
+    "triposplat": "triposplat",
+    "partner": "partner",
+    "Anthropic": "Anthropic",
+    "Beeble": "Beeble",
+    "BFL": "BFL",
+    "Bria": "Bria",
+    "ByteDance": "ByteDance",
+    "ElevenLabs": "ElevenLabs",
+    "Gemini": "Gemini",
+    "Grok": "Grok",
+    "HeyGen": "HeyGen",
+    "HitPaw": "HitPaw",
+    "Tencent": "Tencent",
+    "Ideogram": "Ideogram",
+    "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "model_specific": "model_specific",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
-    "Sora": "Sora",
-    "cond pair": "cond pair",
-    "photomaker": "photomaker",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
-    "primitive": "primitive",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
-    "edit_models": "edit_models",
     "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
-    "animation": "animation",
-    "api": "api",
-    "save": "save",
-    "upscale_diffusion": "upscale_diffusion",
-    "clip": "clip",
-    "Stability AI": "Stability AI",
-    "stable_cascade": "stable_cascade",
-    "3d_models": "3d_models",
-    "style_model": "style_model",
-    "Tencent": "Tencent",
-    "textgen": "textgen",
+    "Sonilo": "Sonilo",
+    "Sora": "Sora",
+    "sync_so": "sync.so",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
-    "camera": "camera",
     "Wan": "Wan",
-    "WaveSpeed": "WaveSpeed",
-    "zimage": "zimage"
+    "WaveSpeed": "WaveSpeed"
   },
   "dataTypes": {
     "*": "*",
+    "ARRAY": "ARRAY",
     "AUDIO": "AUDIO",
     "AUDIO_ENCODER": "AUDIO_ENCODER",
     "AUDIO_ENCODER_OUTPUT": "AUDIO_ENCODER_OUTPUT",
     "AUDIO_RECORD": "AUDIO_RECORD",
+    "BACKGROUND_REMOVAL": "BACKGROUND_REMOVAL",
     "BOOLEAN": "BOOLEAN",
     "BOUNDING_BOX": "BOUNDING_BOX",
+    "BOUNDING_BOXES": "BOUNDING_BOXES",
     "CAMERA_CONTROL": "CAMERA_CONTROL",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
     "COLOR": "COLOR",
+    "COLORS": "COLORS",
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -1768,12 +1875,23 @@
     "CONDITIONING": "CONDITIONING",
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "CURVE",
+    "DA3_GEOMETRY": "DA3_GEOMETRY",
+    "DA3_MODEL": "DA3_MODEL",
+    "DICT": "DICT",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "FACE_DETECTION_MODEL",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "FLOAT",
@@ -1784,17 +1902,22 @@
     "HISTOGRAM": "HISTOGRAM",
     "HOOK_KEYFRAMES": "HOOK_KEYFRAMES",
     "HOOKS": "HOOKS",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGE",
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
+    "INTERP_MODEL": "INTERP_MODEL",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD_3D": "LOAD_3D",
     "LOAD3D_CAMERA": "LOAD3D_CAMERA",
+    "LOAD3D_MODEL_INFO": "LOAD3D_MODEL_INFO",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
     "LUMA_CONCEPTS": "LUMA_CONCEPTS",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "LUMA_REF",
     "MASK": "MASK",
     "MESH": "MESH",
@@ -1803,9 +1926,12 @@
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_PATCH",
     "MODEL_TASK_ID": "MODEL_TASK_ID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "NOISE",
     "OPENAI_CHAT_CONFIG": "OPENAI_CHAT_CONFIG",
     "OPENAI_INPUT_FILES": "OPENAI_INPUT_FILES",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PIXVERSE_TEMPLATE",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -1814,8 +1940,12 @@
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STYLE",
     "RETARGET_TASK_ID": "RETARGET_TASK_ID",
     "RIG_TASK_ID": "RIG_TASK_ID",
+    "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
+    "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "SAMPLER",
     "SIGMAS": "SIGMAS",
+    "SPLAT": "SPLAT",
     "STRING": "STRING",
     "STYLE_MODEL": "STYLE_MODEL",
     "SVG": "SVG",
@@ -1887,6 +2017,7 @@
   "errorDialog": {
     "defaultTitle": "An error occurred",
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
+    "queueOpenWorkflowFailedTitle": "Failed to Open Workflow",
     "noStackTrace": "No stacktrace available",
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed",
@@ -1940,8 +2071,11 @@
     "upDirection": "Up Direction",
     "materialMode": "Material Mode",
     "showSkeleton": "Show Skeleton",
+    "fitToViewer": "Fit to Viewer",
+    "centerCameraOnModel": "Center Camera on Model",
     "scene": "Scene",
     "model": "Model",
+    "model3d": "3D Model",
     "camera": "Camera",
     "light": "Light",
     "switchingMaterialMode": "Switching Material Mode...",
@@ -1952,13 +2086,35 @@
     "reloadingModel": "Reloading model...",
     "uploadTexture": "Upload Texture",
     "applyingTexture": "Applying Texture...",
+    "menuBar": {
+      "showGrid": "Show grid",
+      "bgColor": "BG Color",
+      "bgImage": "BG Image",
+      "panorama": "Panorama",
+      "removeBackground": "Remove BG",
+      "upDirection": "Up Direction",
+      "material": "Material",
+      "skeleton": "Skeleton",
+      "fov": "FOV",
+      "intensity": "Intensity",
+      "record": "Record",
+      "recording": "Recording",
+      "stopRecording": "Stop recording",
+      "downloadRecording": "Download Recording",
+      "startNewRecording": "Start New Recording",
+      "deleteRecording": "Delete Recording",
+      "videoRecordingTooltip": "Video recording of the scene [mp4]",
+      "switchProjection": "Switch projection",
+      "originalMaterialOnly": "Original material only"
+    },
     "materialModes": {
       "normal": "Normal",
       "wireframe": "Wireframe",
       "original": "Original",
       "pointCloud": "Point Cloud",
       "depth": "Depth",
-      "lineart": "Lineart"
+      "lineart": "Lineart",
+      "clay": "Clay"
     },
     "upDirections": {
       "original": "Original"
@@ -1987,7 +2143,24 @@
     "openIn3DViewer": "Open in 3D Viewer",
     "dropToLoad": "Drop 3D model to load",
     "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl, .ply, .spz, .splat, .ksplat)",
-    "uploadingModel": "Uploading 3D model..."
+    "uploadingModel": "Uploading 3D model...",
+    "loadingHDRI": "Loading HDRI...",
+    "hdri": {
+      "label": "HDRI",
+      "uploadFile": "Upload",
+      "changeFile": "Change",
+      "removeFile": "Remove",
+      "showAsBackground": "Show as Background",
+      "intensity": "Intensity"
+    },
+    "gizmo": {
+      "label": "Gizmo",
+      "toggle": "Gizmo",
+      "translate": "Translate",
+      "rotate": "Rotate",
+      "scale": "Scale",
+      "reset": "Reset"
+    }
   },
   "imageCrop": {
     "loading": "Loading...",
@@ -2021,6 +2194,22 @@
     "monotone_cubic": "Smooth",
     "linear": "Linear"
   },
+  "boundingBoxes": {
+    "clearAll": "Clear all",
+    "clickRegionToEdit": "Click a region to edit it.",
+    "typeObj": "obj",
+    "typeText": "text",
+    "textLabel": "Text",
+    "descLabel": "description",
+    "textPlaceholder": "text to render (verbatim)",
+    "descPlaceholder": "description of this region",
+    "colors": "color_palette",
+    "grid": "Grid"
+  },
+  "palette": {
+    "addColor": "Add a color",
+    "swatchTitle": "Click edit · drag reorder · right-click remove"
+  },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
@@ -2048,10 +2237,12 @@
     "failedToDownloadFile": "Failed to download file",
     "updateRequested": "Update requested",
     "nodeDefinitionsUpdated": "Node definitions updated",
+    "nodeDefinitionsUpdateFailed": "Failed to update node definitions",
     "errorSaveSetting": "Error saving setting {id}: {err}",
     "errorCopyImage": "Error copying image: {error}",
     "errorOpenImage": "Error opening image: {error}",
     "noTemplatesToExport": "No templates to export",
+    "invalidTemplateData": "Failed to load node template: invalid data",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
     "legacyMaskEditorDeprecated": "The legacy mask editor is deprecated and will be removed soon.",
@@ -2082,7 +2273,11 @@
     "failedToUpdateMaterialMode": "Failed to update material mode",
     "failedToUpdateEdgeThreshold": "Failed to update edge threshold",
     "failedToUploadBackgroundImage": "Failed to upload background image",
-    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}"
+    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}",
+    "failedToLoadHDRI": "Failed to load HDRI file",
+    "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file.",
+    "failedToToggleGizmo": "Failed to toggle gizmo",
+    "failedToSetGizmoMode": "Failed to set gizmo mode"
   },
   "nodeErrors": {
     "render": "Node Render Error",
@@ -2090,6 +2285,43 @@
     "header": "Node Header Error",
     "slots": "Node Slots Error",
     "widgets": "Node Widgets Error"
+  },
+  "oauth": {
+    "consent": {
+      "allow": "Continue",
+      "deny": "Cancel",
+      "genericError": "OAuth request failed. Please restart from the client app.",
+      "loading": "Loading authorization request…",
+      "missingRequest": "This authorization request is missing. Please restart from the client app.",
+      "noWorkspaces": "No eligible workspaces are available for this request.",
+      "title": "{client} wants access",
+      "subtitle": "Sign in to {resource} to continue",
+      "resourceFallback": "this app",
+      "workspaceLabel": "Your Workspaces",
+      "detailsHeader": "Details",
+      "permissionsHeader": "Permissions",
+      "redirectNotice": "You'll be redirected to",
+      "appTypeNative": "Native app",
+      "appTypeWeb": "Web app",
+      "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
+      "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
+      "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists.",
+      "sessionError": "Failed to establish session. Please try again.",
+      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in"
+    },
+    "scopes": {
+      "mcp:tools:read": {
+        "label": "View available workflow tools"
+      },
+      "mcp:tools:call": {
+        "label": "Run workflows on your behalf"
+      }
+    },
+    "workspace": {
+      "personal": "Personal",
+      "owner": "Owner",
+      "member": "Member"
+    }
   },
   "auth": {
     "apiKey": {
@@ -2137,6 +2369,7 @@
       "orContinueWith": "Or continue with",
       "loginWithGoogle": "Log in with Google",
       "loginWithGithub": "Log in with Github",
+      "googleSsoInAppBrowserNotice": "If you opened this from an in-app browser (e.g. Instagram, LinkedIn), Google sign-in may not work. Use GitHub or email, or open this page in your device's default browser.",
       "termsText": "By clicking \"Next\" or \"Sign Up\", you agree to our",
       "termsLink": "Terms of Use",
       "andText": "and",
@@ -2150,7 +2383,8 @@
       "freeTierBadge": "Eligible for Free Tier",
       "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
       "freeTierDescriptionGeneric": "Sign up with Google to get free credits every month. No card needed.",
-      "backToSocialLogin": "Sign up with Google or Github instead"
+      "backToSocialLogin": "Sign up with Google or Github instead",
+      "backToGithubLogin": "Sign up with Github instead"
     },
     "signup": {
       "title": "Create an account",
@@ -2167,12 +2401,19 @@
       "personalDataConsentLabel": "I agree to the processing of my personal data.",
       "emailNotEligibleForFreeTier": "Email sign-up is not eligible for Free Tier."
     },
+    "turnstile": {
+      "failed": "Verification failed. Please try again.",
+      "expired": "Verification expired. Please complete the challenge again.",
+      "submitBlockedHint": "Complete the verification challenge above to enable sign up."
+    },
     "signOut": {
       "signOut": "Log Out",
       "success": "Signed out successfully",
       "successDetail": "You have been signed out of your account.",
       "unsavedChangesTitle": "Unsaved Changes",
-      "unsavedChangesMessage": "You have unsaved changes that will be lost when you sign out. Do you want to continue?"
+      "unsavedChangesMessage": "You have unsaved changes that will be lost when you sign out. Do you want to continue?",
+      "signOutAnyway": "Sign out anyway",
+      "saveFailed": "Sign-out cancelled because saving \"{workflow}\" failed."
     },
     "passwordUpdate": {
       "success": "Password Updated",
@@ -2190,7 +2431,9 @@
       "auth/invalid-credential": "Invalid login credentials. Please check your email and password.",
       "auth/network-request-failed": "Network error. Please check your connection and try again.",
       "auth/popup-closed-by-user": "Sign-in was cancelled. Please try again.",
-      "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again."
+      "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again.",
+      "generic": "Something went wrong while signing you in. Please try again.",
+      "signupBlocked": "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org."
     },
     "deleteAccount": {
       "contactSupport": "To delete your account, please contact {email}"
@@ -2205,6 +2448,16 @@
       "tooltipHelp": "Login to be able to use \"API Nodes\"",
       "tooltipLearnMore": "Learn more..."
     }
+  },
+  "desktopLogin": {
+    "confirmSummary": "Approve desktop sign-in?",
+    "confirmMessage": "The ComfyUI desktop app is waiting to sign in with your account. Only continue if you just started signing in from the ComfyUI desktop app.",
+    "successSummary": "Signed in",
+    "successDetail": "You can return to the ComfyUI desktop app.",
+    "expiredSummary": "Desktop sign-in failed",
+    "expiredDetail": "The sign-in request expired or was already used. Start signing in again from the ComfyUI desktop app.",
+    "failedSummary": "Desktop sign-in failed",
+    "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app."
   },
   "validation": {
     "invalidEmail": "Invalid email address",
@@ -2227,6 +2480,11 @@
   },
   "credits": {
     "activity": "Activity",
+    "insufficient": {
+      "memberTitle": "This workspace is out of credits",
+      "memberDescription": "Your team has used all its credits. Your workspace admins need to add more credits to run workflows.",
+      "memberCta": "Ok, got it"
+    },
     "credits": "Credits",
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
@@ -2280,6 +2538,15 @@
     "model": "Model",
     "added": "Added",
     "accountInitialized": "Account initialized",
+    "loadEventsError": "Failed to load activity. Please try again.",
+    "loadEventsUnknownError": "Something went wrong while loading activity. Please refresh and try again.",
+    "eventTypes": {
+      "creditAdded": "Credits Added",
+      "accountCreated": "Account Created",
+      "apiUsage": "API Usage",
+      "gpuUsage": "GPU Usage",
+      "apiNodeUsage": "Partner Node Usage"
+    },
     "unified": {
       "message": "Credits have been unified",
       "tooltip": "We've unified payments across Comfy. Everything now runs on Comfy Credits:\n- Partner Nodes (formerly API nodes)\n- Cloud workflows\n\nYour existing Partner node balance has been converted into credits."
@@ -2293,7 +2560,9 @@
     "topupProcessing": "Processing payment — adding credits...",
     "topupSuccess": "Credits added successfully",
     "topupFailed": "Top-up failed",
-    "topupTimeout": "Top-up verification timed out"
+    "topupTimeout": "Top-up verification timed out",
+    "cancelFailed": "Failed to cancel subscription",
+    "cancelTimeout": "Subscription cancellation timed out"
   },
   "subscription": {
     "plansForWorkspace": "Plans for {workspace}",
@@ -2311,15 +2580,22 @@
     "member": "member",
     "usdPerMonth": "USD / mo",
     "usdPerMonthPerMember": "USD / mo / member",
+    "creditSliderSave": "Save {percent}% ({amount})",
     "renewsDate": "Renews {date}",
     "expiresDate": "Expires {date}",
+    "renewsOnDate": "Renews on {date}",
+    "endsOnDate": "Ends on {date}",
     "manageSubscription": "Manage subscription",
-    "managePayment": "Manage Payment",
-    "cancelSubscription": "Cancel Subscription",
+    "manageBilling": "Manage billing",
+    "changePlan": "Change plan",
+    "cancelPlan": "Cancel plan",
     "canceled": "Canceled",
     "resubscribe": "Resubscribe",
+    "reactivatePlan": "Reactivate plan",
     "resubscribeTo": "Resubscribe to {plan}",
     "resubscribeSuccess": "Subscription reactivated successfully",
+    "resubscribeFailed": "Failed to reactivate subscription",
+    "subscribeFailed": "Failed to subscribe",
     "canceledCard": {
       "title": "Your subscription has been canceled",
       "description": "You won't be charged again. Your features remain active until {date}."
@@ -2332,6 +2608,19 @@
       "keepSubscription": "Keep subscription",
       "confirmCancel": "Cancel subscription",
       "failed": "Failed to cancel subscription"
+    },
+    "downgrade": {
+      "title": "Change to {plan} plan?",
+      "body": "All other members of this workspace will be immediately removed.",
+      "confirmationPhrase": "I understand",
+      "confirmationPrompt": "Type \"{phrase}\" to confirm.",
+      "confirm": "Change plan",
+      "failed": "Failed to change plan",
+      "notAllowed": "This plan change is not available",
+      "paymentMethodRequired": "A payment method is required to change plans",
+      "paymentPageBlocked": "Couldn't open the payment page — please try again",
+      "memberRemovalFailed": "Couldn't remove {email} from the team — some members may already be removed and your plan was not changed",
+      "failedAfterMemberRemoval": "Team members were removed, but the plan change didn't complete — please try again or contact support"
     },
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
     "partnerNodesDescription": "For running commercial/proprietary models",
@@ -2346,27 +2635,58 @@
     "creditsRemainingThisMonth": "Included (Refills {date})",
     "creditsRemainingThisYear": "Included (Refills {date})",
     "creditsYouveAdded": "Additional",
+    "remaining": "remaining",
+    "refillsDate": "Refills {date}",
+    "refillsNextCycle": "Refills next cycle",
+    "creditsUsed": "{used} used",
+    "creditsLeftOfTotal": "{remaining} left of {total}",
+    "monthlyUsageProgress": "{used} of {total} monthly credits used",
+    "additionalCreditsInfo": "About additional credits",
+    "additionalCredits": "Additional credits",
+    "additionalCreditsInUse": "In use",
+    "usedAfterMonthly": "Used after monthly runs out",
+    "monthlyCreditsUsedUpTitle": "Monthly credits are used up. Refills {date}",
+    "monthlyCreditsUsedUpTitleNoDate": "Monthly credits are used up",
+    "monthlyCreditsUsedUpDescription": "You're now spending additional credits.",
+    "outOfCreditsTitle": "You're out of credits. Credits refill {date}",
+    "outOfCreditsTitleNoDate": "You're out of credits",
+    "outOfCreditsDescription": "Add more credits to continue generating.",
+    "additionalCreditsTooltip": "Credits you add on top of your plan. Used after monthly credits run out. Each expires one year after purchase.",
     "monthlyCreditsInfo": "These credits refresh monthly and don't roll over",
     "viewMoreDetailsPlans": "View more details about plans & pricing",
     "nextBillingCycle": "next billing cycle",
     "yourPlanIncludes": "Your plan includes:",
+    "whatsIncluded": "What's included:",
+    "planLoadError": "We couldn't load your plan details.",
+    "planLoadErrorRetry": "Try again",
+    "teamPlanName": "Team",
+    "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
+    "teamPerks": {
+      "inviteMembers": "Invite members",
+      "concurrentRuns": "Members can run workflows concurrently",
+      "sharedCreditPool": "Shared credit pool for all members",
+      "rolePermissions": "Role-based permissions"
+    },
+    "freePerks": {
+      "maxRuntime": "{duration} max runtime"
+    },
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
     "billedMonthly": "Billed monthly",
     "billedYearly": "{total} Billed yearly",
     "monthly": "Monthly",
     "yearly": "Yearly",
+    "saveYearly": "Save 20%",
     "tierNameYearly": "{name} Yearly",
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
     "refreshCredits": "Refresh credits",
     "benefits": {
       "benefit1": "Monthly credits for Partner Nodes — top up when needed",
-      "benefit1FreeTier": "More monthly credits, top up anytime",
+      "benefit1FreeTier": "Monthly credits, top up anytime",
       "benefit2": "Up to 1 hour runtime per job on Pro",
       "benefit3": "Bring your own models (Creator & Pro)"
     },
-    "yearlyDiscount": "20% DISCOUNT",
     "tiers": {
       "free": {
         "name": "Free"
@@ -2375,13 +2695,17 @@
         "name": "Founder's Edition"
       },
       "standard": {
-        "name": "Standard"
+        "name": "Standard",
+        "feature1": "30 minute max workflow runtime",
+        "feature2": "Add more credits anytime"
       },
       "creator": {
-        "name": "Creator"
+        "name": "Creator",
+        "feature1": "Import your own models"
       },
       "pro": {
-        "name": "Pro"
+        "name": "Pro",
+        "feature1": "Longer workflow runtime (up to 1 hr)"
       }
     },
     "required": {
@@ -2392,36 +2716,86 @@
       "pollingFailed": "Subscription activation failed",
       "pollingTimeout": "Timed out waiting for subscription. Please refresh and try again."
     },
+    "inactive": {
+      "memberTitle": "This workspace's subscription is inactive",
+      "memberDescription": "Ask your workspace owner to reactivate the workspace's subscription to run workflows.",
+      "memberCta": "Ok, got it",
+      "memberRunTooltip": "Contact your workspace owner to resubscribe",
+      "runLabel": "Run"
+    },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeForMore": "Upgrade",
     "upgradeToAddCredits": "Upgrade to add credits",
+    "subscribe": "Subscribe",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",
     "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud and invite members",
     "contactOwnerToSubscribe": "Contact the workspace owner to subscribe",
     "description": "Choose the best plan for you",
-    "descriptionWorkspace": "Choose the best plan for your workspace",
+    "descriptionWorkspace": "Choose a Plan",
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
     "viewEnterprise": "View enterprise",
+    "planScope": {
+      "personal": "For Personal",
+      "team": "For Teams"
+    },
+    "teamHeader": "For teams wanting to collaborate. Need more members? {learnMore} about enterprise.",
+    "teamHeaderLearnMore": "Learn more",
+    "personalHeader": "Personal plans are for individual use only. {action}",
+    "personalHeaderAction": "To add teammates, subscribe to the team plan.",
+    "everythingInPlus": "Everything in {plan}, plus:",
+    "monthlyCredits": "monthly credits",
+    "videoEstimate": "Generates ~{count} 5s videos*",
+    "saveYearlyUpTo": "Save up to 20%",
+    "teamPlan": {
+      "name": "Team Plan",
+      "tagline": "Choose your own monthly credit subscription. Get a larger discount with a larger credit subscription.",
+      "detailsTitle": "Details",
+      "perkInviteMembers": "Invite team members",
+      "perkConcurrentRuns": "Members can run workflows concurrently",
+      "perkSharedPool": "Shared credit pool for all members",
+      "perkRolePermissions": "Role-based permissions",
+      "comingSoonLabel": "Coming soon:",
+      "perkProjectAssets": "Project & asset management",
+      "cta": "Subscribe to Team Yearly",
+      "ctaMonthly": "Subscribe to Team Monthly",
+      "unavailable": "This team plan is not available right now.",
+      "changePlan": "Change plan",
+      "currentPlan": "Current plan"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "needMoreMembers": "Need more members?",
+      "flexibility": "Looking for more flexibility or custom features?",
+      "reachOut": "Reach out to us and let's schedule a chat.",
+      "cta": "Learn more"
+    },
+    "pricingBlurb": "*Based on this template, {seeDetails}. Contact us for {questions} or {enterpriseDiscussions}. For more pricing details, {clickHere}.",
+    "pricingBlurbSeeDetails": "see details",
+    "pricingBlurbQuestions": "questions",
+    "pricingBlurbEnterprise": "enterprise discussions",
+    "pricingBlurbClickHere": "click here",
     "freeTier": {
       "title": "You're on the Free plan",
       "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
       "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
+      "descriptionQuota": "Your free plan includes {runs} runs to get started with Comfy Cloud — no card needed.",
       "nextRefresh": "Your credits refresh on {date}.",
       "subscribeCta": "Subscribe for more",
       "outOfCredits": {
         "title": "You're out of free credits",
-        "subtitle": "Subscribe to unlock top-ups and more"
+        "subtitle": "Subscribe to add top-ups and more"
       },
       "topUpBlocked": {
-        "title": "Unlock top-ups and more"
+        "title": "Add top-ups and more"
       },
       "upgradeCta": "View plans"
     },
     "partnerNodesCredits": "Partner nodes pricing",
+    "partnerNodesPricingTable": "Partner Nodes pricing table",
     "plansAndPricing": "Plans & pricing",
     "managePlan": "Manage plan",
     "upgrade": "UPGRADE",
@@ -2432,8 +2806,6 @@
     "monthlyCreditsPerMemberLabel": "Monthly credits / member",
     "maxMembersLabel": "Max. members",
     "yearlyCreditsLabel": "Total yearly credits",
-    "membersLabel": "Up to {count} members",
-    "nextMonthInvoice": "Next month invoice",
     "memberCount": "{count} member | {count} members",
     "maxDurationLabel": "Max run duration",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
@@ -2448,7 +2820,7 @@
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
     "maxDuration": {
-      "free": "30 min",
+      "free": "10 min",
       "standard": "30 min",
       "creator": "30 min",
       "pro": "1 hr",
@@ -2461,10 +2833,14 @@
     "preview": {
       "confirmPayment": "Confirm your payment",
       "confirmPlanChange": "Confirm your plan change",
-      "startingToday": "Starting today",
+      "startingToday": "Starts today",
       "starting": "Starting {date}",
       "ends": "Ends {date}",
       "eachMonthCreditsRefill": "Each month credits refill to",
+      "eachYearCreditsRefill": "Each year credits refill to",
+      "everyMonthStarting": "Every month starting {date}",
+      "creditsRefillTo": "Credits refill to",
+      "youllBeCharged": "You'll be charged",
       "perMember": "/ member",
       "showMoreFeatures": "Show more features",
       "hideFeatures": "Hide features",
@@ -2472,12 +2848,41 @@
       "proratedCharge": "Prorated charge for {plan}",
       "totalDueToday": "Total due today",
       "nextPaymentDue": "Next payment due {date}. Cancel anytime.",
+      "confirmUpgradeTitle": "Confirm your upgrade",
+      "confirmUpgradeCta": "Confirm upgrade",
+      "confirmChange": "Confirm change",
+      "confirmChangeTitle": "Review your scheduled change",
+      "paymentPopupBlocked": "Couldn't open the payment page — please allow popups and try again.",
+      "switchesToday": "Switches today",
+      "startsOn": "Starts {date}",
+      "yearlySubscription": "Yearly subscription",
+      "newMonthlySubscription": "New monthly subscription",
+      "creditFromCurrent": "Credit from current {plan}",
+      "currentMonthly": "monthly plan",
+      "commitment": "commitment",
+      "creditsYoullGetToday": "Credits you'll get today",
+      "refillReplacesNote": "Replaces your monthly refill. Existing balance is kept.",
+      "afterThat": "After that",
+      "creditsRefillMonthlyTo": "Credits refill monthly to",
+      "billedEachMonth": "{amount} billed each month. Cancel anytime.",
+      "stayOnUntil": "You'll stay on {plan} until {date}.",
       "termsAgreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}.",
       "terms": "Terms",
       "privacyPolicy": "Privacy Policy",
       "addCreditCard": "Add credit card",
       "confirm": "Confirm",
+      "subscribeToPlan": "Subscribe to {plan}",
+      "switchToPlan": "Switch to {plan}",
       "backToAllPlans": "Back to all plans"
+    },
+    "success": {
+      "allSet": "You're all set",
+      "inviteEmailsPlaceholder": "Enter emails separated by commas",
+      "inviteSubtext": "You can also invite people later from Settings",
+      "inviteTitle": "Invite your team",
+      "planUpdated": "Your plan has been successfully updated.",
+      "receiptEmailed": "A receipt has been emailed to you.",
+      "sendInvites": "Send invites"
     }
   },
   "userSettings": {
@@ -2491,9 +2896,35 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "billingStatus": {
+      "warning": {
+        "title": "Payment declined",
+        "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
+        "bodyNoDate": "Your last payment didn't go through. Update payment to avoid a pause."
+      },
+      "paused": {
+        "title": "Subscription paused",
+        "body": "This workspace's subscription is paused. Update payment to resume.",
+        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+      },
+      "outOfCredits": {
+        "title": "Out of credits",
+        "body": "Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.",
+        "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
+        "memberBody": "Your team has used all its credits. Your workspace admins need to add more credits to continue generating.",
+        "addCredits": "Add credits",
+        "dismiss": "Dismiss"
+      },
+      "ending": {
+        "title": "Your team plan ends on {date}",
+        "body": "Members keep full access until then. Reactivate to keep your shared credits and seats.",
+        "reactivate": "Reactivate plan"
+      },
+      "updatePayment": "Update payment"
+    },
     "invite": "Invite",
     "inviteMember": "Invite member",
-    "inviteLimitReached": "You've reached the maximum of 50 members",
+    "inviteLimitReached": "You've reached the maximum of {count} members",
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
@@ -2503,7 +2934,8 @@
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
-      "membersCount": "{count}/{maxSeats} Members",
+      "header": "Members",
+      "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
         "active": "Active",
@@ -2512,26 +2944,30 @@
       "columns": {
         "inviteDate": "Invite date",
         "expiryDate": "Expiry date",
-        "joinDate": "Join date"
+        "role": "Role"
       },
       "actions": {
-        "copyLink": "Copy invite link",
-        "revokeInvite": "Revoke invite",
+        "resendInvite": "Resend invite",
+        "cancelInvite": "Cancel invite",
+        "changeRole": "Change role",
         "removeMember": "Remove member"
       },
-      "upsellBannerSubscribe": "Subscribe to the Creator plan or above to invite team members to this workspace.",
-      "upsellBannerUpgrade": "Upgrade to the Creator plan or above to invite additional team members.",
-      "viewPlans": "View plans",
+      "upsellBanner": "To add teammates, upgrade your plan.",
+      "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
+      "upgradeToTeam": "Upgrade to Team",
+      "reactivateTeam": "Reactivate Team",
+      "needMoreMembers": "Need more members?",
+      "contactUs": "Contact us",
       "noInvites": "No pending invites",
       "noMembers": "No members",
-      "personalWorkspaceMessage": "You can't invite other members to your personal workspace right now. To add members to a workspace,",
-      "createNewWorkspace": "create a new one."
+      "searchPlaceholder": "Search..."
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
-      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first"
+      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
+      "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {
       "title": "Edit workspace details",
@@ -2555,38 +2991,44 @@
       "success": "Member removed",
       "error": "Failed to remove member"
     },
+    "changeRoleDialog": {
+      "promoteTitle": "Make {name} an owner?",
+      "promoteIntro": "They'll be able to:",
+      "promotePermissionCredits": "Add additional credits",
+      "promotePermissionManage": "Manage members, payment methods, and workspace settings",
+      "promotePermissionRoles": "Promote members and demote eligible owners.",
+      "promoteConfirm": "Make owner",
+      "demoteTitle": "Demote {name} to member?",
+      "demoteMessage": "They'll lose admin access.",
+      "demoteConfirm": "Demote to member",
+      "success": "Role updated",
+      "error": "Failed to update role"
+    },
     "revokeInviteDialog": {
       "title": "Uninvite this person?",
       "message": "This member won't be able to join your workspace anymore. Their invite link will be invalidated.",
       "revoke": "Uninvite"
     },
     "inviteUpsellDialog": {
-      "titleNotSubscribed": "A subscription is required to invite members",
+      "titleNotSubscribed": "A Team plan is required to invite members",
       "titleSingleSeat": "Your current plan supports a single seat",
-      "messageNotSubscribed": "To add team members to this workspace, you need a Creator plan or above. The Standard plan supports only a single seat (the owner).",
-      "messageSingleSeat": "The Standard plan includes one seat for the workspace owner. To invite additional members, upgrade to the Creator plan or above to unlock multiple seats.",
-      "viewPlans": "View Plans",
-      "upgradeToCreator": "Upgrade to Creator"
+      "messageNotSubscribed": "To add teammates to this workspace, upgrade to a Team plan.",
+      "messageSingleSeat": "Your current plan includes one seat for the workspace owner. To add teammates, upgrade to a Team plan.",
+      "upgradeToTeam": "Upgrade to Team"
     },
     "inviteMemberDialog": {
-      "title": "Invite a person to this workspace",
-      "message": "Create a shareable invite link to send to someone",
-      "placeholder": "Enter the person's email",
-      "createLink": "Create link",
-      "linkStep": {
-        "title": "Send this link to the person",
-        "message": "Make sure their account uses this email.",
-        "copyLink": "Copy Link",
-        "done": "Done"
-      },
-      "linkCopied": "Copied",
-      "linkCopyFailed": "Failed to copy link"
+      "title": "Invite members to this workspace",
+      "placeholder": "Enter emails separated by commas",
+      "invalidEmailCount": "{count} invalid email address | {count} invalid email addresses",
+      "failedCount": "Couldn't send {count} invite. Try again. | Couldn't send {count} invites. Try again.",
+      "invitedMessage": "An invite was sent to {emails} | Invites were sent to {emails}",
+      "seatLimitReached": "You can invite up to {count} teammate. | You can invite up to {count} teammates."
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
-      "message": "Workspaces create a new credit pool that can be shared among members. You'll become the owner after creating this.",
-      "nameLabel": "Workspace name*",
-      "namePlaceholder": "Enter workspace name",
+      "message": "Workspaces keep your projects and files organized. Subscribe to a Team plan to invite members.",
+      "nameLabel": "Workspace name",
+      "namePlaceholder": "Ex: Comfy Org",
       "create": "Create"
     },
     "toast": {
@@ -2607,6 +3049,8 @@
         "title": "Left workspace",
         "message": "You have left the workspace."
       },
+      "inviteResent": "Invite resent",
+      "inviteResendFailed": "Failed to resend invite",
       "failedToUpdateWorkspace": "Failed to update workspace",
       "failedToCreateWorkspace": "Failed to create workspace",
       "failedToDeleteWorkspace": "Failed to delete workspace",
@@ -2632,7 +3076,7 @@
     "personal": "Personal",
     "roleOwner": "Owner",
     "roleMember": "Member",
-    "createWorkspace": "Create new workspace",
+    "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
     "failedToSwitch": "Failed to switch workspace"
   },
@@ -2660,7 +3104,8 @@
       "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media...",
-      "maxSelectionReached": "Maximum selection limit reached"
+      "maxSelectionReached": "Maximum selection limit reached",
+      "topResult": "Top result: {result}"
     },
     "valueControl": {
       "header": {
@@ -2701,12 +3146,14 @@
     "noReleaseNotes": "No release notes available."
   },
   "breadcrumbsMenu": {
+    "blueprint": "Blueprint",
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
     "exitAppMode": "Exit app mode",
     "enterBuilderMode": "Build app",
     "editBuilderMode": "Edit app",
     "workflowActions": "Workflow actions",
+    "activeModeWorkflowActions": "{mode} mode, workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
@@ -2718,7 +3165,7 @@
     "share": "Share"
   },
   "shortcuts": {
-    "shortcuts": "Shortcuts",
+    "shortcuts": "Short­cuts",
     "essentials": "Essential",
     "viewControls": "View Controls",
     "manageShortcuts": "Manage Shortcuts",
@@ -2744,59 +3191,67 @@
     "description": "You've been using this feature. Would you take a moment to share your feedback?",
     "accept": "Sure, I'll help!",
     "notNow": "Not Now",
-    "dontAskAgain": "Don't Ask Again",
-    "loadError": "Failed to load survey. Please try again later."
+    "dontAskAgain": "Don't Ask Again"
+  },
+  "errorPanelSurvey": {
+    "ctaText": "How's the new error panel?",
+    "ctaButton": "Give feedback"
+  },
+  "feedback": {
+    "title": "Share Feedback"
+  },
+  "typeform": {
+    "loadError": "Failed to load the form. Please try again later."
   },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
     "survey": {
-      "title": "Cloud Survey",
+      "title": "Let's get to know you",
       "placeholder": "Survey questions placeholder",
-      "steps": {
-        "familiarity": "How familiar are you with ComfyUI?",
-        "purpose": "What will you primarily use ComfyUI for?",
-        "industry": "What's your primary industry?",
-        "making": "What do you plan on making?"
-      },
-      "questions": {
-        "familiarity": "How familiar are you with ComfyUI?",
-        "purpose": "What will you primarily use ComfyUI for?",
-        "industry": "What's your primary industry?",
-        "making": "What do you plan on making?"
+      "intro": "A few quick questions so we can set up ComfyUI for you.",
+      "otherPlaceholder": "Tell us more",
+      "errors": {
+        "chooseAnOption": "Please choose an option.",
+        "selectAtLeastOne": "Please select at least one option.",
+        "describeAnswer": "Please describe your answer.",
+        "answerTooLong": "Please keep your answer under {max} characters."
       },
       "options": {
-        "familiarity": {
-          "new": "New to ComfyUI (never used it before)",
-          "starting": "Just getting started (following tutorials)",
-          "basics": "Comfortable with basics",
-          "advanced": "Advanced user (custom workflows)",
-          "expert": "Expert (help others)"
-        },
-        "purpose": {
-          "personal": "Personal projects / hobby",
-          "community": "Community contributions (nodes, workflows, etc.)",
-          "client": "Client work (freelance)",
-          "inhouse": "My own workplace (in-house)",
-          "research": "Academic research"
-        },
-        "industry": {
-          "film_tv_animation": "Film, TV, & animation",
-          "gaming": "Gaming",
-          "marketing": "Marketing & advertising",
-          "architecture": "Architecture",
-          "product_design": "Product & graphic design",
-          "fine_art": "Fine art & illustration",
-          "software": "Software & technology",
-          "education": "Education",
-          "other": "Other",
-          "otherPlaceholder": "Please specify"
-        },
-        "making": {
+        "intent": {
           "images": "Images",
-          "video": "Video & animation",
-          "3d": "3D assets",
-          "audio": "Audio / music",
-          "custom_nodes": "Custom nodes & workflows"
+          "video": "Video",
+          "workflows": "Workflows and pipelines",
+          "apps_api": "Apps and APIs",
+          "exploring": "Just exploring",
+          "other": "Something else",
+          "otherPlaceholder": "What do you want to make?"
+        },
+        "experience": {
+          "new": "New to ComfyUI",
+          "some": "I know my way around",
+          "pro": "I'm a power user"
+        },
+        "focus": {
+          "custom_nodes": "Custom nodes",
+          "pipelines": "Automated pipelines",
+          "products": "Products for others"
+        },
+        "source": {
+          "social": "Social media",
+          "friend": "A friend or colleague",
+          "search": "Web search",
+          "community": "A community or forum",
+          "other": "Somewhere else",
+          "otherPlaceholder": "Where did you find us?"
+        },
+        "source_social": {
+          "youtube": "YouTube",
+          "reddit": "Reddit",
+          "twitter": "X (Twitter)",
+          "instagram": "Instagram",
+          "tiktok": "TikTok",
+          "linkedin": "LinkedIn",
+          "discord": "Discord"
         }
       }
     },
@@ -2851,6 +3306,29 @@
   "cloudStart_learnAboutButton": "Learn about Cloud",
   "cloudStart_wantToRun": "Want to run ComfyUI locally instead?",
   "cloudStart_download": "Download ComfyUI",
+  "cloudHero": {
+    "previousSlide": "Previous slide",
+    "nextSlide": "Next slide",
+    "slidePagerLabel": "Go to slide {index}",
+    "slides": {
+      "cloud": {
+        "title": "Cloud",
+        "description": "Best for most users who want to work from anywhere with models verified for commercial license."
+      },
+      "workflows": {
+        "title": "Workflows",
+        "description": "From idea to output in minutes. Generate multiple variations side by side."
+      },
+      "team": {
+        "title": "Team",
+        "description": "Onboard your team today. Share workflows and assets across your organization."
+      },
+      "models": {
+        "title": "Models",
+        "description": "Curated, commercially licensed models ready to run with zero setup."
+      }
+    }
+  },
   "cloudWaitlist_questionsText": "Questions? Contact us",
   "cloudWaitlist_contactLink": "here",
   "cloudSorryContactSupport_title": "Sorry, contact support",
@@ -2866,10 +3344,11 @@
   "cloudForgotPassword_emailRequired": "Email is required",
   "cloudForgotPassword_passwordResetSent": "Password reset sent",
   "cloudForgotPassword_passwordResetError": "Failed to send password reset email",
-  "cloudSurvey_steps_familiarity": "How familiar are you with ComfyUI?",
-  "cloudSurvey_steps_purpose": "What will you primarily use ComfyUI for?",
-  "cloudSurvey_steps_industry": "What's your primary industry?",
-  "cloudSurvey_steps_making": "What do you plan on making?",
+  "cloudSurvey_steps_intent": "What do you want to make?",
+  "cloudSurvey_steps_experience": "How well do you know ComfyUI?",
+  "cloudSurvey_steps_focus": "What are you building?",
+  "cloudSurvey_steps_source": "How did you find us?",
+  "cloudSurvey_steps_source_social": "Which platform?",
   "assetBrowser": {
     "allCategory": "All {category}",
     "allModels": "All Models",
@@ -2927,6 +3406,7 @@
     "invalidFilename": "Invalid Filename",
     "invalidFilenameDetail": "The asset filename could not be determined. Please try again.",
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
+    "failedToSetModelValue": "Node added, but its model could not be set automatically. Check the console for details.",
     "fileFormats": "File formats",
     "fileName": "File Name",
     "fileSize": "File Size",
@@ -2935,10 +3415,19 @@
     "finish": "Finish",
     "importAnother": "Import Another",
     "genericLinkPlaceholder": "Paste link here",
+    "gridView": "Grid view",
     "jobId": "Job ID",
+    "listView": "List view",
     "loadingModels": "Loading {type}...",
     "maxFileSize": "Max file size: {size}",
     "maxFileSizeValue": "1 GB",
+    "missingModelImportTypeLocked": "Locked to {type} for this missing model",
+    "missingModelImportTypeMismatchAlreadyImported": "This file is already imported as {actual}.",
+    "missingModelImportTypeMismatchNextAction": "Try importing a different {required} model that this node can use.",
+    "missingModelImportTypeMismatchRequired": "This node requires {required}, so this import cannot resolve the missing model.",
+    "missingModelImportTypeMismatchTitle": "This model cannot resolve the missing model.",
+    "missingModelImportUnknownType": "another model type",
+    "missingModelImportWillReplace": "This import will replace {model} in:",
     "modelAssociatedWithLink": "The model associated with the link you provided:",
     "modelName": "Model Name",
     "modelNamePlaceholder": "Enter a name for this model",
@@ -2967,6 +3456,7 @@
     "sortingType": "Sorting Type",
     "sortPopular": "Popular",
     "sortRecent": "Recent",
+    "sortUnsorted": "Unsorted",
     "sortZA": "Z-A",
     "tags": "Tags",
     "tagsHelp": "Separate tags with commas",
@@ -3071,7 +3561,7 @@
       "error": "Error"
     },
     "selection": {
-      "selectedCount": "Assets Selected: {count}",
+      "selectedCount": "{count} selected",
       "multipleSelectedAssets": "Multiple assets selected",
       "deselectAll": "Deselect all",
       "downloadSelected": "Download",
@@ -3111,6 +3601,9 @@
     "dockToTop": "Dock to top",
     "feedback": "Feedback",
     "feedbackTooltip": "Feedback",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
+    "freeTierRunsExhausted": "No runs left",
+    "freeTierPartner": "Partner nodes need a paid plan",
     "share": "Share",
     "shareTooltip": "Share workflow"
   },
@@ -3149,7 +3642,7 @@
     "mediaLabel": "{count} Media File | {count} Media Files",
     "modelsLabel": "{count} Model | {count} Models",
     "checkingAssets": "Checking media visibility…",
-    "acknowledgeCheckbox": "I understand these media items will be published and made public",
+    "acknowledgeCheckbox": "I understand anyone with the link can view these files",
     "inLibrary": "In library",
     "comfyHubTitle": "Upload to ComfyHub",
     "comfyHubDescription": "ComfyHub is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
@@ -3164,6 +3657,7 @@
     "copyAssetsAndOpen": "Import assets & open workflow",
     "openWorkflow": "Open workflow",
     "openWithoutImporting": "Open without importing",
+    "opening": "Opening shared workflow...",
     "importFailed": "Failed to import workflow assets",
     "loadError": "Could not load this shared workflow. Please try again later."
   },
@@ -3200,6 +3694,7 @@
     "back": "Back",
     "next": "Next",
     "publishButton": "Publish to ComfyHub",
+    "updateButton": "Update workflow",
     "examplesDescription": "Add up to {total} additional sample images",
     "uploadAnImage": "Click to browse or drag an image",
     "uploadExampleImage": "Upload example image",
@@ -3213,16 +3708,23 @@
     "createProfileToPublish": "Create a profile to publish to ComfyHub",
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
-    "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again."
+    "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
+    "renameFailedTitle": "Rename failed",
+    "renameFailedDescription": "Your workflow was published successfully, but renaming the local file failed. Rename it again to match.",
+    "publishSuccessTitle": "Published successfully",
+    "publishSuccessDescription": "Your workflow is now live on ComfyHub."
   },
   "comfyHubProfile": {
     "checkingAccess": "Checking your publishing access...",
     "profileCreationNav": "Profile creation",
     "introTitle": "Publish to the ComfyHub",
     "introDescription": "Publish your workflows, build your portfolio and get discovered by millions of users",
+    "updateIntroTitle": "Update your ComfyHub workflow",
+    "updateIntroDescription": "Push your latest changes to ComfyHub. Your share link and stats stay the same.",
     "introSubtitle": "To share your workflow on ComfyHub, let's first create your profile.",
     "createProfileButton": "Create my profile",
     "startPublishingButton": "Start publishing",
+    "startUpdatingButton": "Update workflow",
     "modalTitle": "Create your profile on ComfyHub",
     "createProfileTitle": "Create your Comfy Hub profile",
     "uploadCover": "+ Upload a cover",
@@ -3277,8 +3779,6 @@
   },
   "linearMode": {
     "linearMode": "App Mode",
-    "beta": "App mode in beta",
-    "buildAnApp": "Build an app",
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
@@ -3311,7 +3811,10 @@
       "appBuilder": "App builder",
       "apps": "Apps",
       "appsEmptyMessage": "Saved apps will show up here.",
-      "appsEmptyMessageAction": "Click below to build your first app."
+      "appsEmptyMessageAction": "Click below to build your first app.",
+      "buildAnApp": "Build an app",
+      "create": "Create",
+      "createApp": "Create app"
     },
     "arrange": {
       "noOutputs": "No outputs added yet",
@@ -3354,6 +3857,7 @@
       "support": "contact our support",
       "promptShow": "Show error report"
     },
+    "feedbackLoadError": "Failed to load feedback form. Please try again later.",
     "queue": {
       "clickToClear": "Click to clear queue",
       "clear": "Clear queue"
@@ -3392,7 +3896,6 @@
     "skipForNow": "Skip for Now",
     "installMissingNodes": "Install Missing Nodes",
     "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure.",
-    "swapNodesGuide": "The following nodes can be automatically replaced with compatible alternatives.",
     "willBeReplacedBy": "This node will be replaced by:",
     "replaceNode": "Replace Node",
     "replaceAll": "Replace All",
@@ -3402,12 +3905,15 @@
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
+    "editTitle": "Edit title",
+    "editSubgraph": "Edit subgraph",
     "noSelection": "Select a node to see its properties and info.",
     "workflowOverview": "Workflow Overview",
     "title": "No item(s) selected | 1 item selected | {count} items selected",
     "parameters": "Parameters",
     "nodes": "Nodes",
     "info": "Info",
+    "infoFor": "Info for {item}",
     "color": "Node color",
     "pinned": "Pinned",
     "bypass": "Bypass",
@@ -3427,6 +3933,7 @@
     "hideInput": "Hide input",
     "showInput": "Show input",
     "locateNode": "Locate node on canvas",
+    "locateNodeFor": "Locate {item}",
     "favorites": "FAVORITED INPUTS",
     "favoritesNone": "NO FAVORITED INPUTS",
     "favoritesNoneTooltip": "Star widgets to quickly access them without selecting nodes",
@@ -3459,25 +3966,20 @@
     "hideAdvancedShort": "Hide advanced",
     "errors": "Errors",
     "noErrors": "No errors",
+    "errorsDetected": "Error detected | Errors detected",
+    "selectedNodeErrors": "{node} — {count} error | {node} — {count} errors",
+    "selectedNodesErrors": "{nodes} nodes selected — {count} error | {nodes} nodes selected — {count} errors",
+    "errorNodeSummary": "{nodes} node — {count} error | {nodes} node — {count} errors",
+    "errorNodesSummary": "{nodes} nodes — {count} error | {nodes} nodes — {count} errors",
+    "errorsSummary": "{count} error | {count} errors",
+    "resolveBeforeRun": "Resolve before running the workflow",
+    "expand": "Expand",
+    "collapse": "Collapse",
     "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
+    "errorLog": "Error log",
     "findOnGithubTooltip": "Search GitHub issues for related problems",
     "getHelpTooltip": "Report this error and we'll help you resolve it",
-    "enterSubgraph": "Enter subgraph",
     "seeError": "See Error",
-    "promptErrors": {
-      "prompt_no_outputs": {
-        "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
-      },
-      "no_prompt": {
-        "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
-      },
-      "server_error_local": {
-        "desc": "The server encountered an unexpected error. Please check the server logs."
-      },
-      "server_error_cloud": {
-        "desc": "The server encountered an unexpected error. Please try again later."
-      }
-    },
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
@@ -3486,61 +3988,425 @@
     "missingNodePacks": {
       "title": "Missing Node Packs",
       "unsupportedTitle": "Unsupported Node Packs",
-      "cloudMessage": "This workflow requires custom nodes not yet available on Comfy Cloud.",
-      "ossMessage": "This workflow uses custom nodes you haven't installed yet.",
       "ossManagerDisabledHint": "To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.",
       "installAll": "Install All",
-      "installNodePack": "Install node pack",
       "unknownPack": "Unknown pack",
       "installing": "Installing...",
       "installed": "Installed",
       "applyChanges": "Apply Changes",
-      "searchInManager": "Search in Node Manager",
       "viewInManager": "View in Manager",
       "collapse": "Collapse",
       "expand": "Expand"
     },
     "missingModels": {
-      "urlPlaceholder": "Paste Model URL (Civitai or Hugging Face)",
-      "or": "OR",
-      "useFromLibrary": "Use from Library",
-      "usingFromLibrary": "Using from Library",
-      "unsupportedUrl": "Only Civitai and Hugging Face URLs are supported.",
-      "metadataFetchFailed": "Failed to retrieve metadata. Please check the link and try again.",
       "import": "Import",
       "importing": "Importing...",
-      "imported": "Imported",
-      "importFailed": "Import failed",
-      "typeMismatch": "This model seems to be a \"{detectedType}\". Are you sure?",
-      "importAnyway": "Import Anyway",
-      "alreadyExistsInCategory": "This model already exists in \"{category}\"",
-      "customNodeDownloadDisabled": "Cloud environment does not support model imports for custom nodes in this section. Please use standard loader nodes or substitute with a model from the library below.",
+      "customNodeDownloadDisabled": "Nodes that reference the models below do not support imported models. Open the node to choose a supported built-in model, or replace it with a standard node that supports imported models.",
       "importNotSupported": "Import Not Supported",
       "copyModelName": "Copy model name",
       "copyUrl": "Copy URL",
-      "confirmSelection": "Confirm selection",
       "locateNode": "Locate node on canvas",
-      "cancelSelection": "Cancel selection",
-      "clearUrl": "Clear URL",
       "expandNodes": "Show referencing nodes",
       "collapseNodes": "Hide referencing nodes",
       "unknownCategory": "Unknown",
       "missingModelsTitle": "Missing Models",
-      "assetLoadTimeout": "Model detection timed out. Try reloading the workflow.",
-      "downloadAll": "Download all"
+      "downloadAll": "Download all",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing missing models.",
+      "refreshFailed": "Failed to refresh missing models. Please try again."
+    },
+    "missingMedia": {
+      "missingMediaTitle": "Missing Inputs"
     }
   },
   "errorOverlay": {
-    "errorCount": "{count} ERROR | {count} ERRORS",
-    "seeErrors": "See Errors",
-    "showMissingNodes": "Show missing nodes",
-    "showMissingModels": "Show missing models",
-    "showSwapNodes": "Show swap nodes",
-    "showMissingMedia": "Show missing inputs",
+    "multipleErrorCount": "{count} error found | {count} errors found",
+    "multipleErrorsMessage": "Resolve them before running the workflow.",
+    "viewDetails": "View details",
     "missingNodes": "Some nodes are missing and need to be installed",
     "missingModels": "{count} required model is missing | {count} required models are missing",
-    "swapNodes": "Some nodes can be replaced with alternatives",
     "missingMedia": "Some nodes are missing required inputs"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "nodeName": "This node",
+      "inputName": "unknown input"
+    },
+    "missingErrors": {
+      "missing_node": {
+        "displayMessageCloud": "Required custom nodes aren't supported on Cloud. Replace them with supported nodes.",
+        "displayMessageOss": "Install missing packs to use this workflow.",
+        "toastTitleOneCloud": "{nodeType} isn't available on Cloud",
+        "toastTitleOneOss": "Missing node: {nodeType}",
+        "toastTitleManyCloud": "Nodes aren't available on Cloud",
+        "toastTitleManyOss": "Missing nodes",
+        "toastMessageOneCloud": "This node isn't supported on Cloud.",
+        "toastMessageOneOss": "This workflow uses a custom node that isn't installed. Install it from the registry or replace the node.",
+        "toastMessageManyCloud": "This workflow uses nodes that aren't supported on Cloud.",
+        "toastMessageManyOss": "{count} nodes require missing node packs."
+      },
+      "swap_nodes": {
+        "displayMessage": "Some nodes can be replaced with alternatives",
+        "toastTitleOne": "{nodeType} can be replaced",
+        "toastTitleMany": "Nodes can be replaced",
+        "toastMessageOne": "Replace it with {replacementNodeType} from the error panel.",
+        "toastMessageMany": "{count} node types can be replaced with compatible alternatives."
+      },
+      "missing_model": {
+        "displayMessageCloud": "Import a model, or open the node to replace it.",
+        "displayMessageOss": "Download a model, or open the node to replace it.",
+        "toastTitleOneCloud": "{modelName} isn't available on Cloud",
+        "toastTitleOneOss": "{modelName} is missing",
+        "toastTitleMany": "Missing models",
+        "toastTitleManyCloud": "Models aren't available on Cloud",
+        "toastMessageOneCloud": "This model isn't supported. Choose a different one.",
+        "toastMessageOneOss": "{nodeName} is missing a required model file.",
+        "toastMessageManyCloud": "Some models aren't supported. Choose different ones.",
+        "toastMessageManyOss": "{count} model files are missing."
+      },
+      "missing_media": {
+        "displayMessage": "A required media input has no file selected.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitleOne": "Media input missing",
+        "toastTitleMany": "Missing media inputs",
+        "toastMessageWithNode": "{nodeName} is missing a required media file.",
+        "toastMessageMany": "Please select the missing media inputs before running this workflow."
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "title": "Missing connection",
+        "message": "Required input slots have no connection feeding them.",
+        "details": "{nodeName} is missing a required input: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Required input missing",
+        "toastMessage": "{nodeName} is missing a required input: {inputName}"
+      },
+      "bad_linked_input": {
+        "title": "Invalid connection",
+        "message": "A node connection could not be read correctly.",
+        "details": "{nodeName} has an invalid connection for {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Invalid connection",
+        "toastMessage": "{nodeName} has an invalid connection for {inputName}."
+      },
+      "return_type_mismatch": {
+        "title": "Invalid connection",
+        "message": "Connected nodes are using incompatible input and output types.",
+        "details": "{nodeName} has an incompatible connection for {inputName}.",
+        "detailsWithTypes": "{nodeName}'s {inputName} input expects {expectedType}, but the connected output is {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Invalid connection",
+        "toastMessage": "{nodeName} has an incompatible connection for {inputName}.",
+        "toastMessageWithTypes": "{nodeName}'s {inputName} input expects {expectedType}, but the connected output is {receivedType}."
+      },
+      "invalid_input_type": {
+        "title": "Invalid input",
+        "message": "An input value has the wrong type.",
+        "details": "{nodeName} couldn't convert {inputName} to the expected type.",
+        "detailsWithValue": "The value {receivedValue} for {nodeName}'s {inputName} couldn't be converted to {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Invalid input",
+        "toastMessage": "{nodeName} couldn't convert {inputName} to the expected type.",
+        "toastMessageWithValue": "The value {receivedValue} for {nodeName}'s {inputName} couldn't be converted to {expectedType}."
+      },
+      "value_smaller_than_min": {
+        "title": "Input out of range",
+        "message": "Some input values are outside the allowed range.",
+        "details": "{nodeName} has a value below the minimum for {inputName}.",
+        "detailsWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is below the minimum {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Input out of range",
+        "toastMessage": "{nodeName} has a value below the minimum for {inputName}.",
+        "toastMessageWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is below the minimum {minValue}."
+      },
+      "value_bigger_than_max": {
+        "title": "Input out of range",
+        "message": "Some input values are outside the allowed range.",
+        "details": "{nodeName} has a value above the maximum for {inputName}.",
+        "detailsWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is above the maximum {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Input out of range",
+        "toastMessage": "{nodeName} has a value above the maximum for {inputName}.",
+        "toastMessageWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is above the maximum {maxValue}."
+      },
+      "value_not_in_list": {
+        "title": "Invalid input",
+        "message": "Some input values are not available for this node.",
+        "details": "{nodeName} has an unsupported value for {inputName}.",
+        "detailsWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is not available.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Invalid input",
+        "toastMessage": "{nodeName} has an unsupported value for {inputName}.",
+        "toastMessageWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is not available."
+      },
+      "custom_validation_failed": {
+        "title": "Invalid input",
+        "message": "A node rejected one or more input values.",
+        "details": "{nodeName} rejected the value for {inputName}.",
+        "detailsWithRawDetails": "{nodeName} failed custom validation: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Invalid input",
+        "toastMessage": "{nodeName} rejected the value for {inputName}."
+      },
+      "unknown_validation_error": {
+        "title": "Validation failed",
+        "message": "A node returned a validation error ComfyUI does not recognize.",
+        "details": "{nodeName} returned an unrecognized validation error: {errorType}",
+        "detailsWithRawDetails": "{nodeName} returned an unrecognized validation error ({errorType}): {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Validation failed",
+        "toastMessage": "{nodeName} returned an unrecognized validation error."
+      },
+      "exception_during_inner_validation": {
+        "title": "Validation failed",
+        "message": "The workflow couldn't validate a connected node.",
+        "details": "{nodeName} couldn't validate {inputName}.",
+        "detailsWithRawDetails": "{nodeName} couldn't validate {inputName}: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Validation failed",
+        "toastMessage": "{nodeName} couldn't validate {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} couldn't validate {inputName}: {rawDetails}"
+      },
+      "exception_during_validation": {
+        "title": "Validation failed",
+        "message": "The workflow could not be validated because a node validation check failed unexpectedly.",
+        "details": "{nodeName} failed during validation.",
+        "detailsWithRawDetails": "{nodeName} failed during validation: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Validation failed",
+        "toastMessage": "{nodeName} failed during validation.",
+        "toastMessageWithRawDetails": "{nodeName} failed during validation: {rawDetails}"
+      },
+      "dependency_cycle": {
+        "title": "Invalid workflow",
+        "message": "The workflow has a circular node connection.",
+        "details": "{nodeName} is part of a circular connection.",
+        "detailsWithRawDetails": "{nodeName} is part of a circular connection: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Invalid workflow",
+        "toastMessage": "{nodeName} is part of a circular connection."
+      },
+      "image_not_loaded": {
+        "title": "Image not loaded",
+        "message": "The system couldn't load this image.",
+        "details": "The image for {nodeName} couldn't be loaded. Try adding it again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Input image couldn't be loaded",
+        "toastMessage": "The image for {nodeName} couldn't be loaded. Try adding it again."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "title": "Execution failed",
+        "message": "Node threw an error during execution.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "{nodeName} failed",
+        "toastMessage": "This node threw an error during execution. Check its inputs or try a different configuration."
+      },
+      "image_not_loaded": {
+        "title": "Image not loaded",
+        "message": "The system couldn't load this image.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Input image couldn't be loaded",
+        "toastMessage": "The image for {nodeName} couldn't be loaded. Try adding it again."
+      },
+      "out_of_memory": {
+        "title": "Generation failed",
+        "message": "Not enough GPU memory. Try reducing image resolution or batch size and run again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Generation failed",
+        "toastMessage": "Not enough GPU memory. Try reducing image resolution or batch size and run again."
+      },
+      "content_blocked": {
+        "title": "Content blocked",
+        "message": "This request was blocked by the content moderation system. Try changing the prompt or inputs.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Content blocked",
+        "toastMessage": "This request was blocked by the content moderation system. Try changing the prompt or inputs."
+      },
+      "access_required": {
+        "title": "Access required",
+        "message": "This run requires access that is not available for the current account.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Access required",
+        "toastMessage": "This run requires access that is not available for the current account."
+      },
+      "model_access_error": {
+        "title": "Model access required",
+        "message": "One or more required models could not be accessed.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Model access required",
+        "toastMessage": "One or more required models could not be accessed."
+      },
+      "invalid_clip_input": {
+        "title": "Invalid CLIP input",
+        "message": "The CLIP input is missing or invalid. Check the connected checkpoint or CLIP loader.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Invalid CLIP input",
+        "toastMessage": "{nodeName} has a missing or invalid CLIP input."
+      },
+      "invalid_prompt": {
+        "title": "Prompt is empty",
+        "message": "Enter a prompt before running this workflow.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Prompt is empty",
+        "toastMessage": "Enter a prompt before running this workflow."
+      },
+      "invalid_workflow_request": {
+        "title": "Invalid workflow request",
+        "message": "The workflow request is invalid. Check the workflow and try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Invalid workflow request",
+        "toastMessage": "The workflow request is invalid. Check the workflow and try again."
+      },
+      "insufficient_credits": {
+        "title": "Insufficient credits",
+        "message": "Add credits to your account to use this node.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Insufficient credits",
+        "toastMessage": "Add credits to your account to use this node."
+      },
+      "workspace_insufficient_credits": {
+        "title": "Insufficient credits",
+        "message": "Add credits to your workspace to continue.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Insufficient credits",
+        "toastMessage": "Add credits to your workspace to continue."
+      },
+      "subscription_required": {
+        "title": "Subscription required",
+        "message": "Subscribe to a plan to continue running this workflow.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Subscription required",
+        "toastMessage": "Subscribe to a plan to continue running this workflow."
+      },
+      "subscription_upgrade_required": {
+        "title": "Subscription upgrade required",
+        "message": "Upgrade your subscription to use the private models in this workflow.",
+        "details": "Private models require a subscription upgrade: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Subscription upgrade required",
+        "toastMessage": "Upgrade your subscription to use these private models: {modelNames}."
+      },
+      "model_download_failed": {
+        "title": "Model download failed",
+        "message": "A model could not be downloaded. Try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Model download failed",
+        "toastMessage": "A model could not be downloaded. Try again."
+      },
+      "unexpected_service_error": {
+        "title": "Service error",
+        "message": "The service encountered an unexpected error. Try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Service error",
+        "toastMessage": "The service encountered an unexpected error. Try again."
+      },
+      "request_failed": {
+        "title": "Request failed",
+        "message": "The request failed before the run could complete. Try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Request failed",
+        "toastMessage": "The request failed before the run could complete. Try again."
+      },
+      "run_start_failed": {
+        "title": "Run could not start",
+        "message": "The run could not be started. Try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Run could not start",
+        "toastMessage": "The run could not be started. Try again."
+      },
+      "run_ended_unexpectedly": {
+        "title": "Run ended unexpectedly",
+        "message": "The run ended unexpectedly. Try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Run ended unexpectedly",
+        "toastMessage": "The run ended unexpectedly. Try again."
+      },
+      "sign_in_required": {
+        "title": "Sign in required",
+        "message": "Partner nodes require a Comfy account. Sign in to continue.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Sign in to use this node",
+        "toastMessage": "Partner nodes require a Comfy account. Sign in to continue."
+      },
+      "rate_limited": {
+        "title": "Servers are busy",
+        "message": "High demand right now. Try again in a moment.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Servers are busy",
+        "toastMessage": "High demand right now. Try again in a moment."
+      },
+      "timeout": {
+        "title": "Generation timed out",
+        "message": "This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Generation timed out",
+        "toastMessage": "This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again."
+      },
+      "generation_stalled": {
+        "title": "Generation stalled",
+        "message": "This workflow stopped making progress. Try running it again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Generation stalled",
+        "toastMessage": "This workflow stopped making progress. Try running it again."
+      },
+      "preprocessing_failed": {
+        "title": "Preparation failed",
+        "message": "The workflow could not be prepared. Try running it again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Preparation failed",
+        "toastMessage": "The workflow could not be prepared. Try running it again."
+      },
+      "preprocessing_timeout": {
+        "title": "Preparation timed out",
+        "message": "The workflow took too long to prepare. Try running it again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Preparation timed out",
+        "toastMessage": "The workflow took too long to prepare. Try running it again."
+      },
+      "server_crashed": {
+        "title": "Server crashed",
+        "message": "The server stopped while running this workflow. Try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Server crashed",
+        "toastMessage": "The server stopped while running this workflow. Try again."
+      },
+      "server_busy": {
+        "title": "Servers are busy",
+        "message": "The servers are busy right now. Try again in a moment.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Servers are busy",
+        "toastMessage": "The servers are busy right now. Try again in a moment."
+      }
+    },
+    "promptErrors": {
+      "prompt_no_outputs": {
+        "title": "Prompt has no outputs",
+        "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
+      },
+      "no_prompt": {
+        "title": "Workflow data is empty",
+        "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
+      },
+      "server_error_local": {
+        "title": "Server error",
+        "desc": "The server encountered an unexpected error. Please check the server logs."
+      },
+      "server_error_cloud": {
+        "title": "Server error",
+        "desc": "The server encountered an unexpected error. Please try again later."
+      },
+      "missing_node_type": {
+        "title": "Missing node type",
+        "desc": "A node type is missing or unavailable. The workflow may be corrupted or require a custom node."
+      },
+      "prompt_outputs_failed_validation": {
+        "title": "Prompt validation failed",
+        "desc": "The workflow has invalid node inputs. Fix the highlighted nodes before running it again."
+      }
+    }
   },
   "help": {
     "recentReleases": "Recent releases",
@@ -3619,12 +4485,20 @@
     "name": "Name",
     "namePlaceholder": "e.g., My API Key",
     "provider": "Provider",
-    "providerHint": "Optional. Selecting a provider enables automatic token usage.",
+    "providerHint": "Select a provider to enable automatic token usage.",
+    "providerHelp": {
+      "runway": "Enter your Runway API key. You can find it in your Runway account settings under API keys.",
+      "gemini": "Enter your Google Gemini API key. You can generate one in Google AI Studio."
+    },
     "secretValue": "Secret Value",
     "secretValuePlaceholder": "Enter your API key",
     "secretValuePlaceholderEdit": "Enter new value to change",
     "secretValueHint": "This value will be encrypted and cannot be viewed again.",
     "secretValueHintEdit": "Leave blank to keep the current value.",
+    "uploadJsonFile": "Upload JSON file",
+    "jsonFilePlaceholder": "Upload or paste the provider JSON credential",
+    "jsonFileHint": "Paste the JSON or upload a file. It will be encrypted and cannot be viewed again.",
+    "jsonFileHintEdit": "Leave blank to keep the current value, or upload a new JSON file to replace it.",
     "createdAt": "Created {date}",
     "lastUsed": "Last used {date}",
     "deleteConfirmTitle": "Delete Secret",
@@ -3634,47 +4508,34 @@
       "nameTooLong": "Name must be 255 characters or less",
       "providerRequired": "Provider is required",
       "secretValueRequired": "Secret value is required",
+      "invalidJson": "File must contain a valid JSON object",
+      "fileTooLarge": "File is too large. Upload a JSON credential under 1 MB",
+      "fileReadFailed": "Could not read the selected file. Please try again",
       "duplicateName": "A secret with this name already exists",
       "duplicateProvider": "A secret for this provider already exists"
     }
   },
   "essentials": {
-    "loadImage": "Load Image",
-    "saveImage": "Save Image",
-    "loadVideo": "Load Video",
-    "saveVideo": "Save Video",
-    "load3DModel": "Load 3D model",
-    "save3DModel": "Save 3D Model",
-    "text": "Text",
-    "batchImage": "Batch Image",
-    "cropImage": "Crop Image",
-    "resizeImage": "Resize Image",
-    "rotate": "Rotate",
-    "invert": "Invert",
-    "canny": "Canny",
-    "removeBackground": "Remove Background",
-    "imageCompare": "Image compare",
-    "extractFrame": "Extract frame",
-    "loadStyleLora": "Load style",
-    "lipsync": "Lipsync",
-    "textGenerationLLM": "Text generation",
-    "textTo3DModel": "Text to 3D model",
-    "imageTo3DModel": "Image to 3D Model",
-    "musicGeneration": "Music generation",
-    "loadAudio": "Load Audio",
-    "saveAudio": "Save Audio",
-    "inpaintImage": "Inpaint image",
-    "outpaintImage": "Outpaint image",
-    "imageToImage": "Image to image",
-    "textToImage": "Text to image",
-    "poseToImage": "Pose to image",
-    "cannyToImage": "Canny to image",
-    "depthToImage": "Depth to image",
-    "textToVideo": "Text to video",
-    "imageToVideo": "Image to video",
-    "poseToVideo": "Pose to video",
-    "cannyToVideo": "Canny to video",
-    "depthToVideo": "Depth to video"
+    "inputs-outputs": "Inputs & Outputs",
+    "generate": "Generate",
+    "generate-image": "Image",
+    "generate-video": "Video",
+    "generate-text": "Text",
+    "generate-audio": "Audio",
+    "generate-3d": "3D",
+    "control-guidance": "Control & Guidance",
+    "control-image": "Image",
+    "editing-utilities": "Editing & Utilities",
+    "image-transform": "Image Transform",
+    "image-utilities": "Image Utilities",
+    "image-filters-effects": "Image Filters & Effects",
+    "image-color": "Image Color",
+    "image-selection-masking": "Image Selection & Masking",
+    "video-transform": "Video Transform",
+    "video-compose": "Video Compose",
+    "video-selection-masking": "Video Selection & Masking",
+    "3d-transform": "3D Transform",
+    "jumpTo": "Jump to"
   },
   "builderToolbar": {
     "label": "App Builder",
@@ -3716,7 +4577,6 @@
   "cloudNotification": {
     "title": "Run ComfyUI in the Cloud",
     "message": "From setup to creation in seconds. Popular models, extensions, and powerful GPUs — ready when you are.",
-    "feature1Title": "400 Free Credits Monthly",
     "feature2Title": "Works Anywhere, Instantly",
     "feature3Title": "Models Ready to Use",
     "feature4Title": "Top Custom Node Packs Pre-installed",

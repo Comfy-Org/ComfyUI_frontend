@@ -6,17 +6,17 @@
     v-else
     :class="
       cn(
-        'lg-node-header w-full min-w-0 py-2 pr-3 pl-2 text-sm',
-        'text-node-component-header',
+        'lg-node-header w-full min-w-0 p-1 text-xs',
+        'text-node-component-slot-text',
         headerShapeClass
       )
     "
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex min-w-0 items-center justify-between gap-2.5">
+    <div class="flex min-w-0 items-center justify-between gap-1">
       <!-- Collapse/Expand Button -->
-      <div class="relative mr-auto flex min-w-0 shrink items-center gap-2.5">
+      <div class="relative mr-auto flex min-w-0 shrink items-center gap-1">
         <div class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"
@@ -29,7 +29,7 @@
             <i
               :class="
                 cn(
-                  'icon-[lucide--chevron-down] size-5 transition-transform',
+                  'icon-[lucide--chevron-down] size-4 transition-transform',
                   collapsed && '-rotate-90'
                 )
               "
@@ -55,29 +55,16 @@
         </div>
       </div>
 
-      <template v-for="badge in priceBadges ?? []" :key="badge.required">
-        <span
-          :class="
-            cn(
-              'flex h-5 shrink-0 items-center bg-component-node-widget-background p-1 text-xs',
-              badge.rest ? 'rounded-l-full pr-1' : 'rounded-full'
-            )
-          "
-        >
-          <i class="icon-[lucide--component] h-full bg-amber-400" />
-          <span class="truncate" v-text="badge.required" />
-        </span>
-        <span
-          v-if="badge.rest"
-          class="-ml-2.5 max-w-max min-w-0 grow basis-0 truncate rounded-r-full bg-component-node-widget-background"
-        >
-          <span class="pr-2" v-text="badge.rest" />
-        </span>
-      </template>
+      <CreditBadge
+        v-for="badge in priceBadges ?? []"
+        :key="badge.required"
+        :text="badge.required"
+        :rest="badge.rest"
+      />
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
-        class="icon-[comfy--pin] size-5"
+        class="icon-[comfy--pin] size-4"
         data-testid="node-pin-indicator"
       />
     </div>
@@ -88,6 +75,7 @@
 import { computed, onErrorCaptured, ref, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
+import CreditBadge from '@/components/node/CreditBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -96,7 +84,7 @@ import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { NodeBadgeProps } from './NodeBadge.vue'
 
@@ -171,18 +159,18 @@ const headerShapeClass = computed(() => {
       case RenderShape.BOX:
         return 'rounded-none'
       case RenderShape.CARD:
-        return 'rounded-tl-2xl rounded-br-2xl rounded-tr-none rounded-bl-none'
+        return 'rounded-tl-xl rounded-br-xl rounded-tr-none rounded-bl-none'
       default:
-        return 'rounded-2xl'
+        return 'rounded-xl'
     }
   }
   switch (nodeData?.shape) {
     case RenderShape.BOX:
       return 'rounded-t-none'
     case RenderShape.CARD:
-      return 'rounded-tl-2xl rounded-tr-none'
+      return 'rounded-tl-xl rounded-tr-none'
     default:
-      return 'rounded-t-2xl'
+      return 'rounded-t-xl'
   }
 })
 

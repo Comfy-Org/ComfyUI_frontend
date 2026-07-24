@@ -6,7 +6,7 @@
  */
 import log from 'loglevel'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
   LayoutSource,
@@ -20,17 +20,12 @@ import type {
 const logger = log.getLogger('LayoutMutations')
 
 interface LayoutMutations {
-  // Single node operations (synchronous, CRDT-ready)
   moveNode(nodeId: NodeId, position: Point): void
   batchMoveNodes(updates: Array<{ nodeId: NodeId; position: Point }>): void
   resizeNode(nodeId: NodeId, size: Size): void
   setNodeZIndex(nodeId: NodeId, zIndex: number): void
-
-  // Node lifecycle operations
   createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
   deleteNode(nodeId: NodeId): void
-
-  // Link operations
   createLink(
     linkId: LinkId,
     sourceNodeId: NodeId,
@@ -44,7 +39,7 @@ interface LayoutMutations {
   createReroute(
     rerouteId: RerouteId,
     position: Point,
-    parentId?: LinkId,
+    parentId?: RerouteId,
     linkIds?: LinkId[]
   ): void
   deleteReroute(rerouteId: RerouteId): void
@@ -54,10 +49,7 @@ interface LayoutMutations {
     previousPosition: Point
   ): void
 
-  // Stacking operations
   bringNodeToFront(nodeId: NodeId): void
-
-  // Source tracking
   setSource(source: LayoutSource): void
   setActor(actor: string): void
 }
@@ -84,14 +76,13 @@ export function useLayoutMutations(): LayoutMutations {
    * Move a node to a new position
    */
   const moveNode = (nodeId: NodeId, position: Point): void => {
-    const normalizedNodeId = String(nodeId)
-    const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
+    const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'moveNode',
       entity: 'node',
-      nodeId: normalizedNodeId,
+      nodeId,
       position,
       previousPosition: existing.position,
       timestamp: Date.now(),
@@ -106,13 +97,12 @@ export function useLayoutMutations(): LayoutMutations {
     if (updates.length === 0) return
 
     const nodeBoundsUpdates = updates.flatMap(({ nodeId, position }) => {
-      const normalizedNodeId = String(nodeId)
-      const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
+      const existing = layoutStore.getNodeLayoutRef(nodeId).value
       if (!existing) return []
 
       return [
         {
-          nodeId: normalizedNodeId,
+          nodeId,
           bounds: {
             x: position.x,
             y: position.y,
@@ -131,14 +121,13 @@ export function useLayoutMutations(): LayoutMutations {
    * Resize a node
    */
   const resizeNode = (nodeId: NodeId, size: Size): void => {
-    const normalizedNodeId = String(nodeId)
-    const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
+    const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'resizeNode',
       entity: 'node',
-      nodeId: normalizedNodeId,
+      nodeId,
       size,
       previousSize: existing.size,
       timestamp: Date.now(),
@@ -151,14 +140,13 @@ export function useLayoutMutations(): LayoutMutations {
    * Set node z-index
    */
   const setNodeZIndex = (nodeId: NodeId, zIndex: number): void => {
-    const normalizedNodeId = String(nodeId)
-    const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
+    const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'setNodeZIndex',
       entity: 'node',
-      nodeId: normalizedNodeId,
+      nodeId,
       zIndex,
       previousZIndex: existing.zIndex,
       timestamp: Date.now(),
@@ -171,9 +159,8 @@ export function useLayoutMutations(): LayoutMutations {
    * Create a new node
    */
   const createNode = (nodeId: NodeId, layout: Partial<NodeLayout>): void => {
-    const normalizedNodeId = String(nodeId)
     const fullLayout: NodeLayout = {
-      id: normalizedNodeId,
+      id: nodeId,
       position: layout.position ?? { x: 0, y: 0 },
       size: layout.size ?? { width: 200, height: 100 },
       zIndex: layout.zIndex ?? 0,
@@ -189,7 +176,7 @@ export function useLayoutMutations(): LayoutMutations {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
-      nodeId: normalizedNodeId,
+      nodeId,
       layout: fullLayout,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -201,14 +188,13 @@ export function useLayoutMutations(): LayoutMutations {
    * Delete a node
    */
   const deleteNode = (nodeId: NodeId): void => {
-    const normalizedNodeId = String(nodeId)
-    const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
+    const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'deleteNode',
       entity: 'node',
-      nodeId: normalizedNodeId,
+      nodeId,
       previousLayout: existing,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -220,7 +206,6 @@ export function useLayoutMutations(): LayoutMutations {
    * Bring a node to the front (highest z-index)
    */
   const bringNodeToFront = (nodeId: NodeId): void => {
-    // Get all nodes to find the highest z-index
     const allNodes = layoutStore.getAllNodes().value
     let maxZIndex = 0
 
@@ -229,8 +214,6 @@ export function useLayoutMutations(): LayoutMutations {
         maxZIndex = layout.zIndex
       }
     }
-
-    // Set this node's z-index to be one higher than the current max
     setNodeZIndex(nodeId, maxZIndex + 1)
   }
 
@@ -244,22 +227,18 @@ export function useLayoutMutations(): LayoutMutations {
     targetNodeId: NodeId,
     targetSlot: number
   ): void => {
-    // Normalize node IDs to strings for layout store consistency
-    const normalizedSourceNodeId = String(sourceNodeId)
-    const normalizedTargetNodeId = String(targetNodeId)
-
     logger.debug('Creating link:', {
       linkId,
-      from: `${normalizedSourceNodeId}[${sourceSlot}]`,
-      to: `${normalizedTargetNodeId}[${targetSlot}]`
+      from: `${sourceNodeId}[${sourceSlot}]`,
+      to: `${targetNodeId}[${targetSlot}]`
     })
     layoutStore.applyOperation({
       type: 'createLink',
       entity: 'link',
       linkId,
-      sourceNodeId: normalizedSourceNodeId,
+      sourceNodeId,
       sourceSlot,
-      targetNodeId: normalizedTargetNodeId,
+      targetNodeId,
       targetSlot,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -288,7 +267,7 @@ export function useLayoutMutations(): LayoutMutations {
   const createReroute = (
     rerouteId: RerouteId,
     position: Point,
-    parentId?: LinkId,
+    parentId?: RerouteId,
     linkIds: LinkId[] = []
   ): void => {
     logger.debug('Creating reroute:', {

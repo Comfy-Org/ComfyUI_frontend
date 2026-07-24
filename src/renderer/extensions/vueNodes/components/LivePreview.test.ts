@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -26,8 +26,8 @@ describe('LivePreview', () => {
     imageUrl: '/api/view?filename=test_sample.png&type=temp'
   }
 
-  const mountLivePreview = (props = {}) => {
-    return mount(LivePreview, {
+  function renderLivePreview(props = {}) {
+    return render(LivePreview, {
       props: { ...defaultProps, ...props },
       global: {
         plugins: [
@@ -44,91 +44,88 @@ describe('LivePreview', () => {
   }
 
   it('renders preview when imageUrl provided', () => {
-    const wrapper = mountLivePreview()
+    renderLivePreview()
 
-    expect(wrapper.find('img').exists()).toBe(true)
-    expect(wrapper.find('img').attributes('src')).toBe(defaultProps.imageUrl)
+    const img = screen.getByRole('img')
+    expect(img).toHaveAttribute('src', defaultProps.imageUrl)
   })
 
   it('does not render when no imageUrl provided', () => {
-    const wrapper = mountLivePreview({ imageUrl: null })
+    const { container } = renderLivePreview({ imageUrl: null })
 
-    expect(wrapper.find('img').exists()).toBe(false)
-    expect(wrapper.text()).toBe('')
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(container.textContent).toBe('')
   })
 
   it('displays calculating dimensions text initially', () => {
-    const wrapper = mountLivePreview()
+    renderLivePreview()
 
-    expect(wrapper.text()).toContain('Calculating dimensions')
+    screen.getByText('Calculating dimensions')
   })
 
   it('has proper accessibility attributes', () => {
-    const wrapper = mountLivePreview()
+    renderLivePreview()
 
-    const img = wrapper.find('img')
-    expect(img.attributes('alt')).toBe('Live sampling preview')
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'alt',
+      'Live sampling preview'
+    )
   })
 
   it('handles image load event', async () => {
-    const wrapper = mountLivePreview()
-    const img = wrapper.find('img')
+    const { container } = renderLivePreview()
+    const img = screen.getByRole('img')
 
-    // Mock the naturalWidth and naturalHeight properties on the img element
-    Object.defineProperty(img.element, 'naturalWidth', {
+    Object.defineProperty(img, 'naturalWidth', {
       writable: false,
       value: 512
     })
-    Object.defineProperty(img.element, 'naturalHeight', {
+    Object.defineProperty(img, 'naturalHeight', {
       writable: false,
       value: 512
     })
 
-    // Trigger the load event
-    await img.trigger('load')
+    await fireEvent.load(img)
+    await nextTick()
 
-    expect(wrapper.text()).toContain('512 x 512')
+    expect(container.textContent).toContain('512 x 512')
   })
 
   it('handles image error state', async () => {
-    const wrapper = mountLivePreview()
-    const img = wrapper.find('img')
+    renderLivePreview()
+    const img = screen.getByRole('img')
 
-    // Trigger the error event
-    await img.trigger('error')
+    await fireEvent.error(img)
+    await nextTick()
 
-    // Check that the image is hidden and error content is shown
-    expect(wrapper.find('img').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Image failed to load')
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    screen.getByText('Image failed to load')
   })
 
   it('resets state when imageUrl changes', async () => {
-    const wrapper = mountLivePreview()
-    const img = wrapper.find('img')
+    const { container, rerender } = renderLivePreview()
+    const img = screen.getByRole('img')
 
-    // Set error state via event
-    await img.trigger('error')
-    expect(wrapper.text()).toContain('Error loading image')
+    await fireEvent.error(img)
+    await nextTick()
+    expect(container.textContent).toContain('Error loading image')
 
-    // Change imageUrl prop
-    await wrapper.setProps({ imageUrl: '/new-image.png' })
+    await rerender({ imageUrl: '/new-image.png' })
     await nextTick()
 
-    // State should be reset - dimensions text should show calculating
-    expect(wrapper.text()).toContain('Calculating dimensions')
-    expect(wrapper.text()).not.toContain('Error loading image')
+    expect(container.textContent).toContain('Calculating dimensions')
+    expect(container.textContent).not.toContain('Error loading image')
   })
 
   it('shows error state when image fails to load', async () => {
-    const wrapper = mountLivePreview()
-    const img = wrapper.find('img')
+    const { container } = renderLivePreview()
+    const img = screen.getByRole('img')
 
-    // Trigger error event
-    await img.trigger('error')
+    await fireEvent.error(img)
+    await nextTick()
 
-    // Should show error state instead of image
-    expect(wrapper.find('img').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Image failed to load')
-    expect(wrapper.text()).toContain('Error loading image')
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    screen.getByText('Image failed to load')
+    expect(container.textContent).toContain('Error loading image')
   })
 })

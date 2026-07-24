@@ -1,7 +1,7 @@
 <template>
   <div
     ref="container"
-    class="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-(--dialog-surface) h-full overflow-y-auto [overflow-anchor:none] [scrollbar-gutter:stable]"
+    class="h-full scrollbar-thin scrollbar-thumb-(--dialog-surface) scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto [overflow-anchor:none]"
   >
     <div :style="topSpacerStyle" />
     <div :style="mergedGridStyle">
@@ -33,7 +33,6 @@ const {
   items,
   gridStyle,
   bufferRows = 1,
-  scrollThrottle = 64,
   resizeDebounce = 64,
   defaultItemHeight = 200,
   defaultItemWidth = 200,
@@ -42,7 +41,6 @@ const {
   items: (T & { key: string })[]
   gridStyle: CSSProperties
   bufferRows?: number
-  scrollThrottle?: number
   resizeDebounce?: number
   defaultItemHeight?: number
   defaultItemWidth?: number
@@ -61,7 +59,6 @@ const itemWidth = ref(defaultItemWidth)
 const container = ref<HTMLElement | null>(null)
 const { width, height } = useElementSize(container)
 const { y: scrollY } = useScroll(container, {
-  throttle: scrollThrottle,
   eventListenerOptions: { passive: true }
 })
 

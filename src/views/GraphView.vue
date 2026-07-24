@@ -34,8 +34,7 @@
 <script setup lang="ts">
 import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import type { ToastMessageOptions } from 'primevue/toast'
-import { useToast } from 'primevue/usetoast'
+
 import {
   computed,
   nextTick,
@@ -45,7 +44,6 @@ import {
   watch,
   watchEffect
 } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
@@ -58,16 +56,19 @@ import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
+import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
-import { i18n, loadLocale } from '@/i18n'
+import { setActiveLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -103,8 +104,6 @@ setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
 
-const { t } = useI18n()
-const toast = useToast()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
@@ -112,7 +111,7 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
-const { isBuilderMode } = useAppMode()
+const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
 
 watch(linearMode, (isLinear) => {
@@ -130,9 +129,9 @@ watch(
   (newTheme) => {
     const DARK_THEME_CLASS = 'dark-theme'
     if (newTheme.light_theme) {
-      document.body.classList.remove(DARK_THEME_CLASS)
+      document.documentElement.classList.remove(DARK_THEME_CLASS)
     } else {
-      document.body.classList.add(DARK_THEME_CLASS)
+      document.documentElement.classList.add(DARK_THEME_CLASS)
     }
     if (isDesktop) {
       electronAPI().changeTheme({
@@ -192,15 +191,17 @@ watchEffect(() => {
 
 watchEffect(async () => {
   const locale = settingStore.get('Comfy.Locale')
-  if (locale) {
-    // Load the locale dynamically if not already loaded
-    try {
-      await loadLocale(locale)
-      // Type assertion is safe here as loadLocale validates the locale exists
-      i18n.global.locale.value = locale as typeof i18n.global.locale.value
-    } catch (error) {
-      console.error(`Failed to switch to locale "${locale}":`, error)
+  if (!locale) return
+  try {
+    const resolved = await setActiveLocale(locale)
+    // Self-heal: a stored value from an older build (e.g. 'de') would otherwise
+    // leave the language dropdown — derived from SUPPORTED_LOCALE_OPTIONS —
+    // showing nothing selected until the user picks one manually.
+    if (resolved !== locale) {
+      await settingStore.set('Comfy.Locale', resolved)
     }
+  } catch (error) {
+    console.error(`Failed to switch to locale "${locale}":`, error)
   }
 })
 
@@ -250,33 +251,18 @@ const onExecutionSuccess = async () => {
   }
 }
 
-const reconnectingMessage: ToastMessageOptions = {
-  severity: 'error',
-  summary: t('g.reconnecting')
-}
+const { onReconnecting, onReconnected } = useReconnectingNotification()
+const refreshOnReconnect = useReconnectQueueRefresh()
 
-const onReconnecting = () => {
-  if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
-    toast.remove(reconnectingMessage)
-    toast.add(reconnectingMessage)
-  }
-}
-
-const onReconnected = () => {
-  if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
-    toast.remove(reconnectingMessage)
-    toast.add({
-      severity: 'success',
-      summary: t('g.reconnected'),
-      life: 2000
-    })
-  }
+const handleReconnected = async () => {
+  onReconnected()
+  await refreshOnReconnect()
 }
 
 useEventListener(api, 'status', onStatus)
 useEventListener(api, 'execution_success', onExecutionSuccess)
 useEventListener(api, 'reconnecting', onReconnecting)
-useEventListener(api, 'reconnected', onReconnected)
+useEventListener(api, 'reconnected', handleReconnected)
 
 onMounted(() => {
   executionStore.bindExecutionEvents()
@@ -364,6 +350,16 @@ const onGraphReady = () => {
 
       // Send initial heartbeat
       tabCountChannel.postMessage({ type: 'heartbeat', tabId: currentTabId })
+    }
+
+    // Shell layout snapshot, once per session (cloud only)
+    if (isCloud && telemetry) {
+      telemetry.trackShellLayout(
+        getShellLayoutSnapshot({
+          view_mode: mode.value,
+          is_app_mode: isAppMode.value
+        })
+      )
     }
 
     // Setting values now available after comfyApp.setup.

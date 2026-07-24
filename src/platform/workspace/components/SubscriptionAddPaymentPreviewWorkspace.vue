@@ -16,9 +16,16 @@
             ${{ displayPrice }}
           </span>
           <span class="text-xl text-base-foreground">
-            {{ $t('subscription.usdPerMonthPerMember') }}
+            {{ $t('subscription.usdPerMonth') }}
           </span>
         </div>
+        <span class="text-muted-foreground">
+          {{
+            isYearly
+              ? $t('subscription.billedYearly', { total: annualTotalFormatted })
+              : $t('subscription.billedMonthly')
+          }}
+        </span>
         <span class="text-muted-foreground">
           {{ $t('subscription.preview.startingToday') }}
         </span>
@@ -28,15 +35,12 @@
       <div class="flex flex-col gap-3 pt-16 pb-8">
         <div class="flex items-center justify-between">
           <span class="text-base-foreground">
-            {{ $t('subscription.preview.eachMonthCreditsRefill') }}
+            {{ $t(creditsRefillLabelKey) }}
           </span>
           <div class="flex items-center gap-1">
-            <i class="icon-[lucide--component] text-sm text-amber-400" />
+            <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
             <span class="font-bold text-base-foreground">
-              {{ displayCredits }}
-            </span>
-            <span class="text-base-foreground">
-              {{ $t('subscription.preview.perMember') }}
+              {{ refillCredits }}
             </span>
           </div>
         </div>
@@ -63,36 +67,48 @@
           />
         </button>
         <div v-show="!isFeaturesCollapsed" class="flex flex-col gap-2 pt-2">
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-base-foreground">
-              {{ $t('subscription.maxDurationLabel') }}
-            </span>
-            <span class="text-sm font-bold text-base-foreground">
-              {{ maxDuration }}
-            </span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-base-foreground">
-              {{ $t('subscription.gpuLabel') }}
-            </span>
-            <i class="pi pi-check text-success-foreground text-xs" />
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-base-foreground">
-              {{ $t('subscription.addCreditsLabel') }}
-            </span>
-            <i class="pi pi-check text-success-foreground text-xs" />
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-base-foreground">
-              {{ $t('subscription.customLoRAsLabel') }}
-            </span>
-            <i
-              v-if="hasCustomLoRAs"
-              class="pi pi-check text-success-foreground text-xs"
-            />
-            <i v-else class="pi pi-times text-xs text-muted-foreground" />
-          </div>
+          <template v-if="teamPlan">
+            <div
+              v-for="perk in teamPerks"
+              :key="perk"
+              class="flex items-center gap-2"
+            >
+              <i class="pi pi-check text-success-foreground text-xs" />
+              <span class="text-sm text-base-foreground">{{ perk }}</span>
+            </div>
+          </template>
+          <template v-else>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-base-foreground">
+                {{ $t('subscription.maxDurationLabel') }}
+              </span>
+              <span class="text-sm font-bold text-base-foreground">
+                {{ maxDuration }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-base-foreground">
+                {{ $t('subscription.gpuLabel') }}
+              </span>
+              <i class="pi pi-check text-success-foreground text-xs" />
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-base-foreground">
+                {{ $t('subscription.addCreditsLabel') }}
+              </span>
+              <i class="pi pi-check text-success-foreground text-xs" />
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-base-foreground">
+                {{ $t('subscription.customLoRAsLabel') }}
+              </span>
+              <i
+                v-if="hasCustomLoRAs"
+                class="pi pi-check text-success-foreground text-xs"
+              />
+              <i v-else class="pi pi-times text-xs text-muted-foreground" />
+            </div>
+          </template>
         </div>
       </div>
 
@@ -118,40 +134,17 @@
     <!-- Footer -->
     <div class="flex flex-col gap-2 pt-8">
       <!-- Terms Agreement -->
-      <p class="text-center text-xs text-muted-foreground">
-        <i18n-t keypath="subscription.preview.termsAgreement" tag="span">
-          <template #terms>
-            <a
-              href="https://www.comfy.org/terms"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="underline hover:text-base-foreground"
-            >
-              {{ $t('subscription.preview.terms') }}
-            </a>
-          </template>
-          <template #privacy>
-            <a
-              href="https://www.comfy.org/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="underline hover:text-base-foreground"
-            >
-              {{ $t('subscription.preview.privacyPolicy') }}
-            </a>
-          </template>
-        </i18n-t>
-      </p>
+      <SubscriptionTermsNote />
 
       <!-- Add Credit Card Button -->
       <Button
-        variant="secondary"
+        variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
         @click="$emit('addCreditCard')"
       >
-        {{ $t('subscription.preview.addCreditCard') }}
+        {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
       </Button>
 
       <!-- Back Link -->
@@ -171,28 +164,36 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import {
   getTierCredits,
   getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 
 interface Props {
-  tierKey: Exclude<TierKey, 'free' | 'founder'>
+  /** Personal-tier checkout. Required unless `teamPlan` is set. */
+  tierKey?: Exclude<TierKey, 'free' | 'founder'>
   billingCycle?: BillingCycle
   isLoading?: boolean
   previewData?: PreviewSubscribeResponse | null
+  /** Team-plan checkout (selected slider stop); overrides tier-derived display. */
+  teamPlan?: TeamPlanSelection | null
 }
 
 const {
   tierKey,
   billingCycle = 'monthly',
   isLoading = false,
-  previewData = null
+  previewData = null,
+  teamPlan = null
 } = defineProps<Props>()
 
 defineEmits<{
@@ -204,29 +205,72 @@ const { t, n } = useI18n()
 
 const isFeaturesCollapsed = ref(true)
 
-const tierName = computed(() => t(`subscription.tiers.${tierKey}.name`))
+const tierName = computed(() =>
+  teamPlan
+    ? t('subscription.teamPlan.name')
+    : t(`subscription.tiers.${tierKey}.name`)
+)
+
+const isYearly = computed(() =>
+  isYearlyCheckout(previewData?.new_plan.duration, billingCycle)
+)
 
 const displayPrice = computed(() => {
+  if (teamPlan) return teamPlan.discountedUsd
   if (previewData?.new_plan) {
-    return (previewData.new_plan.price_cents / 100).toFixed(0)
+    const cents = previewData.new_plan.price_cents
+    return ((isYearly.value ? cents / 12 : cents) / 100).toFixed(0)
   }
-  return getTierPrice(tierKey, billingCycle === 'yearly')
+  return tierKey ? getTierPrice(tierKey, isYearly.value) : 0
 })
 
-const displayCredits = computed(() => n(getTierCredits(tierKey) ?? 0))
+const annualTotalUsd = computed(() => {
+  if (teamPlan) return teamPlan.discountedUsd * 12
+  if (previewData?.new_plan) return previewData.new_plan.price_cents / 100
+  return tierKey ? getTierPrice(tierKey, true) * 12 : 0
+})
 
-const hasCustomLoRAs = computed(() => getTierFeatures(tierKey).customLoRAs)
+const annualTotalFormatted = computed(() => `$${n(annualTotalUsd.value)}`)
+
+const monthlyCredits = computed(() =>
+  teamPlan ? teamPlan.credits : tierKey ? (getTierCredits(tierKey) ?? 0) : 0
+)
+
+const refillCredits = computed(() =>
+  n(isYearly.value ? monthlyCredits.value * 12 : monthlyCredits.value)
+)
+
+const creditsRefillLabelKey = computed(() =>
+  isYearly.value
+    ? 'subscription.preview.eachYearCreditsRefill'
+    : 'subscription.preview.eachMonthCreditsRefill'
+)
+
+const teamPerks = computed(() => [
+  t('subscription.teamPlan.perkInviteMembers'),
+  t('subscription.teamPlan.perkConcurrentRuns'),
+  t('subscription.teamPlan.perkSharedPool'),
+  t('subscription.teamPlan.perkRolePermissions')
+])
+
+const hasCustomLoRAs = computed(() =>
+  tierKey ? getTierFeatures(tierKey).customLoRAs : false
+)
 const maxDuration = computed(() => t(`subscription.maxDuration.${tierKey}`))
 
 const totalDueToday = computed(() => {
+  if (teamPlan) {
+    const total = isYearly.value
+      ? teamPlan.discountedUsd * 12
+      : teamPlan.discountedUsd
+    return total.toFixed(2)
+  }
   if (previewData) {
     return (previewData.cost_today_cents / 100).toFixed(2)
   }
-  const priceValue = getTierPrice(tierKey, billingCycle === 'yearly')
-  if (billingCycle === 'yearly') {
-    return (priceValue * 12).toFixed(2)
-  }
-  return priceValue.toFixed(2)
+  if (!tierKey) return '0.00'
+  const priceValue = getTierPrice(tierKey, isYearly.value)
+  return (isYearly.value ? priceValue * 12 : priceValue).toFixed(2)
 })
 
 const nextPaymentDate = computed(() => {

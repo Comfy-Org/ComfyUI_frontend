@@ -30,25 +30,24 @@
               "
             >
               <button
-                class="flex flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
+                class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
                 @click="handleSelectWorkspace(workspace)"
               >
                 <WorkspaceProfilePic
-                  class="size-8 text-sm"
+                  class="size-8 shrink-0 text-sm"
                   :workspace-name="workspace.name"
                 />
                 <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-sm text-base-foreground">
-                      {{
-                        workspace.type === 'personal'
-                          ? $t('workspaceSwitcher.personal')
-                          : workspace.name
-                      }}
+                  <div class="flex max-w-full min-w-0 items-center gap-1.5">
+                    <span
+                      :title="workspace.name"
+                      class="min-w-0 truncate text-sm text-base-foreground"
+                    >
+                      {{ workspace.name }}
                     </span>
                     <span
                       v-if="resolveTierLabel(workspace)"
-                      class="rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
+                      class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
                     >
                       {{ resolveTierLabel(workspace) }}
                     </span>
@@ -59,7 +58,7 @@
                 </div>
                 <i
                   v-if="isCurrentWorkspace(workspace)"
-                  class="pi pi-check text-sm text-base-foreground"
+                  class="pi pi-check shrink-0 text-sm text-base-foreground"
                 />
               </button>
             </div>
@@ -122,7 +121,7 @@ import type {
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 interface AvailableWorkspace {
   id: string
@@ -178,6 +177,8 @@ function getRoleLabel(role: AvailableWorkspace['role']): string {
 }
 
 function resolveTierLabel(workspace: AvailableWorkspace): string | null {
+  if (workspace.type !== 'personal') return null
+
   if (isCurrentWorkspace(workspace)) {
     return currentSubscriptionTierName.value || null
   }

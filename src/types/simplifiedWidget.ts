@@ -4,6 +4,8 @@
  */
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@/types/nodeId'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 /** Valid types for widget values */
 export type WidgetValue =
@@ -39,7 +41,7 @@ export type SafeControlWidget = {
 }
 
 export interface LinkedUpstreamInfo {
-  nodeId: string
+  nodeId: NodeId
   outputName?: string
 }
 
@@ -77,7 +79,7 @@ export interface SimplifiedWidget<
   serializeValue?: () => unknown
 
   /** NodeLocatorId for the node that owns this widget's execution outputs */
-  nodeLocatorId?: string
+  nodeLocatorId?: NodeLocatorId
 
   /** Optional input specification backing this widget */
   spec?: InputSpecV2

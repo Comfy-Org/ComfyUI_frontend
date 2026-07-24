@@ -36,7 +36,7 @@ export function isTransparent(color: string) {
   return false
 }
 
-function rgbToHsl({ r, g, b }: RGB): HSL {
+export function rgbToHsl({ r, g, b }: RGB): HSL {
   r /= 255
   g /= 255
   b /= 255
@@ -82,12 +82,39 @@ export function hexToRgb(hex: string): RGB {
   return { r, g, b }
 }
 
+export function hexToInt(hex: string): number {
+  const { r, g, b } = hexToRgb(hex)
+  return (r << 16) | (g << 8) | b
+}
+
 export function rgbToHex({ r, g, b }: RGB): string {
   const toHex = (n: number) =>
     Math.max(0, Math.min(255, Math.round(n)))
       .toString(16)
       .padStart(2, '0')
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+}
+
+export function luminance({ r, g, b }: RGB): number {
+  return 0.299 * r + 0.587 * g + 0.114 * b
+}
+
+export function readableTextColor(hex: string): string {
+  const rgb = hexToRgb(hex)
+  let { r, g, b } = rgb
+  const lum = luminance(rgb)
+  const MIN = 130
+  if (lum < MIN) {
+    const t = (MIN - lum) / (255 - lum)
+    r = Math.round(r + (255 - r) * t)
+    g = Math.round(g + (255 - g) * t)
+    b = Math.round(b + (255 - b) * t)
+  }
+  return `rgb(${r},${g},${b})`
+}
+
+export function textOnColor(hex: string): string {
+  return luminance(hexToRgb(hex)) > 140 ? '#000' : '#fff'
 }
 
 export function hsbToRgb({ h, s, b }: HSB): RGB {
@@ -100,9 +127,7 @@ export function hsbToRgb({ h, s, b }: HSB): RGB {
   const x = c * (1 - Math.abs(((hh / 60) % 2) - 1))
   const m = vv - c
 
-  let rp = 0,
-    gp = 0,
-    bp = 0
+  let rp: number, gp: number, bp: number
 
   if (hh < 60) {
     rp = c
@@ -157,9 +182,7 @@ export function parseToRgb(color: string): RGB {
   const x = c * (1 - Math.abs(((h * 6) % 2) - 1))
   const m = l - c / 2
 
-  let r = 0,
-    g = 0,
-    b = 0
+  let r: number, g: number, b: number
 
   if (h < 1 / 6) {
     r = c
@@ -343,7 +366,7 @@ function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
   }
 }
 
-function rgbToHsv({ r, g, b }: RGB): {
+export function rgbToHsv({ r, g, b }: RGB): {
   h: number
   s: number
   v: number
@@ -372,6 +395,11 @@ function rgbToHsv({ r, g, b }: RGB): {
     }
   }
   return { h, s, v }
+}
+
+export function normalizeHex(value: string): string | null {
+  const digits = value.trim().replace(/^#/, '')
+  return /^([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(digits) ? `#${digits}` : null
 }
 
 export function hexToHsva(hex: string): HSVA {

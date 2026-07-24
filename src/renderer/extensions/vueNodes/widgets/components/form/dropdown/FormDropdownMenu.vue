@@ -18,26 +18,37 @@ import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 interface Props {
   items: FormDropdownItem[]
   isSelected: (item: FormDropdownItem, index: number) => boolean
+  uploadable: boolean
   filterOptions: FilterOption[]
   sortOptions: SortOption[]
   showOwnershipFilter?: boolean
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
+  candidateIndex?: number
+  candidateLabel?: string
+  loadingMore?: boolean
 }
 
 const {
   items,
   isSelected,
+  uploadable,
   filterOptions,
   sortOptions,
   showOwnershipFilter,
   ownershipOptions,
   showBaseModelFilter,
-  baseModelOptions
+  baseModelOptions,
+  candidateIndex = -1,
+  candidateLabel,
+  loadingMore = false
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
+  (e: 'search-enter'): void
+  (e: 'show-picker'): void
+  (e: 'approach-end'): void
 }>()
 
 const filterSelected = defineModel<string>('filterSelected')
@@ -93,17 +104,37 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
     key: String(item.id)
   }))
 )
+
+/**
+ * The dropdown content is teleported to `document.body` by PrimeVue Popover,
+ * detaching it from the LGraphNode subtree where the canvas wheel guard lives.
+ * Pinch-zoom (`ctrl/meta + wheel`) would otherwise trigger page-level zoom and
+ * push fixed UI off-screen, so it must be suppressed locally. Horizontal
+ * swipe-to-navigate is already blocked at the page boundary by
+ * `overscroll-behavior: none` on `html, body`, so we deliberately do NOT
+ * preventDefault on horizontal-dominant wheels here — doing so cancels the
+ * trackpad's native momentum on slow vertical scrolls (where stray horizontal
+ * jitter frames satisfy `|deltaX| > |deltaY|`), starving the VirtualGrid's
+ * `useScroll` and leaving rows blank until a fast scroll re-pumps samples.
+ */
+const onWheel = (event: WheelEvent) => {
+  if (event.ctrlKey || event.metaKey) event.preventDefault()
+}
 </script>
 
 <template>
   <div
     class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline -outline-offset-1 outline-node-component-border"
     data-capture-wheel="true"
+    data-testid="form-dropdown-menu"
+    @wheel="onWheel"
   >
     <FormDropdownMenuFilter
       v-if="filterOptions.length > 0"
       v-model:filter-selected="filterSelected"
       :filter-options
+      :uploadable
+      @show-picker="emit('show-picker')"
     />
     <FormDropdownMenuActions
       v-model:layout-mode="layoutMode"
@@ -116,6 +147,8 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
       :ownership-options
       :show-base-model-filter
       :base-model-options
+      :candidate-label
+      @search-enter="emit('search-enter')"
     />
     <div
       v-if="items.length === 0"
@@ -137,10 +170,12 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
       :default-item-width="layoutConfig.itemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
+      @approach-end="emit('approach-end')"
     >
       <template #item="{ item, index }">
         <FormDropdownMenuItem
           :index
+          :candidate="index === candidateIndex"
           :selected="isSelected(item, index)"
           :preview-url="item.preview_url ?? ''"
           :name="item.name"
@@ -150,5 +185,15 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
         />
       </template>
     </VirtualGrid>
+    <div
+      v-if="loadingMore"
+      class="flex items-center justify-center py-2"
+      data-testid="form-dropdown-loading-more"
+    >
+      <i
+        :aria-label="$t('g.loading')"
+        class="icon-[lucide--loader] size-6 animate-spin text-muted-foreground"
+      />
+    </div>
   </div>
 </template>

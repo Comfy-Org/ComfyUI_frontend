@@ -1,33 +1,41 @@
 <script setup lang="ts">
 import { useTimeout } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { ref, useTemplateRef } from 'vue'
+import { computed, ref, toValue, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
+import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErrorWarning.vue'
+import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
 import { useCommandStore } from '@/stores/commandStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
-const { isActiveSubscription } = useBillingContext()
+const { canRunWorkflows } = useBillingContext()
 const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
+const { hasAnyError } = storeToRefs(useExecutionErrorStore())
+const { overlayMessage } = useErrorOverlayState()
 
 const { toastTo, mobile } = defineProps<{
   toastTo?: string | HTMLElement
@@ -43,6 +51,13 @@ const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
   { controls: true, immediate: false }
 )
 const widgetListRef = useTemplateRef('widgetListRef')
+const linearRunButtonTestId = 'linear-run-button'
+const showRunErrorWarning = computed(
+  () =>
+    hasAnyError.value &&
+    toValue(canRunWorkflows) &&
+    toValue(overlayMessage).trim().length > 0
+)
 
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
@@ -57,7 +72,8 @@ async function runButtonClick(e: Event) {
 
     if (batchCount.value > 1) {
       useTelemetry()?.trackUiButtonClicked({
-        button_id: 'queue_run_multiple_batches_submitted'
+        button_id: 'queue_run_multiple_batches_submitted',
+        element_group: 'app_mode'
       })
     }
     await commandStore.execute(commandId, {
@@ -71,8 +87,8 @@ async function runButtonClick(e: Event) {
     pendingJobQueues.value -= 1
   }
 }
-function handleDragDrop(e: DragEvent) {
-  return widgetListRef.value?.handleDragDrop(e)
+function handleDragDrop() {
+  return widgetListRef.value?.handleDragDrop()
 }
 </script>
 <template>
@@ -133,13 +149,11 @@ function handleDragDrop(e: DragEvent) {
       <PartnerNodesList v-if="!mobile" />
       <section
         v-if="mobile"
-        data-testid="linear-run-button"
+        :data-testid="linearRunButtonTestId"
         class="border-t border-node-component-border p-4 pb-6"
       >
-        <SubscribeToRunButton
-          v-if="!isActiveSubscription"
-          class="mt-4 w-full"
-        />
+        <LinearRunErrorWarning v-if="showRunErrorWarning" />
+        <SubscribeToRunButton v-if="!canRunWorkflows" class="mt-4 w-full" />
         <div v-else class="mt-4 flex">
           <PartnerNodesList mobile />
           <Popover side="top" @open-auto-focus.prevent>
@@ -165,18 +179,24 @@ function handleDragDrop(e: DragEvent) {
             variant="primary"
             class="grow"
             size="lg"
+            :aria-describedby="
+              showRunErrorWarning
+                ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+                : undefined
+            "
             @click="runButtonClick"
           >
-            <i class="icon-[lucide--play]" />
+            <i aria-hidden="true" class="icon-[lucide--play]" />
             {{ t('menu.run') }}
           </Button>
         </div>
       </section>
       <section
         v-else
-        data-testid="linear-run-button"
+        :data-testid="linearRunButtonTestId"
         class="border-t border-node-component-border p-4 pb-6"
       >
+        <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <div
           class="m-1 mb-2 text-node-component-slot-text"
           v-text="t('linearMode.runCount')"
@@ -188,20 +208,23 @@ function handleDragDrop(e: DragEvent) {
           :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
           class="h-7 min-w-40"
         />
-        <SubscribeToRunButton
-          v-if="!isActiveSubscription"
-          class="mt-4 w-full"
-        />
+        <SubscribeToRunButton v-if="!canRunWorkflows" class="mt-4 w-full" />
         <Button
           v-else
           variant="primary"
           class="mt-4 w-full text-sm"
           size="lg"
+          :aria-describedby="
+            showRunErrorWarning
+              ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+              : undefined
+          "
           @click="runButtonClick"
         >
-          <i class="icon-[lucide--play]" />
+          <i aria-hidden="true" class="icon-[lucide--play]" />
           {{ t('menu.run') }}
         </Button>
+        <FreeTierQuota />
       </section>
     </div>
   </div>

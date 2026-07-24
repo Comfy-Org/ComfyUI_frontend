@@ -158,15 +158,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "解开所选子图"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "将选中节点转换为组节点"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "管理组节点"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "解散选中组节点"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "打开关于ComfyUI"
   },
@@ -294,7 +285,7 @@
     "label": "说明中心"
   },
   "Comfy_ToggleLinear": {
-    "label": "切换线性模式"
+    "label": "切换应用模式"
   },
   "Comfy_ToggleQPOV2": {
     "label": "切换队列面板V2"
@@ -312,7 +303,7 @@
     "label": "退出登录"
   },
   "Experimental_ToggleVueNodes": {
-    "label": "实验性：启用 Vue 节点"
+    "label": "启用 Nodes 2.0"
   },
   "Workspace_CloseWorkflow": {
     "label": "关闭当前工作流"

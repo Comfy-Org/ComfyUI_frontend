@@ -3,10 +3,12 @@ import { computed, watch } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import type { NodeError } from '@/schemas/apiSchema'
 import { getParentExecutionIds } from '@/types/nodeIdentification'
+import { hasErrorForSlot } from '@/utils/executionErrorUtil'
 import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 function setNodeHasErrors(node: LGraphNode, hasErrors: boolean): void {
@@ -32,12 +34,13 @@ function setNodeHasErrors(node: LGraphNode, hasErrors: boolean): void {
 function reconcileNodeErrorFlags(
   rootGraph: LGraph,
   nodeErrors: Record<string, NodeError> | null,
-  missingModelExecIds: Set<string>
+  missingModelExecIds: Set<string>,
+  missingMediaExecIds: Set<string> = new Set()
 ): void {
   // Collect nodes and slot info that should be flagged
   // Includes both error-owning nodes and their ancestor containers
   const flaggedNodes = new Set<LGraphNode>()
-  const errorSlots = new Map<LGraphNode, Set<string>>()
+  const errorsByNode = new Map<LGraphNode, NodeError['errors']>()
 
   if (nodeErrors) {
     for (const [executionId, nodeError] of Object.entries(nodeErrors)) {
@@ -45,12 +48,10 @@ function reconcileNodeErrorFlags(
       if (!node) continue
 
       flaggedNodes.add(node)
-      const slotNames = new Set<string>()
-      for (const error of nodeError.errors) {
-        const name = error.extra_info?.input_name
-        if (name) slotNames.add(name)
-      }
-      if (slotNames.size > 0) errorSlots.set(node, slotNames)
+      errorsByNode.set(node, [
+        ...(errorsByNode.get(node) ?? []),
+        ...nodeError.errors
+      ])
 
       for (const parentId of getParentExecutionIds(executionId)) {
         const parentNode = getNodeByExecutionId(rootGraph, parentId)
@@ -64,21 +65,28 @@ function reconcileNodeErrorFlags(
     if (node) flaggedNodes.add(node)
   }
 
+  for (const execId of missingMediaExecIds) {
+    const node = getNodeByExecutionId(rootGraph, execId)
+    if (node) flaggedNodes.add(node)
+  }
+
   forEachNode(rootGraph, (node) => {
     setNodeHasErrors(node, flaggedNodes.has(node))
 
     if (node.inputs) {
-      const nodeSlotNames = errorSlots.get(node)
+      const ownErrors = errorsByNode.get(node)
       for (const slot of node.inputs) {
-        slot.hasErrors = !!nodeSlotNames?.has(slot.name)
+        slot.hasErrors =
+          !!slot.name && !!ownErrors && hasErrorForSlot(ownErrors, slot.name)
       }
     }
   })
 }
 
 export function useNodeErrorFlagSync(
-  lastNodeErrors: Ref<Record<string, NodeError> | null>,
-  missingModelStore: ReturnType<typeof useMissingModelStore>
+  nodeErrors: Ref<Record<string, NodeError> | null>,
+  missingModelStore: ReturnType<typeof useMissingModelStore>,
+  missingMediaStore: ReturnType<typeof useMissingMediaStore>
 ): () => void {
   const settingStore = useSettingStore()
   const showErrorsTab = computed(() =>
@@ -87,21 +95,25 @@ export function useNodeErrorFlagSync(
 
   const stop = watch(
     [
-      lastNodeErrors,
+      nodeErrors,
       () => missingModelStore.missingModelNodeIds,
+      () => missingMediaStore.missingMediaNodeIds,
       showErrorsTab
     ],
     () => {
       if (!app.isGraphReady) return
-      // Legacy (LGraphNode) only: suppress missing-model error flags when
-      // the Errors tab is hidden, since legacy nodes lack the per-widget
+      // Legacy (LGraphNode) only: suppress missing-model/media error flags
+      // when the Errors tab is hidden, since legacy nodes lack the per-widget
       // red highlight that Vue nodes use to indicate *why* a node has errors.
       // Vue nodes compute hasAnyError independently and are unaffected.
       reconcileNodeErrorFlags(
         app.rootGraph,
-        lastNodeErrors.value,
+        nodeErrors.value,
         showErrorsTab.value
           ? missingModelStore.missingModelAncestorExecutionIds
+          : new Set(),
+        showErrorsTab.value
+          ? missingMediaStore.missingMediaAncestorExecutionIds
           : new Set()
       )
     },

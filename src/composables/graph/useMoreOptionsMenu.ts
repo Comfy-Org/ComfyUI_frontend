@@ -1,14 +1,10 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type {
-  LGraphGroup,
-  LGraphNode,
-  NodeId
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 
 import {
@@ -33,6 +29,7 @@ export interface MenuOption {
   disabled?: boolean
   source?: 'litegraph' | 'vue'
   isColorPicker?: boolean
+  isShapePicker?: boolean
 }
 
 export interface SubMenuOption {
@@ -44,14 +41,13 @@ export interface SubMenuOption {
 }
 
 export enum BadgeVariant {
-  NEW = 'new',
-  DEPRECATED = 'deprecated'
+  NEW = 'new'
 }
 
 // Global singleton for NodeOptions component reference
 let nodeOptionsInstance: null | NodeOptionsInstance = null
 
-const hoveredWidget = ref<[string, NodeId | undefined]>()
+const hoveredWidget = ref<[string, SerializedNodeId | undefined]>()
 
 /**
  * Toggle the node options popover
@@ -71,7 +67,7 @@ export function toggleNodeOptions(event: Event) {
 export function showNodeOptions(
   event: MouseEvent,
   widgetName?: string,
-  nodeId?: NodeId
+  nodeId?: SerializedNodeId
 ) {
   hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
   if (nodeOptionsInstance?.show) {
@@ -124,8 +120,8 @@ export function useMoreOptionsMenu() {
   const {
     selectedItems,
     selectedNodes,
-    nodeDef,
-    showNodeHelp,
+    canOpenNodeInfo,
+    openNodeInfo,
     hasSubgraphs: hasSubgraphsComputed,
     hasImageNode,
     hasOutputNodesSelected,
@@ -211,7 +207,7 @@ export function useMoreOptionsMenu() {
     }
     if (!groupContext) {
       const pin = getPinOption(states, bump)
-      const bypass = getBypassOption(states, bump)
+      const bypass = getBypassOption(bump)
       options.push(pin)
       options.push(bypass)
     }
@@ -243,8 +239,8 @@ export function useMoreOptionsMenu() {
     options.push({ type: 'divider' })
 
     // Section 4: Node properties (Node Info, Shape, Color)
-    if (nodeDef.value) {
-      options.push(getNodeInfoOption(showNodeHelp))
+    if (canOpenNodeInfo.value) {
+      options.push(getNodeInfoOption(openNodeInfo))
     }
     if (groupContext) {
       options.push(getGroupColorOptions(groupContext, bump))
@@ -265,16 +261,8 @@ export function useMoreOptionsMenu() {
       options.push(...getImageMenuOptions(selectedNodes.value[0]))
       options.push({ type: 'divider' })
     }
-    const [widgetName, nodeId] = hoveredWidget.value ?? []
-    const widget =
-      nodeId !== undefined
-        ? node?.widgets?.find(
-            (w) =>
-              isPromotedWidgetView(w) &&
-              w.sourceWidgetName === widgetName &&
-              w.sourceNodeId === nodeId
-          )
-        : node?.widgets?.find((w) => w.name === widgetName)
+    const [widgetName] = hoveredWidget.value ?? []
+    const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (widget) {
       const widgetOptions = convertContextMenuToOptions(
         getExtraOptionsForWidget(node, widget)

@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>ComfyUI</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no"
@@ -26,6 +27,10 @@
         width: 100%;
         height: 100%;
         margin: 0;
+        /* Disable trackpad two-finger horizontal swipe back/forward navigation
+           and other overscroll gestures. ComfyUI is a full-screen editor; the
+           browser's overscroll behaviors only ever leave or break the workflow. */
+        overscroll-behavior: none;
       }
       body {
         display: grid;
@@ -157,6 +162,6 @@
       })()
     </script>
     <div id="vue-app"></div>
-    <script type="module" src="src/main.ts"></script>
+    <script type="module" src="src/bootstrap.ts"></script>
   </body>
 </html>

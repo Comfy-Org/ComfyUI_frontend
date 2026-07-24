@@ -29,28 +29,26 @@
       </span>
     </div>
 
-    <!-- Credits Section (cloud only) -->
-    <div
-      v-if="isCloud && isActiveSubscription"
-      class="flex items-center gap-2 px-4 py-2"
-    >
-      <i class="icon-[lucide--component] text-sm text-amber-400" />
-      <Skeleton
-        v-if="authStore.isFetchingBalance"
-        width="4rem"
-        height="1.25rem"
-        class="w-full"
-      />
+    <!-- Credits Section -->
+    <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-2">
+      <i class="icon-[lucide--component] text-sm text-credit" />
+      <Skeleton v-if="isLoading" width="4rem" height="1.25rem" class="w-full" />
       <span v-else class="text-base font-semibold text-base-foreground">{{
         formattedBalance
       }}</span>
-      <i
-        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        class="mr-auto icon-[lucide--circle-help] cursor-help text-base text-muted-foreground"
-      />
       <Button
-        v-if="isFreeTier"
-        variant="gradient"
+        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
+        variant="muted-textonly"
+        size="icon-sm"
+        class="mr-auto"
+        :aria-label="$t('credits.unified.tooltip')"
+        data-testid="credits-info-button"
+      >
+        <i class="icon-[lucide--circle-help]" />
+      </Button>
+      <Button
+        v-if="isCloud && isFreeTier"
+        variant="subscribe"
         size="sm"
         data-testid="upgrade-to-add-credits-button"
         @click="handleUpgradeToAddCredits"
@@ -74,7 +72,7 @@
         :fluid="false"
         :label="$t('subscription.subscribeToComfyCloud')"
         size="sm"
-        button-variant="gradient"
+        button-variant="subscribe"
         @subscribed="handleSubscribed"
       />
     </div>
@@ -82,7 +80,7 @@
     <Divider class="mx-0 my-2" />
 
     <div
-      v-if="isCloud && isActiveSubscription"
+      v-if="isActiveSubscription"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
@@ -112,7 +110,7 @@
     </div>
 
     <div
-      v-if="isCloud && isActiveSubscription"
+      v-if="isActiveSubscription"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
@@ -159,16 +157,15 @@ import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import { useDialogService } from '@/services/dialogService'
-import { useAuthStore } from '@/stores/authStore'
 
 const emit = defineEmits<{
   close: []
@@ -178,25 +175,29 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
-const authActions = useAuthActions()
-const authStore = useAuthStore()
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
   isActiveSubscription,
   isFreeTier,
-  subscriptionTierName,
-  subscriptionTier,
-  fetchStatus
-} = useSubscription()
+  tier,
+  subscription,
+  balance,
+  isLoading,
+  fetchStatus,
+  fetchBalance
+} = useBillingContext()
+const { formatTierName } = useWorkspaceTierLabel()
 const subscriptionDialog = useSubscriptionDialog()
 const { locale } = useI18n()
 
+const subscriptionTierName = computed(() =>
+  formatTierName(tier.value, subscription.value?.duration === 'ANNUAL')
+)
+
 const formattedBalance = computed(() => {
   const cents =
-    authStore.balance?.effective_balance_micros ??
-    authStore.balance?.amount_micros ??
-    0
+    balance.value?.effectiveBalanceMicros ?? balance.value?.amountMicros ?? 0
   return formatCreditsFromCents({
     cents,
     locale: locale.value,
@@ -208,12 +209,12 @@ const formattedBalance = computed(() => {
 })
 
 const canUpgrade = computed(() => {
-  const tier = subscriptionTier.value
+  const currentTier = tier.value
   return (
-    tier === 'FREE' ||
-    tier === 'FOUNDERS_EDITION' ||
-    tier === 'STANDARD' ||
-    tier === 'CREATOR'
+    currentTier === 'FREE' ||
+    currentTier === 'FOUNDERS_EDITION' ||
+    currentTier === 'STANDARD' ||
+    currentTier === 'CREATOR'
   )
 })
 
@@ -223,7 +224,7 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlansAndPricing = () => {
-  subscriptionDialog.showPricingTable()
+  subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
   emit('close')
 }
 
@@ -238,8 +239,7 @@ const handleOpenPlanAndCreditsSettings = () => {
 }
 
 const handleTopUp = () => {
-  // Track purchase credits entry from avatar popover
-  useTelemetry()?.trackAddApiCreditButtonClicked()
+  useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'avatar_menu' })
   dialogService.showTopUpCreditsDialog()
   emit('close')
 }
@@ -253,7 +253,7 @@ const handleOpenPartnerNodesInfo = () => {
 }
 
 const handleUpgradeToAddCredits = () => {
-  subscriptionDialog.showPricingTable()
+  subscriptionDialog.showPricingTable({ reason: 'upgrade_to_add_credits' })
   emit('close')
 }
 
@@ -267,6 +267,6 @@ const handleSubscribed = async () => {
 }
 
 onMounted(() => {
-  void authActions.fetchBalance()
+  void fetchBalance()
 })
 </script>

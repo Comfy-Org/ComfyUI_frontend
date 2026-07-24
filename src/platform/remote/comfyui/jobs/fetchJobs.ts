@@ -22,6 +22,16 @@ interface FetchJobsRawResult {
   jobs: RawJobListItem[]
   total: number
   offset: number
+  limit: number
+  hasMore: boolean
+}
+
+export interface FetchHistoryPageResult {
+  jobs: JobListItem[]
+  total: number
+  offset: number
+  limit: number
+  hasMore: boolean
 }
 
 /**
@@ -40,13 +50,25 @@ async function fetchJobsRaw(
     const res = await fetchApi(url)
     if (!res.ok) {
       console.error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
-      return { jobs: [], total: 0, offset: 0 }
+      return {
+        jobs: [],
+        total: 0,
+        offset,
+        limit: maxItems,
+        hasMore: false
+      }
     }
     const data = zJobsListResponse.parse(await res.json())
-    return { jobs: data.jobs, total: data.pagination.total, offset }
+    return {
+      jobs: data.jobs,
+      total: data.pagination.total,
+      offset: data.pagination.offset,
+      limit: data.pagination.limit,
+      hasMore: data.pagination.has_more
+    }
   } catch (error) {
     console.error('[Jobs API] Error fetching jobs:', error)
-    return { jobs: [], total: 0, offset: 0 }
+    return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
   }
 }
 
@@ -76,14 +98,33 @@ export async function fetchHistory(
   maxItems: number = 200,
   offset: number = 0
 ): Promise<JobListItem[]> {
-  const { jobs, total } = await fetchJobsRaw(
+  const { jobs } = await fetchHistoryPage(fetchApi, maxItems, offset)
+  return jobs
+}
+
+/**
+ * Fetches one page of history with server-provided pagination metadata.
+ */
+export async function fetchHistoryPage(
+  fetchApi: (url: string) => Promise<Response>,
+  maxItems: number = 200,
+  offset: number = 0
+): Promise<FetchHistoryPageResult> {
+  const result = await fetchJobsRaw(
     fetchApi,
     ['completed', 'failed', 'cancelled'],
     maxItems,
     offset
   )
+
   // History gets priority based on total count (lower than queue)
-  return assignPriority(jobs, total - offset)
+  return {
+    jobs: assignPriority(result.jobs, result.total - result.offset),
+    total: result.total,
+    offset: result.offset,
+    limit: result.limit,
+    hasMore: result.hasMore
+  }
 }
 
 /**

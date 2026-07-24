@@ -12,17 +12,30 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
   scan:
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@v6
 
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
       - name: Use Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
@@ -96,3 +109,87 @@ jobs:
             exit 1
           fi
           echo '✅ No PostHog references found'
+
+      - name: Scan dist for Datadog RUM references
+        run: |
+          set -euo pipefail
+          echo '🔍 Scanning for Datadog RUM references...'
+          if rg --no-ignore -n \
+            -g '*.html' \
+            -g '*.js' \
+            -e '@datadog/browser-rum' \
+            -e '041a9897-5516-4b1f-a245-1a9aa6895488' \
+            -e 'pub7704486e5b64eb4ff6f62891cda45559' \
+            -e 'comfy-cloud-frontend' \
+            dist; then
+            echo '❌ ERROR: Datadog RUM references found in dist assets!'
+            echo 'Datadog RUM must be properly tree-shaken from OSS builds.'
+            exit 1
+          fi
+          echo '✅ No Datadog RUM references found'
+
+      - name: Scan dist for Customer.io telemetry references
+        run: |
+          set -euo pipefail
+          echo '🔍 Scanning for Customer.io references...'
+          if rg --no-ignore -n \
+            -g '*.html' \
+            -g '*.js' \
+            -e 'CustomerIoTelemetryProvider' \
+            -e '@customerio/cdp-analytics-browser' \
+            -e 'customerio-gist-web' \
+            -e '(?i)cdp\.customer\.io' \
+            -e 'Comfy\.CustomerIo' \
+            dist; then
+            echo '❌ ERROR: Customer.io references found in dist assets!'
+            echo 'Customer.io must be properly tree-shaken from OSS builds.'
+            echo ''
+            echo 'To fix this:'
+            echo '1. Use the TelemetryProvider pattern (see src/platform/telemetry/)'
+            echo '2. Call telemetry via useTelemetry() hook'
+            echo '3. Use conditional dynamic imports behind isCloud checks'
+            exit 1
+          fi
+          echo '✅ No Customer.io references found'
+
+      - name: Scan dist for Syft telemetry references
+        run: |
+          set -euo pipefail
+          echo '🔍 Scanning for Syft references...'
+          if rg --no-ignore -n \
+            -g '*.html' \
+            -g '*.js' \
+            -e '(?i)syft' \
+            -e '(?i)sy-d\.io' \
+            dist; then
+            echo '❌ ERROR: Syft references found in dist assets!'
+            echo 'Syft must be properly tree-shaken from OSS builds.'
+            echo ''
+            echo 'To fix this:'
+            echo '1. Use the TelemetryProvider pattern (see src/platform/telemetry/)'
+            echo '2. Call telemetry via useTelemetry() hook'
+            echo '3. Use conditional dynamic imports behind isCloud checks'
+            exit 1
+          fi
+          echo '✅ No Syft references found'
+
+      - name: Scan dist for Cloudflare Turnstile sitekey references
+        run: |
+          set -euo pipefail
+          echo '🔍 Scanning for Cloudflare Turnstile sitekeys...'
+          if rg --no-ignore -n \
+            -g '*.html' \
+            -g '*.js' \
+            -e '0x4AAAAAADnYZPVOpFCL_zeo' \
+            -e '0x4AAAAAADnYY4_Q0qxHZ5a7' \
+            -e '1x00000000000000000000AA' \
+            dist; then
+            echo '❌ ERROR: Cloudflare Turnstile sitekey found in dist assets!'
+            echo 'The per-env Turnstile sitekeys are cloud-only and must be tree-shaken from OSS builds.'
+            echo ''
+            echo 'To fix this:'
+            echo '1. Gate sitekey selection on the __DISTRIBUTION__ build define, not the runtime isCloud const'
+            echo '2. See getTurnstileSiteKey() in src/config/turnstile.ts'
+            exit 1
+          fi
+          echo '✅ No Turnstile sitekey references found'

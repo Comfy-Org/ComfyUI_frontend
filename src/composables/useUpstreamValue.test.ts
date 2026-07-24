@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
-import type { WidgetState } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
+import type { WidgetState } from '@/types/widgetState'
 
 import { boundsExtractor, singleValueExtractor } from './useUpstreamValue'
 
 function widget(name: string, value: unknown): WidgetState {
-  return { name, type: 'INPUT', value, nodeId: '1' as NodeId, options: {} }
+  return {
+    name,
+    type: 'INPUT',
+    value,
+    nodeId: toNodeId(1),
+    options: {},
+    y: 0
+  }
 }
 
 const isNumber = (v: unknown): v is number => typeof v === 'number'

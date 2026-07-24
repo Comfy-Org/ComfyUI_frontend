@@ -7,11 +7,12 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, toValue } from 'vue'
+import { computed, ref, toValue } from 'vue'
 
 import DropdownItem from '@/components/common/DropdownItem.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+import { cn } from '@comfyorg/tailwind-utils'
 import type { ButtonVariants } from '../ui/button/button.variants'
 
 defineOptions({
@@ -37,14 +38,17 @@ const itemClass = computed(() =>
 
 const contentClass = computed(() =>
   cn(
-    'data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade z-1700 min-w-[220px] rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[opacity,transform]',
+    'data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade z-1700 min-w-55 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[opacity,transform]',
     contentProp
   )
 )
+
+const open = ref(false)
+const contentStyle = useModalLiftedZIndex(open)
 </script>
 
 <template>
-  <DropdownMenuRoot>
+  <DropdownMenuRoot v-model:open="open">
     <DropdownMenuTrigger as-child>
       <slot name="button">
         <Button :size="buttonSize ?? 'icon'" :class="buttonClass">
@@ -60,6 +64,7 @@ const contentClass = computed(() =>
         :collision-padding="10"
         v-bind="$attrs"
         :class="contentClass"
+        :style="contentStyle"
       >
         <slot :item-class>
           <DropdownItem
@@ -67,6 +72,7 @@ const contentClass = computed(() =>
             :key="toValue(item.label) ?? index"
             :item-class
             :content-class
+            :content-style
             :item
           />
         </slot>

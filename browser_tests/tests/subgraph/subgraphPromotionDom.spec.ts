@@ -1,216 +1,169 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { SubgraphHelper } from '../../fixtures/helpers/SubgraphHelper'
-import { getPromotedWidgetNames } from '../../helpers/promotedWidgets'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
+import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
 
-// Constants
 const TEST_WIDGET_CONTENT = 'Test content that should persist'
 
-// Common selectors
-const SELECTORS = {
-  breadcrumb: '.subgraph-breadcrumb',
-  domWidget: '.comfy-multiline-input'
-} as const
+async function openSubgraphById(comfyPage: ComfyPage, nodeId: string) {
+  await comfyPage.page.evaluate((targetNodeId) => {
+    const node = window.app!.rootGraph.nodes.find(
+      (candidate) => String(candidate.id) === targetNodeId
+    )
+    if (!node || !('subgraph' in node) || !node.subgraph) {
+      throw new Error(`Subgraph node ${targetNodeId} not found`)
+    }
+
+    window.app!.canvas.openSubgraph(node.subgraph, node)
+  }, nodeId)
+
+  await expect
+    .poll(() =>
+      comfyPage.page.evaluate(() => {
+        const graph = window.app!.canvas.graph
+        return !!graph && 'inputNode' in graph
+      })
+    )
+    .toBe(true)
+}
 
 test.describe(
-  'Subgraph Promoted Widget DOM',
-  { tag: ['@slow', '@subgraph'] },
+  'Subgraph Promotion DOM',
+  { tag: ['@subgraph', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.settings.setSetting(
-        'Comfy.NodeSearchBoxImpl',
-        'v1 (legacy)'
-      )
+    test('Promoted seed widget renders in node body, not header', async ({
+      comfyPage
+    }) => {
+      const subgraphNode =
+        await comfyPage.subgraph.convertDefaultKSamplerToSubgraph()
+
+      const subgraphNodeId = String(subgraphNode.id)
+      await expect
+        .poll(() => getPromotedWidgetNames(comfyPage, subgraphNodeId))
+        .toContain('seed')
+
+      const nodeLocator = comfyPage.vueNodes.getNodeLocator(subgraphNodeId)
+      await expect(nodeLocator).toBeVisible()
+
+      const seedWidget = nodeLocator.getByLabel('seed', { exact: true }).first()
+      await expect(seedWidget).toBeVisible()
+
+      await SubgraphHelper.expectWidgetBelowHeader(nodeLocator, seedWidget)
     })
 
-    test.describe('DOM Widget Navigation and Persistence', () => {
-      test('DOM widget visibility persists through subgraph navigation', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-promoted-text-widget'
-        )
-        await comfyPage.nextFrame()
+    test('Promoted textarea materializes once when a node is converted to a subgraph', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('default')
 
-        // Verify promoted widget is visible in parent graph
-        const parentTextarea = comfyPage.page.locator(SELECTORS.domWidget)
-        await expect(parentTextarea).toBeVisible()
-        await expect(parentTextarea).toHaveCount(1)
+      const clipNode = await comfyPage.nodeOps.getNodeRefById('6')
+      await clipNode.click('title')
+      const subgraphNode = await clipNode.convertToSubgraph()
 
-        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-        expect(await subgraphNode.exists()).toBe(true)
-
-        await subgraphNode.navigateIntoSubgraph()
-
-        // Verify widget is visible in subgraph
-        const subgraphTextarea = comfyPage.page.locator(SELECTORS.domWidget)
-        await expect(subgraphTextarea).toBeVisible()
-        await expect(subgraphTextarea).toHaveCount(1)
-
-        // Navigate back
-        await comfyPage.page.keyboard.press('Escape')
-        await comfyPage.nextFrame()
-
-        // Verify widget is still visible
-        const backToParentTextarea = comfyPage.page.locator(SELECTORS.domWidget)
-        await expect(backToParentTextarea).toBeVisible()
-        await expect(backToParentTextarea).toHaveCount(1)
-      })
-
-      test('DOM widget content is preserved through navigation', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-promoted-text-widget'
-        )
-
-        const textarea = comfyPage.page.locator(SELECTORS.domWidget)
-        await textarea.fill(TEST_WIDGET_CONTENT)
-
-        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-        await subgraphNode.navigateIntoSubgraph()
-
-        const subgraphTextarea = comfyPage.page.locator(SELECTORS.domWidget)
-        await expect(subgraphTextarea).toHaveValue(TEST_WIDGET_CONTENT)
-
-        await comfyPage.page.keyboard.press('Escape')
-        await comfyPage.nextFrame()
-
-        const parentTextarea = comfyPage.page.locator(SELECTORS.domWidget)
-        await expect(parentTextarea).toHaveValue(TEST_WIDGET_CONTENT)
-      })
-
-      test('Multiple promoted widgets are handled correctly', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-multiple-promoted-widgets'
-        )
-
-        const parentCount = await comfyPage.page
-          .locator(SELECTORS.domWidget)
-          .count()
-        expect(parentCount).toBeGreaterThan(1)
-
-        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-        await subgraphNode.navigateIntoSubgraph()
-
-        const subgraphCount = await comfyPage.page
-          .locator(SELECTORS.domWidget)
-          .count()
-        expect(subgraphCount).toBe(parentCount)
-
-        await comfyPage.page.keyboard.press('Escape')
-        await comfyPage.nextFrame()
-
-        const finalCount = await comfyPage.page
-          .locator(SELECTORS.domWidget)
-          .count()
-        expect(finalCount).toBe(parentCount)
-      })
+      const promotedTextarea = comfyPage.vueNodes
+        .getNodeLocator(String(subgraphNode.id))
+        .getByRole('textbox', { name: 'text', exact: true })
+      await expect(promotedTextarea).toHaveCount(1)
+      await expect(promotedTextarea).toBeVisible()
     })
 
-    test.describe('DOM Cleanup', () => {
-      test('DOM elements are cleaned up when subgraph node is removed', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-promoted-text-widget'
-        )
+    test.describe(
+      'Promoted Text Widget Lifecycle',
+      { tag: ['@vue-nodes'] },
+      () => {
+        test('Promoted text widget preserves content through subgraph enter/exit', async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/subgraph-with-promoted-text-widget'
+          )
 
-        const initialCount = await comfyPage.page
-          .locator(SELECTORS.domWidget)
-          .count()
-        expect(initialCount).toBe(1)
+          const subgraphNode = comfyPage.vueNodes.getNodeLocator('11')
+          const promotedTextarea = subgraphNode.getByRole('textbox', {
+            name: 'text'
+          })
+          await expect(promotedTextarea).toBeVisible()
+          await promotedTextarea.fill(TEST_WIDGET_CONTENT)
 
-        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
+          await openSubgraphById(comfyPage, '11')
 
-        await subgraphNode.delete()
+          await comfyPage.keyboard.press('Escape')
 
-        const finalCount = await comfyPage.page
-          .locator(SELECTORS.domWidget)
-          .count()
-        expect(finalCount).toBe(0)
-      })
-
-      test('DOM elements are cleaned up when widget is disconnected from I/O', async ({
-        comfyPage
-      }) => {
-        // Enable new menu for breadcrumb navigation
-        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
-        const workflowName = 'subgraphs/subgraph-with-promoted-text-widget'
-        await comfyPage.workflow.loadWorkflow(workflowName)
-
-        const textareaCount = await comfyPage.page
-          .locator(SELECTORS.domWidget)
-          .count()
-        expect(textareaCount).toBe(1)
-
-        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-
-        // Navigate into subgraph (method now handles retries internally)
-        await subgraphNode.navigateIntoSubgraph()
-
-        await comfyPage.subgraph.removeSlot('input', 'text')
-
-        // Wait for breadcrumb to be visible
-        await comfyPage.page.waitForSelector(SELECTORS.breadcrumb, {
-          state: 'visible',
-          timeout: 5000
+          const backToPromoted = comfyPage.vueNodes
+            .getNodeLocator('11')
+            .getByRole('textbox', { name: 'text' })
+          await expect(backToPromoted).toBeVisible()
+          await expect(backToPromoted).toHaveValue(TEST_WIDGET_CONTENT)
         })
 
-        // Click breadcrumb to navigate back to parent graph
-        const homeBreadcrumb = comfyPage.page.locator(
-          '.p-breadcrumb-list > :first-child'
-        )
-        await homeBreadcrumb.waitFor({ state: 'visible' })
-        await homeBreadcrumb.click()
-        await comfyPage.nextFrame()
+        test('Promoted text widget is removed when subgraph node is deleted', async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/subgraph-with-promoted-text-widget'
+          )
 
-        // Check that the subgraph node has no widgets after removing the text slot
-        const widgetCount = await comfyPage.page.evaluate(() => {
-          return window.app!.canvas.graph!.nodes[0].widgets?.length || 0
+          const subgraphNode = comfyPage.vueNodes.getNodeLocator('11')
+          await expect(
+            subgraphNode.getByRole('textbox', { name: 'text' })
+          ).toBeVisible()
+
+          const subgraphNodeRef = await comfyPage.nodeOps.getNodeRefById('11')
+          await subgraphNodeRef.delete()
+
+          await expect(subgraphNode).toHaveCount(0)
         })
 
-        expect(widgetCount).toBe(0)
-      })
-    })
+        test('Promoted text widget disappears when widget is disconnected from I/O', async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/subgraph-with-promoted-text-widget'
+          )
 
-    test.describe('DOM Positioning', () => {
-      test('Promoted seed widget renders in node body, not header', async ({
-        comfyPage
-      }) => {
-        const subgraphNode =
-          await comfyPage.subgraph.convertDefaultKSamplerToSubgraph()
+          const subgraphNode = comfyPage.vueNodes.getNodeLocator('11')
+          await expect(
+            subgraphNode.getByRole('textbox', { name: 'text' })
+          ).toBeVisible()
 
-        // Enable Vue nodes now that the subgraph has been created
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+          await openSubgraphById(comfyPage, '11')
+          await comfyPage.subgraph.removeSlot('input', 'text')
+          await comfyPage.subgraph.exitViaBreadcrumb()
 
-        const subgraphNodeId = String(subgraphNode.id)
-        const promotedNames = await getPromotedWidgetNames(
-          comfyPage,
-          subgraphNodeId
-        )
-        expect(promotedNames).toContain('seed')
+          await expect(
+            comfyPage.vueNodes
+              .getNodeLocator('11')
+              .getByRole('textbox', { name: 'text' })
+          ).toHaveCount(0)
+        })
 
-        // Wait for Vue nodes to render
-        await comfyPage.vueNodes.waitForNodes()
+        test('Multiple promoted widgets are handled correctly', async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/subgraph-with-multiple-promoted-widgets'
+          )
 
-        const nodeLocator = comfyPage.vueNodes.getNodeLocator(subgraphNodeId)
-        await expect(nodeLocator).toBeVisible()
+          const subgraphNode = comfyPage.vueNodes.getNodeLocator('11')
+          const promotedTextareas = subgraphNode.getByRole('textbox')
+          await expect(promotedTextareas).toHaveCount(2)
 
-        // The seed widget should be visible inside the node body
-        const seedWidget = nodeLocator
-          .getByLabel('seed', { exact: true })
-          .first()
-        await expect(seedWidget).toBeVisible()
+          await openSubgraphById(comfyPage, '11')
 
-        // Verify widget is inside the node body, not the header
-        await SubgraphHelper.expectWidgetBelowHeader(nodeLocator, seedWidget)
-      })
-    })
+          const interiorTextareas = comfyPage.page
+            .locator('[data-node-id]')
+            .getByRole('textbox')
+          await expect(interiorTextareas).toHaveCount(2)
+
+          await comfyPage.subgraph.exitViaBreadcrumb()
+
+          await expect(
+            comfyPage.vueNodes.getNodeLocator('11').getByRole('textbox')
+          ).toHaveCount(2)
+        })
+      }
+    )
   }
 )

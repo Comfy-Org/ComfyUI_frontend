@@ -1,0 +1,101 @@
+---
+title: "育碧开源 CHORD 模型，通过 ComfyUI 实现 AAA 级 PBR 材质生成"
+category: "AAA 游戏制作"
+description: "育碧 La Forge 开源了 CHORD PBR 材质估算模型及 ComfyUI 自定义节点，为 AAA 游戏制作实现了端到端的纹理生成工作流。"
+cover: "https://media.comfy.org/website/customers/ubisoft/cover.webp"
+order: 3
+readMore: "https://blog.comfy.org/p/ubisoft-open-sources-the-chord-model"
+sections:
+  - id: topic-1
+    label: "简介"
+  - id: topic-2
+    label: "挑战"
+  - id: topic-3
+    label: "为什么选择 ComfyUI"
+  - id: topic-4
+    label: "流水线"
+  - id: topic-5
+    label: "试用"
+  - id: topic-6
+    label: "成果"
+---
+
+<Section id="topic-1">
+
+育碧 La Forge 开源了其 PBR 材质估算模型 **CHORD（Chain of Rendering Decomposition）**，以及 **ComfyUI-Chord** 自定义节点实现，用于构建端到端的 AI 材质生成工作流。
+
+模型权重和代码以仅限研究的许可证发布。除了研究之外，这是将 ComfyUI 集成到 AAA 级视频游戏制作工作流中的重要一步。
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/cover.webp" alt="ComfyUI 中的 CHORD PBR 材质生成" caption="使用 ComfyUI 中的 CHORD 模型生成的 PBR 材质。" />
+
+</Section>
+
+<Section id="topic-2" title="当今 AAA 游戏中的 PBR 材质制作">
+
+在 AAA 游戏开发中，PBR 材质是视觉真实感的基础。大型游戏需要数百种可复用的材质，每种都包含完整的基础颜色、法线、高度、粗糙度和金属度贴图，并须满足严格的 svBRDF 标准。
+
+传统上，这些资产由纹理艺术家使用摄影测量、程序化工具和大量手动调整来制作——这使得流程耗时且高度依赖专业知识。
+
+育碧的生成式基础材质原型直接针对这一制作瓶颈。ComfyUI 工作流输出的 PBR 纹理集可直接集成到 DCC 工具和游戏引擎中，用于原型制作和占位资产。
+
+</Section>
+
+<Section id="topic-3" title="育碧为何选择 ComfyUI 作为工作流平台">
+
+育碧选择 ComfyUI 源于生产实际需求。对于大型工作室来说，需要的不是另一个图像生成器——而是一个可控且可集成的 AI 工作流平台，能够满足游戏开发的定制需求。
+
+<Quote name="育碧 La Forge 博客">考虑到我们原型的多阶段特性，ComfyUI 为我们提供了一个高效的框架来构建集成工作流，涵盖纹理图像合成、材质估算和材质放大。这也使我们能够利用最先进的生成模型和 ComfyUI 的强大功能，通过 ControlNet、图像引导、修复等众多选项为创作者提供精细控制。</Quote>
+
+</Section>
+
+<Section id="topic-4" title="生成式基础材质流水线的三个阶段">
+
+CHORD 模型集成在一个更广泛的流水线中，由三个核心阶段组成。
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/pipeline.webp" alt="三阶段生成式基础材质流水线" caption="三阶段生成式基础材质流水线：纹理生成、CHORD 估算和放大。" />
+
+### 阶段一 — 纹理图像生成
+
+第一阶段使用具有完全条件控制的自定义扩散模型，从文本提示或参考输入（如线稿和高度图）生成无缝、可平铺的 2D 纹理。
+
+### 阶段二 — CHORD 图像到材质估算
+
+将单一纹理转换为完整的 PBR 贴图集——包括基础颜色、法线、高度、粗糙度和金属度——使用链式分解、统一多模态预测和高效的单步扩散推理，实现可控且可扩展的结果。
+
+### 阶段三 — 材质放大
+
+由于 CHORD 在 1024 分辨率下运行最佳，第三阶段应用工业级 PBR 放大。所有通道放大 2 倍或 4 倍，以生成用于实时游戏制作的 2K 和 4K 纹理资产。
+
+这条完整的流水线使艺术家能够快速迭代创意，在现有工作流中混合搭配 AI 生成的输出，降低了工业级 PBR 材质创建的门槛。
+
+</Section>
+
+<Section id="topic-5" title="如何在 ComfyUI 中试用 CHORD">
+
+育碧开源了 CHORD 模型权重、ComfyUI 自定义节点和示例工作流，涵盖流水线中的纹理图像生成阶段和图像到材质估算阶段。
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/workflow.webp" alt="ComfyUI 中的 CHORD 示例工作流" caption="ComfyUI 中端到端 PBR 材质生成的 CHORD 示例工作流。" />
+
+<Steps items={["安装或更新 ComfyUI 至最新版本","从育碧安装 CHORD ComfyUI 自定义节点","下载 CHORD 模型并放置在 ./ComfyUI/models/checkpoints 目录","在 ComfyUI 中加载 CHORD 示例工作流"]} />
+
+您可以将纹理图像生成模型替换为任何其他图像模型，也可以单独使用每个阶段的工作流模块。
+
+</Section>
+
+<Section id="topic-6" title="输出示例">
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example1.webp" alt="CHORD PBR 材质输出示例 1" caption="生成的 PBR 材质集，展示基础颜色、法线、高度、粗糙度和金属度贴图。" />
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example2.webp" alt="CHORD PBR 材质输出示例 2" caption="另一组生成的 PBR 材质集，展示 CHORD 可实现的多样纹理效果。" />
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example3.webp" alt="CHORD PBR 材质输出示例 3" caption="具有完整 PBR 通道分解的材质生成输出。" />
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example4.webp" alt="CHORD PBR 材质输出示例 4" caption="从单一输入纹理生成的高质量 PBR 纹理集。" />
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example5.webp" alt="CHORD PBR 材质输出示例 5" caption="最终渲染的 PBR 材质，展示可用于生产的质量。" />
+
+CHORD 的发布表明，ComfyUI 已从一个社区驱动的工具成长为一个真正的生产平台。工作室用户可以构建端到端流水线，从提示或参考输入到纹理生成、材质估算、PBR 放大，最终导出到 DCC 工具或游戏引擎。每个阶段也可以独立运行并嵌入现有的生产系统中。
+
+<Contributors label="作者" people={[{"name":"Jo Zhang","role":"ComfyUI 博客"},{"name":"Daxiong (Lin)","role":"ComfyUI 博客"}]} />
+
+</Section>

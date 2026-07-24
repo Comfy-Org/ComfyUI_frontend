@@ -5,7 +5,7 @@ import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className, ...restProps } = defineProps<
   TagsInputItemDeleteProps & { class?: HTMLAttributes['class'] }

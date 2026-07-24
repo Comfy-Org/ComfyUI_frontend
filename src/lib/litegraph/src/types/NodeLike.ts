@@ -1,4 +1,4 @@
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -6,7 +6,7 @@ import type {
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
 
 export interface NodeLike {
-  id: NodeId
+  id: SerializedNodeId
 
   canConnectTo(
     node: NodeLike,

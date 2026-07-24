@@ -1,6 +1,7 @@
 <template>
   <div
     id="maskEditor_brush"
+    data-testid="brush-cursor"
     :style="{
       position: 'absolute',
       opacity: brushOpacity,
@@ -15,6 +16,7 @@
   >
     <div
       id="maskEditor_brushPreviewGradient"
+      data-testid="brush-cursor-gradient"
       :style="{
         display: gradientVisible ? 'block' : 'none',
         background: gradientBackground

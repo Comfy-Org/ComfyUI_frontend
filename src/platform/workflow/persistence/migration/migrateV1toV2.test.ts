@@ -261,7 +261,7 @@ describe('migrateV1toV2', () => {
       // V2 tab state should be readable via the V2 API
       const openPaths = readOpenPaths(clientId, workspaceId)
 
-      // This is the bug: V1 tab state is NOT migrated, so openPaths is null
+      // V2 tab state should be reconstructed from V1 localStorage keys
       expect(openPaths).not.toBeNull()
       expect(openPaths!.paths).toEqual([
         'workflows/a.json',

@@ -158,15 +158,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "فك التفرع الفرعي المحدد"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "تحويل العقد المحددة إلى عقدة مجموعة"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "إدارة عقد المجموعات"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "إلغاء تجميع عقد المجموعات المحددة"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "حول ComfyUI"
   },

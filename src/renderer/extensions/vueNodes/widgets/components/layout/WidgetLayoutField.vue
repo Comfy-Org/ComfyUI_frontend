@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { widget, rootClass } = defineProps<{
   widget: Pick<
@@ -27,12 +27,16 @@ const borderStyle = computed(() =>
   <div
     :class="
       cn(
-        'grid min-w-0 grid-cols-subgrid justify-between gap-1 text-node-component-slot-text',
+        'grid min-w-0 grid-cols-subgrid justify-between gap-2 text-node-component-slot-text',
         rootClass
       )
     "
   >
-    <div v-if="!hideLayoutField" class="content-center-safe truncate">
+    <div
+      v-if="!hideLayoutField"
+      data-testid="widget-layout-field-label"
+      class="content-center-safe truncate"
+    >
       <template v-if="widget.name">
         {{ widget.label || widget.name }}
       </template>
@@ -42,7 +46,7 @@ const borderStyle = computed(() =>
       <div
         :class="
           cn(
-            'min-w-0 cursor-default rounded-lg transition-all',
+            'min-w-0 cursor-default rounded-md transition-all',
             !noBorder && borderStyle
           )
         "

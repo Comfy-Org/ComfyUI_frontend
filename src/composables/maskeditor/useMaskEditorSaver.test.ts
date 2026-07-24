@@ -1,10 +1,11 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useMaskEditorSaver } from './useMaskEditorSaver'
 
@@ -21,7 +22,7 @@ vi.mock('@/stores/maskEditorDataStore', () => ({
 }))
 
 function createMockCtx(): CanvasRenderingContext2D {
-  return {
+  return fromPartial<CanvasRenderingContext2D>({
     drawImage: vi.fn(),
     getImageData: vi.fn(() => ({
       data: new Uint8ClampedArray(4 * 4 * 4),
@@ -30,11 +31,11 @@ function createMockCtx(): CanvasRenderingContext2D {
     })),
     putImageData: vi.fn(),
     globalCompositeOperation: 'source-over'
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 function createMockCanvas(): HTMLCanvasElement {
-  return {
+  return fromPartial<HTMLCanvasElement>({
     width: 4,
     height: 4,
     getContext: vi.fn(() => createMockCtx()),
@@ -42,7 +43,7 @@ function createMockCanvas(): HTMLCanvasElement {
       cb(new Blob(['x'], { type: 'image/png' }))
     }),
     toDataURL: vi.fn(() => 'data:image/png;base64,mock')
-  } as unknown as HTMLCanvasElement
+  })
 }
 
 const mockEditorStore: Record<string, HTMLCanvasElement | null> = {
@@ -96,7 +97,7 @@ describe('useMaskEditorSaver', () => {
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
 
-    mockNode = {
+    mockNode = fromAny<LGraphNode, unknown>({
       id: 42,
       type: 'LoadImage',
       images: [],
@@ -107,7 +108,7 @@ describe('useMaskEditorSaver', () => {
       widgets_values: ['original.png [input]'],
       properties: { image: 'original.png [input]' },
       graph: { setDirtyCanvas: vi.fn() }
-    } as unknown as LGraphNode
+    })
 
     mockDataStore.sourceNode = mockNode
     mockDataStore.inputData = {
@@ -135,7 +136,7 @@ describe('useMaskEditorSaver', () => {
     vi.spyOn(document, 'createElement').mockImplementation(
       (tagName: string, options?: ElementCreationOptions) => {
         if (tagName === 'canvas')
-          return createMockCanvas() as unknown as HTMLCanvasElement
+          return fromAny<HTMLCanvasElement, unknown>(createMockCanvas())
         return originalCreateElement(tagName, options)
       }
     )
@@ -179,5 +180,25 @@ describe('useMaskEditorSaver', () => {
     // when there are no pre-existing outputs for the node.
     expect(store.nodeOutputs[locatorId]).toBeDefined()
     expect(store.nodeOutputs[locatorId]?.images?.length).toBeGreaterThan(0)
+  })
+
+  it('omits subfolder from the upload FormData under the unified contract', async () => {
+    const fetchApiMock = vi.mocked(api.fetchApi)
+
+    const { save } = useMaskEditorSaver()
+    await save()
+
+    // The unified contract uploads to /upload/image with only image + type;
+    // subfolder is intentionally omitted (the server assigns it). Assert it
+    // here so the next reader knows the omission is deliberate, not accidental.
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/upload/image',
+      expect.objectContaining({ method: 'POST' })
+    )
+    const [, init] = fetchApiMock.mock.calls[0]
+    const body = init?.body as FormData
+    expect(body).toBeInstanceOf(FormData)
+    expect(body.get('type')).toBe('input')
+    expect(body.get('subfolder')).toBeNull()
   })
 })

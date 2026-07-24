@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="video-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2"
+    class="video-preview flex size-full min-h-55 min-w-16 flex-col px-2"
     @keydown="handleKeyDown"
   >
     <!-- Video Wrapper -->
@@ -45,7 +45,13 @@
       <video
         v-if="!videoError"
         :src="currentVideoUrl"
-        :class="cn('block size-full object-contain', showLoader && 'invisible')"
+        :class="
+          cn(
+            'absolute inset-0 size-full object-contain',
+            showLoader && 'invisible'
+          )
+        "
+        preload="metadata"
         controls
         loop
         playsinline
@@ -126,13 +132,14 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { cn } from '@/utils/tailwindUtil'
+import type { NodeId } from '@/types/nodeId'
+import { cn } from '@comfyorg/tailwind-utils'
 
 interface VideoPreviewProps {
   /** Array of video URLs to display */
   readonly imageUrls: readonly string[] // Named imageUrls for consistency with parent components
   /** Optional node ID for context-aware actions */
-  readonly nodeId?: string
+  readonly nodeId?: NodeId
 }
 
 const props = defineProps<VideoPreviewProps>()

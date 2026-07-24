@@ -1,0 +1,23 @@
+name: Ashby Pull
+description: 'Refresh the apps/website Ashby roles snapshot from the Ashby job board API'
+inputs:
+  api_key:
+    description: 'Ashby API key (WEBSITE_ASHBY_API_KEY).'
+    required: true
+  job_board_name:
+    description: 'Ashby job board name (WEBSITE_ASHBY_JOB_BOARD_NAME).'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    # Note: this action assumes the frontend repo is checked out at the workspace root.
+
+    - name: Setup frontend
+      uses: ./.github/actions/setup-frontend
+
+    - name: Refresh Ashby snapshot
+      shell: bash
+      env:
+        WEBSITE_ASHBY_API_KEY: ${{ inputs.api_key }}
+        WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ inputs.job_board_name }}
+      run: pnpm --filter @comfyorg/website ashby:refresh-snapshot

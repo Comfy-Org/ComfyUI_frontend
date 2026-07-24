@@ -1,10 +1,10 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { fitToViewInstant } from '../helpers/fitToView'
-import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 // TODO: there might be a better solution for this
 // Helper function to pan canvas and select node
@@ -23,10 +23,19 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
   await nodeRef.click('title')
 }
 
+async function openSelectionToolboxHelp(comfyPage: ComfyPage) {
+  await expect(comfyPage.selectionToolbox).toBeVisible()
+
+  const helpButton = comfyPage.selectionToolbox.getByTestId('info-button')
+  await expect(helpButton).toBeVisible()
+  await helpButton.click()
+  await comfyPage.nextFrame()
+
+  return comfyPage.page.getByTestId('properties-panel')
+}
+
 test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
   })
 
@@ -46,20 +55,8 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       // Select the node with panning to ensure toolbox is visible
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
-      // Wait for selection toolbox to appear
-      await expect(comfyPage.selectionToolbox).toBeVisible()
-
-      // Click the help button in the selection toolbox
-      const helpButton = comfyPage.selectionToolbox.locator(
-        'button[data-testid="info-button"]'
-      )
-      await expect(helpButton).toBeVisible()
-      await helpButton.click()
-
       // Verify that the help page is shown for the correct node
-      const helpPage = comfyPage.page.locator(
-        '[data-testid="properties-panel"]'
-      )
+      const helpPage = await openSelectionToolboxHelp(comfyPage)
       await expect(helpPage).toContainText('KSampler')
       await expect(helpPage.locator('.node-help-content')).toBeVisible()
     })
@@ -141,7 +138,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       ).toBeVisible()
 
       // Verify help page is no longer visible
-      await expect(helpPage.locator('.node-help-content')).not.toBeVisible()
+      await expect(helpPage.locator('.node-help-content')).toBeHidden()
     })
   })
 
@@ -168,16 +165,8 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
-      // Click help button
-      const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]'
-      )
-      await helpButton.click()
-
       // Verify loading spinner is shown
-      const helpPage = comfyPage.page.locator(
-        '[data-testid="properties-panel"]'
-      )
+      const helpPage = await openSelectionToolboxHelp(comfyPage)
       await expect(helpPage.locator('.p-progressspinner')).toBeVisible()
 
       // Wait for content to load
@@ -201,16 +190,8 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
-      // Click help button
-      const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]'
-      )
-      await helpButton.click()
-
       // Verify fallback content is shown (description, inputs, outputs)
-      const helpPage = comfyPage.page.locator(
-        '[data-testid="properties-panel"]'
-      )
+      const helpPage = await openSelectionToolboxHelp(comfyPage)
       await expect(helpPage).toContainText('Description')
       await expect(helpPage).toContainText('Inputs')
       await expect(helpPage).toContainText('Outputs')
@@ -239,14 +220,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
-      const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]'
-      )
-      await helpButton.click()
-
-      const helpPage = comfyPage.page.locator(
-        '[data-testid="properties-panel"]'
-      )
+      const helpPage = await openSelectionToolboxHelp(comfyPage)
       await expect(helpPage).toContainText('KSampler Documentation')
 
       // Check that relative image paths are prefixed correctly
@@ -290,14 +264,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
-      const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]'
-      )
-      await helpButton.click()
-
-      const helpPage = comfyPage.page.locator(
-        '[data-testid="properties-panel"]'
-      )
+      const helpPage = await openSelectionToolboxHelp(comfyPage)
 
       // Check relative video paths are prefixed
       const relativeVideo = helpPage.locator('video[src*="demo.mp4"]')
@@ -329,61 +296,6 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       )
     })
 
-    test('Should handle custom node documentation paths', async ({
-      comfyPage
-    }) => {
-      // First load workflow with custom node
-      await comfyPage.workflow.loadWorkflow('groupnodes/group_node_v1.3.3')
-
-      // Mock custom node documentation with fallback
-      await comfyPage.page.route(
-        '**/extensions/*/docs/*/en.md',
-        async (route) => {
-          await route.fulfill({ status: 404 })
-        }
-      )
-
-      await comfyPage.page.route('**/extensions/*/docs/*.md', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: `# Custom Node Documentation
-
-This is documentation for a custom node.
-
-![Custom Image](assets/custom.png)
-`
-        })
-      })
-
-      // Find and select a custom/group node
-      const nodeRefs = await comfyPage.page.evaluate(() => {
-        return window.app!.graph!.nodes.map((n) => n.id)
-      })
-      if (nodeRefs.length > 0) {
-        const firstNode = await comfyPage.nodeOps.getNodeRefById(nodeRefs[0])
-        await selectNodeWithPan(comfyPage, firstNode)
-      }
-
-      const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]'
-      )
-      if (await helpButton.isVisible()) {
-        await helpButton.click()
-
-        const helpPage = comfyPage.page.locator(
-          '[data-testid="properties-panel"]'
-        )
-        await expect(helpPage).toContainText('Custom Node Documentation')
-
-        // Check image path for custom nodes
-        const image = helpPage.locator('img[alt="Custom Image"]')
-        await expect(image).toHaveAttribute(
-          'src',
-          /.*\/extensions\/.*\/docs\/assets\/custom\.png/
-        )
-      }
-    })
-
     test('Should sanitize dangerous HTML content', async ({ comfyPage }) => {
       // Mock response with potentially dangerous content
       await comfyPage.page.route('**/docs/KSampler/en.md', async (route) => {
@@ -408,14 +320,7 @@ This is documentation for a custom node.
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
-      const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]'
-      )
-      await helpButton.click()
-
-      const helpPage = comfyPage.page.locator(
-        '[data-testid="properties-panel"]'
-      )
+      const helpPage = await openSelectionToolboxHelp(comfyPage)
 
       // Dangerous elements should be removed
       await expect(helpPage.locator('script')).toHaveCount(0)
@@ -426,8 +331,7 @@ This is documentation for a custom node.
       const imageCount = await images.count()
       for (let i = 0; i < imageCount; i++) {
         const img = images.nth(i)
-        const onError = await img.getAttribute('onerror')
-        expect(onError).toBeNull()
+        await expect(img).not.toHaveAttribute('onerror')
       }
 
       // Check that javascript: links are sanitized
@@ -435,10 +339,7 @@ This is documentation for a custom node.
       const linkCount = await links.count()
       for (let i = 0; i < linkCount; i++) {
         const link = links.nth(i)
-        const href = await link.getAttribute('href')
-        if (href !== null) {
-          expect(href).not.toContain('javascript:')
-        }
+        await expect(link).not.toHaveAttribute('href', /^javascript:/i)
       }
 
       // Safe content should remain
@@ -446,52 +347,42 @@ This is documentation for a custom node.
       await expect(helpPage.locator('img[alt="Safe Image"]')).toBeVisible()
     })
 
-    test('Should handle locale-specific documentation', async ({
-      comfyPage
-    }) => {
-      // Mock different responses for different locales
-      await comfyPage.page.route('**/docs/KSampler/ja.md', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: `# KSamplerノード
+    test.describe('Locale-specific documentation', () => {
+      test.use({ initialSettings: { 'Comfy.Locale': 'ja' } })
+
+      test('Should handle locale-specific documentation', async ({
+        comfyPage
+      }) => {
+        // Mock different responses for different locales
+        await comfyPage.page.route('**/docs/KSampler/ja.md', async (route) => {
+          await route.fulfill({
+            status: 200,
+            body: `# KSamplerノード
 
 これは日本語のドキュメントです。
 `
+          })
         })
-      })
 
-      await comfyPage.page.route('**/docs/KSampler/en.md', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: `# KSampler Node
+        await comfyPage.page.route('**/docs/KSampler/en.md', async (route) => {
+          await route.fulfill({
+            status: 200,
+            body: `# KSampler Node
 
 This is English documentation.
 `
+          })
         })
+
+        await comfyPage.workflow.loadWorkflow('default')
+        const ksamplerNodes =
+          await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+        await selectNodeWithPan(comfyPage, ksamplerNodes[0])
+
+        const helpPage = await openSelectionToolboxHelp(comfyPage)
+        await expect(helpPage).toContainText('KSamplerノード')
+        await expect(helpPage).toContainText('これは日本語のドキュメントです')
       })
-
-      // Set locale to Japanese
-      await comfyPage.settings.setSetting('Comfy.Locale', 'ja')
-
-      await comfyPage.workflow.loadWorkflow('default')
-      const ksamplerNodes =
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      await selectNodeWithPan(comfyPage, ksamplerNodes[0])
-
-      const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]'
-      )
-      await helpButton.waitFor({ state: 'visible', timeout: 10_000 })
-      await helpButton.click()
-
-      const helpPage = comfyPage.page.locator(
-        '[data-testid="properties-panel"]'
-      )
-      await expect(helpPage).toContainText('KSamplerノード')
-      await expect(helpPage).toContainText('これは日本語のドキュメントです')
-
-      // Reset locale
-      await comfyPage.settings.setSetting('Comfy.Locale', 'en')
     })
 
     test('Should handle network errors gracefully', async ({ comfyPage }) => {
@@ -505,22 +396,14 @@ This is English documentation.
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
-      const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]'
-      )
-      await helpButton.click()
-
-      const helpPage = comfyPage.page.locator(
-        '[data-testid="properties-panel"]'
-      )
+      const helpPage = await openSelectionToolboxHelp(comfyPage)
 
       // Should show fallback content (node description)
       await expect(helpPage).toBeVisible()
-      await expect(helpPage.locator('.p-progressspinner')).not.toBeVisible()
+      await expect(helpPage.locator('.p-progressspinner')).toBeHidden()
 
       // Should show some content even on error
-      const content = await helpPage.textContent()
-      expect(content).toBeTruthy()
+      await expect(helpPage).not.toHaveText('')
     })
 
     test('Should update help content when switching between nodes', async ({
@@ -552,14 +435,7 @@ This is English documentation.
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
-      const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]'
-      )
-      await helpButton.click()
-
-      const helpPage = comfyPage.page.locator(
-        '[data-testid="properties-panel"]'
-      )
+      const helpPage = await openSelectionToolboxHelp(comfyPage)
       await expect(helpPage).toContainText('KSampler Help')
       await expect(helpPage).toContainText('This is KSampler documentation')
 

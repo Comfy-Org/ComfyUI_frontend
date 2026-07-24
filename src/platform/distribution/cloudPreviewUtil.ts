@@ -14,6 +14,11 @@ export function appendCloudResParam(
   filename?: string
 ): void {
   if (!isCloud) return
-  if (filename && getMediaTypeFromFilename(filename) !== 'image') return
+  if (
+    filename &&
+    (getMediaTypeFromFilename(filename) !== 'image' ||
+      filename.toLowerCase().endsWith('.svg'))
+  )
+    return
   params.set('res', '512')
 }

@@ -4,6 +4,9 @@ export type ClientOptions = {
   baseUrl: `${string}://${string}` | (string & {})
 }
 
+/**
+ * Response indicating whether a Hub username is available.
+ */
 export type HubUsernameCheckResponse = {
   /**
    * The username that was checked.
@@ -23,6 +26,9 @@ export type HubUsernameCheckResponse = {
   validation_error?: string
 }
 
+/**
+ * Response containing a signed upload URL and the target asset path.
+ */
 export type HubAssetUploadUrlResponse = {
   /**
    * Presigned R2 URL for uploading the file via PUT.
@@ -38,6 +44,9 @@ export type HubAssetUploadUrlResponse = {
   token: string
 }
 
+/**
+ * Request body for requesting a signed upload URL for a Hub asset.
+ */
 export type HubAssetUploadUrlRequest = {
   /**
    * Original filename for display purposes. Not used in the storage key.
@@ -50,6 +59,75 @@ export type HubAssetUploadUrlRequest = {
   content_type: string
 }
 
+/**
+ * Partial update for a published hub workflow (admin moderation). All fields are optional. Semantics match UpdateHubProfileRequest / avatar_token:
+ *
+ * * field omitted or null — leave unchanged
+ * * string field = ""     — clear (for clearable string fields)
+ * * array field  = []     — clear the list
+ * * any other value       — set to the provided value
+ *
+ * Array fields use full-replacement (PUT) semantics when a value is supplied. The two single-value thumbnail token fields accept only upload tokens (not existing URLs) since omitting them already expresses "keep the current value".
+ * Backend note: cleared string columns are persisted as the empty string "" in the Ent schema (description, thumbnail_url, thumbnail_comparison_url, tutorial_url). thumbnail_type is the only true SQL-nullable column but is not clearable via this endpoint.
+ *
+ */
+export type UpdateHubWorkflowRequest = {
+  /**
+   * Display name. Not clearable. Null/omit leaves unchanged; empty string is invalid.
+   */
+  name?: string | null
+  /**
+   * Workflow description. Send "" to clear. Null/omit leaves unchanged.
+   */
+  description?: string | null
+  /**
+   * Full replacement of tag slugs. Must exist in hub_labels. Send [] to clear. Null/omit leaves unchanged.
+   */
+  tags?: Array<string> | null
+  /**
+   * Full replacement of model slugs. Must exist in hub_labels. Send [] to clear. Null/omit leaves unchanged.
+   */
+  models?: Array<string> | null
+  /**
+   * Full replacement of custom_node slugs. Must exist in hub_labels. Send [] to clear. Null/omit leaves unchanged.
+   */
+  custom_nodes?: Array<string> | null
+  /**
+   * Tutorial URL. Send "" to clear. Null/omit leaves unchanged.
+   */
+  tutorial_url?: string | null
+  /**
+   * Thumbnail kind. Null/omit leaves unchanged; not clearable via this endpoint. If set to image_comparison, both the thumbnail and comparison thumbnail must resolve to a value on the stored record after this update is applied (either already present and not being cleared, or supplied as a token in this request).
+   *
+   */
+  thumbnail_type?: 'image' | 'video' | 'image_comparison'
+  /**
+   * Token from POST /api/hub/assets/upload-url for a newly uploaded thumbnail. Null/omit leaves the existing thumbnail unchanged. Send "" to clear. (PATCH does not accept an existing public URL here — to keep the current thumbnail, simply omit the field.)
+   *
+   */
+  thumbnail_token?: string | null
+  /**
+   * Token from POST /api/hub/assets/upload-url for a newly uploaded comparison thumbnail. Null/omit leaves unchanged. Send "" to clear. (PATCH does not accept an existing public URL here — to keep the current comparison thumbnail, simply omit the field.)
+   *
+   */
+  thumbnail_comparison_token?: string | null
+  /**
+   * Full replacement of sample images. Each element is either a token from /api/hub/assets/upload-url or an existing public URL. Send [] to clear. Null/omit leaves unchanged.
+   *
+   */
+  sample_image_tokens_or_urls?: Array<string> | null
+  /**
+   * Admin-only full replacement of the hub_workflow_detail.metadata JSON object. Null/omit leaves unchanged. Send {} to clear all keys. Accepts arbitrary JSON (size, vram, open_source, media_type, logos, etc.).
+   *
+   */
+  metadata?: {
+    [key: string]: unknown
+  } | null
+}
+
+/**
+ * Request body for publishing or updating a workflow on the Hub.
+ */
 export type PublishHubWorkflowRequest = {
   /**
    * Username of the hub profile to publish under. The authenticated user must belong to the workspace that owns this profile.
@@ -111,6 +189,9 @@ export type PublishHubWorkflowRequest = {
   sample_image_tokens_or_urls?: Array<string>
 }
 
+/**
+ * Paginated list of Hub workflows matching search criteria.
+ */
 export type HubWorkflowListResponse = {
   /**
    * Array of HubWorkflowSummary (default) or HubWorkflowDetail (when detail=true).
@@ -122,6 +203,9 @@ export type HubWorkflowListResponse = {
   next_cursor?: string
 }
 
+/**
+ * Lightweight asset reference used in workflow publishing payloads.
+ */
 export type AssetInfo = {
   /**
    * Asset identifier.
@@ -147,6 +231,9 @@ export type AssetInfo = {
   in_library: boolean
 }
 
+/**
+ * Full Hub workflow detail including versions, assets, and statistics.
+ */
 export type HubWorkflowDetail = {
   share_id: string
   workflow_id: string
@@ -175,6 +262,9 @@ export type HubWorkflowDetail = {
   profile: HubProfileSummary
 }
 
+/**
+ * Abbreviated Hub profile used in workflow listings.
+ */
 export type HubProfileSummary = {
   username: string
   display_name?: string
@@ -184,6 +274,9 @@ export type HubProfileSummary = {
   avatar_url?: string
 }
 
+/**
+ * Reference to a Hub label by ID.
+ */
 export type LabelRef = {
   /**
    * Slug identifier (e.g. "video-generation", "flux").
@@ -204,6 +297,9 @@ export type HubWorkflowStatus =
   | 'rejected'
   | 'deprecated'
 
+/**
+ * Abbreviated Hub workflow metadata used in search and listing results.
+ */
 export type HubWorkflowSummary = {
   share_id: string
   name: string
@@ -224,6 +320,9 @@ export type HubWorkflowSummary = {
   sample_image_urls?: Array<string>
 }
 
+/**
+ * Metadata for a single Hub label.
+ */
 export type HubLabelInfo = {
   /**
    * Slug identifier.
@@ -243,6 +342,9 @@ export type HubLabelInfo = {
   type: 'tag' | 'model' | 'custom_node'
 }
 
+/**
+ * List of available Hub labels for categorizing workflows.
+ */
 export type HubLabelListResponse = {
   /**
    * Available labels filtered by type (or all if no type specified).
@@ -250,6 +352,9 @@ export type HubLabelListResponse = {
   labels: Array<HubLabelInfo>
 }
 
+/**
+ * Entry in the curated workflow template gallery shown on the home page.
+ */
 export type HubWorkflowTemplateEntry = {
   /**
    * Slug identifier for the template
@@ -264,8 +369,26 @@ export type HubWorkflowTemplateEntry = {
   thumbnailVariant?: string
   mediaType?: string
   mediaSubtype?: string
+  /**
+   * Workflow asset size in bytes.
+   */
   size?: number
+  /**
+   * Approximate VRAM requirement in bytes.
+   */
   vram?: number
+  /**
+   * Usage count reported upstream.
+   */
+  usage?: number
+  /**
+   * Search ranking score reported upstream.
+   */
+  searchRank?: number
+  /**
+   * Whether the template belongs to a module marked as essential.
+   */
+  isEssential?: boolean
   openSource?: boolean
   profile?: HubProfileSummary
   tutorialUrl?: string
@@ -326,6 +449,9 @@ export type HubWorkflowTemplateEntry = {
   contentTemplate?: string
 }
 
+/**
+ * Request body for updating an existing Hub profile.
+ */
 export type UpdateHubProfileRequest = {
   display_name?: string
   description?: string
@@ -340,6 +466,9 @@ export type UpdateHubProfileRequest = {
   website_urls?: Array<string>
 }
 
+/**
+ * Request body for creating a new Hub profile.
+ */
 export type CreateHubProfileRequest = {
   /**
    * ID of the workspace to create the hub profile for. The authenticated user must belong to this workspace.
@@ -362,6 +491,9 @@ export type CreateHubProfileRequest = {
   website_urls?: Array<string>
 }
 
+/**
+ * Full public profile for a Hub creator.
+ */
 export type HubProfile = {
   username: string
   display_name?: string
@@ -376,17 +508,39 @@ export type HubProfile = {
   website_urls?: Array<string>
 }
 
+/**
+ * Response after importing published workflow assets.
+ */
 export type ImportPublishedAssetsResponse = {
   assets: Array<AssetInfo>
 }
 
+/**
+ * Request body for importing assets from a published workflow.
+ */
 export type ImportPublishedAssetsRequest = {
   /**
    * IDs of published assets (inputs and models) to import.
    */
   published_asset_ids: Array<string>
+  /**
+   * Optional. Share ID of the published workflow these assets belong to.
+   * When provided (non-null, non-empty): all published_asset_ids must
+   * belong to this share's workflow version; returns
+   * 400/CodeInvalidAssets if the share is not found or any asset does
+   * not belong to it.
+   * When omitted, null, or empty string: no share-scoped validation is
+   * performed and the assets are validated only against global rules
+   * (legacy behaviour, preserved for clients that have not yet adopted
+   * share_id).
+   *
+   */
+  share_id?: string | null
 }
 
+/**
+ * Full detail of a publicly published workflow on the Hub.
+ */
 export type PublishedWorkflowDetail = {
   share_id: string
   workflow_id: string
@@ -408,16 +562,49 @@ export type PublishedWorkflowDetail = {
   assets: Array<AssetInfo>
 }
 
+/**
+ * Response containing assets associated with a workflow.
+ */
 export type WorkflowApiAssetsResponse = {
   assets: Array<AssetInfo>
 }
 
+/**
+ * Request body for querying assets associated with a workflow.
+ */
 export type WorkflowApiAssetsRequest = {
   workflow_api_json: {
     [key: string]: unknown
   }
 }
 
+/**
+ * Request body for publishing workflow assets to the Hub.
+ */
+export type PublishWorkflowAssetsRequest = {
+  /**
+   * IDs of assets (inputs and models) to snapshot.
+   */
+  asset_ids: Array<string>
+}
+
+/**
+ * Publishing metadata for a workflow shared to the Hub.
+ */
+export type WorkflowPublishInfo = {
+  workflow_id: string
+  share_id: string
+  publish_time?: string | null
+  listed: boolean
+  /**
+   * Published assets (inputs and models).
+   */
+  assets: Array<AssetInfo>
+}
+
+/**
+ * Request body for forking an existing workflow into the user's account.
+ */
 export type ForkWorkflowRequest = {
   /**
    * Version number to fork from
@@ -429,6 +616,9 @@ export type ForkWorkflowRequest = {
   name?: string
 }
 
+/**
+ * Full workflow version including the serialized workflow JSON.
+ */
 export type WorkflowVersionContentResponse = {
   id: string
   version: number
@@ -440,6 +630,9 @@ export type WorkflowVersionContentResponse = {
   dependency_asset_ids?: Array<string>
 }
 
+/**
+ * Metadata for a single workflow version.
+ */
 export type WorkflowVersionResponse = {
   id: string
   version: number
@@ -448,6 +641,9 @@ export type WorkflowVersionResponse = {
   created_at: string
 }
 
+/**
+ * Request body for creating a new version of a saved workflow.
+ */
 export type CreateWorkflowVersionRequest = {
   /**
    * The version number this change is based on (for optimistic concurrency)
@@ -461,14 +657,26 @@ export type CreateWorkflowVersionRequest = {
   }
 }
 
+/**
+ * Paginated list of saved workflows.
+ */
 export type WorkflowListResponse = {
   data: Array<WorkflowResponse>
   pagination: PaginationInfo
 }
 
+/**
+ * Pagination metadata included in list responses. Supports both legacy
+ * offset/limit pagination and cursor-based pagination. When cursor-based
+ * pagination is used, `next_cursor` is the primary pagination token and
+ * `offset`/`total` may be zero.
+ *
+ */
 export type PaginationInfo = {
   /**
-   * Current offset (0-based)
+   * Current offset (0-based). Deprecated: use cursor-based pagination.
+   *
+   * @deprecated
    */
   offset: number
   /**
@@ -476,20 +684,33 @@ export type PaginationInfo = {
    */
   limit: number
   /**
-   * Total number of items matching filters
+   * Total number of items matching filters (may be 0 when using cursor pagination)
    */
   total: number
   /**
    * Whether more items are available beyond this page
    */
   has_more: boolean
+  /**
+   * Opaque cursor for the next page. Pass this value as the `after`
+   * query parameter on the next request. Empty or absent when there
+   * are no more results.
+   *
+   */
+  next_cursor?: string
 }
 
+/**
+ * Reference to the parent workflow from which this workflow was forked.
+ */
 export type WorkflowForkedFrom = {
   workflow_id?: string
   workflow_version_id?: string
 }
 
+/**
+ * Full workflow entity including metadata and version history.
+ */
 export type WorkflowResponse = {
   id: string
   name?: string
@@ -502,6 +723,9 @@ export type WorkflowResponse = {
   updated_at: string
 }
 
+/**
+ * Request body for updating an existing saved workflow.
+ */
 export type UpdateWorkflowRequest = {
   /**
    * New display name
@@ -517,6 +741,9 @@ export type UpdateWorkflowRequest = {
   default_view?: 'workflow' | 'app'
 }
 
+/**
+ * Request body for creating a new saved workflow.
+ */
 export type CreateWorkflowRequest = {
   /**
    * Display name for the workflow
@@ -546,6 +773,49 @@ export type CreateWorkflowRequest = {
   forked_from_workflow_version_id?: string
 }
 
+/**
+ * Request body for forwarding a comfy-api audit/history event. Identify the target workspace by either user_id (cloud resolves the user's personal workspace via the converged identity, BE-1047) or an explicit workspace_id. At least one must be provided; workspace_id wins when both are set.
+ */
+export type HistoryEventRequest = {
+  /**
+   * Originating comfy-api user (Firebase UID). The cloud resolves this to the user's personal workspace. Required unless workspace_id is set.
+   */
+  user_id?: string
+  /**
+   * Cloud workspace ID to attach the history event to. Optional when user_id is provided.
+   */
+  workspace_id?: string
+  /**
+   * Cloud billing event_type string for the user-facing history event.
+   */
+  event_type: string
+  /**
+   * Unique event ID for idempotency.
+   */
+  event_id: string
+  /**
+   * Event-specific properties copied from comfy-api audit_logs.params.
+   */
+  params?: {
+    [key: string]: unknown
+  }
+  /**
+   * Optional credential class that produced the event.
+   */
+  auth_method?: 'api_key' | 'bearer_token'
+  /**
+   * Optional originating comfy-api customer ID.
+   */
+  customer_ref?: string
+  /**
+   * Optional source event timestamp; stored for forward compatibility.
+   */
+  timestamp?: string
+}
+
+/**
+ * Response after recording partner usage data.
+ */
 export type PartnerUsageResponse = {
   /**
    * Result status (e.g., "ok")
@@ -553,6 +823,9 @@ export type PartnerUsageResponse = {
   status: string
 }
 
+/**
+ * Request body for reporting partner resource usage (admin endpoint).
+ */
 export type PartnerUsageRequest = {
   /**
    * The workspace ID to bill usage against
@@ -582,6 +855,9 @@ export type PartnerUsageRequest = {
   }
 }
 
+/**
+ * Status of an asynchronous billing operation.
+ */
 export type BillingOpStatusResponse = {
   /**
    * Unique identifier for the billing operation
@@ -605,6 +881,9 @@ export type BillingOpStatusResponse = {
   completed_at?: string
 }
 
+/**
+ * Response after successfully purchasing a credit top-up.
+ */
 export type CreateTopupResponse = {
   /**
    * Billing operation ID to poll for status via GET /api/billing/ops/{id}
@@ -624,6 +903,9 @@ export type CreateTopupResponse = {
   amount_cents: number
 }
 
+/**
+ * Request body for purchasing a one-time credit top-up.
+ */
 export type CreateTopupRequest = {
   /**
    * Amount to charge and grant as credits (in cents). Minimum $5.00.
@@ -637,6 +919,9 @@ export type CreateTopupRequest = {
   idempotency_key?: string
 }
 
+/**
+ * Response containing a redirect URL to the payment portal.
+ */
 export type PaymentPortalResponse = {
   /**
    * Stripe Billing Portal URL
@@ -644,6 +929,9 @@ export type PaymentPortalResponse = {
   url: string
 }
 
+/**
+ * Request body for generating a payment portal session URL.
+ */
 export type PaymentPortalRequest = {
   /**
    * URL to redirect after the user exits the portal
@@ -651,21 +939,27 @@ export type PaymentPortalRequest = {
   return_url?: string
 }
 
+/**
+ * Response after accepting a resubscribe request.
+ */
 export type ResubscribeResponse = {
   /**
    * Billing operation ID to poll for status via GET /api/billing/ops/{id}
    */
   billing_op_id: string
   /**
-   * The subscription status after resubscribing
+   * Subscription outcome. `active` means the resubscribe committed (the scheduled cancellation was undone); `pending` means the operation is still executing — poll the billing operation for the final outcome.
    */
-  status: 'active'
+  status: 'active' | 'pending'
   /**
    * Human-readable confirmation message
    */
   message?: string
 }
 
+/**
+ * Request body for reactivating a previously cancelled subscription.
+ */
 export type ResubscribeRequest = {
   /**
    * Client-provided key to prevent duplicate operations.
@@ -675,6 +969,9 @@ export type ResubscribeRequest = {
   idempotency_key?: string
 }
 
+/**
+ * Response after successfully cancelling a subscription.
+ */
 export type CancelSubscriptionResponse = {
   /**
    * Billing operation ID to poll for status via GET /api/billing/ops/{id}
@@ -686,6 +983,9 @@ export type CancelSubscriptionResponse = {
   cancel_at: string
 }
 
+/**
+ * Request body for cancelling the current subscription.
+ */
 export type CancelSubscriptionRequest = {
   /**
    * Client-provided key to prevent duplicate operations.
@@ -695,6 +995,9 @@ export type CancelSubscriptionRequest = {
   idempotency_key?: string
 }
 
+/**
+ * Response after successfully subscribing to a billing plan.
+ */
 export type SubscribeResponse = {
   /**
    * Billing operation ID to poll for status via GET /api/billing/ops/{id}
@@ -718,11 +1021,29 @@ export type SubscribeResponse = {
   payment_method_url?: string
 }
 
+/**
+ * Request body for subscribing a workspace to a billing plan.
+ */
 export type SubscribeRequest = {
   /**
    * Target plan slug to subscribe to
    */
   plan_slug: string
+  /**
+   * Selected team credit-stop preset id (e.g. "team_700") for the
+   * per-credit Team plan. Required when subscribing to a per-credit Team
+   * plan; rejected for non-team plans. The backend owns the resolved
+   * amounts (credits/price) for the stop.
+   *
+   */
+  team_credit_stop_id?: string
+  /**
+   * Billing cycle for the team slider contract. When present it must be
+   * consistent with plan_slug (monthly -> team_per_credit_monthly,
+   * yearly -> team_per_credit_annual).
+   *
+   */
+  billing_cycle?: 'monthly' | 'yearly'
   /**
    * Client-provided key to prevent duplicate operations.
    * If a billing op with this key already exists, returns the existing op instead of creating a new one.
@@ -804,7 +1125,11 @@ export type SubscriptionTier =
   | 'CREATOR'
   | 'PRO'
   | 'FOUNDERS_EDITION'
+  | 'TEAM'
 
+/**
+ * Itemized cost preview for a pending subscription change.
+ */
 export type PreviewSubscribeResponse = {
   /**
    * Whether this subscription change is allowed
@@ -850,6 +1175,9 @@ export type PreviewSubscribeResponse = {
   new_plan: PreviewPlanInfo
 }
 
+/**
+ * Request body for previewing the cost of a plan subscription change.
+ */
 export type PreviewSubscribeRequest = {
   /**
    * Target plan slug to preview subscribing to
@@ -857,12 +1185,61 @@ export type PreviewSubscribeRequest = {
   plan_slug: string
 }
 
+/**
+ * List of available billing plans for subscription.
+ */
 export type BillingPlansResponse = {
   /**
    * Current plan slug if subscribed
    */
   current_plan_slug?: string
   plans: Array<Plan>
+  team_credit_stops?: TeamCreditStops
+}
+
+/**
+ * Pre/post-discount price for a team credit stop, in cents.
+ */
+export type TeamCreditStopPrice = {
+  /**
+   * Pre-discount (struck-through) price in cents
+   */
+  list_price_cents: number
+  /**
+   * Post-discount (bold) price in cents
+   */
+  price_cents: number
+}
+
+/**
+ * A selectable preset on the team pricing slider. Echoed on subscribe via
+ * team_credit_stop_id; the backend owns the resolved amounts. credits is a
+ * RAW monthly credit count (not cents). Save% is derived by the FE as
+ * (list_price_cents - price_cents) / list_price_cents.
+ *
+ */
+export type TeamCreditStop = {
+  /**
+   * Stable stop id echoed on subscribe (e.g. "team_700")
+   */
+  id: string
+  /**
+   * Raw monthly credit count granted at this stop
+   */
+  credits: number
+  monthly: TeamCreditStopPrice
+  yearly: TeamCreditStopPrice
+}
+
+/**
+ * Credit-stop ladder for the pricing slider (BE-1254). Returned by GET /api/billing/plans for every workspace regardless of the caller's token or workspace type (the personal/team distinction was removed); omitted only when the catalog defines no stops.
+ */
+export type TeamCreditStops = {
+  /**
+   * Index into stops[] for the slider's initial position
+   */
+  default_stop_index: number
+  stops: Array<TeamCreditStop>
 }
 
 /**
@@ -875,6 +1252,9 @@ export type PlanAvailabilityReason =
   | 'requires_personal'
   | 'exceeds_max_seats'
 
+/**
+ * Availability and eligibility information for a billing plan.
+ */
 export type PlanAvailability = {
   /**
    * Whether the workspace can subscribe to this plan
@@ -883,6 +1263,9 @@ export type PlanAvailability = {
   reason?: PlanAvailabilityReason
 }
 
+/**
+ * Billing plan details including pricing, limits, and features.
+ */
 export type Plan = {
   /**
    * Plan identifier (e.g., "pro-monthly", "team-standard-annual")
@@ -906,10 +1289,64 @@ export type Plan = {
   seat_summary: PlanSeatSummary
 }
 
+/**
+ * The team credit stop a workspace is currently subscribed to: the
+ * per-workspace slider choice recorded at subscribe time
+ * (workspace_subscriptions.team_credit_stop_id). Amounts are owned by the
+ * catalog, not the subscription row. Returned on GET /api/billing/status
+ * for per-credit Team plans (BE-1254).
+ *
+ */
+export type TeamCreditStopSummary = {
+  /**
+   * Stable stop id (e.g. "team_200")
+   */
+  id: string
+  /**
+   * Raw monthly credit count granted at this stop
+   */
+  credits_monthly: number
+  /**
+   * Monthly USD commitment for this stop
+   */
+  stop_usd: number
+}
+
+/**
+ * The providers available to the authenticated user in the current workspace.
+ */
+export type SecretProvidersResponse = {
+  data: Array<SecretProvider>
+}
+
+/**
+ * A provider the user may configure a secret for.
+ */
+export type SecretProvider = {
+  /**
+   * Provider identifier (e.g., huggingface, civitai, runway, gemini)
+   */
+  id: string
+  /**
+   * How the credential is entered. `text` is a single-line secret (an API key); `json_file` is an uploaded/pasted JSON document (e.g. a Vertex service-account key). Defaults to `text` when omitted.
+   */
+  input_type?: 'text' | 'json_file'
+  /**
+   * Human-facing display label for the provider. Falls back to the frontend registry label, then the raw id, when omitted.
+   */
+  label?: string
+}
+
+/**
+ * List of user secrets with metadata only.
+ */
 export type SecretListResponse = {
   data: Array<SecretResponse>
 }
 
+/**
+ * User secret metadata (the secret value itself is never returned after creation).
+ */
 export type SecretResponse = {
   /**
    * Unique identifier for the secret
@@ -937,6 +1374,9 @@ export type SecretResponse = {
   updated_at: string
 }
 
+/**
+ * Request body for updating an existing user secret.
+ */
 export type UpdateSecretRequest = {
   /**
    * New name for the secret
@@ -948,6 +1388,9 @@ export type UpdateSecretRequest = {
   secret_value?: string
 }
 
+/**
+ * Request body for creating a new user secret.
+ */
 export type CreateSecretRequest = {
   /**
    * User-provided label for the secret
@@ -963,6 +1406,9 @@ export type CreateSecretRequest = {
   secret_value: string
 }
 
+/**
+ * Paginated list of billing events for a workspace.
+ */
 export type BillingEventsResponse = {
   /**
    * Total number of events
@@ -983,9 +1429,12 @@ export type BillingEventsResponse = {
   totalPages: number
 }
 
+/**
+ * A single history event. The cloud history-events store is the single source of truth for both billing events (charges, credits, adjustments) and user-facing usage events.
+ */
 export type BillingEvent = {
   /**
-   * Type of billing event (e.g., subscription.created, payment.succeeded)
+   * Type of history event. Billing types (e.g. invoice_paid, checkout_completed, topup_completed) and the migrated user-facing usage types (account_created, credit_added, api_usage_completed, cloud_subscription_created, cloud_subscription_paid, cloud_subscription_credit_added, cloud_workflow_executed, free_tier_credit_granted). Kept as a free-form string for back-compat with existing billing-event consumers.
    */
   event_type: string
   /**
@@ -1004,6 +1453,9 @@ export type BillingEvent = {
   createdAt: string
 }
 
+/**
+ * Current credit balance and usage details for a workspace.
+ */
 export type BillingBalanceResponse = {
   /**
    * The total remaining balance in microamount (1/1,000,000 of the currency unit)
@@ -1031,6 +1483,9 @@ export type BillingBalanceResponse = {
   currency: string
 }
 
+/**
+ * Current billing and subscription status for a workspace.
+ */
 export type BillingStatusResponse = {
   /**
    * Whether the workspace has an active subscription
@@ -1059,6 +1514,10 @@ export type BillingStatusResponse = {
    * When the current billing period ends and the next one begins
    */
   renewal_date?: string
+  /**
+   * The team credit stop the workspace is currently subscribed to, for per-credit Team plans (BE-1254). Lets clients tell apart team subscriptions, which all share subscription_tier=TEAM. Always present; null for personal plans (use subscription_tier to distinguish those) and for legacy team plans without a credit stop.
+   */
+  team_credit_stop: TeamCreditStopSummary | null
 }
 
 /**
@@ -1071,6 +1530,9 @@ export type BillingStatus =
   | 'payment_failed'
   | 'inactive'
 
+/**
+ * A single JSON Web Key entry within a JWKS response.
+ */
 export type JwkKey = {
   kty: string
   crv: string
@@ -1087,10 +1549,611 @@ export type JwkKey = {
   y: string
 }
 
+/**
+ * RFC 6749 §5.2 error response.
+ */
+export type OAuthTokenError = {
+  /**
+   * RFC 6749 §5.2 error code: invalid_request, invalid_client, invalid_grant, unauthorized_client, unsupported_grant_type, invalid_scope.
+   */
+  error: string
+  /**
+   * Human-readable, no leak of internal storage state.
+   */
+  error_description?: string
+}
+
+/**
+ * RFC 6749 §5.1 successful token response.
+ */
+export type OAuthTokenResponse = {
+  /**
+   * Resource-bound Cloud JWT (audience matches the protected resource).
+   */
+  access_token: string
+  token_type: 'Bearer'
+  /**
+   * Access token lifetime in seconds.
+   */
+  expires_in: number
+  /**
+   * Opaque refresh token. Rotates on every successful refresh; presenting an already-rotated token revokes the entire family.
+   */
+  refresh_token: string
+  /**
+   * Space-delimited scopes granted with this token.
+   */
+  scope: string
+}
+
+/**
+ * One workspace option presented in the OAuth consent challenge. Promoted to a named schema so the generated Go type is referenceable in handlers and tests rather than re-declared as an anonymous struct at every callsite.
+ *
+ */
+export type OAuthConsentChallengeWorkspace = {
+  id: string
+  name: string
+  type: 'personal' | 'team'
+  role: 'owner' | 'member'
+}
+
+/**
+ * Redirect target produced after a JSON consent submission. The frontend must navigate the browser to this URL so custom-scheme client callbacks work without relying on fetch-visible 302 headers.
+ */
+export type OAuthAuthorizeRedirectResponse = {
+  /**
+   * OAuth client redirect URI with either code+state for allow, or error+state for deny.
+   */
+  redirect_url: string
+}
+
+/**
+ * Server-side state describing the OAuth consent decision the user is being asked to make. Returned by GET /oauth/authorize when a valid Cloud session exists; the frontend renders the consent UI from this payload and POSTs the decision back. Browser never sees the original OAuth params on resume.
+ *
+ */
+export type OAuthConsentChallenge = {
+  /**
+   * Opaque server-side identifier for the authorization-request row. Carried back unchanged in the consent submission.
+   */
+  oauth_request_id: string
+  /**
+   * Per-row CSRF token bound to this authorization request (not to the session). Must be echoed back on POST.
+   */
+  csrf_token: string
+  /**
+   * Human-readable name of the OAuth client requesting authorization, from oauth_clients.display_name.
+   */
+  client_display_name: string
+  /**
+   * Human-readable name of the protected resource, from oauth_resources.display_name.
+   */
+  resource_display_name: string
+  /**
+   * The exact redirect URI this authorization request was validated
+   * against at GET time (oauth_authorization_requests.redirect_uri,
+   * itself byte-matched to the client registration). The frontend
+   * binds the post-consent navigation to this value, so it needs no
+   * per-client knowledge of callback schemes. Surfaced verbatim;
+   * also suitable for display so users can verify the destination.
+   *
+   */
+  redirect_uri: string
+  /**
+   * Scopes the client is requesting for this resource. The frontend should present these for the user to approve.
+   */
+  scopes: Array<string>
+  /**
+   * Workspaces the user can select from. Membership is re-checked on POST.
+   */
+  workspaces: Array<OAuthConsentChallengeWorkspace>
+}
+
+/**
+ * OAuth 2.1 protected-resource metadata (RFC 9728).
+ */
+export type OAuthProtectedResourceMetadata = {
+  resource: string
+  authorization_servers: Array<string>
+  scopes_supported: Array<string>
+  bearer_methods_supported?: Array<string>
+}
+
+/**
+ * RFC 7591 §3.2.2 error response.
+ */
+export type OAuthRegisterError = {
+  error: 'invalid_redirect_uri' | 'invalid_client_metadata'
+  error_description?: string | null
+}
+
+/**
+ * Union of the two 400 shapes /oauth/register can emit. `OAuthRegisterError` is the handler-shaped RFC 7591 §3.2.2 error; `ErrorResponse` is the strict-server binding-layer error fired when the request body fails OpenAPI-schema validation before the handler runs, normalized to the standard {code, message} shape by the custom Echo HTTPErrorHandler (BE-1178).
+ *
+ */
+export type OAuthRegisterBadRequestResponse = OAuthRegisterError | ErrorResponse
+
+/**
+ * Standard error response with a machine-readable code and human-readable message.
+ */
+export type ErrorResponse = {
+  code: string
+  message: string
+  /**
+   * Optional open object carrying structured, machine-readable context about the error (e.g. offending field names, validation specifics). Absent for most errors; consumers must not assume any particular shape.
+   */
+  details?: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * RFC 7591 §3.2.1 successful registration response.
+ */
+export type OAuthRegisterResponse = {
+  /**
+   * Server-generated client_id. Always carries the `comfy-dyn-` prefix.
+   */
+  client_id: string
+  /**
+   * Unix timestamp (seconds) when the client was registered.
+   */
+  client_id_issued_at: number
+  client_name?: string
+  redirect_uris: Array<string>
+  grant_types: Array<string>
+  response_types: Array<string>
+  token_endpoint_auth_method: 'none'
+  application_type: 'native' | 'web'
+}
+
+/**
+ * RFC 7591 §2 client metadata document. Only the fields the server honors are listed; presence of `scope` or `resource_grants` in the request is rejected (`invalid_client_metadata`) because those are server-owned for dynamic clients. `additionalProperties: false` mirrors the runtime middleware that rejects any unknown metadata key.
+ *
+ */
+export type OAuthRegisterRequest = {
+  /**
+   * 1–5 redirect URIs. Validated against `application_type` policy.
+   */
+  redirect_uris: Array<string>
+  /**
+   * Human-readable name shown in the consent UI. Reserved-name list rejects impersonation of major MCP clients.
+   */
+  client_name?: string
+  /**
+   * RFC 7591 §2 application_type. **OPTIONAL** — omit the field to default to `native` (the loopback-friendly policy), rather than the RFC's nominal `web` default; the MCP SDK's DCR client omits it. `native` for desktop / CLI / MCP-spec-strict clients (loopback redirects); `web` for hosted clients (HTTPS only, host must be allowlisted). The realistic MCP-client population is overwhelmingly native/loopback, so defaulting to `web` would silently bounce those clients off the wrong redirect policy. A *present* value must be one of the enum members; any other value rejects with `invalid_client_metadata`. (The server has no runtime enum validation and defensively coerces a null/empty value to `native`, but spec-validating clients should omit the field rather than send `""` — the enum does not permit it.)
+   *
+   */
+  application_type?: 'native' | 'web'
+  /**
+   * Public clients only this phase — must be `none` if present. The server forces `none` regardless.
+   */
+  token_endpoint_auth_method?: 'none'
+  /**
+   * Optional. Defaults to `["authorization_code","refresh_token"]`.
+   */
+  grant_types?: Array<'authorization_code' | 'refresh_token'>
+  /**
+   * Optional. Defaults to `["code"]`.
+   */
+  response_types?: Array<'code'>
+  /**
+   * **REJECTED IF PRESENT.** Dynamic clients do not pick scopes — the server assigns scopes from the active MCP resource's published list. Sending `scope` in the registration body is treated as a privilege-escalation attempt and returns `invalid_client_metadata`. The field is documented here so clients see a well-defined error rather than silent drop.
+   *
+   */
+  scope?: string | null
+  /**
+   * **REJECTED IF PRESENT.** Same reason as `scope`. The set of resources and scopes a dynamic client may request is server-policy, not request-driven.
+   *
+   */
+  resource_grants?: {
+    [key: string]: Array<string>
+  } | null
+  /**
+   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   */
+  client_uri?: string | null
+  /**
+   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   */
+  logo_uri?: string | null
+  /**
+   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   */
+  tos_uri?: string | null
+  /**
+   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   */
+  policy_uri?: string | null
+  /**
+   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   */
+  software_id?: string | null
+  /**
+   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   */
+  software_version?: string | null
+  /**
+   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   */
+  contacts?: Array<string> | null
+  /**
+   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   */
+  jwks?: {
+    [key: string]: unknown
+  } | null
+  /**
+   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   */
+  jwks_uri?: string | null
+}
+
+/**
+ * OAuth 2.1 authorization-server metadata (RFC 8414).
+ */
+export type OAuthAuthorizationServerMetadata = {
+  issuer: string
+  authorization_endpoint: string
+  token_endpoint: string
+  jwks_uri: string
+  /**
+   * RFC 7591 §3.1 Dynamic Client Registration endpoint. Advertised so MCP-spec-compliant clients can auto-discover and self-register without operator involvement. Present only when DCR is enabled.
+   *
+   */
+  registration_endpoint?: string
+  response_types_supported: Array<string>
+  grant_types_supported: Array<string>
+  code_challenge_methods_supported: Array<string>
+  token_endpoint_auth_methods_supported: Array<string>
+  scopes_supported?: Array<string>
+}
+
+/**
+ * JSON Web Key Set containing the public keys used to verify Cloud JWTs.
+ */
 export type JwksResponse = {
   keys: Array<JwkKey>
 }
 
+/**
+ * Response after synchronizing an API key into the local database.
+ */
+export type SyncApiKeyResponse = {
+  /**
+   * `revoked` — matching row found, was active, now revoked.
+   * `already_revoked` — matching row found, already revoked.
+   * `no_op` — no row matches the supplied hash.
+   *
+   */
+  result: 'revoked' | 'already_revoked' | 'no_op'
+}
+
+/**
+ * Request body for synchronizing an API key from the external registry.
+ */
+export type SyncApiKeyRequest = {
+  /**
+   * Lifecycle event type. Only `delete` is supported in Phase 1.
+   */
+  event: 'delete'
+  /**
+   * SHA-256 hex digest of the plaintext API key (64 hex characters).
+   * Case-insensitive: the server lowercases the value before lookup, so
+   * producers may emit lowercase or uppercase hex. The lowercase form
+   * is recommended for consistency with the rest of the codebase, which
+   * computes hashes via `hex.EncodeToString`.
+   *
+   */
+  key_hash: string
+  /**
+   * Firebase UID of the key's owner according to comfy-api. Required on
+   * the request so cloud can detect drift between the two systems, but
+   * **advisory only**: `key_hash` is the sole authoritative identifier
+   * for the revocation. A mismatch against cloud's stored `user_id` is
+   * logged and emits `admin.api_key_sync.delete.customer_mismatch`, but
+   * does not change the outcome — the matching row is still revoked so
+   * a subsequent sync call can repair drift.
+   *
+   */
+  customer_id: string
+}
+
+/**
+ * The personal workspace's provisioned billing identity.
+ */
+export type EnsureWorkspaceBillingProvisionedResponse = {
+  /**
+   * The user's personal workspace ID.
+   */
+  workspace_id: string
+  /**
+   * The Stripe customer ID attached to the workspace.
+   */
+  stripe_customer_id: string
+  /**
+   * The Metronome customer ID attached to the workspace.
+   */
+  metronome_customer_id: string
+  /**
+   * The active Metronome contract ID on the workspace.
+   */
+  metronome_contract_id: string
+}
+
+/**
+ * The caller's already-resolved legacy (comfy-api) customer identity. When
+ * present and carrying provider IDs, provisioning ATTACHES this identity to
+ * the personal workspace (sharing the existing balance and subscription)
+ * instead of minting a net-new empty customer. Omit (or send with no
+ * provider IDs) for a free user with nothing to attach — provisioning then
+ * creates net-new. This closes the create-new-before-attach gap: a caller
+ * that already knows the legacy identity hands it over so the very first
+ * provisioning is an attach.
+ *
+ */
+export type EnsureWorkspaceBillingLegacySnapshot = {
+  /**
+   * Legacy Stripe customer id to attach.
+   */
+  stripe_customer_id?: string
+  /**
+   * Legacy Metronome customer id to attach (the balance holder).
+   */
+  metronome_customer_id?: string
+  /**
+   * Active Metronome contract id on the legacy customer.
+   */
+  metronome_contract_id?: string
+  /**
+   * Whether the legacy customer currently has spendable funds.
+   */
+  has_funds?: boolean
+  /**
+   * Cached subscription tier of the legacy customer, if any.
+   */
+  subscription_tier?: string
+  /**
+   * Active legacy Stripe subscription id, if the customer is subscribed.
+   */
+  legacy_stripe_subscription_id?: string
+  /**
+   * Namespaced legacy comfy user id, for provider stamping and audit.
+   */
+  legacy_comfy_user_id?: string
+}
+
+/**
+ * Request body for ensuring a user's personal workspace carries a fully
+ * provisioned billing identity. Sent by comfy-api's CreateCustomer (BE-1047)
+ * with the already canonical-resolved user identity.
+ *
+ */
+export type EnsureWorkspaceBillingProvisionedRequest = {
+  /**
+   * Canonical cloud user ID whose personal workspace should be ensured and
+   * provisioned. The caller (comfy-api) resolves canonical-sibling routing
+   * before calling, so this is taken as authoritative — the endpoint never
+   * re-resolves or self-maps.
+   *
+   */
+  user_id: string
+  /**
+   * Owner email, used when minting a net-new vendor customer. Required for
+   * create-new; ignored on the already-provisioned fast-path.
+   *
+   */
+  email: string
+  snapshot?: EnsureWorkspaceBillingLegacySnapshot
+}
+
+/**
+ * Firebase UIDs linked to the canonical comfy_user_id. Empty list when
+ * no mappings exist (not an error — callers can treat empty as "unknown
+ * canonical").
+ *
+ */
+export type ListLinkedFirebaseUidsResponse = {
+  /**
+   * Subjects from `identity_mappings` where provider = 'firebase' and
+   * comfy_user_id matches the request. Order is unspecified.
+   *
+   */
+  firebase_uids: Array<string>
+}
+
+/**
+ * Request body for reverse-looking-up Firebase UIDs linked to a canonical comfy_user_id.
+ */
+export type ListLinkedFirebaseUidsRequest = {
+  /**
+   * Canonical user ID to look up. Cloud's `identity_mappings` is queried
+   * for every `subject` whose `comfy_user_id` matches and whose `provider`
+   * equals `firebase`.
+   *
+   */
+  comfy_user_id: string
+}
+
+/**
+ * Response confirming the validity and scope of a workspace API key.
+ */
+export type VerifyApiKeyResponse = {
+  /**
+   * Firebase UID of the key creator
+   */
+  user_id: string
+  /**
+   * User's email address
+   */
+  email: string
+  /**
+   * User's display name
+   */
+  name: string
+  /**
+   * Whether the user is an admin
+   */
+  is_admin: boolean
+  /**
+   * Workspace ID for billing attribution
+   */
+  workspace_id: string
+  /**
+   * Type of workspace
+   */
+  workspace_type: 'personal' | 'team'
+  /**
+   * User's role in the workspace
+   */
+  role: 'owner' | 'member'
+  /**
+   * Whether the workspace has available funds for usage
+   */
+  has_funds: boolean
+  /**
+   * Whether the workspace has an active subscription
+   */
+  is_active: boolean
+  /**
+   * Permissions granted by this key. Always includes the role permission
+   * (`owner:*` or `member:*`). May also include `partner-node:use`,
+   * which is a **staging-only shim** used to gate partner-node access
+   * for non-admin users during testing. No production code path checks
+   * this permission today; it is emitted for parity with the Cloud JWT
+   * claim set so JWT and API-key callers see the same permissions.
+   *
+   */
+  permissions: Array<string>
+}
+
+/**
+ * Request body for verifying a workspace API key (admin endpoint).
+ */
+export type VerifyApiKeyRequest = {
+  /**
+   * The full plaintext API key to verify
+   */
+  api_key: string
+}
+
+/**
+ * Response after bulk-revoking API keys for a workspace member.
+ */
+export type BulkRevokeApiKeysResponse = {
+  /**
+   * Number of API keys that were revoked
+   */
+  revoked_count: number
+}
+
+/**
+ * List of API keys associated with the current workspace.
+ */
+export type ListWorkspaceApiKeysResponse = {
+  api_keys: Array<WorkspaceApiKeyInfo>
+}
+
+/**
+ * Metadata for a workspace-scoped API key (secret is never returned).
+ */
+export type WorkspaceApiKeyInfo = {
+  /**
+   * API key ID
+   */
+  id: string
+  /**
+   * Workspace this key belongs to
+   */
+  workspace_id: string
+  /**
+   * User who created this key
+   */
+  user_id: string
+  /**
+   * User-provided label
+   */
+  name: string
+  /**
+   * User-provided description of the key's purpose. Limit is byte-based (UTF-8 encoding); 5000 bytes equals 5000 ASCII characters or fewer multi-byte characters.
+   */
+  description: string
+  /**
+   * First 8 chars after prefix for display
+   */
+  key_prefix: string
+  /**
+   * When the key expires (if set)
+   */
+  expires_at?: string
+  /**
+   * Last time the key was used
+   */
+  last_used_at?: string
+  /**
+   * When the key was revoked (if revoked)
+   */
+  revoked_at?: string
+  /**
+   * When the key was created
+   */
+  created_at: string
+}
+
+/**
+ * Response containing the newly created workspace API key.
+ */
+export type CreateWorkspaceApiKeyResponse = {
+  /**
+   * API key ID
+   */
+  id: string
+  /**
+   * User-provided label
+   */
+  name: string
+  /**
+   * User-provided description of the key's purpose. Limit is byte-based (UTF-8 encoding); 5000 bytes equals 5000 ASCII characters or fewer multi-byte characters.
+   */
+  description: string
+  /**
+   * The full plaintext API key (only shown once)
+   */
+  key: string
+  /**
+   * First 8 chars after prefix for display
+   */
+  key_prefix: string
+  /**
+   * When the key expires (if set)
+   */
+  expires_at?: string
+  /**
+   * When the key was created
+   */
+  created_at: string
+}
+
+/**
+ * Request body for creating a new workspace-scoped API key.
+ */
+export type CreateWorkspaceApiKeyRequest = {
+  /**
+   * User-provided label for the key
+   */
+  name: string
+  /**
+   * User-provided description of the key's purpose. Limit is byte-based (UTF-8 encoding); 5000 bytes equals 5000 ASCII characters or fewer multi-byte characters.
+   */
+  description?: string
+  /**
+   * Optional expiration timestamp
+   */
+  expires_at?: string
+}
+
+/**
+ * Response returned after successfully accepting a workspace invitation.
+ */
 export type AcceptInviteResponse = {
   /**
    * ID of the workspace joined
@@ -1102,6 +2165,9 @@ export type AcceptInviteResponse = {
   workspace_name: string
 }
 
+/**
+ * Request body for inviting a user to a workspace.
+ */
 export type CreateInviteRequest = {
   /**
    * Email address to invite
@@ -1109,10 +2175,16 @@ export type CreateInviteRequest = {
   email: string
 }
 
+/**
+ * List of pending invitations for the current workspace.
+ */
 export type ListInvitesResponse = {
   invites: Array<PendingInvite>
 }
 
+/**
+ * An outstanding workspace invitation that has not yet been accepted.
+ */
 export type PendingInvite = {
   /**
    * Invite ID
@@ -1136,11 +2208,17 @@ export type PendingInvite = {
   expires_at: string
 }
 
+/**
+ * List of members in the current workspace.
+ */
 export type ListMembersResponse = {
   members: Array<Member>
   pagination: PaginationInfo
 }
 
+/**
+ * Workspace member with profile and role information.
+ */
 export type Member = {
   /**
    * User ID
@@ -1162,8 +2240,25 @@ export type Member = {
    * When the user joined the workspace
    */
   joined_at: string
+  /**
+   * Whether this member is the workspace's immutable original owner (the creator). Derived as member.id == workspace.created_by_user_id; exactly one member per workspace is marked. The original owner can never be demoted, removed, or leave; a promoted owner is never marked.
+   */
+  is_original_owner: boolean
 }
 
+/**
+ * Request body for changing a workspace member's role.
+ */
+export type UpdateMemberRoleRequest = {
+  /**
+   * The role to assign to the member
+   */
+  role: 'owner' | 'member'
+}
+
+/**
+ * Request body for updating an existing workspace's settings.
+ */
 export type UpdateWorkspaceRequest = {
   /**
    * New display name for the workspace
@@ -1171,6 +2266,9 @@ export type UpdateWorkspaceRequest = {
   name?: string
 }
 
+/**
+ * Request body for creating a new workspace.
+ */
 export type CreateWorkspaceRequest = {
   /**
    * Display name for the workspace
@@ -1178,6 +2276,9 @@ export type CreateWorkspaceRequest = {
   name: string
 }
 
+/**
+ * Workspace entity annotated with the requesting user's role.
+ */
 export type WorkspaceWithRole = {
   id: string
   name: string
@@ -1194,10 +2295,16 @@ export type WorkspaceWithRole = {
   subscription_tier?: SubscriptionTier
 }
 
+/**
+ * Paginated list of workspaces the authenticated user belongs to.
+ */
 export type ListWorkspacesResponse = {
   workspaces: Array<WorkspaceWithRole>
 }
 
+/**
+ * Full workspace entity with configuration and ownership details.
+ */
 export type Workspace = {
   id: string
   name: string
@@ -1205,12 +2312,106 @@ export type Workspace = {
   created_at: string
 }
 
+/**
+ * Exchange poll result. Pending until the code is redeemed in the browser.
+ */
+export type DesktopLoginCodeExchangeResponse = {
+  /**
+   * Whether the code has been redeemed yet.
+   */
+  status: 'pending' | 'complete'
+  /**
+   * One-time Firebase custom token for the redeeming user. Present only when status is "complete".
+   */
+  custom_token?: string
+}
+
+/**
+ * Request to exchange a redeemed login code for a custom token.
+ */
+export type DesktopLoginCodeExchangeRequest = {
+  /**
+   * The login code returned at creation.
+   */
+  code: string
+  /**
+   * PKCE code verifier matching the challenge supplied at creation.
+   */
+  code_verifier: string
+}
+
+/**
+ * Result of redeeming a desktop login code.
+ */
+export type DesktopLoginCodeRedeemResponse = {
+  /**
+   * The code is now claimed for the authenticated user.
+   */
+  status: 'redeemed'
+}
+
+/**
+ * Request to claim a desktop login code for the authenticated user.
+ */
+export type DesktopLoginCodeRedeemRequest = {
+  /**
+   * The login code the desktop app placed in the browser URL.
+   */
+  code: string
+}
+
+/**
+ * A freshly minted desktop login code and its polling parameters.
+ */
+export type DesktopLoginCodeCreateResponse = {
+  /**
+   * Opaque single-use login code ("dlc_" prefix).
+   */
+  code: string
+  /**
+   * Seconds until the code expires if not redeemed.
+   */
+  expires_in: number
+  /**
+   * Suggested seconds between exchange polls.
+   */
+  poll_interval: number
+}
+
+/**
+ * Request to mint a desktop login code.
+ */
+export type DesktopLoginCodeCreateRequest = {
+  /**
+   * Stable identifier of the desktop installation, used only for the login attribution event. Omit when telemetry consent is off - the login flow still works, but no attribution event is emitted.
+   */
+  installation_id?: string
+  /**
+   * Desktop platform identifier (e.g. darwin, win32, linux).
+   */
+  platform: string
+  /**
+   * Desktop app version string.
+   */
+  app_version: string
+  /**
+   * PKCE code challenge - base64url(SHA256(code_verifier)) per RFC 7636 (S256 only).
+   */
+  code_challenge: string
+}
+
+/**
+ * Abbreviated workspace metadata used in list responses.
+ */
 export type WorkspaceSummary = {
   id: string
   name: string
   type: 'personal' | 'team'
 }
 
+/**
+ * Response containing the issued Cloud JWT and its expiry.
+ */
 export type ExchangeTokenResponse = {
   /**
    * Cloud JWT token
@@ -1231,6 +2432,12 @@ export type ExchangeTokenResponse = {
   permissions: Array<string>
 }
 
+/**
+ * Optional request body for the token exchange endpoint. The Firebase JWT
+ * being exchanged is supplied via the `Authorization: Bearer` header; this
+ * body only carries workspace-selection input.
+ *
+ */
 export type ExchangeTokenRequest = {
   /**
    * Workspace ID to get token for. Defaults to personal workspace if omitted.
@@ -1322,6 +2529,9 @@ export type TaskEntry = {
   completed_at?: string
 }
 
+/**
+ * Paginated list of background tasks for the authenticated user.
+ */
 export type TasksListResponse = {
   /**
    * Array of tasks ordered by create_time
@@ -1330,6 +2540,27 @@ export type TasksListResponse = {
   pagination: PaginationInfo
 }
 
+/**
+ * Result of authorizing a legal-hold release on a user's deletion.
+ */
+export type ReleaseHoldResponse = {
+  /**
+   * The Firebase ID of the user whose hold was released
+   */
+  firebase_id: string
+  /**
+   * Whether the release authorization is recorded on the deletion request
+   */
+  released: boolean
+  /**
+   * Human-readable outcome detail
+   */
+  message: string
+}
+
+/**
+ * Details of a pending or completed user data deletion request.
+ */
 export type DeletionRequest = {
   /**
    * Unique identifier for the deletion request
@@ -1349,6 +2580,9 @@ export type DeletionRequest = {
   deletion_status: Array<DeletionStatus>
 }
 
+/**
+ * Current status of a user data deletion request.
+ */
 export type DeletionStatus = {
   /**
    * The name of the deletion status
@@ -1360,6 +2594,208 @@ export type DeletionStatus = {
   status_details: string
 }
 
+/**
+ * Detailed execution error information from ComfyUI
+ */
+export type ExecutionError = {
+  /**
+   * ID of the node that failed
+   */
+  node_id: string
+  /**
+   * Type name of the node (e.g., "KSampler")
+   */
+  node_type: string
+  /**
+   * Human-readable error message
+   */
+  exception_message: string
+  /**
+   * Python exception type (e.g., "RuntimeError")
+   */
+  exception_type: string
+  /**
+   * Array of traceback lines (empty array if not available)
+   */
+  traceback: Array<string>
+  /**
+   * Input values at time of failure (empty object if not available)
+   */
+  current_inputs: {
+    [key: string]: unknown
+  }
+  /**
+   * Output values at time of failure (empty object if not available)
+   */
+  current_outputs: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Full job details including workflow and outputs
+ */
+export type JobDetailResponse = {
+  /**
+   * Unique job identifier
+   */
+  id: string
+  /**
+   * User-friendly job status
+   */
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+  /**
+   * Full ComfyUI workflow (10-100KB, omitted if not available).
+   *
+   * Sensitive credentials are redacted before the response is returned:
+   * `extra_data.api_key_comfy_org`, when present, is replaced with the
+   * literal string `"[REDACTED]"`. The field is preserved (not removed)
+   * so existence checks still pass, but the value is not usable.
+   *
+   */
+  workflow?: {
+    [key: string]: unknown
+  }
+  /**
+   * Detailed execution error from ComfyUI (only for failed jobs with structured error data)
+   */
+  execution_error?: ExecutionError
+  /**
+   * Job creation timestamp (Unix timestamp in milliseconds)
+   */
+  create_time: number
+  /**
+   * Last update timestamp (Unix timestamp in milliseconds)
+   */
+  update_time: number
+  /**
+   * Full outputs object from ComfyUI (only for terminal states)
+   */
+  outputs?: {
+    [key: string]: unknown
+  }
+  /**
+   * Primary preview output (only for terminal states)
+   */
+  preview_output?: {
+    [key: string]: unknown
+  }
+  /**
+   * Total number of output files (omitted for non-terminal states)
+   */
+  outputs_count?: number
+  /**
+   * UUID identifying the workflow graph definition
+   */
+  workflow_id?: string
+  /**
+   * ComfyUI execution status and timeline (only for terminal states)
+   */
+  execution_status?: {
+    [key: string]: unknown
+  }
+  /**
+   * Node-level execution metadata (only for terminal states)
+   */
+  execution_meta?: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Response for POST /api/jobs/cancel.
+ */
+export type JobsCancelResponse = {
+  /**
+   * Job IDs for which a cancel event was successfully dispatched by this
+   * call. Jobs already in a terminal or cancelling state are idempotently
+   * skipped and will not appear here.
+   *
+   */
+  cancelled: Array<string>
+}
+
+/**
+ * Request to cancel multiple jobs by ID.
+ */
+export type JobsCancelRequest = {
+  /**
+   * Job identifiers (UUIDs) to cancel.
+   */
+  job_ids: Array<string>
+}
+
+/**
+ * Response for POST /api/jobs/{job_id}/cancel. Returned on both fresh cancels and idempotent no-ops.
+ */
+export type JobCancelResponse = {
+  /**
+   * True when a cancel event was successfully dispatched by this call.
+   * False when the job was already in a terminal or cancelling state,
+   * in which case the call is a no-op (still 200 — idempotent).
+   *
+   */
+  cancelled: boolean
+}
+
+/**
+ * Lightweight job data for list views (workflow and full outputs excluded)
+ */
+export type JobEntry = {
+  /**
+   * Unique job identifier
+   */
+  id: string
+  /**
+   * User-friendly job status
+   */
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+  /**
+   * Detailed execution error from ComfyUI (only for failed jobs with structured error data)
+   */
+  execution_error?: ExecutionError
+  /**
+   * Job creation timestamp (Unix timestamp in milliseconds)
+   */
+  create_time: number
+  /**
+   * Primary preview output (only present for terminal states)
+   */
+  preview_output?: {
+    [key: string]: unknown
+  }
+  /**
+   * Total number of output files (omitted for non-terminal states)
+   */
+  outputs_count?: number
+  /**
+   * UUID identifying the workflow graph definition
+   */
+  workflow_id?: string
+  /**
+   * Workflow execution start timestamp (Unix milliseconds, only present for terminal states)
+   */
+  execution_start_time?: number
+  /**
+   * Workflow execution completion timestamp (Unix milliseconds, only present for terminal states)
+   */
+  execution_end_time?: number
+}
+
+/**
+ * Paginated list of jobs for the authenticated user.
+ */
+export type JobsListResponse = {
+  /**
+   * Array of jobs ordered by specified sort field
+   */
+  jobs: Array<JobEntry>
+  pagination: PaginationInfo
+}
+
+/**
+ * Response after adding, updating, or removing tags on an asset.
+ */
 export type TagsModificationResponse = {
   /**
    * Tags that were successfully added (for add operation)
@@ -1383,6 +2819,9 @@ export type TagsModificationResponse = {
   total_tags: Array<string>
 }
 
+/**
+ * Details of a single validation error encountered during asset operations.
+ */
 export type ValidationError = {
   /**
    * Machine-readable error code
@@ -1398,6 +2837,9 @@ export type ValidationError = {
   field: string
 }
 
+/**
+ * Result of validating a set of asset operations.
+ */
 export type ValidationResult = {
   /**
    * Overall validation status (true if all checks passed)
@@ -1413,6 +2855,9 @@ export type ValidationResult = {
   warnings?: Array<ValidationError>
 }
 
+/**
+ * Acknowledgement of an async asset download task; clients poll GET /api/tasks/{task_id} for status.
+ */
 export type AssetDownloadResponse = {
   /**
    * Task ID for tracking download progress via GET /api/tasks/{task_id}
@@ -1428,6 +2873,9 @@ export type AssetDownloadResponse = {
   message?: string
 }
 
+/**
+ * Metadata for a remotely hosted asset resolved by URL.
+ */
 export type AssetMetadataResponse = {
   /**
    * Size of the asset in bytes (-1 if unknown)
@@ -1453,9 +2901,15 @@ export type AssetMetadataResponse = {
    * Preview image as base64-encoded data URL
    */
   preview_image?: string
+  /**
+   * Validation results for the file
+   */
   validation?: ValidationResult
 }
 
+/**
+ * Histogram of tag counts used for refining asset search results.
+ */
 export type AssetTagHistogramResponse = {
   /**
    * Map of tag names to their occurrence counts on matching assets
@@ -1465,6 +2919,9 @@ export type AssetTagHistogramResponse = {
   }
 }
 
+/**
+ * Paginated list of available asset tags.
+ */
 export type ListTagsResponse = {
   /**
    * List of tags
@@ -1480,6 +2937,9 @@ export type ListTagsResponse = {
   has_more: boolean
 }
 
+/**
+ * Metadata for a single tag that can be applied to assets.
+ */
 export type TagInfo = {
   /**
    * Tag name
@@ -1491,6 +2951,9 @@ export type TagInfo = {
   count: number
 }
 
+/**
+ * Paginated list of assets belonging to the authenticated user.
+ */
 export type ListAssetsResponse = {
   /**
    * List of assets matching the query
@@ -1504,8 +2967,17 @@ export type ListAssetsResponse = {
    * Whether more assets are available beyond this page
    */
   has_more: boolean
+  /**
+   * Opaque cursor to pass as the `after` query parameter to fetch the
+   * next page. Omitted from the response when there are no more results.
+   *
+   */
+  next_cursor?: string
 }
 
+/**
+ * Represents a user-owned asset (image, video, or other generated output).
+ */
 export type Asset = {
   /**
    * Unique identifier for the asset
@@ -1516,13 +2988,17 @@ export type Asset = {
    */
   name: string
   /**
-   * Blake3 hash of the asset content
+   * Display name of the asset. Mirrors name for backwards compatibility.
    */
-  asset_hash?: string
+  display_name?: string | null
+  /**
+   * Blake3 hash of the asset content.
+   */
+  hash?: string
   /**
    * Size of the asset in bytes
    */
-  size: number
+  size?: number
   /**
    * MIME type of the asset
    */
@@ -1548,13 +3024,17 @@ export type Asset = {
    */
   preview_url?: string
   /**
+   * Durable, owner-gated short link to this asset's content (relative `/api/s/{id}` path). Stable across the underlying signed URL's expiry — resolving it re-mints a fresh signed URL on every request — so it is safe to persist or share into chat, unlike `preview_url`. Only the minting user can resolve it. Omitted when the short-link surface is disabled or the asset has no resolvable content hash.
+   */
+  short_url?: string | null
+  /**
    * ID of the preview asset if available
    */
   preview_id?: string | null
   /**
-   * ID of the job/prompt that created this asset, if available
+   * ID of the job that created this asset, if available
    */
-  prompt_id?: string | null
+  job_id?: string | null
   /**
    * Timestamp when the asset was created
    */
@@ -1571,8 +3051,15 @@ export type Asset = {
    * Whether this asset is immutable (cannot be modified or deleted)
    */
   is_immutable?: boolean
+  /**
+   * Relative path in global-namespace-root form (e.g. "models/checkpoints/flux.safetensors")
+   */
+  file_path?: string | null
 }
 
+/**
+ * Response returned when an existing asset is successfully updated.
+ */
 export type AssetUpdated = {
   /**
    * Asset ID
@@ -1583,9 +3070,13 @@ export type AssetUpdated = {
    */
   name?: string
   /**
-   * Blake3 hash of the asset content
+   * Display name of the asset. Mirrors name for backwards compatibility.
    */
-  asset_hash?: string
+  display_name?: string | null
+  /**
+   * Blake3 hash of the asset content.
+   */
+  hash?: string
   /**
    * Tags associated with the asset
    */
@@ -1601,11 +3092,22 @@ export type AssetUpdated = {
     [key: string]: unknown
   }
   /**
+   * ID of the job that created this asset, if available
+   */
+  job_id?: string | null
+  /**
    * Timestamp of the update
    */
   updated_at: string
+  /**
+   * Relative path in global-namespace-root form (e.g. "models/checkpoints/flux.safetensors")
+   */
+  file_path?: string | null
 }
 
+/**
+ * Response returned when a new asset is successfully created.
+ */
 export type AssetCreated = Asset & {
   /**
    * Whether this was a new asset creation (true) or returned existing (false)
@@ -1614,33 +3116,8 @@ export type AssetCreated = Asset & {
 }
 
 /**
- * Response after sending an invite email
+ * Response after updating the review status of a Hub workflow.
  */
-export type SendUserInviteEmailResponse = {
-  /**
-   * Whether the email was sent successfully
-   */
-  success: boolean
-  /**
-   * A message describing the result
-   */
-  message: string
-}
-
-/**
- * Request to send an invite email to a user
- */
-export type SendUserInviteEmailRequest = {
-  /**
-   * The email address to send the invitation to
-   */
-  email: string
-  /**
-   * Whether to force send the invite even if user already exists or has been invited
-   */
-  force?: boolean
-}
-
 export type SetReviewStatusResponse = {
   /**
    * The share IDs that were submitted for review
@@ -1652,6 +3129,9 @@ export type SetReviewStatusResponse = {
   status: 'approved' | 'rejected'
 }
 
+/**
+ * Request body for setting the review status of a Hub workflow.
+ */
 export type SetReviewStatusRequest = {
   /**
    * The share IDs of the hub workflows to review
@@ -1661,34 +3141,6 @@ export type SetReviewStatusRequest = {
    * The review decision for the workflows
    */
   status: 'approved' | 'rejected'
-}
-
-/**
- * Response after successfully claiming an invite code
- */
-export type InviteCodeClaimResponse = {
-  /**
-   * Whether the claim was successful
-   */
-  success: boolean
-  /**
-   * Success message
-   */
-  message: string
-}
-
-/**
- * Invite code status response
- */
-export type InviteCodeStatusResponse = {
-  /**
-   * Whether the code has been claimed
-   */
-  claimed: boolean
-  /**
-   * Whether the code has expired
-   */
-  expired: boolean
 }
 
 /**
@@ -1720,38 +3172,87 @@ export type CreateSessionResponse = {
  */
 export type UserResponse = {
   /**
-   * User status (active or waitlisted)
+   * Firebase UID of the authenticated user
+   */
+  id: string
+  /**
+   * User status (always "active" for authenticated users)
    */
   status: string
 }
 
-export type LogsSubscribeRequest = {
-  /**
-   * Whether to enable or disable log subscription
-   */
-  enabled: boolean
-}
-
 /**
- * Raw logs response with entries and size
+ * System statistics response
  */
-export type RawLogsResponse = {
-  entries?: Array<{
+export type SystemStatsResponse = {
+  system: {
     /**
-     * Log message
+     * Operating system
      */
-    m?: string
-  }>
-  size?: {
+    os: string
     /**
-     * Terminal column size
+     * Python version
      */
-    cols?: number
+    python_version: string
     /**
-     * Terminal row size
+     * Whether using embedded Python
      */
-    rows?: number
+    embedded_python: boolean
+    /**
+     * ComfyUI version
+     */
+    comfyui_version: string
+    /**
+     * How this ComfyUI instance is deployed (e.g. cloud, local-git, local-portable, local-desktop)
+     */
+    deploy_environment?: string
+    /**
+     * ComfyUI frontend version (commit hash or tag)
+     */
+    comfyui_frontend_version?: string
+    /**
+     * Workflow templates version
+     */
+    workflow_templates_version?: string
+    /**
+     * Cloud ingest service version (commit hash)
+     */
+    cloud_version?: string
+    /**
+     * PyTorch version
+     */
+    pytorch_version: string
+    /**
+     * Command line arguments
+     */
+    argv: Array<string>
+    /**
+     * Total RAM in bytes
+     */
+    ram_total: number
+    /**
+     * Free RAM in bytes
+     */
+    ram_free: number
   }
+  devices: Array<{
+    /**
+     * Device name
+     */
+    name: string
+    /**
+     * Device type
+     */
+    type: string
+    /**
+     * Total VRAM in bytes
+     */
+    vram_total?: number
+    /**
+     * Free VRAM in bytes
+     */
+    vram_free?: number
+  }>
 }
 
 /**
@@ -1842,6 +3343,62 @@ export type ModelFolder = {
 }
 
 /**
+ * Error response for ComfyUI prompt execution.
+ */
+export type PromptErrorResponse = {
+  [key: string]: unknown
+}
+
+/**
+ * Individual file entry within a full user data response.
+ */
+export type GetUserDataResponseFullFile = {
+  /**
+   * File name or path relative to the user directory.
+   */
+  path?: string
+  /**
+   * File size in bytes.
+   */
+  size?: number
+  /**
+   * UNIX timestamp of the last modification in milliseconds.
+   */
+  modified?: number
+}
+
+/**
+ * List of user data file entries (each with path, size, and modification time) returned when full_info=true.
+ */
+export type GetUserDataResponseFull = Array<GetUserDataResponseFullFile>
+
+/**
+ * User data listing entry with file metadata (path, size, modification time).
+ */
+export type UserDataResponseFull = {
+  path?: string
+  size?: number
+  /**
+   * UNIX timestamp of the last modification in milliseconds.
+   */
+  modified?: number
+}
+
+/**
+ * Request to manage history operations
+ */
+export type HistoryManageRequest = {
+  /**
+   * Array of job IDs to delete from history
+   */
+  delete?: Array<string>
+  /**
+   * If true, clear all history for the authenticated user
+   */
+  clear?: boolean
+}
+
+/**
  * Job status information
  */
 export type JobStatusResponse = {
@@ -1879,6 +3436,178 @@ export type JobStatusResponse = {
    * Error message if the job failed
    */
   error_message?: string | null
+}
+
+/**
+ * Response after a queue management action (delete or clear).
+ */
+export type QueueManageResponse = {
+  /**
+   * Array of job IDs that were successfully cancelled
+   */
+  deleted?: Array<string>
+  /**
+   * Whether the queue was cleared
+   */
+  cleared?: boolean
+}
+
+/**
+ * Request to manage queue operations
+ */
+export type QueueManageRequest = {
+  /**
+   * Array of job IDs to cancel; pending and running jobs transition to cancelled
+   */
+  delete?: Array<string>
+  /**
+   * If true, clear all pending jobs from the queue
+   */
+  clear?: boolean
+}
+
+/**
+ * Queue information with pending and running jobs
+ */
+export type QueueInfo = {
+  /**
+   * Array of currently running job items
+   */
+  queue_running?: Array<[unknown, unknown, unknown, unknown, unknown]>
+  /**
+   * Array of pending job items (ordered by creation time, oldest first)
+   */
+  queue_pending?: Array<[unknown, unknown, unknown, unknown, unknown]>
+}
+
+/**
+ * Detailed execution history response for a specific prompt.
+ * Returns a dictionary with prompt_id as key and full history data as value.
+ *
+ */
+export type HistoryDetailResponse = {
+  [key: string]: HistoryDetailEntry
+}
+
+/**
+ * History entry with full prompt data
+ */
+export type HistoryDetailEntry = {
+  /**
+   * Full prompt execution data
+   */
+  prompt?: {
+    /**
+     * Execution priority
+     */
+    priority?: number
+    /**
+     * The prompt ID
+     */
+    prompt_id?: string
+    /**
+     * The workflow nodes
+     */
+    prompt?: {
+      [key: string]: unknown
+    }
+    /**
+     * Additional execution data
+     */
+    extra_data?: {
+      [key: string]: unknown
+    }
+    /**
+     * Output nodes to execute
+     */
+    outputs_to_execute?: Array<string>
+  }
+  /**
+   * Output data from execution (generated images, files, etc.)
+   */
+  outputs?: {
+    [key: string]: unknown
+  }
+  /**
+   * Execution status and timeline information
+   */
+  status?: {
+    [key: string]: unknown
+  }
+  /**
+   * Metadata about the execution and nodes
+   */
+  meta?: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * History entry with prompt_id and execution data
+ */
+export type HistoryEntry = {
+  /**
+   * Unique identifier for this prompt execution
+   */
+  prompt_id: string
+  /**
+   * Job creation timestamp (Unix timestamp in milliseconds)
+   */
+  create_time?: number
+  /**
+   * UUID identifying the workflow graph definition
+   */
+  workflow_id?: string
+  /**
+   * Filtered prompt execution data (lightweight format)
+   */
+  prompt?: {
+    /**
+     * Execution priority
+     */
+    priority?: number
+    /**
+     * The prompt ID
+     */
+    prompt_id?: string
+    /**
+     * Additional execution data (workflow removed from extra_pnginfo)
+     */
+    extra_data?: {
+      [key: string]: unknown
+    }
+  }
+  /**
+   * Output data from execution (generated images, files, etc.)
+   */
+  outputs?: {
+    [key: string]: unknown
+  }
+  /**
+   * Execution status and timeline information
+   */
+  status?: {
+    [key: string]: unknown
+  }
+  /**
+   * Metadata about the execution and nodes
+   */
+  meta?: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Execution history response with history array.
+ * Returns an object with a "history" key containing an array of history entries.
+ * Each entry includes prompt_id as a property along with execution data.
+ *
+ */
+export type HistoryResponse = {
+  /**
+   * Array of history entries ordered by creation time (newest first)
+   */
+  history: Array<HistoryEntry>
 }
 
 /**
@@ -1935,6 +3664,91 @@ export type GlobalSubgraphInfo = {
   data?: string
 }
 
+/**
+ * Metadata describing a single ComfyUI node type and its inputs/outputs.
+ */
+export type NodeInfo = {
+  /**
+   * Input specifications for the node
+   */
+  input?: {
+    [key: string]: unknown
+  }
+  /**
+   * Order of inputs for display
+   */
+  input_order?: {
+    [key: string]: Array<string>
+  }
+  /**
+   * Output types of the node
+   */
+  output?: Array<string>
+  /**
+   * Whether each output is a list
+   */
+  output_is_list?: Array<boolean>
+  /**
+   * Names of the outputs
+   */
+  output_name?: Array<string>
+  /**
+   * Internal name of the node
+   */
+  name?: string
+  /**
+   * Display name of the node
+   */
+  display_name?: string
+  /**
+   * Description of the node
+   */
+  description?: string
+  /**
+   * Python module implementing the node
+   */
+  python_module?: string
+  /**
+   * Category of the node
+   */
+  category?: string
+  /**
+   * Whether this is an output node
+   */
+  output_node?: boolean
+  /**
+   * Tooltips for outputs
+   */
+  output_tooltips?: Array<string>
+  /**
+   * Whether the node is deprecated
+   */
+  deprecated?: boolean
+  /**
+   * Whether the node is experimental
+   */
+  experimental?: boolean
+  /**
+   * Whether this is an API node
+   */
+  api_node?: boolean
+}
+
+/**
+ * Metadata about the currently running and queued prompts.
+ */
+export type PromptInfo = {
+  exec_info?: {
+    /**
+     * Number of items remaining in the queue
+     */
+    queue_remaining?: number
+  }
+}
+
+/**
+ * Response containing a signed download URL for an exported asset archive.
+ */
 export type ExportDownloadUrlResponse = {
   /**
    * Signed URL for downloading the export ZIP file
@@ -1946,11 +3760,67 @@ export type ExportDownloadUrlResponse = {
   expires_at?: string
 }
 
-export type ErrorResponse = {
-  code: string
-  message: string
+/**
+ * Response returned after successfully queuing a workflow prompt.
+ */
+export type PromptResponse = {
+  /**
+   * Unique identifier for the prompt execution
+   */
+  prompt_id?: string
+  /**
+   * Priority number in the queue
+   */
+  number?: number
+  /**
+   * Any errors in the nodes of the prompt
+   */
+  node_errors?: {
+    [key: string]: unknown
+  }
 }
 
+/**
+ * Request body for submitting a ComfyUI workflow prompt for execution.
+ */
+export type PromptRequest = {
+  /**
+   * The workflow graph to execute
+   */
+  prompt: {
+    [key: string]: unknown
+  }
+  /**
+   * Priority number for the queue (lower numbers have higher priority)
+   */
+  number?: number
+  /**
+   * If true, adds the prompt to the front of the queue
+   */
+  front?: boolean
+  /**
+   * Extra data to be associated with the prompt
+   */
+  extra_data?: {
+    [key: string]: unknown
+  }
+  /**
+   * List of node names to execute
+   */
+  partial_execution_targets?: Array<string>
+  /**
+   * UUID identifying the cloud workflow entity to associate with this job
+   */
+  workflow_id?: string
+  /**
+   * UUID identifying the workflow version to associate with this job
+   */
+  workflow_version_id?: string
+}
+
+/**
+ * Paginated list of assets belonging to the authenticated user.
+ */
 export type ListAssetsResponseWritable = {
   /**
    * List of assets matching the query
@@ -1964,8 +3834,17 @@ export type ListAssetsResponseWritable = {
    * Whether more assets are available beyond this page
    */
   has_more: boolean
+  /**
+   * Opaque cursor to pass as the `after` query parameter to fetch the
+   * next page. Omitted from the response when there are no more results.
+   *
+   */
+  next_cursor?: string
 }
 
+/**
+ * Represents a user-owned asset (image, video, or other generated output).
+ */
 export type AssetWritable = {
   /**
    * Unique identifier for the asset
@@ -1976,13 +3855,17 @@ export type AssetWritable = {
    */
   name: string
   /**
-   * Blake3 hash of the asset content
+   * Display name of the asset. Mirrors name for backwards compatibility.
    */
-  asset_hash?: string
+  display_name?: string | null
+  /**
+   * Blake3 hash of the asset content.
+   */
+  hash?: string
   /**
    * Size of the asset in bytes
    */
-  size: number
+  size?: number
   /**
    * MIME type of the asset
    */
@@ -2002,13 +3885,17 @@ export type AssetWritable = {
    */
   preview_url?: string
   /**
+   * Durable, owner-gated short link to this asset's content (relative `/api/s/{id}` path). Stable across the underlying signed URL's expiry — resolving it re-mints a fresh signed URL on every request — so it is safe to persist or share into chat, unlike `preview_url`. Only the minting user can resolve it. Omitted when the short-link surface is disabled or the asset has no resolvable content hash.
+   */
+  short_url?: string | null
+  /**
    * ID of the preview asset if available
    */
   preview_id?: string | null
   /**
-   * ID of the job/prompt that created this asset, if available
+   * ID of the job that created this asset, if available
    */
-  prompt_id?: string | null
+  job_id?: string | null
   /**
    * Timestamp when the asset was created
    */
@@ -2025,8 +3912,15 @@ export type AssetWritable = {
    * Whether this asset is immutable (cannot be modified or deleted)
    */
   is_immutable?: boolean
+  /**
+   * Relative path in global-namespace-root form (e.g. "models/checkpoints/flux.safetensors")
+   */
+  file_path?: string | null
 }
 
+/**
+ * Response returned when a new asset is successfully created.
+ */
 export type AssetCreatedWritable = AssetWritable & {
   /**
    * Whether this was a new asset creation (true) or returned existing (false)
@@ -2040,6 +3934,157 @@ export type AssetCreatedWritable = AssetWritable & {
 export type FeedbackResponseWritable = {
   [key: string]: unknown
 }
+
+export type GetPromptInfoData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/prompt'
+}
+
+export type GetPromptInfoErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetPromptInfoError = GetPromptInfoErrors[keyof GetPromptInfoErrors]
+
+export type GetPromptInfoResponses = {
+  /**
+   * Success
+   */
+  200: PromptInfo
+}
+
+export type GetPromptInfoResponse =
+  GetPromptInfoResponses[keyof GetPromptInfoResponses]
+
+export type ExecutePromptData = {
+  body: PromptRequest
+  path?: never
+  query?: never
+  url: '/api/prompt'
+}
+
+export type ExecutePromptErrors = {
+  /**
+   * Invalid prompt
+   */
+  400: PromptErrorResponse
+  /**
+   * Payment required - Insufficient credits
+   */
+  402: PromptErrorResponse
+  /**
+   * Workflow JSON too large
+   */
+  413: PromptErrorResponse
+  /**
+   * Payment required - User has not paid
+   */
+  429: PromptErrorResponse
+  /**
+   * Internal server error
+   */
+  500: PromptErrorResponse
+  /**
+   * Service unavailable
+   */
+  503: PromptErrorResponse
+}
+
+export type ExecutePromptError = ExecutePromptErrors[keyof ExecutePromptErrors]
+
+export type ExecutePromptResponses = {
+  /**
+   * Success - Prompt accepted
+   */
+  200: PromptResponse
+}
+
+export type ExecutePromptResponse =
+  ExecutePromptResponses[keyof ExecutePromptResponses]
+
+export type GetNodeInfoData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/object_info'
+}
+
+export type GetNodeInfoResponses = {
+  /**
+   * Success
+   */
+  200: {
+    [key: string]: NodeInfo
+  }
+}
+
+export type GetNodeInfoResponse =
+  GetNodeInfoResponses[keyof GetNodeInfoResponses]
+
+export type GetFeaturesData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/features'
+}
+
+export type GetFeaturesResponses = {
+  /**
+   * Success
+   */
+  200: {
+    /**
+     * Whether the server supports preview metadata
+     */
+    supports_preview_metadata?: boolean
+    /**
+     * Maximum upload size in bytes
+     */
+    max_upload_size?: number
+    [key: string]: unknown | boolean | number | undefined
+  }
+}
+
+export type GetFeaturesResponse =
+  GetFeaturesResponses[keyof GetFeaturesResponses]
+
+export type GetNodeReplacementsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/node_replacements'
+}
+
+export type GetNodeReplacementsErrors = {
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetNodeReplacementsError =
+  GetNodeReplacementsErrors[keyof GetNodeReplacementsErrors]
+
+export type GetNodeReplacementsResponses = {
+  /**
+   * Success - Node replacement mappings
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type GetNodeReplacementsResponse =
+  GetNodeReplacementsResponses[keyof GetNodeReplacementsResponses]
 
 export type GetWorkflowTemplatesData = {
   body?: never
@@ -2188,29 +4233,108 @@ export type GetModelsInFolderResponses = {
 export type GetModelsInFolderResponse =
   GetModelsInFolderResponses[keyof GetModelsInFolderResponses]
 
-export type GetModelPreviewData = {
+export type GetLegacyHistoryData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/history'
+}
+
+export type GetLegacyHistoryErrors = {
+  /**
+   * Not Found — use /api/history_v2 instead
+   */
+  404: unknown
+}
+
+export type ManageHistoryData = {
+  body: HistoryManageRequest
+  path?: never
+  query?: never
+  url: '/api/history'
+}
+
+export type ManageHistoryErrors = {
+  /**
+   * Invalid request parameters
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ManageHistoryError = ManageHistoryErrors[keyof ManageHistoryErrors]
+
+export type ManageHistoryResponses = {
+  /**
+   * Success - History management operation completed
+   */
+  200: unknown
+}
+
+export type GetHistoryData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Maximum number of items to return
+     */
+    max_items?: number
+    /**
+     * Starting position (default 0)
+     */
+    offset?: number
+  }
+  url: '/api/history_v2'
+}
+
+export type GetHistoryErrors = {
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetHistoryError = GetHistoryErrors[keyof GetHistoryErrors]
+
+export type GetHistoryResponses = {
+  /**
+   * Success - Execution history retrieved
+   */
+  200: HistoryResponse
+}
+
+export type GetHistoryResponse = GetHistoryResponses[keyof GetHistoryResponses]
+
+export type GetHistoryForPromptData = {
   body?: never
   path: {
     /**
-     * The folder name containing the model
+     * The prompt ID to retrieve history for
      */
-    folder: string
-    /**
-     * The path index (usually 0 for cloud service)
-     */
-    path_index: number
-    /**
-     * The model filename (with or without .webp extension)
-     */
-    filename: string
+    prompt_id: string
   }
   query?: never
-  url: '/api/experiment/models/preview/{folder}/{path_index}/{filename}'
+  url: '/api/history_v2/{prompt_id}'
 }
 
-export type GetModelPreviewErrors = {
+export type GetHistoryForPromptErrors = {
   /**
-   * Model not found or preview not available
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Prompt not found
    */
   404: ErrorResponse
   /**
@@ -2219,18 +4343,302 @@ export type GetModelPreviewErrors = {
   500: ErrorResponse
 }
 
-export type GetModelPreviewError =
-  GetModelPreviewErrors[keyof GetModelPreviewErrors]
+export type GetHistoryForPromptError =
+  GetHistoryForPromptErrors[keyof GetHistoryForPromptErrors]
 
-export type GetModelPreviewResponses = {
+export type GetHistoryForPromptResponses = {
   /**
-   * Success - Model preview image
+   * Success - History for prompt retrieved
+   */
+  200: HistoryDetailResponse
+}
+
+export type GetHistoryForPromptResponse =
+  GetHistoryForPromptResponses[keyof GetHistoryForPromptResponses]
+
+export type ListJobsData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Filter by one or more statuses (comma-separated). If not provided, returns all jobs.
+     */
+    status?: string
+    /**
+     * Filter by workflow ID (exact match)
+     */
+    workflow_id?: string
+    /**
+     * Filter by output media type (only applies to completed jobs with outputs)
+     */
+    output_type?: 'image' | 'video' | 'audio' | '3d'
+    /**
+     * Field to sort by (create_time = when job was submitted, execution_time = how long workflow took to run)
+     */
+    sort_by?: 'create_time' | 'execution_time'
+    /**
+     * Sort direction (asc = ascending, desc = descending)
+     */
+    sort_order?: 'asc' | 'desc'
+    /**
+     * Opaque cursor for keyset pagination. Pass the `next_cursor` value
+     * from a previous response to fetch the next page.
+     * Cursor pagination is supported only when `sort_by=create_time`
+     * (default). If `sort_by=execution_time`, `after` is ignored and
+     * offset/limit pagination is used.
+     * Cursors are opaque base64url payloads — clients should treat them
+     * as strings and not parse the contents.
+     *
+     */
+    after?: string
+    /**
+     * Pagination offset (0-based). Deprecated: prefer cursor-based pagination via `after`.
+     *
+     * @deprecated
+     */
+    offset?: number
+    /**
+     * Maximum items per page (1-1000)
+     */
+    limit?: number
+  }
+  url: '/api/jobs'
+}
+
+export type ListJobsErrors = {
+  /**
+   * Bad request (e.g. malformed pagination cursor).
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ListJobsError = ListJobsErrors[keyof ListJobsErrors]
+
+export type ListJobsResponses = {
+  /**
+   * Success - Jobs retrieved
+   */
+  200: JobsListResponse
+}
+
+export type ListJobsResponse = ListJobsResponses[keyof ListJobsResponses]
+
+export type GetJobDetailData = {
+  body?: never
+  path: {
+    /**
+     * Job identifier (UUID)
+     */
+    job_id: string
+  }
+  query?: {
+    /**
+     * When present, each output item in the response receives a `short_url` field containing a short link for that asset. Omit this parameter (the default) to receive a response identical to the no-param baseline. The value selects the link's lifetime and auth model: use `ephemeral_tool_chain` for short-lived (≤5 minute) machine-to-machine handoffs — these are public bearer links where the link ID itself is the credential, so anyone holding the link can resolve it (intended for pasting into an agent/MCP tool chain); use `default` for durable (30 day) human-revisitable links, which are owner-gated and resolvable only by the authenticated owner. Links are always minted under the authenticated request owner's identity; the auth model is selected by the server and is never settable by the caller.
+     *
+     */
+    short_link?: 'ephemeral_tool_chain' | 'default'
+  }
+  url: '/api/jobs/{job_id}'
+}
+
+export type GetJobDetailErrors = {
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - Job does not belong to user
+   */
+  403: ErrorResponse
+  /**
+   * Job not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetJobDetailError = GetJobDetailErrors[keyof GetJobDetailErrors]
+
+export type GetJobDetailResponses = {
+  /**
+   * Success - Job details retrieved
+   */
+  200: JobDetailResponse
+}
+
+export type GetJobDetailResponse =
+  GetJobDetailResponses[keyof GetJobDetailResponses]
+
+export type CancelJobData = {
+  body?: never
+  path: {
+    /**
+     * Job identifier (UUID)
+     */
+    job_id: string
+  }
+  query?: never
+  url: '/api/jobs/{job_id}/cancel'
+}
+
+export type CancelJobErrors = {
+  /**
+   * Bad Request - job_id is not a valid UUID (emitted by request validation before the handler runs)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Job not found for this user
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error - cancellation failed
+   */
+  500: ErrorResponse
+}
+
+export type CancelJobError = CancelJobErrors[keyof CancelJobErrors]
+
+export type CancelJobResponses = {
+  /**
+   * Success - Cancel request accepted (or job was already terminal)
+   */
+  200: JobCancelResponse
+}
+
+export type CancelJobResponse = CancelJobResponses[keyof CancelJobResponses]
+
+export type CancelJobsData = {
+  body: JobsCancelRequest
+  path?: never
+  query?: never
+  url: '/api/jobs/cancel'
+}
+
+export type CancelJobsErrors = {
+  /**
+   * Bad Request - job_ids is missing, empty, exceeds the maximum count, or contains an invalid UUID
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * One or more job IDs not found for this user (no jobs cancelled)
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error - cancellation failed
+   */
+  500: ErrorResponse
+}
+
+export type CancelJobsError = CancelJobsErrors[keyof CancelJobsErrors]
+
+export type CancelJobsResponses = {
+  /**
+   * Success - cancel requests dispatched (or jobs were already terminal)
+   */
+  200: JobsCancelResponse
+}
+
+export type CancelJobsResponse = CancelJobsResponses[keyof CancelJobsResponses]
+
+export type ViewFileData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Name of the file to view
+     */
+    filename: string
+    /**
+     * Subfolder path where the file is located
+     */
+    subfolder?: string
+    /**
+     * Type of file (e.g., output, input, temp)
+     */
+    type?: string
+    /**
+     * Full path to the file (used for temp files)
+     */
+    fullpath?: string
+    /**
+     * Format of the file
+     */
+    format?: string
+    /**
+     * Frame rate for video files
+     */
+    frame_rate?: number
+    /**
+     * Workflow identifier
+     */
+    workflow?: string
+    /**
+     * Timestamp parameter
+     */
+    timestamp?: number
+    /**
+     * Image channel to extract from PNG images.
+     * - 'rgb': Return only RGB channels (alpha set to fully opaque)
+     * - 'a' or 'alpha': Return alpha channel as grayscale image
+     * - If not specified, return original image unchanged via redirect
+     *
+     */
+    channel?: string
+    /**
+     * Maximum dimension (width or height) to resize the image to, preserving aspect ratio.
+     * The image is fit within a res x res box. Returns a JPEG thumbnail.
+     * Only applies to raster image files (PNG, JPEG, WebP, GIF).
+     *
+     */
+    res?: number
+  }
+  url: '/api/view'
+}
+
+export type ViewFileErrors = {
+  /**
+   * Invalid request parameters
+   */
+  400: ErrorResponse
+  /**
+   * File not found or unauthorized
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ViewFileError = ViewFileErrors[keyof ViewFileErrors]
+
+export type ViewFileResponses = {
+  /**
+   * Processed PNG image with extracted channel
    */
   200: Blob | File
 }
 
-export type GetModelPreviewResponse =
-  GetModelPreviewResponses[keyof GetModelPreviewResponses]
+export type ViewFileResponse = ViewFileResponses[keyof ViewFileResponses]
 
 export type GetMaskLayersData = {
   body?: never
@@ -2297,6 +4705,10 @@ export type GetFilesErrors = {
    * Invalid directory type
    */
   400: ErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
 }
 
 export type GetFilesError = GetFilesErrors[keyof GetFilesErrors]
@@ -2347,17 +4759,24 @@ export type ListAssetsData = {
      */
     order?: 'asc' | 'desc'
     /**
-     * Filter assets by job IDs (prompt IDs)
-     */
-    job_ids?: Array<string>
-    /**
      * Whether to include public/shared assets in results
      */
     include_public?: boolean
     /**
-     * Filter assets by exact content hash
+     * Filter assets by exact content hash.
      */
-    asset_hash?: string
+    hash?: string
+    /**
+     * Opaque cursor for keyset pagination. Pass the `next_cursor` value
+     * from the previous response to fetch the next page. When provided,
+     * `offset` is ignored. Cursor pagination is only supported with
+     * `sort` values `created_at`, `updated_at`, `name`, or `size`;
+     * requests combining `after` with other sort fields return 400.
+     * The cursor must have been minted under the same `sort` value used
+     * in the follow-up request.
+     *
+     */
+    after?: string
   }
   url: '/api/assets'
 }
@@ -2388,53 +4807,55 @@ export type ListAssetsResponses = {
 
 export type ListAssetsResponse2 = ListAssetsResponses[keyof ListAssetsResponses]
 
-export type UploadAssetData = {
+export type CreateAssetData = {
   body: {
     /**
-     * HTTP/HTTPS URL to download the asset from
+     * The asset file to upload
      */
-    url: string
+    file: Blob | File
     /**
-     * Display name for the asset (used to determine file extension)
+     * Content hash of the file.
      */
-    name: string
+    hash?: string
     /**
-     * Freeform tags for the asset. Common types include "models", "input", "output", and "temp", but any tag can be used in any order.
+     * JSON-encoded array of freeform tag strings, e.g. '["models","checkpoint"]'. Common types include "models", "input", "output", and "temp", but any tag can be used in any order.
      */
-    tags?: Array<string>
+    tags?: string
     /**
-     * Custom metadata to store with the asset
+     * Optional asset ID for idempotent creation. If provided and asset exists, returns existing asset.
      */
-    user_metadata?: {
-      [key: string]: unknown
-    }
+    id?: string
     /**
-     * Optional preview asset ID
+     * Optional preview asset ID. If not provided, images will use their own ID as preview.
      */
     preview_id?: string
+    /**
+     * Display name for the asset
+     */
+    name?: string
+    /**
+     * MIME type of the asset (e.g., "image/png", "video/mp4")
+     */
+    mime_type?: string
+    /**
+     * Custom JSON metadata as a string
+     */
+    user_metadata?: string
   }
   path?: never
   query?: never
   url: '/api/assets'
 }
 
-export type UploadAssetErrors = {
+export type CreateAssetErrors = {
   /**
-   * Invalid request (bad file, invalid URL, invalid content type, etc.)
+   * Invalid request (bad file, invalid content type, etc.)
    */
   400: ErrorResponse
   /**
    * Unauthorized
    */
   401: ErrorResponse
-  /**
-   * Source URL requires authentication or access denied
-   */
-  403: ErrorResponse
-  /**
-   * Source URL not found
-   */
-  404: ErrorResponse
   /**
    * File too large
    */
@@ -2444,7 +4865,7 @@ export type UploadAssetErrors = {
    */
   415: ErrorResponse
   /**
-   * Download failed due to network error or timeout
+   * Validation error (e.g., disallowed model_type tag)
    */
   422: ErrorResponse
   /**
@@ -2453,26 +4874,28 @@ export type UploadAssetErrors = {
   500: ErrorResponse
 }
 
-export type UploadAssetError = UploadAssetErrors[keyof UploadAssetErrors]
+export type CreateAssetError = CreateAssetErrors[keyof CreateAssetErrors]
 
-export type UploadAssetResponses = {
+export type CreateAssetResponses = {
   /**
-   * Asset already exists (returned existing asset)
+   * Asset already existed for this user (deduplicated by content hash); the
+   * existing asset is returned with created_new=false.
+   *
    */
   200: AssetCreated
   /**
-   * Asset created successfully
+   * Asset created successfully (created_new=true)
    */
   201: AssetCreated
 }
 
-export type UploadAssetResponse =
-  UploadAssetResponses[keyof UploadAssetResponses]
+export type CreateAssetResponse =
+  CreateAssetResponses[keyof CreateAssetResponses]
 
 export type CreateAssetFromHashData = {
   body: {
     /**
-     * Hash of the existing asset. Supports Blake3 (blake3:) or SHA256 (sha256:) formats
+     * Blake3 content hash of the existing asset (blake3: prefix)
      */
     hash: string
     /**
@@ -2513,6 +4936,10 @@ export type CreateAssetFromHashErrors = {
    */
   404: ErrorResponse
   /**
+   * Validation error (e.g., disallowed model_type tag)
+   */
+  422: ErrorResponse
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -2523,11 +4950,13 @@ export type CreateAssetFromHashError =
 
 export type CreateAssetFromHashResponses = {
   /**
-   * Asset reference already exists (returned existing)
+   * Asset reference already existed for this user (deduplicated by content
+   * hash); the existing asset is returned with created_new=false.
+   *
    */
   200: AssetCreated
   /**
-   * Asset reference created successfully
+   * Asset reference created successfully (created_new=true)
    */
   201: AssetCreated
 }
@@ -2582,7 +5011,7 @@ export type GetRemoteAssetMetadataResponse =
 export type CreateAssetDownloadData = {
   body: {
     /**
-     * URL of the file to download (must be from huggingface.co or civitai.com)
+     * URL of the file to download (must be from huggingface.co, civitai.com, or civitai.red)
      */
     source_url: string
     /**
@@ -2644,35 +5073,39 @@ export type CreateAssetDownloadResponse =
 export type CreateAssetExportData = {
   body: {
     /**
-     * Job IDs to include *all associated assets* of the jobs in the ZIP bundle.
+     * Job IDs whose output assets are included in the ZIP bundle. Preview assets of these jobs are additionally included when `include_previews` is true.
      */
     job_ids?: Array<string>
     /**
-     * Asset IDs to include in the ZIP bundle. Additive to the assets associated with provided job IDs.
+     * Asset IDs to include in the ZIP bundle. Supports input, output, and available temp assets. Additive to output assets associated with provided job IDs.
      */
     asset_ids?: Array<string>
     /**
      * Strategy for naming files in the ZIP:
      * - group_by_job_id: Group assets by job ID as a parent directory (e.g., "833a1b5c-beab-436a-ae8e-f07e7cd7b2c4/ComfyUI_00001_.png")
-     * - prepend_job_id: Prepend job ID to filenames for uniqueness (e.g., "833a1b5c-beab-436a-ae8e-f07e7cd7b2c4_ComfyUI_00001_.png")
      * - preserve: Use original asset names, skip duplicates (first one wins)
      * - asset_id: Use the asset ID as the filename (e.g., "833a1b5c-beab-436a-ae8e-f07e7cd7b2c4.png")
+     * - group_by_job_time: Group by job creation timestamp (e.g., "2026-03-26T16-13-00/ComfyUI_00001_.png")
      *
      */
     naming_strategy?:
       | 'group_by_job_id'
-      | 'prepend_job_id'
       | 'preserve'
       | 'asset_id'
+      | 'group_by_job_time'
     /**
      * Optional per-job asset name filters. When provided for a job ID,
      * only assets whose name matches one of the specified names are included.
-     * Job IDs present in `job_ids` but absent from this map include all their assets.
+     * Job IDs present in `job_ids` but absent from this map include their output assets (plus previews when `include_previews` is true).
      *
      */
     job_asset_name_filters?: {
       [key: string]: Array<string>
     }
+    /**
+     * When true, preview assets attached to the provided job_ids are included in the export. No effect on asset_ids. Preview assets are placed under a `previews/` subfolder in group-by-job layouts.
+     */
+    include_previews?: boolean
   }
   path?: never
   query?: never
@@ -2773,6 +5206,10 @@ export type DeleteAssetErrors = {
    */
   404: ErrorResponse
   /**
+   * Asset cannot be deleted because it is referenced by another resource, e.g. a workflow version (error code: ASSET_IN_USE)
+   */
+  409: ErrorResponse
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -2782,7 +5219,7 @@ export type DeleteAssetError = DeleteAssetErrors[keyof DeleteAssetErrors]
 
 export type DeleteAssetResponses = {
   /**
-   * Asset deleted successfully
+   * Asset record deleted successfully
    */
   204: void
 }
@@ -2862,7 +5299,9 @@ export type UpdateAssetData = {
 
 export type UpdateAssetErrors = {
   /**
-   * Invalid request (no fields provided)
+   * Invalid request — no fields provided, or `preview_id` is the zero UUID
+   * (`INVALID_PREVIEW_ID`).
+   *
    */
   400: ErrorResponse
   /**
@@ -2870,7 +5309,10 @@ export type UpdateAssetErrors = {
    */
   401: ErrorResponse
   /**
-   * Asset not found
+   * Asset not found — returned both when the asset being updated does
+   * not exist and when `preview_id` does not reference an asset
+   * accessible to the caller.
+   *
    */
   404: ErrorResponse
   /**
@@ -2995,66 +5437,6 @@ export type AddAssetTagsResponses = {
 
 export type AddAssetTagsResponse =
   AddAssetTagsResponses[keyof AddAssetTagsResponses]
-
-export type UpdateAssetTagsData = {
-  /**
-   * At least one of add or remove must contain items. Empty arrays are allowed when the other array has items.
-   */
-  body: {
-    /**
-     * Tags to add to the asset. Can be empty if remove has items.
-     */
-    add?: Array<string>
-    /**
-     * Tags to remove from the asset. Can be empty if add has items.
-     */
-    remove?: Array<string>
-  }
-  path: {
-    /**
-     * Asset ID
-     */
-    id: string
-  }
-  query?: never
-  url: '/api/assets/{id}/tags'
-}
-
-export type UpdateAssetTagsErrors = {
-  /**
-   * Invalid request
-   */
-  400: ErrorResponse
-  /**
-   * Unauthorized
-   */
-  401: ErrorResponse
-  /**
-   * Asset not found
-   */
-  404: ErrorResponse
-  /**
-   * Reserved tag validation error
-   */
-  422: ErrorResponse
-  /**
-   * Internal server error
-   */
-  500: ErrorResponse
-}
-
-export type UpdateAssetTagsError =
-  UpdateAssetTagsErrors[keyof UpdateAssetTagsErrors]
-
-export type UpdateAssetTagsResponses = {
-  /**
-   * Tags updated successfully
-   */
-  200: TagsModificationResponse
-}
-
-export type UpdateAssetTagsResponse =
-  UpdateAssetTagsResponses[keyof UpdateAssetTagsResponses]
 
 export type ListTagsData = {
   body?: never
@@ -3271,10 +5653,6 @@ export type ImportPublishedAssetsErrors = {
    */
   401: ErrorResponse
   /**
-   * Not found
-   */
-  404: ErrorResponse
-  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -3292,6 +5670,101 @@ export type ImportPublishedAssetsResponses = {
 
 export type ImportPublishedAssetsResponse2 =
   ImportPublishedAssetsResponses[keyof ImportPublishedAssetsResponses]
+
+export type GetQueueInfoData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/queue'
+}
+
+export type GetQueueInfoErrors = {
+  /**
+   * Invalid request parameters
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Invalid request parameters
+   */
+  500: ErrorResponse
+}
+
+export type GetQueueInfoError = GetQueueInfoErrors[keyof GetQueueInfoErrors]
+
+export type GetQueueInfoResponses = {
+  /**
+   * Success
+   */
+  200: QueueInfo
+}
+
+export type GetQueueInfoResponse =
+  GetQueueInfoResponses[keyof GetQueueInfoResponses]
+
+export type ManageQueueData = {
+  body: QueueManageRequest
+  path?: never
+  query?: never
+  url: '/api/queue'
+}
+
+export type ManageQueueErrors = {
+  /**
+   * Invalid request parameters
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ManageQueueError = ManageQueueErrors[keyof ManageQueueErrors]
+
+export type ManageQueueResponses = {
+  /**
+   * Success
+   */
+  200: QueueManageResponse
+}
+
+export type ManageQueueResponse =
+  ManageQueueResponses[keyof ManageQueueResponses]
+
+export type InterruptJobData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/interrupt'
+}
+
+export type InterruptJobErrors = {
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type InterruptJobError = InterruptJobErrors[keyof InterruptJobErrors]
+
+export type InterruptJobResponses = {
+  /**
+   * Success - first active job cancelled, or no active job found
+   */
+  200: unknown
+}
 
 export type ListSecretsData = {
   body?: never
@@ -3372,6 +5845,37 @@ export type CreateSecretResponses = {
 
 export type CreateSecretResponse =
   CreateSecretResponses[keyof CreateSecretResponses]
+
+export type ListSecretProvidersData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/secrets/providers'
+}
+
+export type ListSecretProvidersErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Service unavailable - secrets feature disabled
+   */
+  503: ErrorResponse
+}
+
+export type ListSecretProvidersError =
+  ListSecretProvidersErrors[keyof ListSecretProvidersErrors]
+
+export type ListSecretProvidersResponses = {
+  /**
+   * Success
+   */
+  200: SecretProvidersResponse
+}
+
+export type ListSecretProvidersResponse =
+  ListSecretProvidersResponses[keyof ListSecretProvidersResponses]
 
 export type DeleteSecretData = {
   body?: never
@@ -3521,19 +6025,86 @@ export type UpdateSecretResponses = {
 export type UpdateSecretResponse =
   UpdateSecretResponses[keyof UpdateSecretResponses]
 
-export type GetSettingByKeyData = {
+export type GetAllSettingsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/settings'
+}
+
+export type GetAllSettingsErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+}
+
+export type GetAllSettingsError =
+  GetAllSettingsErrors[keyof GetAllSettingsErrors]
+
+export type GetAllSettingsResponses = {
+  /**
+   * User settings as key-value pairs
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type GetAllSettingsResponse =
+  GetAllSettingsResponses[keyof GetAllSettingsResponses]
+
+export type UpdateMultipleSettingsData = {
+  /**
+   * Settings to update as key-value pairs
+   */
+  body: {
+    [key: string]: unknown
+  }
+  path?: never
+  query?: never
+  url: '/api/settings'
+}
+
+export type UpdateMultipleSettingsErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+}
+
+export type UpdateMultipleSettingsError =
+  UpdateMultipleSettingsErrors[keyof UpdateMultipleSettingsErrors]
+
+export type UpdateMultipleSettingsResponses = {
+  /**
+   * Updated user settings
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type UpdateMultipleSettingsResponse =
+  UpdateMultipleSettingsResponses[keyof UpdateMultipleSettingsResponses]
+
+export type GetSettingByIdData = {
   body?: never
   path: {
     /**
-     * Setting key to retrieve
+     * Setting id to retrieve
      */
-    key: string
+    id: string
   }
   query?: never
-  url: '/api/settings/{key}'
+  url: '/api/settings/{id}'
 }
 
-export type GetSettingByKeyErrors = {
+export type GetSettingByIdErrors = {
   /**
    * Unauthorized
    */
@@ -3544,10 +6115,10 @@ export type GetSettingByKeyErrors = {
   404: ErrorResponse
 }
 
-export type GetSettingByKeyError =
-  GetSettingByKeyErrors[keyof GetSettingByKeyErrors]
+export type GetSettingByIdError =
+  GetSettingByIdErrors[keyof GetSettingByIdErrors]
 
-export type GetSettingByKeyResponses = {
+export type GetSettingByIdResponses = {
   /**
    * Setting value response
    */
@@ -3559,25 +6130,25 @@ export type GetSettingByKeyResponses = {
   }
 }
 
-export type GetSettingByKeyResponse =
-  GetSettingByKeyResponses[keyof GetSettingByKeyResponses]
+export type GetSettingByIdResponse =
+  GetSettingByIdResponses[keyof GetSettingByIdResponses]
 
-export type UpdateSettingByKeyData = {
+export type UpdateSettingByIdData = {
   /**
    * New value for the setting
    */
   body: unknown
   path: {
     /**
-     * Setting key to update
+     * Setting id to update
      */
-    key: string
+    id: string
   }
   query?: never
-  url: '/api/settings/{key}'
+  url: '/api/settings/{id}'
 }
 
-export type UpdateSettingByKeyErrors = {
+export type UpdateSettingByIdErrors = {
   /**
    * Invalid request
    */
@@ -3588,10 +6159,10 @@ export type UpdateSettingByKeyErrors = {
   401: ErrorResponse
 }
 
-export type UpdateSettingByKeyError =
-  UpdateSettingByKeyErrors[keyof UpdateSettingByKeyErrors]
+export type UpdateSettingByIdError =
+  UpdateSettingByIdErrors[keyof UpdateSettingByIdErrors]
 
-export type UpdateSettingByKeyResponses = {
+export type UpdateSettingByIdResponses = {
   /**
    * Updated setting value response
    */
@@ -3603,8 +6174,8 @@ export type UpdateSettingByKeyResponses = {
   }
 }
 
-export type UpdateSettingByKeyResponse =
-  UpdateSettingByKeyResponses[keyof UpdateSettingByKeyResponses]
+export type UpdateSettingByIdResponse =
+  UpdateSettingByIdResponses[keyof UpdateSettingByIdResponses]
 
 export type SubmitFeedbackData = {
   body: FeedbackRequest
@@ -3641,11 +6212,467 @@ export type SubmitFeedbackResponses = {
 export type SubmitFeedbackResponse =
   SubmitFeedbackResponses[keyof SubmitFeedbackResponses]
 
+export type GetUserdataData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * The directory to list files from.
+     */
+    dir?: string
+    /**
+     * Whether to list files recursively.
+     */
+    recurse?: boolean
+    /**
+     * Whether to split file information by type.
+     */
+    split?: boolean
+    /**
+     * Whether to return full file metadata.
+     */
+    full_info?: boolean
+  }
+  url: '/api/userdata'
+}
+
+export type GetUserdataErrors = {
+  /**
+   * Bad request (e.g., invalid filename).
+   */
+  400: string
+  /**
+   * Unauthorized.
+   */
+  401: string
+  /**
+   * File not found or invalid path.
+   */
+  404: string
+  /**
+   * General error
+   */
+  500: string
+}
+
+export type GetUserdataError = GetUserdataErrors[keyof GetUserdataErrors]
+
+export type GetUserdataResponses = {
+  /**
+   * A list of user data files.
+   */
+  200: GetUserDataResponseFull
+}
+
+export type GetUserdataResponse =
+  GetUserdataResponses[keyof GetUserdataResponses]
+
+export type GetUserdataFilePublishData = {
+  body?: never
+  path: {
+    /**
+     * The workflow file path within the user's data directory (URL encoded if necessary).
+     */
+    file: string
+  }
+  query?: never
+  url: '/api/userdata/{file}/publish'
+}
+
+export type GetUserdataFilePublishErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Workflow not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetUserdataFilePublishError =
+  GetUserdataFilePublishErrors[keyof GetUserdataFilePublishErrors]
+
+export type GetUserdataFilePublishResponses = {
+  /**
+   * Publish info (publish_time is null if never published)
+   */
+  200: WorkflowPublishInfo
+}
+
+export type GetUserdataFilePublishResponse =
+  GetUserdataFilePublishResponses[keyof GetUserdataFilePublishResponses]
+
+export type PostUserdataFilePublishData = {
+  body: PublishWorkflowAssetsRequest
+  path: {
+    /**
+     * The workflow file path within the user's data directory (URL encoded if necessary).
+     */
+    file: string
+  }
+  query?: never
+  url: '/api/userdata/{file}/publish'
+}
+
+export type PostUserdataFilePublishErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Workflow not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type PostUserdataFilePublishError =
+  PostUserdataFilePublishErrors[keyof PostUserdataFilePublishErrors]
+
+export type PostUserdataFilePublishResponses = {
+  /**
+   * Workflow published
+   */
+  200: WorkflowPublishInfo
+}
+
+export type PostUserdataFilePublishResponse =
+  PostUserdataFilePublishResponses[keyof PostUserdataFilePublishResponses]
+
+export type DeleteUserdataFileData = {
+  body?: never
+  path: {
+    /**
+     * The file path to delete (URL encoded if necessary).
+     */
+    file: string
+  }
+  query?: never
+  url: '/api/userdata/{file}'
+}
+
+export type DeleteUserdataFileErrors = {
+  /**
+   * Unauthorized.
+   */
+  401: string
+  /**
+   * File not found.
+   */
+  404: string
+  /**
+   * Internal server error.
+   */
+  500: string
+}
+
+export type DeleteUserdataFileError =
+  DeleteUserdataFileErrors[keyof DeleteUserdataFileErrors]
+
+export type DeleteUserdataFileResponses = {
+  /**
+   * File deleted successfully (No Content).
+   */
+  204: void
+}
+
+export type DeleteUserdataFileResponse =
+  DeleteUserdataFileResponses[keyof DeleteUserdataFileResponses]
+
+export type GetUserdataFileData = {
+  body?: never
+  path: {
+    /**
+     * The filename of the user data to retrieve.
+     */
+    file: string
+  }
+  query?: never
+  url: '/api/userdata/{file}'
+}
+
+export type GetUserdataFileErrors = {
+  /**
+   * Bad request (e.g., invalid filename).
+   */
+  400: string
+  /**
+   * Unauthorized.
+   */
+  401: string
+  /**
+   * File not found or invalid path.
+   */
+  404: string
+  /**
+   * General error
+   */
+  500: string
+}
+
+export type GetUserdataFileError =
+  GetUserdataFileErrors[keyof GetUserdataFileErrors]
+
+export type GetUserdataFileResponses = {
+  /**
+   * Successfully retrieved the file.
+   */
+  200: Blob | File
+}
+
+export type GetUserdataFileResponse =
+  GetUserdataFileResponses[keyof GetUserdataFileResponses]
+
+export type PostUserdataFileData = {
+  body: Blob | File
+  path: {
+    /**
+     * The target file path (URL encoded if necessary).
+     */
+    file: string
+  }
+  query?: {
+    /**
+     * If "false", prevents overwriting existing files. Defaults to "true".
+     */
+    overwrite?: 'true' | 'false'
+    /**
+     * If "true", returns detailed file info; if "false", returns only the relative path.
+     */
+    full_info?: 'true' | 'false'
+  }
+  url: '/api/userdata/{file}'
+}
+
+export type PostUserdataFileErrors = {
+  /**
+   * Missing or invalid 'file' parameter.
+   */
+  400: string
+  /**
+   * Unauthorized.
+   */
+  401: string
+  /**
+   * The requested path is not allowed.
+   */
+  403: string
+  /**
+   * File already exists and overwrite is set to false.
+   */
+  409: string
+  /**
+   * General error
+   */
+  500: string
+}
+
+export type PostUserdataFileError =
+  PostUserdataFileErrors[keyof PostUserdataFileErrors]
+
+export type PostUserdataFileResponses = {
+  /**
+   * File uploaded successfully.
+   */
+  200: UserDataResponseFull
+}
+
+export type PostUserdataFileResponse =
+  PostUserdataFileResponses[keyof PostUserdataFileResponses]
+
+export type MoveUserdataFileData = {
+  body?: never
+  path: {
+    /**
+     * The source file path (URL encoded if necessary).
+     */
+    file: string
+    /**
+     * The destination file path (URL encoded if necessary).
+     */
+    dest: string
+  }
+  query?: {
+    /**
+     * If "false", prevents overwriting existing files. Defaults to "true".
+     */
+    overwrite?: 'true' | 'false'
+  }
+  url: '/api/userdata/{file}/move/{dest}'
+}
+
+export type MoveUserdataFileErrors = {
+  /**
+   * Missing or invalid parameters.
+   */
+  400: string
+  /**
+   * Unauthorized.
+   */
+  401: string
+  /**
+   * Source file not found.
+   */
+  404: string
+  /**
+   * Destination file already exists and overwrite is set to false.
+   */
+  409: string
+  /**
+   * General error
+   */
+  500: string
+}
+
+export type MoveUserdataFileError =
+  MoveUserdataFileErrors[keyof MoveUserdataFileErrors]
+
+export type MoveUserdataFileResponses = {
+  /**
+   * File moved successfully.
+   */
+  200: UserDataResponseFull
+}
+
+export type MoveUserdataFileResponse =
+  MoveUserdataFileResponses[keyof MoveUserdataFileResponses]
+
+export type UploadImageData = {
+  body: {
+    /**
+     * The image file to upload
+     */
+    image: Blob | File
+    /**
+     * Whether to overwrite existing file (true/false)
+     */
+    overwrite?: string
+    /**
+     * Optional subfolder path
+     */
+    subfolder?: string
+    /**
+     * Upload type (defaults to "output")
+     */
+    type?: string
+  }
+  path?: never
+  query?: never
+  url: '/api/upload/image'
+}
+
+export type UploadImageErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type UploadImageError = UploadImageErrors[keyof UploadImageErrors]
+
+export type UploadImageResponses = {
+  /**
+   * Image uploaded successfully
+   */
+  200: {
+    /**
+     * Filename of the uploaded image
+     */
+    name?: string
+    /**
+     * Subfolder path where image was saved
+     */
+    subfolder?: string
+    /**
+     * Type of upload (e.g., "output")
+     */
+    type?: string
+  }
+}
+
+export type UploadImageResponse =
+  UploadImageResponses[keyof UploadImageResponses]
+
+export type UploadMaskData = {
+  body: {
+    /**
+     * The mask image file to upload
+     */
+    image: Blob | File
+    /**
+     * JSON string containing reference to the original image
+     */
+    original_ref: string
+  }
+  path?: never
+  query?: never
+  url: '/api/upload/mask'
+}
+
+export type UploadMaskErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type UploadMaskError = UploadMaskErrors[keyof UploadMaskErrors]
+
+export type UploadMaskResponses = {
+  /**
+   * Mask uploaded successfully
+   */
+  200: {
+    /**
+     * Filename of the uploaded mask
+     */
+    name?: string
+    /**
+     * Subfolder path where mask was saved
+     */
+    subfolder?: string
+    /**
+     * Type of upload (e.g., "output")
+     */
+    type?: string
+  }
+}
+
+export type UploadMaskResponse = UploadMaskResponses[keyof UploadMaskResponses]
+
 export type GetLogsData = {
   body?: never
   path?: never
   query?: never
-  url: '/internal/logs'
+  url: '/api/logs'
 }
 
 export type GetLogsErrors = {
@@ -3666,66 +6693,32 @@ export type GetLogsResponses = {
 
 export type GetLogsResponse = GetLogsResponses[keyof GetLogsResponses]
 
-export type GetRawLogsData = {
+export type GetSystemStatsData = {
   body?: never
   path?: never
   query?: never
-  url: '/internal/logs/raw'
+  url: '/api/system_stats'
 }
 
-export type GetRawLogsErrors = {
+export type GetSystemStatsErrors = {
   /**
    * Unauthorized
    */
   401: ErrorResponse
 }
 
-export type GetRawLogsError = GetRawLogsErrors[keyof GetRawLogsErrors]
+export type GetSystemStatsError =
+  GetSystemStatsErrors[keyof GetSystemStatsErrors]
 
-export type GetRawLogsResponses = {
+export type GetSystemStatsResponses = {
   /**
    * Success
    */
-  200: RawLogsResponse
+  200: SystemStatsResponse
 }
 
-export type GetRawLogsResponse = GetRawLogsResponses[keyof GetRawLogsResponses]
-
-export type SubscribeToLogsData = {
-  body: LogsSubscribeRequest
-  path?: never
-  query?: never
-  url: '/internal/logs/subscribe'
-}
-
-export type SubscribeToLogsErrors = {
-  /**
-   * Bad request
-   */
-  400: ErrorResponse
-  /**
-   * Unauthorized
-   */
-  401: ErrorResponse
-}
-
-export type SubscribeToLogsError =
-  SubscribeToLogsErrors[keyof SubscribeToLogsErrors]
-
-export type SubscribeToLogsResponses = {
-  /**
-   * Success
-   */
-  200: {
-    /**
-     * Whether logs subscription is enabled
-     */
-    enabled?: boolean
-  }
-}
-
-export type SubscribeToLogsResponse =
-  SubscribeToLogsResponses[keyof SubscribeToLogsResponses]
+export type GetSystemStatsResponse =
+  GetSystemStatsResponses[keyof GetSystemStatsResponses]
 
 export type DeleteSessionData = {
   body?: never
@@ -3821,6 +6814,119 @@ export type ExchangeTokenResponses = {
 export type ExchangeTokenResponse2 =
   ExchangeTokenResponses[keyof ExchangeTokenResponses]
 
+export type CreateDesktopLoginCodeData = {
+  body: DesktopLoginCodeCreateRequest
+  path?: never
+  query?: never
+  url: '/api/auth/desktop-login-codes'
+}
+
+export type CreateDesktopLoginCodeErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Service unavailable - login code store not available
+   */
+  503: ErrorResponse
+}
+
+export type CreateDesktopLoginCodeError =
+  CreateDesktopLoginCodeErrors[keyof CreateDesktopLoginCodeErrors]
+
+export type CreateDesktopLoginCodeResponses = {
+  /**
+   * Login code created
+   */
+  201: DesktopLoginCodeCreateResponse
+}
+
+export type CreateDesktopLoginCodeResponse =
+  CreateDesktopLoginCodeResponses[keyof CreateDesktopLoginCodeResponses]
+
+export type RedeemDesktopLoginCodeData = {
+  body: DesktopLoginCodeRedeemRequest
+  path?: never
+  query?: never
+  url: '/api/auth/desktop-login-codes/redeem'
+}
+
+export type RedeemDesktopLoginCodeErrors = {
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Unknown or expired code
+   */
+  404: ErrorResponse
+  /**
+   * Code already redeemed by a different user
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Service unavailable - login code store not available
+   */
+  503: ErrorResponse
+}
+
+export type RedeemDesktopLoginCodeError =
+  RedeemDesktopLoginCodeErrors[keyof RedeemDesktopLoginCodeErrors]
+
+export type RedeemDesktopLoginCodeResponses = {
+  /**
+   * Code redeemed (or already redeemed by the same user)
+   */
+  200: DesktopLoginCodeRedeemResponse
+}
+
+export type RedeemDesktopLoginCodeResponse =
+  RedeemDesktopLoginCodeResponses[keyof RedeemDesktopLoginCodeResponses]
+
+export type ExchangeDesktopLoginCodeData = {
+  body: DesktopLoginCodeExchangeRequest
+  path?: never
+  query?: never
+  url: '/api/auth/desktop-login-codes/exchange'
+}
+
+export type ExchangeDesktopLoginCodeErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Code verifier does not match the challenge
+   */
+  403: ErrorResponse
+  /**
+   * Unknown, expired, or already-consumed code
+   */
+  404: ErrorResponse
+  /**
+   * Service unavailable - login code store or token minting not available
+   */
+  503: ErrorResponse
+}
+
+export type ExchangeDesktopLoginCodeError =
+  ExchangeDesktopLoginCodeErrors[keyof ExchangeDesktopLoginCodeErrors]
+
+export type ExchangeDesktopLoginCodeResponses = {
+  /**
+   * Pending (not yet redeemed) or complete with a custom token
+   */
+  200: DesktopLoginCodeExchangeResponse
+}
+
+export type ExchangeDesktopLoginCodeResponse =
+  ExchangeDesktopLoginCodeResponses[keyof ExchangeDesktopLoginCodeResponses]
+
 export type GetJwksData = {
   body?: never
   path?: never
@@ -3836,6 +6942,261 @@ export type GetJwksResponses = {
 }
 
 export type GetJwksResponse = GetJwksResponses[keyof GetJwksResponses]
+
+export type GetOAuthAuthorizationServerData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/.well-known/oauth-authorization-server'
+}
+
+export type GetOAuthAuthorizationServerErrors = {
+  /**
+   * OAuth disabled
+   */
+  404: ErrorResponse
+}
+
+export type GetOAuthAuthorizationServerError =
+  GetOAuthAuthorizationServerErrors[keyof GetOAuthAuthorizationServerErrors]
+
+export type GetOAuthAuthorizationServerResponses = {
+  /**
+   * Authorization-server metadata
+   */
+  200: OAuthAuthorizationServerMetadata
+}
+
+export type GetOAuthAuthorizationServerResponse =
+  GetOAuthAuthorizationServerResponses[keyof GetOAuthAuthorizationServerResponses]
+
+export type GetOAuthProtectedResourceData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/.well-known/oauth-protected-resource'
+}
+
+export type GetOAuthProtectedResourceErrors = {
+  /**
+   * OAuth disabled or no active resource configured
+   */
+  404: ErrorResponse
+}
+
+export type GetOAuthProtectedResourceError =
+  GetOAuthProtectedResourceErrors[keyof GetOAuthProtectedResourceErrors]
+
+export type GetOAuthProtectedResourceResponses = {
+  /**
+   * Protected-resource metadata
+   */
+  200: OAuthProtectedResourceMetadata
+}
+
+export type GetOAuthProtectedResourceResponse =
+  GetOAuthProtectedResourceResponses[keyof GetOAuthProtectedResourceResponses]
+
+export type GetOAuthProtectedResourceByPathData = {
+  body?: never
+  path: {
+    /**
+     * Single-segment resource path without its leading slash (e.g. "mcp").
+     */
+    resourcePath: string
+  }
+  query?: never
+  url: '/.well-known/oauth-protected-resource/{resourcePath}'
+}
+
+export type GetOAuthProtectedResourceByPathErrors = {
+  /**
+   * OAuth disabled, or no active resource at this path
+   */
+  404: ErrorResponse
+}
+
+export type GetOAuthProtectedResourceByPathError =
+  GetOAuthProtectedResourceByPathErrors[keyof GetOAuthProtectedResourceByPathErrors]
+
+export type GetOAuthProtectedResourceByPathResponses = {
+  /**
+   * Protected-resource metadata
+   */
+  200: OAuthProtectedResourceMetadata
+}
+
+export type GetOAuthProtectedResourceByPathResponse =
+  GetOAuthProtectedResourceByPathResponses[keyof GetOAuthProtectedResourceByPathResponses]
+
+export type GetOAuthAuthorizeData = {
+  body?: never
+  path?: never
+  query?: {
+    response_type?: string
+    client_id?: string
+    redirect_uri?: string
+    scope?: string
+    /**
+     * RFC 6749 §10.12 marks `state` as RECOMMENDED. Our hardening makes
+     * it REQUIRED on the initial-entry path (omitted only on the resume
+     * path where `oauth_request_id` is supplied instead). This parameter
+     * is `required: false` at the spec level only because the operation
+     * is dual-mode (initial entry vs. resume); the runtime parser
+     * (services/ingest/server/implementation/oauth/protocol/request.go)
+     * rejects empty `state` on the initial-entry path with a stable
+     * `invalid_request` 400.
+     *
+     */
+    state?: string
+    code_challenge?: string
+    code_challenge_method?: string
+    resource?: string
+    oauth_request_id?: string
+  }
+  url: '/oauth/authorize'
+}
+
+export type GetOAuthAuthorizeErrors = {
+  /**
+   * Invalid authorize request (pre-redirect failure — unknown client, redirect mismatch, malformed params). Content-negotiated; browser navigations (Accept includes text/html without application/json) receive a self-contained HTML error page instead of JSON.
+   */
+  400: ErrorResponse
+  /**
+   * OAuth disabled
+   */
+  404: ErrorResponse
+}
+
+export type GetOAuthAuthorizeError =
+  GetOAuthAuthorizeErrors[keyof GetOAuthAuthorizeErrors]
+
+export type GetOAuthAuthorizeResponses = {
+  /**
+   * Consent challenge payload (cookie present, email verified). Frontend renders the consent UI from this payload and POSTs back to /oauth/authorize.
+   *
+   */
+  200: OAuthConsentChallenge
+}
+
+export type GetOAuthAuthorizeResponse =
+  GetOAuthAuthorizeResponses[keyof GetOAuthAuthorizeResponses]
+
+export type PostOAuthAuthorizeData = {
+  body: {
+    oauth_request_id: string
+    csrf_token: string
+    decision: 'allow' | 'deny'
+    workspace_id: string
+  }
+  path?: never
+  query?: never
+  url: '/oauth/authorize'
+}
+
+export type PostOAuthAuthorizeErrors = {
+  /**
+   * Bad request (CSRF mismatch, expired/consumed request, inaccessible workspace)
+   */
+  400: ErrorResponse
+  /**
+   * Scope broadening on consent re-grant — fresh consent flow required
+   */
+  403: ErrorResponse
+  /**
+   * OAuth disabled
+   */
+  404: ErrorResponse
+}
+
+export type PostOAuthAuthorizeError =
+  PostOAuthAuthorizeErrors[keyof PostOAuthAuthorizeErrors]
+
+export type PostOAuthAuthorizeResponses = {
+  /**
+   * Redirect URL for the frontend to navigate to (allow → with code+state; deny → with error+state)
+   */
+  200: OAuthAuthorizeRedirectResponse
+}
+
+export type PostOAuthAuthorizeResponse =
+  PostOAuthAuthorizeResponses[keyof PostOAuthAuthorizeResponses]
+
+export type PostOAuthTokenData = {
+  body: {
+    grant_type: 'authorization_code' | 'refresh_token'
+    client_id: string
+    code?: string
+    redirect_uri?: string
+    code_verifier?: string
+    refresh_token?: string
+    scope?: string
+    client_secret?: string
+  }
+  path?: never
+  query?: never
+  url: '/oauth/token'
+}
+
+export type PostOAuthTokenErrors = {
+  /**
+   * RFC 6749 §5.2 error
+   */
+  400: OAuthTokenError
+  /**
+   * OAuth disabled
+   */
+  404: ErrorResponse
+}
+
+export type PostOAuthTokenError =
+  PostOAuthTokenErrors[keyof PostOAuthTokenErrors]
+
+export type PostOAuthTokenResponses = {
+  /**
+   * New token pair
+   */
+  200: OAuthTokenResponse
+}
+
+export type PostOAuthTokenResponse =
+  PostOAuthTokenResponses[keyof PostOAuthTokenResponses]
+
+export type PostOAuthRegisterData = {
+  body: OAuthRegisterRequest
+  path?: never
+  query?: never
+  url: '/oauth/register'
+}
+
+export type PostOAuthRegisterErrors = {
+  /**
+   * Bad request. Two shapes possible: `OAuthRegisterError` (RFC 7591 §3.2.2, emitted by the handler for invalid client metadata, reserved client_name, etc.) OR `ErrorResponse` (emitted by the strict-server binding layer when the request body fails OpenAPI-schema validation — malformed JSON, missing required fields, `additionalProperties: false` violations — normalized to the standard {code, message} shape by the custom Echo HTTPErrorHandler, BE-1178).
+   *
+   */
+  400: OAuthRegisterBadRequestResponse
+  /**
+   * OAuth disabled
+   */
+  404: ErrorResponse
+  /**
+   * No active MCP resource is configured — DCR cannot mint a usable client until ops seeds an active oauth_resources row.
+   */
+  503: ErrorResponse
+}
+
+export type PostOAuthRegisterError =
+  PostOAuthRegisterErrors[keyof PostOAuthRegisterErrors]
+
+export type PostOAuthRegisterResponses = {
+  /**
+   * Registered. Body echoes the metadata RFC 7591 §3.2.1 requires.
+   */
+  201: OAuthRegisterResponse
+}
+
+export type PostOAuthRegisterResponse =
+  PostOAuthRegisterResponses[keyof PostOAuthRegisterResponses]
 
 export type ListWorkspacesData = {
   body?: never
@@ -4351,6 +7712,260 @@ export type RemoveWorkspaceMemberResponses = {
 export type RemoveWorkspaceMemberResponse =
   RemoveWorkspaceMemberResponses[keyof RemoveWorkspaceMemberResponses]
 
+export type UpdateWorkspaceMemberRoleData = {
+  body: UpdateMemberRoleRequest
+  path: {
+    /**
+     * User ID whose role is being changed
+     */
+    userId: string
+  }
+  query?: never
+  url: '/api/workspace/members/{userId}'
+}
+
+export type UpdateWorkspaceMemberRoleErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Owner role required, or the original owner cannot be demoted
+   */
+  403: ErrorResponse
+  /**
+   * Workspace or member not found
+   */
+  404: ErrorResponse
+  /**
+   * Validation error
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type UpdateWorkspaceMemberRoleError =
+  UpdateWorkspaceMemberRoleErrors[keyof UpdateWorkspaceMemberRoleErrors]
+
+export type UpdateWorkspaceMemberRoleResponses = {
+  /**
+   * Member role updated
+   */
+  200: Member
+}
+
+export type UpdateWorkspaceMemberRoleResponse =
+  UpdateWorkspaceMemberRoleResponses[keyof UpdateWorkspaceMemberRoleResponses]
+
+export type ListWorkspaceApiKeysData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/workspace/api-keys'
+}
+
+export type ListWorkspaceApiKeysErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ListWorkspaceApiKeysError =
+  ListWorkspaceApiKeysErrors[keyof ListWorkspaceApiKeysErrors]
+
+export type ListWorkspaceApiKeysResponses = {
+  /**
+   * List of API keys
+   */
+  200: ListWorkspaceApiKeysResponse
+}
+
+export type ListWorkspaceApiKeysResponse2 =
+  ListWorkspaceApiKeysResponses[keyof ListWorkspaceApiKeysResponses]
+
+export type CreateWorkspaceApiKeyData = {
+  body: CreateWorkspaceApiKeyRequest
+  path?: never
+  query?: never
+  url: '/api/workspace/api-keys'
+}
+
+export type CreateWorkspaceApiKeyErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not a workspace member
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * Validation error
+   */
+  422: ErrorResponse
+  /**
+   * Key limit reached
+   */
+  429: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type CreateWorkspaceApiKeyError =
+  CreateWorkspaceApiKeyErrors[keyof CreateWorkspaceApiKeyErrors]
+
+export type CreateWorkspaceApiKeyResponses = {
+  /**
+   * API key created (plaintext returned once)
+   */
+  201: CreateWorkspaceApiKeyResponse
+}
+
+export type CreateWorkspaceApiKeyResponse2 =
+  CreateWorkspaceApiKeyResponses[keyof CreateWorkspaceApiKeyResponses]
+
+export type RevokeWorkspaceApiKeyData = {
+  body?: never
+  path: {
+    /**
+     * API key ID to revoke
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspace/api-keys/{id}'
+}
+
+export type RevokeWorkspaceApiKeyErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not authorized to revoke this key
+   */
+  403: ErrorResponse
+  /**
+   * API key not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type RevokeWorkspaceApiKeyError =
+  RevokeWorkspaceApiKeyErrors[keyof RevokeWorkspaceApiKeyErrors]
+
+export type RevokeWorkspaceApiKeyResponses = {
+  /**
+   * API key revoked
+   */
+  204: void
+}
+
+export type RevokeWorkspaceApiKeyResponse =
+  RevokeWorkspaceApiKeyResponses[keyof RevokeWorkspaceApiKeyResponses]
+
+export type BulkRevokeWorkspaceMemberApiKeysData = {
+  body?: never
+  path: {
+    /**
+     * Firebase UID of the member whose keys to revoke (must be non-empty)
+     */
+    user_id: string
+  }
+  query?: never
+  url: '/api/workspace/members/{user_id}/api-keys'
+}
+
+export type BulkRevokeWorkspaceMemberApiKeysErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not authorized (must be workspace owner)
+   */
+  403: ErrorResponse
+  /**
+   * Validation error (e.g. empty user_id)
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type BulkRevokeWorkspaceMemberApiKeysError =
+  BulkRevokeWorkspaceMemberApiKeysErrors[keyof BulkRevokeWorkspaceMemberApiKeysErrors]
+
+export type BulkRevokeWorkspaceMemberApiKeysResponses = {
+  /**
+   * Keys revoked successfully
+   */
+  200: BulkRevokeApiKeysResponse
+}
+
+export type BulkRevokeWorkspaceMemberApiKeysResponse =
+  BulkRevokeWorkspaceMemberApiKeysResponses[keyof BulkRevokeWorkspaceMemberApiKeysResponses]
+
+export type VerifyWorkspaceApiKeyData = {
+  body: VerifyApiKeyRequest
+  path?: never
+  query?: {
+    /**
+     * When true, fetches real billing status from the billing service and populates has_funds and is_active accordingly. When false or omitted, the billing lookup is skipped and has_funds/is_active are returned as true (optimistic defaults). Use true when the caller needs to gate access based on billing (e.g. partner node auth); omit for identity-only lookups (e.g. key caching).
+     */
+    include_billing?: boolean
+  }
+  url: '/admin/api/keys/verify'
+}
+
+export type VerifyWorkspaceApiKeyErrors = {
+  /**
+   * Invalid key or unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type VerifyWorkspaceApiKeyError =
+  VerifyWorkspaceApiKeyErrors[keyof VerifyWorkspaceApiKeyErrors]
+
+export type VerifyWorkspaceApiKeyResponses = {
+  /**
+   * Key is valid
+   */
+  200: VerifyApiKeyResponse
+}
+
+export type VerifyWorkspaceApiKeyResponse =
+  VerifyWorkspaceApiKeyResponses[keyof VerifyWorkspaceApiKeyResponses]
+
 export type GetUserData = {
   body?: never
   path?: never
@@ -4375,121 +7990,6 @@ export type GetUserResponses = {
 }
 
 export type GetUserResponse = GetUserResponses[keyof GetUserResponses]
-
-export type GetInviteCodeStatusData = {
-  body?: never
-  path: {
-    /**
-     * The invite code to check
-     */
-    code: string
-  }
-  query?: never
-  url: '/api/invite_code/{code}/status'
-}
-
-export type GetInviteCodeStatusErrors = {
-  /**
-   * Unauthorized - Firebase authentication required
-   */
-  401: ErrorResponse
-  /**
-   * Invite code not found
-   */
-  404: ErrorResponse
-}
-
-export type GetInviteCodeStatusError =
-  GetInviteCodeStatusErrors[keyof GetInviteCodeStatusErrors]
-
-export type GetInviteCodeStatusResponses = {
-  /**
-   * Success - invite code exists
-   */
-  200: InviteCodeStatusResponse
-}
-
-export type GetInviteCodeStatusResponse =
-  GetInviteCodeStatusResponses[keyof GetInviteCodeStatusResponses]
-
-export type ClaimInviteCodeData = {
-  body?: never
-  path: {
-    /**
-     * The invite code to claim
-     */
-    code: string
-  }
-  query?: never
-  url: '/api/invite_code/{code}/claim'
-}
-
-export type ClaimInviteCodeErrors = {
-  /**
-   * Bad request - invite code already claimed or expired
-   */
-  400: ErrorResponse
-  /**
-   * Unauthorized - Firebase authentication required
-   */
-  401: ErrorResponse
-  /**
-   * Invite code not found
-   */
-  404: ErrorResponse
-}
-
-export type ClaimInviteCodeError =
-  ClaimInviteCodeErrors[keyof ClaimInviteCodeErrors]
-
-export type ClaimInviteCodeResponses = {
-  /**
-   * Success - invite code claimed successfully
-   */
-  200: InviteCodeClaimResponse
-}
-
-export type ClaimInviteCodeResponse =
-  ClaimInviteCodeResponses[keyof ClaimInviteCodeResponses]
-
-export type SendUserInviteEmailData = {
-  body: SendUserInviteEmailRequest
-  path?: never
-  query?: never
-  url: '/admin/api/send_user_invite_email'
-}
-
-export type SendUserInviteEmailErrors = {
-  /**
-   * Bad request - invalid email or parameters
-   */
-  400: ErrorResponse
-  /**
-   * Unauthorized - authentication required
-   */
-  401: ErrorResponse
-  /**
-   * Forbidden - insufficient permissions
-   */
-  403: ErrorResponse
-  /**
-   * Internal server error
-   */
-  500: ErrorResponse
-}
-
-export type SendUserInviteEmailError =
-  SendUserInviteEmailErrors[keyof SendUserInviteEmailErrors]
-
-export type SendUserInviteEmailResponses = {
-  /**
-   * Success - invite email sent successfully
-   */
-  200: SendUserInviteEmailResponse
-}
-
-export type SendUserInviteEmailResponse2 =
-  SendUserInviteEmailResponses[keyof SendUserInviteEmailResponses]
 
 export type SetReviewStatusData = {
   body: SetReviewStatusRequest
@@ -4529,6 +8029,102 @@ export type SetReviewStatusResponses = {
 
 export type SetReviewStatusResponse2 =
   SetReviewStatusResponses[keyof SetReviewStatusResponses]
+
+export type AdminDeleteHubWorkflowData = {
+  body?: never
+  path: {
+    /**
+     * The share ID of the hub workflow to delete.
+     */
+    share_id: string
+  }
+  query?: never
+  url: '/admin/api/hub/workflows/{share_id}'
+}
+
+export type AdminDeleteHubWorkflowErrors = {
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - insufficient permissions
+   */
+  403: ErrorResponse
+  /**
+   * Not found - no published workflow for the given share_id
+   */
+  404: ErrorResponse
+  /**
+   * Conflict - the workflow is not rejected and cannot be deleted
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type AdminDeleteHubWorkflowError =
+  AdminDeleteHubWorkflowErrors[keyof AdminDeleteHubWorkflowErrors]
+
+export type AdminDeleteHubWorkflowResponses = {
+  /**
+   * Successfully deleted
+   */
+  204: void
+}
+
+export type AdminDeleteHubWorkflowResponse =
+  AdminDeleteHubWorkflowResponses[keyof AdminDeleteHubWorkflowResponses]
+
+export type UpdateHubWorkflowData = {
+  body: UpdateHubWorkflowRequest
+  path: {
+    /**
+     * The share ID of the hub workflow to update.
+     */
+    share_id: string
+  }
+  query?: never
+  url: '/admin/api/hub/workflows/{share_id}'
+}
+
+export type UpdateHubWorkflowErrors = {
+  /**
+   * Bad request - invalid field, unknown label slug, or invalid media token
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - insufficient permissions
+   */
+  403: ErrorResponse
+  /**
+   * Not found - no published workflow for the given share_id
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type UpdateHubWorkflowError =
+  UpdateHubWorkflowErrors[keyof UpdateHubWorkflowErrors]
+
+export type UpdateHubWorkflowResponses = {
+  /**
+   * Updated hub workflow detail
+   */
+  200: HubWorkflowDetail
+}
+
+export type UpdateHubWorkflowResponse =
+  UpdateHubWorkflowResponses[keyof UpdateHubWorkflowResponses]
 
 export type GetDeletionRequestData = {
   body?: never
@@ -4627,6 +8223,54 @@ export type CreateDeletionRequestResponses = {
 export type CreateDeletionRequestResponse =
   CreateDeletionRequestResponses[keyof CreateDeletionRequestResponses]
 
+export type ReleaseDeletionHoldData = {
+  body: {
+    /**
+     * The Firebase ID of the user whose hold to release
+     */
+    firebase_id: string
+  }
+  path?: never
+  query?: never
+  url: '/admin/api/deletion_requests/release_hold'
+}
+
+export type ReleaseDeletionHoldErrors = {
+  /**
+   * Bad request - invalid request body
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - insufficient permissions
+   */
+  403: ErrorResponse
+  /**
+   * No deletion request for this user
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ReleaseDeletionHoldError =
+  ReleaseDeletionHoldErrors[keyof ReleaseDeletionHoldErrors]
+
+export type ReleaseDeletionHoldResponses = {
+  /**
+   * Release authorized; the deletion workflow will proceed
+   */
+  200: ReleaseHoldResponse
+}
+
+export type ReleaseDeletionHoldResponse =
+  ReleaseDeletionHoldResponses[keyof ReleaseDeletionHoldResponses]
+
 export type ReportPartnerUsageData = {
   body: PartnerUsageRequest
   path?: never
@@ -4661,6 +8305,316 @@ export type ReportPartnerUsageResponses = {
 
 export type ReportPartnerUsageResponse =
   ReportPartnerUsageResponses[keyof ReportPartnerUsageResponses]
+
+export type GetHistoryEventsData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Target workspace. One of workspace_id or user_id is required; workspace_id wins when both are supplied.
+     */
+    workspace_id?: string
+    /**
+     * Resolve the caller's personal workspace via converged identity when workspace_id is not given. One of workspace_id or user_id is required.
+     */
+    user_id?: string
+    /**
+     * Optional exact event_type filter.
+     */
+    event_type?: string
+    /**
+     * Inclusive lower bound on created_at (RFC3339).
+     */
+    start_date?: string
+    /**
+     * Inclusive upper bound on created_at (RFC3339).
+     */
+    end_date?: string
+    /**
+     * 1-indexed page number (defaults to 1).
+     */
+    page?: number
+    /**
+     * Items per page (defaults to 10).
+     */
+    limit?: number
+  }
+  url: '/admin/api/history-events'
+}
+
+export type GetHistoryEventsErrors = {
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * Validation error - neither workspace_id nor user_id given, or a malformed date
+   */
+  422: ErrorResponse
+  /**
+   * Internal error resolving the workspace or querying events
+   */
+  500: ErrorResponse
+  /**
+   * Billing is disabled; the caller should fall back to legacy audit_logs
+   */
+  503: ErrorResponse
+}
+
+export type GetHistoryEventsError =
+  GetHistoryEventsErrors[keyof GetHistoryEventsErrors]
+
+export type GetHistoryEventsResponses = {
+  /**
+   * Paginated cloud history events for the workspace
+   */
+  200: BillingEventsResponse
+}
+
+export type GetHistoryEventsResponse =
+  GetHistoryEventsResponses[keyof GetHistoryEventsResponses]
+
+export type ReportHistoryEventData = {
+  body: HistoryEventRequest
+  path?: never
+  query?: never
+  url: '/admin/api/history-event'
+}
+
+export type ReportHistoryEventErrors = {
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * Validation error - missing or empty required fields
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ReportHistoryEventError =
+  ReportHistoryEventErrors[keyof ReportHistoryEventErrors]
+
+export type ReportHistoryEventResponses = {
+  /**
+   * History event recorded successfully
+   */
+  200: PartnerUsageResponse
+}
+
+export type ReportHistoryEventResponse =
+  ReportHistoryEventResponses[keyof ReportHistoryEventResponses]
+
+export type UpdateSubscriptionCacheData = {
+  body: {
+    /**
+     * Firebase UID of the user whose cache should be updated.
+     */
+    user_id: string
+    /**
+     * Whether the user currently has an active personal subscription.
+     * When false, any cached entry is cleared.
+     *
+     */
+    is_active: boolean
+    /**
+     * Subscription tier (e.g. `PRO`, `CREATOR`). Required when
+     * `is_active=true`; ignored otherwise. Unknown values are treated as a
+     * no-op rather than cached, so a schema drift between services cannot
+     * poison the cache.
+     *
+     */
+    tier?: string
+  }
+  path?: never
+  query?: never
+  url: '/admin/api/update-subscription-cache'
+}
+
+export type UpdateSubscriptionCacheErrors = {
+  /**
+   * Missing or invalid request body
+   */
+  400: ErrorResponse
+  /**
+   * Cache write failed (Redis unavailable, DEL/SET error, marshal error).
+   * Caller should retry — state on the ingest side is unchanged.
+   *
+   */
+  500: ErrorResponse
+}
+
+export type UpdateSubscriptionCacheError =
+  UpdateSubscriptionCacheErrors[keyof UpdateSubscriptionCacheErrors]
+
+export type UpdateSubscriptionCacheResponses = {
+  /**
+   * Cache updated successfully
+   */
+  200: {
+    /**
+     * One of `updated` (cache entry written), `cleared` (cache entry
+     * removed), or `skipped` (defensive no-op for missing / unknown tier).
+     *
+     */
+    status?: string
+  }
+}
+
+export type UpdateSubscriptionCacheResponse =
+  UpdateSubscriptionCacheResponses[keyof UpdateSubscriptionCacheResponses]
+
+export type ListLinkedFirebaseUidsData = {
+  body: ListLinkedFirebaseUidsRequest
+  path?: never
+  query?: never
+  url: '/admin/api/identity/linked-uids'
+}
+
+export type ListLinkedFirebaseUidsErrors = {
+  /**
+   * Malformed request or missing comfy_user_id
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid admin secret
+   */
+  401: ErrorResponse
+  /**
+   * Internal error
+   */
+  500: ErrorResponse
+}
+
+export type ListLinkedFirebaseUidsError =
+  ListLinkedFirebaseUidsErrors[keyof ListLinkedFirebaseUidsErrors]
+
+export type ListLinkedFirebaseUidsResponses = {
+  /**
+   * Linked Firebase UIDs (possibly empty list)
+   */
+  200: ListLinkedFirebaseUidsResponse
+}
+
+export type ListLinkedFirebaseUidsResponse2 =
+  ListLinkedFirebaseUidsResponses[keyof ListLinkedFirebaseUidsResponses]
+
+export type EnsureWorkspaceBillingProvisionedData = {
+  body: EnsureWorkspaceBillingProvisionedRequest
+  path?: never
+  query?: never
+  url: '/admin/api/workspace/ensure-billing-provisioned'
+}
+
+export type EnsureWorkspaceBillingProvisionedErrors = {
+  /**
+   * Malformed request or missing user_id
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid admin secret
+   */
+  401: ErrorResponse
+  /**
+   * Internal error
+   */
+  500: ErrorResponse
+}
+
+export type EnsureWorkspaceBillingProvisionedError =
+  EnsureWorkspaceBillingProvisionedErrors[keyof EnsureWorkspaceBillingProvisionedErrors]
+
+export type EnsureWorkspaceBillingProvisionedResponses = {
+  /**
+   * The workspace's provisioned billing identity
+   */
+  200: EnsureWorkspaceBillingProvisionedResponse
+}
+
+export type EnsureWorkspaceBillingProvisionedResponse2 =
+  EnsureWorkspaceBillingProvisionedResponses[keyof EnsureWorkspaceBillingProvisionedResponses]
+
+export type InsertDynamicConfigData = {
+  /**
+   * A valid dynamicconfig.Config JSON object.
+   */
+  body: {
+    [key: string]: unknown
+  }
+  path?: never
+  query?: never
+  url: '/admin/api/dynamic-config'
+}
+
+export type InsertDynamicConfigErrors = {
+  /**
+   * Invalid or missing request body
+   */
+  400: ErrorResponse
+  /**
+   * Database insert failed
+   */
+  500: ErrorResponse
+}
+
+export type InsertDynamicConfigError =
+  InsertDynamicConfigErrors[keyof InsertDynamicConfigErrors]
+
+export type InsertDynamicConfigResponses = {
+  /**
+   * Config inserted successfully
+   */
+  201: {
+    /**
+     * The database ID of the newly inserted config row.
+     */
+    id?: number
+    /**
+     * Human-readable success message.
+     */
+    message?: string
+  }
+}
+
+export type InsertDynamicConfigResponse =
+  InsertDynamicConfigResponses[keyof InsertDynamicConfigResponses]
+
+export type SyncApiKeyData = {
+  body: SyncApiKeyRequest
+  path?: never
+  query?: never
+  url: '/admin/api/keys/sync'
+}
+
+export type SyncApiKeyErrors = {
+  /**
+   * Malformed request or unsupported event
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid admin secret
+   */
+  401: ErrorResponse
+  /**
+   * Internal error
+   */
+  500: ErrorResponse
+}
+
+export type SyncApiKeyError = SyncApiKeyErrors[keyof SyncApiKeyErrors]
+
+export type SyncApiKeyResponses = {
+  /**
+   * Sync processed — see `result` field
+   */
+  200: SyncApiKeyResponse
+}
+
+export type SyncApiKeyResponse2 = SyncApiKeyResponses[keyof SyncApiKeyResponses]
 
 export type GetJobStatusData = {
   body?: never
@@ -5279,6 +9233,9 @@ export type CreateWorkflowResponse =
 export type DeleteWorkflowData = {
   body?: never
   path: {
+    /**
+     * The UUID of the workflow to delete.
+     */
     workflow_id: string
   }
   query?: never
@@ -5316,6 +9273,9 @@ export type DeleteWorkflowResponse =
 export type GetWorkflowData = {
   body?: never
   path: {
+    /**
+     * The UUID of the workflow.
+     */
     workflow_id: string
   }
   query?: never
@@ -5356,6 +9316,9 @@ export type GetWorkflowResponse =
 export type UpdateWorkflowData = {
   body: UpdateWorkflowRequest
   path: {
+    /**
+     * The UUID of the workflow to update.
+     */
     workflow_id: string
   }
   query?: never
@@ -5397,6 +9360,9 @@ export type UpdateWorkflowResponse =
 export type CreateWorkflowVersionData = {
   body: CreateWorkflowVersionRequest
   path: {
+    /**
+     * The UUID of the workflow to create a new version for.
+     */
     workflow_id: string
   }
   query?: never
@@ -5446,6 +9412,9 @@ export type CreateWorkflowVersionResponse =
 export type GetWorkflowContentData = {
   body?: never
   path: {
+    /**
+     * The UUID of the workflow whose content should be retrieved.
+     */
     workflow_id: string
   }
   query?: never
@@ -5487,6 +9456,9 @@ export type GetWorkflowContentResponse =
 export type ForkWorkflowData = {
   body: ForkWorkflowRequest
   path: {
+    /**
+     * The UUID of the source workflow to fork from.
+     */
     workflow_id: string
   }
   query?: never
@@ -5646,6 +9618,9 @@ export type CheckHubUsernameResponse =
 export type GetHubProfileByUsernameData = {
   body?: never
   path: {
+    /**
+     * The hub profile username.
+     */
     username: string
   }
   query?: never
@@ -5679,6 +9654,9 @@ export type GetHubProfileByUsernameResponse =
 export type UpdateHubProfileData = {
   body: UpdateHubProfileRequest
   path: {
+    /**
+     * The hub profile username to update.
+     */
     username: string
   }
   query?: never
@@ -5923,6 +9901,9 @@ export type ListHubWorkflowIndexResponse =
 export type DeleteHubWorkflowData = {
   body?: never
   path: {
+    /**
+     * The share ID of the hub workflow to unpublish.
+     */
     share_id: string
   }
   query?: never
@@ -5960,6 +9941,9 @@ export type DeleteHubWorkflowResponse =
 export type GetHubWorkflowData = {
   body?: never
   path: {
+    /**
+     * The share ID of the hub workflow.
+     */
     share_id: string
   }
   query?: never
@@ -5997,6 +9981,9 @@ export type GetHubWorkflowResponse =
 export type GetPublishedWorkflowData = {
   body?: never
   path: {
+    /**
+     * The share ID of the published workflow.
+     */
     share_id: string
   }
   query?: never
@@ -6034,3 +10021,1075 @@ export type GetPublishedWorkflowResponses = {
 
 export type GetPublishedWorkflowResponse =
   GetPublishedWorkflowResponses[keyof GetPublishedWorkflowResponses]
+
+export type GetExtensionsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/extensions'
+}
+
+export type GetExtensionsResponses = {
+  /**
+   * URL paths (relative to web root) of available extension JS files
+   */
+  200: Array<string>
+}
+
+export type GetExtensionsResponse =
+  GetExtensionsResponses[keyof GetExtensionsResponses]
+
+export type GetNodeInfoSchemaData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/experiment/nodes'
+}
+
+export type GetNodeInfoSchemaResponses = {
+  /**
+   * Full node schema JSON
+   */
+  200: unknown
+}
+
+export type GetNodeByIdData = {
+  body?: never
+  path: {
+    /**
+     * Node class_type identifier
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/experiment/nodes/{id}'
+}
+
+export type GetNodeByIdErrors = {
+  /**
+   * Node not found
+   */
+  404: unknown
+}
+
+export type GetNodeByIdResponses = {
+  /**
+   * Node definition JSON
+   */
+  200: unknown
+}
+
+export type GetVhsViewVideoData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Name of the video file to view
+     */
+    filename: string
+    /**
+     * Type of file (e.g., output, input, temp)
+     */
+    type?: string
+    /**
+     * Subfolder path where the file is located
+     */
+    subfolder?: string
+  }
+  url: '/api/vhs/viewvideo'
+}
+
+export type GetVhsViewVideoErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type GetVhsViewVideoResponses = {
+  /**
+   * Video stream
+   */
+  200: unknown
+}
+
+export type GetVhsViewAudioData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Name of the audio file to view
+     */
+    filename: string
+    /**
+     * Type of file (e.g., output, input, temp)
+     */
+    type?: string
+    /**
+     * Subfolder path where the file is located
+     */
+    subfolder?: string
+  }
+  url: '/api/vhs/viewaudio'
+}
+
+export type GetVhsViewAudioErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type GetVhsViewAudioResponses = {
+  /**
+   * Audio stream
+   */
+  200: unknown
+}
+
+export type GetVhsQueryVideoData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Name of the video file to query
+     */
+    filename: string
+  }
+  url: '/api/vhs/queryvideo'
+}
+
+export type GetVhsQueryVideoErrors = {
+  /**
+   * Missing required query parameter. Produced by the oapi-codegen
+   * wrapper via echo.NewHTTPError; the custom Echo HTTPErrorHandler
+   * normalizes it to the standard ErrorResponse {code, message} shape
+   * (BE-1178).
+   *
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+}
+
+export type GetVhsQueryVideoError =
+  GetVhsQueryVideoErrors[keyof GetVhsQueryVideoErrors]
+
+export type GetVhsQueryVideoResponses = {
+  /**
+   * Video metadata
+   */
+  200: {
+    /**
+     * Source video metadata
+     */
+    source: {
+      /**
+       * [width, height] in pixels
+       */
+      size: [number, number]
+      /**
+       * Frames per second
+       */
+      fps: number
+      /**
+       * Total frame count
+       */
+      frames: number
+      /**
+       * Duration in seconds
+       */
+      duration: number
+    }
+  }
+}
+
+export type GetVhsQueryVideoResponse =
+  GetVhsQueryVideoResponses[keyof GetVhsQueryVideoResponses]
+
+export type GetUsersInfoData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/users'
+}
+
+export type GetUsersInfoErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+}
+
+export type GetUsersInfoError = GetUsersInfoErrors[keyof GetUsersInfoErrors]
+
+export type GetUsersInfoResponses = {
+  /**
+   * Userdata storage information
+   */
+  200: {
+    /**
+     * Where user data is stored (always "server" in cloud)
+     */
+    storage: string
+    /**
+     * Whether user data has been migrated (always true in cloud)
+     */
+    migrated: boolean
+  }
+}
+
+export type GetUsersInfoResponse =
+  GetUsersInfoResponses[keyof GetUsersInfoResponses]
+
+export type GetApiViewVideoAliasData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Name of the file to view (see `/api/view` for the full handler contract)
+     */
+    filename: string
+  }
+  url: '/api/viewvideo'
+}
+
+export type GetApiViewVideoAliasErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type GetApiViewVideoAliasResponses = {
+  /**
+   * File stream
+   */
+  200: unknown
+}
+
+export type GetViewCompatAliasData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Name of the file to view (see `/api/view` for the full handler contract)
+     */
+    filename: string
+  }
+  url: '/view'
+}
+
+export type GetViewCompatAliasErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type GetViewCompatAliasResponses = {
+  /**
+   * File stream
+   */
+  200: unknown
+}
+
+export type GetWebsocketData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Stable client identifier used to associate the WebSocket
+     * connection with the frontend session. If omitted, the server
+     * generates one.
+     *
+     */
+    clientId?: string
+  }
+  url: '/ws'
+}
+
+export type GetWebsocketErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type GetTemplateProxyData = {
+  body?: never
+  path: {
+    /**
+     * Template subpath within the versioned GCS bucket.
+     */
+    path: string
+  }
+  query?: never
+  url: '/templates/{path}'
+}
+
+export type GetTemplateProxyErrors = {
+  /**
+   * Template not found.
+   */
+  404: unknown
+  /**
+   * Workflow templates version not available.
+   */
+  503: unknown
+}
+
+export type GetTemplateProxyResponses = {
+  /**
+   * Template file content streamed from GCS.
+   */
+  200: unknown
+}
+
+export type GetHealthData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/health'
+}
+
+export type GetHealthErrors = {
+  /**
+   * Service is unhealthy
+   */
+  503: string
+}
+
+export type GetHealthError = GetHealthErrors[keyof GetHealthErrors]
+
+export type GetHealthResponses = {
+  /**
+   * Service is healthy
+   */
+  200: string
+}
+
+export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses]
+
+export type GetMonitoringTasksData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/monitoring/tasks'
+}
+
+export type GetMonitoringTasksErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Forbidden
+   */
+  403: unknown
+}
+
+export type GetMonitoringTasksResponses = {
+  /**
+   * HTML dashboard
+   */
+  200: unknown
+}
+
+export type DeleteMonitoringTasksSubpathData = {
+  body?: never
+  path: {
+    /**
+     * Asynqmon deletion subpath (e.g. delete task).
+     */
+    path: string
+  }
+  query?: never
+  url: '/monitoring/tasks/{path}'
+}
+
+export type DeleteMonitoringTasksSubpathErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Forbidden
+   */
+  403: unknown
+}
+
+export type DeleteMonitoringTasksSubpathResponses = {
+  /**
+   * Deletion result
+   */
+  200: unknown
+}
+
+export type GetMonitoringTasksSubpathData = {
+  body?: never
+  path: {
+    /**
+     * Asynqmon UI subpath (HTML page, SPA XHR, or static asset).
+     */
+    path: string
+  }
+  query?: never
+  url: '/monitoring/tasks/{path}'
+}
+
+export type GetMonitoringTasksSubpathErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Forbidden
+   */
+  403: unknown
+}
+
+export type GetMonitoringTasksSubpathResponses = {
+  /**
+   * Subpath response (asynqmon-determined content type)
+   */
+  200: unknown
+}
+
+export type PostMonitoringTasksSubpathData = {
+  body?: never
+  path: {
+    /**
+     * Asynqmon action subpath (e.g. retry, archive).
+     */
+    path: string
+  }
+  query?: never
+  url: '/monitoring/tasks/{path}'
+}
+
+export type PostMonitoringTasksSubpathErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Forbidden
+   */
+  403: unknown
+}
+
+export type PostMonitoringTasksSubpathResponses = {
+  /**
+   * Action result
+   */
+  200: unknown
+}
+
+export type GetPprofData = {
+  body?: never
+  path: {
+    /**
+     * pprof endpoint name (e.g. heap, goroutine, allocs, block, mutex, threadcreate).
+     */
+    path: string
+  }
+  query?: never
+  url: '/debug/pprof/{path}'
+}
+
+export type GetPprofResponses = {
+  /**
+   * Profile data
+   */
+  200: unknown
+}
+
+export type GetPprofProfileData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/debug/pprof/profile'
+}
+
+export type GetPprofProfileResponses = {
+  /**
+   * CPU profile data
+   */
+  200: unknown
+}
+
+export type GetPprofTraceData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/debug/pprof/trace'
+}
+
+export type GetPprofTraceResponses = {
+  /**
+   * Execution trace data
+   */
+  200: unknown
+}
+
+export type PostPprofSymbolData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/debug/pprof/symbol'
+}
+
+export type PostPprofSymbolResponses = {
+  /**
+   * Resolved symbols
+   */
+  200: unknown
+}
+
+export type GetStaticExtensionsData = {
+  body?: never
+  path: {
+    /**
+     * Extension file path relative to /static/extensions on disk.
+     */
+    path: string
+  }
+  query?: never
+  url: '/extensions/{path}'
+}
+
+export type GetStaticExtensionsErrors = {
+  /**
+   * File not found
+   */
+  404: unknown
+}
+
+export type GetStaticExtensionsResponses = {
+  /**
+   * Static file
+   */
+  200: unknown
+}
+
+export type GetCustomNodeProxyData = {
+  body?: never
+  path: {
+    /**
+     * Custom node HTTP endpoint path being proxied to the CPU-backed worker.
+     */
+    path: string
+  }
+  query?: never
+  url: '/__custom_node_proxy/{path}'
+}
+
+export type GetCustomNodeProxyErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Path not in allowlist
+   */
+  403: unknown
+}
+
+export type GetCustomNodeProxyResponses = {
+  /**
+   * Proxied response
+   */
+  200: unknown
+}
+
+export type PostCustomNodeProxyData = {
+  body?: never
+  path: {
+    /**
+     * Custom node HTTP endpoint path being proxied to the CPU-backed worker.
+     */
+    path: string
+  }
+  query?: never
+  url: '/__custom_node_proxy/{path}'
+}
+
+export type PostCustomNodeProxyErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Path not in allowlist
+   */
+  403: unknown
+}
+
+export type PostCustomNodeProxyResponses = {
+  /**
+   * Proxied response
+   */
+  200: unknown
+}
+
+export type GetModelPreviewData = {
+  body?: never
+  path: {
+    /**
+     * The folder name containing the model.
+     */
+    folder: string
+    /**
+     * The path index (usually 0 for cloud service).
+     */
+    path_index: number
+    /**
+     * The model filename (with or without .webp extension).
+     */
+    filename: string
+  }
+  query?: never
+  url: '/api/experiment/models/preview/{folder}/{path_index}/{filename}'
+}
+
+export type GetModelPreviewErrors = {
+  /**
+   * Preview not available on Cloud
+   */
+  404: unknown
+}
+
+export type ShortLinkRedirectData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/s/{id}'
+}
+
+export type ShortLinkRedirectErrors = {
+  /**
+   * Not Found — unknown, expired, revoked, or malformed short-link ID
+   */
+  404: unknown
+}
+
+export type GetLegacyPromptByIdData = {
+  body?: never
+  path: {
+    prompt_id: string
+  }
+  query?: never
+  url: '/api/prompt/{prompt_id}'
+}
+
+export type GetLegacyPromptByIdErrors = {
+  /**
+   * Not Found — use /api/jobs/{prompt_id} instead
+   */
+  404: unknown
+}
+
+export type GetLegacyHistoryByIdData = {
+  body?: never
+  path: {
+    prompt_id: string
+  }
+  query?: never
+  url: '/api/history/{prompt_id}'
+}
+
+export type GetLegacyHistoryByIdErrors = {
+  /**
+   * Not Found — use /api/jobs/{prompt_id} instead
+   */
+  404: unknown
+}
+
+export type GetLegacyJobByIdData = {
+  body?: never
+  path: {
+    job_id: string
+  }
+  query?: never
+  url: '/api/job/{job_id}'
+}
+
+export type GetLegacyJobByIdErrors = {
+  /**
+   * Not Found — use /api/jobs/{job_id} instead
+   */
+  404: unknown
+}
+
+export type GetLegacyJobOutputsData = {
+  body?: never
+  path: {
+    job_id: string
+  }
+  query?: never
+  url: '/api/job/{job_id}/outputs'
+}
+
+export type GetLegacyJobOutputsErrors = {
+  /**
+   * Not Found — use /api/jobs/{job_id} instead
+   */
+  404: unknown
+}
+
+export type GetLegacyModelsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/models'
+}
+
+export type GetLegacyModelsErrors = {
+  /**
+   * Not Found — use /api/experiment/models instead
+   */
+  404: unknown
+}
+
+export type GetLegacyModelsByFolderData = {
+  body?: never
+  path: {
+    folder: string
+  }
+  query?: never
+  url: '/api/models/{folder}'
+}
+
+export type GetLegacyModelsByFolderErrors = {
+  /**
+   * Not Found — use /api/experiment/models/{folder} instead
+   */
+  404: unknown
+}
+
+export type GetLegacyObjectInfoByNodeClassData = {
+  body?: never
+  path: {
+    node_class: string
+  }
+  query?: never
+  url: '/api/object_info/{node_class}'
+}
+
+export type GetLegacyObjectInfoByNodeClassErrors = {
+  /**
+   * Not Found — use /api/object_info instead
+   */
+  404: unknown
+}
+
+export type GetLegacyUserdataV2Data = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v2/userdata'
+}
+
+export type GetLegacyUserdataV2Errors = {
+  /**
+   * Not Found — use /api/userdata instead
+   */
+  404: unknown
+}
+
+export type GetAssetContentData = {
+  body?: never
+  path: {
+    /**
+     * Asset ID
+     */
+    id: string
+  }
+  query?: {
+    /**
+     * Content-Disposition for the response: `attachment` (download) or
+     * `inline` (render in browser). Defaults to `attachment`.
+     *
+     */
+    disposition?: 'inline' | 'attachment'
+  }
+  url: '/api/assets/{id}/content'
+}
+
+export type GetAssetContentErrors = {
+  /**
+   * Asset not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetAssetContentError =
+  GetAssetContentErrors[keyof GetAssetContentErrors]
+
+export type GetAssetContentResponses = {
+  /**
+   * Asset content stream (local runtime streams the bytes directly)
+   */
+  200: Blob | File
+}
+
+export type GetAssetContentResponse =
+  GetAssetContentResponses[keyof GetAssetContentResponses]
+
+export type GetLegacyViewMetadataData = {
+  body?: never
+  path: {
+    folder_name: string
+  }
+  query?: never
+  url: '/api/view_metadata/{folder_name}'
+}
+
+export type GetLegacyViewMetadataErrors = {
+  /**
+   * Not Found — use /api/experiment/models instead
+   */
+  404: unknown
+}
+
+export type GetEmbeddingsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/embeddings'
+}
+
+export type GetEmbeddingsResponses = {
+  /**
+   * Embedding names
+   */
+  200: Array<string>
+}
+
+export type GetEmbeddingsResponse =
+  GetEmbeddingsResponses[keyof GetEmbeddingsResponses]
+
+export type FreeMemoryData = {
+  body?: {
+    /**
+     * Unload all models from VRAM/RAM
+     */
+    unload_models?: boolean
+    /**
+     * Run garbage collection and free cached memory
+     */
+    free_memory?: boolean
+  }
+  path?: never
+  query?: never
+  url: '/api/free'
+}
+
+export type FreeMemoryResponses = {
+  /**
+   * Memory freed
+   */
+  200: unknown
+}
+
+export type GetI18nData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/i18n'
+}
+
+export type GetI18nResponses = {
+  /**
+   * Nested map of locale to translation key-value pairs
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type GetI18nResponse = GetI18nResponses[keyof GetI18nResponses]
+
+export type GetInternalFolderPathsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/internal/folder_paths'
+}
+
+export type GetInternalFolderPathsResponses = {
+  /**
+   * Map of folder type name to list of path entries
+   */
+  200: {
+    [key: string]: Array<Array<string>>
+  }
+}
+
+export type GetInternalFolderPathsResponse =
+  GetInternalFolderPathsResponses[keyof GetInternalFolderPathsResponses]
+
+export type GetInternalLogsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/internal/logs'
+}
+
+export type GetInternalLogsResponses = {
+  /**
+   * Log text
+   */
+  200: string
+}
+
+export type GetInternalLogsResponse =
+  GetInternalLogsResponses[keyof GetInternalLogsResponses]
+
+export type GetInternalLogsRawData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/internal/logs/raw'
+}
+
+export type GetInternalLogsRawResponses = {
+  /**
+   * Structured log data
+   */
+  200: {
+    entries?: Array<{
+      /**
+       * Timestamp
+       */
+      t?: number
+      /**
+       * Message
+       */
+      m?: string
+    }>
+    size?: {
+      cols?: number
+      rows?: number
+    }
+  }
+}
+
+export type GetInternalLogsRawResponse =
+  GetInternalLogsRawResponses[keyof GetInternalLogsRawResponses]
+
+export type SubscribeToLogsData = {
+  body: {
+    /**
+     * WebSocket client ID
+     */
+    clientId: string
+    /**
+     * Enable or disable log streaming for this client
+     */
+    enabled: boolean
+  }
+  path?: never
+  query?: never
+  url: '/internal/logs/subscribe'
+}
+
+export type SubscribeToLogsResponses = {
+  /**
+   * Subscription updated
+   */
+  200: unknown
+}
+
+export type PruneAssetsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/assets/prune'
+}
+
+export type PruneAssetsResponses = {
+  /**
+   * Prune result
+   */
+  200: {
+    status?: string
+    /**
+     * Number of assets marked as missing
+     */
+    marked?: number
+  }
+}
+
+export type PruneAssetsResponse =
+  PruneAssetsResponses[keyof PruneAssetsResponses]
+
+export type SeedAssetsData = {
+  body?: {
+    /**
+     * Root folder paths to scan (if omitted, scans all)
+     */
+    roots?: Array<string>
+  }
+  path?: never
+  query?: never
+  url: '/api/assets/seed'
+}
+
+export type SeedAssetsResponses = {
+  /**
+   * Seed started
+   */
+  200: {
+    status?: string
+  }
+}
+
+export type SeedAssetsResponse = SeedAssetsResponses[keyof SeedAssetsResponses]
+
+export type GetAssetSeedStatusData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/assets/seed/status'
+}
+
+export type GetAssetSeedStatusResponses = {
+  /**
+   * Scan progress details (files scanned, total, status, etc.)
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type GetAssetSeedStatusResponse =
+  GetAssetSeedStatusResponses[keyof GetAssetSeedStatusResponses]
+
+export type CancelAssetSeedData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/assets/seed/cancel'
+}
+
+export type CancelAssetSeedResponses = {
+  /**
+   * Scan cancelled
+   */
+  200: {
+    status?: string
+  }
+}
+
+export type CancelAssetSeedResponse =
+  CancelAssetSeedResponses[keyof CancelAssetSeedResponses]

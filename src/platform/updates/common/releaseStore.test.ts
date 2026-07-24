@@ -18,13 +18,15 @@ vi.mock('semver', () => ({
   valid: vi.fn(() => '1.0.0')
 }))
 
-const mockData = vi.hoisted(() => ({ isDesktop: true }))
+const mockData = vi.hoisted(() => ({ isDesktop: true, isCloud: false }))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isDesktop() {
     return mockData.isDesktop
   },
-  isCloud: false
+  get isCloud() {
+    return mockData.isCloud
+  }
 }))
 
 vi.mock('@/platform/updates/common/releaseService', () => {
@@ -115,6 +117,7 @@ describe('useReleaseStore', () => {
 
     vi.resetAllMocks()
     mockSystemStatsState.reset()
+    mockData.isCloud = false
   })
 
   describe('initial state', () => {
@@ -228,12 +231,15 @@ describe('useReleaseStore', () => {
 
         await store.initialize()
 
-        expect(releaseService.getReleases).toHaveBeenCalledWith({
-          project: 'comfyui',
-          current_version: '1.0.0',
-          form_factor: 'git-windows',
-          locale: 'en'
-        })
+        expect(releaseService.getReleases).toHaveBeenCalledWith(
+          {
+            project: 'comfyui',
+            current_version: '1.0.0',
+            form_factor: 'git-windows',
+            locale: 'en'
+          },
+          { deployEnvironment: undefined }
+        )
       })
     })
 
@@ -300,12 +306,15 @@ describe('useReleaseStore', () => {
 
       await store.initialize()
 
-      expect(releaseService.getReleases).toHaveBeenCalledWith({
-        project: 'comfyui',
-        current_version: '1.0.0',
-        form_factor: 'git-windows',
-        locale: 'en'
-      })
+      expect(releaseService.getReleases).toHaveBeenCalledWith(
+        {
+          project: 'comfyui',
+          current_version: '1.0.0',
+          form_factor: 'git-windows',
+          locale: 'en'
+        },
+        { deployEnvironment: undefined }
+      )
       expect(store.releases).toEqual([mockRelease])
     })
 
@@ -318,12 +327,30 @@ describe('useReleaseStore', () => {
 
       await store.initialize()
 
-      expect(releaseService.getReleases).toHaveBeenCalledWith({
-        project: 'comfyui',
-        current_version: '1.0.0',
-        form_factor: 'desktop-mac',
-        locale: 'en'
-      })
+      expect(releaseService.getReleases).toHaveBeenCalledWith(
+        {
+          project: 'comfyui',
+          current_version: '1.0.0',
+          form_factor: 'desktop-mac',
+          locale: 'en'
+        },
+        { deployEnvironment: undefined }
+      )
+    })
+
+    it('should pass deploy_environment from system stats', async () => {
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.deploy_environment = 'local-desktop'
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
+
+      await store.initialize()
+
+      expect(releaseService.getReleases).toHaveBeenCalledWith(
+        expect.anything(),
+        { deployEnvironment: 'local-desktop' }
+      )
     })
 
     it('should skip fetching when --disable-api-nodes is present', async () => {
@@ -654,6 +681,33 @@ describe('useReleaseStore', () => {
 
       // Should only call API once due to loading check
       expect(releaseService.getReleases).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('isCloud environment (FE-1237)', () => {
+    beforeEach(() => {
+      mockData.isCloud = true
+    })
+
+    it('should use comfyui_version, not cloud_version, as the current version', async () => {
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.comfyui_version = '0.27.1'
+      systemStatsStore.systemStats!.system.cloud_version = '0.160.1'
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
+
+      await store.initialize()
+
+      expect(releaseService.getReleases).toHaveBeenCalledWith(
+        {
+          project: 'cloud',
+          current_version: '0.27.1',
+          form_factor: 'git-windows',
+          locale: 'en'
+        },
+        { deployEnvironment: undefined }
+      )
     })
   })
 

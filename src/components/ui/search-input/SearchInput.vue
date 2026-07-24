@@ -61,7 +61,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { watchDebounced } from '@vueuse/core'
 import { ComboboxAnchor, ComboboxInput, ComboboxRoot } from 'reka-ui'
 import { computed, ref } from 'vue'

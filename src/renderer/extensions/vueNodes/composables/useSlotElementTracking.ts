@@ -8,11 +8,15 @@
 import { onMounted, onUnmounted, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { app } from '@/scripts/app'
 import type { SlotLayout } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
+import type { SlotId } from '@/types/slotId'
 import {
   isBoundsEqual,
   isPointEqual,
@@ -22,12 +26,15 @@ import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/
 import { createRafBatch } from '@/utils/rafBatch'
 
 // RAF batching
-const pendingNodes = new Set<string>()
+const pendingNodes = new Set<NodeId>()
 const raf = createRafBatch(() => {
   flushScheduledSlotLayoutSync()
 })
 
-function scheduleSlotLayoutSync(nodeId: string) {
+export function scheduleSlotLayoutSync(nodeId: NodeId) {
+  // Drop signals for unregistered nodes (e.g. preview nodes with synthetic
+  // ids from LGraphNodePreview) - they'd otherwise pump setDirty per RAF.
+  if (!useNodeSlotRegistryStore().getNode(nodeId)) return
   pendingNodes.add(nodeId)
   raf.schedule()
 }
@@ -65,7 +72,7 @@ export function requestSlotLayoutSyncForAllNodes(): void {
 }
 
 function createSlotLayout(options: {
-  nodeId: string
+  nodeId: NodeId
   index: number
   type: 'input' | 'output'
   centerCanvas: { x: number; y: number }
@@ -113,7 +120,7 @@ export function flushScheduledSlotLayoutSync() {
   completePendingSlotSync()
 }
 
-export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
+export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
@@ -134,12 +141,27 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
     .value?.el.closest('[data-node-id]')
   const nodeEl = closestNode instanceof HTMLElement ? closestNode : null
   const nodeRect = nodeEl?.getBoundingClientRect()
+
+  // Collapsed nodes preserve expanded size in layoutStore, so DOM-relative
+  // scale derivation breaks. Fall back to clientPosToCanvasPos instead.
+  const isCollapsed = nodeEl?.dataset.collapsed != null
   const effectiveScale =
-    nodeRect && nodeLayout.size.width > 0
+    !isCollapsed && nodeRect && nodeLayout.size.width > 0
       ? nodeRect.width / nodeLayout.size.width
       : 0
 
-  const batch: Array<{ key: string; layout: SlotLayout }> = []
+  const canvasStore = useCanvasStore()
+  const conv =
+    isCollapsed && canvasStore.canvas
+      ? useSharedCanvasPositionConversion()
+      : null
+
+  if (isCollapsed && !conv) {
+    scheduleSlotLayoutSync(nodeId)
+    return
+  }
+
+  const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
 
   for (const [slotKey, entry] of node.slots) {
     const rect = getSlotElementRect(entry.el)
@@ -155,22 +177,30 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
       rect.top + rect.height / 2
     ]
 
-    if (!nodeRect || effectiveScale <= 0) continue
+    let centerCanvas: { x: number; y: number }
 
-    // DOM-relative measurement: compute offset from the node element's
-    // top-left corner in canvas units. The node element is rendered at
-    // (position.x, position.y - NODE_TITLE_HEIGHT), so the Y offset
-    // must subtract NODE_TITLE_HEIGHT to be relative to position.y.
-    entry.cachedOffset = {
-      x: (screenCenter[0] - nodeRect.left) / effectiveScale,
-      y:
-        (screenCenter[1] - nodeRect.top) / effectiveScale -
-        LiteGraph.NODE_TITLE_HEIGHT
-    }
+    if (conv) {
+      const [cx, cy] = conv.clientPosToCanvasPos(screenCenter)
+      centerCanvas = { x: cx, y: cy }
+      entry.cachedOffset = undefined
+    } else {
+      if (!nodeRect || effectiveScale <= 0) continue
 
-    const centerCanvas = {
-      x: nodeLayout.position.x + entry.cachedOffset.x,
-      y: nodeLayout.position.y + entry.cachedOffset.y
+      // DOM-relative measurement: compute offset from the node element's
+      // top-left corner in canvas units. The node element is rendered at
+      // (position.x, position.y - NODE_TITLE_HEIGHT), so the Y offset
+      // must subtract NODE_TITLE_HEIGHT to be relative to position.y.
+      entry.cachedOffset = {
+        x: (screenCenter[0] - nodeRect.left) / effectiveScale,
+        y:
+          (screenCenter[1] - nodeRect.top) / effectiveScale -
+          LiteGraph.NODE_TITLE_HEIGHT
+      }
+
+      centerCanvas = {
+        x: nodeLayout.position.x + entry.cachedOffset.x,
+        y: nodeLayout.position.y + entry.cachedOffset.y
+      }
     }
 
     const nextLayout = createSlotLayout({
@@ -196,14 +226,14 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
   if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
 }
 
-function updateNodeSlotsFromCache(nodeId: string) {
+function updateNodeSlotsFromCache(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
 
-  const batch: Array<{ key: string; layout: SlotLayout }> = []
+  const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
 
   for (const [slotKey, entry] of node.slots) {
     if (!entry.cachedOffset) {
@@ -232,7 +262,7 @@ function updateNodeSlotsFromCache(nodeId: string) {
 }
 
 export function useSlotElementTracking(options: {
-  nodeId: string
+  nodeId?: NodeId
   index: number
   type: 'input' | 'output'
   element: Ref<HTMLElement | null>
@@ -289,7 +319,7 @@ export function useSlotElementTracking(options: {
           layoutStore.deleteSlotLayout(slotKey)
         }
 
-        el.dataset.slotKey = slotKey
+        el.dataset.slotKey = String(slotKey)
         node.slots.set(slotKey, { el, index, type })
 
         // Seed initial sync from DOM
@@ -324,6 +354,8 @@ export function useSlotElementTracking(options: {
   })
 
   return {
-    requestSlotLayoutSync: () => scheduleSlotLayoutSync(nodeId)
+    requestSlotLayoutSync: () => {
+      if (nodeId) scheduleSlotLayoutSync(nodeId)
+    }
   }
 }

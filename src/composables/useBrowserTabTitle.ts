@@ -74,14 +74,14 @@ export const useBrowserTabTitle = () => {
     }
 
     // If only one node is running
-    const [nodeId, state] = runningNodes[0]
+    const [, state] = runningNodes[0]
     const progress = Math.round((state.value / state.max) * 100)
-    const nodeType =
-      executionStore.activeJob?.workflow?.changeTracker?.activeState.nodes.find(
-        (n) => String(n.id) === nodeId
-      )?.type || 'Node'
+    const nodeLabel =
+      executionStore.executingNode?.type?.trim() ||
+      executionStore.executingNode?.title?.trim() ||
+      'Node'
 
-    return `${executionText.value}[${progress}%] ${nodeType}`
+    return `${executionText.value}[${progress}%] ${nodeLabel}`
   })
 
   const workflowTitle = computed(

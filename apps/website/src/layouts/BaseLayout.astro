@@ -2,52 +2,132 @@
 import { ClientRouter } from 'astro:transitions'
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
+import type { Locale } from '../i18n/translations'
+import SiteFooter from '../components/common/SiteFooter.vue'
+import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
+import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
+import { bannerConfig, getBannerData } from '../config/banner'
+import { isHrefActive } from '../composables/useCurrentPath'
+import {
+  BANNER_DISMISS_ATTR,
+  BANNER_STORAGE_KEY,
+  createBannerVersion,
+  evaluateBannerVisibility
+} from '../utils/banner'
+import { fetchGitHubStars, formatStarCount } from '../utils/github'
+import { buildPageGraph, pageContext } from '../utils/jsonLd'
+import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
+import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
 interface Props {
   title: string
   description?: string
+  keywords?: string[]
   ogImage?: string
+  noindex?: boolean
+  pageType?: WebPageType
+  breadcrumbs?: Crumb[]
+  mainEntityId?: string
+  extraJsonLd?: (JsonLdNode | null | undefined)[]
 }
 
 const {
   title,
   description = 'Comfy is the AI creation engine for visual professionals who demand control.',
-  ogImage = '/og-default.png',
+  keywords,
+  ogImage = 'https://media.comfy.org/website/comfy.webp',
+  noindex = false,
+  pageType,
+  breadcrumbs,
+  mainEntityId,
+  extraJsonLd,
 } = Astro.props
 
-const siteBase = Astro.site ?? 'https://comfy.org'
-const canonicalURL = new URL(Astro.url.pathname, siteBase)
-const ogImageURL = new URL(ogImage, siteBase)
-const locale = Astro.currentLocale ?? 'en'
+const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const canonicalURL = new URL(url)
+const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
+const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
+const githubStars = rawStars ? formatStarCount(rawStars) : ''
+
+// Announcement banner — build-time visibility gate + content-hash version key.
+// A promo never advertises the page you are already on, so the banner is
+// suppressed when its CTA points at the current path.
+const bannerData = getBannerData(bannerConfig, locale)
+const bannerVisible =
+  evaluateBannerVisibility(bannerConfig, {
+    currentLocale: locale,
+    currentSection: 'sitewide',
+    now: new Date(),
+  }) && !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
+const bannerVersion = createBannerVersion(bannerData, locale)
+
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
+
+const structuredData = noindex
+  ? undefined
+  : buildPageGraph(
+      { siteUrl, locale },
+      {
+        url,
+        name: title,
+        description,
+        imageUrl: ogImageURL.href,
+        type: pageType,
+        crumbs: breadcrumbs,
+        mainEntityId,
+      },
+      ...(extraJsonLd ?? []),
+    )
 ---
 
 <!doctype html>
-<html lang={locale}>
+<html lang={locale} class="overflow-x-clip">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    {keywordsContent && <meta name="keywords" content={keywordsContent} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
 
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImageURL.href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:url" content={canonicalURL.href} />
     <meta property="og:locale" content={locale} />
     <meta property="og:site_name" content="Comfy" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@comaboratory" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageURL.href} />
+
+    <!-- Structured Data -->
+    {structuredData && <JsonLdGraph graph={structuredData} />}
+    <slot name="head" />
 
     <!-- Google Tag Manager -->
     {gtmEnabled && (
@@ -66,8 +146,27 @@ const gtmEnabled = import.meta.env.PROD
     )}
 
     <ClientRouter />
+
+    <!-- Hide an already-dismissed announcement banner before first paint (no flash/shift). -->
+    {bannerVisible && (
+      <script
+        is:inline
+        define:vars={{
+          bannerVersion,
+          storageKey: BANNER_STORAGE_KEY,
+          dismissAttr: BANNER_DISMISS_ATTR
+        }}
+      >
+        try {
+          const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
+          if (dismissed[bannerVersion]) {
+            document.documentElement.setAttribute(dismissAttr, '')
+          }
+        } catch (e) {}
+      </script>
+    )}
   </head>
-  <body class="bg-black text-white font-inter antialiased">
+  <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
     {gtmEnabled && (
       <noscript>
         <iframe
@@ -79,8 +178,41 @@ const gtmEnabled = import.meta.env.PROD
       </noscript>
     )}
 
-    <slot />
+    {bannerVisible && (
+      <AnnouncementBanner
+        data={bannerData}
+        version={bannerVersion}
+        locale={locale}
+        client:load
+      />
+    )}
+    <HeaderMain locale={locale} github-stars={githubStars} client:load />
+    <main>
+      <slot />
+    </main>
+    <SiteFooter locale={locale} client:load />
 
     <Analytics />
+
+    <script>
+      import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
+      import { ScrollTrigger } from '../scripts/gsapSetup'
+      import { initPostHog, capturePageview } from '../scripts/posthog'
+
+      initSmoothScroll()
+
+      if (import.meta.env.PROD) {
+        initPostHog()
+        document.addEventListener('astro:page-load', capturePageview)
+      }
+
+      document.addEventListener('astro:page-load', () => {
+        ScrollTrigger.refresh()
+      })
+
+      document.addEventListener('astro:before-preparation', () => {
+        cancelScroll()
+      })
+    </script>
   </body>
 </html>

@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 
 const { t } = useI18n()

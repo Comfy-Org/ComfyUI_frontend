@@ -1,12 +1,14 @@
+import type { ImportPublishedAssetsRequest } from '@comfyorg/ingest-types'
+
 import type {
   PublishPrefill,
   SharedWorkflowPayload,
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
+import { assetService } from '@/platform/assets/services/assetService'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { AssetInfo } from '@/schemas/apiSchema'
 import {
   zHubWorkflowPrefillResponse,
@@ -43,6 +45,8 @@ interface PrefillMetadataFields {
   description?: string | null
   tags?: string[] | null
   thumbnail_type?: 'image' | 'video' | 'image_comparison' | null
+  thumbnail_url?: string | null
+  thumbnail_comparison_url?: string | null
   sample_image_urls?: string[] | null
 }
 
@@ -50,18 +54,29 @@ function extractPrefill(fields: PrefillMetadataFields): PublishPrefill | null {
   const description = fields.description ?? undefined
   const tags = fields.tags ?? undefined
   const thumbnailType = mapApiThumbnailType(fields.thumbnail_type)
+  const thumbnailUrl = fields.thumbnail_url ?? undefined
+  const thumbnailComparisonUrl = fields.thumbnail_comparison_url ?? undefined
   const sampleImageUrls = fields.sample_image_urls ?? undefined
 
   if (
     !description &&
     !tags?.length &&
     !thumbnailType &&
+    !thumbnailUrl &&
+    !thumbnailComparisonUrl &&
     !sampleImageUrls?.length
   ) {
     return null
   }
 
-  return { description, tags, thumbnailType, sampleImageUrls }
+  return {
+    description,
+    tags,
+    thumbnailType,
+    thumbnailUrl,
+    thumbnailComparisonUrl,
+    sampleImageUrls
+  }
 }
 
 function decodeHubWorkflowPrefill(payload: unknown): PublishPrefill | null {
@@ -246,25 +261,29 @@ export function useWorkflowShareService() {
       throw new Error('Failed to load shared workflow: invalid response')
     }
 
-    const validated = await validateComfyWorkflow(workflow.workflowJson)
-    if (!validated) {
-      throw new Error('Failed to load shared workflow: invalid workflow data')
-    }
-    workflow.workflowJson = validated
-
     return workflow
   }
 
-  async function importPublishedAssets(assetIds: string[]): Promise<void> {
+  async function importPublishedAssets(
+    assetIds: string[],
+    shareId?: string
+  ): Promise<void> {
+    const body: ImportPublishedAssetsRequest = {
+      published_asset_ids: assetIds,
+      ...(shareId ? { share_id: shareId } : {})
+    }
+
     const response = await api.fetchApi('/assets/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ published_asset_ids: assetIds })
+      body: JSON.stringify(body)
     })
 
     if (!response.ok) {
       throw new Error(`Failed to import assets: ${response.status}`)
     }
+
+    assetService.invalidateInputAssetsIncludingPublic()
   }
 
   return {

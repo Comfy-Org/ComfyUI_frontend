@@ -39,7 +39,7 @@ const existingOutput = computed(() => {
   <div
     v-else-if="hasOutputs"
     role="article"
-    data-testid="arrange-preview"
+    data-testid="linear-arrange-preview"
     class="mx-auto flex h-full w-3/4 flex-col items-center justify-center gap-6 p-8"
   >
     <div
@@ -54,7 +54,7 @@ const existingOutput = computed(() => {
   <div
     v-else
     role="article"
-    data-testid="arrange-no-outputs"
+    data-testid="linear-arrange-no-outputs"
     class="mx-auto flex h-full w-lg flex-col items-center justify-center gap-6 p-8 text-center"
   >
     <p class="m-0 text-base-foreground">
@@ -75,7 +75,12 @@ const existingOutput = computed(() => {
       <p class="mt-0 p-0">{{ t('linearMode.arrange.outputExamples') }}</p>
     </div>
     <div class="flex flex-row gap-2">
-      <Button variant="primary" size="lg" @click="setMode('builder:outputs')">
+      <Button
+        variant="primary"
+        size="lg"
+        data-testid="linear-arrange-switch-to-outputs"
+        @click="setMode('builder:outputs')"
+      >
         {{ t('linearMode.arrange.switchToOutputsButton') }}
       </Button>
     </div>

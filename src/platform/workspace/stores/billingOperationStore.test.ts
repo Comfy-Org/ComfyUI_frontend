@@ -5,11 +5,13 @@ import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspace
 
 const mockFetchStatus = vi.fn()
 const mockFetchBalance = vi.fn()
+const mockReconcileSubscriptionSuccess = vi.fn()
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     fetchStatus: mockFetchStatus,
-    fetchBalance: mockFetchBalance
+    fetchBalance: mockFetchBalance,
+    reconcileSubscriptionSuccess: mockReconcileSubscriptionSuccess
   })
 }))
 
@@ -33,17 +35,21 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
+const mockSettingsDialogShow = vi.fn()
+
 vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   useSettingsDialog: () => ({
-    show: vi.fn(),
+    show: mockSettingsDialogShow,
     hide: vi.fn(),
     showAbout: vi.fn()
   })
 }))
 
+const mockCloseDialog = vi.fn()
+
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({
-    closeDialog: vi.fn()
+    closeDialog: mockCloseDialog
   })
 }))
 
@@ -52,6 +58,14 @@ const mockTrackMonthlySubscriptionSucceeded = vi.fn()
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
+  })
+}))
+
+const mockUpdateActiveWorkspace = vi.fn()
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    updateActiveWorkspace: mockUpdateActiveWorkspace
   })
 }))
 
@@ -79,7 +93,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       expect(store.operations.size).toBe(1)
       const operation = store.getOperation('op-1')
@@ -97,11 +111,32 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
-      store.startOperation('op-1', 'topup')
+      void store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'topup')
 
       expect(store.operations.size).toBe(1)
       expect(store.getOperation('op-1')?.type).toBe('subscription')
+    })
+
+    it('returns the in-flight terminal promise for duplicate starts', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const first = store.startOperation('op-1', 'cancel')
+      const second = store.startOperation('op-1', 'cancel')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      const [firstOutcome, secondOutcome] = await Promise.all([first, second])
+      expect(firstOutcome.status).toBe('succeeded')
+      expect(secondOutcome.status).toBe('succeeded')
+
+      const afterTerminal = await store.startOperation('op-1', 'cancel')
+      expect(afterTerminal.status).toBe('succeeded')
     })
 
     it('shows immediate processing toast for subscription operations', () => {
@@ -112,7 +147,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'info',
@@ -129,7 +164,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'topup')
+      void store.startOperation('op-1', 'topup')
 
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'info',
@@ -149,7 +184,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -157,14 +192,50 @@ describe('billingOperationStore', () => {
       expect(operation?.status).toBe('succeeded')
       expect(store.hasPendingOperations).toBe(false)
 
-      expect(mockFetchStatus).toHaveBeenCalled()
-      expect(mockFetchBalance).toHaveBeenCalled()
+      expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
+      expect(mockFetchStatus).not.toHaveBeenCalled()
+      expect(mockFetchBalance).not.toHaveBeenCalled()
 
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'success',
         summary: 'billingOperation.subscriptionSuccess',
         life: 5000
       })
+    })
+
+    it('leaves the checkout dialog open on subscription success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockCloseDialog).not.toHaveBeenCalledWith({
+        key: 'subscription-required'
+      })
+      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+    })
+
+    it('closes the top-up dialog and opens settings on topup success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'top-up-credits' })
+      expect(mockSettingsDialogShow).toHaveBeenCalledWith('workspace')
     })
 
     it('fires purchase telemetry on subscription success', async () => {
@@ -176,7 +247,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -191,7 +262,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'topup')
+      void store.startOperation('op-1', 'topup')
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -206,7 +277,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'topup')
+      void store.startOperation('op-1', 'topup')
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -225,7 +296,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       const receivedToast = mockToastAdd.mock.calls[0][0]
 
@@ -246,7 +317,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -270,7 +341,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'topup')
+      void store.startOperation('op-1', 'topup')
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -291,7 +362,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -316,7 +387,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'topup')
+      void store.startOperation('op-1', 'topup')
 
       await vi.advanceTimersByTimeAsync(121_000)
       await vi.runAllTimersAsync()
@@ -325,6 +396,114 @@ describe('billingOperationStore', () => {
         severity: 'error',
         summary: 'billingOperation.topupTimeout'
       })
+    })
+  })
+
+  describe('cancel operations', () => {
+    it('does not show a processing toast for cancel operations', () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'cancel')
+
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('resolves with the succeeded operation and refreshes status', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'cancel')
+
+      await vi.advanceTimersByTimeAsync(0)
+      const operation = await terminal
+
+      expect(operation.status).toBe('succeeded')
+      expect(mockFetchStatus).toHaveBeenCalled()
+      expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
+        isSubscribed: false
+      })
+    })
+
+    it('resolves the terminal outcome even when the post-success refresh fails', async () => {
+      mockFetchStatus.mockRejectedValueOnce(new Error('refresh failed'))
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'cancel')
+
+      await vi.advanceTimersByTimeAsync(0)
+      const operation = await terminal
+
+      expect(operation.status).toBe('succeeded')
+    })
+
+    it('does not open the settings dialog or toast on cancel success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'cancel')
+
+      await vi.advanceTimersByTimeAsync(0)
+      await terminal
+
+      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('resolves with a failed operation and default message, no toast', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'cancel')
+
+      await vi.advanceTimersByTimeAsync(0)
+      const operation = await terminal
+
+      expect(operation.status).toBe('failed')
+      expect(operation.errorMessage).toBe('billingOperation.cancelFailed')
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('resolves with a timeout operation after 2 minutes, no toast', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'cancel')
+
+      await vi.advanceTimersByTimeAsync(121_000)
+      await vi.runAllTimersAsync()
+      const operation = await terminal
+
+      expect(operation.status).toBe('timeout')
+      expect(operation.errorMessage).toBe('billingOperation.cancelTimeout')
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })
 
@@ -337,7 +516,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       await vi.advanceTimersByTimeAsync(0)
       expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(1)
@@ -357,7 +536,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       await vi.advanceTimersByTimeAsync(60_000)
 
@@ -384,7 +563,7 @@ describe('billingOperationStore', () => {
         } satisfies BillingOpStatusResponse)
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       await vi.advanceTimersByTimeAsync(0)
       expect(store.getOperation('op-1')?.status).toBe('pending')
@@ -406,7 +585,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -430,8 +609,8 @@ describe('billingOperationStore', () => {
       )
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
-      store.startOperation('op-2', 'topup')
+      void store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-2', 'topup')
 
       expect(store.operations.size).toBe(2)
       expect(store.hasPendingOperations).toBe(true)
@@ -462,7 +641,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       expect(store.isSettingUp).toBe(true)
     })
@@ -475,7 +654,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -490,7 +669,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'topup')
+      void store.startOperation('op-1', 'topup')
 
       expect(store.isSettingUp).toBe(false)
     })
@@ -505,7 +684,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'topup')
+      void store.startOperation('op-1', 'topup')
 
       expect(store.isAddingCredits).toBe(true)
     })
@@ -518,7 +697,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'topup')
+      void store.startOperation('op-1', 'topup')
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -533,7 +712,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription')
 
       expect(store.isAddingCredits).toBe(false)
     })

@@ -8,16 +8,20 @@ An Architecture Decision Record captures an important architectural decision mad
 
 ## ADR Index
 
-| ADR                                                      | Title                                    | Status   | Date       |
-| -------------------------------------------------------- | ---------------------------------------- | -------- | ---------- |
-| [0001](0001-merge-litegraph-into-frontend.md)            | Merge LiteGraph.js into ComfyUI Frontend | Accepted | 2025-08-05 |
-| [0002](0002-monorepo-conversion.md)                      | Restructure as a Monorepo                | Accepted | 2025-08-25 |
-| [0003](0003-crdt-based-layout-system.md)                 | Centralized Layout Management with CRDT  | Proposed | 2025-08-27 |
-| [0004](0004-fork-primevue-ui-library.md)                 | Fork PrimeVue UI Library                 | Rejected | 2025-08-27 |
-| [0005](0005-remove-importmap-for-vue-extensions.md)      | Remove Import Map for Vue Extensions     | Accepted | 2025-12-13 |
-| [0006](0006-primitive-node-copy-paste-lifecycle.md)      | PrimitiveNode Copy/Paste Lifecycle       | Proposed | 2026-02-22 |
-| [0007](0007-node-execution-output-passthrough-schema.md) | NodeExecutionOutput Passthrough Schema   | Accepted | 2026-03-11 |
-| [0008](0008-entity-component-system.md)                  | Entity Component System                  | Proposed | 2026-03-23 |
+| ADR                                                         | Title                                       | Status   | Date       |
+| ----------------------------------------------------------- | ------------------------------------------- | -------- | ---------- |
+| [0001](0001-merge-litegraph-into-frontend.md)               | Merge LiteGraph.js into ComfyUI Frontend    | Accepted | 2025-08-05 |
+| [0002](0002-monorepo-conversion.md)                         | Restructure as a Monorepo                   | Accepted | 2025-08-25 |
+| [0003](0003-crdt-based-layout-system.md)                    | Centralized Layout Management with CRDT     | Proposed | 2025-08-27 |
+| [0004](0004-fork-primevue-ui-library.md)                    | Fork PrimeVue UI Library                    | Rejected | 2025-08-27 |
+| [0005](0005-remove-importmap-for-vue-extensions.md)         | Remove Import Map for Vue Extensions        | Accepted | 2025-12-13 |
+| [0006](0006-primitive-node-copy-paste-lifecycle.md)         | PrimitiveNode Copy/Paste Lifecycle          | Proposed | 2026-02-22 |
+| [0007](0007-node-execution-output-passthrough-schema.md)    | NodeExecutionOutput Passthrough Schema      | Accepted | 2026-03-11 |
+| [0008](0008-entity-component-system.md)                     | Entity Component System                     | Proposed | 2026-03-23 |
+| [0009](0009-subgraph-promoted-widgets-use-linked-inputs.md) | Subgraph Promoted Widgets Use Linked Inputs | Proposed | 2026-05-05 |
+| [0010](0010-remove-nx-orchestration.md)                     | Remove Nx Orchestration                     | Accepted | 2026-05-19 |
+| [0011](0011-derived-credential-lifecycle.md)                | Derived Credential Lifecycle for Cloud Auth | Proposed | 2026-07-09 |
+| [0012](0012-cloud-release-notes-use-comfyui-version.md)     | Cloud Release Notes Use the ComfyUI Version | Accepted | 2026-07-13 |
 
 ## Creating a New ADR
 

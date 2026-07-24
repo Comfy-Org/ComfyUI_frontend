@@ -1,9 +1,11 @@
-import { mount } from '@vue/test-utils'
+import { createTestingPinia } from '@pinia/testing'
+import { render, screen, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   MissingModelGroup,
   MissingModelViewModel
@@ -12,8 +14,24 @@ import type {
 vi.mock('./MissingModelRow.vue', () => ({
   default: {
     name: 'MissingModelRow',
-    template: '<div class="model-row" />',
-    props: ['model', 'directory', 'showNodeIdBadge', 'isAssetSupported'],
+    template: `
+      <div
+        data-testid="model-row"
+        class="model-row"
+        :data-model-name="model.name"
+        :data-is-asset-supported="isAssetSupported"
+        :data-directory="directory"
+        :data-can-cloud-import="canCloudImport"
+      >
+        <button
+          class="locate-trigger"
+          @click="$emit('locate-model', model?.representative?.nodeId)"
+        >
+          Locate
+        </button>
+      </div>
+    `,
+    props: ['model', 'directory', 'isAssetSupported', 'canCloudImport'],
     emits: ['locate-model']
   }
 }))
@@ -30,25 +48,18 @@ import MissingModelCard from './MissingModelCard.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      rightSidePanel: {
-        missingModels: {
-          importNotSupported: 'Import Not Supported',
-          customNodeDownloadDisabled:
-            'Cloud environment does not support model imports for custom nodes.',
-          unknownCategory: 'Unknown Category'
-        }
-      }
-    }
-  },
+  messages: { en: enMessages },
   missingWarn: false,
   fallbackWarn: false
 })
 
 function makeViewModel(
   name: string,
-  nodeId: string = '1'
+  nodeId: string = '1',
+  opts: {
+    url?: string
+    directory?: string
+  } = {}
 ): MissingModelViewModel {
   return {
     name,
@@ -58,7 +69,9 @@ function makeViewModel(
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       isAssetSupported: true,
-      isMissing: true
+      isMissing: true,
+      url: opts.url,
+      directory: opts.directory
     },
     referencingNodes: [{ nodeId, widgetName: 'ckpt_name' }]
   }
@@ -69,32 +82,51 @@ function makeGroup(
     directory?: string | null
     isAssetSupported?: boolean
     modelNames?: string[]
+    withDownloadUrls?: boolean
   } = {}
 ): MissingModelGroup {
   const names = opts.modelNames ?? ['model.safetensors']
+  const directory =
+    'directory' in opts ? (opts.directory ?? null) : 'checkpoints'
   return {
-    directory: 'directory' in opts ? (opts.directory ?? null) : 'checkpoints',
+    directory,
     isAssetSupported: opts.isAssetSupported ?? true,
-    models: names.map((n, i) => makeViewModel(n, String(i + 1)))
+    models: names.map((n, i) =>
+      makeViewModel(n, String(i + 1), {
+        url: opts.withDownloadUrls
+          ? `https://huggingface.co/comfy/test/resolve/main/${n}`
+          : undefined,
+        directory: directory ?? undefined
+      })
+    )
   }
 }
 
 function mountCard(
   props: Partial<{
     missingModelGroups: MissingModelGroup[]
-    showNodeIdBadge: boolean
-  }> = {}
+  }> = {},
+  onLocateModel?: (nodeId: string) => void
 ) {
-  return mount(MissingModelCard, {
+  const pinia = createTestingPinia({ createSpy: vi.fn })
+  return render(MissingModelCard, {
     props: {
       missingModelGroups: [makeGroup()],
-      showNodeIdBadge: false,
-      ...props
+      ...props,
+      ...(onLocateModel ? { onLocateModel } : {})
     },
     global: {
-      plugins: [PrimeVue, i18n]
+      plugins: [pinia, PrimeVue, i18n]
     }
   })
+}
+
+function getRows() {
+  return screen.queryAllByTestId('model-row')
+}
+
+function getRowsIn(testId: string) {
+  return within(screen.getByTestId(testId)).getAllByTestId('model-row')
 }
 
 describe('MissingModelCard', () => {
@@ -103,103 +135,121 @@ describe('MissingModelCard', () => {
   })
 
   describe('Rendering & Props', () => {
-    it('renders directory name in category header', () => {
-      const wrapper = mountCard({
+    it('passes the model directory to rows', () => {
+      mockIsCloud.value = false
+      mountCard({
         missingModelGroups: [makeGroup({ directory: 'loras' })]
       })
-      expect(wrapper.text()).toContain('loras')
-    })
-
-    it('renders translated unknown category when directory is null', () => {
-      const wrapper = mountCard({
-        missingModelGroups: [makeGroup({ directory: null })]
-      })
-      expect(wrapper.text()).toContain('Unknown Category')
-    })
-
-    it('renders model count in category header', () => {
-      const wrapper = mountCard({
-        missingModelGroups: [
-          makeGroup({ modelNames: ['a.safetensors', 'b.safetensors'] })
-        ]
-      })
-      expect(wrapper.text()).toContain('(2)')
+      expect(getRows()[0].getAttribute('data-directory')).toBe('loras')
     })
 
     it('renders correct number of MissingModelRow components', () => {
-      const wrapper = mountCard({
+      mountCard({
         missingModelGroups: [
           makeGroup({
             modelNames: ['a.safetensors', 'b.safetensors', 'c.safetensors']
           })
         ]
       })
-      expect(
-        wrapper.findAllComponents({ name: 'MissingModelRow' })
-      ).toHaveLength(3)
+      expect(getRows()).toHaveLength(3)
     })
 
-    it('renders multiple groups', () => {
-      const wrapper = mountCard({
+    it('flattens multiple groups into rows', () => {
+      mockIsCloud.value = false
+      mountCard({
         missingModelGroups: [
           makeGroup({ directory: 'checkpoints' }),
           makeGroup({ directory: 'loras' })
         ]
       })
-      expect(wrapper.text()).toContain('checkpoints')
-      expect(wrapper.text()).toContain('loras')
+      expect(getRows()).toHaveLength(2)
+    })
+
+    it('sorts importable rows by model type order in cloud', () => {
+      mountCard({
+        missingModelGroups: [
+          makeGroup({ directory: null, modelNames: ['unknown.safetensors'] }),
+          makeGroup({ directory: 'loras', modelNames: ['lora.safetensors'] }),
+          makeGroup({
+            directory: 'checkpoints',
+            modelNames: ['checkpoint.safetensors']
+          })
+        ]
+      })
+
+      expect(
+        getRowsIn('missing-model-importable-rows').map((row) =>
+          row.getAttribute('data-model-name')
+        )
+      ).toEqual(['checkpoint.safetensors', 'lora.safetensors'])
+    })
+
+    it('moves cloud rows without import context into the unsupported section', () => {
+      mountCard({
+        missingModelGroups: [
+          makeGroup({
+            directory: 'checkpoints',
+            modelNames: ['importable.safetensors']
+          }),
+          makeGroup({
+            directory: null,
+            modelNames: ['unknown.safetensors']
+          }),
+          makeGroup({
+            directory: 'loras',
+            isAssetSupported: false,
+            modelNames: ['custom-node-model.safetensors']
+          })
+        ]
+      })
+
+      expect(
+        getRowsIn('missing-model-importable-rows').map((row) =>
+          row.getAttribute('data-model-name')
+        )
+      ).toEqual(['importable.safetensors'])
+
+      const unsupportedSection = screen.getByTestId(
+        'missing-model-import-not-supported-section'
+      )
+      expect(
+        within(unsupportedSection)
+          .getAllByTestId('model-row')
+          .map((row) => row.getAttribute('data-model-name'))
+      ).toEqual(['custom-node-model.safetensors', 'unknown.safetensors'])
+      expect(
+        within(unsupportedSection).getByText('Import Not Supported')
+      ).toBeInTheDocument()
+      expect(
+        within(unsupportedSection).getByText(
+          /Nodes that reference the models below do not support imported models/
+        )
+      ).toBeInTheDocument()
     })
 
     it('renders zero rows when missingModelGroups is empty', () => {
-      const wrapper = mountCard({ missingModelGroups: [] })
+      mountCard({ missingModelGroups: [] })
+      expect(getRows()).toHaveLength(0)
+    })
+
+    it('hides bulk actions in cloud', () => {
+      mountCard({
+        missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+      })
+
       expect(
-        wrapper.findAllComponents({ name: 'MissingModelRow' })
-      ).toHaveLength(0)
-    })
-
-    it('passes props correctly to MissingModelRow children', () => {
-      const wrapper = mountCard({ showNodeIdBadge: true })
-      const row = wrapper.findComponent({ name: 'MissingModelRow' })
-      expect(row.props('showNodeIdBadge')).toBe(true)
-      expect(row.props('isAssetSupported')).toBe(true)
-      expect(row.props('directory')).toBe('checkpoints')
-    })
-  })
-
-  describe('Asset Unsupported Group', () => {
-    it('shows "Import Not Supported" header for unsupported groups', () => {
-      const wrapper = mountCard({
-        missingModelGroups: [makeGroup({ isAssetSupported: false })]
-      })
-      expect(wrapper.text()).toContain('Import Not Supported')
-    })
-
-    it('shows info notice for unsupported groups', () => {
-      const wrapper = mountCard({
-        missingModelGroups: [makeGroup({ isAssetSupported: false })]
-      })
-      expect(wrapper.text()).toContain(
-        'Cloud environment does not support model imports'
-      )
-    })
-
-    it('hides info notice for supported groups', () => {
-      const wrapper = mountCard({
-        missingModelGroups: [makeGroup({ isAssetSupported: true })]
-      })
-      expect(wrapper.text()).not.toContain(
-        'Cloud environment does not support model imports'
-      )
+        screen.queryByTestId('missing-model-actions')
+      ).not.toBeInTheDocument()
     })
   })
 
   describe('Event Handling', () => {
     it('emits locateModel when child emits locate-model', async () => {
-      const wrapper = mountCard()
-      const row = wrapper.findComponent({ name: 'MissingModelRow' })
-      await row.vm.$emit('locate-model', '42')
-      expect(wrapper.emitted('locateModel')).toBeTruthy()
-      expect(wrapper.emitted('locateModel')?.[0]).toEqual(['42'])
+      const onLocateModel = vi.fn()
+      mountCard({}, onLocateModel)
+      const locateButton = screen.getByRole('button', { name: 'Locate' })
+      await userEvent.click(locateButton)
+      expect(onLocateModel).toHaveBeenCalledWith('1')
     })
   })
 })
@@ -214,31 +264,43 @@ describe('MissingModelCard (OSS)', () => {
   })
 
   it('shows directory name instead of "Import Not Supported" for unsupported groups', () => {
-    const wrapper = mountCard({
+    mountCard({
       missingModelGroups: [
         makeGroup({ directory: 'checkpoints', isAssetSupported: false })
       ]
     })
-    expect(wrapper.text()).toContain('checkpoints')
-    expect(wrapper.text()).not.toContain('Import Not Supported')
+    expect(getRows()[0].getAttribute('data-directory')).toBe('checkpoints')
   })
 
-  it('hides info notice for unsupported groups', () => {
-    const wrapper = mountCard({
-      missingModelGroups: [makeGroup({ isAssetSupported: false })]
-    })
-    expect(wrapper.text()).not.toContain(
-      'Cloud environment does not support model imports'
-    )
-  })
-
-  it('renders unknown category for null directory in OSS', () => {
-    const wrapper = mountCard({
+  it('passes null directory for unknown category rows in OSS', () => {
+    mountCard({
       missingModelGroups: [
         makeGroup({ directory: null, isAssetSupported: false })
       ]
     })
-    expect(wrapper.text()).toContain('Unknown Category')
-    expect(wrapper.text()).not.toContain('Import Not Supported')
+    expect(getRows()[0].hasAttribute('data-directory')).toBe(false)
+  })
+
+  it('shows Download all at the bottom when one model is downloadable', () => {
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+
+    const actions = screen.getByTestId('missing-model-actions')
+    expect(actions).toBeVisible()
+    expect(
+      within(actions).getByRole('button', { name: /Download all/ })
+    ).toBeVisible()
+  })
+
+  it('hides Download all when no model is downloadable', () => {
+    mountCard()
+
+    expect(
+      screen.queryByRole('button', { name: /Download all/ })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('missing-model-actions')
+    ).not.toBeInTheDocument()
   })
 })

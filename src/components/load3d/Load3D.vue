@@ -4,8 +4,6 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @pointerdown.stop
-    @pointermove.stop
-    @pointerup.stop
   >
     <Load3DScene
       v-if="node"
@@ -17,16 +15,39 @@
       :is-preview="isPreview"
     />
     <div class="pointer-events-none absolute top-0 left-0 size-full">
-      <Load3DControls
+      <Load3DMenuBar
         v-model:scene-config="sceneConfig"
         v-model:model-config="modelConfig"
         v-model:camera-config="cameraConfig"
         v-model:light-config="lightConfig"
-        :is-splat-model="isSplatModel"
-        :is-ply-model="isPlyModel"
+        v-model:is-recording="isRecording"
+        v-model:has-recording="hasRecording"
+        v-model:recording-duration="recordingDuration"
+        :can-use-gizmo="canUseGizmo"
+        :can-use-lighting="canUseLighting"
+        :can-export="canExport"
+        :can-use-hdri="canUseHdri"
+        :can-use-background-image="canUseBackgroundImage"
+        :can-fit-to-viewer="canFitToViewer"
+        :can-center-camera-on-model="canCenterCameraOnModel"
+        :node="node as LGraphNode"
+        :enable-viewer="enable3DViewer"
+        :can-use-recording="canUseRecording && !isPreview"
+        :material-modes="materialModes"
         :has-skeleton="hasSkeleton"
+        :source-format="sourceFormat"
         @update-background-image="handleBackgroundImageUpdate"
+        @update-hdri-file="handleHDRIFileUpdate"
         @export-model="handleExportModel"
+        @fit-to-viewer="handleFitToViewer"
+        @center-camera="handleCenterCameraOnModel"
+        @toggle-gizmo="handleToggleGizmo"
+        @set-gizmo-mode="handleSetGizmoMode"
+        @reset-gizmo-transform="handleResetGizmoTransform"
+        @start-recording="handleStartRecording"
+        @stop-recording="handleStopRecording"
+        @export-recording="handleExportRecording"
+        @clear-recording="handleClearRecording"
       />
       <AnimationControls
         v-if="animations && animations.length > 0"
@@ -39,31 +60,6 @@
         @seek="handleSeek"
       />
     </div>
-    <div
-      v-if="enable3DViewer && node"
-      class="pointer-events-auto absolute top-12 right-2 z-20"
-    >
-      <ViewerControls :node="node as LGraphNode" />
-    </div>
-
-    <div
-      v-if="!isPreview"
-      class="pointer-events-auto absolute right-2 z-20"
-      :class="{
-        'top-12': !enable3DViewer,
-        'top-24': enable3DViewer
-      }"
-    >
-      <RecordingControls
-        v-model:is-recording="isRecording"
-        v-model:has-recording="hasRecording"
-        v-model:recording-duration="recordingDuration"
-        @start-recording="handleStartRecording"
-        @stop-recording="handleStopRecording"
-        @export-recording="handleExportRecording"
-        @clear-recording="handleClearRecording"
-      />
-    </div>
   </div>
 </template>
 
@@ -71,22 +67,29 @@
 import { computed, onMounted, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import Load3DControls from '@/components/load3d/Load3DControls.vue'
+import Load3DMenuBar from '@/components/load3d/Load3DMenuBar.vue'
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
-import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
-import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { resolveNode } from '@/utils/litegraphUtil'
 import type { ComponentWidget } from '@/scripts/domWidget'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { resolveNode } from '@/utils/litegraphUtil'
 
-const props = defineProps<{
+const {
+  widget,
+  nodeId,
+  canUseRecording = true,
+  canUseHdri = true,
+  canUseBackgroundImage = true
+} = defineProps<{
   widget: ComponentWidget<string[]> | SimplifiedWidget
   nodeId?: NodeId
+  canUseRecording?: boolean
+  canUseHdri?: boolean
+  canUseBackgroundImage?: boolean
 }>()
 
 function isComponentWidget(
@@ -97,11 +100,11 @@ function isComponentWidget(
 
 const node = ref<LGraphNode | null>(null)
 
-if (isComponentWidget(props.widget)) {
-  node.value = props.widget.node
-} else if (props.nodeId) {
+if (isComponentWidget(widget)) {
+  node.value = widget.node
+} else if (nodeId) {
   onMounted(() => {
-    node.value = resolveNode(props.nodeId!) ?? null
+    node.value = resolveNode(nodeId) ?? null
   })
 }
 
@@ -115,9 +118,14 @@ const {
   // other state
   isRecording,
   isPreview,
-  isSplatModel,
-  isPlyModel,
+  canFitToViewer,
+  canCenterCameraOnModel,
+  canUseGizmo,
+  canUseLighting,
+  canExport,
+  materialModes,
   hasSkeleton,
+  sourceFormat,
   hasRecording,
   recordingDuration,
   animations,
@@ -139,8 +147,14 @@ const {
   handleClearRecording,
   handleSeek,
   handleBackgroundImageUpdate,
+  handleHDRIFileUpdate,
   handleExportModel,
   handleModelDrop,
+  handleFitToViewer,
+  handleCenterCameraOnModel,
+  handleToggleGizmo,
+  handleSetGizmoMode,
+  handleResetGizmoTransform,
   cleanup
 } = useLoad3d(node as Ref<LGraphNode | null>)
 

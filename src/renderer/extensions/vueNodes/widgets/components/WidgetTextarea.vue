@@ -22,8 +22,10 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none text-xs',
-          !hideLayoutField && 'pt-5'
+          'size-full resize-none text-(length:--comfy-textarea-font-size) leading-normal',
+          !hideLayoutField && 'pt-5',
+          // Avoid overflow-auto when idle to prevent per-textarea compositing layers.
+          'overflow-hidden hover:overflow-auto focus:overflow-auto'
         )
       "
       :placeholder
@@ -58,7 +60,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps

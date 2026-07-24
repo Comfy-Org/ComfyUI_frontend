@@ -75,7 +75,7 @@ export const Default: Story = {
           :node-type="nodeType"
           :input-name="inputName"
           :show-left-panel="showLeftPanel"
-          :assets="assets"
+          :override-assets="assets"
           @asset-select="onAssetSelect"
           @close="onClose"
         />
@@ -116,7 +116,7 @@ export const SingleAssetType: Story = {
           :node-type="nodeType"
           :input-name="inputName"
           :show-left-panel="showLeftPanel"
-          :assets="assets"
+          :override-assets="assets"
           @asset-select="onAssetSelect"
           @close="onClose"
         />
@@ -159,7 +159,7 @@ export const NoLeftPanel: Story = {
           :node-type="nodeType"
           :input-name="inputName"
           :show-left-panel="showLeftPanel"
-          :assets="assets"
+          :override-assets="assets"
           @asset-select="onAssetSelect"
           @close="onClose"
         />

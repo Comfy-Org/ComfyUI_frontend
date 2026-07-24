@@ -7,6 +7,7 @@
     <Transition name="slide-up">
       <Panel
         v-if="visible"
+        data-testid="selection-toolbox"
         class="selection-toolbox pointer-events-auto rounded-lg border border-interface-stroke bg-interface-panel-surface"
         :pt="{
           header: 'hidden',
@@ -15,10 +16,11 @@
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
         <DeleteButton v-if="showDelete" />
-        <VerticalDivider v-if="showInfoButton && showAnyPrimaryActions" />
-        <InfoButton v-if="showInfoButton" />
+        <VerticalDivider v-if="canOpenNodeInfo && showAnyPrimaryActions" />
+        <InfoButton v-if="canOpenNodeInfo" />
 
         <ColorPickerButton v-if="showColorPicker" />
+        <ArrangeButton v-if="showArrange" />
         <FrameNodes v-if="showFrameNodes" />
         <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
         <ConfigureSubgraph v-if="showSubgraphButtons" />
@@ -48,6 +50,7 @@
 import Panel from 'primevue/panel'
 import { computed, ref } from 'vue'
 
+import ArrangeButton from '@/components/graph/selectionToolbox/ArrangeButton.vue'
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ConfigureSubgraph from '@/components/graph/selectionToolbox/ConfigureSubgraph.vue'
@@ -98,24 +101,28 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 
 const {
   hasAnySelection,
+  hasGroupedNodesSelection,
   hasMultipleSelection,
   isSingleNode,
   isSingleSubgraph,
   isSingleImageNode,
   hasAny3DNodeSelected,
   hasOutputNodesSelected,
-  nodeDef
+  canOpenNodeInfo
 } = useSelectionState()
-const showInfoButton = computed(() => !!nodeDef.value)
 
 const showColorPicker = computed(() => hasAnySelection.value)
 const showConvertToSubgraph = computed(() => hasAnySelection.value)
+const showArrange = computed(() => hasMultipleSelection.value)
 const showFrameNodes = computed(() => hasMultipleSelection.value)
 const showSubgraphButtons = computed(() => isSingleSubgraph.value)
 
 const showBypass = computed(
   () =>
-    isSingleNode.value || isSingleSubgraph.value || hasMultipleSelection.value
+    isSingleNode.value ||
+    isSingleSubgraph.value ||
+    hasMultipleSelection.value ||
+    hasGroupedNodesSelection.value
 )
 const showLoad3DViewer = computed(() => hasAny3DNodeSelected.value)
 const showMaskEditor = computed(() => isSingleImageNode.value)
@@ -128,6 +135,7 @@ const showAnyPrimaryActions = computed(
   () =>
     showColorPicker.value ||
     showConvertToSubgraph.value ||
+    showArrange.value ||
     showFrameNodes.value ||
     showSubgraphButtons.value
 )

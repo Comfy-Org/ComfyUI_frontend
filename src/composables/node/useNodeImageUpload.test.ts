@@ -1,6 +1,8 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ResultItem } from '@/schemas/apiSchema'
 
 const { mockFetchApi, mockAddAlert, mockUpdateInputs } = vi.hoisted(() => ({
   mockFetchApi: vi.fn(),
@@ -44,16 +46,16 @@ vi.mock('@/stores/assetsStore', () => ({
 }))
 
 function createMockNode(): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     isUploading: false,
     imgs: [new Image()],
     graph: { setDirtyCanvas: vi.fn() },
     size: [300, 400]
-  } as unknown as LGraphNode
+  })
 }
 
-function createFile(name = 'test.png'): File {
-  return new File(['data'], name, { type: 'image/png' })
+function createFile(name = 'test.png', type = 'image/png'): File {
+  return new File(['data'], name, { type })
 }
 
 function successResponse(name: string, subfolder?: string) {
@@ -72,7 +74,7 @@ function failResponse(status = 500) {
 
 describe('useNodeImageUpload', () => {
   let node: LGraphNode
-  let onUploadComplete: (paths: string[]) => void
+  let onUploadComplete: (paths: (string | ResultItem)[]) => void
   let onUploadStart: (files: File[]) => void
   let onUploadError: () => void
 
@@ -93,15 +95,21 @@ describe('useNodeImageUpload', () => {
     })
   })
 
-  it('sets isUploading true during upload and false after', async () => {
-    mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
+  it.for([
+    { mediaType: 'image', filename: 'test.png', mimeType: 'image/png' },
+    { mediaType: 'video', filename: 'clip.mp4', mimeType: 'video/mp4' }
+  ])(
+    'sets isUploading true during $mediaType upload and false after',
+    async ({ filename, mimeType }) => {
+      mockFetchApi.mockResolvedValueOnce(successResponse(filename))
 
-    const promise = capturedDragOnDrop([createFile()])
-    expect(node.isUploading).toBe(true)
+      const promise = capturedDragOnDrop([createFile(filename, mimeType)])
+      expect(node.isUploading).toBe(true)
 
-    await promise
-    expect(node.isUploading).toBe(false)
-  })
+      await promise
+      expect(node.isUploading).toBe(false)
+    }
+  )
 
   it('clears node.imgs on upload start', async () => {
     mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))

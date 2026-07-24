@@ -4,10 +4,9 @@ name: 'CI: Tests E2E'
 on:
   push:
     branches: [main, master, core/*, desktop/*]
-    paths-ignore: ['**/*.md']
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-    paths-ignore: ['**/*.md']
+  merge_group:
   workflow_dispatch:
 
 concurrency:
@@ -15,7 +14,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
   setup:
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -33,12 +45,10 @@ jobs:
           path: dist/
           retention-days: 1
 
-      # Build cloud distribution for @cloud tagged tests
-      # NX_SKIP_NX_CACHE=true is required because `nx build` was already run
-      # for the OSS distribution above. Without skipping cache, Nx returns
-      # the cached OSS build since env vars aren't part of the cache key.
       - name: Build cloud frontend
-        run: NX_SKIP_NX_CACHE=true pnpm build:cloud
+        run: pnpm build:cloud
+        env:
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
 
       - name: Upload cloud frontend
         uses: actions/upload-artifact@v6
@@ -53,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.16
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -63,8 +73,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
-        shardTotal: [8]
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        shardTotal: [16]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -83,9 +93,10 @@ jobs:
       # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
+        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          COLLECT_COVERAGE: 'true'
 
       - name: Upload blob report
         uses: actions/upload-artifact@v6
@@ -95,13 +106,22 @@ jobs:
           path: blob-report/
           retention-days: 1
 
+      - name: Upload shard coverage data
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-coverage-shard-${{ matrix.shardIndex }}
+          path: coverage/playwright/
+          retention-days: 1
+          if-no-files-found: warn
+
   playwright-tests:
     # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
     timeout-minutes: 15
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.16
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -111,14 +131,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium-2x, chromium-0.5x, mobile-chrome, cloud]
+        browser:
+          [chromium-2x, chromium-0.5x, mobile-chrome, cloud, mobile-safari]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
-          name: ${{ matrix.browser == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
+          name: ${{ (matrix.browser == 'cloud' || matrix.browser == 'mobile-safari') && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
 
       - name: Start ComfyUI server
@@ -130,7 +151,7 @@ jobs:
       # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
-        run: pnpm exec playwright test --project=${{ matrix.browser }} --reporter=blob
+        run: pnpm exec playwright test --project=${{ matrix.browser }}
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
 
@@ -153,9 +174,9 @@ jobs:
 
   # Merge sharded test reports (no container needed - only runs CLI)
   merge-reports:
-    needs: [playwright-tests-chromium-sharded]
+    needs: [changes, playwright-tests-chromium-sharded]
     runs-on: ubuntu-latest
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.changes.outputs.should-run == 'true' }}
     steps:
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
@@ -184,35 +205,64 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
+  # Gate job — single required check that passes whether the matrix ran or was
+  # skipped. Branch rulesets require this instead of the individual matrix-
+  # expanded check names so PRs with no e2e-relevant changes aren't stuck.
+  e2e-status:
+    if: ${{ always() }}
+    needs: [changes, playwright-tests-chromium-sharded, playwright-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check E2E results
+        env:
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
+          SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
+          BROWSERS: ${{ needs.playwright-tests.result }}
+        run: |
+          [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
+          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
+          echo "E2E passed"
+
   #### BEGIN Deployment and commenting (non-forked PRs only)
   # when using pull_request event, we have permission to comment directly
   # if its a forked repo, we need to use workflow_run event in a separate workflow (pr-playwright-deploy.yaml)
 
-  # Post starting comment for non-forked PRs
+  # Post starting section into the unified PR report comment for non-forked PRs
   comment-on-pr-start:
+    needs: changes
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: >-
+      ${{
+        needs.changes.outputs.should-run == 'true' &&
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.fork == false
+      }}
     permissions:
       pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Post starting comment
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
-          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
-            "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
-            "starting"
+      - name: Upsert playwright starting section into unified report
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          section-name: playwright
+          section-content: '## 🎭 Playwright: ⏳ Running...'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          token: ${{ github.token }}
 
-  # Deploy and comment for non-forked PRs only
+  # Deploy and upsert final playwright section for non-forked PRs only
   deploy-and-comment:
-    needs: [playwright-tests, merge-reports]
+    needs: [changes, playwright-tests, merge-reports]
     runs-on: ubuntu-latest
-    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: >-
+      ${{
+        always() &&
+        needs.changes.outputs.should-run == 'true' &&
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.fork == false
+      }}
     permissions:
       pull-requests: write
       contents: read
@@ -226,15 +276,34 @@ jobs:
           pattern: playwright-report-*
           path: reports
 
-      - name: Deploy reports and comment on PR
+      - name: Deploy reports and generate section
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
+          SUMMARY_FILE: playwright-section.md
+          BRANCH_NAME: ${{ github.head_ref }}
         run: |
           bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
+            "$BRANCH_NAME" \
             "completed"
+
+      - name: Read playwright section
+        id: section
+        if: ${{ !cancelled() && hashFiles('playwright-section.md') != '' }}
+        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
+        with:
+          path: playwright-section.md
+
+      - name: Upsert playwright section into unified report
+        if: ${{ !cancelled() && steps.section.outputs.content != '' }}
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          section-name: playwright
+          section-content: ${{ steps.section.outputs.content }}
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          token: ${{ github.token }}
   #### END Deployment and commenting (non-forked PRs only)

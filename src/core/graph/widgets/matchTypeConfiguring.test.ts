@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
@@ -72,8 +73,8 @@ describe('MatchType during configure', () => {
     const link2Id = switchNode.inputs[1].link!
 
     const outputTypeBefore = switchNode.outputs[0].type
-    ;(
-      app as unknown as { configuringGraphLevel: number }
+    fromAny<{ configuringGraphLevel: number }, unknown>(
+      app
     ).configuringGraphLevel = 1
 
     try {
@@ -92,8 +93,8 @@ describe('MatchType during configure', () => {
       expect(graph.links[link2Id]).toBeDefined()
       expect(switchNode.outputs[0].type).toBe(outputTypeBefore)
     } finally {
-      ;(
-        app as unknown as { configuringGraphLevel: number }
+      fromAny<{ configuringGraphLevel: number }, unknown>(
+        app
       ).configuringGraphLevel = 0
     }
   })

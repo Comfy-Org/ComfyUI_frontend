@@ -74,10 +74,14 @@ export function highlightQuery(
     text = DOMPurify.sanitize(text)
   }
 
-  // Escape special regex characters in the query string
-  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  // Escape special regex characters, then join with an optional single
+  // space so cross-word matches (e.g. "geto" → "imaGE TO") are
+  // highlighted without spanning tabs, newlines, or multi-space gaps.
+  const pattern = Array.from(query)
+    .map((ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('[ ]?')
 
-  const regex = new RegExp(`(${escapedQuery})`, 'gi')
+  const regex = new RegExp(`(${pattern})`, 'gi')
   return text.replace(regex, '<span class="highlight">$1</span>')
 }
 
@@ -252,6 +256,31 @@ export function isValidUrl(url: string): boolean {
   }
 }
 
+export function joinFilePath(
+  subfolder: string | null | undefined,
+  filename: string | null | undefined
+): string {
+  const normalizedSubfolder = normalizeFilePathSeparators(
+    subfolder ?? ''
+  ).replace(/^\/+|\/+$/g, '')
+  const normalizedFilename = normalizeFilePathSeparators(
+    filename ?? ''
+  ).replace(/^\/+/g, '')
+  if (!normalizedSubfolder) return normalizedFilename
+  if (!normalizedFilename) return normalizedSubfolder
+  return `${normalizedSubfolder}/${normalizedFilename}`
+}
+
+export function getFilePathSeparatorVariants(filepath: string): string[] {
+  const slashPath = normalizeFilePathSeparators(filepath)
+  const backslashPath = slashPath.replace(/\//g, '\\')
+  return slashPath === backslashPath ? [slashPath] : [slashPath, backslashPath]
+}
+
+function normalizeFilePathSeparators(filepath: string): string {
+  return filepath.replace(/[\\/]+/g, '/')
+}
+
 /**
  * Parses a filepath into its filename and subfolder components.
  *
@@ -270,8 +299,7 @@ export function parseFilePath(filepath: string): {
 } {
   if (!filepath?.trim()) return { filename: '', subfolder: '' }
 
-  const normalizedPath = filepath
-    .replace(/[\\/]+/g, '/') // Normalize path separators
+  const normalizedPath = normalizeFilePathSeparators(filepath)
     .replace(/^\//, '') // Remove leading slash
     .replace(/\/$/, '') // Remove trailing slash
 
@@ -351,6 +379,22 @@ export const generateUUID = (): string => {
   })
 }
 
+const isCivitaiHost = (hostname: string): boolean =>
+  hostname === 'civitai.com' ||
+  hostname.endsWith('.civitai.com') ||
+  hostname === 'civitai.red' ||
+  hostname.endsWith('.civitai.red')
+
+/**
+ * Checks if a URL belongs to any Civitai domain (civitai.com or civitai.red).
+ * Use this for source-name detection; use `isCivitaiModelUrl` when the URL
+ * must also match a specific model API path format.
+ */
+export const isCivitaiUrl = (url: string): boolean => {
+  if (!isValidUrl(url)) return false
+  return isCivitaiHost(new URL(url).hostname.toLowerCase())
+}
+
 /**
  * Checks if a URL is a Civitai model URL
  * @example
@@ -361,11 +405,11 @@ export const generateUUID = (): string => {
  */
 export const isCivitaiModelUrl = (url: string): boolean => {
   if (!isValidUrl(url)) return false
-  if (!url.includes('civitai.com')) return false
 
   const urlObj = new URL(url)
-  const pathname = urlObj.pathname
+  if (!isCivitaiHost(urlObj.hostname.toLowerCase())) return false
 
+  const pathname = urlObj.pathname
   return (
     /^\/api\/download\/models\/(\d+)$/.test(pathname) ||
     /^\/api\/v1\/models\/(\d+)$/.test(pathname) ||
@@ -542,11 +586,23 @@ const IMAGE_EXTENSIONS = [
   'bmp',
   'avif',
   'tif',
-  'tiff'
+  'tiff',
+  'svg'
 ] as const
-const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'avi'] as const
-const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac'] as const
-const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb', 'usdz'] as const
+const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
+const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus'] as const
+const THREE_D_EXTENSIONS = [
+  'obj',
+  'fbx',
+  'gltf',
+  'glb',
+  'stl',
+  'usdz',
+  'ply',
+  'spz',
+  'splat',
+  'ksplat'
+] as const
 const TEXT_EXTENSIONS = [
   'txt',
   'md',
@@ -624,12 +680,7 @@ export function getMediaTypeFromFilename(
 }
 
 export function isPreviewableMediaType(mediaType: MediaType): boolean {
-  return (
-    mediaType === 'image' ||
-    mediaType === 'video' ||
-    mediaType === 'audio' ||
-    mediaType === '3D'
-  )
+  return mediaType !== 'other'
 }
 
 export function formatTime(seconds: number): string {
@@ -637,4 +688,33 @@ export function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = Math.floor(seconds % 60)
   return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+/**
+ * Format a number with the given BCP-47 locale.
+ * Returns an em-dash for non-numeric, NaN, or infinite inputs.
+ */
+export function formatLocalizedNumber(
+  value: number | undefined,
+  locale: string
+): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '—'
+  return new Intl.NumberFormat(locale).format(value)
+}
+
+/**
+ * Format an ISO 8601 date string with the given BCP-47 locale using the
+ * `medium` date style (e.g. "Apr 19, 2026"). Returns an em-dash for missing
+ * or unparseable inputs.
+ */
+export function formatLocalizedMediumDate(
+  value: string | undefined,
+  locale: string
+): string {
+  if (!value) return '—'
+  const timestamp = Date.parse(value)
+  if (Number.isNaN(timestamp)) return '—'
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
+    timestamp
+  )
 }

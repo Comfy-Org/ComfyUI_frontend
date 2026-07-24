@@ -1,5 +1,8 @@
+import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+
+import type { RendererView } from '@/renderer/three/RendererView'
 
 import Load3dUtils from './Load3dUtils'
 import {
@@ -9,10 +12,22 @@ import {
 } from './interfaces'
 
 export class SceneManager implements SceneManagerInterface {
-  scene: THREE.Scene
+  scene!: THREE.Scene
   gridHelper: THREE.GridHelper
+  private sparkRenderer: SparkRenderer
 
-  backgroundScene: THREE.Scene
+  private nextSparkDirtyPromise: Promise<void> | null = null
+  private nextSparkDirtyResolve: (() => void) | null = null
+
+  awaitNextSparkDirty(): Promise<void> {
+    if (this.nextSparkDirtyPromise) return this.nextSparkDirtyPromise
+    this.nextSparkDirtyPromise = new Promise<void>((resolve) => {
+      this.nextSparkDirtyResolve = resolve
+    })
+    return this.nextSparkDirtyPromise
+  }
+
+  backgroundScene!: THREE.Scene
   backgroundCamera: THREE.OrthographicCamera
   backgroundMesh: THREE.Mesh | null = null
   backgroundTexture: THREE.Texture | null = null
@@ -25,26 +40,51 @@ export class SceneManager implements SceneManagerInterface {
 
   private eventManager: EventManagerInterface
   private renderer: THREE.WebGLRenderer
+  private view: RendererView
 
   private getActiveCamera: () => THREE.Camera
 
   constructor(
-    renderer: THREE.WebGLRenderer,
+    view: RendererView,
     getActiveCamera: () => THREE.Camera,
     _getControls: () => OrbitControls,
     eventManager: EventManagerInterface
   ) {
-    this.renderer = renderer
+    this.view = view
+    this.renderer = view.renderer
     this.eventManager = eventManager
     this.scene = new THREE.Scene()
 
+    this.scene.name = 'MainScene'
+
     this.getActiveCamera = getActiveCamera
+
+    // Spark 2.x requires a SparkRenderer in the scene tree to render SplatMesh
+    // instances; without it splats are silent no-ops.
+    //
+    // onDirty fires twice per splat first-paint cycle: once from updateInternal
+    // (data uploaded) and again from driveSort (sort completed; line 1105 in
+    // SparkRenderer.ts). We expose it as a passive promise — awaiters get
+    // notified, but the callback itself does NOT trigger a render. Wiring
+    // forceRender directly into onDirty caused a per-frame render-setDirty
+    // cascade that made splats visibly "balloon" during camera interaction.
+    this.sparkRenderer = new SparkRenderer({
+      renderer: view.renderer,
+      onDirty: () => {
+        const resolve = this.nextSparkDirtyResolve
+        this.nextSparkDirtyResolve = null
+        this.nextSparkDirtyPromise = null
+        resolve?.()
+      }
+    })
+    this.scene.add(this.sparkRenderer)
 
     this.gridHelper = new THREE.GridHelper(20, 20)
     this.gridHelper.position.set(0, 0, 0)
     this.scene.add(this.gridHelper)
 
     this.backgroundScene = new THREE.Scene()
+    this.backgroundScene.name = 'BackgroundScene'
     this.backgroundCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1)
 
     this.initBackgroundScene()
@@ -68,7 +108,8 @@ export class SceneManager implements SceneManagerInterface {
     this.backgroundMesh.position.set(0, 0, 0)
     this.backgroundScene.add(this.backgroundMesh)
 
-    this.renderer.setClearColor(0x000000, 0)
+    this.view.state.clearColor.set(0x000000)
+    this.view.state.clearAlpha = 0
   }
 
   init(): void {}
@@ -92,6 +133,8 @@ export class SceneManager implements SceneManagerInterface {
     if (this.scene.background) {
       this.scene.background = null
     }
+
+    this.backgroundScene.clear()
 
     this.scene.clear()
   }
@@ -212,8 +255,8 @@ export class SceneManager implements SceneManagerInterface {
         this.updateBackgroundSize(
           this.backgroundTexture,
           this.backgroundMesh,
-          this.renderer.domElement.clientWidth,
-          this.renderer.domElement.clientHeight
+          this.view.canvas.clientWidth,
+          this.view.canvas.clientHeight
         )
       }
 
@@ -272,8 +315,8 @@ export class SceneManager implements SceneManagerInterface {
 
     if (!material.map) return
 
-    const imageAspect =
-      backgroundTexture.image.width / backgroundTexture.image.height
+    const image = backgroundTexture.image as { width: number; height: number }
+    const imageAspect = image.width / image.height
     const targetAspect = targetWidth / targetHeight
 
     if (imageAspect > targetAspect) {
@@ -327,120 +370,143 @@ export class SceneManager implements SceneManagerInterface {
     }
   }
 
-  captureScene(
+  async captureScene(
     width: number,
     height: number
   ): Promise<{ scene: string; mask: string; normal: string }> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const originalWidth = this.renderer.domElement.width
-        const originalHeight = this.renderer.domElement.height
-        const originalClearColor = this.renderer.getClearColor(
-          new THREE.Color()
-        )
-        const originalClearAlpha = this.renderer.getClearAlpha()
-        const originalOutputColorSpace = this.renderer.outputColorSpace
+    this.view.beginRender()
 
-        this.renderer.setSize(width, height)
+    const originalSize = new THREE.Vector2()
+    this.renderer.getSize(originalSize)
+    const originalPixelRatio = this.renderer.getPixelRatio()
+    const originalClearColor = this.renderer.getClearColor(new THREE.Color())
+    const originalClearAlpha = this.renderer.getClearAlpha()
+    const originalOutputColorSpace = this.renderer.outputColorSpace
 
-        if (this.getActiveCamera() instanceof THREE.PerspectiveCamera) {
-          const perspectiveCamera =
-            this.getActiveCamera() as THREE.PerspectiveCamera
-
-          perspectiveCamera.aspect = width / height
-          perspectiveCamera.updateProjectionMatrix()
-        } else {
-          const orthographicCamera =
-            this.getActiveCamera() as THREE.OrthographicCamera
-
-          const frustumSize = 10
-          const aspect = width / height
-
-          orthographicCamera.left = (-frustumSize * aspect) / 2
-          orthographicCamera.right = (frustumSize * aspect) / 2
-          orthographicCamera.top = frustumSize / 2
-          orthographicCamera.bottom = -frustumSize / 2
-
-          orthographicCamera.updateProjectionMatrix()
-        }
-
-        if (
-          this.backgroundTexture &&
-          this.backgroundMesh &&
-          this.currentBackgroundType === 'image'
-        ) {
-          this.updateBackgroundSize(
-            this.backgroundTexture,
-            this.backgroundMesh,
-            width,
-            height
-          )
-        }
-
-        const originalMaterials = new Map<
-          THREE.Mesh,
-          THREE.Material | THREE.Material[]
-        >()
-
-        this.renderer.clear()
-        this.renderBackground()
-        this.renderer.render(this.scene, this.getActiveCamera())
-        const sceneData = this.renderer.domElement.toDataURL('image/png')
-
-        this.renderer.setClearColor(0x000000, 0)
-        this.renderer.clear()
-        this.renderer.render(this.scene, this.getActiveCamera())
-        const maskData = this.renderer.domElement.toDataURL('image/png')
-
-        this.scene.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            originalMaterials.set(child, child.material)
-
-            child.material = new THREE.MeshNormalMaterial({
-              flatShading: false,
-              side: THREE.DoubleSide,
-              normalScale: new THREE.Vector2(1, 1)
-            })
+    const activeCamera = this.getActiveCamera()
+    const savedCameraParams =
+      activeCamera instanceof THREE.PerspectiveCamera
+        ? { type: 'perspective' as const, aspect: activeCamera.aspect }
+        : {
+            type: 'orthographic' as const,
+            left: (activeCamera as THREE.OrthographicCamera).left,
+            right: (activeCamera as THREE.OrthographicCamera).right,
+            top: (activeCamera as THREE.OrthographicCamera).top,
+            bottom: (activeCamera as THREE.OrthographicCamera).bottom
           }
-        })
 
-        const gridVisible = this.gridHelper.visible
-        this.gridHelper.visible = false
+    const originalMaterials = new Map<
+      THREE.Mesh,
+      THREE.Material | THREE.Material[]
+    >()
+    const tempMaterials: THREE.MeshNormalMaterial[] = []
+    const gridVisible = this.gridHelper.visible
 
-        this.renderer.setClearColor(0x000000, 1)
-        this.renderer.clear()
-        this.renderer.render(this.scene, this.getActiveCamera())
-        const normalData = this.renderer.domElement.toDataURL('image/png')
+    try {
+      // Capture at exactly the requested pixel dimensions, independent of
+      // the current zoom-driven pixel ratio.
+      this.renderer.setPixelRatio(1)
+      this.renderer.setSize(width, height)
 
-        this.scene.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            const originalMaterial = originalMaterials.get(child)
-            if (originalMaterial) {
-              child.material = originalMaterial
-            }
-          }
-        })
+      if (activeCamera instanceof THREE.PerspectiveCamera) {
+        activeCamera.aspect = width / height
+        activeCamera.updateProjectionMatrix()
+      } else {
+        const orthographicCamera = activeCamera as THREE.OrthographicCamera
 
-        this.renderer.setClearColor(0xffffff, 1)
-        this.renderer.clear()
+        const frustumSize = 10
+        const aspect = width / height
 
-        this.gridHelper.visible = gridVisible
+        orthographicCamera.left = (-frustumSize * aspect) / 2
+        orthographicCamera.right = (frustumSize * aspect) / 2
+        orthographicCamera.top = frustumSize / 2
+        orthographicCamera.bottom = -frustumSize / 2
 
-        this.renderer.setClearColor(originalClearColor, originalClearAlpha)
-        this.renderer.setSize(originalWidth, originalHeight)
-        this.renderer.outputColorSpace = originalOutputColorSpace
-
-        this.handleResize(originalWidth, originalHeight)
-
-        resolve({
-          scene: sceneData,
-          mask: maskData,
-          normal: normalData
-        })
-      } catch (error) {
-        reject(error)
+        orthographicCamera.updateProjectionMatrix()
       }
-    })
+
+      if (
+        this.backgroundTexture &&
+        this.backgroundMesh &&
+        this.currentBackgroundType === 'image'
+      ) {
+        this.updateBackgroundSize(
+          this.backgroundTexture,
+          this.backgroundMesh,
+          width,
+          height
+        )
+      }
+
+      this.renderer.clear()
+      this.renderBackground()
+      this.renderer.render(this.scene, activeCamera)
+      const sceneData = this.renderer.domElement.toDataURL('image/png')
+
+      this.renderer.setClearColor(0x000000, 0)
+      this.renderer.clear()
+      this.renderer.render(this.scene, activeCamera)
+      const maskData = this.renderer.domElement.toDataURL('image/png')
+
+      this.scene.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          originalMaterials.set(child, child.material)
+
+          const tempMaterial = new THREE.MeshNormalMaterial({
+            flatShading: false,
+            side: THREE.DoubleSide,
+            normalScale: new THREE.Vector2(1, 1)
+          })
+          tempMaterials.push(tempMaterial)
+          child.material = tempMaterial
+        }
+      })
+
+      this.gridHelper.visible = false
+
+      this.renderer.setClearColor(0x000000, 1)
+      this.renderer.clear()
+      this.renderer.render(this.scene, activeCamera)
+      const normalData = this.renderer.domElement.toDataURL('image/png')
+
+      this.renderer.setClearColor(0xffffff, 1)
+      this.renderer.clear()
+
+      return { scene: sceneData, mask: maskData, normal: normalData }
+    } finally {
+      this.scene.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          const originalMaterial = originalMaterials.get(child)
+          if (originalMaterial) {
+            child.material = originalMaterial
+          }
+        }
+      })
+      for (const mat of tempMaterials) {
+        mat.dispose()
+      }
+      this.gridHelper.visible = gridVisible
+      if (savedCameraParams.type === 'perspective') {
+        const persp = activeCamera as THREE.PerspectiveCamera
+        persp.aspect = savedCameraParams.aspect
+        persp.updateProjectionMatrix()
+      } else {
+        const ortho = activeCamera as THREE.OrthographicCamera
+        ortho.left = savedCameraParams.left
+        ortho.right = savedCameraParams.right
+        ortho.top = savedCameraParams.top
+        ortho.bottom = savedCameraParams.bottom
+        ortho.updateProjectionMatrix()
+      }
+      this.renderer.setClearColor(originalClearColor, originalClearAlpha)
+      this.renderer.setPixelRatio(originalPixelRatio)
+      this.renderer.setSize(originalSize.x, originalSize.y)
+      this.renderer.outputColorSpace = originalOutputColorSpace
+      this.handleResize(
+        this.view.canvas.clientWidth,
+        this.view.canvas.clientHeight
+      )
+    }
   }
 
   reset(): void {}

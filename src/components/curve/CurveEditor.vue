@@ -1,6 +1,7 @@
 <template>
   <svg
     ref="svgRef"
+    data-testid="curve-editor"
     viewBox="-0.04 -0.04 1.08 1.08"
     preserveAspectRatio="xMidYMid meet"
     :class="
@@ -68,6 +69,7 @@
       <circle
         v-for="(point, i) in modelValue"
         :key="i"
+        data-testid="curve-point"
         :cx="point[0]"
         :cy="1 - point[1]"
         r="0.02"
@@ -85,11 +87,11 @@
 import { computed, toRef, useTemplateRef } from 'vue'
 
 import { useCurveEditor } from '@/composables/useCurveEditor'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { CurveInterpolation, CurvePoint } from './types'
 
-import { histogramToPath } from './curveUtils'
+import { histogramToPath } from '@/utils/histogramUtil'
 
 const {
   curveColor = 'white',

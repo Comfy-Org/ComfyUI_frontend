@@ -3,11 +3,19 @@ import { vi } from 'vitest'
 import 'vue'
 
 // Mock @sparkjsdev/spark which uses WASM that doesn't work in Node.js
-vi.mock('@sparkjsdev/spark', () => ({
-  SplatMesh: class SplatMesh {
-    constructor() {}
+vi.mock('@sparkjsdev/spark', async () => {
+  const three = await import('three')
+  return {
+    SplatMesh: class SplatMesh {
+      constructor() {}
+    },
+    SparkRenderer: class SparkRenderer extends three.Object3D {
+      constructor() {
+        super()
+      }
+    }
   }
-}))
+})
 
 // Augment Window interface for tests
 declare global {

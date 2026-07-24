@@ -5,15 +5,25 @@ import type {
   CanvasPointerEvent,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
 
-import type { ComfyPage } from '../ComfyPage'
-import { TestIds } from '../selectors'
-import type { NodeReference } from '../utils/litegraphUtils'
-import { SubgraphSlotReference } from '../utils/litegraphUtils'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { Position, Size } from '@e2e/fixtures/types'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { getAllHostPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
+import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 
 export class SubgraphHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  public readonly editor: SubgraphEditor
+
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.editor = new SubgraphEditor(comfyPage)
+  }
 
   private get page(): Page {
     return this.comfyPage.page
@@ -157,7 +167,7 @@ export class SubgraphHelper {
 
     // Wait for the appropriate UI element to appear
     if (action === 'rightClick') {
-      await this.page.waitForSelector('.litemenu-entry', {
+      await this.page.locator('.litemenu-entry').first().waitFor({
         state: 'visible',
         timeout: 5000
       })
@@ -233,6 +243,17 @@ export class SubgraphHelper {
    */
   getOutputSlot(slotName?: string): SubgraphSlotReference {
     return new SubgraphSlotReference('output', slotName || '', this.comfyPage)
+  }
+
+  async getInputBounds(): Promise<Position & Size> {
+    return await this.comfyPage.page.evaluate(() => {
+      const graph = app!.canvas.graph as Subgraph
+      const inputNode = graph.inputNode
+      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(inputNode.pos)
+      const width = inputNode.size[0] * app!.canvas.ds.scale
+      const height = inputNode.size[1] * app!.canvas.ds.scale
+      return { x, y, width, height }
+    })
   }
 
   /**
@@ -326,11 +347,40 @@ export class SubgraphHelper {
     await this.comfyPage.nextFrame()
   }
 
+  async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
+    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    await this.comfyPage.contextMenu
+      .openFor(widget)
+      .then((m) => m.clickMenuItemExact(`Promote Widget: ${widgetName}`))
+  }
+
+  async unpromoteWidget(
+    nodeLocator: Locator,
+    widgetName: string
+  ): Promise<void> {
+    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    await this.comfyPage.contextMenu
+      .openFor(widget)
+      .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
+  }
+
   async isInSubgraph(): Promise<boolean> {
     return this.page.evaluate(() => {
       const graph = window.app!.canvas.graph
       return !!graph && 'inputNode' in graph
     })
+  }
+
+  /** ID of the graph currently shown on the canvas (root graph or subgraph). */
+  async getActiveGraphId(): Promise<string | null> {
+    return this.page.evaluate(() => window.app!.canvas.graph?.id ?? null)
+  }
+
+  /** ID of the root graph of the active workflow. */
+  async getRootGraphId(): Promise<string | null> {
+    return this.page.evaluate(
+      () => window.app!.canvas.graph?.rootGraph?.id ?? null
+    )
   }
 
   async exitViaBreadcrumb(): Promise<void> {
@@ -349,6 +399,9 @@ export class SubgraphHelper {
 
     await this.comfyPage.nextFrame()
     await expect.poll(async () => this.isInSubgraph()).toBe(false)
+    if (this.comfyPage.isVueNodes) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async countGraphPseudoPreviewEntries(): Promise<number> {
@@ -373,39 +426,9 @@ export class SubgraphHelper {
   }
 
   async getHostPromotedTupleSnapshot(): Promise<
-    { hostNodeId: string; promotedWidgets: [string, string][] }[]
+    { hostNodeId: string; promotedWidgets: PromotedWidgetEntry[] }[]
   > {
-    return this.page.evaluate(() => {
-      const graph = window.app!.canvas.graph!
-      return graph._nodes
-        .filter(
-          (node) =>
-            typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
-        )
-        .map((node) => {
-          const proxyWidgets = Array.isArray(node.properties?.proxyWidgets)
-            ? node.properties.proxyWidgets
-            : []
-          const promotedWidgets = proxyWidgets
-            .filter(
-              (entry): entry is [string, string] =>
-                Array.isArray(entry) &&
-                entry.length >= 2 &&
-                typeof entry[0] === 'string' &&
-                typeof entry[1] === 'string'
-            )
-            .map(
-              ([interiorNodeId, widgetName]) =>
-                [interiorNodeId, widgetName] as [string, string]
-            )
-
-          return {
-            hostNodeId: String(node.id),
-            promotedWidgets
-          }
-        })
-        .sort((a, b) => Number(a.hostNodeId) - Number(b.hostNodeId))
-    })
+    return getAllHostPromotedWidgets(this.comfyPage)
   }
 
   /** Reads from `window.app.canvas.graph` (viewed root or nested subgraph). */
@@ -445,7 +468,15 @@ export class SubgraphHelper {
       await this.rightClickOutputSlot(slotName)
     }
     await this.comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
-    await this.comfyPage.nextFrame()
+    await this.comfyPage.contextMenu.waitForHidden()
+  }
+
+  /** Promoted-widget name order as the subgraph host node exposes it. */
+  async getPromotedWidgetOrder(subgraphNodeId: string): Promise<string[]> {
+    return this.page.evaluate((id) => {
+      const node = window.app!.graph.nodes.find((n) => String(n.id) === id)
+      return (node?.widgets ?? []).map((w) => w.name)
+    }, subgraphNodeId)
   }
 
   async findSubgraphNodeId(): Promise<string> {
@@ -464,11 +495,7 @@ export class SubgraphHelper {
     const serialized = await this.page.evaluate(() =>
       window.app!.graph!.serialize()
     )
-    await this.page.evaluate(
-      (workflow: ComfyWorkflowJSON) => window.app!.loadGraphData(workflow),
-      serialized as ComfyWorkflowJSON
-    )
-    await this.comfyPage.nextFrame()
+    await this.comfyPage.workflow.loadGraphData(serialized as ComfyWorkflowJSON)
   }
 
   async convertDefaultKSamplerToSubgraph(): Promise<NodeReference> {
@@ -476,15 +503,22 @@ export class SubgraphHelper {
     const ksampler = await this.comfyPage.nodeOps.getNodeRefById('3')
     await ksampler.click('title')
     const subgraphNode = await ksampler.convertToSubgraph()
-    await this.comfyPage.nextFrame()
     return subgraphNode
   }
 
   async packAllInteriorNodes(hostNodeId: string): Promise<void> {
     await this.comfyPage.vueNodes.enterSubgraph(hostNodeId)
     await this.comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-    await this.comfyPage.nextFrame()
-    await this.comfyPage.canvas.click()
+    await this.comfyPage.canvas.dispatchEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
+    await this.comfyPage.canvas.dispatchEvent('pointerup', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
     await this.comfyPage.canvas.press('Control+a')
     await this.comfyPage.nextFrame()
     await this.page.evaluate(() => {
@@ -493,11 +527,38 @@ export class SubgraphHelper {
     })
     await this.comfyPage.nextFrame()
     await this.exitViaBreadcrumb()
-    await this.comfyPage.canvas.click()
+    await this.comfyPage.canvas.dispatchEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
+    await this.comfyPage.canvas.dispatchEvent('pointerup', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
     await this.comfyPage.nextFrame()
+  }
+  async publishSubgraph(name: string = 'test blueprint') {
+    await this.comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
+      name
+    })
+  }
+
+  //Blueprints will show an overwrite confirmation dialogue if they have not
+  //already been saved during the active session.
+  //Forcibly reset this flag without an expensive reload operation.
+  async setSaveUnpromptedOnActiveBlueprint() {
+    await this.page.evaluate(() => {
+      const { activeWorkflow } = window.app!.extensionManager.workflow
+      ;(
+        activeWorkflow as ComfyWorkflow & { hasPromptedSave: boolean }
+      ).hasPromptedSave = false
+    })
   }
 
   static getTextSlotPosition(page: Page, nodeId: string) {
+    const localNodeId = toNodeId(nodeId)
     return page.evaluate((id) => {
       const node = window.app!.canvas.graph!.getNodeById(id)
       if (!node) return null
@@ -514,7 +575,7 @@ export class SubgraphHelper {
         }
       }
       return null
-    }, nodeId)
+    }, localNodeId)
   }
 
   static async expectWidgetBelowHeader(
