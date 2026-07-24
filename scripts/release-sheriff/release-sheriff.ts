@@ -64,23 +64,37 @@ export function parseOnCallEmails(payload: unknown): string[] {
   return [...new Set(emails)]
 }
 
+export interface OnCallLookup {
+  emails: string[]
+  /** Set whenever the lookup could not produce an answer. */
+  warning: string | null
+}
+
 /**
  * Ask Datadog who is on call right now. Every failure mode degrades to an empty
- * list plus a warning rather than throwing: an unreachable rotation must leave
- * PRs with the fallback owner, never unowned.
+ * result plus a warning rather than throwing: an unreachable rotation must leave
+ * PRs with the fallback owner, never unowned. The warning is returned, not
+ * emitted, so the caller owns logging and the outcomes stay unit-testable.
  */
-async function fetchOnCallEmails(): Promise<string[]> {
-  const { datadogSite, scheduleId } = CONFIG
-  const apiKey = process.env.DATADOG_API_KEY
-  const appKey = process.env.DATADOG_APP_KEY
+export async function fetchOnCallEmails(
+  config: Pick<typeof CONFIG, 'datadogSite' | 'scheduleId'>,
+  credentials: { apiKey?: string; appKey?: string }
+): Promise<OnCallLookup> {
+  const { datadogSite, scheduleId } = config
+  const { apiKey, appKey } = credentials
 
   if (!scheduleId) {
-    warn('No Datadog On-Call schedule configured — using the fallback sheriff.')
-    return []
+    return {
+      emails: [],
+      warning: 'No Datadog On-Call schedule configured — using the fallback.'
+    }
   }
   if (!apiKey || !appKey) {
-    warn('DATADOG_API_KEY / DATADOG_APP_KEY unavailable — using the fallback.')
-    return []
+    return {
+      emails: [],
+      warning:
+        'DATADOG_API_KEY / DATADOG_APP_KEY unavailable — using the fallback.'
+    }
   }
 
   const url = new URL(
@@ -99,17 +113,17 @@ async function fetchOnCallEmails(): Promise<string[]> {
       signal: AbortSignal.timeout(15_000)
     })
     if (!response.ok) {
-      warn(
-        `Datadog On-Call responded ${response.status} ${response.statusText} — using the fallback.`
-      )
-      return []
+      return {
+        emails: [],
+        warning: `Datadog On-Call responded ${response.status} ${response.statusText} — using the fallback.`
+      }
     }
-    return parseOnCallEmails(await response.json())
+    return { emails: parseOnCallEmails(await response.json()), warning: null }
   } catch (error) {
-    warn(
-      `Datadog On-Call lookup failed (${String(error)}) — using the fallback.`
-    )
-    return []
+    return {
+      emails: [],
+      warning: `Datadog On-Call lookup failed (${String(error)}) — using the fallback.`
+    }
   }
 }
 
@@ -236,10 +250,13 @@ async function main() {
   const repo = process.env.GH_REPO
   if (!repo) throw new Error('GH_REPO is required')
 
-  const { login, source, unmappedEmails } = resolveSheriff(
-    await fetchOnCallEmails(),
-    CONFIG
-  )
+  const { emails, warning } = await fetchOnCallEmails(CONFIG, {
+    apiKey: process.env.DATADOG_API_KEY,
+    appKey: process.env.DATADOG_APP_KEY
+  })
+  if (warning) warn(warning)
+
+  const { login, source, unmappedEmails } = resolveSheriff(emails, CONFIG)
   for (const email of unmappedEmails) {
     warn(`Datadog on-call user ${email} has no githubLoginByEmail entry.`)
   }
