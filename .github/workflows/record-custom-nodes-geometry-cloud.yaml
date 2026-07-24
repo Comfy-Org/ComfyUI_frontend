@@ -1,0 +1,137 @@
+# Records the CLOUD custom-node geometry baselines
+# (browser_tests/fixtures/customNode/geometry/cloud/<pack>.json) and uploads
+# them as an artifact to commit. The cloud sibling of
+# record-custom-nodes-geometry.yaml: same record mechanism (mount sweep in
+# CN_GEOMETRY=record mode, which throws after writing each pack's file so a
+# record can never look like a green test run), with the backend swapped for
+# Cloud. Kept as a SEPARATE file rather than a suite_env input on the core
+# record workflow so the core record path stays byte-for-byte unchanged and
+# neither file has to thread conditionals through every step - the same
+# core/cloud split the two gate workflows already use.
+#
+# Cloud swaps out the whole local-backend half: no ComfyUI checkout, no pack
+# install, no torch constraints, no `python main.py`. The dist is served by
+# `vite preview` with /api proxied to Cloud (preview:cloud-e2e), and the mount
+# sweep runs under CUSTOM_NODES_ENV=cloud so geometry.ts records into
+# geometry/cloud/.
+#
+# SECRETS ARE REQUIRED here (unlike the always-on cloud gate, which no-ops when
+# they are absent). A record run is a deliberate operator dispatch, so missing
+# secrets are an operator error, not an expected pre-calibration state - the
+# job FAILS LOUD rather than silently recording nothing.
+#
+# Runs for real only once the smoke secrets AND the generated
+# customNodeManifest.cloud.json exist (without the manifest the mount sweep
+# throws at collection under cloud env). Dispatch it during Phase 5
+# calibration, after the manifest lands, on the branch carrying it.
+name: 'Record Custom Nodes Geometry (Cloud)'
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  # Shared literal group with ci-tests-custom-nodes-cloud.yaml: both drive the
+  # one shared Cloud instance, so a record run and a gate run must never
+  # overlap (see the gate's concurrency comment for the full semantics).
+  group: custom-nodes-cloud-instance
+  cancel-in-progress: false
+
+jobs:
+  record-geometry-cloud:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      # Fail loud if the operator dispatched without the cloud secrets: a record
+      # that silently produced no baselines would look like a crashed run.
+      - name: Require cloud smoke secrets
+        env:
+          SMOKE_FIREBASE_API_KEY: ${{ secrets.SMOKE_FIREBASE_API_KEY }}
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+          CLOUD_BACKEND_URL: ${{ secrets.CLOUD_BACKEND_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          [ -n "${SMOKE_FIREBASE_API_KEY:-}" ] || missing+=(SMOKE_FIREBASE_API_KEY)
+          [ -n "${SMOKE_ACCOUNT_EMAIL:-}" ] || missing+=(SMOKE_ACCOUNT_EMAIL)
+          [ -n "${SMOKE_ACCOUNT_PASSWORD:-}" ] || missing+=(SMOKE_ACCOUNT_PASSWORD)
+          [ -n "${CLOUD_BACKEND_URL:-}" ] || missing+=(CLOUD_BACKEND_URL)
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::cloud geometry record needs these repo secrets: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+
+      # DISTRIBUTION is a build-time constant: the recorded baselines must come
+      # from the cloud dist, not a localhost build (see the gate's build step).
+      - name: Build cloud dist
+        shell: bash
+        run: pnpm build:cloud-e2e
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      # Same served-dist-against-Cloud mechanism as the cloud gate.
+      - name: Start cloud preview server
+        env:
+          DEV_SERVER_COMFYUI_URL: ${{ secrets.CLOUD_BACKEND_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm preview:cloud-e2e --port 4173 &
+          for _ in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:4173/; then
+              echo "cloud preview server ready on :4173"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::cloud preview server did not become ready on :4173"
+          exit 1
+
+      # The checkout brings any committed cloud baselines along; delete them so
+      # the uploaded artifact is provably a product of THIS run and the
+      # if-no-files-found guard can fire on a crashed record instead of shipping
+      # stale bytes. `rm -f` no-ops cleanly the first time (no cloud/ dir yet).
+      - name: Clear committed cloud baselines
+        shell: bash
+        run: rm -f browser_tests/fixtures/customNode/geometry/cloud/*.json
+
+      # CUSTOM_NODES_ENV=cloud routes geometry.ts's record writes into
+      # geometry/cloud/. Record mode throws by design after writing each file,
+      # so continue-on-error and retries=0 - the artifact is the product, not a
+      # green run. No CN_GEOMETRY_CORE: cloud has no pinned core SHA, so
+      # provenance stamps 'unrecorded' (allNodes.spec.ts); the row's deployRef
+      # is recorded as the pin.
+      - name: Record cloud geometry baselines
+        continue-on-error: true
+        env:
+          CUSTOM_NODES_ENV: cloud
+          CN_GEOMETRY: record
+          PLAYWRIGHT_TEST_URL: http://localhost:4173
+          SMOKE_FIREBASE_API_KEY: ${{ secrets.SMOKE_FIREBASE_API_KEY }}
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+        run: |
+          pnpm exec playwright test browser_tests/tests/customNodes/allNodes.spec.ts \
+            --project=custom-nodes --reporter=list --workers=1 --retries=0 \
+            --grep "mounts in both renderers"
+
+      - name: Upload recorded cloud baselines
+        uses: actions/upload-artifact@v6
+        with:
+          name: custom-nodes-geometry-baselines-cloud
+          path: browser_tests/fixtures/customNode/geometry/cloud/
+          retention-days: 7
+          if-no-files-found: error

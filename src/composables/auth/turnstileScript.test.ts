@@ -140,6 +140,7 @@ describe('loadTurnstile', () => {
     const promise = loadTurnstile()
     scriptEl()!.dispatchEvent(new Event('load'))
     // global never published; deadline elapses
+    // oxlint-disable-next-line vitest/valid-expect -- deliberately awaited after the timer advance below; awaiting here would deadlock fake timers
     const assertion = expect(promise).rejects.toThrow(/timed out/i)
     await vi.advanceTimersByTimeAsync(10_000)
 
@@ -177,6 +178,7 @@ describe('loadTurnstile', () => {
     const loadTurnstile = await freshLoadTurnstile()
 
     const promise = loadTurnstile()
+    // oxlint-disable-next-line vitest/valid-expect -- deliberately awaited after the timer advance below; awaiting here would deadlock fake timers
     const assertion = expect(promise).rejects.toThrow(/timed out/i)
     vi.advanceTimersByTime(10_000)
 
@@ -216,6 +218,7 @@ describe('loadTurnstile', () => {
 
     const loadTurnstile = await freshLoadTurnstile()
     const promise = loadTurnstile()
+    // oxlint-disable-next-line vitest/valid-expect -- deliberately awaited after the timer advance below; awaiting here would deadlock fake timers
     const assertion = expect(promise).rejects.toThrow(/timed out/i)
     await vi.advanceTimersByTimeAsync(10_000)
 

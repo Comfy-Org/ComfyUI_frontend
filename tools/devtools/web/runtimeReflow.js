@@ -1,3 +1,4 @@
+// eslint-disable-next-line import-x/no-unresolved -- import is correct at time of test execution
 import { app } from '../../scripts/app.js'
 
 // 1x1 transparent PNG so `img.onload` fires deterministically in CI.
@@ -34,6 +35,7 @@ app.registerExtension({
       }
 
       this.growByPreview = function () {
+        // eslint-disable-next-line no-undef -- browser global; this script runs in the page
         const img = new Image()
         img.onload = () => {
           this.imgs = [img]

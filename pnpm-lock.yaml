@@ -886,6 +886,9 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.7(typescript@6.0.3)
+      yaml:
+        specifier: ^2.8.3
+        version: 2.9.0
       zip-dir:
         specifier: ^2.0.0
         version: 2.0.0

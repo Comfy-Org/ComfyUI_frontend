@@ -1,0 +1,256 @@
+# Runs the SAME custom-node regression suite as the core gate
+# (ci-tests-custom-nodes.yaml), but against the remote Comfy Cloud backend
+# instead of a local Python one. Two axes change, deliberately: the backend
+# (`CUSTOM_NODES_ENV=cloud` selects the cloud manifest + cloud geometry
+# baselines, and the suite talks to Cloud through a `vite preview` of the PR's
+# built dist with `/api` proxied to CLOUD_BACKEND_URL) and the BUILD - the
+# dist is built as the cloud distribution (build:cloud-e2e), because
+# DISTRIBUTION is a build-time constant and a localhost build would compile
+# out the isCloud code paths this gate exists to exercise. No ComfyUI
+# checkout, no pack install, no torch constraints - the backend is remote and
+# already has every supported pack deployed.
+#
+# GATING intent (same as the core gate): once calibrated and burned in this is
+# a required status check, so a red points at the PR. Skipped tests are a
+# failure here too - a skip means a cloud pack, devtools, or an under-enrolled
+# cloud manifest failed to surface a tier, not an honest pass.
+#
+# PRE-CALIBRATION HONESTY: this workflow cannot pass for real yet. The cloud
+# manifest (`customNodeManifest.cloud.json`) is generated from a Cloud
+# `/object_info` probe snapshot that has not landed, so `loadManifest()` throws
+# under `CUSTOM_NODES_ENV=cloud`. The gate step below therefore checks BOTH
+# preconditions - the four smoke secrets are configured AND the generated
+# manifest exists in the checkout - and no-ops the job green with a loud
+# `::notice` naming whichever is missing. It never fake-passes with a green
+# "0 tests", and it never reds on the half-ready states (secrets landed
+# before the manifest, or the reverse). The suite runs for real the first
+# time both are present. Which rows carry the run tier is decided by the
+# curated overlay (browser_tests/fixtures/data/cloud/
+# curatedCloudWorkflows.json), the one hand-maintained generator input;
+# generated rows without an overlay entry are load+connectivity only and
+# register no run test at all.
+#
+# SHARDING (plan A2.7): at the full ~88-pack cloud manifest this job must
+# partition manifest rows across a CI matrix; set the shard count from the
+# first calibration run's timings, before promotion to required.
+#
+# FORK-SAFETY: fork PRs never reach secrets. GitHub does not expose repo
+# secrets to `pull_request` runs from forks, AND the same-repo `if:` on the job
+# (mirrored from the core gate) skips the whole job on a fork PR. A skipped job
+# counts as passing, so the required check stays green-safe for forks; fork
+# coverage of the frontend still comes from the main e2e shards. The gate
+# step is a second, defence-in-depth backstop: even on a same-repo run, an
+# unconfigured secret no-ops rather than erroring.
+name: 'CI: Tests Custom Nodes Cloud'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+  push:
+    branches: [main, master]
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  # One literal group SHARED with record-custom-nodes-geometry-cloud.yaml, NOT
+  # the core gate's per-ref group: every run in either workflow drives the ONE
+  # shared Cloud test instance (a dedicated per-run instance is open item 7 in
+  # the plan, still unanswered), so a gate run and a record run must never
+  # overlap on that backend's execution/websocket streams.
+  # cancel-in-progress:false protects the IN-PROGRESS run from being killed
+  # mid backend interaction, but GitHub still cancels a PENDING run when a
+  # newer one queues into the group - under 3+ concurrent triggers the middle
+  # run is cancelled, not queued. Fine while this check is non-required and
+  # no-ops in seconds (pre-calibration); NOT fine for a required check running
+  # for real. Do not mark this check required until open item 7 lands a
+  # per-run instance (then switch to the core gate's per-ref group) or an
+  # in-job lock replaces group serialization.
+  group: custom-nodes-cloud-instance
+  cancel-in-progress: false
+
+jobs:
+  # Path gating lives in a job-level `if:`, not a trigger-level `paths:` filter:
+  # a required check gated by trigger paths never creates a check run on an
+  # unrelated PR and leaves branch protection stuck Pending. A job-level `if:`
+  # still creates the check and marks it Skipped (= passing). Mirrors the core
+  # gate and ci-tests-unit.yaml.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  custom-nodes-e2e-cloud:
+    needs: changes
+    # Run only when non-docs code changed AND the PR is same-repo. The same-repo
+    # guard is the fork-safety gate (see the header): fork PRs have no secrets
+    # and this job would have nothing to run, so skip it (a skip counts as
+    # passing, keeping this required-safe). Non-PR events (push, merge_group,
+    # workflow_dispatch) are same-repo by construction and fall through the OR.
+    if: >-
+      needs.changes.outputs.should-run == 'true' &&
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    # Generous while the real runtime is unknown (the suite has never run
+    # against Cloud). Phase 5 burn-in tightens this from observed timings.
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      # Unconditional: the gate step below tests for the generated manifest
+      # in the checkout, so the checkout must precede it. Cheap either way.
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Pre-calibration + defence-in-depth gate on the TWO activation
+      # preconditions. Reads the four cloud secrets into env (secrets are
+      # unavailable to `if:` expressions, so the check is a run step that
+      # writes a step output every later step consumes) and tests that the
+      # generated cloud manifest exists in the checkout - secrets landing
+      # first would otherwise red the suite at collection (`loadManifest()`
+      # throws on the missing file). When either precondition is missing it
+      # emits a LOUD `::notice` naming exactly what, sets run-cloud=false,
+      # and exits 0 - so the job goes green WITHOUT running a single test
+      # step (no fake "0 tests" pass). When both hold the suite runs for
+      # real.
+      - name: Gate on cloud secrets and manifest
+        id: gate
+        env:
+          SMOKE_FIREBASE_API_KEY: ${{ secrets.SMOKE_FIREBASE_API_KEY }}
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+          CLOUD_BACKEND_URL: ${{ secrets.CLOUD_BACKEND_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          [ -n "${SMOKE_FIREBASE_API_KEY:-}" ] || missing+=(SMOKE_FIREBASE_API_KEY)
+          [ -n "${SMOKE_ACCOUNT_EMAIL:-}" ] || missing+=(SMOKE_ACCOUNT_EMAIL)
+          [ -n "${SMOKE_ACCOUNT_PASSWORD:-}" ] || missing+=(SMOKE_ACCOUNT_PASSWORD)
+          [ -n "${CLOUD_BACKEND_URL:-}" ] || missing+=(CLOUD_BACKEND_URL)
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::notice::custom-nodes-e2e-cloud did not run: cloud smoke secrets unconfigured (missing: ${missing[*]}). Expected pre-calibration - the gate no-ops green until these repo secrets AND the generated customNodeManifest.cloud.json land. See browser_tests/tests/customNodes/README.md."
+            echo "run-cloud=false" >> "$GITHUB_OUTPUT"
+          elif [ ! -f browser_tests/fixtures/data/customNodeManifest.cloud.json ]; then
+            echo "::notice::custom-nodes-e2e-cloud did not run: secrets are configured but the generated browser_tests/fixtures/data/customNodeManifest.cloud.json is not in this checkout. Generate it from the Phase-1 probe snapshot ('pnpm gen:cloud-manifest') and commit it - the gate no-ops green until then. See browser_tests/tests/customNodes/README.md."
+            echo "run-cloud=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run-cloud=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup frontend
+        if: steps.gate.outputs.run-cloud == 'true'
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+
+      # Build the PR's own dist AS THE CLOUD DISTRIBUTION. DISTRIBUTION is a
+      # build-time constant (__DISTRIBUTION__), so the shared action's plain
+      # build would bake 'localhost' and every isCloud-gated code path this
+      # gate exists to exercise would be compiled out - preview-time env
+      # cannot fix that. `vite preview` (below) serves this dist.
+      - name: Build cloud dist
+        if: steps.gate.outputs.run-cloud == 'true'
+        shell: bash
+        run: pnpm build:cloud-e2e
+
+      - name: Setup Playwright
+        if: steps.gate.outputs.run-cloud == 'true'
+        uses: ./.github/actions/setup-playwright
+
+      # The cloud analogue of the core gate's `python main.py --front-end-root
+      # ../dist` line: serve the built dist and forward /api to Cloud.
+      # preview:cloud-e2e sets DISTRIBUTION=cloud (keeps the GCS media redirect
+      # proxy entries) and CLOUD_E2E_SERVE=1 (turns OFF the two dev-only /api
+      # bypasses that would blind the suite - the empty /api/extensions list and
+      # the fake single-user /api/users). DEV_SERVER_COMFYUI_URL aims the proxy
+      # at the Cloud backend. Port pinned to 4173 with --strictPort so a taken
+      # port fails loud instead of drifting off PLAYWRIGHT_TEST_URL; the server
+      # is backgrounded and survives into later steps (same pattern as the core
+      # gate's backgrounded backend).
+      - name: Start cloud preview server
+        if: steps.gate.outputs.run-cloud == 'true'
+        env:
+          DEV_SERVER_COMFYUI_URL: ${{ secrets.CLOUD_BACKEND_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm preview:cloud-e2e --port 4173 &
+          for _ in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:4173/; then
+              echo "cloud preview server ready on :4173"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::cloud preview server did not become ready on :4173"
+          exit 1
+
+      # Same suite invocation as the core gate (--project=custom-nodes,
+      # list,json,html, one worker) with the backend swapped by env:
+      # CUSTOM_NODES_ENV=cloud selects the cloud manifest/baselines and triggers
+      # the real smoke sign-in; PLAYWRIGHT_TEST_URL points at the preview server
+      # (its /api proxies to Cloud, so setup + in-page API calls are same-origin
+      # and carry the seeded bearer token). The SMOKE_* secrets feed the
+      # per-worker Firebase sign-in (smokeAuth.ts). workers=1: the auto-run tier
+      # needs exclusive backend-queue access.
+      - name: Run custom-node cloud suite
+        if: steps.gate.outputs.run-cloud == 'true'
+        env:
+          CUSTOM_NODES_ENV: cloud
+          PLAYWRIGHT_TEST_URL: http://localhost:4173
+          PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-cloud-results.json
+          SMOKE_FIREBASE_API_KEY: ${{ secrets.SMOKE_FIREBASE_API_KEY }}
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+        run: |
+          pnpm exec playwright test browser_tests/tests/customNodes/ \
+            --project=custom-nodes --reporter=list,json,html --workers=1
+
+      # A skip means a cloud pack, devtools, or an under-enrolled cloud manifest
+      # failed to surface a tier: on this backend every enrolled tier is meant
+      # to run, so a skip is a gate failure, not an honest pass. Gated on
+      # run-cloud so it only runs when the suite actually ran (else there is
+      # no results json to read); always() so a red suite still gets its skips
+      # surfaced. Byte-for-byte the core gate's jq logic.
+      - name: Forbid skipped tests
+        if: always() && steps.gate.outputs.run-cloud == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # An earlier step (build, preview, the suite itself) may have failed
+          # before Playwright wrote its json; the job is already red, so
+          # surface that rather than a confusing jq "no such file" error.
+          if [ ! -f custom-nodes-cloud-results.json ]; then
+            echo "no results json - the suite did not produce output (an earlier step failed)"
+            exit 0
+          fi
+          skipped=$(jq '.stats.skipped' custom-nodes-cloud-results.json)
+          echo "skipped tests: $skipped"
+          if [ "$skipped" != "0" ]; then
+            echo "::error::$skipped test(s) skipped - a cloud pack, devtools, or an under-enrolled cloud manifest failed to surface a tier; skips are not acceptable in the gating job"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "skipped"))
+                     | .title' custom-nodes-cloud-results.json | sort -u | head -40
+            exit 1
+          fi
+
+      # always() so a red suite still publishes its report. On the no-op path
+      # (secrets or manifest absent) nothing ran, so there is no
+      # playwright-report/ and if-no-files-found:warn simply warns - it never
+      # fails the green no-op.
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-custom-nodes-cloud
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: warn

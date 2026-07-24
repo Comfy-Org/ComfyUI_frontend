@@ -1,0 +1,107 @@
+{
+  "last_node_id": 3,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VHS_LoadVideoPath",
+      "pos": { "0": 20, "1": 60 },
+      "size": { "0": 320, "1": 260 },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "video_info",
+          "type": "VHS_VIDEOINFO",
+          "links": [1],
+          "slot_index": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VHS_LoadVideoPath"
+      },
+      "widgets_values": ["input/plain_video.mp4", 0, 0, 0, 0, 0, 1]
+    },
+    {
+      "id": 2,
+      "type": "VHS_VideoInfo",
+      "pos": { "0": 400, "1": 60 },
+      "size": { "0": 240, "1": 260 },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video_info",
+          "type": "VHS_VIDEOINFO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "source_fps🟨",
+          "type": "FLOAT",
+          "links": [2],
+          "slot_index": 0
+        },
+        { "name": "source_frame_count🟨", "type": "INT", "links": null },
+        { "name": "source_duration🟨", "type": "FLOAT", "links": null },
+        { "name": "source_width🟨", "type": "INT", "links": null },
+        { "name": "source_height🟨", "type": "INT", "links": null },
+        { "name": "loaded_fps🟦", "type": "FLOAT", "links": null },
+        { "name": "loaded_frame_count🟦", "type": "INT", "links": null },
+        { "name": "loaded_duration🟦", "type": "FLOAT", "links": null },
+        { "name": "loaded_width🟦", "type": "INT", "links": null },
+        { "name": "loaded_height🟦", "type": "INT", "links": null }
+      ],
+      "properties": {
+        "Node name for S&R": "VHS_VideoInfo"
+      }
+    },
+    {
+      "id": 3,
+      "type": "PreviewAny",
+      "pos": { "0": 700, "1": 60 },
+      "size": { "0": 220, "1": 60 },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 2
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      }
+    }
+  ],
+  "links": [
+    [1, 1, 3, 2, 0, "VHS_VIDEOINFO"],
+    [2, 2, 0, 3, 0, "FLOAT"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

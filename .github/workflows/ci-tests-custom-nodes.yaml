@@ -1,0 +1,207 @@
+# Runs the custom-node regression suite against a backend that has the manifest
+# packs actually installed, so the load/run tiers execute for real. This is a
+# GATING check: if a pack fails to install or any tier is skipped, the job goes
+# red - a regression gate that let a broken pack through as a "skip" would be
+# pointless. Mark `custom-nodes-e2e-core` as a required status check in branch
+# protection to block merges on failure.
+#
+# The gate is deterministic at the GIT level: ComfyUI core and every pack are
+# pinned at verified commits, so no git surface moves underneath a PR. Python
+# deps (core's and packs' requirements.txt) still resolve fresh per run and
+# the runner image updates independently - a red that reproduces on a trivial
+# PR right after a dependency release is environment, not the PR. Git-level
+# drift (core master moving, pack authors shipping changes) is the nightly
+# canary's job (ci-nightly-custom-nodes-canary.yaml) - non-gating radar, not
+# a PR blocker.
+name: 'CI: Tests Custom Nodes'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+  push:
+    branches: [main, master]
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Path gating lives here, not in a trigger-level `paths:` filter: a required
+  # check gated by trigger paths never creates a check run on an unrelated PR
+  # and leaves branch protection stuck Pending. A job-level `if:` still creates
+  # the check and marks it Skipped (= passing). Mirrors ci-tests-unit.yaml.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  # Deliberately NOT sharded yet: the suite is ~8 min but every shard would
+  # pay the full ~4.5 min setup (clone + pip-install every pack + boot the
+  # backend), so 2 shards buy ~4 min of wall time for double the runner cost,
+  # with diminishing returns beyond that. Sharding pays once test time dwarfs
+  # setup time -
+  # first cut setup with a prebuilt image of the pinned packs, then shard if
+  # the job exceeds ~12 minutes.
+  custom-nodes-e2e-core:
+    needs: changes
+    # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
+    # edit the manifest's repo/pin URLs, and this job clones and pip-installs
+    # whatever they point at (setup.py runs at install time), so an untrusted
+    # fork must not be able to aim the clone at an attacker-controlled repo.
+    # Fork PRs still get the environment-agnostic coverage via the main e2e
+    # shards. A skipped job counts as passing, so this stays required-safe.
+    if: >-
+      needs.changes.outputs.should-run == 'true' &&
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      # Checks out ComfyUI, installs Python/torch/requirements and ComfyUI_devtools.
+      # launch_server:false so we can add the manifest packs before booting.
+      # comfyui_ref pins core so the gate is reproducible: this SHA is the
+      # exact master commit the suite (incl. the KJNodes ledger entries and
+      # per-pack node counts) was last verified green against. Bump it
+      # deliberately, in its own PR, recalibrating ledgers/counts if the run
+      # says so - and bump the canary Job B's copy of this SHA
+      # (ci-nightly-custom-nodes-canary.yaml) in the SAME PR, or its reds
+      # stop isolating pack drift. Core DRIFT is covered nightly by the
+      # canary, not here.
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'false'
+          comfyui_ref: 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2'
+
+      # Install every pack the manifest declares (DRY: a new pack row installs
+      # itself here, no workflow change). A clone or dependency failure fails the
+      # job - if a pack can't be installed, its coverage can't run, and that is a
+      # gate failure, not something to paper over. The `jq | while` pipe hides
+      # failures in a subshell, so read into an array and loop with `set -e`.
+      - name: Install manifest custom nodes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Pin the CPU torch stack that setup-comfyui-server installed so no
+          # pack's requirements.txt can pull a GPU/incompatible torch onto this
+          # --cpu runner. A pack that genuinely needs a different torch fails
+          # the constrained install loudly rather than silently swapping it.
+          pip freeze | grep -iE '^(torch|torchvision|torchaudio)==' \
+            > /tmp/torch-constraints.txt || true
+          manifest=browser_tests/fixtures/data/customNodeManifest.core.json
+          mapfile -t entries < <(jq -c '.[]' "$manifest")
+          for entry in "${entries[@]}"; do
+            repo=$(jq -r '.repo' <<<"$entry")
+            pin=$(jq -r '.pin' <<<"$entry")
+            # Install under the manifest `pack` key, not basename(repo): node
+            # attribution keys on the install dirname via python_module, and
+            # the two only coincide by luck. Same charset the manifest loader
+            # enforces - belt for anything that bypasses it.
+            pack=$(jq -r '.pack' <<<"$entry")
+            if ! [[ "$pack" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+              echo "::error::unsafe pack name: '$pack'"; exit 1
+            fi
+            # The gate tests exactly what was verified: a full SHA pin is
+            # mandatory here, before anything installs. The nightly canary's
+            # pack-drift job is the only intended unpinned INSTALL - it
+            # ignores the pin fields in its own install step
+            # (ci-nightly-custom-nodes-canary.yaml); the manifest itself
+            # stays pinned and validating everywhere.
+            if ! [[ "$pin" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::$pack: pin must be a full commit SHA (got '$pin')"; exit 1
+            fi
+            dir="ComfyUI/custom_nodes/$pack"
+            echo "::group::install $pack"
+            git clone --depth 1 "$repo" "$dir"
+            git -C "$dir" fetch --depth 1 origin "$pin"
+            git -C "$dir" checkout "$pin"
+            if [ -f "$dir/requirements.txt" ]; then
+              pip install -r "$dir/requirements.txt" -c /tmp/torch-constraints.txt
+            fi
+            echo "::endgroup::"
+          done
+
+      # The VHS run-tier workflow reads input/plain_video.mp4.
+      - name: Stage run-tier assets
+        shell: bash
+        run: cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4
+
+      # --cache-none so retried run-tier tests re-execute every node (a cached
+      # node emits no `executing` event and would false-fail PARTIAL).
+      - name: Start ComfyUI server
+        shell: bash
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --multi-user --cache-none --front-end-root ../dist &
+          wait-for-it --service 127.0.0.1:8188 -t 600
+
+      - name: Run custom-node suite
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
+        run: |
+          # workers=1: the auto-run tier needs exclusive backend-queue access;
+          # parallel workers interrupt each other's executions.
+          # --project=custom-nodes: the `@custom-nodes`-tagged specs, which the
+          # main e2e job's `chromium` project excludes (see playwright.config).
+          # list,json,html: json feeds the skip gate below; html writes
+          # playwright-report/ (the upload step's target) and folds in the
+          # on-first-retry traces, which a bare list,json would discard.
+          pnpm exec playwright test browser_tests/tests/customNodes/ \
+            --project=custom-nodes --reporter=list,json,html --workers=1
+
+      # A skip here means a pack or devtools did not load: on this backend every
+      # tier is meant to run, so a skip is a gate failure, not an honest pass.
+      - name: Forbid skipped tests
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # An earlier step (build, server boot, the suite itself) may have
+          # failed before Playwright wrote its json; the job is already red,
+          # so surface that rather than a confusing jq "no such file" error.
+          if [ ! -f custom-nodes-results.json ]; then
+            echo "no results json - the suite did not produce output (an earlier step failed)"
+            exit 0
+          fi
+          skipped=$(jq '.stats.skipped' custom-nodes-results.json)
+          echo "skipped tests: $skipped"
+          if [ "$skipped" != "0" ]; then
+            echo "::error::$skipped test(s) skipped - a manifest pack or devtools failed to load; skips are not acceptable in the gating job"
+            # Recurse so specs nested under describe() blocks are found, and
+            # print only the specs that actually skipped.
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "skipped"))
+                     | .title' custom-nodes-results.json | sort -u | head -40
+            exit 1
+          fi
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-custom-nodes
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: warn
