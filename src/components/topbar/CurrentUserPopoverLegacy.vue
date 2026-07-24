@@ -1,6 +1,7 @@
 <!-- A popover that shows current user information and actions -->
 <template>
   <div
+    data-testid="current-user-popover"
     class="current-user-popover -m-3 w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- User Info Section -->
