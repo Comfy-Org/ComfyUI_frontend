@@ -132,9 +132,21 @@ export function useRemoteWidget<
 
   const onFirstLoad = (data: T | T[]) => {
     isLoaded = true
-    const nextValue =
-      Array.isArray(data) && data.length > 0 ? data[0] : undefined
-    widget.value = nextValue ?? (Array.isArray(data) ? defaultValue : data)
+
+    if (Array.isArray(data) && data.length > 0) {
+      // The widget may already hold a value assigned during workflow
+      // deserialization (node.configure), which runs synchronously and
+      // therefore completes before this async remote fetch resolves. If
+      // that value is still a valid choice in the freshly resolved
+      // options, preserve it instead of clobbering it with data[0] -
+      // otherwise saved selections (e.g. unet_name/clip_name/vae_name on
+      // registry Components) get silently reset on every workflow load.
+      const currentValue = widget.value as T
+      widget.value = data.includes(currentValue) ? currentValue : data[0]
+    } else {
+      widget.value = Array.isArray(data) ? defaultValue : data
+    }
+
     widget.callback?.(widget.value)
     node.graph?.setDirtyCanvas(true)
   }
