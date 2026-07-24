@@ -1,4 +1,5 @@
 import type {
+  CreateSecretRequest,
   SecretProvider as SecretProviderSchema,
   SecretResponse
 } from '@comfyorg/ingest-types'
@@ -38,6 +39,13 @@ export interface SecretCreateRequest {
   secret_value: string
   /** Provider identifier as returned by `GET /secrets/providers`. */
   provider?: string
+  /**
+   * How the backend interprets `secret_value`. `api_key` (default) is a plain
+   * string; `gcp_service_account` is a service-account key JSON that routes the
+   * provider (Gemini) through Vertex AI. Derived from the provider's
+   * `input_type`: a `json_file` credential is a `gcp_service_account`.
+   */
+  credential_type?: CreateSecretRequest['credential_type']
 }
 
 export interface SecretUpdateRequest {

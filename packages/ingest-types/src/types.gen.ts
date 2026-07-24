@@ -1404,6 +1404,10 @@ export type CreateSecretRequest = {
    * The plaintext secret to encrypt and store
    */
   secret_value: string
+  /**
+   * How to interpret secret_value. `api_key` (default) is a plain API-key string; `gcp_service_account` is a GCP service-account key JSON, which routes the provider through Vertex AI.
+   */
+  credential_type?: 'api_key' | 'gcp_service_account'
 }
 
 /**
