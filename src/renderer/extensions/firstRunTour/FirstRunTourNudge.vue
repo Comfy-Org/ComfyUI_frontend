@@ -86,10 +86,6 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useTelemetry } from '@/platform/telemetry'
-import type {
-  FirstRunTourMetadata,
-  OnboardingTourStage
-} from '@/platform/telemetry/types'
 
 import {
   FIRST_RUN_TOUR,
@@ -105,11 +101,6 @@ const { appearDelayMs = 1500 } = defineProps<{ appearDelayMs?: number }>()
 const { t } = useI18n()
 const store = useFirstRunTourStore()
 const telemetry = useTelemetry()
-const trackTour = (
-  stage: OnboardingTourStage,
-  metadata: Omit<FirstRunTourMetadata, 'tour'> = {}
-) =>
-  telemetry?.trackOnboardingTour(stage, { tour: FIRST_RUN_TOUR, ...metadata })
 
 const { resultMedia: media } = storeToRefs(store)
 
@@ -136,7 +127,7 @@ const shown = ref(false)
 const { start: startAppearDelay, stop: cancelAppearDelay } = useTimeoutFn(
   () => {
     shown.value = true
-    trackTour('nudge_shown')
+    telemetry?.trackOnboardingTour('nudge_shown', { tour: FIRST_RUN_TOUR })
   },
   () => appearDelayMs,
   { immediate: false }
@@ -158,7 +149,9 @@ watch(upgradeModalOpen, (open, wasOpen) => {
 
 function onExplore() {
   useWorkflowTemplateSelectorDialog().show('command')
-  trackTour('explore_templates_clicked')
+  telemetry?.trackOnboardingTour('explore_templates_clicked', {
+    tour: FIRST_RUN_TOUR
+  })
   store.dismissNudge()
 }
 </script>

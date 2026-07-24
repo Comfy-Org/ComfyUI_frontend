@@ -115,14 +115,24 @@ export type OnboardingTourSkipReason =
  * for steps with no numbered spotlight (e.g. the landing). `skip_reason` is
  * present only on the `skipped` stage. `step_count` is absent on `nudge_shown`
  * and `explore_templates_clicked`, which fire outside the step sequence.
+ * The first-run tour adds `template_id`/`shape`/`entry`/`step_key`/`status`,
+ * gated on `tour: 'firstRun'`; none carries user content or a share id, so no PII.
  */
-export interface OnboardingTourMetadata {
-  tour: string
+export type OnboardingTourMetadata<Tour extends string = string> = {
+  tour: Tour
   step_count?: number
   step_number?: number
   coach_id?: string
   skip_reason?: OnboardingTourSkipReason
-}
+} & (Tour extends 'firstRun'
+  ? {
+      template_id?: string
+      shape?: OnboardingTourShape
+      entry?: OnboardingTourEntry
+      step_key?: OnboardingTourStepKey
+      status?: OnboardingTourRunStatus
+    }
+  : unknown)
 
 /** `shape` labels the role-derived sequence, not the template — `'other'` is the
  * honest bucket for graphs the resolver handles best-effort but that aren't a
@@ -134,16 +144,6 @@ export type OnboardingTourEntry =
   | 'template_url'
 export type OnboardingTourStepKey = 'upload' | 'prompt' | 'run' | 'result'
 export type OnboardingTourRunStatus = 'success' | 'error' | 'interrupted'
-
-/** Reported only by the first-run tour. No field carries user content or a
- * share id, so no PII. */
-export interface FirstRunTourMetadata extends OnboardingTourMetadata {
-  template_id?: string
-  shape?: OnboardingTourShape
-  entry?: OnboardingTourEntry
-  step_key?: OnboardingTourStepKey
-  status?: OnboardingTourRunStatus
-}
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
@@ -636,9 +636,9 @@ export interface TelemetryProvider {
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 
   // Onboarding coachmark tour events
-  trackOnboardingTour?(
+  trackOnboardingTour?<const Tour extends string>(
     stage: OnboardingTourStage,
-    metadata: OnboardingTourMetadata
+    metadata: OnboardingTourMetadata<Tour>
   ): void
 
   // Email verification events

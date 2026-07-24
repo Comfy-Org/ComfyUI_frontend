@@ -172,9 +172,9 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
   }
 
-  trackOnboardingTour(
+  trackOnboardingTour<const Tour extends string>(
     stage: OnboardingTourStage,
-    metadata: OnboardingTourMetadata
+    metadata: OnboardingTourMetadata<Tour>
   ): void {
     this.dispatch((provider) => provider.trackOnboardingTour?.(stage, metadata))
   }
