@@ -26,6 +26,7 @@ import {
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
@@ -45,13 +46,18 @@ if (isCloud) stripPaymentReturnParams()
 
 // Load remote config before initializeApp() below, so getFirebaseConfig() resolves
 // against the server's runtime values instead of the build-time defaults.
+const phaseRemoteConfig = bootstrapTracer.startPhase('startup/remote-config')
 const { refreshRemoteConfig } =
   await import('@/platform/remoteConfig/refreshRemoteConfig')
 await refreshRemoteConfig({ useAuth: false })
+phaseRemoteConfig.stop()
 
 if (isCloud) {
+  const phaseTelemetry = bootstrapTracer.startPhase('startup/telemetry-init')
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
+  phaseTelemetry.stop()
+
   const { startFeatureFlagTelemetry } =
     await import('@/composables/useFeatureFlags')
   const stopFeatureFlagTelemetry = startFeatureFlagTelemetry()
@@ -71,7 +77,9 @@ const ComfyUIPreset = definePreset(Aura, {
   }
 })
 
+const phaseFirebase = bootstrapTracer.startPhase('startup/firebase-init')
 const firebaseApp = initializeApp(getFirebaseConfig())
+phaseFirebase.stop()
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -86,6 +94,7 @@ const sentryDsn = isCloud
 // runs without the env var, however valid the runtime DSN turns out to be.
 const sentryEnabled = !import.meta.env.DEV && !!sentryDsn
 
+const phaseSentry = bootstrapTracer.startPhase('startup/sentry-init')
 sentryInit({
   app,
   dsn: sentryDsn,
@@ -111,8 +120,10 @@ sentryInit({
         defaultIntegrations: false
       })
 })
+phaseSentry.stop()
 
 flushErrorReports()
+
 
 // Assertion reporter receives pre-formatted messages (with "[Assertion failed]: " prefix).
 // Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
@@ -187,3 +198,4 @@ const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
 
 app.mount('#vue-app')
+bootstrapTracer.milestone('app-mounted')
