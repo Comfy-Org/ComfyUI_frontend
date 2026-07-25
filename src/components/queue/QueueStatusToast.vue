@@ -140,40 +140,70 @@
         align="end"
         :side-offset="6"
         data-testid="queue-status-idle-panel"
-        class="flex w-48 flex-col gap-3 rounded-xl border border-solid border-charcoal-700 bg-comfy-menu-bg p-3 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
+        class="flex w-80 flex-col gap-2 rounded-xl border border-solid border-charcoal-700 bg-comfy-menu-bg p-2.5 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
       >
         <!-- Idle is exactly when someone goes looking for what they just
-             made, so the results are here rather than a tab away. -->
-        <template v-if="recentOutputs.length">
-          <p class="text-xs text-muted-foreground">
+             made, so recent runs are here rather than a tab away. -->
+        <div class="flex items-center justify-between px-1 pt-0.5">
+          <span class="text-sm font-semibold text-base-foreground">
             {{ t('queueStatus.recentResults') }}
-          </p>
-          <div class="grid grid-cols-3 gap-1.5">
-            <button
-              v-for="(output, index) in recentOutputs"
-              :key="output.url"
-              type="button"
-              class="relative aspect-square cursor-pointer overflow-clip rounded-md border-none bg-secondary-background p-0 outline-1 outline-base-foreground/10 transition-transform duration-150 ease-out active:scale-[0.96] motion-reduce:transition-none"
-              :aria-label="t('queueStatus.viewResult')"
-              data-testid="queue-status-recent-output"
-              @click="openOutput(index)"
+          </span>
+          <button
+            v-tooltip.bottom="viewHistoryTooltip"
+            type="button"
+            class="flex size-5 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground"
+            :aria-label="t('queueStatus.goToHistory')"
+            data-testid="queue-status-filter"
+            @click="goToHistory"
+          >
+            <i class="icon-[lucide--list-filter] size-4" />
+          </button>
+        </div>
+
+        <template v-if="recentJobs.length">
+          <button
+            v-for="job in recentJobs"
+            :key="job.id"
+            type="button"
+            class="flex cursor-pointer items-center gap-3 rounded-xl border-none bg-secondary-background p-2.5 text-left transition-colors hover:bg-secondary-background-hover"
+            :aria-label="t('queueStatus.viewResult')"
+            data-testid="queue-status-recent-job"
+            @click="openRecentJob(job)"
+          >
+            <span class="flex min-w-0 flex-1 flex-col gap-1">
+              <span class="truncate text-base font-medium text-base-foreground">
+                {{ recentJobName(job) }}
+              </span>
+              <span class="truncate text-sm text-muted-foreground">
+                {{ recentJobMeta(job) }}
+              </span>
+            </span>
+            <span
+              class="relative flex size-12 shrink-0 items-center justify-center overflow-clip rounded-lg bg-comfy-menu-bg outline-1 outline-base-foreground/10"
             >
               <img
-                :src="output.previewUrl"
+                v-if="jobThumbnail(job)"
+                :src="jobThumbnail(job)!.previewUrl"
                 alt=""
                 loading="lazy"
                 class="size-full object-cover"
               />
               <i
-                v-if="output.isVideo"
+                v-else
+                class="icon-[lucide--file] size-5 text-muted-foreground"
+              />
+              <i
+                v-if="jobThumbnail(job)?.isVideo"
                 class="icon-[lucide--play] absolute right-1 bottom-1 size-3 text-base-foreground drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
               />
-            </button>
-          </div>
+            </span>
+          </button>
         </template>
-        <p v-else class="text-center text-xs text-muted-foreground">
+        <p v-else class="px-1 py-3 text-center text-sm text-muted-foreground">
           {{ t('queueStatus.nothingRunning') }}
         </p>
+
+        <div class="mx-1 border-t border-solid border-base-foreground/10" />
 
         <Button
           variant="secondary"
@@ -396,6 +426,9 @@ const pauseTooltip = computed(() =>
   buildTooltipConfig(t('queueStatus.pauseUnavailable'))
 )
 const cancelTooltip = computed(() => buildTooltipConfig(t('queueStatus.cancel')))
+const viewHistoryTooltip = computed(() =>
+  buildTooltipConfig(t('queueStatus.goToHistory'))
+)
 
 const { galleryActiveIndex, galleryItems } = useResultGallery(() =>
   activeJobs.value
@@ -404,21 +437,37 @@ const { galleryActiveIndex, galleryItems } = useResultGallery(() =>
 )
 
 /**
- * Latest finished results, newest first. Surfaced on the idle popover because
- * that is the moment people go looking for what a run produced — user tests
- * showed they don't know the outputs land in the assets panel.
+ * Latest finished jobs, newest first. Surfaced on the idle popover because that
+ * is the moment people go looking for what a run produced — user tests showed
+ * they don't know the outputs land in the assets panel. Each row keeps the
+ * job's name and finish time, not just a bare thumbnail.
  */
-const RECENT_OUTPUT_LIMIT = 6
-const recentOutputs = computed(() =>
+const RECENT_JOB_LIMIT = 4
+const recentJobs = computed(() =>
   jobItems.value
     .filter((job) => job.state === 'completed')
-    .map((job) => job.taskRef?.previewOutput)
-    .filter((output): output is ResultItemImpl => !!output)
-    .slice(0, RECENT_OUTPUT_LIMIT)
+    .slice(0, RECENT_JOB_LIMIT)
 )
 
-const openOutput = (index: number) => {
-  galleryItems.value = [...recentOutputs.value]
+const jobThumbnail = (job: JobListItem): ResultItemImpl | undefined =>
+  job.taskRef?.previewOutput
+
+/** Prefer the output's name; fall back to the finish status when there is none. */
+const recentJobName = (job: JobListItem): string =>
+  jobThumbnail(job)?.filename || job.title
+/** Avoid repeating the name: show finish status, or the precise time as backup. */
+const recentJobMeta = (job: JobListItem): string =>
+  jobThumbnail(job)?.filename ? job.title : job.meta
+
+const openRecentJob = (job: JobListItem) => {
+  const outputs = recentJobs.value
+    .map((entry) => jobThumbnail(entry))
+    .filter((output): output is ResultItemImpl => !!output)
+  const index = outputs.findIndex(
+    (output) => output.url === jobThumbnail(job)?.url
+  )
+  if (index < 0) return
+  galleryItems.value = outputs
   galleryActiveIndex.value = index
 }
 
