@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, watchEffect } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -153,6 +154,23 @@ describe('badge derivation subgraph credits aggregation', () => {
       rootGraph.add(node)
 
       expect(graphCreditsBadges(rootGraph)).toHaveLength(1)
+    })
+
+    it('pushes membership changes to a subscribed reader', async () => {
+      const { rootGraph, addInner } = setup()
+      const first = addInner(new ApiNode('first'), 11)
+
+      const counts: number[] = []
+      watchEffect(() => counts.push(graphCreditsBadges(rootGraph).length))
+      expect(counts).toEqual([1])
+
+      addInner(new ApiNode('second'), 12)
+      await nextTick()
+      expect(counts.at(-1)).toBe(2)
+
+      first.graph?.remove(first)
+      await nextTick()
+      expect(counts.at(-1)).toBe(1)
     })
   })
 })
