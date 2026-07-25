@@ -6,10 +6,14 @@ const state = vi.hoisted(() => ({
   telemetry: {
     trackRunButton: vi.fn()
   },
+  rootGraph: { id: 'root-graph' },
+  alternateGraph: { id: 'alternate-graph' },
+  getExecutionContext: vi.fn(),
   executionContext: {
     is_template: false,
     workflow_name: 'Desktop workflow',
     custom_node_count: 2,
+    api_node_count: 1,
     total_node_count: 4,
     subgraph_count: 1,
     has_api_nodes: true,
@@ -31,11 +35,16 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => state.telemetry
 }))
 
-vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
-  getExecutionContext: () => {
-    if (state.executionContextError) throw state.executionContextError
-    return state.executionContext
+vi.mock('@/scripts/app', () => ({
+  app: {
+    get rootGraph() {
+      return state.rootGraph
+    }
   }
+}))
+
+vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
+  getExecutionContext: (graph: unknown) => state.getExecutionContext(graph)
 }))
 
 import {
@@ -50,6 +59,14 @@ describe('useRunButtonTelemetry', () => {
     state.mode.value = 'graph'
     state.isAppMode.value = false
     state.executionContextError = null
+    state.rootGraph = { id: 'root-graph' }
+    state.getExecutionContext.mockReset()
+    state.getExecutionContext.mockImplementation((graph) => {
+      if (state.executionContextError) throw state.executionContextError
+      return graph === state.rootGraph
+        ? state.executionContext
+        : { ...state.executionContext, total_node_count: 99 }
+    })
   })
 
   it('builds run button properties from workspace state', () => {
@@ -79,13 +96,20 @@ describe('useRunButtonTelemetry', () => {
   })
 
   it('tracks the completed run button payload', () => {
+    state.rootGraph = state.alternateGraph
+    state.getExecutionContext.mockImplementation((graph) => ({
+      ...state.executionContext,
+      total_node_count: graph === state.alternateGraph ? 7 : 99
+    }))
+
     useRunButtonTelemetry().trackRunButton({ trigger_source: 'linear' })
 
     expect(state.telemetry.trackRunButton).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         subscribe_to_run: false,
         trigger_source: 'linear',
-        workflow_name: 'Desktop workflow'
+        workflow_name: 'Desktop workflow',
+        total_node_count: 7
       })
     )
   })

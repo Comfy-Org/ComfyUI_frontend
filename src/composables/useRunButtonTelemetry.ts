@@ -6,11 +6,12 @@ import type {
 } from '@/platform/telemetry/types'
 import { getActionbarDockState } from '@/platform/telemetry/utils/getActionbarDockState'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
+import { app } from '@/scripts/app'
 
 export function getRunButtonTelemetryProperties(
   options?: WorkflowQueueIntent
 ): RunButtonProperties {
-  const executionContext = getExecutionContext()
+  const executionContext = getExecutionContext(app.rootGraph)
   const { mode, isAppMode } = useAppMode()
 
   return {
