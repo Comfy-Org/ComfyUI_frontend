@@ -1758,6 +1758,7 @@ export class ComfyApp {
                   nodes: Object.keys(p.output),
                   promptOutput: p.output,
                   startTime,
+                  submittedAt,
                   workflow: submissionWorkflow,
                   workflowContext
                 })

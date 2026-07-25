@@ -1,5 +1,5 @@
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { app } from '@/scripts/app'
@@ -56,6 +56,10 @@ vi.mock('@/composables/useAppMode', async (importOriginal) => {
 beforeEach(() => {
   mockAppModeState.mode.value = 'graph'
   mockAppModeState.isAppMode.value = false
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
@@ -618,6 +622,7 @@ describe('useExecutionStore - workflowStatus', () => {
       id: jobId,
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
       startTime: 42,
+      submittedAt: 142,
       workflow
     })
   }
@@ -648,14 +653,18 @@ describe('useExecutionStore - workflowStatus', () => {
   })
 
   it('flushes terminal completed when WS finishes before storeJob', () => {
-    // Instant-finish race: WS fires start+success before HTTP response.
+    const performanceNow = vi.spyOn(performance, 'now').mockReturnValue(92)
     fireExecutionStart('job-1')
+    performanceNow.mockReturnValue(192)
     fireExecutionSuccess('job-1')
 
     callStoreJob('job-1', workflowA)
     expect(mockTrackExecutionOutcome).toHaveBeenCalledOnce()
     expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
       startTime: 42,
+      submittedAt: 142,
+      executionStartedAt: 92,
+      terminalAt: 192,
       outcome: 'success'
     })
     expect(store.getWorkflowStatus(workflowA)).toBe('completed')
@@ -663,12 +672,14 @@ describe('useExecutionStore - workflowStatus', () => {
   })
 
   it('flushes terminal failed when WS errors before storeJob', () => {
-    // Invalid-workflow path: execution_error fires before HTTP response.
+    vi.spyOn(performance, 'now').mockReturnValue(192)
     fireExecutionError('job-1')
 
     callStoreJob('job-1', workflowA)
     expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
       startTime: 42,
+      submittedAt: 142,
+      terminalAt: 192,
       outcome: 'failure'
     })
     expect(store.getWorkflowStatus(workflowA)).toBe('failed')
@@ -684,11 +695,16 @@ describe('useExecutionStore - workflowStatus', () => {
 
   it('sets completed on execution_success', () => {
     callStoreJob('job-1', workflowA)
+    const performanceNow = vi.spyOn(performance, 'now').mockReturnValue(142)
     fireExecutionStart('job-1')
+    performanceNow.mockReturnValue(242)
     fireExecutionSuccess('job-1')
 
     expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
       startTime: 42,
+      submittedAt: 142,
+      executionStartedAt: 142,
+      terminalAt: 242,
       outcome: 'success'
     })
     expect(store.getWorkflowStatus(workflowA)).toBe('completed')
@@ -711,13 +727,20 @@ describe('useExecutionStore - workflowStatus', () => {
       id: 'job-1',
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
       startTime: 42,
+      submittedAt: 142,
       workflow: workflowA,
       workflowContext
     })
+    const performanceNow = vi.spyOn(performance, 'now').mockReturnValue(142)
+    fireExecutionStart('job-1')
+    performanceNow.mockReturnValue(242)
     fireExecutionSuccess('job-1')
 
     expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
       startTime: 42,
+      submittedAt: 142,
+      executionStartedAt: 142,
+      terminalAt: 242,
       outcome: 'success',
       workflowContext
     })
@@ -1368,7 +1391,10 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
       expect(store.activeJobId).toBe('job-1')
-      expect(store.queuedJobs['job-1']).toEqual({ nodes: {} })
+      expect(store.queuedJobs['job-1']).toEqual({
+        nodes: {},
+        executionStartedAt: expect.any(Number)
+      })
     })
 
     it('clears transient errors while preserving validation errors', () => {

@@ -340,6 +340,7 @@ describe('ComfyApp', () => {
             execution_scope: 'full'
           })
         })
+        expect(useExecutionStore().queuedJobs['job-1']?.submittedAt).toBe(92)
       } finally {
         now.mockRestore()
         setTelemetryRegistry(null)
