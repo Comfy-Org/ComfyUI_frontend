@@ -123,12 +123,17 @@
   >
     <Popover>
       <PopoverTrigger as-child>
+        <!-- The chevron is what tells people this opens something; without it
+             "0 active" reads as a bare status label, not a control. -->
         <button
           type="button"
           data-testid="queue-status-idle"
-          class="pointer-events-auto flex h-6 cursor-pointer items-center rounded-md border border-solid border-base-foreground/40 bg-transparent px-2 text-xs text-base-foreground opacity-50 transition-opacity hover:opacity-70 data-[state=open]:opacity-100"
+          class="group pointer-events-auto flex h-6 cursor-pointer items-center gap-1 rounded-md border border-solid border-base-foreground/25 bg-transparent pr-1.5 pl-2 text-xs text-base-foreground opacity-70 transition-[opacity,background-color] hover:bg-secondary-background hover:opacity-100 data-[state=open]:bg-secondary-background data-[state=open]:opacity-100"
         >
           {{ activeJobsLabel }}
+          <i
+            class="icon-[lucide--chevron-down] size-3.5 opacity-60 transition-transform duration-200 group-data-[state=open]:rotate-180"
+          />
         </button>
       </PopoverTrigger>
       <PopoverContent
