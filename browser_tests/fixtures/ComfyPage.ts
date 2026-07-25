@@ -573,6 +573,16 @@ export const comfyPageFixture = base.extend<{
       // A real smoke-user session (no route mocks), seeded before the app
       // boots so the Firebase SDK restores it. Mutually exclusive with the
       // @cloud mock above: its interceptions would corrupt a real session.
+      // Refuse to seed into a traced project: the record rides page.evaluate
+      // arguments, which a trace records verbatim. playwright.config.ts turns
+      // tracing off for this env, but a run that lands in another project
+      // (no --project) would inherit that project's setting instead.
+      if (testInfo.project.use.trace !== 'off')
+        throw new Error(
+          `cloud seeds a real refresh token via page.evaluate, but project ` +
+            `'${testInfo.project.name}' traces '${String(testInfo.project.use.trace)}' - ` +
+            `run with --project=custom-nodes`
+        )
       await seedSmokeAuth(page, comfyPage.url)
     }
 

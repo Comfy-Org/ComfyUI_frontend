@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+// happy-dom (the repo default) resolves @playwright/test's absolute import
+// against http://localhost:3000 and dumps an unhandled ECONNREFUSED.
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { describe, expect, it, vi } from 'vitest'
 

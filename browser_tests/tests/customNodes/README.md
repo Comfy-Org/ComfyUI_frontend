@@ -178,10 +178,11 @@ exactly; the traps it lists all shipped in real packs.
   changes that could interact with pack JS, reproduce CI locally:
   `pnpm build`, relaunch the backend with `--front-end-root <repo>/dist`,
   and run the suite with `PLAYWRIGHT_TEST_URL` pointed at the backend.
-- `playwright.chrome.config.ts` retains a Playwright trace on failure, which
-  is the main reason to reach for it locally. CI's cloud gate is the exception:
-  tracing is off under `CUSTOM_NODES_ENV=cloud` so a seeded cloud session
-  cannot ride a public artifact.
+- `playwright.chrome.config.ts` runs against system-installed Chrome, so no
+  bundled Chromium is downloaded; that is what it buys. Tracing for the
+  `custom-nodes` project comes from `playwright.config.ts` either way (the
+  project's setting wins): retained on failure, and off under
+  `CUSTOM_NODES_ENV=cloud` so a seeded cloud session cannot ride an artifact.
 - In a git worktree whose `node_modules` is symlinked from another checkout,
   prefix scripts with `pnpm --config.verify-deps-before-run=false ...` to
   skip pnpm's auto-install check.

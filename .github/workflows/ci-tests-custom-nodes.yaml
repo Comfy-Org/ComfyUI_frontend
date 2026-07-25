@@ -167,7 +167,7 @@ jobs:
           # main e2e job's `chromium` project excludes (see playwright.config).
           # list,json,html: json feeds the skip gate below; html writes
           # playwright-report/ (the upload step's target) and folds in the
-          # on-first-retry traces, which a bare list,json would discard.
+          # retain-on-failure traces, which a bare list,json would discard.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
             --project=custom-nodes --reporter=list,json,html --workers=1
 

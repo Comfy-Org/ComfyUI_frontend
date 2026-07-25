@@ -300,12 +300,13 @@ means discovering that class of problem one CI round at a time.
   excluded, like wildcards - pack design, not a regression.
 - **Geometry delta under the mount test** (`...: expected X, got Y`): the
   node's rendered layout moved vs the committed baseline. Four causes,
-  four actions: a real layout regression - fix the code; an intended
+  three actions: a real layout regression - fix the code; an intended
   restyle or a deliberate pin/core bump - re-record via the record
   workflow in the same PR (Step 5b); the delta flips between identical
   runs - the layout is racy, ledger the node by mechanism in
   `GEOMETRY_UNSTABLE_NODES`; the delta tracks environment content rather
-  than code (a backend input dir, a preview) - ledger it the same way. A `no geometry baseline` red means a new
+  than code (a backend input dir, a preview) - ledger it the same
+  way. A `no geometry baseline` red means a new
   pack or node needs Step 5b; a `stale baseline` red means a baselined
   node left the corpus - re-record.
 - **Auto-run reports a node "not in cannotRunAlone"**: the node failed to
