@@ -1,11 +1,18 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockLiteGraph = vi.hoisted(() => ({
-  NODE_TITLE_HEIGHT: 30,
-  NODE_SLOT_HEIGHT: 20,
-  NODE_COLLAPSED_WIDTH: 80,
-  vueNodesMode: false
+const { mockLayoutStore, mockLiteGraph } = vi.hoisted(() => ({
+  mockLiteGraph: {
+    NODE_TITLE_HEIGHT: 30,
+    NODE_SLOT_HEIGHT: 20,
+    NODE_COLLAPSED_WIDTH: 80,
+    vueNodesMode: false
+  },
+  mockLayoutStore: {
+    nodeLayout: null as unknown,
+    slotLayout: null as unknown,
+    requestedNodeId: null as unknown
+  }
 }))
 
 vi.mock('@/lib/litegraph/src/litegraph', () => ({
@@ -18,8 +25,11 @@ vi.mock('@/renderer/core/layout/slots/slotIdentifier', () => ({
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getSlotLayout: vi.fn().mockReturnValue(null),
-    getNodeLayoutRef: vi.fn().mockReturnValue({ value: null })
+    getSlotLayout: vi.fn(() => mockLayoutStore.slotLayout),
+    getNodeLayoutRef: vi.fn((nodeId) => {
+      mockLayoutStore.requestedNodeId = nodeId
+      return { value: mockLayoutStore.nodeLayout }
+    })
   }
 }))
 
@@ -67,10 +77,11 @@ function makeNode(
     inputs: INodeInputSlot[]
     outputs: INodeOutputSlot[]
     collapsed: boolean
+    id: number
   }> = {}
 ): LGraphNode {
   return fromPartial<LGraphNode>({
-    id: toNodeId(1),
+    id: overrides.id ?? toNodeId(1),
     pos: [100, 200],
     size: [180, 120],
     flags: { collapsed: overrides.collapsed ?? false },
@@ -193,5 +204,45 @@ describe('getSlotPosition — legacy fallback (vueNodesMode disabled)', () => {
     const [x, y] = getSlotPosition(node, 5, true)
     expect(x).toBe(100)
     expect(y).toBe(200)
+  })
+})
+
+describe('getSlotPosition — collapsed Vue node', () => {
+  beforeEach(() => {
+    mockLiteGraph.vueNodesMode = true
+    mockLayoutStore.nodeLayout = {
+      position: { x: 100, y: 200 },
+      size: { width: 300, height: 120 },
+      bounds: { x: 100, y: 170, width: 140, height: 30 }
+    }
+    mockLayoutStore.slotLayout = {
+      position: { x: 400, y: 250 }
+    }
+  })
+
+  it('uses rendered bounds instead of a stale expanded output slot', () => {
+    const node = makeNode({
+      id: 1,
+      outputs: [makeOutput()],
+      collapsed: true
+    })
+    node._collapsed_width = undefined
+
+    expect(getSlotPosition(node, 0, false)).toEqual([240, 185])
+    expect(mockLayoutStore.requestedNodeId).toBe(toNodeId(1))
+  })
+
+  it('places inputs at the collapsed title edge', () => {
+    const node = makeNode({ inputs: [makeInput()], collapsed: true })
+
+    expect(getSlotPosition(node, 0, true)).toEqual([100, 185])
+  })
+
+  it('uses the measured collapsed width when no node layout is registered', () => {
+    mockLayoutStore.nodeLayout = null
+    const node = makeNode({ outputs: [makeOutput()], collapsed: true })
+    node._collapsed_width = 150
+
+    expect(getSlotPosition(node, 0, false)).toEqual([250, 185])
   })
 })

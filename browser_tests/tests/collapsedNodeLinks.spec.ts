@@ -26,6 +26,39 @@ test.describe(
       await comfyPage.nextFrame()
 
       await assertNodeSlotsWithinBounds(comfyPage.page, NODE_ID)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate((nodeId) => {
+            const node = window.app!.canvas.graph!._nodes.find(
+              (candidate) => String(candidate.id) === nodeId
+            )
+            return node?._collapsed_width ?? 0
+          }, NODE_ID)
+        )
+        .toBeGreaterThan(0)
+      const endpoint = await comfyPage.page.evaluate((nodeId) => {
+        const node = window.app!.canvas.graph!._nodes.find(
+          (candidate) => String(candidate.id) === nodeId
+        )
+        if (!node) throw new Error(`Node ${nodeId} not found`)
+        const nodeElement = document.querySelector<HTMLElement>(
+          `[data-node-id="${nodeId}"]`
+        )
+        if (!nodeElement) throw new Error(`Node element ${nodeId} not found`)
+        node.updateArea()
+        const bounds = node.getBounding()
+        const output = node.getOutputPos(0)
+        return {
+          boundsRight: bounds[0] + bounds[2],
+          boundsCenterY: bounds[1] + bounds[3] / 2,
+          domRight: node.pos[0] + nodeElement.offsetWidth,
+          outputX: output[0],
+          outputY: output[1]
+        }
+      }, NODE_ID)
+      expect(endpoint.outputX).toBeCloseTo(endpoint.domRight)
+      expect(endpoint.outputX).toBeCloseTo(endpoint.boundsRight)
+      expect(endpoint.outputY).toBeCloseTo(endpoint.boundsCenterY)
     })
 
     test('links follow collapsed node after drag', async ({ comfyPage }) => {

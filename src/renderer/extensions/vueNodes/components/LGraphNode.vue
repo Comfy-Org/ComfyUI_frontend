@@ -346,7 +346,8 @@ const nodeId = computed(() => nodeData.id)
 
 useVueElementTracking(nodeId.value, 'node')
 
-const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
+const canvasStore = useCanvasStore()
+const { selectedNodeIds, isGhostPlacing } = storeToRefs(canvasStore)
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(nodeId.value)
 })
@@ -527,7 +528,7 @@ onUnmounted(() => {
 })
 
 const baseResizeHandleClasses =
-  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
+  'absolute z-20 h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
 const mutations = useLayoutMutations()
 
@@ -559,7 +560,7 @@ const handleResizePointerDown = (
   startResize(event, corner)
 }
 
-watch(isCollapsed, (collapsed) => {
+watch(isCollapsed, async (collapsed) => {
   const element = nodeContainerRef.value
   if (!element) return
   if (collapsed) {
@@ -570,6 +571,15 @@ watch(isCollapsed, (collapsed) => {
     )
     element.style.setProperty('--node-width', '')
     element.style.setProperty('--node-height', '')
+
+    await nextTick()
+    if (!isCollapsed.value || !element.isConnected) return
+
+    const node = lgraphNode.value
+    if (node && element.offsetWidth > 0) {
+      node._collapsed_width = Math.min(element.offsetWidth, node.size[0])
+      canvasStore.canvas?.setDirty(false, true)
+    }
   } else {
     element.style.setProperty('--node-width', `${size.value.width}px`)
     element.style.setProperty(

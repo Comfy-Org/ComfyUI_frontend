@@ -15,6 +15,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { toNodeId } from '@/types/nodeId'
 
 export interface SlotPositionContext {
   /** Node's X position in graph coordinates */
@@ -140,8 +141,39 @@ export function getSlotPosition(
 ): Point {
   // Only use DOM-registered slot positions when Vue nodes mode is enabled
   if (LiteGraph.vueNodesMode) {
+    // Workflow deserialization can leave numeric IDs on LiteGraph nodes at
+    // runtime, while the layout store is keyed by normalized string IDs.
+    const nodeId = toNodeId(String(node.id))
+    const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+
+    // Collapsed nodes unify every slot at the title edges. Their expanded DOM
+    // slot layouts may remain cached briefly while the collapsed DOM mounts,
+    // so derive the endpoints without consulting the slot cache.
+    if (node.flags.collapsed) {
+      const collapsedWidth =
+        node._collapsed_width ??
+        (nodeLayout && nodeLayout.bounds.width !== nodeLayout.size.width
+          ? nodeLayout.bounds.width
+          : LiteGraph.NODE_COLLAPSED_WIDTH)
+      const context: SlotPositionContext = {
+        nodeX: nodeLayout?.position.x ?? node.pos[0],
+        nodeY: nodeLayout?.position.y ?? node.pos[1],
+        nodeWidth: nodeLayout?.size.width ?? node.size[0],
+        nodeHeight: nodeLayout?.size.height ?? node.size[1],
+        collapsed: true,
+        collapsedWidth,
+        slotStartY: node.constructor.slot_start_y,
+        inputs: node.inputs,
+        outputs: node.outputs,
+        widgets: node.widgets
+      }
+
+      return isInput
+        ? calculateInputSlotPos(context, slotIndex)
+        : calculateOutputSlotPos(context, slotIndex)
+    }
+
     // Try to get precise position from slot layout (DOM-registered)
-    const nodeId = node.id
     const slotKey = getSlotKey(nodeId, slotIndex, isInput)
     const slotLayout = layoutStore.getSlotLayout(slotKey)
     if (slotLayout) {
@@ -149,8 +181,6 @@ export function getSlotPosition(
     }
 
     // Fallback: derive position from node layout tree and slot model
-    const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
-
     if (nodeLayout) {
       // Create context from layout tree data
       const context: SlotPositionContext = {
