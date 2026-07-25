@@ -1202,6 +1202,18 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.27.1'
   },
   {
+    id: 'Comfy.VueNodes.ViewportVirtualization',
+    category: ['Comfy', 'Nodes 2.0', 'ViewportVirtualization'],
+    name: 'Viewport node virtualization',
+    type: 'boolean',
+    tooltip:
+      'Mount only nodes near the visible canvas. Disable this if a custom node requires its widgets to remain mounted while offscreen.',
+    defaultValue: false,
+    sortOrder: 110,
+    experimental: true,
+    versionAdded: '1.48.5'
+  },
+  {
     id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
     name: 'App Builder Vue Node switch dismissed',
     type: 'hidden',

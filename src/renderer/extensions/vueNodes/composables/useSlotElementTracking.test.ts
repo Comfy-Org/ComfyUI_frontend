@@ -14,6 +14,11 @@ import type { SlotLayout } from '@/renderer/core/layout/types'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 import {
+  deleteTrackedNodeSlots,
+  reconcileTrackedNodeSlots
+} from '@/renderer/extensions/vueNodes/utils/slotLayoutCache'
+
+import {
   syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
   requestSlotLayoutSyncForAllNodes,
@@ -139,19 +144,24 @@ describe('useSlotElementTracking', () => {
   it.for([
     { type: 'input' as const, isInput: true },
     { type: 'output' as const, isInput: false }
-  ])('cleans up $type slot layout on unmount', async ({ type, isInput }) => {
-    const { unmount } = await mountAndRegisterSlot(type)
+  ])(
+    'retains $type slot layout on virtualized unmount',
+    async ({ type, isInput }) => {
+      const { unmount } = await mountAndRegisterSlot(type)
 
-    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, isInput)
-    const registryStore = useNodeSlotRegistryStore()
-    expect(registryStore.getNode(NODE_ID)?.slots.has(slotKey)).toBe(true)
-    expect(layoutStore.getSlotLayout(slotKey)).not.toBeNull()
+      const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, isInput)
+      const registryStore = useNodeSlotRegistryStore()
+      expect(registryStore.getNode(NODE_ID)?.slots.has(slotKey)).toBe(true)
+      expect(layoutStore.getSlotLayout(slotKey)).not.toBeNull()
 
-    unmount()
+      unmount()
 
-    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
-    expect(registryStore.getNode(NODE_ID)).toBeUndefined()
-  })
+      expect(layoutStore.getSlotLayout(slotKey)).not.toBeNull()
+      expect(
+        registryStore.getNode(NODE_ID)?.slots.get(slotKey)?.el
+      ).toBeUndefined()
+    }
+  )
 
   it('clears pendingSlotSync when slot layouts already exist', () => {
     // Seed a slot layout (simulates slot layouts persisting through undo/redo)
@@ -176,17 +186,16 @@ describe('useSlotElementTracking', () => {
     expect(layoutStore.pendingSlotSync).toBe(false)
   })
 
-  it('keeps pendingSlotSync when graph has nodes but no slot layouts', () => {
+  it('clears pendingSlotSync when graph nodes have no measured slots', () => {
     // No slot layouts exist (simulates initial mount before Vue registers slots)
     layoutStore.setPendingSlotSync(true)
 
     flushScheduledSlotLayoutSync()
 
-    // Should remain pending — waiting for Vue components to mount
-    expect(layoutStore.pendingSlotSync).toBe(true)
+    expect(layoutStore.pendingSlotSync).toBe(false)
   })
 
-  it('keeps pendingSlotSync when all registered slots are hidden', () => {
+  it('clears pendingSlotSync when all registered slots are detached', () => {
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
     const hiddenSlot = document.createElement('div')
 
@@ -201,11 +210,11 @@ describe('useSlotElementTracking', () => {
     layoutStore.setPendingSlotSync(true)
     requestSlotLayoutSyncForAllNodes()
 
-    expect(layoutStore.pendingSlotSync).toBe(true)
+    expect(layoutStore.pendingSlotSync).toBe(false)
     expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
   })
 
-  it('removes stale slot layouts when slot element is hidden', () => {
+  it('retains slot layouts when slot elements detach', () => {
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
     const hiddenSlot = document.createElement('div')
 
@@ -228,7 +237,7 @@ describe('useSlotElementTracking', () => {
 
     syncNodeSlotLayoutsFromDOM(NODE_ID)
 
-    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(layoutStore.getSlotLayout(slotKey)).toEqual(staleLayout)
   })
 
   it('skips slot layout writeback when measured slot geometry is unchanged', () => {
@@ -273,6 +282,68 @@ describe('useSlotElementTracking', () => {
     expect(batchUpdateSpy).not.toHaveBeenCalled()
   })
 
+  it('updates retained slot layouts while an offscreen node moves', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+
+    unmount()
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId: NODE_ID,
+      position: { x: 100, y: 200 },
+      previousPosition: { x: 0, y: 0 },
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    await nextTick()
+
+    expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+      x: 115,
+      y: 205
+    })
+  })
+
+  it('reattaches and remeasures a retained slot', async () => {
+    const first = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    first.unmount()
+
+    const second = await mountAndRegisterSlot('input')
+    const entry = useNodeSlotRegistryStore()
+      .getNode(NODE_ID)
+      ?.slots.get(slotKey)
+
+    expect(entry?.el?.isConnected).toBe(true)
+    expect(layoutStore.getSlotLayout(slotKey)).not.toBeNull()
+    second.unmount()
+  })
+
+  it('removes retained layouts when the slot model deletes a slot', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    unmount()
+
+    reconcileTrackedNodeSlots(NODE_ID, 0, 0)
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(
+      useNodeSlotRegistryStore().getNode(NODE_ID)?.slots.has(slotKey)
+    ).toBe(false)
+  })
+
+  it('clears retained layouts when the graph deletes a node', async () => {
+    const { unmount } = await mountAndRegisterSlot('output')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, false)
+    unmount()
+
+    deleteTrackedNodeSlots(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(useNodeSlotRegistryStore().getNode(NODE_ID)).toBeUndefined()
+  })
+
   describe('collapsed node slot sync', () => {
     function registerCollapsedSlot() {
       const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
@@ -306,14 +377,14 @@ describe('useSlotElementTracking', () => {
       expect(layout!.position.y).toBe(screenCenter[1] * 0.5)
     })
 
-    it('clears cachedOffset for collapsed nodes', () => {
+    it('caches collapsed slot offsets for offscreen movement', () => {
       const { slotKey, node } = registerCollapsedSlot()
       const entry = node.slots.get(slotKey)!
       expect(entry.cachedOffset).toBeDefined()
 
       syncNodeSlotLayoutsFromDOM(NODE_ID)
 
-      expect(entry.cachedOffset).toBeUndefined()
+      expect(entry.cachedOffset).toEqual({ x: 7.5, y: 17.5 })
     })
 
     it('defers sync when canvas is not initialized', () => {

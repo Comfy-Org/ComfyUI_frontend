@@ -4,7 +4,7 @@
  */
 import { reactiveComputed } from '@vueuse/core'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
-import { reactive, shallowReactive } from 'vue'
+import { reactive, shallowReactive, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
@@ -17,6 +17,10 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import {
+  deleteTrackedNodeSlots,
+  reconcileTrackedNodeSlots
+} from '@/renderer/extensions/vueNodes/utils/slotLayoutCache'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -484,6 +488,19 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
   // Non-reactive storage for original LiteGraph nodes
   const nodeRefs = new Map<NodeId, LGraphNode>()
+  const nodeSlotModelStops = new Map<NodeId, () => void>()
+
+  const watchNodeSlotModel = (node: LGraphNode) => {
+    nodeSlotModelStops.get(node.id)?.()
+    const stop = watch(
+      [() => node.inputs?.length ?? 0, () => node.outputs?.length ?? 0],
+      ([inputCount, outputCount]) => {
+        reconcileTrackedNodeSlots(node.id, inputCount, outputCount)
+      },
+      { immediate: true }
+    )
+    nodeSlotModelStops.set(node.id, stop)
+  }
 
   const refreshNodeSlots = (nodeId: NodeId) => {
     const nodeRef = nodeRefs.get(nodeId)
@@ -544,6 +561,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Extract initial data for Vue (may be incomplete during graph configure)
     vueNodeData.set(id, extractVueNodeData(node))
+    watchNodeSlotModel(node)
 
     const initializeVueNodeLayout = () => {
       // Check if the node was removed mid-sequence
@@ -593,6 +611,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   }
 
   const dropNodeReferences = (id: NodeId) => {
+    nodeSlotModelStops.get(id)?.()
+    nodeSlotModelStops.delete(id)
     nodeRefs.delete(id)
     vueNodeData.delete(id)
   }
@@ -606,6 +626,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Remove node from layout store
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
+    deleteTrackedNodeSlots(id)
     dropNodeReferences(id)
     originalCallback?.(node)
   }
@@ -631,6 +652,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       )
 
       // Clear all state maps
+      nodeSlotModelStops.forEach((stop) => stop())
+      nodeSlotModelStops.clear()
       nodeRefs.clear()
       vueNodeData.clear()
     }

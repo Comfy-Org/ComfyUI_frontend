@@ -5,7 +5,7 @@ import type { NodeId } from '@/types/nodeId'
 import type { SlotId } from '@/types/slotId'
 
 type SlotEntry = {
-  el: HTMLElement
+  el?: HTMLElement
   index: number
   type: 'input' | 'output'
   cachedOffset?: { x: number; y: number }

@@ -277,6 +277,10 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
   test.describe('vue renderer large graph', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.settings.setSetting(
+        'Comfy.VueNodes.ViewportVirtualization',
+        true
+      )
       await comfyPage.workflow.loadWorkflow('large-graph-workflow')
       await comfyPage.vueNodes.waitForNodes()
     })
@@ -289,9 +293,10 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       }
 
       const m = await comfyPage.perf.stopMeasuring('vue-large-graph-idle')
+      const mountedNodeCount = await comfyPage.vueNodes.getNodeCount()
       recordMeasurement(m)
       console.log(
-        `Vue large graph idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.domNodes} DOM nodes`
+        `Vue large graph idle: ${mountedNodeCount} mounted nodes, ${m.domNodes} DOM nodes, ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.taskDurationMs.toFixed(1)}ms task`
       )
     })
 
@@ -313,9 +318,10 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.page.mouse.up({ button: 'middle' })
 
       const m = await comfyPage.perf.stopMeasuring('vue-large-graph-pan')
+      const mountedNodeCount = await comfyPage.vueNodes.getNodeCount()
       recordMeasurement(m)
       console.log(
-        `Vue large graph pan: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+        `Vue large graph pan: ${mountedNodeCount} mounted nodes, ${m.domNodes} DOM nodes, ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
       )
     })
 

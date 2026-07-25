@@ -476,6 +476,32 @@ describe('layoutStore CRDT operations', () => {
     expect(nodesInBounds).toContain('node-c')
   })
 
+  it.for([
+    { x: -25000, y: -30000 },
+    { x: 25000, y: 30000 }
+  ])('indexes nodes beyond the default canvas bounds', ({ x, y }) => {
+    const nodeId = toNodeId(`far-node-${x}-${y}`)
+    const layout: NodeLayout = {
+      ...createTestNode(nodeId),
+      position: { x, y },
+      bounds: { x, y, width: 200, height: 100 }
+    }
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    expect(
+      layoutStore.queryNodesInBounds({ x, y, width: 200, height: 100 })
+    ).toContain(nodeId)
+  })
+
   it('should maintain operation history', () => {
     const nodeId = toNodeId('test-node-history')
     const layout = createTestNode(nodeId)

@@ -25,14 +25,17 @@ describe('QuadTree', () => {
       expect(quadTree.size).toBe(1)
     })
 
-    it('should reject items outside bounds', () => {
+    it('should expand to include items outside bounds', () => {
       const success = quadTree.insert(
         'node1',
         { x: -100, y: -100, width: 50, height: 50 },
         'node1'
       )
-      expect(success).toBe(false)
-      expect(quadTree.size).toBe(0)
+      expect(success).toBe(true)
+      expect(quadTree.size).toBe(1)
+      expect(
+        quadTree.query({ x: -110, y: -110, width: 70, height: 70 })
+      ).toEqual(['node1'])
     })
 
     it('should handle duplicate IDs by replacing', () => {
@@ -162,6 +165,22 @@ describe('QuadTree', () => {
         height: 100
       })
       expect(newResults).toContain('node1')
+    })
+
+    it.for([
+      { x: -25000, y: -30000 },
+      { x: 25000, y: 30000 }
+    ])('expands when an item moves to $x, $y', ({ x, y }) => {
+      quadTree.insert(
+        'node1',
+        { x: 100, y: 100, width: 50, height: 50 },
+        'node1'
+      )
+
+      expect(quadTree.update('node1', { x, y, width: 50, height: 50 })).toBe(
+        true
+      )
+      expect(quadTree.query({ x, y, width: 50, height: 50 })).toEqual(['node1'])
     })
   })
 

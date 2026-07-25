@@ -381,6 +381,14 @@ class LayoutStoreImpl implements LayoutStore {
     return computed(() => this.version)
   }
 
+  getRevision(): number {
+    return this.version
+  }
+
+  hasNodeLayout(nodeId: NodeId): boolean {
+    return this.ynodes.has(String(nodeId))
+  }
+
   /**
    * Query node at point (non-reactive for performance)
    */

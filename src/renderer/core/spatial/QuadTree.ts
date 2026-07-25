@@ -220,6 +220,7 @@ class QuadNode<T> {
 
 export class QuadTree<T> {
   private root: QuadNode<T>
+  private rootBounds: Bounds
   private itemMap: Map<string, QuadTreeItem<T>> = new Map()
   private options: Required<QuadTreeOptions>
 
@@ -230,8 +231,9 @@ export class QuadTree<T> {
       minNodeSize: options.minNodeSize ?? 50
     }
 
+    this.rootBounds = { ...bounds }
     this.root = new QuadNode<T>(
-      bounds,
+      this.rootBounds,
       0,
       this.options.maxDepth,
       this.options.maxItemsPerNode
@@ -244,6 +246,12 @@ export class QuadTree<T> {
     // Remove old item if it exists
     if (this.itemMap.has(id)) {
       this.remove(id)
+    }
+
+    if (!containsBounds(this.rootBounds, bounds)) {
+      this.itemMap.set(id, item)
+      this.expandToFit(bounds)
+      return true
     }
 
     const success = this.root.insert(item)
@@ -281,7 +289,7 @@ export class QuadTree<T> {
 
   clear() {
     this.root = new QuadNode<T>(
-      this.root['bounds'],
+      this.rootBounds,
       0,
       this.options.maxDepth,
       this.options.maxItemsPerNode
@@ -299,4 +307,44 @@ export class QuadTree<T> {
       tree: this.root.getDebugInfo()
     }
   }
+
+  private expandToFit(bounds: Bounds): void {
+    const expanded = { ...this.rootBounds }
+
+    while (bounds.x < expanded.x) {
+      expanded.x -= expanded.width
+      expanded.width *= 2
+    }
+    while (bounds.x + bounds.width > expanded.x + expanded.width) {
+      expanded.width *= 2
+    }
+    while (bounds.y < expanded.y) {
+      expanded.y -= expanded.height
+      expanded.height *= 2
+    }
+    while (bounds.y + bounds.height > expanded.y + expanded.height) {
+      expanded.height *= 2
+    }
+
+    this.rootBounds = expanded
+    this.root = new QuadNode<T>(
+      this.rootBounds,
+      0,
+      this.options.maxDepth,
+      this.options.maxItemsPerNode
+    )
+
+    for (const item of this.itemMap.values()) {
+      this.root.insert(item)
+    }
+  }
+}
+
+function containsBounds(container: Bounds, item: Bounds): boolean {
+  return (
+    item.x >= container.x &&
+    item.y >= container.y &&
+    item.x + item.width <= container.x + container.width &&
+    item.y + item.height <= container.y + container.height
+  )
 }

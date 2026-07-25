@@ -430,6 +430,10 @@
     "name": "Modern Node Design (Nodes 2.0)",
     "tooltip": "Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering."
   },
+  "Comfy_VueNodes_ViewportVirtualization": {
+    "name": "Viewport node virtualization",
+    "tooltip": "Mount only nodes near the visible canvas. Disable this if a custom node requires its widgets to remain mounted while offscreen."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Widget control mode",
     "tooltip": "Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after.",

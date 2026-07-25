@@ -39,19 +39,13 @@ export function scheduleSlotLayoutSync(nodeId: NodeId) {
   raf.schedule()
 }
 
-function shouldWaitForSlotLayouts(): boolean {
-  const graph = app.canvas?.graph
-  const hasNodes = Boolean(graph && graph._nodes && graph._nodes.length > 0)
-  return hasNodes && !layoutStore.hasSlotLayouts
-}
-
 function completePendingSlotSync(): void {
   layoutStore.setPendingSlotSync(false)
   app.canvas?.setDirty(true, true)
 }
 
-function getSlotElementRect(el: HTMLElement): DOMRect | null {
-  if (!el.isConnected) return null
+function getSlotElementRect(el?: HTMLElement): DOMRect | null {
+  if (!el?.isConnected) return null
 
   const rect = el.getBoundingClientRect()
   if (rect.width <= 0 || rect.height <= 0) return null
@@ -61,11 +55,17 @@ function getSlotElementRect(el: HTMLElement): DOMRect | null {
 export function requestSlotLayoutSyncForAllNodes(): void {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   for (const nodeId of nodeSlotRegistryStore.getNodeIds()) {
-    scheduleSlotLayoutSync(nodeId)
+    const node = nodeSlotRegistryStore.getNode(nodeId)
+    if (
+      node &&
+      Array.from(node.slots.values()).some(({ el }) => el?.isConnected)
+    ) {
+      scheduleSlotLayoutSync(nodeId)
+    }
   }
 
-  // If no slots are currently registered, run the completion check immediately
-  // so pendingSlotSync can be cleared when the graph has no nodes.
+  // Detached virtualized nodes already have cached or model-based geometry and
+  // must not hold link rendering open while waiting for a future remount.
   if (pendingNodes.size === 0) {
     flushScheduledSlotLayoutSync()
   }
@@ -97,14 +97,6 @@ function createSlotLayout(options: {
 
 export function flushScheduledSlotLayoutSync() {
   if (pendingNodes.size === 0) {
-    // No pending nodes - check if we should wait for Vue components to mount
-    if (shouldWaitForSlotLayouts()) {
-      // Graph has nodes but no slot layouts yet - Vue hasn't mounted.
-      // Keep flag set so late mounts can re-assert via scheduleSlotLayoutSync()
-      return
-    }
-    // Either no nodes (nothing to wait for) or slot layouts already exist
-    // (undo/redo preserved them). Clear the flag so links can render.
     completePendingSlotSync()
     return
   }
@@ -112,10 +104,6 @@ export function flushScheduledSlotLayoutSync() {
     pendingNodes.delete(nodeId)
     syncNodeSlotLayoutsFromDOM(nodeId)
   }
-
-  // Keep pending sync active until at least one measurable slot layout has
-  // been captured for the current graph.
-  if (shouldWaitForSlotLayouts()) return
 
   completePendingSlotSync()
 }
@@ -135,10 +123,10 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
   // share the same DOM transform, so their pixel difference divided by the
   // effective scale yields a correct canvas-space offset regardless of
   // whether the TransformPane has flushed its latest transform to the DOM.
-  const closestNode = node.slots
-    .values()
-    .next()
-    .value?.el.closest('[data-node-id]')
+  const connectedEntry = Array.from(node.slots.values()).find(
+    (entry) => entry.el?.isConnected
+  )
+  const closestNode = connectedEntry?.el?.closest('[data-node-id]')
   const nodeEl = closestNode instanceof HTMLElement ? closestNode : null
   const nodeRect = nodeEl?.getBoundingClientRect()
 
@@ -165,12 +153,7 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
 
   for (const [slotKey, entry] of node.slots) {
     const rect = getSlotElementRect(entry.el)
-    if (!rect) {
-      // Drop stale layout values while the slot is hidden so we don't render
-      // links with off-screen coordinates from a previous graph/tab state.
-      layoutStore.deleteSlotLayout(slotKey)
-      continue
-    }
+    if (!rect) continue
 
     const screenCenter: [number, number] = [
       rect.left + rect.width / 2,
@@ -182,7 +165,10 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
     if (conv) {
       const [cx, cy] = conv.clientPosToCanvasPos(screenCenter)
       centerCanvas = { x: cx, y: cy }
-      entry.cachedOffset = undefined
+      entry.cachedOffset = {
+        x: centerCanvas.x - nodeLayout.position.x,
+        y: centerCanvas.y - nodeLayout.position.y
+      }
     } else {
       if (!nodeRect || effectiveScale <= 0) continue
 
@@ -269,6 +255,7 @@ export function useSlotElementTracking(options: {
 }) {
   const { nodeId, index, type, element } = options
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
+  let registeredElement: HTMLElement | undefined
 
   onMounted(() => {
     if (!nodeId) return
@@ -314,13 +301,18 @@ export function useSlotElementTracking(options: {
         // Defensive cleanup: remove stale entry if it exists with different element
         // This handles edge cases where Vue component reuse prevents proper unmount
         const existingEntry = node.slots.get(slotKey)
-        if (existingEntry && existingEntry.el !== el) {
+        if (existingEntry?.el && existingEntry.el !== el) {
           delete existingEntry.el.dataset.slotKey
-          layoutStore.deleteSlotLayout(slotKey)
         }
 
         el.dataset.slotKey = String(slotKey)
-        node.slots.set(slotKey, { el, index, type })
+        registeredElement = el
+        node.slots.set(slotKey, {
+          ...existingEntry,
+          el,
+          index,
+          type
+        })
 
         // Seed initial sync from DOM
         scheduleSlotLayoutSync(nodeId)
@@ -337,19 +329,13 @@ export function useSlotElementTracking(options: {
     const node = nodeSlotRegistryStore.getNode(nodeId)
     if (!node) return
 
-    // Remove this slot from registry and layout
+    // Detach the DOM element while retaining cached geometry. Virtualized
+    // nodes continue to participate in link layout and movement updates.
     const slotKey = getSlotKey(nodeId, index, type === 'input')
     const entry = node.slots.get(slotKey)
-    if (entry) {
+    if (entry?.el && entry.el === registeredElement) {
       delete entry.el.dataset.slotKey
-      node.slots.delete(slotKey)
-    }
-    layoutStore.deleteSlotLayout(slotKey)
-
-    // If node has no more slots, clean up
-    if (node.slots.size === 0) {
-      if (node.stopWatch) node.stopWatch()
-      nodeSlotRegistryStore.deleteNode(nodeId)
+      entry.el = undefined
     }
   })
 

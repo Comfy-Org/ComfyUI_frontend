@@ -8,6 +8,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { clearTrackedSlotLayouts } from '@/renderer/extensions/vueNodes/utils/slotLayoutCache'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -67,6 +68,7 @@ function useVueNodeLifecycleIndividual() {
 
   const disposeNodeManagerAndSyncs = () => {
     stopSync()
+    clearTrackedSlotLayouts()
     if (!nodeManager.value) return
 
     try {
@@ -151,6 +153,7 @@ function useVueNodeLifecycleIndividual() {
 
   // Cleanup function for component unmounting
   const cleanup = () => {
+    clearTrackedSlotLayouts()
     if (nodeManager.value) {
       nodeManager.value.cleanup()
       nodeManager.value = null

@@ -73,7 +73,7 @@
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <LGraphNode
-      v-for="nodeData in allNodes"
+      v-for="nodeData in renderNodes"
       :key="nodeData.id"
       :node-data="nodeData"
       :error="
@@ -158,6 +158,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useViewportNodeVirtualization } from '@/composables/graph/useViewportNodeVirtualization'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -293,6 +294,14 @@ watch(
 const allNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
+const viewportVirtualizationEnabled = computed(() =>
+  settingStore.get('Comfy.VueNodes.ViewportVirtualization')
+)
+const { renderNodes } = useViewportNodeVirtualization({
+  allNodes,
+  canvas: () => canvasStore.canvas,
+  enabled: viewportVirtualizationEnabled
+})
 watch(
   () => linearMode.value,
   (isLinearMode) => {
