@@ -698,7 +698,7 @@ frame drew decides the widget offsets.
 
 A later compare surfaced a second, different mechanism. Across two
 ephemeral runners on an identical pinned image and pinned bundled
-Chromium, 3187 node widths jittered by up to 2e-4px - sub-pixel float
+Chromium, 3187 measured geometry values jittered by up to 2e-4px - float
 residuals from the scale division, not a layout change - while
 LoadAndResizeImage's litegraph height moved 566 to 354, because that
 node's height follows whatever the backend's input dir holds.
@@ -768,7 +768,7 @@ CPU backend ... install every pack", one step serves that cloud dist through
 bypasses turned off, so pack frontend JS and real auth are exercised rather
 than faked), and the suite signs in as Cloud's shared smoke user before it
 runs. Everything downstream -
-one worker, the skip gate, the report artifact - is identical, so the flow
+one worker, the skip gate - is identical, so the flow
 gets no second diagram: it is the same picture with the environment and
 install boxes replaced by one serve-against-Cloud box.
 

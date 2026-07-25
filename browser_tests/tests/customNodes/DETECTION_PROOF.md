@@ -67,7 +67,10 @@ change WHICH pair or node the message names without weakening the catch - the
 promise is the tier and the failure class, not byte-identical offender text
 across pin changes. Rows 2 and 3 name rgthree-comfy, which left the manifest in
 PR #13389: those two captures are historical and re-running the break now names
-a node from a currently installed pack instead. Sections refer to
+a node from a currently installed pack instead. Row 11 names SplineEditor, since
+ledgered in `GEOMETRY_UNSTABLE_NODES` and excluded from measurement, so that
+capture is historical too; the geometry tier's live coverage is the remaining
+baselined nodes. Sections refer to
 [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | #   | Surface (ARCH section)                           | Mode | Real regression it recreates                                                                                                                                                                      | The one-file break                                                                                                                                                                            | CI check that catches it                   | Exact red                                                                                                                                                             |
