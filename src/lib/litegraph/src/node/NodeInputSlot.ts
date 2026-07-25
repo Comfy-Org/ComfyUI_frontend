@@ -17,17 +17,6 @@ import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput
 import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-const inputSlotIndices = new WeakMap<NodeInputSlot, number>()
-
-function inputSlotIndex(slot: NodeInputSlot): number {
-  const { inputs } = slot.node
-  const cached = inputSlotIndices.get(slot) ?? -1
-  if (inputs[cached] === slot) return cached
-  const index = inputs.indexOf(slot)
-  inputSlotIndices.set(slot, index)
-  return index
-}
-
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   /** @deprecated Derived from the link store via a warning prototype getter; never written. */
   declare readonly link: LinkId | null
@@ -66,7 +55,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   override get isConnected(): boolean {
     const { graph } = this._node
     if (!graph) return false
-    return inputHasLink(graph, this._node.id, inputSlotIndex(this))
+    return inputHasLink(graph, this._node.id, this._node.inputs.indexOf(this))
   }
 
   override isValidTarget(
@@ -104,7 +93,8 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     return {
       ...super.toJSON(),
       link: graph
-        ? (inputLinkId(graph, this._node.id, inputSlotIndex(this)) ?? null)
+        ? (inputLinkId(graph, this._node.id, this._node.inputs.indexOf(this)) ??
+          null)
         : null,
       widget: this.widget
     }
@@ -124,7 +114,9 @@ Object.defineProperty(NodeInputSlot.prototype, 'link', {
     )
     const { graph } = this._node
     if (!graph) return null
-    return inputLinkId(graph, this._node.id, inputSlotIndex(this)) ?? null
+    return (
+      inputLinkId(graph, this._node.id, this._node.inputs.indexOf(this)) ?? null
+    )
   },
   set(this: NodeInputSlot): void {
     warnDeprecated(
