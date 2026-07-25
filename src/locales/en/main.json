@@ -4566,7 +4566,7 @@
     "runningPosition": "Running {position}/{total}",
     "recentResults": "Recent results",
     "viewResult": "Open result",
-    "goToHistory": "Open history",
+    "goToHistory": "View all history",
     "pause": "Pause",
     "pauseUnavailable": "Pause is not available yet",
     "chooseRunToStop": "Choose which run to stop"
