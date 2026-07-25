@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
+import { computed, nextTick, watch } from 'vue'
 
 import type {
   INodeInputSlot,
@@ -786,5 +787,48 @@ describe('LGraphNode', () => {
       expect(out[2]).toBe(200)
       expect(out[3]).toBe(120 + LiteGraph.NODE_TITLE_HEIGHT)
     })
+  })
+})
+
+describe('_setConcreteSlots', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('per-frame calls do not invalidate slot-array subscribers', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('a', 'INT')
+    node.addInput('b', 'INT')
+    graph.add(node)
+
+    const names = computed(() => node.inputs.map((i) => i.name).join(','))
+    const onChange = vi.fn()
+    watch(names, onChange)
+    expect(names.value).toBe('a,b')
+
+    // The canvas draw loop calls this once per visible node per frame. It
+    // re-assigns each slot in place, so it must not look like a change.
+    for (let frame = 0; frame < 100; frame++) node._setConcreteSlots()
+    await nextTick()
+
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  test('a real slot change still notifies', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('a', 'INT')
+    graph.add(node)
+
+    const names = computed(() => node.inputs.map((i) => i.name).join(','))
+    const onChange = vi.fn()
+    watch(names, onChange)
+    expect(names.value).toBe('a')
+
+    node.addInput('b', 'INT')
+    await nextTick()
+
+    expect(onChange).toHaveBeenCalledTimes(1)
   })
 })
