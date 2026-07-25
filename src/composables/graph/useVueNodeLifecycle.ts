@@ -10,14 +10,22 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
 
+type NodeLifecycleEvent = CustomEvent<{ node: LGraphNode }>
+
 /**
  * Bootstraps the renderer's layout view of the active graph and owns the
- * Layout↔LiteGraph sync lifecycle. Per-node layout entries are seeded by
- * `LGraph.add` / `LGraph.remove`; this re-seeds the whole active graph on
- * entry, which is what makes subgraph navigation show the right nodes.
+ * Layout↔LiteGraph sync lifecycle. Re-seeds the whole active graph on entry —
+ * which is what makes subgraph navigation show the right nodes — then keeps it
+ * current from the graph's node lifecycle events.
+ *
+ * Seeding lives here rather than in `LGraph.add` so `layoutStore` stays empty
+ * while the Vue renderer is off, and holds only the graph being viewed. The
+ * minimap depends on both: it picks its data source by asking whether
+ * `layoutStore` has any nodes.
  */
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
@@ -25,6 +33,17 @@ function useVueNodeLifecycleIndividual() {
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const isInitialized = shallowRef(false)
   const { startSync, stopSync } = useLayoutSync()
+  let stopNodeListeners: (() => void) | null = null
+
+  const seedNodeLayout = (node: LGraphNode) => {
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createNode(node.id, {
+      position: { x: node.pos[0], y: node.pos[1] },
+      size: { width: node.size[0], height: node.size[1] },
+      zIndex: node.order || 0,
+      visible: true
+    })
+  }
 
   const initializeVueNodeLayout = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -46,6 +65,30 @@ function useVueNodeLifecycleIndividual() {
       layoutMutations.createReroute(reroute.id, { x, y })
     }
 
+    // While configuring, geometry is still placeholder; the `pos`/`size` setters
+    // write through to the store, so the entry catches up as the real values
+    // land and no deferral is needed.
+    const onNodeAdded = ({ detail: { node } }: NodeLifecycleEvent) =>
+      seedNodeLayout(node)
+    const onNodeRemoved = ({ detail: { node } }: NodeLifecycleEvent) => {
+      layoutMutations.setSource(LayoutSource.Canvas)
+      layoutMutations.deleteNode(node.id)
+    }
+    const stopAdded = useEventListener(
+      activeGraph.events,
+      'node:added',
+      onNodeAdded
+    )
+    const stopRemoved = useEventListener(
+      activeGraph.events,
+      'node:removed',
+      onNodeRemoved
+    )
+    stopNodeListeners = () => {
+      stopAdded()
+      stopRemoved()
+    }
+
     // Start sync AFTER seeding so bootstrap operations don't trigger
     // the Layout→LiteGraph writeback loop redundantly.
     startSync(canvasStore.canvas)
@@ -53,6 +96,8 @@ function useVueNodeLifecycleIndividual() {
 
   const disposeVueNodeLayout = () => {
     stopSync()
+    stopNodeListeners?.()
+    stopNodeListeners = null
     isInitialized.value = false
   }
 

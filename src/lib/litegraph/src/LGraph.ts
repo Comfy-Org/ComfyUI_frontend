@@ -1124,18 +1124,6 @@ export class LGraph
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
 
-    // Seed the renderer's layout entry. During `configure` the node still has
-    // placeholder geometry; the `pos`/`size` setters update this entry as the
-    // real values land, so no deferral is needed here.
-    const layoutMutations = useLayoutMutations()
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createNode(node.id, {
-      position: { x: node.pos[0], y: node.pos[1] },
-      size: { width: node.size[0], height: node.size[1] },
-      zIndex: node.order || 0,
-      visible: true
-    })
-
     node.onAdded?.(this)
 
     if (this.config.align_to_grid) node.alignToGrid()
@@ -1242,10 +1230,6 @@ export class LGraph
     node.onRemoved?.()
 
     unregisterNodeState(node)
-
-    const layoutMutations = useLayoutMutations()
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteNode(node.id)
 
     node.graph = null
     this.incrementVersion()

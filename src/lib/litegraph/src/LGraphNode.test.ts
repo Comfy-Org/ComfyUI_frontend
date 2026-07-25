@@ -832,3 +832,45 @@ describe('_setConcreteSlots', () => {
     expect(onChange).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('widgets array reactivity', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('notifies readers when a widget is removed in place', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'a', 1, () => undefined, {})
+    node.addWidget('number', 'b', 2, () => undefined, {})
+    node.addWidget('number', 'c', 3, () => undefined, {})
+    graph.add(node)
+
+    const names = computed(() => node.widgets?.map((w) => w.name).join(','))
+    const onChange = vi.fn()
+    watch(names, onChange)
+    expect(names.value).toBe('a,b,c')
+
+    // Extensions mutate this array directly, with no store call to notice.
+    node.widgets!.pop()
+    await nextTick()
+    expect(names.value).toBe('a,b')
+
+    node.widgets!.splice(0, 1)
+    await nextTick()
+    expect(names.value).toBe('b')
+
+    node.widgets!.length = 0
+    await nextTick()
+    expect(names.value).toBe('')
+
+    expect(onChange).toHaveBeenCalledTimes(3)
+  })
+
+  test('leaves widgets undefined for a node with none', () => {
+    const node = new LGraphNode('test')
+
+    expect(node.widgets).toBeUndefined()
+    expect(node.serialize().widgets_values).toBeUndefined()
+  })
+})

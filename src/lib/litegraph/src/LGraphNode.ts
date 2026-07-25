@@ -239,12 +239,12 @@ export interface LGraphNode {
 // #endregion Types
 
 /**
- * Overwrites `slots` with `value` without swapping the array, so subscribers
+ * Overwrites `target` with `value` without swapping the array, so subscribers
  * keep tracking the same reactive target. A self-assignment is a no-op.
  */
-function replaceSlotsInPlace<T>(slots: T[], value: readonly T[]): void {
-  if (slots === value) return
-  slots.splice(0, slots.length, ...value)
+function replaceInPlace<T>(target: T[], value: readonly T[]): void {
+  if (target === value) return
+  target.splice(0, target.length, ...value)
 }
 
 /**
@@ -344,7 +344,7 @@ export class LGraphNode
   }
 
   set inputs(value: INodeInputSlot[]) {
-    replaceSlotsInPlace(this.inputs, value)
+    replaceInPlace(this.inputs, value)
   }
 
   /** @see {@link inputs} */
@@ -353,7 +353,7 @@ export class LGraphNode
   }
 
   set outputs(value: INodeOutputSlot[]) {
-    replaceSlotsInPlace(this.outputs, value)
+    replaceInPlace(this.outputs, value)
   }
 
   private _concreteInputs: NodeInputSlot[] = []
@@ -371,13 +371,14 @@ export class LGraphNode
   }
 
   /**
-   * The node's widgets. Render order is owned by `widgetValueStore`, which
-   * {@link addWidget}, {@link addCustomWidget} and {@link removeWidget} keep in
-   * step — use them to add or remove.
+   * The node's widgets. Created `shallowReactive` by {@link addWidget} /
+   * {@link addCustomWidget}, so the renderer tracks add / remove / reorder —
+   * including direct mutation (`node.widgets.pop()`), which carries no store
+   * call to notice. Assigning a whole new array drops that tracking; prefer
+   * mutating in place.
    *
-   * Mutating this array directly (`node.widgets.splice(…)`) leaves the store's
-   * order stale and the widget will keep rendering until something else
-   * invalidates it.
+   * Render order is owned by `widgetValueStore`; {@link addWidget},
+   * {@link addCustomWidget} and {@link removeWidget} keep the two in step.
    */
   widgets?: IBaseWidget[]
 
@@ -2094,7 +2095,7 @@ export class LGraphNode
     callback: IBaseWidget['callback'] | string | null,
     options?: IWidgetOptions | string
   ): WidgetTypeMap[Type] | IBaseWidget {
-    this.widgets ||= []
+    this.widgets ||= shallowReactive([])
 
     if (!options && callback && typeof callback === 'object') {
       options = callback
@@ -2142,7 +2143,7 @@ export class LGraphNode
   addCustomWidget<TPlainWidget extends IBaseWidget>(
     custom_widget: TPlainWidget
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
-    this.widgets ||= []
+    this.widgets ||= shallowReactive([])
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
     this._widgetSlotsDirty = true
