@@ -29,7 +29,7 @@ function createCanvas(options?: {
   element.width = options?.width ?? 1000
   element.height = options?.height ?? 500
 
-  return {
+  const canvas = {
     ds: {
       element,
       scale: options?.scale ?? 2,
@@ -37,6 +37,10 @@ function createCanvas(options?: {
     },
     viewport: options?.viewport
   } as LGraphCanvas
+  Object.defineProperty(canvas, 'linkConnector', {
+    value: { renderLinks: [] }
+  })
+  return canvas
 }
 
 function createNode(id: string): VueNodeData {
@@ -189,6 +193,35 @@ describe('useViewportNodeVirtualization', () => {
     await nextTick()
 
     expect(observedTitles.at(-1)).toBe('updated')
+    scope.stop()
+  })
+
+  it('rechecks layout readiness when the node IDs change', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const firstNode = createNode('a')
+    const secondNode = createNode('b')
+    const allNodes = shallowRef([firstNode])
+    vi.spyOn(layoutStore, 'getRevision').mockReturnValue(1)
+    const hasNodeLayout = vi
+      .spyOn(layoutStore, 'hasNodeLayout')
+      .mockImplementation((nodeId) => nodeId === firstNode.id)
+    vi.spyOn(layoutStore, 'queryNodesInBounds').mockReturnValue([firstNode.id])
+    const scope = effectScope()
+
+    scope.run(() => {
+      const { refresh } = useViewportNodeVirtualization({
+        allNodes,
+        canvas: createCanvas(),
+        enabled: true
+      })
+
+      refresh(true)
+      hasNodeLayout.mockClear()
+      allNodes.value = [secondNode]
+      refresh(true)
+    })
+
+    expect(hasNodeLayout).toHaveBeenCalledWith(secondNode.id)
     scope.stop()
   })
 })

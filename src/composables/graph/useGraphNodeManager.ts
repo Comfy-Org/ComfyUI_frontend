@@ -490,16 +490,19 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   const nodeRefs = new Map<NodeId, LGraphNode>()
   const nodeSlotModelStops = new Map<NodeId, () => void>()
 
-  const watchNodeSlotModel = (node: LGraphNode) => {
+  const watchNodeSlotModel = (node: LGraphNode, immediate: boolean) => {
     nodeSlotModelStops.get(node.id)?.()
-    const stop = watch(
-      [() => node.inputs?.length ?? 0, () => node.outputs?.length ?? 0],
-      ([inputCount, outputCount]) => {
-        reconcileTrackedNodeSlots(node.id, inputCount, outputCount)
-      },
-      { immediate: true }
-    )
+    const inputs = node.inputs ?? []
+    const outputs = node.outputs ?? []
+    const reconcileNodeSlots = () => {
+      reconcileTrackedNodeSlots(node.id, inputs.length, outputs.length)
+    }
+    const stop = watch([inputs, outputs], reconcileNodeSlots, {
+      deep: true,
+      immediate
+    })
     nodeSlotModelStops.set(node.id, stop)
+    return reconcileNodeSlots
   }
 
   const refreshNodeSlots = (nodeId: NodeId) => {
@@ -561,7 +564,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Extract initial data for Vue (may be incomplete during graph configure)
     vueNodeData.set(id, extractVueNodeData(node))
-    watchNodeSlotModel(node)
+    const isConfiguringGraph = Boolean(window.app?.configuringGraph)
+    const reconcileNodeSlots = watchNodeSlotModel(node, !isConfiguringGraph)
 
     const initializeVueNodeLayout = () => {
       // Check if the node was removed mid-sequence
@@ -588,7 +592,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     }
 
     // Check if we're in the middle of configuring the graph (workflow loading)
-    if (window.app?.configuringGraph) {
+    if (isConfiguringGraph) {
       // During workflow loading - defer layout initialization until configure completes
       // Chain our callback with any existing onAfterGraphConfigured callback
       node.onAfterGraphConfigured = useChainCallback(
@@ -596,6 +600,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         () => {
           // Re-extract data now that configure() has populated title/slots/widgets/etc.
           vueNodeData.set(id, extractVueNodeData(node))
+          reconcileNodeSlots()
           initializeVueNodeLayout()
         }
       )

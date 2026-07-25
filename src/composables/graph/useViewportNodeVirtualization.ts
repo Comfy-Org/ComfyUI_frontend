@@ -149,7 +149,7 @@ export function useViewportNodeVirtualization(options: {
   let cachedPinnedStateKey = ''
   let cachedPinnedNodeIds = new Set<NodeId>()
   let cachedLayoutRevision = -1
-  let cachedLayoutNodeCount = -1
+  let cachedLayoutNodeIds: NodeId[] = []
   let cachedLayoutReady = false
 
   function collectPinnedNodeIds(canvas: LGraphCanvas): Set<NodeId> {
@@ -220,12 +220,12 @@ export function useViewportNodeVirtualization(options: {
     allNodes: readonly VueNodeData[],
     layoutRevision: number
   ): boolean {
-    if (
-      cachedLayoutRevision !== layoutRevision ||
-      cachedLayoutNodeCount !== allNodes.length
-    ) {
+    const nodeIdsChanged =
+      cachedLayoutNodeIds.length !== allNodes.length ||
+      allNodes.some((node, index) => node.id !== cachedLayoutNodeIds[index])
+    if (cachedLayoutRevision !== layoutRevision || nodeIdsChanged) {
       cachedLayoutRevision = layoutRevision
-      cachedLayoutNodeCount = allNodes.length
+      cachedLayoutNodeIds = allNodes.map((node) => node.id)
       cachedLayoutReady = allNodes.every((node) =>
         layoutStore.hasNodeLayout(node.id)
       )

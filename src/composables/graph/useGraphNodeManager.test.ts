@@ -13,7 +13,10 @@ import {
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { SlotLayout } from '@/renderer/core/layout/types'
+import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -774,6 +777,78 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     expect(interiorNode.has_errors).toBe(true)
     expect(subgraphNode.has_errors).toBe(true)
+  })
+})
+
+describe('Tracked slot model reconciliation', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    layoutStore.initializeFromLiteGraph([])
+  })
+
+  function trackSlot(nodeId: LGraphNode['id'], type: 'input' | 'output') {
+    const slotKey = getSlotKey(nodeId, 0, type === 'input')
+    useNodeSlotRegistryStore()
+      .ensureNode(nodeId)
+      .slots.set(slotKey, { index: 0, type })
+    const layout: SlotLayout = {
+      nodeId,
+      index: 0,
+      type,
+      position: { x: 10, y: 20 },
+      bounds: { x: 10, y: 20, width: 10, height: 10 }
+    }
+    layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout }])
+    return slotKey
+  }
+
+  it('reacts to slot additions and removes retained geometry after deletion', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    node.addInput('input', 'INT')
+    node.addOutput('output', 'INT')
+    await nextTick()
+
+    expect(vueNodeData.get(node.id)?.inputs).toHaveLength(1)
+    expect(vueNodeData.get(node.id)?.outputs).toHaveLength(1)
+
+    const inputKey = trackSlot(node.id, 'input')
+    const outputKey = trackSlot(node.id, 'output')
+    node.removeInput(0)
+    node.removeOutput(0)
+    await nextTick()
+
+    expect(layoutStore.getSlotLayout(inputKey)).toBeNull()
+    expect(layoutStore.getSlotLayout(outputKey)).toBeNull()
+  })
+
+  it('retains same-ID slot geometry until graph configuration completes', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const slotKey = trackSlot(node.id, 'input')
+    const previousApp = window.app
+    const configuringGraph = vi
+      .spyOn(app, 'configuringGraph', 'get')
+      .mockReturnValue(true)
+
+    try {
+      window.app = app
+      useGraphNodeManager(graph)
+
+      expect(layoutStore.getSlotLayout(slotKey)).not.toBeNull()
+
+      node.addInput('input', 'INT')
+      node.onAfterGraphConfigured?.()
+
+      expect(layoutStore.getSlotLayout(slotKey)).not.toBeNull()
+    } finally {
+      configuringGraph.mockRestore()
+      window.app = previousApp
+    }
   })
 })
 
