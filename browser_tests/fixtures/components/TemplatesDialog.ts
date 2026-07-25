@@ -3,6 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 export class TemplatesDialog {
   public readonly root: Locator
   public readonly modelFilter: Locator
+  public readonly modelFilterSearch: Locator
   public readonly resultsCount: Locator
   public readonly mobileFiltersToggle: Locator
   public readonly filterBar: Locator
@@ -12,6 +13,9 @@ export class TemplatesDialog {
     this.root = page.getByRole('dialog')
     this.modelFilter = this.root
       .getByRole('button', { name: /Model Filter/ })
+      .filter({ visible: true })
+    this.modelFilterSearch = this.page
+      .getByRole('combobox', { name: 'Search' })
       .filter({ visible: true })
     this.resultsCount = this.root.getByText(/Showing.*of.*templates/i)
     this.mobileFiltersToggle = this.root.getByRole('button', {
