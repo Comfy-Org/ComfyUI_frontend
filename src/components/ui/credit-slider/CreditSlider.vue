@@ -23,7 +23,8 @@ const {
   class: rootClass,
   stops = TEAM_PLAN_CREDIT_STOPS,
   defaultStopIndex = DEFAULT_TEAM_PLAN_STOP_INDEX,
-  cycle = 'yearly'
+  cycle = 'yearly',
+  extraDiscountPercent = 0
 } = defineProps<{
   disabled?: boolean
   class?: HTMLAttributes['class']
@@ -45,6 +46,8 @@ const {
    * halved": yearly 0/5/10/15/20% → monthly 0/2.5/5/7.5/10%).
    */
   cycle?: 'monthly' | 'yearly'
+  /** Extra percent of list stacked on the stop's cycle discount (EDU promo). */
+  extraDiscountPercent?: number
 }>()
 
 const emit = defineEmits<{
@@ -78,13 +81,14 @@ const current = computed<CreditStop>(() => stops[selectedIndex.value])
 // `discountPercentYearly`; monthly halves it (PRD: GA Team Billing). The card
 // shows the discounted monthly price, the struck pre-discount price, the
 // saving, and — for yearly — the annual total.
-const effectiveDiscountPercent = computed(() =>
-  cycle === 'monthly'
-    ? current.value.discountPercentYearly / 2
-    : current.value.discountPercentYearly
+const effectiveDiscountPercent = computed(
+  () =>
+    (cycle === 'monthly'
+      ? current.value.discountPercentYearly / 2
+      : current.value.discountPercentYearly) + extraDiscountPercent
 )
 const discountedMonthly = computed(() =>
-  getStopDiscountedMonthlyUsd(current.value, cycle)
+  getStopDiscountedMonthlyUsd(current.value, cycle, extraDiscountPercent)
 )
 const saveAmount = computed(() => current.value.usd - discountedMonthly.value)
 const hasDiscount = computed(() => effectiveDiscountPercent.value > 0)

@@ -4111,7 +4111,16 @@
     "workspaceNotSubscribed": "Cet espace de travail n’a pas d’abonnement",
     "yearly": "Annuel",
     "yearlyCreditsLabel": "Crédits annuels totaux",
-    "yourPlanIncludes": "Votre forfait comprend :"
+    "yourPlanIncludes": "Votre forfait comprend :",
+    "eduPromoHeader": "Réduction éducation : jusqu'à {percent}% de remise pour les étudiants et enseignants vérifiés",
+    "eduVerifyTitle": "Étudiant ou enseignant ?",
+    "eduVerifyHeader": "Vérifiez votre e-mail pour débloquer jusqu'à {percent}% de tarif éducation",
+    "eduVerifySend": "Envoyer l'e-mail de vérification",
+    "eduVerifySentHint": "Consultez votre boîte de réception, puis revenez",
+    "eduVerifyConfirm": "J'ai vérifié",
+    "eduVerifySendFailed": "Échec de l'envoi de l'e-mail. Réessayez.",
+    "eduVerifyStillUnverified": "Pas encore vérifié. Cliquez d'abord sur le lien dans votre boîte de réception.",
+    "eduVerifyFailed": "Une erreur est survenue. Réessayez."
   },
   "tabMenu": {
     "addToBookmarks": "Ajouter aux Favoris",

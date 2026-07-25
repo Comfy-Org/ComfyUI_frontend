@@ -52,6 +52,45 @@ const TIER_FEATURES: Record<TierKey, TierFeatures> = {
 
 export const DEFAULT_TIER_KEY: TierKey = 'standard'
 
+export type PaidTierKey = Exclude<TierKey, 'free' | 'founder'>
+export type BillingCycleKey = 'monthly' | 'yearly'
+
+/**
+ * Coupon percent applied to the CYCLE price; must mirror the backend Stripe
+ * coupons exactly — the display promises what the coupon charges. Yearly 6.25%
+ * compounds with the 20% yearly bundle to 25% off the monthly list. Values are
+ * identical across tiers today; keyed per tier to mirror the backend slots.
+ */
+export const EDU_DISCOUNT_PERCENTS: Record<
+  PaidTierKey,
+  Record<BillingCycleKey, number>
+> = {
+  standard: { monthly: 10, yearly: 6.25 },
+  creator: { monthly: 10, yearly: 6.25 },
+  pro: { monthly: 10, yearly: 6.25 }
+}
+
+/** Team EDU adds 5% of list on the volume discount (backend e = 5/(100-v)). */
+export const TEAM_EDU_EXTRA_PERCENT = 5
+
+/** Marketing max: total off the monthly list (yearly EDU = 25%), not a coupon percent. */
+export const EDU_MAX_DISCOUNT_PERCENT = 25
+
+/** Whole dollars render bare ($18); fractional prices always show cents ($31.50). */
+export function formatTierPriceValue(price: number): string {
+  return Number.isInteger(price) ? String(price) : price.toFixed(2)
+}
+
+/** Display-only EDU price; the backend coupon applies the same cut at checkout. */
+export function applyEduDiscount(
+  price: number,
+  tierKey: PaidTierKey,
+  cycle: BillingCycleKey
+): number {
+  const percent = EDU_DISCOUNT_PERCENTS[tierKey][cycle]
+  return Math.round(price * (1 - percent / 100) * 100) / 100
+}
+
 const FOUNDER_MONTHLY_PRICE = 20
 const FOUNDER_MONTHLY_CREDITS = 5460
 

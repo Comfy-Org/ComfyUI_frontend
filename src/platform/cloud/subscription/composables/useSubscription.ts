@@ -37,7 +37,10 @@ type CloudSubscriptionCheckoutResponse = NonNullable<
 
 export type CloudSubscriptionStatusResponse = NonNullable<
   operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']
->
+> & {
+  /** EDU marker from cloud#5314; drop once registry-types regenerates. */
+  is_edu?: boolean
+}
 
 const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
 
@@ -101,6 +104,10 @@ function useSubscriptionInternal() {
 
   const isYearlySubscription = computed(
     () => subscriptionDuration.value === 'ANNUAL'
+  )
+
+  const isEduCustomer = computed(
+    () => subscriptionStatus.value?.is_edu === true
   )
 
   const subscriptionTierName = computed(() => {
@@ -452,6 +459,7 @@ function useSubscriptionInternal() {
     isFreeTier,
     subscriptionDuration,
     isYearlySubscription,
+    isEduCustomer,
     subscriptionTierName,
     subscriptionStatus,
 

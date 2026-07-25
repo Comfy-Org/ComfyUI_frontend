@@ -4123,7 +4123,16 @@
     "workspaceNotSubscribed": "此工作区未订阅",
     "yearly": "年度",
     "yearlyCreditsLabel": "总共年度积分",
-    "yourPlanIncludes": "您的计划包括："
+    "yourPlanIncludes": "您的计划包括：",
+    "eduPromoHeader": "教育优惠：经验证的学生和教育工作者最高可享 {percent}% 折扣",
+    "eduVerifyTitle": "学生或教育工作者？",
+    "eduVerifyHeader": "验证您的邮箱，解锁最高 {percent}% 的教育优惠",
+    "eduVerifySend": "发送验证邮件",
+    "eduVerifySentHint": "请查收邮箱后返回",
+    "eduVerifyConfirm": "我已验证",
+    "eduVerifySendFailed": "邮件发送失败，请重试。",
+    "eduVerifyStillUnverified": "尚未验证。请先点击邮箱中的链接。",
+    "eduVerifyFailed": "出现问题，请重试。"
   },
   "tabMenu": {
     "addToBookmarks": "添加到书签",

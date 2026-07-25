@@ -37,7 +37,8 @@ export enum ServerFeatureFlag {
   CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
-  SIGNUP_TURNSTILE = 'signup_turnstile'
+  SIGNUP_TURNSTILE = 'signup_turnstile',
+  EDU_PRICING_ENABLED = 'edu_pricing_enabled'
 }
 
 /**
@@ -235,6 +236,14 @@ export function useFeatureFlags() {
         ServerFeatureFlag.SIGNUP_TURNSTILE,
         remoteConfig.value.signup_turnstile,
         'off'
+      )
+    },
+    /** EDU promo pricing display; the customer must also carry is_edu (BE-3894). */
+    get eduPricingEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.EDU_PRICING_ENABLED,
+        remoteConfig.value.edu_pricing_enabled,
+        false
       )
     }
   })

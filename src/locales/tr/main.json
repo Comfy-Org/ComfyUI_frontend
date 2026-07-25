@@ -4111,7 +4111,16 @@
     "workspaceNotSubscribed": "Bu çalışma alanı bir aboneliğe sahip değil",
     "yearly": "Yıllık",
     "yearlyCreditsLabel": "Toplam yıllık krediler",
-    "yourPlanIncludes": "Planınız şunları içerir:"
+    "yourPlanIncludes": "Planınız şunları içerir:",
+    "eduPromoHeader": "Eğitim indirimi: doğrulanmış öğrenciler ve eğitimciler için %{percent}'e varan indirim",
+    "eduVerifyTitle": "Öğrenci veya eğitimci misiniz?",
+    "eduVerifyHeader": "E-postanızı doğrulayarak %{percent}'e varan eğitim fiyatlarının kilidini açın",
+    "eduVerifySend": "Doğrulama e-postası gönder",
+    "eduVerifySentHint": "Gelen kutunuzu kontrol edip geri dönün",
+    "eduVerifyConfirm": "Doğruladım",
+    "eduVerifySendFailed": "E-posta gönderilemedi. Tekrar deneyin.",
+    "eduVerifyStillUnverified": "Henüz doğrulanmadı. Önce gelen kutunuzdaki bağlantıya tıklayın.",
+    "eduVerifyFailed": "Bir sorun oluştu. Tekrar deneyin."
   },
   "tabMenu": {
     "addToBookmarks": "Yer İmlerine Ekle",

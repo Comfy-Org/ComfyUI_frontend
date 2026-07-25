@@ -43,13 +43,35 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
+const mockIsEduPricingActive = ref(false)
+
+vi.mock('@/platform/cloud/subscription/composables/useEduPricing', () => ({
+  useEduPricing: () => ({
+    isEduPricingActive: computed(() => mockIsEduPricingActive.value),
+    needsEduVerification: computed(() => false)
+  })
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
       g: { back: 'Back', close: 'Close' },
-      subscription: { descriptionWorkspace: 'Choose your plan' }
+      subscription: {
+        descriptionWorkspace: 'Choose your plan',
+        eduPromoHeader:
+          'Education discount: up to {percent}% off for verified students and educators',
+        eduVerifyHeader:
+          'Verify your email to unlock up to {percent}% education pricing',
+        eduVerifySend: 'Send verification email',
+        eduVerifySentHint: 'Check your inbox, then come back',
+        eduVerifyConfirm: "I've verified",
+        eduVerifySendFailed: "Couldn't send the email. Try again.",
+        eduVerifyStillUnverified:
+          'Not verified yet. Click the link in your inbox first.',
+        eduVerifyFailed: 'Something went wrong. Try again.'
+      }
     }
   }
 })

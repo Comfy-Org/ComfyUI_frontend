@@ -4111,7 +4111,16 @@
     "workspaceNotSubscribed": "Este espacio de trabajo no tiene una suscripción",
     "yearly": "Anual",
     "yearlyCreditsLabel": "Total de créditos anuales",
-    "yourPlanIncludes": "Tu plan incluye:"
+    "yourPlanIncludes": "Tu plan incluye:",
+    "eduPromoHeader": "Descuento educativo: hasta {percent}% de descuento para estudiantes y educadores verificados",
+    "eduVerifyTitle": "¿Estudiante o educador?",
+    "eduVerifyHeader": "Verifica tu correo para desbloquear hasta {percent}% de descuento educativo",
+    "eduVerifySend": "Enviar correo de verificación",
+    "eduVerifySentHint": "Revisa tu bandeja de entrada y vuelve",
+    "eduVerifyConfirm": "Ya verifiqué",
+    "eduVerifySendFailed": "No se pudo enviar el correo. Inténtalo de nuevo.",
+    "eduVerifyStillUnverified": "Aún sin verificar. Primero haz clic en el enlace de tu correo.",
+    "eduVerifyFailed": "Algo salió mal. Inténtalo de nuevo."
   },
   "tabMenu": {
     "addToBookmarks": "Agregar a marcadores",

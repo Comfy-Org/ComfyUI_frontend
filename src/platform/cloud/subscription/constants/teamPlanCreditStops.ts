@@ -100,11 +100,12 @@ export function mapApiTeamCreditStops(
  */
 export function getStopDiscountedMonthlyUsd(
   stop: Pick<CreditStop, 'usd' | 'discountPercentYearly'>,
-  cycle: 'monthly' | 'yearly'
+  cycle: 'monthly' | 'yearly',
+  extraDiscountPercent = 0
 ): number {
   const percent =
-    cycle === 'monthly'
+    (cycle === 'monthly'
       ? stop.discountPercentYearly / 2
-      : stop.discountPercentYearly
+      : stop.discountPercentYearly) + extraDiscountPercent
   return Math.round(stop.usd * (1 - percent / 100))
 }

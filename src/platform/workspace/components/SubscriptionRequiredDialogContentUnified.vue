@@ -33,6 +33,16 @@
       <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
         {{ $t('subscription.descriptionWorkspace') }}
       </h2>
+      <div
+        v-if="isEduPricingActive"
+        class="flex items-center rounded-full bg-primary-background px-3 py-1 text-sm font-medium text-white"
+      >
+        {{
+          $t('subscription.eduPromoHeader', {
+            percent: EDU_MAX_DISCOUNT_PERCENT
+          })
+        }}
+      </div>
     </div>
 
     <div v-if="reason === 'out_of_credits'" class="text-center">
@@ -114,6 +124,8 @@ import { useEventListener } from '@vueuse/core'
 import { onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useEduPricing } from '@/platform/cloud/subscription/composables/useEduPricing'
+import { EDU_MAX_DISCOUNT_PERCENT } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
@@ -156,6 +168,8 @@ const {
   handleTeamSubscribe,
   handleResubscribe
 } = useSubscriptionCheckout(emit, reason)
+
+const { isEduPricingActive } = useEduPricing()
 
 onMounted(() => {
   if (!initialCheckout) return
