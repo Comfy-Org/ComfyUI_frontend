@@ -345,13 +345,16 @@ export function useViewportNodeVirtualization(options: {
     { flush: 'sync' }
   )
 
+  const { pause, resume } = useRafFn(() => refresh(), { immediate: true })
   watch(
     () => toValue(options.enabled),
-    () => refresh(true),
-    { flush: 'sync' }
+    (enabled) => {
+      if (enabled) resume()
+      else pause()
+      refresh(true)
+    },
+    { flush: 'sync', immediate: true }
   )
-
-  useRafFn(() => refresh(), { immediate: true })
 
   return {
     renderNodes: shallowReadonly(renderNodes),
