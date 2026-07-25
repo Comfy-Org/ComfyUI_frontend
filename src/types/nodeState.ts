@@ -1,4 +1,8 @@
-import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeFlags,
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/interfaces'
 import type {
   LGraphEventMode,
   RenderShape,
@@ -31,4 +35,18 @@ export interface NodeState {
   title: string
   titleMode?: TitleMode
   type: string
+}
+
+/**
+ * A node's slot arrays, held by {@link useNodeDataStore} so the renderer can ask
+ * what slots a node has without resolving the live {@link LGraphNode}. These are
+ * the node's own `shallowReactive` arrays, by reference — not a copy — so array
+ * order is the slot order and there is nothing to keep in step.
+ *
+ * The slots themselves are still class instances (`NodeInputSlot` /
+ * `NodeOutputSlot`); extracting their data into plain rows is a later phase.
+ */
+export interface NodeSlotArrays {
+  inputs: INodeInputSlot[]
+  outputs: INodeOutputSlot[]
 }

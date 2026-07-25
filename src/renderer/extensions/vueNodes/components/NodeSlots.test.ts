@@ -243,6 +243,41 @@ function expectSlotError(
 }
 
 describe('NodeSlots.vue', () => {
+  it('renders slots from nodeDataStore without resolving the live node', async () => {
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+
+    const graph = new LGraph()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
+    canvasStore.currentGraph = graph
+    const node = new LGraphNode('Target')
+    node.id = toNodeId(7)
+    node.addInput('model', 'MODEL')
+    node.addOutput('latent', 'LATENT')
+    graph.add(node)
+
+    // No app.rootGraph spy: the component must not need a graph traversal.
+    const { container } = renderSlots(
+      makeNodeData({
+        id: toNodeId(7),
+        graphId: graph.id,
+        inputs: undefined,
+        outputs: undefined
+      }),
+      defaultSlotStubs,
+      pinia
+    )
+
+    expect(getRenderedSlotElement(container, 'model')).toBeTruthy()
+    expect(getRenderedSlotElement(container, 'latent')).toBeTruthy()
+
+    node.addInput('clip', 'CLIP')
+    await nextTick()
+
+    expect(getRenderedSlotIndex(container, 'clip')).toBe(1)
+  })
+
   it('filters out inputs with widget property and maps indexes correctly', () => {
     const inputs = [
       createMockNodeInputSlot({ name: 'objNoWidget', type: 'number' }),

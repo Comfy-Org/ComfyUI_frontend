@@ -290,6 +290,7 @@ import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
@@ -409,10 +410,17 @@ const nodeOpacity = computed(() => {
   return globalOpacity
 })
 
+const nodeDataStore = useNodeDataStore()
+const storedSlots = computed(() => {
+  const rootGraphId = canvasStore.rootGraphId
+  return rootGraphId
+    ? nodeDataStore.getNodeSlots(rootGraphId, nodeId.value)
+    : undefined
+})
 const hasInputs = computed(
-  () => nonWidgetedInputs(lgraphNode.value?.inputs).length > 0
+  () => nonWidgetedInputs(storedSlots.value?.inputs).length > 0
 )
-const hasOutputs = computed((): boolean => !!lgraphNode.value?.outputs?.length)
+const hasOutputs = computed((): boolean => !!storedSlots.value?.outputs?.length)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
@@ -775,11 +783,10 @@ const showAdvancedState = computed({
   }
 })
 
-const hasVideoInput = computed(() => {
-  return (
-    lgraphNode.value?.inputs?.some((input) => input.type === 'VIDEO') ?? false
-  )
-})
+const hasVideoInput = computed(
+  () =>
+    storedSlots.value?.inputs.some((input) => input.type === 'VIDEO') ?? false
+)
 
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]

@@ -54,7 +54,7 @@ mirror (the hard constraint of this phase):
 | widget values / order   | `widgetValueStore`                                                                                                                                            |
 | input link connectivity | `linkStore` (`getInputSlotLink` / `isInputSlotConnected`)                                                                                                     |
 | `badges`                | derived on read by `nodeBadges()` in `src/systems/badgeSystem.ts`; the badge store was shipped and then deleted — see [Node Badge Store](node-badge-store.md) |
-| `inputs` / `outputs`    | deferred — see Decision 3                                                                                                                                     |
+| `inputs` / `outputs`    | `useNodeDataStore` sibling map, by reference (the arrays themselves) — see Decision 3                                                                         |
 
 `VueNodeData.selected` and `.executing` are dead fields today (no
 production consumer reads them); they are deleted, not migrated.
@@ -75,6 +75,14 @@ reactive from construction whether or not the renderer is mounted, and
 deleted. Shallow is deliberate: nested values (`boundingRect`, `_widget`,
 `pos`) stay raw so identity comparisons and `NodeInputSlot`'s `WeakMap`
 index cache keep working.
+
+The slot _arrays_ are held in a `useNodeDataStore` sibling map keyed by
+`NodeId`, by reference — the node's own arrays, not a copy — so the
+renderer can ask what slots a node has without resolving the node. There
+is no per-slot key and no slot id: index is a property of the containing
+array, not of the slot, and ~25 sites permute it, so an index-keyed store
+would need re-keying on every reorder. See ecs-migration-plan.md 2f for
+the full argument and the `linkStore` precedent it rejects.
 
 What this phase does remove is the last `inputs[].link` dependency: the
 three remaining readers (`nodeDataUtils.linkedWidgetedInputs` used by
@@ -102,8 +110,8 @@ directly; Vue tracks the store state, so the per-property
 `node:property:changed` → snapshot-rewrite handlers in
 `useGraphNodeManager` are deleted wholesale.
 
-Slot arrays reach `NodeSlots` via the existing live-node access
-(`getNodeByLocatorId`), not through `NodeState`.
+Slot arrays reach `NodeSlots` from the store's sibling slot map (Decision 3),
+not through `NodeState` and not via `getNodeByLocatorId`.
 
 `LGraphNodePreview` constructs a synthetic `NodeState` (as it does a
 synthetic `VueNodeData` today). `AppModeWidgetList` stops calling

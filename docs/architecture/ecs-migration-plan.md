@@ -275,14 +275,48 @@ because `slot.label = …` is a tracked write.
 a proxy get trap. Benchmark against the Phase 4 "Render hot-path performance
 gate" below before assuming this is free.
 
-**Still class-side:** slot _identity_ has no store. `NodeSlots` reads the live
-node's arrays via `getNodeByLocatorId`. Extracting a `SlotState`
-(`nodeId`, `index`, `kind`, `name`, `localizedName?`, `label?`, `type`,
-`shape?`, `dir?`, `widgetName?`) keyed by the existing
-`getSlotKey(nodeId, index, isInput)` is the remaining work — position already
-lives in `layoutStore` and connectivity in `linkStore`, so identity is what's
-left. It also gates the badge system, which still needs `node.inputs` and
-`node.constructor.nodeData.api_node`.
+### 2f. Slot arrays in nodeDataStore ✅ Shipped
+
+The renderer can ask what slots a node has without resolving the live
+`LGraphNode`. `nodeDataStore` gains a sibling map beside `graphNodeStates`,
+holding each node's `{ inputs, outputs }` **by reference** — the node's own
+arrays, not a copy — registered at the same `LGraph.add` / `LGraph.remove`
+chokepoint as `NodeState`. This is the shape `widgetValueStore` already uses for
+widget order: order data beside record data in one store, rather than a new store
+per concern.
+
+Because the arrays are the node's, array order _is_ slot order and there is
+nothing to keep in step. `NodeSlots.vue` no longer calls `getNodeByLocatorId` or
+touches `app.rootGraph`; `LGraphNode.vue`'s `hasInputs` / `hasOutputs` /
+`hasVideoInput` read the store too.
+
+**Why no keyed `SlotState` and no slot ids.** The draft above proposed
+`getSlotKey(nodeId, index, isInput)`. That is not viable: slot index is a
+property of the containing array, not of the slot, and ~25 sites permute it —
+including `reorderSubgraphInputs` (`subgraphUtils.ts`), a _pure permutation_ with
+no add or remove, reachable by dragging subgraph inputs in the right panel. An
+index-keyed store must re-key on every one of them. `linkStore` shows the price:
+it survives reorder only via six separate mechanisms, one of which
+(`realignInputLinkSlots`, `linkDeduplication.ts`) is a load-time
+corruption-repair pass added for the reorder case that was originally missed
+(#3348). A link's key is derived from fields the link genuinely owns; a slot's
+index is not slot state, so keying on it would be a mirror.
+
+Holding the array instead makes the question moot — no key, no ids, no re-keying,
+no order sync. It rests on one Vue guarantee, which is pinned by test: `reactive()`
+returns an already-`shallowReactive` value **unchanged**, so putting the node's
+array in a reactive store record does not swap its identity or deep-wrap the
+slots inside it. A _plain_ array in the same position would be wrapped — which is
+why the arrays must stay `shallowReactive`.
+
+**Still deferred:** slot data is still class instances with behaviour
+(`draw()`, `isValidTarget()`, `renderingColor()`). Splitting plain `SlotState`
+rows out of `NodeInputSlot` / `NodeOutputSlot` — ADR 0008's "plain data
+components" — is its own phase, and it needs a real consumer first: interaction
+code (`useSlotLinkInteraction`) hands the live slot instance to litegraph's
+`RenderLink`, and the badge system needs `node.constructor.nodeData.api_node`
+and `isSubgraphNode()` alongside the slots, so slot rows alone would not unblock
+it.
 
 ### Store sunset criteria (applies to every Phase 2 concern)
 

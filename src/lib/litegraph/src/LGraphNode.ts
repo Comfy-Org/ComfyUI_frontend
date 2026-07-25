@@ -4346,11 +4346,12 @@ export class LGraphNode
 }
 
 /**
- * Registers a node's shell state into {@link useNodeDataStore} and adopts the
- * store's reactive proxy as {@link LGraphNode._state}, so the store and the node
- * always agree and field writes are tracked. Call this at every site that adds a
- * node to a graph. Sets both ids: `_graphId` (root bucket key + ownership marker)
- * and `_state.graphId` (owning (sub)graph, for renderer partitioning).
+ * Registers a node's shell state and slot arrays into {@link useNodeDataStore}
+ * and adopts the store's reactive proxy as {@link LGraphNode._state}, so the
+ * store and the node always agree and field writes are tracked. Call this at
+ * every site that adds a node to a graph. Sets both ids: `_graphId` (root bucket
+ * key + ownership marker) and `_state.graphId` (owning (sub)graph, for renderer
+ * partitioning).
  * @param graph The graph (or subgraph) the node belongs to
  * @param node The node to register
  */
@@ -4360,22 +4361,32 @@ export function registerNodeState(
 ): void {
   const rootGraphId = graph.rootGraph.id
   node._state.graphId = graph.id
-  const registered = useNodeDataStore().registerNode(rootGraphId, node._state)
-  if (registered !== node._state) {
-    node._state = registered
-    node._graphId = rootGraphId
-  }
+
+  const store = useNodeDataStore()
+  const registered = store.registerNode(rootGraphId, node._state)
+  if (!registered) return
+
+  node._state = registered
+  node._graphId = rootGraphId
+  // By reference: the node keeps mutating these arrays in place.
+  store.registerNodeSlots(rootGraphId, node.id, {
+    inputs: node.inputs,
+    outputs: node.outputs
+  })
 }
 
 /**
- * Removes a node's shell state from {@link useNodeDataStore} and detaches the
- * node. No-op for nodes that never won registration ({@link LGraphNode._graphId}
- * unset), so a collision loser cannot remove the winner's entry.
+ * Removes a node's shell state and slot arrays from {@link useNodeDataStore} and
+ * detaches the node. No-op for nodes that never won registration
+ * ({@link LGraphNode._graphId} unset), so a collision loser cannot remove the
+ * winner's entry.
  * @param node The node to unregister
  */
 export function unregisterNodeState(node: LGraphNode): void {
   if (!node._graphId) return
-  useNodeDataStore().deleteNode(node._graphId, node._state)
+  const store = useNodeDataStore()
+  store.deleteNodeSlots(node._graphId, node.id)
+  store.deleteNode(node._graphId, node._state)
   node._graphId = undefined
 }
 

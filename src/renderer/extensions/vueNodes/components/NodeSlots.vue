@@ -51,13 +51,12 @@ import {
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
-import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import type { NodeState } from '@/types/nodeState'
 import {
   getLocatorIdFromNodeData,
-  getNodeByLocatorId,
   nodeLocatorFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -82,21 +81,21 @@ const {
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
 const linkStore = useLinkStore()
+const nodeDataStore = useNodeDataStore()
 const nodeLocatorId = computed(() =>
   getLocatorIdFromNodeData(
     nodeLocatorFromState(nodeData, canvasStore.rootGraphId)
   )
 )
 
-const liveNode = computed(() => {
-  const locatorId = nodeLocatorId.value
-  const rootGraph = app.isGraphReady ? app.rootGraph : null
-  return locatorId && rootGraph
-    ? getNodeByLocatorId(rootGraph, locatorId)
-    : null
+const storedSlots = computed(() => {
+  const rootGraphId = canvasStore.rootGraphId
+  return rootGraphId
+    ? nodeDataStore.getNodeSlots(rootGraphId, nodeData.id)
+    : undefined
 })
-const liveInputs = computed(() => inputs ?? liveNode.value?.inputs)
-const liveOutputs = computed(() => outputs ?? liveNode.value?.outputs ?? [])
+const liveInputs = computed(() => inputs ?? storedSlots.value?.inputs)
+const liveOutputs = computed(() => outputs ?? storedSlots.value?.outputs ?? [])
 
 const linkedWidgetInputs = computed(() =>
   unified && canvasStore.rootGraphId
