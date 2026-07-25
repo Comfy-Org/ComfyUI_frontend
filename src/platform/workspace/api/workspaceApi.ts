@@ -4,14 +4,15 @@ import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRe
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
-  WorkspaceInviteId
+  WorkspaceInviteId,
+  WorkspaceRole
 } from '@/platform/workspace/workspaceTypes'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
-export type WorkspaceRole = 'owner' | 'member'
+export type { WorkspaceRole }
 export type BillingRail = 'legacy_stripe' | 'stripe'
 
 interface Workspace {

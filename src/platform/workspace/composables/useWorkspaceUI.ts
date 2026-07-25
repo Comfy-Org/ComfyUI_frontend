@@ -130,6 +130,7 @@ function getUIConfig(
     }
   }
 
+  const isOwner = role === 'owner'
   return {
     showMembersList: true,
     showPendingTab: true,
@@ -138,10 +139,11 @@ function getUIConfig(
     membersGridCols: 'grid-cols-[50%_40%_10%]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
     headerGridCols: 'grid-cols-[50%_40%_10%]',
-    showEditWorkspaceMenuItem: true,
-    workspaceMenuAction: 'delete',
-    workspaceMenuDisabledTooltip:
-      'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
+    showEditWorkspaceMenuItem: isOwner,
+    workspaceMenuAction: isOwner ? 'delete' : null,
+    workspaceMenuDisabledTooltip: isOwner
+      ? 'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
+      : null
   }
 }
 
