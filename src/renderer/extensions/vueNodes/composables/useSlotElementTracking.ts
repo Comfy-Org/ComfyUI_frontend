@@ -125,7 +125,11 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
     (entry) => entry.el?.isConnected
   )
   const closestNode = connectedEntry?.el?.closest('[data-node-id]')
-  const nodeEl = closestNode instanceof HTMLElement ? closestNode : null
+  const nodeEl =
+    closestNode instanceof HTMLElement &&
+    closestNode.dataset.nodeId === String(nodeId)
+      ? closestNode
+      : null
   const nodeRect = nodeEl?.getBoundingClientRect()
 
   const effectiveScale =

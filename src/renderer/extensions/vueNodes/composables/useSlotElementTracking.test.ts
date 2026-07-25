@@ -53,10 +53,11 @@ function createTestSetup(type: 'input' | 'output') {
 
 function createSlotElement(
   collapsed = false,
-  rects?: { node?: DOMRect; slot?: DOMRect }
+  rects?: { node?: DOMRect; slot?: DOMRect },
+  containerNodeId: string = NODE_ID
 ): HTMLElement {
   const container = document.createElement('div')
-  container.dataset.nodeId = NODE_ID
+  container.dataset.nodeId = containerNodeId
   if (collapsed) container.dataset.collapsed = ''
   container.getBoundingClientRect = () =>
     rects?.node ??
@@ -231,6 +232,32 @@ describe('useSlotElementTracking', () => {
 
     syncNodeSlotLayoutsFromDOM(NODE_ID)
 
+    expect(layoutStore.getSlotLayout(slotKey)).toEqual(staleLayout)
+  })
+
+  it('ignores slot elements owned by another node', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const slotEl = createSlotElement(false, undefined, 'other-node')
+    const staleLayout: SlotLayout = {
+      nodeId: NODE_ID,
+      index: SLOT_INDEX,
+      type: 'input',
+      position: { x: 10, y: 20 },
+      bounds: { x: 6, y: 16, width: 8, height: 8 }
+    }
+    layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout: staleLayout }])
+
+    const node = useNodeSlotRegistryStore().ensureNode(NODE_ID)
+    node.slots.set(slotKey, {
+      el: slotEl,
+      index: SLOT_INDEX,
+      type: 'input',
+      cachedOffset: { x: 10, y: 20 }
+    })
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(node.slots.get(slotKey)?.cachedOffset).toEqual({ x: 10, y: 20 })
     expect(layoutStore.getSlotLayout(slotKey)).toEqual(staleLayout)
   })
 

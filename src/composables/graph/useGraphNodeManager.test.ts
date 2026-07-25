@@ -794,7 +794,11 @@ describe('Tracked slot model reconciliation', () => {
     const slotKey = getSlotKey(nodeId, index, type === 'input')
     useNodeSlotRegistryStore()
       .ensureNode(nodeId)
-      .slots.set(slotKey, { index, type })
+      .slots.set(slotKey, {
+        index,
+        type,
+        cachedOffset: { x: 10, y: 20 }
+      })
     const layout: SlotLayout = {
       nodeId,
       index,
@@ -812,20 +816,26 @@ describe('Tracked slot model reconciliation', () => {
     graph.add(node)
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    node.addInput('input', 'INT')
+    node.addInput('first input', 'INT')
+    node.addInput('second input', 'INT')
     node.addOutput('output', 'INT')
     await nextTick()
 
-    expect(vueNodeData.get(node.id)?.inputs).toHaveLength(1)
+    expect(vueNodeData.get(node.id)?.inputs).toHaveLength(2)
     expect(vueNodeData.get(node.id)?.outputs).toHaveLength(1)
 
-    const inputKey = trackSlot(node.id, 'input')
+    const inputKey0 = trackSlot(node.id, 'input', 0)
+    const inputKey1 = trackSlot(node.id, 'input', 1)
     const outputKey = trackSlot(node.id, 'output')
+    const trackedNode = useNodeSlotRegistryStore().getNode(node.id)
+
     node.removeInput(0)
     node.removeOutput(0)
     await nextTick()
 
-    expect(layoutStore.getSlotLayout(inputKey)).toBeNull()
+    expect(trackedNode?.slots.get(inputKey0)?.cachedOffset).toBeUndefined()
+    expect(layoutStore.getSlotLayout(inputKey0)).not.toBeNull()
+    expect(layoutStore.getSlotLayout(inputKey1)).toBeNull()
     expect(layoutStore.getSlotLayout(outputKey)).toBeNull()
   })
 
