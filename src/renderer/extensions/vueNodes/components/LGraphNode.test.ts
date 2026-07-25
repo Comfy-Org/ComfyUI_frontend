@@ -15,6 +15,7 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
@@ -182,6 +183,7 @@ describe('LGraphNode', () => {
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
+    useAgentNodeSelectionStore(pinia).isActive = false
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) => {
       if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
@@ -233,6 +235,16 @@ describe('LGraphNode', () => {
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-node-component-outline')
+  })
+
+  it('shows a pointer cursor instead of a grab cursor while node selection mode is active', () => {
+    useAgentNodeSelectionStore(pinia).isActive = true
+
+    const { container } = renderLGraphNode({ nodeData: mockNodeData })
+    const root = getNodeRoot(container)
+
+    expect(root).toHaveClass('cursor-pointer')
+    expect(root).not.toHaveClass('cursor-grab')
   })
 
   it('should render progress indicator when executing prop is true', () => {

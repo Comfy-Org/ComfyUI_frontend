@@ -582,6 +582,9 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const cursorClass = computed(() => {
+  // Dragging is disabled while selecting nodes for the agent composer, so
+  // the node is clickable rather than grabbable.
+  if (agentNodeSelectionStore.isActive) return 'cursor-pointer'
   if (nodeData.flags?.pinned) return 'cursor-default'
   return layoutStore.isDraggingVueNodes.value
     ? 'cursor-grabbing'

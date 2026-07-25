@@ -72,6 +72,47 @@ describe('useAgentNodeSelectionStore', () => {
     expect(canvas.allow_dragnodes).toBe(false)
   })
 
+  test('enter() keeps nodes already referenced instead of resetting to canvas selection', async () => {
+    const canvasStore = useCanvasStore()
+    const { canvas, asCanvas } = createMockCanvas()
+    canvasStore.canvas = asCanvas
+
+    const store = useAgentNodeSelectionStore()
+    const node = createMockLGraphNode({ id: 1 })
+    store.enter()
+    canvas.selectedItems.add(node)
+    canvasStore.updateSelectedItems()
+    await nextTick()
+    expect(store.referencedNodes).toEqual([node])
+
+    store.exit()
+    // Simulate the canvas selection changing away from the referenced node
+    // while node selection mode is inactive (e.g. the user clicked elsewhere).
+    canvas.selectedItems.clear()
+    canvasStore.updateSelectedItems()
+
+    store.enter()
+
+    expect(store.referencedNodes).toEqual([node])
+    expect(canvas.select).toHaveBeenCalledWith(node)
+  })
+
+  test('enter() merges pre-existing canvas selection with already-referenced nodes', () => {
+    const canvasStore = useCanvasStore()
+    const { canvas, asCanvas } = createMockCanvas()
+    canvasStore.canvas = asCanvas
+
+    const store = useAgentNodeSelectionStore()
+    const chippedNode = createMockLGraphNode({ id: 1 })
+    const preSelectedNode = createMockLGraphNode({ id: 2 })
+    store.addNode(chippedNode)
+    canvas.selectedItems.add(preSelectedNode)
+
+    store.enter()
+
+    expect(store.referencedNodes).toEqual([chippedNode, preSelectedNode])
+  })
+
   test('exit() restores the previous allow_dragnodes value and clears selectOnly', () => {
     const canvasStore = useCanvasStore()
     const { canvas, asCanvas } = createMockCanvas()

@@ -1,6 +1,8 @@
-import { computed, readonly, ref } from 'vue'
+import { computed, readonly, ref, shallowReadonly } from 'vue'
+import type { Raw } from 'vue'
 
 import type { ChatStatus } from '@/components/ai-elements/prompt-input/types'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 export interface ToolCall {
   name: string
@@ -20,6 +22,9 @@ interface AgentMessage {
   role: 'user' | 'assistant'
   text: string
   attachments?: readonly MessageAttachment[]
+  // Raw keeps Vue's reactivity type utilities (e.g. ref()'s own UnwrapRef)
+  // from recursing into LGraphNode's large, circular class shape.
+  nodeReferences?: readonly Raw<LGraphNode>[]
   thinking?: boolean
   toolCalls?: readonly ToolCall[]
 }
@@ -379,7 +384,11 @@ function streamReply(reply: string) {
   }, TOOL_CALLS_DELAY_MS)
 }
 
-function send(text?: string, files: File[] = []) {
+function send(
+  text?: string,
+  files: File[] = [],
+  nodeReferences: readonly LGraphNode[] = []
+) {
   const content = (text ?? input.value).trim()
   if (!content || status.value !== 'ready') return
 
@@ -394,7 +403,8 @@ function send(text?: string, files: File[] = []) {
     id: nextId(),
     role: 'user',
     text: content,
-    attachments: attachments.length ? attachments : undefined
+    attachments: attachments.length ? attachments : undefined,
+    nodeReferences: nodeReferences.length ? [...nodeReferences] : undefined
   })
   input.value = ''
   status.value = 'submitted'
@@ -462,10 +472,13 @@ async function copyConversation(id: string) {
 
 export function useAgentChatPrototype() {
   return {
-    messages: readonly(messages),
+    // shallowReadonly avoids readonly()'s deep type mapping recursing into
+    // AgentMessage's LGraphNode references, which is excessively deep and
+    // incompatible with LGraphNode's actual class shape (see nodeReferences).
+    messages: shallowReadonly(messages),
     input,
     status: readonly(status),
-    chatHistory: readonly(chatHistory),
+    chatHistory: shallowReadonly(chatHistory),
     currentConversationId: readonly(currentConversationId),
     isEmpty: computed(() => messages.value.length === 0),
     send,

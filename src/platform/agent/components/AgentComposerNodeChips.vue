@@ -1,17 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useMutationObserver } from '@vueuse/core'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import Attachment from '@/components/ui/attachment/Attachment.vue'
 import AttachmentAction from '@/components/ui/attachment/AttachmentAction.vue'
 import AttachmentActions from '@/components/ui/attachment/AttachmentActions.vue'
-import AttachmentContent from '@/components/ui/attachment/AttachmentContent.vue'
-import AttachmentMedia from '@/components/ui/attachment/AttachmentMedia.vue'
-import AttachmentTitle from '@/components/ui/attachment/AttachmentTitle.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
+import AgentNodeChip from './AgentNodeChip.vue'
 
 const { nodes, graphNodes } = defineProps<{
   nodes: LGraphNode[]
@@ -21,8 +17,6 @@ const { nodes, graphNodes } = defineProps<{
 const emit = defineEmits<{
   remove: [node: LGraphNode]
 }>()
-
-const { focusNodeInstance } = useFocusNode()
 
 // Duplicates are detected against the whole graph, not just the currently
 // referenced nodes, so a lone chip whose title collides with another node
@@ -38,50 +32,63 @@ const duplicateTitleCounts = computed(() => {
 function hasDuplicateTitle(node: LGraphNode) {
   return (duplicateTitleCounts.value.get(node.title) ?? 0) > 1
 }
+
+// Newly referenced nodes are appended last, so keep the newest chip in view
+// as the list grows past the row cap below - it should reveal by scrolling
+// older rows up and out of view, not by pushing the rest of the composer down.
+const scrollEl = useTemplateRef<HTMLDivElement>('scrollEl')
+
+function scrollToNewestChip() {
+  const el = scrollEl.value
+  if (!el) return
+  el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+}
+
+useMutationObserver(scrollEl, () => requestAnimationFrame(scrollToNewestChip), {
+  childList: true
+})
+
+// The scroll-fade mask defaults to a faded bottom edge even when nothing is
+// scrollable, so it's only applied once the chips actually overflow the row
+// cap below.
+const hasOverflow = ref(false)
+
+watch(
+  () => nodes.length,
+  () => {
+    const el = scrollEl.value
+    hasOverflow.value = !!el && el.scrollHeight > el.clientHeight
+  },
+  { immediate: true, flush: 'post' }
+)
 </script>
 
 <template>
-  <div v-if="nodes.length" class="flex flex-wrap gap-1.5 px-4 pt-3">
-    <Attachment v-for="node in nodes" :key="node.id" size="xs">
-      <AttachmentMedia>
-        <i class="icon-[comfy--node] size-3.5" />
-      </AttachmentMedia>
-      <AttachmentContent class="flex items-center gap-1">
-        <Tooltip :delay-duration="500">
-          <TooltipTrigger>
-            <button
-              type="button"
-              class="focus-visible:ring-ring flex min-w-0 flex-1 items-center gap-1 rounded-sm text-left focus-visible:ring-1 focus-visible:outline-none"
-              :aria-label="$t('agent.nodeSelection.chipFocus')"
-              @click="focusNodeInstance(node)"
-            >
-              <AttachmentTitle>{{ node.title }}</AttachmentTitle>
-              <span
-                v-if="hasDuplicateTitle(node)"
-                class="shrink-0 font-mono text-muted-foreground"
-              >
-                #{{ node.id }}
-              </span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top">
-            {{ $t('agent.nodeSelection.chipFocus') }}
-          </TooltipContent>
-        </Tooltip>
-      </AttachmentContent>
+  <!-- max-h-28 caps the list at ~3 rows of xs chips; more than that scrolls -->
+  <div
+    v-if="nodes.length"
+    ref="scrollEl"
+    :class="
+      cn(
+        'flex scrollbar-custom max-h-28 flex-wrap gap-1.5 overflow-y-auto px-4 pt-3',
+        hasOverflow && 'scroll-fade'
+      )
+    "
+  >
+    <AgentNodeChip
+      v-for="node in nodes"
+      :key="node.id"
+      :node="node"
+      :show-id="hasDuplicateTitle(node)"
+    >
       <AttachmentActions>
-        <Tooltip :delay-duration="500">
-          <TooltipTrigger>
-            <AttachmentAction
-              :aria-label="$t('g.remove')"
-              @click="emit('remove', node)"
-            >
-              <i class="icon-[lucide--x]" />
-            </AttachmentAction>
-          </TooltipTrigger>
-          <TooltipContent side="top">{{ $t('g.remove') }}</TooltipContent>
-        </Tooltip>
+        <AttachmentAction
+          :aria-label="$t('g.remove')"
+          @click.stop="emit('remove', node)"
+        >
+          <i class="icon-[lucide--x]" />
+        </AttachmentAction>
       </AttachmentActions>
-    </Attachment>
+    </AgentNodeChip>
   </div>
 </template>

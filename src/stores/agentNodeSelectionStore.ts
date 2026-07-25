@@ -101,13 +101,22 @@ export const useAgentNodeSelectionStore = defineStore(
 
     function enter() {
       isActive.value = true
-      referencedNodes.value = canvasStore.selectedItems.filter(isLGraphNode)
 
       const canvas = canvasStore.canvas
-      if (!canvas) return
-      restoreAllowDragnodes = canvas.allow_dragnodes
-      canvas.allow_dragnodes = false
-      canvas.selectOnly = true
+      if (canvas) {
+        restoreAllowDragnodes = canvas.allow_dragnodes
+        canvas.allow_dragnodes = false
+        canvas.selectOnly = true
+      }
+
+      // Nodes already referenced in the composer stay referenced (and get
+      // re-selected on the canvas so they show as checked); anything the
+      // user had selected on the canvas before entering is merged in too,
+      // rather than one replacing the other.
+      const alreadySelected = canvasStore.selectedItems.filter(isLGraphNode)
+      for (const node of [...referencedNodes.value, ...alreadySelected]) {
+        addNode(node)
+      }
     }
 
     function exit() {

@@ -38,6 +38,7 @@ import AgentChatHeader from './AgentChatHeader.vue'
 import AgentChatHistory from './AgentChatHistory.vue'
 import AgentComposerAttachMenu from './AgentComposerAttachMenu.vue'
 import AgentComposerNodeChips from './AgentComposerNodeChips.vue'
+import AgentMessageNodeChips from './AgentMessageNodeChips.vue'
 import AgentComposerPlaceholderOverlay from './AgentComposerPlaceholderOverlay.vue'
 import AgentComposerWorkflowHeader from './AgentComposerWorkflowHeader.vue'
 import AgentNodeMentionPicker from './AgentNodeMentionPicker.vue'
@@ -107,8 +108,9 @@ function onSubmit() {
     stop()
     return
   }
-  send(undefined, attachments.value)
+  send(undefined, attachments.value, agentNodeSelectionStore.referencedNodes)
   attachments.value = []
+  agentNodeSelectionStore.clear()
 }
 
 function removeAttachment(index: number) {
@@ -260,12 +262,16 @@ function onNewChatFromHistory() {
             :key="message.id"
             :from="message.role"
           >
-            <!-- User messages: attachments float above the text bubble -->
+            <!-- User messages: attachments and node references float above the text bubble -->
             <template v-if="message.role === 'user'">
               <div class="flex flex-col items-end gap-2">
                 <MessageAttachments
                   v-if="message.attachments?.length"
                   :attachments="message.attachments"
+                />
+                <AgentMessageNodeChips
+                  v-if="message.nodeReferences?.length"
+                  :nodes="message.nodeReferences"
                 />
                 <MessageContent v-if="message.text">
                   <MessageResponse

@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import { useAgentChatPrototype } from './useAgentChatPrototype'
 
 describe('useAgentChatPrototype', () => {
@@ -56,6 +58,23 @@ describe('useAgentChatPrototype', () => {
 
     expect(messages.value).toHaveLength(1)
     expect(messages.value[0].text).toBe('first')
+  })
+
+  it('attaches referenced nodes to the sent message', () => {
+    const { messages, send } = useAgentChatPrototype()
+    const node = { id: '1', title: 'Save Image' } as unknown as LGraphNode
+
+    send('describe this node', [], [node])
+
+    expect(messages.value[0].nodeReferences).toEqual([node])
+  })
+
+  it('omits nodeReferences from the message when none are given', () => {
+    const { messages, send } = useAgentChatPrototype()
+
+    send('make a duck')
+
+    expect(messages.value[0].nodeReferences).toBeUndefined()
   })
 
   it('applies a suggestion to the input', () => {

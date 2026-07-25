@@ -18,6 +18,14 @@ export type AnimationOptions = {
   zoom?: number
   /** The animation easing function (curve) */
   easing?: EaseFunction
+  /**
+   * The region of the canvas element (in CSS pixels, relative to its
+   * top-left corner) to fit and center the bounds within. Defaults to the
+   * full canvas. Use this when part of the canvas is visually covered by an
+   * overlaid panel, so the bounds are centered in the area that's actually
+   * visible rather than the full canvas element.
+   */
+  viewport?: ReadOnlyRect
 }
 
 export class DragAndScale {
@@ -234,7 +242,8 @@ export class DragAndScale {
     {
       duration = 350,
       zoom = 0.75,
-      easing = EaseFunction.EASE_IN_OUT_QUAD
+      easing = EaseFunction.EASE_IN_OUT_QUAD,
+      viewport
     }: AnimationOptions = {}
   ) {
     if (!(duration > 0)) throw new RangeError('Duration must be greater than 0')
@@ -250,6 +259,7 @@ export class DragAndScale {
     const startTimestamp = performance.now()
     const cw = this.element.width / window.devicePixelRatio
     const ch = this.element.height / window.devicePixelRatio
+    const [vx, vy, vw, vh] = viewport ?? [0, 0, cw, ch]
     const startX = this.offset[0]
     const startY = this.offset[1]
     const startX2 = startX - cw / this.scale
@@ -258,8 +268,8 @@ export class DragAndScale {
     let targetScale = startScale
 
     if (zoom > 0) {
-      const targetScaleX = (zoom * cw) / Math.max(bounds[2], 300)
-      const targetScaleY = (zoom * ch) / Math.max(bounds[3], 300)
+      const targetScaleX = (zoom * vw) / Math.max(bounds[2], 300)
+      const targetScaleY = (zoom * vh) / Math.max(bounds[3], 300)
 
       // Choose the smaller scale to ensure the node fits into the viewport
       // Ensure we don't go over the max scale
@@ -268,8 +278,13 @@ export class DragAndScale {
     const scaledWidth = cw / targetScale
     const scaledHeight = ch / targetScale
 
-    const targetX = -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5
-    const targetY = -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5
+    // Center the bounds within the given viewport (defaults to the full
+    // canvas), while keeping the corner spacing tied to the full canvas size
+    // so the scale calculated during the animation loop stays correct.
+    const targetCenterX = vx + vw * 0.5
+    const targetCenterY = vy + vh * 0.5
+    const targetX = targetCenterX / targetScale - bounds[0] - bounds[2] * 0.5
+    const targetY = targetCenterY / targetScale - bounds[1] - bounds[3] * 0.5
     const targetX2 = targetX - scaledWidth
     const targetY2 = targetY - scaledHeight
 

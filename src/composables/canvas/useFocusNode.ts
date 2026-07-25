@@ -1,12 +1,15 @@
 import { nextTick } from 'vue'
 
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type {
   LGraph,
+  LGraphCanvas,
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { useAgentPanelStore } from '@/platform/agent/stores/agentPanelStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 async function navigateToGraph(targetGraph: LGraph) {
@@ -29,15 +32,31 @@ async function navigateToGraph(targetGraph: LGraph) {
   }
 }
 
+/**
+ * The region of the canvas that's actually visible, excluding the width
+ * covered by the agent panel overlay. Centering on this instead of the full
+ * canvas avoids landing nodes behind the panel when it's open.
+ */
+function visibleCanvasViewport(canvas: LGraphCanvas): ReadOnlyRect {
+  const agentPanelStore = useAgentPanelStore()
+  const cw = canvas.canvas.width / window.devicePixelRatio
+  const ch = canvas.canvas.height / window.devicePixelRatio
+  const coveredWidth = agentPanelStore.isOpen ? agentPanelStore.width : 0
+  return [0, 0, Math.max(cw - coveredWidth, 0), ch]
+}
+
 export function useFocusNode() {
   const canvasStore = useCanvasStore()
 
   /* Focus a known node instance, navigating to its owning graph first. */
   async function focusNodeInstance(node: LGraphNode) {
-    if (!canvasStore.canvas || !node.graph) return
+    const canvas = canvasStore.canvas
+    if (!canvas || !node.graph) return
 
     await navigateToGraph(node.graph as LGraph)
-    canvasStore.canvas?.animateToBounds(node.boundingRect)
+    canvas.animateToBounds(node.boundingRect, {
+      viewport: visibleCanvasViewport(canvas)
+    })
   }
 
   /* Locate and focus a node on the canvas by its execution ID. */
