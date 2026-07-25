@@ -30,7 +30,8 @@
       )
     "
     :style="{
-      '--min-node-width': `${MIN_NODE_WIDTH}px`,
+      '--min-node-width': `${minNodeWidth}px`,
+      maxWidth: collapsedMaxWidth,
       transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
       zIndex: zIndex,
       opacity: nodeOpacity
@@ -83,12 +84,13 @@
       "
       :style="{
         '--component-node-background': applyLightThemeColor(nodeData.bgcolor),
-        backgroundColor: applyLightThemeColor(nodeData?.color)
+        backgroundColor: applyLightThemeColor(nodeData?.color),
+        maxWidth: collapsedMaxWidth
       }"
     >
       <div
         v-if="displayHeader"
-        class="relative flex flex-col items-center justify-center"
+        class="relative z-10 flex flex-col items-center justify-center"
       >
         <template v-if="isCollapsed">
           <SlotConnectionDot
@@ -426,6 +428,18 @@ onErrorCaptured((error) => {
 })
 
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
+const minNodeWidth = computed(() =>
+  Math.max(
+    0,
+    Math.min(
+      size.value.width,
+      isCollapsed.value ? LiteGraph.NODE_COLLAPSED_WIDTH : MIN_NODE_WIDTH
+    )
+  )
+)
+const collapsedMaxWidth = computed(() =>
+  isCollapsed.value ? `${Math.max(0, size.value.width)}px` : undefined
+)
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
@@ -548,14 +562,23 @@ const handleResizePointerDown = (
 watch(isCollapsed, (collapsed) => {
   const element = nodeContainerRef.value
   if (!element) return
-  const [from, to] = collapsed ? ['', '-x'] : ['-x', '']
-  const currentWidth = element.style.getPropertyValue(`--node-width${from}`)
-  element.style.setProperty(`--node-width${to}`, currentWidth)
-  element.style.setProperty(`--node-width${from}`, '')
-
-  const currentHeight = element.style.getPropertyValue(`--node-height${from}`)
-  element.style.setProperty(`--node-height${to}`, currentHeight)
-  element.style.setProperty(`--node-height${from}`, '')
+  if (collapsed) {
+    element.style.setProperty('--node-width-x', `${size.value.width}px`)
+    element.style.setProperty(
+      '--node-height-x',
+      `${size.value.height + LiteGraph.NODE_TITLE_HEIGHT}px`
+    )
+    element.style.setProperty('--node-width', '')
+    element.style.setProperty('--node-height', '')
+  } else {
+    element.style.setProperty('--node-width', `${size.value.width}px`)
+    element.style.setProperty(
+      '--node-height',
+      `${size.value.height + LiteGraph.NODE_TITLE_HEIGHT}px`
+    )
+    element.style.setProperty('--node-width-x', '')
+    element.style.setProperty('--node-height-x', '')
+  }
 })
 
 // Check if node has custom content (like image/video outputs)

@@ -5,6 +5,7 @@
  * Integrates with the layout system to ensure proper visual ordering.
  */
 import type { NodeId } from '@/types/nodeId'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -26,6 +27,10 @@ export function useNodeZIndex(options: NodeZIndexOptions = {}) {
    * @param source - Optional source override
    */
   function bringNodeToFront(nodeId: NodeId, source?: LayoutSource) {
+    const canvas = useCanvasStore().canvas
+    const node = canvas?.graph?.getNodeById(nodeId)
+    if (canvas && node) canvas.bringToFront(node)
+
     layoutMutations.setSource(source ?? layoutSource)
     layoutMutations.bringNodeToFront(nodeId)
   }

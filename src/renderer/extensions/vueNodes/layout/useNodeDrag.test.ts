@@ -17,7 +17,10 @@ const testState = vi.hoisted(() => {
   return {
     selectedNodeIds: placeholder<Ref<Set<NodeId>>>(null),
     selectedItems: placeholder<Ref<unknown[]>>(null),
-    nodeLayouts: new Map<string, Pick<NodeLayout, 'position' | 'size'>>(),
+    nodeLayouts: new Map<
+      string,
+      Pick<NodeLayout, 'position' | 'size' | 'bounds'>
+    >(),
     mutationFns: {
       setSource: vi.fn(),
       moveNode: vi.fn(),
@@ -163,11 +166,13 @@ describe('useNodeDrag', () => {
     testState.selectedNodeIds.value = new Set([node1, toNodeId('2')])
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 100 },
-      size: { width: 200, height: 120 }
+      size: { width: 200, height: 120 },
+      bounds: { x: 100, y: 100, width: 200, height: 120 }
     })
     testState.nodeLayouts.set('2', {
       position: { x: 200, y: 180 },
-      size: { width: 210, height: 130 }
+      size: { width: 210, height: 130 },
+      bounds: { x: 200, y: 180, width: 210, height: 130 }
     })
 
     const { startDrag, handleDrag } = useNodeDrag()
@@ -188,7 +193,8 @@ describe('useNodeDrag', () => {
     testState.selectedNodeIds.value = new Set([node1])
     testState.nodeLayouts.set('1', {
       position: { x: 50, y: 80 },
-      size: { width: 180, height: 110 }
+      size: { width: 180, height: 110 },
+      bounds: { x: 50, y: 80, width: 180, height: 110 }
     })
 
     const { startDrag, handleDrag } = useNodeDrag()
@@ -208,7 +214,8 @@ describe('useNodeDrag', () => {
     testState.selectedNodeIds.value = new Set([node1])
     testState.nodeLayouts.set('1', {
       position: { x: 50, y: 80 },
-      size: { width: 180, height: 110 }
+      size: { width: 180, height: 110 },
+      bounds: { x: 50, y: 80, width: 80, height: 10 }
     })
     testState.nodeSnap.shouldSnap.mockReturnValue(true)
     testState.nodeSnap.applySnapToPosition.mockImplementation(({ x, y }) => ({
@@ -231,9 +238,10 @@ describe('useNodeDrag', () => {
         bounds: {
           x: 55,
           y: 87,
-          width: 180,
-          height: 110
-        }
+          width: 80,
+          height: 10
+        },
+        preserveSize: true
       }
     ])
   })
@@ -246,11 +254,13 @@ describe('useNodeDrag auto-pan', () => {
     testState.nodeLayouts.clear()
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 200 },
-      size: { width: 200, height: 100 }
+      size: { width: 200, height: 100 },
+      bounds: { x: 100, y: 200, width: 200, height: 100 }
     })
     testState.nodeLayouts.set('2', {
       position: { x: 300, y: 400 },
-      size: { width: 200, height: 100 }
+      size: { width: 200, height: 100 },
+      bounds: { x: 300, y: 400, width: 200, height: 100 }
     })
     testState.mutationFns.setSource.mockReset()
     testState.mutationFns.moveNode.mockReset()

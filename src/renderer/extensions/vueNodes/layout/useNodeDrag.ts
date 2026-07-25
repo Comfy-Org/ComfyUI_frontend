@@ -234,9 +234,10 @@ function useNodeDragIndividual() {
             bounds: {
               x: snappedPos.x,
               y: snappedPos.y,
-              width: currentLayout.size.width,
-              height: currentLayout.size.height
-            }
+              width: currentLayout.bounds.width,
+              height: currentLayout.bounds.height
+            },
+            preserveSize: true
           })
         }
       }
@@ -263,9 +264,10 @@ function useNodeDragIndividual() {
                 bounds: {
                   x: snappedPos.x,
                   y: snappedPos.y,
-                  width: nodeLayout.size.width,
-                  height: nodeLayout.size.height
-                }
+                  width: nodeLayout.bounds.width,
+                  height: nodeLayout.bounds.height
+                },
+                preserveSize: true
               })
             }
           }

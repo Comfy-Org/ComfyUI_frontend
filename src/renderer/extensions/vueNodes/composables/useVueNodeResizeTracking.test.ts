@@ -43,6 +43,13 @@ const resizeObserverState = vi.hoisted(() => {
 const testState = vi.hoisted(() => ({
   linearMode: false,
   nodeLayouts: new Map<NodeId, NodeLayout>(),
+  graphNodes: new Map<
+    NodeId,
+    {
+      size: [number, number]
+      _collapsed_width?: number
+    }
+  >(),
   batchUpdateNodeBounds: vi.fn(),
   setSource: vi.fn(),
   syncNodeSlotLayoutsFromDOM: vi.fn(),
@@ -56,7 +63,12 @@ vi.mock('@vueuse/core', () => ({
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
-    linearMode: testState.linearMode
+    linearMode: testState.linearMode,
+    canvas: {
+      graph: {
+        getNodeById: (nodeId: NodeId) => testState.graphNodes.get(nodeId)
+      }
+    }
   })
 }))
 
@@ -160,6 +172,7 @@ describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
     testState.linearMode = false
     testState.nodeLayouts.clear()
+    testState.graphNodes.clear()
     testState.batchUpdateNodeBounds.mockReset()
     testState.setSource.mockReset()
     testState.syncNodeSlotLayoutsFromDOM.mockReset()
@@ -286,6 +299,11 @@ describe('useVueNodeResizeTracking', () => {
 
     // Seed with larger expanded size so the collapsed write is a real change
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+    const graphNode: {
+      size: [number, number]
+      _collapsed_width?: number
+    } = { size: [240, 150] }
+    testState.graphNodes.set(nodeId, graphNode)
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
@@ -298,9 +316,11 @@ describe('useVueNodeResizeTracking', () => {
           y: 200 + titleHeight,
           width: collapsedWidth,
           height: collapsedHeight
-        }
+        },
+        preserveSize: true
       }
     ])
+    expect(graphNode._collapsed_width).toBe(collapsedWidth)
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 

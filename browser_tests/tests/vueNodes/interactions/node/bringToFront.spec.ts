@@ -91,6 +91,14 @@ test.describe(
         })
         .toBeGreaterThan(0)
 
+      const order = await comfyPage.page.evaluate(() => {
+        const graph = window.app!.canvas.graph!
+        const lastNodeId = String(graph._nodes.at(-1)?.id)
+        const serialisedLastNodeId = String(graph.serialize().nodes.at(-1)?.id)
+        return { lastNodeId, serialisedLastNodeId }
+      })
+      expect(order.serialisedLastNodeId).toBe(order.lastNodeId)
+
       // Screenshot showing CLIP now on top
       await expect(comfyPage.canvas).toHaveScreenshot(
         'bring-to-front-overlapped-after.png'

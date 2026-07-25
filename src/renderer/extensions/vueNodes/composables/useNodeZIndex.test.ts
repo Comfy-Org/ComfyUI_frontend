@@ -11,10 +11,28 @@ vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
 }))
 
 const mockedUseLayoutMutations = vi.mocked(useLayoutMutations)
+const zIndexTestState = vi.hoisted(() => {
+  const graphNode = {}
+  return {
+    graphNode,
+    bringToFront: vi.fn(),
+    getNodeById: vi.fn(() => graphNode)
+  }
+})
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({
+    canvas: {
+      graph: { getNodeById: zIndexTestState.getNodeById },
+      bringToFront: zIndexTestState.bringToFront
+    }
+  })
+}))
 
 describe('useNodeZIndex', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    zIndexTestState.getNodeById.mockReturnValue(zIndexTestState.graphNode)
   })
 
   describe('bringNodeToFront', () => {
@@ -35,6 +53,10 @@ describe('useNodeZIndex', () => {
 
       expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Vue)
       expect(mockBringNodeToFront).toHaveBeenCalledWith('node1')
+      expect(zIndexTestState.getNodeById).toHaveBeenCalledWith('node1')
+      expect(zIndexTestState.bringToFront).toHaveBeenCalledWith(
+        zIndexTestState.graphNode
+      )
     })
 
     it('should bring node to front with custom source', () => {

@@ -678,13 +678,23 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
     })
 
-    test('Vue mode uses this.size directly for collapsed nodes', () => {
+    test('Vue mode uses cached collapsed width without replacing model size', () => {
       LiteGraph.vueNodesMode = true
+      node._collapsed_width = 90
       node.measure(out)
 
-      // Vue mode collapsed takes the expanded-style branch
+      expect(out[2]).toBe(90)
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+      expect(Array.from(node.size)).toEqual([150, 10])
+    })
+
+    test('Vue mode caps cached collapsed width to expanded model width', () => {
+      LiteGraph.vueNodesMode = true
+      node._collapsed_width = 220
+      node.measure(out)
+
       expect(out[2]).toBe(150)
-      expect(out[3]).toBe(10 + LiteGraph.NODE_TITLE_HEIGHT)
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
     })
 
     test('Vue mode expanded behaves identically to legacy expanded', () => {

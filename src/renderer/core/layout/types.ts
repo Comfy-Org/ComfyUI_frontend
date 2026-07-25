@@ -40,6 +40,8 @@ export interface Bounds {
 export interface NodeBoundsUpdate {
   nodeId: NodeId
   bounds: Bounds
+  /** Keep the node's model size while updating its rendered bounds. */
+  preserveSize?: boolean
 }
 
 export type { LinkId }
@@ -152,6 +154,8 @@ export interface ResizeNodeOperation extends NodeOpBase {
   type: 'resizeNode'
   size: { width: number; height: number }
   previousSize: { width: number; height: number }
+  /** Keep rendered bounds unchanged while updating the model size. */
+  preserveBounds?: boolean
 }
 
 /**
@@ -195,7 +199,10 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
   entity: 'node'
   type: 'batchUpdateBounds'
   nodeIds: NodeId[]
-  bounds: Record<NodeId, { bounds: Bounds; previousBounds: Bounds }>
+  bounds: Record<
+    NodeId,
+    { bounds: Bounds; previousBounds: Bounds; preserveSize?: boolean }
+  >
 }
 
 /**

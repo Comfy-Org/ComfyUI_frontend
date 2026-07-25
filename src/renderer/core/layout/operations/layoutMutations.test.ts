@@ -57,6 +57,17 @@ describe('resizeNode', () => {
       height: 200
     })
   })
+
+  it('can update model size without replacing rendered bounds', () => {
+    const { resizeNode } = useLayoutMutations()
+    const originalBounds = layoutStore.getNodeLayoutRef(NODE_1).value?.bounds
+
+    resizeNode(NODE_1, { width: 400, height: 200 }, true)
+
+    const layout = layoutStore.getNodeLayoutRef(NODE_1).value
+    expect(layout?.size).toEqual({ width: 400, height: 200 })
+    expect(layout?.bounds).toEqual(originalBounds)
+  })
 })
 
 describe('setNodeZIndex', () => {
@@ -141,6 +152,23 @@ describe('batchMoveNodes', () => {
       width: 200,
       height: 100
     })
+  })
+
+  it('preserves rendered bounds that differ from model size when moving', () => {
+    layoutStore.batchUpdateNodeBounds([
+      {
+        nodeId: NODE_1,
+        bounds: { x: 10, y: 20, width: 80, height: 10 },
+        preserveSize: true
+      }
+    ])
+
+    const { batchMoveNodes } = useLayoutMutations()
+    batchMoveNodes([{ nodeId: NODE_1, position: { x: 50, y: 60 } }])
+
+    const layout = layoutStore.getNodeLayoutRef(NODE_1).value
+    expect(layout?.size).toEqual({ width: 200, height: 100 })
+    expect(layout?.bounds).toEqual({ x: 50, y: 60, width: 80, height: 10 })
   })
 
   it('skips nodes not found in the store', () => {

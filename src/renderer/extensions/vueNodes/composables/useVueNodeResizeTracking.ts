@@ -19,10 +19,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import {
-  isBoundsEqual,
-  isSizeEqual
-} from '@/renderer/core/layout/utils/geometry'
+import { isBoundsEqual } from '@/renderer/core/layout/utils/geometry'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 import {
@@ -37,6 +34,8 @@ interface ElementBoundsUpdate {
   id: NodeId
   /** Updated bounds */
   bounds: Bounds
+  /** Keep model size while recording transient rendered geometry. */
+  preserveSize?: boolean
 }
 
 interface CachedNodeMeasurement {
@@ -63,9 +62,10 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
     {
       dataAttribute: 'nodeId',
       updateHandler: (updates) => {
-        const nodeUpdates = updates.map(({ id, bounds }) => ({
+        const nodeUpdates = updates.map(({ id, bounds, preserveSize }) => ({
           nodeId: id,
-          bounds
+          bounds,
+          preserveSize
         }))
         layoutStore.batchUpdateNodeBounds(nodeUpdates)
       }
@@ -102,7 +102,8 @@ watch(visibility, (state) => {
 
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
-  if (useCanvasStore().linearMode) return
+  const canvasStore = useCanvasStore()
+  if (canvasStore.linearMode) return
 
   // Skip measurements when tab is hidden — bounding rects are unreliable
   if (visibility.value === 'hidden') {
@@ -178,14 +179,11 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     // ResizeObserver emits entries where nothing changed (e.g. initial observe).
     // Skip expensive DOM reads when this exact element/node already measured at
-    // the same normalized bounds and size.
+    // the same normalized bounds. Collapsed bounds intentionally differ from
+    // the node's persisted expanded size.
     if (
       nodeLayout &&
       !hasFreshMeasurementPending &&
-      isSizeEqual(nodeLayout.size, {
-        width,
-        height: normalizedHeight
-      }) &&
       hasMatchingCachedNodeMeasurement
     ) {
       continue
@@ -225,6 +223,13 @@ const resizeObserver = new ResizeObserver((entries) => {
         nodeId,
         bounds: normalizedBounds
       })
+
+      if (element.hasAttribute('data-collapsed')) {
+        const node = canvasStore.canvas?.graph?.getNodeById(nodeId)
+        if (node) {
+          node._collapsed_width = Math.min(width, node.size[0])
+        }
+      }
     }
 
     if (nodeLayout && isBoundsEqual(nodeLayout.bounds, normalizedBounds)) {
@@ -237,7 +242,12 @@ const resizeObserver = new ResizeObserver((entries) => {
       updatesByType.set(elementType, updates)
     }
     if (!nodeId) continue
-    updates.push({ id: nodeId, bounds })
+    const isCollapsed = element.hasAttribute('data-collapsed')
+    updates.push({
+      id: nodeId,
+      bounds,
+      ...(isCollapsed ? { preserveSize: true } : {})
+    })
 
     // If this entry is a node, mark it for slot layout resync
     nodesNeedingSlotResync.add(nodeId)

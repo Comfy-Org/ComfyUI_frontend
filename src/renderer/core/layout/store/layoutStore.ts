@@ -1033,12 +1033,12 @@ class LayoutStoreImpl implements LayoutStore {
       return
     }
 
-    const size = yNodeToLayout(ynode).size
+    const currentLayout = yNodeToLayout(ynode)
     const newBounds = {
       x: operation.position.x,
       y: operation.position.y,
-      width: size.width,
-      height: size.height
+      width: currentLayout.bounds.width,
+      height: currentLayout.bounds.height
     }
 
     // Update spatial index FIRST, synchronously to prevent race conditions
@@ -1047,7 +1047,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Then update CRDT
     ynode.set('position', operation.position)
-    this.updateNodeBounds(ynode, operation.position, size)
+    ynode.set('bounds', newBounds)
 
     change.nodeIds.push(nodeId)
   }
@@ -1060,7 +1060,15 @@ class LayoutStoreImpl implements LayoutStore {
     const ynode = this.ynodes.get(String(nodeId))
     if (!ynode) return
 
-    const position = yNodeToLayout(ynode).position
+    const currentLayout = yNodeToLayout(ynode)
+    const position = currentLayout.position
+    ynode.set('size', operation.size)
+
+    if (operation.preserveBounds) {
+      change.nodeIds.push(nodeId)
+      return
+    }
+
     const newBounds = {
       x: position.x,
       y: position.y,
@@ -1073,7 +1081,6 @@ class LayoutStoreImpl implements LayoutStore {
     this.spatialIndex.update(nodeId, newBounds)
 
     // Then update CRDT
-    ynode.set('size', operation.size)
     this.updateNodeBounds(ynode, position, operation.size)
 
     change.nodeIds.push(nodeId)
@@ -1152,10 +1159,12 @@ class LayoutStoreImpl implements LayoutStore {
       if (!ynode || !data) continue
 
       ynode.set('position', { x: data.bounds.x, y: data.bounds.y })
-      ynode.set('size', {
-        width: data.bounds.width,
-        height: data.bounds.height
-      })
+      if (!data.preserveSize) {
+        ynode.set('size', {
+          width: data.bounds.width,
+          height: data.bounds.height
+        })
+      }
       ynode.set('bounds', data.bounds)
 
       spatialUpdates.push({ nodeId, bounds: data.bounds })
@@ -1502,7 +1511,7 @@ class LayoutStoreImpl implements LayoutStore {
     const nodeIds: NodeId[] = []
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
-    for (const { nodeId, bounds } of updates) {
+    for (const { nodeId, bounds, preserveSize } of updates) {
       const ynode = this.ynodes.get(String(nodeId))
       if (!ynode) continue
       const currentLayout = yNodeToLayout(ynode)
@@ -1516,7 +1525,8 @@ class LayoutStoreImpl implements LayoutStore {
 
       boundsRecord[nodeId] = {
         bounds: normalizedBounds,
-        previousBounds: currentLayout.bounds
+        previousBounds: currentLayout.bounds,
+        preserveSize
       }
       nodeIds.push(nodeId)
     }

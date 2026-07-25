@@ -22,7 +22,7 @@ const logger = log.getLogger('LayoutMutations')
 interface LayoutMutations {
   moveNode(nodeId: NodeId, position: Point): void
   batchMoveNodes(updates: Array<{ nodeId: NodeId; position: Point }>): void
-  resizeNode(nodeId: NodeId, size: Size): void
+  resizeNode(nodeId: NodeId, size: Size, preserveBounds?: boolean): void
   setNodeZIndex(nodeId: NodeId, zIndex: number): void
   createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
   deleteNode(nodeId: NodeId): void
@@ -106,9 +106,10 @@ export function useLayoutMutations(): LayoutMutations {
           bounds: {
             x: position.x,
             y: position.y,
-            width: existing.size.width,
-            height: existing.size.height
-          }
+            width: existing.bounds.width,
+            height: existing.bounds.height
+          },
+          preserveSize: true
         }
       ]
     })
@@ -120,7 +121,11 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Resize a node
    */
-  const resizeNode = (nodeId: NodeId, size: Size): void => {
+  const resizeNode = (
+    nodeId: NodeId,
+    size: Size,
+    preserveBounds = false
+  ): void => {
     const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
@@ -130,6 +135,7 @@ export function useLayoutMutations(): LayoutMutations {
       nodeId,
       size,
       previousSize: existing.size,
+      preserveBounds,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()

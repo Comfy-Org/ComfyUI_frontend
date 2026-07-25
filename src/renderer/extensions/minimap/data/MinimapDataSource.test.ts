@@ -21,7 +21,8 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
 // Mock useExecutionStore
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: vi.fn().mockReturnValue({
-    nodeProgressStates: {}
+    nodeProgressStates: {},
+    nodeLocationProgressStates: {}
   })
 }))
 
@@ -41,7 +42,7 @@ describe('MinimapDataSource', () => {
           {
             id: layoutNodeId('node1'),
             position: { x: 0, y: 0 },
-            size: { width: 100, height: 50 },
+            size: { width: 300, height: 200 },
             zIndex: 0,
             visible: true,
             bounds: { x: 0, y: 0, width: 100, height: 50 }
@@ -67,6 +68,10 @@ describe('MinimapDataSource', () => {
       expect(dataSource).toBeDefined()
       expect(dataSource.hasData()).toBe(true)
       expect(dataSource.getNodeCount()).toBe(1)
+      expect(dataSource.getNodes()[0]).toMatchObject({
+        width: 100,
+        height: 50
+      })
     })
 
     it('should create LiteGraphDataSource when LayoutStore is empty', () => {

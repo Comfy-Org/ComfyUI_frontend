@@ -590,7 +590,11 @@ export class LGraphNode
     if (layout && isSizeEqual(layout.size, size)) return
 
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.resizeNode(this.id, size)
+    layoutMutations.resizeNode(
+      this.id,
+      size,
+      LiteGraph.vueNodesMode && this.flags.collapsed
+    )
   }
 
   /**
@@ -2155,12 +2159,19 @@ export class LGraphNode
 
     out[0] = this.pos[0]
     out[1] = this.pos[1] + -titleHeight
-    // In Vue mode, `this.size` is kept in sync with the DOM-measured
-    // collapsed dimensions via ResizeObserver → layoutStore → useLayoutSync,
-    // so the expanded branch produces correct bounds for collapsed nodes too.
-    if (!this.flags?.collapsed || LiteGraph.vueNodesMode) {
+    if (!this.flags?.collapsed) {
       out[2] = this.size[0]
       out[3] = this.size[1] + titleHeight
+    } else if (LiteGraph.vueNodesMode) {
+      const layout = layoutStore.getNodeLayoutRef(this.id).value
+      out[2] = Math.min(
+        this.size[0],
+        this._collapsed_width ?? LiteGraph.NODE_COLLAPSED_WIDTH
+      )
+      out[3] =
+        layout && !isSizeEqual(layout.size, layout.bounds)
+          ? layout.bounds.height + LiteGraph.NODE_TITLE_HEIGHT
+          : LiteGraph.NODE_TITLE_HEIGHT
     } else {
       if (ctx) ctx.font = this.innerFontStyle
       this._collapsed_width = Math.min(
