@@ -1,22 +1,73 @@
 <template>
   <div ref="overlayRef" class="pointer-events-none fixed inset-0">
+    <svg
+      v-if="useMaskScrim"
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 size-full"
+    >
+      <mask :id="maskId">
+        <rect width="100%" height="100%" fill="white" />
+        <rect
+          v-if="scrimHoles.primary"
+          data-testid="coach-mask-hole"
+          v-bind="scrimHoles.primary"
+          rx="12"
+          fill="black"
+          :class="
+            !isVirtualTarget &&
+            'motion-safe:transition-[x,y,width,height] motion-safe:duration-300'
+          "
+        />
+        <rect
+          v-for="(hole, i) in scrimHoles.extras"
+          :key="i"
+          data-testid="coach-mask-hole"
+          v-bind="hole"
+          rx="12"
+          fill="black"
+        />
+      </mask>
+      <rect
+        width="100%"
+        height="100%"
+        class="fill-coach-scrim"
+        :mask="`url(#${maskId})`"
+      />
+      <path
+        v-if="step.interactive"
+        data-testid="coach-hit-region"
+        :d="hitRegionPath"
+        fill="transparent"
+        fill-rule="evenodd"
+        class="pointer-events-auto"
+      />
+    </svg>
     <div
+      v-if="!step.interactive"
+      data-testid="coach-blocker"
       :class="
         cn(
           'pointer-events-auto absolute inset-0',
-          !targetRect && 'bg-coach-scrim'
+          !useMaskScrim && !targetRect && 'bg-coach-scrim'
         )
       "
     />
     <div
       aria-hidden="true"
       data-testid="coach-spotlight"
-      class="pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300"
+      :class="
+        cn(
+          'pointer-events-none absolute rounded-xl outline-2 outline-coach-ring',
+          !isVirtualTarget &&
+            'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
+          !useMaskScrim && 'shadow-[0_0_0_9999px_var(--color-coach-scrim)]'
+        )
+      "
       :style="spotlightStyle"
     />
     <FocusScope
       as-child
-      :trapped="!waitingForTarget"
+      :trapped="!waitingForTarget && !step.interactive"
       loop
       @mount-auto-focus.prevent
     >
@@ -83,7 +134,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener, useWindowSize } from '@vueuse/core'
+import { useEventListener, useRafFn, useWindowSize } from '@vueuse/core'
 import { ZIndex } from '@primeuix/utils/zindex'
 import { FocusScope } from 'reka-ui'
 import {
@@ -93,7 +144,8 @@ import {
   ref,
   useId,
   useTemplateRef,
-  watch
+  watch,
+  watchEffect
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -106,6 +158,7 @@ import {
   SPOTLIGHT_PAD,
   VIEWPORT_MARGIN,
   clampSpotlight,
+  clampSpotlightRect,
   noTargetCardLeft
 } from './coachmarkLayout'
 import type { CoachStep } from './onboardingTours'
@@ -152,7 +205,7 @@ const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-const { targetRect, targetEl, floatingStyles, isPositioned } =
+const { targetRect, targetEl, isVirtualTarget, floatingStyles, isPositioned } =
   useCoachmarkTarget(() => step, cardRef)
 
 // Last step's "Done" already dismisses, so hide Skip there.
@@ -215,6 +268,40 @@ const spotlightStyle = computed(() => {
   const r = targetRect.value
   if (!r) return { opacity: '0' }
   return { ...clampSpotlight(r, SPOTLIGHT_PAD, viewport()), opacity: '1' }
+})
+
+const maskId = useId()
+
+const useMaskScrim = computed(() => !!(step.interactive || step.maskRects))
+const maskTick = ref(0)
+const { pause: pauseMaskTracking, resume: resumeMaskTracking } = useRafFn(
+  () => maskTick.value++,
+  { immediate: false }
+)
+watchEffect(() => (step.maskRects ? resumeMaskTracking() : pauseMaskTracking()))
+
+const scrimHoles = computed(() => {
+  void maskTick.value
+  const vp = viewport()
+  return {
+    primary: targetRect.value
+      ? clampSpotlightRect(targetRect.value, SPOTLIGHT_PAD, vp)
+      : null,
+    extras: (step.maskRects?.() ?? []).map((r) =>
+      clampSpotlightRect(r, SPOTLIGHT_PAD, vp)
+    )
+  }
+})
+
+// Evenodd viewport path whose holes let pointer events through to the page.
+const hitRegionPath = computed(() => {
+  const { width, height } = viewport()
+  const { primary, extras } = scrimHoles.value
+  const holes = primary ? [primary, ...extras] : extras
+  return [
+    `M0 0H${width}V${height}H0Z`,
+    ...holes.map((h) => `M${h.x} ${h.y}h${h.width}v${h.height}h${-h.width}Z`)
+  ].join('')
 })
 
 const cardStyle = computed(() => {

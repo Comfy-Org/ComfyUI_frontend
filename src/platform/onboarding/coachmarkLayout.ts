@@ -18,11 +18,18 @@ export const CARD_GAP = 16
 // Kept tight so the spotlight glow doesn't spill onto an adjacent clickable control.
 export const SPOTLIGHT_PAD = 4
 
-export function clampSpotlight(
+export interface SpotlightRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export function clampSpotlightRect(
   r: DOMRect,
   pad: number,
   viewport: Viewport
-): BoxStyle {
+): SpotlightRect {
   const left = Math.max(SPOTLIGHT_EDGE_INSET, r.left - pad)
   const top = Math.max(SPOTLIGHT_EDGE_INSET, r.top - pad)
   const right = Math.min(viewport.width - SPOTLIGHT_EDGE_INSET, r.right + pad)
@@ -31,10 +38,24 @@ export function clampSpotlight(
     r.bottom + pad
   )
   return {
-    left: `${left}px`,
-    top: `${top}px`,
-    width: `${Math.max(0, right - left)}px`,
-    height: `${Math.max(0, bottom - top)}px`
+    x: left,
+    y: top,
+    width: Math.max(0, right - left),
+    height: Math.max(0, bottom - top)
+  }
+}
+
+export function clampSpotlight(
+  r: DOMRect,
+  pad: number,
+  viewport: Viewport
+): BoxStyle {
+  const { x, y, width, height } = clampSpotlightRect(r, pad, viewport)
+  return {
+    left: `${x}px`,
+    top: `${y}px`,
+    width: `${width}px`,
+    height: `${height}px`
   }
 }
 
