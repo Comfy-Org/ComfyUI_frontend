@@ -219,6 +219,9 @@ export interface WorkflowSubmissionMetadata {
 
 export interface ExecutionOutcomeMetadata {
   startTime: number
+  submittedAt?: number
+  executionStartedAt?: number
+  terminalAt: number
   outcome: 'success' | 'failure'
   workflowContext?: WorkflowExecutionContext
 }
