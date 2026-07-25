@@ -1,5 +1,5 @@
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, watchEffect } from 'vue'
 
 import { centsToCredits } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -14,12 +14,14 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
  */
 export function useMemberCreditDisplay() {
   const workspaceStore = useTeamWorkspaceStore()
-  const { members, isInPersonalWorkspace } = storeToRefs(workspaceStore)
+  const { members, activeWorkspaceId, isInPersonalWorkspace } =
+    storeToRefs(workspaceStore)
   const { userEmail } = useCurrentUser()
   const { balance } = useBillingContext()
 
-  onMounted(() => {
-    if (!isInPersonalWorkspace.value) void workspaceStore.ensureMembersLoaded()
+  watchEffect(() => {
+    if (activeWorkspaceId.value && !isInPersonalWorkspace.value)
+      void workspaceStore.ensureMembersLoaded()
   })
 
   const selfMember = computed(() =>

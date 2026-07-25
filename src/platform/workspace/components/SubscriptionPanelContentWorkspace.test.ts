@@ -145,6 +145,7 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
     isWorkspaceSubscribed: mockIsWorkspaceSubscribed,
     members: mockMembers,
+    activeWorkspaceId: ref('ws-1'),
     ensureMembersLoaded: vi.fn()
   })
 }))
