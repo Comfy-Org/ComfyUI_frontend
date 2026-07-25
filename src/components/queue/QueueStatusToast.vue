@@ -140,81 +140,86 @@
         align="end"
         :side-offset="6"
         data-testid="queue-status-idle-panel"
-        class="flex w-80 flex-col gap-2 rounded-xl border border-solid border-charcoal-700 bg-comfy-menu-bg p-2.5 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
+        class="flex w-[326px] flex-col items-center gap-3 rounded-lg border-none bg-comfy-menu-bg py-3 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
       >
         <!-- Idle is exactly when someone goes looking for what they just
-             made, so recent runs are here rather than a tab away. -->
-        <div class="flex items-center justify-between px-1 pt-0.5">
-          <span class="text-sm font-semibold text-base-foreground">
-            {{ t('queueStatus.recentResults') }}
-          </span>
-          <button
-            v-tooltip.bottom="viewHistoryTooltip"
-            type="button"
-            class="flex size-5 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground"
-            :aria-label="t('queueStatus.goToHistory')"
-            data-testid="queue-status-filter"
-            @click="goToHistory"
-          >
-            <i class="icon-[lucide--list-filter] size-4" />
-          </button>
+             made, so recent runs are here rather than a tab away. Figma
+             node 2640-40346. -->
+        <div class="flex w-full flex-col gap-3 px-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[13px] font-semibold text-base-foreground">
+              {{ t('queueStatus.recentResults') }}
+            </span>
+            <button
+              v-tooltip.bottom="viewHistoryTooltip"
+              type="button"
+              class="flex size-3.5 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground"
+              :aria-label="t('queueStatus.goToHistory')"
+              data-testid="queue-status-filter"
+              @click="goToHistory"
+            >
+              <i class="icon-[lucide--list-filter] size-3.5" />
+            </button>
+          </div>
+
+          <template v-if="recentJobs.length">
+            <button
+              v-for="job in recentJobs"
+              :key="job.id"
+              type="button"
+              class="relative flex h-[52px] cursor-pointer items-center gap-2.5 overflow-clip rounded-[10px] border-none bg-secondary-background px-3 py-2 text-left transition-colors hover:bg-secondary-background-hover"
+              :aria-label="t('queueStatus.viewResult')"
+              data-testid="queue-status-recent-job"
+              @click="openRecentJob(job)"
+            >
+              <span class="flex min-w-0 flex-1 flex-col gap-1">
+                <span class="truncate text-sm font-normal text-base-foreground">
+                  {{ recentJobName(job) }}
+                </span>
+                <span class="truncate text-xs text-[#8a8a8a]">
+                  {{ recentJobMeta(job) }}
+                </span>
+              </span>
+              <span
+                class="relative flex size-[41px] shrink-0 items-center justify-center overflow-clip rounded-lg bg-comfy-menu-bg outline-1 outline-base-foreground/10"
+              >
+                <img
+                  v-if="jobThumbnail(job)"
+                  :src="jobThumbnail(job)!.previewUrl"
+                  alt=""
+                  loading="lazy"
+                  class="size-full object-cover"
+                />
+                <i
+                  v-else
+                  class="icon-[lucide--file] size-4 text-muted-foreground"
+                />
+                <i
+                  v-if="jobThumbnail(job)?.isVideo"
+                  class="icon-[lucide--play] absolute right-0.5 bottom-0.5 size-2.5 text-base-foreground drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+                />
+              </span>
+            </button>
+          </template>
+          <p v-else class="py-2 text-center text-xs text-muted-foreground">
+            {{ t('queueStatus.nothingRunning') }}
+          </p>
         </div>
 
-        <template v-if="recentJobs.length">
-          <button
-            v-for="job in recentJobs"
-            :key="job.id"
-            type="button"
-            class="flex cursor-pointer items-center gap-3 rounded-xl border-none bg-secondary-background p-2.5 text-left transition-colors hover:bg-secondary-background-hover"
-            :aria-label="t('queueStatus.viewResult')"
-            data-testid="queue-status-recent-job"
-            @click="openRecentJob(job)"
+        <div class="h-px w-full bg-base-foreground/10" />
+
+        <div class="w-full px-3">
+          <Button
+            variant="secondary"
+            size="unset"
+            class="h-8 w-full gap-1.5 rounded-lg text-sm font-medium"
+            data-testid="queue-status-go-history"
+            @click="goToHistory"
           >
-            <span class="flex min-w-0 flex-1 flex-col gap-1">
-              <span class="truncate text-base font-medium text-base-foreground">
-                {{ recentJobName(job) }}
-              </span>
-              <span class="truncate text-sm text-muted-foreground">
-                {{ recentJobMeta(job) }}
-              </span>
-            </span>
-            <span
-              class="relative flex size-12 shrink-0 items-center justify-center overflow-clip rounded-lg bg-comfy-menu-bg outline-1 outline-base-foreground/10"
-            >
-              <img
-                v-if="jobThumbnail(job)"
-                :src="jobThumbnail(job)!.previewUrl"
-                alt=""
-                loading="lazy"
-                class="size-full object-cover"
-              />
-              <i
-                v-else
-                class="icon-[lucide--file] size-5 text-muted-foreground"
-              />
-              <i
-                v-if="jobThumbnail(job)?.isVideo"
-                class="icon-[lucide--play] absolute right-1 bottom-1 size-3 text-base-foreground drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
-              />
-            </span>
-          </button>
-        </template>
-        <p v-else class="px-1 py-3 text-center text-sm text-muted-foreground">
-          {{ t('queueStatus.nothingRunning') }}
-        </p>
-
-        <div class="mx-1 border-t border-solid border-base-foreground/10" />
-
-        <Button
-          variant="secondary"
-          size="md"
-          class="w-full gap-2"
-          data-testid="queue-status-go-history"
-          @click="goToHistory"
-        >
-          <i class="icon-[lucide--history] size-4 shrink-0" />
-          {{ t('queueStatus.goToHistory') }}
-        </Button>
+            <i class="icon-[lucide--history] size-4 shrink-0" />
+            {{ t('queueStatus.goToHistory') }}
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   </div>
