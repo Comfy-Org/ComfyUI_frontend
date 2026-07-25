@@ -7,6 +7,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 interface AssetSpec {
   id: string
   name: string
+  displayName?: string
   /** Unix ms; written into both `created_at` (ISO) and `user_metadata.create_time`. */
   createTime?: number
   /** Seconds, written into `user_metadata.executionTimeInSeconds`. */
@@ -24,6 +25,7 @@ function makeAsset(spec: AssetSpec): AssetItem {
   return {
     id: spec.id,
     name: spec.name,
+    display_name: spec.displayName,
     tags: [],
     created_at:
       spec.createTime !== undefined
@@ -166,6 +168,50 @@ describe('useMediaAssetFiltering', () => {
       const { filteredAssets } = useMediaAssetFiltering(assets)
 
       expect(ids(filteredAssets.value)).toEqual(['b', 'a'])
+    })
+  })
+
+  describe('name sort', () => {
+    function namedAssets() {
+      return ref<AssetItem[]>([
+        makeAsset({ id: 'fallback', name: 'banana.png' }),
+        makeAsset({
+          id: 'display-z',
+          name: 'a.png',
+          displayName: 'Zebra'
+        }),
+        makeAsset({
+          id: 'display-a',
+          name: 'z.png',
+          displayName: 'apple'
+        })
+      ])
+    }
+
+    it('sorts A → Z by display name, falling back to name and ignoring case', () => {
+      const assets = namedAssets()
+      const { sortBy, filteredAssets } = useMediaAssetFiltering(assets)
+
+      sortBy.value = 'az'
+
+      expect(ids(filteredAssets.value)).toEqual([
+        'display-a',
+        'fallback',
+        'display-z'
+      ])
+      expect(ids(assets.value)).toEqual(['fallback', 'display-z', 'display-a'])
+    })
+
+    it('sorts Z → A by display name, falling back to name and ignoring case', () => {
+      const { sortBy, filteredAssets } = useMediaAssetFiltering(namedAssets())
+
+      sortBy.value = 'za'
+
+      expect(ids(filteredAssets.value)).toEqual([
+        'display-z',
+        'fallback',
+        'display-a'
+      ])
     })
   })
 
