@@ -189,16 +189,13 @@ test.describe('Assets sidebar - sort options', { tag: '@cloud' }, () => {
     await tab.sortAToZ.click()
     await expectAssetOrder(tab.assetCards, ['job-001', 'job-003', 'job-002'])
 
-    await tab.openSettingsMenu()
     await tab.listViewOption.click()
     await expect(tab.listViewItems).toHaveCount(SORT_JOBS.length)
     await expectAssetOrder(tab.listViewItems, ['job-001', 'job-003', 'job-002'])
 
-    await tab.openSettingsMenu()
     await tab.sortZToA.click()
     await expectAssetOrder(tab.listViewItems, ['job-002', 'job-003', 'job-001'])
 
-    await tab.openSettingsMenu()
     await tab.gridViewOption.click()
     await expectAssetOrder(tab.assetCards, ['job-002', 'job-003', 'job-001'])
   })
