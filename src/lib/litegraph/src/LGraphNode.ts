@@ -962,6 +962,10 @@ export class LGraphNode
       graphId: zeroUuid,
       type: type ?? '',
       title: title || 'Unnamed',
+      // Fixed per node class (`static title_mode`), but the renderer reads shell
+      // state from the store, so it is carried here rather than looked up on the
+      // class. Without it, NO_TITLE types such as reroutes draw a title bar.
+      titleMode: this.title_mode,
       mode: LGraphEventMode.ALWAYS,
       flags: {}
     }

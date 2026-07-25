@@ -21,7 +21,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { NodeSlotType, TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
@@ -872,5 +872,28 @@ describe('widgets array reactivity', () => {
 
     expect(node.widgets).toBeUndefined()
     expect(node.serialize().widgets_values).toBeUndefined()
+  })
+})
+
+describe('titleMode in node state', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('carries a NO_TITLE class into the store-held shell state', () => {
+    class TitlelessNode extends LGraphNode {
+      static title_mode = TitleMode.NO_TITLE
+    }
+    const node = new TitlelessNode('titleless')
+
+    // The renderer decides whether to draw a header from this; reroutes and
+    // other NO_TITLE classes draw a title bar without it.
+    expect(node._state.titleMode).toBe(TitleMode.NO_TITLE)
+  })
+
+  test('defaults to a normal title', () => {
+    expect(new LGraphNode('plain')._state.titleMode).toBe(
+      TitleMode.NORMAL_TITLE
+    )
   })
 })
