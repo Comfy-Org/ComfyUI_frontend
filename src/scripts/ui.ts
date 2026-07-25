@@ -487,11 +487,12 @@ export class ComfyUI {
           id: 'queue-button',
           textContent: 'Queue Prompt',
           onclick: () => {
-            useRunButtonTelemetry().trackRunButton({
+            const workflowQueueIntent = {
               trigger_source: 'legacy_ui'
-            })
+            } as const
+            useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
             useTelemetry()?.trackWorkflowExecution()
-            app.queuePrompt(0, this.batchCount)
+            app.queuePrompt(0, this.batchCount, undefined, workflowQueueIntent)
           }
         }),
         $el('div', {}, [
@@ -595,11 +596,17 @@ export class ComfyUI {
             id: 'queue-front-button',
             textContent: 'Queue Front',
             onclick: () => {
-              useRunButtonTelemetry().trackRunButton({
+              const workflowQueueIntent = {
                 trigger_source: 'legacy_ui'
-              })
+              } as const
+              useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
               useTelemetry()?.trackWorkflowExecution()
-              app.queuePrompt(-1, this.batchCount)
+              app.queuePrompt(
+                -1,
+                this.batchCount,
+                undefined,
+                workflowQueueIntent
+              )
             }
           }),
           $el('button', {

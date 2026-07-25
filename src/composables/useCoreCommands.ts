@@ -27,7 +27,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
-import type { ExecutionTriggerSource } from '@/platform/telemetry/types'
+import type { WorkflowQueueIntent } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -503,10 +503,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Queue Prompt',
       versionAdded: '1.3.7',
       category: 'essentials' as const,
-      function: async (metadata?: {
-        subscribe_to_run?: boolean
-        trigger_source?: ExecutionTriggerSource
-      }) => {
+      function: async (metadata?: WorkflowQueueIntent) => {
         trackRunButton(metadata)
         if (!isActiveSubscription.value) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
@@ -517,7 +514,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         useTelemetry()?.trackWorkflowExecution()
 
-        await app.queuePrompt(0, batchCount)
+        await app.queuePrompt(0, batchCount, undefined, metadata)
       }
     },
     {
@@ -526,10 +523,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Queue Prompt (Front)',
       versionAdded: '1.3.7',
       category: 'essentials' as const,
-      function: async (metadata?: {
-        subscribe_to_run?: boolean
-        trigger_source?: ExecutionTriggerSource
-      }) => {
+      function: async (metadata?: WorkflowQueueIntent) => {
         trackRunButton(metadata)
         if (!isActiveSubscription.value) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
@@ -540,7 +534,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         useTelemetry()?.trackWorkflowExecution()
 
-        await app.queuePrompt(-1, batchCount)
+        await app.queuePrompt(-1, batchCount, undefined, metadata)
       }
     },
     {
@@ -548,10 +542,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-play',
       label: 'Queue Selected Output Nodes',
       versionAdded: '1.19.6',
-      function: async (metadata?: {
-        subscribe_to_run?: boolean
-        trigger_source?: ExecutionTriggerSource
-      }) => {
+      function: async (metadata?: WorkflowQueueIntent) => {
         trackRunButton(metadata)
         if (!isActiveSubscription.value) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
@@ -584,7 +575,7 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
         useTelemetry()?.trackWorkflowExecution()
-        await app.queuePrompt(0, batchCount, executionIds)
+        await app.queuePrompt(0, batchCount, executionIds, metadata)
       }
     },
     {
