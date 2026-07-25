@@ -287,6 +287,7 @@ import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useN
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -358,29 +359,33 @@ const { executing, progress } = useNodeExecutionState(nodeLocatorId)
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
 const missingNodesErrorStore = useMissingNodesErrorStore()
+const missingMediaStore = useMissingMediaStore()
 const hasExecutionError = computed(
   () => executionErrorStore.lastExecutionErrorNodeId === nodeId.value
 )
 
+/**
+ * Derived from the error stores only. `node.has_errors` is deliberately not
+ * consulted: it is a plain class field written by a watcher, so Vue cannot
+ * track it and the ring would latch on after the underlying error cleared.
+ * Every source that watcher folds in is queried directly here instead.
+ */
 const hasAnyError = computed((): boolean => {
   const locatorId = nodeLocatorId.value
   const node = lgraphNode.value
   const hasNodeScopedError =
     locatorId !== undefined &&
     (executionErrorStore.getNodeErrors(locatorId) ||
-      missingModelStore.hasMissingModelOnNode(locatorId))
+      missingModelStore.hasMissingModelOnNode(locatorId) ||
+      missingMediaStore.hasMissingMediaOnNode(locatorId))
   const hasContainerError =
     node !== null &&
     (executionErrorStore.isContainerWithInternalError(node) ||
       missingNodesErrorStore.isContainerWithMissingNode(node) ||
-      missingModelStore.isContainerWithMissingModel(node))
+      missingModelStore.isContainerWithMissingModel(node) ||
+      missingMediaStore.isContainerWithMissingMedia(node))
 
-  return !!(
-    hasExecutionError.value ||
-    node?.has_errors ||
-    hasNodeScopedError ||
-    hasContainerError
-  )
+  return !!(hasExecutionError.value || hasNodeScopedError || hasContainerError)
 })
 
 const showErrorsTabEnabled = computed(() =>

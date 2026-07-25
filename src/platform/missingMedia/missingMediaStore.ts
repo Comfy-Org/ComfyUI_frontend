@@ -5,8 +5,9 @@ import { computed, ref } from 'vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
@@ -66,6 +67,12 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
   function setMissingMedia(media: MissingMediaCandidate[]) {
     missingMediaCandidates.value = media.length ? media : null
+  }
+
+  function hasMissingMediaOnNode(nodeLocatorId: NodeLocatorId): boolean {
+    const executionId =
+      useWorkflowStore().nodeLocatorIdToNodeExecutionId(nodeLocatorId)
+    return executionId ? missingMediaNodeIds.value.has(executionId) : false
   }
 
   function isContainerWithMissingMedia(node: LGraphNode): boolean {
@@ -145,6 +152,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     missingMediaAncestorExecutionIds,
     activeMissingMediaGraphIds,
 
+    hasMissingMediaOnNode,
     setMissingMedia,
     addMissingMedia,
     removeMissingMediaByWidget,

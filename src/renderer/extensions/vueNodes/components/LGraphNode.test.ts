@@ -3,6 +3,10 @@ import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { fromAny } from '@total-typescript/shoehorn'
+
+import type { NodeError } from '@/schemas/apiSchema'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@/types/nodeId'
 import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -296,7 +300,11 @@ describe('LGraphNode', () => {
         { name: 'advancedWidget', type: 'number', options: { advanced: true } }
       ]
     }
-    mockData.mockLgraphNode = { has_errors: true, isSubgraphNode: () => false }
+    // Seed the store, not `node.has_errors`: the ring is derived from the error
+    // stores so it can react when the error clears.
+    vi.mocked(useExecutionErrorStore().getNodeErrors).mockReturnValue(
+      fromAny<NodeError, unknown>({ errors: [], class_type: 'TestNode' })
+    )
     renderLGraphNode({
       nodeData: {
         ...mockNodeData,
