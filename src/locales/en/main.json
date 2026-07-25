@@ -893,6 +893,8 @@
       "title": "Media Assets",
       "sortNewestFirst": "Newest first",
       "sortOldestFirst": "Oldest first",
+      "sortAToZ": "Name (A → Z)",
+      "sortZToA": "Name (Z → A)",
       "sortLongestFirst": "Generation time (longest first)",
       "sortFastestFirst": "Generation time (fastest first)",
       "filterImage": "Image",
