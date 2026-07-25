@@ -4583,6 +4583,27 @@
     "processingVideo": "Processing video…",
     "running": "Running…"
   },
+  "gettingStarted": {
+    "title": "Let's make something",
+    "subtitle": "Pick a ready-made workflow to start from, or begin with a blank canvas.",
+    "tabsLabel": "Getting started options",
+    "startBlank": "Start with a blank canvas",
+    "preparing": "Preparing…",
+    "retry": "Try again",
+    "loadFailed": "We couldn't load the templates.",
+    "templateFailed": "We couldn't open this template.",
+    "retryTemplate": "Retry {title}",
+    "tabs": {
+      "templates": "Templates",
+      "tutorials": "Tutorials"
+    },
+    "tutorials": {
+      "interfaceOverview": "Interface overview",
+      "textToImage": "Text to image",
+      "imageToImage": "Image to image",
+      "inpaint": "Inpainting"
+    }
+  },
   "onboardingCoachmarks": {
     "stepLabel": "Step {current} of {total}",
     "skip": "Skip",

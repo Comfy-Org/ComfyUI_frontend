@@ -1,0 +1,165 @@
+import { createTestingPinia } from '@pinia/testing'
+import userEvent from '@testing-library/user-event'
+import { cleanup, render, screen, waitFor } from '@testing-library/vue'
+import { setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
+import { CURATED_TEMPLATE_IDS } from './tutorialCards'
+
+const mocks = vi.hoisted(() => ({
+  dismiss: vi.fn(),
+  loadTemplate: vi.fn(),
+  loadCatalog: vi.fn(),
+  isLoaded: true,
+  toastAdd: vi.fn()
+}))
+
+vi.mock('./firstRunEntry', () => ({
+  useFirstRunEntry: () => ({ dismissGettingStarted: mocks.dismiss })
+}))
+
+vi.mock(
+  '@/platform/workflow/templates/composables/useTemplateWorkflows',
+  async () => {
+    const { ref } = await import('vue')
+    return {
+      useTemplateWorkflows: () => ({
+        loadWorkflowTemplate: mocks.loadTemplate,
+        loadingTemplateId: ref<string | null>(null),
+        getTemplateThumbnailUrl: () => 'thumb.png',
+        getTemplateTitle: (template: { name: string }) => template.name
+      })
+    }
+  }
+)
+
+vi.mock(
+  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+  () => ({
+    useWorkflowTemplatesStore: () => ({
+      get isLoaded() {
+        return mocks.isLoaded
+      },
+      loadWorkflowTemplates: mocks.loadCatalog,
+      getTemplateByName: (name: string) => ({ name })
+    })
+  })
+)
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ add: mocks.toastAdd })
+}))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
+
+async function renderScreen() {
+  const { default: GettingStartedScreen } =
+    await import('./GettingStartedScreen.vue')
+  return render(GettingStartedScreen, { global: { plugins: [i18n] } })
+}
+
+describe('GettingStartedScreen', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    mocks.isLoaded = true
+    mocks.loadTemplate.mockResolvedValue(true)
+    mocks.loadCatalog.mockResolvedValue(undefined)
+  })
+
+  afterEach(cleanup)
+
+  it('loads the chosen template and dismisses', async () => {
+    await renderScreen()
+
+    await userEvent.click(
+      screen.getByTestId(`getting-started-card-${CURATED_TEMPLATE_IDS[0]}`)
+    )
+
+    await waitFor(() =>
+      expect(mocks.loadTemplate).toHaveBeenCalledWith(
+        CURATED_TEMPLATE_IDS[0],
+        'default'
+      )
+    )
+    expect(mocks.dismiss).toHaveBeenCalled()
+  })
+
+  describe('exits', () => {
+    it('offers a blank-canvas action', async () => {
+      await renderScreen()
+
+      await userEvent.click(screen.getByTestId('getting-started-blank'))
+
+      expect(
+        mocks.dismiss,
+        'A first-run user must always have a visible way out of the takeover'
+      ).toHaveBeenCalled()
+    })
+
+    it('exits on Escape', async () => {
+      await renderScreen()
+
+      await userEvent.keyboard('{Escape}')
+
+      expect(
+        mocks.dismiss,
+        'Escape must follow the same safe dismissal path as the blank-canvas action'
+      ).toHaveBeenCalled()
+    })
+  })
+
+  describe('failures', () => {
+    it('surfaces a failed template load and keeps the screen up to retry', async () => {
+      mocks.loadTemplate.mockResolvedValue(false)
+      await renderScreen()
+
+      await userEvent.click(
+        screen.getByTestId(`getting-started-card-${CURATED_TEMPLATE_IDS[0]}`)
+      )
+
+      await waitFor(() => expect(mocks.toastAdd).toHaveBeenCalled())
+      expect(
+        mocks.dismiss,
+        'A failed load must not dismiss the screen; the user would be left on a bare canvas'
+      ).not.toHaveBeenCalled()
+      expect(screen.getByText(enMessages.gettingStarted.retry)).toBeTruthy()
+    })
+
+    it('retries a catalog load that resolved without loading anything', async () => {
+      mocks.isLoaded = false
+      await renderScreen()
+
+      const retry = await screen.findByTestId(
+        'getting-started-retry-catalog',
+        undefined,
+        {
+          timeout: 1000
+        }
+      )
+      mocks.loadCatalog.mockImplementation(() => {
+        mocks.isLoaded = true
+        return Promise.resolve(undefined)
+      })
+      await userEvent.click(retry)
+
+      expect(
+        mocks.loadCatalog,
+        'The store swallows fetch errors and resolves with isLoaded false, so a failed catalog must be detected without a rejection'
+      ).toHaveBeenCalledTimes(2)
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('getting-started-retry-catalog'),
+          'A successful retry must replace the error state with the grid'
+        ).toBeNull()
+      )
+    })
+  })
+})
