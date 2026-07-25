@@ -8,8 +8,10 @@ const mocks = vi.hoisted(() => ({
   setContext: vi.fn(),
   setUser: vi.fn(),
   onUserLogout: vi.fn(),
+  rootGraph: {},
   resolvedUserId: 'existing-user' as string | undefined,
   workflowIsModified: true,
+  getExecutionContext: vi.fn(),
   executionContext: {
     is_template: false,
     workflow_name: 'private-workflow-name',
@@ -52,8 +54,14 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   })
 }))
 
+vi.mock('@/scripts/app', () => ({
+  app: {
+    rootGraph: mocks.rootGraph
+  }
+}))
+
 vi.mock('../../utils/getExecutionContext', () => ({
-  getExecutionContext: () => mocks.executionContext
+  getExecutionContext: mocks.getExecutionContext
 }))
 
 const shellLayout: ShellLayoutMetadata = {
@@ -72,6 +80,7 @@ describe('SentryTelemetryProvider', () => {
     vi.clearAllMocks()
     mocks.resolvedUserId = 'existing-user'
     mocks.workflowIsModified = true
+    mocks.getExecutionContext.mockReturnValue(mocks.executionContext)
   })
 
   it('identifies resolved and newly authenticated users and clears logout', () => {
@@ -109,6 +118,9 @@ describe('SentryTelemetryProvider', () => {
         has_api_nodes: true,
         has_toolkit_nodes: true
       }
+    )
+    expect(mocks.getExecutionContext).toHaveBeenCalledExactlyOnceWith(
+      mocks.rootGraph
     )
   })
 

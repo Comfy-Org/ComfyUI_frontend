@@ -9,7 +9,7 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { ComfyApp, app as singletonApp } from './app'
+import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
   pasteAudioNode,
@@ -207,7 +207,6 @@ describe('ComfyApp', () => {
       })
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
       mockWorkspaceWorkflow.activeWorkflow = workflow
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: {},
@@ -245,7 +244,6 @@ describe('ComfyApp', () => {
         }
       }
       Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
       mockWorkspaceWorkflow.activeWorkflow = workflow
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: promptOutput,
@@ -310,6 +308,62 @@ describe('ComfyApp', () => {
           trigger_source: 'button',
           subscribe_to_run: true
         })
+      } finally {
+        setTelemetryRegistry(null)
+      }
+    })
+
+    it('attributes telemetry to the graph selected when submission starts', async () => {
+      const initialGraph = new LGraph()
+      initialGraph.add(new LGraphNode('Initial node'))
+      const initialWorkflow = new ComfyWorkflow({
+        path: 'workflows/initial.json',
+        modified: 0,
+        size: 0
+      })
+      const submissionGraph = new LGraph()
+      submissionGraph.add(new LGraphNode('Submission node 1'))
+      submissionGraph.add(new LGraphNode('Submission node 2'))
+      submissionGraph.add(new LGraphNode('Submission node 3'))
+      const submissionWorkflow = new ComfyWorkflow({
+        path: 'workflows/submission.json',
+        modified: 0,
+        size: 0
+      })
+      const trackWorkflowQueued = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackWorkflowQueued })
+      setTelemetryRegistry(registry)
+      Reflect.set(app, 'rootGraphInternal', initialGraph)
+      mockWorkspaceWorkflow.activeWorkflow = initialWorkflow
+      let resolveAuthToken!: (token: string | undefined) => void
+      mockAuthStore.getAuthToken.mockImplementation(
+        () =>
+          new Promise<string | undefined>((resolve) => {
+            resolveAuthToken = resolve
+          })
+      )
+      const graphToPrompt = vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: {},
+        workflow: createWorkflowGraphData()
+      })
+      vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      try {
+        const queuePromise = app.queuePrompt(0)
+        Reflect.set(app, 'rootGraphInternal', submissionGraph)
+        mockWorkspaceWorkflow.activeWorkflow = submissionWorkflow
+        resolveAuthToken(undefined)
+        await queuePromise
+
+        expect(graphToPrompt).toHaveBeenCalledWith(submissionGraph)
+        expect(trackWorkflowQueued).toHaveBeenCalledWith(
+          expect.objectContaining({ total_node_count: 3 })
+        )
       } finally {
         setTelemetryRegistry(null)
       }
