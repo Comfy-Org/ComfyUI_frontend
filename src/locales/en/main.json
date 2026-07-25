@@ -4158,6 +4158,13 @@
         "toastTitle": "Validation failed",
         "toastMessage": "{nodeName} returned an unrecognized validation error."
       },
+      "PARTNER_NODE_DISABLED": {
+        "title": "Disabled node",
+        "message": "This node has been disabled by your workspace policy. Use a different node.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Partner nodes",
+        "toastMessage": "This node has been disabled by your workspace policy."
+      },
       "exception_during_inner_validation": {
         "title": "Validation failed",
         "message": "The workflow couldn't validate a connected node.",
