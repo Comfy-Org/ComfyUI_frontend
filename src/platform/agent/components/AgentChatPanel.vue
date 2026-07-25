@@ -375,7 +375,7 @@ function onNewChatFromHistory() {
                     <PromptInputTextarea
                       ref="promptTextarea"
                       v-model="input"
-                      class="pt-3"
+                      class="mt-3 pt-0"
                       :aria-label="$t('agent.placeholderAria')"
                     />
                   </div>

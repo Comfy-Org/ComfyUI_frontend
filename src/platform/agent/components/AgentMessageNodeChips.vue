@@ -10,6 +10,11 @@ const { nodes } = defineProps<{
 
 <template>
   <div v-if="nodes.length" class="flex flex-wrap justify-end gap-1.5">
-    <AgentNodeChip v-for="node in nodes" :key="node.id" :node="node" />
+    <AgentNodeChip
+      v-for="node in nodes"
+      :key="node.id"
+      :node="node"
+      :style="{ paddingRight: '8px' }"
+    />
   </div>
 </template>

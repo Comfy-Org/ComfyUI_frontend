@@ -21,17 +21,15 @@ const forwarded = useForwardPropsEmits(restProps, emits)
     v-bind="forwarded"
     :class="
       cn(
-        'flex size-5 shrink-0 items-center justify-center rounded-sm border border-primary-background transition-colors',
+        'flex size-5 shrink-0 items-center justify-center rounded-sm border border-node-component-header-icon transition-colors',
         'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none',
         'disabled:cursor-not-allowed disabled:opacity-50',
-        'data-[state=checked]:bg-primary-background',
+        'data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500',
         className
       )
     "
   >
-    <CheckboxIndicator
-      class="text-primary-foreground flex items-center justify-center"
-    >
+    <CheckboxIndicator class="flex items-center justify-center text-white">
       <i class="icon-[lucide--check] size-3.5" />
     </CheckboxIndicator>
   </CheckboxRoot>

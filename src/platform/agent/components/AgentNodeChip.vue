@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import type { HTMLAttributes, StyleValue } from 'vue'
+
 import Attachment from '@/components/ui/attachment/Attachment.vue'
 import AttachmentContent from '@/components/ui/attachment/AttachmentContent.vue'
 import AttachmentMedia from '@/components/ui/attachment/AttachmentMedia.vue'
@@ -9,9 +12,16 @@ import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-const { node, showId = false } = defineProps<{
+const {
+  node,
+  showId = false,
+  class: className,
+  style
+} = defineProps<{
   node: LGraphNode
   showId?: boolean
+  class?: HTMLAttributes['class']
+  style?: StyleValue
 }>()
 
 const { focusNodeInstance } = useFocusNode()
@@ -24,7 +34,10 @@ const { focusNodeInstance } = useFocusNode()
         size="xs"
         role="button"
         tabindex="0"
-        class="cursor-pointer hover:bg-tertiary-background-hover"
+        :class="
+          cn('cursor-pointer hover:bg-tertiary-background-hover', className)
+        "
+        :style="style"
         :aria-label="$t('agent.nodeSelection.chipFocus')"
         @click="focusNodeInstance(node)"
         @keydown.enter="focusNodeInstance(node)"
