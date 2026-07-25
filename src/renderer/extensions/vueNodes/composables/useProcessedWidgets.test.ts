@@ -20,6 +20,7 @@ import {
   createNodeLocatorId
 } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
+import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 const GRAPH_ID = 'graph-test'
 
@@ -156,7 +157,7 @@ describe('hasWidgetError', () => {
   it('returns true when node has matching input error', () => {
     const widget = createMockWidget({ name: 'seed' })
     const nodeErrors = {
-      errors: [{ extra_info: { input_name: 'seed' } }]
+      errors: [validationError('required_input_missing', 'seed')]
     }
     expect(
       hasWidgetError(
@@ -174,7 +175,7 @@ describe('hasWidgetError', () => {
       name: 'seed',
       sourceExecutionId: createNodeExecutionId([toNodeId(65), toNodeId(18)])
     })
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       '65:18': {
         errors: [
           {
@@ -187,7 +188,7 @@ describe('hasWidgetError', () => {
         class_type: 'TestNode',
         dependent_outputs: []
       }
-    }
+    })
     expect(
       hasWidgetError(
         widget,
@@ -219,7 +220,7 @@ describe('hasWidgetError', () => {
       sourceWidgetName: 'internal_name'
     })
     const nodeErrors = {
-      errors: [{ extra_info: { input_name: 'display_slot' } }]
+      errors: [validationError('required_input_missing', 'display_slot')]
     }
     expect(
       hasWidgetError(
@@ -251,6 +252,41 @@ describe('hasWidgetError', () => {
       )
     ).toBe(true)
     expect(spy).toHaveBeenCalledWith('1', 'display_slot')
+  })
+
+  it('matches raw interior errors by the source widget name for promoted widgets', () => {
+    const sourceExecutionId = createNodeExecutionId([
+      toNodeId(65),
+      toNodeId(18)
+    ])
+    const widget = createMockWidget({
+      name: 'display_slot',
+      sourceExecutionId,
+      sourceWidgetName: 'ckpt_name'
+    })
+    executionErrorStore.recordNodeErrors({
+      [sourceExecutionId]: {
+        errors: [
+          {
+            type: 'value_not_in_list',
+            message: 'Invalid model',
+            details: '',
+            extra_info: { input_name: 'ckpt_name' }
+          }
+        ],
+        class_type: 'CheckpointLoaderSimple',
+        dependent_outputs: []
+      }
+    })
+    expect(
+      hasWidgetError(
+        widget,
+        createNodeExecutionId([toNodeId(1)]),
+        undefined,
+        executionErrorStore,
+        missingModelStore
+      )
+    ).toBe(true)
   })
 })
 
@@ -667,6 +703,36 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     )
   })
 
+  it('clears raw interior errors through widget.sourceExecutionId, which boundary lift relies on', () => {
+    const sourceExecutionId = createNodeExecutionId([65, 18])
+    const widget = createMockWidget({
+      name: 'display_slot',
+      nodeId: NODE_ID,
+      sourceExecutionId,
+      sourceWidgetName: 'ckpt_name'
+    })
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordNodeErrors({
+      [sourceExecutionId]: {
+        errors: [
+          {
+            type: 'value_not_in_list',
+            message: 'Invalid model',
+            details: '',
+            extra_info: { input_name: 'ckpt_name' }
+          }
+        ],
+        class_type: 'CheckpointLoaderSimple',
+        dependent_outputs: []
+      }
+    })
+
+    const [processed] = processWidgets([widget])
+    processed.updateHandler('real_model.safetensors')
+
+    expect(executionErrorStore.lastNodeErrors).toBeNull()
+  })
+
   it('clears execution errors on update', () => {
     const widget = createMockWidget({
       name: 'seed',
@@ -676,7 +742,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     const executionErrorStore = useExecutionErrorStore()
     const missingModelStore = useMissingModelStore()
 
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       [NODE_ID]: {
         errors: [
           {
@@ -689,7 +755,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
         class_type: 'TestNode',
         dependent_outputs: []
       }
-    }
+    })
 
     const [processed] = processWidgets([widget])
 
@@ -697,7 +763,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       hasWidgetError(
         widget,
         createNodeExecutionId([NODE_ID]),
-        executionErrorStore.lastNodeErrors[NODE_ID],
+        executionErrorStore.lastNodeErrors?.[NODE_ID],
         executionErrorStore,
         missingModelStore
       )

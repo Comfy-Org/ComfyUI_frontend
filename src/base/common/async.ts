@@ -32,11 +32,11 @@ let _runWhenIdle: (
  * Falls back to setTimeout-based scheduling in browsers without native support.
  */
 export let runWhenGlobalIdle: (
-    callback: (idle: IdleDeadline) => void,
-    timeout?: number
-  ) => IDisposable
+  callback: (idle: IdleDeadline) => void,
+  timeout?: number
+) => IDisposable
 
-  // Self-invoking function to set up the idle callback implementation
+// Self-invoking function to set up the idle callback implementation
 ;(function () {
   const safeGlobal: GlobalWindow = globalThis as GlobalWindow
 

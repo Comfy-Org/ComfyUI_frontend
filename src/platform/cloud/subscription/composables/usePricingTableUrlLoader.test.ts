@@ -40,35 +40,18 @@ vi.mock(
 )
 
 const mockPermissions = vi.hoisted(() => ({
-  value: { canManageSubscriptionLifecycle: true }
+  value: { canManageSubscription: true }
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({ permissions: mockPermissions })
 }))
 
-const mockFetchMembers = vi.hoisted(() => vi.fn().mockResolvedValue([]))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    fetchMembers: mockFetchMembers
-  })
-}))
-
-const mockTrackSubscription = vi.hoisted(() => vi.fn())
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackSubscription: mockTrackSubscription })
-}))
-
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRouteQuery.value = {}
-    mockPermissions.value = { canManageSubscriptionLifecycle: true }
-    // clearAllMocks resets calls, not implementations, so restore the default
-    // (a test overrides fetchMembers to flip the gate mid-await).
-    mockFetchMembers.mockResolvedValue([])
+    mockPermissions.value = { canManageSubscription: true }
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
@@ -86,7 +69,7 @@ describe('usePricingTableUrlLoader', () => {
     expect(mockRouterReplace).not.toHaveBeenCalled()
   })
 
-  it('opens the pricing table for an original owner', async () => {
+  it('opens the pricing table for an owner', async () => {
     mockRouteQuery.value = { pricing: '1' }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
@@ -96,26 +79,7 @@ describe('usePricingTableUrlLoader', () => {
       reason: 'deep_link',
       planMode: undefined
     })
-    expect(mockTrackSubscription).toHaveBeenCalledWith('modal_opened', {
-      reason: 'deep_link'
-    })
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
-  })
-
-  it('reads the gate only after members finish loading', async () => {
-    mockRouteQuery.value = { pricing: '1' }
-    // The original owner becomes known only once the members list resolves;
-    // proves the loader awaits fetchMembers before reading the gate.
-    mockPermissions.value = { canManageSubscriptionLifecycle: false }
-    mockFetchMembers.mockImplementation(async () => {
-      mockPermissions.value = { canManageSubscriptionLifecycle: true }
-      return []
-    })
-
-    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
-    await loadPricingTableFromUrl()
-
-    expect(mockShowPricingTable).toHaveBeenCalledOnce()
   })
 
   it('opens on the team tab for ?pricing=team', async () => {
@@ -142,26 +106,24 @@ describe('usePricingTableUrlLoader', () => {
     })
   })
 
-  it('is a silent no-op for a member or promoted owner', async () => {
+  it('is a silent no-op for a member', async () => {
     mockRouteQuery.value = { pricing: '1' }
-    mockPermissions.value = { canManageSubscriptionLifecycle: false }
+    mockPermissions.value = { canManageSubscription: false }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
     expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockTrackSubscription).not.toHaveBeenCalled()
   })
 
   it('denies, strips, and clears together when the user is not eligible', async () => {
     mockRouteQuery.value = { pricing: '1', other: 'param' }
-    mockPermissions.value = { canManageSubscriptionLifecycle: false }
+    mockPermissions.value = { canManageSubscription: false }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
     expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockTrackSubscription).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
@@ -218,22 +180,5 @@ describe('usePricingTableUrlLoader', () => {
       reason: 'deep_link',
       planMode: undefined
     })
-  })
-
-  it('strips and clears, then propagates a members-fetch failure', async () => {
-    mockRouteQuery.value = { pricing: '1' }
-    mockFetchMembers.mockRejectedValue(new Error('listMembers failed'))
-
-    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
-    await expect(loadPricingTableFromUrl()).rejects.toThrow(
-      'listMembers failed'
-    )
-
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockTrackSubscription).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
-    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
-      'pricing'
-    )
   })
 })

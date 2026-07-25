@@ -554,7 +554,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
 
     setWorkflowStatus(e.detail.prompt_id, 'failed')
-    executionErrorStore.lastExecutionError = e.detail
+    executionErrorStore.recordExecutionError(e.detail)
     clearInitializationByJobId(e.detail.prompt_id)
     resetExecutionState(e.detail.prompt_id)
   }
@@ -580,13 +580,13 @@ export const useExecutionStore = defineStore('execution', () => {
 
     clearInitializationByJobId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
-    executionErrorStore.lastPromptError = {
+    executionErrorStore.recordPromptError({
       type: detail.exception_type ?? 'error',
       message: detail.exception_type
         ? `${detail.exception_type}: ${detail.exception_message}`
         : (detail.exception_message ?? ''),
       details: detail.traceback?.join('\n') ?? ''
-    }
+    })
     return true
   }
 
@@ -600,9 +600,9 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
-      executionErrorStore.lastNodeErrors = result.nodeErrors
+      executionErrorStore.recordNodeErrors(result.nodeErrors)
     } else {
-      executionErrorStore.lastPromptError = result.promptError
+      executionErrorStore.recordPromptError(result.promptError)
     }
     return true
   }

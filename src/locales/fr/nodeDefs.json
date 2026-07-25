@@ -1166,6 +1166,48 @@
       }
     }
   },
+  "ByteDanceSeedAudio": {
+    "description": "Générez de la parole, de la musique, des effets sonores et des dialogues multi-interlocuteurs à partir d’un seul prompt avec ByteDance Seed Audio 1.0. Décrivez la/les voix, l’émotion, l’ambiance, la musique de fond et les effets sonores dans le prompt, et incluez les répliques à prononcer. Vous pouvez choisir une voix prédéfinie intégrée, cloner jusqu’à 3 voix à partir de clips de référence (étiquetés @Audio1-3 dans le prompt), ou dériver une voix à partir de l’image d’un personnage. Jusqu’à 2 minutes d’audio par génération.",
+    "display_name": "ByteDance Seed Audio 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "loudness_rate": {
+        "name": "loudness_rate",
+        "tooltip": "Volume. 0 = normal, 100 = 2,0x, -50 = 0,5x."
+      },
+      "pitch_rate": {
+        "name": "pitch_rate",
+        "tooltip": "Décalage de hauteur en demi-tons (-12 à 12)."
+      },
+      "reference_mode": {
+        "name": "reference_mode",
+        "tooltip": "Comment conditionner la voix : « texte uniquement » (tout décrire dans le prompt), « référence audio » (cloner jusqu’à 3 voix, étiquetées @Audio1-3), « référence image » (dériver une voix à partir de l’image d’un personnage), ou « voix prédéfinie » (choisir une voix intégrée qui lit le prompt)."
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "Fréquence d’échantillonnage de sortie en Hz."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit le seed."
+      },
+      "speech_rate": {
+        "name": "speech_rate",
+        "tooltip": "Vitesse de parole. 0 = normal, 100 = 2,0x, -50 = 0,5x."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "Décrivez la/les voix, l’émotion, le rythme, l’ambiance, la musique de fond et les effets sonores, et incluez les répliques à prononcer (nommez les personnages dans le texte pour les dialogues). En mode « référence audio », faites référence aux clips connectés par ordre : @Audio1, @Audio2, @Audio3. Maximum 3000 caractères."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedNode": {
     "description": "Générez des réponses textuelles avec les modèles Seed 2.0 de ByteDance. Fournissez une invite textuelle et, en option, une ou plusieurs images ou vidéos pour un contexte multimodal.",
     "display_name": "ByteDance Seed",
@@ -1266,14 +1308,8 @@
       "model": {
         "name": "modèle"
       },
-      "model_fail_on_partial": {
-        "name": "échec_sur_partiel"
-      },
       "model_height": {
         "name": "hauteur"
-      },
-      "model_max_images": {
-        "name": "images_max"
       },
       "model_size_preset": {
         "name": "préréglage_taille"
@@ -1288,6 +1324,10 @@
       "seed": {
         "name": "graine",
         "tooltip": "Graine à utiliser pour la génération."
+      },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Activez le raisonnement d'optimisation du prompt du modèle (« thinking ») pour une meilleure conformité. Peut augmenter considérablement le temps de génération — notamment sur Seedream 5.0 Pro. Ne peut être désactivé que pour le texte-vers-image (pas lorsque des images de référence sont fournies)."
       },
       "watermark": {
         "name": "filigrane",
@@ -2009,6 +2049,10 @@
       "1": {
         "name": "hex",
         "tooltip": null
+      },
+      "2": {
+        "name": "alpha",
+        "tooltip": null
       }
     }
   },
@@ -2233,6 +2277,17 @@
       },
       "conditioning_to": {
         "name": "conditionnement_vers"
+      }
+    }
+  },
+  "ConditioningMultiply": {
+    "display_name": "Conditionnement (Multiplication)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "multiplier": {
+        "name": "multiplier"
       }
     }
   },
@@ -2780,6 +2835,10 @@
         "name": "arrière-plan",
         "tooltip": "Image optionnelle utilisée comme arrière-plan sur la toile et dans l’aperçu."
       },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Boîtes englobantes, éléments ou une chaîne JSON pour initialiser le canvas. Une nouvelle valeur en amont initialise le canvas ; les modifications effectuées sur le canvas sont prioritaires et conservées jusqu'à ce que la valeur en amont change à nouveau."
+      },
       "editor_state": {
         "name": "état_éditeur",
         "tooltip": "Dessinez des boîtes englobantes et définissez pour chaque boîte le type, le texte, la description, la palette de couleurs. Commencez par l’élément d’arrière-plan et terminez par le premier plan."
@@ -2787,6 +2846,10 @@
       "height": {
         "name": "hauteur",
         "tooltip": "Hauteur de la toile et de la grille de pixels pour les boîtes englobantes."
+      },
+      "last_incoming": {
+        "name": "last_incoming",
+        "tooltip": "État interne géré par le canvas : la dernière valeur bboxes en amont qui l'a initialisé. Laissez vide pour réinitialiser le canvas à partir de l'entrée bboxes lors de la prochaine exécution."
       },
       "width": {
         "name": "largeur",
@@ -5196,6 +5259,40 @@
       }
     }
   },
+  "GeminiVideoOmni": {
+    "description": "Générez une vidéo avec audio à partir d’un prompt texte en utilisant le modèle Gemini Omni Flash de Google. Vous pouvez fournir des images et/ou vidéos de référence pour guider ou éditer le résultat. Décrivez la durée souhaitée (3-10s) et le format d’image (16:9 ou 9:16) directement dans le prompt.",
+    "display_name": "Google Gemini Omni (Vidéo)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Le modèle vidéo Gemini utilisé pour générer la vidéo."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit le seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6162,94 +6259,6 @@
       },
       "width": {
         "name": "largeur"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV1": {
-    "description": "Génère des images de manière synchrone en utilisant le modèle Ideogram V1.\n\nLes liens des images sont disponibles pour une durée limitée ; si vous souhaitez conserver l'image, vous devez la télécharger.",
-    "display_name": "Ideogram V1",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Le format d'image pour la génération."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Déterminer si MagicPrompt doit être utilisé lors de la génération"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Description de ce qu'il faut exclure de l'image"
-      },
-      "num_images": {
-        "name": "num_images"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Invite pour la génération d'image"
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "Activer le mode turbo (génération plus rapide, qualité potentiellement inférieure)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV2": {
-    "description": "Génère des images de manière synchrone en utilisant le modèle Ideogram V2.\n\nLes liens vers les images sont disponibles pour une durée limitée ; si vous souhaitez conserver l'image, vous devez la télécharger.",
-    "display_name": "Ideogram V2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Le format d'image pour la génération. Ignoré si la résolution n'est pas définie sur AUTO."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Déterminer si MagicPrompt doit être utilisé lors de la génération"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Description de ce qu'il faut exclure de l'image"
-      },
-      "num_images": {
-        "name": "num_images"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Invite pour la génération d'image"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "La résolution pour la génération d'image. Si elle n'est pas définie sur AUTO, cela remplace le paramètre aspect_ratio."
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "style_type": {
-        "name": "style_type",
-        "tooltip": "Type de style pour la génération (V2 uniquement)"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "Activer le mode turbo (génération plus rapide, qualité potentiellement inférieure)"
       }
     },
     "outputs": {
@@ -10568,6 +10577,12 @@
       "mask": {
         "name": "mask"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      }
     }
   },
   "MaskToImage": {
@@ -14576,6 +14591,7 @@
     }
   },
   "Preview3D": {
+    "description": "Prévisualisez un fichier de modèle 3D sans l'enregistrer dans le répertoire de sortie ComfyUI.",
     "display_name": "Aperçu 3D",
     "inputs": {
       "bg_image": {
@@ -14594,6 +14610,7 @@
     }
   },
   "Preview3DAdvanced": {
+    "description": "Prévisualisez un fichier de modèle 3D sans l'enregistrer dans le répertoire de sortie ComfyUI.",
     "display_name": "Aperçu 3D (Avancé)",
     "inputs": {
       "camera_info": {
@@ -14640,21 +14657,18 @@
     }
   },
   "PreviewAny": {
+    "description": "Prévisualisez n'importe quelle valeur d'entrée sous forme de texte.",
     "display_name": "Aperçu de n'importe quel",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "Aperçu"
-      },
-      "preview_text": {
-        "name": "Aperçu"
-      },
+      "preview_mode": {},
+      "preview_text": {},
       "source": {
         "name": "source"
       }
     }
   },
   "PreviewAudio": {
+    "description": "Prévisualisez l'audio sans l'enregistrer dans le répertoire de sortie ComfyUI.",
     "display_name": "AperçuAudio",
     "inputs": {
       "audio": {
@@ -14672,6 +14686,7 @@
     }
   },
   "PreviewGaussianSplat": {
+    "description": "Prévisualisez un fichier 3D gaussian splat sans l'enregistrer dans le répertoire de sortie ComfyUI.",
     "display_name": "Aperçu Splat",
     "inputs": {
       "camera_info": {
@@ -14732,6 +14747,7 @@
     }
   },
   "PreviewPointCloud": {
+    "description": "Prévisualisez un fichier 3D de nuage de points sans l'enregistrer dans le répertoire de sortie ComfyUI.",
     "display_name": "Aperçu Nuage de Points",
     "inputs": {
       "camera_info": {
@@ -17509,6 +17525,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "Enregistrer 3D (Avancé)",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Fichier de modèle 3D provenant d'un nœud 3D en amont."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "EnregistrerPNGAnimé",
     "inputs": {
@@ -17669,6 +17734,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "Enregistrer Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Un fichier 3D gaussian splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveImage": {
     "description": "Enregistre les images d'entrée dans votre répertoire de sortie ComfyUI.",
     "display_name": "Enregistrer Image",
@@ -17807,6 +17921,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "Enregistrer le nuage de points",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Fichier nuage de points (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "Enregistrer les fichiers SVG sur le disque.",
     "display_name": "NoeudEnregistrerSVG",
@@ -17822,6 +17985,29 @@
     "outputs": {
       "0": {
         "name": "svg",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "description": "Enregistrer le contenu texte dans un fichier du répertoire de sortie.",
+    "display_name": "Enregistrer le texte",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {},
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
         "tooltip": null
       }
     }
@@ -17950,6 +18136,117 @@
       "0": {
         "name": "graine",
         "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "description": "Générer le conditionnement positif/négatif SeedVR2 à partir d'un latent VAE.",
+    "display_name": "Appliquer le conditionnement SeedVR2",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Le modèle SeedVR2."
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Le conditionnement positif pour l'échantillonnage."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Le conditionnement négatif pour l'échantillonnage."
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "description": "Aligne l’image générée avec l’image redimensionnée d’origine et applique une correction des couleurs.",
+    "display_name": "Post-traitement de la sortie SeedVR2",
+    "inputs": {
+      "color_correction_method": {
+        "name": "color_correction_method",
+        "tooltip": "Méthode pour faire correspondre les couleurs de l’image générée à l’image d’origine. lab : transfert de couleur dans l’espace CIELAB, préservant les détails (le plus fidèle). wavelet : transfert des couleurs basses fréquences, en conservant les détails haute fréquence suréchantillonnés. adain : correspondance moyenne/écart-type par canal (le plus rapide, teinte globale). none : pas de transfert de couleur (alignement géométrique uniquement)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "L’image générée à traiter."
+      },
+      "original_resized_images": {
+        "name": "original_resized_images",
+        "tooltip": "L’image redimensionnée d’origine avant prétraitement, utilisée comme référence."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "L’image alignée et corrigée en couleur."
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "description": "Ajoute un remplissage à une image redimensionnée pour le modèle SeedVR2. Le canal alpha est supprimé. Le nœud Post-traitement SeedVR2 réapplique le canal alpha à partir de l’image redimensionnée d’origine.",
+    "display_name": "Prétraitement de l’entrée SeedVR2",
+    "inputs": {
+      "resized_images": {
+        "name": "resized_images",
+        "tooltip": "L’image redimensionnée à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "L’image rembourrée pour l’encodage VAE."
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "description": "Découpe un latent vidéo SeedVR2 en segments temporels qui se chevauchent, suffisamment petits pour être traités un à un dans la VRAM. Les sorties latentes sont connectées à la fois à Appliquer le conditionnement SeedVR2 et à l’entrée latente du sampler, avant de les recombiner avec Fusionner les latents SeedVR2.",
+    "display_name": "Découper le latent SeedVR2",
+    "inputs": {
+      "chunking_mode": {
+        "name": "chunking_mode",
+        "tooltip": "manual = utilise exactement frames_per_chunk ; auto = prédit le plus grand segment possible selon la VRAM disponible."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Le latent SeedVR2 encodé par VAE à découper."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Images latentes partagées entre segments adjacents et fondues lors de la fusion ; 0 = pas de chevauchement."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "Les segments temporels dans l’ordre de la séquence."
+      },
+      "1": {
+        "name": "temporal_overlap",
+        "tooltip": "Le chevauchement effectif d’images latentes entre segments adjacents, pour Fusionner les latents SeedVR2."
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "description": "Recombine les segments temporels latents SeedVR2 échantillonnés en un seul latent, en fondant chaque chevauchement avec une fenêtre de Hann dimensionnée par le temporal_overlap issu de Découper le latent SeedVR2.",
+    "display_name": "Fusionner les latents SeedVR2",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "Les segments temporels échantillonnés dans l’ordre de la séquence."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "La sortie temporal_overlap de Découper le latent SeedVR2. 0 = simple concaténation."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": "Le latent recombiné sur toute la durée."
       }
     }
   },
@@ -18465,293 +18762,6 @@
       }
     }
   },
-  "StabilityAudioInpaint": {
-    "description": "Transforme une partie d'un échantillon audio existant en utilisant des instructions textuelles.",
-    "display_name": "Restauration audio Stability AI",
-    "inputs": {
-      "audio": {
-        "name": "audio",
-        "tooltip": "L'audio doit durer entre 6 et 190 secondes."
-      },
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée",
-        "tooltip": "Contrôle la durée en secondes de l'audio généré."
-      },
-      "mask_end": {
-        "name": "fin_masque"
-      },
-      "mask_start": {
-        "name": "début_masque"
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "La graine aléatoire utilisée pour la génération."
-      },
-      "steps": {
-        "name": "étapes",
-        "tooltip": "Contrôle le nombre d'étapes d'échantillonnage."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioToAudio": {
-    "description": "Transforme des échantillons audio existants en nouvelles compositions de haute qualité à l'aide d'instructions textuelles.",
-    "display_name": "Stability AI Audio vers Audio",
-    "inputs": {
-      "audio": {
-        "name": "audio",
-        "tooltip": "L'audio doit durer entre 6 et 190 secondes."
-      },
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée",
-        "tooltip": "Contrôle la durée en secondes de l'audio généré."
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "consigne"
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "La graine aléatoire utilisée pour la génération."
-      },
-      "steps": {
-        "name": "étapes",
-        "tooltip": "Contrôle le nombre d'étapes d'échantillonnage."
-      },
-      "strength": {
-        "name": "intensité",
-        "tooltip": "Ce paramètre contrôle l'influence du paramètre audio sur l'audio généré."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageSD_3_5Node": {
-    "description": "Génère des images de manière synchrone à partir d'un prompt et d'une résolution.",
-    "display_name": "Stability AI Stable Diffusion 3.5 Image",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Rapport d’aspect de l’image générée."
-      },
-      "cfg_scale": {
-        "name": "cfg_scale",
-        "tooltip": "À quel point le processus de diffusion suit strictement le texte du prompt (des valeurs plus élevées rapprochent l’image de votre prompt)."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "Dénuagement de l’image d’entrée ; 0,0 donne une image identique à l’entrée, 1,0 équivaut à ne pas fournir d’image du tout."
-      },
-      "model": {
-        "name": "model"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Mots-clés de ce que vous ne souhaitez pas voir dans l’image générée. Il s’agit d’une fonctionnalité avancée."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Ce que vous souhaitez voir dans l’image générée. Un prompt fort et descriptif qui définit clairement les éléments, les couleurs et les sujets donnera de meilleurs résultats."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "Style optionnel souhaité pour l’image générée."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageUltraNode": {
-    "description": "Génère des images de manière synchrone à partir d'un prompt et d'une résolution.",
-    "display_name": "Stability AI Stable Image Ultra",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Rapport d'aspect de l'image générée."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "Dénuage de l'image d'entrée ; 0.0 donne une image identique à l'entrée, 1.0 comme si aucune image n'avait été fournie."
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Un texte décrivant ce que vous ne souhaitez pas voir dans l'image générée. Il s'agit d'une fonctionnalité avancée."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Ce que vous souhaitez voir dans l'image générée. Un prompt fort et descriptif qui définit clairement les éléments, les couleurs et les sujets donnera de meilleurs résultats. Pour contrôler le poids d'un mot donné, utilisez le format `(mot:poids)`, où `mot` est le mot dont vous souhaitez contrôler le poids et `poids` est une valeur entre 0 et 1. Par exemple : `Le ciel était d'un (bleu:0.3) vif et (vert:0.8)` indiquerait un ciel bleu et vert, mais plus vert que bleu."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "Style souhaité optionnel de l'image générée."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityTextToAudio": {
-    "description": "Génère de la musique et des effets sonores de haute qualité à partir de descriptions textuelles.",
-    "display_name": "Stability AI Texte vers Audio",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée",
-        "tooltip": "Contrôle la durée en secondes de l'audio généré."
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "consigne"
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "La graine aléatoire utilisée pour la génération."
-      },
-      "steps": {
-        "name": "étapes",
-        "tooltip": "Contrôle le nombre d'étapes d'échantillonnage."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleConservativeNode": {
-    "description": "Agrandit l’image avec des modifications minimales jusqu’à une résolution 4K.",
-    "display_name": "Stability AI Upscale Conservateur",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "creativity": {
-        "name": "créativité",
-        "tooltip": "Contrôle la probabilité de créer des détails supplémentaires non fortement conditionnés par l’image initiale."
-      },
-      "image": {
-        "name": "image"
-      },
-      "negative_prompt": {
-        "name": "prompt négatif",
-        "tooltip": "Mots-clés de ce que vous ne souhaitez pas voir dans l’image générée. Il s’agit d’une fonctionnalité avancée."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Ce que vous souhaitez voir dans l’image générée. Un prompt fort et descriptif, définissant clairement les éléments, couleurs et sujets, donnera de meilleurs résultats."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "La graine aléatoire utilisée pour générer le bruit."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleCreativeNode": {
-    "description": "Agrandir l’image avec des modifications minimales jusqu’à une résolution 4K.",
-    "display_name": "Stability AI Upscale Creative",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "creativity": {
-        "name": "créativité",
-        "tooltip": "Contrôle la probabilité de créer des détails supplémentaires non fortement conditionnés par l’image initiale."
-      },
-      "image": {
-        "name": "image"
-      },
-      "negative_prompt": {
-        "name": "prompt_négatif",
-        "tooltip": "Mots-clés de ce que vous ne souhaitez pas voir dans l’image générée. Fonctionnalité avancée."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Ce que vous souhaitez voir dans l’image générée. Un prompt fort et descriptif, définissant clairement les éléments, couleurs et sujets, donnera de meilleurs résultats."
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
-      },
-      "style_preset": {
-        "name": "style_prédéfini",
-        "tooltip": "Style souhaité de l’image générée (optionnel)."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleFastNode": {
-    "description": "Agrandit rapidement une image via un appel à l’API Stability jusqu’à 4x sa taille d’origine ; destiné à l’agrandissement d’images de faible qualité ou compressées.",
-    "display_name": "Stability AI Agrandissement Rapide",
-    "inputs": {
-      "image": {
-        "name": "image"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "StableCascade_EmptyLatentImage": {
     "display_name": "StableCascade_EmptyLatentImage",
     "inputs": {
@@ -19122,6 +19132,97 @@
     "inputs": {
       "style_model_name": {
         "name": "nom_du_modèle_de_style"
+      }
+    }
+  },
+  "SyncLipSyncNode": {
+    "description": "Re-synchronisez le mouvement de la bouche dans une vidéo avec un nouvel audio de parole grâce à sync.so. Gère automatiquement les gros plans, les profils et les obstructions tout en préservant l'expression du locuteur. Le coût dépend de la durée de la sortie.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio de parole auquel synchroniser la bouche."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle de génération sync.so."
+      },
+      "model_speaker_frame": {
+        "name": "image_locuteur"
+      },
+      "model_speaker_selection": {
+        "name": "sélection_locuteur"
+      },
+      "model_speaker_x": {
+        "name": "locuteur_x"
+      },
+      "model_speaker_y": {
+        "name": "locuteur_y"
+      },
+      "model_sync_mode": {
+        "name": "mode_sync"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Séquence du locuteur à resynchroniser. Jusqu'à 4K (4096x2160) ; un taux d'images constant de 24/25/30 fps est optimal."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "Animez un portrait fixe en une vidéo parlante pilotée par un audio de parole, grâce au modèle sync-3 de sync.so. La durée de sortie correspond à celle de l'audio. Le coût dépend de la durée de la sortie.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio de parole pilotant la vidéo parlante ; la durée de sortie correspond à celle-ci. Chaînez ici n'importe quel nœud TTS pour animer à partir d'un texte."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Une seule image avec un visage clairement visible, jusqu'à 4K (4096x2160)."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle de génération sync.so. L'entrée image est exclusive à sync-3."
+      },
+      "model_auto_downscale": {
+        "name": "auto_redimensionnement"
+      },
+      "model_speaker_selection": {
+        "name": "sélection_locuteur"
+      },
+      "model_speaker_x": {
+        "name": "locuteur_x"
+      },
+      "model_speaker_y": {
+        "name": "locuteur_y"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Indication optionnelle sur la façon dont le portrait prend vie, par exemple « faire sourire le sujet et regarder la caméra ». Laissez vide pour un mouvement naturel de la parole."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -19755,6 +19856,42 @@
     "outputs": {
       "0": {
         "name": "texte_généré",
+        "tooltip": null
+      }
+    }
+  },
+  "TextOverlay": {
+    "description": "Superposez du texte sur une image ou un lot d’images.",
+    "display_name": "Superposer du texte",
+    "inputs": {
+      "align": {
+        "name": "alignement"
+      },
+      "color": {
+        "name": "couleur",
+        "tooltip": "Couleur du texte."
+      },
+      "font_size": {
+        "name": "taille_de_police",
+        "tooltip": "Taille de la police en pourcentage de la hauteur de l’image."
+      },
+      "images": {
+        "name": "images"
+      },
+      "outline": {
+        "name": "contour",
+        "tooltip": "Dessiner un contour noir autour du texte."
+      },
+      "position": {
+        "name": "position"
+      },
+      "text": {
+        "name": "texte"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
         "tooltip": null
       }
     }

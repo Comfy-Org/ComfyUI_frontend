@@ -2,6 +2,11 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
+import {
+  getLiftedErrorSource,
+  liftNodeErrorsToBoundary,
+  resolveLiftChain
+} from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -16,7 +21,10 @@ import type {
   NodeError,
   PromptError
 } from '@/schemas/apiSchema'
-import { getAncestorExecutionIds } from '@/types/nodeIdentification'
+import {
+  getAncestorExecutionIds,
+  tryNormalizeNodeExecutionId
+} from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   executionIdToNodeLocatorId,
@@ -25,9 +33,19 @@ import {
 } from '@/utils/graphTraversalUtil'
 import {
   SIMPLE_ERROR_TYPES,
+  errorsForSlot,
+  getInputConfigBounds,
+  hasErrorForSlot,
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+
+interface SlotNodeErrorClearTarget {
+  executionId: NodeExecutionId
+  slotName: string
+  /** Interior targets validate against the bounds recorded on their errors. */
+  useRecordedBounds?: boolean
+}
 
 /** Execution error state: node errors, runtime errors, prompt errors, and missing assets. */
 export const useExecutionErrorStore = defineStore('executionError', () => {
@@ -42,6 +60,20 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const lastPromptError = ref<PromptError | null>(null)
 
   const isErrorOverlayOpen = ref(false)
+
+  /** Replaces the full record; empty or null means the run produced no errors. */
+  function recordNodeErrors(nodeErrors: Record<string, NodeError> | null) {
+    lastNodeErrors.value =
+      nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
+  }
+
+  function recordExecutionError(detail: ExecutionErrorWsMessage) {
+    lastExecutionError.value = detail
+  }
+
+  function recordPromptError(promptError: PromptError) {
+    lastPromptError.value = promptError
+  }
 
   function showErrorOverlay() {
     isErrorOverlayOpen.value = true
@@ -66,10 +98,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   function clearExecutionStartErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
-    if (
-      !lastNodeErrors.value ||
-      Object.keys(lastNodeErrors.value).length === 0
-    ) {
+    if (!lastNodeErrors.value) {
       isErrorOverlayOpen.value = false
     }
   }
@@ -79,33 +108,29 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     lastPromptError.value = null
   }
 
-  /**
-   * Removes a node's errors if they consist entirely of simple, auto-resolvable
-   * types. When `slotName` is provided, only errors for that slot are checked.
-   */
-  function clearSimpleNodeErrors(
+  function clearSimpleNodeErrorsFromRecord(
+    nodeErrors: Record<string, NodeError>,
     executionId: NodeExecutionId,
     slotName?: string
-  ): void {
-    if (!lastNodeErrors.value) return
-    const nodeError = lastNodeErrors.value[executionId]
-    if (!nodeError) return
+  ): Record<string, NodeError> | null {
+    const nodeError = nodeErrors[executionId]
+    if (!nodeError) return null
 
     const isSlotScoped = slotName !== undefined
-
     const relevantErrors = isSlotScoped
-      ? nodeError.errors.filter((e) => e.extra_info?.input_name === slotName)
+      ? errorsForSlot(nodeError.errors, slotName)
       : nodeError.errors
 
-    if (relevantErrors.length === 0) return
-    if (!relevantErrors.every((e) => SIMPLE_ERROR_TYPES.has(e.type))) return
+    if (relevantErrors.length === 0) return null
+    if (!relevantErrors.every((e) => SIMPLE_ERROR_TYPES.has(e.type))) {
+      return null
+    }
 
-    const updated = { ...lastNodeErrors.value }
+    const updated = { ...nodeErrors }
 
     if (isSlotScoped) {
-      // Remove only the target slot's errors if they were all simple
       const remainingErrors = nodeError.errors.filter(
-        (e) => e.extra_info?.input_name !== slotName
+        (error) => !relevantErrors.includes(error)
       )
       if (remainingErrors.length === 0) {
         delete updated[executionId]
@@ -116,16 +141,148 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         }
       }
     } else {
-      // If no slot specified and all errors were simple, clear the whole node
       delete updated[executionId]
     }
 
+    return updated
+  }
+
+  /**
+   * Raw interior sources of lifted errors whose boundary chain passes through
+   * `(executionId, slotName)`, so a fix at any host level — final surface or
+   * intermediate — clears the error at its raw key.
+   */
+  function getLiftedErrorSourceTargets(
+    executionId: NodeExecutionId,
+    slotName: string
+  ): SlotNodeErrorClearTarget[] {
+    const surfaced = surfacedNodeErrors.value
+    if (!surfaced || !app.isGraphReady) return []
+
+    return Object.values(surfaced).flatMap((surface) =>
+      surface.errors.flatMap((error): SlotNodeErrorClearTarget[] => {
+        const source = getLiftedErrorSource(error)
+        if (!source) return []
+
+        const sourceExecutionId = tryNormalizeNodeExecutionId(
+          source.source_execution_id
+        )
+        if (!sourceExecutionId) return []
+
+        const clearsThisError = resolveLiftChain(
+          app.rootGraph,
+          sourceExecutionId,
+          source.source_input_name
+        ).some(
+          (level) =>
+            level.hostExecId === executionId && level.hostInputName === slotName
+        )
+        return clearsThisError
+          ? [
+              {
+                executionId: sourceExecutionId,
+                slotName: source.source_input_name,
+                useRecordedBounds: true
+              }
+            ]
+          : []
+      })
+    )
+  }
+
+  /** Raw targets are keys into lastNodeErrors, not surfacedNodeErrors. */
+  function getRawClearTargets(
+    executionId: NodeExecutionId,
+    slotName: string
+  ): SlotNodeErrorClearTarget[] {
+    return [
+      { executionId, slotName },
+      ...getLiftedErrorSourceTargets(executionId, slotName)
+    ]
+  }
+
+  /**
+   * Bounds recorded on the error win only for interior lifted targets, where
+   * the caller's options describe the host widget rather than the interior
+   * input. The base target keeps the caller's live widget bounds, which stay
+   * authoritative when node definitions change after validation.
+   */
+  function getTargetRangeOptions(
+    errors: NodeError['errors'],
+    fallback: { min?: number; max?: number }
+  ): { min?: number; max?: number } {
+    for (const error of errors) {
+      const { min, max } = getInputConfigBounds(error)
+      if (min === undefined && max === undefined) continue
+      return {
+        min: typeof min === 'number' ? min : fallback.min,
+        max: typeof max === 'number' ? max : fallback.max
+      }
+    }
+    return fallback
+  }
+
+  function isTargetStillOutOfRange(
+    nodeErrors: Record<string, NodeError>,
+    target: SlotNodeErrorClearTarget,
+    value: number,
+    callerOptions: { min?: number; max?: number }
+  ): boolean {
+    const nodeError = nodeErrors[target.executionId]
+    if (!nodeError) return false
+
+    const errors = errorsForSlot(nodeError.errors, target.slotName)
+    const options = target.useRecordedBounds
+      ? getTargetRangeOptions(errors, callerOptions)
+      : callerOptions
+
+    return isValueStillOutOfRange(value, errors, options)
+  }
+
+  function clearTargets(
+    targets: { executionId: NodeExecutionId; slotName?: string }[]
+  ): void {
+    if (!lastNodeErrors.value) return
+
+    let updated = lastNodeErrors.value
+    for (const target of targets) {
+      updated =
+        clearSimpleNodeErrorsFromRecord(
+          updated,
+          target.executionId,
+          target.slotName
+        ) ?? updated
+    }
+
+    if (updated === lastNodeErrors.value) return
     lastNodeErrors.value = Object.keys(updated).length > 0 ? updated : null
+  }
+
+  /**
+   * Removes a node's errors if they consist entirely of simple, auto-resolvable
+   * types. When `slotName` is provided, only errors for that slot are checked
+   * and boundary-lifted errors are also cleared through their raw interior
+   * source. Node-scoped calls (no `slotName`) operate on the raw record key
+   * only.
+   */
+  function clearSimpleNodeErrors(
+    executionId: NodeExecutionId,
+    slotName?: string
+  ): void {
+    clearTargets(
+      slotName === undefined
+        ? [{ executionId }]
+        : getRawClearTargets(executionId, slotName)
+    )
   }
 
   /**
    * Attempts to clear an error for a given widget, but avoids clearing it if
    * the error is a range violation and the new value is still out of bounds.
+   * The base target validates against the caller's live widget bounds; each
+   * interior lifted target validates against its own recorded bounds, so a
+   * boundary input fanning out to inputs with different constraints clears
+   * only the targets the new value satisfies.
    *
    * Note: `value_not_in_list` errors are optimistically cleared without
    * list-membership validation because combo widgets constrain choices to
@@ -138,16 +295,24 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     newValue: unknown,
     options?: { min?: number; max?: number }
   ): void {
-    if (typeof newValue === 'number' && lastNodeErrors.value) {
-      const nodeErrors = lastNodeErrors.value[executionId]
-      if (nodeErrors) {
-        const errs = nodeErrors.errors.filter(
-          (e) => e.extra_info?.input_name === widgetName
-        )
-        if (isValueStillOutOfRange(newValue, errs, options || {})) return
-      }
-    }
-    clearSimpleNodeErrors(executionId, widgetName)
+    const nodeErrors = lastNodeErrors.value
+    if (!nodeErrors) return
+
+    const targets = getRawClearTargets(executionId, widgetName)
+    const clearableTargets =
+      typeof newValue === 'number'
+        ? targets.filter(
+            (target) =>
+              !isTargetStillOutOfRange(
+                nodeErrors,
+                target,
+                newValue,
+                options ?? {}
+              )
+          )
+        : targets
+
+    clearTargets(clearableTargets)
   }
 
   /**
@@ -220,8 +385,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   const hasPromptError = computed(() => !!lastPromptError.value)
 
-  const hasNodeError = computed(
-    () => !!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0
+  const hasNodeError = computed(() => lastNodeErrors.value !== null)
+
+  // Re-lifts only when the record changes; topology is assumed stable while errors are displayed.
+  const surfacedNodeErrors = computed(() =>
+    lastNodeErrors.value && app.isGraphReady
+      ? liftNodeErrorsToBoundary(app.rootGraph, lastNodeErrors.value)
+      : lastNodeErrors.value
   )
 
   const hasAnyError = computed(
@@ -236,8 +406,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   const allErrorExecutionIds = computed<string[]>(() => {
     const ids: string[] = []
-    if (lastNodeErrors.value) {
-      ids.push(...Object.keys(lastNodeErrors.value))
+    if (surfacedNodeErrors.value) {
+      ids.push(...Object.keys(surfacedNodeErrors.value))
     }
     if (lastExecutionError.value) {
       const nodeId = lastExecutionError.value.node_id
@@ -279,8 +449,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     // Fall back to rootGraph when currentGraph hasn't been initialized yet
     const activeGraph = canvasStore.currentGraph ?? app.rootGraph
 
-    if (lastNodeErrors.value) {
-      for (const executionId of Object.keys(lastNodeErrors.value)) {
+    if (surfacedNodeErrors.value) {
+      for (const executionId of Object.keys(surfacedNodeErrors.value)) {
         const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
         if (graphNode?.graph === activeGraph) {
           ids.add(String(graphNode.id))
@@ -302,12 +472,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Map of node errors indexed by locator ID. */
   const nodeErrorsByLocatorId = computed<Record<NodeLocatorId, NodeError>>(
     () => {
-      if (!lastNodeErrors.value) return {}
+      if (!surfacedNodeErrors.value) return {}
 
       const map: Record<NodeLocatorId, NodeError> = {}
 
       for (const [executionId, nodeError] of Object.entries(
-        lastNodeErrors.value
+        surfacedNodeErrors.value
       )) {
         const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
         if (locatorId) {
@@ -334,7 +504,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const nodeError = getNodeErrors(nodeLocatorId)
     if (!nodeError) return false
 
-    return nodeError.errors.some((e) => e.extra_info?.input_name === slotName)
+    return hasErrorForSlot(nodeError.errors, slotName)
   }
 
   /**
@@ -361,13 +531,18 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return errorAncestorExecutionIds.value.has(execId)
   }
 
-  useNodeErrorFlagSync(lastNodeErrors, missingModelStore, missingMediaStore)
+  useNodeErrorFlagSync(surfacedNodeErrors, missingModelStore, missingMediaStore)
 
   return {
-    // Raw state
-    lastNodeErrors,
-    lastExecutionError,
-    lastPromptError,
+    // Read-only state
+    lastNodeErrors: computed(() => lastNodeErrors.value),
+    lastExecutionError: computed(() => lastExecutionError.value),
+    lastPromptError: computed(() => lastPromptError.value),
+
+    // Recording
+    recordNodeErrors,
+    recordExecutionError,
+    recordPromptError,
 
     // Clearing
     clearAllErrors,
@@ -380,6 +555,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     dismissErrorOverlay,
 
     // Derived state
+    surfacedNodeErrors,
     hasExecutionError,
     hasPromptError,
     hasNodeError,

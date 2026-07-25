@@ -29,47 +29,50 @@ const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
-const COVERAGE_CRITICAL = process.env.COVERAGE_CRITICAL === 'true'
 
-const CRITICAL_COVERAGE_INCLUDE = [
-  'src/base/**/*.{ts,vue}',
-  'src/composables/**/*.{ts,vue}',
-  'src/core/**/*.{ts,vue}',
-  'src/lib/litegraph/src/node/**/*.{ts,vue}',
-  'src/lib/litegraph/src/subgraph/**/*.{ts,vue}',
-  'src/lib/litegraph/src/utils/**/*.{ts,vue}',
-  'src/platform/assets/composables/**/*.{ts,vue}',
-  'src/platform/assets/mappings/**/*.{ts,vue}',
-  'src/platform/assets/schemas/**/*.{ts,vue}',
-  'src/platform/assets/services/**/*.{ts,vue}',
-  'src/platform/assets/utils/**/*.{ts,vue}',
-  'src/platform/errorCatalog/**/*.{ts,vue}',
-  'src/platform/keybindings/**/*.{ts,vue}',
-  'src/platform/missingMedia/**/*.{ts,vue}',
-  'src/platform/missingModel/**/*.{ts,vue}',
-  'src/platform/navigation/**/*.{ts,vue}',
-  'src/platform/nodeReplacement/**/*.{ts,vue}',
-  'src/platform/remote/**/*.{ts,vue}',
-  'src/platform/remoteConfig/**/*.{ts,vue}',
-  'src/platform/secrets/**/*.{ts,vue}',
-  'src/platform/settings/**/*.{ts,vue}',
-  'src/platform/workflow/**/*.{ts,vue}',
-  'src/platform/workspace/api/**/*.{ts,vue}',
-  'src/platform/workspace/auth/**/*.{ts,vue}',
-  'src/platform/workspace/composables/**/*.{ts,vue}',
-  'src/platform/workspace/stores/**/*.{ts,vue}',
-  'src/platform/workspace/utils/**/*.{ts,vue}',
-  'src/schemas/**/*.{ts,vue}',
-  'src/scripts/**/*.{ts,vue}',
-  'src/services/**/*.{ts,vue}',
-  'src/stores/**/*.{ts,vue}',
-  'src/utils/**/*.{ts,vue}',
-  'src/workbench/extensions/manager/composables/**/*.{ts,vue}',
-  'src/workbench/extensions/manager/services/**/*.{ts,vue}',
-  'src/workbench/extensions/manager/stores/**/*.{ts,vue}',
-  'src/workbench/extensions/manager/utils/**/*.{ts,vue}',
-  'src/workbench/utils/**/*.{ts,vue}'
+const CRITICAL_COVERAGE_DIRS = [
+  'src/base',
+  'src/composables',
+  'src/core',
+  'src/lib/litegraph/src/node',
+  'src/lib/litegraph/src/subgraph',
+  'src/lib/litegraph/src/utils',
+  'src/platform/assets/composables',
+  'src/platform/assets/mappings',
+  'src/platform/assets/schemas',
+  'src/platform/assets/services',
+  'src/platform/assets/utils',
+  'src/platform/errorCatalog',
+  'src/platform/keybindings',
+  'src/platform/missingMedia',
+  'src/platform/missingModel',
+  'src/platform/navigation',
+  'src/platform/nodeReplacement',
+  'src/platform/remote',
+  'src/platform/remoteConfig',
+  'src/platform/secrets',
+  'src/platform/settings',
+  'src/platform/workflow',
+  'src/platform/workspace/api',
+  'src/platform/workspace/auth',
+  'src/platform/workspace/composables',
+  'src/platform/workspace/stores',
+  'src/platform/workspace/utils',
+  'src/schemas',
+  'src/scripts',
+  'src/services',
+  'src/stores',
+  'src/utils',
+  'src/workbench/extensions/manager/composables',
+  'src/workbench/extensions/manager/services',
+  'src/workbench/extensions/manager/stores',
+  'src/workbench/extensions/manager/utils',
+  'src/workbench/utils'
 ]
+
+// A single glob key so vitest aggregates all critical dirs into one
+// thresholds bucket instead of one bucket per glob
+const CRITICAL_COVERAGE_GLOB = `{${CRITICAL_COVERAGE_DIRS.join(',')}}/**/*.{ts,vue}`
 
 const CRITICAL_COVERAGE_THRESHOLDS = {
   statements: 69,
@@ -77,6 +80,18 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
   functions: 67,
   lines: 70
 }
+
+const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
+  'src/lib/litegraph/imgs/**',
+  'src/lib/litegraph/public/**',
+  'src/lib/litegraph/src/*.{ts,vue}',
+  'src/lib/litegraph/src/__fixtures__/**',
+  'src/lib/litegraph/src/__snapshots__/**',
+  'src/lib/litegraph/src/canvas/**',
+  'src/lib/litegraph/src/infrastructure/**',
+  'src/lib/litegraph/src/types/**',
+  'src/lib/litegraph/src/widgets/**'
+]
 
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
@@ -716,19 +731,19 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
-      include: COVERAGE_CRITICAL
-        ? CRITICAL_COVERAGE_INCLUDE
-        : ['src/**/*.{ts,vue}'],
+      include: ['src/**/*.{ts,vue}'],
       exclude: [
         'src/**/*.test.ts',
         'src/**/*.spec.ts',
         'src/**/*.stories.ts',
         'src/**/*.d.ts',
         'src/locales/**',
-        ...(COVERAGE_CRITICAL ? [] : ['src/lib/litegraph/**']),
-        'src/assets/**'
+        'src/assets/**',
+        ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
-      ...(COVERAGE_CRITICAL ? { thresholds: CRITICAL_COVERAGE_THRESHOLDS } : {})
+      thresholds: {
+        [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS
+      }
     },
     exclude: [
       '**/node_modules/**',

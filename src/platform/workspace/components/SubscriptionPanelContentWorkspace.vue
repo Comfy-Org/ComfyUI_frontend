@@ -45,7 +45,7 @@
     <template v-else>
       <!-- Cancelled subscription info card -->
       <div
-        v-if="isTeamPlanCancelled"
+        v-if="isSubscriptionCancelled"
         class="mb-6 flex gap-1 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
       >
         <div
@@ -151,7 +151,7 @@
                     {{ planDisplayName }}
                   </h3>
                   <StatusBadge
-                    v-if="isTeamPlanCancelled"
+                    v-if="isSubscriptionCancelled"
                     :label="$t('subscription.canceled')"
                     severity="warn"
                   />
@@ -164,7 +164,7 @@
                   v-if="isActiveSubscription"
                   class="text-sm text-text-secondary"
                 >
-                  <template v-if="isTeamPlanCancelled">
+                  <template v-if="isSubscriptionCancelled">
                     {{
                       $t('subscription.endsOnDate', {
                         date: formattedEndDate
@@ -195,7 +195,10 @@
                   {{ $t('subscription.manageBilling') }}
                 </Button>
                 <Button
-                  v-if="isTeamPlanCancelled && isOriginalOwner"
+                  v-if="
+                    isSubscriptionCancelled &&
+                    permissions.canManageSubscriptionLifecycle
+                  "
                   size="lg"
                   variant="primary"
                   class="rounded-lg px-4 text-sm font-normal"
@@ -206,7 +209,8 @@
                 </Button>
                 <Button
                   v-else-if="
-                    !isTeamPlanCancelled && permissions.canManageSubscription
+                    !isSubscriptionCancelled &&
+                    permissions.canManageSubscription
                   "
                   size="lg"
                   variant="secondary"
@@ -214,7 +218,7 @@
                   @click="handleUpgrade"
                 >
                   {{
-                    isInPersonalWorkspace
+                    isInPersonalWorkspace && !isTeamPlan
                       ? $t('subscription.upgradePlan')
                       : $t('subscription.changePlan')
                   }}
@@ -305,7 +309,10 @@
         </Button>
       </div>
 
-      <SubscriptionFooterLinks class="mt-auto pt-6" />
+      <SubscriptionFooterLinks
+        class="mt-auto pt-6"
+        :show-invoice-history="permissions.canManageSubscription"
+      />
     </template>
   </div>
 </template>
@@ -335,7 +342,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
-const { permissions, isOriginalOwner, isTeamPlanCancelled } = useWorkspaceUI()
+const { permissions, isSubscriptionCancelled } = useWorkspaceUI()
 const { t, n, locale } = useI18n()
 
 const billingOperationStore = useBillingOperationStore()
@@ -344,6 +351,7 @@ const isSettingUp = computed(() => billingOperationStore.isSettingUp)
 const {
   isActiveSubscription,
   isFreeTier: isFreeTierPlan,
+  isTeamPlan,
   subscription,
   isLoading,
   error,
@@ -362,7 +370,13 @@ const { menuEntries } = useWorkspaceMenuItems()
 // stays active until its end date, so it keeps the subscribed treatment.
 const showSubscribePrompt = computed(() => {
   if (!permissions.value.canManageSubscription) return false
-  if (isTeamPlanCancelled.value) return false
+  if (isSubscriptionCancelled.value) return false
+  if (
+    subscription.value &&
+    !isFreeTierPlan.value &&
+    (subscription.value.planSlug || subscription.value.tier)
+  )
+    return false
   if (isInPersonalWorkspace.value) return !isActiveSubscription.value
   return !isWorkspaceSubscribed.value
 })
@@ -376,7 +390,7 @@ const isPersonalFree = computed(
 )
 
 const isTeamActive = computed(
-  () => !isInPersonalWorkspace.value && isActiveSubscription.value
+  () => isTeamPlan.value && isActiveSubscription.value
 )
 
 const isMemberView = computed(
@@ -391,12 +405,13 @@ const showZeroState = computed(
 )
 
 function handleSubscribeWorkspace() {
-  showSubscriptionDialog()
+  showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
 function handleUpgrade() {
-  if (isFreeTierPlan.value) showPricingTable()
-  else showSubscriptionDialog()
+  if (isFreeTierPlan.value)
+    showPricingTable({ reason: 'settings_billing_panel' })
+  else showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
 function handleViewMoreDetails() {
@@ -439,9 +454,7 @@ const subscriptionTierName = computed(() => {
 })
 
 const planDisplayName = computed(() =>
-  isInPersonalWorkspace.value
-    ? subscriptionTierName.value
-    : t('subscription.teamPlanName')
+  isTeamPlan.value ? t('subscription.teamPlanName') : subscriptionTierName.value
 )
 
 const tierKey = computed(() => {

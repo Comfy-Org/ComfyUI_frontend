@@ -10,7 +10,7 @@ import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
-import { i18n } from '@/i18n'
+import { i18n, te } from '@/i18n'
 
 function nodeValidationError(
   type: string,
@@ -129,6 +129,35 @@ describe('errorMessageResolver', () => {
       toastTitle: 'Required input missing',
       toastMessage: 'KSampler is missing a required input: model'
     })
+  })
+
+  it('preserves special characters in catalog copy for node names', () => {
+    const nodeDisplayName = 'A & B <C>'
+    const result = resolveRunErrorMessage({
+      kind: 'execution',
+      error: executionError('ImageDownloadError', 'Failed to validate images'),
+      nodeDisplayName
+    })
+    const interpolatedCopy = [
+      result.displayItemLabel,
+      result.toastMessage
+    ].join(' ')
+
+    expect(interpolatedCopy).toContain(nodeDisplayName)
+    expect(interpolatedCopy).not.toMatch(/&(?:amp|lt|gt);/)
+    expect(interpolatedCopy).toContain("couldn't be loaded")
+  })
+
+  it('preserves special characters in catalog details copy for node names', () => {
+    const nodeDisplayName = 'A & B <C>'
+    const result = resolveRunErrorMessage({
+      kind: 'node_validation',
+      error: requiredInputMissing('model'),
+      nodeDisplayName
+    })
+
+    expect(result.displayDetails).toContain(nodeDisplayName)
+    expect(result.displayDetails).not.toMatch(/&(?:amp|lt|gt);/)
   })
 
   it('uses catalog fallbacks when required_input_missing lacks node or input labels', () => {
@@ -1540,6 +1569,22 @@ describe('errorMessageResolver', () => {
       toastTitle: "sdxl.safetensors isn't available on Cloud",
       toastMessage: "This model isn't supported. Choose a different one."
     })
+  })
+
+  it('preserves special characters in catalog copy for model names', () => {
+    const modelName = 'sd&xl<v2>.safetensors'
+    expect(
+      te('errorCatalog.missingErrors.missing_model.toastTitleOneOss')
+    ).toBe(true)
+    const result = resolveMissingErrorMessage({
+      kind: 'missing_model',
+      groups: missingModelGroups(modelName),
+      count: 1,
+      isCloud: false
+    })
+
+    expect(result.toastTitle).toContain(modelName)
+    expect(result.toastTitle).not.toMatch(/&(?:amp|lt|gt);/)
   })
 
   it('resolves missing media group display and toast copy', () => {

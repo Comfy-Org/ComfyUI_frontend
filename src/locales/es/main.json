@@ -359,12 +359,14 @@
     "colors": "paleta_de_colores",
     "descLabel": "descripción",
     "descPlaceholder": "descripción de esta región",
+    "grid": "Cuadrícula",
     "textLabel": "Texto",
     "textPlaceholder": "texto a renderizar (literal)",
     "typeObj": "obj",
     "typeText": "texto"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "Modo {mode}, acciones del flujo de trabajo",
     "app": "Aplicación",
     "blueprint": "Plano",
     "clearWorkflow": "Limpiar flujo de trabajo",
@@ -515,57 +517,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "Por favor, mantén tu respuesta por debajo de {max} caracteres.",
         "chooseAnOption": "Por favor, elige una opción.",
         "describeAnswer": "Por favor, describe tu respuesta.",
         "selectAtLeastOne": "Por favor, selecciona al menos una opción."
       },
       "intro": "Ayúdanos a personalizar tu experiencia con ComfyUI.",
       "options": {
-        "familiarity": {
-          "advanced": "Usuario avanzado (flujos de trabajo personalizados)",
-          "basics": "Cómodo con lo básico",
-          "expert": "Experto (ayudo a otros)",
-          "new": "Nuevo en ComfyUI (nunca lo he usado antes)",
-          "starting": "Recién comenzando (siguiendo tutoriales)"
+        "experience": {
+          "new": "Nuevo en ComfyUI",
+          "pro": "Soy usuario avanzado",
+          "some": "Ya tengo experiencia"
+        },
+        "focus": {
+          "custom_nodes": "Nodos personalizados",
+          "pipelines": "Pipelines automatizados",
+          "products": "Productos para otros"
         },
         "intent": {
-          "3d_game": "Recursos 3D / recursos para juegos",
-          "api": "Endpoints de API para ejecutar flujos de trabajo",
-          "apps": "Apps simplificadas a partir de flujos de trabajo",
-          "audio": "Audio / música",
-          "custom_nodes": "Nodos personalizados",
+          "apps_api": "Aplicaciones y APIs",
+          "exploring": "Solo explorando",
           "images": "Imágenes",
-          "not_sure": "No estoy seguro",
-          "videos": "Videos",
+          "other": "Otra cosa",
+          "otherPlaceholder": "¿Qué quieres crear?",
+          "video": "Video",
           "workflows": "Flujos de trabajo o pipelines personalizados"
         },
         "source": {
-          "conference": "Conferencia o evento",
-          "discord": "Discord / comunidad",
+          "community": "Una comunidad o foro",
           "friend": "Amigo o colega",
-          "github": "GitHub",
+          "other": "Otro",
+          "otherPlaceholder": "¿Dónde nos encontraste?",
+          "search": "Google / búsqueda",
+          "social": "Redes sociales"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "Newsletter o blog",
-          "other": "Otro",
           "reddit": "Reddit",
-          "search": "Google / búsqueda",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "Educación (estudiante o docente)",
-          "personal": "Uso personal",
-          "work": "Trabajo"
         }
       },
+      "otherPlaceholder": "Cuéntanos más",
       "placeholder": "Marcador de posición para preguntas de la encuesta",
-      "steps": {
-        "familiarity": "¿Qué tan familiarizado estás con ComfyUI?",
-        "intent": "¿Qué quieres crear con ComfyUI?",
-        "source": "¿Dónde escuchaste sobre ComfyUI?",
-        "usage": "¿Cómo planeas usar ComfyUI?"
-      },
       "title": "Encuesta en la Nube"
     }
   },
@@ -578,10 +575,11 @@
   "cloudStart_learnAboutButton": "Conoce más sobre Cloud",
   "cloudStart_title": "comienza a crear en segundos",
   "cloudStart_wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
-  "cloudSurvey_steps_familiarity": "¿Qué tan familiarizado estás con ComfyUI?",
+  "cloudSurvey_steps_experience": "¿Qué tanto conoces ComfyUI?",
+  "cloudSurvey_steps_focus": "¿Qué estás construyendo?",
   "cloudSurvey_steps_intent": "¿Qué quieres crear con ComfyUI?",
   "cloudSurvey_steps_source": "¿Dónde escuchaste sobre ComfyUI?",
-  "cloudSurvey_steps_usage": "¿Cómo planeas usar ComfyUI?",
+  "cloudSurvey_steps_source_social": "¿En qué plataforma?",
   "cloudWaitlist_contactLink": "aquí",
   "cloudWaitlist_questionsText": "¿Preguntas? Contáctanos",
   "color": {
@@ -621,10 +619,13 @@
     "namePlaceholder": "Ingresa tu nombre aquí",
     "profileCreationNav": "Creación de perfil",
     "startPublishingButton": "Comenzar a publicar",
+    "startUpdatingButton": "Actualizar flujo de trabajo",
     "successDescription": "Ahora puedes subir tu flujo de trabajo a tu página de creador",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "Tu página de perfil está activa en",
     "successTitle": "¡Te ves bien, {'@'}{username}!",
+    "updateIntroDescription": "Envía tus últimos cambios a ComfyHub. Tu enlace para compartir y tus estadísticas permanecerán igual.",
+    "updateIntroTitle": "Actualiza tu flujo de trabajo de ComfyHub",
     "uploadCover": "+ Subir una portada",
     "uploadProfilePicture": "+ Subir una foto de perfil",
     "uploadWorkflowButton": "Subir mi flujo de trabajo",
@@ -648,6 +649,8 @@
     "publishSuccessDescription": "Tu flujo de trabajo ya está disponible en ComfyHub.",
     "publishSuccessTitle": "Publicado con éxito",
     "removeExampleImage": "Eliminar imagen de ejemplo",
+    "renameFailedDescription": "Tu flujo de trabajo se publicó correctamente, pero no se pudo renombrar el archivo local. Vuelve a renombrarlo para que coincida.",
+    "renameFailedTitle": "Error al renombrar",
     "selectAThumbnail": "Selecciona una miniatura",
     "shareAs": "Compartir como",
     "showLessTags": "Mostrar menos...",
@@ -665,6 +668,7 @@
     "thumbnailVideo": "Video",
     "title": "Publicar en ComfyHub",
     "unsavedDescription": "Debes guardar tu flujo de trabajo antes de publicarlo en ComfyHub. Guárdalo ahora para continuar.",
+    "updateButton": "Actualizar flujo de trabajo",
     "uploadAnImage": "Haz clic para buscar o arrastra una imagen",
     "uploadComparison": "Subir antes y después",
     "uploadComparisonAfterPrompt": "Después",
@@ -783,6 +787,8 @@
     "faqs": "Preguntas frecuentes",
     "invoiceHistory": "Historial de facturas",
     "lastUpdated": "Última actualización",
+    "loadEventsError": "No se pudo cargar la actividad. Por favor, inténtalo de nuevo.",
+    "loadEventsUnknownError": "Algo salió mal al cargar la actividad. Por favor, actualiza la página e inténtalo de nuevo.",
     "messageSupport": "Contactar soporte",
     "model": "Modelo",
     "purchaseCredits": "Comprar créditos",
@@ -949,6 +955,16 @@
       "message": "Se proporcionó un ID de diálogo no válido.",
       "title": "Diálogo no válido"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "La aplicación de escritorio de ComfyUI está esperando para iniciar sesión con tu cuenta. Continúa solo si acabas de iniciar sesión desde la aplicación de escritorio de ComfyUI.",
+    "confirmSummary": "¿Aprobar inicio de sesión en el escritorio?",
+    "expiredDetail": "La solicitud de inicio de sesión expiró o ya fue utilizada. Inicia sesión nuevamente desde la aplicación de escritorio de ComfyUI.",
+    "expiredSummary": "Error en el inicio de sesión en el escritorio",
+    "failedDetail": "Ocurrió un error al completar el inicio de sesión en el escritorio. Inicia sesión nuevamente desde la aplicación de escritorio de ComfyUI.",
+    "failedSummary": "Error en el inicio de sesión en el escritorio",
+    "successDetail": "Puedes volver a la aplicación de escritorio de ComfyUI.",
+    "successSummary": "Sesión iniciada"
   },
   "desktopMenu": {
     "confirmQuit": "Hay flujos de trabajo abiertos sin guardar; se perderán los cambios no guardados. ¿Ignorar esto y salir?",
@@ -1564,6 +1580,7 @@
     "extensions": "Extensiones",
     "failed": "Fallido",
     "failedToCopyJobId": "Error al copiar el ID de trabajo",
+    "failedToDownloadFile": "No se pudo descargar el archivo",
     "failedToDownloadImage": "Falló la descarga de imagen",
     "failedToDownloadVideo": "Falló la descarga de video",
     "favorites": "Favoritos",
@@ -1808,6 +1825,7 @@
     "systemStatsRAMTotal": "RAM Total",
     "systemStatsTemplatesVersion": "Versión de Plantillas",
     "terminal": "Terminal",
+    "textFailedToLoad": "No se pudo cargar el texto",
     "title": "Título",
     "triggerPhrase": "Frase de activación",
     "unknownError": "Error desconocido",
@@ -2061,7 +2079,10 @@
       "appBuilder": "Constructor de aplicaciones",
       "apps": "Aplicaciones",
       "appsEmptyMessage": "Las aplicaciones guardadas aparecerán aquí.\nHaz clic abajo para crear tu primera aplicación.",
-      "appsEmptyMessageAction": "Haz clic abajo para crear tu primera aplicación."
+      "appsEmptyMessageAction": "Haz clic abajo para crear tu primera aplicación.",
+      "buildAnApp": "Crear una aplicación",
+      "create": "Crear",
+      "createApp": "Crear aplicación"
     },
     "arrange": {
       "atLeastOne": "al menos uno",
@@ -2074,8 +2095,6 @@
       "switchToOutputsButton": "Cambiar a Salidas"
     },
     "backToWorkflow": "Volver al flujo de trabajo",
-    "beta": "Modo App Beta - Enviar comentarios",
-    "buildAnApp": "Crear una aplicación",
     "builder": {
       "exit": "Salir del constructor",
       "exitConfirmMessage": "Tienes cambios sin guardar que se perderán\n¿Salir sin guardar?",
@@ -2113,6 +2132,7 @@
       "requiresGraph": "Algo salió mal durante la generación. Esto puede deberse a entradas ocultas no válidas, recursos faltantes o problemas de configuración del flujo de trabajo.",
       "support": "contacta a nuestro soporte"
     },
+    "feedbackLoadError": "No se pudo cargar el formulario de comentarios. Por favor, inténtalo de nuevo más tarde.",
     "giveFeedback": "Enviar comentarios",
     "graphMode": "Modo gráfico",
     "hasCreditCost": "Requiere créditos adicionales",
@@ -2181,6 +2201,7 @@
     "loadingModel": "Cargando modelo 3D...",
     "materialMode": "Modo de material",
     "materialModes": {
+      "clay": "Arcilla",
       "depth": "Profundidad",
       "lineart": "Arte lineal",
       "normal": "Normal",
@@ -2188,7 +2209,29 @@
       "pointCloud": "Nube de puntos",
       "wireframe": "Malla"
     },
+    "menuBar": {
+      "bgColor": "Color de fondo",
+      "bgImage": "Imagen de fondo",
+      "deleteRecording": "Eliminar grabación",
+      "downloadRecording": "Descargar grabación",
+      "fov": "FOV",
+      "intensity": "Intensidad",
+      "material": "Material",
+      "originalMaterialOnly": "Solo material original",
+      "panorama": "Panorama",
+      "record": "Grabar",
+      "recording": "Grabando",
+      "removeBackground": "Quitar fondo",
+      "showGrid": "Mostrar cuadrícula",
+      "skeleton": "Esqueleto",
+      "startNewRecording": "Iniciar nueva grabación",
+      "stopRecording": "Detener grabación",
+      "switchProjection": "Cambiar proyección",
+      "upDirection": "Dirección arriba",
+      "videoRecordingTooltip": "Grabación de video de la escena [mp4]"
+    },
     "model": "Modelo",
+    "model3d": "Modelo 3D",
     "openIn3DViewer": "Abrir en Visor 3D",
     "panoramaMode": "Panorama",
     "previewOutput": "Vista previa de salida",
@@ -2400,6 +2443,11 @@
       "importFailed": "Error de Instalación",
       "pending": "Pendiente",
       "unknown": "Desconocido"
+    },
+    "survey": {
+      "error": "No se pudo cargar esta encuesta. Por favor, inténtalo de nuevo más tarde.",
+      "intro": "La instalación de nodos personalizados llegará pronto a Comfy Cloud. Responde unas breves preguntas para unirte a la lista de espera y ayudar a definir esta función.",
+      "title": "Únete a la lista de espera"
     },
     "title": "Administrador de Nodos Personalizados",
     "toFinishSetup": "para finalizar la configuración",
@@ -2769,7 +2817,6 @@
     "Runway": "Runway",
     "Sonilo": "Sonilo",
     "Sora": "Sora",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -2801,7 +2848,6 @@
     "cosmos": "cosmos",
     "create": "crear",
     "custom": "personalizado",
-    "custom_sampling": "muestreo_personalizado",
     "dancer": "bailarín",
     "debug": "depurar",
     "detection": "detección",
@@ -2845,6 +2891,8 @@
     "phantom subject": "sujeto fantasma",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "post-procesadores",
+    "pre-processors": "pre-procesadores",
     "preprocessors": "preprocesadores",
     "primitive": "primitivo",
     "qwen": "qwen",
@@ -2865,8 +2913,8 @@
     "stable video": "stable video",
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
-    "stable_cascade": "stable_cascade",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "texto",
     "training": "entrenamiento",
     "transform": "transformar",
@@ -3102,8 +3150,11 @@
     "errorHelpGithub": "envía un issue en GitHub",
     "errorHelpSupport": "contacta con nuestro soporte",
     "errorLog": "Registro de errores",
+    "errorNodeSummary": "{nodes} nodo — {count} error | {nodes} nodo — {count} errores",
+    "errorNodesSummary": "{nodes} nodos — {count} error | {nodes} nodos — {count} errores",
     "errors": "Errores",
     "errorsDetected": "Error detectado | Errores detectados",
+    "errorsSummary": "{count} error | {count} errores",
     "executionErrorOccurred": "Ocurrió un error durante la ejecución. Consulta la pestaña de Errores para más detalles.",
     "expand": "Expandir",
     "fallbackGroupTitle": "Grupo",
@@ -3193,6 +3244,8 @@
     "resetToDefault": "Restablecer a los valores predeterminados",
     "resolveBeforeRun": "Resuelve antes de ejecutar el flujo de trabajo",
     "seeError": "Ver error",
+    "selectedNodeErrors": "{node} — {count} error | {node} — {count} errores",
+    "selectedNodesErrors": "{nodes} nodos seleccionados — {count} error | {nodes} nodos seleccionados — {count} errores",
     "settings": "Configuración",
     "showAdvancedInputsButton": "Mostrar entradas avanzadas",
     "showAdvancedShort": "Mostrar avanzado",
@@ -3212,24 +3265,35 @@
     "errors": {
       "duplicateName": "Ya existe un secreto con este nombre",
       "duplicateProvider": "Ya existe un secreto para este proveedor",
+      "fileReadFailed": "No se pudo leer el archivo seleccionado",
+      "fileTooLarge": "El archivo es demasiado grande. Sube unas credenciales JSON de menos de 1 MB",
+      "invalidJson": "El archivo debe contener un objeto JSON válido",
       "nameRequired": "El nombre es obligatorio",
       "nameTooLong": "El nombre debe tener 255 caracteres o menos",
       "providerRequired": "El proveedor es obligatorio",
       "secretValueRequired": "El valor secreto es obligatorio"
     },
+    "jsonFileHint": "Pega el JSON o sube un archivo. Será cifrado y no podrá verse de nuevo.",
+    "jsonFileHintEdit": "Déjalo en blanco para mantener el valor actual, o sube un nuevo archivo JSON para reemplazarlo.",
+    "jsonFilePlaceholder": "Sube o pega las credenciales JSON del proveedor",
     "lastUsed": "Último uso el {date}",
     "modelProviders": "Proveedores de modelos",
     "name": "Nombre",
     "namePlaceholder": "p. ej., Mi clave API",
     "noSecrets": "No hay secretos guardados. Agrega tu primera clave API para comenzar.",
     "provider": "Proveedor",
+    "providerHelp": {
+      "gemini": "Introduce tu clave API de Google Gemini. Puedes generarla en Google AI Studio.",
+      "runway": "Introduce tu clave API de Runway. Puedes encontrarla en la configuración de tu cuenta de Runway, en la sección de claves API."
+    },
     "providerHint": "Opcional. Seleccionar un proveedor habilita el uso automático del token.",
     "secretValue": "Valor secreto",
     "secretValueHint": "Este valor será cifrado y no podrá ser visto nuevamente.",
     "secretValueHintEdit": "Déjalo en blanco para mantener el valor actual.",
     "secretValuePlaceholder": "Introduce tu clave API",
     "secretValuePlaceholderEdit": "Introduce un nuevo valor para cambiarlo",
-    "title": "Claves API y Secretos"
+    "title": "Claves API y Secretos",
+    "uploadJsonFile": "Subir archivo JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Omitir nodos de grupo",
@@ -4094,7 +4158,6 @@
     "modelsSelected": "{count} modelos",
     "noResults": "No se encontraron plantillas",
     "noResultsHint": "Intenta ajustar tu búsqueda o filtros",
-    "resetFilters": "Limpiar filtros",
     "resultsCount": "Mostrando {count} de {total} plantillas",
     "runsOnFilter": "Ejecuta en",
     "runsOnSelected": "{count} ejecuciones en",
@@ -4106,6 +4169,7 @@
       "newest": "Más reciente",
       "popular": "Popular",
       "recommended": "Recomendado",
+      "relevance": "Relevancia",
       "searchPlaceholder": "Buscar..."
     },
     "sorting": "Ordenar por",

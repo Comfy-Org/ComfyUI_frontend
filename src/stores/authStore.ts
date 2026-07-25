@@ -31,6 +31,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -226,7 +227,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (flags.teamWorkspacesEnabled) {
-      const wsHeader = useWorkspaceAuthStore().getWorkspaceAuthHeader()
+      const workspaceAuth = useWorkspaceAuthStore()
+      const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+
+      // Recover the workspace token rather than downgrade to the personal
+      // identity, which is what makes cloud requests oscillate.
+      if (activeWorkspaceId) {
+        return workspaceAuth.ensureWorkspaceAuthHeader(activeWorkspaceId)
+      }
+
+      const wsHeader = workspaceAuth.getWorkspaceAuthHeader()
       if (wsHeader) return wsHeader
     }
 
@@ -261,7 +271,18 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (flags.teamWorkspacesEnabled) {
-      const wsToken = useWorkspaceAuthStore().getWorkspaceToken()
+      const workspaceAuth = useWorkspaceAuthStore()
+      const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+
+      // Mirror getAuthHeader for WebSocket/queue auth.
+      if (activeWorkspaceId) {
+        return (
+          (await workspaceAuth.ensureWorkspaceToken(activeWorkspaceId)) ??
+          undefined
+        )
+      }
+
+      const wsToken = workspaceAuth.getWorkspaceToken()
       if (wsToken) return wsToken
     }
 

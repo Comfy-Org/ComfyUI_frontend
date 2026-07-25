@@ -13,6 +13,8 @@ import { hsbToRgb, rgbToHex } from '@/utils/colorUtil'
 import ColorPickerSaturationValue from './ColorPickerSaturationValue.vue'
 import ColorPickerSlider from './ColorPickerSlider.vue'
 
+const { alpha = true } = defineProps<{ alpha?: boolean }>()
+
 const hsva = defineModel<HSVA>('hsva', { required: true })
 const displayMode = defineModel<'hex' | 'rgba'>('displayMode', {
   required: true
@@ -37,6 +39,7 @@ const { t } = useI18n()
     />
     <ColorPickerSlider v-model="hsva.h" type="hue" />
     <ColorPickerSlider
+      v-if="alpha"
       v-model="hsva.a"
       type="alpha"
       :hue="hsva.h"
@@ -72,7 +75,7 @@ const { t } = useI18n()
           <span class="w-6 shrink-0 text-center">{{ rgb.g }}</span>
           <span class="w-6 shrink-0 text-center">{{ rgb.b }}</span>
         </template>
-        <span class="shrink-0 border-l border-border-subtle pl-1"
+        <span v-if="alpha" class="shrink-0 border-l border-border-subtle pl-1"
           >{{ hsva.a }}%</span
         >
       </div>

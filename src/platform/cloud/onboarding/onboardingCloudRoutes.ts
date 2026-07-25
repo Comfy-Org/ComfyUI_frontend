@@ -94,7 +94,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         name: 'cloud-survey',
         component: () =>
           import('@/platform/cloud/onboarding/CloudSurveyView.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, hideHero: true }
       },
       {
         path: 'oauth/consent',
@@ -106,7 +106,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         name: 'cloud-user-check',
         component: () =>
           import('@/platform/cloud/onboarding/UserCheckView.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, hideHero: true }
       },
       {
         path: 'sorry-contact-support',

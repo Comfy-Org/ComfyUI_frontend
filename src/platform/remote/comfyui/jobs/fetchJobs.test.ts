@@ -14,7 +14,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { z } from 'zod'
 
-type JobsListResponse = z.infer<typeof zJobsListResponse>
+type JobsListResponse = z.input<typeof zJobsListResponse>
 
 function createMockJob(
   id: string,
@@ -172,6 +172,22 @@ describe('fetchJobs', () => {
         '[Jobs API] Failed to fetch jobs: 500 '.length + 200 + 1 // +1 for the ellipsis
       )
       expect(err.message).toContain('…')
+    })
+
+    it('parses an empty-string next_cursor as absent', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse([createMockJob('job1', 'completed')], 1, {
+              next_cursor: ''
+            })
+          )
+      })
+
+      const result = await fetchHistoryPage(mockFetch, 200, { offset: 0 })
+
+      expect(result.nextCursor).toBeUndefined()
     })
 
     it('parses a null next_cursor as absent', async () => {

@@ -359,12 +359,14 @@
     "colors": "لوحة الألوان",
     "descLabel": "الوصف",
     "descPlaceholder": "وصف هذه المنطقة",
+    "grid": "شبكة",
     "textLabel": "نص",
     "textPlaceholder": "النص المراد عرضه (كما هو)",
     "typeObj": "كائن",
     "typeText": "نص"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "وضع {mode}، إجراءات سير العمل",
     "app": "التطبيق",
     "blueprint": "المخطط",
     "clearWorkflow": "مسح سير العمل",
@@ -515,57 +517,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "يرجى إبقاء إجابتك أقل من {max} حرفًا.",
         "chooseAnOption": "يرجى اختيار خيار.",
         "describeAnswer": "يرجى وصف إجابتك.",
         "selectAtLeastOne": "يرجى اختيار خيار واحد على الأقل."
       },
       "intro": "ساعدنا في تخصيص تجربتك مع ComfyUI.",
       "options": {
-        "familiarity": {
-          "advanced": "مستخدم متقدم (سير عمل مخصصة)",
-          "basics": "مرتاح مع الأساسيات",
-          "expert": "خبير (أساعد الآخرين)",
-          "new": "جديد في ComfyUI (لم أستخدمه من قبل)",
-          "starting": "في البداية فقط (أتابع الدروس التعليمية)"
+        "experience": {
+          "new": "جديد على ComfyUI",
+          "pro": "أنا مستخدم محترف",
+          "some": "لدي معرفة جيدة"
+        },
+        "focus": {
+          "custom_nodes": "عُقد مخصصة",
+          "pipelines": "مسارات مؤتمتة",
+          "products": "منتجات للآخرين"
         },
         "intent": {
-          "3d_game": "أصول ثلاثية الأبعاد / أصول ألعاب",
-          "api": "نقاط نهاية API لتشغيل مسارات العمل",
-          "apps": "تطبيقات مبسطة من مسارات العمل",
-          "audio": "صوت / موسيقى",
-          "custom_nodes": "عُقد مخصصة",
+          "apps_api": "تطبيقات وواجهات برمجة التطبيقات",
+          "exploring": "أستكشف فقط",
           "images": "صور",
-          "not_sure": "لست متأكداً",
-          "videos": "فيديوهات",
+          "other": "شيء آخر",
+          "otherPlaceholder": "ماذا تريد أن تصنع؟",
+          "video": "فيديو",
           "workflows": "مسارات عمل أو خطوط معالجة مخصصة"
         },
         "source": {
-          "conference": "مؤتمر أو فعالية",
-          "discord": "ديسكورد / مجتمع",
+          "community": "مجتمع أو منتدى",
           "friend": "صديق أو زميل",
-          "github": "GitHub",
+          "other": "أخرى",
+          "otherPlaceholder": "من أين وجدتنا؟",
+          "search": "جوجل / بحث",
+          "social": "وسائل التواصل الاجتماعي"
+        },
+        "source_social": {
+          "discord": "ديسكورد",
           "instagram": "إنستغرام",
           "linkedin": "لينكدإن",
-          "newsletter": "النشرة البريدية أو مدونة",
-          "other": "أخرى",
           "reddit": "ريديت",
-          "search": "جوجل / بحث",
-          "twitter": "تويتر / X",
+          "tiktok": "تيك توك",
+          "twitter": "X (تويتر)",
           "youtube": "يوتيوب"
-        },
-        "usage": {
-          "education": "تعليمي (طالب أو معلم)",
-          "personal": "استخدام شخصي",
-          "work": "عمل"
         }
       },
+      "otherPlaceholder": "أخبرنا المزيد",
       "placeholder": "نص بديل لأسئلة الاستبيان",
-      "steps": {
-        "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
-        "intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
-        "source": "من أين سمعت عن ComfyUI؟",
-        "usage": "كيف تخطط لاستخدام ComfyUI؟"
-      },
       "title": "استبيان السحابة"
     }
   },
@@ -578,10 +575,11 @@
   "cloudStart_learnAboutButton": "تعرف على السحابة",
   "cloudStart_title": "ابدأ الإبداع في ثوانٍ",
   "cloudStart_wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟",
-  "cloudSurvey_steps_familiarity": "ما مدى معرفتك بـ ComfyUI؟",
+  "cloudSurvey_steps_experience": "ما مدى معرفتك بـ ComfyUI؟",
+  "cloudSurvey_steps_focus": "ماذا تبني؟",
   "cloudSurvey_steps_intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
   "cloudSurvey_steps_source": "من أين سمعت عن ComfyUI؟",
-  "cloudSurvey_steps_usage": "كيف تخطط لاستخدام ComfyUI؟",
+  "cloudSurvey_steps_source_social": "أي منصة؟",
   "cloudWaitlist_contactLink": "هنا",
   "cloudWaitlist_questionsText": "أسئلة؟ اتصل بنا",
   "color": {
@@ -621,10 +619,13 @@
     "namePlaceholder": "أدخل اسمك هنا",
     "profileCreationNav": "إنشاء الملف الشخصي",
     "startPublishingButton": "ابدأ النشر",
+    "startUpdatingButton": "تحديث سير العمل",
     "successDescription": "يمكنك الآن رفع سير عملك على صفحة المبدع الخاصة بك",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "صفحتك الشخصية متاحة الآن على",
     "successTitle": "يبدو رائعًا، {'@'}{username}!",
+    "updateIntroDescription": "ادفع أحدث التغييرات إلى ComfyHub. سيبقى رابط المشاركة والإحصائيات كما هي.",
+    "updateIntroTitle": "تحديث سير العمل الخاص بك على ComfyHub",
     "uploadCover": "+ رفع صورة الغلاف",
     "uploadProfilePicture": "+ رفع صورة الملف الشخصي",
     "uploadWorkflowButton": "رفع سير عملي",
@@ -648,6 +649,8 @@
     "publishSuccessDescription": "تم نشر سير العمل الخاص بك على ComfyHub.",
     "publishSuccessTitle": "تم النشر بنجاح",
     "removeExampleImage": "إزالة الصورة النموذجية",
+    "renameFailedDescription": "تم نشر سير العمل بنجاح، لكن فشلت إعادة تسمية الملف المحلي. يرجى إعادة تسميته مرة أخرى ليتطابق.",
+    "renameFailedTitle": "فشل إعادة التسمية",
     "selectAThumbnail": "اختر صورة مصغرة",
     "shareAs": "مشاركة كـ",
     "showLessTags": "عرض أقل...",
@@ -665,6 +668,7 @@
     "thumbnailVideo": "فيديو",
     "title": "النشر على ComfyHub",
     "unsavedDescription": "يجب حفظ سير العمل الخاص بك قبل النشر على ComfyHub. احفظه الآن للمتابعة.",
+    "updateButton": "تحديث سير العمل",
     "uploadAnImage": "انقر للاستعراض أو اسحب صورة",
     "uploadComparison": "رفع صورة قبل وبعد",
     "uploadComparisonAfterPrompt": "بعد",
@@ -783,6 +787,8 @@
     "faqs": "الأسئلة المتكررة",
     "invoiceHistory": "تاريخ الفواتير",
     "lastUpdated": "آخر تحديث",
+    "loadEventsError": "فشل في تحميل النشاط. يرجى المحاولة مرة أخرى.",
+    "loadEventsUnknownError": "حدث خطأ أثناء تحميل النشاط. يرجى إعادة التحميل والمحاولة مرة أخرى.",
     "messageSupport": "مراسلة الدعم",
     "model": "النموذج",
     "purchaseCredits": "شراء رصيد",
@@ -949,6 +955,16 @@
       "message": "تم تقديم معرف حوار غير صالح.",
       "title": "حوار غير صالح"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "تطبيق ComfyUI لسطح المكتب ينتظر تسجيل الدخول باستخدام حسابك. تابع فقط إذا بدأت عملية تسجيل الدخول من تطبيق ComfyUI لسطح المكتب.",
+    "confirmSummary": "تأكيد تسجيل الدخول من سطح المكتب؟",
+    "expiredDetail": "انتهت صلاحية طلب تسجيل الدخول أو تم استخدامه بالفعل. ابدأ عملية تسجيل الدخول مرة أخرى من تطبيق ComfyUI لسطح المكتب.",
+    "expiredSummary": "فشل تسجيل الدخول من سطح المكتب",
+    "failedDetail": "حدث خطأ أثناء إكمال تسجيل الدخول من سطح المكتب. ابدأ عملية تسجيل الدخول مرة أخرى من تطبيق ComfyUI لسطح المكتب.",
+    "failedSummary": "فشل تسجيل الدخول من سطح المكتب",
+    "successDetail": "يمكنك العودة إلى تطبيق ComfyUI لسطح المكتب.",
+    "successSummary": "تم تسجيل الدخول"
   },
   "desktopMenu": {
     "confirmQuit": "هناك سير عمل غير محفوظ مفتوح؛ سيتم فقدان أي تغييرات غير محفوظة. هل تتجاهل هذا وتخرج؟",
@@ -1564,6 +1580,7 @@
     "extensions": "الملحقات",
     "failed": "فشل",
     "failedToCopyJobId": "فشل نسخ معرف المهمة",
+    "failedToDownloadFile": "فشل في تنزيل الملف",
     "failedToDownloadImage": "فشل في تنزيل الصورة",
     "failedToDownloadVideo": "فشل في تنزيل الفيديو",
     "favorites": "المفضلة",
@@ -1808,6 +1825,7 @@
     "systemStatsRAMTotal": "إجمالي الذاكرة (RAM)",
     "systemStatsTemplatesVersion": "إصدار القوالب",
     "terminal": "الطرفية",
+    "textFailedToLoad": "فشل تحميل النص",
     "title": "العنوان",
     "triggerPhrase": "عبارة التشغيل",
     "unknownError": "خطأ غير معروف",
@@ -2061,7 +2079,10 @@
       "appBuilder": "منشئ التطبيقات",
       "apps": "التطبيقات",
       "appsEmptyMessage": "سيتم عرض التطبيقات المحفوظة هنا.\nانقر أدناه لبناء تطبيقك الأول.",
-      "appsEmptyMessageAction": "انقر أدناه لإنشاء أول تطبيق لك."
+      "appsEmptyMessageAction": "انقر أدناه لإنشاء أول تطبيق لك.",
+      "buildAnApp": "إنشاء تطبيق",
+      "create": "إنشاء",
+      "createApp": "إنشاء تطبيق"
     },
     "arrange": {
       "atLeastOne": "عقدة واحدة على الأقل",
@@ -2074,8 +2095,6 @@
       "switchToOutputsButton": "الانتقال إلى المخرجات"
     },
     "backToWorkflow": "العودة إلى سير العمل",
-    "beta": "وضع التطبيق تجريبي - أرسل ملاحظاتك",
-    "buildAnApp": "أنشئ تطبيقًا",
     "builder": {
       "exit": "خروج من البناء",
       "exitConfirmMessage": "لديك تغييرات غير محفوظة ستفقد\nهل تريد الخروج بدون حفظ؟",
@@ -2113,6 +2132,7 @@
       "requiresGraph": "حدث خطأ أثناء التوليد. قد يكون ذلك بسبب مدخلات مخفية غير صالحة، أو موارد مفقودة، أو مشاكل في إعداد سير العمل.",
       "support": "الاتصال بالدعم"
     },
+    "feedbackLoadError": "فشل تحميل نموذج الملاحظات. يرجى المحاولة لاحقًا.",
     "giveFeedback": "إعطاء ملاحظات",
     "graphMode": "وضع الرسم البياني",
     "hasCreditCost": "يتطلب أرصدة إضافية",
@@ -2181,6 +2201,7 @@
     "loadingModel": "جارٍ تحميل النموذج ثلاثي الأبعاد...",
     "materialMode": "وضع المادة",
     "materialModes": {
+      "clay": "طين",
       "depth": "العمق",
       "lineart": "الرسم الخطي",
       "normal": "عادي",
@@ -2188,7 +2209,29 @@
       "pointCloud": "سحابة نقطية",
       "wireframe": "إطار سلكي"
     },
+    "menuBar": {
+      "bgColor": "لون الخلفية",
+      "bgImage": "صورة الخلفية",
+      "deleteRecording": "حذف التسجيل",
+      "downloadRecording": "تحميل التسجيل",
+      "fov": "زاوية الرؤية",
+      "intensity": "الشدة",
+      "material": "الخامة",
+      "originalMaterialOnly": "الخامة الأصلية فقط",
+      "panorama": "بانوراما",
+      "record": "تسجيل",
+      "recording": "جارٍ التسجيل",
+      "removeBackground": "إزالة الخلفية",
+      "showGrid": "إظهار الشبكة",
+      "skeleton": "الهيكل العظمي",
+      "startNewRecording": "بدء تسجيل جديد",
+      "stopRecording": "إيقاف التسجيل",
+      "switchProjection": "تبديل الإسقاط",
+      "upDirection": "اتجاه الأعلى",
+      "videoRecordingTooltip": "تسجيل فيديو للمشهد [mp4]"
+    },
     "model": "النموذج",
+    "model3d": "نموذج ثلاثي الأبعاد",
     "openIn3DViewer": "افتح في عارض ثلاثي الأبعاد",
     "panoramaMode": "وضع البانوراما",
     "previewOutput": "معاينة المخرج",
@@ -2400,6 +2443,11 @@
       "importFailed": "خطأ في التثبيت",
       "pending": "قيد الانتظار",
       "unknown": "غير معروف"
+    },
+    "survey": {
+      "error": "تعذر تحميل هذا الاستبيان. يرجى المحاولة مرة أخرى لاحقًا.",
+      "intro": "تثبيت العقد المخصصة قادم قريبًا إلى Comfy Cloud. أجب عن بعض الأسئلة السريعة للانضمام إلى قائمة الانتظار والمساهمة في تطوير هذه الميزة.",
+      "title": "انضم إلى قائمة الانتظار"
     },
     "title": "مدير العقد المخصصة",
     "toFinishSetup": "لإكمال الإعداد",
@@ -2769,7 +2817,6 @@
     "Runway": "رن واي",
     "Sonilo": "Sonilo",
     "Sora": "سورا",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "تريبو",
@@ -2801,7 +2848,6 @@
     "cosmos": "cosmos",
     "create": "إنشاء",
     "custom": "مخصص",
-    "custom_sampling": "تجميع مخصص",
     "dancer": "راقص",
     "debug": "تصحيح",
     "detection": "الكشف",
@@ -2845,6 +2891,8 @@
     "phantom subject": "موضوع شبحي",
     "photomaker": "صانع الصور",
     "pixart": "pixart",
+    "post-processors": "معالجات ما بعد",
+    "pre-processors": "معالجات ما قبل",
     "preprocessors": "المعالجون المسبقون",
     "primitive": "بدائي",
     "qwen": "تشي وين",
@@ -2865,8 +2913,8 @@
     "stable video": "stable video",
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
-    "stable_cascade": "سلسلة ثابتة",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "نص",
     "training": "تدريب",
     "transform": "تحويل",
@@ -3102,8 +3150,11 @@
     "errorHelpGithub": "إرسال مشكلة على GitHub",
     "errorHelpSupport": "تواصل مع الدعم الفني",
     "errorLog": "سجل الأخطاء",
+    "errorNodeSummary": "{nodes} عقدة — {count} خطأ | {nodes} عقدة — {count} أخطاء",
+    "errorNodesSummary": "{nodes} عقد — {count} خطأ | {nodes} عقد — {count} أخطاء",
     "errors": "الأخطاء",
     "errorsDetected": "تم اكتشاف خطأ | تم اكتشاف أخطاء",
+    "errorsSummary": "{count} خطأ | {count} أخطاء",
     "executionErrorOccurred": "حدث خطأ أثناء التنفيذ. تحقق من علامة تبويب الأخطاء لمزيد من التفاصيل.",
     "expand": "توسيع",
     "fallbackGroupTitle": "مجموعة",
@@ -3193,6 +3244,8 @@
     "resetToDefault": "إعادة التعيين إلى الافتراضي",
     "resolveBeforeRun": "يرجى الحل قبل تشغيل سير العمل",
     "seeError": "عرض الخطأ",
+    "selectedNodeErrors": "{node} — {count} خطأ | {node} — {count} أخطاء",
+    "selectedNodesErrors": "{nodes} عقد محددة — {count} خطأ | {nodes} عقد محددة — {count} أخطاء",
     "settings": "الإعدادات",
     "showAdvancedInputsButton": "إظهار المدخلات المتقدمة",
     "showAdvancedShort": "إظهار الخيارات المتقدمة",
@@ -3212,24 +3265,35 @@
     "errors": {
       "duplicateName": "يوجد سر بهذا الاسم بالفعل",
       "duplicateProvider": "يوجد سر لهذا المزود بالفعل",
+      "fileReadFailed": "تعذر قراءة الملف المحدد. يرجى المحاولة مرة أخرى",
+      "fileTooLarge": "الملف كبير جدًا. يرجى رفع بيانات اعتماد JSON أقل من ١ ميجابايت",
+      "invalidJson": "يجب أن يحتوي الملف على كائن JSON صالح",
       "nameRequired": "الاسم مطلوب",
       "nameTooLong": "يجب ألا يزيد الاسم عن ٢٥٥ حرفًا",
       "providerRequired": "المزود مطلوب",
       "secretValueRequired": "قيمة السر مطلوبة"
     },
+    "jsonFileHint": "الصق ملف JSON أو قم برفعه. سيتم تشفيره ولن يكون بالإمكان عرضه مرة أخرى.",
+    "jsonFileHintEdit": "اتركه فارغًا للاحتفاظ بالقيمة الحالية، أو ارفع ملف JSON جديد لاستبداله.",
+    "jsonFilePlaceholder": "قم برفع أو لصق بيانات اعتماد المزود بصيغة JSON",
     "lastUsed": "آخر استخدام في {date}",
     "modelProviders": "مزودو النماذج",
     "name": "الاسم",
     "namePlaceholder": "مثال: مفتاح API الخاص بي",
     "noSecrets": "لا توجد أسرار مخزنة. أضف أول مفتاح API للبدء.",
     "provider": "المزود",
+    "providerHelp": {
+      "gemini": "أدخل مفتاح Google Gemini API الخاص بك. يمكنك إنشاء واحد في Google AI Studio.",
+      "runway": "أدخل مفتاح Runway API الخاص بك. يمكنك العثور عليه في إعدادات حسابك على Runway ضمن مفاتيح API."
+    },
     "providerHint": "اختياري. اختيار مزود يتيح استخدام الرمز تلقائيًا.",
     "secretValue": "قيمة السر",
     "secretValueHint": "سيتم تشفير هذه القيمة ولا يمكن عرضها مرة أخرى.",
     "secretValueHintEdit": "اترك الحقل فارغًا للاحتفاظ بالقيمة الحالية.",
     "secretValuePlaceholder": "أدخل مفتاح API الخاص بك",
     "secretValuePlaceholderEdit": "أدخل قيمة جديدة للتغيير",
-    "title": "مفاتيح API والأسرار"
+    "title": "مفاتيح API والأسرار",
+    "uploadJsonFile": "رفع ملف JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "تجاوز عقد المجموعة",
@@ -4094,7 +4158,6 @@
     "modelsSelected": "{count} نماذج",
     "noResults": "لم يتم العثور على قوالب",
     "noResultsHint": "حاول تعديل البحث أو المرشحات",
-    "resetFilters": "مسح المرشحات",
     "resultsCount": "عرض {count} من {total} قالب",
     "runsOnFilter": "يعمل على",
     "runsOnSelected": "{count} يعمل على",
@@ -4106,6 +4169,7 @@
       "newest": "الأحدث",
       "popular": "الأكثر شيوعًا",
       "recommended": "موصى به",
+      "relevance": "الصلة",
       "searchPlaceholder": "بحث..."
     },
     "sorting": "ترتيب حسب",

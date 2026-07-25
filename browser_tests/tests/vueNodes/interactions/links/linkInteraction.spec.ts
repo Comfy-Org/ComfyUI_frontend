@@ -1238,7 +1238,7 @@ test(
   { tag: '@vue-nodes' },
   async ({ comfyMouse, comfyPage }) => {
     async function performDisconnect(slot: Locator, isFast: boolean) {
-      await comfyMouse.dragElementBy(slot, { x: isFast ? -25 : -80 })
+      await comfyMouse.dragElementBy(slot, { x: isFast ? -30 : -80 })
 
       if (!isFast) {
         await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
@@ -1251,7 +1251,7 @@ test(
 
     const ksamplerLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
     const ksampler = new VueNodeFixture(ksamplerLocator)
-    await comfyMouse.dragElementBy(ksamplerLocator, { x: 100 })
+    await comfyMouse.dragElementBy(ksampler.title, { x: 100 })
 
     await test.step('Disconnection with normal links', async () => {
       await performDisconnect(ksampler.getSlot('model'), true)

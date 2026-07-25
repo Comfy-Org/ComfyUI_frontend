@@ -54,6 +54,11 @@
       "source": "/press",
       "destination": "/about",
       "permanent": true
+    },
+    {
+      "source": "/login",
+      "destination": "https://cloud.comfy.org/login",
+      "permanent": false
     }
   ]
 }

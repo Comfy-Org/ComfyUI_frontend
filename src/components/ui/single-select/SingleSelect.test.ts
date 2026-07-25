@@ -79,6 +79,20 @@ async function openSelect(triggerEl: HTMLElement) {
 }
 
 describe('SingleSelect', () => {
+  it('lets a consumer class override the trigger variant it conflicts with', () => {
+    const { unmount } = render(SingleSelect, {
+      props: { modelValue: undefined, options, label: 'Pick' },
+      attrs: { class: 'bg-transparent' },
+      global: { plugins: [i18n] }
+    })
+
+    const trigger = screen.getByRole('combobox')
+    expect(trigger).toHaveClass('bg-transparent')
+    expect(trigger).not.toHaveClass('bg-secondary-background')
+
+    unmount()
+  })
+
   describe('Escape key propagation', () => {
     it('stops Escape from propagating to parent when popover is open', async () => {
       const { unmount, parentEscapeCount } = renderInParent()

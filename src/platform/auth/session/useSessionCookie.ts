@@ -3,6 +3,9 @@ import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
+// Coalesce concurrent rotations (token-refresh bursts) into one POST.
+let inFlightCreateSession: Promise<void> | null = null
+
 /**
  * Session cookie management for cloud authentication.
  * Creates and deletes session cookies on the ComfyUI server.
@@ -48,7 +51,14 @@ export const useSessionCookie = () => {
    */
   const createSession = async (): Promise<void> => {
     if (!isCloud) return
+    if (inFlightCreateSession) return inFlightCreateSession
+    inFlightCreateSession = performCreateSession().finally(() => {
+      inFlightCreateSession = null
+    })
+    return inFlightCreateSession
+  }
 
+  const performCreateSession = async (): Promise<void> => {
     const { flags } = useFeatureFlags()
     try {
       const authStore = useAuthStore()

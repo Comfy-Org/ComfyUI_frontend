@@ -8,7 +8,7 @@ test.describe('Cloud page @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Comfy Cloud — AI in the Cloud')
+    await expect(page).toHaveTitle('Comfy Cloud - AI in the Cloud')
   })
 
   test('HeroSection heading and subtitle are visible', async ({ page }) => {
@@ -40,7 +40,7 @@ test.describe('Cloud page @smoke', () => {
     }
   })
 
-  test('AIModelsSection heading and 5 model cards are visible', async ({
+  test('AIModelsSection heading and 6 model cards are visible', async ({
     page
   }) => {
     const heading = page.getByRole('heading', { name: /leading AI models/i })
@@ -49,7 +49,7 @@ test.describe('Cloud page @smoke', () => {
     const section = heading.locator('xpath=ancestor::section')
     const grid = section.locator('.grid')
     const modelCards = grid.locator('a[href="https://comfy.org/workflows"]')
-    await expect(modelCards).toHaveCount(5)
+    await expect(modelCards).toHaveCount(6)
   })
 
   test('AIModelsSection CTA links to workflows', async ({ page }) => {
