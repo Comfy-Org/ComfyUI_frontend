@@ -41,7 +41,6 @@
         <div class="flex flex-col gap-1">
           <span class="text-sm text-base-foreground">{{ plan.name }}</span>
           <p
-            v-if="canManageBilling"
             class="m-0 flex items-center gap-1.5 text-base font-semibold whitespace-nowrap text-base-foreground"
           >
             <i class="icon-[lucide--coins] size-4 text-credit" />
