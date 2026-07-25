@@ -93,10 +93,12 @@ test.describe(
 
       const order = await comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph!
-        const lastNodeId = String(graph._nodes.at(-1)?.id)
-        const serialisedLastNodeId = String(graph.serialize().nodes.at(-1)?.id)
+        const lastNodeId = graph._nodes.at(-1)?.id
+        const serialisedLastNodeId = graph.serialize().nodes.at(-1)?.id
         return { lastNodeId, serialisedLastNodeId }
       })
+      expect(order.lastNodeId).toBeDefined()
+      expect(order.serialisedLastNodeId).toBeDefined()
       expect(order.serialisedLastNodeId).toBe(order.lastNodeId)
 
       // Screenshot showing CLIP now on top

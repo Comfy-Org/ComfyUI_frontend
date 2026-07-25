@@ -15,6 +15,7 @@ import {
   NodeInputSlot,
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { test } from './__fixtures__/testExtensions'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
@@ -695,6 +696,30 @@ describe('LGraphNode', () => {
 
       expect(out[2]).toBe(150)
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+    })
+
+    test('Vue mode uses registered collapsed bounds height', () => {
+      LiteGraph.vueNodesMode = true
+      node._collapsed_width = 90
+      layoutStore.initializeFromLiteGraph([
+        {
+          id: node.id,
+          pos: [node.pos[0], node.pos[1]],
+          size: [node.size[0], node.size[1]]
+        }
+      ])
+      layoutStore.batchUpdateNodeBounds([
+        {
+          nodeId: node.id,
+          bounds: { x: 100, y: 200, width: 90, height: 40 },
+          preserveSize: true
+        }
+      ])
+      node.measure(out)
+
+      expect(out[2]).toBe(90)
+      expect(out[3]).toBe(40 + LiteGraph.NODE_TITLE_HEIGHT)
+      expect(Array.from(node.size)).toEqual([150, 10])
     })
 
     test('Vue mode expanded behaves identically to legacy expanded', () => {

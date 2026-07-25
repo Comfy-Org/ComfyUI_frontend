@@ -17,6 +17,11 @@ type ResizeEntryLike = Pick<
   | 'contentRect'
 >
 
+interface GraphNodeFixture {
+  size: [number, number]
+  _collapsed_width?: number
+}
+
 const resizeObserverState = vi.hoisted(() => {
   const state = {
     callback: null as ResizeObserverCallback | null,
@@ -43,13 +48,7 @@ const resizeObserverState = vi.hoisted(() => {
 const testState = vi.hoisted(() => ({
   linearMode: false,
   nodeLayouts: new Map<NodeId, NodeLayout>(),
-  graphNodes: new Map<
-    NodeId,
-    {
-      size: [number, number]
-      _collapsed_width?: number
-    }
-  >(),
+  graphNodes: new Map<NodeId, GraphNodeFixture>(),
   batchUpdateNodeBounds: vi.fn(),
   setSource: vi.fn(),
   syncNodeSlotLayoutsFromDOM: vi.fn(),
@@ -299,10 +298,7 @@ describe('useVueNodeResizeTracking', () => {
 
     // Seed with larger expanded size so the collapsed write is a real change
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
-    const graphNode: {
-      size: [number, number]
-      _collapsed_width?: number
-    } = { size: [240, 150] }
+    const graphNode: GraphNodeFixture = { size: [240, 150] }
     testState.graphNodes.set(nodeId, graphNode)
 
     resizeObserverState.callback?.([entry], createObserverMock())
