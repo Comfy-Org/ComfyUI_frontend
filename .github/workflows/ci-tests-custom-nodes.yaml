@@ -157,6 +157,7 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
 
       - name: Run custom-node suite
+        id: suite
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
         run: |
@@ -175,13 +176,22 @@ jobs:
       - name: Forbid skipped tests
         if: always()
         shell: bash
+        env:
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
         run: |
           set -euo pipefail
           # An earlier step (build, server boot, the suite itself) may have
           # failed before Playwright wrote its json; the job is already red,
           # so surface that rather than a confusing jq "no such file" error.
+          # A missing json after a SUCCESSFUL suite is different: the skip gate
+          # cannot run at all, so fail closed rather than pass a job whose
+          # zero-skip invariant went unchecked.
           if [ ! -f custom-nodes-results.json ]; then
-            echo "no results json - the suite did not produce output (an earlier step failed)"
+            if [ "${SUITE_OUTCOME:-}" = "success" ]; then
+              echo "::error::suite succeeded but wrote no results json - the skip gate could not run"
+              exit 1
+            fi
+            echo "no results json - the suite step already failed (${SUITE_OUTCOME:-unknown})"
             exit 0
           fi
           skipped=$(jq '.stats.skipped' custom-nodes-results.json)

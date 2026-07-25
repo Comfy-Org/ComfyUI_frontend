@@ -52,7 +52,15 @@ export default defineConfig({
       // serial tests, so recording overhead is negligible, and a red run
       // needs 7 installed packs + a live backend to reproduce - the trace of
       // the ACTUAL first failing attempt (not a retry) is the debug artifact.
-      use: { ...devices['Desktop Chrome'], trace: 'retain-on-failure' },
+      // OFF under cloud: that env seeds a real Firebase session, and
+      // page.evaluate arguments are recorded verbatim in the trace, which CI
+      // uploads as a public artifact - a long-lived refresh token would ship
+      // with it (browser_tests/fixtures/helpers/smokeAuth.ts).
+      use: {
+        ...devices['Desktop Chrome'],
+        trace:
+          process.env.CUSTOM_NODES_ENV === 'cloud' ? 'off' : 'retain-on-failure'
+      },
       timeout: 15000,
       grep: /@custom-nodes/,
       fullyParallel: false

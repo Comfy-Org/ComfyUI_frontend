@@ -92,7 +92,7 @@ Any `-g` pattern works against the generic scripts, e.g.
   skip: baselines encode CI fonts and pack-JS layout, which local
   environments cannot reproduce). Baselines are recorded automatically by
   the record workflow (`.github/workflows/record-custom-nodes-geometry.yaml`);
-  nodes with genuinely racy layout are ledgered by mechanism in
+  nodes whose layout is racy or follows environment content are ledgered by mechanism in
   `GEOMETRY_UNSTABLE_NODES` (see
   [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md)).
 - **connectivity (contract)**: wiring-only, no execution. A

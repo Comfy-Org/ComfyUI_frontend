@@ -165,18 +165,15 @@ jobs:
       # preview:cloud-e2e sets DISTRIBUTION=cloud (keeps the GCS media redirect
       # proxy entries) and CLOUD_E2E_SERVE=1 (turns OFF the two dev-only /api
       # bypasses that would blind the suite - the empty /api/extensions list and
-      # the fake single-user /api/users). DEV_SERVER_COMFYUI_URL aims the proxy
-      # at the Cloud backend. Port pinned to 4173 with --strictPort so a taken
+      # the fake single-user /api/users). That script also owns
+      # DEV_SERVER_COMFYUI_URL (testcloud.comfy.org), so the proxy target cannot
+      # drift here and silently fall back to stagingcloud (vite.config.mts).
+      # Port pinned to 4173 with --strictPort so a taken
       # port fails loud instead of drifting off PLAYWRIGHT_TEST_URL; the server
       # is backgrounded and survives into later steps (same pattern as the core
       # gate's backgrounded backend).
       - name: Start cloud preview server
         if: steps.gate.outputs.run-cloud == 'true'
-        env:
-          # testcloud runs Firebase project dreamboothy-dev (confirmed via
-          # https://testcloud.comfy.org/api/features); its web key is the public
-          # DEV_CONFIG key the seeded auth record uses. Public URL, not a secret.
-          DEV_SERVER_COMFYUI_URL: https://testcloud.comfy.org
         shell: bash
         run: |
           set -euo pipefail
@@ -200,6 +197,7 @@ jobs:
       # per-worker Firebase sign-in (smokeAuth.ts). workers=1: the auto-run tier
       # needs exclusive backend-queue access.
       - name: Run custom-node cloud suite
+        id: suite
         if: steps.gate.outputs.run-cloud == 'true'
         env:
           CUSTOM_NODES_ENV: cloud
@@ -220,13 +218,22 @@ jobs:
       - name: Forbid skipped tests
         if: always() && steps.gate.outputs.run-cloud == 'true'
         shell: bash
+        env:
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
         run: |
           set -euo pipefail
           # An earlier step (build, preview, the suite itself) may have failed
           # before Playwright wrote its json; the job is already red, so
           # surface that rather than a confusing jq "no such file" error.
+          # A missing json after a SUCCESSFUL suite is different: the skip gate
+          # cannot run at all, so fail closed rather than pass a job whose
+          # zero-skip invariant went unchecked.
           if [ ! -f custom-nodes-cloud-results.json ]; then
-            echo "no results json - the suite did not produce output (an earlier step failed)"
+            if [ "${SUITE_OUTCOME:-}" = "success" ]; then
+              echo "::error::suite succeeded but wrote no results json - the skip gate could not run"
+              exit 1
+            fi
+            echo "no results json - the suite step already failed (${SUITE_OUTCOME:-unknown})"
             exit 0
           fi
           skipped=$(jq '.stats.skipped' custom-nodes-cloud-results.json)

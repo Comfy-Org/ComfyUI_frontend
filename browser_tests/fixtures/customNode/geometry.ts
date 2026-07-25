@@ -55,8 +55,9 @@ export interface PackGeometryFile {
   nodes: Record<string, NodeGeometry>
 }
 
-// Nodes whose initial layout is not deterministic run-to-run, keyed by the
-// MECHANISM that makes them racy (same discipline as the console ledger's
+// Nodes whose initial layout is not reproducible run-to-run - a race, or a
+// layout that follows environment content - keyed by the MECHANISM that
+// makes them unreproducible (same discipline as the console ledger's
 // mechanism patterns): each exclusion carries a written reason, is
 // registration-guarded in the spec (an entry whose node leaves the corpus
 // reds), announced in the run output like every other escape hatch, and
@@ -71,6 +72,8 @@ export const GEOMETRY_UNSTABLE_NODES: Record<string, Record<string, string>> = {
     // record run and 920 in the CI compare run at identical code.
     SplineEditor: 'editor_base init race shifts widget y between runs',
     PointsEditor: 'same editor_base init race as SplineEditor',
+    // Observed live: litegraph height read 566 in the record run and one
+    // compare run, 354 in another - the node sizes to the backend input dir.
     LoadAndResizeImage: 'litegraph height follows input-dir preview contents'
   }
 }

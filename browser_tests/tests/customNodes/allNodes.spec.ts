@@ -757,7 +757,7 @@ for (const entry of loadManifest()) {
         ).not.toBeNull()
         expect(
           diffGeometry(geometryBaseline!.nodes, measuredGeometry),
-          'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per ADDING_CUSTOM_NODES.md Step 5b; delta flips between identical runs: ledger by mechanism in GEOMETRY_UNSTABLE_NODES'
+          'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per ADDING_CUSTOM_NODES.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger by mechanism in GEOMETRY_UNSTABLE_NODES'
         ).toEqual([])
       }
     })

@@ -60,6 +60,21 @@ test.describe('diffGeometry', () => {
     ])
   })
 
+  // Literal deltas either side of the tolerance, so widening it is a test
+  // failure rather than a silent loosening: the other cases here straddle a
+  // 100x window and stay green for any tolerance between them.
+  test('the tolerance sits between 0.009px and 0.011px', () => {
+    const inside = node()
+    inside.litegraph.h = 106.009
+    expect(diffGeometry({ A: node() }, { A: inside })).toEqual([])
+
+    const outside = node()
+    outside.litegraph.h = 106.011
+    expect(diffGeometry({ A: node() }, { A: outside })).toEqual([
+      'A.litegraph.h: expected 106, got 106.011'
+    ])
+  })
+
   test('a widget added or removed reds as a length mismatch', () => {
     const measured = node()
     measured.litegraph.widgets = [

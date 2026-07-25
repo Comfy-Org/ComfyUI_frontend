@@ -4,7 +4,9 @@ import type { Page } from '@playwright/test'
 const FIREBASE_AUTH_DB = 'firebaseLocalStorageDb'
 const FIREBASE_AUTH_STORE = 'firebaseLocalStorage'
 
-// Must match src/config/firebase.ts DEV_CONFIG - the SDK restores only the record keyed under them.
+// The SDK's IndexedDB lookup key embeds getFirebaseConfig().apiKey, which the
+// backend reports at /api/features - testcloud resolves that to dreamboothy-dev,
+// so this equals src/config/firebase.ts DEV_CONFIG. A mismatch boots signed out.
 export const FIREBASE_WEB_API_KEY = 'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE'
 export const FIREBASE_APP_NAME = '[DEFAULT]'
 

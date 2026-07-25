@@ -61,11 +61,14 @@ Each row below is labelled with its mode.
 
 Every "Exact red" below is the real message captured when the break was applied
 and the tier was run against a real backend - not a prediction. One scope note:
-for the corpus-derived tiers (rows 4, 6, 9) the named offender and pair list
-are re-derived from `/object_info` each run, so a pin bump can legitimately
+for the corpus-derived tiers (rows 2, 3, 4, 6, 9) the named offender and pair
+list are re-derived from `/object_info` each run, so a pin bump can legitimately
 change WHICH pair or node the message names without weakening the catch - the
 promise is the tier and the failure class, not byte-identical offender text
-across pin changes. Sections refer to [ARCHITECTURE.md](ARCHITECTURE.md).
+across pin changes. Rows 2 and 3 name rgthree-comfy, which left the manifest in
+PR #13389: those two captures are historical and re-running the break now names
+a node from a currently installed pack instead. Sections refer to
+[ARCHITECTURE.md](ARCHITECTURE.md).
 
 | #   | Surface (ARCH section)                           | Mode | Real regression it recreates                                                                                                                                                                      | The one-file break                                                                                                                                                                            | CI check that catches it                   | Exact red                                                                                                                                                             |
 | --- | ------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

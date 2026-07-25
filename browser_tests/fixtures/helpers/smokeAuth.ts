@@ -121,6 +121,8 @@ async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
         email,
         password: process.env.SMOKE_ACCOUNT_PASSWORD,
         returnSecureToken: true,
+        // Mirrors Comfy-Org/cloud testing/smoke/cmd/mint-smoke-api-key/main.go
+        // firebaseSignIn, which signs this same account into this same project.
         clientType: 'CLIENT_TYPE_WEB'
       }),
       signal: AbortSignal.timeout(30_000)
@@ -130,7 +132,10 @@ async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
   if (!response.ok) {
     const code = identityToolkitErrorCode(body)
     throw new Error(
-      `smoke-user sign-in failed (HTTP ${response.status}${code ? `: ${code}` : ''}) - check the SMOKE_ACCOUNT_EMAIL / SMOKE_ACCOUNT_PASSWORD credentials`
+      `smoke-user sign-in failed (HTTP ${response.status}${code ? `: ${code}` : ''}) - ` +
+        `the account must exist in the Firebase project this suite signs into ` +
+        `(dreamboothy-dev, the project testcloud reports at /api/features); ` +
+        `check SMOKE_ACCOUNT_EMAIL / SMOKE_ACCOUNT_PASSWORD`
     )
   }
   return smokeAuthUserRecord(body, email, apiKey, Date.now())

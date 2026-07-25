@@ -80,10 +80,6 @@ jobs:
 
       # Same served-dist-against-Cloud mechanism as the cloud gate.
       - name: Start cloud preview server
-        env:
-          # testcloud runs Firebase project dreamboothy-dev; the seeded auth
-          # record uses that project's public DEV_CONFIG web key. Public URL.
-          DEV_SERVER_COMFYUI_URL: https://testcloud.comfy.org
         shell: bash
         run: |
           set -euo pipefail

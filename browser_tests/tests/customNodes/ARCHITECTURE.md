@@ -248,15 +248,15 @@ pinned by fixtures copied from a live census of both definition dialects
 
 ## 5. The verification tiers
 
-| Tier                 | Verifies                                                                                                                                                                                       | Renderers                                                  | Notes                                                                                                                                              |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mount Completeness   | every declared input and output actually materializes on the created node; the DOM renderer additionally shows at least the instance's widget/slot counts                                      | both; a pack declared Vue-incompatible runs canvas only    | missing parts fail; extras are tolerated                                                                                                           |
-| Layout Geometry      | every node's rendered geometry (canvas model numbers; DOM rects normalized to graph space) matches a committed per-pack baseline to within 0.01px - the shrinking/collapse class fails by name | both; a pack declared Vue-incompatible records canvas only | baselines recorded in CI for font parity; compared in CI only (local runs log and skip); racy nodes ledgered by mechanism and registration-guarded |
-| Persistence          | save/reload loses nothing and changes nothing; user-like writes stick and survive reload                                                                                                       | both; a pack declared Vue-incompatible runs canvas only    | application-added dynamic widgets are legal; see section 8                                                                                         |
-| Wiring Compatibility | one representative typed wire per slot connects through the real validator and survives save, reload, and prompt serialization                                                                 | breadth sweep: one, by decision 7; curated drags: both     | dropdown slots pair only on identical option sets; see section 10 for exception routing                                                            |
-| Execution            | the node runs on a real backend and its output arrives at an observation sink                                                                                                                  | one, by decision 7                                         | the full flow is section 7                                                                                                                         |
-| Curated workflows    | a small hand-authored graph per pack executes end to end; its named must-exist nodes are asserted present (a missing one fails the tier, catching a pack that renamed or dropped a node)       | both (render pass)                                         | plus a forced-error self-check proving the harness detects real failures                                                                           |
-| Core smoke           | the core app loads a workflow cleanly with packs installed                                                                                                                                     | both                                                       | guards against packs breaking the base app                                                                                                         |
+| Tier                 | Verifies                                                                                                                                                                                       | Renderers                                                  | Notes                                                                                                                                                                              |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mount Completeness   | every declared input and output actually materializes on the created node; the DOM renderer additionally shows at least the instance's widget/slot counts                                      | both; a pack declared Vue-incompatible runs canvas only    | missing parts fail; extras are tolerated                                                                                                                                           |
+| Layout Geometry      | every node's rendered geometry (canvas model numbers; DOM rects normalized to graph space) matches a committed per-pack baseline to within 0.01px - the shrinking/collapse class fails by name | both; a pack declared Vue-incompatible records canvas only | baselines recorded in CI for font parity; compared in CI only (local runs log and skip); nondeterministic or content-variable nodes ledgered by mechanism and registration-guarded |
+| Persistence          | save/reload loses nothing and changes nothing; user-like writes stick and survive reload                                                                                                       | both; a pack declared Vue-incompatible runs canvas only    | application-added dynamic widgets are legal; see section 8                                                                                                                         |
+| Wiring Compatibility | one representative typed wire per slot connects through the real validator and survives save, reload, and prompt serialization                                                                 | breadth sweep: one, by decision 7; curated drags: both     | dropdown slots pair only on identical option sets; see section 10 for exception routing                                                                                            |
+| Execution            | the node runs on a real backend and its output arrives at an observation sink                                                                                                                  | one, by decision 7                                         | the full flow is section 7                                                                                                                                                         |
+| Curated workflows    | a small hand-authored graph per pack executes end to end; its named must-exist nodes are asserted present (a missing one fails the tier, catching a pack that renamed or dropped a node)       | both (render pass)                                         | plus a forced-error self-check proving the harness detects real failures                                                                                                           |
+| Core smoke           | the core app loads a workflow cleanly with packs installed                                                                                                                                     | both                                                       | guards against packs breaking the base app                                                                                                                                         |
 
 One vocabulary bridge, because the manifest predates these tier names: the
 manifest row's `tiers` field takes `load`, `run`, `connectivity`, and
@@ -687,17 +687,30 @@ these answer: "green but broken" and "tests can never catch random bugs."
   result stays meaningful everywhere else.
 - **Answers**: tests can never catch random bugs.
 
-### G15. Nondeterministic initial layout (the editor_base race)
+### G15. Layout that is not reproducible run to run (two mechanisms)
 
-The geometry tier's first live compare found exactly one delta across 823
-nodes: SplineEditor's widget block sat at y 915 in the record run and 920
-in the compare run, at identical code. Root cause is the same editor_base
-init race the console ledger documents for editor creation: whether the
-pack's editor DOM finished initializing when the frame drew decides the
-widget offsets. Defense: `GEOMETRY_UNSTABLE_NODES` excludes both
-editor_base subclasses by mechanism (never per incident), registration
-guarded and logged per run; every other node compares exactly, proven
-byte-identical across two independent CI runs.
+The geometry tier's first live compare found exactly one delta across the
+then-823-node corpus: SplineEditor's widget block sat at y 915 in the
+record run and 920 in the compare run, at identical code. Root cause is
+the same editor_base init race the console ledger documents for editor
+creation: whether the pack's editor DOM finished initializing when the
+frame drew decides the widget offsets.
+
+A later compare surfaced a second, different mechanism. Across two
+ephemeral runners on an identical pinned image and pinned bundled
+Chromium, 3187 node widths jittered by up to 2e-4px - sub-pixel float
+residuals from the scale division, not a layout change - while
+LoadAndResizeImage's litegraph height moved 566 to 354, because that
+node's height follows whatever the backend's input dir holds.
+
+Defense, by mechanism and never per incident: `GEOMETRY_UNSTABLE_NODES`
+excludes the two editor_base subclasses (init race) plus
+LoadAndResizeImage (content-variable height), registration guarded and
+logged per run, and omitted from baselines entirely. Every other node
+compares within `GEOMETRY_EPSILON_PX` (0.01px), which absorbs the
+cross-runner float residual while still reding on any real shift - about
+100x finer than a 1px move, and pinned on both sides by
+`geometry.pure.spec.ts`.
 
 ## 13. The CI deployment view
 
