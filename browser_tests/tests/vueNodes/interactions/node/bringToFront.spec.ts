@@ -93,13 +93,18 @@ test.describe(
 
       const order = await comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph!
+        const clipNodeId = graph._nodes.find(
+          (node) => node.title === 'CLIP Text Encode'
+        )?.id
         const lastNodeId = graph._nodes.at(-1)?.id
         const serialisedLastNodeId = graph.serialize().nodes.at(-1)?.id
-        return { lastNodeId, serialisedLastNodeId }
+        return { clipNodeId, lastNodeId, serialisedLastNodeId }
       })
+      expect(order.clipNodeId).toBeDefined()
       expect(order.lastNodeId).toBeDefined()
       expect(order.serialisedLastNodeId).toBeDefined()
-      expect(order.serialisedLastNodeId).toBe(order.lastNodeId)
+      expect(order.lastNodeId).toBe(order.clipNodeId)
+      expect(order.serialisedLastNodeId).toBe(order.clipNodeId)
 
       // Screenshot showing CLIP now on top
       await expect(comfyPage.canvas).toHaveScreenshot(

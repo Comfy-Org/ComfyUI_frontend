@@ -245,6 +245,44 @@ describe('useNodeDrag', () => {
       }
     ])
   })
+
+  it('snaps selected secondary nodes using rendered bounds', () => {
+    const node2 = toNodeId('2')
+    testState.selectedNodeIds.value = new Set([node1, node2])
+    testState.nodeLayouts.set('1', {
+      position: { x: 50, y: 80 },
+      size: { width: 180, height: 110 },
+      bounds: { x: 50, y: 80, width: 180, height: 110 }
+    })
+    testState.nodeLayouts.set('2', {
+      position: { x: 100, y: 120 },
+      size: { width: 240, height: 160 },
+      bounds: { x: 100, y: 120, width: 90, height: 30 }
+    })
+    testState.nodeSnap.shouldSnap.mockReturnValue(true)
+    testState.nodeSnap.applySnapToPosition.mockImplementation(({ x, y }) => ({
+      x: x + 5,
+      y: y + 7
+    }))
+
+    const { startDrag, endDrag } = useNodeDrag()
+
+    startDrag(pointerEvent(5, 10), node1)
+    endDrag({} as PointerEvent, node1)
+
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
+      {
+        nodeId: '1',
+        bounds: { x: 55, y: 87, width: 180, height: 110 },
+        preserveSize: true
+      },
+      {
+        nodeId: '2',
+        bounds: { x: 105, y: 127, width: 90, height: 30 },
+        preserveSize: true
+      }
+    ])
+  })
 })
 
 describe('useNodeDrag auto-pan', () => {

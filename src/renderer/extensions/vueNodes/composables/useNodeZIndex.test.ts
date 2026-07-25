@@ -13,25 +13,31 @@ vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
 const mockedUseLayoutMutations = vi.mocked(useLayoutMutations)
 const zIndexTestState = vi.hoisted(() => {
   const graphNode = {}
+  const bringToFront = vi.fn()
+  const getNodeById = vi.fn((): object | undefined => graphNode)
+  const canvas = {
+    graph: { getNodeById },
+    bringToFront
+  }
   return {
     graphNode,
-    bringToFront: vi.fn(),
-    getNodeById: vi.fn(() => graphNode)
+    bringToFront,
+    getNodeById,
+    canvas: null as typeof canvas | null,
+    defaultCanvas: canvas
   }
 })
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
-    canvas: {
-      graph: { getNodeById: zIndexTestState.getNodeById },
-      bringToFront: zIndexTestState.bringToFront
-    }
+    canvas: zIndexTestState.canvas
   })
 }))
 
 describe('useNodeZIndex', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    zIndexTestState.canvas = zIndexTestState.defaultCanvas
     zIndexTestState.getNodeById.mockReturnValue(zIndexTestState.graphNode)
   })
 
@@ -118,6 +124,45 @@ describe('useNodeZIndex', () => {
 
       expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Canvas)
       expect(mockBringNodeToFront).toHaveBeenCalledWith('node4')
+    })
+
+    it('should update layout when the canvas is missing', () => {
+      const mockSetSource = vi.fn()
+      const mockBringNodeToFront = vi.fn()
+      mockedUseLayoutMutations.mockReturnValue({
+        setSource: mockSetSource,
+        bringNodeToFront: mockBringNodeToFront
+      } as Partial<ReturnType<typeof useLayoutMutations>> as ReturnType<
+        typeof useLayoutMutations
+      >)
+      zIndexTestState.canvas = null
+
+      const { bringNodeToFront } = useNodeZIndex()
+      bringNodeToFront(toNodeId('node5'))
+
+      expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Vue)
+      expect(mockBringNodeToFront).toHaveBeenCalledWith('node5')
+      expect(zIndexTestState.bringToFront).not.toHaveBeenCalled()
+    })
+
+    it('should update layout when the graph node is unresolved', () => {
+      const mockSetSource = vi.fn()
+      const mockBringNodeToFront = vi.fn()
+      mockedUseLayoutMutations.mockReturnValue({
+        setSource: mockSetSource,
+        bringNodeToFront: mockBringNodeToFront
+      } as Partial<ReturnType<typeof useLayoutMutations>> as ReturnType<
+        typeof useLayoutMutations
+      >)
+      zIndexTestState.getNodeById.mockReturnValue(undefined)
+
+      const { bringNodeToFront } = useNodeZIndex()
+      bringNodeToFront(toNodeId('node6'))
+
+      expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Vue)
+      expect(mockBringNodeToFront).toHaveBeenCalledWith('node6')
+      expect(zIndexTestState.getNodeById).toHaveBeenCalledWith('node6')
+      expect(zIndexTestState.bringToFront).not.toHaveBeenCalled()
     })
   })
 })
