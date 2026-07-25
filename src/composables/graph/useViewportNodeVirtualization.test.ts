@@ -202,27 +202,32 @@ describe('useViewportNodeVirtualization', () => {
     const secondNode = createNode('b')
     const allNodes = shallowRef([firstNode])
     vi.spyOn(layoutStore, 'getRevision').mockReturnValue(1)
-    const hasNodeLayout = vi
-      .spyOn(layoutStore, 'hasNodeLayout')
-      .mockImplementation((nodeId) => nodeId === firstNode.id)
+    vi.spyOn(layoutStore, 'hasNodeLayout').mockImplementation(
+      (nodeId) => nodeId === firstNode.id
+    )
     vi.spyOn(layoutStore, 'queryNodesInBounds').mockReturnValue([firstNode.id])
     const scope = effectScope()
-
-    scope.run(() => {
-      const { refresh } = useViewportNodeVirtualization({
+    const virtualization = scope.run(() =>
+      useViewportNodeVirtualization({
         allNodes,
         canvas: createCanvas(),
         enabled: true
       })
+    )
+    if (!virtualization) {
+      scope.stop()
+      throw new Error('Expected virtualization scope to initialize')
+    }
 
-      refresh(true)
-      hasNodeLayout.mockClear()
+    try {
+      virtualization.refresh(true)
       allNodes.value = [secondNode]
-      refresh(true)
-    })
+      virtualization.refresh(true)
+    } finally {
+      scope.stop()
+    }
 
-    expect(hasNodeLayout).toHaveBeenCalledWith(secondNode.id)
-    scope.stop()
+    expect(virtualization.renderNodes.value).toEqual(allNodes.value)
   })
 })
 

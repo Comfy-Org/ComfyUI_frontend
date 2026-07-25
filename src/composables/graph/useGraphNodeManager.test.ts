@@ -786,14 +786,18 @@ describe('Tracked slot model reconciliation', () => {
     layoutStore.initializeFromLiteGraph([])
   })
 
-  function trackSlot(nodeId: LGraphNode['id'], type: 'input' | 'output') {
-    const slotKey = getSlotKey(nodeId, 0, type === 'input')
+  function trackSlot(
+    nodeId: LGraphNode['id'],
+    type: 'input' | 'output',
+    index = 0
+  ) {
+    const slotKey = getSlotKey(nodeId, index, type === 'input')
     useNodeSlotRegistryStore()
       .ensureNode(nodeId)
-      .slots.set(slotKey, { index: 0, type })
+      .slots.set(slotKey, { index, type })
     const layout: SlotLayout = {
       nodeId,
-      index: 0,
+      index,
       type,
       position: { x: 10, y: 20 },
       bounds: { x: 10, y: 20, width: 10, height: 10 }
@@ -830,6 +834,7 @@ describe('Tracked slot model reconciliation', () => {
     const node = new LGraphNode('test')
     graph.add(node)
     const slotKey = trackSlot(node.id, 'input')
+    const outOfRangeSlotKey = trackSlot(node.id, 'input', 1)
     const previousApp = window.app
     const configuringGraph = vi
       .spyOn(app, 'configuringGraph', 'get')
@@ -845,6 +850,7 @@ describe('Tracked slot model reconciliation', () => {
       node.onAfterGraphConfigured?.()
 
       expect(layoutStore.getSlotLayout(slotKey)).not.toBeNull()
+      expect(layoutStore.getSlotLayout(outOfRangeSlotKey)).toBeNull()
     } finally {
       configuringGraph.mockRestore()
       window.app = previousApp
