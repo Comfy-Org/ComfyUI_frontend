@@ -8,7 +8,7 @@
         <div class="flex min-w-0 flex-1 items-baseline gap-2">
           <span class="text-base font-semibold text-base-foreground">
             <template v-if="activeView === 'active'">
-              <template v-if="isOnTeamPlan && !isPersonalWorkspace">
+              <template v-if="isOnTeamPlan">
                 {{
                   $t('workspacePanel.members.membersCount', {
                     count: members.length,
@@ -149,8 +149,7 @@
         <div class="min-h-0 flex-1 overflow-y-auto">
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
-            <!-- Personal Workspace: show only current user -->
-            <template v-if="isPersonalWorkspace">
+            <template v-if="!hasTeamPlan">
               <MemberListItem
                 :member="personalWorkspaceMember"
                 :is-current-user="true"
@@ -159,7 +158,6 @@
               />
             </template>
 
-            <!-- Team Workspace: sorted list -->
             <template v-else>
               <MemberListItem
                 v-for="(member, index) in filteredMembers"
@@ -197,15 +195,14 @@
     </div>
     <!-- Upsell Banner -->
     <MemberUpsellBanner
-      v-if="!isOnTeamPlan"
+      v-if="
+        !isPlanLoading && !isOnTeamPlan && permissions.canManageSubscription
+      "
       :reactivate="hasLapsedTeamPlan"
       @show-plans="showTeamPlans()"
     />
     <!-- Need More Members Footer -->
-    <div
-      v-if="isOnTeamPlan && !isPersonalWorkspace"
-      class="flex items-center pt-2"
-    >
+    <div v-if="isOnTeamPlan" class="flex items-center pt-2">
       <p class="text-sm text-muted-foreground">
         {{ $t('workspacePanel.members.needMoreMembers') }}
       </p>
@@ -236,8 +233,10 @@ const {
   searchQuery,
   activeView,
   maxSeats,
+  hasTeamPlan,
   isOnTeamPlan,
   hasLapsedTeamPlan,
+  isPlanLoading,
   hasMultipleMembers,
   showSearch,
   showViewTabs,
@@ -249,7 +248,6 @@ const {
   filteredMembers,
   filteredPendingInvites,
   memberMenus,
-  isPersonalWorkspace,
   members,
   pendingInvites,
   permissions,

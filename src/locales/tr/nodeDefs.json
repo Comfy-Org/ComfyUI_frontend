@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "Anima LLLite Uygula",
+    "inputs": {
+      "end_percent": {
+        "name": "bitiş yüzdesi"
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "mask": {
+        "name": "maske"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "başlangıç yüzdesi"
+      },
+      "strength": {
+        "name": "güç"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "Sesin seviyesini belirtilen desibel (dB) miktarında ayarla.",
     "display_name": "Ses Ses Seviyesi Ayarla",
@@ -2010,9 +2036,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "sıcaklık"
       },
       "prompt": {
         "name": "istem",
@@ -5861,6 +5884,212 @@
       }
     }
   },
+  "HeyGenAvatarVideoNode": {
+    "description": "HeyGen avatarından konuşan sunucu videosu oluşturun. HeyGen'in en popüler herkese açık avatarlarını içerir; herhangi bir görünüm kimliği geçersiz kılma olarak girilebilir.",
+    "display_name": "HeyGen Avatar Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en-boy oranı",
+        "tooltip": "Çıktı en-boy oranı. 'auto', avatarın kaynak görüntüsünü takip eder."
+      },
+      "background_color": {
+        "name": "arka plan rengi",
+        "tooltip": "İsteğe bağlı düz arka plan rengi, hex kodu olarak (örn. '#00ff00'). Boş bırakılırsa avatarın kendi arka planı kullanılır."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "custom_avatar_id": {
+        "name": "özel_avatar_id",
+        "tooltip": "İsteğe bağlı HeyGen avatar görünüm kimliği. Ayarlandığında, yukarıda seçilen avatarı geçersiz kılar. HeyGen'in 3000+ herkese açık görünümünden (veya özel avatarlarınızdan) herhangi biri kullanılabilir."
+      },
+      "engine": {
+        "name": "motor",
+        "tooltip": "Render motoru; her seçenek yalnızca onu destekleyen avatarları listeler. 'auto' tüm avatarları sunar ve en iyi motorunu seçer (Avatar IV tercih edilir). Avatar V en yüksek kalite, Avatar III en uygun fiyatlıdır."
+      },
+      "engine_avatar": {
+        "name": "avatar"
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "Çıktı video çözünürlüğü."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "HeyGen'e gönderilmez; yeniden çalıştırmak için değiştirin."
+      },
+      "speech": {
+        "name": "konuşma",
+        "tooltip": "Avatarı bir metin senaryosu (HeyGen metinden sese) veya kendi sesinizle yönlendirin."
+      },
+      "speech_custom_voice_id": {
+        "name": "özel_ses_id"
+      },
+      "speech_text": {
+        "name": "metin"
+      },
+      "speech_voice": {
+        "name": "ses"
+      },
+      "speech_voice_speed": {
+        "name": "ses_hızı"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "Bir kişinin fotoğrafından veya bir metin isteminden (oluşturulmuş karakter) kendi tekrar kullanılabilir HeyGen avatarınızı oluşturun. Ortaya çıkan avatar_id'yi HeyGen Avatar Video'nun custom_avatar_id'sine aktarın — ve avatarı gelecekteki iş akışlarında tekrar kullanmak için kimliği bir yere kaydedin.",
+    "display_name": "HeyGen Avatar Oluştur",
+    "inputs": {
+      "source": {
+        "name": "kaynak",
+        "tooltip": "Bir metin isteminden yeni bir karakter oluşturun veya avatarı bağlı bir kişinin fotoğrafından oluşturun."
+      },
+      "source_prompt": {
+        "name": "istem"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "avatar_id",
+        "tooltip": "Avatar görünüm kimliği. HeyGen Avatar Video'nun custom_avatar_id'sine aktarın; avatarı daha sonra tekrar kullanmak için kaydedin."
+      },
+      "1": {
+        "name": "önizleme",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "Bir kişinin herhangi bir görüntüsünü dudak senkronizasyonlu konuşan bir videoya dönüştürün (HeyGen Avatar IV). Metin senaryosu veya kendi sesinizle yönlendirin.",
+    "display_name": "HeyGen Konuşan Fotoğraf",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en boy oranı",
+        "tooltip": "Çıktı en boy oranı. 'auto' giriş görüntüsünü takip eder."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "expressiveness": {
+        "name": "ifadeler",
+        "tooltip": "Animasyonlu yüz ve jestlerin ne kadar ifadeli olacağı."
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Animasyon yapılacak kişinin görüntüsü. 2K'dan büyükse otomatik olarak küçültülür."
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "Çıktı video çözünürlüğü."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "HeyGen'e gönderilmez; yeniden çalıştırmak için değiştirin."
+      },
+      "speech": {
+        "name": "konuşma",
+        "tooltip": "Avatarı bir metin senaryosu (HeyGen metinden konuşmaya) veya kendi sesinizle yönlendirin."
+      },
+      "speech_custom_voice_id": {
+        "name": "özel_ses_id"
+      },
+      "speech_text": {
+        "name": "metin"
+      },
+      "speech_voice": {
+        "name": "ses"
+      },
+      "speech_voice_speed": {
+        "name": "ses_hızı"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "HeyGen'in Starfish TTS motorunu kullanarak metinden konuşma sesi üretin. 17 dilde HeyGen'in en popüler seslerini içerir.",
+    "display_name": "HeyGen Metinden Konuşmaya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "custom_voice_id": {
+        "name": "özel_ses_id",
+        "tooltip": "İsteğe bağlı HeyGen ses kimliği. Ayarlandığında, yukarıda seçilen sesi geçersiz kılar. Ses, Starfish motorunu desteklemelidir."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "HeyGen'e gönderilmez; yeniden çalıştırmak için değiştirin."
+      },
+      "speed": {
+        "name": "hız",
+        "tooltip": "Konuşma hızı çarpanı."
+      },
+      "ssml": {
+        "name": "ssml",
+        "tooltip": "Metni SSML biçimlendirmesi olarak işle (duraklamalar, vurgu ve telaffuz kontrolü için)."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sentezlenecek metin (en fazla 5000 karakter). Oluşturulan konuşma en az 1 saniye uzunluğunda olmalıdır."
+      },
+      "voice": {
+        "name": "ses",
+        "tooltip": "Kullanılacak ses (HeyGen'in en popüler Starfish uyumlu seslerinden seçilmiştir)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "Konuşmalı bir videoyu başka bir dile çevirir. Orijinal konuşmacının sesini klonlar ve ağız hareketlerini çevrilen konuşmaya göre yeniden canlandırır.",
+    "display_name": "HeyGen Video Çeviri",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "'speed' daha hızlıdır; 'precision' ise iki kat fiyatla daha yüksek kaliteli dudak senkronizasyonu sağlar."
+      },
+      "output_language": {
+        "name": "output_language",
+        "tooltip": "Çevrilen video için hedef dil."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "HeyGen'e gönderilmez; yeniden çalıştırmak için değiştirin."
+      },
+      "speaker_count": {
+        "name": "speaker_count",
+        "tooltip": "Videodaki konuşmacı sayısı. 0 = otomatik algıla."
+      },
+      "translate_audio_only": {
+        "name": "translate_audio_only",
+        "tooltip": "Sadece ses parçasını değiştirir, orijinal ağız hareketleri korunur (dudak senkronizasyonu yok)."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Çevrilecek konuşmalı video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "Örneklemenin son kısmında model çıktısını birden fazla kaydırılmış yama-ızgara pozisyonunda ortalar. Dikişleri yok eder.",
     "display_name": "HiDream-O1 Yama Dikiş Yumuşatma",
@@ -9493,6 +9722,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "description": "Belirtilen bir klasörden bir video veri seti yükler ve bir video listesi döndürür. Desteklenen formatlar: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "Video Yükle (Klasörden)",
+    "inputs": {
+      "folder": {
+        "name": "folder",
+        "tooltip": "Video dosyalarını içeren klasör."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "videos",
+        "tooltip": "Tembel video referansları; kareler yalnızca aşağı akışta gerektiğinde çözülür."
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "Belirtilen bir klasörden video ve metin başlıklarından oluşan çiftleri yükler ve bunları bir liste olarak döndürür. Desteklenen formatlar: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "Video-Metin Yükle (Klasörden)",
+    "inputs": {
+      "folder": {
+        "name": "folder",
+        "tooltip": "Video dosyalarını ve .txt başlıklarını içeren klasör."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "videos",
+        "tooltip": "Tembel video referansları; kareler yalnızca aşağı akışta gerektiğinde çözülür."
+      },
+      "1": {
+        "name": "texts",
+        "tooltip": "Metin başlıklarının listesi."
       }
     }
   },
@@ -18445,6 +18710,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "Bir listedeki videoların sırasını rastgele karıştırır.",
+    "display_name": "Video Listesini Karıştır",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Rastgelelik tohumu."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Karıştırılacak video listesi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "videos",
+        "tooltip": "Karıştırılmış videolar"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "Bir listedeki video-metin çiftlerinin sırasını rastgele karıştırır.",
+    "display_name": "Video-Metin Çiftlerini Karıştır",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Rastgelelik tohumu."
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "Karıştırılacak metin listesi."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Karıştırılacak video listesi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "videos",
+        "tooltip": "Karıştırılmış videolar"
+      },
+      "1": {
+        "name": "texts",
+        "tooltip": "Karıştırılmış metinler"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "Her DiT modelinde kullanılabilecek SkipLayerGuidance düğümünün genel bir sürümü.",
     "display_name": "KatmanAtlamaRehberliğiDiT",
@@ -19644,6 +19963,28 @@
       },
       "prompt": {
         "name": "istem"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "görseller"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -21644,6 +21985,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "Bir videodan çeşitli stratejiler kullanarak sabit sayıda kare örnekleyin.",
+    "display_name": "Video Kare Örneği",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "num_frames": {
+        "name": "kare_sayısı",
+        "tooltip": "Örneklenilecek kare sayısı."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Rastgele tohum (yalnızca 'random' stratejisi ile kullanılır)."
+      },
+      "strategy": {
+        "name": "strateji",
+        "tooltip": "uniform: eşit aralıklı, head: ilk N, tail: son N, random: rastgele sıralı."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Girdi videosu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": "Örneklenmiş video."
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "VideoDoğrusalCFGRehberliği",
     "inputs": {
@@ -21652,6 +22024,57 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "Bir videodan ardışık bir kare aralığını rastgele kırpın.",
+    "display_name": "Video Kırp (Zamansal Rastgele)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "length": {
+        "name": "uzunluk",
+        "tooltip": "Tutulacak kare sayısı."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Rastgele tohum."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Girdi videosu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": "Kırpılmış video (tembel)."
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "Bir videodan ardışık bir kare aralığını kırpın.",
+    "display_name": "Video Kırp (Zamansal)",
+    "inputs": {
+      "length": {
+        "name": "uzunluk",
+        "tooltip": "Tutulacak kare sayısı."
+      },
+      "start_frame": {
+        "name": "başlangıç_kare",
+        "tooltip": "Başlangıç kare indeksi."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Girdi videosu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": "Kırpılmış video (tembel)."
       }
     }
   },
@@ -23886,6 +24309,33 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "Wan Uni3C ControlNet Uygula",
+    "inputs": {
+      "end_percent": {
+        "name": "bitiş_yüzdesi"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "render_video": {
+        "name": "video_render",
+        "tooltip": "Kamera hareketinden oluşturulan rehber video, genellikle giriş görselinin bozulmuş nokta bulutu renderları."
+      },
+      "start_percent": {
+        "name": "başlangıç_yüzdesi"
+      },
+      "strength": {
+        "name": "güç"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },

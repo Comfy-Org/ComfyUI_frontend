@@ -107,6 +107,7 @@ export interface BillingState {
 
 export interface BillingContext extends BillingState, BillingActions {
   type: ComputedRef<BillingType>
+  reconcileSubscriptionSuccess: () => Promise<void>
   /**
    * True when the active team workspace is still on a pre-credit-slider
    * (legacy) per-member tier plan, which keeps the old team pricing table.
@@ -120,4 +121,5 @@ export interface BillingContext extends BillingState, BillingActions {
    */
   isTeamPlan: ComputedRef<boolean>
   getMaxSeats: (tierKey: TierKey) => number
+  canRunWorkflows: ComputedRef<boolean>
 }

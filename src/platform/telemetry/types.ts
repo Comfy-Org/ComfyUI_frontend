@@ -33,6 +33,7 @@ export type PaymentIntentSource =
   | 'invite_member_upsell'
   | 'upload_model_upgrade'
   | 'team_upgrade_resume'
+  | 'free_tier_quota'
 
 export type SubscriptionCheckoutType = 'new' | 'change'
 export type SubscriptionCheckoutTier = TierKey | 'team'
@@ -154,6 +155,11 @@ export interface ExecutionErrorMetadata {
   nodeId?: string
   nodeType?: string
   error?: string
+}
+
+export interface ExecutionOutcomeMetadata {
+  startTime: number
+  outcome: 'success' | 'failure'
 }
 
 /**
@@ -632,6 +638,7 @@ export interface TelemetryProvider {
 
   // Workflow execution events
   trackWorkflowExecution?(): void
+  trackExecutionOutcome?(metadata: ExecutionOutcomeMetadata): void
   trackExecutionError?(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void
   trackSharedWorkflowRun?(metadata: SharedWorkflowRunMetadata): void

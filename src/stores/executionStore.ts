@@ -51,6 +51,7 @@ interface QueuedJob {
    * value is a boolean indicating if the node has been executed.
    */
   nodes: Record<string, boolean>
+  startTime?: number
   /**
    * The workflow that is queued to be executed
    */
@@ -177,6 +178,19 @@ export const useExecutionStore = defineStore('execution', () => {
     mutateStatus((m) => m.set(workflow, status))
   }
 
+  function trackExecutionOutcome(
+    jobId: string,
+    status: WorkflowExecutionStatus
+  ) {
+    if (status === 'running') return
+    const startTime = queuedJobs.value[jobId]?.startTime
+    if (startTime === undefined) return
+    useTelemetry()?.trackExecutionOutcome({
+      startTime,
+      outcome: status === 'completed' ? 'success' : 'failure'
+    })
+  }
+
   function setWorkflowStatus(jobId: string, status: WorkflowExecutionStatus) {
     const workflow = jobIdToWorkflow.get(jobId)
     if (!workflow) {
@@ -184,6 +198,7 @@ export const useExecutionStore = defineStore('execution', () => {
       return
     }
     applyWorkflowStatus(workflow, status)
+    trackExecutionOutcome(jobId, status)
   }
 
   function clearWorkflowStatus(workflow: ComfyWorkflow) {
@@ -554,7 +569,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
 
     setWorkflowStatus(e.detail.prompt_id, 'failed')
-    executionErrorStore.lastExecutionError = e.detail
+    executionErrorStore.recordExecutionError(e.detail)
     clearInitializationByJobId(e.detail.prompt_id)
     resetExecutionState(e.detail.prompt_id)
   }
@@ -580,13 +595,13 @@ export const useExecutionStore = defineStore('execution', () => {
 
     clearInitializationByJobId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
-    executionErrorStore.lastPromptError = {
+    executionErrorStore.recordPromptError({
       type: detail.exception_type ?? 'error',
       message: detail.exception_type
         ? `${detail.exception_type}: ${detail.exception_message}`
         : (detail.exception_message ?? ''),
       details: detail.traceback?.join('\n') ?? ''
-    }
+    })
     return true
   }
 
@@ -600,9 +615,9 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
-      executionErrorStore.lastNodeErrors = result.nodeErrors
+      executionErrorStore.recordNodeErrors(result.nodeErrors)
     } else {
-      executionErrorStore.lastPromptError = result.promptError
+      executionErrorStore.recordPromptError(result.promptError)
     }
     return true
   }
@@ -718,11 +733,13 @@ export const useExecutionStore = defineStore('execution', () => {
     nodes,
     id,
     promptOutput,
+    startTime,
     workflow
   }: {
     nodes: string[]
     id: JobId
     promptOutput: ComfyApiWorkflow
+    startTime?: number
     workflow: ComfyWorkflow
   }) {
     queuedJobs.value[id] ??= { nodes: {} }
@@ -735,6 +752,7 @@ export const useExecutionStore = defineStore('execution', () => {
       ...queuedJob.nodes
     }
     queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
+    queuedJob.startTime = startTime
     queuedJob.workflow = workflow
     if (workflow) jobIdToWorkflow.set(String(id), workflow)
     queuedJob.shareId = workflow?.shareId
@@ -761,6 +779,10 @@ export const useExecutionStore = defineStore('execution', () => {
     // Don't let a stale 'running' overwrite a terminal status already set.
     if (pending === 'running' && workflowStatus.value.has(workflow)) return
     applyWorkflowStatus(workflow, pending)
+    trackExecutionOutcome(jobId, pending)
+    if (pending === 'running' || activeJobId.value === jobId) return
+    delete queuedJobs.value[jobId]
+    jobIdToWorkflow.delete(jobId)
   }
 
   // ~0.65 MB at capacity (32 char GUID key + 50 char path value)

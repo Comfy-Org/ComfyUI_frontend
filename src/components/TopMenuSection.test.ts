@@ -629,7 +629,7 @@ describe('TopMenuSection', () => {
       await nextTick()
 
       expect(querySpy).toHaveBeenCalledTimes(1)
-      expect(actionbarContainer!.classList).toContain('px-2')
+      expect(actionbarContainer!.classList).not.toContain('w-0')
     } finally {
       unmount()
       vi.unstubAllGlobals()

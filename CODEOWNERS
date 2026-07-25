@@ -60,5 +60,7 @@
 .claude/
 .cursor/
 .cursorrules
-**/AGENTS.md
 **/CLAUDE.md
+
+# Agent instructions
+**/AGENTS.md                                      @christian-byrne
