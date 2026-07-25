@@ -37,12 +37,11 @@ export const usePartnerNodeGovernanceStore = defineStore(
     let nextSaveId = 0
     let activeSave: { id: number; workspaceId: string } | null = null
 
-    const governedWorkspaceId = computed(() => {
-      const workspace = workspaceStore.activeWorkspace
-      return flags.partnerNodeGovernanceEnabled && workspace?.type === 'team'
-        ? workspace.id
+    const governedWorkspaceId = computed(() =>
+      flags.partnerNodeGovernanceEnabled
+        ? (workspaceStore.activeWorkspace?.id ?? null)
         : null
-    })
+    )
 
     function createInitialPolicy(): PartnerNodePolicy {
       return {

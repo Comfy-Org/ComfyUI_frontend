@@ -162,8 +162,8 @@ describe('partnerNodeGovernanceStore', () => {
     {
       id: 'personal-workspace',
       type: 'personal',
-      expectedStatus: 'inactive',
-      expectedWorkspaceId: null
+      expectedStatus: 'unconfigured',
+      expectedWorkspaceId: 'personal-workspace'
     }
   ] as const)(
     'clears saving state after switching to a $type workspace',
@@ -312,15 +312,15 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.status).toBe('inactive')
   })
 
-  it('stays inactive in a personal workspace', async () => {
+  it('loads governance in a personal workspace when enabled', async () => {
     activateWorkspace('personal-workspace', 'personal')
 
-    store = usePartnerNodeGovernanceStore()
-    await nextTick()
+    store = await createLoadedStore()
 
-    expect(mockGetPartnerProviders).not.toHaveBeenCalled()
-    expect(mockGetPartnerNodePolicy).not.toHaveBeenCalled()
-    expect(store.status).toBe('inactive')
+    expect(mockGetPartnerProviders).toHaveBeenCalledOnce()
+    expect(mockGetPartnerNodePolicy).toHaveBeenCalledOnce()
+    expect(store.governedWorkspaceId).toBe('personal-workspace')
+    expect(store.status).toBe('unconfigured')
   })
 
   it('ignores a stale response after switching workspaces', async () => {
