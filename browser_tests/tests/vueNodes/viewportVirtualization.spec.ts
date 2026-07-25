@@ -37,15 +37,24 @@ test.describe('Viewport node virtualization', { tag: ['@canvas'] }, () => {
 
     const centerX = canvasBox.x + canvasBox.width / 2
     const centerY = canvasBox.y + canvasBox.height / 2
-    await comfyPage.page.mouse.move(centerX, centerY)
-    await comfyPage.page.mouse.down({ button: 'middle' })
-    await comfyPage.page.mouse.move(centerX, centerY - 700, { steps: 20 })
-    await comfyPage.page.mouse.up({ button: 'middle' })
+    const panStep = canvasBox.height / 3
+    for (let step = 0; step < 3; step++) {
+      await comfyPage.page.mouse.move(centerX, centerY)
+      await comfyPage.page.mouse.down({ button: 'middle' })
+      await comfyPage.page.mouse.move(centerX, centerY - panStep, { steps: 20 })
+      await comfyPage.page.mouse.up({ button: 'middle' })
+    }
 
     await expect
       .poll(async () => {
         const currentNodeIds = await comfyPage.vueNodes.getNodeIds()
-        return currentNodeIds.some((id) => !initialNodeIds.includes(id))
+        const hasMountedNode = currentNodeIds.some(
+          (id) => !initialNodeIds.includes(id)
+        )
+        const hasUnmountedNode = initialNodeIds.some(
+          (id) => !currentNodeIds.includes(id)
+        )
+        return hasMountedNode && hasUnmountedNode
       })
       .toBe(true)
 

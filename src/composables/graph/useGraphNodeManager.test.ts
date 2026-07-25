@@ -872,6 +872,7 @@ describe('Tracked slot model reconciliation', () => {
       useGraphNodeManager(graph)
 
       expect(layoutStore.getSlotLayout(slotKey)).not.toBeNull()
+      expect(layoutStore.getSlotLayout(outOfRangeSlotKey)).not.toBeNull()
 
       node.addInput('input', 'INT')
       node.onAfterGraphConfigured?.()

@@ -10,7 +10,7 @@ import {
   getViewportBounds,
   useViewportNodeVirtualization
 } from '@/composables/graph/useViewportNodeVirtualization'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toNodeId } from '@/types/nodeId'
 
@@ -228,6 +228,39 @@ describe('useViewportNodeVirtualization', () => {
     }
 
     expect(virtualization.renderNodes.value).toEqual(allNodes.value)
+  })
+
+  it('keeps an offscreen input-capturing node pinned', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const offscreenNode = createNode('offscreen')
+    const canvas = createCanvas()
+    canvas.node_capturing_input = { id: offscreenNode.id } as LGraphNode
+    vi.spyOn(layoutStore, 'getRevision').mockReturnValue(1)
+    vi.spyOn(layoutStore, 'hasNodeLayout').mockReturnValue(true)
+    vi.spyOn(layoutStore, 'queryNodesInBounds').mockReturnValue([])
+    const scope = effectScope()
+    const virtualization = scope.run(() =>
+      useViewportNodeVirtualization({
+        allNodes: [offscreenNode],
+        canvas,
+        enabled: true
+      })
+    )
+    if (!virtualization) {
+      scope.stop()
+      throw new Error('Expected virtualization scope to initialize')
+    }
+
+    try {
+      virtualization.refresh(true)
+      expect(virtualization.renderNodes.value).toEqual([offscreenNode])
+
+      canvas.node_capturing_input = null
+      virtualization.refresh(true)
+      expect(virtualization.renderNodes.value).toEqual([])
+    } finally {
+      scope.stop()
+    }
   })
 })
 
