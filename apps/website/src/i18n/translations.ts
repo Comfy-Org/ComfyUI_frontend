@@ -10,6 +10,62 @@ const translations = {
     en: 'Image To Video',
     'zh-CN': '图像生成视频'
   },
+  'tags.imageGeneration': {
+    en: 'Image Generation',
+    'zh-CN': '图像生成'
+  },
+  'tags.styleTransfer': {
+    en: 'Style Transfer',
+    'zh-CN': '风格迁移'
+  },
+  'tags.moodboards': {
+    en: 'Moodboards',
+    'zh-CN': '情绪板'
+  },
+  'tags.storyboarding': {
+    en: 'Storyboarding',
+    'zh-CN': '故事板'
+  },
+  'tags.productPhotography': {
+    en: 'Product Photography',
+    'zh-CN': '产品摄影'
+  },
+  'tags.previsualization': {
+    en: 'Previsualization',
+    'zh-CN': '预演'
+  },
+  'tags.bRoll': {
+    en: 'B-Roll',
+    'zh-CN': 'B-Roll 素材'
+  },
+  'tags.outOfHome': {
+    en: 'Out-of-Home',
+    'zh-CN': '户外广告'
+  },
+  'tags.characterDesign': {
+    en: 'Character Design',
+    'zh-CN': '角色设计'
+  },
+  'tags.keyframing': {
+    en: 'Keyframing',
+    'zh-CN': '关键帧'
+  },
+  'tags.backgrounds': {
+    en: 'Backgrounds',
+    'zh-CN': '背景'
+  },
+  'tags.threeD': {
+    en: '3D',
+    'zh-CN': '3D'
+  },
+  'tags.inBetweening': {
+    en: 'In-Betweening',
+    'zh-CN': '中间帧'
+  },
+  'tags.compositing': {
+    en: 'Compositing',
+    'zh-CN': '合成'
+  },
 
   // UI (global, reusable across sections)
   'ui.copy': {
@@ -1512,37 +1568,63 @@ const translations = {
   'player.subtitlesOn': { en: 'Subtitles on', 'zh-CN': '开启字幕' },
   'player.subtitlesOff': { en: 'Subtitles off', 'zh-CN': '关闭字幕' },
 
-  // LearningHeroSection
-  'learning.heroTitle.before': { en: 'Learn', 'zh-CN': '学习' },
-  'learning.heroTitle.after': { en: '.', 'zh-CN': '。' },
-  'learning.heroTitle.line2': {
-    en: 'Build what doesn’t exist yet.',
-    'zh-CN': '构建尚未存在之物。'
+  // LearningDirectorySection
+  'learning.title': { en: 'Learning', 'zh-CN': '学习' },
+  'learning.tagline': {
+    en: 'Hands-on ComfyUI tutorials and workflows, by discipline.',
+    'zh-CN': '按创作领域分类的 ComfyUI 实战教程与工作流。'
   },
-
-  // LearningFeaturedWorkflowSection
-  'learning.featured.title': {
-    en: 'Sky Replacement',
-    'zh-CN': '天空替换'
+  'learning.categoryNav': { en: 'Category filter', 'zh-CN': '分类筛选' },
+  'learning.detail.close': { en: 'Close', 'zh-CN': '关闭' },
+  'learning.featuredBadge': { en: 'Featured', 'zh-CN': '精选' },
+  'learning.categories.all': { en: 'All', 'zh-CN': '全部' },
+  'learning.categories.all.blurb': {
+    en: 'Every tutorial and workflow',
+    'zh-CN': '所有教程与工作流'
   },
-  'learning.featured.author': {
-    en: 'by Doug Hogan',
-    'zh-CN': '作者：Doug Hogan'
+  'learning.categories.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
+  'learning.categories.vfx.blurb': {
+    en: 'Compositing, cleanup and shot work',
+    'zh-CN': '合成、清理与镜头处理'
   },
-  'learning.featured.description': {
-    en: 'A sky replacement workflow built on Wan AI models. WanVideoSampler and WanVideoDecode synthesize new sky visuals into existing footage. CLIPVisionLoader and WanVideoClipVisionEncode ensure replacements feel native, not composited.',
+  'learning.categories.animations': { en: 'Animations', 'zh-CN': '动画' },
+  'learning.categories.animations.blurb': {
+    en: 'Motion, retiming and character',
+    'zh-CN': '运动、变速与角色'
+  },
+  'learning.categories.ads': { en: 'Ads', 'zh-CN': '广告' },
+  'learning.categories.ads.blurb': {
+    en: 'Product shots and campaign assets',
+    'zh-CN': '产品展示与广告素材'
+  },
+  // Per-vertical h1 + description/meta copy, swapped when a category filter is
+  // active (see learningHeading / learningDescription).
+  'learning.categories.vfx.heading': {
+    en: 'VFX Tutorials',
+    'zh-CN': 'VFX 教程'
+  },
+  'learning.categories.vfx.description': {
+    en: 'Hands-on ComfyUI VFX tutorials — cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
     'zh-CN':
-      '基于 Wan AI 模型构建的天空替换工作流。WanVideoSampler 与 WanVideoDecode 将全新的天空视觉合成到现有素材中。CLIPVisionLoader 与 WanVideoClipVisionEncode 确保替换效果自然融合，而非生硬叠加。'
+      '实战 ComfyUI VFX 教程——净板、天空替换、减龄、遮罩与镜头处理，均可亲自打开并运行。'
   },
-  'learning.featured.watchDemo': {
-    en: 'Watch Demo',
-    'zh-CN': '观看演示'
+  'learning.categories.animations.heading': {
+    en: 'Animation Tutorials',
+    'zh-CN': '动画教程'
   },
-
-  // LearningTutorialsSection
-  'learning.tutorials.heading': {
-    en: 'Featured Demos',
-    'zh-CN': '精选演示'
+  'learning.categories.animations.description': {
+    en: 'Hands-on ComfyUI animation tutorials — character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
+    'zh-CN':
+      '实战 ComfyUI 动画教程——角色设定表、关键帧、中间帧、背景与合成，均可亲自运行。'
+  },
+  'learning.categories.ads.heading': {
+    en: 'Ad Creative Tutorials',
+    'zh-CN': '广告创意教程'
+  },
+  'learning.categories.ads.description': {
+    en: 'Hands-on ComfyUI ad creative tutorials — moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
+    'zh-CN':
+      '实战 ComfyUI 广告创意教程——情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
   },
   'learning.tutorials.titlePrefix': {
     en: 'Learn how to:',
@@ -1558,15 +1640,6 @@ const translations = {
     en: 'Contact Sales',
     'zh-CN': '联系销售'
   },
-
-  // LearningEventsSection
-  'learning.events.heading': { en: 'Events', 'zh-CN': '活动' },
-  'learning.events.description': {
-    en: 'Check out our upcoming live streams and community meetings. We’re always open to your questions, ideas, and conversations.',
-    'zh-CN':
-      '查看我们即将举办的直播和社区聚会。我们随时欢迎你的提问、想法和交流。'
-  },
-  'learning.events.getNotified': { en: 'Get Notified', 'zh-CN': '获取通知' },
 
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
