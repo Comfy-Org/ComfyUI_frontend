@@ -157,6 +157,27 @@ export interface ExecutionErrorMetadata {
   error?: string
 }
 
+export interface WorkflowExecutionContext {
+  workflow_type: 'template' | 'custom'
+  view_mode: AppMode
+  execution_scope: 'full' | 'partial'
+  total_node_count: number
+  executable_node_count: number
+  custom_node_count: number
+  api_node_count: number
+  subgraph_count: number
+}
+
+export interface WorkflowQueueIntent {
+  trigger_source?: ExecutionTriggerSource
+  subscribe_to_run?: boolean
+}
+
+export interface WorkflowQueuedMetadata extends WorkflowExecutionContext {
+  trigger_source?: ExecutionTriggerSource
+  subscribe_to_run: boolean
+}
+
 export interface ExecutionOutcomeMetadata {
   startTime: number
   outcome: 'success' | 'failure'
@@ -782,6 +803,7 @@ export type TelemetryEventProperties =
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
+  | WorkflowQueuedMetadata
   | RunButtonProperties
   | ExecutionErrorMetadata
   | ExecutionSuccessMetadata
