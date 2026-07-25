@@ -9,7 +9,8 @@ import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
 const settingMocks = vi.hoisted(() => ({
-  persistRef: null as { value: boolean } | null
+  persistRef: null as { value: boolean } | null,
+  values: {} as Record<string, unknown>
 }))
 
 vi.mock('@/platform/settings/settingStore', async () => {
@@ -20,9 +21,11 @@ vi.mock('@/platform/settings/settingStore', async () => {
       get: vi.fn((key: string) => {
         if (key === 'Comfy.Workflow.Persist')
           return settingMocks.persistRef!.value
-        return undefined
+        return settingMocks.values[key]
       }),
-      set: vi.fn()
+      set: vi.fn((key: string, value: unknown) => {
+        settingMocks.values[key] = value
+      })
     }))
   }
 })
@@ -187,6 +190,7 @@ describe('useWorkflowPersistenceV2', () => {
     sessionStorage.clear()
     vi.clearAllMocks()
     settingMocks.persistRef!.value = true
+    settingMocks.values = {}
     mocks.state.graphChangedHandler = null
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
@@ -555,67 +559,43 @@ describe('useWorkflowPersistenceV2', () => {
   })
 
   describe('loadDefaultWorkflow', () => {
-    it('opens templates browser for first-time users', async () => {
+    it('reports a fresh start for first-time users', async () => {
       const { initializeWorkflow } = mountWorkflowPersistence()
-      await initializeWorkflow()
 
+      await expect(initializeWorkflow()).resolves.toBe('fresh')
       expect(loadBlankWorkflowMock).toHaveBeenCalled()
-      expect(commandStoreMocks.execute).toHaveBeenCalledWith(
-        'Comfy.BrowseTemplates'
-      )
     })
 
-    it('does not open templates browser when share param is in URL', async () => {
-      routeMocks.query = { share: 'test-share-id' }
+    it('still reports fresh on a reload before the user chose anything', async () => {
+      await mountWorkflowPersistence().initializeWorkflow()
 
-      const { initializeWorkflow } = mountWorkflowPersistence()
-      await initializeWorkflow()
-
-      expect(loadBlankWorkflowMock).toHaveBeenCalled()
-      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
-        'Comfy.BrowseTemplates'
-      )
+      await expect(
+        mountWorkflowPersistence().initializeWorkflow(),
+        'Startup must not mark the tutorial completed; a user who reloads before choosing anything would be stranded as a returning user'
+      ).resolves.toBe('fresh')
     })
 
-    it('does not open templates browser when share intent is preserved across /user-select redirect', async () => {
-      // No-local-user flow: ?share=... was captured into sessionStorage and the
-      // URL query was dropped during the /user-select redirect before
-      // initializeWorkflow() runs.
-      preservedQueryMocks.payloads.share = { share: 'test-share-id' }
+    it.for([
+      ['share param in URL', () => (routeMocks.query = { share: 'id' })],
+      [
+        'share intent preserved across /user-select redirect',
+        () => (preservedQueryMocks.payloads.share = { share: 'id' })
+      ],
+      ['template param in URL', () => (routeMocks.query = { template: 'id' })],
+      [
+        'template intent preserved across /user-select redirect',
+        () => (preservedQueryMocks.payloads.template = { template: 'id' })
+      ]
+    ] as const)(
+      'reports url-intent, not fresh, with %s',
+      async ([, applyIntent]) => {
+        applyIntent()
 
-      const { initializeWorkflow } = mountWorkflowPersistence()
-      await initializeWorkflow()
+        const { initializeWorkflow } = mountWorkflowPersistence()
 
-      expect(loadBlankWorkflowMock).toHaveBeenCalled()
-      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
-        'Comfy.BrowseTemplates'
-      )
-    })
-
-    it('does not open templates browser when template param is in URL', async () => {
-      routeMocks.query = { template: 'default-template-id' }
-
-      const { initializeWorkflow } = mountWorkflowPersistence()
-      await initializeWorkflow()
-
-      expect(loadBlankWorkflowMock).toHaveBeenCalled()
-      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
-        'Comfy.BrowseTemplates'
-      )
-    })
-
-    it('does not open templates browser when template intent is preserved across /user-select redirect', async () => {
-      preservedQueryMocks.payloads.template = {
-        template: 'default-template-id'
+        await expect(initializeWorkflow()).resolves.toBe('url-intent')
+        expect(loadBlankWorkflowMock).toHaveBeenCalled()
       }
-
-      const { initializeWorkflow } = mountWorkflowPersistence()
-      await initializeWorkflow()
-
-      expect(loadBlankWorkflowMock).toHaveBeenCalled()
-      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
-        'Comfy.BrowseTemplates'
-      )
-    })
+    )
   })
 })
