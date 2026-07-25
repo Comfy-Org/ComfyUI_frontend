@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+
+const mockGraph = {} as LGraph
 
 const hoisted = vi.hoisted(() => ({
   mockNodeDefsByName: {} as Record<string, unknown>,
   mockNodes: [] as Pick<LGraphNode, 'type' | 'isSubgraphNode'>[],
+  mockNodesByGraph: new Map<
+    LGraph,
+    Pick<LGraphNode, 'type' | 'isSubgraphNode'>[]
+  >(),
   mockActiveWorkflow: null as null | {
     filename: string
     fullFilename: string
@@ -53,15 +59,12 @@ function mockNode(
 vi.mock('@/utils/graphTraversalUtil', () => ({
   reduceAllNodes: vi.fn((_graph, reducer, initial) => {
     let result = initial
-    for (const node of hoisted.mockNodes) {
+    const nodes = hoisted.mockNodesByGraph.get(_graph) ?? hoisted.mockNodes
+    for (const node of nodes) {
       result = reducer(result, node)
     }
     return result
   })
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: {} }
 }))
 
 import { getExecutionContext } from './getExecutionContext'
@@ -69,12 +72,31 @@ import { getExecutionContext } from './getExecutionContext'
 describe('getExecutionContext', () => {
   beforeEach(() => {
     hoisted.mockNodes.length = 0
+    hoisted.mockNodesByGraph.clear()
     for (const key of Object.keys(hoisted.mockNodeDefsByName)) {
       delete hoisted.mockNodeDefsByName[key]
     }
     hoisted.mockActiveWorkflow = null
     hoisted.mockKnownTemplateNames = new Set()
     hoisted.mockTemplateByName = null
+  })
+
+  it('collects node metrics from the supplied graph', () => {
+    const otherGraph = {} as LGraph
+    hoisted.mockNodesByGraph.set(mockGraph, [
+      mockNode('KSampler'),
+      mockNode('PartnerNode')
+    ])
+    hoisted.mockNodesByGraph.set(otherGraph, [mockNode('LoadImage')])
+    hoisted.mockNodeDefsByName['PartnerNode'] = {
+      name: 'PartnerNode',
+      api_node: true
+    }
+
+    const context = getExecutionContext(mockGraph)
+
+    expect(context.total_node_count).toBe(2)
+    expect(context.api_node_count).toBe(1)
   })
 
   it('returns has_toolkit_nodes false when no toolkit nodes are present', () => {
@@ -88,7 +110,7 @@ describe('getExecutionContext', () => {
       python_module: 'nodes'
     }
 
-    const context = getExecutionContext()
+    const context = getExecutionContext(mockGraph)
 
     expect(context.has_toolkit_nodes).toBe(false)
     expect(context.toolkit_node_names).toEqual([])
@@ -106,7 +128,7 @@ describe('getExecutionContext', () => {
       python_module: 'nodes'
     }
 
-    const context = getExecutionContext()
+    const context = getExecutionContext(mockGraph)
 
     expect(context.has_toolkit_nodes).toBe(true)
     expect(context.toolkit_node_names).toEqual(['Canny'])
@@ -118,7 +140,7 @@ describe('getExecutionContext', () => {
     hoisted.mockNodes.push(mockNode(blueprintType, true))
     hoisted.mockNodeDefsByName[blueprintType] = { name: blueprintType }
 
-    const context = getExecutionContext()
+    const context = getExecutionContext(mockGraph)
 
     expect(context.has_toolkit_nodes).toBe(true)
     expect(context.toolkit_node_names).toEqual([blueprintType])
@@ -132,7 +154,7 @@ describe('getExecutionContext', () => {
       python_module: 'comfy_extras.nodes_canny'
     }
 
-    const context = getExecutionContext()
+    const context = getExecutionContext(mockGraph)
 
     expect(context.toolkit_node_names).toEqual(['Canny'])
     expect(context.toolkit_node_count).toBe(2)
@@ -146,7 +168,7 @@ describe('getExecutionContext', () => {
       api_node: true
     }
 
-    const context = getExecutionContext()
+    const context = getExecutionContext(mockGraph)
 
     expect(context.has_api_nodes).toBe(true)
     expect(context.api_node_names).toEqual(['RecraftRemoveBackgroundNode'])
@@ -157,7 +179,7 @@ describe('getExecutionContext', () => {
   it('uses node.type as tracking name when nodeDef is missing', () => {
     hoisted.mockNodes.push(mockNode('ImageCropV2'))
 
-    const context = getExecutionContext()
+    const context = getExecutionContext(mockGraph)
 
     expect(context.has_toolkit_nodes).toBe(true)
     expect(context.toolkit_node_names).toEqual(['ImageCropV2'])
@@ -172,7 +194,7 @@ describe('getExecutionContext', () => {
         fullFilename: 'flux-dev.json'
       }
 
-      const context = getExecutionContext()
+      const context = getExecutionContext(mockGraph)
 
       expect(context.is_template).toBe(true)
       expect(context.workflow_name).toBe('flux-dev')
@@ -190,7 +212,7 @@ describe('getExecutionContext', () => {
         fullFilename: 'templates-qwen_multiangle.app.json'
       }
 
-      const context = getExecutionContext()
+      const context = getExecutionContext(mockGraph)
 
       expect(context.is_template).toBe(true)
       expect(context.workflow_name).toBe('templates-qwen_multiangle.app')
@@ -203,7 +225,7 @@ describe('getExecutionContext', () => {
         fullFilename: 'my-custom-workflow.json'
       }
 
-      const context = getExecutionContext()
+      const context = getExecutionContext(mockGraph)
 
       expect(context.is_template).toBe(false)
     })

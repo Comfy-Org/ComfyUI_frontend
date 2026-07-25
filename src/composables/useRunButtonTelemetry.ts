@@ -6,6 +6,7 @@ import type {
 } from '@/platform/telemetry/types'
 import { getActionbarDockState } from '@/platform/telemetry/utils/getActionbarDockState'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
+import { app } from '@/scripts/app'
 
 type RunButtonTelemetryOptions = {
   subscribe_to_run?: boolean
@@ -15,7 +16,7 @@ type RunButtonTelemetryOptions = {
 export function getRunButtonTelemetryProperties(
   options?: RunButtonTelemetryOptions
 ): RunButtonProperties {
-  const executionContext = getExecutionContext()
+  const executionContext = getExecutionContext(app.rootGraph)
   const { mode, isAppMode } = useAppMode()
 
   return {

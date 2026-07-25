@@ -2,6 +2,7 @@ import { addBreadcrumb, setContext, setUser } from '@sentry/vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { app } from '@/scripts/app'
 
 import type {
   AuthMetadata,
@@ -100,7 +101,7 @@ export class SentryTelemetryProvider implements TelemetryProvider {
       total_node_count,
       has_api_nodes,
       has_toolkit_nodes
-    } = getExecutionContext()
+    } = getExecutionContext(app.rootGraph)
     const activeWorkflow = useWorkflowStore().activeWorkflow
 
     setContext('ComfyUI App State', {

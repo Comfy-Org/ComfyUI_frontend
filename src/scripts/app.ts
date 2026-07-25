@@ -1742,10 +1742,17 @@ export class ComfyApp {
 
         const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
+          const submissionGraph = this.rootGraph
+          const submissionWorkflow = useWorkspaceStore().workflow
+            .activeWorkflow as ComfyWorkflow
+          const submissionMode = getWorkflowMode(submissionWorkflow)
           let executionContext: ExecutionContext | undefined
           if (telemetry) {
             try {
-              executionContext = getExecutionContext()
+              executionContext = getExecutionContext(
+                submissionGraph,
+                submissionWorkflow
+              )
             } catch (error) {
               console.error(
                 '[Telemetry] Workflow context collection failed',
@@ -1756,21 +1763,15 @@ export class ComfyApp {
 
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
-          forEachNode(this.rootGraph, (node) => {
+          forEachNode(submissionGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
             applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
-          // Capture workflow and mode before await — both may change if the
-          // user switches tabs or toggles app/graph mode while the request is
-          // in flight.
-          const queuedWorkflow = useWorkspaceStore().workflow
-            .activeWorkflow as ComfyWorkflow
-          const queuedMode = getWorkflowMode(queuedWorkflow)
           const startTime = performance.now()
-          const p = await this.graphToPrompt(this.rootGraph).catch(
+          const p = await this.graphToPrompt(submissionGraph).catch(
             (error: unknown) => {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -1782,13 +1783,13 @@ export class ComfyApp {
               throw error
             }
           )
-          const queuedNodes = collectAllNodes(this.rootGraph)
+          const queuedNodes = collectAllNodes(submissionGraph)
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
             workflowContext = toWorkflowExecutionContext(executionContext, {
               executableNodeCount: Object.keys(p.output).length,
               executionScope: isPartialExecution ? 'partial' : 'full',
-              viewMode: queuedMode
+              viewMode: submissionMode
             })
           }
           if (
@@ -1837,8 +1838,8 @@ export class ComfyApp {
                   promptOutput: p.output,
                   startTime,
                   submissionAcceptedAt: responseReceivedAt,
-                  workflow: queuedWorkflow,
-                  mode: queuedMode,
+                  workflow: submissionWorkflow,
+                  mode: submissionMode,
                   workflowContext,
                   workflowExecutionIntent
                 })

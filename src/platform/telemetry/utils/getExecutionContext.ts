@@ -1,7 +1,8 @@
 import { TOOLKIT_NODES } from '@/constants/essentialsNodes'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
@@ -20,14 +21,16 @@ type NodeMetrics = {
   toolkit_node_names: string[]
 }
 
-export function getExecutionContext(): ExecutionContext {
-  const workflowStore = useWorkflowStore()
+export function getExecutionContext(
+  graph: LGraph | Subgraph,
+  activeWorkflow: ComfyWorkflow | null | undefined = useWorkflowStore()
+    .activeWorkflow
+): ExecutionContext {
   const templatesStore = useWorkflowTemplatesStore()
   const nodeDefStore = useNodeDefStore()
-  const activeWorkflow = workflowStore.activeWorkflow
 
   const nodeCounts = reduceAllNodes<NodeMetrics>(
-    app.rootGraph,
+    graph,
     (metrics, node) => {
       const nodeDef = nodeDefStore.nodeDefsByName[node.type]
       const isCustomNode =
