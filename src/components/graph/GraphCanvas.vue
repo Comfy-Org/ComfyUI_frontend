@@ -301,18 +301,25 @@ const viewportVirtualizationEnabled = computed(() =>
 const renderNodes = shallowRef<readonly VueNodeData[]>([])
 let viewportVirtualizationScope = effectScope()
 watch(
-  shouldRenderVueNodes,
-  (enabled) => {
+  [shouldRenderVueNodes, viewportVirtualizationEnabled],
+  ([renderVueNodes, virtualize]) => {
     viewportVirtualizationScope.stop()
     viewportVirtualizationScope = effectScope()
     renderNodes.value = []
-    if (!enabled) return
+    if (!renderVueNodes) return
 
     viewportVirtualizationScope.run(() => {
+      if (!virtualize) {
+        watchEffect(() => {
+          renderNodes.value = allNodes.value
+        })
+        return
+      }
+
       const virtualization = useViewportNodeVirtualization({
         allNodes,
         canvas: () => canvasStore.canvas,
-        enabled: viewportVirtualizationEnabled
+        enabled: true
       })
       watchEffect(() => {
         renderNodes.value = virtualization.renderNodes.value
