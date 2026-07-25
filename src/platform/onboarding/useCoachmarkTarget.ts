@@ -1,11 +1,17 @@
 import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
-import type { Middleware, Placement, Rect } from '@floating-ui/vue'
-import { useEventListener } from '@vueuse/core'
-import { computed, ref, toValue, watch, watchEffect } from 'vue'
+import type {
+  Middleware,
+  Placement,
+  Rect,
+  VirtualElement
+} from '@floating-ui/vue'
+import { useEventListener, useRafFn } from '@vueuse/core'
+import { computed, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
 import { coachmarkElements, isLaidOut } from './coachmarkRegistry'
+import type { CoachTarget } from './coachmarkRegistry'
 import type { CoachPlacement, CoachStep } from './onboardingTours'
 
 // A target animating in via CSS transform reports through neither scroll nor
@@ -63,13 +69,17 @@ export function useCoachmarkTarget(
   step: MaybeRefOrGetter<CoachStep | null>,
   cardRef: Ref<HTMLElement | null>
 ) {
-  const candidateEls = computed<readonly HTMLElement[]>(() => {
+  const candidateEls = computed<readonly CoachTarget[]>(() => {
     const id = toValue(step)?.coachId
     return id ? coachmarkElements(id) : []
   })
 
-  const targetEl = computed<HTMLElement | null>(
+  const targetEl = computed<CoachTarget | null>(
     () => candidateEls.value.find(isLaidOut) ?? null
+  )
+
+  const isVirtualTarget = computed(
+    () => !!targetEl.value && !(targetEl.value instanceof Element)
   )
 
   // The top bar's height only changes on resize, so read it once and refresh
@@ -79,8 +89,21 @@ export function useCoachmarkTarget(
     topInset.value = topSafeInset()
   })
 
+  /**
+   * A virtual target follows a camera that reports through no DOM event, so one
+   * loop samples it per frame and everything downstream reads that one sample —
+   * spotlight and card positioned from different samples drift apart on screen.
+   */
+  const sampledRect = shallowRef(new DOMRect())
+  const sampledTarget: VirtualElement = {
+    getBoundingClientRect: () => sampledRect.value
+  }
+  const reference = computed<CoachTarget | null>(() =>
+    isVirtualTarget.value ? sampledTarget : targetEl.value
+  )
+
   const { floatingStyles, middlewareData, isPositioned, update } = useFloating(
-    targetEl,
+    reference,
     cardRef,
     {
       strategy: 'fixed',
@@ -88,6 +111,20 @@ export function useCoachmarkTarget(
       placement: () => floatingPlacement(toValue(step)),
       middleware: () => middleware(toValue(step), topInset.value)
     }
+  )
+
+  const { pause: pauseSampling, resume: resumeSampling } = useRafFn(
+    () => {
+      const el = targetEl.value
+      if (!el) return
+      const { x, y, width, height } = el.getBoundingClientRect()
+      sampledRect.value = new DOMRect(x, y, width, height)
+      void update()
+    },
+    { immediate: false }
+  )
+  watchEffect(() =>
+    isVirtualTarget.value ? resumeSampling() : pauseSampling()
   )
 
   const targetRect = computed<DOMRect | null>(() => {
@@ -122,15 +159,15 @@ export function useCoachmarkTarget(
   })
 
   watchEffect((onCleanup) => {
-    const reference = targetEl.value
+    const anchor = reference.value
     const floating = cardRef.value
-    if (!reference || !floating) return
+    if (!anchor || !floating) return
     onCleanup(
-      autoUpdate(reference, floating, update, {
+      autoUpdate(anchor, floating, update, {
         animationFrame: trackMotion.value
       })
     )
   })
 
-  return { targetEl, targetRect, floatingStyles, isPositioned }
+  return { targetEl, targetRect, isVirtualTarget, floatingStyles, isPositioned }
 }
