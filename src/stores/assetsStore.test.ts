@@ -762,7 +762,7 @@ describe('assetsStore - Refactored (Option A)', () => {
             { hasMore: true, nextCursor: 'cursor-1' }
           )
         )
-        .mockRejectedValueOnce(new JobsApiError('server error', 500))
+        .mockRejectedValueOnce(new JobsApiError(500, 'server error'))
 
       await store.updateHistory()
       await store.loadMoreHistory()
