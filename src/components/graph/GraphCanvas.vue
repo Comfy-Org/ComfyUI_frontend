@@ -118,6 +118,7 @@
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
+  effectScope,
   nextTick,
   onMounted,
   onUnmounted,
@@ -297,11 +298,29 @@ const allNodes = computed((): VueNodeData[] =>
 const viewportVirtualizationEnabled = computed(() =>
   settingStore.get('Comfy.VueNodes.ViewportVirtualization')
 )
-const { renderNodes } = useViewportNodeVirtualization({
-  allNodes,
-  canvas: () => canvasStore.canvas,
-  enabled: viewportVirtualizationEnabled
-})
+const renderNodes = shallowRef<readonly VueNodeData[]>([])
+let viewportVirtualizationScope = effectScope()
+watch(
+  shouldRenderVueNodes,
+  (enabled) => {
+    viewportVirtualizationScope.stop()
+    viewportVirtualizationScope = effectScope()
+    renderNodes.value = []
+    if (!enabled) return
+
+    viewportVirtualizationScope.run(() => {
+      const virtualization = useViewportNodeVirtualization({
+        allNodes,
+        canvas: () => canvasStore.canvas,
+        enabled: viewportVirtualizationEnabled
+      })
+      watchEffect(() => {
+        renderNodes.value = virtualization.renderNodes.value
+      })
+    })
+  },
+  { immediate: true }
+)
 watch(
   () => linearMode.value,
   (isLinearMode) => {
@@ -594,6 +613,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  viewportVirtualizationScope.stop()
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
   vueNodeLifecycle.cleanup()
