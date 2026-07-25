@@ -22,14 +22,16 @@ test.describe('MediaLightbox', { tag: ['@slow', '@vue-nodes'] }, () => {
       .locator('.sidebar-content-container')
       .waitFor({ state: 'visible' })
 
-    // Wait for the generated image asset to appear
+    // Wait for a generated previewable asset to appear
     const assetCard = comfyPage.menu.assetsTab.assetCards
-      .filter({ has: comfyPage.page.locator('img') })
+      .filter({ has: comfyPage.page.locator('img, video') })
       .first()
 
     await expect(assetCard).toBeVisible({ timeout: 30_000 })
 
-    await assetCard.locator('img').dblclick()
+    await assetCard.hover()
+    await assetCard.getByRole('button', { name: 'More options' }).click()
+    await comfyPage.menu.assetsTab.contextMenuItem('Inspect asset').click()
 
     const { root } = comfyPage.mediaLightbox
     await expect(root).toBeVisible()
