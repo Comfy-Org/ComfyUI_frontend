@@ -213,6 +213,29 @@ describe('useMediaAssetFiltering', () => {
         'display-a'
       ])
     })
+
+    it.for(['az', 'za'] as const)(
+      'preserves source order for case-only ties when sorting %s',
+      (direction) => {
+        const assets = ref<AssetItem[]>([
+          makeAsset({
+            id: 'case-first',
+            name: 'z-case.png',
+            displayName: 'ALPHA'
+          }),
+          makeAsset({
+            id: 'case-second',
+            name: 'a-case.png',
+            displayName: 'alpha'
+          })
+        ])
+        const { sortBy, filteredAssets } = useMediaAssetFiltering(assets)
+
+        sortBy.value = direction
+
+        expect(ids(filteredAssets.value)).toEqual(['case-first', 'case-second'])
+      }
+    )
   })
 
   describe('composition', () => {
