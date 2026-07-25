@@ -93,7 +93,8 @@
       </div>
 
       <div class="grid grid-cols-1 gap-4 @4xl:grid-cols-2">
-        <CreditsTile class="border-0" :frozen="isInactive" />
+        <MemberCreditsTile v-if="memberCap && !isInactive" class="border-0" />
+        <CreditsTile v-else class="border-0" :frozen="isInactive" />
 
         <!-- Member snapshot tile (hidden while the plan is lapsed) -->
         <div
@@ -255,6 +256,8 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingsNavigation } from '@/platform/settings/composables/useSettingsNavigation'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import MemberCreditsTile from '@/platform/workspace/components/MemberCreditsTile.vue'
+import { useMemberCreditDisplay } from '@/platform/workspace/composables/useMemberCreditDisplay'
 import AutoReloadSection from '@/platform/workspace/components/dialogs/settings/AutoReloadSection.vue'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
@@ -342,6 +345,7 @@ const planMenuEntries = computed<MenuItem[]>(() =>
 )
 
 const { plan, topSpenders, recentActivity } = useWorkspaceOverview()
+const { memberCap } = useMemberCreditDisplay()
 
 // Enterprise workspaces read "enterprise" in the lapsed copy, not "team".
 const inactiveTitle = computed(() =>
