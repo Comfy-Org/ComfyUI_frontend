@@ -1,7 +1,7 @@
 import { render } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 import { defineComponent, nextTick, ref } from 'vue'
@@ -26,25 +26,9 @@ import {
 } from './useSlotElementTracking'
 
 const mockGraph = vi.hoisted(() => ({ _nodes: [] as unknown[] }))
-const mockCanvasState = vi.hoisted(() => ({
-  canvas: {} as object | null
-}))
-const mockClientPosToCanvasPos = vi.hoisted(() =>
-  vi.fn(([x, y]: [number, number]) => [x * 0.5, y * 0.5] as [number, number])
-)
 
 vi.mock('@/scripts/app', () => ({
   app: { canvas: { graph: mockGraph, setDirty: vi.fn() } }
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => mockCanvasState
-}))
-
-vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
-  useSharedCanvasPositionConversion: () => ({
-    clientPosToCanvasPos: mockClientPosToCanvasPos
-  })
 }))
 
 const NODE_ID = toNodeId('test-node')
@@ -67,11 +51,15 @@ function createTestSetup(type: 'input' | 'output') {
   return { el, TestComponent }
 }
 
-function createSlotElement(collapsed = false): HTMLElement {
+function createSlotElement(
+  collapsed = false,
+  rects?: { node?: DOMRect; slot?: DOMRect }
+): HTMLElement {
   const container = document.createElement('div')
   container.dataset.nodeId = NODE_ID
   if (collapsed) container.dataset.collapsed = ''
   container.getBoundingClientRect = () =>
+    rects?.node ??
     ({
       left: 0,
       top: 0,
@@ -82,11 +70,12 @@ function createSlotElement(collapsed = false): HTMLElement {
       x: 0,
       y: 0,
       toJSON: () => ({})
-    }) as DOMRect
+    } as DOMRect)
   document.body.appendChild(container)
 
   const el = document.createElement('div')
   el.getBoundingClientRect = () =>
+    rects?.slot ??
     ({
       left: 10,
       top: 30,
@@ -97,7 +86,7 @@ function createSlotElement(collapsed = false): HTMLElement {
       x: 10,
       y: 30,
       toJSON: () => ({})
-    }) as DOMRect
+    } as DOMRect)
   container.appendChild(el)
 
   return el
@@ -106,10 +95,13 @@ function createSlotElement(collapsed = false): HTMLElement {
 /**
  * Mount the wrapper, set the element ref, and wait for slot registration.
  */
-async function mountAndRegisterSlot(type: 'input' | 'output') {
+async function mountAndRegisterSlot(
+  type: 'input' | 'output',
+  rects?: { node?: DOMRect; slot?: DOMRect }
+) {
   const { el, TestComponent } = createTestSetup(type)
   const { unmount } = render(TestComponent)
-  el.value = createSlotElement()
+  el.value = createSlotElement(false, rects)
   await nextTick()
   flushScheduledSlotLayoutSync()
   return { unmount }
@@ -137,8 +129,10 @@ describe('useSlotElementTracking', () => {
       actor: 'test'
     })
     mockGraph._nodes = [{ id: 1 }]
-    mockCanvasState.canvas = {}
-    mockClientPosToCanvasPos.mockClear()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
   })
 
   it.for([
@@ -310,13 +304,18 @@ describe('useSlotElementTracking', () => {
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
     first.unmount()
 
-    const second = await mountAndRegisterSlot('input')
+    const second = await mountAndRegisterSlot('input', {
+      slot: new DOMRect(30, 50, 10, 10)
+    })
     const entry = useNodeSlotRegistryStore()
       .getNode(NODE_ID)
       ?.slots.get(slotKey)
 
     expect(entry?.el?.isConnected).toBe(true)
-    expect(layoutStore.getSlotLayout(slotKey)).not.toBeNull()
+    expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+      x: 35,
+      y: 25
+    })
     second.unmount()
   })
 
@@ -333,6 +332,34 @@ describe('useSlotElementTracking', () => {
     ).toBe(false)
   })
 
+  it('invalidates retained offsets when a slot direction shrinks', () => {
+    const inputKey0 = getSlotKey(NODE_ID, 0, true)
+    const inputKey1 = getSlotKey(NODE_ID, 1, true)
+    const outputKey = getSlotKey(NODE_ID, 0, false)
+    const node = useNodeSlotRegistryStore().ensureNode(NODE_ID)
+    node.slots.set(inputKey0, {
+      index: 0,
+      type: 'input',
+      cachedOffset: { x: 10, y: 20 }
+    })
+    node.slots.set(inputKey1, {
+      index: 1,
+      type: 'input',
+      cachedOffset: { x: 30, y: 40 }
+    })
+    node.slots.set(outputKey, {
+      index: 0,
+      type: 'output',
+      cachedOffset: { x: 50, y: 60 }
+    })
+
+    reconcileTrackedNodeSlots(NODE_ID, 1, 1)
+
+    expect(node.slots.has(inputKey1)).toBe(false)
+    expect(node.slots.get(inputKey0)?.cachedOffset).toBeUndefined()
+    expect(node.slots.get(outputKey)?.cachedOffset).toEqual({ x: 50, y: 60 })
+  })
+
   it('clears retained layouts when the graph deletes a node', async () => {
     const { unmount } = await mountAndRegisterSlot('output')
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, false)
@@ -347,7 +374,47 @@ describe('useSlotElementTracking', () => {
   describe('collapsed node slot sync', () => {
     function registerCollapsedSlot() {
       const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
-      const slotEl = createSlotElement(true)
+      const slotEl = createSlotElement(true, {
+        node: {
+          left: 200,
+          top: 340,
+          right: 360,
+          bottom: 400,
+          width: 160,
+          height: 60,
+          x: 200,
+          y: 340,
+          toJSON: () => ({})
+        } as DOMRect,
+        slot: {
+          left: 197,
+          top: 367,
+          right: 203,
+          bottom: 373,
+          width: 6,
+          height: 6,
+          x: 197,
+          y: 367,
+          toJSON: () => ({})
+        } as DOMRect
+      })
+
+      layoutStore.applyOperation({
+        type: 'moveNode',
+        entity: 'node',
+        nodeId: NODE_ID,
+        position: { x: 100, y: 200 },
+        previousPosition: { x: 0, y: 0 },
+        timestamp: Date.now(),
+        source: LayoutSource.External,
+        actor: 'test'
+      })
+      layoutStore.batchUpdateNodeBounds([
+        {
+          nodeId: NODE_ID,
+          bounds: { x: 100, y: 200, width: 80, height: 0 }
+        }
+      ])
 
       const registryStore = useNodeSlotRegistryStore()
       const node = registryStore.ensureNode(NODE_ID)
@@ -361,39 +428,17 @@ describe('useSlotElementTracking', () => {
       return { slotKey, node }
     }
 
-    it('uses clientPosToCanvasPos for collapsed nodes', () => {
-      const { slotKey } = registerCollapsedSlot()
-
-      syncNodeSlotLayoutsFromDOM(NODE_ID)
-
-      // Slot element center: (10 + 10/2, 30 + 10/2) = (15, 35)
-      const screenCenter: [number, number] = [15, 35]
-      expect(mockClientPosToCanvasPos).toHaveBeenCalledWith(screenCenter)
-
-      // Mock returns x*0.5, y*0.5
-      const layout = layoutStore.getSlotLayout(slotKey)
-      expect(layout).not.toBeNull()
-      expect(layout!.position.x).toBe(screenCenter[0] * 0.5)
-      expect(layout!.position.y).toBe(screenCenter[1] * 0.5)
-    })
-
-    it('caches collapsed slot offsets for offscreen movement', () => {
+    it('measures collapsed slots relative to rendered bounds', () => {
       const { slotKey, node } = registerCollapsedSlot()
-      const entry = node.slots.get(slotKey)!
-      expect(entry.cachedOffset).toBeDefined()
 
       syncNodeSlotLayoutsFromDOM(NODE_ID)
 
-      expect(entry.cachedOffset).toEqual({ x: 7.5, y: 17.5 })
-    })
-
-    it('defers sync when canvas is not initialized', () => {
-      mockCanvasState.canvas = null
-      registerCollapsedSlot()
-
-      syncNodeSlotLayoutsFromDOM(NODE_ID)
-
-      expect(mockClientPosToCanvasPos).not.toHaveBeenCalled()
+      // The collapsed DOM is 160px wide for an 80-canvas-unit bound, so the
+      // effective scale is 2. The slot center is on the left edge and 15
+      // canvas units above node.position.y after accounting for title height.
+      const layout = layoutStore.getSlotLayout(slotKey)
+      expect(layout?.position).toEqual({ x: 100, y: 185 })
+      expect(node.slots.get(slotKey)?.cachedOffset).toEqual({ x: 0, y: -15 })
     })
   })
 })

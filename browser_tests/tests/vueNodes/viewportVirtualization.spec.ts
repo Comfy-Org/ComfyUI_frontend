@@ -88,6 +88,22 @@ test.describe('Viewport node virtualization', { tag: ['@canvas'] }, () => {
     await expect(comfyPage.vueNodes.getNodeLocator('2')).toHaveCount(0)
   })
 
+  test('updates a mounted node immediately when it collapses', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+    await comfyPage.canvasOps.setScale(1)
+
+    const node = await comfyPage.nodeOps.getNodeRefById(2)
+    await node.centerOnNode()
+    const vueNode = comfyPage.vueNodes.getNodeLocator('2')
+    await expect(vueNode).not.toHaveAttribute('data-collapsed', 'true')
+
+    await vueNode.getByTestId('node-collapse-button').click()
+
+    await expect(vueNode).toHaveAttribute('data-collapsed', 'true')
+  })
+
   test('preserves links and output updates while a node is offscreen', async ({
     comfyPage
   }) => {

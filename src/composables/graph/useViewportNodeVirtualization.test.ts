@@ -1,13 +1,22 @@
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { effectScope, nextTick, shallowRef, watchEffect } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import {
   createPinnedNodeIds,
   createRenderNodeList,
-  getViewportBounds
+  getViewportBounds,
+  useViewportNodeVirtualization
 } from '@/composables/graph/useViewportNodeVirtualization'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toNodeId } from '@/types/nodeId'
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 function createCanvas(options?: {
   width?: number
@@ -125,6 +134,62 @@ describe('createRenderNodeList', () => {
     })
 
     expect(result).toEqual(nodes)
+  })
+})
+
+describe('useViewportNodeVirtualization', () => {
+  it('avoids canvas and layout bookkeeping while disabled', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const canvas = vi.fn(() => createCanvas())
+    const getLayoutRevision = vi.spyOn(layoutStore, 'getRevision')
+    const scope = effectScope()
+
+    scope.run(() => {
+      const { renderNodes, refresh } = useViewportNodeVirtualization({
+        allNodes: [createNode('a')],
+        canvas,
+        enabled: false
+      })
+
+      refresh(true)
+
+      expect(renderNodes.value.map((node) => node.id)).toEqual([toNodeId('a')])
+    })
+
+    expect(canvas).not.toHaveBeenCalled()
+    expect(getLayoutRevision).not.toHaveBeenCalled()
+    scope.stop()
+  })
+
+  it('publishes refreshed node data without replacing a stable render list', async () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const allNodes = shallowRef([createNode('a')])
+    const observedTitles: string[] = []
+    const scope = effectScope()
+
+    scope.run(() => {
+      const { renderNodes, refresh } = useViewportNodeVirtualization({
+        allNodes,
+        canvas: null,
+        enabled: false
+      })
+      watchEffect(() => {
+        observedTitles.push(renderNodes.value[0]?.title ?? '')
+      })
+
+      refresh(true)
+      const initialRenderNodes = renderNodes.value
+      allNodes.value = [{ ...allNodes.value[0], title: 'updated' }]
+      refresh(true)
+
+      expect(renderNodes.value).toBe(initialRenderNodes)
+      expect(renderNodes.value[0]?.title).toBe('updated')
+    })
+
+    await nextTick()
+
+    expect(observedTitles.at(-1)).toBe('updated')
+    scope.stop()
   })
 })
 

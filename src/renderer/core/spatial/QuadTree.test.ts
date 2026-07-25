@@ -38,6 +38,25 @@ describe('QuadTree', () => {
       ).toEqual(['node1'])
     })
 
+    it.for([
+      { width: 0, height: 0 },
+      { width: -100, height: -100 }
+    ])(
+      'should expand from $width x $height root bounds',
+      ({ width, height }) => {
+        const tree = new QuadTree<string>({ x: 0, y: 0, width, height })
+        const inBounds = { x: 0, y: 0, width: 25, height: 25 }
+        const outOfBounds = { x: 100, y: 100, width: 25, height: 25 }
+
+        expect(tree.insert('in-bounds', inBounds, 'in-bounds')).toBe(true)
+        expect(tree.insert('out-of-bounds', outOfBounds, 'out-of-bounds')).toBe(
+          true
+        )
+        expect(tree.query(inBounds)).toEqual(['in-bounds'])
+        expect(tree.query(outOfBounds)).toEqual(['out-of-bounds'])
+      }
+    )
+
     it('should handle duplicate IDs by replacing', () => {
       quadTree.insert(
         'node1',

@@ -1,5 +1,5 @@
 import { useEventListener, useRafFn } from '@vueuse/core'
-import { computed, shallowRef, toValue, triggerRef, watch } from 'vue'
+import { shallowReadonly, shallowRef, toValue, triggerRef, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
@@ -139,10 +139,18 @@ export function useViewportNodeVirtualization(options: {
   const focusedNodeId = shallowRef<NodeId>()
 
   let lastNodes: readonly VueNodeData[] | undefined
+  let lastCanvas: LGraphCanvas | null | undefined
   let lastViewportKey = ''
   let lastLayoutRevision = -1
-  let lastPinnedKey = ''
+  let lastPinnedStateKey = ''
   let lastEnabled: boolean | undefined
+  let pinnedStateRevision = 0
+  let cachedPinnedCanvas: LGraphCanvas | undefined
+  let cachedPinnedStateKey = ''
+  let cachedPinnedNodeIds = new Set<NodeId>()
+  let cachedLayoutRevision = -1
+  let cachedLayoutNodeCount = -1
+  let cachedLayoutReady = false
 
   function collectPinnedNodeIds(canvas: LGraphCanvas): Set<NodeId> {
     const titleTarget = titleEditorStore.titleEditorTarget
@@ -191,38 +199,93 @@ export function useViewportNodeVirtualization(options: {
     })
   }
 
+  function getPinnedStateKey(canvas: LGraphCanvas): string {
+    const renderLinkNodeIds = canvas.linkConnector.renderLinks
+      .map((link) => (isLGraphNode(link.node) ? link.node.id : ''))
+      .join(',')
+    return `${pinnedStateRevision}|${isNodeOptionsOpen()}|${canvas.node_capturing_input?.id ?? ''}|${renderLinkNodeIds}`
+  }
+
+  function getPinnedNodeIds(canvas: LGraphCanvas) {
+    const stateKey = getPinnedStateKey(canvas)
+    if (cachedPinnedCanvas !== canvas || cachedPinnedStateKey !== stateKey) {
+      cachedPinnedCanvas = canvas
+      cachedPinnedStateKey = stateKey
+      cachedPinnedNodeIds = collectPinnedNodeIds(canvas)
+    }
+    return { nodeIds: cachedPinnedNodeIds, stateKey }
+  }
+
+  function getLayoutReady(
+    allNodes: readonly VueNodeData[],
+    layoutRevision: number
+  ): boolean {
+    if (
+      cachedLayoutRevision !== layoutRevision ||
+      cachedLayoutNodeCount !== allNodes.length
+    ) {
+      cachedLayoutRevision = layoutRevision
+      cachedLayoutNodeCount = allNodes.length
+      cachedLayoutReady = allNodes.every((node) =>
+        layoutStore.hasNodeLayout(node.id)
+      )
+    }
+    return cachedLayoutReady
+  }
+
   function refresh(force = false) {
     const allNodes = toValue(options.allNodes)
-    const canvas = toValue(options.canvas)
     const enabled = toValue(options.enabled)
+
+    if (!enabled) {
+      if (!force && lastNodes === allNodes && lastEnabled === enabled) return
+
+      lastNodes = allNodes
+      lastEnabled = enabled
+
+      const previous = renderNodes.value
+      const next = createRenderNodeList({
+        allNodes,
+        enabled,
+        layoutReady: false,
+        visibleNodeIds: new Set<NodeId>(),
+        pinnedNodeIds: new Set<NodeId>(),
+        previous
+      })
+      if (next === previous) triggerRef(renderNodes)
+      else renderNodes.value = next
+      return
+    }
+
+    const canvas = toValue(options.canvas)
     const viewportBounds = canvas ? getViewportBounds(canvas) : null
     const viewportKey = boundsKey(viewportBounds)
     const layoutRevision = layoutStore.getRevision()
-    const pinnedNodeIds = canvas
-      ? collectPinnedNodeIds(canvas)
-      : new Set<NodeId>()
-    const pinnedKey = [...pinnedNodeIds].sort().join(',')
+    const pinnedState = canvas ? getPinnedNodeIds(canvas) : undefined
+    const pinnedNodeIds = pinnedState?.nodeIds ?? new Set<NodeId>()
+    const pinnedStateKey = pinnedState?.stateKey ?? 'none'
 
     if (
       !force &&
       lastNodes === allNodes &&
+      lastCanvas === canvas &&
       lastViewportKey === viewportKey &&
       lastLayoutRevision === layoutRevision &&
-      lastPinnedKey === pinnedKey &&
+      lastPinnedStateKey === pinnedStateKey &&
       lastEnabled === enabled
     ) {
       return
     }
 
     lastNodes = allNodes
+    lastCanvas = canvas
     lastViewportKey = viewportKey
     lastLayoutRevision = layoutRevision
-    lastPinnedKey = pinnedKey
+    lastPinnedStateKey = pinnedStateKey
     lastEnabled = enabled
 
     const layoutReady =
-      Boolean(viewportBounds) &&
-      allNodes.every((node) => layoutStore.hasNodeLayout(node.id))
+      Boolean(viewportBounds) && getLayoutReady(allNodes, layoutRevision)
     const visibleNodeIds =
       enabled && layoutReady && viewportBounds
         ? new Set(layoutStore.queryNodesInBounds(viewportBounds))
@@ -246,18 +309,41 @@ export function useViewportNodeVirtualization(options: {
     'pointerdown',
     (event) => {
       const nodeId = getNodeIdFromElement(event.target)
-      if (nodeId) activePointerNodes.set(event.pointerId, nodeId)
+      if (nodeId && activePointerNodes.get(event.pointerId) !== nodeId) {
+        activePointerNodes.set(event.pointerId, nodeId)
+        pinnedStateRevision++
+      }
     },
     { capture: true }
   )
   useEventListener(document, ['pointerup', 'pointercancel'], (event) => {
-    activePointerNodes.delete(event.pointerId)
+    if (activePointerNodes.delete(event.pointerId)) pinnedStateRevision++
   })
   useEventListener(document, ['focusin', 'focusout'], () => {
     queueMicrotask(() => {
       focusedNodeId.value = getNodeIdFromElement(document.activeElement)
     })
   })
+
+  watch(
+    [
+      () => [...canvasStore.selectedNodeIds].join(','),
+      () => layoutStore.isDraggingVueNodes.value,
+      () => layoutStore.isResizingVueNodes.value,
+      () => focusedNodeId.value,
+      () => {
+        const target = titleEditorStore.titleEditorTarget
+        return target && isLGraphNode(target) ? target.id : undefined
+      },
+      () => slotDragState.active,
+      () => slotDragState.source?.nodeId,
+      () => slotDragState.candidate?.layout.nodeId
+    ],
+    () => {
+      pinnedStateRevision++
+    },
+    { flush: 'sync' }
+  )
 
   watch(
     () => toValue(options.enabled),
@@ -268,7 +354,7 @@ export function useViewportNodeVirtualization(options: {
   useRafFn(() => refresh(), { immediate: true })
 
   return {
-    renderNodes: computed(() => renderNodes.value),
+    renderNodes: shallowReadonly(renderNodes),
     refresh
   }
 }

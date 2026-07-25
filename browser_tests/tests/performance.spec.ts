@@ -292,9 +292,11 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
         await comfyPage.nextFrame()
       }
 
-      const m = await comfyPage.perf.stopMeasuring('vue-large-graph-idle')
+      const m = await comfyPage.perf.stopMeasuring(
+        'vue-large-graph-virtualized-idle'
+      )
       const mountedNodeCount = await comfyPage.vueNodes.getNodeCount()
-      recordMeasurement(m)
+      recordMeasurement({ ...m, mountedNodeCount })
       console.log(
         `Vue large graph idle: ${mountedNodeCount} mounted nodes, ${m.domNodes} DOM nodes, ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.taskDurationMs.toFixed(1)}ms task`
       )
@@ -317,9 +319,11 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       }
       await comfyPage.page.mouse.up({ button: 'middle' })
 
-      const m = await comfyPage.perf.stopMeasuring('vue-large-graph-pan')
+      const m = await comfyPage.perf.stopMeasuring(
+        'vue-large-graph-virtualized-pan'
+      )
       const mountedNodeCount = await comfyPage.vueNodes.getNodeCount()
-      recordMeasurement(m)
+      recordMeasurement({ ...m, mountedNodeCount })
       console.log(
         `Vue large graph pan: ${mountedNodeCount} mounted nodes, ${m.domNodes} DOM nodes, ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
       )

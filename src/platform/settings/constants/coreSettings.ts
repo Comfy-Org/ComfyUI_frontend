@@ -1209,7 +1209,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Mount only nodes near the visible canvas. Disable this if a custom node requires its widgets to remain mounted while offscreen.',
     defaultValue: false,
-    sortOrder: 110,
+    sortOrder: 90,
     experimental: true,
     versionAdded: '1.48.5'
   },

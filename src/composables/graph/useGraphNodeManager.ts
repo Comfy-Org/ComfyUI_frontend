@@ -570,6 +570,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // Extract actual positions after configure() has potentially updated them
       const nodePosition = { x: node.pos[0], y: node.pos[1] }
       const nodeSize = { width: node.size[0], height: node.size[1] }
+      const graphIndex = graph._nodes.indexOf(node)
 
       // Skip layout creation if it already exists
       // (e.g. in-place node replacement where the old node's layout is reused for the new node with the same ID).
@@ -581,7 +582,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       void createNode(id, {
         position: nodePosition,
         size: nodeSize,
-        zIndex: node.order || 0,
+        zIndex: graphIndex >= 0 ? graphIndex : graph._nodes.length,
         visible: true
       })
     }

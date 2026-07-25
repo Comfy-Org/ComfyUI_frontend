@@ -309,7 +309,13 @@ export class QuadTree<T> {
   }
 
   private expandToFit(bounds: Bounds): void {
-    const expanded = { ...this.rootBounds }
+    const fallbackSize =
+      this.options.minNodeSize > 0 ? this.options.minNodeSize : 1
+    const expanded = {
+      ...this.rootBounds,
+      width: this.rootBounds.width > 0 ? this.rootBounds.width : fallbackSize,
+      height: this.rootBounds.height > 0 ? this.rootBounds.height : fallbackSize
+    }
 
     while (bounds.x < expanded.x) {
       expanded.x -= expanded.width

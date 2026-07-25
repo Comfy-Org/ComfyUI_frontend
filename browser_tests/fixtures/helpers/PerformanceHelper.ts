@@ -25,6 +25,7 @@ export interface PerfMeasurement {
   heapDeltaBytes: number
   heapUsedBytes: number
   domNodes: number
+  mountedNodeCount?: number
   jsHeapTotalBytes: number
   scriptDurationMs: number
   eventListeners: number

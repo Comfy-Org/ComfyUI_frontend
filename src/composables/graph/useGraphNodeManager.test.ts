@@ -13,6 +13,7 @@ import {
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -84,6 +85,28 @@ describe('Node Reactivity', () => {
 
     expect(onValueChange).toHaveBeenCalledTimes(1)
     expect(widgetValue.value).toBe(99)
+  })
+})
+
+describe('Node layout stacking', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    layoutStore.initializeFromLiteGraph([])
+  })
+
+  it('uses graph render order instead of execution order for initial z-index', () => {
+    const graph = new LGraph()
+    const backNode = new LGraphNode('back')
+    const frontNode = new LGraphNode('front')
+    graph.add(backNode)
+    graph.add(frontNode)
+    backNode.order = 99
+    frontNode.order = 1
+
+    useGraphNodeManager(graph)
+
+    expect(layoutStore.getNodeLayoutRef(backNode.id).value?.zIndex).toBe(0)
+    expect(layoutStore.getNodeLayoutRef(frontNode.id).value?.zIndex).toBe(1)
   })
 })
 

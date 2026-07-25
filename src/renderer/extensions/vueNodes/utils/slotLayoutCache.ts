@@ -12,6 +12,7 @@ export function reconcileTrackedNodeSlots(
   const node = registryStore.getNode(nodeId)
   if (!node) return
 
+  const removedTypes = new Set<'input' | 'output'>()
   for (const [slotKey, entry] of node.slots) {
     const count = entry.type === 'input' ? inputCount : outputCount
     if (entry.index < count) continue
@@ -19,6 +20,11 @@ export function reconcileTrackedNodeSlots(
     if (entry.el) delete entry.el.dataset.slotKey
     node.slots.delete(slotKey)
     layoutStore.deleteSlotLayout(slotKey)
+    removedTypes.add(entry.type)
+  }
+
+  for (const entry of node.slots.values()) {
+    if (removedTypes.has(entry.type)) entry.cachedOffset = undefined
   }
 }
 
