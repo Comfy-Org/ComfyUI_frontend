@@ -497,10 +497,14 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     const reconcileNodeSlots = () => {
       reconcileTrackedNodeSlots(node.id, inputs.length, outputs.length)
     }
-    const stop = watch([inputs, outputs], reconcileNodeSlots, {
-      deep: true,
-      immediate
-    })
+    // extractVueNodeData wraps both arrays with shallowReactive. Reconciliation
+    // only depends on their counts; a deep watch would traverse link and graph
+    // objects stored in slot payloads while large workflows are configuring.
+    const stop = watch(
+      [() => inputs.length, () => outputs.length],
+      reconcileNodeSlots,
+      { immediate }
+    )
     nodeSlotModelStops.set(node.id, stop)
     return reconcileNodeSlots
   }

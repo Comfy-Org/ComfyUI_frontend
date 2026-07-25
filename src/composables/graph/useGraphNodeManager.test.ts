@@ -839,6 +839,23 @@ describe('Tracked slot model reconciliation', () => {
     expect(layoutStore.getSlotLayout(outputKey)).toBeNull()
   })
 
+  it('tracks slot counts without traversing nested slot payloads', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('input', 'INT')
+    graph.add(node)
+    const input = node.inputs?.[0]
+    expect(input).toBeDefined()
+    Object.defineProperty(input!, 'deepTraversalTrap', {
+      enumerable: true,
+      get: () => {
+        throw new Error('slot payload was traversed')
+      }
+    })
+
+    expect(() => useGraphNodeManager(graph)).not.toThrow()
+  })
+
   it('retains same-ID slot geometry until graph configuration completes', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
