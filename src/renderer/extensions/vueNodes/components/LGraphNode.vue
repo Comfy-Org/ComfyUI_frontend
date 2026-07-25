@@ -205,7 +205,8 @@
         !isCollapsed &&
         !isRerouteNode &&
         nodeData.resizable !== false &&
-        !isSelectMode
+        !isSelectMode &&
+        !agentNodeSelectionStore.isActive
       "
     >
       <div
@@ -301,6 +302,7 @@ import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
@@ -340,6 +342,7 @@ const settingStore = useSettingStore()
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
 const nodeId = computed(() => nodeData.id)
 
@@ -433,7 +436,7 @@ const { startDrag } = useNodeDrag()
 const badges = usePartitionedBadges(nodeData)
 
 async function nodeOnPointerdown(event: PointerEvent) {
-  if (event.altKey && lgraphNode.value) {
+  if (event.altKey && lgraphNode.value && !agentNodeSelectionStore.isActive) {
     const result = LGraphCanvas.cloneNodes([lgraphNode.value])
     if (result?.created?.length) {
       const [newNode] = result.created
@@ -456,6 +459,9 @@ const handleContextMenu = (event: MouseEvent) => {
 
   // First handle the standard right-click behavior (selection)
   handleNodeRightClick(event as PointerEvent, nodeData.id)
+
+  // Node editing is disabled while selecting nodes for the agent composer
+  if (agentNodeSelectionStore.isActive) return
 
   // Show the node options menu at the cursor position
   showNodeOptions(event)

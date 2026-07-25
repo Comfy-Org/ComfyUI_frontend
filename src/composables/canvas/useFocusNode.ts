@@ -32,23 +32,29 @@ async function navigateToGraph(targetGraph: LGraph) {
 export function useFocusNode() {
   const canvasStore = useCanvasStore()
 
+  /* Focus a known node instance, navigating to its owning graph first. */
+  async function focusNodeInstance(node: LGraphNode) {
+    if (!canvasStore.canvas || !node.graph) return
+
+    await navigateToGraph(node.graph as LGraph)
+    canvasStore.canvas?.animateToBounds(node.boundingRect)
+  }
+
   /* Locate and focus a node on the canvas by its execution ID. */
   async function focusNode(
     nodeId: string,
     executionIdMap?: Map<string, LGraphNode>
   ) {
-    if (!canvasStore.canvas) return
-
     const graphNode = executionIdMap
       ? executionIdMap.get(nodeId)
       : getNodeByExecutionId(app.rootGraph, nodeId)
-    if (!graphNode?.graph) return
+    if (!graphNode) return
 
-    await navigateToGraph(graphNode.graph as LGraph)
-    canvasStore.canvas?.animateToBounds(graphNode.boundingRect)
+    await focusNodeInstance(graphNode)
   }
 
   return {
-    focusNode
+    focusNode,
+    focusNodeInstance
   }
 }

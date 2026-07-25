@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -15,9 +15,21 @@ import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 import NodeHeader from './NodeHeader.vue'
+
+const { toggleNodeSelectionAfterPointerUp } = vi.hoisted(() => ({
+  toggleNodeSelectionAfterPointerUp: vi.fn()
+}))
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers',
+  () => ({
+    useNodeEventHandlers: () => ({ toggleNodeSelectionAfterPointerUp })
+  })
+)
 
 const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
   id: toNodeId('1'),
@@ -114,11 +126,18 @@ const createGlobalConfig = () => {
   }
 }
 
-const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
+const renderHeader = (
+  props?: Partial<ComponentProps<typeof NodeHeader>>,
+  { selectionModeActive = false }: { selectionModeActive?: boolean } = {}
+) => {
   const { global, tooltipDirective } = createGlobalConfig()
   const onCollapse = vi.fn()
   const onUpdateTitle = vi.fn()
   const user = userEvent.setup()
+
+  if (selectionModeActive) {
+    useAgentNodeSelectionStore().isActive = true
+  }
 
   const result = render(NodeHeader, {
     global,
@@ -247,6 +266,70 @@ describe('NodeHeader.vue', () => {
       expect(tooltipDirective.mounted).toHaveBeenCalled()
       const mountedEl = tooltipDirective.mounted.mock.calls[0][0]
       expect(mountedEl).toBe(screen.getByTestId('node-title'))
+    })
+  })
+
+  describe('node selection mode', () => {
+    beforeEach(() => {
+      toggleNodeSelectionAfterPointerUp.mockClear()
+    })
+
+    it('shows the collapse chevron and no checkbox when inactive', () => {
+      renderHeader()
+
+      expect(screen.getByTestId('node-collapse-button')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('node-selection-checkbox')
+      ).not.toBeInTheDocument()
+    })
+
+    it('shows a selection checkbox instead of the chevron when active', () => {
+      renderHeader(undefined, { selectionModeActive: true })
+
+      expect(screen.getByTestId('node-selection-checkbox')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('node-collapse-button')
+      ).not.toBeInTheDocument()
+    })
+
+    it('toggles node selection when the checkbox is clicked', async () => {
+      const { user } = renderHeader(undefined, { selectionModeActive: true })
+
+      await user.click(screen.getByTestId('node-selection-checkbox'))
+
+      expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledWith(
+        toNodeId('1'),
+        true
+      )
+    })
+
+    it('disables double-click title editing while active', async () => {
+      renderHeader(undefined, { selectionModeActive: true })
+
+      // eslint-disable-next-line testing-library/prefer-user-event
+      await fireEvent.dblClick(screen.getByTestId('node-header-1'))
+
+      expect(screen.queryByTestId('node-title-input')).not.toBeInTheDocument()
+    })
+
+    it('stops pointerdown/pointerup from bubbling past the checkbox', async () => {
+      renderHeader(undefined, { selectionModeActive: true })
+      const onPointerDown = vi.fn()
+      const onPointerUp = vi.fn()
+      document.addEventListener('pointerdown', onPointerDown)
+      document.addEventListener('pointerup', onPointerUp)
+
+      const checkbox = screen.getByTestId('node-selection-checkbox')
+      // eslint-disable-next-line testing-library/prefer-user-event
+      await fireEvent.pointerDown(checkbox)
+      // eslint-disable-next-line testing-library/prefer-user-event
+      await fireEvent.pointerUp(checkbox)
+
+      expect(onPointerDown).not.toHaveBeenCalled()
+      expect(onPointerUp).not.toHaveBeenCalled()
+
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('pointerup', onPointerUp)
     })
   })
 })

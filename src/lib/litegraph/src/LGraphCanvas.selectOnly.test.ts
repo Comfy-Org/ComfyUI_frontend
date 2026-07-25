@@ -121,4 +121,62 @@ describe('LGraphCanvas selectOnly mode', () => {
     expect(node.selected).toBe(true)
     expect(canvas.selectedItems.has(node)).toBe(true)
   })
+
+  it('preserves the current selection when clicking empty canvas space', () => {
+    const { canvas, node } = createHarness()
+    canvas.selectOnly = true
+    canvas.select(node)
+
+    canvas.processSelect(null, undefined)
+
+    expect(node.selected).toBe(true)
+    expect(canvas.selectedItems.has(node)).toBe(true)
+  })
+
+  it('clears the selection when clicking empty canvas space with selectOnly off', () => {
+    const { canvas, node } = createHarness()
+    canvas.selectOnly = false
+    canvas.select(node)
+
+    canvas.processSelect(null, undefined)
+
+    expect(node.selected).toBe(false)
+    expect(canvas.selectedItems.has(node)).toBe(false)
+  })
+
+  it('adds to the selection instead of replacing it when clicking another item', () => {
+    const { canvas, graph, node } = createHarness()
+    canvas.selectOnly = true
+    canvas.select(node)
+
+    const secondNode = new LGraphNode('Second Node')
+    secondNode.pos = [400, 100]
+    secondNode.size = [150, 80]
+    secondNode.updateArea()
+    graph.add(secondNode)
+
+    canvas.processSelect(secondNode, undefined)
+
+    expect(node.selected).toBe(true)
+    expect(secondNode.selected).toBe(true)
+    expect(canvas.selectedItems.has(node)).toBe(true)
+    expect(canvas.selectedItems.has(secondNode)).toBe(true)
+  })
+
+  it('replaces the selection when clicking another item with selectOnly off', () => {
+    const { canvas, graph, node } = createHarness()
+    canvas.selectOnly = false
+    canvas.select(node)
+
+    const secondNode = new LGraphNode('Second Node')
+    secondNode.pos = [400, 100]
+    secondNode.size = [150, 80]
+    secondNode.updateArea()
+    graph.add(secondNode)
+
+    canvas.processSelect(secondNode, undefined)
+
+    expect(node.selected).toBe(false)
+    expect(secondNode.selected).toBe(true)
+  })
 })

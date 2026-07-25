@@ -36,8 +36,10 @@
       "bannerSubtitle": "Select one or many nodes to add as reference",
       "exit": "Exit mode",
       "chipRemove": "Remove node reference",
+      "chipFocus": "Locate node on canvas",
       "exitConfirmTitle": "Exit node selection mode?",
-      "exitConfirmMessage": "You're selecting nodes from the graph to reference in the chat. Switching workflows will exit this mode."
+      "exitConfirmMessage": "You're selecting nodes from the graph to reference in the chat. Switching workflows will exit this mode.",
+      "selectNode": "Select node"
     },
     "mentionPicker": {
       "empty": "No nodes found",

@@ -4550,10 +4550,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     e: CanvasPointerEvent | undefined,
     sticky: boolean = false
   ): void {
+    // In selectOnly mode, clicking empty canvas space is a common accidental
+    // action - preserve the existing selection instead of clearing it.
+    if (!item && this.selectOnly) return
+
     const addModifier = e?.shiftKey
     const subtractModifier = e != null && (e.metaKey || e.ctrlKey)
     const eitherModifier = addModifier || subtractModifier
-    const modifySelection = eitherModifier || this.multi_select
+    // In selectOnly mode, clicking an item toggles it without clearing the
+    // rest of the selection - the mode is for building up a set of items.
+    const modifySelection =
+      eitherModifier || this.multi_select || this.selectOnly
 
     if (!item) {
       if (!eitherModifier || this.multi_select) this.deselectAll()

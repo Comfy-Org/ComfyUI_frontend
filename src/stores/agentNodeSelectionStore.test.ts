@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import type {
@@ -12,8 +12,14 @@ import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/managem
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import type * as LitegraphUtilModule from '@/utils/litegraphUtil'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
+const MockDialogComponent = defineComponent({
+  name: 'MockDialogComponent',
+  template: '<div>Mock</div>'
+})
 
 function createMockWorkflow(path: string): LoadedComfyWorkflow {
   return new ComfyWorkflowClass({
@@ -157,6 +163,51 @@ describe('useAgentNodeSelectionStore', () => {
 
     expect(store.referencedNodes).toEqual([node])
     expect(canvas.select).toHaveBeenCalledTimes(1)
+  })
+
+  test('Escape exits node selection mode', () => {
+    const canvasStore = useCanvasStore()
+    const { canvas, asCanvas } = createMockCanvas()
+    canvasStore.canvas = asCanvas
+
+    const store = useAgentNodeSelectionStore()
+    store.enter()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+
+    expect(store.isActive).toBe(false)
+    expect(canvas.selectOnly).toBe(false)
+  })
+
+  test('Escape does nothing when node selection mode is inactive', () => {
+    const canvasStore = useCanvasStore()
+    const { asCanvas } = createMockCanvas()
+    canvasStore.canvas = asCanvas
+
+    const store = useAgentNodeSelectionStore()
+
+    expect(() =>
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    ).not.toThrow()
+    expect(store.isActive).toBe(false)
+  })
+
+  test('Escape is ignored while a dialog is open on top of node selection mode', () => {
+    const canvasStore = useCanvasStore()
+    const { asCanvas } = createMockCanvas()
+    canvasStore.canvas = asCanvas
+    const dialogStore = useDialogStore()
+
+    const store = useAgentNodeSelectionStore()
+    store.enter()
+    dialogStore.showDialog({
+      key: 'test-dialog',
+      component: MockDialogComponent
+    })
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+
+    expect(store.isActive).toBe(true)
   })
 
   test('graphNodes refreshes after switching workflows even though the graph object is reused', () => {

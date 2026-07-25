@@ -10,6 +10,7 @@ import AttachmentTitle from '@/components/ui/attachment/AttachmentTitle.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const { nodes, graphNodes } = defineProps<{
@@ -20,6 +21,8 @@ const { nodes, graphNodes } = defineProps<{
 const emit = defineEmits<{
   remove: [node: LGraphNode]
 }>()
+
+const { focusNodeInstance } = useFocusNode()
 
 // Duplicates are detected against the whole graph, not just the currently
 // referenced nodes, so a lone chip whose title collides with another node
@@ -44,13 +47,27 @@ function hasDuplicateTitle(node: LGraphNode) {
         <i class="icon-[comfy--node] size-3.5" />
       </AttachmentMedia>
       <AttachmentContent class="flex items-center gap-1">
-        <AttachmentTitle>{{ node.title }}</AttachmentTitle>
-        <span
-          v-if="hasDuplicateTitle(node)"
-          class="shrink-0 font-mono text-muted-foreground"
-        >
-          #{{ node.id }}
-        </span>
+        <Tooltip :delay-duration="500">
+          <TooltipTrigger>
+            <button
+              type="button"
+              class="focus-visible:ring-ring flex min-w-0 flex-1 items-center gap-1 rounded-sm text-left focus-visible:ring-1 focus-visible:outline-none"
+              :aria-label="$t('agent.nodeSelection.chipFocus')"
+              @click="focusNodeInstance(node)"
+            >
+              <AttachmentTitle>{{ node.title }}</AttachmentTitle>
+              <span
+                v-if="hasDuplicateTitle(node)"
+                class="shrink-0 font-mono text-muted-foreground"
+              >
+                #{{ node.id }}
+              </span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            {{ $t('agent.nodeSelection.chipFocus') }}
+          </TooltipContent>
+        </Tooltip>
       </AttachmentContent>
       <AttachmentActions>
         <Tooltip :delay-duration="500">

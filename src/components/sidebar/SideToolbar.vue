@@ -2,14 +2,20 @@
   <nav
     ref="sideToolbarRef"
     data-testid="side-toolbar"
-    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
+    :inert="isHidden"
+    :aria-hidden="isHidden"
+    class="side-tool-bar-container flex h-full flex-col items-center overflow-hidden bg-transparent transition-[max-width,opacity,transform] duration-300 ease-in-out [.floating-sidebar]:-mr-2"
     :class="{
       'small-sidebar': isSmall,
       'connected-sidebar pointer-events-auto': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
-      'border-r border-(--interface-stroke) shadow-interface': isConnected
+      'border-r border-(--interface-stroke) shadow-interface': isConnected,
+      'pointer-events-none opacity-0': isHidden,
+      '-translate-x-8': isHidden && sidebarLocation === 'left',
+      'translate-x-8': isHidden && sidebarLocation === 'right'
     }"
+    :style="{ maxWidth: isHidden ? '0px' : 'var(--sidebar-width)' }"
   >
     <div
       :class="
@@ -55,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { useResizeObserver } from '@vueuse/core'
+import { useRafFn, useResizeObserver } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import {
   computed,
@@ -77,6 +83,7 @@ import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
@@ -102,6 +109,7 @@ const settingStore = useSettingStore()
 const userStore = useUserStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const sideToolbarRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
@@ -122,6 +130,7 @@ const isConnected = computed(
 
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
+const isHidden = computed(() => agentNodeSelectionStore.isActionBarsHidden)
 
 /**
  * Handle sidebar tab icon click.
@@ -181,6 +190,44 @@ const groupClasses = computed(() =>
 const ENTER_OVERFLOW_MARGIN = 20
 const EXIT_OVERFLOW_MARGIN = 50
 
+/** Matches the nav's `duration-300` transition, triggered by `isHidden`. */
+const FPS_INFO_SYNC_DURATION_MS = 300
+
+/**
+ * Screen-edge spacing, matching the sidebar's own left offset when
+ * disconnected/floating (`--sidebar-padding`).
+ */
+const FPS_INFO_MIN_LEFT_PX = 4
+
+const updateFpsInfoLocation = () => {
+  if (!canvasStore.canvas) return
+  canvasStore.canvas.fpsInfoLocation =
+    sidebarLocation.value === 'left'
+      ? [
+          Math.max(
+            FPS_INFO_MIN_LEFT_PX,
+            sideToolbarRef.value?.getBoundingClientRect()?.right ??
+              FPS_INFO_MIN_LEFT_PX
+          ),
+          null
+        ]
+      : null
+  canvasStore.canvas.setDirty(false, true)
+}
+
+// While the sidebar slides in/out, keep the fps info widget synced to the
+// freed-up (or reclaimed) space every frame instead of jumping once the
+// transition ends.
+const { pause: pauseFpsInfoSync, resume: resumeFpsInfoSync } = useRafFn(
+  updateFpsInfoLocation,
+  { immediate: false }
+)
+
+const syncFpsInfoLocationDuringTransition = () => {
+  resumeFpsInfoSync()
+  setTimeout(pauseFpsInfoSync, FPS_INFO_SYNC_DURATION_MS)
+}
+
 const checkOverflow = debounce(() => {
   if (!sideToolbarRef.value || !topToolbarRef.value || !bottomToolbarRef.value)
     return
@@ -215,21 +262,13 @@ onMounted(() => {
   watch(
     [isSmall, sidebarLocation],
     async () => {
-      if (canvasStore.canvas) {
-        if (sidebarLocation.value === 'left') {
-          await nextTick()
-          canvasStore.canvas.fpsInfoLocation = [
-            sideToolbarRef.value?.getBoundingClientRect()?.right,
-            null
-          ]
-        } else {
-          canvasStore.canvas.fpsInfoLocation = null
-        }
-        canvasStore.canvas.setDirty(false, true)
-      }
+      await nextTick()
+      updateFpsInfoLocation()
     },
     { immediate: true }
   )
+
+  watch(isHidden, syncFpsInfoLocationDuringTransition)
 })
 </script>
 

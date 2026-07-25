@@ -10,6 +10,7 @@ import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import type { NodeId } from '@/types/nodeId'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
@@ -25,9 +26,16 @@ export function useNodePointerInteractions(
   const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
     useNodeEventHandlers()
   const { nodeManager } = useVueNodeLifecycle()
+  const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
   function isPinnedNode(nodeId: NodeId): boolean {
     return nodeManager.value?.getNode(nodeId)?.flags?.pinned ?? false
+  }
+
+  // Node selection mode only allows clicking/toggling selection - dragging,
+  // resizing, and other node editing is disabled while it's active.
+  function isDragDisabled(): boolean {
+    return agentNodeSelectionStore.isActive
   }
 
   const forwardMiddlePointerIfNeeded = (
@@ -64,7 +72,7 @@ export function useNodePointerInteractions(
     }
 
     // IMPORTANT: Read from actual LGraphNode to get correct state
-    if (isPinnedNode(nodeId)) {
+    if (isPinnedNode(nodeId) || isDragDisabled()) {
       return
     }
 
@@ -81,7 +89,7 @@ export function useNodePointerInteractions(
 
     const nodeId = toValue(nodeIdRef)
 
-    if (isPinnedNode(nodeId)) {
+    if (isPinnedNode(nodeId) || isDragDisabled()) {
       return
     }
 
@@ -157,7 +165,10 @@ export function useNodePointerInteractions(
     // Skip selection handling for right-click (button 2) - context menu handles its own selection
     if (event.button === 2) return
 
-    const multiSelect = isMultiSelectKey(event)
+    // Node selection mode is for building up a set of node references, so a
+    // plain click toggles the node without clearing the rest of the selection.
+    const multiSelect =
+      isMultiSelectKey(event) || agentNodeSelectionStore.isActive
 
     const nodeId = toValue(nodeIdRef)
     if (nodeId) {
