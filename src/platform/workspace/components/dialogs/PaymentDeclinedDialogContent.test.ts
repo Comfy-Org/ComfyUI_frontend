@@ -61,6 +61,11 @@ describe('PaymentDeclinedDialogContent', () => {
   it('opens the billing portal without dismissing the declined subscription', async () => {
     const { onClose } = renderDialog('subscription')
 
+    expect(
+      screen.getByText(
+        "Your card couldn't be charged. Try another card, or contact your bank if this looks wrong."
+      )
+    ).toBeInTheDocument()
     expect(screen.getByText('Insufficient funds')).toBeInTheDocument()
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment method' })

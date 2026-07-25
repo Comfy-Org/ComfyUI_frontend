@@ -1,65 +1,80 @@
 <template>
   <div
-    class="flex w-[min(440px,95vw)] flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]"
+    :class="
+      cn(
+        'relative flex w-lg flex-col overflow-hidden rounded-2xl bg-base-background ring-1 ring-border-default ring-inset',
+        origin === 'subscription' ? 'h-[786px]' : 'h-[460px]'
+      )
+    "
   >
-    <div
-      class="flex h-14 items-center justify-between border-b border-border-default px-6"
+    <Button
+      variant="muted-textonly"
+      size="icon"
+      class="absolute top-2 right-2 z-10 rounded-full"
+      :aria-label="$t('g.close')"
+      @click="$emit('close')"
     >
+      <i class="icon-[lucide--x] size-4" />
+    </Button>
+
+    <div
+      :class="
+        cn(
+          'absolute top-6 left-16 flex w-96 flex-col items-center',
+          origin === 'subscription' ? 'h-[730px]' : 'h-[395px]'
+        )
+      "
+    >
+      <i
+        class="mt-8 icon-[lucide--circle-alert] size-12 shrink-0 text-muted-foreground"
+      />
       <h2
         id="payment-declined"
-        class="m-0 text-lg font-semibold text-base-foreground"
+        class="m-0 mt-4 text-center text-xl/6 font-semibold text-base-foreground"
       >
         {{ $t('paymentDeclined.title') }}
       </h2>
-      <button
-        type="button"
-        class="focus-visible:ring-secondary-foreground -m-1 cursor-pointer rounded-sm border-none bg-transparent p-1 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
-        :aria-label="$t('g.close')"
-        @click="$emit('close')"
-      >
-        <i class="icon-[lucide--x] size-5" />
-      </button>
-    </div>
-
-    <div class="flex flex-col gap-5 px-6 pt-6">
-      <p class="m-0 text-sm/5 text-muted-foreground">
+      <p class="m-0 mt-2 text-center text-sm/5 text-muted-foreground">
         {{ $t('paymentDeclined.body') }}
       </p>
-      <div class="flex flex-col gap-2 rounded-xl bg-secondary-background p-4">
-        <span class="text-xs text-muted-foreground">
+      <div
+        class="mt-[45px] flex h-[94px] w-full shrink-0 flex-col gap-1.5 rounded-lg bg-secondary-background p-6"
+      >
+        <span class="text-sm/5 text-muted-foreground">
           {{ $t('paymentDeclined.reasonLabel') }}
         </span>
-        <span class="text-sm font-medium text-base-foreground">
+        <span class="text-sm/5 font-medium text-base-foreground">
           {{ reason }}
         </span>
       </div>
-    </div>
 
-    <div class="flex flex-col gap-2 p-6">
-      <Button
-        variant="primary"
-        size="lg"
-        class="w-full"
-        :loading="isOpeningPortal"
-        @click="handleUpdatePaymentMethod"
-      >
-        {{ $t('paymentDeclined.updatePaymentMethod') }}
-      </Button>
-      <Button
-        v-if="origin === 'subscription'"
-        variant="muted-textonly"
-        size="lg"
-        class="w-full"
-        @click="$emit('close')"
-      >
-        <i class="icon-[lucide--arrow-left] size-4" />
-        {{ $t('subscription.preview.backToAllPlans') }}
-      </Button>
+      <div class="mt-auto flex w-full flex-col gap-4">
+        <Button
+          variant="primary"
+          size="lg"
+          class="w-full"
+          :loading="isOpeningPortal"
+          @click="handleUpdatePaymentMethod"
+        >
+          {{ $t('paymentDeclined.updatePaymentMethod') }}
+        </Button>
+        <Button
+          v-if="origin === 'subscription'"
+          variant="muted-textonly"
+          size="sm"
+          class="w-full text-sm"
+          @click="$emit('close')"
+        >
+          <i class="icon-[lucide--arrow-left] size-4" />
+          {{ $t('subscription.preview.backToAllPlans') }}
+        </Button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
