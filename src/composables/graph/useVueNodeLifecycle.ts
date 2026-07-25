@@ -1,4 +1,8 @@
-import { createSharedComposable, whenever } from '@vueuse/core'
+import {
+  createSharedComposable,
+  useEventListener,
+  whenever
+} from '@vueuse/core'
 import { shallowRef, watch } from 'vue'
 
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
@@ -99,8 +103,7 @@ function useVueNodeLifecycleIndividual() {
 
   /**
    * When the canvas mounts before its first node exists, bootstrap is deferred
-   * to the first add. The last onNodeAdded monkeypatch in the renderer; it goes
-   * away once LGraph dispatches a `node:added` event.
+   * to the first add.
    */
   const setupEmptyGraphListener = () => {
     const activeGraph = comfyApp.canvas?.graph
@@ -111,14 +114,14 @@ function useVueNodeLifecycleIndividual() {
     ) {
       return
     }
-    const originalOnNodeAdded = activeGraph.onNodeAdded
-    activeGraph.onNodeAdded = function (node: LGraphNode) {
-      activeGraph.onNodeAdded = originalOnNodeAdded
-
-      if (shouldRenderVueNodes.value) initializeVueNodeLayout()
-
-      originalOnNodeAdded?.call(this, node)
-    }
+    useEventListener(
+      activeGraph.events,
+      'node:added',
+      () => {
+        if (shouldRenderVueNodes.value) initializeVueNodeLayout()
+      },
+      { once: true }
+    )
   }
 
   return {

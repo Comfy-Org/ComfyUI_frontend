@@ -2,6 +2,8 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
@@ -104,6 +106,7 @@ function createMockGraph(
     links: linksMap,
     getLink: (id: number) => linksMap.get(id),
     rootGraph: { id: GRAPH_ID },
+    events: new CustomEventTarget<LGraphEventMap>(),
     updateExecutionOrder: vi.fn(),
     setDirtyCanvas: vi.fn()
   })

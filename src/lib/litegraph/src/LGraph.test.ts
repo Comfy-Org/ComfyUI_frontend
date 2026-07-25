@@ -547,6 +547,39 @@ describe('node:before-removed event', () => {
     ])
   })
 
+  it('fires node:added once the node is attached and registered', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+
+    let attached: string | undefined
+    graph.events.addEventListener('node:added', (e) => {
+      attached = `graph=${e.detail.node.graph === graph ? 'set' : 'null'},byId=${
+        graph.getNodeById(e.detail.node.id) === e.detail.node
+      }`
+    })
+
+    graph.add(node)
+
+    expect(attached).toBe('graph=set,byId=true')
+  })
+
+  it('fires node:removed after the node is detached', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    let detached: string | undefined
+    graph.events.addEventListener('node:removed', (e) => {
+      detached = `graph=${e.detail.node.graph === null ? 'null' : 'set'},byId=${
+        graph.getNodeById(node.id) == null
+      }`
+    })
+
+    graph.remove(node)
+
+    expect(detached).toBe('graph=null,byId=true')
+  })
+
   it('fires node:before-removed for every node cleared by clear()', () => {
     const graph = new LGraph()
     graph.add(new LGraphNode('a'))

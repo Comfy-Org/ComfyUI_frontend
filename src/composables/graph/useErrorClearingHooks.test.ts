@@ -340,16 +340,27 @@ describe('installErrorClearingHooks lifecycle', () => {
     expect(store.lastNodeErrors).toBeNull()
   })
 
-  it('restores original onNodeAdded when cleanup is called', () => {
+  it('stops hooking added nodes after cleanup, leaving onNodeAdded alone', () => {
     const graph = new LGraph()
     const originalHook = vi.fn()
     graph.onNodeAdded = originalHook
 
     const cleanup = installErrorClearingHooks(graph)
-    expect(graph.onNodeAdded).not.toBe(originalHook)
+    expect(graph.onNodeAdded).toBe(originalHook)
+
+    const hooked = new LGraphNode('hooked')
+    hooked.onConnectionsChange = vi.fn()
+    graph.add(hooked)
+    expect(graph.onNodeAdded).toBe(originalHook)
 
     cleanup()
-    expect(graph.onNodeAdded).toBe(originalHook)
+
+    const afterCleanup = new LGraphNode('after-cleanup')
+    const untouched = vi.fn()
+    afterCleanup.onConnectionsChange = untouched
+    graph.add(afterCleanup)
+
+    expect(afterCleanup.onConnectionsChange).toBe(untouched)
   })
 
   it('restores original node callbacks when a node is removed', () => {
@@ -369,8 +380,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     expect(node.onConnectionsChange).not.toBe(originalOnConnectionsChange)
     expect(node.onWidgetChanged).not.toBe(originalOnWidgetChanged)
 
-    // Simulate node removal via the graph hook
-    graph.onNodeRemoved!(node)
+    graph.remove(node)
 
     // Original callbacks should be restored
     expect(node.onConnectionsChange).toBe(originalOnConnectionsChange)
@@ -933,7 +943,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     installErrorClearingHooks(subgraph)
 
     // An add inside the bypassed subgraph's interior.
-    subgraph.onNodeAdded?.(interiorNode)
+    subgraph.events.dispatch('node:added', { node: interiorNode })
     await new Promise((r) => setTimeout(r, 0))
 
     expect(useMissingModelStore().missingModelCandidates).toBeNull()
@@ -968,7 +978,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
     installErrorClearingHooks(rootGraph)
 
-    rootGraph.onNodeAdded?.(outerSubgraphNode)
+    rootGraph.events.dispatch('node:added', { node: outerSubgraphNode })
     await new Promise((r) => setTimeout(r, 0))
 
     expect(modelScanSpy).toHaveBeenCalledWith(

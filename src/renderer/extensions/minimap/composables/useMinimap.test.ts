@@ -4,6 +4,8 @@ import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
 
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -24,6 +26,7 @@ interface MockNode {
 
 interface MockGraph {
   _nodes: MockNode[]
+  events: CustomEventTarget<LGraphEventMap>
   rootGraph: { id: UUID }
   links: Record<string, { id: string; target_id: string }>
   getNodeById: Mock
@@ -147,6 +150,7 @@ const setupMocks = () => {
     },
     getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
     setDirtyCanvas: vi.fn(),
+    events: new CustomEventTarget<LGraphEventMap>(),
     onNodeAdded: null,
     onNodeRemoved: null,
     onConnectionChange: null
@@ -314,6 +318,7 @@ describe('useMinimap', () => {
       },
       getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
       setDirtyCanvas: vi.fn(),
+      events: new CustomEventTarget<LGraphEventMap>(),
       onNodeAdded: null,
       onNodeRemoved: null,
       onConnectionChange: null

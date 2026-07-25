@@ -1143,6 +1143,7 @@ export class LGraph
     if (!shouldSkipComputeOrder) this.updateExecutionOrder()
 
     this.onNodeAdded?.(node)
+    this.events.dispatch('node:added', { node })
 
     // Must follow onNodeAdded: its microtask-deferred hooks must run before the Vue flush this write schedules
     this.incrementVersion()
@@ -1266,6 +1267,7 @@ export class LGraph
 
     delete this._nodes_by_id[node.id]
     this.onNodeRemoved?.(node)
+    this.events.dispatch('node:removed', { node })
 
     // close panels
     this.canvasAction((c) => c.checkPanels())

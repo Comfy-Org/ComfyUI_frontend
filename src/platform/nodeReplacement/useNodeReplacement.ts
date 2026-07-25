@@ -229,6 +229,12 @@ function replaceWithMapping(
   }
 
   newNode.has_errors = false
+
+  // This bypasses graph.add(), which is where an add is normally announced.
+  // Node-data registration is handled above; this is for the subscribers
+  // (error-clearing hooks, minimap, telemetry).
+  nodeGraph.onNodeAdded?.(newNode)
+  nodeGraph.events.dispatch('node:added', { node: newNode })
 }
 
 export function useNodeReplacement() {
@@ -295,10 +301,6 @@ export function useNodeReplacement() {
               )
             }
         replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
-
-        // replaceWithMapping bypasses graph.add(), so trigger the renderer
-        // lifecycle (layout seeding + slot graft) for the new node by hand.
-        nodeGraph.onNodeAdded?.(newNode)
 
         if (!replacedTypes.includes(match.type)) {
           replacedTypes.push(match.type)

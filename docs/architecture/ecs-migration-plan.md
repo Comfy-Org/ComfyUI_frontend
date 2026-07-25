@@ -242,13 +242,7 @@ Two consequences worth recording:
   graph entry — which is what makes subgraph navigation seed the right nodes.
 
 `useVueNodeLifecycle` keeps only layout bootstrap and the Layout↔LiteGraph sync
-lifecycle. One monkeypatch remains: `setupEmptyGraphListener` wraps
-`onNodeAdded` to defer bootstrap when the canvas mounts before its first node.
-It dies when `LGraph` dispatches a `node:added` event — worth doing, since
-`LGraphEventMap` has `node:before-removed` but no add-side counterpart, and
-three separate call sites currently save/restore `graph.onNodeAdded` (this one,
-the minimap, and previously the manager), which is order-dependent and can
-silently clobber.
+lifecycle, and no longer patches anything — see 2g.
 
 ### 2e. Slot reactivity ✅ Shipped
 
@@ -317,6 +311,28 @@ code (`useSlotLinkInteraction`) hands the live slot instance to litegraph's
 `RenderLink`, and the badge system needs `node.constructor.nodeData.api_node`
 and `isSubgraphNode()` alongside the slots, so slot rows alone would not unblock
 it.
+
+### 2g. node:added / node:removed events ✅ Shipped
+
+`LGraphEventMap` had `node:before-removed` but no add-side counterpart, so every
+consumer that needed to know about a node add wrapped the single
+`graph.onNodeAdded` callback slot, saving and restoring the previous value.
+**Four** did so concurrently: the renderer's empty-graph bootstrap, the
+error-clearing hooks, the minimap, and node-added telemetry. Whichever restored
+first put back the _pre-its-own-install_ value and silently discarded the others
+— order-dependent, per graph switch.
+
+`LGraph.add` now dispatches `node:added` (after the node is attached and
+registered) and `LGraph.remove` dispatches `node:removed` (after detach, so
+`node.graph` is already null and execution ids must be derived from the
+dispatching graph plus `node.id`). All four consumers are plain
+`addEventListener` subscribers; none touches the callback slot. `onNodeAdded` /
+`onNodeRemoved` remain for extension compatibility.
+
+`useNodeReplacement` bypasses `graph.add` by design (it swaps a node in place,
+preserving the id), so `replaceWithMapping` announces the add itself.
+
+Prefer the events for anything new. The callback slots cannot be shared.
 
 ### Store sunset criteria (applies to every Phase 2 concern)
 

@@ -3,6 +3,8 @@ import type {
   INodeOutputSlot,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   CanvasPointerEvent,
@@ -103,6 +105,8 @@ export function createMockCanvas(
 export function createMockLGraph(overrides: Partial<LGraph> = {}): LGraph {
   return {
     trigger: vi.fn(),
+    // A real dispatcher: node lifecycle subscribers listen on `graph.events`.
+    events: new CustomEventTarget<LGraphEventMap>(),
     ...overrides
   } as LGraph
 }
