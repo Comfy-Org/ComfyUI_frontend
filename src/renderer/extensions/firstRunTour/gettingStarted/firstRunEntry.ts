@@ -1,0 +1,58 @@
+import {
+  breakpointsTailwind,
+  createSharedComposable,
+  useBreakpoints
+} from '@vueuse/core'
+import { readonly, ref } from 'vue'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
+import { useNewUserService } from '@/services/useNewUserService'
+import { useCommandStore } from '@/stores/commandStore'
+
+/**
+ * Decides what a first-time user sees once startup reports its outcome: the
+ * Getting Started screen for first-run tour candidates, the template browser
+ * for everyone else.
+ */
+export const useFirstRunEntry = createSharedComposable(() => {
+  const settingStore = useSettingStore()
+  const gettingStartedVisible = ref(false)
+
+  function isFirstRunCandidate(): boolean {
+    if (!isCloud) return false
+    if (!useBreakpoints(breakpointsTailwind).greaterOrEqual('md').value)
+      return false
+    if (!useSubscription().isSubscriptionEnabled()) return false
+    if (useNewUserService().isNewUser() !== true) return false
+    return useFeatureFlags().flags.onboardingTourEnabled
+  }
+
+  /**
+   * Candidacy is read once, here: a later breakpoint, flag or subscription
+   * change must not unmount the screen out from under the user.
+   */
+  async function handleStartupOutcome(outcome: StartupOutcome) {
+    if (outcome !== 'fresh') return
+    if (isFirstRunCandidate()) {
+      gettingStartedVisible.value = true
+      return
+    }
+    await useCommandStore().execute('Comfy.BrowseTemplates')
+  }
+
+  /** The only writer of the seen flag, so it lands on a real user action. */
+  async function dismissGettingStarted() {
+    gettingStartedVisible.value = false
+    await settingStore.set('Comfy.TutorialCompleted', true)
+  }
+
+  return {
+    gettingStartedVisible: readonly(gettingStartedVisible),
+    handleStartupOutcome,
+    dismissGettingStarted
+  }
+})
