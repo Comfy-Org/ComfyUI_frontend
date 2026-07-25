@@ -127,6 +127,14 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       }
     }
     stepIdx.value = idx
+    if (nextStep.onEnter) {
+      try {
+        await nextStep.onEnter(signal)
+      } catch (error) {
+        if (!signal.aborted) console.error('coachmark onEnter failed', error)
+      }
+      if (signal.aborted) return
+    }
     trackTour('step_shown')
   }
 
@@ -152,6 +160,11 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     finish('skipped')
   }
 
+  /** Ends the tour as completed, for consumers whose last step self-completes. */
+  function complete() {
+    finish('completed')
+  }
+
   function finish(
     outcome: 'completed' | 'skipped',
     {
@@ -172,7 +185,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     watch(
       trigger.autoOpen,
       (visible) => {
-        if (visible) startTour(entryPath)
+        if (visible) void startTour(entryPath)
       },
       { immediate: true }
     )
@@ -192,19 +205,29 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     void settingStore.set(TOUR_SEEN_SETTING, [...seen, entryPath])
   }
 
-  function startTour(entryPath: EntryPath, force = false) {
-    if (steps.value.length) return
-    if (!force && hasSeenTour(entryPath)) return
-    const resolved = resolveSteps(TOURS[entryPath], targetMounted)
-    if (!resolved.length) return
+  async function begin(entryPath: EntryPath): Promise<boolean> {
+    if (steps.value.length) return false
+    const definition = TOURS[entryPath]
+    const built = Array.isArray(definition) ? definition : await definition()
+    // A resolver settling late may have let a concurrent start fill steps first.
+    if (steps.value.length) return false
+    const resolved = resolveSteps(built, targetMounted)
+    if (!resolved.length) return false
     steps.value = resolved
     activeTour.value = entryPath
     trackTour('started')
     void showStep(0)
+    return true
+  }
+
+  /** Starts an unseen tour; false when nothing started. */
+  async function startTour(entryPath: EntryPath): Promise<boolean> {
+    if (hasSeenTour(entryPath)) return false
+    return begin(entryPath)
   }
 
   function replayTour(entryPath: EntryPath) {
-    startTour(entryPath, true)
+    void begin(entryPath)
   }
 
   return {
@@ -219,9 +242,11 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     countedStepIdx,
     countedStepsTotal,
     waitingForTarget,
+    startTour,
     replayTour,
     next,
     back,
-    skip
+    skip,
+    complete
   }
 })

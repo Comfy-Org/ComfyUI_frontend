@@ -40,7 +40,16 @@ export interface CoachStep {
   /** Renders the landing dialog instead of a spotlight. */
   landing?: boolean
   image?: string
+  /** Lets pointer input through the scrim's holes and releases the focus trap. */
+  interactive?: boolean
+  /** Extra scrim holes; re-read every frame while the step shows. */
+  maskRects?: () => DOMRect[]
+  /** Runs when the step is shown; the signal aborts on leaving the step. */
+  onEnter?: (signal: AbortSignal) => void | Promise<void>
 }
+
+/** A tour's steps: a fixed list, or a resolver that builds them at start. */
+export type TourDefinition = CoachStep[] | (() => Promise<CoachStep[]>)
 
 /**
  * Fixes the running step set (and so the step count) at tour start: drops steps
@@ -55,7 +64,7 @@ export function resolveSteps(
   )
 }
 
-export const TOURS: Record<EntryPath, CoachStep[]> = {
+export const TOURS: Record<EntryPath, TourDefinition> = {
   appMode: [
     {
       name: 'landing',
