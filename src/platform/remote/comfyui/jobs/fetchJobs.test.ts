@@ -143,19 +143,47 @@ describe('fetchJobs', () => {
       await expect(fetchHistory(mockFetch)).rejects.toThrow('Network error')
     })
 
-    it('throws a JobsApiError carrying status and body on non-ok response', async () => {
+    it('throws a JobsApiError carrying status, body, and parsed errorCode on non-ok response', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 400,
         text: () =>
-          Promise.resolve('{"error":"Invalid cursor","code":"INVALID_CURSOR"}')
+          Promise.resolve(
+            '{"code":"INVALID_CURSOR","message":"Invalid pagination cursor"}'
+          )
       })
 
       await expect(fetchHistory(mockFetch)).rejects.toBeInstanceOf(JobsApiError)
       await expect(fetchHistory(mockFetch)).rejects.toMatchObject({
         status: 400,
+        errorCode: 'INVALID_CURSOR',
         message: expect.stringContaining('INVALID_CURSOR')
       })
+    })
+
+    it('leaves errorCode undefined when the body is not the structured error shape', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 502,
+        text: () => Promise.resolve('<html>Bad Gateway</html>')
+      })
+
+      const err = await fetchHistory(mockFetch).catch((e) => e)
+      expect(err).toBeInstanceOf(JobsApiError)
+      expect(err.errorCode).toBeUndefined()
+    })
+
+    it('leaves errorCode undefined for an oversized body rather than parsing it', async () => {
+      const oversized = `{"code":"INVALID_CURSOR","pad":"${'x'.repeat(20_000)}"}`
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: () => Promise.resolve(oversized)
+      })
+
+      const err = await fetchHistory(mockFetch).catch((e) => e)
+      expect(err).toBeInstanceOf(JobsApiError)
+      expect(err.errorCode).toBeUndefined()
     })
 
     it('truncates oversized error bodies to 200 chars in the thrown message', async () => {
