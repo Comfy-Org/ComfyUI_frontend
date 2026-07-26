@@ -15,13 +15,33 @@ import {
 import UiDialog from '@/components/ui/dialog/Dialog.vue'
 import UiDialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import UiDialogPortal from '@/components/ui/dialog/DialogPortal.vue'
+import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
-    en: { g: { close: 'Close', maximizeDialog: 'Maximize' } }
+    en: {
+      g: {
+        cancel: 'Cancel',
+        close: 'Close',
+        maximizeDialog: 'Maximize'
+      },
+      workspacePanel: {
+        members: {
+          creditLimitDialog: {
+            title: 'Set a monthly credit limit for {name}',
+            description: 'Description',
+            limitOption: 'Limit monthly credit usage to:',
+            noLimit: 'No limit',
+            warning: 'Already spent {credits}',
+            invalidLimit: 'Invalid limit',
+            update: 'Update limit'
+          }
+        }
+      }
+    }
   },
   missingWarn: false,
   fallbackWarn: false
@@ -185,6 +205,29 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 
     await screen.findByRole('dialog')
     expect(screen.getByText('Visible title')).toBeInTheDocument()
+  })
+
+  it('uses the credit-limit heading as the headless dialog name', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'set-member-credit-limit',
+      component: SetMemberCreditLimitDialogContent,
+      props: {
+        memberId: 'member-1',
+        memberName: 'Jane',
+        creditsUsed: 645,
+        currentLimit: 3000
+      },
+      dialogComponentProps: { renderer: 'reka', headless: true }
+    })
+
+    expect(
+      await screen.findByRole('dialog', {
+        name: 'Set a monthly credit limit for Jane'
+      })
+    ).toBeInTheDocument()
   })
 
   it('closes the dialog on Escape by default', async () => {
