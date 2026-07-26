@@ -4,8 +4,10 @@ import { computed, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
+import type { SubscriptionCheckoutTier } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -19,12 +21,19 @@ const TIMEOUT_MS = 120_000 // 2 minutes
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
 
+export interface StartOperationMetadata {
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+}
+
 interface BillingOperation {
   opId: string
   type: OperationType
   status: OperationStatus
   errorMessage: string | null
   startedAt: number
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
 }
 
 type TerminalResolver = (operation: BillingOperation) => void
@@ -59,7 +68,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function startOperation(
     opId: string,
-    type: OperationType
+    type: OperationType,
+    metadata?: StartOperationMetadata
   ): Promise<BillingOperation> {
     const existing = operations.value.get(opId)
     if (existing) {
@@ -71,7 +81,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       type,
       status: 'pending',
       errorMessage: null,
-      startedAt: Date.now()
+      startedAt: Date.now(),
+      tier: metadata?.tier,
+      cycle: metadata?.cycle
     }
 
     operations.value = new Map(operations.value).set(opId, operation)
@@ -154,7 +166,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     if (operation.type === 'subscription') {
-      useTelemetry()?.trackMonthlySubscriptionSucceeded()
+      useTelemetry()?.trackMonthlySubscriptionSucceeded({
+        tier: operation.tier,
+        cycle: operation.cycle,
+        billing_op_id: opId
+      })
+    } else if (operation.type === 'topup') {
+      useTelemetry()?.trackApiCreditTopupSucceeded()
     }
 
     const billingContext = useBillingContext()
@@ -204,6 +222,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperationStatus(opId, 'failed', errorMessage ?? defaultMessage)
     cleanup(opId)
 
+    useTelemetry()?.trackBillingOperationFailed({
+      billing_op_id: opId,
+      operation_type: operation.type,
+      tier: operation.tier,
+      cycle: operation.cycle,
+      failure_reason: errorMessage ?? defaultMessage
+    })
+
     if (operation.type !== 'cancel') {
       useToastStore().add({
         severity: 'error',
@@ -223,6 +249,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     updateOperationStatus(opId, 'timeout', message)
     cleanup(opId)
+
+    useTelemetry()?.trackBillingOperationTimeout({
+      billing_op_id: opId,
+      operation_type: operation.type,
+      tier: operation.tier,
+      cycle: operation.cycle,
+      failure_reason: message
+    })
 
     if (operation.type !== 'cancel') {
       useToastStore().add({

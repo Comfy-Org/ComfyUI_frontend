@@ -11,10 +11,15 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
   AddCreditsClickMetadata,
+  ApiCreditTopupFailedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
+  BillingOperationOutcomeMetadata,
   DefaultViewSetMetadata,
+  DowngradeToPersonalFailedMetadata,
+  DowngradeToPersonalStartedMetadata,
+  DowngradeToPersonalSucceededMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
@@ -28,11 +33,13 @@ import type {
   PageViewMetadata,
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
+  ResubscribeOutcomeMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
   SubscriptionCancellationMetadata,
+  SubscriptionCheckoutFailedMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -48,6 +55,7 @@ import type {
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
+  WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
 } from '../../types'
 import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
@@ -403,6 +411,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED, metadata)
   }
 
+  trackResubscribeSucceeded(metadata: ResubscribeOutcomeMetadata): void {
+    this.trackEvent(TelemetryEvents.RESUBSCRIBE_SUCCEEDED, metadata)
+  }
+
+  trackResubscribeFailed(metadata: ResubscribeOutcomeMetadata): void {
+    this.trackEvent(TelemetryEvents.RESUBSCRIBE_FAILED, metadata)
+  }
+
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED, {
       credit_amount: amount
@@ -413,8 +429,50 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
   }
 
+  trackApiCreditTopupFailed(metadata?: ApiCreditTopupFailedMetadata): void {
+    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_FAILED, metadata)
+  }
+
   trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
     this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
+  }
+
+  trackWorkspaceInviteFailed(metadata: WorkspaceInviteFailedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_FAILED, metadata)
+  }
+
+  trackBillingOperationFailed(metadata: BillingOperationOutcomeMetadata): void {
+    this.trackEvent(TelemetryEvents.BILLING_OPERATION_FAILED, metadata)
+  }
+
+  trackBillingOperationTimeout(
+    metadata: BillingOperationOutcomeMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.BILLING_OPERATION_TIMEOUT, metadata)
+  }
+
+  trackDowngradeToPersonalStarted(
+    metadata: DowngradeToPersonalStartedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.DOWNGRADE_TO_PERSONAL_STARTED, metadata)
+  }
+
+  trackDowngradeToPersonalSucceeded(
+    metadata: DowngradeToPersonalSucceededMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.DOWNGRADE_TO_PERSONAL_SUCCEEDED, metadata)
+  }
+
+  trackDowngradeToPersonalFailed(
+    metadata: DowngradeToPersonalFailedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.DOWNGRADE_TO_PERSONAL_FAILED, metadata)
+  }
+
+  trackSubscriptionCheckoutFailed(
+    metadata: SubscriptionCheckoutFailedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.SUBSCRIPTION_CHECKOUT_FAILED, metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {

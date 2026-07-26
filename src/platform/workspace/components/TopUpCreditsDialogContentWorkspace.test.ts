@@ -63,7 +63,8 @@ vi.mock('@/stores/dialogStore', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase
+    trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
+    trackApiCreditTopupSucceeded: vi.fn()
   })
 }))
 

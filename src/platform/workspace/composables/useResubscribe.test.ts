@@ -7,7 +7,9 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: true,
   resubscribe: vi.fn(),
   toastAdd: vi.fn(),
-  trackResubscribeClicked: vi.fn()
+  trackResubscribeClicked: vi.fn(),
+  trackResubscribeSucceeded: vi.fn(),
+  trackResubscribeFailed: vi.fn()
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -38,7 +40,9 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackResubscribeClicked: state.trackResubscribeClicked
+    trackResubscribeClicked: state.trackResubscribeClicked,
+    trackResubscribeSucceeded: state.trackResubscribeSucceeded,
+    trackResubscribeFailed: state.trackResubscribeFailed
   })
 }))
 

@@ -34,6 +34,9 @@ export function useResubscribe() {
     isResubscribing.value = true
     try {
       await resubscribe()
+      useTelemetry()?.trackResubscribeSucceeded({
+        source: 'settings_billing_panel'
+      })
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),
@@ -44,6 +47,10 @@ export function useResubscribe() {
         error instanceof Error && error.message.trim()
           ? error.message
           : t('subscription.resubscribeFailed')
+      useTelemetry()?.trackResubscribeFailed({
+        source: 'settings_billing_panel',
+        error_message: detail
+      })
       toast.add({
         severity: 'error',
         summary: t('g.error'),

@@ -54,10 +54,16 @@ vi.mock('@/stores/dialogStore', () => ({
 }))
 
 const mockTrackMonthlySubscriptionSucceeded = vi.fn()
+const mockTrackApiCreditTopupSucceeded = vi.fn()
+const mockTrackBillingOperationFailed = vi.fn()
+const mockTrackBillingOperationTimeout = vi.fn()
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
+    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded,
+    trackApiCreditTopupSucceeded: mockTrackApiCreditTopupSucceeded,
+    trackBillingOperationFailed: mockTrackBillingOperationFailed,
+    trackBillingOperationTimeout: mockTrackBillingOperationTimeout
   })
 }))
 

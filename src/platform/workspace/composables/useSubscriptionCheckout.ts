@@ -137,7 +137,15 @@ export function useSubscriptionCheckout(
       billingOpId: result.response.billing_op_id,
       paymentIntentSource
     })
-    await handleSubscribeResponse(result.response, result.preview.is_immediate)
+    await handleSubscribeResponse(
+      result.response,
+      {
+        tier: tierKey,
+        cycle: selectedBillingCycle.value,
+        checkoutType: 'change'
+      },
+      result.preview.is_immediate
+    )
     return true
   }
 
@@ -301,7 +309,11 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response)
+      await handleSubscribeResponse(response, {
+        tier: tierKey,
+        cycle: billingCycle,
+        checkoutType
+      })
     } catch (error) {
       showSubscribeError(error)
     } finally {
@@ -320,15 +332,27 @@ export function useSubscriptionCheckout(
     })
   }
 
+  interface SubscriptionOutcomeContext {
+    tier: CheckoutTierKey | 'team'
+    cycle: BillingCycle
+    checkoutType: SubscriptionCheckoutType
+  }
+
   async function handleSubscribeResponse(
     response: SubscribeResponse | void,
+    context: SubscriptionOutcomeContext,
     shouldTrackSubscriptionSuccess = true
   ): Promise<void> {
     if (!response) return
 
     if (response.status === 'subscribed') {
       if (shouldTrackSubscriptionSuccess) {
-        telemetry?.trackMonthlySubscriptionSucceeded()
+        telemetry?.trackMonthlySubscriptionSucceeded({
+          tier: context.tier,
+          cycle: context.cycle,
+          checkout_type: context.checkoutType,
+          billing_op_id: response.billing_op_id
+        })
       }
       checkoutStep.value = 'success'
       return
@@ -353,16 +377,20 @@ export function useSubscriptionCheckout(
         })
       }
     }
-    await advanceToSuccessOnOperation(response.billing_op_id)
+    await advanceToSuccessOnOperation(response.billing_op_id, context)
   }
 
   // A Stripe-backed subscribe finishes asynchronously: await the billing op and
   // advance to the success step ourselves. The store refreshes status/balance
   // before resolving and surfaces any failure via toast.
-  async function advanceToSuccessOnOperation(opId: string) {
+  async function advanceToSuccessOnOperation(
+    opId: string,
+    context: SubscriptionOutcomeContext
+  ) {
     const operation = await billingOperationStore.startOperation(
       opId,
-      'subscription'
+      'subscription',
+      { tier: context.tier, cycle: context.cycle }
     )
     if (operation.status === 'succeeded') checkoutStep.value = 'success'
   }
@@ -402,7 +430,11 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response)
+      await handleSubscribeResponse(response, {
+        tier: 'team',
+        cycle: billingCycle,
+        checkoutType
+      })
     } catch (error) {
       showSubscribeError(error)
     } finally {
@@ -420,6 +452,7 @@ export function useSubscriptionCheckout(
     isResubscribing.value = true
     try {
       await resubscribe()
+      telemetry?.trackResubscribeSucceeded({ source: 'pricing_dialog' })
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),
@@ -429,6 +462,10 @@ export function useSubscriptionCheckout(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to resubscribe'
+      telemetry?.trackResubscribeFailed({
+        source: 'pricing_dialog',
+        error_message: message
+      })
       toast.add({
         severity: 'error',
         summary: 'Error',

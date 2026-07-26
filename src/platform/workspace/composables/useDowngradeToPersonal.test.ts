@@ -328,7 +328,9 @@ describe('useDowngradeToPersonal', () => {
         'https://pay.test/method',
         '_blank'
       )
-      expect(mockStartOperation).toHaveBeenCalledWith('op-2', 'subscription')
+      expect(mockStartOperation).toHaveBeenCalledWith('op-2', 'subscription', {
+        tier: undefined
+      })
     })
 
     it('falls back to the generic message when the transition is disallowed without a reason', async () => {
@@ -382,7 +384,9 @@ describe('useDowngradeToPersonal', () => {
       await downgradeToPersonal('founder-monthly')
 
       expect(windowOpen).not.toHaveBeenCalled()
-      expect(mockStartOperation).toHaveBeenCalledWith('op-4', 'subscription')
+      expect(mockStartOperation).toHaveBeenCalledWith('op-4', 'subscription', {
+        tier: undefined
+      })
     })
 
     it('reports the generic failure when subscribe fails and no members were removed', async () => {

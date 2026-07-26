@@ -5,6 +5,9 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useTelemetry } from '@/platform/telemetry'
 import type {
   PreviewSubscribeResponse,
   SubscribeResponse
@@ -31,6 +34,7 @@ export function useDowngradeToPersonal() {
   const billingOperationStore = useBillingOperationStore()
   const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
+  const telemetry = useTelemetry()
 
   const removableMembers = computed(() => {
     const hasFlag = members.value.some((m) => m.isOriginalOwner)
@@ -61,64 +65,99 @@ export function useDowngradeToPersonal() {
     planSlug: string
   ): Promise<DowngradeToPersonalResult | null> {
     ensureCanDowngrade()
-    const preview = await previewSubscribe(planSlug)
-    if (!preview?.allowed) {
-      throw new Error(preview?.reason || t('subscription.downgrade.notAllowed'))
-    }
-    ensureCanDowngrade()
 
     const membersToRemove = removableMembers.value
-    for (const member of membersToRemove) {
-      ensureCanDowngrade()
-      try {
-        await workspaceStore.removeMember(member.id)
-      } catch (error) {
+    let memberRemovalFailures = 0
+    let targetTier: TierKey | undefined
+
+    telemetry?.trackDowngradeToPersonalStarted({
+      member_removal_count: membersToRemove.length
+    })
+
+    const trackSucceeded = () =>
+      telemetry?.trackDowngradeToPersonalSucceeded({
+        member_removal_count: membersToRemove.length,
+        member_removal_failures: memberRemovalFailures,
+        target_tier: targetTier
+      })
+
+    try {
+      const preview = await previewSubscribe(planSlug)
+      if (!preview?.allowed) {
         throw new Error(
-          t('subscription.downgrade.memberRemovalFailed', {
-            email: member.email
-          }),
-          { cause: error }
+          preview?.reason || t('subscription.downgrade.notAllowed')
         )
       }
-    }
+      ensureCanDowngrade()
+      targetTier = preview.new_plan?.tier
+        ? TIER_TO_KEY[preview.new_plan.tier]
+        : undefined
 
-    ensureCanDowngrade()
-    const response = await subscribe(planSlug, {
-      returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
-      cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
-    })
-    if (!response) {
-      throw new Error(
-        membersToRemove.length > 0
-          ? t('subscription.downgrade.failedAfterMemberRemoval')
-          : t('subscription.downgrade.failed')
-      )
-    }
-
-    if (response.status === 'needs_payment_method') {
-      if (!response.payment_method_url) {
-        throw new Error(t('subscription.downgrade.paymentMethodRequired'))
+      for (const member of membersToRemove) {
+        ensureCanDowngrade()
+        try {
+          await workspaceStore.removeMember(member.id)
+        } catch (error) {
+          memberRemovalFailures += 1
+          throw new Error(
+            t('subscription.downgrade.memberRemovalFailed', {
+              email: member.email
+            }),
+            { cause: error }
+          )
+        }
       }
-      const paymentTab = window.open(response.payment_method_url, '_blank')
-      if (!paymentTab) {
-        throw new Error(t('subscription.downgrade.paymentPageBlocked'))
+
+      ensureCanDowngrade()
+      const response = await subscribe(planSlug, {
+        returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
+      })
+      if (!response) {
+        throw new Error(
+          membersToRemove.length > 0
+            ? t('subscription.downgrade.failedAfterMemberRemoval')
+            : t('subscription.downgrade.failed')
+        )
       }
-      void billingOperationStore.startOperation(
-        response.billing_op_id,
-        'subscription'
-      )
-      return null
-    }
 
-    if (response.status === 'pending_payment') {
-      void billingOperationStore.startOperation(
-        response.billing_op_id,
-        'subscription'
-      )
-      return null
-    }
+      if (response.status === 'needs_payment_method') {
+        if (!response.payment_method_url) {
+          throw new Error(t('subscription.downgrade.paymentMethodRequired'))
+        }
+        const paymentTab = window.open(response.payment_method_url, '_blank')
+        if (!paymentTab) {
+          throw new Error(t('subscription.downgrade.paymentPageBlocked'))
+        }
+        void billingOperationStore.startOperation(
+          response.billing_op_id,
+          'subscription',
+          { tier: targetTier }
+        )
+        trackSucceeded()
+        return null
+      }
 
-    return { preview, response }
+      if (response.status === 'pending_payment') {
+        void billingOperationStore.startOperation(
+          response.billing_op_id,
+          'subscription',
+          { tier: targetTier }
+        )
+        trackSucceeded()
+        return null
+      }
+
+      trackSucceeded()
+      return { preview, response }
+    } catch (error) {
+      telemetry?.trackDowngradeToPersonalFailed({
+        member_removal_count: membersToRemove.length,
+        member_removal_failures: memberRemovalFailures,
+        failure_reason: error instanceof Error ? error.message : 'unknown error'
+      })
+      throw error
+    }
   }
 
   return {

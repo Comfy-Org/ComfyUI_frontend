@@ -533,20 +533,88 @@ interface EcommerceMetadata {
 
 export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   user_id?: string
-  checkout_attempt_id: string
-  tier: TierKey
-  cycle: BillingCycle
-  checkout_type: SubscriptionCheckoutType
+  checkout_attempt_id?: string
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+  checkout_type?: SubscriptionCheckoutType
   previous_tier?: TierKey
   payment_intent_source?: PaymentIntentSource
-  value: number
-  currency: string
-  ecommerce: EcommerceMetadata
+  /** Present when the success is reported off the workspace billing-op poller. */
+  billing_op_id?: string
+  value?: number
+  currency?: string
+  ecommerce?: EcommerceMetadata
 }
 
 export interface WorkspaceInviteMetadata extends Record<string, unknown> {
   source: 'post_upgrade_success' | 'settings_members'
   count: number
+}
+
+export interface WorkspaceInviteFailedMetadata extends Record<string, unknown> {
+  source: WorkspaceInviteMetadata['source']
+  attempted_count: number
+  failed_count: number
+}
+
+/**
+ * Shared shape for the billing-operation poller's terminal-failure events.
+ * Used for both a definite failure and a client-side poll timeout.
+ */
+export interface BillingOperationOutcomeMetadata extends Record<
+  string,
+  unknown
+> {
+  billing_op_id: string
+  operation_type: 'subscription' | 'topup' | 'cancel'
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+  failure_reason?: string
+}
+
+export interface ResubscribeOutcomeMetadata extends Record<string, unknown> {
+  source: ResubscribeClickMetadata['source']
+  /** Present only on the failed event. */
+  error_message?: string
+}
+
+export interface ApiCreditTopupFailedMetadata extends Record<string, unknown> {
+  error_message?: string
+}
+
+export interface DowngradeToPersonalStartedMetadata extends Record<
+  string,
+  unknown
+> {
+  member_removal_count: number
+}
+
+export interface DowngradeToPersonalSucceededMetadata extends Record<
+  string,
+  unknown
+> {
+  member_removal_count: number
+  member_removal_failures: number
+  target_tier?: TierKey
+}
+
+export interface DowngradeToPersonalFailedMetadata extends Record<
+  string,
+  unknown
+> {
+  member_removal_count: number
+  member_removal_failures: number
+  failure_reason: string
+}
+
+export interface SubscriptionCheckoutFailedMetadata extends Record<
+  string,
+  unknown
+> {
+  tier: TierKey
+  cycle: BillingCycle
+  checkout_type: SubscriptionCheckoutType
+  error_message?: string
 }
 
 /**
@@ -575,11 +643,35 @@ export interface TelemetryProvider {
     metadata?: SubscriptionCancellationMetadata
   ): void
   trackResubscribeClicked?(metadata: ResubscribeClickMetadata): void
+  trackResubscribeSucceeded?(metadata: ResubscribeOutcomeMetadata): void
+  trackResubscribeFailed?(metadata: ResubscribeOutcomeMetadata): void
   trackAddApiCreditButtonClicked?(metadata?: AddCreditsClickMetadata): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
+  trackApiCreditTopupFailed?(metadata?: ApiCreditTopupFailedMetadata): void
   trackWorkspaceInviteSent?(metadata: WorkspaceInviteMetadata): void
+  trackWorkspaceInviteFailed?(metadata: WorkspaceInviteFailedMetadata): void
   trackRunButton?(properties: RunButtonProperties): void
+
+  // Workspace billing-operation poller events (subscribe, plan change, topup, cancel)
+  trackBillingOperationFailed?(metadata: BillingOperationOutcomeMetadata): void
+  trackBillingOperationTimeout?(metadata: BillingOperationOutcomeMetadata): void
+
+  // Team-to-personal downgrade lifecycle events
+  trackDowngradeToPersonalStarted?(
+    metadata: DowngradeToPersonalStartedMetadata
+  ): void
+  trackDowngradeToPersonalSucceeded?(
+    metadata: DowngradeToPersonalSucceededMetadata
+  ): void
+  trackDowngradeToPersonalFailed?(
+    metadata: DowngradeToPersonalFailedMetadata
+  ): void
+
+  // Legacy-rail subscribe checkout failure (before a checkout_url is obtained)
+  trackSubscriptionCheckoutFailed?(
+    metadata: SubscriptionCheckoutFailedMetadata
+  ): void
 
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking?(): void
@@ -685,11 +777,21 @@ export const TelemetryEvents = {
   SUBSCRIPTION_CANCEL_ABANDONED: 'app:subscription_cancel_abandoned',
   SUBSCRIPTION_CANCEL_FAILED: 'app:subscription_cancel_failed',
   RESUBSCRIBE_BUTTON_CLICKED: 'app:resubscribe_button_clicked',
+  RESUBSCRIBE_SUCCEEDED: 'app:resubscribe_succeeded',
+  RESUBSCRIBE_FAILED: 'app:resubscribe_failed',
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
   API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
+  API_CREDIT_TOPUP_FAILED: 'app:api_credit_topup_failed',
   WORKSPACE_INVITE_SENT: 'app:workspace_invite_sent',
+  WORKSPACE_INVITE_FAILED: 'app:workspace_invite_failed',
+  BILLING_OPERATION_FAILED: 'app:billing_operation_failed',
+  BILLING_OPERATION_TIMEOUT: 'app:billing_operation_timeout',
+  DOWNGRADE_TO_PERSONAL_STARTED: 'app:downgrade_to_personal_started',
+  DOWNGRADE_TO_PERSONAL_SUCCEEDED: 'app:downgrade_to_personal_succeeded',
+  DOWNGRADE_TO_PERSONAL_FAILED: 'app:downgrade_to_personal_failed',
+  SUBSCRIPTION_CHECKOUT_FAILED: 'app:subscription_checkout_failed',
   BEGIN_CHECKOUT: 'begin_checkout',
 
   // Onboarding Survey
@@ -810,3 +912,11 @@ export type TelemetryEventProperties =
   | DefaultViewSetMetadata
   | SubscriptionMetadata
   | SubscriptionSuccessMetadata
+  | WorkspaceInviteFailedMetadata
+  | BillingOperationOutcomeMetadata
+  | ResubscribeOutcomeMetadata
+  | ApiCreditTopupFailedMetadata
+  | DowngradeToPersonalStartedMetadata
+  | DowngradeToPersonalSucceededMetadata
+  | DowngradeToPersonalFailedMetadata
+  | SubscriptionCheckoutFailedMetadata

@@ -528,9 +528,22 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           }
         }
       } else {
-        await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
-          paymentIntentSource: reason
-        })
+        try {
+          await performSubscriptionCheckout(
+            tierKey,
+            currentBillingCycle.value,
+            { paymentIntentSource: reason }
+          )
+        } catch (error) {
+          telemetry?.trackSubscriptionCheckoutFailed({
+            tier: tierKey,
+            cycle: currentBillingCycle.value,
+            checkout_type: 'new',
+            error_message:
+              error instanceof Error ? error.message : 'unknown error'
+          })
+          throw error
+        }
       }
     } finally {
       isLoading.value = false

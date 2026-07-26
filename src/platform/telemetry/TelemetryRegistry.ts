@@ -2,10 +2,15 @@ import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
   AddCreditsClickMetadata,
+  ApiCreditTopupFailedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
+  BillingOperationOutcomeMetadata,
   DefaultViewSetMetadata,
+  DowngradeToPersonalFailedMetadata,
+  DowngradeToPersonalStartedMetadata,
+  DowngradeToPersonalSucceededMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
   ExecutionOutcomeMetadata,
@@ -20,6 +25,7 @@ import type {
   PageViewMetadata,
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
+  ResubscribeOutcomeMetadata,
   RunButtonProperties,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
@@ -27,6 +33,7 @@ import type {
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
   SubscriptionCancellationMetadata,
+  SubscriptionCheckoutFailedMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -41,6 +48,7 @@ import type {
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
+  WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
 } from './types'
 
@@ -121,6 +129,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackResubscribeClicked?.(metadata))
   }
 
+  trackResubscribeSucceeded(metadata: ResubscribeOutcomeMetadata): void {
+    this.dispatch((provider) => provider.trackResubscribeSucceeded?.(metadata))
+  }
+
+  trackResubscribeFailed(metadata: ResubscribeOutcomeMetadata): void {
+    this.dispatch((provider) => provider.trackResubscribeFailed?.(metadata))
+  }
+
   trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {
     this.dispatch((provider) =>
       provider.trackAddApiCreditButtonClicked?.(metadata)
@@ -137,8 +153,62 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackApiCreditTopupSucceeded?.())
   }
 
+  trackApiCreditTopupFailed(metadata?: ApiCreditTopupFailedMetadata): void {
+    this.dispatch((provider) => provider.trackApiCreditTopupFailed?.(metadata))
+  }
+
   trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
     this.dispatch((provider) => provider.trackWorkspaceInviteSent?.(metadata))
+  }
+
+  trackWorkspaceInviteFailed(metadata: WorkspaceInviteFailedMetadata): void {
+    this.dispatch((provider) => provider.trackWorkspaceInviteFailed?.(metadata))
+  }
+
+  trackBillingOperationFailed(metadata: BillingOperationOutcomeMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackBillingOperationFailed?.(metadata)
+    )
+  }
+
+  trackBillingOperationTimeout(
+    metadata: BillingOperationOutcomeMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackBillingOperationTimeout?.(metadata)
+    )
+  }
+
+  trackDowngradeToPersonalStarted(
+    metadata: DowngradeToPersonalStartedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackDowngradeToPersonalStarted?.(metadata)
+    )
+  }
+
+  trackDowngradeToPersonalSucceeded(
+    metadata: DowngradeToPersonalSucceededMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackDowngradeToPersonalSucceeded?.(metadata)
+    )
+  }
+
+  trackDowngradeToPersonalFailed(
+    metadata: DowngradeToPersonalFailedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackDowngradeToPersonalFailed?.(metadata)
+    )
+  }
+
+  trackSubscriptionCheckoutFailed(
+    metadata: SubscriptionCheckoutFailedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackSubscriptionCheckoutFailed?.(metadata)
+    )
   }
 
   trackRunButton(properties: RunButtonProperties): void {

@@ -255,7 +255,7 @@ async function handleBuy() {
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
-    await authActions.purchaseCredits(payAmount.value)
+    await authActions.purchaseCreditsDirect(payAmount.value)
 
     // Close top-up dialog (keep tracking) and open credits panel to show updated balance
     handleClose(false)
@@ -273,6 +273,7 @@ async function handleBuy() {
 
     const errorMessage =
       error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    telemetry?.trackApiCreditTopupFailed({ error_message: errorMessage })
     toast.add({
       severity: 'error',
       summary: t('credits.topUp.purchaseError'),

@@ -158,11 +158,15 @@ vi.mock('primevue/usetoast', () => ({
 }))
 
 const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
+const mockTrackResubscribeSucceeded = vi.hoisted(() => vi.fn())
+const mockTrackResubscribeFailed = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded,
     trackResubscribeClicked: mockTrackResubscribeClicked,
+    trackResubscribeSucceeded: mockTrackResubscribeSucceeded,
+    trackResubscribeFailed: mockTrackResubscribeFailed,
     trackBeginCheckout: mockTrackBeginCheckout
   })
 }))
@@ -1004,7 +1008,8 @@ describe('useSubscriptionCheckout', () => {
       expect(openSpy).not.toHaveBeenCalled()
       expect(mockStartOperation).toHaveBeenCalledWith(
         'op-no-url',
-        'subscription'
+        'subscription',
+        { tier: 'standard', cycle: 'yearly' }
       )
       expect(checkout.checkoutStep.value).toBe('success')
       openSpy.mockRestore()
@@ -1026,7 +1031,8 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockStartOperation).toHaveBeenCalledWith(
         'op-async-1',
-        'subscription'
+        'subscription',
+        { tier: 'standard', cycle: 'yearly' }
       )
       expect(checkout.checkoutStep.value).toBe('success')
       openSpy.mockRestore()
@@ -1047,7 +1053,8 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockStartOperation).toHaveBeenCalledWith(
         'op-async-2',
-        'subscription'
+        'subscription',
+        { tier: 'standard', cycle: 'yearly' }
       )
       expect(checkout.checkoutStep.value).toBe('preview')
     })
