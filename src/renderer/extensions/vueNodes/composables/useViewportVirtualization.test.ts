@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import type * as VueUse from '@vueuse/core'
 import { setActivePinia } from 'pinia'
-import { effectScope, nextTick, ref } from 'vue'
+import { computed, effectScope, nextTick, ref } from 'vue'
 import type { ShallowRef } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -274,6 +274,84 @@ describe('viewport virtualization behavior', () => {
     await nextTick()
 
     expect(virtualization.renderedNodes.value).toEqual([nodeData])
+    scope.stop()
+  })
+
+  it('retries a settled refresh when the node manager becomes available', () => {
+    vi.useFakeTimers()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const { runAnimationFrame } = stubAnimationFrames()
+    const nodeData = createNodeData(1)
+    const node = createNode(1, 0, 0)
+    const canvas = {
+      ds: {
+        scale: 1,
+        offset: [0, 0],
+        visible_area: [0, 0, 200, 200],
+        computeVisibleArea: vi.fn()
+      },
+      graph: {},
+      linkConnector: { renderLinks: [] },
+      viewport: [0, 0, 200, 200]
+    } as unknown as LGraphCanvas
+    const nodeManager = ref<GraphNodeManager | null>(null)
+    const scope = effectScope()
+    const virtualization = scope.run(() =>
+      useViewportVirtualization({
+        allNodes: [nodeData],
+        canvas,
+        enabled: true,
+        nodeManager
+      })
+    )
+    if (!virtualization)
+      throw new Error('Failed to create virtualization scope')
+
+    virtualization.onNodeMounted(nodeData.id)
+    runAnimationFrame()
+    runAnimationFrame()
+    expect(virtualization.renderedNodes.value).toEqual([])
+
+    nodeManager.value = {
+      getNode: vi.fn(() => node)
+    } as unknown as GraphNodeManager
+    vi.advanceTimersByTime(150)
+
+    expect(virtualization.renderedNodes.value).toEqual([nodeData])
+    scope.stop()
+  })
+
+  it('does not reconcile node ids when only node data changes', async () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const { animationFrames, runAnimationFrame } = stubAnimationFrames()
+    const title = ref('Initial')
+    const allNodes = computed(() => [
+      {
+        ...createNodeData(1),
+        title: title.value
+      }
+    ])
+    const scope = effectScope()
+    const virtualization = scope.run(() =>
+      useViewportVirtualization({
+        allNodes,
+        canvas: null,
+        enabled: true,
+        nodeManager: null
+      })
+    )
+    if (!virtualization)
+      throw new Error('Failed to create virtualization scope')
+
+    virtualization.onNodeMounted(toNodeId(1))
+    runAnimationFrame()
+    runAnimationFrame()
+    expect(animationFrames.size).toBe(0)
+
+    title.value = 'Updated'
+    await nextTick()
+
+    expect(animationFrames.size).toBe(0)
     scope.stop()
   })
 

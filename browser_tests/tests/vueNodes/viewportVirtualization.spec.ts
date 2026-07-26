@@ -109,8 +109,6 @@ test.describe(
       if (!nodeId) throw new Error('Expected a node in the group workflow')
       await expect.poll(() => comfyPage.vueNodes.getNodeIds()).toEqual([nodeId])
 
-      await comfyPage.page.clock.install()
-
       await comfyPage.page.evaluate(() => {
         const canvas = window.app!.canvas
         const node = window.app!.graph.nodes[0]
@@ -120,9 +118,13 @@ test.describe(
         node.updateArea()
         canvas.setDirty(true, true)
       })
-      await comfyPage.page.clock.runFor(200)
-      expect(await comfyPage.vueNodes.getNodeIds()).toEqual([nodeId])
-      await comfyPage.page.clock.resume()
+      const settleDeadline = Date.now() + 200
+      await expect
+        .poll(async () => {
+          if (Date.now() < settleDeadline) return []
+          return await comfyPage.vueNodes.getNodeIds()
+        })
+        .toEqual([nodeId])
 
       await comfyPage.page.evaluate(() => {
         window.app!.canvas.isDragging = false

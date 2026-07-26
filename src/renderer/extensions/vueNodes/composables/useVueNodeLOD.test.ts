@@ -1,6 +1,29 @@
-import { describe, expect, it } from 'vitest'
+import type * as VueUse from '@vueuse/core'
+import { effectScope } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
-import { shouldUseVueNodeLowDetail } from './useVueNodeLOD'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+
+import { shouldUseVueNodeLowDetail, useVueNodeLOD } from './useVueNodeLOD'
+
+const rafWatcher = vi.hoisted(() => ({
+  callback: undefined as Parameters<typeof VueUse.useRafFn>[0] | undefined
+}))
+
+vi.mock('@vueuse/core', async (importOriginal) => {
+  const vueUse = await importOriginal<typeof VueUse>()
+  return {
+    ...vueUse,
+    useRafFn: vi.fn((callback: Parameters<typeof VueUse.useRafFn>[0]) => {
+      rafWatcher.callback = callback
+      return {
+        isActive: true,
+        pause: vi.fn(),
+        resume: vi.fn()
+      }
+    })
+  }
+})
 
 describe('shouldUseVueNodeLowDetail', () => {
   it('uses low detail strictly below the percentage threshold', () => {
@@ -24,5 +47,30 @@ describe('shouldUseVueNodeLowDetail', () => {
     expect(shouldUseVueNodeLowDetail(0.1, true, 0, true)).toBe(false)
     expect(shouldUseVueNodeLowDetail(0.99, true, 200, true)).toBe(true)
     expect(shouldUseVueNodeLowDetail(1, true, 200, true)).toBe(false)
+  })
+
+  it('does not reevaluate an unchanged NaN scale on every frame', () => {
+    const canvas = {
+      ds: { scale: Number.NaN }
+    } as unknown as LGraphCanvas
+    const fullDetailZoom = vi.fn(() => 95)
+    const scope = effectScope()
+    scope.run(() =>
+      useVueNodeLOD({
+        canvas,
+        enabled: true,
+        fullDetailZoom,
+        vueNodesEnabled: true
+      })
+    )
+    const callback = rafWatcher.callback
+    if (!callback) throw new Error('RAF watcher callback was not captured')
+
+    callback({ delta: 0, timestamp: 0 })
+    const evaluationCount = fullDetailZoom.mock.calls.length
+    callback({ delta: 0, timestamp: 16 })
+
+    expect(fullDetailZoom).toHaveBeenCalledTimes(evaluationCount)
+    scope.stop()
   })
 })

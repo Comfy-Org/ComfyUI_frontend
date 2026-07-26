@@ -1221,7 +1221,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Hide expensive node details below the full-detail zoom threshold while preserving node shells, titles, sockets, links, and layout.',
     defaultValue: true,
-    sortOrder: 80,
+    sortOrder: 75,
     experimental: true,
     versionAdded: '1.49.0'
   },

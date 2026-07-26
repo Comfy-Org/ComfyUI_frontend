@@ -167,7 +167,10 @@ export function useViewportVirtualization({
     }
     const activeCanvas = toValue(canvas)
     const manager = toValue(nodeManager)
-    if (!activeCanvas || !manager) return
+    if (!activeCanvas || !manager) {
+      scheduleSettledRefresh()
+      return
+    }
     const mountSetFrozen =
       layoutStore.isDraggingVueNodes.value ||
       layoutStore.isResizingVueNodes.value ||
@@ -281,8 +284,9 @@ export function useViewportVirtualization({
   )
 
   watch(
-    () => toValue(allNodes).map((node) => node.id),
-    (nodeIds) => {
+    () => JSON.stringify(toValue(allNodes).map((node) => node.id)),
+    () => {
+      const nodeIds = toValue(allNodes).map((node) => node.id)
       const currentNodeIds = new Set(nodeIds)
       const nextHydratedNodeIds = new Set(
         Array.from(hydratedNodeIds.value).filter((nodeId) =>
@@ -295,9 +299,12 @@ export function useViewportVirtualization({
       for (const nodeId of pendingHydrationNodeIds) {
         if (!currentNodeIds.has(nodeId)) pendingHydrationNodeIds.delete(nodeId)
       }
-      viewportNodeIds.value = new Set(
+      const nextViewportNodeIds = new Set(
         Array.from(viewportNodeIds.value).filter((id) => currentNodeIds.has(id))
       )
+      if (!areNodeIdSetsEqual(viewportNodeIds.value, nextViewportNodeIds)) {
+        viewportNodeIds.value = nextViewportNodeIds
+      }
       if (
         nodeIds.every(
           (nodeId) =>

@@ -65,7 +65,7 @@ export function useVueNodeLOD({
 
   useRafFn(() => {
     const scale = toValue(canvas)?.ds.scale
-    if (scale == null || scale === lastScale) return
+    if (scale == null || Object.is(scale, lastScale)) return
     lastScale = scale
     update(scale)
   })
