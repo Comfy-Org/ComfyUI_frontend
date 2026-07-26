@@ -18,29 +18,16 @@ test.describe(
       await comfyPage.canvasOps.resetView()
     })
 
-    test('hydrates all nodes, then swaps only after the viewport settles', async ({
+    test('hydrates all nodes, then swaps to the settled viewport', async ({
       comfyPage
     }) => {
-      const graphNodeIds = await comfyPage.page.evaluate(() => {
-        const nodes = window.app!.graph.nodes
-        nodes.forEach((node, index) => {
-          const x = index < 2 ? 100 + index * 500 : 1800 + (index - 2) * 1800
-          node.setPos(x, 100)
-          node.updateArea()
-        })
-        const canvas = window.app!.canvas
-        canvas.ds.offset[0] = 0
-        canvas.ds.offset[1] = 0
-        canvas.ds.scale = 1
-        canvas.setDirty(true, true)
-        return nodes.map((node) => String(node.id))
-      })
-      await comfyPage.nextFrame()
-
-      await comfyPage.settings.setSetting(
-        'Comfy.VueNodes.ViewportVirtualization',
-        true
-      )
+      const graphNodeIds =
+        await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
+          (_nodeId, index) => [
+            index < 2 ? 100 + index * 500 : 1800 + (index - 2) * 1800,
+            100
+          ]
+        )
 
       const firstViewportIds = graphNodeIds.slice(0, 2)
       await expect
@@ -54,7 +41,6 @@ test.describe(
       })
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.vueNodes.getNodeIds()).toEqual(firstViewportIds)
       await expect
         .poll(() => comfyPage.vueNodes.getNodeIds())
         .toEqual([graphNodeIds[2]])
@@ -66,25 +52,13 @@ test.describe(
     test('keeps a multi-node drag mount set frozen during edge auto-pan', async ({
       comfyPage
     }) => {
-      const graphNodeIds = await comfyPage.page.evaluate(() => {
-        const nodes = window.app!.graph.nodes
-        nodes.forEach((node, index) => {
-          const x = index < 2 ? 100 + index * 500 : 1800 + (index - 2) * 1800
-          node.setPos(x, 100)
-          node.updateArea()
-        })
-        const canvas = window.app!.canvas
-        canvas.ds.offset[0] = 0
-        canvas.ds.offset[1] = 0
-        canvas.ds.scale = 1
-        canvas.setDirty(true, true)
-        return nodes.map((node) => String(node.id))
-      })
-      await comfyPage.nextFrame()
-      await comfyPage.settings.setSetting(
-        'Comfy.VueNodes.ViewportVirtualization',
-        true
-      )
+      const graphNodeIds =
+        await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
+          (_nodeId, index) => [
+            index < 2 ? 100 + index * 500 : 1800 + (index - 2) * 1800,
+            100
+          ]
+        )
 
       const initialIds = graphNodeIds.slice(0, 2)
       await expect
@@ -123,26 +97,16 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('groups/oversized_group')
-      const nodeId = await comfyPage.page.evaluate(() => {
-        const node = window.app!.graph.nodes[0]
+      await comfyPage.page.evaluate(() => {
         const group = window.app!.graph.groups[0]
-        node.setPos(100, 100)
-        node.updateArea()
         group.pos = [50, 50]
         group.size = [900, 825]
-        group.recomputeInsideNodes()
-        const canvas = window.app!.canvas
-        canvas.ds.offset[0] = 0
-        canvas.ds.offset[1] = 0
-        canvas.ds.scale = 1
-        canvas.setDirty(true, true)
-        return String(node.id)
       })
-      await comfyPage.nextFrame()
-      await comfyPage.settings.setSetting(
-        'Comfy.VueNodes.ViewportVirtualization',
-        true
-      )
+      const [nodeId] =
+        await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(() => [
+          100, 100
+        ])
+      if (!nodeId) throw new Error('Expected a node in the group workflow')
       await expect.poll(() => comfyPage.vueNodes.getNodeIds()).toEqual([nodeId])
 
       await comfyPage.page.evaluate(() => {
@@ -153,8 +117,9 @@ test.describe(
         node.updateArea()
         canvas.setDirty(true, true)
       })
-      await comfyPage.page.waitForTimeout(400)
-      expect(await comfyPage.vueNodes.getNodeIds()).toEqual([nodeId])
+      await expect
+        .poll(() => comfyPage.vueNodes.getNodeIds(), { timeout: 1_000 })
+        .toEqual([nodeId])
 
       await comfyPage.page.evaluate(() => {
         window.app!.canvas.isDragging = false
@@ -166,26 +131,14 @@ test.describe(
     test('hydrates a node pasted into a distant settled viewport', async ({
       comfyPage
     }) => {
-      const sourceId = await comfyPage.page.evaluate(() => {
-        const [source, ...otherNodes] = window.app!.graph.nodes
-        source.setPos(100, 100)
-        source.updateArea()
-        otherNodes.forEach((node, index) => {
-          node.setPos(4000 + index * 1800, 100)
-          node.updateArea()
-        })
-        const canvas = window.app!.canvas
-        canvas.ds.offset[0] = 0
-        canvas.ds.offset[1] = 0
-        canvas.ds.scale = 1
-        canvas.setDirty(true, true)
-        return String(source.id)
-      })
-      await comfyPage.nextFrame()
-      await comfyPage.settings.setSetting(
-        'Comfy.VueNodes.ViewportVirtualization',
-        true
-      )
+      const [sourceId] =
+        await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
+          (_nodeId, index) => [
+            index === 0 ? 100 : 4000 + (index - 1) * 1800,
+            100
+          ]
+        )
+      if (!sourceId) throw new Error('Expected a source node')
 
       await expect
         .poll(() => comfyPage.vueNodes.getNodeIds())
@@ -234,29 +187,16 @@ test.describe(
         const target = graph.nodes.find(
           (node) => node.getTitle() === 'KSampler'
         )!
-        source.setPos(100, 100)
-        target.setPos(1800, 100)
-        source.updateArea()
-        target.updateArea()
-        graph.nodes
-          .filter((node) => node !== source && node !== target)
-          .forEach((node, index) => {
-            node.setPos(4000 + index * 1800, 100)
-            node.updateArea()
-          })
         const targetSlot = target.findInputSlot('model')
         if (targetSlot >= 0) target.disconnectInput(targetSlot)
-        const canvas = window.app!.canvas
-        canvas.ds.offset[0] = 0
-        canvas.ds.offset[1] = 0
-        canvas.ds.scale = 1
-        canvas.setDirty(true, true)
         return { source: String(source.id), target: String(target.id) }
       })
-      await comfyPage.nextFrame()
-      await comfyPage.settings.setSetting(
-        'Comfy.VueNodes.ViewportVirtualization',
-        true
+      await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
+        (nodeId, index) => {
+          if (nodeId === ids.source) return [100, 100]
+          if (nodeId === ids.target) return [1800, 100]
+          return [4000 + index * 1800, 100]
+        }
       )
 
       await expect(comfyPage.vueNodes.getNodeLocator(ids.source)).toBeVisible()

@@ -297,7 +297,9 @@ const allNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
 const viewportVirtualizationEnabled = computed(
-  () => settingStore.get('Comfy.VueNodes.ViewportVirtualization') ?? false
+  () =>
+    shouldRenderVueNodes.value &&
+    (settingStore.get('Comfy.VueNodes.ViewportVirtualization') ?? false)
 )
 const { onNodeMounted, renderedNodes } = useViewportVirtualization({
   allNodes,

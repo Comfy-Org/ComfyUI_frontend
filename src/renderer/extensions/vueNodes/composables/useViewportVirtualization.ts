@@ -29,6 +29,17 @@ function normalizeNodeId(nodeId: number | NodeId): NodeId {
   return typeof nodeId === 'number' ? toNodeId(nodeId) : nodeId
 }
 
+function areNodeIdSetsEqual(
+  a: ReadonlySet<NodeId>,
+  b: ReadonlySet<NodeId>
+): boolean {
+  if (a.size !== b.size) return false
+  for (const nodeId of a) {
+    if (!b.has(nodeId)) return false
+  }
+  return true
+}
+
 interface ViewportVirtualizationOptions {
   allNodes: MaybeRefOrGetter<readonly VueNodeData[]>
   canvas: MaybeRefOrGetter<LGraphCanvas | null | undefined>
@@ -125,21 +136,29 @@ export function useViewportVirtualization({
     return result
   }
 
+  const protectedNodeIds = shallowRef(getProtectedNodeIds())
+
+  function refreshProtectedNodeIds(): void {
+    const nextProtectedNodeIds = getProtectedNodeIds()
+    if (areNodeIdSetsEqual(protectedNodeIds.value, nextProtectedNodeIds)) return
+    protectedNodeIds.value = nextProtectedNodeIds
+  }
+
   const renderedNodes = computed(() => {
     const nodes = toValue(allNodes)
     if (!toValue(enabled)) return nodes
 
     void hydrationVersion.value
-    const protectedNodeIds = getProtectedNodeIds()
     return nodes.filter(
       (node) =>
         !hydratedNodeIds.has(node.id) ||
         viewportNodeIds.value.has(node.id) ||
-        protectedNodeIds.has(node.id)
+        protectedNodeIds.value.has(node.id)
     )
   })
 
   function replaceViewportNodes(): void {
+    refreshProtectedNodeIds()
     if (!toValue(enabled)) {
       viewportNodeIds.value = new Set(toValue(allNodes).map((node) => node.id))
       return
@@ -175,6 +194,7 @@ export function useViewportVirtualization({
   }
 
   function scheduleSettledRefresh(): void {
+    if (!toValue(enabled)) return
     if (settleTimer != null) clearTimeout(settleTimer)
     settleTimer = setTimeout(() => {
       settleTimer = undefined
@@ -203,6 +223,30 @@ export function useViewportVirtualization({
     pendingHydrationNodeIds.add(nodeId)
     schedulePostHydrationRefresh()
   }
+
+  const transformWatcher = useRafFn(
+    () => {
+      refreshProtectedNodeIds()
+      const ds = toValue(canvas)?.ds
+      if (!ds) return
+      const transform: [number, number, number] = [
+        ds.scale,
+        ds.offset[0],
+        ds.offset[1]
+      ]
+      if (
+        lastTransform &&
+        transform[0] === lastTransform[0] &&
+        transform[1] === lastTransform[1] &&
+        transform[2] === lastTransform[2]
+      ) {
+        return
+      }
+      lastTransform = transform
+      scheduleSettledRefresh()
+    },
+    { immediate: false }
+  )
 
   watch(
     () => toValue(canvas)?.graph,
@@ -259,15 +303,21 @@ export function useViewportVirtualization({
     () => toValue(enabled),
     (isEnabled) => {
       if (!isEnabled) {
+        transformWatcher.pause()
+        if (settleTimer != null) {
+          clearTimeout(settleTimer)
+          settleTimer = undefined
+        }
         clearViewportVirtualizedNodeIds()
         viewportNodeIds.value = new Set(
           toValue(allNodes).map((node) => node.id)
         )
         return
       }
+      transformWatcher.resume()
       schedulePostHydrationRefresh()
     },
-    { flush: 'sync' }
+    { immediate: true, flush: 'sync' }
   )
 
   watch(layoutVersion, scheduleSettledRefresh)
@@ -285,26 +335,7 @@ export function useViewportVirtualization({
   )
 
   useEventListener(window, ['pointerup', 'pointercancel'], scheduleFrameRefresh)
-
-  useRafFn(() => {
-    const ds = toValue(canvas)?.ds
-    if (!ds) return
-    const transform: [number, number, number] = [
-      ds.scale,
-      ds.offset[0],
-      ds.offset[1]
-    ]
-    if (
-      lastTransform &&
-      transform[0] === lastTransform[0] &&
-      transform[1] === lastTransform[1] &&
-      transform[2] === lastTransform[2]
-    ) {
-      return
-    }
-    lastTransform = transform
-    scheduleSettledRefresh()
-  })
+  useEventListener(window, ['focusin', 'pointerdown'], refreshProtectedNodeIds)
 
   onScopeDispose(() => {
     if (settleTimer != null) clearTimeout(settleTimer)

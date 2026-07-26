@@ -138,11 +138,18 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
   // share the same DOM transform, so their pixel difference divided by the
   // effective scale yields a correct canvas-space offset regardless of
   // whether the TransformPane has flushed its latest transform to the DOM.
-  const connectedSlotElement = Array.from(node.slots.values()).find(
-    (entry) => entry.el?.isConnected
-  )?.el
-  const closestNode = connectedSlotElement?.closest('[data-node-id]')
-  const nodeEl = closestNode instanceof HTMLElement ? closestNode : null
+  let nodeEl: HTMLElement | null = null
+  for (const entry of node.slots.values()) {
+    if (!entry.el?.isConnected) continue
+    const closestNode = entry.el.closest('[data-node-id]')
+    if (
+      closestNode instanceof HTMLElement &&
+      closestNode.dataset.nodeId === String(nodeId)
+    ) {
+      nodeEl = closestNode
+      break
+    }
+  }
   const nodeRect = nodeEl?.getBoundingClientRect()
 
   // Collapsed nodes preserve expanded size in layoutStore, so DOM-relative
@@ -307,7 +314,8 @@ export function useSlotElementTracking(options: {
               if (!newSize) return
               if (!oldSize || !isSizeEqual(newSize, oldSize)) {
                 if (isNodeViewportVirtualized(nodeId)) {
-                  for (const slotKey of node.slots.keys()) {
+                  for (const [slotKey, entry] of node.slots) {
+                    entry.cachedOffset = undefined
                     layoutStore.deleteSlotLayout(slotKey)
                   }
                   return

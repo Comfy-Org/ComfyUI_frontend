@@ -199,9 +199,10 @@ describe('useSlotElementTracking', () => {
     })
   })
 
-  it('invalidates cached geometry when a virtualized node resizes', async () => {
+  it('keeps cached geometry invalid after a virtualized node resizes and moves', async () => {
     const { unmount } = await mountAndRegisterSlot('input')
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const registryStore = useNodeSlotRegistryStore()
     replaceViewportVirtualizedNodeIds([NODE_ID])
     unmount()
 
@@ -211,6 +212,23 @@ describe('useSlotElementTracking', () => {
       nodeId: NODE_ID,
       size: { width: 300, height: 200 },
       previousSize: { width: 200, height: 100 },
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    await nextTick()
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(
+      registryStore.getNode(NODE_ID)?.slots.get(slotKey)?.cachedOffset
+    ).toBeUndefined()
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId: NODE_ID,
+      position: { x: 50, y: 75 },
+      previousPosition: { x: 0, y: 0 },
       timestamp: Date.now(),
       source: LayoutSource.External,
       actor: 'test'
@@ -350,6 +368,37 @@ describe('useSlotElementTracking', () => {
     syncNodeSlotLayoutsFromDOM(NODE_ID)
 
     expect(batchUpdateSpy).not.toHaveBeenCalled()
+  })
+
+  it('uses a matching node container when a foreign slot entry comes first', () => {
+    const foreignContainer = document.createElement('div')
+    foreignContainer.dataset.nodeId = 'other-node'
+    document.body.appendChild(foreignContainer)
+
+    const foreignSlot = document.createElement('div')
+    foreignContainer.appendChild(foreignSlot)
+
+    const matchingSlot = createSlotElement()
+    const foreignSlotKey = getSlotKey(NODE_ID, 0, true)
+    const matchingSlotKey = getSlotKey(NODE_ID, 1, false)
+    const node = useNodeSlotRegistryStore().ensureNode(NODE_ID)
+    node.slots.set(foreignSlotKey, {
+      el: foreignSlot,
+      index: 0,
+      type: 'input'
+    })
+    node.slots.set(matchingSlotKey, {
+      el: matchingSlot,
+      index: 1,
+      type: 'output'
+    })
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(matchingSlotKey)?.position).toEqual({
+      x: 15,
+      y: 35 - LiteGraph.NODE_TITLE_HEIGHT
+    })
   })
 
   describe('collapsed node slot sync', () => {
