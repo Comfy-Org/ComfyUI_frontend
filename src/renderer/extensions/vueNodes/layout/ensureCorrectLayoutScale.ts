@@ -2,7 +2,6 @@ import type { LGraph, RendererType } from '@/lib/litegraph/src/LGraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Point as LGPoint } from '@/lib/litegraph/src/interfaces'
-import type { Point } from '@/renderer/core/layout/types'
 import {
   RENDER_SCALE_FACTOR,
   getGraphRenderAnchor,
@@ -15,31 +14,6 @@ import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOu
 interface Positioned {
   pos: LGPoint
   size: LGPoint
-}
-
-function unprojectPosSize(item: Positioned, anchor: Point, graph: LGraph) {
-  const c = unprojectBounds(
-    {
-      x: item.pos[0],
-      y: item.pos[1],
-      width: item.size[0],
-      height: item.size[1]
-    },
-    anchor,
-    RENDER_SCALE_FACTOR
-  )
-  item.pos[0] = c.x
-  item.pos[1] = c.y
-  item.size[0] = c.width
-  item.size[1] = c.height
-
-  if (LiteGraph.alwaysSnapToGrid) {
-    const snapTo = graph.getSnapToGridSize?.()
-    if (snapTo) {
-      snapPoint(item.pos, snapTo, 'round')
-      snapPoint(item.size, snapTo, 'ceil')
-    }
-  }
 }
 
 /**
@@ -82,24 +56,31 @@ export function ensureCorrectLayoutScale(
     }
   }
 
-  for (const node of graph.nodes) {
+  // Snap the unprojected values first, then assign once: `pos` and `size` are
+  // whole-value setters that commit to the layout store, so element-wise
+  // writes here would land in the class and never reach it.
+  const normalize = (item: Positioned) => {
     const c = unprojectBounds(
       {
-        x: node.pos[0],
-        y: node.pos[1],
-        width: node.size[0],
-        height: node.size[1]
+        x: item.pos[0],
+        y: item.pos[1],
+        width: item.size[0],
+        height: item.size[1]
       },
       anchor,
       RENDER_SCALE_FACTOR
     )
-    node.pos[0] = c.x
-    node.pos[1] = c.y
-    node.size[0] = c.width
-    node.size[1] = c.height
+    const pos: [number, number] = [c.x, c.y]
+    const size: [number, number] = [c.width, c.height]
+    applySnap(pos)
+    applySnap(size, 'ceil')
 
-    applySnap(node.pos)
-    applySnap(node.size, 'ceil')
+    item.pos = pos
+    item.size = size
+  }
+
+  for (const node of graph.nodes) {
+    normalize(node)
   }
 
   for (const reroute of graph.reroutes.values()) {
@@ -108,12 +89,13 @@ export function ensureCorrectLayoutScale(
       anchor,
       RENDER_SCALE_FACTOR
     )
-    reroute.pos = [p.x, p.y]
-    applySnap(reroute.pos)
+    const pos: [number, number] = [p.x, p.y]
+    applySnap(pos)
+    reroute.pos = pos
   }
 
   for (const group of graph.groups) {
-    unprojectPosSize(group, anchor, graph)
+    normalize(group)
   }
 
   if ('inputNode' in graph && 'outputNode' in graph) {
@@ -122,7 +104,7 @@ export function ensureCorrectLayoutScale(
       graph.outputNode as SubgraphOutputNode
     ]) {
       if (ioNode) {
-        unprojectPosSize(ioNode, anchor, graph)
+        normalize(ioNode)
       }
     }
   }

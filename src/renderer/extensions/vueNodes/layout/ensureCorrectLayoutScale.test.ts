@@ -2,6 +2,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
+import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
 
@@ -244,18 +245,21 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
       workflowRendererVersion: 'Vue'
     })
 
-    const groupPos = [150, 150] as Point
-    const groupSize = [300, 200] as Point
-    const group = {
-      pos: groupPos,
-      size: groupSize
-    }
-    ;(graph.groups as (typeof group)[]).push(group)
+    // A real group: `pos` and `size` are subarrays of one Rectangle buffer, so
+    // the setters must write through rather than rebind.
+    const group = new LGraphGroup('normalize-me')
+    group._bounding.set([150, 150, 300, 200])
+    const groupPos = group.pos
+    const groupSize = group.size
+    ;(graph.groups as LGraphGroup[]).push(group)
 
     ensureCorrectLayoutScale(undefined, graph as LGraph)
 
     expect(group.pos).toBe(groupPos)
     expect(group.size).toBe(groupSize)
+    // Read through the captured reference: the normalized value must have
+    // landed in the original array, not a replacement.
+    expect(groupSize[0]).toBeCloseTo(300 / RENDER_SCALE_FACTOR, 5)
   })
 
   it('repeated normalization does not compound spacing', () => {
