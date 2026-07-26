@@ -10,6 +10,7 @@ import type { NodeId } from '@/types/nodeId'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
@@ -935,6 +936,27 @@ describe('node geometry held by reference', () => {
       position: { x: 50, y: 60 },
       size: { width: 200, height: 100 },
       bounds: { x: 50, y: 60, width: 200, height: 100 }
+    })
+  })
+
+  it('reports geometry committed through the mutation path', () => {
+    const { nodeId } = registeredNode('3')
+
+    // The Vue drag, resize and arrange paths all land here. Reads come from the
+    // rectangle, so a mutation that only reached the Yjs projection would be
+    // invisible.
+    useLayoutMutations().moveNode(nodeId, { x: 500, y: 600 })
+
+    expect(layoutStore.getNodeLayoutRef(nodeId).value?.position).toEqual({
+      x: 500,
+      y: 600
+    })
+
+    useLayoutMutations().resizeNode(nodeId, { width: 321, height: 123 })
+
+    expect(layoutStore.getNodeLayoutRef(nodeId).value).toMatchObject({
+      position: { x: 500, y: 600 },
+      size: { width: 321, height: 123 }
     })
   })
 

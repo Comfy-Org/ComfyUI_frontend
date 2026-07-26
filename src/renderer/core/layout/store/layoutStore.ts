@@ -227,6 +227,16 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
+   * Commits geometry to the registered rectangle, which is where reads come
+   * from. Callers also project into Yjs; this is the authoritative write.
+   */
+  private writeNodeRect(nodeId: NodeId, bounds: Bounds): void {
+    this.nodeRects
+      .get(nodeId)
+      ?.set([bounds.x, bounds.y, bounds.width, bounds.height])
+  }
+
+  /**
    * A node's layout, read from the registered rectangle when there is one so
    * that geometry has a single home. `bounds` is position and size verbatim,
    * so it is derived rather than stored.
@@ -1075,6 +1085,8 @@ class LayoutStoreImpl implements LayoutStore {
     // Hit detection queries can run before CRDT updates complete
     this.spatialIndex.update(nodeId, newBounds)
 
+    this.writeNodeRect(nodeId, newBounds)
+
     // Then update CRDT
     ynode.set('position', operation.position)
     this.updateNodeBounds(ynode, operation.position, size)
@@ -1101,6 +1113,8 @@ class LayoutStoreImpl implements LayoutStore {
     // Update spatial index FIRST, synchronously to prevent race conditions
     // Hit detection queries can run before CRDT updates complete
     this.spatialIndex.update(nodeId, newBounds)
+
+    this.writeNodeRect(nodeId, newBounds)
 
     // Then update CRDT
     ynode.set('size', operation.size)
@@ -1179,6 +1193,7 @@ class LayoutStoreImpl implements LayoutStore {
       const ynode = this.ynodes.get(String(nodeId))
       if (!ynode || !data) continue
 
+      this.writeNodeRect(nodeId, data.bounds)
       ynode.set('position', { x: data.bounds.x, y: data.bounds.y })
       ynode.set('size', {
         width: data.bounds.width,
