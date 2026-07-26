@@ -2259,6 +2259,7 @@
     "nothingSelected": "Nothing selected",
     "cannotCreateSubgraph": "Cannot create subgraph",
     "failedToConvertToSubgraph": "Failed to convert items to subgraph",
+    "batchImagesNodeUnavailable": "The Batch Images node is not available on this server",
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",

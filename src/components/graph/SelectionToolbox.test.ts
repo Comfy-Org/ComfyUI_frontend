@@ -13,6 +13,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useExtensionService } from '@/services/extensionService'
 import {
   createMockCanvas,
+  createMockLGraphNode,
   createMockPositionable
 } from '@/utils/__tests__/litegraphTestUtils'
 import * as litegraphUtil from '@/utils/litegraphUtil'
@@ -90,7 +91,11 @@ vi.mock('@/services/extensionService', () => ({
 vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(() => true),
   isImageNode: vi.fn(() => false),
-  isLoad3dNode: vi.fn(() => false)
+  isLoad3dNode: vi.fn(() => false),
+  hasImageOutput: vi.fn(
+    (node: LGraphNode | undefined) =>
+      !!node?.outputs?.some((output) => output.type === 'IMAGE')
+  )
 }))
 
 vi.mock('@/utils/nodeFilterUtil', () => ({
@@ -115,9 +120,14 @@ let nodeDefMock = {
   title: 'Test Node'
 } as unknown
 
+let nodeDefsByNameMock: Record<string, unknown> = {}
+
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({
-    fromLGraphNode: vi.fn(() => nodeDefMock)
+    fromLGraphNode: vi.fn(() => nodeDefMock),
+    get nodeDefsByName() {
+      return nodeDefsByNameMock
+    }
   })
 }))
 
@@ -152,6 +162,9 @@ describe('SelectionToolbox', () => {
       type: 'TestNode',
       title: 'Test Node'
     } as unknown
+    nodeDefsByNameMock = {
+      BatchImagesNode: { name: 'BatchImagesNode' }
+    }
 
     // Mock the canvas to avoid "getCanvas: canvas is null" errors
     canvasStore.canvas = createMockCanvas()
@@ -181,6 +194,10 @@ describe('SelectionToolbox', () => {
               '<button data-testid="color-picker-button" class="color-picker-button" />'
           },
           FrameNodes: { template: '<div class="frame-nodes" />' },
+          BatchImagesButton: {
+            template:
+              '<button data-testid="batch-images-button" class="batch-images-button" />'
+          },
           PublishButton: {
             template:
               '<button data-testid="add-to-library" class="bookmark-button" />'
@@ -384,6 +401,52 @@ describe('SelectionToolbox', () => {
       canvasStore.selectedItems = [createMockPositionable()]
       const { container: container2 } = renderComponent()
       expect(container2.querySelector('.load-3d-viewer-button')).toBeFalsy()
+    })
+
+    it('should show batch images button only when multiple image-output nodes are selected', () => {
+      const createImageOutputNode = () =>
+        createMockLGraphNode({ outputs: [{ name: 'IMAGE', type: 'IMAGE' }] })
+      const createNonImageNode = () =>
+        createMockLGraphNode({ outputs: [{ name: 'LATENT', type: 'LATENT' }] })
+
+      // Multiple nodes with IMAGE outputs
+      canvasStore.selectedItems = [
+        createImageOutputNode(),
+        createImageOutputNode()
+      ]
+      const { container } = renderComponent()
+      expect(
+        container.querySelector('[data-testid="batch-images-button"]')
+      ).toBeTruthy()
+
+      // Single image-output node
+      canvasStore.selectedItems = [createImageOutputNode()]
+      const { container: container2 } = renderComponent()
+      expect(
+        container2.querySelector('[data-testid="batch-images-button"]')
+      ).toBeFalsy()
+
+      // Multiple nodes but only one has an IMAGE output
+      canvasStore.selectedItems = [
+        createImageOutputNode(),
+        createNonImageNode()
+      ]
+      const { container: container3 } = renderComponent()
+      expect(
+        container3.querySelector('[data-testid="batch-images-button"]')
+      ).toBeFalsy()
+    })
+
+    it('should not show batch images button when the Batch Images node def is unavailable', () => {
+      nodeDefsByNameMock = {}
+      canvasStore.selectedItems = [
+        createMockLGraphNode({ outputs: [{ name: 'IMAGE', type: 'IMAGE' }] }),
+        createMockLGraphNode({ outputs: [{ name: 'IMAGE', type: 'IMAGE' }] })
+      ]
+      const { container } = renderComponent()
+      expect(
+        container.querySelector('[data-testid="batch-images-button"]')
+      ).toBeFalsy()
     })
 
     it('should show ExecuteButton only when output nodes are selected', () => {

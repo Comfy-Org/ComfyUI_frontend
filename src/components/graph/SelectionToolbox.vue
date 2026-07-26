@@ -22,6 +22,7 @@
         <ColorPickerButton v-if="showColorPicker" />
         <ArrangeButton v-if="showArrange" />
         <FrameNodes v-if="showFrameNodes" />
+        <BatchImagesButton v-if="showBatchImages" />
         <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
         <ConfigureSubgraph v-if="showSubgraphButtons" />
         <PublishSubgraphButton v-if="showSubgraphButtons" />
@@ -51,6 +52,7 @@ import Panel from 'primevue/panel'
 import { computed, ref } from 'vue'
 
 import ArrangeButton from '@/components/graph/selectionToolbox/ArrangeButton.vue'
+import BatchImagesButton from '@/components/graph/selectionToolbox/BatchImagesButton.vue'
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ConfigureSubgraph from '@/components/graph/selectionToolbox/ConfigureSubgraph.vue'
@@ -70,6 +72,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useExtensionService } from '@/services/extensionService'
 import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import FrameNodes from './selectionToolbox/FrameNodes.vue'
 import NodeOptionsButton from './selectionToolbox/NodeOptionsButton.vue'
@@ -77,6 +80,7 @@ import VerticalDivider from './selectionToolbox/VerticalDivider.vue'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
+const nodeDefStore = useNodeDefStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 
@@ -108,6 +112,7 @@ const {
   isSingleImageNode,
   hasAny3DNodeSelected,
   hasOutputNodesSelected,
+  hasMultipleImageOutputNodes,
   canOpenNodeInfo
 } = useSelectionState()
 
@@ -115,6 +120,11 @@ const showColorPicker = computed(() => hasAnySelection.value)
 const showConvertToSubgraph = computed(() => hasAnySelection.value)
 const showArrange = computed(() => hasMultipleSelection.value)
 const showFrameNodes = computed(() => hasMultipleSelection.value)
+const showBatchImages = computed(
+  () =>
+    hasMultipleImageOutputNodes.value &&
+    !!nodeDefStore.nodeDefsByName?.['BatchImagesNode']
+)
 const showSubgraphButtons = computed(() => isSingleSubgraph.value)
 
 const showBypass = computed(
@@ -137,6 +147,7 @@ const showAnyPrimaryActions = computed(
     showConvertToSubgraph.value ||
     showArrange.value ||
     showFrameNodes.value ||
+    showBatchImages.value ||
     showSubgraphButtons.value
 )
 
