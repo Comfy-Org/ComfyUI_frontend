@@ -1114,6 +1114,7 @@ export function useCoreCommands(): ComfyCommand[] {
           source.connect(outputIndex, batchNode, inputIndex)
         }
 
+        canvas.deselectAll()
         canvas.select(batchNode)
         canvasStore.updateSelectedItems()
       }
