@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
@@ -92,10 +93,12 @@ export function useMembersPanel() {
   const { t } = useI18n()
   const toast = useToast()
   const { userPhotoUrl, userEmail, userDisplayName } = useCurrentUser()
+  const { flags } = useFeatureFlags()
   const {
     showRemoveMemberDialog,
     showRevokeInviteDialog,
     showChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog
   } = useDialogService()
@@ -149,6 +152,7 @@ export function useMembersPanel() {
         showPendingTab: false,
         showSearch: false,
         showRoleColumn: false,
+        showCreditsColumn: false,
         membersGridCols: 'grid-cols-1',
         pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
         headerGridCols: 'grid-cols-1'
@@ -162,9 +166,13 @@ export function useMembersPanel() {
         showPendingTab: true,
         showSearch: true,
         showRoleColumn: true,
-        membersGridCols: 'grid-cols-[50%_40%_10%]',
+        membersGridCols: workspaceUiConfig.value.showCreditsColumn
+          ? workspaceUiConfig.value.membersGridCols
+          : 'grid-cols-[50%_40%_10%]',
         pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-        headerGridCols: 'grid-cols-[50%_40%_10%]'
+        headerGridCols: workspaceUiConfig.value.showCreditsColumn
+          ? workspaceUiConfig.value.headerGridCols
+          : 'grid-cols-[50%_40%_10%]'
       }
     }
 
@@ -252,6 +260,28 @@ export function useMembersPanel() {
   }
 
   function memberMenuItems(member: WorkspaceMember): MenuItem[] {
+    if (!permissions.value.canManageMembers) return []
+
+    const creditLimitItem: MenuItem = {
+      label: t('workspacePanel.members.actions.setCreditLimit'),
+      command: () =>
+        void showSetMemberCreditLimitDialog({
+          memberId: member.id,
+          memberName: member.name,
+          creditsUsed: member.creditsUsedThisMonth,
+          currentLimit: member.monthlyCreditLimit
+        })
+    }
+
+    const creditLimitEnabled = flags.billingControlEnabled
+
+    // The creator and the current user can't change their own role or be
+    // removed; their only possible action is capping their own usage, so they
+    // get a menu at all only when credit limits are enabled.
+    if (isCurrentUser(member) || isOriginalOwner(member)) {
+      return creditLimitEnabled ? [creditLimitItem] : []
+    }
+
     return [
       {
         label: t('workspacePanel.members.actions.changeRole'),
@@ -260,6 +290,7 @@ export function useMembersPanel() {
           roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
         ]
       },
+      ...(creditLimitEnabled ? [creditLimitItem] : []),
       {
         label: t('workspacePanel.members.actions.removeMember'),
         command: () => handleRemoveMember(member)
