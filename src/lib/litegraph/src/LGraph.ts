@@ -37,6 +37,7 @@ import {
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
+import { Rectangle } from './infrastructure/Rectangle'
 import { LGraphGroup } from './LGraphGroup'
 import type { GroupId } from './LGraphGroup'
 import {
@@ -1907,10 +1908,16 @@ export class LGraph
     // Position the subgraph input nodes
     subgraph.inputNode.arrange()
     subgraph.outputNode.arrange()
-    const { boundingRect: inputRect } = subgraph.inputNode
-    const { boundingRect: outputRect } = subgraph.outputNode
-    alignOutsideContainer(inputRect, Alignment.MidLeft, boundingRect, [50, 0])
-    alignOutsideContainer(outputRect, Alignment.MidRight, boundingRect, [50, 0])
+    // Both helpers write only the position components, so align a copy and
+    // assign it through `pos` rather than mutating the node's own rectangle.
+    for (const [ioNode, alignment] of [
+      [subgraph.inputNode, Alignment.MidLeft],
+      [subgraph.outputNode, Alignment.MidRight]
+    ] as const) {
+      const aligned = new Rectangle(...ioNode.boundingRect)
+      alignOutsideContainer(aligned, alignment, boundingRect, [50, 0])
+      ioNode.pos = [aligned[0], aligned[1]]
+    }
 
     this.rootGraph.events.dispatch('convert-to-subgraph', {
       subgraph,
@@ -1935,17 +1942,18 @@ export class LGraph
     // Resize to inputs/outputs
     subgraphNode.setSize(subgraphNode.computeSize())
 
-    // Center the subgraph node
-    alignToContainer(
-      subgraphNode._posSize,
-      Alignment.Centre | Alignment.Middle,
-      boundingRect
-    )
-
-    //Correct for title height. It's included in bounding box, but not _posSize
-    subgraphNode.setPos(
+    // Center the subgraph node. The title height is included in the bounding
+    // box but not in pos/size, so correct for it in the same assignment.
+    const centred = new Rectangle(
       subgraphNode.pos[0],
-      subgraphNode.pos[1] + LiteGraph.NODE_TITLE_HEIGHT / 2
+      subgraphNode.pos[1],
+      subgraphNode.size[0],
+      subgraphNode.size[1]
+    )
+    alignToContainer(centred, Alignment.Centre | Alignment.Middle, boundingRect)
+    subgraphNode.setPos(
+      centred[0],
+      centred[1] + LiteGraph.NODE_TITLE_HEIGHT / 2
     )
 
     // Add the subgraph node to the graph
