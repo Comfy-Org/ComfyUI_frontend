@@ -221,7 +221,10 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
     })
   }
 
-  if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
+  if (batch.length) {
+    layoutStore.batchUpdateSlotLayouts(batch)
+    app.canvas?.setDirty(false, true)
+  }
 }
 
 export function useSlotElementTracking(options: {
@@ -280,6 +283,10 @@ export function useSlotElementTracking(options: {
         const existingEntry = node.slots.get(slotKey)
         if (existingEntry?.el && existingEntry.el !== el) {
           delete existingEntry.el.dataset.slotKey
+        }
+        if (existingEntry) {
+          existingEntry.cachedOffset = undefined
+          layoutStore.deleteSlotLayout(slotKey)
         }
 
         el.dataset.slotKey = String(slotKey)

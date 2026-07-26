@@ -111,6 +111,10 @@ test.describe('Viewport node virtualization', { tag: ['@canvas'] }, () => {
     await vueNode.getByTestId('node-collapse-button').click()
 
     await expect(vueNode).toHaveAttribute('data-collapsed', 'true')
+
+    await vueNode.getByTestId('node-collapse-button').click()
+
+    await expect(vueNode).not.toHaveAttribute('data-collapsed', 'true')
   })
 
   test('preserves links and output updates while a node is offscreen', async ({

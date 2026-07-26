@@ -26,9 +26,10 @@ import {
 } from './useSlotElementTracking'
 
 const mockGraph = vi.hoisted(() => ({ _nodes: [] as unknown[] }))
+const mockSetDirty = vi.hoisted(() => vi.fn())
 
 vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: mockGraph, setDirty: vi.fn() } }
+  app: { canvas: { graph: mockGraph, setDirty: mockSetDirty } }
 }))
 
 const NODE_ID = toNodeId('test-node')
@@ -130,6 +131,7 @@ describe('useSlotElementTracking', () => {
       actor: 'test'
     })
     mockGraph._nodes = [{ id: 1 }]
+    mockSetDirty.mockClear()
   })
 
   afterEach(() => {
@@ -330,6 +332,7 @@ describe('useSlotElementTracking', () => {
     const first = await mountAndRegisterSlot('input')
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
     first.unmount()
+    const deleteSlotLayout = vi.spyOn(layoutStore, 'deleteSlotLayout')
 
     const second = await mountAndRegisterSlot('input', {
       slot: new DOMRect(30, 50, 10, 10)
@@ -339,11 +342,34 @@ describe('useSlotElementTracking', () => {
       ?.slots.get(slotKey)
 
     expect(entry?.el?.isConnected).toBe(true)
+    expect(deleteSlotLayout).toHaveBeenCalledWith(slotKey)
     expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
       x: 35,
       y: 25
     })
     second.unmount()
+  })
+
+  it('redraws links after cached slot positions follow a node move', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    mockSetDirty.mockClear()
+
+    layoutStore.batchUpdateNodeBounds([
+      {
+        nodeId: NODE_ID,
+        bounds: { x: 100, y: 50, width: 200, height: 100 },
+        preserveSize: true
+      }
+    ])
+    await nextTick()
+
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+      x: 115,
+      y: 55
+    })
+    expect(mockSetDirty).toHaveBeenCalledWith(false, true)
+    unmount()
   })
 
   it('removes retained layouts when the slot model deletes a slot', async () => {

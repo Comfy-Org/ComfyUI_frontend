@@ -124,6 +124,7 @@ import {
   onUnmounted,
   ref,
   shallowRef,
+  triggerRef,
   useTemplateRef,
   watch,
   watchEffect
@@ -322,7 +323,9 @@ watch(
         enabled: true
       })
       watchEffect(() => {
-        renderNodes.value = virtualization.renderNodes.value
+        const next = virtualization.renderNodes.value
+        if (renderNodes.value === next) triggerRef(renderNodes)
+        else renderNodes.value = next
       })
     })
   },
