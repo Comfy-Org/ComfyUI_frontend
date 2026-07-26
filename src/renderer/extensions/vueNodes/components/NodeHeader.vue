@@ -61,7 +61,7 @@
         :text="badge.required"
         :rest="badge.rest"
       />
-      <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
+      <NodeBadge v-if="showStatusBadge && statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
         class="icon-[comfy--pin] size-4"
@@ -92,9 +92,14 @@ interface NodeHeaderProps {
   nodeData?: VueNodeData
   collapsed?: boolean
   priceBadges?: { required: string; rest?: string }[]
+  showStatusBadge?: boolean
 }
 
-const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
+const {
+  nodeData,
+  collapsed,
+  showStatusBadge = true
+} = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []

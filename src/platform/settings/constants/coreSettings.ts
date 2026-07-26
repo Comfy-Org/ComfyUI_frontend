@@ -1202,6 +1202,29 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.27.1'
   },
   {
+    id: 'Comfy.VueNodes.CompactCollapsedNodes',
+    category: ['Comfy', 'Nodes 2.0', 'CompactCollapsedNodes'],
+    name: 'Compact collapsed nodes',
+    type: 'boolean',
+    tooltip:
+      'Size collapsed nodes to their titles and hide header badges while collapsed.',
+    defaultValue: false,
+    sortOrder: 85,
+    experimental: true,
+    versionAdded: '1.49.0'
+  },
+  {
+    id: 'Comfy.VueNodes.HideStatusBadges',
+    category: ['Comfy', 'Nodes 2.0', 'HideStatusBadges'],
+    name: 'Hide node status badges',
+    type: 'boolean',
+    tooltip: 'Hide Muted and Bypassed badges on Nodes 2.0.',
+    defaultValue: false,
+    sortOrder: 80,
+    experimental: true,
+    versionAdded: '1.49.0'
+  },
+  {
     id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
     name: 'App Builder Vue Node switch dismissed',
     type: 'hidden',

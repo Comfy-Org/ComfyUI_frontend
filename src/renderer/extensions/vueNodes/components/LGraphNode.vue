@@ -18,7 +18,10 @@
           : 'drop-shadow-xl drop-shadow-black/40',
         isRerouteNode
           ? 'h-(--node-height)'
-          : 'min-h-(--node-height) min-w-(--min-node-width)',
+          : cn(
+              'min-h-(--node-height)',
+              !compactCollapsed && 'min-w-(--min-node-width)'
+            ),
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
@@ -73,7 +76,10 @@
         cn(
           'flex flex-1 flex-col bg-node-component-header-surface',
           'w-(--node-width)',
-          !isRerouteNode && 'min-w-(--min-node-width)',
+          !isRerouteNode &&
+            (compactCollapsed
+              ? 'max-w-(--node-width-x)'
+              : 'min-w-(--min-node-width)'),
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
           bypassed && bypassOverlayClass,
@@ -106,7 +112,8 @@
         <NodeHeader
           :node-data="nodeData"
           :collapsed="isCollapsed"
-          :price-badges="badges.pricing"
+          :price-badges="headerPricingBadges"
+          :show-status-badge="showStatusBadge"
           @collapse="handleCollapse"
           @update:title="handleHeaderTitleUpdate"
         />
@@ -391,6 +398,16 @@ const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
+const compactCollapsed = computed(
+  () =>
+    isCollapsed.value &&
+    settingStore.get('Comfy.VueNodes.CompactCollapsedNodes')
+)
+const showStatusBadge = computed(
+  () =>
+    !compactCollapsed.value &&
+    !settingStore.get('Comfy.VueNodes.HideStatusBadges')
+)
 const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
@@ -430,6 +447,9 @@ const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
 const badges = usePartitionedBadges(nodeData)
+const headerPricingBadges = computed(() =>
+  compactCollapsed.value ? undefined : badges.value.pricing
+)
 
 async function nodeOnPointerdown(event: PointerEvent) {
   if (event.altKey && lgraphNode.value) {
