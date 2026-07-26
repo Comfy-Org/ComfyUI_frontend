@@ -1106,7 +1106,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     align_to?: LGraphNode
   ): void {
     const newPositions = alignNodes(Object.values(nodes), direction, align_to)
-    LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
+    LGraphCanvas.active_canvas.applyNodePositions(newPositions)
     LGraphCanvas.active_canvas.setDirty(true, true)
   }
 
@@ -1129,7 +1129,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value.toLowerCase() as Direction,
         node
       )
-      LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
+      LGraphCanvas.active_canvas.applyNodePositions(newPositions)
       LGraphCanvas.active_canvas.setDirty(true, true)
     }
   }
@@ -1151,7 +1151,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         Object.values(LGraphCanvas.active_canvas.selected_nodes),
         value.toLowerCase() as Direction
       )
-      LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
+      LGraphCanvas.active_canvas.applyNodePositions(newPositions)
       LGraphCanvas.active_canvas.setDirty(true, true)
     }
   }
@@ -1174,7 +1174,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         Object.values(canvas.selected_nodes),
         value === 'Horizontally'
       )
-      canvas.repositionNodesVueMode(newPositions)
+      canvas.applyNodePositions(newPositions)
       canvas.setDirty(true, true)
     }
   }
@@ -8926,20 +8926,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.ds.animateToBounds(bounds, setDirty, options)
   }
 
-  /**
-   * Apply batched node position updates
-   */
-  private applyNodePositionUpdates(
-    nodesToMove: Array<{ node: LGraphNode; newPos: { x: number; y: number } }>
-  ): void {
-    for (const { node, newPos } of nodesToMove) {
-      // setPos automatically syncs to layout store
+  /** Moves each node to its given position. Used by align, distribute and clone. */
+  applyNodePositions(positions: NewNodePosition[]): void {
+    for (const { node, newPos } of positions) {
       node.setPos(newPos.x, newPos.y)
     }
-  }
-
-  repositionNodesVueMode(nodesToReposition: NewNodePosition[]) {
-    this.applyNodePositionUpdates(nodesToReposition)
   }
 
   /**
