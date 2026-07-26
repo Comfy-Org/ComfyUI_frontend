@@ -1,11 +1,12 @@
 <template>
-  <Popover>
+  <Popover :open="openPopover === 'upDirection'">
     <PopoverTrigger as-child>
       <button
         v-tooltip.bottom="tip(t('load3d.menuBar.upDirection'))"
         :class="actionClass(false)"
         type="button"
         :aria-label="compact ? t('load3d.menuBar.upDirection') : undefined"
+        @click="togglePopover('upDirection')"
       >
         <i class="icon-[lucide--move-3d] size-4" />
         <span v-if="!compact">{{ t('load3d.menuBar.upDirection') }}</span>
@@ -29,13 +30,14 @@
     </PopoverContent>
   </Popover>
 
-  <Popover v-if="materialModes.length">
+  <Popover v-if="materialModes.length" :open="openPopover === 'material'">
     <PopoverTrigger as-child>
       <button
         v-tooltip.bottom="tip(t('load3d.menuBar.material'))"
         :class="actionClass(false)"
         type="button"
         :aria-label="compact ? t('load3d.menuBar.material') : undefined"
+        @click="togglePopover('material')"
       >
         <i class="icon-[lucide--box] size-4" />
         <span v-if="!compact">{{ t('load3d.menuBar.material') }}</span>
@@ -74,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -110,6 +112,17 @@ const { t } = useI18n()
 const upDirection = computed(() => config.value?.upDirection)
 const materialMode = computed(() => config.value?.materialMode)
 const showSkeleton = computed(() => config.value?.showSkeleton ?? false)
+
+type MenuPopover = 'upDirection' | 'material'
+
+// One-way `:open` binding, no `@update:open`: reka-ui's own dismiss/toggle
+// emits are intentionally ignored so they can't race this ref (they were the
+// cause of a flash-then-close bug when both popovers were kept in sync).
+const openPopover = ref<MenuPopover | null>(null)
+
+function togglePopover(popover: MenuPopover) {
+  openPopover.value = openPopover.value === popover ? null : popover
+}
 
 const upDirections: UpDirection[] = [
   'original',
