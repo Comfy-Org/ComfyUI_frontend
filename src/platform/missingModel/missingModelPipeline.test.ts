@@ -436,7 +436,7 @@ describe('missingModelPipeline', () => {
       })
     })
 
-    it('fetches file sizes only for candidates with complete download metadata', async () => {
+    it('does not fetch remote metadata while initializing downloadable candidates', async () => {
       const downloadableCandidate = {
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
@@ -458,23 +458,28 @@ describe('missingModelPipeline', () => {
         downloadableCandidate,
         urlOnlyCandidate
       ]
-      mockHandles.fetchModelMetadata.mockResolvedValue({ fileSize: 1024 })
 
-      await runMissingModelPipeline({
+      const result = await runMissingModelPipeline({
         graph: createGraph(),
         graphData: createWorkflowGraphData(),
         missingModelStore: mockHandles.missingModelStore
       })
       await vi.dynamicImportSettled()
 
-      expect(mockHandles.fetchModelMetadata).toHaveBeenCalledOnce()
-      expect(mockHandles.fetchModelMetadata).toHaveBeenCalledWith(
-        'https://example.com/downloadable.safetensors'
-      )
-      expect(mockHandles.missingModelStore.setFileSize).toHaveBeenCalledWith(
-        'https://example.com/downloadable.safetensors',
-        1024
-      )
+      expect(result).toEqual({
+        missingModels: [
+          {
+            name: 'downloadable.safetensors',
+            url: 'https://example.com/downloadable.safetensors',
+            directory: 'checkpoints',
+            hash: undefined,
+            hash_type: undefined
+          }
+        ],
+        confirmedCandidates: [downloadableCandidate, urlOnlyCandidate]
+      })
+      expect(mockHandles.fetchModelMetadata).not.toHaveBeenCalled()
+      expect(mockHandles.missingModelStore.setFileSize).not.toHaveBeenCalled()
     })
 
     it('clears surfaced and cached missing models when no candidates are confirmed missing', async () => {

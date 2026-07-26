@@ -195,7 +195,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -358,29 +358,29 @@ const { showUploadDialog } = useModelUpload(
   () => missingModelUploadContext.value
 )
 
-onMounted(() => {
-  if (isCloud) return
-
-  const url = model.representative.url
-  if (url && !store.fileSizes[url]) {
-    fetchModelMetadata(url)
-      .then((metadata) => {
-        if (metadata.fileSize !== null) {
-          store.setFileSize(url, metadata.fileSize)
-        }
-      })
-      .catch((error: unknown) => {
-        console.warn(
-          `[MissingModelRow] Failed to fetch metadata for ${url}:`,
-          error
-        )
-      })
-  }
-})
+let metadataFetchPromise: Promise<void> | undefined
 
 function handleDownload() {
   const rep = model.representative
   if (rep.url && rep.directory) {
+    const url = rep.url
+    if (!store.fileSizes[url] && !metadataFetchPromise) {
+      metadataFetchPromise = fetchModelMetadata(url)
+        .then((metadata) => {
+          if (metadata.fileSize !== null) {
+            store.setFileSize(url, metadata.fileSize)
+          }
+        })
+        .catch((error: unknown) => {
+          console.warn(
+            `[MissingModelRow] Failed to fetch metadata for ${url}:`,
+            error
+          )
+        })
+        .finally(() => {
+          metadataFetchPromise = undefined
+        })
+    }
     downloadModel(
       { name: rep.name, url: rep.url, directory: rep.directory },
       store.folderPaths

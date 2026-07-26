@@ -202,18 +202,6 @@ export async function runMissingModelPipeline({
           })
           cacheModelCandidates(activeWf, confirmedCandidates)
         })
-
-      const missingModelDownload =
-        import('@/platform/missingModel/missingModelDownload')
-      void Promise.allSettled(
-        downloadableCandidates.map(async (c) => {
-          const { fetchModelMetadata } = await missingModelDownload
-          const metadata = await fetchModelMetadata(c.url)
-          if (!controller.signal.aborted && metadata.fileSize !== null) {
-            missingModelStore.setFileSize(c.url, metadata.fileSize)
-          }
-        })
-      )
     }
   } else {
     clearMissingModels(activeWf, silent)
