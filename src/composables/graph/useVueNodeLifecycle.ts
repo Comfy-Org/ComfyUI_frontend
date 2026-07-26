@@ -55,13 +55,6 @@ function useVueNodeLifecycleIndividual() {
     }))
     layoutStore.initializeFromLiteGraph(nodes)
 
-    // Deserialised reroutes bypass createReroute, so they need seeding here for
-    // hit-testing to find them.
-    for (const reroute of activeGraph.reroutes.values()) {
-      const [x, y] = reroute.pos
-      layoutMutations.createReroute(reroute.id, { x, y })
-    }
-
     // While configuring, geometry is still placeholder; the `pos`/`size` setters
     // write through to the store, so the entry catches up as the real values
     // land and no deferral is needed.

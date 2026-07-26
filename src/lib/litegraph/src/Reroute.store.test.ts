@@ -3,9 +3,15 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { computed } from 'vue'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  Reroute
+} from '@/lib/litegraph/src/litegraph'
 import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { toRerouteId } from '@/types/rerouteId'
@@ -255,5 +261,49 @@ describe('Reroute ↔ rerouteStore integration', () => {
     expect(store.getReroute(graph.rootGraph.id, reroute.id)?.floating).toEqual({
       slotType: 'input'
     })
+  })
+})
+
+describe('Reroute position lives only in layoutStore', () => {
+  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
+  it('registers geometry on construction, before any graph wiring', () => {
+    const { graph, link } = connectedGraph()
+
+    const reroute = graph.createReroute([37, 41], link)!
+
+    expect(layoutStore.getRerouteLayout(reroute.id)?.position).toEqual({
+      x: 37,
+      y: 41
+    })
+  })
+
+  it('reads a store write back through pos, with no class-side copy', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 10], link)!
+
+    // Move it in the store only. A mirrored copy on the class could not see
+    // this without a synchronisation step.
+    useLayoutMutations().moveReroute(reroute.id, { x: 300, y: 400 })
+
+    expect([...reroute.pos]).toEqual([300, 400])
+    expect(reroute.boundingRect[0]).toBe(300 - Reroute.radius)
+  })
+
+  it('routes move and snapToGrid through the same stored point', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 10], link)!
+
+    reroute.move(5, 7)
+    expect(layoutStore.getRerouteLayout(reroute.id)?.position).toEqual({
+      x: 15,
+      y: 17
+    })
+
+    reroute.snapToGrid(10)
+    expect([...reroute.pos]).toEqual([
+      layoutStore.getRerouteLayout(reroute.id)!.position.x,
+      layoutStore.getRerouteLayout(reroute.id)!.position.y
+    ])
   })
 })

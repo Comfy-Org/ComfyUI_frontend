@@ -1651,7 +1651,6 @@ export class LGraph
    * @returns The newly created reroute, or undefined when the segment cannot be resolved.
    */
   createReroute(pos: Point, before: LinkSegment): Reroute | undefined {
-    const layoutMutations = useLayoutMutations()
     if (!(before instanceof LLink) && !(before instanceof Reroute)) {
       return
     }
@@ -1668,10 +1667,6 @@ export class LGraph
         : [before]
     const reroute = new Reroute(rerouteId, this, pos, before.parentId)
     this._addReroute(reroute)
-
-    // Register reroute in Layout Store for spatial tracking
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createReroute(rerouteId, { x: pos[0], y: pos[1] })
 
     // Splice the new reroute into every chain that contained `before`
     for (const link of chainLinks) {

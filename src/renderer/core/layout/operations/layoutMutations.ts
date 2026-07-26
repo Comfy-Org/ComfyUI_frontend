@@ -31,10 +31,11 @@ interface LayoutMutations {
   // Reroute operations
   createReroute(rerouteId: RerouteId, position: Point): void
   deleteReroute(rerouteId: RerouteId): void
+  /** `previousPosition` defaults to the stored one; callers rarely have a better answer. */
   moveReroute(
     rerouteId: RerouteId,
     position: Point,
-    previousPosition: Point
+    previousPosition?: Point
   ): void
 
   // Group operations
@@ -295,19 +296,17 @@ export function useLayoutMutations(): LayoutMutations {
   const moveReroute = (
     rerouteId: RerouteId,
     position: Point,
-    previousPosition: Point
+    previousPosition?: Point
   ): void => {
-    logger.debug('Moving reroute:', {
-      rerouteId,
-      from: previousPosition,
-      to: position
-    })
     layoutStore.applyOperation({
       type: 'moveReroute',
       entity: 'reroute',
       rerouteId,
       position,
-      previousPosition,
+      previousPosition:
+        previousPosition ??
+        layoutStore.getRerouteLayout(rerouteId)?.position ??
+        position,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
