@@ -13,6 +13,12 @@ describe('shouldUseVueNodeLowDetail', () => {
     expect(shouldUseVueNodeLowDetail(0.5, true, 95, false)).toBe(false)
   })
 
+  it('rejects non-finite canvas scales', () => {
+    expect(shouldUseVueNodeLowDetail(Number.NaN, true, 95, true)).toBe(false)
+    expect(shouldUseVueNodeLowDetail(Infinity, true, 95, true)).toBe(false)
+    expect(shouldUseVueNodeLowDetail(-Infinity, true, 95, true)).toBe(false)
+  })
+
   it('clamps the supported threshold range', () => {
     expect(shouldUseVueNodeLowDetail(0.09, true, 0, true)).toBe(true)
     expect(shouldUseVueNodeLowDetail(0.1, true, 0, true)).toBe(false)
