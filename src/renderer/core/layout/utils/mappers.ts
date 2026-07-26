@@ -2,46 +2,53 @@ import * as Y from 'yjs'
 
 import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
-export type NodeLayoutMap = Y.Map<NodeLayout[keyof NodeLayout]>
+/**
+ * A node's stored geometry: one `[x, y, width, height]` tuple. Position, size
+ * and bounds are views of it rather than fields of their own, so they cannot
+ * disagree, and a whole-tuple replace is the write a CRDT register wants.
+ */
+type StoredNodeRect = [x: number, y: number, width: number, height: number]
 
-export const NODE_LAYOUT_DEFAULTS: NodeLayout = {
-  id: toNodeId('unknown-node'),
-  position: { x: 0, y: 0 },
-  size: { width: 100, height: 50 },
-  zIndex: 0,
-  visible: true,
-  bounds: { x: 0, y: 0, width: 100, height: 50 }
+type StoredNode = {
+  id: NodeId
+  rect: StoredNodeRect
+  zIndex: number
+  visible: boolean
 }
 
+export type NodeLayoutMap = Y.Map<StoredNode[keyof StoredNode]>
+
+const DEFAULT_RECT: StoredNodeRect = [0, 0, 100, 50]
+
 export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
-  const ynode = new Y.Map<NodeLayout[keyof NodeLayout]>() as NodeLayoutMap
+  const ynode = new Y.Map<StoredNode[keyof StoredNode]>() as NodeLayoutMap
   ynode.set('id', layout.id)
-  ynode.set('position', layout.position)
-  ynode.set('size', layout.size)
+  ynode.set('rect', [
+    layout.position.x,
+    layout.position.y,
+    layout.size.width,
+    layout.size.height
+  ])
   ynode.set('zIndex', layout.zIndex)
   ynode.set('visible', layout.visible)
-  ynode.set('bounds', layout.bounds)
   return ynode
 }
 
-function getOr<K extends keyof NodeLayout>(
-  map: NodeLayoutMap,
-  key: K,
-  fallback: NodeLayout[K]
-): NodeLayout[K] {
-  const v = map.get(key)
-  return (v ?? fallback) as NodeLayout[K]
+function yNodeRect(ynode: NodeLayoutMap): StoredNodeRect {
+  return (ynode.get('rect') as StoredNodeRect | undefined) ?? DEFAULT_RECT
 }
 
 export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
+  const [x, y, width, height] = yNodeRect(ynode)
   return {
-    id: getOr(ynode, 'id', NODE_LAYOUT_DEFAULTS.id),
-    position: getOr(ynode, 'position', NODE_LAYOUT_DEFAULTS.position),
-    size: getOr(ynode, 'size', NODE_LAYOUT_DEFAULTS.size),
-    zIndex: getOr(ynode, 'zIndex', NODE_LAYOUT_DEFAULTS.zIndex),
-    visible: getOr(ynode, 'visible', NODE_LAYOUT_DEFAULTS.visible),
-    bounds: getOr(ynode, 'bounds', NODE_LAYOUT_DEFAULTS.bounds)
+    id: (ynode.get('id') ?? toNodeId('unknown-node')) as NodeId,
+    position: { x, y },
+    size: { width, height },
+    bounds: { x, y, width, height },
+    zIndex: (ynode.get('zIndex') ?? 0) as number,
+    visible: (ynode.get('visible') ?? true) as boolean
   }
 }
 

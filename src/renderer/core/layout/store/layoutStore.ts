@@ -1043,8 +1043,12 @@ class LayoutStoreImpl implements LayoutStore {
     this.spatialIndex.update(nodeId, newBounds)
 
     // Then update CRDT
-    ynode.set('position', operation.position)
-    this.updateNodeBounds(ynode, operation.position, size)
+    ynode.set('rect', [
+      operation.position.x,
+      operation.position.y,
+      size.width,
+      size.height
+    ])
 
     change.nodeIds.push(nodeId)
   }
@@ -1070,8 +1074,12 @@ class LayoutStoreImpl implements LayoutStore {
     this.spatialIndex.update(nodeId, newBounds)
 
     // Then update CRDT
-    ynode.set('size', operation.size)
-    this.updateNodeBounds(ynode, position, operation.size)
+    ynode.set('rect', [
+      position.x,
+      position.y,
+      operation.size.width,
+      operation.size.height
+    ])
 
     change.nodeIds.push(nodeId)
   }
@@ -1146,12 +1154,12 @@ class LayoutStoreImpl implements LayoutStore {
       const ynode = this.ynodes.get(String(nodeId))
       if (!ynode || !data) continue
 
-      ynode.set('position', { x: data.bounds.x, y: data.bounds.y })
-      ynode.set('size', {
-        width: data.bounds.width,
-        height: data.bounds.height
-      })
-      ynode.set('bounds', data.bounds)
+      ynode.set('rect', [
+        data.bounds.x,
+        data.bounds.y,
+        data.bounds.width,
+        data.bounds.height
+      ])
 
       spatialUpdates.push({ nodeId, bounds: data.bounds })
       change.nodeIds.push(nodeId)
@@ -1227,18 +1235,6 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Update node bounds helper
    */
-  private updateNodeBounds(
-    ynode: NodeLayoutMap,
-    position: Point,
-    size: { width: number; height: number }
-  ): void {
-    ynode.set('bounds', {
-      x: position.x,
-      y: position.y,
-      width: size.width,
-      height: size.height
-    })
-  }
 
   /**
    * Clean up all segment layouts for a link
