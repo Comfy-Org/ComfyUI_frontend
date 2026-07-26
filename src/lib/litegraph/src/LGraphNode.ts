@@ -2142,6 +2142,18 @@ export class LGraphNode
   }
 
   /**
+   * Measures the collapsed node width using the legacy canvas title formula.
+   */
+  measureCollapsedWidth(ctx: CanvasRenderingContext2D): number {
+    ctx.font = this.innerFontStyle
+    return Math.min(
+      this.size[0],
+      cachedMeasureText(ctx, this.getTitle() ?? '') +
+        LiteGraph.NODE_TITLE_HEIGHT * 2
+    )
+  }
+
+  /**
    * Internal method to measure the node for rendering.  Prefer {@link boundingRect} where possible.
    *
    * Populates {@link out} with the results in graph space.
@@ -2173,14 +2185,7 @@ export class LGraphNode
           ? layout.bounds.height + LiteGraph.NODE_TITLE_HEIGHT
           : LiteGraph.NODE_TITLE_HEIGHT
     } else {
-      if (ctx) ctx.font = this.innerFontStyle
-      this._collapsed_width = Math.min(
-        this.size[0],
-        ctx
-          ? cachedMeasureText(ctx, this.getTitle() ?? '') +
-              LiteGraph.NODE_TITLE_HEIGHT * 2
-          : 0
-      )
+      this._collapsed_width = ctx ? this.measureCollapsedWidth(ctx) : 0
       out[2] = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
       out[3] = LiteGraph.NODE_TITLE_HEIGHT
     }

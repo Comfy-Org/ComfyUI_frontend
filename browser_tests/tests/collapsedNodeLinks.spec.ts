@@ -87,13 +87,88 @@ test.describe(
     test('links recover correct positions after expand', async ({
       comfyPage
     }) => {
-      const node = await comfyPage.vueNodes.getFixtureByTitle(NODE_TITLE)
-      await node.toggleCollapse()
-      await comfyPage.nextFrame()
-      await node.toggleCollapse()
+      const serialized = await comfyPage.workflow.getExportedWorkflow()
+      const serializedNode = serialized.nodes.find(
+        (node) => String(node.id) === NODE_ID
+      )
+      if (!serializedNode) throw new Error(`Node ${NODE_ID} not found`)
+      serializedNode.flags = { ...serializedNode.flags, collapsed: true }
+      await comfyPage.workflow.loadGraphData(serialized)
+
+      const collapsedNode =
+        await comfyPage.vueNodes.getFixtureByTitle(NODE_TITLE)
+      await expect(collapsedNode.root).toHaveAttribute('data-collapsed', 'true')
+      await assertNodeSlotsWithinBounds(comfyPage.page, NODE_ID)
+      const collapsedWidths = await comfyPage.page.evaluate((nodeId) => {
+        const node = window.app!.canvas.graph!._nodes.find(
+          (candidate) => String(candidate.id) === nodeId
+        )
+        if (!node) throw new Error(`Node ${nodeId} not found`)
+        const element = document.querySelector<HTMLElement>(
+          `[data-node-id="${nodeId}"]`
+        )
+        if (!element) throw new Error(`Node element ${nodeId} not found`)
+        return {
+          cached: node._collapsed_width,
+          expected: node.measureCollapsedWidth(window.app!.canvas.ctx),
+          rendered: element.offsetWidth
+        }
+      }, NODE_ID)
+      expect(collapsedWidths.cached).toBeCloseTo(collapsedWidths.expected)
+      expect(collapsedWidths.rendered).toBeCloseTo(collapsedWidths.expected)
+
+      await comfyPage.page.evaluate((nodeId) => {
+        const node = window.app!.canvas.graph!._nodes.find(
+          (candidate) => String(candidate.id) === nodeId
+        )
+        if (!node) throw new Error(`Node ${nodeId} not found`)
+        node.collapse()
+      }, NODE_ID)
+      await expect(collapsedNode.root).not.toHaveAttribute(
+        'data-collapsed',
+        'true'
+      )
       await comfyPage.nextFrame()
 
       await assertNodeSlotsWithinBounds(comfyPage.page, NODE_ID)
+      const getOutputAlignmentError = () =>
+        comfyPage.page.evaluate((nodeId) => {
+          const node = window.app!.canvas.graph!._nodes.find(
+            (candidate) => String(candidate.id) === nodeId
+          )
+          const slot = document.querySelector<HTMLElement>(
+            `[data-node-id="${nodeId}"] .lg-slot--output [data-slot-key]`
+          )
+          const nodeElement = document.querySelector<HTMLElement>(
+            `[data-node-id="${nodeId}"]`
+          )
+          if (!node || !slot || !nodeElement) return Number.POSITIVE_INFINITY
+
+          const [x, y] = node.getOutputPos(0)
+          const nodeRect = nodeElement.getBoundingClientRect()
+          const slotRect = slot.getBoundingClientRect()
+          const scale = nodeRect.width / node.size[0]
+          const expectedX =
+            node.pos[0] +
+            (slotRect.left + slotRect.width / 2 - nodeRect.left) / scale
+          const expectedY =
+            node.pos[1] +
+            (slotRect.top + slotRect.height / 2 - nodeRect.top) / scale -
+            window.LiteGraph!.NODE_TITLE_HEIGHT
+          return Math.hypot(x - expectedX, y - expectedY)
+        }, NODE_ID)
+      await expect.poll(getOutputAlignmentError).toBeLessThan(0.5)
+
+      const box = await collapsedNode.boundingBox()
+      if (!box) throw new Error(`Node ${NODE_ID} has no bounding box`)
+      await comfyPage.page.mouse.move(box.x + 100, box.y + 15)
+      await comfyPage.page.mouse.down()
+      await comfyPage.page.mouse.move(box.x + 300, box.y + 115, { steps: 10 })
+      await comfyPage.page.mouse.up()
+      await comfyPage.nextFrame()
+
+      await assertNodeSlotsWithinBounds(comfyPage.page, NODE_ID)
+      await expect.poll(getOutputAlignmentError).toBeLessThan(0.5)
     })
   }
 )

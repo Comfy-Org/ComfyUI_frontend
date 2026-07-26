@@ -287,6 +287,10 @@ import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/compo
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import {
+  invalidateNodeSlotLayouts,
+  scheduleSlotLayoutSync
+} from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
@@ -521,6 +525,7 @@ onMounted(() => {
     nodeData.id,
     handleLayoutChange
   )
+  if (isCollapsed.value) void syncCollapseState(true)
 })
 
 onUnmounted(() => {
@@ -560,9 +565,10 @@ const handleResizePointerDown = (
   startResize(event, corner)
 }
 
-watch(isCollapsed, async (collapsed) => {
+async function syncCollapseState(collapsed: boolean) {
   const element = nodeContainerRef.value
   if (!element) return
+  invalidateNodeSlotLayouts(nodeData.id)
   if (collapsed) {
     element.style.setProperty('--node-width-x', `${size.value.width}px`)
     element.style.setProperty(
@@ -577,8 +583,12 @@ watch(isCollapsed, async (collapsed) => {
 
     const node = lgraphNode.value
     if (node && element.offsetWidth > 0) {
-      node._collapsed_width = Math.min(element.offsetWidth, node.size[0])
-      canvasStore.canvas?.setDirty(false, true)
+      const ctx = canvasStore.canvas?.ctx
+      const collapsedWidth = ctx
+        ? node.measureCollapsedWidth(ctx)
+        : Math.min(element.offsetWidth, node.size[0])
+      element.style.setProperty('--node-width', `${collapsedWidth}px`)
+      node._collapsed_width = collapsedWidth
     }
   } else {
     element.style.setProperty('--node-width', `${size.value.width}px`)
@@ -588,8 +598,16 @@ watch(isCollapsed, async (collapsed) => {
     )
     element.style.setProperty('--node-width-x', '')
     element.style.setProperty('--node-height-x', '')
+
+    await nextTick()
+    if (isCollapsed.value || !element.isConnected) return
   }
-})
+
+  scheduleSlotLayoutSync(nodeData.id)
+  canvasStore.canvas?.setDirty(false, true)
+}
+
+watch(isCollapsed, syncCollapseState)
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {

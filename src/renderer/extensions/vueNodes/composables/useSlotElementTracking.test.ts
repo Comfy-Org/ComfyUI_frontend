@@ -14,6 +14,7 @@ import type { SlotLayout } from '@/renderer/core/layout/types'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 import {
+  invalidateNodeSlotLayouts,
   syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
   requestSlotLayoutSyncForAllNodes,
@@ -27,9 +28,10 @@ const mockCanvasState = vi.hoisted(() => ({
 const mockClientPosToCanvasPos = vi.hoisted(() =>
   vi.fn(([x, y]: [number, number]) => [x * 0.5, y * 0.5] as [number, number])
 )
+const mockSetDirty = vi.hoisted(() => vi.fn())
 
 vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: mockGraph, setDirty: vi.fn() } }
+  app: { canvas: { graph: mockGraph, setDirty: mockSetDirty } }
 }))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -62,11 +64,15 @@ function createTestSetup(type: 'input' | 'output') {
   return { el, TestComponent }
 }
 
-function createSlotElement(collapsed = false): HTMLElement {
+function createSlotElement(
+  collapsed = false,
+  rects?: { node?: DOMRect; slot?: DOMRect }
+): HTMLElement {
   const container = document.createElement('div')
   container.dataset.nodeId = NODE_ID
   if (collapsed) container.dataset.collapsed = ''
   container.getBoundingClientRect = () =>
+    rects?.node ??
     ({
       left: 0,
       top: 0,
@@ -77,11 +83,12 @@ function createSlotElement(collapsed = false): HTMLElement {
       x: 0,
       y: 0,
       toJSON: () => ({})
-    }) as DOMRect
+    } as DOMRect)
   document.body.appendChild(container)
 
   const el = document.createElement('div')
   el.getBoundingClientRect = () =>
+    rects?.slot ??
     ({
       left: 10,
       top: 30,
@@ -92,7 +99,7 @@ function createSlotElement(collapsed = false): HTMLElement {
       x: 10,
       y: 30,
       toJSON: () => ({})
-    }) as DOMRect
+    } as DOMRect)
   container.appendChild(el)
 
   return el
@@ -134,6 +141,7 @@ describe('useSlotElementTracking', () => {
     mockGraph._nodes = [{ id: 1 }]
     mockCanvasState.canvas = {}
     mockClientPosToCanvasPos.mockClear()
+    mockSetDirty.mockClear()
   })
 
   it.for([
@@ -151,6 +159,34 @@ describe('useSlotElementTracking', () => {
 
     expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
     expect(registryStore.getNode(NODE_ID)).toBeUndefined()
+  })
+
+  it('invalidates cached slot geometry for a node', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const node = useNodeSlotRegistryStore().ensureNode(NODE_ID)
+    node.slots.set(slotKey, {
+      el: createSlotElement(),
+      index: SLOT_INDEX,
+      type: 'input',
+      cachedOffset: { x: 15, y: 5 }
+    })
+    layoutStore.batchUpdateSlotLayouts([
+      {
+        key: slotKey,
+        layout: {
+          nodeId: NODE_ID,
+          index: SLOT_INDEX,
+          type: 'input',
+          position: { x: 15, y: 5 },
+          bounds: { x: 11, y: 1, width: 8, height: 8 }
+        }
+      }
+    ])
+
+    invalidateNodeSlotLayouts(NODE_ID)
+
+    expect(node.slots.get(slotKey)?.cachedOffset).toBeUndefined()
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
   })
 
   it('clears pendingSlotSync when slot layouts already exist', () => {
@@ -271,6 +307,52 @@ describe('useSlotElementTracking', () => {
     syncNodeSlotLayoutsFromDOM(NODE_ID)
 
     expect(batchUpdateSpy).not.toHaveBeenCalled()
+  })
+
+  it('uses model width while expanded bounds settle', () => {
+    layoutStore.batchUpdateNodeBounds([
+      {
+        nodeId: NODE_ID,
+        bounds: { x: 0, y: 0, width: 80, height: 100 },
+        preserveSize: true
+      }
+    ])
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, false)
+    const slotEl = createSlotElement(false, {
+      node: new DOMRect(0, 0, 200, 100),
+      slot: new DOMRect(190, 30, 10, 10)
+    })
+    useNodeSlotRegistryStore().ensureNode(NODE_ID).slots.set(slotKey, {
+      el: slotEl,
+      index: SLOT_INDEX,
+      type: 'output'
+    })
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(slotKey)?.position.x).toBe(195)
+  })
+
+  it('redraws links after cached slot positions follow a node move', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    mockSetDirty.mockClear()
+
+    layoutStore.batchUpdateNodeBounds([
+      {
+        nodeId: NODE_ID,
+        bounds: { x: 100, y: 50, width: 200, height: 100 },
+        preserveSize: true
+      }
+    ])
+    await nextTick()
+
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+      x: 115,
+      y: 55
+    })
+    expect(mockSetDirty).toHaveBeenCalledWith(false, true)
+    unmount()
   })
 
   describe('collapsed node slot sync', () => {

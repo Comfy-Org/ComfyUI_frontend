@@ -39,6 +39,16 @@ export function scheduleSlotLayoutSync(nodeId: NodeId) {
   raf.schedule()
 }
 
+export function invalidateNodeSlotLayouts(nodeId: NodeId) {
+  const node = useNodeSlotRegistryStore().getNode(nodeId)
+  if (!node) return
+
+  for (const [slotKey, entry] of node.slots) {
+    entry.cachedOffset = undefined
+    layoutStore.deleteSlotLayout(slotKey)
+  }
+}
+
 function shouldWaitForSlotLayouts(): boolean {
   const graph = app.canvas?.graph
   const hasNodes = Boolean(graph && graph._nodes && graph._nodes.length > 0)
@@ -258,7 +268,10 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
     })
   }
 
-  if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
+  if (batch.length) {
+    layoutStore.batchUpdateSlotLayouts(batch)
+    app.canvas?.setDirty(false, true)
+  }
 }
 
 export function useSlotElementTracking(options: {

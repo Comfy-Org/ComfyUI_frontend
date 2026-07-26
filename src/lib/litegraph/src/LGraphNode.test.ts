@@ -679,6 +679,19 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
     })
 
+    test('legacy mode measures collapsed width from the title', () => {
+      LiteGraph.vueNodesMode = false
+      const ctx = {
+        font: '',
+        measureText: vi.fn(() => ({ width: 70 }))
+      } as unknown as CanvasRenderingContext2D
+
+      node.measure(out, ctx)
+
+      expect(ctx.font).toBe(node.innerFontStyle)
+      expect(out[2]).toBe(70 + LiteGraph.NODE_TITLE_HEIGHT * 2)
+    })
+
     test('Vue mode uses cached collapsed width without replacing model size', () => {
       LiteGraph.vueNodesMode = true
       node._collapsed_width = 90

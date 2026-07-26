@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -18,8 +18,18 @@ import { app } from '@/scripts/app'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
-  mockLgraphNode: null as Record<string, unknown> | null
+  mockLgraphNode: null as Record<string, unknown> | null,
+  invalidateNodeSlotLayouts: vi.fn(),
+  scheduleSlotLayoutSync: vi.fn()
 }))
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
+  () => ({
+    invalidateNodeSlotLayouts: mockData.invalidateNodeSlotLayouts,
+    scheduleSlotLayoutSync: mockData.scheduleSlotLayoutSync
+  })
+)
 
 vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>
@@ -258,6 +268,56 @@ describe('LGraphNode', () => {
 
     expect(root.style.getPropertyValue('--node-height')).toBe('')
     expect(root.style.getPropertyValue('--node-height-x')).toBe('130px')
+  })
+
+  it('synchronizes initially collapsed size and expanded slots', async () => {
+    const offsetWidth = vi
+      .spyOn(HTMLElement.prototype, 'offsetWidth', 'get')
+      .mockReturnValue(120)
+    const graphNode = {
+      _collapsed_width: undefined as number | undefined,
+      isSubgraphNode: () => false,
+      size: [200, 100]
+    }
+    mockData.mockLgraphNode = graphNode
+
+    try {
+      const collapsedNodeData = {
+        ...mockNodeData,
+        flags: { collapsed: true }
+      }
+      const { container, rerender } = renderLGraphNode({
+        nodeData: collapsedNodeData
+      })
+      const root = getNodeRoot(container)
+
+      await waitFor(() => expect(graphNode._collapsed_width).toBe(120))
+      expect(root.style.getPropertyValue('--node-width')).toBe('120px')
+      expect(mockData.invalidateNodeSlotLayouts).toHaveBeenCalledWith(
+        mockNodeData.id
+      )
+      expect(mockData.scheduleSlotLayoutSync).toHaveBeenCalledWith(
+        mockNodeData.id
+      )
+
+      mockData.invalidateNodeSlotLayouts.mockClear()
+      mockData.scheduleSlotLayoutSync.mockClear()
+      await rerender({
+        nodeData: { ...collapsedNodeData, flags: { collapsed: false } }
+      })
+
+      await waitFor(() =>
+        expect(mockData.scheduleSlotLayoutSync).toHaveBeenCalledWith(
+          mockNodeData.id
+        )
+      )
+      expect(mockData.invalidateNodeSlotLayouts).toHaveBeenCalledWith(
+        mockNodeData.id
+      )
+    } finally {
+      offsetWidth.mockRestore()
+      mockData.mockLgraphNode = null
+    }
   })
 
   it('should initialize height CSS vars for expanded nodes', () => {
