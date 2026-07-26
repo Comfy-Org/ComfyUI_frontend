@@ -326,6 +326,9 @@ interface LGraphNodeProps {
 }
 
 const { nodeData, error = null } = defineProps<LGraphNodeProps>()
+const emit = defineEmits<{
+  'node-mounted': [nodeId: VueNodeData['id']]
+}>()
 
 const { t } = useI18n()
 
@@ -506,6 +509,7 @@ onMounted(() => {
     nodeData.id,
     handleLayoutChange
   )
+  emit('node-mounted', nodeData.id)
 })
 
 onUnmounted(() => {
