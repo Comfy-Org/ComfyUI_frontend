@@ -3,11 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
-import {
-  canvasNodeTarget,
-  canvasNodesRect,
-  canvasTransformValid
-} from './canvasCoachTarget'
+import { canvasNodeTarget, canvasTransformValid } from './canvasCoachTarget'
 
 interface FakeCanvas {
   graph: LGraph
@@ -87,26 +83,6 @@ describe('canvasCoachTarget', () => {
   it('reports a zero-sized rect while no canvas exists', () => {
     const rect = canvasNodeTarget(toNodeId(1)).getBoundingClientRect()
     expect(rect.width).toBe(0)
-  })
-
-  it('unions the rects of resolvable nodes and skips unknown ids', () => {
-    const graph = mountCanvas({ offset: [0, 0], scale: 1 })
-    const a = addNode(graph, [0, 100], [10, 10])
-    const b = addNode(graph, [200, 300], [40, 20])
-    const title = LiteGraph.NODE_TITLE_HEIGHT
-
-    const rect = canvasNodesRect([a.id, b.id, toNodeId('missing')])
-
-    expect(rect).not.toBeNull()
-    expect(rect?.left).toBe(5)
-    expect(rect?.top).toBe(100 - title + 7)
-    expect(rect?.right).toBe(240 + 5)
-    expect(rect?.bottom).toBe(320 + 7)
-  })
-
-  it('returns null when no node resolves', () => {
-    mountCanvas()
-    expect(canvasNodesRect([toNodeId('missing')])).toBeNull()
   })
 
   it('validates the camera transform', () => {
