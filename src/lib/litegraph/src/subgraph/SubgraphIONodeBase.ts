@@ -88,8 +88,7 @@ export abstract class SubgraphIONodeBase<
   ) {}
 
   move(deltaX: number, deltaY: number): void {
-    this.pos[0] += deltaX
-    this.pos[1] += deltaY
+    this.pos = [this.pos[0] + deltaX, this.pos[1] + deltaY]
   }
 
   /** @inheritdoc */
