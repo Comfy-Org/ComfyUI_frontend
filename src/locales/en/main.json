@@ -2210,6 +2210,9 @@
     "addColor": "Add a color",
     "swatchTitle": "Click edit · drag reorder · right-click remove"
   },
+  "videoEdit": {
+    "adjustCrop": "Adjust crop region"
+  },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
