@@ -2686,12 +2686,11 @@ export class LGraph
 
           if (LiteGraph.alwaysSnapToGrid && node) {
             const snapTo = this.getSnapToGridSize()
-            if (node.snapToGrid(snapTo)) {
-              // snapToGrid mutates the internal _pos array in-place, bypassing the setter
-              // This reassignment triggers the pos setter to sync to the Vue layout store
-              node.pos = [node.pos[0], node.pos[1]]
-            }
-            snapPoint(node.size, snapTo, 'ceil')
+            node.snapToGrid(snapTo)
+
+            const snappedSize: Point = [node.size[0], node.size[1]]
+            snapPoint(snappedSize, snapTo, 'ceil')
+            node.size = snappedSize
           }
         }
       }

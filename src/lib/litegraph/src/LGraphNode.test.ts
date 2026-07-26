@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
@@ -787,6 +788,45 @@ describe('LGraphNode', () => {
       expect(out[2]).toBe(200)
       expect(out[3]).toBe(120 + LiteGraph.NODE_TITLE_HEIGHT)
     })
+  })
+})
+
+describe('snapToGrid', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('commits the snapped position to the layout store', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [103, 97]
+    graph.add(node)
+    // Node layout entries are seeded by the renderer, so stand one up here;
+    // without it the pos setter has nothing to commit to.
+    layoutStore.initializeFromLiteGraph([
+      { id: node.id, pos: [103, 97], size: [140, 60] }
+    ])
+
+    expect(node.snapToGrid(20)).toBe(true)
+
+    expect([...node.pos]).toEqual([100, 100])
+    // snapPoint mutates in place, so snapping the backing array directly would
+    // leave the store on the pre-snap position.
+    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+      x: 100,
+      y: 100
+    })
+  })
+
+  test('leaves a pinned node alone', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [103, 97]
+    graph.add(node)
+    node.pin(true)
+
+    expect(node.snapToGrid(20)).toBe(false)
+    expect([...node.pos]).toEqual([103, 97])
   })
 })
 
