@@ -2247,14 +2247,6 @@ export class LGraphNode
   move(deltaX: number, deltaY: number): void {
     if (this.pinned) return
 
-    // If Vue nodes mode is enabled, skip LiteGraph's direct position update
-    // The layout store will handle the movement and sync back to LiteGraph
-    if (LiteGraph.vueNodesMode) {
-      // Vue nodes handle their own dragging through the layout store
-      // This prevents the snap-back issue from conflicting position updates
-      return
-    }
-
     this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
   }
 

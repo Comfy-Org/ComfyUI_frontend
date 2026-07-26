@@ -3573,12 +3573,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const deltaX = delta[0] / this.ds.scale
         const deltaY = delta[1] / this.ds.scale
 
-        if (LiteGraph.vueNodesMode) {
-          this.moveChildNodesInGroupVueMode(allItems, deltaX, deltaY)
-        } else {
-          for (const item of allItems) {
-            item.move(deltaX, deltaY, true)
-          }
+        for (const item of allItems) {
+          item.move(deltaX, deltaY, true)
         }
 
         this._dirty()
@@ -3676,12 +3672,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const selected = this.selectedItems
         const allItems = getDraggedItems(selected, this._lastDragModifiers)
 
-        if (LiteGraph.vueNodesMode) {
-          this.moveChildNodesInGroupVueMode(allItems, panX, panY)
-        } else {
-          for (const item of allItems) {
-            item.move(panX, panY, true)
-          }
+        for (const item of allItems) {
+          item.move(panX, panY, true)
         }
 
         this._dirty()
@@ -4340,17 +4332,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    // Adjust positions - use move/setPos to ensure layout store is updated
+    // Children of pasted groups are in `created` already, so skip them here.
     const dx = position[0] - offsetX
     const dy = position[1] - offsetY
     for (const item of created) {
-      if (item instanceof LGraphNode) {
-        item.setPos(item.pos[0] + dx, item.pos[1] + dy)
-      } else if (item instanceof Reroute) {
-        item.move(dx, dy)
-      } else if (item instanceof LGraphGroup) {
-        item.move(dx, dy, true)
-      }
+      item.move(dx, dy, true)
     }
 
     // TODO: Report failures, i.e. `failedNodes`
@@ -8941,20 +8927,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   /**
-   * Calculate new position with delta
-   */
-  private calculateNewPosition(
-    node: LGraphNode,
-    deltaX: number,
-    deltaY: number
-  ): { x: number; y: number } {
-    return {
-      x: node.pos[0] + deltaX,
-      y: node.pos[1] + deltaY
-    }
-  }
-
-  /**
    * Apply batched node position updates
    */
   private applyNodePositionUpdates(
@@ -8964,30 +8936,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // setPos automatically syncs to layout store
       node.setPos(newPos.x, newPos.y)
     }
-  }
-
-  moveChildNodesInGroupVueMode(
-    allItems: Set<Positionable>,
-    deltaX: number,
-    deltaY: number
-  ) {
-    const nodesToMove: NewNodePosition[] = []
-
-    // First, collect all the moves we need to make
-    for (const item of allItems) {
-      if (item instanceof LGraphNode) {
-        nodesToMove.push({
-          node: item,
-          newPos: this.calculateNewPosition(item, deltaX, deltaY)
-        })
-      } else {
-        // Other items (reroutes, etc.)
-        item.move(deltaX, deltaY, true)
-      }
-    }
-
-    // Now apply all the node moves at once
-    this.applyNodePositionUpdates(nodesToMove)
   }
 
   repositionNodesVueMode(nodesToReposition: NewNodePosition[]) {
