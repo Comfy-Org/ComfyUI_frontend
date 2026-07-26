@@ -1955,6 +1955,7 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
@@ -2212,7 +2213,32 @@
     "swatchTitle": "Click edit · drag reorder · right-click remove"
   },
   "videoEdit": {
-    "adjustCrop": "Adjust crop region"
+    "trimVideo": "Trim Video",
+    "cropVideo": "Crop Video",
+    "startFrame": "Start Frame",
+    "endFrame": "End Frame",
+    "duration": "Duration",
+    "frames": "Number of Frames",
+    "fileSize": "File Size",
+    "resolution": "{width} × {height}",
+    "play": "Play",
+    "pause": "Pause",
+    "loadingVideo": "Loading video preview",
+    "loadingFilmstrip": "Loading filmstrip…",
+    "seekVideo": "Seek video",
+    "adjustStartFrame": "Adjust start frame",
+    "adjustEndFrame": "Adjust end frame",
+    "adjustCrop": "Adjust crop region",
+    "setStartFrame": "Reset start frame",
+    "setEndFrame": "Reset end frame",
+    "durationZero": "0s",
+    "durationSeconds": "{count}s",
+    "selectedOfTotal": "{selected} / {total}",
+    "fileSizeUnknown": "—",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB",
+    "noVideoSource": "Select or connect a video to preview and edit"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
