@@ -70,6 +70,9 @@ describe('ModelMenuGroup', () => {
       screen.queryByRole('button', { name: 'Wireframe' })
     ).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '+Y' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Up Direction' }))
+    expect(screen.queryByRole('button', { name: '+Y' })).not.toBeInTheDocument()
   })
 
   it('toggles the skeleton only when supported', async () => {
