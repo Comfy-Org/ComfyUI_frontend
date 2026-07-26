@@ -165,6 +165,7 @@ interface SubscribeRequest {
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
+  checkout_invoice_payment?: boolean
   /** Required for the per-credit Team plan; selects the slider stop. */
   team_credit_stop_id?: string
   billing_cycle?: SubscribeBillingCycle
@@ -175,6 +176,7 @@ interface SubscribeRequest {
 export interface SubscribeOptions {
   returnUrl?: string
   cancelUrl?: string
+  checkoutInvoicePayment?: boolean
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
   confirmReactivation?: boolean
@@ -305,15 +307,30 @@ export interface CreateTopupResponse {
   amount_cents: number
 }
 
-type BillingOpStatus = 'pending' | 'succeeded' | 'failed'
-
-export interface BillingOpStatusResponse {
-  id: string
-  status: BillingOpStatus
-  error_message?: string
-  started_at: string
-  completed_at?: string
+interface BillingOpCustomerAction {
+  type: 'pay_hosted_invoice' | 'pay_checkout_invoice'
+  url: string
 }
+
+interface BillingOpStatusBase {
+  id: string
+  started_at: string
+}
+
+export type BillingOpStatusResponse = BillingOpStatusBase &
+  (
+    | {
+        status: 'pending'
+        customer_action?: BillingOpCustomerAction
+      }
+    | {
+        status: 'succeeded' | 'failed'
+        error_message?: string
+        customer_action?: never
+      }
+  ) & {
+    completed_at?: string
+  }
 
 interface BillingEvent {
   event_type: string
@@ -689,6 +706,7 @@ export const workspaceApi = {
           plan_slug: planSlug,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
+          checkout_invoice_payment: options.checkoutInvoicePayment,
           team_credit_stop_id: options.teamCreditStopId,
           billing_cycle: options.billingCycle,
           confirm_reactivation: options.confirmReactivation
