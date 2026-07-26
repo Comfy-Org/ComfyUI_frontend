@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   LGraph,
   LGraphGroup,
@@ -1303,6 +1304,31 @@ describe('Subgraph Unpacking', () => {
 
     // After unpacking, there should be exactly 1 link (not 4)
     expect(rootGraph.links.size).toBe(1)
+  })
+
+  it('offsets unpacked group geometry in the layout store too', () => {
+    registerTestNodes()
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const group = new LGraphGroup('inner', 909)
+    group.pos = [10, 20]
+    group.size = [200, 150]
+    subgraph.add(group)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    rootGraph.unpackSubgraph(subgraphNode)
+
+    // The unpacked copy is offset by the wrapper position; element-wise writes
+    // would reach _pos and leave the store holding the pre-offset value.
+    const unpacked = rootGraph.groups.find((g) => g.title === 'inner')!
+    expect(layoutStore.getGroupLayout(unpacked.id)?.position).toEqual({
+      x: unpacked.pos[0],
+      y: unpacked.pos[1]
+    })
+    expect(unpacked.pos[0]).toBeGreaterThan(10)
   })
 
   it('preserves correct link connections when unpacking with duplicate links', () => {

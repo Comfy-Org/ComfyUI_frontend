@@ -2143,8 +2143,8 @@ export class LGraph
       const group = new LGraphGroup(g_info.title, g_info.id)
       this.add(group, true)
       group.configure(g_info)
-      group.pos[0] += offsetX
-      group.pos[1] += offsetY
+      // Whole-value assignment: element writes reach _pos but not the store.
+      group.pos = [group.pos[0] + offsetX, group.pos[1] + offsetY]
       toSelect.push(group)
     }
     const newLinks: {
