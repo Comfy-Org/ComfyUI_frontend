@@ -418,6 +418,142 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures resubscribe succeeded and failed outcomes', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackResubscribeSucceeded({ source: 'settings_billing_panel' })
+      provider.trackResubscribeFailed({
+        source: 'settings_billing_panel',
+        error_message: 'card declined'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.RESUBSCRIBE_SUCCEEDED,
+        { source: 'settings_billing_panel' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.RESUBSCRIBE_FAILED,
+        { source: 'settings_billing_panel', error_message: 'card declined' }
+      )
+    })
+
+    it('captures api credit topup failures with their error message', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackApiCreditTopupFailed({ error_message: 'card declined' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.API_CREDIT_TOPUP_FAILED,
+        { error_message: 'card declined' }
+      )
+    })
+
+    it('captures workspace invite failures with attempted/failed counts', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackWorkspaceInviteFailed({
+        source: 'settings_members',
+        attempted_count: 3,
+        failed_count: 1
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.WORKSPACE_INVITE_FAILED,
+        { source: 'settings_members', attempted_count: 3, failed_count: 1 }
+      )
+    })
+
+    it('captures billing-operation failure and timeout outcomes', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackBillingOperationFailed({
+        billing_op_id: 'op-1',
+        operation_type: 'subscription',
+        failure_reason: 'declined'
+      })
+      provider.trackBillingOperationTimeout({
+        billing_op_id: 'op-2',
+        operation_type: 'topup'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.BILLING_OPERATION_FAILED,
+        {
+          billing_op_id: 'op-1',
+          operation_type: 'subscription',
+          failure_reason: 'declined'
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.BILLING_OPERATION_TIMEOUT,
+        { billing_op_id: 'op-2', operation_type: 'topup' }
+      )
+    })
+
+    it('captures the downgrade-to-personal lifecycle events', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackDowngradeToPersonalStarted({ member_removal_count: 2 })
+      provider.trackDowngradeToPersonalSucceeded({
+        member_removal_count: 2,
+        member_removal_failures: 0,
+        target_tier: 'standard'
+      })
+      provider.trackDowngradeToPersonalFailed({
+        member_removal_count: 2,
+        member_removal_failures: 1,
+        failure_reason: 'network error'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.DOWNGRADE_TO_PERSONAL_STARTED,
+        { member_removal_count: 2 }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.DOWNGRADE_TO_PERSONAL_SUCCEEDED,
+        {
+          member_removal_count: 2,
+          member_removal_failures: 0,
+          target_tier: 'standard'
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.DOWNGRADE_TO_PERSONAL_FAILED,
+        {
+          member_removal_count: 2,
+          member_removal_failures: 1,
+          failure_reason: 'network error'
+        }
+      )
+    })
+
+    it('captures subscription checkout failures on the legacy rail', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackSubscriptionCheckoutFailed({
+        tier: 'pro',
+        cycle: 'monthly',
+        checkout_type: 'new',
+        error_message: 'card declined'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SUBSCRIPTION_CHECKOUT_FAILED,
+        {
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          error_message: 'card declined'
+        }
+      )
+    })
+
     it('captures begin_checkout with intent metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

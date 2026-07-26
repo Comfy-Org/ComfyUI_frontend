@@ -29,6 +29,7 @@ const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
 const mockTrackBeginCheckout = vi.fn()
+const mockTrackSubscriptionCheckoutFailed = vi.fn()
 const mockUserId = ref<string | undefined>('user-123')
 const mockGetAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
@@ -122,7 +123,8 @@ vi.mock('@/stores/authStore', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackBeginCheckout: mockTrackBeginCheckout
+    trackBeginCheckout: mockTrackBeginCheckout,
+    trackSubscriptionCheckoutFailed: mockTrackSubscriptionCheckoutFailed
   })
 }))
 
@@ -192,6 +194,10 @@ function renderComponent() {
       onChooseTeamWorkspace: onChooseTeamWorkspace
     },
     global: {
+      // A test in this suite intentionally makes handleSubscribe reject to
+      // verify checkout-failure telemetry; without an app-level errorHandler,
+      // Vue's dev-mode default handler re-throws it as an unhandled rejection.
+      config: { errorHandler: () => {} },
       plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
       components: {
         Button
@@ -436,6 +442,32 @@ describe('PricingTable', () => {
       )
 
       windowOpenSpy.mockRestore()
+    })
+
+    it('tracks and rethrows a subscription checkout failure for new subscribers', async () => {
+      mockIsActiveSubscription.value = false
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: false,
+        json: async () => ({ message: 'card declined' })
+      } as Response)
+
+      renderComponent()
+      await flushPromises()
+
+      const subscribeButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Subscribe'))
+
+      await userEvent.click(subscribeButton!)
+      await flushPromises()
+
+      expect(mockTrackSubscriptionCheckoutFailed).toHaveBeenCalledWith({
+        tier: 'standard',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        error_message: expect.stringContaining('card declined')
+      })
+      expect(mockReportError).toHaveBeenCalled()
     })
 
     it('should pass correct tier for each subscription level', async () => {

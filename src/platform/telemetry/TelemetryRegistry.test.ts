@@ -134,4 +134,183 @@ describe('TelemetryRegistry', () => {
     expect(a.trackResubscribeClicked).toHaveBeenCalledExactlyOnceWith(payload)
     expect(b.trackResubscribeClicked).toHaveBeenCalledExactlyOnceWith(payload)
   })
+
+  it('dispatches resubscribe succeeded/failed outcomes to every registered provider', () => {
+    const a: TelemetryProvider = {
+      trackResubscribeSucceeded: vi.fn(),
+      trackResubscribeFailed: vi.fn()
+    }
+    const b: TelemetryProvider = {
+      trackResubscribeSucceeded: vi.fn(),
+      trackResubscribeFailed: vi.fn()
+    }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const succeeded = { source: 'settings_billing_panel' as const }
+    const failed = {
+      source: 'settings_billing_panel' as const,
+      error_message: 'card declined'
+    }
+    registry.trackResubscribeSucceeded(succeeded)
+    registry.trackResubscribeFailed(failed)
+
+    expect(a.trackResubscribeSucceeded).toHaveBeenCalledExactlyOnceWith(
+      succeeded
+    )
+    expect(b.trackResubscribeSucceeded).toHaveBeenCalledExactlyOnceWith(
+      succeeded
+    )
+    expect(a.trackResubscribeFailed).toHaveBeenCalledExactlyOnceWith(failed)
+    expect(b.trackResubscribeFailed).toHaveBeenCalledExactlyOnceWith(failed)
+  })
+
+  it('dispatches trackApiCreditTopupFailed to every registered provider', () => {
+    const a: TelemetryProvider = { trackApiCreditTopupFailed: vi.fn() }
+    const b: TelemetryProvider = { trackApiCreditTopupFailed: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = { error_message: 'card declined' }
+    registry.trackApiCreditTopupFailed(payload)
+
+    expect(a.trackApiCreditTopupFailed).toHaveBeenCalledExactlyOnceWith(payload)
+    expect(b.trackApiCreditTopupFailed).toHaveBeenCalledExactlyOnceWith(payload)
+  })
+
+  it('dispatches trackWorkspaceInviteFailed to every registered provider', () => {
+    const a: TelemetryProvider = { trackWorkspaceInviteFailed: vi.fn() }
+    const b: TelemetryProvider = { trackWorkspaceInviteFailed: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = {
+      source: 'settings_members' as const,
+      attempted_count: 3,
+      failed_count: 1
+    }
+    registry.trackWorkspaceInviteFailed(payload)
+
+    expect(a.trackWorkspaceInviteFailed).toHaveBeenCalledExactlyOnceWith(
+      payload
+    )
+    expect(b.trackWorkspaceInviteFailed).toHaveBeenCalledExactlyOnceWith(
+      payload
+    )
+  })
+
+  it('dispatches billing-operation failure and timeout telemetry to every registered provider', () => {
+    const a: TelemetryProvider = {
+      trackBillingOperationFailed: vi.fn(),
+      trackBillingOperationTimeout: vi.fn()
+    }
+    const b: TelemetryProvider = {
+      trackBillingOperationFailed: vi.fn(),
+      trackBillingOperationTimeout: vi.fn()
+    }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const failed = {
+      billing_op_id: 'op-1',
+      operation_type: 'subscription' as const,
+      failure_reason: 'declined'
+    }
+    const timedOut = {
+      billing_op_id: 'op-2',
+      operation_type: 'topup' as const
+    }
+    registry.trackBillingOperationFailed(failed)
+    registry.trackBillingOperationTimeout(timedOut)
+
+    expect(a.trackBillingOperationFailed).toHaveBeenCalledExactlyOnceWith(
+      failed
+    )
+    expect(b.trackBillingOperationFailed).toHaveBeenCalledExactlyOnceWith(
+      failed
+    )
+    expect(a.trackBillingOperationTimeout).toHaveBeenCalledExactlyOnceWith(
+      timedOut
+    )
+    expect(b.trackBillingOperationTimeout).toHaveBeenCalledExactlyOnceWith(
+      timedOut
+    )
+  })
+
+  it('dispatches the downgrade-to-personal lifecycle events to every registered provider', () => {
+    const a: TelemetryProvider = {
+      trackDowngradeToPersonalStarted: vi.fn(),
+      trackDowngradeToPersonalSucceeded: vi.fn(),
+      trackDowngradeToPersonalFailed: vi.fn()
+    }
+    const b: TelemetryProvider = {
+      trackDowngradeToPersonalStarted: vi.fn(),
+      trackDowngradeToPersonalSucceeded: vi.fn(),
+      trackDowngradeToPersonalFailed: vi.fn()
+    }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const started = { member_removal_count: 2 }
+    const succeeded = {
+      member_removal_count: 2,
+      member_removal_failures: 0,
+      target_tier: 'standard' as const
+    }
+    const failed = {
+      member_removal_count: 2,
+      member_removal_failures: 1,
+      failure_reason: 'network error'
+    }
+    registry.trackDowngradeToPersonalStarted(started)
+    registry.trackDowngradeToPersonalSucceeded(succeeded)
+    registry.trackDowngradeToPersonalFailed(failed)
+
+    expect(a.trackDowngradeToPersonalStarted).toHaveBeenCalledExactlyOnceWith(
+      started
+    )
+    expect(b.trackDowngradeToPersonalStarted).toHaveBeenCalledExactlyOnceWith(
+      started
+    )
+    expect(a.trackDowngradeToPersonalSucceeded).toHaveBeenCalledExactlyOnceWith(
+      succeeded
+    )
+    expect(b.trackDowngradeToPersonalSucceeded).toHaveBeenCalledExactlyOnceWith(
+      succeeded
+    )
+    expect(a.trackDowngradeToPersonalFailed).toHaveBeenCalledExactlyOnceWith(
+      failed
+    )
+    expect(b.trackDowngradeToPersonalFailed).toHaveBeenCalledExactlyOnceWith(
+      failed
+    )
+  })
+
+  it('dispatches trackSubscriptionCheckoutFailed to every registered provider', () => {
+    const a: TelemetryProvider = { trackSubscriptionCheckoutFailed: vi.fn() }
+    const b: TelemetryProvider = { trackSubscriptionCheckoutFailed: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = {
+      tier: 'pro' as const,
+      cycle: 'monthly' as const,
+      checkout_type: 'new' as const,
+      error_message: 'card declined'
+    }
+    registry.trackSubscriptionCheckoutFailed(payload)
+
+    expect(a.trackSubscriptionCheckoutFailed).toHaveBeenCalledExactlyOnceWith(
+      payload
+    )
+    expect(b.trackSubscriptionCheckoutFailed).toHaveBeenCalledExactlyOnceWith(
+      payload
+    )
+  })
 })
