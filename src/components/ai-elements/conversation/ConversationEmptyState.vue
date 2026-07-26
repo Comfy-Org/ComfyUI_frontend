@@ -11,7 +11,7 @@ const { class: className } = defineProps<{
   <div
     :class="
       cn(
-        'flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto p-8 text-center',
+        'flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-hidden p-8 text-center',
         className
       )
     "

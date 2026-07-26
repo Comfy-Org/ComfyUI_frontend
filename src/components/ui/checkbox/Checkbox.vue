@@ -24,7 +24,7 @@ const forwarded = useForwardPropsEmits(restProps, emits)
         'flex size-5 shrink-0 items-center justify-center rounded-sm border border-node-component-header-icon transition-colors',
         'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none',
         'disabled:cursor-not-allowed disabled:opacity-50',
-        'data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500',
+        'data-[state=checked]:border-primary-background data-[state=checked]:bg-primary-background',
         className
       )
     "
