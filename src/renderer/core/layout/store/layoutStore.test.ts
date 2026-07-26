@@ -7,10 +7,8 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
@@ -907,70 +905,5 @@ describe('layoutStore link layout updates', () => {
 
     expect(layoutStore.getLinkLayout(toLinkId(1))).toBeNull()
     expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toBeNull()
-  })
-})
-
-describe('node geometry held by reference', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  function registeredNode(id: string) {
-    const nodeId = toNodeId(id)
-    layoutStore.initializeFromLiteGraph([
-      { id: nodeId, pos: [10, 20], size: [140, 60] }
-    ])
-    const rect = new Rectangle(10, 20, 140, 60)
-    layoutStore.registerNodeRect(nodeId, rect)
-    return { nodeId, rect }
-  }
-
-  it('reports geometry written straight into the registered rectangle', () => {
-    const { nodeId, rect } = registeredNode('1')
-
-    // The buffer LGraphNode._pos and _size are views onto. No mutation call,
-    // no writeback: a copy could not see this.
-    rect.set([50, 60, 200, 100])
-
-    expect(layoutStore.getNodeLayoutRef(nodeId).value).toMatchObject({
-      position: { x: 50, y: 60 },
-      size: { width: 200, height: 100 },
-      bounds: { x: 50, y: 60, width: 200, height: 100 }
-    })
-  })
-
-  it('reports geometry committed through the mutation path', () => {
-    const { nodeId } = registeredNode('3')
-
-    // The Vue drag, resize and arrange paths all land here. Reads come from the
-    // rectangle, so a mutation that only reached the Yjs projection would be
-    // invisible.
-    useLayoutMutations().moveNode(nodeId, { x: 500, y: 600 })
-
-    expect(layoutStore.getNodeLayoutRef(nodeId).value?.position).toEqual({
-      x: 500,
-      y: 600
-    })
-
-    useLayoutMutations().resizeNode(nodeId, { width: 321, height: 123 })
-
-    expect(layoutStore.getNodeLayoutRef(nodeId).value).toMatchObject({
-      position: { x: 500, y: 600 },
-      size: { width: 321, height: 123 }
-    })
-  })
-
-  it('serves the same geometry to whole-map reads', () => {
-    const { nodeId, rect } = registeredNode('2')
-
-    rect.set([7, 8, 90, 30])
-
-    expect(layoutStore.getAllNodes().value.get(nodeId)?.position).toEqual({
-      x: 7,
-      y: 8
-    })
-    // Deliberately not asserted here: the spatial index is a derived copy that
-    // a raw buffer write does not reach. Committing through layoutMutations
-    // still updates it; closing that gap is what stage 2 is for.
   })
 })

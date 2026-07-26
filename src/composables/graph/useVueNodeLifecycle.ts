@@ -33,8 +33,6 @@ function useVueNodeLifecycleIndividual() {
   let stopNodeListeners: (() => void) | null = null
 
   const seedNodeLayout = (node: LGraphNode) => {
-    // By reference: the store reads geometry from the node's own rectangle.
-    layoutStore.registerNodeRect(node.id, node._posSize)
     layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.createNode(node.id, {
       position: { x: node.pos[0], y: node.pos[1] },
@@ -55,9 +53,6 @@ function useVueNodeLifecycleIndividual() {
       pos: [node.pos[0], node.pos[1]] as [number, number],
       size: [node.size[0], node.size[1]] as [number, number]
     }))
-    for (const node of activeGraph._nodes) {
-      layoutStore.registerNodeRect(node.id, node._posSize)
-    }
     layoutStore.initializeFromLiteGraph(nodes)
 
     // While configuring, geometry is still placeholder; the `pos`/`size` setters

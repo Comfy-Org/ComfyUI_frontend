@@ -7,11 +7,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 const testState = vi.hoisted(() => {
   return {
     listener: null as
-      | ((change: {
-          nodeIds: string[]
-          source: LayoutSource
-          operation?: { type: string }
-        }) => void)
+      | ((change: { nodeIds: string[]; source: LayoutSource }) => void)
       | null,
     layoutByNodeId: new Map<
       string,
@@ -108,40 +104,6 @@ describe('useLayoutSync', () => {
     expect(canvas.graph.getNodeById).toHaveBeenCalledTimes(1)
     expect(liteNode.pos).toEqual([10, 15])
     expect(liteNode.size).toEqual([120, 70])
-
-    unmount()
-  })
-
-  it('fires onResize for a resize even when the geometry already agrees', () => {
-    // Node geometry and store geometry are the same memory now, so a value
-    // diff can no longer detect a resize. The operation type has to carry it,
-    // or extensions chaining node.onResize (Load3D, for one) stop being called.
-    const liteNode = {
-      pos: [10, 15],
-      size: [120, 70],
-      onResize: vi.fn()
-    }
-    const canvas = {
-      graph: { getNodeById: vi.fn(() => liteNode) },
-      setDirty: vi.fn()
-    }
-
-    testState.layoutByNodeId.set('1', {
-      position: { x: 10, y: 15 },
-      size: { width: 120, height: 70 }
-    })
-
-    const { unmount } = render(LayoutSyncHarness)
-    syncApi.startSync(canvas as never)
-
-    testState.listener?.({
-      nodeIds: ['1'],
-      source: LayoutSource.External,
-      operation: { type: 'resizeNode' }
-    })
-    testState.rafCallback?.(0)
-
-    expect(liteNode.onResize).toHaveBeenCalledTimes(1)
 
     unmount()
   })

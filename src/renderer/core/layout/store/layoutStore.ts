@@ -64,7 +64,6 @@ import type {
   GroupLayoutMap,
   NodeLayoutMap
 } from '@/renderer/core/layout/utils/mappers'
-import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
 type YEventChange = {
@@ -119,17 +118,6 @@ class LayoutStoreImpl implements LayoutStore {
   >()
   private pendingGlobalChanges: LayoutChange[] = []
   private isGlobalDispatchQueued = false
-
-  /**
-   * Each node's geometry, held **by reference** — the very `Rectangle` whose
-   * `pos` and `size` subarrays back `LGraphNode._pos` / `_size`. Class and
-   * store are then the same memory, so there is no direction to reconcile.
-   *
-   * The Yjs map remains a projection of it for persistence and CRDT, written
-   * on commit. Nodes seeded without a live class instance have no entry here
-   * and fall back to the projection.
-   */
-  private nodeRects = new Map<NodeId, Rectangle>()
 
   // CustomRef cache and trigger functions
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
@@ -221,40 +209,6 @@ class LayoutStoreImpl implements LayoutStore {
     return value ?? defaultValue
   }
 
-  /** Registers a node's geometry by reference. See {@link nodeRects}. */
-  registerNodeRect(nodeId: NodeId, rect: Rectangle): void {
-    this.nodeRects.set(nodeId, rect)
-  }
-
-  /**
-   * Commits geometry to the registered rectangle, which is where reads come
-   * from. Callers also project into Yjs; this is the authoritative write.
-   */
-  private writeNodeRect(nodeId: NodeId, bounds: Bounds): void {
-    this.nodeRects
-      .get(nodeId)
-      ?.set([bounds.x, bounds.y, bounds.width, bounds.height])
-  }
-
-  /**
-   * A node's layout, read from the registered rectangle when there is one so
-   * that geometry has a single home. `bounds` is position and size verbatim,
-   * so it is derived rather than stored.
-   */
-  private nodeLayoutFor(nodeId: NodeId, ynode: NodeLayoutMap): NodeLayout {
-    const rect = this.nodeRects.get(nodeId)
-    if (!rect) return yNodeToLayout(ynode)
-
-    const stored = yNodeToLayout(ynode)
-    const [x, y, width, height] = rect
-    return {
-      ...stored,
-      position: { x, y },
-      size: { width, height },
-      bounds: { x, y, width, height }
-    }
-  }
-
   /**
    * Get or create a customRef for a node layout
    */
@@ -270,7 +224,8 @@ class LayoutStoreImpl implements LayoutStore {
           get: () => {
             track()
             const ynode = this.ynodes.get(nodeKey)
-            return ynode ? this.nodeLayoutFor(nodeId, ynode) : null
+            const layout = ynode ? yNodeToLayout(ynode) : null
+            return layout
           },
           set: (newLayout: NodeLayout | null) => {
             // No caller assigns null through this ref; deletion goes through
@@ -359,7 +314,7 @@ class LayoutStoreImpl implements LayoutStore {
       const result: NodeId[] = []
       for (const [rawNodeId, ynode] of this.ynodes) {
         const nodeId = toNodeId(rawNodeId)
-        const layout = this.nodeLayoutFor(nodeId, ynode)
+        const layout = yNodeToLayout(ynode)
         if (boundsIntersect(layout.bounds, bounds)) {
           result.push(nodeId)
         }
@@ -379,7 +334,8 @@ class LayoutStoreImpl implements LayoutStore {
       const result = new Map<NodeId, NodeLayout>()
       for (const [rawNodeId, ynode] of this.ynodes) {
         const nodeId = toNodeId(rawNodeId)
-        result.set(nodeId, this.nodeLayoutFor(nodeId, ynode))
+        const layout = yNodeToLayout(ynode)
+        result.set(nodeId, layout)
       }
       return result
     })
@@ -422,7 +378,8 @@ class LayoutStoreImpl implements LayoutStore {
 
     for (const [rawNodeId, ynode] of this.ynodes) {
       const nodeId = toNodeId(rawNodeId)
-      nodes.push([nodeId, this.nodeLayoutFor(nodeId, ynode)])
+      const layout = yNodeToLayout(ynode)
+      nodes.push([nodeId, layout])
     }
 
     // Sort by zIndex (top to bottom)
@@ -1073,7 +1030,7 @@ class LayoutStoreImpl implements LayoutStore {
       return
     }
 
-    const { size } = this.nodeLayoutFor(nodeId, ynode)
+    const size = yNodeToLayout(ynode).size
     const newBounds = {
       x: operation.position.x,
       y: operation.position.y,
@@ -1084,8 +1041,6 @@ class LayoutStoreImpl implements LayoutStore {
     // Update spatial index FIRST, synchronously to prevent race conditions
     // Hit detection queries can run before CRDT updates complete
     this.spatialIndex.update(nodeId, newBounds)
-
-    this.writeNodeRect(nodeId, newBounds)
 
     // Then update CRDT
     ynode.set('position', operation.position)
@@ -1102,7 +1057,7 @@ class LayoutStoreImpl implements LayoutStore {
     const ynode = this.ynodes.get(String(nodeId))
     if (!ynode) return
 
-    const { position } = this.nodeLayoutFor(nodeId, ynode)
+    const position = yNodeToLayout(ynode).position
     const newBounds = {
       x: position.x,
       y: position.y,
@@ -1113,8 +1068,6 @@ class LayoutStoreImpl implements LayoutStore {
     // Update spatial index FIRST, synchronously to prevent race conditions
     // Hit detection queries can run before CRDT updates complete
     this.spatialIndex.update(nodeId, newBounds)
-
-    this.writeNodeRect(nodeId, newBounds)
 
     // Then update CRDT
     ynode.set('size', operation.size)
@@ -1193,7 +1146,6 @@ class LayoutStoreImpl implements LayoutStore {
       const ynode = this.ynodes.get(String(nodeId))
       if (!ynode || !data) continue
 
-      this.writeNodeRect(nodeId, data.bounds)
       ynode.set('position', { x: data.bounds.x, y: data.bounds.y })
       ynode.set('size', {
         width: data.bounds.width,

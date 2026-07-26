@@ -18,8 +18,6 @@ import type { NodeId } from '@/types/nodeId'
 export function useLayoutSync() {
   const unsubscribe = ref<() => void>()
   const pendingNodeIds = new Set<NodeId>()
-  /** Nodes whose pending change was a resize, so onResize is owed to them. */
-  const pendingResizeIds = new Set<NodeId>()
   let rafId: number | null = null
   let isMicrotaskQueued = false
   let syncGeneration = 0
@@ -55,15 +53,11 @@ export function useLayoutSync() {
       ) {
         // The setter's isSizeEqual guard no-ops this equal write-back.
         liteNode.size = [layout.size.width, layout.size.height]
+        liteNode.onResize?.(liteNode.size)
       }
-
-      // Fired from the operation's intent, not from a value diff: geometry is
-      // shared memory now, so a resize leaves nothing to compare.
-      if (pendingResizeIds.has(nodeId)) liteNode.onResize?.(liteNode.size)
     }
 
     pendingNodeIds.clear()
-    pendingResizeIds.clear()
     canvas.setDirty(true, true)
   }
 
@@ -113,12 +107,8 @@ export function useLayoutSync() {
       // node writeback — link rendering reads from the store directly.
       if (change.nodeIds.length === 0) return
 
-      const isResize =
-        change.operation?.type === 'resizeNode' ||
-        change.operation?.type === 'batchUpdateBounds'
       for (const nodeId of change.nodeIds) {
         pendingNodeIds.add(nodeId)
-        if (isResize) pendingResizeIds.add(nodeId)
       }
       scheduleFlush(change.source, canvas)
     })
@@ -132,7 +122,6 @@ export function useLayoutSync() {
     }
     isMicrotaskQueued = false
     pendingNodeIds.clear()
-    pendingResizeIds.clear()
     unsubscribe.value?.()
     unsubscribe.value = undefined
   }
