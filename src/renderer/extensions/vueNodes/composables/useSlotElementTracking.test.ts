@@ -238,6 +238,30 @@ describe('useSlotElementTracking', () => {
     expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
   })
 
+  it('prunes cached geometry when virtualization clears before remount', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const registryStore = useNodeSlotRegistryStore()
+    replaceViewportVirtualizedNodeIds([NODE_ID])
+    unmount()
+    clearViewportVirtualizedNodeIds()
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId: NODE_ID,
+      position: { x: 50, y: 75 },
+      previousPosition: { x: 0, y: 0 },
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    await nextTick()
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(registryStore.getNode(NODE_ID)).toBeUndefined()
+  })
+
   it('clears retained geometry on real node deletion', async () => {
     const { unmount } = await mountAndRegisterSlot('input')
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
@@ -399,6 +423,7 @@ describe('useSlotElementTracking', () => {
       x: 15,
       y: 35 - LiteGraph.NODE_TITLE_HEIGHT
     })
+    expect(layoutStore.getSlotLayout(foreignSlotKey)).toBeNull()
   })
 
   describe('collapsed node slot sync', () => {

@@ -180,6 +180,10 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
       layoutStore.deleteSlotLayout(slotKey)
       continue
     }
+    if (!nodeEl || entry.el.closest('[data-node-id]') !== nodeEl) {
+      layoutStore.deleteSlotLayout(slotKey)
+      continue
+    }
     const rect = getSlotElementRect(entry.el)
     if (!rect) {
       // Drop stale layout values while the slot is hidden so we don't render
@@ -252,6 +256,11 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
   const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
 
   for (const [slotKey, entry] of node.slots) {
+    if (!entry.el && !isNodeViewportVirtualized(nodeId)) {
+      node.slots.delete(slotKey)
+      layoutStore.deleteSlotLayout(slotKey)
+      continue
+    }
     if (!entry.cachedOffset) {
       // schedule a sync to seed offset
       scheduleSlotLayoutSync(nodeId)
@@ -275,6 +284,10 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
   }
 
   if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
+  if (node.slots.size === 0) {
+    node.stopWatch?.()
+    nodeSlotRegistryStore.deleteNode(nodeId)
+  }
 }
 
 export function useSlotElementTracking(options: {

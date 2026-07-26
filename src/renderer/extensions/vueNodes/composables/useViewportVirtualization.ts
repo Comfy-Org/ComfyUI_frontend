@@ -1,5 +1,5 @@
 import { useEventListener, useRafFn } from '@vueuse/core'
-import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
+import { computed, onScopeDispose, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
@@ -80,9 +80,8 @@ export function useViewportVirtualization({
   const canvasStore = useCanvasStore()
   const titleEditorStore = useTitleEditorStore()
   const { state: linkDragState } = useSlotLinkDragUIState()
-  const hydratedNodeIds = new Set<NodeId>()
+  const hydratedNodeIds = shallowRef(new Set<NodeId>())
   const pendingHydrationNodeIds = new Set<NodeId>()
-  const hydrationVersion = ref(0)
   const viewportNodeIds = shallowRef(new Set<NodeId>())
   const layoutVersion = layoutStore.getVersion()
   let settleTimer: ReturnType<typeof setTimeout> | undefined
@@ -130,7 +129,7 @@ export function useViewportVirtualization({
     if (candidateNodeId != null) result.add(candidateNodeId)
 
     for (const link of activeCanvas?.linkConnector.renderLinks ?? []) {
-      if (link.node.id != null) result.add(link.node.id)
+      if (link.node.id != null) result.add(normalizeNodeId(link.node.id))
     }
 
     return result
@@ -148,10 +147,9 @@ export function useViewportVirtualization({
     const nodes = toValue(allNodes)
     if (!toValue(enabled)) return nodes
 
-    void hydrationVersion.value
     return nodes.filter(
       (node) =>
-        !hydratedNodeIds.has(node.id) ||
+        !hydratedNodeIds.value.has(node.id) ||
         viewportNodeIds.value.has(node.id) ||
         protectedNodeIds.value.has(node.id)
     )
@@ -186,6 +184,7 @@ export function useViewportVirtualization({
   }
 
   function scheduleFrameRefresh(): void {
+    if (!toValue(enabled)) return
     if (refreshFrame != null) cancelAnimationFrame(refreshFrame)
     refreshFrame = requestAnimationFrame(() => {
       refreshFrame = undefined
@@ -202,23 +201,44 @@ export function useViewportVirtualization({
     }, VIEWPORT_SETTLE_DELAY)
   }
 
+  function cancelScheduledRefreshes(): void {
+    if (settleTimer != null) {
+      clearTimeout(settleTimer)
+      settleTimer = undefined
+    }
+    if (refreshFrame != null) {
+      cancelAnimationFrame(refreshFrame)
+      refreshFrame = undefined
+    }
+    if (hydrationFrame != null) {
+      cancelAnimationFrame(hydrationFrame)
+      hydrationFrame = undefined
+    }
+  }
+
   function schedulePostHydrationRefresh(): void {
+    if (!toValue(enabled)) return
     if (hydrationFrame != null) cancelAnimationFrame(hydrationFrame)
     hydrationFrame = requestAnimationFrame(() => {
       hydrationFrame = requestAnimationFrame(() => {
         hydrationFrame = undefined
-        for (const nodeId of pendingHydrationNodeIds) {
-          hydratedNodeIds.add(nodeId)
+        if (pendingHydrationNodeIds.size > 0) {
+          hydratedNodeIds.value = new Set([
+            ...hydratedNodeIds.value,
+            ...pendingHydrationNodeIds
+          ])
         }
         pendingHydrationNodeIds.clear()
-        hydrationVersion.value++
         replaceViewportNodes()
       })
     })
   }
 
   function onNodeMounted(nodeId: NodeId): void {
-    if (hydratedNodeIds.has(nodeId) || pendingHydrationNodeIds.has(nodeId))
+    if (
+      hydratedNodeIds.value.has(nodeId) ||
+      pendingHydrationNodeIds.has(nodeId)
+    )
       return
     pendingHydrationNodeIds.add(nodeId)
     schedulePostHydrationRefresh()
@@ -251,9 +271,8 @@ export function useViewportVirtualization({
   watch(
     () => toValue(canvas)?.graph,
     () => {
-      hydratedNodeIds.clear()
+      hydratedNodeIds.value = new Set()
       pendingHydrationNodeIds.clear()
-      hydrationVersion.value++
       viewportNodeIds.value = new Set()
       clearViewportVirtualizedNodeIds()
       lastTransform = undefined
@@ -265,8 +284,13 @@ export function useViewportVirtualization({
     () => toValue(allNodes).map((node) => node.id),
     (nodeIds) => {
       const currentNodeIds = new Set(nodeIds)
-      for (const nodeId of hydratedNodeIds) {
-        if (!currentNodeIds.has(nodeId)) hydratedNodeIds.delete(nodeId)
+      const nextHydratedNodeIds = new Set(
+        Array.from(hydratedNodeIds.value).filter((nodeId) =>
+          currentNodeIds.has(nodeId)
+        )
+      )
+      if (!areNodeIdSetsEqual(hydratedNodeIds.value, nextHydratedNodeIds)) {
+        hydratedNodeIds.value = nextHydratedNodeIds
       }
       for (const nodeId of pendingHydrationNodeIds) {
         if (!currentNodeIds.has(nodeId)) pendingHydrationNodeIds.delete(nodeId)
@@ -277,7 +301,8 @@ export function useViewportVirtualization({
       if (
         nodeIds.every(
           (nodeId) =>
-            hydratedNodeIds.has(nodeId) || pendingHydrationNodeIds.has(nodeId)
+            hydratedNodeIds.value.has(nodeId) ||
+            pendingHydrationNodeIds.has(nodeId)
         )
       ) {
         schedulePostHydrationRefresh()
@@ -304,10 +329,7 @@ export function useViewportVirtualization({
     (isEnabled) => {
       if (!isEnabled) {
         transformWatcher.pause()
-        if (settleTimer != null) {
-          clearTimeout(settleTimer)
-          settleTimer = undefined
-        }
+        cancelScheduledRefreshes()
         clearViewportVirtualizedNodeIds()
         viewportNodeIds.value = new Set(
           toValue(allNodes).map((node) => node.id)
@@ -338,9 +360,7 @@ export function useViewportVirtualization({
   useEventListener(window, ['focusin', 'pointerdown'], refreshProtectedNodeIds)
 
   onScopeDispose(() => {
-    if (settleTimer != null) clearTimeout(settleTimer)
-    if (refreshFrame != null) cancelAnimationFrame(refreshFrame)
-    if (hydrationFrame != null) cancelAnimationFrame(hydrationFrame)
+    cancelScheduledRefreshes()
     clearViewportVirtualizedNodeIds()
   })
 
