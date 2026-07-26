@@ -22,6 +22,8 @@ import type {
   CreateRerouteOperation,
   DeleteNodeOperation,
   DeleteRerouteOperation,
+  GroupId,
+  GroupLayout,
   LayoutChange,
   LayoutOperation,
   LayoutStore,
@@ -37,6 +39,7 @@ import type {
   RerouteId,
   RerouteLayout,
   ResizeNodeOperation,
+  SetGroupBoundsOperation,
   SetNodeZIndexOperation,
   SlotId,
   SlotLayout
@@ -52,10 +55,15 @@ import {
 } from '@/renderer/core/layout/utils/layoutMath'
 import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
 import {
+  layoutToYGroup,
   layoutToYNode,
+  yGroupToLayout,
   yNodeToLayout
 } from '@/renderer/core/layout/utils/mappers'
-import type { NodeLayoutMap } from '@/renderer/core/layout/utils/mappers'
+import type {
+  GroupLayoutMap,
+  NodeLayoutMap
+} from '@/renderer/core/layout/utils/mappers'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
 type YEventChange = {
@@ -91,6 +99,7 @@ class LayoutStoreImpl implements LayoutStore {
   private ydoc = new Y.Doc()
   private ynodes: Y.Map<NodeLayoutMap> // Maps nodeId -> NodeLayoutMap containing NodeLayout data
   private yreroutes: Y.Map<Y.Map<unknown>> // Maps rerouteId -> Y.Map containing reroute data
+  private ygroups: Y.Map<GroupLayoutMap> // Maps groupId -> GroupLayoutMap containing GroupLayout data
   private yoperations: Y.Array<LayoutOperation> // Operation log
 
   // Vue reactivity layer
@@ -153,6 +162,7 @@ class LayoutStoreImpl implements LayoutStore {
     // Initialize Yjs data structures
     this.ynodes = this.ydoc.getMap('nodes')
     this.yreroutes = this.ydoc.getMap('reroutes')
+    this.ygroups = this.ydoc.getMap('groups')
     this.yoperations = this.ydoc.getArray('operations')
 
     // Initialize spatial index managers
@@ -172,6 +182,12 @@ class LayoutStoreImpl implements LayoutStore {
           trigger()
         }
       })
+    })
+
+    // Groups have no per-group refs or spatial index; bumping the version is
+    // the whole reactivity contract for them.
+    this.ygroups.observe(() => {
+      this.version++
     })
 
     // Listen for reroute changes and update spatial indexes
@@ -323,6 +339,28 @@ class LayoutStoreImpl implements LayoutStore {
       }
       return result
     })
+  }
+
+  /**
+   * Get all groups as a reactive map
+   */
+  getAllGroups(): ComputedRef<ReadonlyMap<GroupId, GroupLayout>> {
+    return computed(() => {
+      // Touch version for reactivity
+      void this.version
+
+      const result = new Map<GroupId, GroupLayout>()
+      for (const [rawGroupId, ygroup] of this.ygroups) {
+        const groupId = Number(rawGroupId)
+        result.set(groupId, yGroupToLayout(ygroup, groupId))
+      }
+      return result
+    })
+  }
+
+  getGroupLayout(groupId: GroupId): GroupLayout | null {
+    const ygroup = this.ygroups.get(String(groupId))
+    return ygroup ? yGroupToLayout(ygroup, groupId) : null
   }
 
   /**
@@ -822,6 +860,20 @@ class LayoutStoreImpl implements LayoutStore {
       case 'moveReroute':
         this.handleMoveReroute(operation, change)
         break
+      case 'createGroup':
+        this.ygroups.set(
+          String(operation.groupId),
+          layoutToYGroup(operation.layout)
+        )
+        change.type = 'create'
+        break
+      case 'setGroupBounds':
+        this.handleSetGroupBounds(operation)
+        break
+      case 'deleteGroup':
+        this.ygroups.delete(String(operation.groupId))
+        change.type = 'delete'
+        break
     }
   }
 
@@ -1022,6 +1074,14 @@ class LayoutStoreImpl implements LayoutStore {
     this.updateNodeBounds(ynode, position, operation.size)
 
     change.nodeIds.push(nodeId)
+  }
+
+  private handleSetGroupBounds(operation: SetGroupBoundsOperation): void {
+    const ygroup = this.ygroups.get(String(operation.groupId))
+    if (!ygroup) return
+
+    ygroup.set('position', operation.position)
+    ygroup.set('size', operation.size)
   }
 
   private handleSetNodeZIndex(

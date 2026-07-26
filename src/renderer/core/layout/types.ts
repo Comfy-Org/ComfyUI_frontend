@@ -6,6 +6,8 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
+import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
+export type { GroupId }
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
@@ -86,6 +88,17 @@ export interface LinkSegmentLayout {
   centerPos: Point
 }
 
+/**
+ * A group's geometry. Unlike {@link NodeLayout} there is no zIndex or spatial
+ * index: groups draw beneath nodes in insertion order and are hit-tested by the
+ * canvas against their own bounds, so nothing queries them positionally.
+ */
+export interface GroupLayout {
+  id: GroupId
+  position: Point
+  size: Size
+}
+
 export interface RerouteLayout {
   id: RerouteId
   position: Point
@@ -132,6 +145,9 @@ type OperationType =
   | 'createReroute'
   | 'deleteReroute'
   | 'moveReroute'
+  | 'createGroup'
+  | 'setGroupBounds'
+  | 'deleteGroup'
 
 /**
  * Move node operation
@@ -222,6 +238,29 @@ export interface MoveRerouteOperation extends RerouteOpBase {
 /**
  * Union of all operation types
  */
+type GroupOpBase = OperationMeta & { entity: 'group'; groupId: GroupId }
+
+interface CreateGroupOperation extends GroupOpBase {
+  type: 'createGroup'
+  layout: GroupLayout
+}
+
+/**
+ * Groups move and resize as one Rectangle, so a single bounds operation keeps
+ * position and size from ever being written apart.
+ */
+export interface SetGroupBoundsOperation extends GroupOpBase {
+  type: 'setGroupBounds'
+  position: Point
+  size: Size
+  previousPosition?: Point
+  previousSize?: Size
+}
+
+interface DeleteGroupOperation extends GroupOpBase {
+  type: 'deleteGroup'
+}
+
 export type LayoutOperation =
   | MoveNodeOperation
   | ResizeNodeOperation
@@ -233,6 +272,9 @@ export type LayoutOperation =
   | CreateRerouteOperation
   | DeleteRerouteOperation
   | MoveRerouteOperation
+  | CreateGroupOperation
+  | SetGroupBoundsOperation
+  | DeleteGroupOperation
 
 export interface LayoutChange {
   type: 'create' | 'update' | 'delete'
@@ -248,6 +290,7 @@ export interface LayoutStore {
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
   getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
+  getAllGroups(): ComputedRef<ReadonlyMap<GroupId, GroupLayout>>
   getVersion(): ComputedRef<number>
 
   // Spatial queries (non-reactive)

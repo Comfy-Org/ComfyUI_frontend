@@ -1,4 +1,6 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -24,6 +26,8 @@ import {
   snapPoint
 } from './measure'
 import type { ISerialisedGroup } from './types/serialisation'
+
+const layoutMutations = useLayoutMutations()
 
 export type GroupId = number
 
@@ -89,8 +93,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   set pos(v) {
     if (!v || v.length < 2) return
 
-    this._pos[0] = v[0]
-    this._pos[1] = v[1]
+    this.setBounds(v[0], v[1], this._size[0], this._size[1])
   }
 
   /** Size of the group, as width,height in graph units */
@@ -101,8 +104,36 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   set size(v) {
     if (!v || v.length < 2) return
 
-    this._size[0] = Math.max(LGraphGroup.minWidth, v[0])
-    this._size[1] = Math.max(LGraphGroup.minHeight, v[1])
+    this.setBounds(
+      this._pos[0],
+      this._pos[1],
+      Math.max(LGraphGroup.minWidth, v[0]),
+      Math.max(LGraphGroup.minHeight, v[1])
+    )
+  }
+
+  /**
+   * The one writer for group geometry. `pos` and `size` are views onto a single
+   * {@link Rectangle}, so every mutation writes the whole rectangle and commits
+   * it as one operation — position and size can never be stored apart.
+   *
+   * Callers that must not clamp (deserialisation, fit-to-contents) use this
+   * directly; the public setters clamp first and then delegate here.
+   */
+  protected setBounds(x: number, y: number, width: number, height: number) {
+    this._bounding.set([x, y, width, height])
+    this.commitBounds()
+  }
+
+  private commitBounds() {
+    if (!this.graph || this.id === -1) return
+
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.setGroupBounds(
+      this.id,
+      { x: this._pos[0], y: this._pos[1] },
+      { width: this._size[0], height: this._size[1] }
+    )
   }
 
   get boundingRect() {
@@ -147,7 +178,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   configure(o: ISerialisedGroup): void {
     this.id = o.id
     this.title = o.title
-    this._bounding.set(o.bounding)
+    const [x, y, width, height] = o.bounding
+    this.setBounds(x, y, width, height)
     this.color = o.color
     this.flags = o.flags || this.flags
   }
@@ -222,16 +254,14 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   resize(width: number, height: number): boolean {
     if (this.pinned) return false
 
-    this._size[0] = Math.max(LGraphGroup.minWidth, width)
-    this._size[1] = Math.max(LGraphGroup.minHeight, height)
+    this.size = [width, height]
     return true
   }
 
   move(deltaX: number, deltaY: number, skipChildren: boolean = false): void {
     if (this.pinned) return
 
-    this._pos[0] += deltaX
-    this._pos[1] += deltaY
+    this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
     if (skipChildren === true) return
 
     for (const item of this._children) {
@@ -241,7 +271,13 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
   /** @inheritdoc */
   snapToGrid(snapTo: number): boolean {
-    return this.pinned ? false : snapPoint(this.pos, snapTo)
+    if (this.pinned) return false
+
+    const snapped: Point = [this._pos[0], this._pos[1]]
+    if (!snapPoint(snapped, snapTo)) return false
+
+    this.pos = snapped
+    return true
   }
 
   /**
@@ -308,10 +344,14 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     const boundingBox = createBounds(objects, padding)
     if (boundingBox === null) return
 
-    this.pos[0] = boundingBox[0]
-    this.pos[1] = boundingBox[1] - this.titleHeight
-    this.size[0] = boundingBox[2]
-    this.size[1] = boundingBox[3] + this.titleHeight
+    // Deliberately unclamped, as before: a group fitted to its contents may be
+    // narrower than LGraphGroup.minWidth.
+    this.setBounds(
+      boundingBox[0],
+      boundingBox[1] - this.titleHeight,
+      boundingBox[2],
+      boundingBox[3] + this.titleHeight
+    )
   }
 
   /**

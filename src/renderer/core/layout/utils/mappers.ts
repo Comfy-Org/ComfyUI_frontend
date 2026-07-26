@@ -1,6 +1,6 @@
 import * as Y from 'yjs'
 
-import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 
 export type NodeLayoutMap = Y.Map<NodeLayout[keyof NodeLayout]>
@@ -42,5 +42,33 @@ export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
     zIndex: getOr(ynode, 'zIndex', NODE_LAYOUT_DEFAULTS.zIndex),
     visible: getOr(ynode, 'visible', NODE_LAYOUT_DEFAULTS.visible),
     bounds: getOr(ynode, 'bounds', NODE_LAYOUT_DEFAULTS.bounds)
+  }
+}
+
+export type GroupLayoutMap = Y.Map<GroupLayout[keyof GroupLayout]>
+
+const GROUP_LAYOUT_DEFAULTS: Omit<GroupLayout, 'id'> = {
+  position: { x: 0, y: 0 },
+  size: { width: 140, height: 80 }
+}
+
+export function layoutToYGroup(layout: GroupLayout): GroupLayoutMap {
+  const ygroup = new Y.Map<GroupLayout[keyof GroupLayout]>() as GroupLayoutMap
+  ygroup.set('id', layout.id)
+  ygroup.set('position', layout.position)
+  ygroup.set('size', layout.size)
+  return ygroup
+}
+
+export function yGroupToLayout(
+  ygroup: GroupLayoutMap,
+  groupId: GroupLayout['id']
+): GroupLayout {
+  return {
+    id: (ygroup.get('id') ?? groupId) as GroupLayout['id'],
+    position: (ygroup.get('position') ??
+      GROUP_LAYOUT_DEFAULTS.position) as GroupLayout['position'],
+    size: (ygroup.get('size') ??
+      GROUP_LAYOUT_DEFAULTS.size) as GroupLayout['size']
   }
 }

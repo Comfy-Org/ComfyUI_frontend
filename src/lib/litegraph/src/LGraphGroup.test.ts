@@ -1,6 +1,9 @@
-import { describe, expect } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect } from 'vitest'
 
-import { LGraph, LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { test } from './__fixtures__/testExtensions'
 
@@ -76,5 +79,110 @@ describe('LGraphGroup', () => {
       // inner should not have computed its own children (it was never processed)
       expect(inner.children.size).toBe(0)
     })
+  })
+})
+
+describe('group layout in layoutStore', () => {
+  // graph.add(node) registers node state, which needs a store.
+  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
+  function addedGroup(graph: LGraph, id: number) {
+    const group = new LGraphGroup('group', id)
+    group.pos = [100, 100]
+    group.size = [300, 200]
+    graph.add(group)
+    return group
+  }
+
+  test('registers geometry on add and drops it on remove', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 801)
+
+    expect(layoutStore.getGroupLayout(801)).toEqual({
+      id: 801,
+      position: { x: 100, y: 100 },
+      size: { width: 300, height: 200 }
+    })
+
+    graph.remove(group)
+    expect(layoutStore.getGroupLayout(801)).toBeNull()
+  })
+
+  test('drops entries when the graph is cleared', () => {
+    const graph = new LGraph()
+    addedGroup(graph, 802)
+
+    graph.clear()
+
+    expect(layoutStore.getGroupLayout(802)).toBeNull()
+  })
+
+  describe('every geometry mutation keeps the store in step', () => {
+    // Each of these wrote _pos / _size directly before groups were stored, so
+    // the invariant under test is that none of them can drift again.
+    const mutations: Array<[name: string, mutate: (g: LGraphGroup) => void]> = [
+      ['pos setter', (g) => void (g.pos = [7, 9])],
+      ['size setter', (g) => void (g.size = [400, 300])],
+      ['move', (g) => g.move(10, 20)],
+      ['resize', (g) => void g.resize(500, 400)],
+      ['snapToGrid', (g) => void g.snapToGrid(64)],
+      [
+        'configure',
+        (g) =>
+          g.configure({
+            id: g.id,
+            title: 'reconfigured',
+            bounding: [1, 2, 300, 200],
+            flags: {}
+          })
+      ]
+    ]
+
+    test.for(mutations)('%s', ([, mutate], { expect }) => {
+      const graph = new LGraph()
+      const group = addedGroup(graph, 803)
+
+      mutate(group)
+
+      expect(layoutStore.getGroupLayout(group.id)).toEqual({
+        id: group.id,
+        position: { x: group.pos[0], y: group.pos[1] },
+        size: { width: group.size[0], height: group.size[1] }
+      })
+      graph.remove(group)
+    })
+  })
+
+  test('resizeTo fits contents and commits, still unclamped', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 804)
+    const node = new LGraphNode('tiny')
+    node.pos = [500, 500]
+    node.size = [10, 10]
+    graph.add(node)
+
+    group.resizeTo([node])
+
+    // Narrower than minWidth: fit-to-contents deliberately does not clamp.
+    expect(group.size[0]).toBeLessThan(LGraphGroup.minWidth)
+    expect(layoutStore.getGroupLayout(group.id)).toEqual({
+      id: group.id,
+      position: { x: group.pos[0], y: group.pos[1] },
+      size: { width: group.size[0], height: group.size[1] }
+    })
+  })
+
+  test('setters write through the shared Rectangle buffer', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 805)
+    const pos = group.pos
+    const size = group.size
+
+    group.pos = [1, 2]
+    group.size = [400, 300]
+
+    expect(group.pos).toBe(pos)
+    expect(group.size).toBe(size)
+    expect([...pos]).toEqual([1, 2])
   })
 })

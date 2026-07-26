@@ -9,6 +9,8 @@ import log from 'loglevel'
 import type { NodeId } from '@/types/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
+  GroupId,
+  GroupLayout,
   LayoutSource,
   NodeLayout,
   Point,
@@ -34,6 +36,11 @@ interface LayoutMutations {
     position: Point,
     previousPosition: Point
   ): void
+
+  // Group operations
+  createGroup(groupId: GroupId, layout: Omit<GroupLayout, 'id'>): void
+  setGroupBounds(groupId: GroupId, position: Point, size: Size): void
+  deleteGroup(groupId: GroupId): void
 
   bringNodeToFront(nodeId: NodeId): void
   setSource(source: LayoutSource): void
@@ -219,6 +226,54 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
+  const createGroup = (
+    groupId: GroupId,
+    layout: Omit<GroupLayout, 'id'>
+  ): void => {
+    layoutStore.applyOperation({
+      type: 'createGroup',
+      entity: 'group',
+      groupId,
+      layout: { id: groupId, ...layout },
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+  }
+
+  const setGroupBounds = (
+    groupId: GroupId,
+    position: Point,
+    size: Size
+  ): void => {
+    const existing = layoutStore.getGroupLayout(groupId)
+    if (!existing) return
+
+    layoutStore.applyOperation({
+      type: 'setGroupBounds',
+      entity: 'group',
+      groupId,
+      position,
+      size,
+      previousPosition: existing.position,
+      previousSize: existing.size,
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+  }
+
+  const deleteGroup = (groupId: GroupId): void => {
+    layoutStore.applyOperation({
+      type: 'deleteGroup',
+      entity: 'group',
+      groupId,
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+  }
+
   /**
    * Delete a reroute
    */
@@ -271,6 +326,9 @@ export function useLayoutMutations(): LayoutMutations {
     bringNodeToFront,
     createReroute,
     deleteReroute,
-    moveReroute
+    moveReroute,
+    createGroup,
+    setGroupBounds,
+    deleteGroup
   }
 }
