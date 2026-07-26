@@ -39,9 +39,10 @@ function useNodeDragIndividual() {
   let rafId: number | null = null
   let stopShiftSync: (() => void) | null = null
 
-  // For groups: track the last applied canvas delta to compute frame delta
-  let lastCanvasDelta: Point | null = null
-  let selectedNonNode: Positionable[] | null = null
+  // Non-node positionables (groups, reroutes) are driven from their own start
+  // positions, exactly like nodes; `pos` is readonly on Positionable, so the
+  // absolute target is reached via move().
+  let nonNodeStartPositions: Map<Positionable, Point> | null = null
 
   // Auto-pan state
   let autoPan: AutoPanController | null = null
@@ -85,13 +86,13 @@ function useNodeDragIndividual() {
 
     // Capture selected groups only if the dragged node is part of the selection
     // This prevents groups from moving when dragging an unrelated node
-    if (isDraggedNodeInSelection) {
-      selectedNonNode = toValue(selectedItems).filter((i) => !isLGraphNode(i))
-      lastCanvasDelta = { x: 0, y: 0 }
-    } else {
-      selectedNonNode = null
-      lastCanvasDelta = null
-    }
+    nonNodeStartPositions = isDraggedNodeInSelection
+      ? new Map(
+          toValue(selectedItems)
+            .filter((item) => !isLGraphNode(item))
+            .map((item) => [item, { x: item.pos[0], y: item.pos[1] }])
+        )
+      : null
 
     mutations.setSource(LayoutSource.Vue)
   }
@@ -119,9 +120,10 @@ function useNodeDragIndividual() {
             pos.y += panY
           }
         }
-        if (selectedNonNode) {
-          for (const group of selectedNonNode) {
-            group.move(panX, panY, true)
+        if (nonNodeStartPositions) {
+          for (const start of nonNodeStartPositions.values()) {
+            start.x += panX
+            start.y += panY
           }
         }
         updateNodePositions(nodeId)
@@ -178,18 +180,15 @@ function useNodeDragIndividual() {
 
     mutations.batchMoveNodes(updates)
 
-    if (selectedNonNode && selectedNonNode.length > 0 && lastCanvasDelta) {
-      const frameDelta = {
-        x: canvasDelta.x - lastCanvasDelta.x,
-        y: canvasDelta.y - lastCanvasDelta.y
-      }
-
-      for (const group of selectedNonNode) {
-        group.move(frameDelta.x, frameDelta.y, true)
-      }
+    for (const [item, start] of nonNodeStartPositions ?? []) {
+      // Re-derived from the start position every frame, so a dropped frame
+      // cannot leave the item behind and deltas cannot accumulate error.
+      item.move(
+        start.x + canvasDelta.x - item.pos[0],
+        start.y + canvasDelta.y - item.pos[1],
+        true
+      )
     }
-
-    lastCanvasDelta = canvasDelta
   }
 
   function handleDrag(event: PointerEvent, nodeId: NodeId) {
@@ -285,8 +284,7 @@ function useNodeDragIndividual() {
     dragStartPos = null
     dragStartMouse = null
     otherSelectedNodesStartPositions = null
-    selectedNonNode = null
-    lastCanvasDelta = null
+    nonNodeStartPositions = null
 
     autoPan?.stop()
     autoPan = null
