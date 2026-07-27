@@ -1,6 +1,6 @@
 <template>
   <div class="inline-flex items-center">
-    <DropdownMenuRoot v-model:open="open">
+    <DropdownMenuRoot v-model:open="open" :modal="false">
       <DropdownMenuTrigger as-child>
         <Button
           variant="secondary"
@@ -22,9 +22,12 @@
           :side-offset="5"
           :collision-padding="10"
           :style="contentStyle"
-          class="z-1700 min-w-55 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm"
+          class="data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade z-1700 min-w-55 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[transform,opacity]"
         >
           <slot />
+          <DropdownMenuArrow
+            class="fill-base-background stroke-border-subtle"
+          />
         </DropdownMenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
@@ -33,6 +36,7 @@
 
 <script setup lang="ts">
 import {
+  DropdownMenuArrow,
   DropdownMenuContent,
   DropdownMenuPortal,
   DropdownMenuRoot,

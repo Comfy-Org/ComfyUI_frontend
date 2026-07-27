@@ -18,9 +18,10 @@
 
     <DropdownMenuPortal>
       <DropdownMenuSubContent
-        :side-offset="2"
+        :side-offset="8"
         :align-offset="-5"
         :collision-padding="10"
+        :prioritize-position="false"
         :class="submenuClass"
       >
         <DropdownMenuCheckboxItem
@@ -55,9 +56,10 @@
 
     <DropdownMenuPortal>
       <DropdownMenuSubContent
-        :side-offset="2"
+        :side-offset="8"
         :align-offset="-5"
         :collision-padding="10"
+        :prioritize-position="false"
         :class="submenuClass"
       >
         <DropdownMenuRadioGroup :model-value="dateFilter">
