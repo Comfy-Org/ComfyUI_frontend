@@ -50,7 +50,7 @@ export default defineConfig({
       name: 'custom-nodes',
       // retain-on-failure (not the repo's on-first-retry): this job is ~40
       // serial tests, so recording overhead is negligible, and a red run
-      // needs 7 installed packs + a live backend to reproduce - the trace of
+      // needs 6 installed packs + a live backend to reproduce - the trace of
       // the ACTUAL first failing attempt (not a retry) is the debug artifact.
       // OFF under cloud: that env seeds a real Firebase session, and
       // page.evaluate arguments are recorded verbatim in the trace, which CI
