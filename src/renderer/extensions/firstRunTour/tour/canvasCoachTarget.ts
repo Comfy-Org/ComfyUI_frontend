@@ -9,11 +9,12 @@ function nodeClientRect(nodeId: NodeId): DOMRect | null {
   const node = lgCanvas?.graph?.getNodeById(nodeId)
   if (!lgCanvas || !node) return null
   const [x, y, width, height] = node.boundingRect
-  const { offset, scale } = lgCanvas.ds
+  const { scale } = lgCanvas.ds
+  const [left, top] = lgCanvas.ds.convertOffsetToCanvas([x, y])
   const host = lgCanvas.canvas.getBoundingClientRect()
   return new DOMRect(
-    (x + offset[0]) * scale + host.left,
-    (y + offset[1]) * scale + host.top,
+    left + host.left,
+    top + host.top,
     width * scale,
     height * scale
   )

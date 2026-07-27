@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
@@ -7,7 +8,7 @@ import { canvasNodeTarget, canvasTransformValid } from './canvasCoachTarget'
 
 interface FakeCanvas {
   graph: LGraph
-  ds: { offset: [number, number]; scale: number }
+  ds: DragAndScale
   canvas: { getBoundingClientRect: () => DOMRect }
 }
 
@@ -21,9 +22,15 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-function mountCanvas(
-  ds: FakeCanvas['ds'] = { offset: [10, 20], scale: 2 }
-): LGraph {
+/** The real camera, so the target maps through the same maths the canvas does. */
+function makeDs(offset: [number, number] = [10, 20], scale = 2): DragAndScale {
+  const ds = new DragAndScale(document.createElement('canvas'))
+  ds.offset = offset
+  ds.scale = scale
+  return ds
+}
+
+function mountCanvas(ds: DragAndScale = makeDs()): LGraph {
   const graph = new LGraph()
   appState.canvas = {
     graph,
@@ -88,10 +95,10 @@ describe('canvasCoachTarget', () => {
   it('validates the camera transform', () => {
     expect(canvasTransformValid()).toBe(false)
 
-    mountCanvas({ offset: [Number.NaN, 0], scale: 1 })
+    mountCanvas(makeDs([Number.NaN, 0], 1))
     expect(canvasTransformValid()).toBe(false)
 
-    mountCanvas({ offset: [0, 0], scale: 0 })
+    mountCanvas(makeDs([0, 0], 0))
     expect(canvasTransformValid()).toBe(false)
 
     mountCanvas()
