@@ -177,7 +177,7 @@ describe('AssetsSidebarTab folder navigation', () => {
     expect(backButton).toHaveAttribute('data-tooltip', 'Back to all assets')
     expect(copyButton).toHaveAttribute('data-tooltip', 'Copy Job ID')
     expect(copyButton).toHaveAttribute('data-size', 'icon')
-    expect(copyButton).toHaveAttribute('data-variant', 'muted-textonly')
+    expect(copyButton).toHaveAttribute('data-variant', 'textonly')
     expect(screen.getByTestId('folder-controls')).not.toHaveTextContent(
       'Back to all assets'
     )
