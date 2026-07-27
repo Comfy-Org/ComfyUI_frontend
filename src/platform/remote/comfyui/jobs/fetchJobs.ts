@@ -6,7 +6,7 @@
  * All distributions use the /jobs endpoint.
  */
 
-import { isSessionTerminated } from '@/platform/auth/session/sessionExpiry'
+import { isSessionSuspended } from '@/platform/auth/session/sessionExpiry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { JobId } from '@/schemas/apiSchema'
@@ -47,7 +47,7 @@ async function fetchJobsRaw(
 ): Promise<FetchJobsRawResult> {
   const empty = { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
   // The one place every list fetcher passes through.
-  if (isSessionTerminated()) return empty
+  if (isSessionSuspended()) return empty
 
   const statusParam = statuses.join(',')
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
@@ -161,7 +161,7 @@ export async function fetchJobDetail(
   fetchApi: (url: string) => Promise<Response>,
   jobId: JobId
 ): Promise<JobDetail | undefined> {
-  if (isSessionTerminated()) return undefined
+  if (isSessionSuspended()) return undefined
 
   try {
     const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`)

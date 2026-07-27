@@ -1,14 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { PUBLIC_ROUTE_PATHS } from '@/platform/auth/session/publicRoutes'
-
 vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
-
-const mockLocation = { href: '', pathname: '/', reload: vi.fn() }
-Object.defineProperty(window, 'location', {
-  value: mockLocation,
-  writable: true
-})
 
 async function loadSessionExpiry() {
   vi.resetModules()
@@ -17,48 +9,51 @@ async function loadSessionExpiry() {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockLocation.href = ''
-  mockLocation.pathname = '/'
 })
 
-describe('endExpiredSession', () => {
-  it('returns the user to sign-in when the identity provider invalidated the credential', async () => {
+describe('suspendSession', () => {
+  it('suspends the session so request seams stop generating doomed traffic', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const { endExpiredSession, isSessionTerminated } = await loadSessionExpiry()
+    const { suspendSession, isSessionSuspended } = await loadSessionExpiry()
 
-    endExpiredSession('token revoked')
+    expect(isSessionSuspended()).toBe(false)
+    suspendSession('token revoked')
 
-    expect(mockLocation.href).toBe('/cloud/login')
-    expect(isSessionTerminated()).toBe(true)
+    expect(isSessionSuspended()).toBe(true)
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('token revoked'))
     warn.mockRestore()
   })
 
-  it('redirects only once, however many callers fire', async () => {
-    const { endExpiredSession } = await loadSessionExpiry()
+  it('never navigates, so unsaved work on the canvas survives', async () => {
+    const assign = vi.fn()
+    Object.defineProperty(window, 'location', {
+      value: {
+        get href() {
+          return ''
+        },
+        set href(value: string) {
+          assign(value)
+        }
+      },
+      writable: true,
+      configurable: true
+    })
+    const { suspendSession } = await loadSessionExpiry()
 
-    endExpiredSession('token revoked')
-    mockLocation.href = ''
-    endExpiredSession('cloud session could not be renewed')
+    suspendSession('token revoked')
 
-    expect(mockLocation.href).toBe('')
+    expect(assign).not.toHaveBeenCalled()
   })
 
-  // /cloud/oauth/consent is the legacy redirect stub, matched by the
-  // /cloud/oauth prefix rather than listed outright.
-  it.for([...PUBLIC_ROUTE_PATHS, '/cloud/oauth/consent'])(
-    'leaves a user alone on the public route %s',
-    async (pathname, { expect }) => {
-      mockLocation.pathname = pathname
-      const { endExpiredSession, isSessionTerminated } =
-        await loadSessionExpiry()
+  it('resumes once a user signs back in, so traffic recovers without a reload', async () => {
+    const { suspendSession, resumeSession, isSessionSuspended } =
+      await loadSessionExpiry()
 
-      endExpiredSession('token revoked')
+    suspendSession('token revoked')
+    resumeSession()
 
-      expect(mockLocation.href).toBe('')
-      expect(isSessionTerminated()).toBe(false)
-    }
-  )
+    expect(isSessionSuspended()).toBe(false)
+  })
 
   it('reports a deliberate sign-out only while one is in flight', async () => {
     const {
@@ -75,52 +70,38 @@ describe('endExpiredSession', () => {
     endVoluntarySignOut()
     expect(isVoluntarySignOutInProgress()).toBe(false)
   })
+})
 
-  it('keeps offering the way out, and keeps traffic stopped, when the browser refuses to leave', async () => {
-    vi.useFakeTimers()
-    try {
-      const { endExpiredSession, isSessionTerminated } =
-        await loadSessionExpiry()
+describe('remembered identity', () => {
+  it('offers the provider the user actually signed in with', async () => {
+    const { rememberIdentity, lastKnownProviderId } = await loadSessionExpiry()
 
-      endExpiredSession('token revoked')
-      expect(mockLocation.href).toBe('/cloud/login')
+    rememberIdentity('uid-a', 'github.com')
 
-      // A successful navigation would have destroyed the page, so a firing
-      // timer means the user cancelled the unload prompt. Cancelling twice
-      // must not leave the tab silently dead.
-      for (const _ of [1, 2, 3]) {
-        mockLocation.href = ''
-        await vi.advanceTimersByTimeAsync(10_001)
-        expect(mockLocation.href).toBe('/cloud/login')
-      }
-
-      expect(isSessionTerminated()).toBe(true)
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(lastKnownProviderId()).toBe('github.com')
   })
 
-  it('falls back to a reload when assigning the location throws', async () => {
-    const { endExpiredSession } = await loadSessionExpiry()
-    Object.defineProperty(mockLocation, 'href', {
-      set() {
-        throw new Error('navigation blocked')
-      },
-      get() {
-        return ''
-      },
-      configurable: true
-    })
+  it('reports no provider when none was captured, so callers offer a choice', async () => {
+    const { rememberIdentity, lastKnownProviderId } = await loadSessionExpiry()
 
-    try {
-      expect(() => endExpiredSession('token revoked')).not.toThrow()
-      expect(mockLocation.reload).toHaveBeenCalledTimes(1)
-    } finally {
-      Object.defineProperty(mockLocation, 'href', {
-        value: '',
-        writable: true,
-        configurable: true
-      })
-    }
+    rememberIdentity('uid-a')
+
+    expect(lastKnownProviderId()).toBeUndefined()
+  })
+
+  it('recognises the same user returning, and a different one arriving', async () => {
+    const { rememberIdentity, isSameUserAsRemembered } =
+      await loadSessionExpiry()
+
+    rememberIdentity('uid-a', 'google.com')
+
+    expect(isSameUserAsRemembered('uid-a')).toBe(true)
+    expect(isSameUserAsRemembered('uid-b')).toBe(false)
+  })
+
+  it('treats an unknown user as different, so work is never inherited', async () => {
+    const { isSameUserAsRemembered } = await loadSessionExpiry()
+
+    expect(isSameUserAsRemembered('uid-a')).toBe(false)
   })
 })

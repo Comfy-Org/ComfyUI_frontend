@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 const mockIsSessionTerminated = vi.hoisted(() => vi.fn(() => false))
 vi.mock('@/platform/auth/session/sessionExpiry', () => ({
-  isSessionTerminated: mockIsSessionTerminated
+  isSessionSuspended: mockIsSessionTerminated
 }))
 
 import {

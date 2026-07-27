@@ -6,7 +6,7 @@ import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
-import { isSessionTerminated } from '@/platform/auth/session/sessionExpiry'
+import { isSessionSuspended } from '@/platform/auth/session/sessionExpiry'
 import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
@@ -462,7 +462,7 @@ export class ComfyApi extends EventTarget {
     let unifiedRetryOn401 = false
 
     if (isCloud) {
-      if (isSessionTerminated()) {
+      if (isSessionSuspended()) {
         return new Response('{}', { status: 401, statusText: 'Unauthorized' })
       }
       await this.waitForAuthInitialization()

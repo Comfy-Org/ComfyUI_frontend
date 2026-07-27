@@ -1,5 +1,6 @@
 <template>
   <router-view />
+  <SessionExpiredBanner />
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
 </template>
@@ -9,6 +10,7 @@ import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
 import { computed, onMounted, watch } from 'vue'
 
+import SessionExpiredBanner from '@/components/auth/SessionExpiredBanner.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'

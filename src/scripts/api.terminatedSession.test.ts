@@ -12,7 +12,7 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 vi.mock('@/platform/auth/session/sessionExpiry', () => ({
-  isSessionTerminated: mockIsSessionTerminated
+  isSessionSuspended: mockIsSessionTerminated
 }))
 
 vi.stubGlobal('fetch', vi.fn())

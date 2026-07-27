@@ -1,10 +1,13 @@
 import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import {
-  endExpiredSession,
-  isVoluntarySignOutInProgress
+  isVoluntarySignOutInProgress,
+  rememberIdentity,
+  resumeSession,
+  suspendSession
 } from '@/platform/auth/session/sessionExpiry'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { useExtensionService } from '@/services/extensionService'
+import { useAuthStore } from '@/stores/authStore'
 
 /**
  * Cloud-only extension that manages session cookies for authentication.
@@ -13,7 +16,14 @@ import { useExtensionService } from '@/services/extensionService'
 useExtensionService().registerExtension({
   name: 'Comfy.Cloud.SessionCookie',
 
-  onAuthUserResolved: async () => {
+  onAuthUserResolved: async (user) => {
+    // Captured while the session is healthy: Firebase clears currentUser before
+    // an expiry can be observed, taking the provider with it.
+    rememberIdentity(
+      user.id,
+      useAuthStore().currentUser?.providerData[0]?.providerId
+    )
+    resumeSession()
     const { createSession } = useSessionCookie()
     await createSession()
   },
@@ -31,7 +41,7 @@ useExtensionService().registerExtension({
     const { deleteSession } = useSessionCookie()
     await deleteSession()
     if (!deliberate) {
-      endExpiredSession('identity provider invalidated the credential')
+      suspendSession('identity provider invalidated the credential')
     }
   }
 })

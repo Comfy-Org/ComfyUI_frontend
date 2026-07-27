@@ -94,7 +94,8 @@ vi.mock('vue-router', () => ({
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
-    onUserLogout: vi.fn()
+    onUserLogout: vi.fn(),
+    onUserResolved: vi.fn()
   })
 }))
 
