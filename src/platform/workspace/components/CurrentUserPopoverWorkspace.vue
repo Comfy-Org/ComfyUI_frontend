@@ -66,16 +66,9 @@
         height="1.25rem"
         class="w-full"
       />
-      <span
-        v-else
-        :class="
-          cn(
-            'text-base font-semibold text-base-foreground',
-            isLimitReached && 'text-amber-400'
-          )
-        "
-        >{{ displayedCredits }}</span
-      >
+      <span v-else class="text-base font-semibold text-base-foreground">{{
+        displayedCredits
+      }}</span>
       <span
         v-if="isEdgeState"
         class="mr-auto"
@@ -269,7 +262,6 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'

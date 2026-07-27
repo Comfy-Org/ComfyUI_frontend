@@ -12,15 +12,9 @@
       </div>
       <div class="flex items-baseline gap-2">
         <i class="icon-[lucide--coins] size-4 self-center text-credit" />
-        <span
-          :class="
-            cn(
-              'text-2xl leading-none font-bold tabular-nums',
-              isLimitReached && 'text-amber-400'
-            )
-          "
-          >{{ displayLabel }}</span
-        >
+        <span class="text-2xl leading-none font-bold tabular-nums">{{
+          displayLabel
+        }}</span>
         <span class="text-sm text-muted">{{
           $t('subscription.remaining')
         }}</span>
@@ -63,7 +57,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

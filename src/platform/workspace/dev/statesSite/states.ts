@@ -116,7 +116,7 @@ export const STATES: ViewerState[] = [
     cfg: { ...HEALTHY, balance: 'low' },
     spec: [
       'Trigger: <span class="mono">workspaceBalance &lt; monthlyCreditLimit − creditsUsedThisMonth</span> (strict).',
-      'Number stays <b>white</b>; ⓘ + hover popover only — <b>no button</b> (revised 2026-07-24).',
+      'ⓘ + hover popover only — <b>no button</b> (revised 2026-07-24).',
       'Popover floats left of the menu, 12px margin ⇒ 4px visible gap.',
       '<span class="mono">Figma 5217-35986 (canonical)</span>'
     ]
@@ -130,7 +130,7 @@ export const STATES: ViewerState[] = [
     group: 'Profile menu',
     cfg: { ...HEALTHY, balance: 'partial', capSpent: true },
     spec: [
-      'Amber is reserved for this state (limit binding at zero).',
+      'The number stays <b>white</b> — a quantity, not a status (revised 2026-07-27, Figma 5271-18878). Zero already reads as zero; the request button carries the status.',
       'Click → email to workspace owner (no notification center); sent-state protects the inbox.',
       '<span class="mono">Precedence: workspace-out beats limit-reached</span>'
     ]
@@ -255,7 +255,7 @@ export const STATES: ViewerState[] = [
     group: 'Plan & Credits',
     cfg: { ...HEALTHY, balance: 'partial', capSpent: true },
     spec: [
-      'Amber zero; reset date in the tile label answers "when do I get more?".',
+      'White zero (revised 2026-07-27); reset date in the tile label answers "when do I get more?".',
       "The plan header's renewal date is the wrong date for a capped member — the tile label carries the right one."
     ]
   },
