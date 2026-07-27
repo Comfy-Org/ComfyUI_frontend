@@ -5,6 +5,7 @@ import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 const resultItemCases = [
   {
+    name: 'input',
     item: {
       filename: 'input.png',
       subfolder: 'nested',
@@ -13,6 +14,7 @@ const resultItemCases = [
     expected: 'nested/input.png'
   },
   {
+    name: 'temp',
     item: {
       filename: 'preview.png',
       subfolder: 'nested',
@@ -21,20 +23,63 @@ const resultItemCases = [
     expected: 'nested/preview.png [temp]'
   },
   {
+    name: 'output',
     item: {
       filename: 'result.png',
       subfolder: 'nested',
       type: 'output'
     },
     expected: 'nested/result.png [output]'
+  },
+  {
+    name: 'missing type',
+    item: {
+      filename: 'untyped.png',
+      subfolder: 'nested'
+    },
+    expected: 'nested/untyped.png'
   }
-] satisfies { item: ResultItem; expected: string }[]
+] satisfies { name: string; item: ResultItem; expected: string }[]
+
+const stringCases = [
+  {
+    name: 'input root',
+    filename: 'input.png',
+    options: { rootFolder: 'input', subfolder: 'nested' },
+    expected: 'nested/input.png'
+  },
+  {
+    name: 'temp root',
+    filename: 'preview.png',
+    options: { rootFolder: 'temp', subfolder: 'nested' },
+    expected: 'nested/preview.png [temp]'
+  },
+  {
+    name: 'output root',
+    filename: 'result.png',
+    options: { rootFolder: 'output', subfolder: 'nested' },
+    expected: 'nested/result.png [output]'
+  },
+  {
+    name: 'existing annotation',
+    filename: 'preview.png [temp]',
+    options: { rootFolder: 'output' },
+    expected: 'preview.png [temp]'
+  }
+]
 
 describe('createAnnotatedPath', () => {
   it.for(resultItemCases)(
-    'formats $item.type ResultItem paths from their own type',
+    'formats $name ResultItem paths from their own type',
     ({ item, expected }) => {
       expect(createAnnotatedPath(item)).toBe(expected)
+    }
+  )
+
+  it.for(stringCases)(
+    'formats string paths for $name',
+    ({ filename, options, expected }) => {
+      expect(createAnnotatedPath(filename, options)).toBe(expected)
     }
   )
 })
