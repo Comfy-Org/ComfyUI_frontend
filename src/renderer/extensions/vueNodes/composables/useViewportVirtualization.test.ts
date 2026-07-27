@@ -18,7 +18,10 @@ import {
   rectsOverlap,
   useViewportVirtualization
 } from './useViewportVirtualization'
-import { isNodeViewportVirtualized } from './viewportVirtualizationState'
+import {
+  clearViewportVirtualizedNodeIds,
+  isNodeViewportVirtualized
+} from './viewportVirtualizationState'
 
 const rafWatcher = vi.hoisted(() => ({
   callback: undefined as Parameters<typeof VueUse.useRafFn>[0] | undefined,
@@ -126,6 +129,7 @@ describe('viewport virtualization geometry', () => {
 
 describe('viewport virtualization behavior', () => {
   beforeEach(() => {
+    clearViewportVirtualizedNodeIds()
     rafWatcher.callback = undefined
     rafWatcher.isActive = undefined
     rafWatcher.pause.mockClear()
@@ -172,7 +176,6 @@ describe('viewport virtualization behavior', () => {
     expect(isNodeViewportVirtualized(nodeData.id)).toBe(false)
 
     input.blur()
-    window.dispatchEvent(new FocusEvent('focusin'))
     expect(virtualization.renderedNodes.value).toEqual([])
     expect(isNodeViewportVirtualized(nodeData.id)).toBe(true)
     scope.stop()
@@ -185,8 +188,9 @@ describe('viewport virtualization behavior', () => {
     const nodeData = createNodeData(1)
     const linkedNode = createNode(1, 0, 0)
     Object.defineProperty(linkedNode, 'id', { value: 1 })
+    const renderLinks: { node: LGraphNode }[] = []
     const canvas = {
-      linkConnector: { renderLinks: [{ node: linkedNode }] }
+      linkConnector: { renderLinks }
     } as unknown as LGraphCanvas
     const scope = effectScope()
     const virtualization = scope.run(() =>
@@ -203,6 +207,16 @@ describe('viewport virtualization behavior', () => {
     virtualization.onNodeMounted(nodeData.id)
     runAnimationFrame()
     runAnimationFrame()
+    expect(virtualization.renderedNodes.value).toEqual([])
+
+    renderLinks.push({ node: linkedNode })
+    const callback = rafWatcher.callback
+    if (!callback)
+      throw new Error('Transform watcher callback was not captured')
+    callback({ delta: 0, timestamp: 0 })
+    expect(virtualization.renderedNodes.value).toEqual([])
+
+    window.dispatchEvent(new PointerEvent('pointerdown'))
 
     expect(virtualization.renderedNodes.value).toEqual([nodeData])
     expect(isNodeViewportVirtualized(nodeData.id)).toBe(false)

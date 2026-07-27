@@ -156,7 +156,6 @@ export function useViewportVirtualization({
   })
 
   function replaceViewportNodes(): void {
-    refreshProtectedNodeIds()
     if (!toValue(enabled)) {
       viewportNodeIds.value = new Set(toValue(allNodes).map((node) => node.id))
       return
@@ -249,7 +248,6 @@ export function useViewportVirtualization({
 
   const transformWatcher = useRafFn(
     () => {
-      refreshProtectedNodeIds()
       const ds = toValue(canvas)?.ds
       if (!ds) return
       const transform: [number, number, number] = [
@@ -279,15 +277,15 @@ export function useViewportVirtualization({
       viewportNodeIds.value = new Set()
       clearViewportVirtualizedNodeIds()
       lastTransform = undefined
+      refreshProtectedNodeIds()
     },
     { flush: 'sync' }
   )
 
   watch(
-    () => JSON.stringify(toValue(allNodes).map((node) => node.id)),
-    () => {
-      const nodeIds = toValue(allNodes).map((node) => node.id)
-      const currentNodeIds = new Set(nodeIds)
+    () => new Set(toValue(allNodes).map((node) => node.id)),
+    (currentNodeIds, previousNodeIds) => {
+      if (areNodeIdSetsEqual(currentNodeIds, previousNodeIds)) return
       const nextHydratedNodeIds = new Set(
         Array.from(hydratedNodeIds.value).filter((nodeId) =>
           currentNodeIds.has(nodeId)
@@ -306,7 +304,7 @@ export function useViewportVirtualization({
         viewportNodeIds.value = nextViewportNodeIds
       }
       if (
-        nodeIds.every(
+        Array.from(currentNodeIds).every(
           (nodeId) =>
             hydratedNodeIds.value.has(nodeId) ||
             pendingHydrationNodeIds.has(nodeId)
@@ -351,20 +349,45 @@ export function useViewportVirtualization({
 
   watch(layoutVersion, scheduleSettledRefresh)
   watch(
-    [layoutStore.isDraggingVueNodes, layoutStore.isResizingVueNodes],
-    ([dragging, resizing]) => {
-      if (!dragging && !resizing) scheduleFrameRefresh()
-    }
+    [
+      () => toValue(canvas),
+      () => canvasStore.selectedNodeIds,
+      () => titleEditorStore.titleEditorTarget,
+      () => isNodeOptionsOpen()
+    ],
+    refreshProtectedNodeIds,
+    { flush: 'sync' }
   )
   watch(
-    () => linkDragState.active,
-    (active) => {
+    [layoutStore.isDraggingVueNodes, layoutStore.isResizingVueNodes],
+    ([dragging, resizing]) => {
+      refreshProtectedNodeIds()
+      if (!dragging && !resizing) scheduleFrameRefresh()
+    },
+    { flush: 'sync' }
+  )
+  watch(
+    [
+      () => linkDragState.active,
+      () => linkDragState.source?.nodeId,
+      () => linkDragState.candidate?.layout.nodeId
+    ],
+    ([active]) => {
+      refreshProtectedNodeIds()
       if (!active) scheduleFrameRefresh()
-    }
+    },
+    { flush: 'sync' }
   )
 
-  useEventListener(window, ['pointerup', 'pointercancel'], scheduleFrameRefresh)
-  useEventListener(window, ['focusin', 'pointerdown'], refreshProtectedNodeIds)
+  useEventListener(window, ['pointerup', 'pointercancel'], () => {
+    refreshProtectedNodeIds()
+    scheduleFrameRefresh()
+  })
+  useEventListener(
+    window,
+    ['focusin', 'focusout', 'pointerdown'],
+    refreshProtectedNodeIds
+  )
 
   onScopeDispose(() => {
     cancelScheduledRefreshes()
