@@ -418,14 +418,7 @@
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  provide,
-  ref,
-  watch
-} from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CardBottom from '@/components/card/CardBottom.vue'
@@ -957,7 +950,10 @@ onMounted(() => {
   let ticks = 0
   const timer = window.setInterval(() => {
     const active = document.activeElement
-    if (active instanceof HTMLElement && active.getAttribute('role') === 'dialog') {
+    if (
+      active instanceof HTMLElement &&
+      active.getAttribute('role') === 'dialog'
+    ) {
       searchInputRef.value?.focus()
     }
     if (++ticks >= 15) window.clearInterval(timer)
