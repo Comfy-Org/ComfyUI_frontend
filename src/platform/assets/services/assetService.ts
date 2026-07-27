@@ -193,11 +193,19 @@ const ASSETS_EXPORT_ENDPOINT = '/assets/export'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
 const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
-// Defensive backstop against a server that never signals exhaustion (e.g. an
-// unbounded stream of unique cursors); mirrors assetsStore's walk cap. At
-// DEFAULT_LIMIT per page this allows 500k assets per walk, so it only ever
-// trips on pathological pagination.
 const MAX_PAGINATION_BATCHES = 1000
+
+export class AssetPaginationCapError extends Error {
+  constructor(
+    readonly tag: string,
+    readonly assetsCollected: number
+  ) {
+    super(
+      `getAllAssetsByTag('${tag}') hit the ${MAX_PAGINATION_BATCHES}-batch pagination cap after collecting ${assetsCollected} assets; the backend never signaled exhaustion.`
+    )
+    this.name = 'AssetPaginationCapError'
+  }
+}
 
 export const MODELS_TAG = 'models'
 export const INPUT_TAG = 'input'
@@ -762,10 +770,7 @@ function createAssetService() {
     while (true) {
       if (signal?.aborted) throw createAbortError()
       if (batchCount++ >= MAX_PAGINATION_BATCHES) {
-        console.warn(
-          `Paginated walk for tag '${tag}' hit the ${MAX_PAGINATION_BATCHES}-batch backstop; returning a truncated listing.`
-        )
-        return assets
+        throw new AssetPaginationCapError(tag, assets.length)
       }
 
       const data = await getAssetsPageByTag(tag, includePublic, {

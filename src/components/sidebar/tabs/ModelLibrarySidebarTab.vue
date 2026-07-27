@@ -142,6 +142,13 @@ const handleSearch = async (query: string) => {
   await modelStore.loadModels()
 }
 
+watch(searchQuery, (query) => {
+  if (!query) {
+    activeSearchQuery.value = ''
+    expandedKeys.value = {}
+  }
+})
+
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
 const root = computed<TreeNode>(() => {

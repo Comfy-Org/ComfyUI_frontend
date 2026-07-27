@@ -6,10 +6,12 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import {
+  MAX_CONCURRENT_METADATA_LOADS,
   ResourceState,
   effectiveModelExtensions,
   getModelPreviewUrl,
   matchesModelExtension,
+  resetMetadataLoadLimiter,
   useModelStore
 } from '@/stores/modelStore'
 
@@ -112,6 +114,7 @@ describe('useModelStore', () => {
   beforeEach(async () => {
     isCloudRef.value = false
     remoteConfig.value = {}
+    resetMetadataLoadLimiter()
   })
 
   it('should load models', async () => {
