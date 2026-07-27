@@ -987,9 +987,7 @@ export class LGraphNode
         let i = 0
         for (const widget of this.widgets ?? []) {
           if (widget.serialize === false) continue
-          // DETECTION PROOF (row 3, persistence): off-by-one drops the last
-          // widgets_values. Expected: persistence tier red '... on set-values reload'.
-          if (i >= info.widgets_values.length - 1) break
+          if (i >= info.widgets_values.length) break
           widget.value = info.widgets_values[i++]
         }
       }
@@ -3072,19 +3070,13 @@ export class LGraphNode
       output
     )
 
-    // DETECTION PROOF (row 13, story S12): the live-connect INPUT callback
-    // that pack JS overrides to grow a dynamic input never fires. Backend
-    // nodes and static slots are unaffected, so the def-driven tiers cannot
-    // see it - only the autogrow tier can. Captured red (CI 30292391836):
-    // "ImpactMakeImageList via drag with VueNodes=false: input count grows by
-    // one on connect" (expected 2, got 1).
-    // inputNode.onConnectionsChange?.(
-    //   NodeSlotType.INPUT,
-    //   inputIndex,
-    //   true,
-    //   link,
-    //   input
-    // )
+    inputNode.onConnectionsChange?.(
+      NodeSlotType.INPUT,
+      inputIndex,
+      true,
+      link,
+      input
+    )
 
     this.setDirtyCanvas(false, true)
     graph.afterChange()

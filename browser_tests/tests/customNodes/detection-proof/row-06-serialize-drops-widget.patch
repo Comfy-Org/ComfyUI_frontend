@@ -1,0 +1,14 @@
+diff --git a/src/utils/executionUtil.ts b/src/utils/executionUtil.ts
+--- a/src/utils/executionUtil.ts
++++ b/src/utils/executionUtil.ts
+@@ -103,6 +103,10 @@ export const graphToPrompt = async (
+         const widgetValue = widget.serializeValue
+           ? await widget.serializeValue(node, i)
+           : widget.value
++        // DETECTION PROOF (row 6, exec/serialize): drop numeric widget inputs
++        // from the serialized prompt.
++        // Expected: auto-run red 'VALIDATION_FAIL ... : value'.
++        if (typeof widgetValue === 'number') continue
+         // By default, Array values are reserved to represent node connections.
+         // We need to wrap the array as an object to avoid the misinterpretation
+         // of the array as a node connection.
