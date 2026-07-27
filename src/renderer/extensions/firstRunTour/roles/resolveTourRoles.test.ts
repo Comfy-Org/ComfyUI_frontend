@@ -23,6 +23,10 @@ if (!source || !prompt) {
   )
 }
 
+class OutputNode extends LGraphNode {
+  static override nodeData = { output_node: true }
+}
+
 function addPinnedNode(graph: LGraph | Subgraph, pin: RolePin) {
   const node = new LGraphNode(pin.type, pin.type)
   node.id = toNodeId(pin.id)
@@ -103,10 +107,30 @@ describe('resolveTourRoles', () => {
     ).toBeNull()
   })
 
-  it('gives an unsupported template no roles, so no tour starts', () => {
+  it('gives an unpinned workflow with no output node no roles at all', () => {
     const root = createTestRootGraph()
     addPinnedNode(root, sink)
 
-    expect(resolveTourRoles(root, 'some_shared_workflow')).toBeNull()
+    expect(
+      resolveTourRoles(root, 'some_shared_workflow'),
+      'a bare node is not an output node, so there is nowhere to show a result'
+    ).toBeNull()
+  })
+
+  it('reads an unpinned workflow off the graph and host-maps what it finds', () => {
+    const root = createTestRootGraph()
+    const { subgraph, host } = addHostedSubgraph(root)
+    const decode = new LGraphNode('VAEDecode', 'VAEDecode')
+    decode.addOutput('IMAGE', 'IMAGE')
+    subgraph.add(decode)
+    const saved = new OutputNode('SaveImage', 'SaveImage')
+    saved.addInput('images', 'IMAGE')
+    subgraph.add(saved)
+    decode.connect(0, saved, 0)
+
+    expect(
+      resolveTourRoles(root, 'some_shared_workflow')?.sink,
+      'a share URL gets its roles from the graph, spotlit through the root host'
+    ).toBe(host.id)
   })
 })
