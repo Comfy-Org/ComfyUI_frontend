@@ -12,6 +12,7 @@ import {
   absoluteUrl,
   comfyUiApplicationNode,
   comfyUiSoftwareId,
+  comfyUiSourceCodeNode,
   pageContext,
 } from '../utils/jsonLd'
 
@@ -23,14 +24,14 @@ const { siteUrl, locale } = pageContext(
 ---
 
 <BaseLayout
-  title="Download Comfy Desktop — Run AI on Your Hardware"
+  title="Download Comfy Desktop - Run AI on Your Hardware"
   description={t('download.hero.subtitle', 'en')}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
     { name: t('breadcrumb.download', locale) },
   ]}
-  extraJsonLd={[comfyUiApplicationNode(siteUrl)]}
+  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
   keywords={['comfyui app', 'comfyui desktop app', 'comfyui desktop', 'comfy ui application', 'comfyui download', 'download comfyui', 'comfyui windows', 'comfyui mac', 'comfyui linux']}
 >
   <CloudBannerSection />

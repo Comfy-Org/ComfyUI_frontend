@@ -248,6 +248,36 @@ describe('useAssetSelection', () => {
     })
   })
 
+  describe('setSelectedIds', () => {
+    it('replaces selection and anchors on the last selected asset', () => {
+      const selection = useAssetSelection()
+      const store = useAssetSelectionStore()
+      const assets = createMockAssets(5)
+
+      selection.setSelectedIds(['asset-1', 'asset-3'], assets)
+
+      expect(Array.from(store.selectedAssetIds).sort()).toEqual([
+        'asset-1',
+        'asset-3'
+      ])
+      expect(store.lastSelectedIndex).toBe(3)
+      expect(store.lastSelectedAssetId).toBe('asset-3')
+    })
+
+    it('clears the anchor when the selection is empty', () => {
+      const selection = useAssetSelection()
+      const store = useAssetSelectionStore()
+      const assets = createMockAssets(3)
+      store.setLastSelectedIndex(2)
+      store.setLastSelectedAssetId('asset-2')
+
+      selection.setSelectedIds([], assets)
+
+      expect(store.lastSelectedIndex).toBe(-1)
+      expect(store.lastSelectedAssetId).toBeNull()
+    })
+  })
+
   describe('clearSelection', () => {
     it('clears all selections', () => {
       const { handleAssetClick, clearSelection, selectedCount } =

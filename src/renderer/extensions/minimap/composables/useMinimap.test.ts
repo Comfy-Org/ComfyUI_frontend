@@ -24,6 +24,10 @@ interface MockGraph {
   onNodeAdded: ((node: MockNode) => void) | null
   onNodeRemoved: ((node: MockNode) => void) | null
   onConnectionChange: ((node: MockNode) => void) | null
+  events: {
+    addEventListener: Mock
+    removeEventListener: Mock
+  }
 }
 
 interface MockCanvas {
@@ -128,7 +132,11 @@ const setupMocks = () => {
     setDirtyCanvas: vi.fn(),
     onNodeAdded: null,
     onNodeRemoved: null,
-    onConnectionChange: null
+    onConnectionChange: null,
+    events: {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    }
   }
 
   moduleMockCanvas = {
@@ -292,7 +300,11 @@ describe('useMinimap', () => {
       setDirtyCanvas: vi.fn(),
       onNodeAdded: null,
       onNodeRemoved: null,
-      onConnectionChange: null
+      onConnectionChange: null,
+      events: {
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn()
+      }
     }
 
     moduleMockCanvas = {

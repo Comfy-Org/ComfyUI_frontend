@@ -1270,3 +1270,49 @@ test(
     })
   }
 )
+
+test.describe('Vue link drag panning', { tag: '@vue-nodes' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
+    await fitToViewInstant(comfyPage)
+  })
+
+  test('spacebar pans during link drag', async ({ comfyPage }) => {
+    const initialOffset = await comfyPage.canvasOps.getOffset()
+
+    await test.step('Setup link drag', async () => {
+      await comfyPage.searchBoxV2.addNode('Load Diffusion')
+      const loadNode = await comfyPage.vueNodes.getFixtureByTitle('Load Diff')
+      const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+
+      await loadNode.getSlot('MODEL').hover()
+      await comfyPage.page.mouse.down()
+      await ksampler.getSlot('model').hover()
+      expect(
+        await comfyPage.canvasOps.getOffset(),
+        'starting the link drag should not pan the canvas'
+      ).toEqual(initialOffset)
+    })
+
+    await test.step('Holding space initiates a pan', async () => {
+      await comfyPage.page.keyboard.down(' ')
+      await comfyPage.page.mouse.move(100, 100)
+      await comfyPage.page.keyboard.up(' ')
+      await expect
+        .poll(() => comfyPage.canvasOps.getOffset())
+        .not.toEqual(initialOffset)
+    })
+
+    await test.step('Mouse remains over model after pan', async () => {
+      await comfyPage.page.mouse.up()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () => graph?.nodes?.at(-1)?.outputs?.[0]?.links?.length === 1
+          )
+        )
+        .toBe(true)
+    })
+  })
+})

@@ -98,12 +98,14 @@ export const TestIds = {
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
     subscribeButton: 'topbar-subscribe-button',
+    subscribeToRunButton: 'subscribe-to-run-button',
     loginButton: 'login-button',
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
     integratedTabBarActions: 'integrated-tab-bar-actions',
-    actionBarButtons: 'action-bar-buttons'
+    actionBarButtons: 'action-bar-buttons',
+    freeTierQuota: 'free-tier-quota'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
@@ -240,12 +242,17 @@ export const TestIds = {
     renameInput: 'subgraph-breadcrumb-rename-input',
     menu: (key: string) => `subgraph-breadcrumb-menu-${key}`
   },
+  workflowActions: {
+    viewModeToggle: 'view-mode-toggle'
+  },
   templates: {
     content: 'template-workflows-content',
     workflowCard: (id: string) => `template-workflow-${id}`
   },
   user: {
-    currentUserIndicator: 'current-user-indicator'
+    currentUserButton: 'current-user-button',
+    currentUserIndicator: 'current-user-indicator',
+    currentUserPopover: 'current-user-popover'
   },
   queue: {
     jobHistorySidebar: 'job-history-sidebar',
@@ -277,6 +284,7 @@ export const TestIds = {
     overlay: 'loading-overlay'
   },
   load3d: {
+    categoryMenu: 'load3d-category-menu',
     recordingDuration: 'load3d-recording-duration'
   },
   load3dViewer: {

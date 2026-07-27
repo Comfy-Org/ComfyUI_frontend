@@ -22,6 +22,8 @@ import {
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { isCloud } from '@/platform/distribution/types'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
@@ -85,6 +87,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
   const modelStore = useModelStore()
+  const missingModelStore = useMissingModelStore()
   const telemetry = useTelemetry()
   const { trackRunButton } = useRunButtonTelemetry()
   const { staticUrls, buildDocsUrl } = useExternalLink()
@@ -311,6 +314,9 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         await Promise.all([app.refreshComboInNodes(), modelStore.refresh()])
+        if (!isCloud) {
+          await missingModelStore.refreshMissingModels({ reloadDefs: false })
+        }
       }
     },
     {
@@ -414,7 +420,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Canvas Toggle Lock',
       category: 'view-controls' as const,
       function: () => {
-        app.canvas.state.readOnly = !app.canvas.state.readOnly
+        app.canvas.read_only = !app.canvas.read_only
       }
     },
     {
@@ -423,7 +429,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Lock Canvas',
       category: 'view-controls' as const,
       function: () => {
-        app.canvas.state.readOnly = true
+        app.canvas.read_only = true
       }
     },
     {
@@ -431,7 +437,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-lock-open',
       label: 'Unlock Canvas',
       function: () => {
-        app.canvas.state.readOnly = false
+        app.canvas.read_only = false
       }
     },
     {

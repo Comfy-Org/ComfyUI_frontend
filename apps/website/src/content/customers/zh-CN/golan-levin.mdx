@@ -1,0 +1,146 @@
+---
+title: "以全新方式观察世界：Golan Levin 教授如何在卡内基梅隆大学用 ComfyUI 教学"
+category: "创意校园展示"
+description: "\"对我而言，ComfyUI 不只是生成式 AI。它是一台面向全新创作方式的图像处理工作站。\""
+cover: "https://media.comfy.org/website/customers/golan-levin/cover.png"
+order: 7
+sections:
+  - id: topic-1
+    label: "简介"
+  - id: topic-2
+    label: "ComfyUI 的定位"
+  - id: topic-3
+    label: "图像合成"
+  - id: topic-4
+    label: "图像分析"
+  - id: topic-5
+    label: "计算机视觉实验室"
+  - id: topic-6
+    label: "概览"
+  - id: topic-7
+    label: "学生作品"
+---
+
+<Section id="topic-1">
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/augmented-hand.jpg" alt="Golan Levin, Augmented Hand Series" caption="Golan Levin，Augmented Hand Series（2014），与 Chris Sugrue 和 Kyle McDonald 合作。摄影：Gerlinde de Geus，由 Cinekid 提供。" />
+
+对许多人来说，艺术中的 AI 意味着图像生成。但在过去二十年的大部分时间里，Levin 一直在教艺术家如何让计算机去解读、分析和度量视觉世界。他自己的艺术作品长期通过实时计算机视觉系统探索机器感知，自 2024 年起，他越来越多地使用 ComfyUI 来讲授这些原理。
+
+对 Levin 而言，ComfyUI 与其说是图像生成器，不如说是一台图像处理工作台。学生用它来组装用于分割、追踪、深度估计等各类计算感知的自定义工作流。由此形成了一个环境：艺术家可以直接用研究级的机器学习工具做实验，并把它们组合成自己设计的系统。
+
+</Section>
+
+<Section id="topic-2">
+
+### ComfyUI 在你想做的事情中处于什么位置？
+
+我培养的是创意技术专家和具备技术素养的艺术家。我这门创意编程课上典型的学生是真正的复合型人才：一位同时在学习计算机科学、人机交互或信息科学的艺术或设计本科生。他们有很强的视觉能力、深厚的文化素养和出色的算法思维能力，但我的课程可能是他们第一次有机会把这些能力融会贯通。
+
+对我来说，这意味着给学生他们能够理解、修改和重组的工具，让他们构建自己设计的系统，而不是把创意软件当作一成不变的既定条件。这正是我如此推崇面向艺术的社区驱动、开源软件开发工具包的原因。
+
+<Quote>ComfyUI 是我找到的第一个既有"低门槛"又有"高上限"的 AI 工具。它极其强大而灵活，让艺术家能够用最前沿的算法设计自己的 AI 工作流。同时它又跳过了应付古怪的 GitHub 仓库和过时的 Colab notebook 带来的种种烦恼。</Quote>
+
+### 学生们此前卡在哪里？
+
+学生常常发现自己被困在两个世界之间。一边是商业 AI 工具，效果惊艳，但可定制的空间有限。另一边是大学和实验室发布的研究项目，其软件往往难以安装、文档不全，或者早已过时。
+
+ComfyUI 弥合了这一鸿沟。它让学生通过一个自己能够理解、修改和扩展的环境去接触最先进的算法。他们不必削足适履地把自己的想法套进工具内置的工作流，而是可以构建能反映自身兴趣和问题的工作流。
+
+<Quote>我的学生是探索者。他们是会写代码的艺术家，想要构建前所未有的系统。</Quote>
+
+</Section>
+
+<Section id="topic-3">
+
+### 第一个练习：在 ComfyUI 内用 p5.js 草图驱动图像合成
+
+在 Levin 的一个入门练习中——这是学生第一次接触 ComfyUI 环境——他们直接在 ComfyUI 里写一个简单的 p5.js 草图，然后用他们画出的形状加上一段文字提示词，去引导一次 Stable Diffusion 图像合成。他们把生成的成对图像记录下来：左边是他们的 JavaScript 画布绘图，右边是 AI 合成结果。此前他们已经花了几周时间费力地想从 p5.js 中榨出一点细腻表现，因此看到简单形状竟能得到这样的结果，他们乐在其中，也由此对 Stable Diffusion 的工作原理有了很多领悟。
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/p5-landscape.png" alt="p5.js 椭圆引导 Stable Diffusion 合成" caption={`在 p5.js 中绘制的一些宽椭圆（左）引导 Stable Diffusion 合成，提示词为 "rolling hills, foggy day"（右）。`} />
+
+它运行在一个节点式画布上，艺术专业的学生上手很快，因为它的工作方式与他们已经熟悉的工具相似。
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/p5-workflow.png" alt="使用 ComfyUI-p5js-node 的模板 ComfyUI 工作流" caption="学生拿到的模板 ComfyUI 工作流。它使用了 Ben Fox 制作的自定义 ComfyUI-p5js-node。取自 Levin 的 60-212 课程仓库。" />
+
+*自己动手试试：[json 文件](https://media.comfy.org/website/customers/golan-levin/p5-in-comfy.json)（仅限 Comfy Local）*
+
+</Section>
+
+<Section id="topic-4">
+
+### 许多艺术家一开始把 ComfyUI 用于生成式 AI。你的用法却不同。
+
+也许是吧。我感兴趣的是把 AI 作为一种拓展感知的框架，所以在过去 25 年里，我使用机器学习和计算机视觉的很多方式都是为了图像分析，而非图像合成。本质上，我用计算机视觉去理解视频和图像，再用提取出的信息创造出新类型的交互体验。在课堂上，我用 ComfyUI 帮助学生学会"像机器一样观察"。所以我让学生把 ComfyUI 当作分析图像的框架，而不只是生成图像。例如，我让他们取一张输入图像，然后用 AI 从中计算出新的图像，比如语义分割（"哪些像素属于这头大象？"）和单目深度估计（"每个像素有多远？"）。接着学生构建一个交互作品，去解读原始图像，但使用的是五个信息通道而非三个：常规的红、绿、蓝，加上深度，再加上分割。在我的演示项目里，分割把大象染成粉色，背景像素则根据 AI 判断的远近改变大小。
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/depth-segmentation.png" alt="ComfyUI 中的语义分割与单目深度分析" caption={`一张输入图像在 ComfyUI 内被分析：语义分割和单目深度，供给一个五通道的 "Custom Pixel" 练习。取自 Levin 的 60-212 课程仓库。`} />
+
+*自己动手试试：[演示项目](https://editor.p5js.org/golan/sketches/-_cFmLtoP) · [教案与工作流](https://github.com/golanlevin/60-212/tree/main/lectures/comfy/image_analysis#3-segment-the-image-with-ai)*
+
+*工作流文件：下载 [.json](https://media.comfy.org/website/customers/golan-levin/image-analysis-workflow.json)，或[将工作流嵌入元数据的 .png](https://media.comfy.org/website/customers/golan-levin/image-analysis-workflow.png)（把它拖入 ComfyUI 即可加载图。）*
+
+<Quote>我希望学生明白，AI 不只是生成图像的工具。它也是一种用于感知、度量和分析的工具。</Quote>
+
+为此构建的计算机视觉工具通常面向开发者和企业，预设了一套工程化的工作流。我希望我的艺术专业学生能在一个他们已经习惯思考的环境里接触到分割、深度和追踪，而不必先搭建一条生产管线。
+
+### 当 ComfyUI 进入工作流后，发生了什么变化？
+
+有两点。第一，它运行在一个节点式画布上，许多艺术专业学生已经从 TouchDesigner、Max/MSP 和 Grasshopper 这类环境中熟悉了这种方式——只不过它在浏览器里运行，而且是为 AI 服务的。因此，学生可以专注于机器学习工作流背后的思想，而不必先去学习一整套全新的交互范式。第二，它拉近了研究实验室与课堂之间的距离。
+
+<Quote>从实验室到你的课堂有一条快速通道。爱好者们把 AI 研究代码转化为 Comfy 节点，往往在其发布几天之内就完成，这已成为常态。</Quote>
+
+ComfyUI 生态最了不起的一点，是新研究成果变得可用的速度。一篇计算机视觉论文可能在 CVPR 或 ICCV 上发表，几天之内社区里就有人把它封装成一个可复用的 ComfyUI 节点。对教育者而言，这极大地缩短了研究实验室与课堂之间的距离。学生不必花上数周去重建一套实验性的软件环境，几乎可以立即开始探索其中的核心思想。
+
+云端对可及性和公平也很重要。我的大多数学生没有强大的 GPU 工作站，我也不希望他们能否使用先进工具取决于个人硬件的档次。云平台让一个班的每个人都能在同一个环境里、用同样的模型工作，无论他们手头恰好是哪台笔记本电脑。
+
+</Section>
+
+<Section id="topic-5">
+
+### 在你的高阶实验性捕捉工作室里，你把 ComfyUI 变成了一个计算机视觉实验室。
+
+这门课的目标是借助各种技术，帮助我们以全新的方式观察世界：极快的、极慢的、极小的、极大的，以及超出人类感知的光谱，比如红外和紫外。它关乎培养学生的好奇心。但这个工作室的限制在于硬件。我们有一台能以每秒 10 万帧拍摄的相机、一台高分辨率热成像相机，还能使用一台电子显微镜——但我们有 20 个学生。我们没法总是让所有人排队去用某台稀有的相机，那会成为瓶颈。
+
+<Quote>我得给他们一些工具，让他们都能在自己的硬件上运行，用来以全新的方式观察世界。</Quote>
+
+ComfyUI 让学生能用自己的手机去提出以前提不出的问题。于是他们用胶带把手机相机粘在窗户上，录下窗外流逝的世界，然后用 LocateAnything 和 SAM3 这些 ComfyUI 节点来追踪事物，生成一份份提炼相机所见的数据文件。ComfyUI 由此成为一个用于计算观察的实验室，让学生能够对图像和视频提出那些原本很难表述的问题。
+
+### 你也会亲自把小众的研究库封装成 ComfyUI 节点。
+
+ComfyUI 生态最了不起的一点，是围绕它形成的社区。GitHub 上有一位我很敬佩的人，Kijai，他不断把计算机视觉实验室的各种库变成 ComfyUI 节点。他已经做了数百个，在把实验室级的模型变成人人可用的工具这件事上，他做得比任何人都多。我和我的学生也开始这么做。"小众"这个词用得很贴切。眼下我盯上了一个动物学实验室，他们发布了一个很好的、用于追踪昆虫腿部的库。做这个库的人大概根本不知道 ComfyUI 是什么。但我想把那个算法用到我的学生身上，而且外面一定还有别人会爱上它。
+
+### 你在学生身上看到的更大的规律是什么？
+
+我的学生是探索者。他们一看到新工具，立刻就会开始琢磨它还能连接到什么别的东西。他们不断探索：我应该能把这个东西和那个东西组合起来。这正是要给他们一个可以在上面搭建的系统、而不是一个告诉他们只能做什么的工具的全部理由。
+
+<Quote>我们培养的是想要发明新形式、新体验的学生，而不只是复制已有事物的学生。</Quote>
+
+</Section>
+
+<Section id="topic-6" title="概览">
+
+<AtAGlance rows={[
+  { label: "课程", value: "中阶工作室：创意编程（60-212）；实验性捕捉（与 Nica Ross 合授）" },
+  { label: "层次", value: "本科（二年级工作室 + 高阶工作室，约 20 名学生）" },
+  { label: "配置", value: "云端托管的 ComfyUI；在学生自己的笔记本电脑上运行" },
+  { label: "核心技术", value: "p5.js 驱动的合成；语义分割；单目深度；LocateAnything + SAM3 追踪" },
+  { label: "独特视角", value: "把 ComfyUI 当作计算机视觉实验室，而不只是生成器" }
+]} />
+
+</Section>
+
+<Section id="topic-7" title="学生作品">
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/student-tippi.png" alt="Tippi Li 的学生作品" caption={`"nuclear explosion"，作者 Tippi Li`} />
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/student-xiao.png" alt="Xiao Yuan 的学生作品" caption={`"Chinese painting, plants, ink, transparent"，作者 Xiao Yuan`} />
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/student-aarnav.png" alt="Aarnav Patel 的学生作品" caption={`"NASA space image of a new cosmos detected"，作者 Aarnav Patel`} />
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/student-jeffrey.png" alt="Jeffrey Wang 的学生作品" caption={`"Dream Scene Painting"，作者 Jeffrey Wang`} />
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/student-kai.gif" alt="Kai Okorodudu 的学生作品" caption={`"Electric hand"，作者 Kai Okorodudu`} />
+
+</Section>
+
+<AuthorBio people={[{ name: "Golan Levin", photo: "https://media.comfy.org/website/customers/golan-levin/author-golan.png" }]}>Golan Levin 是卡内基梅隆大学计算艺术教授，与 Tega Brain 合著有《Code as Creative Medium》。今年秋季他在卡内基梅隆大学开设两门用 ComfyUI 授课的课程："中阶工作室：创意编程"（60-212），围绕 p5.js 展开；以及"实验性捕捉"，一门关于计算摄影与拓展摄影的工作室课程，与 Nica Ross 合授。Levin 还以由实时机器视觉驱动的交互艺术装置广为人知，例如他与 Kyle McDonald 和 Christine Sugrue 共同创作的 [Augmented Hand Series](https://flong.com/archive/projects/augmented-hand-series/index.html)（2014）。</AuthorBio>

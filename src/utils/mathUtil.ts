@@ -1,5 +1,29 @@
+import { clamp } from 'es-toolkit/math'
+
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Bounds } from '@/renderer/core/layout/types'
+
+/** A rectangle's viewport edges: the DOMRect subset, so a DOMRect is directly assignable. */
+export type RectEdges = Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom'>
+
+/**
+ * Clips a rectangle to `bounds`: each edge is limited independently, so the
+ * rect shrinks to the overlapping region rather than being moved to fit.
+ * Keeps an interaction rectangle (the canvas selection box, the assets
+ * marquee) inside its own surface. Both the rect and the bounds use
+ * viewport-style edges (left/top/right/bottom), e.g. a DOMRect.
+ */
+export function clipRectToBounds(
+  rect: RectEdges,
+  bounds: RectEdges
+): RectEdges {
+  return {
+    left: clamp(rect.left, bounds.left, bounds.right),
+    top: clamp(rect.top, bounds.top, bounds.bottom),
+    right: clamp(rect.right, bounds.left, bounds.right),
+    bottom: clamp(rect.bottom, bounds.top, bounds.bottom)
+  }
+}
 
 /**
  * Linearly maps a value from [min, max] to [0, 1].
