@@ -54,25 +54,28 @@ describe('shouldUseVueNodeLowDetail', () => {
       ds: { scale: Number.NaN }
     } as unknown as LGraphCanvas
     const scope = effectScope()
-    scope.run(() =>
-      useVueNodeLOD({
-        canvas,
-        enabled: true,
-        fullDetailZoom: 95,
-        vueNodesEnabled: true
-      })
-    )
-    const callback = rafWatcher.callback
-    if (!callback) throw new Error('RAF watcher callback was not captured')
+    try {
+      scope.run(() =>
+        useVueNodeLOD({
+          canvas,
+          enabled: true,
+          fullDetailZoom: 95,
+          vueNodesEnabled: true
+        })
+      )
+      const callback = rafWatcher.callback
+      if (!callback) throw new Error('RAF watcher callback was not captured')
 
-    callback({ delta: 0, timestamp: 0 })
-    expect(
-      document.documentElement.classList.contains('vue-nodes-low-detail')
-    ).toBe(false)
-    callback({ delta: 0, timestamp: 16 })
-    expect(
-      document.documentElement.classList.contains('vue-nodes-low-detail')
-    ).toBe(false)
-    scope.stop()
+      callback({ delta: 0, timestamp: 0 })
+      expect(
+        document.documentElement.classList.contains('vue-nodes-low-detail')
+      ).toBe(false)
+      callback({ delta: 0, timestamp: 16 })
+      expect(
+        document.documentElement.classList.contains('vue-nodes-low-detail')
+      ).toBe(false)
+    } finally {
+      scope.stop()
+    }
   })
 })
