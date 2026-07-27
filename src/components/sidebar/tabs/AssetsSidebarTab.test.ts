@@ -102,8 +102,10 @@ const i18n = createI18n({
 })
 
 const sidebarTabTemplateStub = {
+  props: ['title'],
   template: `
     <section>
+      <h2 v-if="title">{{ title }}</h2>
       <div data-testid="folder-title"><slot name="alt-title" /></div>
       <div data-testid="folder-controls"><slot name="header" /></div>
       <slot name="body" />
@@ -172,6 +174,10 @@ describe('AssetsSidebarTab folder navigation', () => {
     )
 
     await userEvent.click(backButton)
+    expect(screen.getByText('Media Assets')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Back to all assets' })
+    ).not.toBeInTheDocument()
     expect(screen.queryByText('Job ID')).not.toBeInTheDocument()
   })
 })
