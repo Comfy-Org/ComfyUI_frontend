@@ -97,6 +97,19 @@ const MOCK_RELOAD_FAILED = `
 
 const HEALTHY = { state: 'active', autoReload: 'healthy' } as const
 
+/**
+ * The viewer renders the real component, so this corrects itself the moment the
+ * prototype branch picks up main — nothing here needs editing.
+ */
+const PAUSED_NOT_LOCKED =
+  '⚠ <b>The button above is not locked — that is the finding, not a rendering bug.</b> <span class="mono">CloudRunButtonWrapper</span> forks only on <span class="mono">isActiveSubscription</span>, and a paused subscription still reports <span class="mono">is_active: true</span>, so paused renders the ordinary queue button. Open question: should the backend report <span class="mono">is_active: false</span> when paused, or should the frontend branch on <span class="mono">subscription_status</span>?'
+
+const PAUSED_KEEPS_GROUP =
+  '⚠ <b>Paused locks differently from inactive.</b> Figma 5242-31804 keeps the whole group — batch count, dropdown, cancel, job count — and locks only the primary button (gold + padlock). Inactive instead swaps the entire group for one standalone button, losing the batch count and dropdown. So paused is a <i>state change within</i> <span class="mono">ComfyQueueButton</span>, not the component swap inactive uses.'
+
+const STALE_BUTTON_COLOUR =
+  '⚠ <b>Button colour here is stale, not a design.</b> The purple gradient was replaced by a solid credit-gold fill with dark text in <span class="mono">#13763</span> (variant renamed <span class="mono">gradient</span> → <span class="mono">subscribe</span>), which is live on cloud. This branch is behind main, and the viewer renders the real component — so it will show gold automatically once the branch catches up.'
+
 export const STATES: ViewerState[] = [
   // ---- Profile menu (real component) ----
   {
@@ -354,10 +367,11 @@ export const STATES: ViewerState[] = [
     cfg: { state: 'paused', autoReload: 'healthy', balance: 'partial' },
     mock: MOCK_PAUSED_DIALOG_OWNER,
     spec: [
-      'The button is the <b>real</b> shipped component (<span class="mono">SubscribeToRun.vue</span>) under a paused subscription.',
-      '<b>Gap:</b> it still renders the inactive-state label. Paused needs its own label ("Update payment to run") and dialog — the component forks on <span class="mono">canManageSubscription</span> only, never on cause.',
+      PAUSED_NOT_LOCKED,
+      PAUSED_KEEPS_GROUP,
+      'Once it does lock, paused needs its own label ("Update payment to run") — today the component forks on <span class="mono">canManageSubscription</span> only, never on cause.',
       'Dialog below is the designed target, not yet built.',
-      '<span class="mono">Figma 5242-31803</span>'
+      '<span class="mono">Figma 5242-31803 / 5242-31804</span>'
     ]
   },
   {
@@ -370,9 +384,10 @@ export const STATES: ViewerState[] = [
     cfg: { state: 'paused', autoReload: 'healthy', balance: 'partial' },
     mock: MOCK_PAUSED_DIALOG_MEMBER,
     spec: [
+      PAUSED_NOT_LOCKED,
+      PAUSED_KEEPS_GROUP,
       'Member buttons never fork across causes — locked "Run"; the cause lives in dialog copy.',
-      'The shipped button already renders exactly this for members, because member copy is cause-agnostic by design.',
-      'Only the dialog needs building: reuse the inactive shell + <span class="mono">subscription.paused.*</span> keys.',
+      'The <b>dialog</b> can reuse the inactive shell + <span class="mono">subscription.paused.*</span> keys; the <b>button</b> cannot reuse the inactive approach, per the row above.',
       '<span class="mono">Family: inactive (shipped) · paused (designed) · out-of-credits (member shipped, owner parked)</span>'
     ]
   },
@@ -389,6 +404,7 @@ export const STATES: ViewerState[] = [
       'Both halves shipped in #12786 — this is the grammar the paused variant should follow, not a proposal.',
       'Button and dialog are cause-agnostic for members: a plain locked "Run", and copy that names the fix as someone else\'s ("ask your workspace owner"). Never mentions payment.',
       'Dialog is a faithful mock of the shipped <span class="mono">SubscriptionInactiveMemberDialog.vue</span> — the exact shell the paused dialog should reuse with <span class="mono">subscription.paused.*</span> keys.',
+      STALE_BUTTON_COLOUR,
       '<span class="mono">Routing: useSubscriptionDialog forks on !canManageSubscription (out_of_credits excepted)</span>'
     ]
   },
@@ -403,6 +419,7 @@ export const STATES: ViewerState[] = [
     spec: [
       'Owner label names the fix ("Subscribe to Run") — the member label never does.',
       'No small dialog here: owners route to the full pricing table, since they can actually resolve it. That asymmetry is the point — the dialog exists for the role that can only ask someone else.',
+      STALE_BUTTON_COLOUR,
       'Shipped in #12786.'
     ]
   },
