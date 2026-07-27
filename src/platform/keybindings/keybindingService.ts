@@ -8,6 +8,23 @@ import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
 
+const OPEN_REKA_CONTENT_SELECTOR = '[role="dialog"][data-state="open"]'
+const POPPER_WRAPPER_SELECTOR = '[data-reka-popper-content-wrapper]'
+
+/**
+ * Dialogs built directly on reka's `DialogRoot` never register with
+ * `dialogStore`, so its stack cannot see them. Reka marks open dialog content
+ * with `role="dialog"` + `data-state="open"`, but reuses that same pair for
+ * `PopoverContent`, which is non-modal and must keep global keybindings
+ * working. Only popover content is positioned inside a popper wrapper.
+ */
+function hasOpenRekaDialog(): boolean {
+  const openContent = document.querySelectorAll(OPEN_REKA_CONTENT_SELECTOR)
+  return Array.from(openContent).some(
+    (content) => content.closest(POPPER_WRAPPER_SELECTOR) === null
+  )
+}
+
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
   const commandStore = useCommandStore()
@@ -44,23 +61,23 @@ export function useKeybindingService() {
           return
         }
       }
-      if (
-        event.key === 'Escape' &&
-        !event.ctrlKey &&
-        !event.altKey &&
-        !event.metaKey
-      ) {
-        if (dialogStore.dialogStack.length > 0) {
-          return
-        }
-      }
-
       /**
        * Block global keybindings from triggering background actions while a
-       * modal dialog is open. Keybindings whose event target lives inside an
-       * open dialog still fire, so dialog-scoped shortcuts keep working.
+       * dialog is open. Keybindings whose event target lives inside an open
+       * dialog still fire, so dialog-scoped shortcuts keep working. Escape is
+       * the exception: it belongs to the dialog, and must also skip the
+       * `preventDefault()` below, since reka dismisses its own dialogs only
+       * while the event is not already default-prevented.
        */
-      if (dialogStore.dialogStack.length > 0) {
+      if (dialogStore.dialogStack.length > 0 || hasOpenRekaDialog()) {
+        if (
+          event.key === 'Escape' &&
+          !event.ctrlKey &&
+          !event.altKey &&
+          !event.metaKey
+        ) {
+          return
+        }
         const inDialog = target.closest?.('[role="dialog"]') != null
         if (!inDialog) {
           return
