@@ -42,8 +42,6 @@ export interface CoachStep {
   image?: string
   /** Lets pointer input through the scrim's holes and releases the focus trap. */
   interactive?: boolean
-  /** Extra scrim holes; re-read every frame while the step shows. */
-  maskRects?: () => DOMRect[]
   /** Runs when the step is shown; the signal aborts on leaving the step. */
   onEnter?: (signal: AbortSignal) => void | Promise<void>
 }

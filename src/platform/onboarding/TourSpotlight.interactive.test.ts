@@ -67,30 +67,12 @@ describe('TourSpotlight interactive and masked steps', () => {
     expect(screen.getByTestId('coach-hit-region')).toBeTruthy()
   })
 
-  it('cuts the extra mask rects out of the interactive hit region', () => {
-    renderSpotlight({
-      step: spotlightStep({
-        interactive: true,
-        maskRects: () => [new DOMRect(10, 10, 50, 50)]
-      })
-    })
+  it('covers the viewport with an evenodd region, so its holes pass input through', () => {
+    renderSpotlight({ step: spotlightStep({ interactive: true }) })
+
     const region = screen.getByTestId('coach-hit-region')
     expect(region.getAttribute('fill-rule')).toBe('evenodd')
-    expect(region.getAttribute('d')).toBe('M0 0H1024V768H0ZM6 6h58v58h-58Z')
-  })
-
-  it('renders extra mask holes while keeping the blocker on a non-interactive step', () => {
-    renderSpotlight({
-      step: spotlightStep({
-        maskRects: () => [
-          new DOMRect(10, 10, 50, 50),
-          new DOMRect(100, 100, 40, 40)
-        ]
-      })
-    })
-    expect(screen.getAllByTestId('coach-mask-hole')).toHaveLength(2)
-    expect(screen.getByTestId('coach-blocker')).toBeTruthy()
-    expect(screen.queryByTestId('coach-hit-region')).toBeNull()
+    expect(region.getAttribute('d')).toBe('M0 0H1024V768H0Z')
   })
 
   it('still skips on Escape during an interactive step', async () => {
@@ -100,6 +82,21 @@ describe('TourSpotlight interactive and masked steps', () => {
     })
     await user.keyboard('{Escape}')
     expect(emitted().skip).toHaveLength(1)
+  })
+
+  it('transitions the ring between DOM targets, which move on discrete events', () => {
+    const el = document.createElement('div')
+    el.getBoundingClientRect = () => new DOMRect(10, 10, 80, 40)
+    document.body.append(el)
+    registerCoachmark(COACH_IDS.inputsList, el)
+
+    renderSpotlight({
+      step: spotlightStep({ coachId: COACH_IDS.inputsList })
+    })
+
+    expect(screen.getByTestId('coach-spotlight').className).toContain(
+      'transition-[left,top,width,height,opacity]'
+    )
   })
 
   it('rides a virtual target instead of transitioning after it', () => {

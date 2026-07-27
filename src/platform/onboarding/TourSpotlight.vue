@@ -8,23 +8,15 @@
       <mask :id="maskId">
         <rect width="100%" height="100%" fill="white" />
         <rect
-          v-if="scrimHoles.primary"
+          v-if="scrimHole"
           data-testid="coach-mask-hole"
-          v-bind="scrimHoles.primary"
+          v-bind="scrimHole"
           rx="12"
           fill="black"
           :class="
             !isVirtualTarget &&
             'motion-safe:transition-[x,y,width,height] motion-safe:duration-300'
           "
-        />
-        <rect
-          v-for="(hole, i) in scrimHoles.extras"
-          :key="i"
-          data-testid="coach-mask-hole"
-          v-bind="hole"
-          rx="12"
-          fill="black"
         />
       </mask>
       <rect
@@ -134,7 +126,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener, useRafFn, useWindowSize } from '@vueuse/core'
+import { useEventListener, useWindowSize } from '@vueuse/core'
 import { ZIndex } from '@primeuix/utils/zindex'
 import { FocusScope } from 'reka-ui'
 import {
@@ -144,8 +136,7 @@ import {
   ref,
   useId,
   useTemplateRef,
-  watch,
-  watchEffect
+  watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -272,36 +263,21 @@ const spotlightStyle = computed(() => {
 
 const maskId = useId()
 
-const useMaskScrim = computed(() => !!(step.interactive || step.maskRects))
-const maskTick = ref(0)
-const { pause: pauseMaskTracking, resume: resumeMaskTracking } = useRafFn(
-  () => maskTick.value++,
-  { immediate: false }
+const useMaskScrim = computed(() => !!step.interactive)
+
+const scrimHole = computed(() =>
+  targetRect.value
+    ? clampSpotlightRect(targetRect.value, SPOTLIGHT_PAD, viewport())
+    : null
 )
-watchEffect(() => (step.maskRects ? resumeMaskTracking() : pauseMaskTracking()))
 
-const scrimHoles = computed(() => {
-  void maskTick.value
-  const vp = viewport()
-  return {
-    primary: targetRect.value
-      ? clampSpotlightRect(targetRect.value, SPOTLIGHT_PAD, vp)
-      : null,
-    extras: (step.maskRects?.() ?? []).map((r) =>
-      clampSpotlightRect(r, SPOTLIGHT_PAD, vp)
-    )
-  }
-})
-
-// Evenodd viewport path whose holes let pointer events through to the page.
+// Evenodd viewport path whose hole lets pointer events through to the page.
 const hitRegionPath = computed(() => {
   const { width, height } = viewport()
-  const { primary, extras } = scrimHoles.value
-  const holes = primary ? [primary, ...extras] : extras
-  return [
-    `M0 0H${width}V${height}H0Z`,
-    ...holes.map((h) => `M${h.x} ${h.y}h${h.width}v${h.height}h${-h.width}Z`)
-  ].join('')
+  const hole = scrimHole.value
+  const viewportPath = `M0 0H${width}V${height}H0Z`
+  if (!hole) return viewportPath
+  return `${viewportPath}M${hole.x} ${hole.y}h${hole.width}v${hole.height}h${-hole.width}Z`
 })
 
 const cardStyle = computed(() => {
