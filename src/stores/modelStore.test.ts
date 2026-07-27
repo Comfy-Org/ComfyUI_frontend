@@ -6,12 +6,16 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import {
+  MAX_CONCURRENT_METADATA_LOADS,
   ResourceState,
   effectiveModelExtensions,
   getModelPreviewUrl,
   matchesModelExtension,
+  resetMetadataLoadLimiter,
   useModelStore
 } from '@/stores/modelStore'
+
+const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 const { isCloudRef } = vi.hoisted(() => ({ isCloudRef: { value: false } }))
 
@@ -110,6 +114,9 @@ describe('useModelStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.resetAllMocks()
     isCloudRef.value = false
+    // The metadata limiter is module-global; without a reset a never-settling
+    // load from one test leaves slots held and hangs a later one.
+    resetMetadataLoadLimiter()
   })
 
   it('should load models', async () => {
@@ -153,6 +160,161 @@ describe('useModelStore', () => {
     expect(model.author).toBe('')
     expect(model.description).toBe('')
     expect(model.resolution).toBe('')
+  })
+
+  describe('metadata load concurrency', () => {
+    it('bounds how many metadata reads run at once', async () => {
+      enableMocks()
+      const total = 20
+      vi.mocked(api.getModels).mockResolvedValue(
+        Array.from({ length: total }, (_, i) => ({
+          name: `bulk-${i}.safetensors`,
+          pathIndex: 0
+        }))
+      )
+      let inFlight = 0
+      let peak = 0
+      vi.mocked(api.viewMetadata).mockImplementation(async () => {
+        inFlight++
+        peak = Math.max(peak, inFlight)
+        await Promise.resolve()
+        inFlight--
+        return {}
+      })
+
+      store = useModelStore()
+      await store.loadModelFolders()
+      const folder = await store.getLoadedModelFolder('checkpoints')
+      const models = Object.values(folder!.models)
+
+      await Promise.all(models.map((model) => model.load()))
+
+      // Every model still loads; they just never all run at once.
+      expect(api.viewMetadata).toHaveBeenCalledTimes(total)
+      expect(peak).toBeGreaterThan(1)
+      expect(peak).toBeLessThanOrEqual(MAX_CONCURRENT_METADATA_LOADS)
+    })
+
+    it('releases the slot when a load rejects so later loads still run', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      enableMocks()
+      const total = MAX_CONCURRENT_METADATA_LOADS + 4
+      vi.mocked(api.getModels).mockResolvedValue(
+        Array.from({ length: total }, (_, i) => ({
+          name: `bulk-${i}.safetensors`,
+          pathIndex: 0
+        }))
+      )
+      let call = 0
+      vi.mocked(api.viewMetadata).mockImplementation(() => {
+        call++
+        // The first full batch of slots all reject; if `finally` did not
+        // release them the remaining loads would wait on a slot forever.
+        if (call <= MAX_CONCURRENT_METADATA_LOADS) {
+          return Promise.reject(new Error('metadata read failed'))
+        }
+        return Promise.resolve({ 'modelspec.title': `Title ${call}` })
+      })
+
+      store = useModelStore()
+      await store.loadModelFolders()
+      const folder = await store.getLoadedModelFolder('checkpoints')
+      const models = Object.values(folder!.models)
+
+      await Promise.all(models.map((model) => model.load()))
+
+      expect(api.viewMetadata).toHaveBeenCalledTimes(total)
+      const loaded = models.filter((m) => m.has_loaded_metadata)
+      expect(loaded).toHaveLength(4)
+      // A rejected load clears its request flag so it can retry later.
+      const failed = models.filter((m) => !m.has_loaded_metadata)
+      expect(failed.every((m) => m.is_load_requested === false)).toBe(true)
+      consoleError.mockRestore()
+    })
+
+    async function seedSaturatedLimiter(...tailNames: string[]) {
+      enableMocks()
+      const holders = Array.from(
+        { length: MAX_CONCURRENT_METADATA_LOADS },
+        (_, i) => `hold-${i}.safetensors`
+      )
+      vi.mocked(api.getModels).mockResolvedValue(
+        [...holders, ...tailNames].map((name) => ({ name, pathIndex: 0 }))
+      )
+      const resolvers = new Map<string, (value: unknown) => void>()
+      const called: string[] = []
+      vi.mocked(api.viewMetadata).mockImplementation((_folder, model) => {
+        called.push(model)
+        return new Promise((resolve) => {
+          resolvers.set(model, resolve)
+        })
+      })
+
+      store = useModelStore()
+      await store.loadModelFolders()
+      const folder = await store.getLoadedModelFolder('checkpoints')
+      const models = folder!.models
+
+      // Every slot is held by a load that never settles.
+      for (const name of holders) {
+        void models[`0/${name}`].load()
+      }
+      await flush()
+
+      return { models, holders, called, resolvers }
+    }
+
+    it('drops a queued load when its leaf unmounts, freeing the slot for the next waiter', async () => {
+      const { models, holders, called, resolvers } = await seedSaturatedLimiter(
+        'aborted.safetensors',
+        'next.safetensors'
+      )
+
+      const controller = new AbortController()
+      void models['0/aborted.safetensors'].load({ signal: controller.signal })
+      void models['0/next.safetensors'].load()
+      await flush()
+
+      // Both extras sit behind the six in-flight holders.
+      expect(called).toEqual(holders)
+
+      // The leaf that requested `aborted` unmounts before it ever ran.
+      controller.abort()
+      // One holder finishes and frees a single slot.
+      resolvers.get(holders[0])!({})
+      await flush()
+
+      // The freed slot skips the removed waiter and serves the next one.
+      expect(called).toContain('next.safetensors')
+      expect(called).not.toContain('aborted.safetensors')
+      expect(models['0/aborted.safetensors'].is_load_requested).toBe(false)
+    })
+
+    it('lets a priority (hover) load jump ahead of queued background loads', async () => {
+      const { models, holders, called, resolvers } = await seedSaturatedLimiter(
+        'background.safetensors',
+        'hovered.safetensors'
+      )
+
+      // Two leaves mount; both background loads queue behind the six holders,
+      // with `background` enqueued ahead of `hovered`.
+      void models['0/background.safetensors'].load()
+      void models['0/hovered.safetensors'].load()
+      await flush()
+      expect(called).toEqual(holders)
+
+      // The user hovers the second leaf; its load jumps the queue.
+      void models['0/hovered.safetensors'].load({ priority: true })
+      // One holder finishes and frees a single slot.
+      resolvers.get(holders[0])!({})
+      await flush()
+
+      // The hovered read ran even though it was enqueued last.
+      expect(called).toContain('hovered.safetensors')
+      expect(called).not.toContain('background.safetensors')
+    })
   })
 
   it('should cache model information', async () => {

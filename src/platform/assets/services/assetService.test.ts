@@ -5,6 +5,7 @@ import type {
   AssetResponse
 } from '@/platform/assets/schemas/assetSchema'
 import {
+  AssetPaginationCapError,
   MISSING_TAG,
   assetService
 } from '@/platform/assets/services/assetService'
@@ -978,6 +979,26 @@ describe(assetService.getAllAssetsByTag, () => {
     }
     const secondParams = new URL(secondUrl, 'http://localhost').searchParams
     expect(secondParams.get('after')).toBe('cursor-next')
+  })
+
+  it('throws at the batch cap when the cursor never stops advancing', async () => {
+    let cursor = 0
+    fetchApiMock.mockImplementation(() => {
+      cursor++
+      return Promise.resolve(
+        buildAssetListResponse(
+          [validAsset({ id: `a-${cursor}`, tags: ['input'] })],
+          { hasMore: true, nextCursor: `cursor-${cursor}` }
+        )
+      )
+    })
+
+    // A truncated walk must be loud, not returned as if complete, so callers
+    // never cache a partial list.
+    await expect(
+      assetService.getAllAssetsByTag('input', true, { limit: 1 })
+    ).rejects.toBeInstanceOf(AssetPaginationCapError)
+    expect(fetchApiMock).toHaveBeenCalledTimes(1000)
   })
 
   it('stops walking when next_cursor is absent even if has_more is true', async () => {

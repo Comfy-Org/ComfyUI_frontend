@@ -27,6 +27,89 @@ function _findInMetadata(
   return null
 }
 
+/**
+ * Caps how many `viewMetadata` reads run at once. Expanding a large folder
+ * mounts a leaf per model, each loading its metadata on mount; without a
+ * ceiling that is hundreds of parallel GETs. Slots are handed to waiting
+ * loads in FIFO order as in-flight reads finish.
+ */
+export const MAX_CONCURRENT_METADATA_LOADS = 6
+/**
+ * Upper bound on a single metadata read. viewMetadata reads a safetensors
+ * header off local disk; a hung request would otherwise hold its slot forever
+ * and, once all slots are held, wedge every remaining load process-wide.
+ */
+const METADATA_LOAD_TIMEOUT_MS = 15_000
+let activeMetadataLoads = 0
+const metadataLoadQueue: (() => void)[] = []
+
+interface MetadataSlot {
+  /** Resolves once a slot is held; rejects if `signal` aborts while queued. */
+  acquired: Promise<void>
+  /** Moves a still-queued waiter to the front of the FIFO queue. */
+  promote: () => void
+}
+
+interface MetadataLoadOptions {
+  /** Aborts the load if the requesting leaf unmounts before or during it. */
+  signal?: AbortSignal
+  /** User-initiated (hover) read: jump ahead of queued background loads. */
+  priority?: boolean
+}
+
+function acquireMetadataSlot(signal?: AbortSignal): MetadataSlot {
+  if (activeMetadataLoads < MAX_CONCURRENT_METADATA_LOADS) {
+    activeMetadataLoads++
+    return { acquired: Promise.resolve(), promote: () => {} }
+  }
+  let waiter: () => void = () => {}
+  const acquired = new Promise<void>((resolve, reject) => {
+    const onAbort = () => {
+      const index = metadataLoadQueue.indexOf(waiter)
+      if (index !== -1) {
+        metadataLoadQueue.splice(index, 1)
+      }
+      reject(signal?.reason ?? new DOMException('Aborted', 'AbortError'))
+    }
+    waiter = () => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }
+    if (signal?.aborted) {
+      onAbort()
+      return
+    }
+    signal?.addEventListener('abort', onAbort, { once: true })
+    metadataLoadQueue.push(waiter)
+  })
+  const promote = () => {
+    const index = metadataLoadQueue.indexOf(waiter)
+    if (index > 0) {
+      metadataLoadQueue.splice(index, 1)
+      metadataLoadQueue.unshift(waiter)
+    }
+  }
+  return { acquired, promote }
+}
+
+function releaseMetadataSlot(): void {
+  const nextWaiter = metadataLoadQueue.shift()
+  if (nextWaiter) {
+    nextWaiter()
+    return
+  }
+  activeMetadataLoads--
+}
+
+/**
+ * Resets the module-global metadata load limiter. Tests share this state across
+ * cases; without a reset a never-settling mock leaves slots permanently held.
+ */
+export function resetMetadataLoadLimiter(): void {
+  activeMetadataLoads = 0
+  metadataLoadQueue.length = 0
+}
+
 /** Defines and holds metadata for a model */
 export class ComfyModelDef {
   /** Path to the model */
@@ -65,6 +148,10 @@ export class ComfyModelDef {
   is_load_requested: boolean = false
   /** A string full of auto-computed lowercase-only searchable text for this model */
   searchable: string = ''
+  /** In-flight metadata read, shared so repeat callers de-dupe onto one load */
+  private metadataLoadPromise: Promise<void> | null = null
+  /** Jumps this model's still-queued load ahead of background loads (hover) */
+  private promoteMetadataLoad: (() => void) | null = null
 
   constructor(name: string, directory: string, pathIndex: number) {
     this.path_index = pathIndex
@@ -96,19 +183,52 @@ export class ComfyModelDef {
       .toLowerCase()
   }
 
-  /** Loads the model metadata from the server, filling in this object if data is available */
-  async load(): Promise<void> {
-    if (this.has_loaded_metadata || this.is_load_requested) {
-      return
+  /**
+   * Loads the model metadata from the server, filling in this object if data is
+   * available. Concurrent callers share one in-flight read. `signal` cancels a
+   * still-queued or in-flight load when the requesting leaf unmounts. `priority`
+   * marks a user-initiated (hover) read so it jumps ahead of background loads.
+   */
+  load(options: MetadataLoadOptions = {}): Promise<void> {
+    if (this.has_loaded_metadata) {
+      return Promise.resolve()
+    }
+    if (this.metadataLoadPromise) {
+      if (options.priority) {
+        this.promoteMetadataLoad?.()
+      }
+      return this.metadataLoadPromise
     }
     // viewMetadata reads the safetensors header off local disk; on Cloud the
     // model bytes live in object storage so there is nothing to read.
     if (isCloud) {
-      return
+      return Promise.resolve()
     }
+    this.metadataLoadPromise = this.loadMetadata(options)
+    return this.metadataLoadPromise
+  }
+
+  private async loadMetadata({
+    signal,
+    priority = false
+  }: MetadataLoadOptions): Promise<void> {
     this.is_load_requested = true
+    const slot = acquireMetadataSlot(signal)
+    this.promoteMetadataLoad = slot.promote
+    if (priority) {
+      slot.promote()
+    }
+    let slotAcquired = false
     try {
-      const metadata = await api.viewMetadata(this.directory, this.file_name)
+      await slot.acquired
+      slotAcquired = true
+      const timeout = AbortSignal.timeout(METADATA_LOAD_TIMEOUT_MS)
+      const readSignal = signal ? AbortSignal.any([signal, timeout]) : timeout
+      const metadata = await api.viewMetadata(
+        this.directory,
+        this.file_name,
+        readSignal
+      )
       if (!metadata) {
         return
       }
@@ -151,7 +271,24 @@ export class ComfyModelDef {
       this.has_loaded_metadata = true
       this.updateSearchable()
     } catch (error) {
-      console.error('Error loading model metadata', this.file_name, this, error)
+      // A timeout or transport failure must not permanently blank the model:
+      // clear the request flag so a later load() can retry. An abort from the
+      // requesting leaf unmounting is expected, so it is not logged.
+      this.is_load_requested = false
+      if (!signal?.aborted) {
+        console.error(
+          'Error loading model metadata',
+          this.file_name,
+          this,
+          error
+        )
+      }
+    } finally {
+      this.promoteMetadataLoad = null
+      this.metadataLoadPromise = null
+      if (slotAcquired) {
+        releaseMetadataSlot()
+      }
     }
   }
 }

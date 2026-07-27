@@ -95,6 +95,10 @@ const usesAssetAPI = computed(() =>
 const assetDownloadStore = useAssetDownloadStore()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
+// The raw query drives the input; the full-model scan below is driven off this
+// debounced copy (updated on the debounced `@search` event) so it does not
+// re-run on every keystroke.
+const debouncedSearchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
@@ -106,7 +110,7 @@ const SEARCH_RESULT_LIMIT = 500
 
 const searchResults = computed<{ models: ComfyModelDef[]; capped: boolean }>(
   () => {
-    const search = searchQuery.value.toLocaleLowerCase()
+    const search = debouncedSearchQuery.value.toLocaleLowerCase()
     if (!search) return { models: [], capped: false }
     const matches: ComfyModelDef[] = []
     for (const model of modelStore.models) {
@@ -121,6 +125,7 @@ const searchResults = computed<{ models: ComfyModelDef[]; capped: boolean }>(
 )
 
 const handleSearch = async (query: string) => {
+  debouncedSearchQuery.value = query
   if (!query) {
     expandedKeys.value = {}
     return
@@ -130,10 +135,20 @@ const handleSearch = async (query: string) => {
   await expandSearchResults()
 }
 
+// Clearing the input (X button, select-all + delete) must drop the filtered
+// tree at once rather than lingering behind the debounced `@search` event; a
+// non-empty query still settles through the debounce.
+watch(searchQuery, (query) => {
+  if (!query) {
+    debouncedSearchQuery.value = ''
+    expandedKeys.value = {}
+  }
+})
+
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
 const root = computed<TreeNode>(() => {
-  const allNodes: ModelOrFolder[] = searchQuery.value
+  const allNodes: ModelOrFolder[] = debouncedSearchQuery.value
     ? searchResults.value.models
     : [...modelStore.visibleModelFolders, ...modelStore.models]
   return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
@@ -142,15 +157,10 @@ const root = computed<TreeNode>(() => {
 })
 
 async function expandSearchResults() {
-  if (!searchQuery.value) return
+  if (!debouncedSearchQuery.value) return
   await nextTick()
   expandNode(root.value)
 }
-
-// Expand results when the QUERY changes, not on every root recompute: a
-// background reload during an active search must neither re-expand folders
-// the user collapsed nor pay a full expand-and-mount pass per folder commit.
-watch(searchQuery, expandSearchResults)
 
 const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
