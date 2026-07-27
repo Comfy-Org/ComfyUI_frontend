@@ -10,6 +10,8 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 function createTestDialogInstance(
   key: string,
@@ -45,6 +47,18 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+vi.mock('@/stores/subgraphNavigationStore', () => {
+  // Pinia setup stores auto-unwrap top-level refs when accessed via the
+  // store proxy, so the production code sees `activeSubgraph` directly
+  // as `Subgraph | undefined`. Mirror that with a plain object.
+  const state: { activeSubgraph: Subgraph | undefined } = {
+    activeSubgraph: undefined
+  }
+  return {
+    useSubgraphNavigationStore: () => state
+  }
+})
+
 describe('keybindingService - Escape key handling', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
   let mockCommandExecute: ReturnType<typeof useCommandStore>['execute']
@@ -60,9 +74,17 @@ describe('keybindingService - Escape key handling', () => {
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
 
+    const subgraphNavigationStore = useSubgraphNavigationStore()
+    subgraphNavigationStore.activeSubgraph = undefined
+
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
   })
+
+  function setInSubgraph() {
+    const subgraphNavigationStore = useSubgraphNavigationStore()
+    subgraphNavigationStore.activeSubgraph = {} as Subgraph
+  }
 
   function createKeyboardEvent(
     key: string,
@@ -89,14 +111,26 @@ describe('keybindingService - Escape key handling', () => {
     return event
   }
 
-  it('should execute Escape keybinding when no dialogs are open', async () => {
+  it('should execute ExitSubgraph when in a subgraph and no dialogs are open', async () => {
+    setInSubgraph()
+
     const event = createKeyboardEvent('Escape')
     await keybindingService.keybindHandler(event)
 
     expect(mockCommandExecute).toHaveBeenCalledWith('Comfy.Graph.ExitSubgraph')
+    expect(event.preventDefault).toHaveBeenCalled()
+  })
+
+  it('should NOT execute ExitSubgraph or preventDefault at top level', async () => {
+    const event = createKeyboardEvent('Escape')
+    await keybindingService.keybindHandler(event)
+
+    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(event.preventDefault).not.toHaveBeenCalled()
   })
 
   it('should NOT execute Escape keybinding when dialogs are open', async () => {
+    setInSubgraph()
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.push(createTestDialogInstance('test-dialog'))
 
