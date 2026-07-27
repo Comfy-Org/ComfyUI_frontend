@@ -521,6 +521,31 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: ''
   },
   {
+    id: 'Comfy.Image.PreviewCompression',
+    category: ['Comfy', 'Preview', 'PreviewCompression'],
+    name: 'Load large images as compressed previews',
+    tooltip:
+      'When enabled, image editors (currently the mask editor) load images as compressed, downscaled previews. This greatly improves performance with very large images; edits are applied to the original at full resolution on save. Downscaling requires the assets system on the server (--enable-assets); without it images are only recompressed at full resolution.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.48.0'
+  },
+  {
+    id: 'Comfy.Image.PreviewMaxSize',
+    category: ['Comfy', 'Preview', 'PreviewMaxSize'],
+    name: 'Compressed preview maximum size',
+    tooltip:
+      'Maximum size in pixels for the longest edge of a compressed preview. Images whose longest edge exceeds this are downscaled proportionally until it fits; the aspect ratio is preserved and images are never upscaled.',
+    type: 'slider',
+    attrs: {
+      min: 512,
+      max: 8192,
+      step: 256
+    },
+    defaultValue: 4096,
+    versionAdded: '1.48.0'
+  },
+  {
     id: 'Comfy.DisableSliders',
     category: ['LiteGraph', 'Node Widget', 'DisableSliders'],
     name: 'Disable node widget sliders',

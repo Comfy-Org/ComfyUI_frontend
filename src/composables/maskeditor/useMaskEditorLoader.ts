@@ -3,9 +3,11 @@ import type { ImageRef, ImageLayer } from '@/stores/maskEditorDataStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
+import { previewCompressionParams } from './previewCompressionParams'
 
 export function extractWidgetStringValue(value: unknown): string | undefined {
   if (typeof value === 'string') return value
@@ -61,7 +63,7 @@ function toRef(filename: string, subfolder: string): ImageRef {
   }
 }
 
-function mkFileUrl(props: { ref: ImageRef; preview?: boolean }): string {
+function mkFileUrl(props: { ref: ImageRef }): string {
   const params = new URLSearchParams()
   params.set('filename', props.ref.filename)
   if (props.ref.subfolder) {
@@ -71,10 +73,15 @@ function mkFileUrl(props: { ref: ImageRef; preview?: boolean }): string {
     params.set('type', props.ref.type)
   }
 
+  const settingStore = useSettingStore()
   const pathPlusQueryParams = api.apiURL(
     '/view?' +
       params.toString() +
-      app.getPreviewFormatParam() +
+      previewCompressionParams({
+        compressionEnabled: settingStore.get('Comfy.Image.PreviewCompression'),
+        previewFormat: settingStore.get('Comfy.PreviewFormat'),
+        maxSize: settingStore.get('Comfy.Image.PreviewMaxSize')
+      }) +
       app.getRandParam()
   )
   const imageElement = new Image()
