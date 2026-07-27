@@ -22,7 +22,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
-import type { ConflictChoice } from './components/agent/safety/ConflictDialog.vue'
 import { useAttachment } from './composables/agent/useAttachment'
 import type { ActiveTab } from './components/agent/ActiveTabStrip.vue'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
@@ -270,8 +269,6 @@ function surfaceDraftApplyFailure(details: string): void {
   surfaceAgentError('agent_draft_apply_failed', details)
 }
 
-const conflictOpen = ref(false)
-let applySuppressed = false
 let lastApplied: { workflowId: string; version: number } | null = null
 let applying = false
 let reapplyQueued = false
@@ -503,7 +500,6 @@ async function applyDraft(): Promise<void> {
     const version = draftStore.version
     const content = draftStore.content
     if (workflowId === null || version === null || content === null) return
-    if (applySuppressed) return
     if (
       lastApplied !== null &&
       lastApplied.workflowId === workflowId &&
@@ -515,10 +511,6 @@ async function applyDraft(): Promise<void> {
     const boundTab = boundTabFor(workflowId)
     if (boundTab) {
       if (workflowStore.activeWorkflow?.path !== boundTab.path) return
-      if (boundTab.isModified) {
-        conflictOpen.value = true
-        return
-      }
       await loadDraft(workflowId, version, content, boundTab)
       return
     }
@@ -547,32 +539,8 @@ watch(
   () => draftStore.workflowId,
   () => {
     lastApplied = null
-    applySuppressed = false
-    conflictOpen.value = false
   }
 )
-
-function onResolveConflict(choice: ConflictChoice): void {
-  conflictOpen.value = false
-  const workflowId = draftStore.workflowId
-  const version = draftStore.version
-  const content = draftStore.content
-  if (workflowId === null || version === null || content === null) return
-  if (choice === 'cancel') {
-    applySuppressed = true
-    return
-  }
-  if (choice === 'mine') {
-    lastApplied = { workflowId, version }
-    return
-  }
-  void loadDraft(
-    workflowId,
-    version,
-    content,
-    choice === 'agent' ? boundTabFor(workflowId) : null
-  )
-}
 
 start()
 void refreshCloudWorkflowIds()
@@ -646,7 +614,6 @@ const coachStep: CoachStep = {
 }
 
 function onSend(text: string, attachments: ComposerAttachment[]): void {
-  applySuppressed = false
   void applyDraft()
   const nodeTags = consumeSelection()
   useTelemetry()?.trackAgentMessageSent({
@@ -727,14 +694,12 @@ async function onFilesPicked(event: Event): Promise<void> {
       :history-groups="history.grouped"
       :selection-tags="selectionTags"
       :active-tab="activeTab"
-      :conflict-open="conflictOpen"
       :get-mention-nodes="mentionableNodes"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
       @remove-tag="removeSelectionTag"
       @mention-pick="onMentionPick"
-      @resolve-conflict="onResolveConflict"
       @feedback="onFeedback"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
