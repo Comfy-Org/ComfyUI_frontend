@@ -127,16 +127,23 @@ describe('useBillingPlans', () => {
       )
 
       const useBillingPlans = await importUseBillingPlans()
-      const { fetchPlans, isLoading } = useBillingPlans()
+      const { fetchPlans, isLoading, plans } = useBillingPlans()
 
       const first = fetchPlans()
       expect(isLoading.value).toBe(true)
-      const second = fetchPlans()
+      let secondResolved = false
+      const second = fetchPlans().then(() => {
+        secondResolved = true
+      })
+
+      await Promise.resolve()
+      expect(secondResolved).toBe(false)
 
       resolveFetch({ plans: [buildPlan()] })
       await Promise.all([first, second])
 
       expect(mockGetBillingPlans).toHaveBeenCalledTimes(1)
+      expect(plans.value).toEqual([buildPlan()])
       expect(isLoading.value).toBe(false)
     })
 

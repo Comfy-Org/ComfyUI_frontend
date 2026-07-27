@@ -189,13 +189,9 @@ export function getAssetStoredFilename(asset: AssetItem): string {
 }
 
 /**
- * Gets the human-readable filename to render in UI surfaces.
- * Fallback chain: user_metadata.filename → metadata.filename →
- * asset.display_name → asset.name.
- *
- * `display_name` is populated by queue output mappers in Cloud where
- * `asset.name` is a content hash. Use this helper for labels/titles only;
- * for serialized identifiers use {@link getAssetFilename}.
+ * Human-readable filename for UI labels.
+ * Fallback: user_metadata.filename → metadata.filename → display_name → asset.name.
+ * For serialized identifiers use {@link getAssetFilename}.
  */
 export function getAssetDisplayFilename(asset: AssetItem): string {
   return (
@@ -208,7 +204,7 @@ export function getAssetDisplayFilename(asset: AssetItem): string {
  * Prefers a user-curated name (user_metadata.name / metadata.name) when it
  * actually differs from asset.name, so a user-renamed model keeps its
  * display name. Falls through to {@link getAssetDisplayFilename} when the
- * curated name is absent or equal to asset.name (Cloud hash case).
+ * curated name is absent or equal to asset.name (hash-keyed asset case).
  */
 export function getAssetCardTitle(asset: AssetItem): string {
   const curatedName = getStringProperty(asset, 'name')

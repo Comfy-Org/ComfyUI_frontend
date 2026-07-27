@@ -1,6 +1,7 @@
+import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -72,7 +73,33 @@ function findContentElement(): HTMLElement | null {
   return document.querySelector('[data-dismissable-layer]')
 }
 
+let openModal: HTMLElement | undefined
+
+afterEach(() => {
+  if (openModal) {
+    ZIndex.clear(openModal)
+    openModal = undefined
+  }
+})
+
 describe('MultiSelect', () => {
+  it('opens above a dialog registered with the modal z-index counter', async () => {
+    openModal = document.createElement('div')
+    ZIndex.set('modal', openModal, 3702)
+    const dialogZIndex = Number(openModal.style.zIndex)
+    const user = userEvent.setup()
+    const { unmount } = renderInParent()
+
+    await user.click(screen.getByRole('button'))
+    await nextTick()
+
+    const content = findContentElement()
+    expect(content).not.toBeNull()
+    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+
+    unmount()
+  })
+
   it('keeps open-state border styling available while the dropdown is open', async () => {
     const user = userEvent.setup()
     const { unmount } = renderInParent()
