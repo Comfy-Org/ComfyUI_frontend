@@ -61,7 +61,11 @@ const proseClass = cn(
 </script>
 
 <template>
-  <div>
+  <pre
+    v-if="raw"
+    class="rounded-agent bg-agent-surface text-agent-fg overflow-x-auto p-3 text-xs whitespace-pre-wrap"
+    >{{ text }}</pre>
+  <div v-else>
     <template v-for="(segment, index) in segments" :key="index">
       <CodeBlock
         v-if="segment.type === 'code'"
