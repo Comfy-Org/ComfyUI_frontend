@@ -32,6 +32,7 @@ import {
   WorkflowsSidebarTab
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
 import { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
@@ -45,6 +46,7 @@ import { ModelLibraryHelper } from '@e2e/fixtures/helpers/ModelLibraryHelper'
 import { NodeOperationsHelper } from '@e2e/fixtures/helpers/NodeOperationsHelper'
 import { PerformanceHelper } from '@e2e/fixtures/helpers/PerformanceHelper'
 import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
+import { seedSmokeAuth } from '@e2e/fixtures/helpers/smokeAuth'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
@@ -521,7 +523,7 @@ export const comfyPageFixture = base.extend<{
   },
 
   comfyPage: async (
-    { page, request, initialFeatureFlags, initialSettings },
+    { page, request, initialFeatureFlags, initialSettings, trace },
     use,
     testInfo
   ) => {
@@ -567,6 +569,23 @@ export const comfyPageFixture = base.extend<{
 
     if (testInfo.tags.includes('@cloud')) {
       await comfyPage.cloudAuth.mockAuth()
+    } else if (customNodesEnv() === 'cloud') {
+      // A real smoke-user session (no route mocks), seeded before the app
+      // boots so the Firebase SDK restores it. Mutually exclusive with the
+      // @cloud mock above: its interceptions would corrupt a real session.
+      // Refuse to seed while tracing: the record rides page.evaluate
+      // arguments, which a trace records verbatim. Read the resolved option
+      // rather than the project's, so a --trace flag or a spec-level
+      // test.use({ trace }) cannot turn tracing on behind the guard.
+      const traceMode =
+        typeof trace === 'string' ? trace : (trace?.mode ?? 'off')
+      if (traceMode !== 'off')
+        throw new Error(
+          `cloud seeds a real refresh token via page.evaluate, but project ` +
+            `'${testInfo.project.name}' traces '${traceMode}' - run with ` +
+            `--project=custom-nodes and without --trace`
+        )
+      await seedSmokeAuth(page, comfyPage.url)
     }
 
     if (Object.keys(initialFeatureFlags).length > 0) {

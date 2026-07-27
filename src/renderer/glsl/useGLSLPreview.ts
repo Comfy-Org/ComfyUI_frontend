@@ -232,7 +232,7 @@ function createInnerPreview(
     const node = nodeRef.value
     const inner = innerGLSLNode
     if (!node?.isSubgraphNode() || !inner) return null
-    return extractUniformSources(inner, node.subgraph as Subgraph)
+    return extractUniformSources(inner, node.subgraph as Subgraph, node)
   })
 
   const { floatValues, intValues, boolValues, curveValues } = useGLSLUniforms(

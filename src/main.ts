@@ -19,6 +19,7 @@ import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
@@ -140,6 +141,10 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+if (isCloud && hasHostTelemetryBridge) {
+  syncHostUserIdWithFirebaseAuth()
+}
 
 LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
   flushProxyWidgetMigration({

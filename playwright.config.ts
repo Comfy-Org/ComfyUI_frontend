@@ -50,9 +50,17 @@ export default defineConfig({
       name: 'custom-nodes',
       // retain-on-failure (not the repo's on-first-retry): this job is ~40
       // serial tests, so recording overhead is negligible, and a red run
-      // needs 7 installed packs + a live backend to reproduce - the trace of
+      // needs 6 installed packs + a live backend to reproduce - the trace of
       // the ACTUAL first failing attempt (not a retry) is the debug artifact.
-      use: { ...devices['Desktop Chrome'], trace: 'retain-on-failure' },
+      // OFF under cloud: that env seeds a real Firebase session, and
+      // page.evaluate arguments are recorded verbatim in the trace, which CI
+      // uploads as a public artifact - a long-lived refresh token would ship
+      // with it (browser_tests/fixtures/helpers/smokeAuth.ts).
+      use: {
+        ...devices['Desktop Chrome'],
+        trace:
+          process.env.CUSTOM_NODES_ENV === 'cloud' ? 'off' : 'retain-on-failure'
+      },
       timeout: 15000,
       grep: /@custom-nodes/,
       fullyParallel: false
@@ -99,13 +107,20 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
       grep: /@cloud/,
-      grepInvert: /@oss/
+      grepInvert: /@oss|@mobile-ios/
     },
 
     {
       name: 'mobile-chrome',
       use: { ...devices['Pixel 5'], hasTouch: true },
-      grep: /@mobile/
+      grep: /@mobile\b/,
+      grepInvert: /@mobile-ios/
+    },
+
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 15'] },
+      grep: /@mobile-ios/
     }
   ]
 })

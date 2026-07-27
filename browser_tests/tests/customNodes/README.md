@@ -12,7 +12,7 @@ System design, data flow, and the reasoning behind every invariant:
 ## Prerequisites
 
 1. A ComfyUI backend on `127.0.0.1:8288` with every manifest pack (the
-   `pack` entries in `browser_tests/fixtures/data/customNodeManifest.json`)
+   `pack` entries in `browser_tests/fixtures/data/customNodeManifest.core.json`)
    and ComfyUI_devtools
    installed. Launch it with `--multi-user` (the repo-wide browser-test
    prerequisite; the fixture writes per-worker user settings and the suite
@@ -83,6 +83,18 @@ Any `-g` pattern works against the generic scripts, e.g.
   never silently dropped; the documented exception ledgers (see
   [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md)) carry a written mechanism for every
   escape hatch.
+- **Layout geometry**: while the mount sweep has each node on screen, its
+  geometry (node size, widget-row positions, slot positions, in both
+  renderers) is measured and compared against committed per-pack baselines
+  to within a 0.01px tolerance (absorbs cross-runner sub-pixel float, still
+  catches any real shift) - any layout move, the "shrinking node" class,
+  fails naming the node and field. The compare runs in CI only (local runs log and
+  skip: baselines encode CI fonts and pack-JS layout, which local
+  environments cannot reproduce). Baselines are recorded automatically by
+  the record workflow (`.github/workflows/record-custom-nodes-geometry.yaml`);
+  nodes whose layout is racy or follows environment content are ledgered by mechanism in
+  `GEOMETRY_UNSTABLE_NODES` (see
+  [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md)).
 - **connectivity (contract)**: wiring-only, no execution. A
   type-pairing generator (`fixtures/customNode/typePairing.ts`) indexes
   `/object_info` producers/consumers and plans one representative typed edge
@@ -112,6 +124,42 @@ Any `-g` pattern works against the generic scripts, e.g.
   that reaches a visible surface; only invisible, functionally-inert boot
   console noise (the ledger's whole reason to exist) is out of scope.
 
+## CI
+
+The suite deploys across several workflows against the same manifest;
+[ARCHITECTURE.md section 13](ARCHITECTURE.md#13-the-ci-deployment-view) has the
+full deployment view. Which backend a run targets is chosen by
+`CUSTOM_NODES_ENV` (`core`, the default, or `cloud`) - same suite, backend
+swapped.
+
+- **The core PR gate** (`custom-nodes-e2e-core` in `ci-tests-custom-nodes.yaml`;
+  mark it as a required check in branch protection once this lands):
+  `CUSTOM_NODES_ENV=core` against a local Python backend with every git surface
+  pinned - ComfyUI core at the exact verified commit (`comfyui_ref`) and every
+  pack at its manifest pin - so a red points at the PR, not at drift. Skipped
+  tests are failures.
+- **The cloud PR gate** (`custom-nodes-e2e-cloud` in
+  `ci-tests-custom-nodes-cloud.yaml`): the SAME suite with
+  `CUSTOM_NODES_ENV=cloud` against the remote Comfy Cloud backend - no pack
+  install; expectations come from the generated cloud manifest and re-float
+  when Cloud redeploys. Gated on TWO preconditions: the smoke user credentials
+  (`SMOKE_ACCOUNT_EMAIL`, `SMOKE_ACCOUNT_PASSWORD`) both configured AND the generated
+  `customNodeManifest.cloud.json` present in the checkout. With either
+  missing the job emits a `::notice` naming exactly what and no-ops green
+  (required-safe pre-calibration - it never fake-passes a green "0 tests"
+  and never reds on the half-ready states); with both present the suite
+  runs for real. Which cloud rows carry the run tier comes from the curated
+  overlay (`browser_tests/fixtures/data/cloud/curatedCloudWorkflows.json`);
+  rows without an overlay entry register no run test. Skipped tests are
+  failures.
+- **The nightly canary** (`ci-nightly-custom-nodes-canary.yaml`,
+  non-gating): where drift surfaces instead. Two jobs, one moving git
+  variable each: `canary-core-drift` floats ComfyUI core with packs
+  pinned; `canary-pack-drift` floats the packs at their authors' latest
+  with core pinned. A red or cancelled run files or updates one
+  label-deduped tracking issue carrying the run link, report artifact
+  name, and triage playbook. It never blocks a PR or a release.
+
 ## Adding a pack
 
 One manifest row plus one small workflow JSON - no new test code. The
@@ -130,10 +178,11 @@ exactly; the traps it lists all shipped in real packs.
   changes that could interact with pack JS, reproduce CI locally:
   `pnpm build`, relaunch the backend with `--front-end-root <repo>/dist`,
   and run the suite with `PLAYWRIGHT_TEST_URL` pointed at the backend.
-- Do not run with `--trace on` against system Chrome
-  (`playwright.chrome.config.ts` pins trace off): the trace recorder crashes
-  pages under the branded Chrome channel and every test reports a bogus 15s
-  timeout.
+- `playwright.chrome.config.ts` runs against system-installed Chrome, so no
+  bundled Chromium is downloaded; that is what it buys. Tracing for the
+  `custom-nodes` project comes from `playwright.config.ts` either way (the
+  project's setting wins): retained on failure, and off under
+  `CUSTOM_NODES_ENV=cloud` so a seeded cloud session cannot ride an artifact.
 - In a git worktree whose `node_modules` is symlinked from another checkout,
   prefix scripts with `pnpm --config.verify-deps-before-run=false ...` to
   skip pnpm's auto-install check.

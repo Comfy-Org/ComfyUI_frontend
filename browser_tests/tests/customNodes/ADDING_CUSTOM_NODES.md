@@ -154,7 +154,7 @@ run tier asserts each one actually executes on the backend.
 
 Add one JSON file under `browser_tests/assets/customNodes/`, named
 `<pack>_<what it does>_run.json`. Copy an existing asset as the template
-(`rgthree_seed_display_run.json` is the simplest two-node example;
+(`essentials_math_display_run.json` is the simplest two-node example;
 `was_number_text_run.json` shows a 3-node chain). It is the frontend
 workflow format, hand-authorable:
 
@@ -189,26 +189,49 @@ to_node_id, to_slot, "TYPE"]`, plus the matching `link`/`links` ids on the
 
 ## Step 5 - add the manifest row
 
-Append one object to `browser_tests/fixtures/data/customNodeManifest.json`:
+Append one object to `browser_tests/fixtures/data/customNodeManifest.core.json`:
 
-| Field                | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pack`               | The pack's directory name under `custom_nodes/` (what `git clone` creates).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `repo`               | The GitHub URL CI clones. Required non-empty.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `pin`                | Required: the full 40-char commit SHA you verified locally. The manifest loader rejects anything else at load and CI fails before install (empty is accepted only under `CUSTOM_NODES_ALLOW_UNPINNED=1`, reserved for the planned pack-HEAD canary). CI checks it out after cloning, so the gate tests exactly what you tested. Bump deliberately, re-verifying per this doc.                                                                                                                                                                                                                                                                                                        |
-| `tiers`              | Tier gates: `connectivity` (typed links + slot drags) and `run` (executes the workflow) enable their tiers; `load` is descriptive only - the register+render pass runs for every row regardless. Keep all three unless a tier is impossible for the pack.                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `workflow`           | Path relative to `browser_tests/` of the Step 4 file. `""` only while the pack has no `run` tier.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `expectedNodes`      | The Step 2/3 keys. The load tier mounts each in both renderers; the run tier asserts each executes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `expectedNodeCount`  | Required. The exact number of nodes the pack registers at its pin - read it from the gating CI's `custom-nodes count: <pack> = N` log line (or count the pack's `/object_info` keys locally). The all-nodes tier fails on any delta in either direction: fewer means a node silently failed to register (shrunk coverage would otherwise stay green), more means the pack or a core change moved the surface. Recalibrate only in the same commit as the pin/core change that moved it.                                                                                                                                                                                              |
-| `expectedExtensions` | Required. Frontend extension names the pack's JS registers at boot (`app.registerExtension({ name })` in the pinned source - grep its web/js dir). The load tier asserts each is present in `window.app.extensions`, catching a pack whose frontend JS silently fails to load while its backend nodes still register. One boot-registered sentinel name per pack is enough for the pack-level failure modes this assert targets (wrong web dir, a loadExtensions regression); extension files load per-file, so a single-file failure inside a multi-file pack is out of scope for this tier. Do not enumerate every extension. `[]` only when the pinned pack ships no frontend JS. |
-| `requiresGpu`        | `true` only if execution genuinely needs CUDA. Such packs cannot use the `run` tier on the CPU gate.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `requiresModels`     | Model files the workflow needs (`[]` for the packs onboarded so far - keep it that way whenever possible).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `timeoutMs`          | Per-test budget. `30000` unless the workflow does real work (video decode uses `90000`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `vueNodesCompatible` | Optional, default `true`. See the policy below. Only ever set `false`, and only with evidence.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Field                | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pack`               | The pack's directory name under `custom_nodes/` (what `git clone` creates).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `repo`               | The GitHub URL CI clones. Required non-empty.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `pin`                | Required: the full 40-char commit SHA you verified locally. The manifest loader rejects anything else at load and CI fails before install (empty is accepted only under `CUSTOM_NODES_ALLOW_UNPINNED=1`, a loader escape hatch currently exercised only by the pure spec). CI checks it out after cloning, so the gate tests exactly what you tested. The nightly canary's pack-drift job ignores the pin fields in its own install step and tests pack HEADs; the pins themselves never change for it. ComfyUI core is pinned the same way in the gate workflow (`comfyui_ref`) - that SHA alone has a second copy in the canary's Job B, so when bumping the core pin update both in the same PR (pack pins live only in this manifest, no second copy), and recalibrate `expectedNodeCount`/ledgers if the run says so. |
+| `tiers`              | Tier gates: `connectivity` (typed links + slot drags) and `run` (executes the workflow) enable their tiers; `load` is descriptive only - the register+render pass runs for every row regardless. Keep all three unless a tier is impossible for the pack.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `workflow`           | Path relative to `browser_tests/` of the Step 4 file. `""` only while the pack has no `run` tier.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `expectedNodes`      | The Step 2/3 keys. The load tier mounts each in both renderers; the run tier asserts each executes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `expectedNodeCount`  | Required. The exact number of nodes the pack registers at its pin - read it from the gating CI's `custom-nodes count: <pack> = N` log line (or count the pack's `/object_info` keys locally). The all-nodes tier fails on any delta in either direction: fewer means a node silently failed to register (shrunk coverage would otherwise stay green), more means the pack or a core change moved the surface. Recalibrate only in the same commit as the pin/core change that moved it.                                                                                                                                                                                                                                                                                                                                    |
+| `expectedExtensions` | Required. Frontend extension names the pack's JS registers at boot (`app.registerExtension({ name })` in the pinned source - grep its web/js dir). The load tier asserts each is present in `window.app.extensions`, catching a pack whose frontend JS silently fails to load while its backend nodes still register. One boot-registered sentinel name per pack is enough for the pack-level failure modes this assert targets (wrong web dir, a loadExtensions regression); extension files load per-file, so a single-file failure inside a multi-file pack is out of scope for this tier. Do not enumerate every extension. `[]` only when the pinned pack ships no frontend JS.                                                                                                                                       |
+| `requiresGpu`        | `true` only if execution genuinely needs CUDA. Such packs cannot use the `run` tier on the CPU gate.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `requiresModels`     | Model files the workflow needs (`[]` for the packs onboarded so far - keep it that way whenever possible).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `timeoutMs`          | Per-test budget. `30000` unless the workflow does real work (video decode uses `90000`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `vueNodesCompatible` | Optional, default `true`. See the policy below. Only ever set `false`, and only with evidence.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 `loadManifest()` (`browser_tests/fixtures/customNode/manifest.ts`) validates
 every row and fails loudly on a missing field, an empty `repo`, a misspelled
 tier, or a `run` tier with an empty `workflow`.
+
+## Step 5b - record the pack's geometry baseline
+
+Every pack commits a layout baseline
+(`browser_tests/fixtures/customNode/geometry/<pack>.json`): the mount sweep
+measures every node's geometry and compares it to within a 0.01px tolerance, so a missing
+baseline fails CI rather than silently skipping the new pack. Record it in
+the CI environment, not on a dev machine: font metrics differ across
+platforms by whole pixels, and the baselines encode pack-JS-built layout
+that the dev server never produces. Run the record workflow
+(`.github/workflows/record-custom-nodes-geometry.yaml`, manual dispatch -
+dispatched ON YOUR PR BRANCH, so the run sees your manifest row and pins):
+it runs the mount tests with `CN_GEOMETRY=record` plus `CN_GEOMETRY_CORE`
+set to the gate's pinned core SHA (stamping provenance into each file) and
+uploads `browser_tests/fixtures/customNode/geometry/` as an artifact.
+Commit the artifact; the next gate run compares against it, and its green
+is the confirmation. Local runs log and skip the compare for the same two
+reasons recording is CI-only. A node whose layout is genuinely
+non-deterministic run to run, or that follows environment content (an input dir, a preview), goes into `GEOMETRY_UNSTABLE_NODES`
+(`browser_tests/fixtures/customNode/geometry.ts`) with its mechanism
+written down; entries are registration-guarded, so a stale one fails the
+suite. Re-record only with the pin/core change that legitimately moved the
+layout, in the same commit.
 
 ## Step 6 - prove it green locally, in both environments
 
@@ -229,7 +252,9 @@ the fastest loop.
 Two surfaces fail under 6a BY DESIGN and are proven in 6b/CI instead: the
 T0 `expectedExtensions` assert and the dynamic-inputs tier. Both depend on
 pack frontend JS, which the dev server never loads (see 6b) - so their 6a
-red is the assert working, not a setup problem. Everything else must be
+red is the assert working, not a setup problem. The geometry compare does
+not run here at all: it logs and skips off-CI, because the baselines
+encode CI fonts and pack-JS layout (Step 5b). Everything else must be
 green here.
 
 ### 6b - CI-parity run (required if the pack ships frontend JS)
@@ -273,6 +298,17 @@ means discovering that class of problem one CI round at a time.
   frontend JS rebuilt a declared input as a widget-only control (rgthree's
   Seed does this to `seed`), so there is no socket to wire. Recorded and
   excluded, like wildcards - pack design, not a regression.
+- **Geometry delta under the mount test** (`...: expected X, got Y`): the
+  node's rendered layout moved vs the committed baseline. Four causes,
+  three actions: a real layout regression - fix the code; an intended
+  restyle or a deliberate pin/core bump - re-record via the record
+  workflow in the same PR (Step 5b); the delta flips between identical
+  runs - the layout is racy, ledger the node by mechanism in
+  `GEOMETRY_UNSTABLE_NODES`; the delta tracks environment content rather
+  than code (a backend input dir, a preview) - ledger it the same
+  way. A `no geometry baseline` red means a new
+  pack or node needs Step 5b; a `stale baseline` red means a baselined
+  node left the corpus - re-record.
 - **Auto-run reports a node "not in cannotRunAlone"**: the node failed to
   execute on pure defaults or synthesized chain inputs (validation reject,
   or a real exception from degenerate inputs - empty expression, empty
@@ -310,17 +346,18 @@ means discovering that class of problem one CI round at a time.
 Every escape hatch is a reviewed list whose entries carry the mechanism, so
 the gate stays honest and none can grow silently:
 
-| Ledger                       | Lives in                                    | Covers                                                                                                                                                                                 |
-| ---------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vueIncompatibleNodes`       | manifest row                                | node cannot mount under Vue Nodes 2.0 (evidence rule below)                                                                                                                            |
-| `cannotRunAlone`             | manifest row                                | node cannot execute standalone on a bare backend; asserted both ways so entries cannot rot                                                                                             |
-| `AUTO_RUN_EXCLUDE`           | `allNodes.spec.ts`                          | executing the node is unsafe or unstable (runtime downloads/pip installs, infinite loops, non-interruptible hangs, environment/state-variable results, flip-flopping executed signals) |
-| `WIDGET_SET_ALLOWLIST`       | `allNodes.spec.ts`                          | plain-typed widget whose value is owned by pack JS (menu-action combos, canonicalized refs) - set-and-stick does not apply                                                             |
-| `ROUNDTRIP_VALUE_ALLOWLIST`  | `allNodes.spec.ts`                          | node whose serialized widgets_values legitimately change on reload (pack JS initializes or rebuilds them); the widget-shrink check still applies                                       |
-| `MOUNT_WIDGET_ALLOWLIST`     | `allNodes.spec.ts`                          | node whose pack JS renders custom editor/preview widgets outside the node-widget rows; slot fidelity still applies                                                                     |
-| `CONSOLE_ERROR_ALLOWLIST`    | `fixtures/customNode/consoleErrorLedger.ts` | pack-attributed console noise with no visible error surface; shared by the all-nodes tiers and the curated run                                                                         |
-| `CONNECT_REJECTED_ALLOWLIST` | `connectivity.spec.ts`                      | pack JS legitimately vetoes a planned wiring                                                                                                                                           |
-| `ROUNDTRIP_LOST_ALLOWLIST`   | `connectivity.spec.ts`                      | pack's own serialize/configure drops links it manages itself                                                                                                                           |
+| Ledger                       | Lives in                                    | Covers                                                                                                                                                                                                                                         |
+| ---------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vueIncompatibleNodes`       | manifest row                                | node cannot mount under Vue Nodes 2.0 (evidence rule below)                                                                                                                                                                                    |
+| `cannotRunAlone`             | manifest row                                | node cannot execute standalone on a bare backend; asserted both ways so entries cannot rot                                                                                                                                                     |
+| `AUTO_RUN_EXCLUDE`           | `allNodes.spec.ts`                          | executing the node is unsafe or unstable (runtime downloads/pip installs, infinite loops, non-interruptible hangs, environment/state-variable results, flip-flopping executed signals)                                                         |
+| `WIDGET_SET_ALLOWLIST`       | `allNodes.spec.ts`                          | plain-typed widget whose value is owned by pack JS (menu-action combos, canonicalized refs) - set-and-stick does not apply                                                                                                                     |
+| `ROUNDTRIP_VALUE_ALLOWLIST`  | `allNodes.spec.ts`                          | node whose serialized widgets_values legitimately change on reload (pack JS initializes or rebuilds them); the widget-shrink check still applies                                                                                               |
+| `MOUNT_WIDGET_ALLOWLIST`     | `allNodes.spec.ts`                          | node whose pack JS renders custom editor/preview widgets outside the node-widget rows; slot fidelity still applies                                                                                                                             |
+| `CONSOLE_ERROR_ALLOWLIST`    | `fixtures/customNode/consoleErrorLedger.ts` | pack-attributed console noise with no visible error surface; shared by the all-nodes tiers and the curated run                                                                                                                                 |
+| `GEOMETRY_UNSTABLE_NODES`    | `fixtures/customNode/geometry.ts`           | node's initial layout is not reproducible run to run - a race (editor_base init) or environment-content dependence (LoadAndResizeImage's preview dir); excluded from measurement and baselines, registration-guarded, exclusion logged per run |
+| `CONNECT_REJECTED_ALLOWLIST` | `connectivity.spec.ts`                      | pack JS legitimately vetoes a planned wiring                                                                                                                                                                                                   |
+| `ROUNDTRIP_LOST_ALLOWLIST`   | `connectivity.spec.ts`                      | pack's own serialize/configure drops links it manages itself                                                                                                                                                                                   |
 
 ### Evidence rules for changing the harness itself
 
@@ -362,6 +399,62 @@ exclusion) or, for genuine upstream drift after a pin bump, re-pin the
 pack to its last good commit. Never paper
 over it with a skip.
 
+## Cloud packs (`CUSTOM_NODES_ENV=cloud`)
+
+Everything above is the CORE path (`customNodeManifest.core.json`, local
+backend). The cloud gate runs the same suite against the remote Comfy Cloud
+backend off a SECOND manifest, `customNodeManifest.cloud.json`, and its rows
+are authored differently:
+
+- **Cloud rows are GENERATED, never hand-edited.** `pnpm gen:cloud-manifest`
+  builds `.cloud.json` by joining Cloud's `supported_nodes.yaml` (the
+  Cloud-ops source of truth for which packs are deployed and how they are
+  pinned) with a Cloud `/object_info` snapshot, then applying the curated
+  workflow overlay (next bullets). Do not add or edit a cloud row by hand -
+  it is overwritten on the next regeneration and a hand-edit hides real
+  drift. Fix the inputs (the vendored yaml, the snapshot, or the overlay)
+  and regenerate.
+- **Regeneration tracks Cloud deploys, not our pins.** A `.cloud.json` change
+  belongs in the commit that re-vendors `supported_nodes.yaml` or re-takes the
+  snapshot after Cloud redeploys; `.core.json` still tracks our own pin bumps.
+  The recalibration path is regenerate-and-diff, the same discipline as
+  re-recording geometry.
+- **`disabledNodes` carry their label mechanisms.** Cloud disables individual
+  nodes (usually for security); each is a `disabledNodes` entry whose labels
+  ARE the mechanism (`DisabledOnCloud`, `ReadsArbitraryFile`, `WritesToDisk`,
+  ...), the same "every exception carries its mechanism" rule the core ledgers
+  use. The generator emits them - you do not write them.
+- **Curated cloud workflows are AUTHORED (Steps 1-7, upload-based media),
+  then ATTACHED via the overlay.** A cloud pack still gets a hand-authored
+  run workflow the same way, but a node disabled on Cloud cannot appear in
+  it: use the unlabeled equivalent (e.g. the upload-based `VHS_LoadVideo` in
+  place of the disabled disk-path `VHS_LoadVideoPath`), and stage media by
+  uploading it through the running session, not by copying into a backend
+  `input/` dir (there is no local backend to copy into). Enrollment is NOT a
+  manifest edit: add an entry to the curated overlay
+  (`browser_tests/fixtures/data/cloud/curatedCloudWorkflows.json`, the one
+  hand-maintained generator input) and regenerate. Overlay entries are keyed
+  by the pack's snapshot dirname (= the generated row's `pack` field, the
+  same key the exclusion ledgers and geometry baselines use - not the yaml
+  pack name, whose URL-pinned form churns with every Cloud deploy sha) and
+  carry `workflow` (path relative to `browser_tests/`, same convention as
+  core rows), the row's FULL replacement `tiers` list (include `run`), and
+  optionally `timeoutMs`. An overlay key matching no generated row fails
+  generation loudly, so a Cloud rename cannot silently drop enrollment.
+  Generated rows without an overlay entry stay load+connectivity and
+  register no run test. Cloud geometry baselines record into
+  `geometry/cloud/<pack>.json` via the cloud record workflow
+  (`.github/workflows/record-custom-nodes-geometry-cloud.yaml`), the cloud
+  sibling of Step 5b.
+- **Three pre-calibration assertions are waiting to be flipped.** The pure
+  specs currently assert the not-yet-landed artifacts are ABSENT (marked
+  `PRE-CALIBRATION assertion: INVERT`): `manifest.pure.spec.ts` expects
+  `loadManifest()` / `loadCloudCoreDisabledNodes()` to throw under
+  `CUSTOM_NODES_ENV=cloud`, and `geometry.pure.spec.ts` expects the cloud
+  baseline load to be null. Invert each in the same commit that lands its
+  artifact (the generated `.cloud.json`; the recorded cloud baselines) or
+  that commit fails the pure specs.
+
 ## Vue Nodes 2.0 compatibility policy
 
 Some packs only work under the LiteGraph canvas renderer and fail to mount
@@ -378,8 +471,8 @@ failures and without skipping tests:
    sets the flag. When only SOME of a pack's nodes fail to mount, use the
    per-node `vueIncompatibleNodes` ledger in the manifest row instead of
    flagging the whole pack - compatibility is per-node, not per-pack (all
-   823 nodes across the first 7 packs mount clean, so both mechanisms ship
-   unused; the every-node mount tier is what earns an entry).
+   799 nodes across the 6 manifest packs mount clean, so both mechanisms
+   ship unused; the every-node mount tier is what earns an entry).
 3. **Effect of `false`**: the load tier runs its LiteGraph pass only, and
    the connectivity drag test does not drag that pack's edges under Vue
    Nodes. The tests still run and pass their canvas assertions - nothing is

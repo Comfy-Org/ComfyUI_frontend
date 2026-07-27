@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.48.3",
+  "version": "1.48.5",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -9,6 +9,7 @@
   "type": "module",
   "scripts": {
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
+    "build:cloud-e2e": "cross-env DISTRIBUTION=cloud VITE_USE_LEGACY_DEFAULT_GRAPH=true vite build --config vite.config.mts",
     "build:desktop": "pnpm --filter @comfyorg/desktop-ui run build",
     "build-storybook": "storybook build",
     "build:types": "vite build --config vite.types.config.mts && node scripts/prepare-types.js",
@@ -29,8 +30,11 @@
     "dev:test": "cross-env VITE_USE_LEGACY_DEFAULT_GRAPH=true vite --config vite.config.mts",
     "dev": "vite --config vite.config.mts",
     "devtools:pycheck": "python3 -m compileall -q tools/devtools",
+    "fallow": "fallow",
+    "fallow:audit": "fallow audit",
     "format:check": "oxfmt --check",
     "format": "oxfmt --write",
+    "gen:cloud-manifest": "tsx scripts/gen-cloud-manifest.ts",
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "knip:no-cache": "knip",
     "knip": "knip --cache",
@@ -45,6 +49,7 @@
     "oxlint": "oxlint src browser_tests --type-aware",
     "prepare": "pnpm exec husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "vite preview --config vite.config.mts",
+    "preview:cloud-e2e": "cross-env CLOUD_E2E_SERVE=1 DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/ vite preview --strictPort --config vite.config.mts",
     "storybook": "storybook dev -p 6006",
     "storybook:desktop": "pnpm --filter @comfyorg/desktop-ui run storybook",
     "stylelint:fix": "stylelint --cache --fix '{apps,packages,src}/**/*.{css,vue}'",
@@ -78,6 +83,7 @@
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@customerio/cdp-analytics-browser": "catalog:",
+    "@datadog/browser-rum": "catalog:",
     "@formkit/auto-animate": "catalog:",
     "@iconify/json": "catalog:",
     "@primeuix/forms": "catalog:",
@@ -101,7 +107,7 @@
     "@vee-validate/zod": "catalog:",
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
-    "@vueuse/router": "^14.2.0",
+    "@vueuse/router": "^14.3.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-serialize": "^0.13.0",
     "@xterm/xterm": "^5.5.0",
@@ -115,7 +121,7 @@
     "extendable-media-recorder": "^9.2.27",
     "extendable-media-recorder-wav-encoder": "^7.0.129",
     "firebase": "catalog:",
-    "fuse.js": "^7.0.0",
+    "fuse.js": "7.0.0",
     "glob": "catalog:",
     "jsonata": "catalog:",
     "loglevel": "^1.9.2",
@@ -178,6 +184,7 @@
     "eslint-plugin-testing-library": "catalog:",
     "eslint-plugin-unused-imports": "catalog:",
     "eslint-plugin-vue": "catalog:",
+    "fallow": "catalog:",
     "fast-check": "catalog:",
     "fs-extra": "^11.2.0",
     "globals": "catalog:",
@@ -215,6 +222,7 @@
     "vue-component-type-helpers": "catalog:",
     "vue-eslint-parser": "catalog:",
     "vue-tsc": "catalog:",
+    "yaml": "catalog:",
     "zip-dir": "^2.0.0",
     "zod-to-json-schema": "catalog:"
   },
@@ -222,5 +230,5 @@
     "node": ">=25 <26",
     "pnpm": ">=11.3"
   },
-  "packageManager": "pnpm@11.3.0"
+  "packageManager": "pnpm@11.13.1"
 }

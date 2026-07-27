@@ -1,0 +1,567 @@
+{
+  "KSampler": {
+    "input": {
+      "required": {
+        "model": [
+          "MODEL"
+        ],
+        "seed": [
+          "INT",
+          {
+            "default": 0,
+            "min": 0
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "model",
+        "seed"
+      ]
+    },
+    "output": [
+      "LATENT"
+    ],
+    "output_is_list": [
+      false
+    ],
+    "output_name": [
+      "LATENT"
+    ],
+    "name": "KSampler",
+    "display_name": "KSampler",
+    "description": "",
+    "python_module": "nodes",
+    "category": "sampling",
+    "output_node": false
+  },
+  "CheckpointSave": {
+    "input": {
+      "required": {
+        "model": [
+          "MODEL"
+        ],
+        "clip": [
+          "CLIP"
+        ],
+        "vae": [
+          "VAE"
+        ],
+        "filename_prefix": [
+          "STRING",
+          {
+            "default": "checkpoints/ComfyUI"
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "model",
+        "clip",
+        "vae",
+        "filename_prefix"
+      ]
+    },
+    "output": [],
+    "output_is_list": [],
+    "output_name": [],
+    "name": "CheckpointSave",
+    "display_name": "CheckpointSave",
+    "description": "",
+    "python_module": "comfy_extras.nodes_model_merging",
+    "category": "advanced/model_merging",
+    "output_node": true
+  },
+  "INTConstant": {
+    "input": {
+      "required": {
+        "value": [
+          "INT",
+          {
+            "default": 0
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "value"
+      ]
+    },
+    "output": [
+      "INT"
+    ],
+    "output_is_list": [
+      false
+    ],
+    "output_name": [
+      "value"
+    ],
+    "name": "INTConstant",
+    "display_name": "INT Constant",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI-KJNodes",
+    "category": "KJNodes/constants",
+    "output_node": false
+  },
+  "FloatConstant": {
+    "input": {
+      "required": {
+        "value": [
+          "FLOAT",
+          {
+            "default": 0.0
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "value"
+      ]
+    },
+    "output": [
+      "FLOAT"
+    ],
+    "output_is_list": [
+      false
+    ],
+    "output_name": [
+      "value"
+    ],
+    "name": "FloatConstant",
+    "display_name": "Float Constant",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI-KJNodes",
+    "category": "KJNodes/constants",
+    "output_node": false
+  },
+  "StringConstant": {
+    "input": {
+      "required": {
+        "string": [
+          "STRING",
+          {
+            "default": ""
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "string"
+      ]
+    },
+    "output": [
+      "STRING"
+    ],
+    "output_is_list": [
+      false
+    ],
+    "output_name": [
+      "string"
+    ],
+    "name": "StringConstant",
+    "display_name": "String Constant",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI-KJNodes",
+    "category": "KJNodes/constants",
+    "output_node": false
+  },
+  "CameraPoseVisualizer": {
+    "input": {
+      "required": {
+        "pose_file_path": [
+          "STRING",
+          {
+            "default": ""
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "pose_file_path"
+      ]
+    },
+    "output": [
+      "IMAGE"
+    ],
+    "output_is_list": [
+      false
+    ],
+    "output_name": [
+      "image"
+    ],
+    "name": "CameraPoseVisualizer",
+    "display_name": "Camera Pose Visualizer",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI-KJNodes",
+    "category": "KJNodes/misc",
+    "output_node": false
+  },
+  "VHS_LoadVideo": {
+    "input": {
+      "required": {
+        "video": [
+          "COMBO",
+          {
+            "video_upload": true
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "video"
+      ]
+    },
+    "output": [
+      "IMAGE",
+      "INT",
+      "AUDIO"
+    ],
+    "output_is_list": [
+      false,
+      false,
+      false
+    ],
+    "output_name": [
+      "IMAGE",
+      "frame_count",
+      "audio"
+    ],
+    "name": "VHS_LoadVideo",
+    "display_name": "Load Video (Upload) 🎥🅥🅗🅢",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI-VideoHelperSuite",
+    "category": "Video Helper Suite 🎥🅥🅗🅢",
+    "output_node": false
+  },
+  "VHS_VideoInfo": {
+    "input": {
+      "required": {
+        "video_info": [
+          "VHS_VIDEOINFO"
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "video_info"
+      ]
+    },
+    "output": [
+      "FLOAT",
+      "INT",
+      "FLOAT",
+      "INT",
+      "INT"
+    ],
+    "output_is_list": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "output_name": [
+      "source_fps",
+      "source_frame_count",
+      "loaded_fps",
+      "loaded_frame_count",
+      "loaded_width"
+    ],
+    "name": "VHS_VideoInfo",
+    "display_name": "Video Info 🎥🅥🅗🅢",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI-VideoHelperSuite",
+    "category": "Video Helper Suite 🎥🅥🅗🅢",
+    "output_node": false
+  },
+  "WanVideoSampler": {
+    "input": {
+      "required": {
+        "model": [
+          "WANVIDEOMODEL"
+        ],
+        "steps": [
+          "INT",
+          {
+            "default": 30
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "model",
+        "steps"
+      ]
+    },
+    "output": [
+      "LATENT"
+    ],
+    "output_is_list": [
+      false
+    ],
+    "output_name": [
+      "samples"
+    ],
+    "name": "WanVideoSampler",
+    "display_name": "WanVideo Sampler",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI-WanVideoWrapper",
+    "category": "WanVideoWrapper",
+    "output_node": false
+  },
+  "WanVideoDecode": {
+    "input": {
+      "required": {
+        "vae": [
+          "WANVAE"
+        ],
+        "samples": [
+          "LATENT"
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "vae",
+        "samples"
+      ]
+    },
+    "output": [
+      "IMAGE"
+    ],
+    "output_is_list": [
+      false
+    ],
+    "output_name": [
+      "images"
+    ],
+    "name": "WanVideoDecode",
+    "display_name": "WanVideo Decode",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI-WanVideoWrapper",
+    "category": "WanVideoWrapper",
+    "output_node": false
+  },
+  "WanVideoTextEncode": {
+    "input": {
+      "required": {
+        "positive_prompt": [
+          "STRING",
+          {
+            "default": ""
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "positive_prompt"
+      ]
+    },
+    "output": [
+      "WANVIDEOTEXTEMBEDS"
+    ],
+    "output_is_list": [
+      false
+    ],
+    "output_name": [
+      "text_embeds"
+    ],
+    "name": "WanVideoTextEncode",
+    "display_name": "WanVideo TextEncode",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI-WanVideoWrapper",
+    "category": "WanVideoWrapper",
+    "output_node": false
+  },
+  "DownloadAndLoadNLFModel": {
+    "input": {
+      "required": {
+        "model": [
+          "COMBO"
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "model"
+      ]
+    },
+    "output": [
+      "NLFMODEL"
+    ],
+    "output_is_list": [
+      false
+    ],
+    "output_name": [
+      "nlf_model"
+    ],
+    "name": "DownloadAndLoadNLFModel",
+    "display_name": "(Down)Load NLF Model",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI-WanVideoWrapper",
+    "category": "WanVideoWrapper",
+    "output_node": false
+  },
+  "WanVideoBlockSwap": {
+    "input": {
+      "required": {
+        "blocks_to_swap": [
+          "INT",
+          {
+            "default": 20
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "blocks_to_swap"
+      ]
+    },
+    "output": [
+      "BLOCKSWAPARGS"
+    ],
+    "output_is_list": [
+      false
+    ],
+    "output_name": [
+      "block_swap_args"
+    ],
+    "name": "WanVideoBlockSwap",
+    "display_name": "WanVideo BlockSwap",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI-WanVideoWrapper",
+    "category": "WanVideoWrapper",
+    "output_node": false
+  },
+  "SimpleMathInt+": {
+    "input": {
+      "required": {
+        "value": [
+          "INT",
+          {
+            "default": 0
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "value"
+      ]
+    },
+    "output": [
+      "INT"
+    ],
+    "output_is_list": [
+      false
+    ],
+    "output_name": [
+      "INT"
+    ],
+    "name": "SimpleMathInt+",
+    "display_name": "🔧 Simple Math Int",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI_essentials",
+    "category": "essentials/utilities",
+    "output_node": false
+  },
+  "DisplayAny": {
+    "input": {
+      "required": {
+        "input": [
+          "*",
+          {}
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "input"
+      ]
+    },
+    "output": [
+      "STRING"
+    ],
+    "output_is_list": [
+      false
+    ],
+    "output_name": [
+      "STRING"
+    ],
+    "name": "DisplayAny",
+    "display_name": "🔧 Display Any",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI_essentials",
+    "category": "essentials/utilities",
+    "output_node": true
+  },
+  "ImageResize+": {
+    "input": {
+      "required": {
+        "image": [
+          "IMAGE"
+        ],
+        "width": [
+          "INT",
+          {
+            "default": 512
+          }
+        ]
+      }
+    },
+    "input_order": {
+      "required": [
+        "image",
+        "width"
+      ]
+    },
+    "output": [
+      "IMAGE",
+      "INT",
+      "INT"
+    ],
+    "output_is_list": [
+      false,
+      false,
+      false
+    ],
+    "output_name": [
+      "IMAGE",
+      "width",
+      "height"
+    ],
+    "name": "ImageResize+",
+    "display_name": "🔧 Image Resize",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI_essentials",
+    "category": "essentials/image manipulation",
+    "output_node": false
+  },
+  "DevToolsErrorRaiseNode": {
+    "input": {
+      "required": {}
+    },
+    "input_order": {
+      "required": []
+    },
+    "output": [],
+    "output_is_list": [],
+    "output_name": [],
+    "name": "DevToolsErrorRaiseNode",
+    "display_name": "Raise Error",
+    "description": "",
+    "python_module": "custom_nodes.ComfyUI_devtools",
+    "category": "DevTools",
+    "output_node": true
+  }
+}

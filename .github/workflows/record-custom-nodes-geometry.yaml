@@ -1,0 +1,119 @@
+# Records the custom-node geometry baselines
+# (browser_tests/fixtures/customNode/geometry/<pack>.json) in the CI
+# environment and uploads them as an artifact to commit. Recording MUST
+# happen here, not on a dev machine: font metrics differ across platforms
+# by whole pixels, and the baselines also encode pack-JS-built layout, so
+# only this environment produces the numbers the gate compares against.
+# Run it (manual dispatch) whenever a deliberate pin/core bump or an
+# intended restyle legitimately moves layout, then commit the artifact in
+# the same PR as the change that moved it. Procedure:
+# browser_tests/tests/customNodes/ADDING_CUSTOM_NODES.md Step 5b.
+name: 'Record Custom Nodes Geometry'
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  record-geometry:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      # Same pinned core as the gate: baselines must describe the exact
+      # world the gate tests. Bump this SHA together with the gate's
+      # comfyui_ref (ci-tests-custom-nodes.yaml) and the canary Job B copy.
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'false'
+          comfyui_ref: 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2'
+
+      # Identical pinned-pack install to the gate.
+      - name: Install manifest custom nodes
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip freeze | grep -iE '^(torch|torchvision|torchaudio)==' \
+            > /tmp/torch-constraints.txt || true
+          manifest=browser_tests/fixtures/data/customNodeManifest.core.json
+          mapfile -t entries < <(jq -c '.[]' "$manifest")
+          for entry in "${entries[@]}"; do
+            repo=$(jq -r '.repo' <<<"$entry")
+            pin=$(jq -r '.pin' <<<"$entry")
+            pack=$(jq -r '.pack' <<<"$entry")
+            if ! [[ "$pack" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+              echo "::error::unsafe pack name: '$pack'"; exit 1
+            fi
+            if ! [[ "$pin" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::$pack: pin must be a full commit SHA (got '$pin')"; exit 1
+            fi
+            dir="ComfyUI/custom_nodes/$pack"
+            echo "::group::install $pack"
+            git clone --depth 1 "$repo" "$dir"
+            git -C "$dir" fetch --depth 1 origin "$pin"
+            git -C "$dir" checkout "$pin"
+            if [ -f "$dir/requirements.txt" ]; then
+              pip install -r "$dir/requirements.txt" -c /tmp/torch-constraints.txt
+            fi
+            echo "::endgroup::"
+          done
+
+      - name: Stage run-tier assets
+        shell: bash
+        run: cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4
+
+      - name: Start ComfyUI server
+        shell: bash
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --multi-user --cache-none --front-end-root ../dist &
+          wait-for-it --service 127.0.0.1:8188 -t 600
+
+      # The checkout brings the committed baselines along; delete them so
+      # the uploaded artifact is provably a product of THIS run and the
+      # if-no-files-found guard below can actually fire on a crashed
+      # record instead of shipping stale bytes as a fresh recording.
+      - name: Clear committed baselines
+        shell: bash
+        run: rm -f browser_tests/fixtures/customNode/geometry/*.json
+
+      # Record mode throws by design after writing each pack's file (a
+      # record must never look like a green test run), so the step is
+      # expected to exit nonzero; the artifact is the product. Retries are
+      # pointless against a deliberate throw, so they are off.
+      # CN_GEOMETRY_CORE stamps provenance into each baseline file and
+      # must match the comfyui_ref above.
+      - name: Record geometry baselines
+        continue-on-error: true
+        env:
+          CN_GEOMETRY: record
+          CN_GEOMETRY_CORE: b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2
+        run: |
+          pnpm exec playwright test browser_tests/tests/customNodes/allNodes.spec.ts \
+            --project=custom-nodes --reporter=list --workers=1 --retries=0 \
+            --grep "mounts in both renderers"
+
+      - name: Upload recorded baselines
+        uses: actions/upload-artifact@v6
+        with:
+          name: custom-nodes-geometry-baselines
+          path: browser_tests/fixtures/customNode/geometry/
+          retention-days: 7
+          if-no-files-found: error

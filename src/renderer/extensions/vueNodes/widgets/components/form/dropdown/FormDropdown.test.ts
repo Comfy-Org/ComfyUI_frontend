@@ -47,6 +47,14 @@ const MockFormDropdownMenu = {
     'candidateLabel'
   ],
   template: `<div class="mock-menu" data-testid="dropdown-menu" :data-candidate-index="candidateIndex" :data-candidate-label="candidateLabel ?? ''" :data-items="JSON.stringify(items)">
+      <button
+        v-for="(item, index) in items"
+        :key="item.id"
+        type="button"
+        @click="$emit('item-click', item, index)"
+      >
+        {{ item.label ?? item.name }}
+      </button>
       <button type="button" @click="$emit('search-enter')">Search enter</button>
     </div>`
 }
@@ -79,6 +87,7 @@ interface MountDropdownOptions {
     onCleanup: (cleanupFn: () => void) => void
   ) => Promise<FormDropdownItem[]>
   multiple?: boolean | number
+  selected?: Set<string>
   searchQuery?: string
   onUpdateSelected?: (selected: Set<string>) => void
   onUpdateIsOpen?: (isOpen: boolean) => void
@@ -97,6 +106,7 @@ function mountDropdown(
     props: {
       items,
       multiple: options.multiple,
+      selected: options.selected,
       searcher: options.searcher,
       searchQuery: options.searchQuery,
       'onUpdate:selected': options.onUpdateSelected,
@@ -253,6 +263,40 @@ describe('FormDropdown', () => {
     await flushPromises()
 
     expect(onUpdateSelected).toHaveBeenCalledWith(new Set(['alpha']))
+    expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+  })
+
+  it('keeps the selected item when it is clicked again in single-select mode', async () => {
+    const onUpdateSelected = vi.fn()
+    const onUpdateIsOpen = vi.fn()
+    const item = createItem('image', 'photo.png')
+    const { user } = mountDropdown([item], {
+      selected: new Set([item.id]),
+      onUpdateSelected,
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    await user.click(screen.getByRole('button', { name: item.label }))
+
+    expect(onUpdateSelected).not.toHaveBeenCalled()
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+    expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+  })
+
+  it('replaces the selected item when a different item is clicked in single-select mode', async () => {
+    const onUpdateSelected = vi.fn()
+    const firstItem = createItem('first', 'first.png')
+    const secondItem = createItem('second', 'second.png')
+    const { user } = mountDropdown([firstItem, secondItem], {
+      selected: new Set([firstItem.id]),
+      onUpdateSelected
+    })
+    await openDropdown(user)
+
+    await user.click(screen.getByRole('button', { name: secondItem.label }))
+
+    expect(onUpdateSelected).toHaveBeenCalledWith(new Set([secondItem.id]))
     expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
   })
 

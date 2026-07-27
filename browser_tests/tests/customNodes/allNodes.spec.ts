@@ -15,12 +15,29 @@ import {
   planAutoRuns,
   SYNTH_PRODUCERS
 } from '@e2e/fixtures/customNode/autoRun'
+import {
+  cloudAutoRunExclusions,
+  disabledHarnessNodes
+} from '@e2e/fixtures/customNode/cloudExclusions'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   CONSOLE_ERROR_ALLOWLIST,
   isForeignExecutionNoise
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
+import type {
+  LitegraphNodeGeometry,
+  NodeGeometry,
+  VueNodeGeometry
+} from '@e2e/fixtures/customNode/geometry'
 import {
+  diffGeometry,
+  GEOMETRY_UNSTABLE_NODES,
+  loadPackGeometry,
+  packGeometryRelativePath,
+  savePackGeometry
+} from '@e2e/fixtures/customNode/geometry'
+import {
+  loadCloudCoreDisabledNodes,
   loadManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
@@ -59,12 +76,6 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'pack JS hooks the queue at submit time; client-side queuePrompt transiently refuses even through the retry, flip-flopping between PASS and VALIDATION_FAIL',
     ImageReceiver:
       'environment-variable execution: av.error.InvalidDataError decoding its default image on macOS, clean on Linux CI'
-  },
-  'rgthree-comfy': {
-    'Power Primitive (rgthree)':
-      'requires its pack JS to build the primitive value at queue time; raw defaults KeyError. Whether a page applies pack JS varies by serving setup, so excluded unconditionally - curated-workflow candidate',
-    'Power Puter (rgthree)':
-      'requires its pack JS to compile the expression at queue time; raw defaults KeyError. Excluded unconditionally - curated-workflow candidate'
   },
   'ComfyUI-KJNodes': {
     CreateMagicMask:
@@ -210,10 +221,6 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
     ImageTransformKJ:
       'pack JS initializes its fill-options JSON widget on configure; a fresh create serializes an empty string'
   },
-  'rgthree-comfy': {
-    'Power Primitive (rgthree)':
-      'pack JS rebuilds and normalizes its value widget on configure (a written string comes back as the typed default)'
-  },
   'ComfyUI-Custom-Scripts': {
     'LoadText|pysssss':
       'file combo re-resolves against backend contents on configure; state-dependent (same class as its auto-run exclusion)'
@@ -339,6 +346,109 @@ function addChunk(
   )
 }
 
+// S14 geometry capture, in the same mounted state the fidelity checks just
+// validated. LiteGraph paints to a canvas, so its numbers come from the node
+// model (size, drawn widget offsets, connection positions) - which is where
+// the historical shrinking bugs lived. Vue numbers come from the rendered
+// DOM, divided by the chunk-fit zoom so they are graph-space and invariant
+// to chunk composition. Everything is relative to the node's own origin, so
+// grid placement cannot leak into baselines.
+function measureChunkGeometry(
+  page: Page,
+  ids: Array<string | null>,
+  vueNodesEnabled: boolean
+): Promise<Array<LitegraphNodeGeometry | VueNodeGeometry | null>> {
+  return page.evaluate(
+    ([chunkIds, vue]) => {
+      type LgOut = {
+        w: number
+        h: number
+        widgets: Array<{ name: string; y: number | null }>
+        inputs: Array<[number, number]>
+        outputs: Array<[number, number]>
+      }
+      type VueOut = {
+        w: number
+        h: number
+        widgets: Array<{ dy: number; h: number }>
+        slots: Array<[number, number]>
+      }
+      const results: Array<LgOut | VueOut | null> = []
+      for (const id of chunkIds) {
+        if (id === null) {
+          results.push(null)
+          continue
+        }
+        const node = window.app!.graph.nodes.find(
+          (candidate) => String(candidate.id) === id
+        )
+        if (!node) {
+          results.push(null)
+          continue
+        }
+        if (!vue) {
+          const origin = [node.pos[0], node.pos[1]]
+          const rel = (point: ArrayLike<number>): [number, number] => [
+            point[0] - origin[0],
+            point[1] - origin[1]
+          ]
+          results.push({
+            w: node.size[0],
+            h: node.size[1],
+            widgets: (node.widgets ?? []).map((widget) => {
+              const lastY = (widget as { last_y?: number }).last_y
+              return {
+                name: widget.name,
+                y: typeof lastY === 'number' ? lastY : null
+              }
+            }),
+            inputs: (node.inputs ?? []).map((_, slot) =>
+              rel(node.getConnectionPos(true, slot))
+            ),
+            outputs: (node.outputs ?? []).map((_, slot) =>
+              rel(node.getConnectionPos(false, slot))
+            )
+          })
+          continue
+        }
+        const root = document.querySelector(`[data-node-id="${id}"]`)
+        if (!root) {
+          results.push(null)
+          continue
+        }
+        const scale = window.app!.canvas.ds.scale
+        const rootRect = root.getBoundingClientRect()
+        results.push({
+          w: rootRect.width / scale,
+          h: rootRect.height / scale,
+          widgets: Array.from(
+            root.querySelectorAll('[data-testid="node-widget"]'),
+            (row) => {
+              const rect = row.getBoundingClientRect()
+              return {
+                dy: (rect.top - rootRect.top) / scale,
+                h: rect.height / scale
+              }
+            }
+          ),
+          slots: Array.from(
+            root.querySelectorAll('[data-testid="slot-connection-dot"]'),
+            (dot) => {
+              const rect = dot.getBoundingClientRect()
+              return [
+                (rect.left - rootRect.left) / scale,
+                (rect.top - rootRect.top) / scale
+              ] as [number, number]
+            }
+          )
+        })
+      }
+      return results
+    },
+    [ids, vueNodesEnabled] as const
+  )
+}
+
 // What the def promises the instance must materialize, in any renderer:
 // every non-socketless declared input (as a widget or a socket - pack JS may
 // legally convert between the two) and every declared output. Autogrow
@@ -389,6 +499,10 @@ async function packNodeKeys(
   return { keys, defs }
 }
 
+// Invariant across manifest entries: which harness nodes the target backend
+// label-disables is a property of the backend, not of any pack row.
+const disabledHarness = disabledHarnessNodes(loadCloudCoreDisabledNodes())
+
 for (const entry of loadManifest()) {
   test.describe(`all nodes: ${entry.pack} @custom-nodes`, () => {
     test('every registered node mounts in both renderers', async ({
@@ -415,6 +529,21 @@ for (const entry of loadManifest()) {
         keys.map((key) => [key, declaredShape(defs[key])])
       )
       const ledger = entry.vueIncompatibleNodes ?? {}
+      // S14: geometry accumulates across both renderer passes (LiteGraph
+      // first, Vue second per rendererPassesFor), then records or compares
+      // once at the end of the test.
+      const geometryRecordMode = process.env.CN_GEOMETRY === 'record'
+      if (process.env.CN_GEOMETRY && !geometryRecordMode)
+        throw new Error(
+          `unrecognized CN_GEOMETRY value "${process.env.CN_GEOMETRY}" - the only mode is "record"`
+        )
+      const measuredGeometry: Record<string, NodeGeometry> = {}
+      const geometryUnstable = GEOMETRY_UNSTABLE_NODES[entry.pack] ?? {}
+      for (const ledgered of Object.keys(geometryUnstable))
+        expect(
+          keys,
+          `stale GEOMETRY_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
+        ).toContain(ledgered)
       for (const ledgered of Object.keys(ledger))
         expect(
           keys,
@@ -445,6 +574,24 @@ for (const entry of loadManifest()) {
             failures.push(
               `chunk@${offset}: graph has ${count} of ${chunk.length} nodes`
             )
+          // Geometry rides the same mounted chunk. A null measurement means
+          // the node never materialized - already red via the mount checks,
+          // so geometry stays silent rather than double-reporting.
+          const chunkGeometry = await measureChunkGeometry(
+            comfyPage.page,
+            shapes.map((shape) => shape?.id ?? null),
+            vueNodesEnabled
+          )
+          for (const [index, measured] of chunkGeometry.entries()) {
+            const key = chunk[index]
+            if (measured === null || key in geometryUnstable) continue
+            if (!vueNodesEnabled)
+              measuredGeometry[key] = {
+                litegraph: measured as LitegraphNodeGeometry
+              }
+            else if (measuredGeometry[key] && !(key in ledger))
+              measuredGeometry[key].vue = measured as VueNodeGeometry
+          }
           for (const [index, shape] of shapes.entries()) {
             const key = chunk[index]
             if (shape === null) {
@@ -575,6 +722,43 @@ for (const entry of loadManifest()) {
           comfyPage.page,
           `after all-nodes VueNodes=${vueNodesEnabled} pass`
         )
+      }
+      // S14 epilogue. The exclusion is announced like every other escape
+      // hatch, record fails loudly (never a green run that rewrote its own
+      // expectations), and compare runs in CI ONLY: the baselines encode
+      // pack-JS-built layout and CI font metrics, so a dev-server run (no
+      // pack JS) reds structurally and a non-Linux machine reds on fonts -
+      // neither is signal. The skip is loud and provably inert in CI.
+      if (Object.keys(geometryUnstable).length > 0)
+        console.log(
+          `${entry.pack}: ${Object.keys(geometryUnstable).length} node(s) ledgered geometry-unstable; geometry not asserted for them`
+        )
+      if (geometryRecordMode) {
+        savePackGeometry(entry.pack, {
+          recordedAt: {
+            core: process.env.CN_GEOMETRY_CORE ?? 'unrecorded',
+            pin: 'pin' in entry ? entry.pin : entry.deployRef
+          },
+          schema: 1,
+          nodes: measuredGeometry
+        })
+        throw new Error(
+          `geometry baselines recorded for ${entry.pack} - commit ${packGeometryRelativePath(entry.pack)} and re-run without CN_GEOMETRY`
+        )
+      } else if (!process.env.CI) {
+        console.log(
+          `${entry.pack}: geometry compare skipped off-CI (baselines encode CI fonts and pack-JS layout); CI enforces`
+        )
+      } else {
+        const geometryBaseline = loadPackGeometry(entry.pack)
+        expect(
+          geometryBaseline,
+          `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (ADDING_CUSTOM_NODES.md Step 5b)`
+        ).not.toBeNull()
+        expect(
+          diffGeometry(geometryBaseline!.nodes, measuredGeometry),
+          'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per ADDING_CUSTOM_NODES.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger by mechanism in GEOMETRY_UNSTABLE_NODES'
+        ).toEqual([])
       }
     })
 
@@ -885,7 +1069,14 @@ for (const entry of loadManifest()) {
         'backend still has a running prompt after a 150s drain - a genuinely wedged (non-interruptible) execution; restart the test backend'
       ).toBe(0)
 
-      const excluded = AUTO_RUN_EXCLUDE[entry.pack] ?? {}
+      expect(
+        disabledHarness,
+        'Cloud label-disables auto-run harness node(s); synthesized chains cannot run without them'
+      ).toEqual([])
+      const excluded = {
+        ...(AUTO_RUN_EXCLUDE[entry.pack] ?? {}),
+        ...cloudAutoRunExclusions(entry)
+      }
       for (const [key, reason] of Object.entries(excluded)) {
         expect(
           keys,

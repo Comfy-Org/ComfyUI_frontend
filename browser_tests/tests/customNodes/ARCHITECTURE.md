@@ -19,7 +19,7 @@ LiteGraph, and the DOM renderer, Vue Nodes 2.0), it survives save/reload,
 its slots wire type-correctly, and it executes when its inputs allow.
 Section 1 states each proof precisely.
 
-> **Scale snapshot (example, at the time of writing):** 7 packs, 823
+> **Scale snapshot (example, at the time of writing):** 6 packs, 799
 > registered nodes, about 5,000 planned wiring checks, about 440 nodes
 > executing clean per run. These are observations printed by the run, not
 > properties of the design; they move whenever the manifest or a pin moves.
@@ -130,6 +130,14 @@ re-discovered live on every run:
   renderer, as a rendered row), disconnecting removes the trailing empty. This behavior lives in
   pack JS (`onConnectionsChange` overrides), invisible to `/object_info`, so
   the def-driven tiers above cannot see it
+- the node's **rendered layout matches a committed baseline**, in
+  both renderers: node size, widget-row offsets and heights, and slot
+  positions, recorded in the CI environment and compared to within a
+  0.01px tolerance (absorbs cross-runner sub-pixel float; still reds on
+  any real shift, ~100x finer than a 1px move). CI-only (local runs log
+  and skip: baselines encode CI fonts and pack-JS layout); nodes with a
+  nondeterministic or content-variable layout are excluded by mechanism
+  (section 12, G15)
 
 Every tier also asserts the app shows **zero visible errors** while doing
 this, except the execution tier, which deliberately provokes expected
@@ -148,8 +156,8 @@ Who and what the suite touches.
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 220}}}%%
 flowchart LR
-    CIP["CI platform: runs the gate on every PR"]
-    PACKS["Community node packs: external code, installed at pinned versions"]
+    CIP["CI platform: runs the gate on every PR, plus a nightly non-gating drift canary"]
+    PACKS["Community node packs: external code, installed at pinned versions (the canary also tests their latest)"]
     DRIVER["Suite test driver: puts every pack node through its create, wire, save, and submit checks"]
     FE["ComfyUI frontend: the system under test, running in a real browser"]
     BE["ComfyUI backend: real graph execution engine"]
@@ -240,14 +248,15 @@ pinned by fixtures copied from a live census of both definition dialects
 
 ## 5. The verification tiers
 
-| Tier                 | Verifies                                                                                                                                                                                 | Renderers                                               | Notes                                                                                   |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Mount Completeness   | every declared input and output actually materializes on the created node; the DOM renderer additionally shows at least the instance's widget/slot counts                                | both; a pack declared Vue-incompatible runs canvas only | missing parts fail; extras are tolerated                                                |
-| Persistence          | save/reload loses nothing and changes nothing; user-like writes stick and survive reload                                                                                                 | both; a pack declared Vue-incompatible runs canvas only | application-added dynamic widgets are legal; see section 8                              |
-| Wiring Compatibility | one representative typed wire per slot connects through the real validator and survives save, reload, and prompt serialization                                                           | breadth sweep: one, by decision 7; curated drags: both  | dropdown slots pair only on identical option sets; see section 10 for exception routing |
-| Execution            | the node runs on a real backend and its output arrives at an observation sink                                                                                                            | one, by decision 7                                      | the full flow is section 7                                                              |
-| Curated workflows    | a small hand-authored graph per pack executes end to end; its named must-exist nodes are asserted present (a missing one fails the tier, catching a pack that renamed or dropped a node) | both (render pass)                                      | plus a forced-error self-check proving the harness detects real failures                |
-| Core smoke           | the core app loads a workflow cleanly with packs installed                                                                                                                               | both                                                    | guards against packs breaking the base app                                              |
+| Tier                 | Verifies                                                                                                                                                                                       | Renderers                                                  | Notes                                                                                                                                                                              |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mount Completeness   | every declared input and output actually materializes on the created node; the DOM renderer additionally shows at least the instance's widget/slot counts                                      | both; a pack declared Vue-incompatible runs canvas only    | missing parts fail; extras are tolerated                                                                                                                                           |
+| Layout Geometry      | every node's rendered geometry (canvas model numbers; DOM rects normalized to graph space) matches a committed per-pack baseline to within 0.01px - the shrinking/collapse class fails by name | both; a pack declared Vue-incompatible records canvas only | baselines recorded in CI for font parity; compared in CI only (local runs log and skip); nondeterministic or content-variable nodes ledgered by mechanism and registration-guarded |
+| Persistence          | save/reload loses nothing and changes nothing; user-like writes stick and survive reload                                                                                                       | both; a pack declared Vue-incompatible runs canvas only    | application-added dynamic widgets are legal; see section 8                                                                                                                         |
+| Wiring Compatibility | one representative typed wire per slot connects through the real validator and survives save, reload, and prompt serialization                                                                 | breadth sweep: one, by decision 7; curated drags: both     | dropdown slots pair only on identical option sets; see section 10 for exception routing                                                                                            |
+| Execution            | the node runs on a real backend and its output arrives at an observation sink                                                                                                                  | one, by decision 7                                         | the full flow is section 7                                                                                                                                                         |
+| Curated workflows    | a small hand-authored graph per pack executes end to end; its named must-exist nodes are asserted present (a missing one fails the tier, catching a pack that renamed or dropped a node)       | both (render pass)                                         | plus a forced-error self-check proving the harness detects real failures                                                                                                           |
+| Core smoke           | the core app loads a workflow cleanly with packs installed                                                                                                                                     | both                                                       | guards against packs breaking the base app                                                                                                                                         |
 
 One vocabulary bridge, because the manifest predates these tier names: the
 manifest row's `tiers` field takes `load`, `run`, `connectivity`, and
@@ -427,7 +436,8 @@ Not every ledger can earn that two-way strength; the guards come in three
 grades. Ledgers whose nodes still execute (the known-failure baseline) are
 two-way behavioral: a new failure and a stale entry both flip the gate.
 Ledgers that stop a path from running at all (execution exclusions,
-probe-write exemptions) are registration guarded: the suite proves the
+probe-write exemptions, geometry-unstable exclusions) are registration
+guarded: the suite proves the
 named node still exists, but the excluded path never runs, so an entry
 that stopped being necessary cannot be observed; staleness there is
 caught by review, not observation. Weakest are the pattern allowlists
@@ -455,20 +465,20 @@ deliberate extension seam is the curated-workflow fixture: anything the
 manifest cannot derive from the live node corpus (pack-specific semantics,
 multi-node behavior) is expressed there (decisions 6 and 11).
 
-| #   | Decision                                                                                                                                                                                                    | Why                                                                                                                                                   | Trade-off accepted                                                                                                                          |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0   | Drive a real browser, not just the backend API                                                                                                                                                              | Pack frontend scripts (widget rebuilds, restyles, submission hooks) are half of what breaks; only a browser running the built frontend exercises them | Browser e2e is the slowest, most race-prone tier; mitigated by the attribution filters (section 9) and the staged settle points (section 8) |
-| 1   | Real environment only: real browser, real backend, pack scripts active, nothing mocked                                                                                                                      | The failures worth catching live in the integration, not in units                                                                                     | Slower than unit tests; needs a backend in CI                                                                                               |
-| 2   | The backend serves the built frontend                                                                                                                                                                       | The dev server never loads pack scripts, so it tests a different product                                                                              | Local iteration needs a build + restart for pack-script changes                                                                             |
-| 3   | One test worker                                                                                                                                                                                             | The execution queue is exclusive; parallel workers corrupt each other's evidence                                                                      | Wall-clock time grows with the manifest                                                                                                     |
-| 4   | Execution caching disabled                                                                                                                                                                                  | The per-node "actually ran" signal only exists for uncached executions                                                                                | Every run pays full execution cost                                                                                                          |
-| 5   | Packs installed at pinned, verified versions                                                                                                                                                                | An upstream push must not change what the gate tests mid-flight                                                                                       | Pins need deliberate bumps; a nightly canary against pack HEADs is the planned complement                                                   |
-| 6   | One manifest row per pack, zero per-pack test code                                                                                                                                                          | Extension cost stays constant as coverage grows                                                                                                       | The generic tiers cannot assert pack-specific semantics; curated workflows exist for that                                                   |
-| 7   | Both renderers only where the renderer can change the outcome: mount, persistence, the curated render pass, the curated pointer drags, core smoke; one renderer elsewhere (breadth wiring sweep, execution) | Widget values flow through the same store under both renderers (verified by probe), so doubling execution buys no new failure surface                 | If that store unification ever changes, revisit this decision                                                                               |
-| 8   | Every exception carries its mechanism and is stale-guarded                                                                                                                                                  | An unexplained exemption is indistinguishable from a hidden bug                                                                                       | Onboarding a flaky pack takes more effort than a blanket skip                                                                               |
-| 9   | Known-failure baseline reconciled in both directions                                                                                                                                                        | One-way baselines rot into permanent blind spots                                                                                                      | A node that gets fixed upstream turns the gate red until its entry is removed (by design)                                                   |
-| 10  | Small batches with single-node bisection                                                                                                                                                                    | Batching amortizes queue latency; bisection restores per-node attribution on failure                                                                  | A failing batch costs one extra pass over its members                                                                                       |
-| 11  | Scope excludes output semantics and frontend-virtual nodes                                                                                                                                                  | Both need per-node knowledge a manifest cannot derive; curated workflows and future behavior tests are the extension point                            | "Green" is narrower than "the pack fully works," and says so                                                                                |
+| #   | Decision                                                                                                                                                                                                    | Why                                                                                                                                                   | Trade-off accepted                                                                                                                                                  |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | Drive a real browser, not just the backend API                                                                                                                                                              | Pack frontend scripts (widget rebuilds, restyles, submission hooks) are half of what breaks; only a browser running the built frontend exercises them | Browser e2e is the slowest, most race-prone tier; mitigated by the attribution filters (section 9) and the staged settle points (section 8)                         |
+| 1   | Real environment only: real browser, real backend, pack scripts active, nothing mocked                                                                                                                      | The failures worth catching live in the integration, not in units                                                                                     | Slower than unit tests; needs a backend in CI                                                                                                                       |
+| 2   | The backend serves the built frontend                                                                                                                                                                       | The dev server never loads pack scripts, so it tests a different product                                                                              | Local iteration needs a build + restart for pack-script changes                                                                                                     |
+| 3   | One test worker                                                                                                                                                                                             | The execution queue is exclusive; parallel workers corrupt each other's evidence                                                                      | Wall-clock time grows with the manifest                                                                                                                             |
+| 4   | Execution caching disabled                                                                                                                                                                                  | The per-node "actually ran" signal only exists for uncached executions                                                                                | Every run pays full execution cost                                                                                                                                  |
+| 5   | Packs AND ComfyUI core installed at pinned, verified versions in the PR gate                                                                                                                                | An upstream push must not change what the gate tests mid-flight; a gate red must be attributable to the PR                                            | Pins need deliberate bumps (gate + canary Job B together); git-level drift detection lives in the non-gating nightly canary (Job A floats core, Job B floats packs) |
+| 6   | One manifest row per pack, zero per-pack test code                                                                                                                                                          | Extension cost stays constant as coverage grows                                                                                                       | The generic tiers cannot assert pack-specific semantics; curated workflows exist for that                                                                           |
+| 7   | Both renderers only where the renderer can change the outcome: mount, persistence, the curated render pass, the curated pointer drags, core smoke; one renderer elsewhere (breadth wiring sweep, execution) | Widget values flow through the same store under both renderers (verified by probe), so doubling execution buys no new failure surface                 | If that store unification ever changes, revisit this decision                                                                                                       |
+| 8   | Every exception carries its mechanism and is stale-guarded                                                                                                                                                  | An unexplained exemption is indistinguishable from a hidden bug                                                                                       | Onboarding a flaky pack takes more effort than a blanket skip                                                                                                       |
+| 9   | Known-failure baseline reconciled in both directions                                                                                                                                                        | One-way baselines rot into permanent blind spots                                                                                                      | A node that gets fixed upstream turns the gate red until its entry is removed (by design)                                                                           |
+| 10  | Small batches with single-node bisection                                                                                                                                                                    | Batching amortizes queue latency; bisection restores per-node attribution on failure                                                                  | A failing batch costs one extra pass over its members                                                                                                               |
+| 11  | Scope excludes output semantics and frontend-virtual nodes                                                                                                                                                  | Both need per-node knowledge a manifest cannot derive; curated workflows and future behavior tests are the extension point                            | "Green" is narrower than "the pack fully works," and says so                                                                                                        |
 
 ## 12. Gotchas: every incident, its root cause, and the defense
 
@@ -677,17 +687,56 @@ these answer: "green but broken" and "tests can never catch random bugs."
   result stays meaningful everywhere else.
 - **Answers**: tests can never catch random bugs.
 
+### G15. Layout that is not reproducible run to run (two mechanisms)
+
+The geometry tier's first live compare found exactly one delta across the
+then-823-node corpus: SplineEditor's widget block sat at y 915 in the
+record run and 920 in the compare run, at identical code. Root cause is
+the same editor_base init race the console ledger documents for editor
+creation: whether the pack's editor DOM finished initializing when the
+frame drew decides the widget offsets.
+
+A later compare surfaced a second, different mechanism. Across two
+ephemeral runners on an identical pinned image and pinned bundled
+Chromium, 3187 measured geometry values jittered by up to 2e-4px - float
+residuals from the scale division, not a layout change - while
+LoadAndResizeImage's litegraph height moved 566 to 354, because that
+node's height follows whatever the backend's input dir holds.
+
+Defense, by mechanism and never per incident: `GEOMETRY_UNSTABLE_NODES`
+excludes the two editor_base subclasses (init race) plus
+LoadAndResizeImage (content-variable height), registration guarded and
+logged per run, and omitted from baselines entirely. Every other node
+compares within `GEOMETRY_EPSILON_PX` (0.01px), which absorbs the
+cross-runner float residual while still reding on any real shift - about
+100x finer than a 1px move, and pinned on both sides by
+`geometry.pure.spec.ts`.
+
 ## 13. The CI deployment view
 
 In today's implementation, the suite is Playwright driving bundled
-Chromium, and the CI platform is GitHub Actions.
+Chromium, and the CI platform is GitHub Actions. The same suite deploys
+against two backends, chosen by `CUSTOM_NODES_ENV` - a local Python backend
+(`core`) and the remote Comfy Cloud backend (`cloud`) - each as its own
+gating PR check, plus a nightly non-gating canary where git-level drift is
+allowed to show up instead. The manifest, tiers, and every assertion are
+shared; only the backend and its calibrated expectations differ.
+
+### The PR gate (`custom-nodes-e2e-core`, gating)
+
+Everything git-level is pinned: ComfyUI core is provisioned at the exact
+commit the suite was last verified green against, and every pack at its
+manifest pin, enforced per pack before it installs. A gate red therefore
+points at the PR itself. Python dependencies and the runner image still
+resolve fresh per run - a red that appears everywhere at once right after
+a dependency release is environment, not the PR.
 
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 260}}}%%
 flowchart LR
     CH["change gate: skip only when nothing relevant changed, without wedging the required check"] --> BUILD["build the frontend"]
-    BUILD --> ENV["provision a CPU backend"]
-    ENV --> INST["clone every manifest pack at its pinned version; install with dependency constraints so packs cannot swap the numeric stack"]
+    BUILD --> ENV["provision a CPU backend with ComfyUI core at the verified pin"]
+    ENV --> INST["clone every manifest pack at its pinned commit; install with dependency constraints so packs cannot swap the numeric stack"]
     INST --> ASSET["stage the curated workflows' media"]
     ASSET --> RUN["boot the backend serving the built frontend; run the suite, one worker"]
     RUN --> SKIP{"anything skipped?"}
@@ -704,14 +753,123 @@ eight minutes of suite on top of about four and a half minutes of
 environment setup, with sharding starting to pay once the whole job
 passes roughly twelve minutes.
 
+### The cloud PR gate (`custom-nodes-e2e-cloud`, gating)
+
+The same suite pointed at the remote Comfy Cloud backend by
+`CUSTOM_NODES_ENV=cloud`, in `ci-tests-custom-nodes-cloud.yaml`. The core
+gate's flow above holds with its backend half swapped out - no ComfyUI
+checkout, no pack install, no torch constraints, because Cloud already runs
+every supported pack - and with one more deliberate difference: the dist is
+built as the CLOUD distribution (`build:cloud-e2e`), because `DISTRIBUTION`
+is a build-time constant and a localhost build would compile out the
+`isCloud` code paths this gate exists to exercise. In place of "provision a
+CPU backend ... install every pack", one step serves that cloud dist through
+`vite preview` with `/api` proxied to the Cloud URL (the two dev-only proxy
+bypasses turned off, so pack frontend JS and real auth are exercised rather
+than faked), and the suite signs in as Cloud's shared smoke user before it
+runs. Everything downstream -
+one worker, the skip gate - is identical, so the flow
+gets no second diagram: it is the same picture with the environment and
+install boxes replaced by one serve-against-Cloud box.
+
+Where the core gate PINS its world, the cloud gate FLOATS with Cloud. Its
+expectations are not hand-pinned but generated into the cloud manifest from a
+Cloud `/object_info` snapshot, so a Cloud redeploy that moves the installed
+pack set is recalibrated by regenerating that manifest (a regenerate-and-diff),
+not by editing pins. Drift detection is therefore intrinsic on the cloud side:
+a per-PR cloud red after a deploy is the deploy drifting, which is why the
+cloud side needs no separate drift canary the way the pinned core side does.
+
+Fork-safety matches the core gate: the same same-repo `if:` skips fork PRs
+(which have no secrets), and a skipped job counts as passing. Three
+cloud-specific differences: tracing is off under `CUSTOM_NODES_ENV=cloud`
+(`playwright.config.ts`), because the seeded smoke-user session rides
+`page.evaluate` arguments and a trace records those verbatim into a report
+this workflow uploads as a public artifact - so a cloud red is triaged from
+the list/json/html report, not a trace, and the fixture refuses to seed at
+all if it ever finds itself in a traced project; because runs share one
+Cloud test instance, the
+gate and the cloud geometry record serialize on one shared literal
+`concurrency` group (`cancel-in-progress: false`) instead of per-ref, so no
+two runs cross-talk on the shared backend's execution stream - at the cost
+that a newly queued run CANCELS a pending (not in-progress) one, which is
+why this check must not be marked required until a per-run instance (open
+item: run isolation) or an in-job lock replaces group serialization; and
+because
+the smoke user credentials may be unset (pre-calibration, or on a fork clone)
+and the generated cloud manifest may not be committed yet, a gate step
+checks BOTH first - either absent, it emits a loud `::notice` naming which
+and no-ops the job green without running a test (secrets landing before the
+manifest would otherwise red the suite at collection); both present, the
+suite runs for real. Until then that no-op is the honest state, never a
+green "0 tests". Run-tier enrollment for cloud rows comes from the curated
+overlay (`fixtures/data/cloud/curatedCloudWorkflows.json`); rows without an
+overlay entry register no run test.
+
+**Release-pipeline stage (the cloud drift leg).** Beyond the per-PR gate, this
+same cloud suite is the custom-node stage of the release pipeline - nightly
+cut, staging Cloud, CI, QA, canary, rollout - pointed at the STAGING Cloud
+carrying the version being cut and blocking rollout progression on red. It
+reuses everything here and is triggered by the release pipeline, not a cron in
+this repo. In the drift-leg naming this is the **cloud** leg (floats the Cloud
+deployment, holds the frontend at the nightly cut); the **core** and **node
+packs** legs are the nightly canary's two jobs below.
+
+### The nightly canary (non-gating drift radar)
+
+The gate's pins mean git drift never breaks a PR, so drift needs its own
+surface. The canary reruns the identical suite nightly, two jobs, each
+moving exactly one git variable so every red names its own culprit. The
+suite itself runs unmodified and fully strict in both jobs - no loosened
+assertions, no special environment flags.
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 240}}}%%
+flowchart LR
+    CRON["nightly schedule"] --> A["core-drift job: ComfyUI core floats at master, packs stay pinned"]
+    CRON --> B["pack-drift job: core stays at the gate's exact pin, packs float at their authors' latest"]
+    A --> OUT{"red or cancelled?"}
+    B --> OUT
+    OUT -- no --> QUIET["quiet green, nothing to do"]
+    OUT -- yes --> PAGE["file or update ONE tracking issue, deduped on a per-job label, carrying the run link, the report artifact name, and the triage playbook"]
+```
+
+What a red means, and who acts:
+
+- **Core-drift red**: a core change broke the frontend contract or
+  exposed a pack bug (the 2026-07-18 KJNodes editor crashes were this).
+  Fix the code, ledger the pack bug by mechanism, or bump the gate's core
+  pin in its own PR.
+- **Pack-drift red**: the authors' latest diverges from what we
+  verified - the expected steady state whenever our pins lag. CI cannot
+  classify author intent (an added node, a removed node, and a rename can
+  each be healthy or breakage), so the job only detects divergence and a
+  human classifies from the report: crashes or execution failures are
+  reported upstream by a maintainer; count or membership drift alone
+  means bump the pins and recalibrate the manifest.
+
+The paging path is deliberate: a canary red blocks nothing, but it must
+never rot unseen. The filing step fires on failure and on cancellation (a
+job-level timeout cancels rather than fails, and a cancelled red must
+still page), and dedups on a label so one standing issue accumulates
+comments instead of spawning a new issue per night. The two labels
+(`custom-nodes-canary`, `custom-nodes-canary-packs`) must exist in the
+repo for filing to work; both are created.
+
+The core pin deliberately lives in two places - the gate and the
+pack-drift job, which needs the same pin so its reds isolate pack
+drift - and both copies are bumped in the same PR.
+[ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md) has the bump procedure.
+
 ## 14. Implementation map
 
 The one place where architecture names meet code symbols.
 
 | Building block                        | File                                                                       | Key symbols                                                                                                                                                                                                                     |
 | ------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pack Manifest                         | `browser_tests/fixtures/data/customNodeManifest.json`                      | one row per pack: `pack`, `repo`, `pin`, `tiers`, `workflow`, `expectedNodes`, `expectedExtensions`, `requiresGpu`, `requiresModels`, `timeoutMs`, plus optional `vueNodesCompatible`, `vueIncompatibleNodes`, `cannotRunAlone` |
+| Pack Manifest                         | `browser_tests/fixtures/data/customNodeManifest.core.json`                 | one row per pack: `pack`, `repo`, `pin`, `tiers`, `workflow`, `expectedNodes`, `expectedExtensions`, `requiresGpu`, `requiresModels`, `timeoutMs`, plus optional `vueNodesCompatible`, `vueIncompatibleNodes`, `cannotRunAlone` |
 | Manifest loader                       | `browser_tests/fixtures/customNode/manifest.ts`                            | `loadManifest`, `rendererPassesFor`                                                                                                                                                                                             |
+| Suite env switch (`core`/`cloud`)     | `browser_tests/fixtures/customNode/manifest.ts`                            | `customNodesEnv()` reads `CUSTOM_NODES_ENV` (default `core`); selects `customNodeManifest.core.json` vs `.cloud.json`, `geometry/` vs `geometry/cloud/`; `cloud` seeds the smoke session via `fixtures/helpers/smokeAuth.ts`    |
 | Test Orchestrator                     | each spec file                                                             | the `for (const entry of loadManifest())` loop heading allNodes.spec.ts, connectivity.spec.ts, customNode.regression.spec.ts                                                                                                    |
 | Evidence Ledgers + Reconciler         | `browser_tests/tests/customNodes/allNodes.spec.ts`, `connectivity.spec.ts` | the `*_ALLOWLIST` maps, `AUTO_RUN_EXCLUDE`, the `cannotRunAlone` two-way reconciliation, stale-entry guards                                                                                                                     |
 | Definition Normalizer                 | `browser_tests/fixtures/customNode/typePairing.ts`                         | `normalizeNodeDefs`, `packOf`                                                                                                                                                                                                   |
@@ -719,10 +877,13 @@ The one place where architecture names meet code symbols.
 | Capability Classifier                 | `browser_tests/fixtures/customNode/autoRun.ts`                             | `classifyAutoRunnable`, `classifyInput`, `planAutoRuns`, `batchAutoRunnable`, `SYNTH_PRODUCERS`                                                                                                                                 |
 | Execution Harness                     | `browser_tests/fixtures/customNode/ComfyTarget.ts`                         | `LocalDesktopTarget.runWorkflow`: event tap, attempt + graph-membership filters, guarded submission                                                                                                                             |
 | Outcome classification                | `browser_tests/fixtures/customNode/runResult.ts`                           | `classifyRun`, `RunResult`                                                                                                                                                                                                      |
-| Mount / Persistence / Execution tiers | `browser_tests/tests/customNodes/allNodes.spec.ts`                         | `addChunk`, `declaredShape`, the staged rig on `window.__cnRt`, `runBatch`, monotonic identities via `window.__cnIdBase`, five in-spec exception ledgers                                                                        |
+| Mount / Persistence / Execution tiers | `browser_tests/tests/customNodes/allNodes.spec.ts`                         | `addChunk`, `declaredShape`, the staged rig on `window.__cnRt`, `runBatch`, monotonic identities via `window.__cnIdBase`, four in-spec exception ledgers                                                                        |
+| Layout geometry tier                  | `browser_tests/fixtures/customNode/geometry.ts` + `geometry/<pack>.json`   | `measureChunkGeometry` (in allNodes.spec.ts), `diffGeometry`, `GEOMETRY_UNSTABLE_NODES`, `CN_GEOMETRY=record` mode plus the default CI-only compare                                                                             |
 | Wiring tier                           | `browser_tests/tests/customNodes/connectivity.spec.ts`                     | breadth sweep, executor self-check, curated drags, two allowlists                                                                                                                                                               |
 | Curated workflows + self-check        | `browser_tests/tests/customNodes/customNode.regression.spec.ts`            | T0/T1 per pack, forced-error positive control                                                                                                                                                                                   |
 | Core smoke                            | `browser_tests/tests/customNodes/coreSmoke.spec.ts`                        |                                                                                                                                                                                                                                 |
 | Dynamic-input (autogrow) tier         | `browser_tests/tests/customNodes/dynamicInputs.spec.ts`                    | `AUTOGROW_CASES` (curated cases), `consumerShape` (graph + DOM census), per-path connect/disconnect loop                                                                                                                        |
 | Parser/classifier fixtures            | `browser_tests/tests/customNodes/*.pure.spec.ts`                           | census-derived cases for both definition dialects                                                                                                                                                                               |
-| CI job                                | `.github/workflows/ci-tests-custom-nodes.yaml`                             | gating check `custom-nodes-e2e`                                                                                                                                                                                                 |
+| PR gate                               | `.github/workflows/ci-tests-custom-nodes.yaml`                             | gating check `custom-nodes-e2e-core`; core pin via `comfyui_ref`                                                                                                                                                                |
+| Cloud PR gate                         | `.github/workflows/ci-tests-custom-nodes-cloud.yaml`                       | gating check `custom-nodes-e2e-cloud`; `CUSTOM_NODES_ENV=cloud`; credentials+manifest no-op gate; served dist proxied to testcloud.comfy.org                                                                                    |
+| Nightly canary                        | `.github/workflows/ci-nightly-custom-nodes-canary.yaml`                    | `canary-core-drift` (core floats), `canary-pack-drift` (packs float at HEAD), label-deduped issue filing                                                                                                                        |

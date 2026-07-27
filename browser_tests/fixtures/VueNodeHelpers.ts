@@ -209,6 +209,13 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Get the visible widget tooltip text element (PrimeVue tooltip portal).
+   */
+  getVisibleWidgetTooltip(): Locator {
+    return this.page.locator('.p-tooltip-text:visible')
+  }
+
+  /**
    * Select an option from a combo widget on a node.
    */
   async selectComboOption(

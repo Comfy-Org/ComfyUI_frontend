@@ -1,5 +1,11 @@
 import type { Page } from '@playwright/test'
 
+import {
+  FIREBASE_APP_NAME,
+  FIREBASE_WEB_API_KEY,
+  seedFirebaseAuthUser
+} from '@e2e/fixtures/helpers/firebaseAuthStorage'
+
 /**
  * Mocks Firebase authentication for cloud E2E tests.
  *
@@ -11,6 +17,8 @@ import type { Page } from '@playwright/test'
  * This helper seeds Firebase's IndexedDB persistence layer with a mock
  * user and intercepts the Firebase REST APIs (securetoken, identitytoolkit)
  * so the SDK believes a user is signed in. Must be called before navigation.
+ * For a REAL session against a live Cloud backend (no interception), see
+ * `smokeAuth.ts`.
  */
 export class CloudAuthHelper {
   private readonly appUrl: string
@@ -28,96 +36,33 @@ export class CloudAuthHelper {
   }
 
   /**
-   * Navigate to a lightweight same-origin page to seed Firebase's
-   * IndexedDB persistence with a mock user. This ensures the data
-   * is written before the app loads and Firebase reads it.
-   *
-   * Firebase auth uses `browserLocalPersistence` which stores data in
-   * IndexedDB database `firebaseLocalStorageDb`, object store
-   * `firebaseLocalStorage`, keyed by `firebase:authUser:<apiKey>:<appName>`.
+   * Seed Firebase's IndexedDB persistence with the mock user (see
+   * `firebaseAuthStorage.ts` for the shared db/store/key contract).
    */
   private async seedFirebaseIndexedDB(): Promise<void> {
-    // Navigate to a lightweight endpoint to get a same-origin context
-    await this.page.goto(`${this.appUrl}/api/users`)
-
-    await this.page.evaluate(() => {
-      const MOCK_USER_DATA = {
-        uid: 'test-user-e2e',
-        email: 'e2e@test.comfy.org',
-        displayName: 'E2E Test User',
-        emailVerified: true,
-        isAnonymous: false,
-        providerData: [
-          {
-            providerId: 'google.com',
-            uid: 'test-user-e2e',
-            displayName: 'E2E Test User',
-            email: 'e2e@test.comfy.org',
-            phoneNumber: null,
-            photoURL: null
-          }
-        ],
-        stsTokenManager: {
-          refreshToken: 'mock-refresh-token',
-          accessToken: 'mock-firebase-id-token',
-          expirationTime: Date.now() + 60 * 60 * 1000
-        },
-        apiKey: 'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE',
-        appName: '[DEFAULT]'
-      }
-
-      const DB_NAME = 'firebaseLocalStorageDb'
-      const STORE_NAME = 'firebaseLocalStorage'
-      const KEY = `firebase:authUser:${MOCK_USER_DATA.apiKey}:${MOCK_USER_DATA.appName}`
-
-      return new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME)
-        request.onerror = () => reject(request.error)
-        request.onupgradeneeded = () => {
-          const db = request.result
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.createObjectStore(STORE_NAME)
-          }
+    await seedFirebaseAuthUser(this.page, this.appUrl, {
+      uid: 'test-user-e2e',
+      email: 'e2e@test.comfy.org',
+      displayName: 'E2E Test User',
+      emailVerified: true,
+      isAnonymous: false,
+      providerData: [
+        {
+          providerId: 'google.com',
+          uid: 'test-user-e2e',
+          displayName: 'E2E Test User',
+          email: 'e2e@test.comfy.org',
+          phoneNumber: null,
+          photoURL: null
         }
-        request.onsuccess = () => {
-          const db = request.result
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.close()
-            const upgradeReq = indexedDB.open(DB_NAME, db.version + 1)
-            upgradeReq.onerror = () => reject(upgradeReq.error)
-            upgradeReq.onupgradeneeded = () => {
-              const upgradedDb = upgradeReq.result
-              if (!upgradedDb.objectStoreNames.contains(STORE_NAME)) {
-                upgradedDb.createObjectStore(STORE_NAME)
-              }
-            }
-            upgradeReq.onsuccess = () => {
-              const upgradedDb = upgradeReq.result
-              const tx = upgradedDb.transaction(STORE_NAME, 'readwrite')
-              tx.objectStore(STORE_NAME).put(
-                { fpiVersion: '1', value: MOCK_USER_DATA },
-                KEY
-              )
-              tx.oncomplete = () => {
-                upgradedDb.close()
-                resolve()
-              }
-              tx.onerror = () => reject(tx.error)
-            }
-            return
-          }
-          const tx = db.transaction(STORE_NAME, 'readwrite')
-          tx.objectStore(STORE_NAME).put(
-            { fpiVersion: '1', value: MOCK_USER_DATA },
-            KEY
-          )
-          tx.oncomplete = () => {
-            db.close()
-            resolve()
-          }
-          tx.onerror = () => reject(tx.error)
-        }
-      })
+      ],
+      stsTokenManager: {
+        refreshToken: 'mock-refresh-token',
+        accessToken: 'mock-firebase-id-token',
+        expirationTime: Date.now() + 60 * 60 * 1000
+      },
+      apiKey: FIREBASE_WEB_API_KEY,
+      appName: FIREBASE_APP_NAME
     })
   }
 
