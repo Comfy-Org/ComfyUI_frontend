@@ -38,6 +38,10 @@ export interface Member {
   // protections and Team-to-personal downgrade eligibility.
   // Optional: the cloud OpenAPI does not carry this field yet.
   is_original_owner?: boolean
+  // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
+  // neither usage nor limit yet; persistence and real usage land in FE-1278.
+  credits_used_this_month?: number
+  monthly_credit_limit?: number | null
 }
 
 interface PaginationInfo {
