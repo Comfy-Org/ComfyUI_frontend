@@ -180,19 +180,16 @@
                   {{ recentJobMeta(job) }}
                 </span>
               </span>
+              <!-- Thumbnail only when the run produced one; no empty tile. -->
               <span
+                v-if="jobThumbnail(job)"
                 class="relative flex size-[41px] shrink-0 items-center justify-center overflow-clip rounded-lg bg-comfy-menu-bg outline-1 outline-base-foreground/10"
               >
                 <img
-                  v-if="jobThumbnail(job)"
                   :src="jobThumbnail(job)!.previewUrl"
                   alt=""
                   loading="lazy"
                   class="size-full object-cover"
-                />
-                <i
-                  v-else
-                  class="icon-[lucide--file] size-4 text-muted-foreground"
                 />
                 <i
                   v-if="jobThumbnail(job)?.isVideo"
