@@ -3050,6 +3050,38 @@
       "personal": "Pessoal"
     }
   },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "Cada geração e importação fica em Assets de Mídia. Abra a qualquer momento para navegar, baixar ou reutilizar trabalhos anteriores.",
+        "title": "Encontre todos os seus assets"
+      },
+      "inputs": {
+        "body": "Adicione o que você deseja trabalhar. Suas entradas são o que o app transforma em resultados.",
+        "title": "Adicione suas entradas"
+      },
+      "landing": {
+        "body": "Um tour rápido pelos essenciais, em cerca de um minuto. Vamos mostrar onde adicionar entradas, executar seu app e encontrar seus resultados.",
+        "primary": "Iniciar tutorial",
+        "title": "Bem-vindo aos Apps"
+      },
+      "outputs": {
+        "body": "Seus resultados finais aparecem aqui no centro. Baixe-os ou ajuste uma entrada e execute novamente.",
+        "title": "Veja seus resultados"
+      },
+      "replay": "Fazer um tour pelo Modo App",
+      "run": {
+        "body": "Satisfeito com suas entradas? Clique em Executar e seu resultado aparecerá no centro assim que estiver pronto.",
+        "title": "Execute seu app"
+      }
+    },
+    "back": "Voltar",
+    "done": "Concluir",
+    "loadError": "Algo deu errado ao exibir este tour",
+    "next": "Próximo",
+    "skip": "Pular",
+    "stepLabel": "Etapa {current} de {total}"
+  },
   "openSharedWorkflow": {
     "author": "Autor:",
     "copyAssetsAndOpen": "Importar ativos e abrir fluxo de trabalho",
@@ -4330,6 +4362,9 @@
     "title": "Aviso de Compatibilidade de Versão",
     "updateFrontend": "Atualizar Frontend"
   },
+  "videoEdit": {
+    "adjustCrop": "Ajustar região de corte"
+  },
   "vueNodesBanner": {
     "desc": "– Fluxos de trabalho mais flexíveis, novos widgets poderosos, feito para extensibilidade",
     "title": "Apresentando Nodes 2.0",
@@ -4436,9 +4471,7 @@
         "lastActivity": "Última atividade",
         "partnerNodeUsed": "Nó parceiro utilizado",
         "totalCreditsUsed": "Total de créditos usados"
-      },
-      "perUserHint": "Procurando o uso total por usuário?",
-      "seeMembers": "Ver membros"
+      }
     },
     "billingStatus": {
       "ending": {

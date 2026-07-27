@@ -3050,6 +3050,38 @@
       "personal": "個人"
     }
   },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "すべての生成物やインポートは「メディアアセット」に保存されます。いつでも開いて、閲覧・ダウンロード・再利用ができます。",
+        "title": "すべてのアセットを探す"
+      },
+      "inputs": {
+        "body": "作業したい内容を追加しましょう。入力がアプリによって結果に変換されます。",
+        "title": "入力を追加"
+      },
+      "landing": {
+        "body": "約1分で基本を素早くご案内します。入力の追加方法、アプリの実行、結果の確認場所をご紹介します。",
+        "primary": "チュートリアルを開始",
+        "title": "Appsへようこそ"
+      },
+      "outputs": {
+        "body": "完成した結果は中央に表示されます。ダウンロードしたり、入力を調整して再実行も可能です。",
+        "title": "結果を取得"
+      },
+      "replay": "アプリモードのツアーを見る",
+      "run": {
+        "body": "入力に満足したら「実行」を押してください。準備ができ次第、中央に結果が表示されます。",
+        "title": "アプリを実行"
+      }
+    },
+    "back": "戻る",
+    "done": "完了",
+    "loadError": "このツアーの表示中に問題が発生しました",
+    "next": "次へ",
+    "skip": "スキップ",
+    "stepLabel": "ステップ {current} / {total}"
+  },
   "openSharedWorkflow": {
     "author": "作成者：",
     "copyAssetsAndOpen": "アセットをインポートしてワークフローを開く",
@@ -4318,6 +4350,9 @@
     "title": "バージョン互換性の警告",
     "updateFrontend": "フロントエンドを更新"
   },
+  "videoEdit": {
+    "adjustCrop": "クロップ領域を調整"
+  },
   "vueNodesBanner": {
     "desc": "– より柔軟なワークフロー、強力な新ウィジェット、拡張性を重視",
     "title": "Nodes 2.0 のご紹介",
@@ -4424,9 +4459,7 @@
         "lastActivity": "最終アクティビティ",
         "partnerNodeUsed": "パートナーノード使用",
         "totalCreditsUsed": "合計クレジット使用量"
-      },
-      "perUserHint": "ユーザーごとの合計使用量をお探しですか？",
-      "seeMembers": "メンバーを見る"
+      }
     },
     "billingStatus": {
       "ending": {

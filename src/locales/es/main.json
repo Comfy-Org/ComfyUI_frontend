@@ -3050,6 +3050,38 @@
       "personal": "Personal"
     }
   },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "Cada generación e importación vive en Recursos Multimedia. Ábrelo en cualquier momento para explorar, descargar o reutilizar trabajos anteriores.",
+        "title": "Encuentra todos tus recursos"
+      },
+      "inputs": {
+        "body": "Agrega con qué quieres trabajar. Tus entradas son lo que la app convierte en resultados.",
+        "title": "Agrega tus entradas"
+      },
+      "landing": {
+        "body": "Un recorrido rápido por lo esencial, en aproximadamente un minuto. Te mostraremos dónde agregar entradas, ejecutar tu app y encontrar tus resultados.",
+        "primary": "Iniciar tutorial",
+        "title": "Bienvenido a Apps"
+      },
+      "outputs": {
+        "body": "Tus resultados finales aparecerán aquí en el centro. Descárgalos, o ajusta una entrada y ejecuta de nuevo.",
+        "title": "Obtén tus resultados"
+      },
+      "replay": "Haz un recorrido por el Modo App",
+      "run": {
+        "body": "¿Contento con tus entradas? Pulsa Ejecutar y tu resultado aparecerá en el centro en cuanto esté listo.",
+        "title": "Ejecuta tu app"
+      }
+    },
+    "back": "Atrás",
+    "done": "Listo",
+    "loadError": "Algo salió mal al mostrar este recorrido",
+    "next": "Siguiente",
+    "skip": "Saltar",
+    "stepLabel": "Paso {current} de {total}"
+  },
   "openSharedWorkflow": {
     "author": "Autor:",
     "copyAssetsAndOpen": "Importar recursos y abrir flujo de trabajo",
@@ -4318,6 +4350,9 @@
     "title": "Advertencia de compatibilidad de versión",
     "updateFrontend": "Actualizar frontend"
   },
+  "videoEdit": {
+    "adjustCrop": "Ajustar región de recorte"
+  },
   "vueNodesBanner": {
     "desc": "– Flujos de trabajo más flexibles, nuevos widgets potentes, diseñado para la extensibilidad",
     "title": "Presentamos Nodes 2.0",
@@ -4424,9 +4459,7 @@
         "lastActivity": "Última actividad",
         "partnerNodeUsed": "Nodo de socio usado",
         "totalCreditsUsed": "Total de créditos usados"
-      },
-      "perUserHint": "¿Buscas el uso total por usuario?",
-      "seeMembers": "Ver miembros"
+      }
     },
     "billingStatus": {
       "ending": {

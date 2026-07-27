@@ -3050,6 +3050,38 @@
       "personal": "個人"
     }
   },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "每次生成和匯入的內容都會儲存在媒體資產中。隨時開啟以瀏覽、下載或重複使用過去的作品。",
+        "title": "找到所有媒體資產"
+      },
+      "inputs": {
+        "body": "新增您想處理的內容。您的輸入將由應用程式轉換為結果。",
+        "title": "新增您的輸入"
+      },
+      "landing": {
+        "body": "快速導覽重點，只需約一分鐘。我們會介紹如何新增輸入、執行應用程式，以及在哪裡找到結果。",
+        "primary": "開始教學",
+        "title": "歡迎使用應用程式"
+      },
+      "outputs": {
+        "body": "完成的結果會顯示在中央。您可以下載，或調整輸入後再次執行。",
+        "title": "取得您的結果"
+      },
+      "replay": "重新導覽應用程式模式",
+      "run": {
+        "body": "對輸入滿意了嗎？點擊執行，結果準備好時會顯示在中央。",
+        "title": "執行您的應用程式"
+      }
+    },
+    "back": "上一步",
+    "done": "完成",
+    "loadError": "導覽顯示時發生錯誤",
+    "next": "下一步",
+    "skip": "跳過",
+    "stepLabel": "步驟 {current} / {total}"
+  },
   "openSharedWorkflow": {
     "author": "作者：",
     "copyAssetsAndOpen": "匯入資產並開啟工作流程",
@@ -4318,6 +4350,9 @@
     "title": "版本相容性警告",
     "updateFrontend": "更新前端"
   },
+  "videoEdit": {
+    "adjustCrop": "調整裁剪區域"
+  },
   "vueNodesBanner": {
     "desc": "– 更靈活的工作流程、強大的新元件、專為擴充性打造",
     "title": "全新 Nodes 2.0 上線",
@@ -4424,9 +4459,7 @@
         "lastActivity": "最近活動",
         "partnerNodeUsed": "已使用合作夥伴節點",
         "totalCreditsUsed": "已用總點數"
-      },
-      "perUserHint": "想查看每位使用者的總用量？",
-      "seeMembers": "查看成員"
+      }
     },
     "billingStatus": {
       "ending": {

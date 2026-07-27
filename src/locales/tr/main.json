@@ -3050,6 +3050,38 @@
       "personal": "Kişisel"
     }
   },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "Her oluşturulan ve içe aktarılan içerik Medya Varlıkları'nda saklanır. Geçmiş çalışmalarınızı gözden geçirmek, indirmek veya yeniden kullanmak için istediğiniz zaman açabilirsiniz.",
+        "title": "Tüm varlıklarınızı bulun"
+      },
+      "inputs": {
+        "body": "Üzerinde çalışmak istediğiniz şeyleri ekleyin. Girdileriniz, uygulamanın sonuçlara dönüştürdüğü şeylerdir.",
+        "title": "Girdilerinizi ekleyin"
+      },
+      "landing": {
+        "body": "Temel bilgilerin hızlı bir turu, yaklaşık bir dakika sürecek. Girdileri nereden ekleyeceğinizi, uygulamanızı nasıl çalıştıracağınızı ve sonuçlarınızı nerede bulacağınızı göstereceğiz.",
+        "primary": "Eğitimi başlat",
+        "title": "Uygulamalara Hoş Geldiniz"
+      },
+      "outputs": {
+        "body": "Tamamlanan sonuçlarınız burada, ortada görüntülenir. İndirebilir veya bir girdiyi değiştirip tekrar çalıştırabilirsiniz.",
+        "title": "Sonuçlarınızı alın"
+      },
+      "replay": "Uygulama Modu turuna katıl",
+      "run": {
+        "body": "Girdilerinizden memnun musunuz? Çalıştır'a basın ve sonuç hazır olduğunda ortada belirsin.",
+        "title": "Uygulamanızı çalıştırın"
+      }
+    },
+    "back": "Geri",
+    "done": "Bitti",
+    "loadError": "Bu tur gösterilirken bir hata oluştu",
+    "next": "İleri",
+    "skip": "Atla",
+    "stepLabel": "Adım {current} / {total}"
+  },
   "openSharedWorkflow": {
     "author": "Yazar:",
     "copyAssetsAndOpen": "Varlıkları içe aktar ve iş akışını aç",
@@ -4318,6 +4350,9 @@
     "title": "Sürüm Uyumluluk Uyarısı",
     "updateFrontend": "Ön Ucu Güncelle"
   },
+  "videoEdit": {
+    "adjustCrop": "Kırpma bölgesini ayarla"
+  },
   "vueNodesBanner": {
     "desc": "– Daha esnek iş akışları, güçlü yeni bileşenler, genişletilebilirlik için tasarlandı",
     "title": "Nodes 2.0 Tanıtıldı",
@@ -4424,9 +4459,7 @@
         "lastActivity": "Son etkinlik",
         "partnerNodeUsed": "Kullanılan partner node",
         "totalCreditsUsed": "Toplam kullanılan kredi"
-      },
-      "perUserHint": "Kullanıcı başına toplam kullanım mı arıyorsunuz?",
-      "seeMembers": "Üyeleri Gör"
+      }
     },
     "billingStatus": {
       "ending": {

@@ -3050,6 +3050,38 @@
       "personal": "个人"
     }
   },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "每次生成和导入的内容都保存在媒体资源中。随时打开浏览、下载或复用以往作品。",
+        "title": "查找所有资源"
+      },
+      "inputs": {
+        "body": "添加你想处理的内容。你的输入将由应用生成结果。",
+        "title": "添加你的输入"
+      },
+      "landing": {
+        "body": "一分钟快速了解核心功能。我们将向你展示如何添加输入、运行应用以及查找结果。",
+        "primary": "开始教程",
+        "title": "欢迎来到应用"
+      },
+      "outputs": {
+        "body": "最终结果会显示在中央。你可以下载，或调整输入后再次运行。",
+        "title": "获取你的结果"
+      },
+      "replay": "体验应用模式导览",
+      "run": {
+        "body": "对输入满意了吗？点击运行，结果准备好后会立即显示在中央。",
+        "title": "运行你的应用"
+      }
+    },
+    "back": "上一步",
+    "done": "完成",
+    "loadError": "显示此引导时出现问题",
+    "next": "下一步",
+    "skip": "跳过",
+    "stepLabel": "第 {current} 步，共 {total} 步"
+  },
   "openSharedWorkflow": {
     "author": "作者：",
     "copyAssetsAndOpen": "导入资源并打开工作流",
@@ -4330,6 +4362,9 @@
     "title": "版本相容性警告",
     "updateFrontend": "更新前端"
   },
+  "videoEdit": {
+    "adjustCrop": "调整裁剪区域"
+  },
   "vueNodesBanner": {
     "desc": "– 更灵活的工作流，强力的新组件，为拓展性而生",
     "title": "介绍 Nodes 2.0",
@@ -4436,9 +4471,7 @@
         "lastActivity": "最近活动",
         "partnerNodeUsed": "已使用合作节点",
         "totalCreditsUsed": "已用总积分"
-      },
-      "perUserHint": "想查看每位用户的总使用量？",
-      "seeMembers": "查看成员"
+      }
     },
     "billingStatus": {
       "ending": {

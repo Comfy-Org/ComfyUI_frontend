@@ -3050,6 +3050,38 @@
       "personal": "Personnel"
     }
   },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "Chaque génération et importation se trouve dans Médias. Ouvrez-le à tout moment pour parcourir, télécharger ou réutiliser vos travaux précédents.",
+        "title": "Retrouvez tous vos médias"
+      },
+      "inputs": {
+        "body": "Ajoutez ce avec quoi vous souhaitez travailler. Vos entrées sont ce que l'application transforme en résultats.",
+        "title": "Ajoutez vos entrées"
+      },
+      "landing": {
+        "body": "Une visite rapide des éléments essentiels, en environ une minute. Nous vous montrerons où ajouter des entrées, lancer votre application et retrouver vos résultats.",
+        "primary": "Commencer le tutoriel",
+        "title": "Bienvenue dans Apps"
+      },
+      "outputs": {
+        "body": "Vos résultats finaux s'affichent ici au centre. Téléchargez-les, ou modifiez une entrée et relancez.",
+        "title": "Obtenez vos résultats"
+      },
+      "replay": "Faire une visite du mode Application",
+      "run": {
+        "body": "Satisfait de vos entrées ? Cliquez sur Lancer et votre résultat apparaîtra au centre dès qu'il sera prêt.",
+        "title": "Lancez votre application"
+      }
+    },
+    "back": "Précédent",
+    "done": "Terminé",
+    "loadError": "Une erreur est survenue lors de l'affichage de ce tutoriel",
+    "next": "Suivant",
+    "skip": "Passer",
+    "stepLabel": "Étape {current} sur {total}"
+  },
   "openSharedWorkflow": {
     "author": "Auteur :",
     "copyAssetsAndOpen": "Importer les ressources et ouvrir le workflow",
@@ -4318,6 +4350,9 @@
     "title": "Avertissement de compatibilité de version",
     "updateFrontend": "Mettre à jour le frontend"
   },
+  "videoEdit": {
+    "adjustCrop": "Ajuster la zone de recadrage"
+  },
   "vueNodesBanner": {
     "desc": "– Flux de travail plus flexibles, nouveaux widgets puissants, conçu pour l’extensibilité",
     "title": "Présentation de Nodes 2.0",
@@ -4424,9 +4459,7 @@
         "lastActivity": "Dernière activité",
         "partnerNodeUsed": "Nœud partenaire utilisé",
         "totalCreditsUsed": "Total de crédits utilisés"
-      },
-      "perUserHint": "Vous cherchez l'utilisation totale par utilisateur ?",
-      "seeMembers": "Voir les membres"
+      }
     },
     "billingStatus": {
       "ending": {
