@@ -70,8 +70,20 @@ PR #13389: those two captures are historical and re-running the break now names
 a node from a currently installed pack instead. Row 11 names SplineEditor, since
 ledgered in `GEOMETRY_UNSTABLE_NODES` and excluded from measurement, so that
 capture is historical too; the geometry tier's live coverage is the remaining
-baselined nodes. Sections refer to
-[ARCHITECTURE.md](ARCHITECTURE.md).
+baselined nodes.
+
+Rows 12 and 13 were captured on isolated branches off the shipped suite state
+rather than here, because several breaks in this PR collide: rows 4 and 5
+sabotage connection validity and slot hit-testing, so an autogrow red taken in
+this PR could not be attributed to row 13's break. That isolation is also why
+row 13's exact red is not reproducible from THIS PR's HEAD - verified in run
+30297797189, the dynamic-inputs tier does red here, but at an earlier
+precondition (`consumer instantiates with at least one input`) because row 1's
+break leaves the consumer with zero inputs. The tier and the failure class are
+the promise; row 13's message is the capture from its own break, alone. Row 12
+does reproduce here verbatim (8 occurrences in that same run).
+
+Sections refer to [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | #   | Surface (ARCH section)                           | Mode | Real regression it recreates                                                                                                                                                                                                       | The one-file break                                                                                                                                                                                                                                                   | CI check that catches it                   | Exact red                                                                                                                                                             |
 | --- | ------------------------------------------------ | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
