@@ -13,11 +13,13 @@ import type { LLink } from '@/lib/litegraph/src/LLink'
 import { commonType } from '@/lib/litegraph/src/utils/type'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
   zAutogrowOptions,
   zDynamicComboInputSpec,
+  zDynamicGroupInputSpec,
   zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -27,6 +29,18 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 
 const INLINE_INPUTS = false
+
+type DynamicGroupState = {
+  min: number
+  max: number
+  groupName?: string
+  inputSpecs: InputSpecV2[]
+  addRow: () => void
+  removeRow: (row: number) => void
+}
+export type DynamicGroupNode = LGraphNode & {
+  comfyDynamic: { dynamicGroup: Record<string, DynamicGroupState> }
+}
 
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
@@ -214,7 +228,254 @@ function dynamicComboWidget(
   return { widget, minWidth, minHeight }
 }
 
-export const dynamicWidgets = { COMFY_DYNAMICCOMBO_V3: dynamicComboWidget }
+function withComfyDynamicGroup(
+  node: LGraphNode
+): asserts node is DynamicGroupNode {
+  if (node.comfyDynamic?.dynamicGroup) return
+  node.comfyDynamic ??= {}
+  node.comfyDynamic.dynamicGroup = {}
+}
+
+const fieldName = (group: string, row: number, field: string) =>
+  `${group}.${row}.${field}`
+
+/** Rename a field that sits above the removed row, shifting its index down. */
+function shiftedFieldName(
+  group: string,
+  name: string,
+  removedRow: number
+): string | undefined {
+  const prefix = `${group}.`
+  if (!name.startsWith(prefix)) return undefined
+  const rest = name.slice(prefix.length)
+  const dot = rest.indexOf('.')
+  if (dot === -1) return undefined
+  const row = Number(rest.slice(0, dot))
+  if (!Number.isInteger(row) || row <= removedRow) return undefined
+  return fieldName(group, row - 1, rest.slice(dot + 1))
+}
+
+const isGroupField = (group: string, name: string) =>
+  name.startsWith(`${group}.`)
+
+const belongsToRow = (group: string, name: string, row: number): boolean =>
+  name.startsWith(`${group}.${row}.`)
+
+function rowIndexOf(group: string, name: string): number | undefined {
+  if (!isGroupField(group, name)) return undefined
+  const rest = name.slice(group.length + 1)
+  const dot = rest.indexOf('.')
+  if (dot === -1) return undefined
+  const row = Number(rest.slice(0, dot))
+  return Number.isInteger(row) ? row : undefined
+}
+
+/**
+ * Counts distinct rows in the group. Fields may be backed by a widget, an input
+ * socket, or both, so both collections are scanned to keep the count accurate
+ * for socket-only field types (e.g. IMAGE).
+ */
+function countGroupRows(group: string, node: LGraphNode): number {
+  const rows = new Set<number>()
+  for (const w of node.widgets ?? []) {
+    const row = rowIndexOf(group, w.name)
+    if (row !== undefined) rows.add(row)
+  }
+  for (const input of node.inputs) {
+    const row = rowIndexOf(group, input.name)
+    if (row !== undefined) rows.add(row)
+  }
+  return rows.size
+}
+
+/** Build field widgets for a single row, returning them detached from the node. */
+function createRow(
+  group: string,
+  row: number,
+  state: DynamicGroupState,
+  node: DynamicGroupNode
+): IBaseWidget[] {
+  const { addNodeInput } = useLitegraphService()
+  const startLen = node.widgets!.length
+
+  for (const spec of state.inputSpecs)
+    addNodeInput(node, {
+      ...spec,
+      name: fieldName(group, row, spec.name),
+      display_name: spec.display_name ?? spec.name,
+      hidden: true,
+      socketless: true
+    })
+
+  return node.widgets!.splice(startLen)
+}
+
+function insertRowAfterGroup(
+  group: string,
+  node: LGraphNode,
+  rowWidgets: IBaseWidget[]
+): void {
+  const lastIdx = node.widgets!.findLastIndex(
+    (w) => w.name === group || isGroupField(group, w.name)
+  )
+  node.widgets!.splice(lastIdx + 1, 0, ...rowWidgets)
+}
+
+function removeGroupInputs(
+  node: DynamicGroupNode,
+  predicate: (name: string) => boolean
+): void {
+  for (let i = node.inputs.length - 1; i >= 0; i--) {
+    if (predicate(node.inputs[i].name)) node.removeInput(i)
+  }
+}
+
+function syncController(group: string, node: DynamicGroupNode): void {
+  const state = node.comfyDynamic.dynamicGroup[group]
+  const controller = node.widgets?.find((w) => w.name === group)
+  if (!state || !controller) return
+  controller.options ??= {}
+  controller.options.disabled = countGroupRows(group, node) >= state.max
+  // Route through setSize (not `size[1] = …`) so the layout store and the Vue
+  // node's min-height floor are updated; a direct buffer write bypasses the
+  // size setter and leaves the node unable to shrink after rows are removed.
+  node.setSize([node.size[0], node.computeSize()[1]])
+}
+
+function addRow(group: string, node: DynamicGroupNode): void {
+  const state = node.comfyDynamic.dynamicGroup[group]
+  if (!state) return
+  node.widgets ??= []
+  const row = countGroupRows(group, node)
+  if (row >= state.max) return
+  insertRowAfterGroup(group, node, createRow(group, row, state, node))
+  syncController(group, node)
+  app.canvas?.setDirty(true, true)
+}
+
+function removeRow(group: string, row: number, node: DynamicGroupNode): void {
+  const state = node.comfyDynamic.dynamicGroup[group]
+  if (!state || countGroupRows(group, node) <= state.min) return
+
+  const store = useWidgetValueStore()
+  const graphId = resolveNodeRootGraphId(node)
+  const keyFor = (name: string) =>
+    graphId ? widgetId(graphId, node.id, name) : undefined
+
+  for (const w of remove(node.widgets!, (w) =>
+    belongsToRow(group, w.name, row)
+  )) {
+    w.onRemove?.()
+    const key = keyFor(w.name)
+    if (key) store.deleteWidget(key)
+  }
+  removeGroupInputs(node, (name) => belongsToRow(group, name, row))
+
+  for (const w of node.widgets ?? []) {
+    const shifted = shiftedFieldName(group, w.name, row)
+    if (shifted === undefined) continue
+    const from = keyFor(w.name)
+    const to = keyFor(shifted)
+    if (from && to) store.renameWidget(from, to)
+    w.name = shifted
+  }
+  for (const inp of node.inputs) {
+    const shifted = shiftedFieldName(group, inp.name, row)
+    if (shifted === undefined) continue
+    inp.name = shifted
+    if (inp.widget) inp.widget.name = shifted
+  }
+
+  syncController(group, node)
+  app.canvas?.setDirty(true, true)
+}
+
+/** Rebuild the group from scratch to hold exactly `count` rows. */
+function rebuildRows(group: string, count: number, node: DynamicGroupNode) {
+  const state = node.comfyDynamic.dynamicGroup[group]
+  if (!state) return
+  node.widgets ??= []
+
+  const isRowMember = (name: string) => isGroupField(group, name)
+  for (const w of remove(node.widgets, (w) => isRowMember(w.name)))
+    w.onRemove?.()
+  removeGroupInputs(node, isRowMember)
+
+  const insertAt = node.widgets.findIndex((w) => w.name === group) + 1
+  const rowWidgets: IBaseWidget[] = []
+  for (let row = 0; row < count; row++)
+    rowWidgets.push(...createRow(group, row, state, node))
+  node.widgets.splice(insertAt, 0, ...rowWidgets)
+}
+
+function dynamicGroupWidget(
+  node: LGraphNode,
+  inputName: string,
+  untypedInputData: InputSpec,
+  _appArg: ComfyApp
+) {
+  const parseResult = zDynamicGroupInputSpec.safeParse(untypedInputData)
+  if (!parseResult.success) throw new Error('invalid DynamicGroup spec')
+  const [, { template, min, max, group_name: groupName }] = parseResult.data
+
+  const toSpecs = (
+    inputs: Record<string, InputSpec> | undefined,
+    isOptional: boolean
+  ) =>
+    Object.entries(inputs ?? {}).map(([name, spec]) =>
+      transformInputSpecV1ToV2(spec, { name, isOptional })
+    )
+  const inputSpecs = [
+    ...toSpecs(template.required, false),
+    ...toSpecs(template.optional, true)
+  ]
+
+  withComfyDynamicGroup(node)
+  const typedNode = node as DynamicGroupNode
+  typedNode.comfyDynamic.dynamicGroup[inputName] = {
+    min,
+    max,
+    groupName,
+    inputSpecs,
+    addRow: () => addRow(inputName, typedNode),
+    removeRow: (row: number) => removeRow(inputName, row, typedNode)
+  }
+
+  node.widgets ??= []
+  const controller = node.addCustomWidget({
+    name: inputName,
+    type: 'dynamic_group',
+    value: min,
+    y: 0,
+    serialize: true,
+    callback: () => addRow(inputName, typedNode),
+    options: { socketless: true, disabled: false, min, max }
+  })
+
+  Object.defineProperty(controller, 'value', {
+    get() {
+      return countGroupRows(inputName, typedNode)
+    },
+    set(count: unknown) {
+      if (typeof count !== 'number') return
+      const state = typedNode.comfyDynamic.dynamicGroup[inputName]
+      if (!state) return
+      const clamped = Math.min(Math.max(count, state.min), state.max)
+      rebuildRows(inputName, clamped, typedNode)
+      syncController(inputName, typedNode)
+    },
+    configurable: true
+  })
+
+  controller.value = min
+
+  return { widget: controller }
+}
+
+export const dynamicWidgets = {
+  COMFY_DYNAMICCOMBO_V3: dynamicComboWidget,
+  COMFY_DYNAMICGROUP_V3: dynamicGroupWidget
+}
 const dynamicInputs: Record<
   string,
   (node: LGraphNode, inputSpec: InputSpecV2) => void

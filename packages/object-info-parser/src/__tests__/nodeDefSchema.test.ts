@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { validateComfyNodeDef } from '../schemas/nodeDefSchema'
+import {
+  validateComfyNodeDef,
+  zDynamicGroupInputSpec
+} from '../schemas/nodeDefSchema'
 import type { ComfyNodeDef } from '../schemas/nodeDefSchema'
 
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {
@@ -63,5 +66,44 @@ describe('validateNodeDef', () => {
         })
       ).toBeNull()
     })
+  })
+})
+
+describe('zDynamicGroupInputSpec', () => {
+  const template = { required: { a: ['STRING', {}] } }
+
+  it('rejects min greater than max', () => {
+    expect(
+      zDynamicGroupInputSpec.safeParse([
+        'COMFY_DYNAMICGROUP_V3',
+        { template, min: 60, max: 50 }
+      ]).success
+    ).toBe(false)
+  })
+
+  it('accepts min equal to max', () => {
+    expect(
+      zDynamicGroupInputSpec.safeParse([
+        'COMFY_DYNAMICGROUP_V3',
+        { template, min: 3, max: 3 }
+      ]).success
+    ).toBe(true)
+  })
+
+  it('applies default min and max', () => {
+    const parsed = zDynamicGroupInputSpec.parse([
+      'COMFY_DYNAMICGROUP_V3',
+      { template }
+    ])
+    expect(parsed[1].min).toBe(0)
+    expect(parsed[1].max).toBe(50)
+  })
+
+  it('accepts an optional group_name', () => {
+    const parsed = zDynamicGroupInputSpec.parse([
+      'COMFY_DYNAMICGROUP_V3',
+      { template, group_name: 'Lora' }
+    ])
+    expect(parsed[1].group_name).toBe('Lora')
   })
 })
