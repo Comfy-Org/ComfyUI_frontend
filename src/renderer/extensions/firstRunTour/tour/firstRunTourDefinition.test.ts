@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   clearCoachmarks,
@@ -46,7 +47,7 @@ vi.mock('@/scripts/app', () => ({
       return appState.graph
         ? {
             graph: appState.graph,
-            ds: { offset: [0, 0], scale: 1 },
+            ds: new DragAndScale(document.createElement('canvas')),
             canvas: { getBoundingClientRect: () => new DOMRect(0, 0, 800, 600) }
           }
         : undefined
