@@ -29,8 +29,16 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
-import type { WorkflowOpenSource } from '@/platform/telemetry/types'
+import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
+import type {
+  ExecutionContext,
+  WorkflowExecutionContext,
+  WorkflowOpenSource,
+  WorkflowQueueIntent,
+  WorkflowQueuedMetadata
+} from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -114,6 +122,7 @@ import {
   verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
 
+import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import {
   collectAllNodes,
@@ -238,6 +247,7 @@ export class ComfyApp {
     batchCount: number
     requestId: number
     queueNodeIds?: NodeExecutionId[]
+    workflowQueueIntent?: WorkflowQueueIntent
   }[] = []
   private nextQueueRequestId = 1
   /**
@@ -1627,10 +1637,17 @@ export class ComfyApp {
   async queuePrompt(
     number: number,
     batchCount: number = 1,
-    queueNodeIds?: NodeExecutionId[]
+    queueNodeIds?: NodeExecutionId[],
+    workflowQueueIntent?: WorkflowQueueIntent
   ): Promise<boolean> {
     const requestId = this.nextQueueRequestId++
-    this.queueItems.push({ number, batchCount, queueNodeIds, requestId })
+    this.queueItems.push({
+      number,
+      batchCount,
+      queueNodeIds,
+      requestId,
+      workflowQueueIntent
+    })
     api.dispatchCustomEvent('promptQueueing', {
       requestId,
       batchCount
@@ -1644,6 +1661,7 @@ export class ComfyApp {
     this.processingQueue = true
     const executionStore = useExecutionStore()
     const executionErrorStore = useExecutionErrorStore()
+    const telemetry = useTelemetry()
     executionErrorStore.clearAllErrors()
     let queueResultOverride: boolean | null = null
 
@@ -1653,18 +1671,37 @@ export class ComfyApp {
 
     try {
       while (this.queueItems.length) {
-        const { number, batchCount, queueNodeIds, requestId } =
-          this.queueItems.pop()!
+        const {
+          number,
+          batchCount,
+          queueNodeIds,
+          requestId,
+          workflowQueueIntent
+        } = this.queueItems.pop()!
         let queuedCount = 0
+        let workflowQueuedMetadata: WorkflowQueuedMetadata | undefined
         const previewMethod = useSettingStore().get(
           'Comfy.Execution.PreviewMethod'
         )
 
         const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
+          const queuedGraph = this.rootGraph
+          const queuedWorkflow = useWorkspaceStore().workflow
+            .activeWorkflow as ComfyWorkflow
+          let executionContext: ExecutionContext | undefined
+          try {
+            executionContext = getExecutionContext()
+          } catch (error) {
+            console.error(
+              '[Telemetry] Workflow context collection failed',
+              error
+            )
+          }
+
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
-          forEachNode(this.rootGraph, (node) => {
+          forEachNode(queuedGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
@@ -1673,13 +1710,17 @@ export class ComfyApp {
             })
           })
 
-          // Capture workflow before await — activeWorkflow may change if the
-          // user switches tabs while the request is in flight.
-          const queuedWorkflow = useWorkspaceStore().workflow
-            .activeWorkflow as ComfyWorkflow
           const startTime = performance.now()
-          const p = await this.graphToPrompt(this.rootGraph)
-          const queuedNodes = collectAllNodes(this.rootGraph)
+          const p = await this.graphToPrompt(queuedGraph)
+          const queuedNodes = collectAllNodes(queuedGraph)
+          let workflowContext: WorkflowExecutionContext | undefined
+          if (executionContext) {
+            workflowContext = toWorkflowExecutionContext(executionContext, {
+              executableNodeCount: Object.keys(p.output).length,
+              executionScope: isPartialExecution ? 'partial' : 'full',
+              viewMode: getWorkflowMode(queuedWorkflow)
+            })
+          }
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
@@ -1689,6 +1730,16 @@ export class ComfyApp {
             })
             delete api.authToken
             delete api.apiKey
+            if (workflowContext && !workflowQueuedMetadata) {
+              workflowQueuedMetadata = {
+                ...workflowContext,
+                ...(workflowQueueIntent?.trigger_source && {
+                  trigger_source: workflowQueueIntent.trigger_source
+                }),
+                subscribe_to_run: workflowQueueIntent?.subscribe_to_run ?? false
+              }
+              telemetry?.trackWorkflowQueued(workflowQueuedMetadata)
+            }
             executionErrorStore.recordNodeErrors(res.node_errors ?? null)
             queueResultOverride = null
             try {

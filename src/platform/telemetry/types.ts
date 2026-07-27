@@ -193,6 +193,16 @@ export interface WorkflowExecutionContext {
   subgraph_count: number
 }
 
+export interface WorkflowQueueIntent {
+  trigger_source?: ExecutionTriggerSource
+  subscribe_to_run?: boolean
+}
+
+export interface WorkflowQueuedMetadata extends WorkflowExecutionContext {
+  trigger_source?: ExecutionTriggerSource
+  subscribe_to_run: boolean
+}
+
 export interface ExecutionOutcomeMetadata {
   startTime: number
   outcome: 'success' | 'failure'
@@ -680,6 +690,7 @@ export interface TelemetryProvider {
 
   // Workflow execution events
   trackWorkflowExecution?(): void
+  trackWorkflowQueued?(metadata: WorkflowQueuedMetadata): void
   trackExecutionOutcome?(metadata: ExecutionOutcomeMetadata): void
   trackExecutionError?(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void
@@ -841,6 +852,7 @@ export type TelemetryEventProperties =
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
+  | WorkflowQueuedMetadata
   | RunButtonProperties
   | ExecutionErrorMetadata
   | ExecutionSuccessMetadata

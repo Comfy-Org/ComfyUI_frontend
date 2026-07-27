@@ -9,7 +9,7 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { ComfyApp } from './app'
+import { ComfyApp, app as singletonApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
   pasteAudioNode,
@@ -22,6 +22,8 @@ import {
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { setTelemetryRegistry } from '@/platform/telemetry'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -203,7 +205,9 @@ describe('ComfyApp', () => {
         modified: 0,
         size: 0
       })
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
       mockWorkspaceWorkflow.activeWorkflow = workflow
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: {},
@@ -241,6 +245,7 @@ describe('ComfyApp', () => {
         }
       }
       Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
       mockWorkspaceWorkflow.activeWorkflow = workflow
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: promptOutput,
@@ -264,6 +269,72 @@ describe('ComfyApp', () => {
         'workflows/review.json'
       )
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+    })
+
+    it('tracks one workflow queue after the first batch submission succeeds', async () => {
+      prepareEmptyPromptQueue()
+      const trackWorkflowQueued = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackWorkflowQueued })
+      setTelemetryRegistry(registry)
+      vi.spyOn(api, 'queuePrompt')
+        .mockResolvedValueOnce({
+          prompt_id: 'job-1',
+          error: ''
+        })
+        .mockResolvedValueOnce({
+          prompt_id: 'job-2',
+          error: ''
+        })
+
+      try {
+        await app.queuePrompt(0, 2, undefined, {
+          trigger_source: 'button',
+          subscribe_to_run: true
+        })
+
+        expect(trackWorkflowQueued).toHaveBeenCalledExactlyOnceWith({
+          workflow_type: 'custom',
+          view_mode: 'graph',
+          execution_scope: 'full',
+          total_node_count: 0,
+          executable_node_count: 0,
+          custom_node_count: 0,
+          api_node_count: 0,
+          subgraph_count: 0,
+          trigger_source: 'button',
+          subscribe_to_run: true
+        })
+      } finally {
+        setTelemetryRegistry(null)
+      }
+    })
+
+    it('tracks an accepted workflow queue when the queue UI refresh fails', async () => {
+      prepareEmptyPromptQueue()
+      const trackWorkflowQueued = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackWorkflowQueued })
+      setTelemetryRegistry(registry)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+      vi.spyOn(app.ui.queue, 'update').mockRejectedValue(
+        new Error('Queue UI refresh failed')
+      )
+
+      try {
+        await expect(
+          app.queuePrompt(0, 1, undefined, {
+            trigger_source: 'button',
+            subscribe_to_run: true
+          })
+        ).rejects.toThrow('Queue UI refresh failed')
+        expect(trackWorkflowQueued).toHaveBeenCalledOnce()
+      } finally {
+        setTelemetryRegistry(null)
+      }
     })
 
     it('preserves a failed result when prompt errors include an empty node error record', async () => {
