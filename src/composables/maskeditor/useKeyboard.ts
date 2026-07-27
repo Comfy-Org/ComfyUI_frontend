@@ -3,7 +3,6 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 export function useKeyboard() {
   const store = useMaskEditorStore()
-
   const keysDown = ref<string[]>([])
 
   const isKeyDown = (key: string): boolean => {
@@ -29,10 +28,13 @@ export function useKeyboard() {
 
     if ((event.ctrlKey || event.metaKey) && !event.altKey) {
       const key = event.key.toUpperCase()
-
       if ((key === 'Y' && !event.shiftKey) || (key === 'Z' && event.shiftKey)) {
+        event.stopPropagation()
+        event.preventDefault()
         store.canvasHistory.redo()
       } else if (key === 'Z' && !event.shiftKey) {
+        event.stopPropagation()
+        event.preventDefault()
         store.canvasHistory.undo()
       }
     }
