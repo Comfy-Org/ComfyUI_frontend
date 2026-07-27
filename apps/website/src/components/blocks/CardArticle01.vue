@@ -48,7 +48,10 @@ const { item, titleClamp = false } = defineProps<{
         <Badge variant="category">
           {{ item.category }}
         </Badge>
-        <CardTitle class="pt-4" :class="titleClamp ? 'truncate' : undefined">
+        <CardTitle
+          class="pt-4"
+          :class="titleClamp ? 'line-clamp-3' : undefined"
+        >
           {{ item.title }}
         </CardTitle>
         <CardDescription v-if="item.description">
