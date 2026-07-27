@@ -111,7 +111,6 @@ class LayoutStoreImpl implements LayoutStore {
   private ynodes: Y.Map<NodeLayoutMap> // Maps nodeId -> NodeLayoutMap containing NodeLayout data
   private yreroutes: Y.Map<Y.Map<unknown>> // Maps rerouteId -> Y.Map containing reroute data
   private ygroups: Y.Map<GroupLayoutMap> // Maps groupId -> GroupLayoutMap containing GroupLayout data
-  private yoperations: Y.Array<LayoutOperation> // Operation log
 
   // Vue reactivity layer
   private version = ref(0)
@@ -174,7 +173,6 @@ class LayoutStoreImpl implements LayoutStore {
     this.ynodes = this.ydoc.getMap('nodes')
     this.yreroutes = this.ydoc.getMap('reroutes')
     this.ygroups = this.ydoc.getMap('groups')
-    this.yoperations = this.ydoc.getArray('operations')
 
     // Initialize spatial index managers
     this.spatialIndex = new SpatialIndexManager<NodeId>()
@@ -826,10 +824,6 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Use Yjs transaction for atomic updates
     this.ydoc.transact(() => {
-      // Add operation to log
-      this.yoperations.push([operation])
-
-      // Apply the operation
       this.applyOperationInTransaction(operation, change)
     }, this.currentActor)
 
@@ -1331,27 +1325,6 @@ class LayoutStoreImpl implements LayoutStore {
         }
       })
     }
-  }
-
-  // CRDT-specific methods
-  getOperationsSince(timestamp: number): LayoutOperation[] {
-    const operations: LayoutOperation[] = []
-    this.yoperations.forEach((op: LayoutOperation) => {
-      if (op && op.timestamp > timestamp) {
-        operations.push(op)
-      }
-    })
-    return operations
-  }
-
-  getOperationsByActor(actor: string): LayoutOperation[] {
-    const operations: LayoutOperation[] = []
-    this.yoperations.forEach((op: LayoutOperation) => {
-      if (op && op.actor === actor) {
-        operations.push(op)
-      }
-    })
-    return operations
   }
 
   /**

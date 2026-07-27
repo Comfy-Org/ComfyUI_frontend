@@ -22,9 +22,13 @@ import type {
 } from '@/renderer/core/layout/types'
 
 function getOperationsAddedBy(action: () => void): LayoutOperation[] {
-  const operationCount = layoutStore.getOperationsSince(0).length
-  action()
-  return layoutStore.getOperationsSince(0).slice(operationCount)
+  const applySpy = vi.spyOn(layoutStore, 'applyOperation')
+  try {
+    action()
+    return applySpy.mock.calls.map(([operation]) => operation)
+  } finally {
+    applySpy.mockRestore()
+  }
 }
 
 function expectSingleOperation(
@@ -470,45 +474,6 @@ describe('layoutStore CRDT operations', () => {
     expect(nodesInBounds).toContain('node-a')
     expect(nodesInBounds).toContain('node-b')
     expect(nodesInBounds).toContain('node-c')
-  })
-
-  it('should maintain operation history', () => {
-    const nodeId = toNodeId('test-node-history')
-    const layout = createTestNode(nodeId)
-    const startTime = Date.now()
-
-    // Create node
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      nodeId,
-      layout,
-      timestamp: startTime,
-      source: LayoutSource.External,
-      actor: 'test-actor'
-    })
-
-    // Move node
-    layoutStore.applyOperation({
-      type: 'moveNode',
-      entity: 'node',
-      nodeId,
-      position: { x: 150, y: 150 },
-      timestamp: startTime + 100,
-      source: LayoutSource.Vue,
-      actor: 'test-actor'
-    })
-
-    // Get operations by actor
-    const operations = layoutStore.getOperationsByActor('test-actor')
-    expect(operations.length).toBeGreaterThanOrEqual(2)
-    expect(operations[0].type).toBe('createNode')
-    expect(operations[1].type).toBe('moveNode')
-
-    // Get operations since timestamp
-    const recentOps = layoutStore.getOperationsSince(startTime + 50)
-    expect(recentOps.length).toBeGreaterThanOrEqual(1)
-    expect(recentOps[0].type).toBe('moveNode')
   })
 
   it('normalizes DOM-sourced heights before storing', () => {
