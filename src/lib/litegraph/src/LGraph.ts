@@ -502,6 +502,15 @@ export class LGraph
       unregisterAllRerouteChains(this)
       unregisterAllNodeStates(this)
     }
+
+    // Group ids are root-scoped, so entries are dropped one by one whether this
+    // is a root graph or a subgraph sharing the root's bucket.
+    if (this._groups.length) {
+      const layoutMutations = useLayoutMutations()
+      layoutMutations.setSource(LayoutSource.Canvas)
+      for (const group of this._groups) layoutMutations.deleteGroup(group.id)
+    }
+
     this.id = zeroUuid
     this.revision = 0
 
@@ -538,15 +547,6 @@ export class LGraph
     this._lastFloatingLinkId = 0
 
     // other scene stuff
-    // Group ids are root-scoped, so entries are dropped one by one whether this
-    // is a root graph or a subgraph sharing the root's bucket.
-    if (this._groups.length) {
-      const layoutMutations = useLayoutMutations()
-      layoutMutations.setSource(LayoutSource.Canvas)
-      const owner = this.rootGraph.id
-      for (const group of this._groups)
-        layoutMutations.deleteGroup(group.id, owner)
-    }
     this._groups = []
 
     // iterations
@@ -1086,14 +1086,10 @@ export class LGraph
       const { pos, size } = node
       const layoutMutations = useLayoutMutations()
       layoutMutations.setSource(LayoutSource.Canvas)
-      layoutMutations.createGroup(
-        node.id,
-        {
-          position: { x: pos[0], y: pos[1] },
-          size: { width: size[0], height: size[1] }
-        },
-        this.rootGraph.id
-      )
+      layoutMutations.createGroup(node.id, {
+        position: { x: pos[0], y: pos[1] },
+        size: { width: size[0], height: size[1] }
+      })
       this.incrementVersion()
       return
     }
@@ -1190,7 +1186,7 @@ export class LGraph
       }
       const layoutMutations = useLayoutMutations()
       layoutMutations.setSource(LayoutSource.Canvas)
-      layoutMutations.deleteGroup(node.id, this.rootGraph.id)
+      layoutMutations.deleteGroup(node.id)
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)

@@ -11,7 +11,6 @@ import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import type { SlotDirection, SlotId, SlotIndex } from '@/types/slotId'
-import type { UUID } from '@/utils/uuid'
 
 // Enum for layout source types
 export enum LayoutSource {
@@ -120,15 +119,6 @@ interface OperationMeta {
   source: LayoutSource
   /** Operation type discriminator */
   type: OperationType
-  /**
-   * Root graph the writer belongs to. The store holds the layout of one root
-   * graph — the open workflow — and entity ids are only unique within a root
-   * graph, so a graph that is not the open one (the scratch graph
-   * `insertWorkflow` builds, for one) allocates ids that collide with it.
-   * Operations from a different root graph are out of scope and ignored.
-   * Omitted by callers already scoped to the viewed graph.
-   */
-  owner?: UUID
 }
 
 /**
@@ -354,12 +344,11 @@ export interface LayoutStore {
       id: NodeId
       pos: [number, number]
       size: [number, number]
-    }>,
-    rootGraphId?: UUID
+    }>
   ): void
 
-  /** Scopes the store to the open workflow. See {@link OperationMeta.owner}. */
-  setRootGraphId(rootGraphId: UUID): void
+  /** @see {@link LayoutStoreImpl.whileDetached} */
+  whileDetached<T>(work: () => T): T
 
   // Source and actor management
   setSource(source: LayoutSource): void

@@ -17,23 +17,16 @@ import type {
   RerouteId,
   Size
 } from '@/renderer/core/layout/types'
-import type { UUID } from '@/utils/uuid'
 
 const logger = log.getLogger('LayoutMutations')
 
-/**
- * `owner` is the writer's root graph id. Entity ids collide across root graphs,
- * so anything that can be reached from a detached graph passes it and the store
- * drops writes aimed at another graph's entry. Callers already scoped to the
- * viewed graph omit it.
- */
 interface LayoutMutations {
-  moveNode(nodeId: NodeId, position: Point, owner?: UUID): void
+  moveNode(nodeId: NodeId, position: Point): void
   batchMoveNodes(updates: Array<{ nodeId: NodeId; position: Point }>): void
-  resizeNode(nodeId: NodeId, size: Size, owner?: UUID): void
+  resizeNode(nodeId: NodeId, size: Size): void
   setNodeZIndex(nodeId: NodeId, zIndex: number): void
-  createNode(nodeId: NodeId, layout: Partial<NodeLayout>, owner?: UUID): void
-  deleteNode(nodeId: NodeId, owner?: UUID): void
+  createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
+  deleteNode(nodeId: NodeId): void
 
   // Reroute operations
   createReroute(rerouteId: RerouteId, position: Point): void
@@ -41,18 +34,9 @@ interface LayoutMutations {
   moveReroute(rerouteId: RerouteId, position: Point): void
 
   // Group operations
-  createGroup(
-    groupId: GroupId,
-    layout: Omit<GroupLayout, 'id'>,
-    owner?: UUID
-  ): void
-  setGroupBounds(
-    groupId: GroupId,
-    position: Point,
-    size: Size,
-    owner?: UUID
-  ): void
-  deleteGroup(groupId: GroupId, owner?: UUID): void
+  createGroup(groupId: GroupId, layout: Omit<GroupLayout, 'id'>): void
+  setGroupBounds(groupId: GroupId, position: Point, size: Size): void
+  deleteGroup(groupId: GroupId): void
 
   bringNodeToFront(nodeId: NodeId): void
   setSource(source: LayoutSource): void
@@ -80,7 +64,7 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Move a node to a new position
    */
-  const moveNode = (nodeId: NodeId, position: Point, owner?: UUID): void => {
+  const moveNode = (nodeId: NodeId, position: Point): void => {
     const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
@@ -91,8 +75,7 @@ export function useLayoutMutations(): LayoutMutations {
       position,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor(),
-      owner
+      actor: layoutStore.getCurrentActor()
     })
   }
 
@@ -125,7 +108,7 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Resize a node
    */
-  const resizeNode = (nodeId: NodeId, size: Size, owner?: UUID): void => {
+  const resizeNode = (nodeId: NodeId, size: Size): void => {
     const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
@@ -136,8 +119,7 @@ export function useLayoutMutations(): LayoutMutations {
       size,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor(),
-      owner
+      actor: layoutStore.getCurrentActor()
     })
   }
 
@@ -162,11 +144,7 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Create a new node
    */
-  const createNode = (
-    nodeId: NodeId,
-    layout: Partial<NodeLayout>,
-    owner?: UUID
-  ): void => {
+  const createNode = (nodeId: NodeId, layout: Partial<NodeLayout>): void => {
     const fullLayout: NodeLayout = {
       id: nodeId,
       position: layout.position ?? { x: 0, y: 0 },
@@ -188,15 +166,14 @@ export function useLayoutMutations(): LayoutMutations {
       layout: fullLayout,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor(),
-      owner
+      actor: layoutStore.getCurrentActor()
     })
   }
 
   /**
    * Delete a node
    */
-  const deleteNode = (nodeId: NodeId, owner?: UUID): void => {
+  const deleteNode = (nodeId: NodeId): void => {
     const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
@@ -206,8 +183,7 @@ export function useLayoutMutations(): LayoutMutations {
       nodeId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor(),
-      owner
+      actor: layoutStore.getCurrentActor()
     })
   }
 
@@ -244,8 +220,7 @@ export function useLayoutMutations(): LayoutMutations {
 
   const createGroup = (
     groupId: GroupId,
-    layout: Omit<GroupLayout, 'id'>,
-    owner?: UUID
+    layout: Omit<GroupLayout, 'id'>
   ): void => {
     layoutStore.applyOperation({
       type: 'createGroup',
@@ -254,16 +229,14 @@ export function useLayoutMutations(): LayoutMutations {
       layout: { id: groupId, ...layout },
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor(),
-      owner
+      actor: layoutStore.getCurrentActor()
     })
   }
 
   const setGroupBounds = (
     groupId: GroupId,
     position: Point,
-    size: Size,
-    owner?: UUID
+    size: Size
   ): void => {
     const existing = layoutStore.getGroupLayout(groupId)
     if (!existing) return
@@ -276,20 +249,18 @@ export function useLayoutMutations(): LayoutMutations {
       size,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor(),
-      owner
+      actor: layoutStore.getCurrentActor()
     })
   }
 
-  const deleteGroup = (groupId: GroupId, owner?: UUID): void => {
+  const deleteGroup = (groupId: GroupId): void => {
     layoutStore.applyOperation({
       type: 'deleteGroup',
       entity: 'group',
       groupId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor(),
-      owner
+      actor: layoutStore.getCurrentActor()
     })
   }
 

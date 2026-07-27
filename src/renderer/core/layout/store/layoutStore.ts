@@ -13,7 +13,6 @@ import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
-import type { UUID } from '@/utils/uuid'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -125,12 +124,6 @@ class LayoutStoreImpl implements LayoutStore {
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
   private nodeTriggers = new Map<NodeId, () => void>()
 
-  /**
-   * The root graph this store holds the layout of — the open workflow. Unset
-   * until a graph is opened, during which nothing is out of scope.
-   */
-  private rootGraphId?: UUID
-
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
@@ -164,6 +157,25 @@ class LayoutStoreImpl implements LayoutStore {
 
   setPendingSlotSync(value: boolean): void {
     this._pendingSlotSync = value
+  }
+
+  private suspended = false
+
+  /**
+   * Runs `work` with layout operations ignored, for graphs that exist only to
+   * be serialised and thrown away. Entity ids are unique within a root graph
+   * but not across them, so a graph built off to the side allocates ids that
+   * collide with the open workflow's and would otherwise overwrite and delete
+   * its geometry.
+   */
+  whileDetached<T>(work: () => T): T {
+    const previous = this.suspended
+    this.suspended = true
+    try {
+      return work()
+    } finally {
+      this.suspended = previous
+    }
   }
 
   constructor() {
@@ -808,7 +820,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Apply a layout operation using Yjs transactions
    */
   applyOperation(operation: LayoutOperation): void {
-    if (this.isOutOfScope(operation)) return
+    if (this.suspended) return
 
     // Create change object outside transaction so we can use it after
     const change: LayoutChange = {
@@ -830,20 +842,6 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Post-transaction updates
     this.finalizeOperation(change)
-  }
-
-  setRootGraphId(rootGraphId: UUID): void {
-    this.rootGraphId = rootGraphId
-  }
-
-  /**
-   * Whether an operation comes from a graph other than the open workflow. Their
-   * entity ids collide, so applying one would land on the open workflow's
-   * geometry.
-   */
-  private isOutOfScope(operation: LayoutOperation): boolean {
-    if (!operation.owner || !this.rootGraphId) return false
-    return operation.owner !== this.rootGraphId
   }
 
   /**
@@ -992,11 +990,8 @@ class LayoutStoreImpl implements LayoutStore {
       id: NodeId
       pos: [number, number]
       size: [number, number]
-    }>,
-    rootGraphId?: UUID
+    }>
   ): void {
-    if (rootGraphId) this.rootGraphId = rootGraphId
-
     this.ydoc.transact(() => {
       this.ynodes.clear()
       // Note: We intentionally do NOT clear nodeRefs and nodeTriggers here.

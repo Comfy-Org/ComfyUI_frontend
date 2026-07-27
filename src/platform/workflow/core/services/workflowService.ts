@@ -22,6 +22,8 @@ import {
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
@@ -549,22 +551,25 @@ export const useWorkflowService = () => {
     const workflowJSON = toRaw(loadedWorkflow.initialState)
     const old = localStorage.getItem('litegrapheditor_clipboard')
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
-    // serialisation schema.
-    const graph = new LGraph({
-      ...(workflowJSON as unknown as SerialisableGraph),
-      id: createUuidv4()
+    // serialisation schema. The synthetic id keeps the scratch graph out of
+    // the open workflow's root-scoped store buckets.
+    layoutStore.whileDetached(() => {
+      const graph = new LGraph({
+        ...(workflowJSON as unknown as SerialisableGraph),
+        id: createUuidv4()
+      })
+      const canvasElement = document.createElement('canvas')
+      const canvas = new LGraphCanvas(canvasElement, graph, {
+        skip_events: true,
+        skip_render: true
+      })
+      try {
+        canvas.selectItems()
+        canvas.copyToClipboard()
+      } finally {
+        graph.clear()
+      }
     })
-    const canvasElement = document.createElement('canvas')
-    const canvas = new LGraphCanvas(canvasElement, graph, {
-      skip_events: true,
-      skip_render: true
-    })
-    try {
-      canvas.selectItems()
-      canvas.copyToClipboard()
-    } finally {
-      graph.clear()
-    }
     app.canvas.pasteFromClipboard(options)
     if (old !== null) {
       localStorage.setItem('litegrapheditor_clipboard', old)

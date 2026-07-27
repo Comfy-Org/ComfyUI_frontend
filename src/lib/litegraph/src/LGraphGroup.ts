@@ -125,12 +125,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     if (!this.graph || this.id === -1) return
 
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.setGroupBounds(
-      this.id,
-      { x, y },
-      { width, height },
-      this.graph.rootGraph.id
-    )
+    layoutMutations.setGroupBounds(this.id, { x, y }, { width, height })
   }
 
   get boundingRect() {
