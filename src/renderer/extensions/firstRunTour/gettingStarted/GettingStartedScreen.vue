@@ -3,16 +3,14 @@
     <FocusScope as-child trapped loop>
       <div
         ref="screenRef"
-        class="fixed inset-0 z-2000 overflow-y-auto bg-base-background focus:outline-none"
+        class="fixed inset-0 z-2000 flex overflow-y-auto bg-base-background focus:outline-none"
         role="dialog"
         aria-modal="true"
         :aria-label="t('gettingStarted.title')"
         tabindex="-1"
         @keydown.escape.capture.prevent="dismissGettingStarted()"
       >
-        <div
-          class="flex min-h-full flex-col items-center justify-start gap-8 px-8 py-16"
-        >
+        <div class="m-auto flex w-full flex-col items-center gap-8 px-8 py-16">
           <div class="flex flex-col items-center gap-3">
             <h1
               class="m-0 text-center text-4xl/11 font-medium text-base-foreground"
