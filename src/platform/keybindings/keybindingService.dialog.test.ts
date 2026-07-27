@@ -209,4 +209,31 @@ describe('keybindingService - dialog gate', () => {
       'Workspace.ToggleSidebarTab.workflows'
     )
   })
+
+  it('does NOT execute the Escape keybinding while a store dialog is open', async () => {
+    const dialogStore = useDialogStore()
+    dialogStore.dialogStack.push(createTestDialogInstance('templates-dialog'))
+
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'dialog')
+    const inner = document.createElement('button')
+    dialog.appendChild(inner)
+    document.body.appendChild(dialog)
+
+    const event = createKeyboardEvent('Escape', inner)
+    await keybindingService.keybindHandler(event)
+
+    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(event.preventDefault).not.toHaveBeenCalled()
+  })
+
+  it('blocks a global keybinding when a popover precedes the open dialog', async () => {
+    appendRekaPopover()
+    appendRekaDialog()
+
+    const event = createKeyboardEvent('w')
+    await keybindingService.keybindHandler(event)
+
+    expect(mockCommandExecute).not.toHaveBeenCalled()
+  })
 })

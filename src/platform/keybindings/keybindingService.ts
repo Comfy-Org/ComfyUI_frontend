@@ -19,8 +19,7 @@ const POPPER_WRAPPER_SELECTOR = '[data-reka-popper-content-wrapper]'
  * working. Only popover content is positioned inside a popper wrapper.
  */
 function hasOpenRekaDialog(): boolean {
-  const openContent = document.querySelectorAll(OPEN_REKA_CONTENT_SELECTOR)
-  return Array.from(openContent).some(
+  return Array.from(document.querySelectorAll(OPEN_REKA_CONTENT_SELECTOR)).some(
     (content) => content.closest(POPPER_WRAPPER_SELECTOR) === null
   )
 }

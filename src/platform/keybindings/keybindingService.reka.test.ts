@@ -8,6 +8,8 @@ import DialogContent from '@/components/ui/dialog/DialogContent.vue'
 import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -77,12 +79,34 @@ describe('keybindingService - reka dialog integration', () => {
       bubbles: true,
       cancelable: true
     })
-    window.dispatchEvent(event)
+    // eslint-disable-next-line testing-library/no-node-access -- reka focus-traps into DialogContent, so a real Escape originates inside the dialog
+    ;(document.activeElement ?? document.body).dispatchEvent(event)
     return event
   }
 
   it('runs the Escape command when no reka dialog is open', async () => {
     render(RekaDialogHost)
+
+    pressEscape()
+
+    await waitFor(() =>
+      expect(mockCommandExecute).toHaveBeenCalledWith(
+        'Comfy.Graph.ExitSubgraph'
+      )
+    )
+  })
+
+  it('executes a global keybinding while a real reka popover is open', async () => {
+    const PopoverHost = defineComponent({
+      name: 'PopoverHost',
+      setup: () => () =>
+        h(Popover, { open: true }, () =>
+          h(PopoverContent, null, () => 'Popover body')
+        )
+    })
+    render(PopoverHost)
+    const popover = await screen.findByRole('dialog')
+    expect(popover.getAttribute('data-state')).toBe('open')
 
     pressEscape()
 
