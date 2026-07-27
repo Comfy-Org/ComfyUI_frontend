@@ -900,6 +900,8 @@
       "filterAudio": "Audio",
       "filter3D": "3D",
       "filterText": "Text",
+      "filterMediaType": "Media type",
+      "filterGroupAttribute": "Attribute",
       "viewSettings": "View settings"
     },
     "backToAssets": "Back to all assets",
