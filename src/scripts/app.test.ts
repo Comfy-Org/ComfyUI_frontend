@@ -24,6 +24,7 @@ import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -265,16 +266,6 @@ describe('ComfyApp', () => {
       expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
       expect(errorStore.isErrorOverlayOpen).toBe(true)
       expect(executionStore.queuedJobs['job-1']?.nodes).toEqual({ '1': false })
-      expect(executionStore.queuedJobs['job-1']?.workflowContext).toEqual({
-        workflow_type: 'custom',
-        view_mode: 'graph',
-        execution_scope: 'full',
-        total_node_count: 0,
-        executable_node_count: 1,
-        custom_node_count: 0,
-        api_node_count: 0,
-        subgraph_count: 0
-      })
       expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
         'workflows/review.json'
       )
@@ -304,6 +295,22 @@ describe('ComfyApp', () => {
         })
 
         expect(trackWorkflowQueued).toHaveBeenCalledExactlyOnceWith({
+          workflowContext: {
+            workflow_type: 'custom',
+            view_mode: 'graph',
+            execution_scope: 'full',
+            total_node_count: 0,
+            executable_node_count: 0,
+            custom_node_count: 0,
+            api_node_count: 0,
+            subgraph_count: 0
+          },
+          trigger_source: 'button',
+          subscribe_to_run: true
+        })
+        expect(
+          useExecutionStore().queuedJobs['job-1']?.workflowContext
+        ).toEqual({
           workflow_type: 'custom',
           view_mode: 'graph',
           execution_scope: 'full',
@@ -311,13 +318,78 @@ describe('ComfyApp', () => {
           executable_node_count: 0,
           custom_node_count: 0,
           api_node_count: 0,
-          subgraph_count: 0,
+          subgraph_count: 0
+        })
+      } finally {
+        setTelemetryRegistry(null)
+      }
+    })
+
+    it('does not track a resolved prompt response without a prompt ID', async () => {
+      prepareEmptyPromptQueue()
+      const trackWorkflowQueued = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackWorkflowQueued })
+      setTelemetryRegistry(registry)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        error: 'Prompt rejected'
+      })
+
+      try {
+        await app.queuePrompt(0)
+
+        expect(trackWorkflowQueued).not.toHaveBeenCalled()
+      } finally {
+        setTelemetryRegistry(null)
+      }
+    })
+
+    it('tracks an accepted workflow queue when context collection fails', async () => {
+      prepareEmptyPromptQueue()
+      const trackWorkflowQueued = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackWorkflowQueued })
+      setTelemetryRegistry(registry)
+      vi.spyOn(
+        executionContextUtils,
+        'getExecutionContext'
+      ).mockImplementationOnce(() => {
+        throw new Error('Context unavailable')
+      })
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      try {
+        await app.queuePrompt(0, 1, undefined, {
+          trigger_source: 'button',
+          subscribe_to_run: true
+        })
+
+        expect(trackWorkflowQueued).toHaveBeenCalledExactlyOnceWith({
           trigger_source: 'button',
           subscribe_to_run: true
         })
       } finally {
         setTelemetryRegistry(null)
       }
+    })
+
+    it('skips workflow context collection without telemetry', async () => {
+      prepareEmptyPromptQueue()
+      const getExecutionContext = vi.spyOn(
+        executionContextUtils,
+        'getExecutionContext'
+      )
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      await app.queuePrompt(0)
+
+      expect(getExecutionContext).not.toHaveBeenCalled()
     })
 
     it('tracks an accepted workflow queue when the queue UI refresh fails', async () => {

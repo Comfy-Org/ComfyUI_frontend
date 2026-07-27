@@ -23,15 +23,17 @@ describe('DatadogRumTelemetryProvider', () => {
   it('records a bounded workflow queue action', () => {
     const metadata: WorkflowQueuedMetadata = {
       subscribe_to_run: false,
-      workflow_type: 'custom',
-      custom_node_count: 3,
-      api_node_count: 1,
-      total_node_count: 42,
-      executable_node_count: 12,
-      subgraph_count: 2,
       trigger_source: 'keybinding',
-      execution_scope: 'partial',
-      view_mode: 'graph'
+      workflowContext: {
+        workflow_type: 'custom',
+        custom_node_count: 3,
+        api_node_count: 1,
+        total_node_count: 42,
+        executable_node_count: 12,
+        subgraph_count: 2,
+        execution_scope: 'partial',
+        view_mode: 'graph'
+      }
     }
 
     new DatadogRumTelemetryProvider().trackWorkflowQueued(metadata)

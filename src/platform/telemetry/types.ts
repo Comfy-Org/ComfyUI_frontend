@@ -198,7 +198,8 @@ export interface WorkflowQueueIntent {
   subscribe_to_run?: boolean
 }
 
-export interface WorkflowQueuedMetadata extends WorkflowExecutionContext {
+export interface WorkflowQueuedMetadata {
+  workflowContext?: WorkflowExecutionContext
   trigger_source?: ExecutionTriggerSource
   subscribe_to_run: boolean
 }

@@ -7,8 +7,14 @@ import type {
 } from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
-  trackWorkflowQueued(metadata: WorkflowQueuedMetadata): void {
-    datadogRum.addAction('workflow_queue', metadata)
+  trackWorkflowQueued({
+    workflowContext,
+    ...metadata
+  }: WorkflowQueuedMetadata): void {
+    datadogRum.addAction('workflow_queue', {
+      ...workflowContext,
+      ...metadata
+    })
   }
 
   trackExecutionOutcome({

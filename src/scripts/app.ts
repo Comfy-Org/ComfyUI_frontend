@@ -1690,13 +1690,15 @@ export class ComfyApp {
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
           let executionContext: ExecutionContext | undefined
-          try {
-            executionContext = getExecutionContext()
-          } catch (error) {
-            console.error(
-              '[Telemetry] Workflow context collection failed',
-              error
-            )
+          if (telemetry) {
+            try {
+              executionContext = getExecutionContext()
+            } catch (error) {
+              console.error(
+                '[Telemetry] Workflow context collection failed',
+                error
+              )
+            }
           }
 
           // Allow widgets to run callbacks before a prompt has been queued
@@ -1730,15 +1732,15 @@ export class ComfyApp {
             })
             delete api.authToken
             delete api.apiKey
-            if (workflowContext && !workflowQueuedMetadata) {
+            if (res.prompt_id && telemetry && !workflowQueuedMetadata) {
               workflowQueuedMetadata = {
-                ...workflowContext,
+                ...(workflowContext && { workflowContext }),
                 ...(workflowQueueIntent?.trigger_source && {
                   trigger_source: workflowQueueIntent.trigger_source
                 }),
                 subscribe_to_run: workflowQueueIntent?.subscribe_to_run ?? false
               }
-              telemetry?.trackWorkflowQueued(workflowQueuedMetadata)
+              telemetry.trackWorkflowQueued(workflowQueuedMetadata)
             }
             executionErrorStore.recordNodeErrors(res.node_errors ?? null)
             queueResultOverride = null
