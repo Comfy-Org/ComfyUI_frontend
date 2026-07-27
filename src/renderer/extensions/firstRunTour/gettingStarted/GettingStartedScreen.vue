@@ -136,6 +136,7 @@ import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/reposit
 
 import GettingStartedCard from './GettingStartedCard.vue'
 import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
+import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 import { useFirstRunEntry } from './firstRunEntry'
 import type { TutorialCard } from './tutorialCards'
 import {
@@ -163,6 +164,7 @@ const tabs = [
 const { t } = useI18n()
 
 const { dismissGettingStarted } = useFirstRunEntry()
+const { beginTour } = useFirstRunTourController()
 const templatesStore = useWorkflowTemplatesStore()
 const { loadWorkflowTemplate, getTemplateThumbnailUrl, loadingTemplateId } =
   useTemplateWorkflows()
@@ -221,6 +223,7 @@ async function onSelectTemplate(id: string) {
 
   if (await loadWorkflowTemplate(id, 'default')) {
     await dismissGettingStarted()
+    await beginTour(id)
     return
   }
 

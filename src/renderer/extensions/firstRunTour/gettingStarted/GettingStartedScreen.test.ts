@@ -11,6 +11,7 @@ import { CURATED_TEMPLATE_IDS } from './tutorialCards'
 
 const mocks = vi.hoisted(() => ({
   dismiss: vi.fn(),
+  beginTour: vi.fn(),
   loadTemplate: vi.fn(),
   loadCatalog: vi.fn(),
   isLoaded: true,
@@ -19,6 +20,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('./firstRunEntry', () => ({
   useFirstRunEntry: () => ({ dismissGettingStarted: mocks.dismiss })
+}))
+
+vi.mock('../tour/useFirstRunTourController', () => ({
+  useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
 
 vi.mock(
@@ -72,6 +77,7 @@ describe('GettingStartedScreen', () => {
     mocks.isLoaded = true
     mocks.loadTemplate.mockResolvedValue(true)
     mocks.loadCatalog.mockResolvedValue(undefined)
+    mocks.beginTour.mockResolvedValue(true)
   })
 
   afterEach(() => {
@@ -79,12 +85,16 @@ describe('GettingStartedScreen', () => {
     document.body.replaceChildren()
   })
 
-  it('loads the chosen template and dismisses', async () => {
-    await renderScreen()
-
+  async function pickFirstTemplate() {
     await userEvent.click(
       screen.getByTestId(`getting-started-card-${CURATED_TEMPLATE_IDS[0]}`)
     )
+  }
+
+  it('loads the chosen template and tours it', async () => {
+    await renderScreen()
+
+    await pickFirstTemplate()
 
     await waitFor(() =>
       expect(mocks.loadTemplate).toHaveBeenCalledWith(
@@ -92,7 +102,22 @@ describe('GettingStartedScreen', () => {
         'default'
       )
     )
+    expect(mocks.beginTour).toHaveBeenCalledWith(CURATED_TEMPLATE_IDS[0])
     expect(mocks.dismiss).toHaveBeenCalled()
+  })
+
+  it('leaves the user on the loaded graph when the template has no tour', async () => {
+    mocks.beginTour.mockResolvedValue(false)
+    await renderScreen()
+
+    await pickFirstTemplate()
+
+    await waitFor(() =>
+      expect(
+        mocks.dismiss,
+        'the graph is loaded and usable, so the takeover must not strand the user on it'
+      ).toHaveBeenCalled()
+    )
   })
 
   describe('exits', () => {
@@ -124,9 +149,7 @@ describe('GettingStartedScreen', () => {
       mocks.loadTemplate.mockResolvedValue(false)
       await renderScreen()
 
-      await userEvent.click(
-        screen.getByTestId(`getting-started-card-${CURATED_TEMPLATE_IDS[0]}`)
-      )
+      await pickFirstTemplate()
 
       await waitFor(() => expect(mocks.toastAdd).toHaveBeenCalled())
       expect(
