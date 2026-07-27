@@ -38,6 +38,7 @@ import {
 } from '@e2e/fixtures/customNode/geometry'
 import {
   loadCloudCoreDisabledNodes,
+  loadCloudUnjoinedYamlPacks,
   loadManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
@@ -502,6 +503,64 @@ async function packNodeKeys(
 // Invariant across manifest entries: which harness nodes the target backend
 // label-disables is a property of the backend, not of any pack row.
 const disabledHarness = disabledHarnessNodes(loadCloudCoreDisabledNodes())
+
+// The generator records yaml packs it could not join to any snapshot node
+// instead of dropping them. That record is only honest if the live backend
+// still agrees, so assert it two-way like every other ledger: a pack listed
+// here that now registers nodes has coverage to gain, and the manifest must be
+// regenerated rather than left silently short.
+// Packs that live under custom_nodes/ but are not community packs under test,
+// keyed by the mechanism that puts them there. Same discipline as every other
+// ledger: an entry carries its reason, and anything NOT listed must have a row.
+const INFRASTRUCTURE_PACKS: Record<string, string> = {
+  ComfyUI_devtools:
+    'harness pack the suite installs to observe the backend; never under test',
+  websocket_image_save:
+    'ships inside ComfyUI core custom_nodes/ (comfyanonymous/ComfyUI), so it is core infrastructure the yaml does not list'
+}
+
+// The per-row count assert below catches drift INSIDE a known pack. It cannot
+// catch a pack the backend registers that no manifest row covers, because the
+// suite only iterates rows - a newly deployed pack would land with zero
+// coverage and every existing assertion would stay green. Close the set both
+// ways: the live custom-node pack set must equal the manifest's.
+test.describe('manifest covers every registered pack @custom-nodes', () => {
+  test('no pack registers on the backend without a manifest row', async ({
+    comfyPage
+  }) => {
+    const defs = (await comfyPage.page.evaluate(() =>
+      window.app!.api.getNodeDefs()
+    )) as unknown as Record<string, RawNodeDef>
+    const live = new Set(
+      normalizeNodeDefs(defs)
+        .map((node) => node.pack)
+        .filter((pack) => pack !== 'core' && !(pack in INFRASTRUCTURE_PACKS))
+    )
+    const covered = new Set(loadManifest().map((entry) => entry.pack))
+    const uncovered = [...live].filter((pack) => !covered.has(pack)).sort()
+    expect(
+      uncovered,
+      `backend registers pack(s) with no manifest row: ${uncovered.join(', ')} - they have ZERO coverage; regenerate the manifest ('pnpm gen:cloud-manifest') or add the core row`
+    ).toEqual([])
+  })
+})
+
+const unjoinedYamlPacks = loadCloudUnjoinedYamlPacks()
+if (unjoinedYamlPacks.length > 0) {
+  test.describe('cloud manifest: unjoined yaml packs @custom-nodes', () => {
+    test('still register no nodes on the live backend', async ({
+      comfyPage
+    }) => {
+      for (const pack of unjoinedYamlPacks) {
+        const { keys } = await packNodeKeys(comfyPage.page, pack)
+        expect(
+          keys,
+          `${pack} is recorded as registering no nodes, but the live backend registers ${keys.length} - it has cloud coverage to gain: regenerate the cloud manifest ('pnpm gen:cloud-manifest')`
+        ).toHaveLength(0)
+      }
+    })
+  })
+}
 
 for (const entry of loadManifest()) {
   test.describe(`all nodes: ${entry.pack} @custom-nodes`, () => {

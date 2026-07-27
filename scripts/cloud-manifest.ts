@@ -204,10 +204,17 @@ function snapshotPacksOf(snapshot: ObjectInfoSnapshot): Map<string, string[]> {
   return nodesByPack
 }
 
+// One boot-registered extension name per pack, read off the JS Cloud actually
+// serves at /extensions/. One sentinel, not the full set: the assert only has
+// to prove the pack's JS loaded, and a conditionally-registered extra would
+// red a healthy run.
+export type CloudExtensionSentinels = Record<string, string[]>
+
 export function buildCloudManifest(
   doc: SupportedNodesDoc,
   snapshot: ObjectInfoSnapshot,
-  overlay: CuratedCloudOverlay = {}
+  overlay: CuratedCloudOverlay = {},
+  sentinels: CloudExtensionSentinels = {}
 ): CloudManifest {
   const nodesByPack = snapshotPacksOf(snapshot)
   const dirnameByJoinKey = new Map<string, string>()
@@ -256,15 +263,20 @@ export function buildCloudManifest(
       workflow: curated?.workflow ?? '',
       expectedNodes: enabled.slice(0, 2),
       expectedNodeCount: enabled.length,
-      expectedExtensions: [],
+      expectedExtensions: sentinels[dirname] ?? [],
       disabledNodes: sortedRecordOf(pack.node_labels ?? {}),
       timeoutMs: curated?.timeoutMs ?? 30_000
     })
   }
-  if (unmatched.length > 0)
+  // A yaml pack with no snapshot nodes gets recorded, not thrown on: it would
+  // otherwise block every other pack's row. The snapshot cannot say WHY it is
+  // empty (the pack registers nothing, or the dirname rule broke), so the list
+  // ships in the manifest for review instead of being silently dropped.
+  if (unmatched.length > packs.length)
     throw new Error(
-      `yaml packs with no /object_info pack to join: ${unmatched.join(', ')} - ` +
-        `either the snapshot predates their deploy or the dirname mapping rule broke`
+      `${unmatched.length} yaml packs have no /object_info pack to join but only ` +
+        `${packs.length} joined - the dirname mapping rule has broken, not a few ` +
+        `empty packs: ${unmatched.slice(0, 10).join(', ')}`
     )
   if (packs.length === 0)
     throw new Error(
@@ -286,7 +298,8 @@ export function buildCloudManifest(
   const core = doc.node_packs.find((pack) => pack.name === 'core')
   return {
     coreDisabledNodes: sortedRecordOf(core?.node_labels ?? {}),
-    packs
+    packs,
+    unjoinedYamlPacks: unmatched.sort()
   }
 }
 

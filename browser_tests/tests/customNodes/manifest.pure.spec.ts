@@ -152,7 +152,7 @@ test.describe('customNode manifest', () => {
       ).toThrow(/pack/)
   })
 
-  test('CUSTOM_NODES_ENV selects the manifest; unknown values and the missing cloud file fail loudly', () => {
+  test('CUSTOM_NODES_ENV selects the manifest; unknown values fail loudly', () => {
     const prior = process.env.CUSTOM_NODES_ENV
     try {
       delete process.env.CUSTOM_NODES_ENV
@@ -163,11 +163,13 @@ test.describe('customNode manifest', () => {
       expect(loadManifest()).toEqual(defaulted)
       expect(loadCloudCoreDisabledNodes()).toEqual({})
       process.env.CUSTOM_NODES_ENV = 'cloud'
-      expect(() => loadManifest()).toThrow(
-        /customNodeManifest\.cloud\.json.*gen-cloud-manifest.*snapshot/s
-      )
-      expect(() => loadCloudCoreDisabledNodes()).toThrow(
-        /customNodeManifest\.cloud\.json/
+      const cloud = loadManifest()
+      expect(cloud.length).toBeGreaterThan(0)
+      expect(cloud).not.toEqual(defaulted)
+      // Cloud rows are generated, so they carry deployRef where core carries pin.
+      expect(cloud.every((entry) => 'deployRef' in entry)).toBe(true)
+      expect(Object.keys(loadCloudCoreDisabledNodes()).length).toBeGreaterThan(
+        0
       )
       process.env.CUSTOM_NODES_ENV = 'clod'
       expect(() => loadManifest()).toThrow(/CUSTOM_NODES_ENV/)
@@ -220,28 +222,44 @@ test.describe('customNode manifest', () => {
   test('assertCloudManifestShape names the source on malformed top-level shapes and returns valid ones', () => {
     const valid = {
       coreDisabledNodes: { VAESave: ['WritesToDisk'] },
-      packs: [validCloudEntry()]
+      packs: [validCloudEntry()],
+      unjoinedYamlPacks: []
     }
     expect(assertCloudManifestShape(valid, 'probe.json')).toBe(valid)
+    const base = { coreDisabledNodes: {}, packs: [validCloudEntry()] }
     for (const bad of [
       null,
       42,
       'packs',
       [],
-      { coreDisabledNodes: {}, packs: [] },
-      { coreDisabledNodes: { NodeA: [] }, packs: [validCloudEntry()] },
-      { packs: [validCloudEntry()] },
-      { coreDisabledNodes: {}, packs: {} }
+      { coreDisabledNodes: {}, packs: [], unjoinedYamlPacks: [] },
+      {
+        coreDisabledNodes: { NodeA: [] },
+        packs: [validCloudEntry()],
+        unjoinedYamlPacks: []
+      },
+      { packs: [validCloudEntry()], unjoinedYamlPacks: [] },
+      { coreDisabledNodes: {}, packs: {}, unjoinedYamlPacks: [] },
+      // the live assert reads unjoinedYamlPacks, so a missing or malformed
+      // list would silently assert nothing
+      base,
+      { ...base, unjoinedYamlPacks: {} },
+      { ...base, unjoinedYamlPacks: [''] },
+      { ...base, unjoinedYamlPacks: [42] },
+      { ...base, unjoinedYamlPacks: ['dup', 'dup'] }
     ])
       expect(
         () => assertCloudManifestShape(bad, 'probe.json'),
         `${JSON.stringify(bad)} must be rejected`
       ).toThrow(/probe\.json is malformed/)
+    // A well-formed top level still validates each row: the per-entry error
+    // must survive, not get masked by the shape check.
     expect(() =>
       assertCloudManifestShape(
         {
           coreDisabledNodes: {},
-          packs: [{ ...validCloudEntry(), deployRef: 'unpinned' }]
+          packs: [{ ...validCloudEntry(), deployRef: 'unpinned' }],
+          unjoinedYamlPacks: []
         },
         'probe.json'
       )

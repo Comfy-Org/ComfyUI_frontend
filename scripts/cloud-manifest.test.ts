@@ -135,11 +135,23 @@ describe('buildCloudManifest', () => {
     )
   })
 
-  it('fails loudly when a yaml pack has no snapshot pack to join', () => {
+  it('records a yaml pack with no snapshot nodes instead of blocking the others', () => {
     const doc = fixtureDoc()
     doc.node_packs.push({ name: 'comfyui-not-deployed', version: '1.0.0' })
+    const manifest = buildCloudManifest(doc, fixtureSnapshot())
+    expect(manifest.unjoinedYamlPacks).toEqual(['comfyui-not-deployed'])
+    expect(manifest.packs.length).toBeGreaterThan(0)
+    expect(manifest.packs.map((pack) => pack.pack)).not.toContain(
+      'comfyui-not-deployed'
+    )
+  })
+
+  it('still fails loudly when more packs go unjoined than joined - the mapping rule broke', () => {
+    const doc = fixtureDoc()
+    for (let index = 0; index < 20; index++)
+      doc.node_packs.push({ name: `comfyui-absent-${index}`, version: '1.0.0' })
     expect(() => buildCloudManifest(doc, fixtureSnapshot())).toThrow(
-      /comfyui-not-deployed/
+      /dirname mapping rule has broken/
     )
   })
 

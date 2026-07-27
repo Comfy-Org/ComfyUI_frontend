@@ -1,5 +1,5 @@
 {
-  "ComfyUI-VideoHelperSuite": {
+  "comfyui-videohelpersuite": {
     "workflow": "assets/customNodes/vhs_video_pipeline_cloud_run.json",
     "tiers": ["load", "connectivity", "run"],
     "timeoutMs": 90000

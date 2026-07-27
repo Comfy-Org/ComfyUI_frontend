@@ -71,6 +71,11 @@ export interface CloudManifestEntry extends SharedNodeExpectations {
 export interface CloudManifest {
   coreDisabledNodes: Record<string, string[]>
   packs: CloudManifestEntry[]
+  // yaml packs the snapshot has no nodes for. Recorded rather than dropped:
+  // the snapshot cannot distinguish "pack registers nothing" from "the dirname
+  // mapping broke", so the list is a reviewed record - a pack appearing here
+  // has no cloud coverage, and the list growing is the signal to look.
+  unjoinedYamlPacks: string[]
 }
 
 function sharedIssues(entry: SharedNodeExpectations): string[] {
@@ -260,10 +265,17 @@ export function assertCloudManifestShape(
     manifest === null ||
     invalidRecordOf(manifest.coreDisabledNodes, isLabelList) ||
     !Array.isArray(manifest.packs) ||
-    manifest.packs.length === 0
+    manifest.packs.length === 0 ||
+    // Required, and an empty array is the deliberate "every yaml pack joined"
+    // declaration - the live assert reads this list, so a missing or malformed
+    // one would silently assert nothing.
+    !Array.isArray(manifest.unjoinedYamlPacks) ||
+    !manifest.unjoinedYamlPacks.every(isNonEmptyString) ||
+    new Set(manifest.unjoinedYamlPacks).size !==
+      manifest.unjoinedYamlPacks.length
   )
     throw new Error(
-      `${sourcePath} is malformed (expected { coreDisabledNodes, packs } with at least one pack): regenerate it via 'pnpm gen:cloud-manifest'`
+      `${sourcePath} is malformed (expected { coreDisabledNodes, packs, unjoinedYamlPacks } with at least one pack): regenerate it via 'pnpm gen:cloud-manifest'`
     )
   manifest.packs.forEach(assertCloudEntry)
   return manifest
@@ -291,6 +303,15 @@ export function loadCloudCoreDisabledNodes(): Record<string, string[]> {
   return customNodesEnv() === 'cloud'
     ? readCloudManifest().coreDisabledNodes
     : {}
+}
+
+// Packs the generator could not join to any snapshot node. Asserted against the
+// LIVE backend so the record cannot rot: one of these registering nodes on
+// Cloud means it now has coverage to gain and the manifest must be regenerated.
+export function loadCloudUnjoinedYamlPacks(): string[] {
+  return customNodesEnv() === 'cloud'
+    ? readCloudManifest().unjoinedYamlPacks
+    : []
 }
 
 export function loadManifest(): (CoreManifestEntry | CloudManifestEntry)[] {

@@ -16,6 +16,8 @@ const DEFAULT_OUTPUT =
   'browser_tests/fixtures/data/customNodeManifest.cloud.json'
 const CURATED_OVERLAY =
   'browser_tests/fixtures/data/cloud/curatedCloudWorkflows.json'
+const EXTENSION_SENTINELS =
+  'browser_tests/fixtures/data/cloud/cloudExtensionSentinels.json'
 
 const [snapshotPath, supportedNodesPath, outputPath] = process.argv.slice(2)
 if (!snapshotPath) {
@@ -38,7 +40,13 @@ const overlay = existsSync(CURATED_OVERLAY)
       JSON.parse(readFileSync(CURATED_OVERLAY, 'utf-8'))
     )
   : {}
-const manifest = buildCloudManifest(doc, snapshot, overlay)
+const sentinels = existsSync(EXTENSION_SENTINELS)
+  ? (JSON.parse(readFileSync(EXTENSION_SENTINELS, 'utf-8')) as Record<
+      string,
+      string[]
+    >)
+  : {}
+const manifest = buildCloudManifest(doc, snapshot, overlay, sentinels)
 const target = outputPath ?? DEFAULT_OUTPUT
 writeFileSync(target, renderCloudManifest(manifest))
 const runEnrolled = manifest.packs.filter((row) =>
