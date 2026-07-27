@@ -1714,7 +1714,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(activity.editingTabPath).toBeNull()
   })
 
-  it('autosaves a minted tab so the next patch applies without a conflict', async () => {
+  it('autosaves a minted tab so the next patch applies in place', async () => {
     mockMessagesEndpoint('wf-42')
     const mintedPath = 'workflows/Unsaved Workflow.json'
     vi.mocked(app.loadGraphData).mockImplementation(
@@ -1753,9 +1753,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, minted)
     )
-    expect(
-      screen.queryByText(i18n.global.t('agent.conflictTitle'))
-    ).not.toBeInTheDocument()
   })
 
   it('a failed autosave keeps the applied draft and surfaces no apply error', async () => {
@@ -1781,9 +1778,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).toHaveBeenCalledTimes(1)
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(tab.path)
-    expect(
-      screen.queryByText(i18n.global.t('agent.conflictTitle'))
-    ).not.toBeInTheDocument()
   })
 
   it('autosave dodges an occupied app-mode save path and rebinds the renamed tab', async () => {
@@ -3058,85 +3052,52 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).toHaveBeenCalledTimes(1)
   })
 
-  it("leaves the edited tab alone when the user picks 'Open new tab'", async () => {
+  it('overwrites a user-edited bound tab without prompting', async () => {
     const tab = makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('add an upscaler')
 
     tab.isModified = true
-    const graph = { version: 0.4, nodes: [{ id: 4 }] }
+    const graph = { version: 0.4, nodes: [{ id: 5 }] }
     patch(1, graph)
-    await screen.findByText(i18n.global.t('agent.conflictTitle'))
 
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.moreApplyOptions')
-      })
-    )
-    await userEvent.click(
-      await screen.findByText(i18n.global.t('agent.openNewTab'))
-    )
     await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, null)
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
     )
-    expect(tab.isModified).toBe(true)
+    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() =>
+      expect(workflowService.saveWorkflow).toHaveBeenCalledWith(tab)
+    )
+    expect(tab.isModified).toBe(false)
   })
 
-  it('replays a parked draft on the next turn even when its version is unchanged', async () => {
+  it('drops a parked draft when a new chat starts', async () => {
     const tab = makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('add an upscaler')
 
-    tab.isModified = true
+    const other = addTab('workflows/other.json')
+    hostStores.workflow.activeWorkflow = other
     patch(1, { version: 0.4, nodes: [{ id: 2 }] })
-    await screen.findByText(i18n.global.t('agent.conflictTitle'))
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('g.close') })
-    )
+    await nextTick()
+    await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
-
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
-    await screen.findByRole('button', { name: 'Send' })
-
-    await userEvent.type(screen.getByRole('textbox'), 'go ahead')
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    expect(
-      await screen.findByText(i18n.global.t('agent.conflictTitle'))
-    ).toBeInTheDocument()
-  })
-
-  it('drops the parked draft when a new chat starts', async () => {
-    const tab = makeTab('wf-42')
-    mockMessagesEndpoint('wf-42')
-
-    await renderAndSend('add an upscaler')
-
-    tab.isModified = true
-    patch(1, { version: 0.4, nodes: [{ id: 2 }] })
-    await screen.findByText(i18n.global.t('agent.conflictTitle'))
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('g.cancel') })
-    )
 
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
     )
 
-    patch(2, { version: 0.4, nodes: [{ id: 6 }] })
+    hostStores.workflow.activeWorkflow = tab
     await nextTick()
     await nextTick()
-    tab.isModified = false
-
-    await sendFromComposer('fresh start')
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    expect(
-      screen.queryByText(i18n.global.t('agent.conflictTitle'))
-    ).not.toBeInTheDocument()
 
-    const graph = { version: 0.4, nodes: [{ id: 8 }] }
-    patch(3, graph)
+    // Only the parked draft was dropped; the next turn's drafts still apply.
+    await sendFromComposer('fresh start')
+    const graph = { version: 0.4, nodes: [{ id: 9 }] }
+    patch(2, graph)
     await vi.waitFor(() =>
       expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
     )
@@ -3170,76 +3131,6 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     expect(screen.getByText('VAEDecode')).toBeInTheDocument()
     expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
-  })
-
-  it('raises the conflict dialog on a user-edited bound tab and honors the choice', async () => {
-    const tab = makeTab('wf-42')
-    mockMessagesEndpoint('wf-42')
-
-    await renderAndSend('add an upscaler')
-
-    tab.isModified = true
-    patch(1, { version: 0.4, nodes: [{ id: 1 }] })
-    expect(
-      await screen.findByText(i18n.global.t('agent.conflictTitle'))
-    ).toBeInTheDocument()
-    expect(app.loadGraphData).not.toHaveBeenCalled()
-
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('g.cancel') })
-    )
-    patch(2, { version: 0.4, nodes: [{ id: 1 }] })
-    await nextTick()
-    expect(app.loadGraphData).not.toHaveBeenCalled()
-    expect(
-      screen.queryByText(i18n.global.t('agent.conflictTitle'))
-    ).not.toBeInTheDocument()
-
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
-    await screen.findByRole('button', { name: 'Send' })
-    await userEvent.type(screen.getByRole('textbox'), 'go on')
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    const graph = { version: 0.4, nodes: [{ id: 2 }] }
-    patch(3, graph)
-    await screen.findByText(i18n.global.t('agent.conflictTitle'))
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.acceptAgent')
-      })
-    )
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
-    )
-    expect(tab.isModified).toBe(false)
-  })
-
-  it("'Keep my changes' retires the pending draft version for good", async () => {
-    const tab = makeTab('wf-42')
-    mockMessagesEndpoint('wf-42')
-
-    await renderAndSend('add an upscaler')
-
-    tab.isModified = true
-    patch(1, { version: 0.4, nodes: [{ id: 1 }] })
-    await screen.findByText(i18n.global.t('agent.conflictTitle'))
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.keepMine') })
-    )
-
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
-    await screen.findByRole('button', { name: 'Send' })
-    await userEvent.type(screen.getByRole('textbox'), 'something else')
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    await nextTick()
-    expect(
-      screen.queryByText(i18n.global.t('agent.conflictTitle'))
-    ).not.toBeInTheDocument()
-
-    patch(2, { version: 0.4, nodes: [{ id: 3 }] })
-    expect(
-      await screen.findByText(i18n.global.t('agent.conflictTitle'))
-    ).toBeInTheDocument()
-    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('stages selected nodes as chips and sends their ids once', async () => {
@@ -3394,9 +3285,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    expect(
-      screen.queryByText(i18n.global.t('agent.conflictTitle'))
-    ).not.toBeInTheDocument()
   })
 
   it('re-uploads the canvas after a failed send', async () => {
