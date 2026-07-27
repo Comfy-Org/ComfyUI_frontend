@@ -66,6 +66,20 @@ export class VueNodeHelpers {
     })
   }
 
+  async getNodeCenter(title: string): Promise<{ x: number; y: number }> {
+    const box = await this.getNodeByTitle(title).boundingBox()
+    if (!box) throw new Error(`Node "${title}" not found`)
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+  }
+
+  async getNodePaintOrder(title: string): Promise<number> {
+    return await this.getNodeByTitle(title).evaluate((node) =>
+      node.parentElement
+        ? Array.from(node.parentElement.children).indexOf(node)
+        : -1
+    )
+  }
+
   /**
    * Get total count of Vue nodes in the DOM
    */

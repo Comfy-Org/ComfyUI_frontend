@@ -2,7 +2,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 test.describe(
@@ -15,37 +14,12 @@ test.describe(
       await fitToViewInstant(comfyPage)
     })
 
-    /**
-     * Helper to get the z-index of a node by its title
-     */
-    async function getNodeZIndex(
-      comfyPage: ComfyPage,
-      title: string
-    ): Promise<number> {
-      const node = comfyPage.vueNodes.getNodeByTitle(title)
-      const style = await node.getAttribute('style')
-      const match = style?.match(/z-index:\s*(\d+)/)
-      return match ? parseInt(match[1], 10) : Number.NaN
-    }
-
-    /**
-     * Helper to get the bounding box center of a node
-     */
-    async function getNodeCenter(
-      comfyPage: ComfyPage,
-      title: string
-    ): Promise<{ x: number; y: number }> {
-      const node = comfyPage.vueNodes.getNodeByTitle(title)
-      const box = await node.boundingBox()
-      if (!box) throw new Error(`Node "${title}" not found`)
-      return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-    }
-
     test('should bring overlapped node to front when clicking on it', async ({
       comfyPage
     }) => {
       // Get initial positions
-      const clipCenter = await getNodeCenter(comfyPage, 'CLIP Text Encode')
+      const clipCenter =
+        await comfyPage.vueNodes.getNodeCenter('CLIP Text Encode')
       const ksamplerHeader = await comfyPage.page
         .getByText('KSampler')
         .boundingBox()
@@ -63,12 +37,14 @@ test.describe(
         'bring-to-front-overlapped-before.png'
       )
 
-      // KSampler should be on top (higher z-index) after being dragged
+      // KSampler should be on top after being dragged
       await expect
         .poll(async () => {
-          const ksamplerZ = await getNodeZIndex(comfyPage, 'KSampler')
-          const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
-          return ksamplerZ - clipZ
+          const ksamplerOrder =
+            await comfyPage.vueNodes.getNodePaintOrder('KSampler')
+          const clipOrder =
+            await comfyPage.vueNodes.getNodePaintOrder('CLIP Text Encode')
+          return ksamplerOrder - clipOrder
         })
         .toBeGreaterThan(0)
 
@@ -82,12 +58,14 @@ test.describe(
       await comfyPage.page.mouse.click(clipBox.x + 30, clipBox.y + 10)
       await comfyPage.nextFrame()
 
-      // CLIP should now be on top - compare post-action z-indices
+      // CLIP should now be on top
       await expect
         .poll(async () => {
-          const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
-          const ksamplerZ = await getNodeZIndex(comfyPage, 'KSampler')
-          return clipZ - ksamplerZ
+          const clipOrder =
+            await comfyPage.vueNodes.getNodePaintOrder('CLIP Text Encode')
+          const ksamplerOrder =
+            await comfyPage.vueNodes.getNodePaintOrder('KSampler')
+          return clipOrder - ksamplerOrder
         })
         .toBeGreaterThan(0)
 
@@ -101,7 +79,8 @@ test.describe(
       comfyPage
     }) => {
       // Get CLIP Text Encode position (it has a text widget)
-      const clipCenter = await getNodeCenter(comfyPage, 'CLIP Text Encode')
+      const clipCenter =
+        await comfyPage.vueNodes.getNodeCenter('CLIP Text Encode')
 
       // Get VAE Decode position and drag it on top of CLIP
       const vaeHeader = await comfyPage.page
@@ -118,9 +97,11 @@ test.describe(
       // VAE should be on top after drag
       await expect
         .poll(async () => {
-          const vaeZ = await getNodeZIndex(comfyPage, 'VAE Decode')
-          const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
-          return vaeZ - clipZ
+          const vaeOrder =
+            await comfyPage.vueNodes.getNodePaintOrder('VAE Decode')
+          const clipOrder =
+            await comfyPage.vueNodes.getNodePaintOrder('CLIP Text Encode')
+          return vaeOrder - clipOrder
         })
         .toBeGreaterThan(0)
 
@@ -136,12 +117,14 @@ test.describe(
       await comfyPage.page.mouse.click(clipBox.x + 170, clipBox.y + 80)
       await comfyPage.nextFrame()
 
-      // CLIP should now be on top - compare post-action z-indices
+      // CLIP should now be on top
       await expect
         .poll(async () => {
-          const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
-          const vaeZ = await getNodeZIndex(comfyPage, 'VAE Decode')
-          return clipZ - vaeZ
+          const clipOrder =
+            await comfyPage.vueNodes.getNodePaintOrder('CLIP Text Encode')
+          const vaeOrder =
+            await comfyPage.vueNodes.getNodePaintOrder('VAE Decode')
+          return clipOrder - vaeOrder
         })
         .toBeGreaterThan(0)
 

@@ -32,7 +32,6 @@
     :style="{
       '--min-node-width': `${MIN_NODE_WIDTH}px`,
       transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-      zIndex: zIndex,
       opacity: nodeOpacity
     }"
     :inert="isGhostPlacing"
@@ -425,7 +424,7 @@ onErrorCaptured((error) => {
   return false // Prevent error propagation
 })
 
-const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
+const { position, size } = useNodeLayout(() => nodeData.id)
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
