@@ -29,18 +29,26 @@
       <h2>{{ current.title }}</h2>
       <div class="crumb">{{ current.crumb }}</div>
 
-      <div class="stage" :class="{ wide: current.host === 'members' }">
+      <div class="stage" :class="{ wide: isPanelHost }">
         <CurrentUserPopoverWorkspace v-if="current.host === 'menu'" />
-        <MemberCreditsTile
-          v-else-if="current.host === 'tile'"
-          class="tilehost"
-        />
+        <PlanCreditsPanelContent v-else-if="current.host === 'plancredits'" />
         <MembersPanelContent v-else-if="current.host === 'members'" />
+        <div v-else-if="current.host === 'runbutton'" class="runstage">
+          <div class="actionbar"><CloudRunButtonWrapper /></div>
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <div v-if="current.mock" class="mockhost" v-html="current.mock" />
+        </div>
         <!-- eslint-disable-next-line vue/no-v-html -->
         <div v-else class="mockhost" v-html="current.mock" />
       </div>
       <div v-if="current.host === 'mock'" class="mocknote">
         {{ mockNote }}
+      </div>
+      <div
+        v-else-if="current.host === 'runbutton' && current.mock"
+        class="mocknote"
+      >
+        {{ runNote }}
       </div>
 
       <div class="spec">
@@ -57,9 +65,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import CloudRunButtonWrapper from '@/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue'
 import CurrentUserPopoverWorkspace from '@/platform/workspace/components/CurrentUserPopoverWorkspace.vue'
-import MemberCreditsTile from '@/platform/workspace/components/MemberCreditsTile.vue'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
+import PlanCreditsPanelContent from '@/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue'
 
 import type { ViewerRole } from './states'
 import {
@@ -75,6 +84,8 @@ const roleLabel = 'Viewing as'
 const specLabel = 'Spec'
 const mockNote =
   'Static mock — not yet built in Vue. The spec below is the source of truth.'
+const runNote =
+  'Button above is the real shipped component; the dialog below is a static mock of the designed target.'
 
 const { role, stateId } = parseHash()
 
@@ -92,6 +103,10 @@ const grouped = computed(() => {
 
 const current = computed(
   () => visible.value.find((s) => s.id === stateId) ?? visible.value[0]
+)
+
+const isPanelHost = computed(() =>
+  ['members', 'plancredits'].includes(current.value.host)
 )
 
 function onSelect(id: string) {
@@ -216,8 +231,20 @@ function onRoleChange(e: Event) {
 .stage.wide > :deep(*) {
   flex: 1;
 }
-.tilehost {
-  width: 420px;
+.runstage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.actionbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #0b0c0f;
+  border: 1px solid #23252b;
+  border-radius: 10px;
+  padding: 10px 14px;
 }
 .mocknote {
   max-width: 860px;
