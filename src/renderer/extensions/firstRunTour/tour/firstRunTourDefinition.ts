@@ -18,7 +18,7 @@ import { frameNode } from './cameraFraming'
 import { canvasNodeRect, canvasNodeTarget } from './canvasCoachTarget'
 
 /** How far the run has got, which is all the Run step's copy has to report. */
-export type RunState = 'idle' | 'generating' | 'failed'
+export type RunState = 'idle' | 'generating' | 'succeeded' | 'failed'
 
 /**
  * What the workflow does. The Upload and Prompt steps mean something different
@@ -111,9 +111,9 @@ function toCoachStep(
     return {
       ...framed,
       get name() {
-        return runState.value === 'idle'
-          ? `result.${step.mediaKind}`
-          : `result.${runState.value}`
+        if (runState.value === 'generating') return 'result.generating'
+        if (runState.value === 'failed') return 'result.failed'
+        return `result.${step.mediaKind}`
       },
       busy: () => runState.value === 'generating'
     }

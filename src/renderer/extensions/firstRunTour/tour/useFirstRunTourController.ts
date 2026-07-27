@@ -72,7 +72,7 @@ function useFirstRunTourControllerInternal() {
     (status) => {
       if (!status || engine.activeTour !== 'firstRun') return
       if (status === 'running') runState.value = 'generating'
-      else runState.value = status === 'failed' ? 'failed' : 'idle'
+      else runState.value = status === 'failed' ? 'failed' : 'succeeded'
     }
   )
 

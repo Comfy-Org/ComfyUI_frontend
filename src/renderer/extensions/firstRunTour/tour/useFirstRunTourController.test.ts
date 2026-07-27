@@ -252,13 +252,16 @@ describe('useFirstRunTourController', () => {
       expect(mocks.runState.value).toBe('generating')
     })
 
-    it('drops the busy state once the run lands', async () => {
+    it('tells a run that landed apart from one that never started', async () => {
       await tourOnRunStep()
       await finishRun(TOUR_WORKFLOW, 'running')
 
       await finishRun(TOUR_WORKFLOW, 'completed')
 
-      expect(mocks.runState.value).toBe('idle')
+      expect(
+        mocks.runState.value,
+        'sharing a state with never-ran leaves the Result step unable to tell them apart'
+      ).toBe('succeeded')
     })
   })
 
