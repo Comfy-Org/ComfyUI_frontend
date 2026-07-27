@@ -101,18 +101,4 @@ describe('useAttachment', () => {
     expect(registry.chips.every((chip) => chip.uploading === false)).toBe(true)
     expect(onError).toHaveBeenCalledWith('b.png could not be uploaded')
   })
-
-  it('calls preventDefault before doing any work on drop', async () => {
-    const upload = vi.fn().mockResolvedValue({ ref: 'r' })
-    const registry = chipRegistry()
-    const { onDrop } = useAttachment({ upload, ...registry })
-    const preventDefault = vi.fn()
-    const event = {
-      preventDefault,
-      dataTransfer: { files: [] as unknown as FileList }
-    } as unknown as DragEvent
-
-    await onDrop(event)
-    expect(preventDefault).toHaveBeenCalledOnce()
-  })
 })

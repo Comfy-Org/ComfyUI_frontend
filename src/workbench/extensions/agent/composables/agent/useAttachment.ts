@@ -51,13 +51,5 @@ export function useAttachment(options: UseAttachmentOptions) {
     }
   }
 
-  function onDrop(event: DragEvent): Promise<void> {
-    event.preventDefault()
-    const files = event.dataTransfer?.files
-    return files && files.length > 0
-      ? addFiles(Array.from(files))
-      : Promise.resolve()
-  }
-
-  return { addFiles, onDrop }
+  return { addFiles }
 }

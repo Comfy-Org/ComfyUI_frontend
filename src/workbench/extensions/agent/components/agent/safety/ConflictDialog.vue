@@ -30,6 +30,14 @@ function choose(choice: ConflictChoice): void {
 function onOpenChange(value: boolean): void {
   if (!value) choose('cancel')
 }
+
+// The global Escape keybinding preventDefaults before reka sees the event, which
+// suppresses reka's own dismiss, so close from here. The preventDefault below
+// stops a surviving dismiss from resolving a second time.
+function onEscapeKeyDown(event: KeyboardEvent): void {
+  event.preventDefault()
+  choose('cancel')
+}
 </script>
 
 <template>
@@ -38,6 +46,7 @@ function onOpenChange(value: boolean): void {
       <DialogOverlay class="fixed inset-0 z-50 bg-black/60" />
       <DialogContent
         class="agent-scope rounded-agent border-agent-border bg-agent-surface-raised text-agent-fg fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-1/2 space-y-3 border p-5 shadow-xl focus:outline-none"
+        @escape-key-down="onEscapeKeyDown"
       >
         <div class="flex items-start justify-between gap-2">
           <DialogTitle class="text-agent-fg my-0 text-sm font-semibold">
