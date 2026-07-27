@@ -3,9 +3,22 @@ import { datadogRum } from '@datadog/browser-rum'
 import type {
   ExecutionOutcomeMetadata,
   TelemetryProvider,
+  WorkflowExecutionContext,
+  WorkflowExecutionStartedMetadata,
   WorkflowQueuedMetadata,
   WorkflowSubmissionMetadata
 } from '../../types'
+
+function funnelStep(
+  jobId: string | undefined,
+  workflowContext: WorkflowExecutionContext | undefined
+) {
+  return {
+    product: 'cloud_generation',
+    ...(jobId && { job_id: jobId }),
+    ...(workflowContext ?? {})
+  }
+}
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
   trackWorkflowQueued({
@@ -22,8 +35,13 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     startTime,
     submittedAt,
     outcome,
+    jobId,
     workflowContext
   }: WorkflowSubmissionMetadata): void {
+    datadogRum.addAction('workflow_submission', {
+      outcome,
+      ...funnelStep(jobId, workflowContext)
+    })
     const originViewId = datadogRum.getInternalContext(startTime)?.view?.id
     datadogRum.addDurationVital('workflow_submission', {
       startTime: performance.timeOrigin + startTime,
@@ -38,14 +56,29 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     })
   }
 
+  trackWorkflowExecutionStarted({
+    jobId,
+    workflowContext
+  }: WorkflowExecutionStartedMetadata): void {
+    datadogRum.addAction(
+      'workflow_execution_start',
+      funnelStep(jobId, workflowContext)
+    )
+  }
+
   trackExecutionOutcome({
     startTime,
     submittedAt,
     executionStartedAt,
     terminalAt,
     outcome,
+    jobId,
     workflowContext
   }: ExecutionOutcomeMetadata): void {
+    datadogRum.addAction('workflow_run_finished', {
+      outcome,
+      ...funnelStep(jobId, workflowContext)
+    })
     const originViewId = datadogRum.getInternalContext(startTime)?.view?.id
     const context = {
       outcome,

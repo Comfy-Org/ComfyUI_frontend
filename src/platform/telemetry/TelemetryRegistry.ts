@@ -41,6 +41,7 @@ import type {
   TemplateMetadata,
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
+  WorkflowExecutionStartedMetadata,
   WorkflowImportMetadata,
   WorkflowQueuedMetadata,
   WorkflowSavedMetadata,
@@ -286,6 +287,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWorkflowSubmission(metadata: WorkflowSubmissionMetadata): void {
     this.dispatch((provider) => provider.trackWorkflowSubmission?.(metadata))
+  }
+
+  trackWorkflowExecutionStarted(
+    metadata: WorkflowExecutionStartedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackWorkflowExecutionStarted?.(metadata)
+    )
   }
 
   trackExecutionOutcome(metadata: ExecutionOutcomeMetadata): void {

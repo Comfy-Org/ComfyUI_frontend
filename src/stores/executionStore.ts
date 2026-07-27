@@ -213,6 +213,7 @@ export const useExecutionStore = defineStore('execution', () => {
       }),
       terminalAt,
       outcome,
+      jobId,
       ...(queuedJob.workflowContext && {
         workflowContext: queuedJob.workflowContext
       })
@@ -436,7 +437,16 @@ export const useExecutionStore = defineStore('execution', () => {
     executionErrorStore.clearExecutionStartErrors()
     activeJobId.value = e.detail.prompt_id
     queuedJobs.value[activeJobId.value] ??= { nodes: {} }
-    queuedJobs.value[activeJobId.value].executionStartedAt ??= performance.now()
+    const startedJob = queuedJobs.value[activeJobId.value]
+    if (startedJob.executionStartedAt === undefined) {
+      startedJob.executionStartedAt = performance.now()
+      useTelemetry()?.trackWorkflowExecutionStarted({
+        jobId: activeJobId.value,
+        ...(startedJob.workflowContext && {
+          workflowContext: startedJob.workflowContext
+        })
+      })
+    }
     clearInitializationByJobId(activeJobId.value)
 
     // Ensure path mapping exists — execution_start can arrive via WebSocket

@@ -472,6 +472,7 @@ describe('ComfyApp', () => {
           startTime: 42,
           submittedAt: 92,
           outcome: 'accepted',
+          jobId: 'job-1',
           workflowContext: expect.objectContaining({
             workflow_type: 'custom',
             execution_scope: 'full'

@@ -1739,6 +1739,7 @@ export class ComfyApp {
               startTime,
               submittedAt,
               outcome: res.prompt_id ? 'accepted' : 'prompt_rejected',
+              ...(res.prompt_id && { jobId: res.prompt_id }),
               ...(workflowContext && { workflowContext })
             })
             delete api.authToken
