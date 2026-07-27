@@ -49,6 +49,14 @@ export function isVoluntarySignOutInProgress(): boolean {
   return voluntarySignOutDepth > 0
 }
 
+function redirectToLogin(): void {
+  try {
+    window.location.href = '/cloud/login'
+  } catch {
+    window.location.reload()
+  }
+}
+
 /**
  * Ends a cloud session that the identity provider has already invalidated.
  *
@@ -63,14 +71,6 @@ export function isVoluntarySignOutInProgress(): boolean {
  * app may end a session; the token refresh paths only ask the provider to
  * re-issue and let it decide.
  */
-function redirectToLogin(): void {
-  try {
-    window.location.href = '/cloud/login'
-  } catch {
-    window.location.reload()
-  }
-}
-
 export function endExpiredSession(reason: string): void {
   if (!isCloud || terminated || isPublicRoutePath(window.location.pathname)) {
     return

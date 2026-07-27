@@ -2218,6 +2218,41 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockEndExpiredSession).not.toHaveBeenCalled()
     })
 
+    it('remintUnifiedOnce reports a failed revalidation instead of swallowing it', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockGetIdToken.mockImplementation((force?: boolean) =>
+        force === true
+          ? Promise.reject(new Error('network down'))
+          : Promise.resolve('firebase-token-xyz')
+      )
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(personalTokenResponse)
+        })
+        .mockResolvedValue({
+          ok: false,
+          status: 401,
+          statusText: 'Unauthorized',
+          json: () => Promise.resolve({ message: 'Invalid token' })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.mintAtLogin()
+      await store.remintUnifiedOnce('unified-token-1')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(warn).toHaveBeenCalledWith(
+        'Identity revalidation failed:',
+        expect.any(Error)
+      )
+      expect(mockEndExpiredSession).not.toHaveBeenCalled()
+      warn.mockRestore()
+    })
+
     it('remintUnifiedOnce does not ask the provider when the workspace, not the identity, was refused', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')

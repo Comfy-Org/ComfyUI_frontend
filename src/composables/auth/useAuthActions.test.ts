@@ -137,6 +137,23 @@ describe('useAuthActions.logout', () => {
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
   })
 
+  it('holds the deliberate-sign-out guard for the whole sign-out, then releases it', async () => {
+    const { isVoluntarySignOutInProgress } =
+      await import('@/platform/auth/session/sessionExpiry')
+    let heldDuringSignOut = false
+    mockAuthStore.logout.mockImplementation(async () => {
+      heldDuringSignOut = isVoluntarySignOutInProgress()
+    })
+
+    const { logout } = useAuthActions()
+    await logout()
+
+    // The guard must outlive the sign-out itself: the hook that observes it
+    // only runs after an awaited network round-trip.
+    expect(heldDuringSignOut).toBe(true)
+    expect(isVoluntarySignOutInProgress()).toBe(false)
+  })
+
   it('logs out without prompting when no workflows are modified', async () => {
     const { logout } = useAuthActions()
 
