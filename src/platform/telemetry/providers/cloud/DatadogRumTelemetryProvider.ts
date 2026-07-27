@@ -26,8 +26,8 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     ...metadata
   }: WorkflowQueuedMetadata): void {
     datadogRum.addAction('workflow_queue', {
-      ...workflowContext,
-      ...metadata
+      ...metadata,
+      ...funnelStep(undefined, workflowContext)
     })
   }
 

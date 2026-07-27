@@ -63,8 +63,35 @@ describe('DatadogRumTelemetryProvider', () => {
       api_node_count: 1,
       subgraph_count: 2,
       trigger_source: 'keybinding',
+      subscribe_to_run: false,
+      product: 'cloud_generation'
+    })
+  })
+
+  it('tags every funnel step with the same product', () => {
+    const provider = new DatadogRumTelemetryProvider()
+
+    provider.trackWorkflowQueued({
+      workflowContext,
+      trigger_source: 'unknown',
       subscribe_to_run: false
     })
+    provider.trackWorkflowSubmission({
+      startTime: 0,
+      submittedAt: 1,
+      outcome: 'accepted',
+      jobId: 'job-1'
+    })
+    provider.trackWorkflowExecutionStarted({ jobId: 'job-1' })
+    provider.trackExecutionOutcome({
+      startTime: 0,
+      terminalAt: 2,
+      outcome: 'success',
+      jobId: 'job-1'
+    })
+
+    const products = addAction.mock.calls.map(([, context]) => context.product)
+    expect(products).toEqual(Array(4).fill('cloud_generation'))
   })
 
   it('records workflow submission timing and outcome', () => {

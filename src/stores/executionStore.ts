@@ -194,6 +194,16 @@ export const useExecutionStore = defineStore('execution', () => {
     mutateStatus((m) => m.set(workflow, status))
   }
 
+  function trackWorkflowExecutionStarted(
+    jobId: string,
+    workflowContext: WorkflowExecutionContext | undefined
+  ) {
+    useTelemetry()?.trackWorkflowExecutionStarted({
+      jobId,
+      ...(workflowContext && { workflowContext })
+    })
+  }
+
   function trackExecutionOutcome(
     jobId: string,
     outcome: ExecutionOutcomeMetadata['outcome'],
@@ -440,12 +450,15 @@ export const useExecutionStore = defineStore('execution', () => {
     const startedJob = queuedJobs.value[activeJobId.value]
     if (startedJob.executionStartedAt === undefined) {
       startedJob.executionStartedAt = performance.now()
-      useTelemetry()?.trackWorkflowExecutionStarted({
-        jobId: activeJobId.value,
-        ...(startedJob.workflowContext && {
-          workflowContext: startedJob.workflowContext
-        })
-      })
+      // execution_start is broadcast to every connected tab, but only the tab
+      // that submitted has startTime. Spectator tabs must not count the step;
+      // a submitting tab that has not yet stored the job emits from storeJob.
+      if (startedJob.startTime !== undefined) {
+        trackWorkflowExecutionStarted(
+          activeJobId.value,
+          startedJob.workflowContext
+        )
+      }
     }
     clearInitializationByJobId(activeJobId.value)
 
@@ -821,9 +834,19 @@ export const useExecutionStore = defineStore('execution', () => {
       ...queuedJob.nodes
     }
     queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
+    const wasStored = queuedJob.startTime !== undefined
     queuedJob.startTime = startTime
     queuedJob.submittedAt = submittedAt
     queuedJob.workflowContext = workflowContext
+    // execution_start can beat the queuePrompt response, leaving the step
+    // unattributed until the job is stored.
+    if (
+      !wasStored &&
+      startTime !== undefined &&
+      queuedJob.executionStartedAt !== undefined
+    ) {
+      trackWorkflowExecutionStarted(String(id), workflowContext)
+    }
     queuedJob.workflow = workflow
     if (workflow) jobIdToWorkflow.set(String(id), workflow)
     queuedJob.shareId = workflow?.shareId

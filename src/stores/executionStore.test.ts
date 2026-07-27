@@ -1424,9 +1424,42 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       })
     })
 
+    function submitJob(id: string) {
+      store.storeJob({
+        nodes: ['1'],
+        id,
+        promptOutput: { '1': createPromptNode('Node', 'TestNode') },
+        startTime: 42,
+        submittedAt: 142,
+        workflow: createQueuedWorkflow()
+      })
+    }
+
     it('emits the execution start funnel step once per job', () => {
+      submitJob('job-1')
+
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackWorkflowExecutionStarted).toHaveBeenCalledExactlyOnceWith(
+        { jobId: 'job-1' }
+      )
+    })
+
+    it('does not count the step in a tab that did not submit the job', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(store.queuedJobs['job-1'].executionStartedAt).toEqual(
+        expect.any(Number)
+      )
+      expect(mockTrackWorkflowExecutionStarted).not.toHaveBeenCalled()
+    })
+
+    it('emits the step when execution_start beats the queuePrompt response', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      expect(mockTrackWorkflowExecutionStarted).not.toHaveBeenCalled()
+
+      submitJob('job-1')
 
       expect(mockTrackWorkflowExecutionStarted).toHaveBeenCalledExactlyOnceWith(
         { jobId: 'job-1' }
