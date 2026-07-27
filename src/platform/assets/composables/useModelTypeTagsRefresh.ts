@@ -16,11 +16,18 @@ const REFRESH_INTERVAL_MS = 120_000
  */
 export const httpSupportsModelTypeTags = ref<boolean | undefined>(undefined)
 
+let refreshSequence = 0
+
 export async function refreshSupportsModelTypeTags(): Promise<void> {
+  const sequence = ++refreshSequence
   try {
     const response = await api.fetchApi('/features', { cache: 'no-store' })
     if (!response.ok) return
     const features: unknown = await response.json()
+    // The refresh triggers can overlap (reconnect, visibility, interval); a
+    // superseded fetch must not commit, or a slow pre-flip response could
+    // revert a newer value.
+    if (sequence !== refreshSequence) return
     const value =
       typeof features === 'object' && features !== null
         ? (features as Record<string, unknown>)['supports_model_type_tags']

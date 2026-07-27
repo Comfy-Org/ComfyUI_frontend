@@ -88,6 +88,27 @@ describe('refreshSupportsModelTypeTags', () => {
 
     expect(httpSupportsModelTypeTags.value).toBe(false)
   })
+
+  it('discards a superseded response that resolves after a newer one', async () => {
+    let resolveSlow: (response: Response) => void
+    fetchApiSpy.mockReturnValueOnce(
+      new Promise<Response>((resolve) => {
+        resolveSlow = resolve
+      })
+    )
+    const slowRefresh = refreshSupportsModelTypeTags()
+
+    fetchApiSpy.mockResolvedValueOnce(
+      buildResponse({ supports_model_type_tags: false })
+    )
+    await refreshSupportsModelTypeTags()
+    expect(httpSupportsModelTypeTags.value).toBe(false)
+
+    resolveSlow!(buildResponse({ supports_model_type_tags: true }))
+    await slowRefresh
+
+    expect(httpSupportsModelTypeTags.value).toBe(false)
+  })
 })
 
 describe('useSupportsModelTypeTagsRefresh', () => {
@@ -133,6 +154,23 @@ describe('useSupportsModelTypeTagsRefresh', () => {
     expect(fetchApiSpy).toHaveBeenCalledTimes(2)
     vi.advanceTimersByTime(120_000)
     expect(fetchApiSpy).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not fetch on visibility events or interval ticks while hidden', () => {
+    vi.useFakeTimers()
+    const hiddenSpy = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
+    scope.run(() => useSupportsModelTypeTagsRefresh())
+    expect(fetchApiSpy).toHaveBeenCalledTimes(1)
+
+    hiddenSpy.mockReturnValue(true)
+    document.dispatchEvent(new Event('visibilitychange'))
+    vi.advanceTimersByTime(120_000)
+    expect(fetchApiSpy).toHaveBeenCalledTimes(1)
+
+    hiddenSpy.mockReturnValue(false)
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(fetchApiSpy).toHaveBeenCalledTimes(2)
+    hiddenSpy.mockRestore()
   })
 
   it('stops all refresh triggers when the scope is disposed', () => {
