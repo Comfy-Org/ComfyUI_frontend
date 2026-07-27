@@ -73,7 +73,7 @@ function updateToastPosition() {
   styleElement.textContent = `
     .p-toast.p-component.p-toast-top-right {
       top: ${rect.top + 100}px !important;
-      right: ${window.innerWidth - (rect.left + rect.width) + 20}px !important;
+      right: calc(${window.innerWidth - (rect.left + rect.width) + 20}px + var(--workspace-inset-right, 0px)) !important;
        z-index: 10000 !important;
     }
   `

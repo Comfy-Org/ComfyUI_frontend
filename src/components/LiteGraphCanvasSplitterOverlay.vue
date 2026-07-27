@@ -152,6 +152,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
 import {
   BUILDER_MIN_SIZE,
   CENTER_PANEL_SIZE,
@@ -192,6 +193,10 @@ const {
 } = storeToRefs(agentPanelStore)
 const agentPanelDocked = computed(
   () => agentPanelEnabled.value && agentPanelOpen.value
+)
+
+useWorkspaceInsetRight(() =>
+  agentPanelDocked.value ? agentPanelWidth.value : 0
 )
 const isAgentResizing = ref(false)
 let agentResizeStartX = 0
