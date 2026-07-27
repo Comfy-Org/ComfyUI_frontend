@@ -22,6 +22,29 @@ reviews:
     docstrings:
       mode: 'off'
     custom_checks:
+      - name: Reproduction and contribution evidence
+        mode: error
+        instructions: |
+          Use only PR metadata already available in the review context: the PR
+          description, changed-file list relative to the base, and diff content.
+          Do not run shell commands or follow links to infer missing evidence.
+
+          Fail when the PR description does not contain concrete reproduction or
+          validation steps that another reviewer can follow.
+
+          The PR must select exactly one evidence type:
+          1. Visual: require either distinct Before and After screenshot links, or
+             one screencast link that demonstrates the before and after behavior.
+          2. Non-visual: allow this only when the diff has no user-visible behavior
+             or presentation change. Require an `N/A:` rationale plus a concrete
+             test command and result or relevant log evidence.
+
+          Fail placeholders, generic statements such as `done` or `tested`, a
+          screenshot used as both Before and After, and Non-visual selections for
+          changes to rendered UI, styling, interaction, or user-visible states.
+          Pass otherwise. The repository metadata workflow validates field shape;
+          this check validates whether the supplied evidence matches the diff.
+
       - name: End-to-end regression coverage for fixes
         mode: error
         instructions: |

@@ -86,6 +86,20 @@ jobs:
             ${{ steps.capitalised.outputs.capitalised }} version increment for @comfyorg/desktop-ui to ${{ steps.bump-version.outputs.NEW_VERSION }}
 
             **Base branch:** `${{ github.event.inputs.branch }}`
+
+            ## Reproduction or validation steps
+            1. Review the desktop UI package and lockfile version changes.
+            2. Confirm desktop UI release checks pass for the target branch in CI.
+
+            ## Evidence type
+            - [ ] Visual
+            - [x] Non-visual
+
+            ## Non-visual rationale
+            N/A: This automated package version bump has no visual behavior.
+
+            ## Test or log evidence
+            `pnpm -C apps/desktop-ui version ${{ github.event.inputs.version_type }} --no-git-tag-version` passed in workflow run `${{ github.run_id }}`.
           branch: desktop-ui-version-bump-${{ steps.bump-version.outputs.NEW_VERSION }}
           base: ${{ github.event.inputs.branch }}
           labels: |

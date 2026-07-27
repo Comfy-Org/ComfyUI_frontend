@@ -63,6 +63,20 @@ jobs:
             snapshot (with a warning annotation in CI).
 
             Triggered by workflow run `${{ github.run_id }}`.
+
+            ## Reproduction or validation steps
+            1. Review both regenerated snapshot diffs for expected remote data.
+            2. Confirm the Vercel website preview builds successfully.
+
+            ## Evidence type
+            - [ ] Visual
+            - [x] Non-visual
+
+            ## Non-visual rationale
+            N/A: This automated snapshot refresh changes data files only.
+
+            ## Test or log evidence
+            Status: success for snapshot generation in workflow run `${{ github.run_id }}`.
           branch: chore/refresh-website-snapshots-${{ github.run_id }}
           base: main
           labels: |

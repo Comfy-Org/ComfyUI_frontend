@@ -1,0 +1,117 @@
+# Description: Labels and reports issues blocked by missing evidence or a Comfy human owner.
+name: 'CI: Issue Evidence'
+
+on:
+  issues:
+    types: [opened, edited, reopened, assigned, unassigned]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: issue-evidence-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  issue-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout default-branch validator
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.workflow_sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Validate issue evidence
+        id: evidence
+        continue-on-error: true
+        run: node scripts/cicd/validate-evidence.ts issue "$GITHUB_EVENT_PATH"
+
+      - name: Validate human maintainer assignment
+        id: maintainer
+        continue-on-error: true
+        env:
+          COMFY_ORG_MEMBERS_READ_TOKEN: ${{ secrets.COMFY_ORG_MEMBERS_READ_TOKEN }}
+        run: node scripts/cicd/validate-maintainer.ts "$GITHUB_EVENT_PATH"
+
+      - name: Update blocked labels
+        if: always()
+        uses: actions/github-script@v8
+        env:
+          EVIDENCE_VALID: ${{ steps.evidence.outputs.valid }}
+          MAINTAINER_VALID: ${{ steps.maintainer.outputs.valid }}
+        with:
+          script: |
+            const issue_number = context.issue.number
+            const { owner, repo } = context.repo
+            const policies = [
+              {
+                description: 'Blocked until required reproduction and evidence details are added',
+                name: 'blocked: needs-evidence',
+                valid: process.env.EVIDENCE_VALID === 'true'
+              },
+              {
+                description: 'Blocked until an active human comfy_frontend_devs member is assigned',
+                name: 'blocked: needs-maintainer',
+                valid: process.env.MAINTAINER_VALID === 'true'
+              }
+            ]
+
+            for (const policy of policies) {
+              if (policy.valid) {
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner,
+                    repo,
+                    issue_number,
+                    name: policy.name
+                  })
+                } catch (error) {
+                  if (error.status !== 404) throw error
+                }
+                continue
+              }
+
+              try {
+                await github.rest.issues.getLabel({
+                  owner,
+                  repo,
+                  name: policy.name
+                })
+              } catch (error) {
+                if (error.status !== 404) throw error
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo,
+                  name: policy.name,
+                  color: 'B60205',
+                  description: policy.description
+                }).catch((createError) => {
+                  const alreadyExists =
+                    createError.status === 422 &&
+                    createError.response?.data?.errors?.some(
+                      (detail) => detail.code === 'already_exists'
+                    )
+                  if (!alreadyExists) throw createError
+                })
+              }
+
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number,
+                labels: [policy.name]
+              })
+            }
+
+      - name: Fail blocked contribution
+        if: >-
+          always() &&
+          (steps.evidence.outputs.valid != 'true' ||
+           steps.maintainer.outputs.valid != 'true')
+        run: exit 1

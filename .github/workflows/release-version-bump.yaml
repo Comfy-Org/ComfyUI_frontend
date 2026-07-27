@@ -202,6 +202,20 @@ jobs:
             ${{ steps.capitalised.outputs.capitalised }} version increment to ${{ steps.bump-version.outputs.NEW_VERSION }}
 
             **Base branch:** `${{ steps.prepared-inputs.outputs.branch }}`
+
+            ## Reproduction or validation steps
+            1. Review the package and lockfile version changes.
+            2. Confirm release checks pass for the target branch in CI.
+
+            ## Evidence type
+            - [ ] Visual
+            - [x] Non-visual
+
+            ## Non-visual rationale
+            N/A: This automated version bump has no visual behavior.
+
+            ## Test or log evidence
+            `pnpm version ${{ steps.prepared-inputs.outputs.version_type }} --no-git-tag-version` passed in workflow run `${{ github.run_id }}`.
           branch: version-bump-${{ steps.bump-version.outputs.NEW_VERSION }}
           base: ${{ steps.prepared-inputs.outputs.branch }}
           labels: |

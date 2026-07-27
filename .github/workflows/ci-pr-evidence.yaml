@@ -1,0 +1,67 @@
+# Description: Enforces PR evidence and a Comfy human owner with trusted base-branch code.
+name: 'CI: PR Evidence'
+
+on:
+  pull_request_target:
+    types:
+      [
+        opened,
+        edited,
+        synchronize,
+        reopened,
+        ready_for_review,
+        assigned,
+        unassigned
+      ]
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-evidence-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  pr-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout trusted validator
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.workflow_sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Validate human maintainer assignment
+        id: maintainer
+        if: github.event_name == 'pull_request_target'
+        continue-on-error: true
+        env:
+          COMFY_ORG_MEMBERS_READ_TOKEN: ${{ secrets.COMFY_ORG_MEMBERS_READ_TOKEN }}
+        run: node scripts/cicd/validate-maintainer.ts "$GITHUB_EVENT_PATH"
+
+      - name: Validate pull request evidence
+        id: evidence
+        if: github.event_name == 'pull_request_target'
+        continue-on-error: true
+        run: node scripts/cicd/validate-evidence.ts pr "$GITHUB_EVENT_PATH"
+
+      - name: Enforce contribution policy
+        if: >-
+          github.event_name == 'pull_request_target' &&
+          (steps.maintainer.outputs.valid != 'true' ||
+           steps.evidence.outputs.valid != 'true')
+        run: exit 1
+
+      - name: Validate current merge group metadata
+        if: github.event_name == 'merge_group'
+        env:
+          COMFY_ORG_MEMBERS_READ_TOKEN: ${{ secrets.COMFY_ORG_MEMBERS_READ_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/cicd/validate-merge-group.ts "$GITHUB_EVENT_PATH"
