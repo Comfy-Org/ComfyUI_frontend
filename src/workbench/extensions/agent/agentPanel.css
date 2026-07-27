@@ -60,7 +60,9 @@
    each element's own bg-* / border utilities still win. */
 @layer base {
   /* Thin the scrollbar and drop the UA track fill, leaving the thumb as the
-     only mark on the surface. */
+     only mark on the surface. The scope carriers themselves scroll too (the
+     portaled menus), so they are part of the selector, not just ancestors. */
+  :where(#agent-panel-root, .agent-scope),
   :where(#agent-panel-root, .agent-scope) :where(*) {
     scrollbar-width: thin;
     scrollbar-color: var(--color-agent-border-strong) transparent;
