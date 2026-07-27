@@ -2212,7 +2212,18 @@
     "swatchTitle": "Click edit · drag reorder · right-click remove"
   },
   "videoEdit": {
-    "adjustCrop": "Adjust crop region"
+    "play": "Play",
+    "pause": "Pause",
+    "loadingFilmstrip": "Loading filmstrip…",
+    "adjustStartFrame": "Adjust start frame",
+    "adjustEndFrame": "Adjust end frame",
+    "adjustCrop": "Adjust crop region",
+    "durationZero": "0s",
+    "durationSeconds": "{count}s",
+    "fileSizeUnknown": "—",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
