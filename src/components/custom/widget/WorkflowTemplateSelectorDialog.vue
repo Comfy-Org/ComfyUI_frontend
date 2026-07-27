@@ -277,7 +277,7 @@
                 </template>
                 <template #top-left>
                   <div
-                    class="flex h-6 items-center gap-1 rounded-lg bg-zinc-700/50 px-2 backdrop-blur-[20px]"
+                    class="flex h-6 items-center gap-1 rounded-md bg-zinc-700/50 px-2 backdrop-blur-[20px]"
                   >
                     <i
                       :class="
