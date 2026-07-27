@@ -225,9 +225,9 @@ export function useWorkflowPersistenceV2() {
     const query = await ensureTemplateQueryFromIntent()
     const hasTemplateUrl = query.template && typeof query.template === 'string'
 
-    if (hasTemplateUrl) {
-      await templateUrlLoader.loadTemplateFromUrl()
-    }
+    return hasTemplateUrl
+      ? await templateUrlLoader.loadTemplateFromUrl()
+      : undefined
   }
 
   const loadSharedWorkflowFromUrlIfPresent = async () => {

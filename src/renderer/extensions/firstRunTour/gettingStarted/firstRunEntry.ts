@@ -13,6 +13,8 @@ import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftT
 import { useNewUserService } from '@/services/useNewUserService'
 import { useCommandStore } from '@/stores/commandStore'
 
+import { useFirstRunTourController } from '../tour/useFirstRunTourController'
+
 /**
  * Decides what a first-time user sees once startup reports its outcome: the
  * Getting Started screen for first-run tour candidates, the template browser
@@ -44,6 +46,19 @@ export const useFirstRunEntry = createSharedComposable(() => {
     await useCommandStore().execute('Comfy.BrowseTemplates')
   }
 
+  /**
+   * A share or template link loads its workflow instead of the Getting Started
+   * screen, so the tour is offered over whatever arrived. The engine declines
+   * to repeat a tour the user has already seen.
+   */
+  async function handleUrlWorkflow(
+    outcome: StartupOutcome | undefined,
+    templateId?: string
+  ) {
+    if (outcome !== 'url-intent' || !isFirstRunCandidate()) return
+    await useFirstRunTourController().beginTour(templateId)
+  }
+
   /** The only writer of the seen flag, so it lands on a real user action. */
   async function dismissGettingStarted() {
     gettingStartedVisible.value = false
@@ -53,6 +68,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
   return {
     gettingStartedVisible: readonly(gettingStartedVisible),
     handleStartupOutcome,
+    handleUrlWorkflow,
     dismissGettingStarted
   }
 })

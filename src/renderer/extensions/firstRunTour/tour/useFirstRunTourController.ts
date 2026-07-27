@@ -106,8 +106,8 @@ function useFirstRunTourControllerInternal() {
     nudgeArmed.value = false
   }
 
-  /** False when this template has no tour to give; the caller keeps the loaded graph. */
-  async function beginTour(templateId: string): Promise<boolean> {
+  /** False when this graph has no tour to give; the caller keeps it loaded. */
+  async function beginTour(templateId?: string): Promise<boolean> {
     if (!canvasTransformValid()) return false
 
     tourWorkflow.value = workflowStore.activeWorkflow ?? null

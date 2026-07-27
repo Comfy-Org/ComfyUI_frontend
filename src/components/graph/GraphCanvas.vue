@@ -179,6 +179,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
+import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -505,6 +506,8 @@ useEventListener(
 onMounted(async () => {
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
+  let startupOutcome: StartupOutcome | undefined
+  let urlTemplateId: string | undefined
   try {
     // ChangeTracker needs to be initialized before setup, as it will overwrite
     // some listeners of litegraph canvas.
@@ -560,14 +563,15 @@ onMounted(async () => {
     )
 
     // Restore saved workflow and workflow tabs state
-    const startupOutcome = await workflowPersistence.initializeWorkflow()
+    startupOutcome = await workflowPersistence.initializeWorkflow()
     await workflowPersistence.restoreWorkflowTabsState()
-    await workflowPersistence.loadTemplateFromUrlIfPresent()
+    urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
     await useFirstRunEntry().handleStartupOutcome(startupOutcome)
   } finally {
     workspaceStore.spinner = false
   }
   await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
+  await useFirstRunEntry().handleUrlWorkflow(startupOutcome, urlTemplateId)
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,

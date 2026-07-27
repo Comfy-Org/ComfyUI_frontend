@@ -16,7 +16,8 @@ const mocks = vi.hoisted(() => ({
   tourFlag: true,
   execute: vi.fn(),
   settings: {} as Record<string, unknown>,
-  setSetting: vi.fn()
+  setSetting: vi.fn(),
+  beginTour: vi.fn()
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -65,6 +66,10 @@ vi.mock('@/platform/settings/settingStore', () => ({
     get: (key: string) => mocks.settings[key],
     set: mocks.setSetting
   })
+}))
+
+vi.mock('../tour/useFirstRunTourController', () => ({
+  useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
 
 // createSharedComposable caches across calls; each test needs its own instance.
@@ -137,6 +142,53 @@ describe('useFirstRunEntry', () => {
       ).not.toHaveBeenCalled()
     }
   )
+
+  describe('a workflow that arrived by URL', () => {
+    it('offers the tour over a shared workflow, which has no template id', async () => {
+      const entry = await freshEntry()
+
+      await entry.handleUrlWorkflow('url-intent')
+
+      expect(
+        mocks.beginTour,
+        'a share link is the case no pin can ever cover'
+      ).toHaveBeenCalledWith(undefined)
+    })
+
+    it('passes a template id through so its pins beat the heuristic', async () => {
+      const entry = await freshEntry()
+
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(mocks.beginTour).toHaveBeenCalledWith('image_z_image_turbo')
+    })
+
+    it('leaves a non-candidate alone', async () => {
+      mocks.isNewUser = false
+      const entry = await freshEntry()
+
+      await entry.handleUrlWorkflow('url-intent')
+
+      expect(
+        mocks.beginTour,
+        'a returning user opening a share link must not be toured'
+      ).not.toHaveBeenCalled()
+    })
+
+    it.for(['fresh', 'restored'] as const)(
+      'does not fire on a %s startup',
+      async (outcome: StartupOutcome) => {
+        const entry = await freshEntry()
+
+        await entry.handleUrlWorkflow(outcome)
+
+        expect(
+          mocks.beginTour,
+          'only a URL intent has a workflow on the canvas to tour'
+        ).not.toHaveBeenCalled()
+      }
+    )
+  })
 
   it('keeps the screen up when eligibility changes underneath it', async () => {
     const entry = await freshEntry()
