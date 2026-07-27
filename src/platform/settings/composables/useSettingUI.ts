@@ -204,6 +204,16 @@ export function useSettingUI(
     props: { section: 'planCredits' }
   }
 
+  const membersPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace-members',
+      label: 'Members',
+      children: []
+    },
+    component: workspaceSettingsPanelComponent,
+    props: { section: 'members' }
+  }
+
   const shouldShowWorkspacePanel = computed(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
   )
@@ -214,7 +224,9 @@ export function useSettingUI(
 
   const visibleWorkspacePanels = computed<SettingPanelItem[]>(() => {
     if (!shouldShowWorkspacePanel.value) return []
-    return billingControlsEnabled.value ? [planCreditsPanel] : [workspacePanel]
+    return billingControlsEnabled.value
+      ? [planCreditsPanel, membersPanel]
+      : [workspacePanel]
   })
 
   const secretsPanel: SettingPanelItem = {

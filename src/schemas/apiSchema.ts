@@ -414,6 +414,7 @@ const zSettings = z.object({
   'Comfy.Toast.DisableReconnectingToast': z.boolean(),
   'Comfy.Workflow.Persist': z.boolean(),
   'Comfy.TutorialCompleted': z.boolean(),
+  'Comfy.OnboardingCoachmarks.Seen': z.array(z.string()),
   'Comfy.InstalledVersion': z.string().nullable(),
   'Comfy.Node.AllowImageSizeDraw': z.boolean(),
   'Comfy.Minimap.Visible': z.boolean(),

@@ -246,7 +246,7 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
         .getByRole('dialog')
         .locator('nav')
         .getByRole('button', { name: 'Members', exact: true })
-    ).toHaveCount(0)
+    ).toBeVisible()
 
     // Total + remaining suffix (Pro monthly allowance = 21,100; remaining
     // 10,550 -> used 10,550).

@@ -4,6 +4,7 @@ import { computed, ref, toValue, watch } from 'vue'
 export interface ActivityEvent {
   id: string
   date: Date
+  userId: string | null
   userName: string
   eventType: string
   detail: string
@@ -38,7 +39,7 @@ export type ActivitySortField =
 export function useWorkspaceActivity(
   search: MaybeRefOrGetter<string>,
   pageSize: MaybeRefOrGetter<number>,
-  selfName: MaybeRefOrGetter<string | null> = null,
+  selfUserId: MaybeRefOrGetter<string | null> = null,
   source: MaybeRefOrGetter<ActivityEvent[]> = []
 ) {
   const page = ref(1)
@@ -49,9 +50,9 @@ export function useWorkspaceActivity(
   // Members only see their own usage; credit inflows stay workspace-level.
   const base = computed<ActivityEvent[]>(() => {
     const events = toValue(source)
-    const self = toValue(selfName)
-    if (!self) return events
-    return events.filter((event) => event.credited || event.userName === self)
+    const self = toValue(selfUserId)
+    if (self === null) return events
+    return events.filter((event) => event.credited || event.userId === self)
   })
 
   const filtered = computed(() => {
@@ -109,10 +110,10 @@ export function useWorkspaceActivity(
   const userSummaries = computed(() => {
     const map = new Map<string, UserSummary>()
     for (const event of base.value) {
-      if (event.credited) continue
-      const existing = map.get(event.userName)
+      if (event.credited || !event.userId) continue
+      const existing = map.get(event.userId)
       if (!existing) {
-        map.set(event.userName, {
+        map.set(event.userId, {
           totalCredits: event.credits,
           lastActivity: event.date
         })
