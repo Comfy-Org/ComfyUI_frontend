@@ -366,22 +366,21 @@ defineExpose({
 
       <div
         ref="widgetsContainer"
+        data-testid="section-widgets-list"
         class="relative space-y-2 rounded-lg px-4 pt-1"
       >
-        <TransitionGroup name="list-scale">
-          <WidgetItem
-            v-for="{ widget, node } in widgets"
-            :key="getStableWidgetRenderKey(widget)"
-            :widget
-            :node
-            :is-draggable
-            :hidden-favorite-indicator
-            :show-node-name
-            :host
-            @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
-            @reset-to-default="handleWidgetReset(node, widget, $event)"
-          />
-        </TransitionGroup>
+        <WidgetItem
+          v-for="{ widget, node } in widgets"
+          :key="getStableWidgetRenderKey(widget)"
+          :widget
+          :node
+          :is-draggable
+          :hidden-favorite-indicator
+          :show-node-name
+          :host
+          @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
+          @reset-to-default="handleWidgetReset(node, widget, $event)"
+        />
       </div>
     </PropertiesAccordionItem>
   </div>

@@ -23,6 +23,7 @@ import {
   resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -126,6 +127,7 @@ export function useSlotLinkInteraction({
     setCompatibleForKey,
     clearCompatible
   } = useSlotLinkDragUIState()
+  const canvasStore = useCanvasStore()
   const conversion = useSharedCanvasPositionConversion()
   const pointerSession = createPointerSession()
   let activeAdapter: LinkConnectorAdapter | null = null
@@ -420,9 +422,11 @@ export function useSlotLinkInteraction({
   const canvas = app.canvas
   const node = nodeId && canvas ? canvas.graph?.getNodeById(nodeId) : null
   const handlePointerMove = (event: PointerEvent) => {
-    if (!pointerSession.matches(event)) return
+    if (!pointerSession.matches(event) || canvasStore.isReadOnly) return
+
     event.stopPropagation()
 
+    app.canvas.last_mouse = [event.clientX, event.clientY]
     autoPan?.updatePointer(event.clientX, event.clientY)
 
     if (canvas?.subgraph && node) {
@@ -531,8 +535,6 @@ export function useSlotLinkInteraction({
 
     raf.flush()
 
-    raf.flush()
-
     if (!state.source) {
       cleanupInteraction()
       app.canvas?.setDirty(true, true)
@@ -580,24 +582,18 @@ export function useSlotLinkInteraction({
     const graph = app.canvas?.graph ?? null
     const context = { adapter, graph, session: dragContext }
 
-    const attemptSnapped = () => tryConnectToCandidate(snappedCandidate)
-
     const domSlotCandidate = resolveSlotTargetCandidate(target, context)
-    const attemptDomSlot = () => tryConnectToCandidate(domSlotCandidate)
-
     const nodeSurfaceSlotCandidate = resolveNodeSurfaceSlotCandidate(
       target,
       context
     )
-    const attemptNodeSurface = () =>
-      tryConnectToCandidate(nodeSurfaceSlotCandidate)
-    const attemptReroute = () => tryConnectViaRerouteAtPointer()
 
-    if (attemptSnapped()) return true
-    if (attemptDomSlot()) return true
-    if (attemptNodeSurface()) return true
-    if (attemptReroute()) return true
-    return false
+    return (
+      tryConnectToCandidate(snappedCandidate) ||
+      tryConnectToCandidate(domSlotCandidate) ||
+      tryConnectToCandidate(nodeSurfaceSlotCandidate) ||
+      tryConnectViaRerouteAtPointer()
+    )
   }
 
   const onPointerDown = (event: PointerEvent) => {

@@ -4,7 +4,7 @@ import { reactive, ref } from 'vue'
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { parseWidgetId } from '@/types/widgetId'
+import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
@@ -89,11 +89,21 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>,
     renderState: WidgetRenderState = {}
-  ): WidgetState<TValue> {
+  ): WidgetState<TValue> | undefined {
+    // Guard before parseWidgetId: an un-keyable id cannot address either map.
+    if (!isWidgetId(widgetId)) {
+      console.warn(
+        'widgetValueStore.registerWidget: ignoring un-keyable widget id',
+        widgetId
+      )
+      return undefined
+    }
+
     registerWidgetRenderState(widgetId, renderState)
 
     const existing = getWidget(widgetId)
-    if (existing) {
+    // A type change re-registers: the stored value no longer fits the widget.
+    if (existing && existing.type === init.type) {
       appendNodeWidgetOrder(widgetId)
       return existing as WidgetState<TValue>
     }
@@ -129,6 +139,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function getWidget(widgetId: WidgetId): WidgetState | undefined {
+    if (!isWidgetId(widgetId)) return undefined
+
     const { graphId } = parseWidgetId(widgetId)
     return getGraphWidgetStates(graphId).get(widgetId)
   }
@@ -148,6 +160,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function deleteWidget(widgetId: WidgetId): boolean {
+    if (!isWidgetId(widgetId)) return false
+
     const { graphId } = parseWidgetId(widgetId)
     getGraphWidgetRenderStates(graphId).delete(widgetId)
     removeNodeWidgetOrder(widgetId)

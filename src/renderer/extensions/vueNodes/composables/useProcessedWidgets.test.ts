@@ -223,7 +223,7 @@ describe('widget error state', () => {
   })
 
   it('reports an error when the node has a matching input error', () => {
-    useExecutionErrorStore().lastNodeErrors = {
+    useExecutionErrorStore().recordNodeErrors({
       [createNodeExecutionId([toNodeId(1)])]: {
         errors: [
           {
@@ -236,7 +236,7 @@ describe('widget error state', () => {
         class_type: 'TestNode',
         dependent_outputs: []
       }
-    }
+    })
     expect(processWidgetNamed('seed').hasError).toBe(true)
   })
 
@@ -434,7 +434,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
   })
 
   function seedSeedError() {
-    useExecutionErrorStore().lastNodeErrors = {
+    useExecutionErrorStore().recordNodeErrors({
       [createNodeExecutionId([NODE_ID])]: {
         errors: [
           {
@@ -447,7 +447,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
         class_type: 'TestNode',
         dependent_outputs: []
       }
-    }
+    })
   }
 
   it('clears execution errors on update', () => {

@@ -56,6 +56,7 @@ export const useCanvasStore = defineStore('canvas', () => {
       setMode(val ? 'app' : 'graph')
     }
   })
+  const isReadOnly = ref(false)
 
   // Set up scale synchronization when canvas is available
   let originalOnChanged: ((scale: number, offset: Point) => void) | undefined =
@@ -140,6 +141,16 @@ export const useCanvasStore = defineStore('canvas', () => {
         }
       )
 
+      isReadOnly.value = newCanvas.read_only
+
+      useEventListener(
+        newCanvas.canvas,
+        'litegraph:read-only-changed',
+        (event: CustomEvent<{ readOnly: boolean }>) => {
+          isReadOnly.value = event.detail.readOnly
+        }
+      )
+
       useEventListener(
         newCanvas.canvas,
         'litegraph:set-graph',
@@ -185,6 +196,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     rerouteSelected,
     appScalePercentage,
     linearMode,
+    isReadOnly,
     updateSelectedItems,
     getCanvas,
     setAppZoomFromPercentage,

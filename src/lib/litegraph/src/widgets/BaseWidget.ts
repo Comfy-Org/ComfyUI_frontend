@@ -148,10 +148,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
 
-    const store = useWidgetValueStore()
-    const id = widgetId(graphId, nodeId, this.name)
-    this._state = store.registerWidget(
-      id,
+    const registered = useWidgetValueStore().registerWidget(
+      widgetId(graphId, nodeId, this.name),
       {
         ...this._state,
         type: this.type,
@@ -159,6 +157,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       },
       deriveWidgetRenderState(this)
     )
+    if (registered) this._state = registered
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

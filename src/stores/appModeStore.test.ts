@@ -821,6 +821,74 @@ describe('appModeStore', () => {
     })
   })
 
+  describe('displayViewMode', () => {
+    const rafQueue = new Map<number, FrameRequestCallback>()
+    let nextHandle: number
+
+    const advanceFrame = () => {
+      const callbacks = [...rafQueue.values()]
+      rafQueue.clear()
+      for (const cb of callbacks) cb(0)
+    }
+
+    beforeEach(() => {
+      rafQueue.clear()
+      nextHandle = 0
+      vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+        const handle = ++nextHandle
+        rafQueue.set(handle, cb)
+        return handle
+      })
+      vi.stubGlobal('cancelAnimationFrame', (handle: number) => {
+        rafQueue.delete(handle)
+      })
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('lags the view mode by two frames so the toggle can animate the switch', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+      await nextTick()
+      expect(store.displayViewMode).toBe('graph')
+
+      workflowStore.activeWorkflow.activeMode = 'app'
+      await nextTick()
+
+      // The real mode has flipped, but the displayed mode still lags so a toggle
+      // that mounts now renders the old order before animating to the new one.
+      expect(store.viewMode).toBe('app')
+      expect(store.displayViewMode).toBe('graph')
+
+      // First frame only schedules the second; the displayed mode must not move.
+      advanceFrame()
+      expect(store.displayViewMode).toBe('graph')
+
+      // The second frame is the one that flips the displayed mode.
+      advanceFrame()
+      expect(store.displayViewMode).toBe('app')
+    })
+
+    it('cancels a stale frame chain so a rapid toggle has no transient flash', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+      workflowStore.activeWorkflow.activeMode = 'app'
+      await nextTick()
+      advanceFrame()
+
+      workflowStore.activeWorkflow.activeMode = 'graph'
+      await nextTick()
+
+      // The pending second frame from the first toggle is cancelled, so it can
+      // no longer flip the displayed mode to 'app' before settling on 'graph'.
+      advanceFrame()
+      expect(store.displayViewMode).toBe('graph')
+
+      advanceFrame()
+      expect(store.displayViewMode).toBe('graph')
+    })
+  })
+
   describe('legacy selectedInput tuple migration', () => {
     const rootGraphId = '11111111-1111-4111-8111-111111111111'
 

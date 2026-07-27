@@ -116,6 +116,12 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('apple.usdz')).toBe('3D')
         expect(getMediaTypeFromFilename('scan.ply')).toBe('3D')
       })
+
+      it('should identify Gaussian splat extensions that Load3D accepts', () => {
+        expect(getMediaTypeFromFilename('scene.spz')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.splat')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.ksplat')).toBe('3D')
+      })
     })
 
     describe('text files', () => {
@@ -414,15 +420,15 @@ describe('formatUtil', () => {
   })
 
   describe('isPreviewableMediaType', () => {
-    it('returns true for image/video/audio/3D', () => {
+    it('returns true for image/video/audio/3D/text', () => {
       expect(isPreviewableMediaType('image')).toBe(true)
       expect(isPreviewableMediaType('video')).toBe(true)
       expect(isPreviewableMediaType('audio')).toBe(true)
       expect(isPreviewableMediaType('3D')).toBe(true)
+      expect(isPreviewableMediaType('text')).toBe(true)
     })
 
-    it('returns false for text/other', () => {
-      expect(isPreviewableMediaType('text')).toBe(false)
+    it('returns false for other', () => {
       expect(isPreviewableMediaType('other')).toBe(false)
     })
   })

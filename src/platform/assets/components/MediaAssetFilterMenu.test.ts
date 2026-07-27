@@ -30,7 +30,8 @@ const labelByType: Record<string, string> = {
   image: 'sideToolbar.mediaAssets.filterImage',
   video: 'sideToolbar.mediaAssets.filterVideo',
   audio: 'sideToolbar.mediaAssets.filterAudio',
-  '3d': 'sideToolbar.mediaAssets.filter3D'
+  '3d': 'sideToolbar.mediaAssets.filter3D',
+  text: 'sideToolbar.mediaAssets.filterText'
 }
 
 function getCheckbox(type: keyof typeof labelByType): HTMLElement {
@@ -38,11 +39,11 @@ function getCheckbox(type: keyof typeof labelByType): HTMLElement {
 }
 
 describe('MediaAssetFilterMenu', () => {
-  it('renders all four media-type checkboxes', () => {
+  it('renders all media-type checkboxes', () => {
     renderMenu()
 
     const checkboxes = screen.getAllByRole('checkbox')
-    expect(checkboxes).toHaveLength(4)
+    expect(checkboxes).toHaveLength(5)
     for (const type of Object.keys(labelByType)) {
       expect(getCheckbox(type)).toBeTruthy()
     }

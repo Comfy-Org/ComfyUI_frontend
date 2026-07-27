@@ -2,13 +2,13 @@ import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
   AddCreditsClickMetadata,
+  AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ShareFlowMetadata,
-  ShareLinkOpenedMetadata,
   ExecutionErrorMetadata,
+  ExecutionOutcomeMetadata,
   ExecutionSuccessMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
@@ -21,6 +21,8 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
@@ -73,6 +75,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAuth(metadata: AuthMetadata): void {
     this.dispatch((provider) => provider.trackAuth?.(metadata))
+  }
+
+  trackAuthFailed(metadata: AuthErrorMetadata): void {
+    this.dispatch((provider) => provider.trackAuthFailed?.(metadata))
   }
 
   trackUserLoggedIn(): void {
@@ -261,6 +267,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWorkflowExecution(): void {
     this.dispatch((provider) => provider.trackWorkflowExecution?.())
+  }
+
+  trackExecutionOutcome(metadata: ExecutionOutcomeMetadata): void {
+    this.dispatch((provider) => provider.trackExecutionOutcome?.(metadata))
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {

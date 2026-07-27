@@ -2,23 +2,21 @@ import { useThrottleFn } from '@vueuse/core'
 import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import type {
-  LGraph,
-  LGraphNode,
-  LGraphTriggerEvent
-} from '@/lib/litegraph/src/litegraph'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { api } from '@/scripts/api'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 import { MinimapDataSourceFactory } from '../data/MinimapDataSourceFactory'
+
+type NodeLifecycleEvent = CustomEvent<{ node: LGraphNode }>
 import type { UpdateFlags } from '../types'
 
 interface GraphCallbacks {
   onConnectionChange?: (node: LGraphNode) => void
-  onTrigger?: (event: LGraphTriggerEvent) => void
-  disposeNodeListeners?: () => void
 }
 
 export function useMinimapGraph(
@@ -38,8 +36,16 @@ export function useMinimapGraph(
   // Track LayoutStore version for change detection
   const layoutStoreVersion = layoutStore.getVersion()
 
-  // Map to store original callbacks per graph ID
-  const originalCallbacksMap = new Map<string, GraphCallbacks>()
+  // Cleanup restores originals only when our wrapper is still on top, and
+  // marks any buried wrapper inert via `entry.live` so it can't fire dead work.
+  interface InstalledHooks {
+    originals: GraphCallbacks
+    wrappers: GraphCallbacks
+    live: boolean
+    /** Event listeners to detach on cleanup. */
+    listeners: [type: keyof LGraphEventMap, listener: EventListener][]
+  }
+  const hooksMap = new Map<string, InstalledHooks>()
 
   const handleGraphChangedThrottled = useThrottleFn(() => {
     onGraphChanged()
@@ -47,71 +53,71 @@ export function useMinimapGraph(
 
   const setupEventListeners = () => {
     const g = graph.value
-    if (!g) return
+    if (!g || hooksMap.has(g.id)) return
 
-    // Check if we've already wrapped this graph's callbacks
-    if (originalCallbacksMap.has(g.id)) {
-      return
+    const originals: GraphCallbacks = {
+      onConnectionChange: g.onConnectionChange
     }
+    const wrappers: GraphCallbacks = {}
 
-    // Store the original callbacks for this graph
+    const entry: InstalledHooks = {
+      originals,
+      wrappers,
+      live: true,
+      listeners: []
+    }
+    hooksMap.set(g.id, entry)
+
+    // Node lifecycle and property changes are events, so they need no wrapper:
+    // several subscribers can listen without contending for a callback slot.
     const onNodeAdded = () => void handleGraphChangedThrottled()
-    const onNodeRemoved = ({
-      detail: { node }
-    }: CustomEvent<{ node: LGraphNode }>) => {
+    const onNodeRemoved = ({ detail: { node } }: NodeLifecycleEvent) => {
       nodeStatesCache.delete(node.id)
       void handleGraphChangedThrottled()
     }
-    g.events.addEventListener('node:added', onNodeAdded)
-    g.events.addEventListener('node:removed', onNodeRemoved)
-
-    const originalCallbacks: GraphCallbacks = {
-      onConnectionChange: g.onConnectionChange,
-      onTrigger: g.onTrigger,
-      disposeNodeListeners: () => {
-        g.events.removeEventListener('node:added', onNodeAdded)
-        g.events.removeEventListener('node:removed', onNodeRemoved)
-      }
-    }
-    originalCallbacksMap.set(g.id, originalCallbacks)
-
-    g.onConnectionChange = function (node: LGraphNode) {
-      originalCallbacks.onConnectionChange?.call(this, node)
+    const onPropertyChanged = ({
+      detail: { property, nodeId }
+    }: CustomEvent<LGraphEventMap['node:property:changed']>) => {
+      if (property !== 'mode' && property !== 'bgcolor' && property !== 'color')
+        return
+      nodeStatesCache.delete(toNodeId(nodeId))
       void handleGraphChangedThrottled()
     }
 
-    g.onTrigger = function (event: LGraphTriggerEvent) {
-      originalCallbacks.onTrigger?.call(this, event)
+    g.events.addEventListener('node:added', onNodeAdded)
+    g.events.addEventListener('node:removed', onNodeRemoved)
+    g.events.addEventListener('node:property:changed', onPropertyChanged)
+    entry.listeners = [
+      ['node:added', onNodeAdded as EventListener],
+      ['node:removed', onNodeRemoved as EventListener],
+      ['node:property:changed', onPropertyChanged as EventListener]
+    ]
 
-      // Listen for visual property changes that affect minimap rendering
-      if (
-        event.type === 'node:property:changed' &&
-        (event.property === 'mode' ||
-          event.property === 'bgcolor' ||
-          event.property === 'color')
-      ) {
-        // Invalidate cache for this node to force redraw
-        nodeStatesCache.delete(toNodeId(event.nodeId))
+    // No event for connection changes yet, so this one still chains.
+    wrappers.onConnectionChange = useChainCallback(
+      originals.onConnectionChange,
+      function () {
+        if (!entry.live) return
         void handleGraphChangedThrottled()
       }
-    }
+    )
+    g.onConnectionChange = wrappers.onConnectionChange
   }
 
   const cleanupEventListeners = (oldGraph?: LGraph) => {
     const g = oldGraph || graph.value
     if (!g) return
+    const entry = hooksMap.get(g.id)
+    if (!entry) return
+    const { originals, wrappers } = entry
 
-    const originalCallbacks = originalCallbacksMap.get(g.id)
-    if (!originalCallbacks) {
-      // Graph was never set up (e.g., minimap destroyed before init) - nothing to clean up
-      return
-    }
+    if (g.onConnectionChange === wrappers.onConnectionChange)
+      g.onConnectionChange = originals.onConnectionChange
+    for (const [type, listener] of entry.listeners)
+      g.events.removeEventListener(type, listener)
 
-    originalCallbacks.disposeNodeListeners?.()
-    g.onConnectionChange = originalCallbacks.onConnectionChange
-    g.onTrigger = originalCallbacks.onTrigger
-
-    originalCallbacksMap.delete(g.id)
+    entry.live = false
+    hooksMap.delete(g.id)
   }
 
   const checkForChangesInternal = () => {

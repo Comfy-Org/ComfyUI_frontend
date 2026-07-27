@@ -43,7 +43,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('sets has_errors on nodes referenced in lastNodeErrors', async () => {
     const { nodeA, nodeB, store } = setupGraphWithStore()
 
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(nodeA.id)]: {
         errors: [
           {
@@ -56,7 +56,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'KSampler'
       }
-    }
+    })
     await nextTick()
 
     expect(nodeA.has_errors).toBe(true)
@@ -66,7 +66,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('sets slot hasErrors for inputs matching error input_name', async () => {
     const { nodeA, store } = setupGraphWithStore()
 
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(nodeA.id)]: {
         errors: [
           {
@@ -79,7 +79,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'KSampler'
       }
-    }
+    })
     await nextTick()
 
     expect(nodeA.inputs[0].hasErrors).toBe(true)
@@ -89,7 +89,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('clears has_errors and slot hasErrors when errors are removed', async () => {
     const { nodeA, store } = setupGraphWithStore()
 
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(nodeA.id)]: {
         errors: [
           {
@@ -102,12 +102,12 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'KSampler'
       }
-    }
+    })
     await nextTick()
     expect(nodeA.has_errors).toBe(true)
     expect(nodeA.inputs[1].hasErrors).toBe(true)
 
-    store.lastNodeErrors = null
+    store.recordNodeErrors(null)
     await nextTick()
 
     expect(nodeA.has_errors).toBeFalsy()
@@ -131,7 +131,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     // Error on interior node: execution ID = "50:<interiorNodeId>"
     const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [interiorExecId]: {
         errors: [
           {
@@ -144,7 +144,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'InnerNode'
       }
-    }
+    })
     await nextTick()
 
     // Interior node should have the error

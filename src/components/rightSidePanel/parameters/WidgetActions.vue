@@ -90,7 +90,7 @@ function handleResetToDefault() {
       <Button
         variant="textonly"
         size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleRename()
@@ -106,7 +106,7 @@ function handleResetToDefault() {
         v-if="canShowInput"
         variant="textonly"
         size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleShowInput()
@@ -121,7 +121,7 @@ function handleResetToDefault() {
       <Button
         variant="textonly"
         size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleToggleFavorite()
@@ -143,7 +143,7 @@ function handleResetToDefault() {
         v-if="hasDefault"
         variant="textonly"
         size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         :disabled="isCurrentValueDefault"
         @click="
           () => {

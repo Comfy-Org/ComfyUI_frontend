@@ -1,16 +1,22 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphCanvas, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+
+const { appModeState } = vi.hoisted(() => ({
+  appModeState: {} as { isAppMode: Ref<boolean> }
+}))
 
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({
-    isAppMode: { value: false },
+    isAppMode: appModeState.isAppMode,
     setMode: vi.fn()
   })
 }))
@@ -39,10 +45,18 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+function createMockCanvas(readOnly = false): LGraphCanvas {
+  return fromPartial<LGraphCanvas>({
+    read_only: readOnly,
+    canvas: document.createElement('canvas')
+  })
+}
+
 describe('useCanvasStore', () => {
   let store: ReturnType<typeof useCanvasStore>
 
   beforeEach(() => {
+    appModeState.isAppMode = ref(false)
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useCanvasStore()
     vi.clearAllMocks()
@@ -147,5 +161,41 @@ describe('useCanvasStore', () => {
     store.selectedItems = [new LGraphGroup()]
 
     expect(store.selectedNodeIds).toHaveLength(0)
+  })
+
+  describe('isReadOnly', () => {
+    it('syncs initial read_only value when canvas is set', async () => {
+      const mockCanvas = createMockCanvas(true)
+
+      store.canvas = mockCanvas
+      await nextTick()
+
+      expect(store.isReadOnly).toBe(true)
+    })
+
+    it('updates isReadOnly when litegraph:read-only-changed event fires', async () => {
+      const mockCanvas = createMockCanvas(false)
+
+      store.canvas = mockCanvas
+      await nextTick()
+
+      expect(store.isReadOnly).toBe(false)
+
+      mockCanvas.canvas.dispatchEvent(
+        new CustomEvent('litegraph:read-only-changed', {
+          detail: { readOnly: true }
+        })
+      )
+
+      expect(store.isReadOnly).toBe(true)
+
+      mockCanvas.canvas.dispatchEvent(
+        new CustomEvent('litegraph:read-only-changed', {
+          detail: { readOnly: false }
+        })
+      )
+
+      expect(store.isReadOnly).toBe(false)
+    })
   })
 })

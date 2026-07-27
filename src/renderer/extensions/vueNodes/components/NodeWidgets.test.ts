@@ -242,7 +242,7 @@ describe('NodeWidgets', () => {
       nodeData: createMockNodeData('TestNode', nodeId),
       widgetIds: [id],
       setupStores: () => {
-        useExecutionErrorStore().lastNodeErrors = {
+        useExecutionErrorStore().recordNodeErrors({
           [createNodeExecutionId([nodeId])]: {
             errors: [
               {
@@ -255,7 +255,7 @@ describe('NodeWidgets', () => {
             class_type: 'TestNode',
             dependent_outputs: []
           }
-        }
+        })
         registerWidgetState(id, { type: 'text' })
       }
     })

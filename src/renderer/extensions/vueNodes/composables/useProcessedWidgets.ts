@@ -27,6 +27,7 @@ import {
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
+import type { NodeError } from '@/schemas/apiSchema'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -57,6 +58,7 @@ import {
   nodeLocatorFromState,
   subgraphIdFromGraphId
 } from '@/utils/graphTraversalUtil'
+import { hasErrorForSlot } from '@/utils/executionErrorUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
 
 const TOOLTIP_VALUE_TYPES = ['asset', 'combo', 'number', 'text'] as const
@@ -203,25 +205,22 @@ function isWidgetVisible(
 function hasWidgetError(
   widget: { name: string; errorTarget?: WidgetErrorTarget },
   nodeExecId: NodeExecutionId,
-  nodeErrors:
-    | { errors: { extra_info?: { input_name?: string } }[] }
-    | undefined,
+  nodeErrors: Pick<NodeError, 'errors'> | undefined,
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>,
   missingModelStore: ReturnType<typeof useMissingModelStore>
 ): boolean {
   const hasHostError =
-    !!nodeErrors?.errors.some(
-      (e) => e.extra_info?.input_name === widget.name
-    ) || missingModelStore.isWidgetMissingModel(nodeExecId, widget.name)
+    (!!nodeErrors && hasErrorForSlot(nodeErrors.errors, widget.name)) ||
+    missingModelStore.isWidgetMissingModel(nodeExecId, widget.name)
   const target = widget.errorTarget
   if (!target) return hasHostError
 
+  // An interior error names the source widget, not the boundary name.
   const sourceErrors = executionErrorStore.lastNodeErrors?.[target.executionId]
   return (
     hasHostError ||
-    !!sourceErrors?.errors.some(
-      (e) => e.extra_info?.input_name === target.widgetName
-    ) ||
+    (!!sourceErrors &&
+      hasErrorForSlot(sourceErrors.errors, target.widgetName)) ||
     missingModelStore.isWidgetMissingModel(
       target.executionId,
       target.widgetName

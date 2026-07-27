@@ -32,7 +32,7 @@ describe('PaletteSwatchRow', () => {
 
   it('appends a color when the add button is clicked', async () => {
     const { emitted } = renderRow(['#ff0000'])
-    await userEvent.click(screen.getByRole('button'))
+    await userEvent.click(screen.getByRole('button', { name: '+' }))
     expect(lastEmit(emitted)).toEqual(['#ff0000', '#ffffff'])
   })
 
@@ -44,18 +44,14 @@ describe('PaletteSwatchRow', () => {
 
   it('hides the add button once the max is reached', () => {
     renderRow(['#a', '#b'], 2)
-    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.queryByRole('button', { name: '+' })).toBeNull()
   })
 
-  it('writes a picked color back through the hidden color input', async () => {
-    const { container, emitted } = renderRow(['#ff0000', '#00ff00'])
-    await fireEvent.click(container.querySelector('[data-index="1"]')!)
-    const input = container.querySelector(
-      'input[type="color"]'
-    ) as HTMLInputElement
-    input.value = '#0000ff'
-    await fireEvent.input(input)
-    expect(lastEmit(emitted)).toEqual(['#ff0000', '#0000ff'])
+  it('opens the color picker when a swatch is clicked', async () => {
+    const { container } = renderRow(['#ff0000'])
+    const swatch = container.querySelector('[data-index="0"]')!
+    await userEvent.click(swatch)
+    expect(swatch.getAttribute('data-state')).toBe('open')
   })
 
   it('starts a drag on pointer down without emitting', async () => {

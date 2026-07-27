@@ -141,7 +141,7 @@ function nodeToNodeData(node: LGraphNode, id: WidgetId) {
 
   return {
     ...node._state,
-    hasErrors: !!executionErrorStore.lastNodeErrors?.[node.id],
+    hasErrors: !!executionErrorStore.surfacedNodeErrors?.[node.id],
     dropIndicator,
     onDragDrop: node.onDragDrop,
     onDragOver: node.onDragOver
