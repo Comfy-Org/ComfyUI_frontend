@@ -150,14 +150,21 @@ vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
     (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
 }))
 
+type AgentPromptError = {
+  type: string
+  message: string
+  details: string
+}
+
 const executionErrors = vi.hoisted(() => ({
-  lastPromptError: null as {
-    type: string
-    message: string
-    details: string
-  } | null,
+  lastPromptError: null as AgentPromptError | null,
+  recordPromptError: vi.fn<(error: AgentPromptError) => void>(),
   showErrorOverlay: vi.fn()
 }))
+
+executionErrors.recordPromptError.mockImplementation((error) => {
+  executionErrors.lastPromptError = error
+})
 
 vi.mock('@/stores/executionErrorStore', () => ({
   useExecutionErrorStore: () => executionErrors

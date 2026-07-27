@@ -3,6 +3,9 @@
     "dockToTop": "Acoplar en la parte superior",
     "feedback": "Comentarios",
     "feedbackTooltip": "Comentarios",
+    "freeTierPartner": "Los nodos de socios requieren un plan de pago",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} ejecuciones restantes",
+    "freeTierRunsExhausted": "No quedan ejecuciones",
     "share": "Compartir",
     "shareTooltip": "Compartir flujo de trabajo"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "Elegible para el plan gratuito",
       "freeTierDescription": "Regístrate con Google para obtener {credits} créditos gratis cada mes. No se necesita tarjeta.",
       "freeTierDescriptionGeneric": "Regístrate con Google para obtener créditos gratis cada mes. No se necesita tarjeta.",
+      "googleSsoInAppBrowserNotice": "Si abriste esto desde un navegador dentro de una app (por ejemplo, Instagram, LinkedIn), es posible que el inicio de sesión con Google no funcione. Usa GitHub o correo electrónico, o abre esta página en el navegador predeterminado de tu dispositivo.",
       "insecureContextWarning": "Esta conexión no es segura (HTTP): tus credenciales pueden ser interceptadas por atacantes si continúas con el inicio de sesión.",
       "loginButton": "Iniciar sesión",
       "loginWithGithub": "Iniciar sesión con Github",
@@ -366,6 +370,7 @@
     "typeText": "texto"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "Modo {mode}, acciones del flujo de trabajo",
     "app": "Aplicación",
     "blueprint": "Plano",
     "clearWorkflow": "Limpiar flujo de trabajo",
@@ -784,6 +789,11 @@
       "gpuUsage": "Uso de GPU"
     },
     "faqs": "Preguntas frecuentes",
+    "insufficient": {
+      "memberCta": "Entendido",
+      "memberDescription": "Tu equipo ha utilizado todos sus créditos. Los administradores del espacio de trabajo deben añadir más créditos para ejecutar flujos de trabajo.",
+      "memberTitle": "Este espacio de trabajo se ha quedado sin créditos"
+    },
     "invoiceHistory": "Historial de facturas",
     "lastUpdated": "Última actualización",
     "loadEventsError": "No se pudo cargar la actividad. Por favor, inténtalo de nuevo.",
@@ -1452,6 +1462,9 @@
     "preparingExport": "Preparando exportación...",
     "retryDownload": "Reintentar descarga"
   },
+  "feedback": {
+    "title": "Compartir comentarios"
+  },
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -2078,11 +2091,15 @@
       "appBuilder": "Constructor de aplicaciones",
       "apps": "Aplicaciones",
       "appsEmptyMessage": "Las aplicaciones guardadas aparecerán aquí.\nHaz clic abajo para crear tu primera aplicación.",
-      "appsEmptyMessageAction": "Haz clic abajo para crear tu primera aplicación."
+      "appsEmptyMessageAction": "Haz clic abajo para crear tu primera aplicación.",
+      "buildAnApp": "Crear una aplicación",
+      "create": "Crear",
+      "createApp": "Crear aplicación"
     },
     "arrange": {
       "atLeastOne": "al menos uno",
       "connectAtLeastOne": "Conecta {atLeastOne} nodo de salida para que los usuarios puedan ver los resultados después de ejecutar.",
+      "descriptionPlaceholder": "Haz doble clic para agregar una descripción",
       "noOutputs": "Aún no se han añadido salidas",
       "outputExamples": "Ejemplos: 'Guardar imagen' o 'Guardar video'",
       "outputs": "Salidas",
@@ -2091,8 +2108,6 @@
       "switchToOutputsButton": "Cambiar a Salidas"
     },
     "backToWorkflow": "Volver al flujo de trabajo",
-    "beta": "Modo App Beta - Enviar comentarios",
-    "buildAnApp": "Crear una aplicación",
     "builder": {
       "exit": "Salir del constructor",
       "exitConfirmMessage": "Tienes cambios sin guardar que se perderán\n¿Salir sin guardar?",
@@ -2130,6 +2145,7 @@
       "requiresGraph": "Algo salió mal durante la generación. Esto puede deberse a entradas ocultas no válidas, recursos faltantes o problemas de configuración del flujo de trabajo.",
       "support": "contacta a nuestro soporte"
     },
+    "feedbackLoadError": "No se pudo cargar el formulario de comentarios. Por favor, inténtalo de nuevo más tarde.",
     "giveFeedback": "Enviar comentarios",
     "graphMode": "Modo gráfico",
     "hasCreditCost": "Requiere créditos adicionales",
@@ -2198,6 +2214,7 @@
     "loadingModel": "Cargando modelo 3D...",
     "materialMode": "Modo de material",
     "materialModes": {
+      "clay": "Arcilla",
       "depth": "Profundidad",
       "lineart": "Arte lineal",
       "normal": "Normal",
@@ -2205,7 +2222,29 @@
       "pointCloud": "Nube de puntos",
       "wireframe": "Malla"
     },
+    "menuBar": {
+      "bgColor": "Color de fondo",
+      "bgImage": "Imagen de fondo",
+      "deleteRecording": "Eliminar grabación",
+      "downloadRecording": "Descargar grabación",
+      "fov": "FOV",
+      "intensity": "Intensidad",
+      "material": "Material",
+      "originalMaterialOnly": "Solo material original",
+      "panorama": "Panorama",
+      "record": "Grabar",
+      "recording": "Grabando",
+      "removeBackground": "Quitar fondo",
+      "showGrid": "Mostrar cuadrícula",
+      "skeleton": "Esqueleto",
+      "startNewRecording": "Iniciar nueva grabación",
+      "stopRecording": "Detener grabación",
+      "switchProjection": "Cambiar proyección",
+      "upDirection": "Dirección arriba",
+      "videoRecordingTooltip": "Grabación de video de la escena [mp4]"
+    },
     "model": "Modelo",
+    "model3d": "Modelo 3D",
     "openIn3DViewer": "Abrir en Visor 3D",
     "panoramaMode": "Panorama",
     "previewOutput": "Vista previa de salida",
@@ -2757,7 +2796,6 @@
     "accept": "¡Claro, ayudaré!",
     "description": "Has estado usando esta función. ¿Te tomarías un momento para compartir tus comentarios?",
     "dontAskAgain": "No preguntar de nuevo",
-    "loadError": "No se pudo cargar la encuesta. Por favor, inténtalo de nuevo más tarde.",
     "notNow": "Ahora no",
     "title": "Ayúdanos a mejorar"
   },
@@ -2772,6 +2810,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2801,6 +2840,7 @@
     "ace": "ace",
     "adjustments": "ajustes",
     "advanced": "avanzado",
+    "anima": "anima",
     "animate": "animar",
     "attention_experiments": "experimentos_de_atención",
     "audio": "audio",
@@ -2823,6 +2863,7 @@
     "create": "crear",
     "custom": "personalizado",
     "dancer": "bailarín",
+    "dataset": "dataset",
     "debug": "depurar",
     "detection": "detección",
     "experimental": "experimental",
@@ -2844,6 +2885,7 @@
     "image": "imagen",
     "infinite talk": "charla infinita",
     "instructpix2pix": "instruirpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "latent",
     "loaders": "cargadores",
@@ -2851,11 +2893,13 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "mask",
     "merging": "fusión",
     "mochi": "mochi",
     "model": "modelo",
     "model specific": "específico del modelo",
+    "model_patches": "model_patches",
     "move": "mover",
     "multigpu": "multigpu",
     "noise": "ruido",
@@ -2888,6 +2932,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "texto",
     "training": "entrenamiento",
     "transform": "transformar",
@@ -2974,6 +3019,7 @@
       "appTypeNative": "Aplicación nativa",
       "appTypeWeb": "Aplicación web",
       "deny": "Cancelar",
+      "detailsHeader": "Detalles",
       "errorExpired": "Esta solicitud de consentimiento ha expirado o ya ha sido utilizada. Por favor, reinicia desde la aplicación cliente.",
       "errorScopeBroadening": "Los permisos aprobados previamente no cubren esta solicitud. Necesitas volver a autorizar con los nuevos permisos.",
       "errorUnavailable": "Esta función no está disponible en este momento. Por favor, contacta con soporte si el problema persiste.",
@@ -2988,7 +3034,6 @@
       "sessionErrorToastSummary": "No se pudo continuar con el inicio de sesión OAuth",
       "subtitle": "Inicia sesión en {resource} para continuar",
       "title": "{client} quiere acceder",
-      "workspaceHelp": "Los permisos se aplican solo a este espacio de trabajo.",
       "workspaceLabel": "Espacio de trabajo"
     },
     "scopes": {
@@ -3238,11 +3283,17 @@
     "errors": {
       "duplicateName": "Ya existe un secreto con este nombre",
       "duplicateProvider": "Ya existe un secreto para este proveedor",
+      "fileReadFailed": "No se pudo leer el archivo seleccionado",
+      "fileTooLarge": "El archivo es demasiado grande. Sube unas credenciales JSON de menos de 1 MB",
+      "invalidJson": "El archivo debe contener un objeto JSON válido",
       "nameRequired": "El nombre es obligatorio",
       "nameTooLong": "El nombre debe tener 255 caracteres o menos",
       "providerRequired": "El proveedor es obligatorio",
       "secretValueRequired": "El valor secreto es obligatorio"
     },
+    "jsonFileHint": "Pega el JSON o sube un archivo. Será cifrado y no podrá verse de nuevo.",
+    "jsonFileHintEdit": "Déjalo en blanco para mantener el valor actual, o sube un nuevo archivo JSON para reemplazarlo.",
+    "jsonFilePlaceholder": "Sube o pega las credenciales JSON del proveedor",
     "lastUsed": "Último uso el {date}",
     "modelProviders": "Proveedores de modelos",
     "name": "Nombre",
@@ -3259,7 +3310,8 @@
     "secretValueHintEdit": "Déjalo en blanco para mantener el valor actual.",
     "secretValuePlaceholder": "Introduce tu clave API",
     "secretValuePlaceholderEdit": "Introduce un nuevo valor para cambiarlo",
-    "title": "Claves API y Secretos"
+    "title": "Claves API y Secretos",
+    "uploadJsonFile": "Subir archivo JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Omitir nodos de grupo",
@@ -3462,6 +3514,7 @@
     "Load 3D": "Cargar 3D",
     "Locale": "Localización",
     "Mask Editor": "Editor de Máscara",
+    "Members": "Miembros",
     "Menu": "Menú",
     "ModelLibrary": "Biblioteca de Modelos",
     "Node": "Nodo",
@@ -3824,6 +3877,7 @@
     "freeTier": {
       "description": "Tu plan gratuito incluye {credits} créditos cada mes para probar Comfy Cloud.",
       "descriptionGeneric": "Tu plan gratuito incluye una asignación mensual de créditos para probar Comfy Cloud.",
+      "descriptionQuota": "Tu plan gratuito incluye {runs} ejecuciones para comenzar con Comfy Cloud — no se necesita tarjeta.",
       "nextRefresh": "Tus créditos se renovarán el {date}.",
       "outOfCredits": {
         "subtitle": "Suscríbete para desbloquear recargas y más",
@@ -3964,6 +4018,7 @@
       "waitingForSubscription": "Completa tu suscripción en la nueva pestaña. ¡Detectaremos automáticamente cuando hayas terminado!"
     },
     "resubscribe": "Volver a suscribirse",
+    "resubscribeFailed": "No se pudo reactivar la suscripción",
     "resubscribeSuccess": "¡Suscripción reactivada correctamente!",
     "resubscribeTo": "Volver a suscribirse a {plan}",
     "saveYearly": "Ahorra 20%",
@@ -4089,7 +4144,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "Filtros:",
     "allTemplates": "Todas las plantillas",
     "categories": "Categorías",
     "category": {
@@ -4114,9 +4168,12 @@
       "Video": "Video",
       "Video API": "API de Video"
     },
+    "clearAllFilters": "Borrar todos los filtros",
     "error": {
       "templateNotFound": "Plantilla \"{templateName}\" no encontrada"
     },
+    "filtersApplied": "{count} filtro aplicado | {count} filtros aplicados",
+    "filtersButton": "Filtros",
     "licenseFilter": "Licencia",
     "loading": "Cargando plantillas...",
     "loadingMore": "Cargando más plantillas...",
@@ -4124,7 +4181,6 @@
     "modelsSelected": "{count} modelos",
     "noResults": "No se encontraron plantillas",
     "noResultsHint": "Intenta ajustar tu búsqueda o filtros",
-    "resetFilters": "Limpiar filtros",
     "resultsCount": "Mostrando {count} de {total} plantillas",
     "runsOnFilter": "Ejecuta en",
     "runsOnSelected": "{count} ejecuciones en",
@@ -4215,6 +4271,9 @@
     "updateRequested": "Actualización solicitada",
     "useApiKeyTip": "Consejo: ¿No puedes acceder al inicio de sesión normal? Usa la opción de clave API de Comfy.",
     "userNotAuthenticated": "Usuario no autenticado"
+  },
+  "typeform": {
+    "loadError": "No se pudo cargar el formulario. Por favor, inténtalo de nuevo más tarde."
   },
   "userSelect": {
     "enterUsername": "Introduce un nombre de usuario",
@@ -4351,6 +4410,50 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "Créditos",
+        "date": "Fecha",
+        "eventDetails": "Detalles del evento",
+        "eventType": "Tipo de evento",
+        "user": "Usuario"
+      },
+      "empty": "Aún no hay actividad.",
+      "fullActivity": "Actividad completa",
+      "hoverCard": {
+        "lastActivity": "Última actividad",
+        "partnerNodeUsed": "Nodo de socio usado",
+        "totalCreditsUsed": "Total de créditos usados"
+      },
+      "perUserHint": "¿Buscas el uso total por usuario?",
+      "seeMembers": "Ver miembros"
+    },
+    "billingStatus": {
+      "ending": {
+        "body": "Los miembros mantienen el acceso completo hasta entonces. Reactiva para conservar tus créditos y plazas compartidas.",
+        "reactivate": "Reactivar plan",
+        "title": "El plan de tu equipo termina el {date}"
+      },
+      "outOfCredits": {
+        "addCredits": "Añadir créditos",
+        "body": "Tu equipo ha utilizado todos sus créditos. Añade más créditos para continuar generando o espera hasta que se recarguen el {date}.",
+        "bodyNoDate": "Tu equipo ha utilizado todos sus créditos. Añade más créditos para continuar generando.",
+        "dismiss": "Descartar",
+        "memberBody": "Tu equipo ha utilizado todos sus créditos. Los administradores del espacio de trabajo deben añadir más créditos para continuar generando.",
+        "title": "Sin créditos"
+      },
+      "paused": {
+        "body": "La suscripción de este espacio de trabajo está pausada. Actualiza el pago para reanudar.",
+        "memberBody": "La suscripción de este espacio de trabajo está pausada. Los administradores del espacio de trabajo deben actualizar el método de pago.",
+        "title": "Suscripción pausada"
+      },
+      "updatePayment": "Actualizar pago",
+      "warning": {
+        "body": "Tu último pago no se realizó correctamente. Tu suscripción se pausará el {date} a menos que actualices el pago.",
+        "bodyNoDate": "Tu último pago no se realizó correctamente. Actualiza el pago para evitar una pausa.",
+        "title": "Pago rechazado"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "Degradar a miembro",
       "demoteMessage": "Perderá acceso de administrador.",
@@ -4412,14 +4515,31 @@
         "cancelInvite": "Cancelar invitación",
         "changeRole": "Cambiar rol",
         "removeMember": "Eliminar miembro",
-        "resendInvite": "Reenviar invitación"
+        "resendInvite": "Reenviar invitación",
+        "setCreditLimit": "Establecer límite de crédito"
+      },
+      "activity": {
+        "daysAgo": "hace {count} día | hace {count} días",
+        "hoursAgo": "hace {n} h",
+        "justNow": "justo ahora",
+        "minutesAgo": "hace {n} min"
       },
       "columns": {
+        "creditsUsed": "Créditos mensuales",
         "expiryDate": "Fecha de vencimiento",
         "inviteDate": "Fecha de invitación",
         "role": "Rol"
       },
       "contactUs": "Contáctanos",
+      "creditLimitDialog": {
+        "description": "Una vez que alcancen este límite, no podrán ejecutar workflows.",
+        "invalidLimit": "Introduce un límite de crédito mayor que cero.",
+        "limitOption": "Limitar el uso mensual de créditos a:",
+        "noLimit": "Sin límite",
+        "title": "Establecer un límite mensual de crédito para {name}",
+        "update": "Actualizar límite",
+        "warning": "Este usuario ya ha gastado {credits} créditos. Establecer el límite en o por debajo de su uso actual impedirá más ejecuciones hasta el próximo mes."
+      },
       "header": "Miembros",
       "membersCount": "{count}/50 Miembros",
       "needMoreMembers": "¿Necesitas más miembros?",
@@ -4442,6 +4562,12 @@
       "deleteWorkspaceDisabledTooltip": "Primero cancela la suscripción activa de tu espacio de trabajo",
       "editWorkspace": "Editar detalles del espacio de trabajo",
       "leaveWorkspace": "Abandonar espacio de trabajo"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "Actividad",
+        "overview": "Créditos"
+      }
     },
     "removeMemberDialog": {
       "error": "No se pudo eliminar al miembro",
