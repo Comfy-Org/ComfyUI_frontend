@@ -5,6 +5,7 @@ import {
   ServerFeatureFlag,
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
+import { httpSupportsModelTypeTags } from '@/platform/assets/composables/useModelTypeTagsRefresh'
 import * as distributionTypes from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
@@ -380,6 +381,75 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.signupTurnstileMode).toBe('shadow')
+    })
+  })
+
+  describe('supportsModelTypeTags', () => {
+    afterEach(() => {
+      httpSupportsModelTypeTags.value = undefined
+    })
+
+    it('prefers the HTTP /features value over the websocket flag', () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      httpSupportsModelTypeTags.value = false
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(false)
+      expect(api.getServerFeature).not.toHaveBeenCalled()
+    })
+
+    it('uses an HTTP-served true value', () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      httpSupportsModelTypeTags.value = true
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(true)
+    })
+
+    it('falls back to the websocket flag when HTTP has not served the key', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS) return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
+        false
+      )
+    })
+
+    it('defaults to false when neither source has the flag', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(false)
+    })
+
+    it('leaves other server flags on the websocket path', () => {
+      httpSupportsModelTypeTags.value = false
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA) return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsPreviewMetadata).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA
+      )
     })
   })
 

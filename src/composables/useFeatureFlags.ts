@@ -1,6 +1,7 @@
 import { computed, reactive, readonly } from 'vue'
 import type { Ref } from 'vue'
 
+import { httpSupportsModelTypeTags } from '@/platform/assets/composables/useModelTypeTagsRefresh'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
@@ -238,10 +239,16 @@ export function useFeatureFlags() {
         'off'
       )
     },
+    /**
+     * Server capability, deliberately not resolved through remoteConfig so a
+     * dynamic-config entry cannot shadow it. The HTTP `/features` value is
+     * preferred because it can refresh mid-session; the websocket copy only
+     * arrives once per connection and covers backends without the HTTP key.
+     */
     get supportsModelTypeTags() {
-      return api.getServerFeature(
-        ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
-        false
+      return (
+        httpSupportsModelTypeTags.value ??
+        api.getServerFeature(ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS, false)
       )
     }
   })

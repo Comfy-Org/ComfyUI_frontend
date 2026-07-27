@@ -1,7 +1,8 @@
 import { debounce } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, onScopeDispose, ref } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
@@ -531,6 +532,27 @@ export const useModelStore = defineStore('models', () => {
     reloadAfterScan.cancel()
     unsubscribeModelsScanned()
   })
+
+  const { flags } = useFeatureFlags()
+
+  // The capability can flip mid-session (its HTTP source refreshes); loaded
+  // folders never re-walk on their own, so converge the library to the new
+  // tagging scheme without a page reload. reloadModels also discards the
+  // asset service's bucket cache.
+  watch(
+    () => flags.supportsModelTypeTags,
+    async () => {
+      if (!usesAssetApi()) return
+      try {
+        await reloadModels()
+      } catch (error) {
+        console.error(
+          'Failed to reload the model library after a capability change',
+          error
+        )
+      }
+    }
+  )
 
   return {
     models,
