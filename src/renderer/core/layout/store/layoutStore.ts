@@ -124,8 +124,11 @@ class LayoutStoreImpl implements LayoutStore {
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
   private nodeTriggers = new Map<NodeId, () => void>()
 
-  /** Root graph that created each entry, keyed as `${entity}:${id}`. */
-  private entryOwners = new Map<string, UUID>()
+  /**
+   * The root graph this store holds the layout of — the open workflow. Unset
+   * until a graph is opened, during which nothing is out of scope.
+   */
+  private rootGraphId?: UUID
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
@@ -807,7 +810,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Apply a layout operation using Yjs transactions
    */
   applyOperation(operation: LayoutOperation): void {
-    if (this.isForeignWrite(operation)) return
+    if (this.isOutOfScope(operation)) return
 
     // Create change object outside transaction so we can use it after
     const change: LayoutChange = {
@@ -827,50 +830,22 @@ class LayoutStoreImpl implements LayoutStore {
       this.applyOperationInTransaction(operation, change)
     }, this.currentActor)
 
-    this.updateEntryOwnership(operation)
-
     // Post-transaction updates
     this.finalizeOperation(change)
   }
 
-  private entryKey(operation: LayoutOperation): string | undefined {
-    if ('nodeId' in operation) return `node:${operation.nodeId}`
-    if ('groupId' in operation) return `group:${operation.groupId}`
-    if ('rerouteId' in operation) return `reroute:${operation.rerouteId}`
-    return undefined
+  setRootGraphId(rootGraphId: UUID): void {
+    this.rootGraphId = rootGraphId
   }
 
   /**
-   * Whether an operation targets an entry a different root graph created. Ids
-   * collide across root graphs, so without this a detached graph's writes and
-   * deletes land on the open workflow's geometry.
+   * Whether an operation comes from a graph other than the open workflow. Their
+   * entity ids collide, so applying one would land on the open workflow's
+   * geometry.
    */
-  private isForeignWrite(operation: LayoutOperation): boolean {
-    if (!operation.owner) return false
-
-    const key = this.entryKey(operation)
-    if (!key) return false
-
-    const holder = this.entryOwners.get(key)
-    return holder !== undefined && holder !== operation.owner
-  }
-
-  private updateEntryOwnership(operation: LayoutOperation): void {
-    const key = this.entryKey(operation)
-    if (!key) return
-
-    switch (operation.type) {
-      case 'createNode':
-      case 'createGroup':
-      case 'createReroute':
-        if (operation.owner) this.entryOwners.set(key, operation.owner)
-        break
-      case 'deleteNode':
-      case 'deleteGroup':
-      case 'deleteReroute':
-        this.entryOwners.delete(key)
-        break
-    }
+  private isOutOfScope(operation: LayoutOperation): boolean {
+    if (!operation.owner || !this.rootGraphId) return false
+    return operation.owner !== this.rootGraphId
   }
 
   /**
@@ -1020,13 +995,12 @@ class LayoutStoreImpl implements LayoutStore {
       pos: [number, number]
       size: [number, number]
     }>,
-    owner?: UUID
+    rootGraphId?: UUID
   ): void {
+    if (rootGraphId) this.rootGraphId = rootGraphId
+
     this.ydoc.transact(() => {
       this.ynodes.clear()
-      for (const key of this.entryOwners.keys()) {
-        if (key.startsWith('node:')) this.entryOwners.delete(key)
-      }
       // Note: We intentionally do NOT clear nodeRefs and nodeTriggers here.
       // Vue components may already hold references to these refs, and clearing
       // them would break the reactivity chain. The refs will be reused when
@@ -1061,7 +1035,6 @@ class LayoutStoreImpl implements LayoutStore {
         }
 
         this.ynodes.set(nodeKey, layoutToYNode(layout))
-        if (owner) this.entryOwners.set(`node:${nodeId}`, owner)
 
         // Add to spatial index
         this.spatialIndex.insert(nodeId, layout.bounds)

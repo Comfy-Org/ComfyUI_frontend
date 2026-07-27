@@ -899,6 +899,10 @@ export class ComfyApp {
 
         const r = onConfigure?.apply(this, args)
 
+        // Configuring assigns the workflow's id; scope the layout store to it
+        // so graphs built off to the side cannot write over its geometry.
+        layoutStore.setRootGraphId(this.rootGraph.id)
+
         // Fire after onConfigure, used by primitives to generate widget using input nodes config
         triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
 

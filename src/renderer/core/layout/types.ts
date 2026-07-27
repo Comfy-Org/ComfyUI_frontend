@@ -122,12 +122,12 @@ interface OperationMeta {
   /** Operation type discriminator */
   type: OperationType
   /**
-   * Root graph the writer belongs to. Entity ids are only unique within a root
-   * graph, so a detached graph — the scratch graph `insertWorkflow` builds, for
-   * one — allocates ids that collide with the open workflow's. Operations
-   * carrying a different owner than the entry are dropped rather than applied
-   * to a stranger's geometry. Omitted by callers already scoped to the viewed
-   * graph.
+   * Root graph the writer belongs to. The store holds the layout of one root
+   * graph — the open workflow — and entity ids are only unique within a root
+   * graph, so a graph that is not the open one (the scratch graph
+   * `insertWorkflow` builds, for one) allocates ids that collide with it.
+   * Operations from a different root graph are out of scope and ignored.
+   * Omitted by callers already scoped to the viewed graph.
    */
   owner?: UUID
 }
@@ -363,8 +363,12 @@ export interface LayoutStore {
       id: NodeId
       pos: [number, number]
       size: [number, number]
-    }>
+    }>,
+    rootGraphId?: UUID
   ): void
+
+  /** Scopes the store to the open workflow. See {@link OperationMeta.owner}. */
+  setRootGraphId(rootGraphId: UUID): void
 
   // Source and actor management
   setSource(source: LayoutSource): void
