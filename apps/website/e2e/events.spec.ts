@@ -1,7 +1,13 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { featuredEvents, pastEvents, upcomingEvents } from '../src/data/events'
+import { localizeHref } from '../src/config/routes'
+import {
+  featuredEvents,
+  pastEventPath,
+  pastEvents,
+  upcomingEvents
+} from '../src/data/events'
 import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
@@ -152,7 +158,12 @@ test.describe('Events page — desktop @smoke', () => {
         const watch = card.getByRole('link', {
           name: new RegExp(t('events.past.watchNow', locale))
         })
-        await expect(watch).toHaveAttribute('href', event.watch.href[locale])
+        // Recorded events open their own detail page; the rest link out to the
+        // external recording.
+        const expectedHref = event.youtubeVideoId
+          ? localizeHref(pastEventPath(event), locale)
+          : event.watch.href[locale]
+        await expect(watch).toHaveAttribute('href', expectedHref)
       }
     }
   })
