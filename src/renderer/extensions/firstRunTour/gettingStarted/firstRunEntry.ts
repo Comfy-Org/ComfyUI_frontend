@@ -10,6 +10,7 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
+import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -53,9 +54,11 @@ export const useFirstRunEntry = createSharedComposable(() => {
    */
   async function handleUrlWorkflow(
     outcome: StartupOutcome | undefined,
-    templateId?: string
+    templateId?: string,
+    sharedStatus?: SharedWorkflowUrlLoadStatus
   ) {
     if (outcome !== 'url-intent' || !isFirstRunCandidate()) return
+    if (sharedStatus === 'failed' || sharedStatus === 'cancelled') return
     await useFirstRunTourController().beginTour(templateId)
   }
 

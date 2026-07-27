@@ -163,6 +163,20 @@ describe('useFirstRunEntry', () => {
       expect(mocks.beginTour).toHaveBeenCalledWith('image_z_image_turbo')
     })
 
+    it.for(['failed', 'cancelled'] as const)(
+      'offers no tour when the share %s',
+      async (sharedStatus) => {
+        const entry = await freshEntry()
+
+        await entry.handleUrlWorkflow('url-intent', undefined, sharedStatus)
+
+        expect(
+          mocks.beginTour,
+          'the canvas still holds the blank workflow the share never replaced'
+        ).not.toHaveBeenCalled()
+      }
+    )
+
     it('leaves a non-candidate alone', async () => {
       mocks.isNewUser = false
       const entry = await freshEntry()

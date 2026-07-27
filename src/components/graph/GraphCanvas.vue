@@ -570,8 +570,13 @@ onMounted(async () => {
   } finally {
     workspaceStore.spinner = false
   }
-  await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
-  await useFirstRunEntry().handleUrlWorkflow(startupOutcome, urlTemplateId)
+  const sharedStatus =
+    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
+  await useFirstRunEntry().handleUrlWorkflow(
+    startupOutcome,
+    urlTemplateId,
+    sharedStatus
+  )
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
