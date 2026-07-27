@@ -18,6 +18,14 @@
 /**
  * Mirrors the branch name `pr-backport.yaml` builds for a backport:
  * `BACKPORT_BRANCH="backport-${PR_NUMBER}-to-$(echo "$TARGET" | tr '/' '-')"`.
+ *
+ * The slash-to-dash mapping is deliberately identical to that `tr`, including
+ * its non-injectivity (`release/hotfix` and `release-hotfix` both encode to
+ * `release-hotfix`). Matching the producer exactly is the point: an "injective"
+ * encoding here would stop recognising the branches the workflow actually
+ * creates. Divergence, not the shared collision, would be the bug — and it is
+ * harmless in practice because the label grants nothing on its own and real
+ * targets are `core/x.y` / `cloud/x.y`, which have no dashed twin.
  */
 export function toSafeBranchName(branch: string): string {
   return branch.replaceAll('/', '-')

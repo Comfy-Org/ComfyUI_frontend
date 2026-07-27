@@ -54,6 +54,19 @@ describe('isBackportBranchForBase', () => {
     ).toBe(true)
   })
 
+  // The slash-to-dash encoding mirrors the workflow's `tr '/' '-'` and is
+  // therefore non-injective by design: one backport head branch matches both a
+  // slashed base and its dashed twin. Pinned so a future "make it injective"
+  // change cannot silently stop matching the branches the workflow generates.
+  it('matches both a slashed base and its dashed twin (mirrors the producer)', () => {
+    expect(
+      isBackportBranchForBase('backport-42-to-release-hotfix', 'release/hotfix')
+    ).toBe(true)
+    expect(
+      isBackportBranchForBase('backport-42-to-release-hotfix', 'release-hotfix')
+    ).toBe(true)
+  })
+
   it('rejects a branch whose encoded target is not the PR base', () => {
     expect(
       isBackportBranchForBase('backport-13875-to-cloud-1.47', 'cloud/1.45')
