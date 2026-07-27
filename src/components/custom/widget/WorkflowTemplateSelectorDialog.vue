@@ -52,7 +52,7 @@
               :variant="selectedType === tab.value ? 'inverted' : 'secondary'"
               :aria-pressed="selectedType === tab.value"
               :aria-label="tab.icon ? tab.label : undefined"
-              class="h-9 shrink-0 px-4 @max-[30rem]/filters:px-2.5"
+              class="h-8 shrink-0 px-3 text-xs @max-[30rem]/filters:px-2.5"
               @click="selectedType = tab.value"
             >
               <i v-if="tab.icon" :class="cn(tab.icon, 'size-3.5')" />
@@ -77,7 +77,7 @@
             :aria-expanded="mobileFiltersOpen"
             aria-controls="template-mobile-filters"
             :aria-label="$t('templateWorkflows.filtersButton')"
-            class="ml-auto h-9 shrink-0 px-4 @[58rem]/filters:hidden"
+            class="ml-auto h-8 shrink-0 px-3 text-xs @[58rem]/filters:hidden"
             @click="mobileFiltersOpen = !mobileFiltersOpen"
           >
             <i class="icon-[lucide--sliders-horizontal] size-3.5" />
