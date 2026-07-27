@@ -45,78 +45,82 @@ function onEscapeKeyDown(event: KeyboardEvent): void {
     <DialogPortal>
       <DialogOverlay class="fixed inset-0 z-50 bg-black/60" />
       <DialogContent
-        class="agent-scope rounded-agent border-agent-border bg-agent-surface-raised text-agent-fg fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-1/2 space-y-3 border p-5 shadow-xl focus:outline-none"
+        class="agent-scope border-agent-border-strong bg-agent-surface text-agent-fg fixed top-1/2 left-1/2 z-50 w-full max-w-130 -translate-1/2 overflow-hidden rounded-2xl border shadow-xl focus:outline-none"
         @escape-key-down="onEscapeKeyDown"
       >
-        <div class="flex items-start justify-between gap-2">
-          <DialogTitle class="text-agent-fg my-0 text-sm font-semibold">
+        <div
+          class="border-agent-border-strong flex h-12 items-center gap-2 border-b px-4"
+        >
+          <DialogTitle class="text-agent-fg my-0 flex-1 text-base font-medium">
             {{ t('agent.conflictTitle') }}
           </DialogTitle>
           <button
             type="button"
             :aria-label="t('g.close')"
-            class="text-agent-fg-subtle hover:text-agent-fg flex size-5 cursor-pointer items-center justify-center"
+            class="text-agent-fg-subtle hover:text-agent-fg flex size-4 cursor-pointer items-center justify-center"
             @click="choose('cancel')"
           >
-            <span class="icon-[lucide--x] size-3.5" />
+            <span class="icon-[lucide--x] size-4" />
           </button>
         </div>
-        <DialogDescription class="text-agent-fg-muted my-0 text-xs">
+        <DialogDescription class="text-agent-fg-muted my-0 p-4 text-sm/5">
           {{ t('agent.conflictBody') }}
         </DialogDescription>
-        <div class="flex items-center justify-end gap-2">
+        <div class="flex items-center justify-between p-4">
           <Button
             variant="muted-textonly"
-            size="md"
-            class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl px-3 text-sm focus-visible:ring-2"
+            size="unset"
+            class="hover:text-agent-fg focus-visible:ring-agent-accent h-8 shrink-0 rounded-lg px-4 text-sm font-normal focus-visible:ring-2"
             @click="choose('cancel')"
           >
             {{ t('g.cancel') }}
           </Button>
-          <Button
-            variant="textonly"
-            size="md"
-            class="border-agent-border focus-visible:ring-agent-accent rounded-xl border border-solid px-3 text-sm focus-visible:ring-2"
-            @click="choose('mine')"
-          >
-            {{ t('agent.keepMine') }}
-          </Button>
-          <div class="flex">
+          <div class="flex min-w-0 items-center gap-2">
             <Button
-              variant="primary"
-              size="md"
-              class="text-agent-accent-fg hover:bg-agent-accent/90 focus-visible:ring-agent-accent rounded-l-xl rounded-r-none px-3 text-sm focus-visible:ring-2"
-              @click="choose('agent')"
+              variant="secondary"
+              size="unset"
+              class="text-agent-fg-muted focus-visible:ring-agent-accent h-8 shrink-0 rounded-lg px-4 text-sm font-normal focus-visible:ring-2"
+              @click="choose('mine')"
             >
-              {{ t('agent.acceptAgent') }}
+              {{ t('agent.keepMine') }}
             </Button>
-            <DropdownMenuRoot>
-              <DropdownMenuTrigger as-child>
-                <Button
-                  variant="primary"
-                  size="md"
-                  class="border-agent-surface/30 text-agent-accent-fg hover:bg-agent-accent/90 focus-visible:ring-agent-accent w-6 rounded-l-none rounded-r-xl border-l border-solid px-0 text-sm focus-visible:ring-2"
-                  :aria-label="t('agent.moreApplyOptions')"
-                >
-                  <span class="icon-[lucide--chevron-down] size-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuContent
-                  side="bottom"
-                  align="end"
-                  :side-offset="4"
-                  class="rounded-agent border-agent-border bg-agent-surface-raised z-1100 border p-1 shadow-lg"
-                >
-                  <DropdownMenuItem
-                    class="text-agent-fg data-highlighted:bg-agent-surface-hover rounded-agent cursor-pointer px-2 py-1.5 text-xs outline-none"
-                    @select="choose('newtab')"
+            <div class="flex shrink-0 items-center">
+              <Button
+                variant="inverted"
+                size="unset"
+                class="focus-visible:ring-agent-accent h-8 gap-1.5 rounded-l-lg rounded-r-none px-2.5 text-sm font-normal focus-visible:ring-2"
+                @click="choose('agent')"
+              >
+                {{ t('agent.acceptAgent') }}
+              </Button>
+              <DropdownMenuRoot>
+                <DropdownMenuTrigger as-child>
+                  <Button
+                    variant="inverted"
+                    size="unset"
+                    class="focus-visible:ring-agent-accent size-8 shrink-0 rounded-l-none rounded-r-lg border-l border-solid border-white/20 p-0 opacity-60 focus-visible:ring-2"
+                    :aria-label="t('agent.moreApplyOptions')"
                   >
-                    {{ t('agent.openNewTab') }}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenuPortal>
-            </DropdownMenuRoot>
+                    <span class="icon-[lucide--chevron-down] size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuContent
+                    side="bottom"
+                    align="end"
+                    :side-offset="4"
+                    class="rounded-agent border-agent-border bg-agent-surface-raised z-1100 border p-1 shadow-lg"
+                  >
+                    <DropdownMenuItem
+                      class="text-agent-fg data-highlighted:bg-agent-surface-hover rounded-agent cursor-pointer px-2 py-1.5 text-xs outline-none"
+                      @select="choose('newtab')"
+                    >
+                      {{ t('agent.openNewTab') }}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenuPortal>
+              </DropdownMenuRoot>
+            </div>
           </div>
         </div>
       </DialogContent>
