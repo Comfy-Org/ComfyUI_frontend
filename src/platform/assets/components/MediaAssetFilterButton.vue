@@ -8,6 +8,12 @@
           :aria-label="$t('assetBrowser.filterBy')"
         >
           <i class="icon-[lucide--list-filter]" />
+          <span
+            v-if="active"
+            data-testid="active-filter-indicator"
+            aria-hidden="true"
+            class="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-base-foreground"
+          />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuPortal>
@@ -36,6 +42,10 @@ import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+
+const { active = false } = defineProps<{
+  active?: boolean
+}>()
 
 const open = ref(false)
 const contentStyle = useModalLiftedZIndex(open)

@@ -908,6 +908,8 @@
       "datePastWeek": "Past 7 days",
       "datePastMonth": "Past 30 days",
       "dateThisYear": "This year",
+      "clearFilters": "Clear all",
+      "removeFilter": "Remove {label} filter",
       "viewSettings": "View settings"
     },
     "backToAssets": "Back to all assets",
