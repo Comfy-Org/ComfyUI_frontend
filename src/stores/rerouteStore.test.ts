@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { toLinkId } from '@/types/linkId'
@@ -40,6 +40,10 @@ describe('useRerouteStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('registers a chain and answers queries for it', () => {
     const store = useRerouteStore()
     store.registerReroute(graphA, chain(1))
@@ -74,11 +78,12 @@ describe('useRerouteStore', () => {
     expect(store.registerReroute(graphA, usurper)).toBe(usurper)
     expect(warn).toHaveBeenCalledOnce()
 
+    expect(store.deleteReroute(graphA, usurper)).toBe(false)
+    expect(store.getReroute(graphA, toRerouteId(1))).toBe(owner)
+
     owner.parentId = toRerouteId(3)
     expect(store.getReroute(graphA, toRerouteId(1))?.parentId).toBe(3)
     expect(store.deleteReroute(graphA, owner)).toBe(true)
-
-    warn.mockRestore()
   })
 
   it('deletes a chain; only the registered state may vacate it', () => {

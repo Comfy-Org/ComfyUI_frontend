@@ -133,10 +133,14 @@ function stubWorkflow(initialState: SerialisableGraph): ComfyWorkflow {
 
 beforeAll(() => {
   LiteGraph.registerNodeType(PROBE_NODE_TYPE, InsertWorkflowProbeNode)
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-    createMockCanvasRenderingContext2D() as unknown as ReturnType<
-      HTMLCanvasElement['getContext']
-    >
+  const canvasPrototype: {
+    getContext(
+      contextId: '2d',
+      options?: CanvasRenderingContext2DSettings
+    ): CanvasRenderingContext2D | null
+  } = HTMLCanvasElement.prototype
+  vi.spyOn(canvasPrototype, 'getContext').mockReturnValue(
+    createMockCanvasRenderingContext2D()
   )
 })
 

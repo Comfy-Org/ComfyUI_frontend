@@ -549,8 +549,7 @@ export const useWorkflowService = () => {
     const workflowJSON = toRaw(loadedWorkflow.initialState)
     const old = localStorage.getItem('litegrapheditor_clipboard')
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
-    // serialisation schema. The synthetic id keeps the scratch graph out of
-    // the open workflow's root-scoped store buckets.
+    // serialisation schema.
     const graph = new LGraph({
       ...(workflowJSON as unknown as SerialisableGraph),
       id: createUuidv4()

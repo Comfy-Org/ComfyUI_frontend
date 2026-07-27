@@ -2,10 +2,10 @@
  * Generic node factories for litegraph tests.
  *
  * Both helpers lazily register a node type keyed by its shape, so repeated calls
- * reuse the same registration. The types are intentionally never unregistered:
- * registration is idempotent, the key set is bounded by the distinct node shapes
- * a test file uses, and vitest isolates the registry per file.
+ * reuse the same registration.
  */
+import { onTestFinished } from 'vitest'
+
 import type { ISlotType, LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -36,6 +36,11 @@ export function createTestNode(
       }
     }
     LiteGraph.registered_node_types[type] = TestNode
+    onTestFinished(() => {
+      if (LiteGraph.registered_node_types[type] === TestNode) {
+        delete LiteGraph.registered_node_types[type]
+      }
+    })
   }
   const node = LiteGraph.createNode(type, title)
   if (!node) throw new Error('Failed to create node')

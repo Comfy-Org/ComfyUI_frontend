@@ -1,4 +1,11 @@
-import { assert, beforeEach, describe, expect, it } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished
+} from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
@@ -30,7 +37,7 @@ describe('SubgraphConversion', () => {
   describe('Convert to Subgraph store integrity', () => {
     it('keeps interior and boundary-derived input links registered in the link store', () => {
       const rootGraph = createTestRootGraph()
-      enableSubgraphNodeCreation(rootGraph)
+      onTestFinished(enableSubgraphNodeCreation(rootGraph))
 
       const exterior = createTestNode(rootGraph, [], ['number'])
       const origin = createTestNode(rootGraph, ['number'], ['number'])
@@ -69,7 +76,7 @@ describe('SubgraphConversion', () => {
 
     it('keeps interior reroute chains registered with live membership', () => {
       const rootGraph = createTestRootGraph()
-      enableSubgraphNodeCreation(rootGraph)
+      onTestFinished(enableSubgraphNodeCreation(rootGraph))
 
       const origin = createTestNode(rootGraph, [], ['number'])
       const target = createTestNode(rootGraph, ['number'])
@@ -95,7 +102,7 @@ describe('SubgraphConversion', () => {
 
     it('preserves widget values on interior nodes through conversion', () => {
       const rootGraph = createTestRootGraph()
-      enableSubgraphNodeCreation(rootGraph)
+      onTestFinished(enableSubgraphNodeCreation(rootGraph))
 
       const origin = createTestNode(rootGraph, [], ['number'])
       const target = createTestWidgetNode(rootGraph)

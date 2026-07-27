@@ -4075,9 +4075,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           subgraphs.add(node.subgraph)
         }
       }
-      // Snapshot without Subgraph.clone(): configuring a throwaway live
-      // subgraph would register its links and reroutes into the same
-      // root-scoped store buckets as the live subgraph's.
+      // Subgraph.clone() would register throwaway state in the live store buckets.
       serialisable.subgraphs.push(structuredClone(subgraph.asSerialisable()))
     }
     return serialisable
