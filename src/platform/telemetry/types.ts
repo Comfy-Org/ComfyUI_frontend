@@ -183,6 +183,11 @@ export interface ExecutionErrorMetadata {
   error?: string
 }
 
+export interface ExecutionOutcomeMetadata {
+  startTime: number
+  outcome: 'success' | 'failure'
+}
+
 /**
  * Execution success metadata
  */
@@ -665,6 +670,7 @@ export interface TelemetryProvider {
 
   // Workflow execution events
   trackWorkflowExecution?(): void
+  trackExecutionOutcome?(metadata: ExecutionOutcomeMetadata): void
   trackExecutionError?(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void
   trackSharedWorkflowRun?(metadata: SharedWorkflowRunMetadata): void
