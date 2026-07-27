@@ -44,10 +44,9 @@ describe('endExpiredSession', () => {
     expect(mockLocation.href).toBe('')
   })
 
-  // The live OAuth consent screen is /oauth/consent; /cloud/oauth/consent is a
-  // legacy redirect stub, so asserting on it would pass while the real path
-  // stayed exposed.
-  it.for([...PUBLIC_ROUTE_PATHS, '/oauth/consent?client_id=abc'])(
+  // /cloud/oauth/consent is the legacy redirect stub, matched by the
+  // /cloud/oauth prefix rather than listed outright.
+  it.for([...PUBLIC_ROUTE_PATHS, '/cloud/oauth/consent'])(
     'leaves a user alone on the public route %s',
     async (pathname, { expect }) => {
       mockLocation.pathname = pathname
@@ -77,18 +76,22 @@ describe('endExpiredSession', () => {
     expect(isVoluntarySignOutInProgress()).toBe(false)
   })
 
-  it('releases the latch when the browser refuses to leave, rather than bricking the tab', async () => {
+  it('re-attempts the navigation, and keeps traffic stopped, when the browser refuses to leave', async () => {
     vi.useFakeTimers()
     try {
       const { endExpiredSession, isSessionTerminated } =
         await loadSessionExpiry()
 
       endExpiredSession('token revoked')
-      expect(isSessionTerminated()).toBe(true)
+      expect(mockLocation.href).toBe('/cloud/login')
 
+      // A successful navigation would have destroyed the page, so a firing
+      // timer means the user cancelled the unload prompt.
+      mockLocation.href = ''
       await vi.advanceTimersByTimeAsync(10_001)
 
-      expect(isSessionTerminated()).toBe(false)
+      expect(mockLocation.href).toBe('/cloud/login')
+      expect(isSessionTerminated()).toBe(true)
     } finally {
       vi.useRealTimers()
     }
@@ -106,13 +109,15 @@ describe('endExpiredSession', () => {
       configurable: true
     })
 
-    expect(() => endExpiredSession('token revoked')).not.toThrow()
-    expect(mockLocation.reload).toHaveBeenCalledTimes(1)
-
-    Object.defineProperty(mockLocation, 'href', {
-      value: '',
-      writable: true,
-      configurable: true
-    })
+    try {
+      expect(() => endExpiredSession('token revoked')).not.toThrow()
+      expect(mockLocation.reload).toHaveBeenCalledTimes(1)
+    } finally {
+      Object.defineProperty(mockLocation, 'href', {
+        value: '',
+        writable: true,
+        configurable: true
+      })
+    }
   })
 })

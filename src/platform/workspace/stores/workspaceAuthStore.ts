@@ -853,8 +853,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   async function askProviderToRevalidate(): Promise<void> {
     try {
       await useAuthStore().currentUser?.getIdToken(true)
-    } catch {
-      // Firebase raised and, when the credential is dead, signed out already.
+    } catch (err) {
+      // Firebase signs out itself when the credential is dead. Anything else
+      // leaves the session unverified with nothing left to re-check it, so it
+      // must not vanish silently.
+      console.warn('Identity revalidation failed:', err)
     }
   }
 
@@ -881,9 +884,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       if (isPermanentAuthError(err)) {
         if (getUnifiedToken()) surfacePermanentAuthError(err)
         clearUnifiedContext()
-        // A denied or missing workspace clears the token but leaves the
-        // credential valid, so only an identity rejection is worth re-checking
-        // with the provider.
         if (isIdentityRevoked(err)) {
           void askProviderToRevalidate()
         }

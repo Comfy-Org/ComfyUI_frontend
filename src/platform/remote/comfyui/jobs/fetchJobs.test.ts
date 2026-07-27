@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
+const mockIsSessionTerminated = vi.hoisted(() => vi.fn(() => false))
+vi.mock('@/platform/auth/session/sessionExpiry', () => ({
+  isSessionTerminated: mockIsSessionTerminated
+}))
+
 import {
   extractWorkflow,
   fetchHistory,
@@ -382,5 +387,25 @@ describe('fetchJobs', () => {
       )
       consoleSpy.mockRestore()
     })
+  })
+})
+
+describe('terminated session', () => {
+  it('issues no request and logs nothing once the session has ended', async () => {
+    mockIsSessionTerminated.mockReturnValue(true)
+    const fetchApi = vi.fn()
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const queue = await fetchQueue(fetchApi)
+    const history = await fetchHistoryPage(fetchApi)
+
+    expect(fetchApi).not.toHaveBeenCalled()
+    expect(error).not.toHaveBeenCalled()
+    expect(queue).toEqual({ Running: [], Pending: [] })
+    expect(history.jobs).toEqual([])
+    expect(history.hasMore).toBe(false)
+
+    error.mockRestore()
+    mockIsSessionTerminated.mockReturnValue(false)
   })
 })

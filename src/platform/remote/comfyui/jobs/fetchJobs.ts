@@ -46,8 +46,7 @@ async function fetchJobsRaw(
   offset: number = 0
 ): Promise<FetchJobsRawResult> {
   const empty = { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
-  // A terminated session is already redirecting; every job fetch would 401 and
-  // log, so stop at the one place all four job callers pass through.
+  // The one place every list fetcher passes through.
   if (isSessionTerminated()) return empty
 
   const statusParam = statuses.join(',')
@@ -162,6 +161,8 @@ export async function fetchJobDetail(
   fetchApi: (url: string) => Promise<Response>,
   jobId: JobId
 ): Promise<JobDetail | undefined> {
+  if (isSessionTerminated()) return undefined
+
   try {
     const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`)
 
