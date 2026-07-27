@@ -411,6 +411,26 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByText('cat.png')).toBeInTheDocument()
   })
 
+  it('warns without a server error when a video is over the size limit', async () => {
+    // PM-118: dropping a movie showed "Comfy Agent hit a server error" because a
+    // size rejection was routed through the agent-failure overlay.
+    executionErrors.showErrorOverlay.mockClear()
+    stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    const movie = new File(['x'], 'movie.mp4', { type: 'video/mp4' })
+    Object.defineProperty(movie, 'size', { value: 25 * 1024 * 1024 })
+    dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [movie] })
+    await nextTick()
+
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({ severity: 'warn' })
+    )
+    expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
+  })
+
   it('claims a dragover carrying files so a drop can reach the panel', async () => {
     // Without cancelling dragover the browser fires no drop at all, so this is
     // what makes the advertised drag-and-drop work.
@@ -584,16 +604,21 @@ describe('AgentPanelRoot attach flow', () => {
     )
     expect(await screen.findByText('cat.png')).toBeInTheDocument()
 
+    executionErrors.showErrorOverlay.mockClear()
     failUpload()
     await vi.waitFor(() =>
       expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
     )
     expect(revoke).toHaveBeenCalledTimes(1)
-    expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
-    expect(executionErrors.lastPromptError).toMatchObject({
-      type: 'agent_api_failed',
-      details: 'cat.png could not be uploaded'
-    })
+    // A rejected file is the user's to fix; raising the server-error overlay
+    // told them the agent had broken instead.
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'warn',
+        detail: 'cat.png could not be uploaded'
+      })
+    )
     revoke.mockRestore()
   })
 
