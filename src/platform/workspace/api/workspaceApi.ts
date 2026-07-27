@@ -332,7 +332,7 @@ interface GetBillingEventsParams {
   limit?: number
 }
 
-class WorkspaceApiError extends Error {
+export class WorkspaceApiError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
@@ -360,7 +360,7 @@ function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
     const message = err.response?.data?.message ?? err.message
-    throw new WorkspaceApiError(message, status)
+    throw new WorkspaceApiError(message, status, err.response?.data?.code)
   }
   throw err
 }

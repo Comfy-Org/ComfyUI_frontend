@@ -12,7 +12,10 @@ import type {
   SubscribeOptions,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -22,6 +25,17 @@ import type {
   BillingState,
   SubscriptionInfo
 } from '../../../composables/billing/types'
+
+/**
+ * Whether a rejection means the subscription already holds the state the caller
+ * asked for. The request did nothing, but the user's intent is satisfied, so
+ * surfacing it as a failure would report a problem that does not exist — most
+ * visibly when a request succeeds and its response is lost, and the retry is
+ * then refused.
+ */
+function isAlreadyInRequestedState(err: unknown, code: string): boolean {
+  return err instanceof WorkspaceApiError && err.code === code
+}
 
 /**
  * Adapter for workspace-scoped billing via /billing/* endpoints.
@@ -277,6 +291,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         )
       }
     } catch (err) {
+      if (isAlreadyInRequestedState(err, 'ALREADY_CANCELED')) {
+        await fetchStatus()
+        return
+      }
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
       throw err
@@ -292,6 +310,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       await workspaceApi.resubscribe()
       await Promise.all([fetchStatus(), fetchBalance()])
     } catch (err) {
+      if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
+        await fetchStatus()
+        return
+      }
       error.value = err instanceof Error ? err.message : 'Failed to resubscribe'
       throw err
     } finally {
