@@ -5129,6 +5129,7 @@
     "attachmentUploadFailed": "{name} could not be uploaded",
     "mention": "Mention a node",
     "changeWorkflowForChat": "Change the workflow for this chat",
+    "chatOptions": "Chat options",
     "chooseWorkflow": "Choose a workflow",
     "dontWorkInWorkflow": "Don't work in a workflow",
     "searchWorkflows": "Search workflows",
