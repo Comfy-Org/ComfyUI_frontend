@@ -66,10 +66,17 @@ const activeIsVideo = computed(
   () => slides[activeIndex.value]?.media.type === 'video'
 )
 
-// The active video plays from the start only while its slide is active and the
-// carousel is on screen; every other video stays paused.
+// Restart the video only when the slide actually changes, not when the carousel
+// scrolls in and out of the viewport.
+watch(activeIndex, () => {
+  const el = activeVideo.value
+  if (el) el.currentTime = 0
+})
+
+// Play the active slide's video while the carousel is on screen and motion is
+// allowed; every other video stays paused.
 watch(
-  [activeIndex, isVisible, reduceMotion, activeVideo],
+  [isVisible, reduceMotion, activeVideo],
   () => {
     videoEls.value.forEach((el, index) => {
       if (el && index !== activeIndex.value) el.pause()
@@ -77,7 +84,6 @@ watch(
     const el = activeVideo.value
     if (!el) return
     if (isVisible.value && !reduceMotion.value) {
-      el.currentTime = 0
       el.play().catch(() => {})
     } else {
       el.pause()
@@ -141,6 +147,7 @@ useCarouselAutoplay({
               :src="slide.media.src"
               :poster="slide.media.poster"
               :aria-label="slide.media.alt"
+              :loop="slides.length === 1"
               muted
               playsinline
               preload="metadata"
