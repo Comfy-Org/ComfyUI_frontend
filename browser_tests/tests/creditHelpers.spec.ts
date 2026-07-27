@@ -253,9 +253,7 @@ testWithMockedObjectInfo.describe(
             `[data-testid="node-header-${nodeId}"]`
           )
           const collapseButton = vueNode.getByTestId('node-collapse-button')
-          const pricing = header.locator(
-            'span:has(> i[class*="lucide--component"])'
-          )
+          const pricing = header.getByText('10.6', { exact: true })
           const status = header.getByText('Bypassed', { exact: true })
 
           await expect(pricing).toContainText('10.6')
@@ -324,9 +322,7 @@ testWithMockedObjectInfo.describe(
         const nodeFixture = await comfyPage.vueNodes.getFixtureByTitle('API')
         const vueNode = comfyPage.vueNodes.getNodeLocator(String(nodeId))
         const header = vueNode.locator(`[data-testid="node-header-${nodeId}"]`)
-        const pricing = header.locator(
-          'span:has(> i[class*="lucide--component"])'
-        )
+        const pricing = header.getByText('10.6', { exact: true })
         const status = header.getByText('Muted', { exact: true })
 
         await expect(pricing).toContainText('10.6')
