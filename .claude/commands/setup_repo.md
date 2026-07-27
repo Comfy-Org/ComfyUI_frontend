@@ -13,13 +13,13 @@ This command will:
 
 ## Step 1: Bootstrap Environment
 
-The orb lifecycle scripts handle the full toolchain setup — Node.js from `.nvmrc`, pnpm from `package.json#packageManager`, workspace dependencies, and Playwright Chromium:
+The `.agents/setup` script handles the full toolchain setup — Node.js from `.nvmrc`, pnpm from `package.json#packageManager`, workspace dependencies, and Playwright Chromium:
 
 ```bash
 .agents/setup
 ```
 
-For subsequent orb resumes, use the fast readiness check instead:
+For fast verification that the toolchain is already in place (e.g. after an environment restart), use the readiness check instead:
 
 ```bash
 .agents/resume
