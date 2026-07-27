@@ -10,7 +10,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
@@ -62,6 +62,13 @@ function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
   composer.submit()
+}
+
+const running = computed(() => streaming || submitting)
+
+function onPrimaryAction(): void {
+  if (running.value) emit('stop')
+  else composer.submit()
 }
 
 const textareaRef = useTemplateRef<InstanceType<typeof Textarea>>('textareaRef')
@@ -226,27 +233,23 @@ defineExpose({
         </button>
         <button
           type="button"
-          :aria-label="streaming ? t('agent.stop') : t('agent.send')"
-          :disabled="!streaming && !composer.canSend.value"
+          :aria-label="running ? t('agent.stop') : t('agent.send')"
+          :disabled="!running && !composer.canSend.value"
           :class="
             cn(
               'flex size-8 items-center justify-center rounded-xl transition-colors',
-              streaming
+              running
                 ? 'bg-agent-surface-hover text-agent-fg hover:bg-agent-border cursor-pointer'
                 : 'bg-agent-fg text-agent-surface hover:bg-agent-fg/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
             )
           "
-          @click="composer.submit"
+          @click="onPrimaryAction"
         >
           <span
             :class="
               cn(
                 'size-4',
-                submitting
-                  ? 'icon-[lucide--loader-circle] animate-spin'
-                  : streaming
-                    ? 'icon-[lucide--square]'
-                    : 'icon-[lucide--arrow-up]'
+                running ? 'icon-[lucide--square]' : 'icon-[lucide--arrow-up]'
               )
             "
           />

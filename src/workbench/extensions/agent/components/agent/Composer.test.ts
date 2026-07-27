@@ -70,6 +70,14 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('shows Stop instead of a spinner while submitting and emits stop', async () => {
+    const { emitted } = mount({ submitting: true })
+    const stop = screen.getByRole('button', { name: 'Stop' })
+    await userEvent.click(stop)
+    expect(emitted().stop).toHaveLength(1)
+    expect(emitted().send).toBeUndefined()
+  })
+
   it('restores the typed draft after unmount and remount', async () => {
     const first = mount()
     await userEvent.type(screen.getByRole('textbox'), 'keep me')
