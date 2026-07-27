@@ -109,7 +109,7 @@ jobs:
         uses: actions/checkout@v6
 
       # Pre-calibration + defence-in-depth gate on the TWO activation
-      # preconditions. Reads the four cloud secrets into env (secrets are
+      # preconditions. Reads the two smoke user credentials into env (secrets are
       # unavailable to `if:` expressions, so the check is a run step that
       # writes a step output every later step consumes) and tests that the
       # generated cloud manifest exists in the checkout - secrets landing
