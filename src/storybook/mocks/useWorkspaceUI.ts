@@ -1,20 +1,29 @@
 import { computed, ref } from 'vue'
 
-import type { WorkspaceType } from '@/platform/workspace/api/workspaceApi'
+import type {
+  WorkspaceRole,
+  WorkspaceType
+} from '@/platform/workspace/api/workspaceApi'
 
 /** The workspace role/permission state a story wants the stub to report. */
 export interface WorkspaceUIMockState {
   workspaceType: WorkspaceType
+  workspaceRole: WorkspaceRole
   canManageSubscription: boolean
   canManageSubscriptionLifecycle: boolean
+  canDowngradeToPersonal: boolean
   canTopUp: boolean
+  isSubscriptionCancelled: boolean
 }
 
 const defaultState: WorkspaceUIMockState = {
   workspaceType: 'team',
+  workspaceRole: 'owner',
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
-  canTopUp: true
+  canDowngradeToPersonal: true,
+  canTopUp: true,
+  isSubscriptionCancelled: false
 }
 
 const state = ref<WorkspaceUIMockState>({ ...defaultState })
@@ -24,22 +33,18 @@ export function setWorkspaceUIMock(next: Partial<WorkspaceUIMockState>) {
   state.value = { ...defaultState, ...next }
 }
 
-/**
- * Storybook mock for `useWorkspaceUI`.
- *
- * The real composable derives permissions from `useCurrentUser` (Firebase auth)
- * and the team workspace store, neither of which is available in Storybook. This
- * stub exposes only the role surface the billing banner reads; add keys here as
- * other stories need them.
- */
+/** Storybook mock for `useWorkspaceUI`. */
 export function useWorkspaceUI() {
   return {
     workspaceType: computed(() => state.value.workspaceType),
+    workspaceRole: computed(() => state.value.workspaceRole),
     permissions: computed(() => ({
       canManageSubscription: state.value.canManageSubscription,
       canManageSubscriptionLifecycle:
         state.value.canManageSubscriptionLifecycle,
+      canDowngradeToPersonal: state.value.canDowngradeToPersonal,
       canTopUp: state.value.canTopUp
-    }))
+    })),
+    isSubscriptionCancelled: computed(() => state.value.isSubscriptionCancelled)
   }
 }

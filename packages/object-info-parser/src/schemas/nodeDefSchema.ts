@@ -357,6 +357,9 @@ export const zMatchTypeOptions = z.object({
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
 export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
+
+/** Full `/object_info` response: node definitions keyed by node type. */
+export type ObjectInfoResponse = Record<string, ComfyNodeDef>
 export type RemoteWidgetConfig = z.infer<typeof zRemoteWidgetConfig>
 
 export type ComboInputOptions = z.infer<typeof zComboInputOptions>

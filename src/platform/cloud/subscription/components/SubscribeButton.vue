@@ -2,7 +2,7 @@
   <Button
     :size
     :disabled="disabled"
-    :variant="buttonVariant === 'gradient' ? 'gradient' : 'primary'"
+    :variant="buttonVariant === 'subscribe' ? 'subscribe' : 'primary'"
     :class="cn('font-bold', fluid && 'w-full')"
     @click="handleSubscribe"
   >
@@ -28,7 +28,7 @@ const {
 } = defineProps<{
   label?: string
   size?: 'sm' | 'lg'
-  buttonVariant?: 'default' | 'gradient'
+  buttonVariant?: 'default' | 'subscribe'
   fluid?: boolean
   disabled?: boolean
 }>()

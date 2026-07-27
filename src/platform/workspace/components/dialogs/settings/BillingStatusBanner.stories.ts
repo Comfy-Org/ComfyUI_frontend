@@ -163,16 +163,12 @@ export const EndingOwner: Story = story(
   owner
 )
 
-/**
- * Reactivate is lifecycle-gated to the original owner, so a non-original owner
- * sees the notice read-only.
- */
-export const EndingNonOriginalOwner: Story = story(
+export const EndingPromotedOwner: Story = story(
   {
     subscription: cancelled,
     isActiveSubscription: true,
     billingStatus: 'paid',
     subscriptionStatus: 'canceled'
   },
-  { canManageSubscriptionLifecycle: false }
+  { canManageSubscriptionLifecycle: true }
 )
