@@ -26,6 +26,24 @@ describe('Composer', () => {
     expect(send).toBeEnabled()
   })
 
+  it('hints every composer affordance without tripping i18n linked-message syntax', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mount()
+
+    // A bare "@" is vue-i18n linked-message syntax: it fails compilation and
+    // only reaches the screen because the raw message is used as a fallback.
+    expect(
+      (screen.getByRole('textbox') as HTMLTextAreaElement).placeholder
+    ).toBe(
+      'Describe ideas, @ to reference, add nodes from graph or drag in assets'
+    )
+    expect(consoleError.mock.calls.flat().join(' ')).not.toContain(
+      'Message compilation error'
+    )
+
+    consoleError.mockRestore()
+  })
+
   it('emits send with the trimmed text and clears the draft', async () => {
     const { emitted } = mount()
     const box = screen.getByRole('textbox')

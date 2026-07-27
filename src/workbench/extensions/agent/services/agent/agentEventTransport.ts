@@ -11,6 +11,7 @@ export type AgentChatEvent = Extract<
       | 'agent_tool_call'
       | 'agent_message_delta'
       | 'agent_message_done'
+      | 'agent_active_tab'
   }
 >
 
@@ -27,6 +28,7 @@ export function createAgentEventTransport(
   let gotText = false
   let toolCount = 0
   let settled = false
+  let lastTabWorkflowId: string | undefined
 
   function closeOpenText(): void {
     if (openText) {
@@ -62,6 +64,20 @@ export function createAgentEventTransport(
           durationMs: event.data.duration_ms
         }
         message.parts.push(part)
+        break
+      }
+      case 'agent_active_tab': {
+        // The agent re-announces the same tab as it keeps working on it, with
+        // text and tool calls in between, so the tail of parts is not the test;
+        // only a change of tab is worth another link in the transcript.
+        if (lastTabWorkflowId === event.data.workflow_id) return
+        lastTabWorkflowId = event.data.workflow_id
+        closeOpenText()
+        message.parts.push({
+          type: 'tabLink',
+          workflowId: event.data.workflow_id,
+          name: event.data.name
+        })
         break
       }
       case 'agent_message_delta':

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useClipboard } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
 
 const {
@@ -10,10 +14,13 @@ const {
   attachments?: UserAttachment[]
   tags?: string[]
 }>()
+
+const { t } = useI18n()
+const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
 </script>
 
 <template>
-  <div class="flex flex-col items-end gap-1.5">
+  <div class="group flex flex-col items-end gap-1.5">
     <div v-if="tags.length" class="flex flex-wrap justify-end gap-1">
       <span
         v-for="(tag, index) in tags"
@@ -55,6 +62,26 @@ const {
       class="bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-lg px-4 py-3 text-xs whitespace-pre-wrap"
     >
       {{ text }}
+    </div>
+    <div
+      v-if="text"
+      class="text-agent-fg-subtle flex opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+    >
+      <button
+        type="button"
+        :aria-label="copied ? t('agent.copied') : t('agent.copy')"
+        class="rounded-agent hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center transition-colors"
+        @click="copy(text)"
+      >
+        <span
+          :class="
+            cn(
+              'size-3.5',
+              copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+            )
+          "
+        />
+      </button>
     </div>
   </div>
 </template>
