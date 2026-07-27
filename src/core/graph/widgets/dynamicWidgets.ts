@@ -183,7 +183,10 @@ function dynamicComboWidget(
       }
     }
 
-    node.size[1] = node.computeSize([...node.size])[1]
+    // During configure the serialized size is authoritative — recomputing
+    // here would clobber the node height the user saved.
+    if (!app.configuringGraph)
+      node.size[1] = node.computeSize([...node.size])[1]
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()

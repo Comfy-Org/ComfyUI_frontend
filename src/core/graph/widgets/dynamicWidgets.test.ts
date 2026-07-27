@@ -4,6 +4,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { HasInitialMinSize } from '@/services/litegraphService'
 
@@ -115,6 +116,28 @@ describe('Dynamic Combos', () => {
     expect.soft(node.widgets[1].tooltip).toBe('0')
     node.widgets[0].value = '1'
     expect.soft(node.widgets[1].tooltip).toBe('1')
+  })
+  test('Recomputes node height on selection', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+    node.size[1] = 800
+    node.widgets[0].value = '1'
+    expect(node.size[1]).not.toBe(800)
+  })
+  test('Preserves node height while configuring graph', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+    node.size[1] = 800
+    const configuringGraphSpy = vi
+      .spyOn(app, 'configuringGraph', 'get')
+      .mockReturnValue(true)
+    try {
+      node.widgets[0].value = '1'
+    } finally {
+      configuringGraphSpy.mockRestore()
+    }
+    expect(node.widgets.length).toBe(3)
+    expect(node.size[1]).toBe(800)
   })
 })
 describe('Autogrow', () => {
