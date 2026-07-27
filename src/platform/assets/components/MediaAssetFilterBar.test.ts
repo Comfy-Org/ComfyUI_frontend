@@ -59,6 +59,15 @@ function renderFilterBar({
 }
 
 describe('MediaAssetFilterBar', () => {
+  it('hides filter actions when no filters are active', () => {
+    renderFilterBar()
+
+    expect(screen.queryByRole('button', { name: 'Clear all' })).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: /^Remove .+ filter$/ })
+    ).toBeNull()
+  })
+
   it('switches directly from filters to view settings', async () => {
     const { user } = renderFilterBar()
     const filterButton = screen.getByRole('button', { name: 'Filter by' })

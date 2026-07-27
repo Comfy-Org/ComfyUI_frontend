@@ -5,7 +5,7 @@
     {{ $t('sideToolbar.mediaAssets.filterGroupAttribute') }}
   </DropdownMenuLabel>
 
-  <DropdownMenuSub v-model:open="mediaTypeMenuOpen">
+  <DropdownMenuSub>
     <DropdownMenuSubTrigger :class="menuItemClass">
       <i class="icon-[lucide--image] size-4 shrink-0 text-muted-foreground" />
       <span class="flex-1 text-left">
@@ -94,7 +94,6 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger
 } from 'reka-ui'
-import { nextTick, ref } from 'vue'
 
 import {
   dateFilterOptions,
@@ -113,7 +112,6 @@ const menuItemClass =
   'flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-highlighted:bg-secondary-background-hover'
 const submenuClass =
   'z-1700 min-w-40 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm'
-const mediaTypeMenuOpen = ref(false)
 
 function toggleMediaType(type: string) {
   if (mediaTypeFilters.value.includes(type)) {
@@ -123,11 +121,5 @@ function toggleMediaType(type: string) {
   } else {
     mediaTypeFilters.value = [...mediaTypeFilters.value, type]
   }
-
-  // Reka closes a submenu after selection. Reopen it after that state update
-  // so users can toggle multiple media types without re-entering the submenu.
-  void nextTick(() => {
-    mediaTypeMenuOpen.value = true
-  })
 }
 </script>

@@ -116,13 +116,14 @@ describe('MediaAssetFilterMenu', () => {
     ).toHaveAttribute('aria-checked', 'false')
   })
 
-  it('adds a media type without closing either menu', async () => {
+  it('adds a media type with the keyboard without closing either menu', async () => {
     const { onMediaTypeUpdate, user } = renderMenu({
       mediaTypeFilters: ['image']
     })
     await openMediaTypeMenu(user)
 
-    await user.click(screen.getByRole('menuitemcheckbox', { name: 'Video' }))
+    screen.getByRole('menuitemcheckbox', { name: 'Video' }).focus()
+    await user.keyboard('{Enter}')
 
     expect(onMediaTypeUpdate).toHaveBeenCalledWith(['image', 'video'])
     expect(screen.getByRole('menu', { name: 'Filter by' })).toBeVisible()
@@ -163,11 +164,12 @@ describe('MediaAssetFilterMenu', () => {
     ).toHaveAttribute('aria-checked', 'false')
   })
 
-  it('selects a date without closing the filter dropdown', async () => {
+  it('selects a date with the keyboard without closing the filter dropdown', async () => {
     const { onDateUpdate, user } = renderMenu()
     await openDateMenu(user)
 
-    await user.click(screen.getByRole('menuitemradio', { name: 'Today' }))
+    screen.getByRole('menuitemradio', { name: 'Today' }).focus()
+    await user.keyboard('{Enter}')
 
     expect(onDateUpdate).toHaveBeenCalledWith('today')
     expect(screen.getByRole('menu', { name: 'Filter by' })).toBeVisible()
