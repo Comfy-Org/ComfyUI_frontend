@@ -157,7 +157,7 @@
 
     <div v-if="requestAction" class="px-4 py-1">
       <Button
-        :variant="isLimitReached ? 'primary' : 'secondary'"
+        variant="secondary"
         class="w-full"
         :disabled="requestSent"
         data-testid="member-credits-request-button"
@@ -325,28 +325,9 @@ const subscriptionDialog = useSubscriptionDialog()
 const { locale } = useI18n()
 const isLoadingBalance = isLoading
 
-const {
-  memberCap,
-  displayedNumber,
-  isWorkspaceOut,
-  isLimitReached,
-  isEdgeState,
-  isTeamMemberViewer
-} = useMemberCreditDisplay()
+const { memberCap, displayedNumber, isEdgeState, requestAction } =
+  useMemberCreditDisplay()
 
-const REQUEST_BUTTON_FLOOR = 1500
-const requestAction = computed(() => {
-  if (!isTeamMemberViewer.value) return null
-  if (isWorkspaceOut.value) return 'notifyOwner' as const
-  // Edge state shows no button — the popover alone explains the substituted
-  // number, and a limit increase wouldn't help while the pool binds.
-  if (isEdgeState.value) return null
-  if (memberCap.value && displayedNumber.value <= REQUEST_BUTTON_FLOOR)
-    return 'requestLimitIncrease' as const
-  if (!memberCap.value && displayedNumber.value <= REQUEST_BUTTON_FLOOR)
-    return 'requestMoreCredits' as const
-  return null
-})
 const requestSent = ref(false)
 const isEdgePopoverOpen = ref(false)
 

@@ -6,11 +6,15 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
+/** Placeholder until balance-at-top-up is instrumented (DES-504). */
+const REQUEST_BUTTON_FLOOR = 1500
+
 /**
  * The member-facing credit display rule (DES-504): a capped member's number
  * is min(limit − used, workspace balance); the info popover appears only when
  * the balance is the smaller term. Zero states outrank the rule —
- * workspace-out beats limit-reached.
+ * workspace-out beats limit-reached. The number never changes colour, and
+ * both member surfaces derive their request button from `requestAction`.
  */
 export function useMemberCreditDisplay() {
   const workspaceStore = useTeamWorkspaceStore()
@@ -75,6 +79,18 @@ export function useMemberCreditDisplay() {
     () => !isInPersonalWorkspace.value && selfMember.value?.role === 'member'
   )
 
+  const requestAction = computed(() => {
+    if (!isTeamMemberViewer.value) return null
+    if (isWorkspaceOut.value) return 'notifyOwner' as const
+    // Edge state shows no button — the popover alone explains the substituted
+    // number, and a limit increase wouldn't help while the pool binds.
+    if (isEdgeState.value) return null
+    if (displayedNumber.value > REQUEST_BUTTON_FLOOR) return null
+    return memberCap.value
+      ? ('requestLimitIncrease' as const)
+      : ('requestMoreCredits' as const)
+  })
+
   return {
     selfMember,
     memberCap,
@@ -83,6 +99,7 @@ export function useMemberCreditDisplay() {
     isWorkspaceOut,
     isLimitReached,
     isEdgeState,
-    isTeamMemberViewer
+    isTeamMemberViewer,
+    requestAction
   }
 }

@@ -255,6 +255,7 @@ const mockShowSubscriptionDialog = vi.fn()
 const mockShowInviteMemberDialog = vi.fn()
 const mockShowInviteMemberUpsellDialog = vi.fn()
 const mockShowMemberLimitDialog = vi.fn()
+const mockShowSetMemberCreditLimitDialog = vi.fn()
 
 const {
   mockMembers,
@@ -396,7 +397,8 @@ vi.mock('@/services/dialogService', () => ({
     showChangeMemberRoleDialog: mockShowChangeMemberRoleDialog,
     showInviteMemberDialog: mockShowInviteMemberDialog,
     showInviteMemberUpsellDialog: mockShowInviteMemberUpsellDialog,
-    showMemberLimitDialog: mockShowMemberLimitDialog
+    showMemberLimitDialog: mockShowMemberLimitDialog,
+    showSetMemberCreditLimitDialog: mockShowSetMemberCreditLimitDialog
   })
 }))
 
@@ -593,6 +595,7 @@ describe('useMembersPanel', () => {
 
       expect(items.map((i) => i.label)).toEqual([
         'workspacePanel.members.actions.changeRole',
+        'workspacePanel.members.actions.setCreditLimit',
         'workspacePanel.members.actions.removeMember'
       ])
 
@@ -629,7 +632,9 @@ describe('useMembersPanel', () => {
     it('routes Remove member to the remove dialog', async () => {
       const panel = await setup()
       const member = createMember({ id: 'mem-9' })
-      const removeItem = panel.memberMenuItems(member)[1]
+      const removeItem = panel
+        .memberMenuItems(member)
+        .find((i) => i.label === 'workspacePanel.members.actions.removeMember')!
 
       removeItem.command?.({
         originalEvent: new Event('click'),
