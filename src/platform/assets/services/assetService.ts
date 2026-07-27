@@ -189,6 +189,14 @@ const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make s
 const DEFAULT_LIMIT = 500
 const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 
+/**
+ * Backstop mirroring assetsStore.loadBatches: caps a single walk so a backend
+ * that never signals exhaustion (e.g. an unbounded stream of unique cursors)
+ * cannot loop forever. At DEFAULT_LIMIT per page this bounds one walk at 500k
+ * assets — far beyond any real tag — so it only trips on pathological paging.
+ */
+const MAX_PAGINATION_BATCHES = 1000
+
 export const MODELS_TAG = 'models'
 /** Prefix for the namespaced tag that carries a model's folder category, e.g. `model_type:checkpoints`. */
 const MODEL_TYPE_TAG_PREFIX = 'model_type:'
@@ -767,9 +775,16 @@ function createAssetService() {
     const assets: AssetItem[] = []
     const pageSize = limit > 0 ? limit : DEFAULT_LIMIT
     let after: string | undefined
+    let batchCount = 0
 
     while (true) {
       if (signal?.aborted) throw createAbortError()
+      if (batchCount++ >= MAX_PAGINATION_BATCHES) {
+        console.warn(
+          `getAllAssetsByTag('${tag}') hit the ${MAX_PAGINATION_BATCHES}-batch cap; returning ${assets.length} assets.`
+        )
+        return assets
+      }
 
       const data = await getAssetsPageByTag(tag, includePublic, {
         limit: pageSize,

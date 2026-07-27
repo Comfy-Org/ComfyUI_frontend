@@ -27,6 +27,35 @@ function _findInMetadata(
   return null
 }
 
+/**
+ * Caps how many `viewMetadata` reads run at once. Expanding a large folder
+ * mounts a leaf per model, each loading its metadata on mount; without a
+ * ceiling that is hundreds of parallel GETs. Slots are handed to waiting
+ * loads in FIFO order as in-flight reads finish.
+ */
+const MAX_CONCURRENT_METADATA_LOADS = 6
+let activeMetadataLoads = 0
+const metadataLoadQueue: (() => void)[] = []
+
+function acquireMetadataSlot(): Promise<void> {
+  if (activeMetadataLoads < MAX_CONCURRENT_METADATA_LOADS) {
+    activeMetadataLoads++
+    return Promise.resolve()
+  }
+  return new Promise<void>((resolve) => {
+    metadataLoadQueue.push(resolve)
+  })
+}
+
+function releaseMetadataSlot(): void {
+  const nextWaiter = metadataLoadQueue.shift()
+  if (nextWaiter) {
+    nextWaiter()
+    return
+  }
+  activeMetadataLoads--
+}
+
 /** Defines and holds metadata for a model */
 export class ComfyModelDef {
   /** Path to the model */
@@ -107,6 +136,7 @@ export class ComfyModelDef {
       return
     }
     this.is_load_requested = true
+    await acquireMetadataSlot()
     try {
       const metadata = await api.viewMetadata(this.directory, this.file_name)
       if (!metadata) {
@@ -152,6 +182,8 @@ export class ComfyModelDef {
       this.updateSearchable()
     } catch (error) {
       console.error('Error loading model metadata', this.file_name, this, error)
+    } finally {
+      releaseMetadataSlot()
     }
   }
 }

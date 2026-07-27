@@ -152,7 +152,8 @@ vi.mock('@/components/common/TreeExplorer.vue', async () => {
 vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
   default: {
     name: 'SearchInput',
-    template: '<input data-testid="search-input" @input="onInput" />',
+    template:
+      '<div><input data-testid="search-input" @input="onInput" /><input data-testid="search-model-only" @input="onModelOnly" /></div>',
     props: ['modelValue', 'placeholder'],
     emits: ['update:modelValue', 'search'],
     setup(
@@ -167,10 +168,16 @@ vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
     ) {
       expose({ focus: vi.fn() })
       return {
+        // The real SearchInput debounces `@search` behind raw v-model updates;
+        // this mirrors that: `search-input` fires both, `search-model-only`
+        // fires only the raw model-value update (a pre-debounce keystroke).
         onInput: (event: Event) => {
           const value = (event.target as HTMLInputElement).value
           emit('update:modelValue', value)
           emit('search', value)
+        },
+        onModelOnly: (event: Event) => {
+          emit('update:modelValue', (event.target as HTMLInputElement).value)
         }
       }
     }
@@ -293,6 +300,30 @@ describe('ModelLibrarySidebarTab', () => {
   })
 
   describe('search', () => {
+    it('scans models only for the debounced search value, not raw input updates', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+      await nextTick()
+
+      const leafLabels = () => {
+        const { children: folders = [] } = getRoot()
+        return folders.flatMap(({ children: leaves = [] }) =>
+          leaves.map((leaf) => leaf.label)
+        )
+      }
+
+      // Raw model-value updates (keystrokes before the debounce elapses) must
+      // not run the scan: the tree still shows the unfiltered model.
+      await user.type(screen.getByTestId('search-model-only'), 'nomatch')
+      await nextTick()
+      expect(leafLabels()).toEqual(['model'])
+
+      // The debounced @search value drives the scan, which filters the tree.
+      await user.type(screen.getByTestId('search-input'), 'nomatch')
+      await nextTick()
+      expect(leafLabels()).toEqual([])
+    })
+
     it('updates active search results when a reload adds a matching model', async () => {
       const user = userEvent.setup()
       renderComponent()

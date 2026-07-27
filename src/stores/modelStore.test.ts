@@ -155,6 +155,40 @@ describe('useModelStore', () => {
     expect(model.resolution).toBe('')
   })
 
+  describe('metadata load concurrency', () => {
+    it('bounds how many metadata reads run at once', async () => {
+      enableMocks()
+      const total = 20
+      vi.mocked(api.getModels).mockResolvedValue(
+        Array.from({ length: total }, (_, i) => ({
+          name: `bulk-${i}.safetensors`,
+          pathIndex: 0
+        }))
+      )
+      let inFlight = 0
+      let peak = 0
+      vi.mocked(api.viewMetadata).mockImplementation(async () => {
+        inFlight++
+        peak = Math.max(peak, inFlight)
+        await Promise.resolve()
+        inFlight--
+        return {}
+      })
+
+      store = useModelStore()
+      await store.loadModelFolders()
+      const folder = await store.getLoadedModelFolder('checkpoints')
+      const models = Object.values(folder!.models)
+
+      await Promise.all(models.map((model) => model.load()))
+
+      // Every model still loads; they just never all run at once.
+      expect(api.viewMetadata).toHaveBeenCalledTimes(total)
+      expect(peak).toBeGreaterThan(1)
+      expect(peak).toBeLessThanOrEqual(6)
+    })
+  })
+
   it('should cache model information', async () => {
     enableMocks()
     store = useModelStore()

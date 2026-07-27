@@ -980,6 +980,28 @@ describe(assetService.getAllAssetsByTag, () => {
     expect(secondParams.get('after')).toBe('cursor-next')
   })
 
+  it('stops walking at the batch cap when the cursor never stops advancing', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    let cursor = 0
+    fetchApiMock.mockImplementation(() => {
+      cursor++
+      return Promise.resolve(
+        buildAssetListResponse(
+          [validAsset({ id: `a-${cursor}`, tags: ['input'] })],
+          { hasMore: true, nextCursor: `cursor-${cursor}` }
+        )
+      )
+    })
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 1
+    })
+
+    expect(fetchApiMock).toHaveBeenCalledTimes(1000)
+    expect(assets).toHaveLength(1000)
+    warn.mockRestore()
+  })
+
   it('stops walking when next_cursor is absent even if has_more is true', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([validAsset({ id: 'only', tags: ['input'] })], {
