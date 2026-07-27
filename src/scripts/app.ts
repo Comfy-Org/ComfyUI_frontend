@@ -1687,13 +1687,16 @@ export class ComfyApp {
 
         const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
-          const queuedGraph = this.rootGraph
-          const queuedWorkflow = useWorkspaceStore().workflow
+          const submissionGraph = this.rootGraph
+          const submissionWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
           let executionContext: ExecutionContext | undefined
           if (telemetry) {
             try {
-              executionContext = getExecutionContext()
+              executionContext = getExecutionContext(
+                submissionGraph,
+                submissionWorkflow
+              )
             } catch (error) {
               console.error(
                 '[Telemetry] Workflow context collection failed',
@@ -1704,7 +1707,7 @@ export class ComfyApp {
 
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
-          forEachNode(queuedGraph, (node) => {
+          forEachNode(submissionGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
@@ -1714,14 +1717,14 @@ export class ComfyApp {
           })
 
           const startTime = performance.now()
-          const p = await this.graphToPrompt(queuedGraph)
-          const queuedNodes = collectAllNodes(queuedGraph)
+          const p = await this.graphToPrompt(submissionGraph)
+          const queuedNodes = collectAllNodes(submissionGraph)
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
             workflowContext = toWorkflowExecutionContext(executionContext, {
               executableNodeCount: Object.keys(p.output).length,
               executionScope: isPartialExecution ? 'partial' : 'full',
-              viewMode: getWorkflowMode(queuedWorkflow)
+              viewMode: getWorkflowMode(submissionWorkflow)
             })
           }
           try {
@@ -1752,7 +1755,7 @@ export class ComfyApp {
                   nodes: Object.keys(p.output),
                   promptOutput: p.output,
                   startTime,
-                  workflow: queuedWorkflow,
+                  workflow: submissionWorkflow,
                   workflowContext
                 })
               }
