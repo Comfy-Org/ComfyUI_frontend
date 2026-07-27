@@ -17,9 +17,13 @@ const hoisted = vi.hoisted(() => {
 vi.mock('@datadog/browser-rum', () => ({
   datadogRum: hoisted
 }))
+vi.mock('./manualRefreshTracker', () => ({
+  trackUserManualRefresh: vi.fn()
+}))
 
 import { rumBeforeSend } from './datadogRumBeforeSend'
 import { initDatadogRum } from './initDatadogRum'
+import { trackUserManualRefresh } from './manualRefreshTracker'
 
 describe('initDatadogRum', () => {
   beforeEach(() => {
@@ -225,5 +229,15 @@ describe('initDatadogRum', () => {
     await initDatadogRum('cloud.comfy.org')
 
     expect(hoisted.init).not.toHaveBeenCalled()
+  })
+
+  it('tracks manual refreshes only once RUM is initialized', async () => {
+    await initDatadogRum('localhost')
+
+    expect(vi.mocked(trackUserManualRefresh)).not.toHaveBeenCalled()
+
+    await initDatadogRum('cloud.comfy.org')
+
+    expect(vi.mocked(trackUserManualRefresh)).toHaveBeenCalledOnce()
   })
 })
