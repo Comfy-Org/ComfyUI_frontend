@@ -56,6 +56,22 @@ describe('ConflictDialog', () => {
     expect(emitted().resolve).toEqual([['agent']])
   })
 
+  it('resolves with newtab from the split-button menu', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderOpen()
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: t('agent.moreApplyOptions')
+      })
+    )
+    await user.click(
+      await screen.findByRole('menuitem', { name: t('agent.openNewTab') })
+    )
+
+    expect(emitted().resolve).toEqual([['newtab']])
+  })
+
   it('resolves once with cancel from the close button', async () => {
     const user = userEvent.setup()
     const { emitted } = renderOpen()
