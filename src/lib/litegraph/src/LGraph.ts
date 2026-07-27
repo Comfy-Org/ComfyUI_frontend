@@ -1154,6 +1154,18 @@ export class LGraph
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
 
+    // Geometry registers at attach, as it does for groups and reroutes. zIndex
+    // is the draw order litegraph uses — the index in `_nodes` — not
+    // `node.order`, which is execution order and unrelated to stacking.
+    const layoutMutations = useLayoutMutations()
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createNode(node.id, {
+      position: { x: node.pos[0], y: node.pos[1] },
+      size: { width: node.size[0], height: node.size[1] },
+      zIndex: this._nodes.length - 1,
+      visible: true
+    })
+
     node.onAdded?.(this)
 
     if (this.config.align_to_grid) node.alignToGrid()
@@ -1263,6 +1275,10 @@ export class LGraph
     node.onRemoved?.()
 
     unregisterNodeState(node)
+
+    const layoutMutations = useLayoutMutations()
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.deleteNode(node.id)
 
     node.graph = null
     this.incrementVersion()

@@ -1599,3 +1599,34 @@ describe('Zero UUID handling in configure', () => {
     expect(subgraph.id).toBe(zeroUuid)
   })
 })
+
+describe('node layout registration', () => {
+  it('creates a layout entry on add and drops it on remove', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [120, 340]
+    graph.add(node)
+
+    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+      x: 120,
+      y: 340
+    })
+
+    graph.remove(node)
+
+    expect(layoutStore.getNodeLayoutRef(node.id).value).toBeNull()
+  })
+
+  it('orders entries by draw order, not execution order', () => {
+    const graph = new LGraph()
+    const first = new LGraphNode('first')
+    const second = new LGraphNode('second')
+    graph.add(first)
+    graph.add(second)
+
+    const zIndexOf = (node: LGraphNode) =>
+      layoutStore.getNodeLayoutRef(node.id).value?.zIndex
+
+    expect(zIndexOf(second)).toBeGreaterThan(zIndexOf(first)!)
+  })
+})

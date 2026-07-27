@@ -6,6 +6,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toNodeId } from '@/types/nodeId'
 
 import { useLayoutMutations } from './layoutMutations'
+import { seedNodeLayout } from '@/renderer/core/layout/__fixtures__/seedNodeLayout'
 
 const NODE_1 = toNodeId('1')
 const NODE_2 = toNodeId('2')
@@ -14,10 +15,8 @@ const NEW_NODE = toNodeId('99')
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-  layoutStore.initializeFromLiteGraph([
-    { id: NODE_1, pos: [10, 20], size: [200, 100] },
-    { id: NODE_2, pos: [300, 400], size: [150, 80] }
-  ])
+  seedNodeLayout(NODE_1, [10, 20], [200, 100], 0)
+  seedNodeLayout(NODE_2, [300, 400], [150, 80], 1)
 })
 
 describe('moveNode', () => {

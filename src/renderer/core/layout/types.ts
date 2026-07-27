@@ -356,14 +356,11 @@ export interface LayoutStore {
     callback: (change: LayoutChange) => void
   ): () => void
 
-  // Initialization
-  initializeFromLiteGraph(
-    nodes: Array<{
-      id: NodeId
-      pos: [number, number]
-      size: [number, number]
-    }>
-  ): void
+  /** @see {@link LayoutStoreImpl.clearViewGeometry} */
+  clearViewGeometry(): void
+
+  /** @see {@link LayoutStoreImpl.reset} */
+  reset(): void
 
   // Source and actor management
   setSource(source: LayoutSource): void

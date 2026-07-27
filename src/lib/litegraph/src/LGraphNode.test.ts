@@ -25,6 +25,7 @@ import { test } from './__fixtures__/testExtensions'
 import { NodeSlotType, TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
+import { seedNodeLayout } from '@/renderer/core/layout/__fixtures__/seedNodeLayout'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -801,9 +802,7 @@ describe('snapToGrid', () => {
     const node = new LGraphNode('test')
     node.pos = [103, 97]
     graph.add(node)
-    layoutStore.initializeFromLiteGraph([
-      { id: node.id, pos: [103, 97], size: [140, 60] }
-    ])
+    seedNodeLayout(node.id, [103, 97], [140, 60], 0)
     return node
   }
 
@@ -820,7 +819,7 @@ describe('snapToGrid', () => {
   })
 
   test('writes indexed position mutations through to the layout store', () => {
-    const node = seededNode(new LGraph())
+    const node = addedNode(new LGraph())
     const pos = node.pos
 
     node.pos[0] = 120
@@ -833,12 +832,12 @@ describe('snapToGrid', () => {
   })
 
   test('does not re-commit the current stored position', () => {
-    const node = seededNode(new LGraph())
-    const operationCount = layoutStore.getOperationsSince(0).length
+    const node = addedNode(new LGraph())
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
 
     node.pos = [103, 97]
 
-    expect(layoutStore.getOperationsSince(0)).toHaveLength(operationCount)
+    expect(applyOperation).not.toHaveBeenCalled()
   })
 
   test('leaves a pinned node alone', () => {

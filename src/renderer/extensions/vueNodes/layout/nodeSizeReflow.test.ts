@@ -16,15 +16,6 @@ function setup() {
   node.size[1] = 100
   graph.add(node)
 
-  // Registers the node in layoutStore with its current size.
-  layoutStore.initializeFromLiteGraph([
-    {
-      id: node.id,
-      pos: [node.pos[0], node.pos[1]],
-      size: [node.size[0], node.size[1]]
-    }
-  ])
-
   const applySpy = vi.spyOn(layoutStore, 'applyOperation')
   const resizeCommits = (): ResizeNodeOperation[] =>
     applySpy.mock.calls
@@ -40,7 +31,7 @@ function setup() {
 describe('LGraphNode size reflow', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    layoutStore.initializeFromLiteGraph([])
+    layoutStore.reset()
   })
 
   afterEach(() => {

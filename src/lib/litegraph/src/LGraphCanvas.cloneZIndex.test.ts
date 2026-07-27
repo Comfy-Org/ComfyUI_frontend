@@ -131,7 +131,7 @@ describe('cloned node z-index in Vue renderer', () => {
     canvas = createCanvas(graph)
     LGraphCanvas.active_canvas = canvas
 
-    layoutStore.initializeFromLiteGraph([])
+    layoutStore.reset()
 
     // Simulate Vue runtime: create layout entries when nodes are added
     graph.onNodeAdded = (node: LGraphNode) => {

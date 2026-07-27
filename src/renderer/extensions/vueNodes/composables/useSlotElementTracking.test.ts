@@ -114,7 +114,7 @@ describe('useSlotElementTracking', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     document.body.innerHTML = ''
-    layoutStore.initializeFromLiteGraph([])
+    layoutStore.reset()
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',

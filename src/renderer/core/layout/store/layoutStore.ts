@@ -978,23 +978,31 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Initialize store with existing nodes
+   * Drops everything, including node entries. Only correct when no graph is
+   * attached — nodes normally leave the store via `LGraph.remove`.
    */
-  initializeFromLiteGraph(
-    nodes: Array<{
-      id: NodeId
-      pos: [number, number]
-      size: [number, number]
-    }>
-  ): void {
+  reset(): void {
     this.ydoc.transact(() => {
       this.ynodes.clear()
+      this.ygroups.clear()
+      this.yreroutes.clear()
+      this.spatialIndex.clear()
+    }, 'initialization')
+    this.clearViewGeometry()
+  }
+
+  /**
+   * Drops the geometry that belongs to the graph being left: slot and link
+   * layouts, and the spatial indexes over them. Node, group and reroute
+   * entries are not touched — those live with the entity itself.
+   */
+  clearViewGeometry(): void {
+    this.ydoc.transact(() => {
       // Note: We intentionally do NOT clear nodeRefs and nodeTriggers here.
       // Vue components may already hold references to these refs, and clearing
       // them would break the reactivity chain. The refs will be reused when
       // nodes are recreated, and stale refs will be cleaned up over time.
       this.nodeChangeListeners.clear()
-      this.spatialIndex.clear()
       this.linkSegmentSpatialIndex.clear()
       this.slotSpatialIndex.clear()
       this.linkLayouts.clear()
@@ -1004,30 +1012,6 @@ class LayoutStoreImpl implements LayoutStore {
       this.pendingGlobalChanges = []
       this.isGlobalDispatchQueued = false
 
-      nodes.forEach((node, index) => {
-        const nodeId = node.id
-        const nodeKey = String(nodeId)
-        const layout: NodeLayout = {
-          id: nodeId,
-          position: { x: node.pos[0], y: node.pos[1] },
-          size: { width: node.size[0], height: node.size[1] },
-          zIndex: index,
-          visible: true,
-          bounds: {
-            x: node.pos[0],
-            y: node.pos[1],
-            width: node.size[0],
-            height: node.size[1]
-          }
-        }
-
-        this.ynodes.set(nodeKey, layoutToYNode(layout))
-
-        // Add to spatial index
-        this.spatialIndex.insert(nodeId, layout.bounds)
-      })
-
-      // Trigger all existing refs to notify Vue of the new data
       this.nodeTriggers.forEach((trigger) => trigger())
     }, 'initialization')
   }
