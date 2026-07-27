@@ -260,9 +260,7 @@
                           template.mediaType === 'video' ||
                           template.mediaSubtype === 'webp'
                         "
-                        :hover-zoom="
-                          template.thumbnailVariant === 'zoomHover' ? 16 : 5
-                        "
+                        :hover-zoom="0"
                       />
                     </template>
                     <LogoOverlay
