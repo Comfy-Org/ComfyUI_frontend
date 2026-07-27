@@ -118,8 +118,7 @@ const foundersLiveFeatured: FeaturedEvent = {
     'founders-live-thumb.png'
   ),
   href: foundersLiveStreamHref,
-  newTab: true,
-  autoplayMs: 17000
+  newTab: true
 }
 
 const blackMathFeatured: FeaturedEvent = {

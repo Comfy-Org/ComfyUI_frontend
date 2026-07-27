@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import { computed, ref } from 'vue'
+import { useIntersectionObserver } from '@vueuse/core'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import IconButton from '../ui/icon-button/IconButton.vue'
 import { useCarouselAutoplay } from '../../composables/useCarouselAutoplay'
@@ -44,21 +45,60 @@ const autoplayDelay = computed(
   () => slides[activeIndex.value]?.autoplayMs ?? DEFAULT_AUTOPLAY_MS
 )
 
-// Respect prefers-reduced-motion (WCAG 2.2.2): don't autoplay the looping
-// slide video. Removing the reactive `autoplay` attribute only suppresses the
-// initial play under SSR (the server can't read the client's preference and
-// renders autoplay, so the browser starts playback before hydration) — so also
-// pause on mount. The paused video falls back to its poster frame.
+// Respect prefers-reduced-motion (WCAG 2.2.2): the video never plays and the
+// carousel does not auto-advance; the paused video shows its poster frame.
 const reduceMotion = computed(() => prefersReducedMotion())
 
-const pauseIfReduced = (el: unknown) => {
-  if (el instanceof HTMLVideoElement && reduceMotion.value) el.pause()
+const rootEl = useTemplateRef<HTMLElement>('rootEl')
+const isVisible = ref(false)
+useIntersectionObserver(rootEl, ([entry]) => {
+  isVisible.value = entry?.isIntersecting ?? false
+})
+
+// Slides are mixed image/video, so keep video elements keyed by slide index
+// rather than a DOM-order refs list.
+const videoEls = ref<(HTMLVideoElement | null)[]>([])
+const setVideoRef = (index: number, el: unknown) => {
+  videoEls.value[index] = el instanceof HTMLVideoElement ? el : null
+}
+const activeVideo = computed(() => videoEls.value[activeIndex.value] ?? null)
+const activeIsVideo = computed(
+  () => slides[activeIndex.value]?.media.type === 'video'
+)
+
+// The active video plays from the start only while its slide is active and the
+// carousel is on screen; every other video stays paused.
+watch(
+  [activeIndex, isVisible, reduceMotion, activeVideo],
+  () => {
+    videoEls.value.forEach((el, index) => {
+      if (el && index !== activeIndex.value) el.pause()
+    })
+    const el = activeVideo.value
+    if (!el) return
+    if (isVisible.value && !reduceMotion.value) {
+      el.currentTime = 0
+      el.play().catch(() => {})
+    } else {
+      el.pause()
+    }
+  },
+  { immediate: true }
+)
+
+// When the active video ends (or fails), advance like any other slide.
+const onVideoEnded = (index: number) => {
+  if (index === activeIndex.value) goTo(activeIndex.value + 1)
 }
 
-// Reduced motion disables autoplay entirely (WCAG 2.2.2).
+// Image slides advance on a timer; video slides advance when their video ends.
 useCarouselAutoplay({
   delayMs: autoplayDelay,
-  active: () => !reduceMotion.value && slides.length > 1,
+  active: () =>
+    !reduceMotion.value &&
+    isVisible.value &&
+    slides.length > 1 &&
+    !activeIsVideo.value,
   resetKey: activeIndex,
   advance: () => goTo(activeIndex.value + 1)
 })
@@ -67,6 +107,7 @@ useCarouselAutoplay({
 <template>
   <div class="w-full px-6 lg:px-14">
     <div
+      ref="rootEl"
       class="border-primary-warm-gray relative mx-auto max-w-[1446px] rounded-[38px] border p-1.5 lg:p-5"
       :data-active-index="activeIndex"
     >
@@ -96,16 +137,16 @@ useCarouselAutoplay({
             />
             <video
               v-else
-              :ref="pauseIfReduced"
+              :ref="(el) => setVideoRef(index, el)"
               :src="slide.media.src"
               :poster="slide.media.poster"
               :aria-label="slide.media.alt"
-              :autoplay="!reduceMotion"
-              loop
               muted
               playsinline
               preload="metadata"
               class="absolute inset-0 size-full object-cover object-center"
+              @ended="onVideoEnded(index)"
+              @error="onVideoEnded(index)"
             />
             <div class="absolute inset-0 bg-black/20" />
 
