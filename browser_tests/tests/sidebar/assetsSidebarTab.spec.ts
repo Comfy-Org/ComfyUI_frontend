@@ -245,6 +245,11 @@ test.describe('FE-130 assets sidebar route mocks', () => {
       .click()
 
     await expect(tab.backToAssetsButton).toBeVisible()
+    const folderJobId = comfyPage.page.getByText('multi-output', {
+      exact: true
+    })
+    await expect(folderJobId).toBeVisible()
+    await expect(folderJobId).toHaveCSS('text-overflow', 'ellipsis')
     await expect(tab.getAssetCardByName('multi-output-b')).toBeVisible()
     await expect(
       comfyPage.page.getByRole('img', { name: 'multi-output-b.png' })

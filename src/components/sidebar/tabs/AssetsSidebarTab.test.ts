@@ -172,9 +172,11 @@ describe('AssetsSidebarTab folder navigation', () => {
     const copyButton = within(folderTitle).getByRole('button', {
       name: 'Copy Job ID'
     })
+    const jobId = within(folderTitle).getByText('multi-output-job')
 
     expect(backButton).toHaveTextContent('')
     expect(backButton).toHaveAttribute('data-tooltip', 'Back to all assets')
+    expect(jobId).toHaveClass('min-w-0', 'truncate')
     expect(copyButton).toHaveAttribute('data-tooltip', 'Copy Job ID')
     expect(copyButton).toHaveAttribute('data-size', 'icon')
     expect(copyButton).toHaveAttribute('data-variant', 'textonly')
