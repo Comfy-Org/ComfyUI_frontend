@@ -1,5 +1,10 @@
 <template>
-  <div class="px-3">
+  <!-- Server-side download flow when the server advertises support -->
+  <MissingModelCardServerSide
+    v-if="useServerSideFlow"
+    :missing-model-groups="missingModelGroups"
+  />
+  <div v-else class="px-3">
     <div
       v-if="importableModelRows.length > 0"
       data-testid="missing-model-importable-rows"
@@ -67,6 +72,8 @@ import { useI18n } from 'vue-i18n'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
+import MissingModelCardServerSide from '@/platform/missingModel/serverDownloads/MissingModelCardServerSide.vue'
+import { isServerSideDownloadsAvailable } from '@/platform/missingModel/serverDownloads/useServerSideDownloads'
 import Button from '@/components/ui/button/Button.vue'
 import { downloadModel } from '@/platform/missingModel/missingModelDownload'
 import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
@@ -120,6 +127,10 @@ const importableModelRows = computed(() =>
 
 const unsupportedModelRows = computed(() =>
   isCloud ? sortedModelRows.value.filter((row) => !canCloudImport(row)) : []
+)
+
+const useServerSideFlow = computed(
+  () => !isCloud && isServerSideDownloadsAvailable()
 )
 
 const downloadableModels = computed(() => {
