@@ -8,14 +8,13 @@ import {
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import type { CoachId, CoachStep } from '@/platform/onboarding/onboardingTours'
 import { app } from '@/scripts/app'
-import type { NodeId } from '@/types/nodeId'
 
 import { resolveTourRoles } from '../roles/resolveTourRoles'
 import type { ResolvedRoles } from '../roles/resolveTourRoles'
 import { sequenceBuilder } from '../roles/tourSequence'
 import type { TourStep } from '../roles/tourSequence'
 import { frameNode } from './cameraFraming'
-import { canvasNodeRect, canvasNodeTarget } from './canvasCoachTarget'
+import { canvasNodeTarget } from './canvasCoachTarget'
 
 /** How far the run has got, which is all the Run step's copy has to report. */
 export type RunState = 'idle' | 'generating' | 'succeeded' | 'failed'
@@ -62,14 +61,7 @@ function tourShape({
   return mediaKind === 'video' ? 'i2v' : 'image-edit'
 }
 
-/** Nodes an earlier step already introduced, which stay lit as the tour moves on. */
-function revealedRects(nodeIds: NodeId[]): () => DOMRect[] {
-  return () =>
-    nodeIds.map(canvasNodeRect).filter((rect): rect is DOMRect => rect !== null)
-}
-
 interface StepContext {
-  sequence: TourStep[]
   shape: TourShape
   runState: Ref<RunState>
 }
@@ -81,19 +73,13 @@ interface StepContext {
 function toCoachStep(
   step: TourStep,
   index: number,
-  { sequence, shape, runState }: StepContext
+  { shape, runState }: StepContext
 ): CoachStep {
-  const revealed = sequence
-    .slice(0, index)
-    .map((earlier) => (earlier.kind === 'run' ? null : earlier.nodeId))
-    .filter((nodeId): nodeId is NodeId => nodeId !== null)
-
   const common = {
     coachId: COACH_ID[step.kind],
     deferTarget: true,
     cursor: true,
-    interactive: step.kind === 'prompt' || step.kind === 'run',
-    ...(revealed.length && { maskRects: revealedRects(revealed) })
+    interactive: step.kind === 'prompt' || step.kind === 'run'
   }
 
   if (step.kind === 'run')
@@ -140,6 +126,6 @@ export async function firstRunTourSteps(
   if (sequence.every((step) => step.kind === 'run')) return []
 
   registerCanvasTargets(sequence)
-  const context: StepContext = { sequence, shape: tourShape(roles), runState }
+  const context: StepContext = { shape: tourShape(roles), runState }
   return sequence.map((step, index) => toCoachStep(step, index, context))
 }

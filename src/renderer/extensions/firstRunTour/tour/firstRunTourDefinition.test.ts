@@ -151,21 +151,15 @@ describe('firstRunTourSteps', () => {
     expect(result?.name).toBe('result.image')
   })
 
-  it('keeps earlier nodes lit once the tour has moved past them', async () => {
+  it('lights the step the tour is on and nothing else', async () => {
     loadTemplate(FROM_IMAGE)
 
-    const [upload, prompt, run, result] = await buildSteps(FROM_IMAGE)
+    const steps = await buildSteps(FROM_IMAGE)
 
     expect(
-      upload.maskRects,
-      'the first step reveals nothing yet'
-    ).toBeUndefined()
-    expect(prompt.maskRects?.()).toHaveLength(1)
-    expect(run.maskRects?.()).toHaveLength(2)
-    expect(
-      result.maskRects?.(),
-      'Run is a toolbar step and adds no canvas hole'
-    ).toHaveLength(2)
+      steps.filter((step) => step.maskRects),
+      'a step that also cuts out the nodes behind it lights half the graph by the end'
+    ).toEqual([])
   })
 
   it('lets only interactive steps take pointer input', async () => {
