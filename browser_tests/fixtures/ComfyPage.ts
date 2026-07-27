@@ -531,40 +531,50 @@ export const comfyPageFixture = base.extend<{
 
     const { parallelIndex } = testInfo
     const username = `playwright-test-${parallelIndex}`
-    const userId = await comfyPage.setupUser(username)
+    // Cloud has no local multi-user registry: /api/users and the devtools
+    // settings endpoint sit behind the cloud session, which only the app
+    // holds - a node-side request context carries no bearer and gets a 401
+    // (proven on run 30309274120: all 359 failures were this one call).
+    // The smoke account IS the user; startup settings are applied in-app
+    // after boot instead.
+    const isCloudEnv = customNodesEnv() === 'cloud'
+    const userId = isCloudEnv ? username : await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
 
     const isVueNodes = testInfo.tags.includes('@vue-nodes')
     comfyPage.isVueNodes = isVueNodes
 
-    try {
-      await comfyPage.setupSettings({
-        'Comfy.UseNewMenu': 'Top',
-        // Hide canvas menu/info/selection toolbox by default.
-        'Comfy.Graph.CanvasInfo': false,
-        'Comfy.Graph.CanvasMenu': false,
-        'Comfy.Canvas.SelectionToolbox': false,
-        // Hide all badges by default.
-        'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
-        'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
-        // Disable tooltips by default to avoid flakiness.
-        'Comfy.EnableTooltips': false,
-        'Comfy.userId': userId,
-        // Set tutorial completed to true to avoid loading the tutorial workflow.
-        'Comfy.TutorialCompleted': true,
-        'Comfy.Queue.MaxHistoryItems': 64,
-        'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
-        // Disable toast warning about version compatibility, as they may or
-        // may not appear - depending on upstream ComfyUI dependencies
-        'Comfy.VersionCompatibility.DisableWarnings': true,
-        // Disable errors tab to prevent missing model detection from
-        // rendering error indicators on nodes during unrelated tests.
-        'Comfy.RightSidePanel.ShowErrorsTab': false,
-        ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
-        ...initialSettings
-      })
-    } catch (e) {
-      console.error(e)
+    const startupSettings: Record<string, unknown> = {
+      'Comfy.UseNewMenu': 'Top',
+      // Hide canvas menu/info/selection toolbox by default.
+      'Comfy.Graph.CanvasInfo': false,
+      'Comfy.Graph.CanvasMenu': false,
+      'Comfy.Canvas.SelectionToolbox': false,
+      // Hide all badges by default.
+      'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
+      'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
+      // Disable tooltips by default to avoid flakiness.
+      'Comfy.EnableTooltips': false,
+      'Comfy.userId': userId,
+      // Set tutorial completed to true to avoid loading the tutorial workflow.
+      'Comfy.TutorialCompleted': true,
+      'Comfy.Queue.MaxHistoryItems': 64,
+      'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
+      // Disable toast warning about version compatibility, as they may or
+      // may not appear - depending on upstream ComfyUI dependencies
+      'Comfy.VersionCompatibility.DisableWarnings': true,
+      // Disable errors tab to prevent missing model detection from
+      // rendering error indicators on nodes during unrelated tests.
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
+      ...initialSettings
+    }
+    if (!isCloudEnv) {
+      try {
+        await comfyPage.setupSettings(startupSettings)
+      } catch (e) {
+        console.error(e)
+      }
     }
 
     if (testInfo.tags.includes('@cloud')) {
@@ -593,6 +603,15 @@ export const comfyPageFixture = base.extend<{
     }
 
     await comfyPage.setup()
+
+    if (isCloudEnv) {
+      // The devtools settings endpoint is unreachable node-side on cloud
+      // (401, see above), so apply the same startup settings through the
+      // booted app's own authenticated session.
+      for (const [key, value] of Object.entries(startupSettings))
+        await comfyPage.settings.setSetting(key, value)
+      await comfyPage.nextFrame()
+    }
 
     if (isVueNodes) {
       await comfyPage.vueNodes.waitForNodes()
