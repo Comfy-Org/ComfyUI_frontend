@@ -316,8 +316,13 @@ jobs:
           skipped=$(jq '.stats.skipped' custom-nodes-results.json)
           if [ "$ROW" = "10" ]; then
             # Row 10's red is the skip gate, not a test failure: the renamed
-            # node-class key makes its tests skip, and skipped != 0 is the catch.
+            # node-class key makes its tests skip. skipped != 0 alone is
+            # flake-satisfiable (an install failure also skips), so ALSO
+            # require the renamed key itself in the results - the rename
+            # deterministically surfaces it (a never-before-seen node type
+            # fails the geometry-baseline check by name, run 30305166953).
             [ "$skipped" != "0" ] || { echo "::error::row 10: no tests skipped - the registration break was NOT caught"; exit 1; }
+            grep -q 'ImpactIntDETECTIONPROOF' custom-nodes-results.json || { echo "::error::row 10: tests skipped but the renamed key never surfaced - the skips are not attributable to this break"; exit 1; }
             echo "row 10 caught: $skipped test(s) skipped on the renamed node key"
             exit 0
           fi
@@ -331,7 +336,12 @@ jobs:
             6) pat='VALIDATION_FAIL' ;;
             7) pat='Error calling extension' ;;
             8) pat='DETECTION PROOF \(row 8\)' ;;
-            9) pat='EXECUTION_ERROR|DETECTION PROOF \(row 9\)' ;;
+            # Row 9 names its exact target: the injected raise MESSAGE does
+            # not propagate into the results json (only the exception class
+            # does, run 30305166953), and a bare EXECUTION_ERROR would match
+            # any node raising for any reason. The node and exception are
+            # ours by construction, so this stays stable.
+            9) pat='Constant Number: EXECUTION_ERROR \(Constant Number: ValueError\)' ;;
             12) pat='not registered - pack JS did not load' ;;
             13) pat='input count grows by one on connect' ;;
             *) echo "::error::no expected pattern for row $ROW"; exit 1 ;;
