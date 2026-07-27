@@ -9,7 +9,7 @@
         v-if="isInFolderView"
         class="flex w-full items-center justify-between gap-2"
       >
-        <div class="flex items-center gap-2">
+        <div class="flex min-w-0 flex-1 items-center gap-2">
           <Button
             v-tooltip.bottom="{
               value: $t('sideToolbar.backToAssets'),
@@ -18,13 +18,16 @@
             variant="textonly"
             size="icon"
             type="button"
+            class="shrink-0"
             :aria-label="$t('sideToolbar.backToAssets')"
             @click="exitFolderView"
           >
             <i class="icon-[lucide--arrow-left] size-4" />
           </Button>
-          <span class="font-bold">{{ $t('assetBrowser.jobId') }}:</span>
-          <span class="text-sm">{{ folderJobId?.substring(0, 8) }}</span>
+          <span class="shrink-0 font-bold">
+            {{ $t('assetBrowser.jobId') }}:
+          </span>
+          <span class="min-w-0 truncate text-sm">{{ folderJobId }}</span>
           <Button
             v-tooltip.bottom="{
               value: $t('g.copyJobId'),
@@ -33,13 +36,14 @@
             variant="textonly"
             size="icon"
             type="button"
+            class="shrink-0"
             :aria-label="$t('g.copyJobId')"
             @click="copyJobId"
           >
             <i class="icon-[lucide--copy] size-4" />
           </Button>
         </div>
-        <div>
+        <div class="shrink-0">
           <span>{{ formattedExecutionTime }}</span>
         </div>
       </div>
