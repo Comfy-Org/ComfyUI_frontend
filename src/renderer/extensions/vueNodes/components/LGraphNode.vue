@@ -513,7 +513,7 @@ onUnmounted(() => {
 })
 
 const baseResizeHandleClasses =
-  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
 const mutations = useLayoutMutations()
 
@@ -717,7 +717,7 @@ const lgraphNode = computed(() => {
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 
-useGLSLPreview(lgraphNode)
+const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
@@ -780,7 +780,12 @@ const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
 
-  if (!node || !newOutputs?.images?.length || node.hideOutputImages)
+  if (
+    !node ||
+    !newOutputs?.images?.length ||
+    node.hideOutputImages ||
+    hideExecutedOutput.value
+  )
     return undefined
 
   if (node instanceof SubgraphNode) return undefined

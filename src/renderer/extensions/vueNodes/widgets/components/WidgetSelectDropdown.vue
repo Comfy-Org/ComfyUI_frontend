@@ -41,8 +41,9 @@ provide(
 )
 
 const modelValue = defineModel<string | undefined>({
-  default(props: Props) {
-    const values = props.widget.options?.values
+  default(modelProps: Record<string, unknown>) {
+    const modelWidget = modelProps.widget as Props['widget'] | undefined
+    const values = modelWidget?.options?.values
     return (Array.isArray(values) ? values[0] : undefined) ?? ''
   }
 })
