@@ -87,7 +87,7 @@ const specLabel = 'Spec'
 const mockNote =
   'Static mock — not yet built in Vue. The spec below is the source of truth.'
 const runNote =
-  'Button above is the real shipped component; the dialog below is a static mock of the designed target.'
+  'Button above is the real component; the dialog below is a static mock — see the spec for whether it is shipped or still only designed.'
 
 const { role, stateId } = parseHash()
 

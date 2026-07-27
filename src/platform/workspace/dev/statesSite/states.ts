@@ -78,6 +78,14 @@ const MOCK_PAUSED_DIALOG_MEMBER = `
     <div class="dfoot"><button class="mbtn">Ok, got it</button></div>
   </div>`
 
+// Faithful mock of the shipped SubscriptionInactiveMemberDialog.vue.
+const MOCK_INACTIVE_DIALOG_MEMBER = `
+  <div class="mock-dialog">
+    <div class="dhead"><b>This workspace's subscription is inactive</b><span class="x">✕</span></div>
+    <div class="dbody">Ask your workspace owner to reactivate the workspace's subscription to run workflows.</div>
+    <div class="dfoot"><button class="mbtn">Ok, got it</button></div>
+  </div>`
+
 const MOCK_RELOAD_FAILED = `
   <div class="mock-tile">
     <div class="label">Auto-reload <span class="pill">Last reload failed<span class="tip">Card declined on Jun 25</span></span></div>
@@ -369,17 +377,33 @@ export const STATES: ViewerState[] = [
     ]
   },
   {
-    id: 'pay-inactive-runlock',
-    title: 'Inactive run-lock (shipped)',
+    id: 'pay-inactive-member',
+    title: 'Inactive run-lock — member (shipped)',
     crumb: 'reference: the shipped run-lock this family extends',
-    roles: ['owner', 'member-capped'],
+    roles: ['member-capped', 'member-uncapped'],
+    host: 'runbutton',
+    group: 'Payment failed',
+    cfg: { state: 'inactive', autoReload: 'healthy', balance: 'partial' },
+    mock: MOCK_INACTIVE_DIALOG_MEMBER,
+    spec: [
+      'Both halves shipped in #12786 — this is the grammar the paused variant should follow, not a proposal.',
+      'Button and dialog are cause-agnostic for members: a plain locked "Run", and copy that names the fix as someone else\'s ("ask your workspace owner"). Never mentions payment.',
+      'Dialog is a faithful mock of the shipped <span class="mono">SubscriptionInactiveMemberDialog.vue</span> — the exact shell the paused dialog should reuse with <span class="mono">subscription.paused.*</span> keys.',
+      '<span class="mono">Routing: useSubscriptionDialog forks on !canManageSubscription (out_of_credits excepted)</span>'
+    ]
+  },
+  {
+    id: 'pay-inactive-owner',
+    title: 'Inactive run-lock — owner (shipped)',
+    crumb: 'the other half of the fork',
+    roles: ['owner'],
     host: 'runbutton',
     group: 'Payment failed',
     cfg: { state: 'inactive', autoReload: 'healthy', balance: 'partial' },
     spec: [
-      'Shipped in #12786 — the grammar the paused variant should follow.',
-      'Owner label names the fix ("Subscribe to Run"); member label stays a plain locked "Run".',
-      'Switch the role dropdown to see both halves of the fork.'
+      'Owner label names the fix ("Subscribe to Run") — the member label never does.',
+      'No small dialog here: owners route to the full pricing table, since they can actually resolve it. That asymmetry is the point — the dialog exists for the role that can only ask someone else.',
+      'Shipped in #12786.'
     ]
   },
 
