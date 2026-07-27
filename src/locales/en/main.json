@@ -3711,7 +3711,7 @@
     "stepDescribe": "Describe your workflow",
     "stepExamples": "Add output examples",
     "stepFinish": "Finish publishing",
-    "workflowName": "Workflow name",
+    "workflowName": "Hub title",
     "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
     "workflowDescription": "Workflow description",
     "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people know what to expect.",
@@ -3753,8 +3753,6 @@
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
     "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
-    "renameFailedTitle": "Rename failed",
-    "renameFailedDescription": "Your workflow was published successfully, but renaming the local file failed. Rename it again to match.",
     "publishSuccessTitle": "Published successfully",
     "publishSuccessDescription": "Your workflow is now live on ComfyHub."
   },

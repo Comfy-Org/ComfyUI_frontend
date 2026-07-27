@@ -20,6 +20,7 @@ const zPrefillTagList = z
   .transform((tags) => tags.filter((tag): tag is string => tag !== undefined))
 
 export const zHubWorkflowPrefillResponse = z.object({
+  name: z.string().nullish(),
   description: z.string().nullish(),
   tags: zPrefillTagList.nullish(),
   sample_image_urls: z.array(z.string()).nullish(),

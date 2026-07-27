@@ -59,12 +59,14 @@ describe('zSharedWorkflowResponse name sanitization', () => {
 describe('zHubWorkflowPrefillResponse tag tolerance', () => {
   it('drops a malformed tag without discarding the rest of the prefill', () => {
     const result = zHubWorkflowPrefillResponse.safeParse({
+      name: 'Published title',
       description: 'A cool workflow',
       thumbnail_url: 'https://cdn.example.com/thumb.png',
       tags: [{ name: 'art', display_name: 'Art' }, 'rawtag', { name: 'broken' }]
     })
 
     expect(result.success).toBe(true)
+    expect(result.data?.name).toBe('Published title')
     expect(result.data?.tags).toEqual(['Art', 'rawtag'])
     expect(result.data?.description).toBe('A cool workflow')
     expect(result.data?.thumbnail_url).toBe('https://cdn.example.com/thumb.png')

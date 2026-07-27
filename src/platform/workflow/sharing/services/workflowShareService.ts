@@ -42,6 +42,7 @@ function mapApiThumbnailType(
 }
 
 interface PrefillMetadataFields {
+  name?: string | null
   description?: string | null
   tags?: string[] | null
   thumbnail_type?: 'image' | 'video' | 'image_comparison' | null
@@ -51,6 +52,7 @@ interface PrefillMetadataFields {
 }
 
 function extractPrefill(fields: PrefillMetadataFields): PublishPrefill | null {
+  const name = fields.name ?? undefined
   const description = fields.description ?? undefined
   const tags = fields.tags ?? undefined
   const thumbnailType = mapApiThumbnailType(fields.thumbnail_type)
@@ -59,6 +61,7 @@ function extractPrefill(fields: PrefillMetadataFields): PublishPrefill | null {
   const sampleImageUrls = fields.sample_image_urls ?? undefined
 
   if (
+    !name &&
     !description &&
     !tags?.length &&
     !thumbnailType &&
@@ -70,6 +73,7 @@ function extractPrefill(fields: PrefillMetadataFields): PublishPrefill | null {
   }
 
   return {
+    name,
     description,
     tags,
     thumbnailType,

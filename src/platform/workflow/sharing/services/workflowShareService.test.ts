@@ -176,6 +176,7 @@ describe(useWorkflowShareService, () => {
 
       if (path === '/hub/workflows/wf-prefill') {
         return mockJsonResponse({
+          name: 'Published title',
           description: 'A cool workflow',
           tags: [
             { name: 'art', display_name: 'Art' },
@@ -194,6 +195,7 @@ describe(useWorkflowShareService, () => {
 
     expect(status.isPublished).toBe(true)
     expect(status.prefill).toEqual({
+      name: 'Published title',
       description: 'A cool workflow',
       tags: ['Art', 'Upscale'],
       thumbnailType: 'imageComparison',
