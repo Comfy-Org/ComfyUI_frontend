@@ -10,6 +10,7 @@ import {
 } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 import { toValue } from 'vue'
+import type { StyleValue } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -19,7 +20,12 @@ defineOptions({
   inheritAttrs: false
 })
 
-defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
+defineProps<{
+  itemClass: string
+  contentClass: string
+  contentStyle?: StyleValue
+  item: MenuItem
+}>()
 </script>
 <template>
   <DropdownMenuSeparator
@@ -37,6 +43,7 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
     <DropdownMenuPortal>
       <DropdownMenuSubContent
         :class="contentClass"
+        :style="contentStyle"
         :side-offset="2"
         :align-offset="-5"
       >
@@ -46,6 +53,7 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
           :item="subitem"
           :item-class
           :content-class
+          :content-style
         />
       </DropdownMenuSubContent>
     </DropdownMenuPortal>

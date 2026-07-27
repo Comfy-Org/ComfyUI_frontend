@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 import SubscriptionRequiredDialogContentUnified from './SubscriptionRequiredDialogContentUnified.vue'
 
 const mockHandleSubscribeTeamClick = vi.fn()
+const mockHandleSubscribeClick = vi.fn()
 const mockIsInPersonalWorkspace = ref(false)
 
 vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
@@ -23,7 +24,7 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     isPolling: ref(false),
     isTeamCheckout: computed(() => false),
     previewVariant: computed(() => null),
-    handleSubscribeClick: vi.fn(),
+    handleSubscribeClick: mockHandleSubscribeClick,
     handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
     handleBackToPricing: vi.fn(),
     handleSuccessClose: vi.fn(),
@@ -112,5 +113,42 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     await vi.waitFor(() => {
       expect(mockHandleSubscribeTeamClick).toHaveBeenCalledWith(TEAM_PAYLOAD)
     })
+  })
+
+  it('opens the selected personal plan confirmation on mount', async () => {
+    renderComponent({
+      initialCheckout: {
+        planMode: 'personal',
+        tierKey: 'creator',
+        billingCycle: 'monthly'
+      }
+    })
+
+    await vi.waitFor(() => {
+      expect(mockHandleSubscribeClick).toHaveBeenCalledWith({
+        planMode: 'personal',
+        tierKey: 'creator',
+        billingCycle: 'monthly'
+      })
+    })
+  })
+
+  it('opens a resolved Team stop confirmation on mount', async () => {
+    renderComponent({
+      initialCheckout: {
+        planMode: 'team',
+        stop: TEAM_PAYLOAD.stop,
+        billingCycle: TEAM_PAYLOAD.billingCycle
+      }
+    })
+
+    await vi.waitFor(() => {
+      expect(mockHandleSubscribeTeamClick).toHaveBeenCalledWith({
+        planMode: 'team',
+        stop: TEAM_PAYLOAD.stop,
+        billingCycle: TEAM_PAYLOAD.billingCycle
+      })
+    })
+    expect(mockHandleSubscribeClick).not.toHaveBeenCalled()
   })
 })

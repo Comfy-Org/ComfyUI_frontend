@@ -239,7 +239,11 @@
                           )
                         "
                         :aria-label="
-                          t('rightSidePanel.infoFor', { item: item.label })
+                          t(
+                            'rightSidePanel.infoFor',
+                            { item: item.label },
+                            { escapeParameter: false }
+                          )
                         "
                         :aria-controls="getExecutionItemDetailId(item.key)"
                         :aria-expanded="isExecutionItemDetailExpanded(item.key)"
@@ -253,9 +257,13 @@
                       size="icon-sm"
                       class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
                       :aria-label="
-                        t('rightSidePanel.locateNodeFor', {
-                          item: item.label
-                        })
+                        t(
+                          'rightSidePanel.locateNodeFor',
+                          {
+                            item: item.label
+                          },
+                          { escapeParameter: false }
+                        )
                       "
                       @click.stop="handleLocateNode(item.nodeId)"
                     >
