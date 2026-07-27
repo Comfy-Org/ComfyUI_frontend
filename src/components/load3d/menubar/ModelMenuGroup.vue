@@ -1,12 +1,11 @@
 <template>
-  <Popover :open="openPopover === 'upDirection'">
+  <Popover v-model:open="upDirectionOpen">
     <PopoverTrigger as-child>
       <button
         v-tooltip.bottom="tip(t('load3d.menuBar.upDirection'))"
         :class="actionClass(false)"
         type="button"
         :aria-label="compact ? t('load3d.menuBar.upDirection') : undefined"
-        @click="togglePopover('upDirection')"
       >
         <i class="icon-[lucide--move-3d] size-4" />
         <span v-if="!compact">{{ t('load3d.menuBar.upDirection') }}</span>
@@ -30,14 +29,13 @@
     </PopoverContent>
   </Popover>
 
-  <Popover v-if="materialModes.length" :open="openPopover === 'material'">
+  <Popover v-if="materialModes.length" v-model:open="materialOpen">
     <PopoverTrigger as-child>
       <button
         v-tooltip.bottom="tip(t('load3d.menuBar.material'))"
         :class="actionClass(false)"
         type="button"
         :aria-label="compact ? t('load3d.menuBar.material') : undefined"
-        @click="togglePopover('material')"
       >
         <i class="icon-[lucide--box] size-4" />
         <span v-if="!compact">{{ t('load3d.menuBar.material') }}</span>
@@ -76,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -85,6 +83,7 @@ import {
   rowClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
+import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import type {
@@ -113,16 +112,9 @@ const upDirection = computed(() => config.value?.upDirection)
 const materialMode = computed(() => config.value?.materialMode)
 const showSkeleton = computed(() => config.value?.showSkeleton ?? false)
 
-type MenuPopover = 'upDirection' | 'material'
-
-// One-way `:open` binding, no `@update:open`: reka-ui's own dismiss/toggle
-// emits are intentionally ignored so they can't race this ref (they were the
-// cause of a flash-then-close bug when both popovers were kept in sync).
-const openPopover = ref<MenuPopover | null>(null)
-
-function togglePopover(popover: MenuPopover) {
-  openPopover.value = openPopover.value === popover ? null : popover
-}
+const exclusivePopover = usePopoverExclusivity()
+const upDirectionOpen = exclusivePopover('model-up-direction')
+const materialOpen = exclusivePopover('model-material')
 
 const upDirections: UpDirection[] = [
   'original',
