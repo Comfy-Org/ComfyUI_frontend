@@ -7,6 +7,7 @@ import { createApp, defineComponent, h, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -15,9 +16,6 @@ import { useMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
-
-// Track the filename passed to createAnnotatedPath
-const capturedFilenames = vi.hoisted(() => ({ values: [] as string[] }))
 
 const mockDownloadFile = vi.hoisted(() => vi.fn())
 vi.mock('@/base/common/downloadUtil', () => ({
@@ -93,16 +91,12 @@ vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
   extractWorkflowFromAsset: mockExtractWorkflowFromAsset
 }))
 
+const litegraphServiceMock = vi.hoisted(() => ({
+  addNodeOnGraph: vi.fn<(nodeDef: unknown, options?: unknown) => LGraphNode>(),
+  getCanvasCenter: vi.fn<() => [number, number]>()
+}))
 vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({
-    addNodeOnGraph: vi.fn().mockReturnValue(
-      fromAny<LGraphNode, unknown>({
-        widgets: [{ name: 'image', value: '', callback: vi.fn() }],
-        graph: { setDirtyCanvas: vi.fn() }
-      })
-    ),
-    getCanvasCenter: vi.fn().mockReturnValue([100, 100])
-  })
+  useLitegraphService: () => litegraphServiceMock
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
@@ -113,13 +107,6 @@ vi.mock('@/stores/nodeDefStore', () => ({
         display_name: 'Load Image'
       }
     }
-  })
-}))
-
-vi.mock('@/utils/createAnnotatedPath', () => ({
-  createAnnotatedPath: vi.fn((item: { filename: string }) => {
-    capturedFilenames.values.push(item.filename)
-    return item.filename
   })
 }))
 
@@ -252,6 +239,20 @@ function createMockMediaAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
   }
 }
 
+function createLoadImageNode(): LGraphNode {
+  return fromAny<LGraphNode, unknown>({
+    widgets: [{ name: 'image', value: '', callback: vi.fn() }],
+    graph: { setDirtyCanvas: vi.fn() }
+  })
+}
+
+function getAddedImageWidgetValues() {
+  return litegraphServiceMock.addNodeOnGraph.mock.results.map(
+    ({ value }) =>
+      value.widgets?.find((widget: IWidget) => widget.name === 'image')?.value
+  )
+}
+
 function mountMediaActions(asset?: AssetMeta) {
   let actions: ReturnType<typeof useMediaAssetActions> | undefined
 
@@ -290,11 +291,13 @@ describe('useMediaAssetActions', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
-    capturedFilenames.values = []
     mockIsCloud.value = false
+    litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
+    litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
     mockGetOutputAssetMetadata.mockReset()
     mockGetOutputAssetMetadata.mockReturnValue(null)
     mockGetAssetType.mockReset()
+    mockGetAssetType.mockReturnValue('input')
     mockResolveOutputAssetItems.mockReset()
     mockResolveOutputAssetItems.mockResolvedValue([])
   })
@@ -315,7 +318,7 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(capturedFilenames.values).toContain('my-image.jpeg')
+        expect(getAddedImageWidgetValues()).toEqual(['my-image.jpeg'])
       })
     })
 
@@ -334,7 +337,7 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(capturedFilenames.values).toContain('abc123hash.jpeg')
+        expect(getAddedImageWidgetValues()).toEqual(['abc123hash.jpeg'])
       })
 
       it('should fall back to asset.name when hash is not available', async () => {
@@ -347,7 +350,7 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(capturedFilenames.values).toContain('fallback-name.jpeg')
+        expect(getAddedImageWidgetValues()).toEqual(['fallback-name.jpeg'])
       })
 
       it('should fall back to asset.name when hash is null', async () => {
@@ -360,7 +363,7 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(capturedFilenames.values).toContain('fallback-null.jpeg')
+        expect(getAddedImageWidgetValues()).toEqual(['fallback-null.jpeg'])
       })
     })
   })
@@ -371,8 +374,11 @@ describe('useMediaAssetActions', () => {
         mockIsCloud.value = true
       })
 
-      it('should use hash for each asset', async () => {
-        const actions = useMediaAssetActions()
+      it('assigns annotated hashes to each non-input loader node', async () => {
+        mockGetAssetType
+          .mockReturnValueOnce('temp')
+          .mockReturnValueOnce('output')
+        const { actions, unmount } = mountMediaActions()
 
         const assets = [
           createMockAsset({
@@ -388,11 +394,13 @@ describe('useMediaAssetActions', () => {
         ]
 
         await actions.addMultipleToWorkflow(assets)
+        const widgetValues = getAddedImageWidgetValues()
+        unmount()
 
-        expect(capturedFilenames.values).toContain('hash1.jpeg')
-        expect(capturedFilenames.values).toContain('hash2.jpeg')
-        expect(capturedFilenames.values).not.toContain('file1.jpeg')
-        expect(capturedFilenames.values).not.toContain('file2.jpeg')
+        expect(widgetValues).toEqual([
+          'hash1.jpeg [temp]',
+          'hash2.jpeg [output]'
+        ])
       })
     })
   })
