@@ -126,8 +126,7 @@ export type NodeProperty = string | number | boolean | object | null
 /** Captures only the {@link layoutStore} singleton, so shared across nodes. */
 const layoutMutations = useLayoutMutations()
 
-/** Scratch for store rect reads that must not allocate. */
-const storedRect = new Float64Array(4)
+const storedRectScratch = new Float64Array(4)
 
 interface INodePropertyInfo {
   name?: string
@@ -622,19 +621,6 @@ export class LGraphNode
     return [posX - bX, posY - bY]
   }
 
-  /**
-   * A frame-scoped projection of the node's geometry, which `layoutStore` owns.
-   *
-   * Reading straight from the store on every access costs ~57ns against a
-   * realistic document, and the legacy canvas reads a node's geometry dozens of
-   * times per frame. The rect is refreshed once per dirty signal and read
-   * locally after that - ADR 0008's first render-loop mitigation, pre-collecting
-   * a query rather than probing the store per draw call.
-   *
-   * It is a projection, never a source: nothing reads it back into the store,
-   * and it cannot go stale because every store write bumps the version that
-   * invalidates it.
-   */
   _posSize = new Rectangle()
   _pos: Point = this._posSize.pos
   _size: Size = this._posSize.size
@@ -647,17 +633,10 @@ export class LGraphNode
     synchronize: () => this.refreshGeometry()
   })
 
-  /** The `layoutStore.geometryVersion` this projection was built from. */
   _geometryVersion = -1
 
-  /**
-   * Whether the store holds this node's geometry. Until it does — before the
-   * node is attached — {@link _posSize} is the geometry, not a projection of
-   * it, and must not be overwritten by whatever entry happens to share the id.
-   */
   _layoutRegistered = false
 
-  /** Rebuilds {@link _posSize} if the store has changed since it was read. */
   private refreshGeometry(): void {
     if (!this._layoutRegistered || !this.graph) return
 
@@ -688,9 +667,9 @@ export class LGraphNode
     const rootGraphId = this.graph.rootGraph.id
     const position = { x: this._pos[0], y: this._pos[1] }
     if (
-      layoutStore.readNodeRect(rootGraphId, this.id, storedRect) &&
-      storedRect[0] === position.x &&
-      storedRect[1] === position.y
+      layoutStore.readNodeRect(rootGraphId, this.id, storedRectScratch) &&
+      storedRectScratch[0] === position.x &&
+      storedRectScratch[1] === position.y
     ) {
       return
     }
@@ -724,12 +703,10 @@ export class LGraphNode
     if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 
     const rootGraphId = this.graph.rootGraph.id
-    // An equal write would bump the store version, which invalidates every
-    // node's geometry projection, so it is worth a read to avoid.
     if (
-      layoutStore.readNodeRect(rootGraphId, this.id, storedRect) &&
-      storedRect[2] === this._size[0] &&
-      storedRect[3] === this._size[1]
+      layoutStore.readNodeRect(rootGraphId, this.id, storedRectScratch) &&
+      storedRectScratch[2] === this._size[0] &&
+      storedRectScratch[3] === this._size[1]
     ) {
       return
     }
@@ -4416,18 +4393,6 @@ export function registerNodeState(
  * node. No-op for nodes that were never registered.
  * @param node The node to unregister
  */
-/**
- * Hands the node's geometry to {@link layoutStore} and switches it to reading
- * from there. Called from `LGraph.add`, after the node has an id.
- * @param node The node to register
- */
-
-/**
- * Drops the node's layout entry. The node keeps its last known geometry
- * locally, so a detached node still reports where it was.
- * @param node The node to unregister
- */
-
 export function unregisterNodeState(node: LGraphNode): void {
   if (!node._graphId) return
   useNodeDataStore().deleteNode(node._graphId, node._state)

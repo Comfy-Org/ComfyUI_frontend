@@ -872,6 +872,41 @@ describe('snapToGrid', () => {
   })
 })
 
+describe('layout geometry projection', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    layoutStore.resetForTests()
+  })
+
+  test('refreshes stable views before indexed mutations', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [10, 20]
+    node.size = [100, 50]
+    graph.add(node)
+    const pos = node.pos
+    const size = node.size
+
+    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
+      {
+        nodeId: node.id,
+        bounds: { x: 30, y: 40, width: 200, height: 80 }
+      }
+    ])
+    pos[0] = 50
+    size[1] = 90
+
+    expect(node.pos).toBe(pos)
+    expect(node.size).toBe(size)
+    expect([...pos]).toEqual([50, 40])
+    expect([...size]).toEqual([200, 90])
+    expect(layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value).toMatchObject({
+      position: { x: 50, y: 40 },
+      size: { width: 200, height: 90 }
+    })
+  })
+})
+
 describe('_setConcreteSlots', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
