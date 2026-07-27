@@ -2099,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "au moins un",
       "connectAtLeastOne": "Connectez {atLeastOne} nœud de sortie pour que les utilisateurs puissent voir les résultats après l'exécution.",
+      "descriptionPlaceholder": "Double-cliquez pour ajouter une description",
       "noOutputs": "Aucune sortie ajoutée pour le moment",
       "outputExamples": "Exemples : « Enregistrer l'image » ou « Enregistrer la vidéo »",
       "outputs": "Sorties",
@@ -2892,6 +2893,7 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "masque",
     "merging": "fusion",
     "mochi": "mochi",
@@ -3512,6 +3514,7 @@
     "Load 3D": "Charger 3D",
     "Locale": "Locale",
     "Mask Editor": "Éditeur de Masque",
+    "Members": "Membres",
     "Menu": "Menu",
     "ModelLibrary": "Bibliothèque de Modèles",
     "Node": "Nœud",
@@ -3874,6 +3877,7 @@
     "freeTier": {
       "description": "Votre plan gratuit inclut {credits} crédits chaque mois pour essayer Comfy Cloud.",
       "descriptionGeneric": "Votre plan gratuit inclut une allocation mensuelle de crédits pour essayer Comfy Cloud.",
+      "descriptionQuota": "Votre offre gratuite inclut {runs} exécutions pour commencer avec Comfy Cloud — aucune carte requise.",
       "nextRefresh": "Vos crédits seront renouvelés le {date}.",
       "outOfCredits": {
         "subtitle": "Abonnez-vous pour débloquer les recharges et plus encore",
@@ -4406,6 +4410,24 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "Crédits",
+        "date": "Date",
+        "eventDetails": "Détails de l'événement",
+        "eventType": "Type d'événement",
+        "user": "Utilisateur"
+      },
+      "empty": "Aucune activité pour le moment.",
+      "fullActivity": "Activité complète",
+      "hoverCard": {
+        "lastActivity": "Dernière activité",
+        "partnerNodeUsed": "Nœud partenaire utilisé",
+        "totalCreditsUsed": "Total de crédits utilisés"
+      },
+      "perUserHint": "Vous cherchez l'utilisation totale par utilisateur ?",
+      "seeMembers": "Voir les membres"
+    },
     "billingStatus": {
       "ending": {
         "body": "Les membres conservent un accès complet jusqu'à cette date. Réactivez pour conserver vos crédits et places partagés.",
@@ -4493,14 +4515,31 @@
         "cancelInvite": "Annuler l'invitation",
         "changeRole": "Changer de rôle",
         "removeMember": "Retirer le membre",
-        "resendInvite": "Renvoyer l'invitation"
+        "resendInvite": "Renvoyer l'invitation",
+        "setCreditLimit": "Définir une limite de crédits"
+      },
+      "activity": {
+        "daysAgo": "il y a {count} jour | il y a {count} jours",
+        "hoursAgo": "il y a {n} h",
+        "justNow": "à l’instant",
+        "minutesAgo": "il y a {n} min"
       },
       "columns": {
+        "creditsUsed": "Crédits mensuels",
         "expiryDate": "Date d'expiration",
         "inviteDate": "Date d'invitation",
         "role": "Rôle"
       },
       "contactUs": "Contactez-nous",
+      "creditLimitDialog": {
+        "description": "Une fois cette limite atteinte, ils ne pourront plus exécuter de workflows.",
+        "invalidLimit": "Entrez une limite de crédits supérieure à zéro.",
+        "limitOption": "Limiter l'utilisation mensuelle des crédits à :",
+        "noLimit": "Aucune limite",
+        "title": "Définir une limite mensuelle de crédits pour {name}",
+        "update": "Mettre à jour la limite",
+        "warning": "Cet utilisateur a déjà dépensé {credits} crédits. Définir la limite à ce montant ou en dessous empêchera toute exécution supplémentaire jusqu'au mois prochain."
+      },
       "header": "Membres",
       "membersCount": "{count}/50 membres",
       "needMoreMembers": "Besoin de plus de membres ?",
@@ -4523,6 +4562,12 @@
       "deleteWorkspaceDisabledTooltip": "Annulez d’abord l’abonnement actif de votre espace de travail",
       "editWorkspace": "Modifier les détails de l’espace de travail",
       "leaveWorkspace": "Quitter l’espace de travail"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "Activité",
+        "overview": "Crédits"
+      }
     },
     "removeMemberDialog": {
       "error": "Échec du retrait du membre",

@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "响度。0 = 正常，100 = 2.0x，-50 = 0.5x。"
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual：支持20种语言（英语、中文、日语、韩语、墨西哥西班牙语、西班牙西班牙语、印尼语、德语、巴西葡萄牙语、法语、泰语、越南语、马来语、菲律宾语、意大利语、俄语、荷兰语、波兰语、土耳其语、瑞典语），并可通过“[5.5s:8.0s] ...”时间戳进行逐句时序控制。seed-audio-1.0：仅支持英语和中文，不支持时序控制。"
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "音高变化（半音，-12 到 12）。"
@@ -19989,6 +19993,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "为 Mage-Flow-Edit 编码编辑指令，可包含一张或多张参考图像。参考 latent 会被调整为输出分辨率（宽/高，或为0时使用第一张图像的尺寸）。采样时请使用 latent 输出，以确保尺寸始终一致。",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "输出高度。0 = 使用第一张参考图像的尺寸。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "要编辑的参考图像。所有参考图像在编码前会被调整为输出分辨率。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "输出宽度。0 = 使用第一张参考图像的尺寸。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }

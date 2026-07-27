@@ -242,7 +242,7 @@ describe('useSettingUI', () => {
       expect(findPanelByKey('workspace-members')).toBeNull()
     })
 
-    it('shows only Plan & Credits and hides standalone Credits when enabled', () => {
+    it('shows Plan & Credits and Members separately when enabled', () => {
       env.state.billingControlEnabled = true
       const { defaultCategory, findPanelByKey, navGroups } =
         useSettingUI('workspace')
@@ -250,12 +250,15 @@ describe('useSettingUI', () => {
         .find((group) => group.title === 'Workspace')
         ?.items.map(({ id, label }) => ({ id, label }))
       const planCreditsPanel = findPanelByKey('workspace')
+      const membersPanel = findPanelByKey('workspace-members')
 
       expect(workspaceItems).toEqual([
-        { id: 'workspace', label: 'PlanCredits' }
+        { id: 'workspace', label: 'PlanCredits' },
+        { id: 'workspace-members', label: 'Members' }
       ])
+      expect(planCreditsPanel?.component).toBe(membersPanel?.component)
       expect(planCreditsPanel?.props).toEqual({ section: 'planCredits' })
-      expect(findPanelByKey('workspace-members')).toBeNull()
+      expect(membersPanel?.props).toEqual({ section: 'members' })
       expect(defaultCategory.value).toMatchObject({
         key: 'workspace',
         label: 'PlanCredits'

@@ -93,7 +93,7 @@
                         <span class="text-sm text-base-foreground tabular-nums">
                           {{
                             summaryFor(
-                              event.userName
+                              event.userId
                             ).totalCredits.toLocaleString()
                           }}
                         </span>
@@ -106,7 +106,7 @@
                         }}
                       </span>
                       <span class="text-sm text-base-foreground">
-                        {{ lastActivityLabel(event.userName) }}
+                        {{ lastActivityLabel(event.userId) }}
                       </span>
                     </div>
                   </div>
@@ -168,10 +168,7 @@
     </div>
 
     <div class="flex flex-col gap-3 @2xl:h-8 @2xl:flex-row @2xl:items-center">
-      <div
-        v-if="canViewTeamUsage"
-        class="flex flex-wrap items-center gap-x-6 gap-y-2"
-      >
+      <div v-if="canViewTeamUsage" class="flex items-center">
         <a
           :href="fullActivityUrl"
           target="_blank"
@@ -232,12 +229,10 @@ const tableContainer = ref<HTMLElement | null>(null)
 const { pageSize } = useAutoPageSize(tableContainer, 1)
 
 const { workspaceRole } = useWorkspaceUI()
-const { userDisplayName, userEmail } = useCurrentUser()
+const { resolvedUserInfo } = useCurrentUser()
 const canViewTeamUsage = computed(() => workspaceRole.value === 'owner')
-const selfName = computed(() =>
-  canViewTeamUsage.value
-    ? null
-    : userDisplayName.value || userEmail.value || t('g.you')
+const selfUserId = computed(() =>
+  canViewTeamUsage.value ? null : (resolvedUserInfo.value?.id ?? '')
 )
 
 const fullActivityUrl = `${getComfyPlatformBaseUrl()}/profile/usage`
@@ -254,21 +249,21 @@ const {
 } = useWorkspaceActivity(
   () => search,
   pageSize,
-  selfName,
+  selfUserId,
   () => events
 )
 
-function summaryFor(userName: string) {
+function summaryFor(userId: string | null) {
   return (
-    userSummaries.value.get(userName) ?? {
+    (userId ? userSummaries.value.get(userId) : undefined) ?? {
       totalCredits: 0,
       lastActivity: new Date()
     }
   )
 }
 
-function lastActivityLabel(userName: string): string {
-  return formatRelativeTime(summaryFor(userName).lastActivity, new Date(), {
+function lastActivityLabel(userId: string | null): string {
+  return formatRelativeTime(summaryFor(userId).lastActivity, new Date(), {
     justNow: t('workspacePanel.members.activity.justNow'),
     minutesAgo: (n) => t('workspacePanel.members.activity.minutesAgo', { n }),
     hoursAgo: (n) => t('workspacePanel.members.activity.hoursAgo', { n }),
