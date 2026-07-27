@@ -265,6 +265,16 @@ describe('ComfyApp', () => {
       expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
       expect(errorStore.isErrorOverlayOpen).toBe(true)
       expect(executionStore.queuedJobs['job-1']?.nodes).toEqual({ '1': false })
+      expect(executionStore.queuedJobs['job-1']?.workflowContext).toEqual({
+        workflow_type: 'custom',
+        view_mode: 'graph',
+        execution_scope: 'full',
+        total_node_count: 0,
+        executable_node_count: 1,
+        custom_node_count: 0,
+        api_node_count: 0,
+        subgraph_count: 0
+      })
       expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
         'workflows/review.json'
       )

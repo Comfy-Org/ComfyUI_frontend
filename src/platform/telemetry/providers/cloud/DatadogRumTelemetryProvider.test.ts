@@ -58,7 +58,17 @@ describe('DatadogRumTelemetryProvider', () => {
 
       new DatadogRumTelemetryProvider().trackExecutionOutcome({
         startTime: 42,
-        outcome
+        outcome,
+        workflowContext: {
+          workflow_type: 'custom',
+          view_mode: 'graph',
+          execution_scope: 'full',
+          total_node_count: 42,
+          executable_node_count: 12,
+          custom_node_count: 3,
+          api_node_count: 1,
+          subgraph_count: 2
+        }
       })
 
       expect(getInternalContext).toHaveBeenCalledWith(42)
@@ -66,9 +76,17 @@ describe('DatadogRumTelemetryProvider', () => {
         startTime: performance.timeOrigin + 42,
         duration: 100,
         context: {
+          api_node_count: 1,
+          custom_node_count: 3,
+          executable_node_count: 12,
+          execution_scope: 'full',
           origin_view_id: 'view-a',
           outcome,
-          product: 'cloud_generation'
+          product: 'cloud_generation',
+          subgraph_count: 2,
+          total_node_count: 42,
+          view_mode: 'graph',
+          workflow_type: 'custom'
         }
       })
     }

@@ -1749,7 +1749,8 @@ export class ComfyApp {
                   nodes: Object.keys(p.output),
                   promptOutput: p.output,
                   startTime,
-                  workflow: queuedWorkflow
+                  workflow: queuedWorkflow,
+                  workflowContext
                 })
               }
             } catch (error) {
