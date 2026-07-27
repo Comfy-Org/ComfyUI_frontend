@@ -255,15 +255,16 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
     await expect(page.getByTestId('coach-spotlight')).toBeHidden()
   })
 
-  test.describe('arriving on a link', () => {
-    test('tours the template the link loaded', async ({ comfyPage }) => {
-      test.slow()
-      const { page } = comfyPage
-
+  test.describe('arriving on a template link', () => {
+    test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setup({
         clearStorage: false,
         url: `/?template=${LINKED_TEMPLATE_ID}`
       })
+    })
+
+    test('tours the template the link loaded', async ({ comfyPage }) => {
+      const { page } = comfyPage
 
       await expect(
         page.getByRole('dialog', { name: GETTING_STARTED_TITLE }),
@@ -272,20 +273,19 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       await expect(page.getByTestId('coach-spotlight')).toBeVisible()
       await expect(page.getByTestId('coach-card')).toContainText('Step 1 of')
     })
+  })
 
-    test('offers no tour when the link loads nothing', async ({
-      comfyPage
-    }) => {
-      test.slow()
-      const { page } = comfyPage
-
+  test.describe('arriving on a link that loads nothing', () => {
+    test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setup({
         clearStorage: false,
         url: '/?template=no_such_template_exists'
       })
+    })
 
+    test('offers no tour', async ({ comfyPage }) => {
       await expect(
-        page.getByTestId('coach-spotlight'),
+        comfyPage.page.getByTestId('coach-spotlight'),
         'touring a graph the user never asked for is worse than no tour'
       ).toBeHidden()
     })
