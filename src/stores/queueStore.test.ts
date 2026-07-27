@@ -54,6 +54,10 @@ type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
 type QueueResolver = (value: QueueResponse) => void
 
 // Mock API
+vi.mock('@/platform/auth/session/sessionExpiry', () => ({
+  isSessionTerminated: vi.fn(() => false)
+}))
+
 vi.mock('@/scripts/api', () => ({
   api: {
     getQueue: vi.fn(),
@@ -297,6 +301,32 @@ describe('useQueueStore', () => {
   const mockGetHistory = vi.mocked(api.getHistory)
   const mockClearItems = vi.mocked(api.clearItems)
   const mockDeleteItem = vi.mocked(api.deleteItem)
+
+  describe('terminated session', () => {
+    it('should stop polling once the session is terminated', async () => {
+      const { isSessionTerminated } =
+        await import('@/platform/auth/session/sessionExpiry')
+      vi.mocked(isSessionTerminated).mockReturnValue(true)
+
+      await Promise.all(Array.from({ length: 20 }, () => store.update()))
+
+      expect(mockGetQueue).not.toHaveBeenCalled()
+      expect(mockGetHistory).not.toHaveBeenCalled()
+    })
+
+    it('should keep polling while the session is alive', async () => {
+      const { isSessionTerminated } =
+        await import('@/platform/auth/session/sessionExpiry')
+      vi.mocked(isSessionTerminated).mockReturnValue(false)
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([])
+
+      await store.update()
+
+      expect(mockGetQueue).toHaveBeenCalledTimes(1)
+      expect(mockGetHistory).toHaveBeenCalledTimes(1)
+    })
+  })
 
   describe('initial state', () => {
     it('should have empty state on initialization', () => {
