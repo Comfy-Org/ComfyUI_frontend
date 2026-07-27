@@ -96,7 +96,7 @@ describe('ConversationView', () => {
     })
   })
 
-  it('shows a scroll-to-latest pill when scrolled up and returns to bottom on click', async () => {
+  it('shows a scroll-to-latest button when scrolled up and returns to bottom on click', async () => {
     const assistant: AssistantMessage = {
       id: 'msg-1' as TurnId,
       role: 'assistant',
@@ -112,12 +112,15 @@ describe('ConversationView', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(screen.queryByText('Latest')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Latest' })
+    ).not.toBeInTheDocument()
 
     for (const cb of intersectionCallbacks) cb([{ isIntersecting: false }])
-    const pill = await screen.findByRole('button', { name: 'Latest' })
+    const jump = await screen.findByRole('button', { name: 'Latest' })
+    expect(jump).toHaveTextContent('')
 
-    await userEvent.click(pill)
+    await userEvent.click(jump)
     expect(scrollIntoView).toHaveBeenCalled()
   })
 
