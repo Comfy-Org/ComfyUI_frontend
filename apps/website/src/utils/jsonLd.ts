@@ -384,11 +384,7 @@ export function eventNode(input: EventNodeInput): JsonLdNode {
       : 'https://schema.org/OfflineEventAttendanceMode',
     location: online
       ? { '@type': 'VirtualLocation', url: input.virtualUrl }
-      : {
-          '@type': 'Place',
-          name: input.placeName,
-          address: input.placeName
-        },
+      : { '@type': 'Place', name: input.placeName },
     organizer: { '@id': organizationId(input.siteUrl) },
     inLanguage: input.locale
   }
