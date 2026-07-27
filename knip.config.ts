@@ -10,7 +10,11 @@ const config: KnipConfig = {
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
-        'src/storybook/mocks/**/*.ts'
+        'src/storybook/mocks/**/*.ts',
+        // Internal states viewer: a second Vite build whose entry is an HTML
+        // file, and whose stubs are swapped in via resolve.alias — neither is
+        // traceable from the main graph.
+        'src/platform/workspace/dev/statesSite/**'
       ],
       project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}', '!.claude/**']
     },
