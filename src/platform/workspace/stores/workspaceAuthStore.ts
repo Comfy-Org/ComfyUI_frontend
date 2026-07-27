@@ -80,6 +80,19 @@ function isPermanentAuthError(err: unknown): err is WorkspaceAuthError {
   )
 }
 
+/**
+ * The subset of permanent failures that mean the IDENTITY was rejected, rather
+ * than that this workspace is gone or off-limits. `/api/auth/token` answers 401
+ * for a bad Firebase token but 403 for a denied workspace and 404 for a missing
+ * one — the latter two leave the user's credential perfectly valid, so they must
+ * never end the session.
+ */
+function isIdentityRevoked(err: unknown): boolean {
+  return (
+    err instanceof WorkspaceAuthError && err.code === 'INVALID_FIREBASE_TOKEN'
+  )
+}
+
 function permanentAuthErrorMessageKey(code: string | undefined): string {
   switch (code) {
     case 'ACCESS_DENIED':
@@ -850,10 +863,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       if (isPermanentAuthError(err)) {
         if (getUnifiedToken()) surfacePermanentAuthError(err)
         clearUnifiedContext()
-        // The scheduled refresh is the authoritative check on this identity:
-        // /api/auth/token refused to re-issue, so clearing the token would
-        // otherwise leave the app running with no way to make a cloud call.
-        endExpiredSession('the cloud session could not be renewed')
+        // Only an identity rejection ends the session. A denied or missing
+        // workspace clears the token but leaves the credential valid, so the
+        // user stays signed in rather than being bounced to the login page.
+        if (isIdentityRevoked(err)) {
+          endExpiredSession('the identity provider rejected this account')
+        }
       } else {
         console.warn('Unified token refresh failed:', err)
       }
