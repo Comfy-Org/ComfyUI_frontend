@@ -225,7 +225,6 @@ function onRoleChange(e: Event) {
   max-width: 860px;
 }
 .stage.wide {
-  max-width: none;
   justify-content: stretch;
 }
 .stage.wide > :deep(*) {
