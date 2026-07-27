@@ -22,6 +22,7 @@
           {{ pageTitle }}
         </h2>
         <AsyncSearchInput
+          ref="searchInputRef"
           v-model="searchInput"
           :searcher="applySearchQuery"
           :debounce-ms="400"
@@ -194,7 +195,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card hover:bg-base-background"
+            class="group/card transition-colors hover:bg-secondary-background/50"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -278,20 +279,18 @@
                 </template>
                 <template #top-left>
                   <div
-                    class="flex h-7 items-center gap-1.5 rounded-lg bg-black/30 px-2 backdrop-blur-[20px]"
+                    class="flex h-6 items-center gap-1 rounded-lg bg-zinc-700/50 px-2 backdrop-blur-[20px]"
                   >
                     <i
                       :class="
-                        cn(
-                          'size-4',
-                          isAppTemplate(template)
-                            ? 'icon-[lucide--app-window] text-jade-600'
-                            : 'icon-[comfy--workflow] text-azure-400'
-                        )
+                        isAppTemplate(template)
+                          ? 'icon-[lucide--app-window]'
+                          : 'icon-[comfy--workflow]'
                       "
+                      class="size-3 text-white"
                     />
                     <span
-                      class="text-sm font-medium whitespace-nowrap text-white"
+                      class="text-xs font-medium whitespace-nowrap text-white"
                     >
                       {{
                         isAppTemplate(template)
@@ -421,7 +420,14 @@
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  provide,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CardBottom from '@/components/card/CardBottom.vue'
@@ -933,6 +939,32 @@ const { isLoading } = useAsyncState(
     immediate: true // Start loading immediately
   }
 )
+
+// The template grid mounts asynchronously after the dialog opens. When the
+// catalog finishes loading and the grid renders, Reka's focus scope reclaims
+// focus to the dialog container (in a microtask after the mutation), undoing
+// the search input's initial autofocus. Re-assert focus on the search once the
+// catalog settles — across a few macrotask ticks so we win after Reka — unless
+// the user has already moved to another field.
+const searchInputRef = ref<{ focus: () => void }>()
+function refocusSearchAfterLoad() {
+  const isTypingElsewhere = () => {
+    const active = document.activeElement
+    return (
+      active instanceof HTMLInputElement ||
+      active instanceof HTMLTextAreaElement ||
+      (active instanceof HTMLElement && active.isContentEditable)
+    )
+  }
+  for (const delay of [0, 80, 200]) {
+    window.setTimeout(() => {
+      if (!isTypingElsewhere()) searchInputRef.value?.focus()
+    }, delay)
+  }
+}
+watch(isLoading, (loading, wasLoading) => {
+  if (wasLoading && !loading) refocusSearchAfterLoad()
+})
 
 onBeforeUnmount(() => {
   cardRefs.value = [] // Release DOM refs
