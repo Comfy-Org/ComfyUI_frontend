@@ -75,7 +75,8 @@
     border: 0 solid;
   }
 
-  :where(#agent-panel-root, .agent-scope) :where(textarea, input, select) {
+  :where(#agent-panel-root, .agent-scope) :where(textarea, input),
+  :where(#agent-panel-root, .agent-scope) :where(select) {
     appearance: none;
     border: 0 solid;
     background-color: transparent;

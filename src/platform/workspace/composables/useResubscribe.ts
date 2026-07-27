@@ -40,10 +40,14 @@ export function useResubscribe() {
         life: 5000
       })
     } catch (error) {
+      const detail =
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : t('subscription.resubscribeFailed')
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: error instanceof Error ? error.message : t('g.error')
+        detail
       })
     } finally {
       isResubscribing.value = false

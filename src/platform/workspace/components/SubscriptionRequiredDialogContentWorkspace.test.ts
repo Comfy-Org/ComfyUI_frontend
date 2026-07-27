@@ -6,6 +6,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import SubscriptionRequiredDialogContentWorkspace from './SubscriptionRequiredDialogContentWorkspace.vue'
 
@@ -78,6 +79,7 @@ function renderComponent(
     onClose?: () => void
     reason?: PaymentIntentSource
     isPersonal?: boolean
+    initialCheckout?: SubscriptionCheckoutSelection
   } = {}
 ) {
   return render(SubscriptionRequiredDialogContentWorkspace, {
@@ -86,6 +88,9 @@ function renderComponent(
       ...(props.reason ? { reason: props.reason } : {}),
       ...(props.isPersonal !== undefined
         ? { isPersonal: props.isPersonal }
+        : {}),
+      ...(props.initialCheckout
+        ? { initialCheckout: props.initialCheckout }
         : {})
     },
     global: {
@@ -152,6 +157,18 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
       undefined,
       { tierPlanType: 'personal' }
     )
+  })
+
+  it('opens a personal deep-linked checkout on mount', () => {
+    const initialCheckout = {
+      planMode: 'personal',
+      tierKey: 'creator',
+      billingCycle: 'monthly'
+    } as const
+
+    renderComponent({ isPersonal: true, initialCheckout })
+
+    expect(mockHandleSubscribeClick).toHaveBeenCalledWith(initialCheckout)
   })
 
   it('shows the team workspace header by default', () => {

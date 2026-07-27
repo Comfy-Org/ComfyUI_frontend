@@ -37,11 +37,16 @@ import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const agentPanelStore = useAgentPanelStore()
 const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
 const docked = computed(() => enabled.value && isOpen.value)
+
+// Body-mounted overlays center on the raw viewport; declaring the docked
+// width as --workspace-inset-right lets them center on the visible workspace.
+useWorkspaceInsetRight(() => (docked.value ? width.value : 0))
 
 const isResizing = ref(false)
 let resizeStartX = 0
