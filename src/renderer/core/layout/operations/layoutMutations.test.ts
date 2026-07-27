@@ -17,7 +17,6 @@ const NODE_2 = toNodeId('2')
 const MISSING_NODE = toNodeId('999')
 const NEW_NODE = toNodeId('99')
 
-/** Production registers nodes from `LGraph.add`; these tests need only the entry. */
 function seedNode(
   nodeId: NodeId,
   [x, y]: [number, number],

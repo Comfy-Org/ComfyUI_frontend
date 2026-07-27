@@ -343,23 +343,10 @@ class LayoutStore {
     return ygroup ? yGroupToLayout(ygroup, groupId) : null
   }
 
-  /**
-   * Get current version for change detection
-   */
-  /**
-   * Bumped by every layout change. Read as a dirty signal by consumers that
-   * hold a frame-scoped projection of geometry and need to know when to refresh
-   * it — a plain number, so it stays cheap enough for a per-read check.
-   */
   get geometryVersion(): number {
     return this.version.value
   }
 
-  /**
-   * Copies a node's stored rect into `out` without allocating. The one read a
-   * frame's worth of geometry access should cost; see ADR 0008 on pre-collected
-   * render queries.
-   */
   readNodeRect(
     rootGraphId: UUID,
     nodeId: NodeId,
@@ -379,6 +366,9 @@ class LayoutStore {
     return true
   }
 
+  /**
+   * Get current version for change detection
+   */
   getVersion(): ComputedRef<number> {
     return computed(() => this.version.value)
   }
