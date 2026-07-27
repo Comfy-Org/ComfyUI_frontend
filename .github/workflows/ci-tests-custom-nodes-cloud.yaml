@@ -92,7 +92,12 @@ jobs:
     # and this job would have nothing to run, so skip it (a skip counts as
     # passing, keeping this required-safe). Non-PR events (push, merge_group,
     # workflow_dispatch) are same-repo by construction and fall through the OR.
+    # DETECTION-PROOF BRANCH ONLY: the plain cloud gate is disabled here. This
+    # never-merge branch's pushes were burning full real runs on the ONE shared
+    # Cloud test instance for nothing (its tree is clean; breaks live only in
+    # the core matrix legs). Phase C replaces this with cloud-mode proof legs.
     if: >-
+      github.head_ref != 'nathaniel/detection-proof' &&
       needs.changes.outputs.should-run == 'true' &&
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository)
