@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import type { ActiveTab } from './ActiveTabStrip.vue'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
-import type { ConflictChoice } from './safety/ConflictDialog.vue'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
@@ -17,14 +16,12 @@ import EmptyState from './EmptyState.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
 import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
-import ConflictDialog from './safety/ConflictDialog.vue'
 
 const {
   entries,
   userName,
   streaming = false,
   submitting = false,
-  conflictOpen = false,
   canAttach = false,
   canOpenAssets = false,
   isMaximized = false,
@@ -39,7 +36,6 @@ const {
   userName?: string
   streaming?: boolean
   submitting?: boolean
-  conflictOpen?: boolean
   canAttach?: boolean
   canOpenAssets?: boolean
   isMaximized?: boolean
@@ -58,7 +54,6 @@ const emit = defineEmits<{
   removeTag: [id: string]
   mentionPick: [node: SelectedNode]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
-  resolveConflict: [choice: ConflictChoice]
   selectTab: [path: string]
   clearWorkflow: []
   newChat: []
@@ -206,10 +201,5 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         </div>
       </footer>
     </template>
-
-    <ConflictDialog
-      :open="conflictOpen"
-      @resolve="emit('resolveConflict', $event)"
-    />
   </section>
 </template>
