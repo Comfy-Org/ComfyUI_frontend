@@ -29,6 +29,19 @@ const REVOKED_IDENTITY_CODES: ReadonlySet<string> = new Set([
 const INVESTIGATION_COOLDOWN_MS = 60_000
 
 /**
+ * Each consecutive `alive` verdict doubles the quiet period, up to this cap.
+ *
+ * An endpoint that 401s for its own reasons — an entitlement the user lacks, a
+ * resource outside their workspace — keeps reporting forever while the session
+ * stays healthy. A flat cooldown would probe the auth server ~480 times across
+ * a working day, and every probe is another chance for a transient 401 to be
+ * read as a revoked identity. Backing off on repeated proof-of-health cuts that
+ * to a handful without slowing real detection: a dying session returns `dead`
+ * on its first probe, and the first probe is never delayed.
+ */
+const MAX_INVESTIGATION_COOLDOWN_MS = 15 * 60_000
+
+/**
  * The session mint shares a serialized mutation queue with no request timeout,
  * so a stalled prior mutation could otherwise pin the shared investigation
  * promise forever and leave every later report awaiting a verdict that never
@@ -39,6 +52,15 @@ const INVESTIGATION_TIMEOUT_MS = 15_000
 let terminated = false
 let investigation: Promise<SessionVerdict> | null = null
 let nextInvestigationAllowedAt = 0
+let consecutiveHealthyVerdicts = 0
+
+function nextCooldownMs(): number {
+  const doublings = Math.max(0, consecutiveHealthyVerdicts - 1)
+  return Math.min(
+    INVESTIGATION_COOLDOWN_MS * 2 ** doublings,
+    MAX_INVESTIGATION_COOLDOWN_MS
+  )
+}
 
 /**
  * True once the session has been judged dead. Request seams check this to stop
@@ -157,6 +179,12 @@ async function terminate(): Promise<void> {
   if (terminated) return
   terminated = true
 
+  // The redirect is otherwise silent, which would make a false positive both
+  // indistinguishable from a real expiry and invisible in telemetry.
+  console.warn(
+    'Cloud session ended: the identity provider or the session endpoint rejected a freshly minted token.'
+  )
+
   try {
     const [sessionCookie, authStore] = await Promise.all([
       loadSessionCookie(),
@@ -198,10 +226,16 @@ export async function reportUnauthorized(): Promise<void> {
 
   if (!investigation) {
     if (Date.now() < nextInvestigationAllowedAt) return
-    investigation = investigate(user).finally(() => {
-      investigation = null
-      nextInvestigationAllowedAt = Date.now() + INVESTIGATION_COOLDOWN_MS
-    })
+    investigation = investigate(user)
+      .then((verdict) => {
+        consecutiveHealthyVerdicts =
+          verdict === 'alive' ? consecutiveHealthyVerdicts + 1 : 0
+        return verdict
+      })
+      .finally(() => {
+        investigation = null
+        nextInvestigationAllowedAt = Date.now() + nextCooldownMs()
+      })
   }
 
   if ((await investigation) === 'dead') await terminate()

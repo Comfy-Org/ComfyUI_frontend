@@ -194,6 +194,76 @@ describe('reportUnauthorized', () => {
     }
   })
 
+  it('never logs out a healthy session, and backs off, when one endpoint 401s all day', async () => {
+    vi.useFakeTimers()
+    try {
+      const { reportUnauthorized, isSessionTerminated } =
+        await loadSessionExpiry()
+
+      // Eight hours of a poller 401ing every 10s against a healthy session.
+      for (let elapsed = 0; elapsed < 8 * 60 * 60_000; elapsed += 10_000) {
+        await reportUnauthorized()
+        await vi.advanceTimersByTimeAsync(10_000)
+      }
+
+      expect(isSessionTerminated()).toBe(false)
+      expect(mocks.logout).not.toHaveBeenCalled()
+      // A flat 60s cooldown would be ~480 probes; backoff must cut it hard.
+      expect(mocks.createSessionOrThrow.mock.calls.length).toBeLessThan(40)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not delay the first probe, however long the session has been healthy', async () => {
+    vi.useFakeTimers()
+    try {
+      const { reportUnauthorized } = await loadSessionExpiry()
+
+      await reportUnauthorized()
+      expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(1)
+
+      mocks.createSessionOrThrow.mockRejectedValue(
+        new SessionRequestError('unauthorized', 401)
+      )
+      await vi.advanceTimersByTimeAsync(60_001)
+      await reportUnauthorized()
+
+      expect(mocks.logout).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('resets the backoff once a verdict stops being healthy', async () => {
+    vi.useFakeTimers()
+    try {
+      const { reportUnauthorized } = await loadSessionExpiry()
+
+      await reportUnauthorized()
+      await vi.advanceTimersByTimeAsync(60_001)
+      await reportUnauthorized()
+      await vi.advanceTimersByTimeAsync(120_001)
+      await reportUnauthorized()
+      expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(3)
+
+      mocks.createSessionOrThrow.mockRejectedValue(
+        new SessionRequestError('server exploded', 500)
+      )
+      await vi.advanceTimersByTimeAsync(240_001)
+      await reportUnauthorized()
+
+      // The 500 resets the streak, so the next window is the 60s base again.
+      mocks.createSessionOrThrow.mockResolvedValue(undefined)
+      await vi.advanceTimersByTimeAsync(60_001)
+      await reportUnauthorized()
+
+      expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(5)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('does not log out when the identity oracle is unreachable', async () => {
     mocks.getIdToken.mockRejectedValue(
       new FirebaseError(AuthErrorCodes.NETWORK_REQUEST_FAILED, 'offline')
