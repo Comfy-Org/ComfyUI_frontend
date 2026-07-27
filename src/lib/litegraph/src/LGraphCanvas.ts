@@ -3652,7 +3652,28 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.emitAfterChange()
     }
 
-    this.processSelect(item, pointer.eDown, sticky)
+    // Selection-update side effects (onSelectionChange callback) are deferred
+    // to the next frame so the node visibly starts following the pointer
+    // before downstream reactivity (e.g. Vue store updates) runs.
+    // The sentinel records whether processSelect actually notified, so we
+    // skip the RAF on the no-op sticky-resselect path and avoid swallowing
+    // the listener if processSelect throws.
+    const onSelectionChange = this.onSelectionChange
+    let selectionNotified = false
+    this.onSelectionChange = () => {
+      selectionNotified = true
+    }
+    try {
+      this.processSelect(item, pointer.eDown, sticky)
+    } finally {
+      this.onSelectionChange = onSelectionChange
+    }
+    if (onSelectionChange && selectionNotified) {
+      this.getCanvasWindow().requestAnimationFrame(() => {
+        onSelectionChange.call(this, this.selected_nodes)
+      })
+    }
+
     this.isDragging = true
 
     // Seed the auto-pan modifier state from the pointer-down event so a drag
