@@ -10,7 +10,7 @@ const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 const mockCloseDialog = vi.fn()
 const mockTrackTopUpPurchase = vi.fn()
-const mockTrackApiCreditTopupFailed = vi.fn()
+const mockTrackBillingEvent = vi.fn()
 const mockIsSubscriptionEnabled = vi.fn(() => true)
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
@@ -47,7 +47,7 @@ vi.mock('@/stores/dialogStore', () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
-    trackApiCreditTopupFailed: mockTrackApiCreditTopupFailed
+    trackBillingEvent: mockTrackBillingEvent
   })
 }))
 
@@ -160,13 +160,18 @@ describe('TopUpCreditsDialogContentLegacy', () => {
   })
 
   it('tracks the failure and surfaces a toast when the purchase rejects', async () => {
-    mockPurchaseCreditsDirect.mockRejectedValue(new Error('card declined'))
+    mockPurchaseCreditsDirect.mockRejectedValue(
+      new Error('declined for person@example.com')
+    )
 
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockTrackApiCreditTopupFailed).toHaveBeenCalledWith({
-      error_message: 'card declined'
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: 'unknown'
     })
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -177,14 +182,17 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     expect(mockShowSettings).not.toHaveBeenCalled()
   })
 
-  it('reports the unknown-error message when the rejection is not an Error', async () => {
+  it('uses the same bounded category when the rejection is not an Error', async () => {
     mockPurchaseCreditsDirect.mockRejectedValue('boom')
 
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockTrackApiCreditTopupFailed).toHaveBeenCalledWith({
-      error_message: 'An unknown error occurred'
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: 'unknown'
     })
   })
 })

@@ -12,9 +12,7 @@ const mockFetchMembers = vi.hoisted(() => vi.fn())
 const mockSubscribe = vi.hoisted(() => vi.fn())
 const mockPreviewSubscribe = vi.hoisted(() => vi.fn())
 const mockStartOperation = vi.hoisted(() => vi.fn())
-const mockTrackDowngradeToPersonalStarted = vi.hoisted(() => vi.fn())
-const mockTrackDowngradeToPersonalSucceeded = vi.hoisted(() => vi.fn())
-const mockTrackDowngradeToPersonalFailed = vi.hoisted(() => vi.fn())
+const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
 const mockPermissions = vi.hoisted(() => ({
   value: {
     canManageSubscription: true,
@@ -72,9 +70,7 @@ vi.mock('@/config/comfyApi', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackDowngradeToPersonalStarted: mockTrackDowngradeToPersonalStarted,
-    trackDowngradeToPersonalSucceeded: mockTrackDowngradeToPersonalSucceeded,
-    trackDowngradeToPersonalFailed: mockTrackDowngradeToPersonalFailed
+    trackBillingEvent: mockTrackBillingEvent
   })
 }))
 
@@ -307,7 +303,10 @@ describe('useDowngradeToPersonal', () => {
       const result = await downgradeToPersonal('creator-annual')
 
       expect(result).toStrictEqual({ preview, response })
-      expect(mockTrackDowngradeToPersonalSucceeded).toHaveBeenCalledWith({
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'succeeded',
+        outcome: 'success',
         member_removal_count: 0,
         member_removal_failures: 0,
         target_tier: 'creator'
@@ -345,7 +344,14 @@ describe('useDowngradeToPersonal', () => {
         '_blank'
       )
       expect(mockStartOperation).toHaveBeenCalledWith('op-2', 'subscription', {
-        tier: undefined
+        tier: undefined,
+        cycle: undefined,
+        checkoutType: 'change',
+        downgradeToPersonal: {
+          memberRemovalCount: 1,
+          memberRemovalFailures: 0,
+          targetTier: undefined
+        }
       })
     })
 
@@ -401,8 +407,18 @@ describe('useDowngradeToPersonal', () => {
 
       expect(windowOpen).not.toHaveBeenCalled()
       expect(mockStartOperation).toHaveBeenCalledWith('op-4', 'subscription', {
-        tier: undefined
+        tier: undefined,
+        cycle: undefined,
+        checkoutType: 'change',
+        downgradeToPersonal: {
+          memberRemovalCount: 1,
+          memberRemovalFailures: 0,
+          targetTier: undefined
+        }
       })
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'succeeded' })
+      )
     })
 
     it('reports the generic failure when subscribe fails and no members were removed', async () => {
@@ -447,12 +463,16 @@ describe('useDowngradeToPersonal', () => {
 
       await downgradeToPersonal('founder-monthly')
 
-      expect(mockTrackDowngradeToPersonalStarted).toHaveBeenCalledWith({
-        member_removal_count: 2
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'started',
+        outcome: 'pending',
+        member_removal_count: 2,
+        member_removal_failures: 0
       })
     })
 
-    it('tracks a failed outcome with the removal-failure count and reason', async () => {
+    it('tracks a failed outcome without the member email', async () => {
       mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       mockRemoveMember.mockImplementation((id: string) =>
         id === 'm2' ? Promise.reject(new Error('network')) : Promise.resolve()
@@ -463,25 +483,36 @@ describe('useDowngradeToPersonal', () => {
         'm2@example.com'
       )
 
-      expect(mockTrackDowngradeToPersonalFailed).toHaveBeenCalledWith({
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
         member_removal_count: 2,
         member_removal_failures: 1,
-        failure_reason: expect.stringContaining('m2@example.com')
+        target_tier: undefined,
+        failure_category: 'unknown',
+        error_code: 'member_removal_failed'
       })
-      expect(mockTrackDowngradeToPersonalSucceeded).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'succeeded' })
+      )
     })
 
-    it('falls back to a generic failure reason when a non-Error value is thrown', async () => {
+    it('uses a bounded unknown category when a non-Error value is thrown', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
       mockPreviewSubscribe.mockRejectedValue('boom')
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
       await expect(downgradeToPersonal('founder-monthly')).rejects.toBe('boom')
 
-      expect(mockTrackDowngradeToPersonalFailed).toHaveBeenCalledWith({
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
         member_removal_count: 1,
         member_removal_failures: 0,
-        failure_reason: 'unknown error'
+        target_tier: undefined,
+        failure_category: 'unknown'
       })
     })
   })

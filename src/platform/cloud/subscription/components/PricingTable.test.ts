@@ -29,7 +29,7 @@ const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
 const mockTrackBeginCheckout = vi.fn()
-const mockTrackSubscriptionCheckoutFailed = vi.fn()
+const mockTrackBillingEvent = vi.fn()
 const mockUserId = ref<string | undefined>('user-123')
 const mockGetAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
@@ -124,7 +124,7 @@ vi.mock('@/stores/authStore', () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackBeginCheckout: mockTrackBeginCheckout,
-    trackSubscriptionCheckoutFailed: mockTrackSubscriptionCheckoutFailed
+    trackBillingEvent: mockTrackBillingEvent
   })
 }))
 
@@ -448,7 +448,7 @@ describe('PricingTable', () => {
       mockIsActiveSubscription.value = false
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
-        json: async () => ({ message: 'card declined' })
+        json: async () => ({ message: 'declined for person@example.com' })
       } as Response)
 
       renderComponent()
@@ -461,11 +461,15 @@ describe('PricingTable', () => {
       await userEvent.click(subscribeButton!)
       await flushPromises()
 
-      expect(mockTrackSubscriptionCheckoutFailed).toHaveBeenCalledWith({
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
         tier: 'standard',
         cycle: 'yearly',
         checkout_type: 'new',
-        error_message: expect.stringContaining('card declined')
+        payment_intent_source: undefined,
+        failure_category: 'unknown'
       })
       expect(mockReportError).toHaveBeenCalled()
     })

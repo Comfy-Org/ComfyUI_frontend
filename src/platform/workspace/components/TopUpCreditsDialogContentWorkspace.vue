@@ -270,7 +270,12 @@ async function handleBuy() {
     if (!response) return
 
     if (response.status === 'completed') {
-      telemetry?.trackApiCreditTopupSucceeded()
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: response.billing_op_id
+      })
       toast.add({
         severity: 'success',
         summary: t('credits.topUp.purchaseSuccess'),
@@ -282,6 +287,13 @@ async function handleBuy() {
     } else if (response.status === 'pending') {
       billingOperationStore.startOperation(response.billing_op_id, 'topup')
     } else {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: response.billing_op_id,
+        failure_category: 'unknown'
+      })
       toast.add({
         severity: 'error',
         summary: t('credits.topUp.purchaseError'),
@@ -293,6 +305,12 @@ async function handleBuy() {
 
     const errorMessage =
       error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: 'unknown'
+    })
     toast.add({
       severity: 'error',
       summary: t('credits.topUp.purchaseError'),

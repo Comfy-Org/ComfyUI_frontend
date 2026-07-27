@@ -8,8 +8,7 @@ const state = vi.hoisted(() => ({
   resubscribe: vi.fn(),
   toastAdd: vi.fn(),
   trackResubscribeClicked: vi.fn(),
-  trackResubscribeSucceeded: vi.fn(),
-  trackResubscribeFailed: vi.fn()
+  trackBillingEvent: vi.fn()
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -41,8 +40,7 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackResubscribeClicked: state.trackResubscribeClicked,
-    trackResubscribeSucceeded: state.trackResubscribeSucceeded,
-    trackResubscribeFailed: state.trackResubscribeFailed
+    trackBillingEvent: state.trackBillingEvent
   })
 }))
 
@@ -83,13 +81,21 @@ describe('useResubscribe', () => {
 
     expect(state.resubscribe).toHaveBeenCalledOnce()
     expect(state.trackResubscribeClicked).toHaveBeenCalledOnce()
+    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'succeeded',
+      outcome: 'success',
+      source: 'settings_billing_panel'
+    })
     expect(state.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
     )
   })
 
   it('shows an error and resets loading when resubscription fails', async () => {
-    state.resubscribe.mockRejectedValueOnce(new Error('Resubscribe failed'))
+    state.resubscribe.mockRejectedValueOnce(
+      new Error('Resubscribe failed for person@example.com')
+    )
     const { handleResubscribe, isResubscribing } = useResubscribe()
 
     await handleResubscribe()
@@ -98,9 +104,16 @@ describe('useResubscribe', () => {
     expect(state.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
-        detail: 'Resubscribe failed'
+        detail: 'Resubscribe failed for person@example.com'
       })
     )
+    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'failed',
+      outcome: 'failure',
+      source: 'settings_billing_panel',
+      failure_category: 'unknown'
+    })
     expect(isResubscribing.value).toBe(false)
   })
 })
