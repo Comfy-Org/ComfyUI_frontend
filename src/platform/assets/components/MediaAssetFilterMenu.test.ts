@@ -80,6 +80,68 @@ const dateLabels = [
 ]
 
 describe('MediaAssetFilterMenu', () => {
+  it('focuses the filter search when the menu opens', async () => {
+    const { user } = renderMenu()
+    await openMenu(user)
+
+    const searchInput = screen.getByRole('textbox', { name: 'Filter by' })
+    expect(searchInput).toHaveAttribute('placeholder', 'Filter by...')
+    expect(searchInput).toHaveFocus()
+  })
+
+  it('finds and toggles a media type without closing the menu', async () => {
+    const { onMediaTypeUpdate, user } = renderMenu()
+    await openMenu(user)
+
+    await user.type(screen.getByRole('textbox', { name: 'Filter by' }), 'VIDEO')
+
+    expect(screen.queryByRole('menuitem', { name: /Media type/ })).toBeNull()
+    const videoResult = screen.getByRole('menuitemcheckbox', {
+      name: 'Video'
+    })
+    expect(screen.queryByRole('menuitemcheckbox', { name: 'Image' })).toBeNull()
+
+    await user.click(videoResult)
+
+    expect(onMediaTypeUpdate).toHaveBeenCalledWith(['video'])
+    expect(screen.getByRole('menu', { name: 'Filter by' })).toBeVisible()
+    expect(screen.getByRole('textbox', { name: 'Filter by' })).toBeVisible()
+  })
+
+  it('finds and toggles date options without closing the menu', async () => {
+    const { onDateUpdate, user } = renderMenu()
+    await openMenu(user)
+
+    await user.type(screen.getByRole('textbox', { name: 'Filter by' }), 'past')
+
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Past 7 days' })
+    ).toBeVisible()
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Past 30 days' })
+    ).toBeVisible()
+
+    await user.click(
+      screen.getByRole('menuitemcheckbox', { name: 'Past 7 days' })
+    )
+
+    expect(onDateUpdate).toHaveBeenCalledWith('week')
+    expect(screen.getByRole('menu', { name: 'Filter by' })).toBeVisible()
+  })
+
+  it('shows an empty state when no filter options match', async () => {
+    const { user } = renderMenu()
+    await openMenu(user)
+
+    await user.type(
+      screen.getByRole('textbox', { name: 'Filter by' }),
+      'not-a-filter'
+    )
+
+    expect(screen.getByText('No matches')).toBeVisible()
+    expect(screen.queryAllByRole('menuitemcheckbox')).toHaveLength(0)
+  })
+
   it('groups media type and date under the Attribute section', async () => {
     const { user } = renderMenu()
     await openMenu(user)
