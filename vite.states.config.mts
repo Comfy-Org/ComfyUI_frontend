@@ -50,6 +50,8 @@ export default defineConfig({
         '/src/platform/workspace/dev/statesSite/useCurrentUserStub.ts',
       '@/stores/authStore':
         '/src/platform/workspace/dev/statesSite/authStoreStub.ts',
+      '@/composables/useRunButtonTelemetry':
+        '/src/platform/workspace/dev/statesSite/runButtonTelemetryStub.ts',
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',

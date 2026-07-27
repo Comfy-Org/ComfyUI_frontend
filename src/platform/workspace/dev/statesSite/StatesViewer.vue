@@ -1,6 +1,7 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div class="viewer">
+    <GlobalDialog />
     <nav class="side">
       <h1>{{ SITE_TITLE }}</h1>
       <div class="sub">{{ SITE_SUB }}</div>
@@ -66,6 +67,7 @@
 import { computed } from 'vue'
 
 import CloudRunButtonWrapper from '@/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue'
+import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import CurrentUserPopoverWorkspace from '@/platform/workspace/components/CurrentUserPopoverWorkspace.vue'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import PlanCreditsPanelContent from '@/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue'
