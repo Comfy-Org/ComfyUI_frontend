@@ -30,7 +30,7 @@
               value: $t('g.copyJobId'),
               showDelay: 300
             }"
-            variant="muted-textonly"
+            variant="textonly"
             size="icon"
             type="button"
             :aria-label="$t('g.copyJobId')"
