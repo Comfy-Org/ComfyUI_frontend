@@ -1,12 +1,15 @@
+import { isPublicRoutePath } from '@/platform/auth/session/publicRoutes'
 import { isCloud } from '@/platform/distribution/types'
 
 /**
- * Routes that are already the destination, or are part of getting signed in.
- * Redirecting from one of these would either loop or interrupt a login.
+ * If the browser refuses to leave — a `beforeunload` confirm the user cancels —
+ * the latch would otherwise stay set for the life of the tab, silently failing
+ * every cloud call. Releasing it restores the previous behaviour instead.
  */
-const PUBLIC_PATH_PREFIXES = ['/cloud/login', '/cloud/signup', '/cloud/oauth']
+const NAVIGATION_GRACE_MS = 10_000
 
 let terminated = false
+let voluntarySignOutDepth = 0
 
 /**
  * True once the session has ended. Request seams check this to stop generating
@@ -16,37 +19,55 @@ export function isSessionTerminated(): boolean {
   return terminated
 }
 
-function isOnPublicRoute(): boolean {
-  return PUBLIC_PATH_PREFIXES.some((prefix) =>
-    window.location.pathname.startsWith(prefix)
-  )
+/**
+ * Brackets a sign-out the app performed on purpose.
+ *
+ * Several in-process flows sign the user out without their session having
+ * expired: `useAuthActions.logout` (which redirects itself), the
+ * `requires-recent-login` recovery that signs out only to immediately re-prompt,
+ * and the signup rollback that deletes a half-created Firebase user. All three
+ * reach the same `onAuthUserLogout` hook as a genuine expiry, so without this
+ * bracket they would each be misread as a dead credential and hard-navigate.
+ */
+export function beginVoluntarySignOut(): void {
+  voluntarySignOutDepth++
+}
+
+export function endVoluntarySignOut(): void {
+  voluntarySignOutDepth = Math.max(0, voluntarySignOutDepth - 1)
+}
+
+export function isVoluntarySignOutInProgress(): boolean {
+  return voluntarySignOutDepth > 0
 }
 
 /**
  * Ends a cloud session that the identity provider has already invalidated.
  *
- * This is deliberately NOT driven by observing `401`s. A `401` is per-endpoint
- * and overloaded — missing entitlement, a resource outside the workspace, a
- * feature the account lacks — so inferring session death from one is a guess,
- * and a wrong guess signs out a working user. Instead there are exactly two
- * callers, both authoritative and both driven by a known expiry rather than by
- * polling:
- *
- * - Firebase's own `ProactiveRefresh` refreshes at `expiry - 5m` and, via
- *   `_logoutIfInvalidated`, signs the user out on precisely `user-disabled` or
- *   `user-token-expired`. Every other failure, including a network error,
- *   leaves the user signed in. That sign-out is the identity verdict.
- * - The unified Cloud JWT refresh timer, when `POST /api/auth/token` rejects
- *   the Firebase identity permanently.
- *
- * Idempotent: the voluntary sign-out path performs its own redirect, and this
- * may be reached concurrently with it.
+ * Deliberately NOT driven by observing `401`s. A `401` is per-endpoint and
+ * overloaded — missing entitlement, a resource outside the workspace, a feature
+ * the account lacks — so inferring session death from one is a guess, and a
+ * wrong guess signs out a working user. The two callers are instead driven by a
+ * known token expiry: Firebase's own `_logoutIfInvalidated`, which signs out on
+ * precisely `user-disabled` or `user-token-expired` and never on a transient
+ * failure, and the Cloud JWT refresh timer when the identity itself is rejected.
  */
 export function endExpiredSession(reason: string): void {
-  if (!isCloud || terminated || isOnPublicRoute()) return
+  if (
+    !isCloud ||
+    terminated ||
+    isVoluntarySignOutInProgress() ||
+    isPublicRoutePath(window.location.pathname)
+  ) {
+    return
+  }
   terminated = true
 
   console.warn(`Cloud session ended (${reason}); returning to sign-in.`)
+
+  setTimeout(() => {
+    terminated = false
+  }, NAVIGATION_GRACE_MS)
 
   try {
     window.location.href = '/cloud/login'

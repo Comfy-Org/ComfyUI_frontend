@@ -840,6 +840,36 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
   }
 
+  /**
+   * A single 401 from our own backend is not enough to end a session.
+   *
+   * The refresh that just failed presented a token the client SDK was willing to
+   * issue, so at this instant the identity provider and our backend disagree, and
+   * one un-retried disagreement is exactly the overloaded-401 inference this
+   * design exists to avoid. Force a fresh token straight from the provider: if it
+   * refuses, Firebase signs the user out itself and that is the verdict; if it
+   * succeeds and the exchange still rejects the identity, the rejection is
+   * corroborated. Anything else is treated as transient and left alone.
+   */
+  async function endSessionIfIdentityIsReallyGone(): Promise<void> {
+    const user = useAuthStore().currentUser
+    if (!user) return
+
+    try {
+      await user.getIdToken(true)
+    } catch {
+      return
+    }
+
+    try {
+      await requestToken(undefined)
+    } catch (retryErr) {
+      if (isIdentityRevoked(retryErr)) {
+        endExpiredSession('the identity provider rejected this account')
+      }
+    }
+  }
+
   async function refreshUnified(): Promise<void> {
     if (!flags.unifiedCloudAuthEnabled) {
       return
@@ -863,11 +893,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       if (isPermanentAuthError(err)) {
         if (getUnifiedToken()) surfacePermanentAuthError(err)
         clearUnifiedContext()
-        // Only an identity rejection ends the session. A denied or missing
-        // workspace clears the token but leaves the credential valid, so the
-        // user stays signed in rather than being bounced to the login page.
+        // Only an identity rejection ends the session, and only once a forced
+        // refresh has corroborated it. A denied or missing workspace clears the
+        // token but leaves the credential valid.
         if (isIdentityRevoked(err)) {
-          endExpiredSession('the identity provider rejected this account')
+          void endSessionIfIdentityIsReallyGone()
         }
       } else {
         console.warn('Unified token refresh failed:', err)

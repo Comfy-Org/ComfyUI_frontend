@@ -11,10 +11,20 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 const mockGetIdToken = vi.fn()
 const mockNotifyTokenRefreshed = vi.fn()
 const mockToastAdd = vi.fn()
-const mockEnsureSessionCookie = vi.fn()
-const mockCurrentUser = vi.hoisted((): { value: { uid: string } | null } => ({
-  value: null
+const { mockEndExpiredSession } = vi.hoisted(() => ({
+  mockEndExpiredSession: vi.fn()
 }))
+const mockEnsureSessionCookie = vi.fn()
+const mockCurrentUser = vi.hoisted(
+  (): {
+    value: {
+      uid: string
+      getIdToken?: (force: boolean) => Promise<string>
+    } | null
+  } => ({
+    value: null
+  })
+)
 const mockForgetRevokedActiveWorkspace = vi.fn()
 
 vi.mock('@/stores/authStore', () => ({
@@ -57,6 +67,14 @@ vi.mock('@/i18n', () => ({
 
 const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: true }))
 const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
+
+vi.mock('@/platform/auth/session/sessionExpiry', () => ({
+  endExpiredSession: mockEndExpiredSession,
+  isSessionTerminated: () => false,
+  beginVoluntarySignOut: vi.fn(),
+  endVoluntarySignOut: vi.fn(),
+  isVoluntarySignOutInProgress: () => false
+}))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
@@ -102,7 +120,7 @@ describe('useWorkspaceAuthStore', () => {
     sessionStorage.clear()
     mockTeamWorkspacesEnabled.value = true
     mockUnifiedCloudAuthEnabled.value = false
-    mockCurrentUser.value = { uid: 'user-a' }
+    mockCurrentUser.value = { uid: 'user-a', getIdToken: mockGetIdToken }
     mockEnsureSessionCookie.mockResolvedValue(undefined)
   })
 
@@ -165,7 +183,7 @@ describe('useWorkspaceAuthStore', () => {
         futureExpiry.toString()
       )
       sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.OWNER_UID, 'user-a')
-      mockCurrentUser.value = { uid: 'user-b' }
+      mockCurrentUser.value = { uid: 'user-b', getIdToken: mockGetIdToken }
 
       const store = useWorkspaceAuthStore()
 
@@ -344,7 +362,7 @@ describe('useWorkspaceAuthStore', () => {
 
       const store = useWorkspaceAuthStore()
       const switchPromise = store.switchWorkspace('workspace-123')
-      mockCurrentUser.value = { uid: 'user-b' }
+      mockCurrentUser.value = { uid: 'user-b', getIdToken: mockGetIdToken }
       resolveResponse({
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)
@@ -801,7 +819,7 @@ describe('useWorkspaceAuthStore', () => {
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-123')
-      mockCurrentUser.value = { uid: 'user-b' }
+      mockCurrentUser.value = { uid: 'user-b', getIdToken: mockGetIdToken }
 
       const header = await store.ensureWorkspaceAuthHeader('workspace-123')
 
@@ -897,7 +915,7 @@ describe('useWorkspaceAuthStore', () => {
       const previousHeader = store.ensureWorkspaceAuthHeader('workspace-123')
       await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
 
-      mockCurrentUser.value = { uid: 'user-b' }
+      mockCurrentUser.value = { uid: 'user-b', getIdToken: mockGetIdToken }
       store.clearWorkspaceContext()
       await store.switchWorkspace('workspace-123')
 
@@ -1059,7 +1077,7 @@ describe('useWorkspaceAuthStore', () => {
       const { currentWorkspace } = storeToRefs(store)
       await store.switchWorkspace('workspace-123')
 
-      mockCurrentUser.value = { uid: 'user-a' }
+      mockCurrentUser.value = { uid: 'user-a', getIdToken: mockGetIdToken }
       mockGetIdToken.mockResolvedValue(undefined)
 
       const token = await store.ensureWorkspaceToken('workspace-999')
@@ -1942,7 +1960,7 @@ describe('useWorkspaceAuthStore', () => {
 
       const store = useWorkspaceAuthStore()
       await store.mintAtLogin()
-      mockCurrentUser.value = { uid: 'user-b' }
+      mockCurrentUser.value = { uid: 'user-b', getIdToken: mockGetIdToken }
 
       const result = await store.mintAtLogin()
 
@@ -2257,7 +2275,7 @@ describe('useWorkspaceAuthStore', () => {
 
       const store = useWorkspaceAuthStore()
       await store.mintAtLogin()
-      mockCurrentUser.value = { uid: 'user-b' }
+      mockCurrentUser.value = { uid: 'user-b', getIdToken: mockGetIdToken }
       await store.mintAtLogin()
 
       const result = await store.remintUnifiedOnce('unified-token-1')
@@ -2466,21 +2484,24 @@ describe('useWorkspaceAuthStore', () => {
       {
         status: 403,
         statusText: 'Forbidden',
-        detailKey: 'workspaceAuth.errors.accessDenied'
+        detailKey: 'workspaceAuth.errors.accessDenied',
+        endsSession: false
       },
       {
         status: 404,
         statusText: 'Not Found',
-        detailKey: 'workspaceAuth.errors.workspaceNotFound'
+        detailKey: 'workspaceAuth.errors.workspaceNotFound',
+        endsSession: false
       },
       {
         status: 401,
         statusText: 'Unauthorized',
-        detailKey: 'workspaceAuth.errors.invalidFirebaseToken'
+        detailKey: 'workspaceAuth.errors.invalidFirebaseToken',
+        endsSession: true
       }
     ])(
       'surfaces the $status permanent refresh error as a toast and clears the slot',
-      async ({ status, statusText, detailKey }) => {
+      async ({ status, statusText, detailKey, endsSession }) => {
         mockUnifiedCloudAuthEnabled.value = true
         mockGetIdToken.mockResolvedValue('firebase-token-xyz')
         const expiresInMs = 3600 * 1000
@@ -2515,6 +2536,15 @@ describe('useWorkspaceAuthStore', () => {
           expect.objectContaining({ severity: 'error', detail: detailKey })
         )
         expect(unifiedToken.value).toBeNull()
+
+        // A denied (403) or missing (404) workspace clears the token but leaves
+        // the credential valid, so only a rejected identity ends the session.
+        await vi.advanceTimersByTimeAsync(0)
+        expect(mockEndExpiredSession).toHaveBeenCalledTimes(endsSession ? 1 : 0)
+
+        // Only a rejected identity is worth corroborating; a workspace error
+        // must not cost an extra /auth/token round-trip.
+        expect(mockFetch).toHaveBeenCalledTimes(endsSession ? 3 : 2)
       }
     )
 
