@@ -543,7 +543,9 @@ export class LGraph
     if (this._groups.length) {
       const layoutMutations = useLayoutMutations()
       layoutMutations.setSource(LayoutSource.Canvas)
-      for (const group of this._groups) layoutMutations.deleteGroup(group.id)
+      const owner = this.rootGraph.id
+      for (const group of this._groups)
+        layoutMutations.deleteGroup(group.id, owner)
     }
     this._groups = []
 
@@ -1084,10 +1086,14 @@ export class LGraph
       const { pos, size } = node
       const layoutMutations = useLayoutMutations()
       layoutMutations.setSource(LayoutSource.Canvas)
-      layoutMutations.createGroup(node.id, {
-        position: { x: pos[0], y: pos[1] },
-        size: { width: size[0], height: size[1] }
-      })
+      layoutMutations.createGroup(
+        node.id,
+        {
+          position: { x: pos[0], y: pos[1] },
+          size: { width: size[0], height: size[1] }
+        },
+        this.rootGraph.id
+      )
       this.incrementVersion()
       return
     }
@@ -1184,7 +1190,7 @@ export class LGraph
       }
       const layoutMutations = useLayoutMutations()
       layoutMutations.setSource(LayoutSource.Canvas)
-      layoutMutations.deleteGroup(node.id)
+      layoutMutations.deleteGroup(node.id, this.rootGraph.id)
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)

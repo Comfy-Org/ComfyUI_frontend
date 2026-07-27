@@ -12,6 +12,7 @@ import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import type { SlotDirection, SlotId, SlotIndex } from '@/types/slotId'
+import type { UUID } from '@/utils/uuid'
 
 // Enum for layout source types
 export enum LayoutSource {
@@ -120,6 +121,15 @@ interface OperationMeta {
   source: LayoutSource
   /** Operation type discriminator */
   type: OperationType
+  /**
+   * Root graph the writer belongs to. Entity ids are only unique within a root
+   * graph, so a detached graph — the scratch graph `insertWorkflow` builds, for
+   * one — allocates ids that collide with the open workflow's. Operations
+   * carrying a different owner than the entry are dropped rather than applied
+   * to a stranger's geometry. Omitted by callers already scoped to the viewed
+   * graph.
+   */
+  owner?: UUID
 }
 
 /**

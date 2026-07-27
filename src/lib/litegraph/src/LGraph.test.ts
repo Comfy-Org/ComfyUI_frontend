@@ -20,7 +20,7 @@ import type {
   SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
-import { zeroUuid } from '@/utils/uuid'
+import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
@@ -1564,5 +1564,53 @@ describe('Zero UUID handling in configure', () => {
     const subgraph = graph.createSubgraph(subgraphData)
     subgraph.configure(subgraphData)
     expect(subgraph.id).toBe(zeroUuid)
+  })
+})
+
+describe('Layout ownership across root graphs', () => {
+  it('a detached graph does not delete another root graph group layout', () => {
+    const open = new LGraph()
+    open.id = createUuidv4()
+    const openGroup = new LGraphGroup('open')
+    openGroup.pos = [100, 200]
+    open.add(openGroup)
+
+    const detached = new LGraph()
+    detached.id = createUuidv4()
+    const detachedGroup = new LGraphGroup('detached')
+    detachedGroup.pos = [999, 999]
+    detached.add(detachedGroup)
+    expect(detachedGroup.id).toBe(openGroup.id)
+
+    detached.clear()
+
+    expect(layoutStore.getGroupLayout(openGroup.id)?.position).toEqual({
+      x: 100,
+      y: 200
+    })
+  })
+
+  it('a detached graph node does not move another root graph node layout', () => {
+    const open = new LGraph()
+    open.id = createUuidv4()
+    const openNode = new LGraphNode('open')
+    open.add(openNode)
+    layoutStore.initializeFromLiteGraph(
+      [{ id: openNode.id, pos: [100, 200], size: [140, 60] }],
+      open.rootGraph.id
+    )
+
+    const detached = new LGraph()
+    detached.id = createUuidv4()
+    const detachedNode = new LGraphNode('detached')
+    detached.add(detachedNode)
+    expect(detachedNode.id).toBe(openNode.id)
+
+    detachedNode.pos = [999, 888]
+
+    expect(layoutStore.getNodeLayoutRef(openNode.id).value?.position).toEqual({
+      x: 100,
+      y: 200
+    })
   })
 })

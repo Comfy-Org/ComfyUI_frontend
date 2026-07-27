@@ -33,13 +33,19 @@ function useVueNodeLifecycleIndividual() {
   let stopNodeListeners: (() => void) | null = null
 
   const seedNodeLayout = (node: LGraphNode) => {
+    if (!node.graph) return
+
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createNode(node.id, {
-      position: { x: node.pos[0], y: node.pos[1] },
-      size: { width: node.size[0], height: node.size[1] },
-      zIndex: node.order || 0,
-      visible: true
-    })
+    layoutMutations.createNode(
+      node.id,
+      {
+        position: { x: node.pos[0], y: node.pos[1] },
+        size: { width: node.size[0], height: node.size[1] },
+        zIndex: node.order || 0,
+        visible: true
+      },
+      node.graph.rootGraph.id
+    )
   }
 
   const initializeVueNodeLayout = () => {
@@ -53,7 +59,7 @@ function useVueNodeLifecycleIndividual() {
       pos: [node.pos[0], node.pos[1]] as [number, number],
       size: [node.size[0], node.size[1]] as [number, number]
     }))
-    layoutStore.initializeFromLiteGraph(nodes)
+    layoutStore.initializeFromLiteGraph(nodes, activeGraph.rootGraph.id)
 
     // While configuring, geometry is still placeholder; the `pos`/`size` setters
     // write through to the store, so the entry catches up as the real values
@@ -62,7 +68,7 @@ function useVueNodeLifecycleIndividual() {
       seedNodeLayout(node)
     const onNodeRemoved = ({ detail: { node } }: NodeLifecycleEvent) => {
       layoutMutations.setSource(LayoutSource.Canvas)
-      layoutMutations.deleteNode(node.id)
+      layoutMutations.deleteNode(node.id, activeGraph.rootGraph.id)
     }
     const stopAdded = useEventListener(
       activeGraph.events,

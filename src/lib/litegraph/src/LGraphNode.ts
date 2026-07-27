@@ -646,7 +646,11 @@ export class LGraphNode
     if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.moveNode(this.id, { x: value[0], y: value[1] })
+    layoutMutations.moveNode(
+      this.id,
+      { x: value[0], y: value[1] },
+      this.graph.rootGraph.id
+    )
   }
 
   /**
@@ -717,7 +721,7 @@ export class LGraphNode
     if (layout && isSizeEqual(layout.size, size)) return
 
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.resizeNode(this.id, size)
+    layoutMutations.resizeNode(this.id, size, this.graph.rootGraph.id)
   }
 
   /**

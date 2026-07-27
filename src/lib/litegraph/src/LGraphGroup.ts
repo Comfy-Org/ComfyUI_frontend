@@ -132,7 +132,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     layoutMutations.setGroupBounds(
       this.id,
       { x: this._pos[0], y: this._pos[1] },
-      { width: this._size[0], height: this._size[1] }
+      { width: this._size[0], height: this._size[1] },
+      this.graph.rootGraph.id
     )
   }
 
