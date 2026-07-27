@@ -192,10 +192,30 @@ const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 /**
  * Backstop mirroring assetsStore.loadBatches: caps a single walk so a backend
  * that never signals exhaustion (e.g. an unbounded stream of unique cursors)
- * cannot loop forever. At DEFAULT_LIMIT per page this bounds one walk at 500k
- * assets — far beyond any real tag — so it only trips on pathological paging.
+ * cannot loop forever. The bound is on request count, not asset count: at most
+ * MAX_PAGINATION_BATCHES pages are fetched, so the asset ceiling is this times
+ * the caller's page size (500k at the DEFAULT_LIMIT of 500). Hitting the cap
+ * throws AssetPaginationCapError rather than returning a partial list, so a
+ * truncated walk can never be mistaken for a complete one.
  */
 const MAX_PAGINATION_BATCHES = 1000
+
+/**
+ * Thrown when a walk hits MAX_PAGINATION_BATCHES without the backend signaling
+ * exhaustion. Distinct type so callers can tell a truncated walk apart from a
+ * genuine empty/complete result instead of caching wrong data.
+ */
+export class AssetPaginationCapError extends Error {
+  constructor(
+    readonly tag: string,
+    readonly assetsCollected: number
+  ) {
+    super(
+      `getAllAssetsByTag('${tag}') hit the ${MAX_PAGINATION_BATCHES}-batch pagination cap after collecting ${assetsCollected} assets; the backend never signaled exhaustion.`
+    )
+    this.name = 'AssetPaginationCapError'
+  }
+}
 
 export const MODELS_TAG = 'models'
 /** Prefix for the namespaced tag that carries a model's folder category, e.g. `model_type:checkpoints`. */
@@ -780,10 +800,7 @@ function createAssetService() {
     while (true) {
       if (signal?.aborted) throw createAbortError()
       if (batchCount++ >= MAX_PAGINATION_BATCHES) {
-        console.warn(
-          `getAllAssetsByTag('${tag}') hit the ${MAX_PAGINATION_BATCHES}-batch cap; returning ${assets.length} assets.`
-        )
-        return assets
+        throw new AssetPaginationCapError(tag, assets.length)
       }
 
       const data = await getAssetsPageByTag(tag, includePublic, {

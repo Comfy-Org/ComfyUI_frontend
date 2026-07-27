@@ -1120,12 +1120,19 @@ export class ComfyApi extends EventTarget {
    * Gets the metadata for a model
    * @param {string} folder The folder containing the model
    * @param {string} model The model to get metadata for
+   * @param {AbortSignal} signal Optional signal to abort a hung read
    * @returns The metadata for the model
    */
-  async viewMetadata(folder: string, model: string) {
+  async viewMetadata(folder: string, model: string, signal?: AbortSignal) {
     const res = await this.fetchApi(
-      `/view_metadata/${folder}?filename=${encodeURIComponent(model)}`
+      `/view_metadata/${folder}?filename=${encodeURIComponent(model)}`,
+      signal ? { signal } : undefined
     )
+    if (!res.ok) {
+      throw new Error(
+        `Failed to load metadata for ${model}: server returned ${res.status}`
+      )
+    }
     const rawResponse = await res.text()
     if (!rawResponse) {
       return null

@@ -324,6 +324,33 @@ describe('ModelLibrarySidebarTab', () => {
       expect(leafLabels()).toEqual([])
     })
 
+    it('clears the filtered tree synchronously when the query is emptied', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+      await nextTick()
+
+      const leafLabels = () => {
+        const { children: folders = [] } = getRoot()
+        return folders.flatMap(({ children: leaves = [] }) =>
+          leaves.map((leaf) => leaf.label)
+        )
+      }
+
+      // Filter the tree to nothing via the debounced search value.
+      await user.type(screen.getByTestId('search-input'), 'nomatch')
+      await nextTick()
+      expect(leafLabels()).toEqual([])
+
+      // Emptying the raw input (X button / select-all + delete) resets the
+      // tree at once, without waiting for the debounced `@search('')` event.
+      const rawInput = screen.getByTestId('search-model-only')
+      await user.type(rawInput, 'x')
+      await user.clear(rawInput)
+      await nextTick()
+
+      expect(leafLabels()).toEqual(['model'])
+    })
+
     it('updates active search results when a reload adds a matching model', async () => {
       const user = userEvent.setup()
       renderComponent()

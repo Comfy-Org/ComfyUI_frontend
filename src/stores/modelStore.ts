@@ -33,7 +33,13 @@ function _findInMetadata(
  * ceiling that is hundreds of parallel GETs. Slots are handed to waiting
  * loads in FIFO order as in-flight reads finish.
  */
-const MAX_CONCURRENT_METADATA_LOADS = 6
+export const MAX_CONCURRENT_METADATA_LOADS = 6
+/**
+ * Upper bound on a single metadata read. viewMetadata reads a safetensors
+ * header off local disk; a hung request would otherwise hold its slot forever
+ * and, once all slots are held, wedge every remaining load process-wide.
+ */
+const METADATA_LOAD_TIMEOUT_MS = 15_000
 let activeMetadataLoads = 0
 const metadataLoadQueue: (() => void)[] = []
 
@@ -54,6 +60,15 @@ function releaseMetadataSlot(): void {
     return
   }
   activeMetadataLoads--
+}
+
+/**
+ * Resets the module-global metadata load limiter. Tests share this state across
+ * cases; without a reset a never-settling mock leaves slots permanently held.
+ */
+export function resetMetadataLoadLimiter(): void {
+  activeMetadataLoads = 0
+  metadataLoadQueue.length = 0
 }
 
 /** Defines and holds metadata for a model */
@@ -138,7 +153,11 @@ export class ComfyModelDef {
     this.is_load_requested = true
     await acquireMetadataSlot()
     try {
-      const metadata = await api.viewMetadata(this.directory, this.file_name)
+      const metadata = await api.viewMetadata(
+        this.directory,
+        this.file_name,
+        AbortSignal.timeout(METADATA_LOAD_TIMEOUT_MS)
+      )
       if (!metadata) {
         return
       }
@@ -181,6 +200,9 @@ export class ComfyModelDef {
       this.has_loaded_metadata = true
       this.updateSearchable()
     } catch (error) {
+      // A timeout or transport failure must not permanently blank the model:
+      // clear the request flag so a later load() can retry.
+      this.is_load_requested = false
       console.error('Error loading model metadata', this.file_name, this, error)
     } finally {
       releaseMetadataSlot()

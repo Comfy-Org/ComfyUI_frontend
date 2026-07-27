@@ -135,6 +135,16 @@ const handleSearch = async (query: string) => {
   await expandSearchResults()
 }
 
+// Clearing the input (X button, select-all + delete) must drop the filtered
+// tree at once rather than lingering behind the debounced `@search` event; a
+// non-empty query still settles through the debounce.
+watch(searchQuery, (query) => {
+  if (!query) {
+    debouncedSearchQuery.value = ''
+    expandedKeys.value = {}
+  }
+})
+
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
 const root = computed<TreeNode>(() => {
@@ -151,11 +161,6 @@ async function expandSearchResults() {
   await nextTick()
   expandNode(root.value)
 }
-
-// Expand results when the QUERY changes, not on every root recompute: a
-// background reload during an active search must neither re-expand folders
-// the user collapsed nor pay a full expand-and-mount pass per folder commit.
-watch(debouncedSearchQuery, expandSearchResults)
 
 const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')

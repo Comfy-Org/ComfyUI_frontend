@@ -6,10 +6,12 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import {
+  MAX_CONCURRENT_METADATA_LOADS,
   ResourceState,
   effectiveModelExtensions,
   getModelPreviewUrl,
   matchesModelExtension,
+  resetMetadataLoadLimiter,
   useModelStore
 } from '@/stores/modelStore'
 
@@ -110,6 +112,9 @@ describe('useModelStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.resetAllMocks()
     isCloudRef.value = false
+    // The metadata limiter is module-global; without a reset a never-settling
+    // load from one test leaves slots held and hangs a later one.
+    resetMetadataLoadLimiter()
   })
 
   it('should load models', async () => {
@@ -185,7 +190,46 @@ describe('useModelStore', () => {
       // Every model still loads; they just never all run at once.
       expect(api.viewMetadata).toHaveBeenCalledTimes(total)
       expect(peak).toBeGreaterThan(1)
-      expect(peak).toBeLessThanOrEqual(6)
+      expect(peak).toBeLessThanOrEqual(MAX_CONCURRENT_METADATA_LOADS)
+    })
+
+    it('releases the slot when a load rejects so later loads still run', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      enableMocks()
+      const total = MAX_CONCURRENT_METADATA_LOADS + 4
+      vi.mocked(api.getModels).mockResolvedValue(
+        Array.from({ length: total }, (_, i) => ({
+          name: `bulk-${i}.safetensors`,
+          pathIndex: 0
+        }))
+      )
+      let call = 0
+      vi.mocked(api.viewMetadata).mockImplementation(() => {
+        call++
+        // The first full batch of slots all reject; if `finally` did not
+        // release them the remaining loads would wait on a slot forever.
+        if (call <= MAX_CONCURRENT_METADATA_LOADS) {
+          return Promise.reject(new Error('metadata read failed'))
+        }
+        return Promise.resolve({ 'modelspec.title': `Title ${call}` })
+      })
+
+      store = useModelStore()
+      await store.loadModelFolders()
+      const folder = await store.getLoadedModelFolder('checkpoints')
+      const models = Object.values(folder!.models)
+
+      await Promise.all(models.map((model) => model.load()))
+
+      expect(api.viewMetadata).toHaveBeenCalledTimes(total)
+      const loaded = models.filter((m) => m.has_loaded_metadata)
+      expect(loaded).toHaveLength(4)
+      // A rejected load clears its request flag so it can retry later.
+      const failed = models.filter((m) => !m.has_loaded_metadata)
+      expect(failed.every((m) => m.is_load_requested === false)).toBe(true)
+      consoleError.mockRestore()
     })
   })
 
