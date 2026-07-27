@@ -72,7 +72,7 @@ const { visibleItems, hasMore, showMore } = useFilteredGallery({
         {{ title }}
       </h2>
 
-      <div role="tablist" class="rounded-2xl border-2 border-white/20 p-2">
+      <div class="rounded-2xl border-2 border-white/20 p-2">
         <div class="flex gap-0.5 overflow-clip rounded-lg">
           <button
             v-for="tab in [
@@ -81,8 +81,7 @@ const { visibleItems, hasMore, showMore } = useFilteredGallery({
             ]"
             :key="tab.key"
             type="button"
-            role="tab"
-            :aria-selected="activeTab === tab.key"
+            :aria-pressed="activeTab === tab.key"
             class="h-8 px-4 text-xs font-semibold whitespace-nowrap transition-colors"
             :class="
               activeTab === tab.key
