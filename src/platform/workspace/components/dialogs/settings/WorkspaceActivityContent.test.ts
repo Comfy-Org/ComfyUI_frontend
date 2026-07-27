@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -23,8 +24,7 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
-    userDisplayName: { value: 'Ada Lovelace' },
-    userEmail: { value: 'ada@example.com' }
+    resolvedUserInfo: { value: { id: 'user-ada' } }
   })
 }))
 
@@ -53,6 +53,7 @@ function renderContent(events: ActivityEvent[] = []) {
 const creditedRow: ActivityEvent = {
   id: 'inflow',
   date: new Date('2026-07-14T12:00:00Z'),
+  userId: null,
   userName: '',
   eventType: 'Auto-reload',
   detail: '—',
@@ -71,7 +72,7 @@ describe('WorkspaceActivityContent', () => {
     expect(screen.getByText('No activity yet.')).toBeTruthy()
   })
 
-  it('shows the full activity link to an owner', () => {
+  it('shows the per-user footer actions to an owner', () => {
     renderContent([])
     const link = screen.getByRole('link', { name: /full activity/i })
     expect(link.getAttribute('href')).toBe(
@@ -79,10 +80,40 @@ describe('WorkspaceActivityContent', () => {
     )
   })
 
-  it('hides the full activity link from members', () => {
+  it('hides the per-user footer from members', () => {
     mockWorkspaceRole.value = 'member'
     renderContent([])
     expect(screen.queryByRole('link', { name: /full activity/i })).toBeNull()
+  })
+
+  it('shows members only their own usage plus workspace credit inflows', async () => {
+    mockWorkspaceRole.value = 'member'
+    renderContent([
+      {
+        id: 'own-usage',
+        date: new Date('2026-07-14T13:00:00Z'),
+        userId: 'user-ada',
+        userName: 'Ada Lovelace',
+        eventType: 'Own workflow',
+        detail: '1 run',
+        credits: 100
+      },
+      {
+        id: 'other-usage',
+        date: new Date('2026-07-14T10:00:00Z'),
+        userId: 'user-other-ada',
+        userName: 'Ada Lovelace',
+        eventType: 'Other workflow',
+        detail: '1 run',
+        credits: 200
+      },
+      creditedRow
+    ])
+
+    expect(screen.getByText('Own workflow')).toBeTruthy()
+    expect(screen.queryByText('Other workflow')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Page 2' }))
+    expect(screen.getByText('Auto-reload')).toBeTruthy()
   })
 
   it('marks a credit inflow with a leading plus', () => {
