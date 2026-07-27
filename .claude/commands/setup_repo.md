@@ -112,9 +112,9 @@ echo "3. Check README.md for additional setup instructions"
 
 If any step fails:
 
-1. **Build fails**: Check for TypeScript errors and fix them first
-2. **Tests fail**: Review test output and fix failing tests
-3. **Dev server fails**: Check if port 5173 is already in use
+2. **Build fails**: Check for TypeScript errors and fix them first
+3. **Tests fail**: Review test output and fix failing tests
+4. **Dev server fails**: Check if port 5173 is already in use
 
 ## Manual Verification Steps
 
