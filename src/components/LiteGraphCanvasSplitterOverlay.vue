@@ -139,6 +139,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
 import {
   BUILDER_MIN_SIZE,
   CENTER_PANEL_SIZE,
@@ -170,6 +171,37 @@ const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
+const {
+  isOpen: agentPanelOpen,
+  enabled: agentPanelEnabled,
+  width: agentPanelWidth
+} = storeToRefs(agentPanelStore)
+const agentPanelDocked = computed(
+  () => agentPanelEnabled.value && agentPanelOpen.value
+)
+
+useWorkspaceInsetRight(() =>
+  agentPanelDocked.value ? agentPanelWidth.value : 0
+)
+const isAgentResizing = ref(false)
+let agentResizeStartX = 0
+let agentResizeStartWidth = 0
+
+function onAgentResizeStart(e: PointerEvent): void {
+  isAgentResizing.value = true
+  agentResizeStartX = e.clientX
+  agentResizeStartWidth = agentPanelStore.width
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  e.preventDefault()
+}
+
+useEventListener(document, 'pointermove', (e: PointerEvent) => {
+  if (!isAgentResizing.value) return
+  agentPanelStore.setWidth(
+    agentResizeStartWidth + (agentResizeStartX - e.clientX)
+  )
+})
+
 const showOffsideSplitter = computed(
   () => rightSidePanelVisible.value || isSelectMode.value
 )
