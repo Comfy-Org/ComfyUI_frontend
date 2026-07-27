@@ -1,14 +1,16 @@
 import userEvent from '@testing-library/user-event'
 import { cleanup, render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import TourSpotlight from './TourSpotlight.vue'
+import { CARD_GLIDE_MS } from './coachmarkLayout'
 import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
-import { COACH_IDS } from './onboardingTours'
+import { COACH_IDS, FIRST_RUN_COACH_IDS } from './onboardingTours'
 import type { CoachStep } from './onboardingTours'
 
 vi.mock('@primeuix/utils/zindex', () => ({
@@ -52,6 +54,7 @@ describe('TourSpotlight interactive and masked steps', () => {
     cleanup()
     clearCoachmarks()
     document.body.replaceChildren()
+    vi.useRealTimers()
   })
 
   it('keeps the blocking scrim and no hit region on a plain step', () => {
@@ -112,5 +115,96 @@ describe('TourSpotlight interactive and masked steps', () => {
       screen.getByTestId('coach-spotlight').className,
       'a transition makes the ring lag a target that moves every frame'
     ).not.toContain('transition-[left,top,width,height,opacity]')
+  })
+
+  it('holds the opening card back until its tour has framed itself', () => {
+    renderSpotlight({ opening: true })
+    const card = screen.getByRole('dialog', { hidden: true })
+
+    expect(
+      card.style.opacity,
+      'the first card has nowhere to travel from, so it fades in once the view is still'
+    ).toBe('0')
+    expect(
+      card.className,
+      'a hidden card must not swallow clicks meant for the app'
+    ).toContain('pointer-events-none')
+    expect(
+      card.className,
+      'a card that pops in reads as a glitch rather than an arrival'
+    ).toContain('transition')
+  })
+
+  it('keeps the card on screen once the tour is under way', async () => {
+    const { rerender } = renderSpotlight({ opening: true })
+
+    await rerender({ opening: false, step: spotlightStep({ name: 'later' }) })
+
+    expect(
+      screen.getByRole('dialog').style.opacity,
+      'a card that fades out on every step reads as a restart, not a next step'
+    ).toBe('1')
+  })
+
+  it('glides to a new canvas target, then rides it', async () => {
+    vi.useFakeTimers()
+    registerCoachmark(FIRST_RUN_COACH_IDS.prompt, {
+      getBoundingClientRect: () => new DOMRect(10, 10, 80, 40)
+    })
+
+    renderSpotlight({
+      step: spotlightStep({ coachId: FIRST_RUN_COACH_IDS.prompt })
+    })
+    const card = () => screen.getByRole('dialog', { hidden: true }).className
+
+    expect(
+      card(),
+      'a card that jumps to the next node leaves the user hunting for it'
+    ).toContain('transition-[left,top,opacity]')
+
+    vi.advanceTimersByTime(CARD_GLIDE_MS)
+    await nextTick()
+    expect(
+      card(),
+      'transitioning after a camera that moves every frame leaves the card lagging it'
+    ).not.toContain('transition-[left,top,opacity]')
+  })
+
+  it('spins while the app is still working on what the step asked for', async () => {
+    let working = true
+    const { rerender } = renderSpotlight({
+      step: spotlightStep({ busy: () => working })
+    })
+
+    expect(
+      screen.getByTestId('coach-busy'),
+      'a card that reads the same whether a job is running or stalled says nothing'
+    ).toBeTruthy()
+
+    working = false
+    await rerender({ step: spotlightStep({ busy: () => working }) })
+    expect(screen.queryByTestId('coach-busy')).toBeNull()
+  })
+
+  it('points a cursor back at the target from the card edge facing it', async () => {
+    registerCoachmark(FIRST_RUN_COACH_IDS.prompt, {
+      getBoundingClientRect: () => new DOMRect(10, 10, 80, 40)
+    })
+
+    const { rerender } = renderSpotlight({
+      step: spotlightStep({ coachId: FIRST_RUN_COACH_IDS.prompt, cursor: true })
+    })
+    expect(
+      screen.getByTestId('coach-cursor').className,
+      'the card sits right of the target, so the cursor must ride its left edge'
+    ).toContain('-left-7')
+
+    await rerender({
+      step: spotlightStep({ coachId: FIRST_RUN_COACH_IDS.prompt })
+    })
+    expect(
+      screen.queryByTestId('coach-cursor'),
+      'a step that did not ask for a cursor must not grow one'
+    ).toBeNull()
   })
 })

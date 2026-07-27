@@ -9,7 +9,12 @@ import { useEventListener, useRafFn } from '@vueuse/core'
 import { computed, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
-import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
+import {
+  CARD_GAP,
+  CURSOR_GAP,
+  VIEWPORT_MARGIN,
+  topSafeInset
+} from './coachmarkLayout'
 import { coachmarkElements, isLaidOut } from './coachmarkRegistry'
 import type { CoachTarget } from './coachmarkRegistry'
 import type { CoachPlacement, CoachStep } from './onboardingTours'
@@ -42,7 +47,7 @@ const captureReference: Middleware = {
 }
 
 function middleware(step: CoachStep | null, topInset: number): Middleware[] {
-  const list: Middleware[] = [offset(CARD_GAP)]
+  const list: Middleware[] = [offset(step?.cursor ? CURSOR_GAP : CARD_GAP)]
   if (!step?.placement || step.placement === 'auto') list.push(flip())
   // shift only guards the main axis by default; crossAxis keeps vertically-
   // centred placements (leftCenter) on-screen too.
@@ -102,16 +107,13 @@ export function useCoachmarkTarget(
     isVirtualTarget.value ? sampledTarget : targetEl.value
   )
 
-  const { floatingStyles, middlewareData, isPositioned, update } = useFloating(
-    reference,
-    cardRef,
-    {
+  const { floatingStyles, middlewareData, isPositioned, placement, update } =
+    useFloating(reference, cardRef, {
       strategy: 'fixed',
       transform: false,
       placement: () => floatingPlacement(toValue(step)),
       middleware: () => middleware(toValue(step), topInset.value)
-    }
-  )
+    })
 
   const { pause: pauseSampling, resume: resumeSampling } = useRafFn(
     () => {
@@ -169,5 +171,12 @@ export function useCoachmarkTarget(
     )
   })
 
-  return { targetEl, targetRect, isVirtualTarget, floatingStyles, isPositioned }
+  return {
+    targetEl,
+    targetRect,
+    isVirtualTarget,
+    floatingStyles,
+    isPositioned,
+    placement
+  }
 }
