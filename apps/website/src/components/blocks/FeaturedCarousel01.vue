@@ -115,7 +115,6 @@ useCarouselAutoplay({
     <div
       ref="rootEl"
       class="border-primary-warm-gray relative mx-auto max-w-[1446px] rounded-[38px] border p-1.5 lg:p-5"
-      :data-active-index="activeIndex"
     >
       <div class="relative overflow-clip rounded-4xl lg:rounded-[38px]">
         <div

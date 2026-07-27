@@ -73,33 +73,45 @@ test.describe('Events page — desktop @smoke', () => {
     }
   })
 
-  test('hero carousel next/prev cycle through featured slides', async ({
+  test('hero carousel next/prev cycle through featured slides in both locales', async ({
     page
   }) => {
     test.skip(featuredEvents.length < 2, 'needs at least two featured events')
 
-    await page.goto(PATH_EN)
-    const carousel = page.locator('[data-active-index]')
-    await expect(carousel).toHaveAttribute('data-active-index', '0')
+    // Reduced motion pauses autoplay so the slide only advances on click.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
 
-    await page
-      .getByRole('button', { name: t('events.hero.nextSlide', 'en') })
-      .click()
-    await expect(carousel).toHaveAttribute('data-active-index', '1')
+    for (const [path, locale] of LOCALES) {
+      await page.goto(path)
+      const hero = heroSection(page, locale)
+      // Inactive slides are aria-hidden, so only the active slide's overlay
+      // link is exposed; its accessible name is that slide's title.
+      const activeSlide = hero.getByRole('link')
+      const nextSlide = hero.getByRole('button', {
+        name: t('events.hero.nextSlide', locale)
+      })
+      const prevSlide = hero.getByRole('button', {
+        name: t('events.hero.prevSlide', locale)
+      })
+      const slideTitle = (index: number) => featuredEvents[index].title[locale]
 
-    await page
-      .getByRole('button', { name: t('events.hero.prevSlide', 'en') })
-      .click()
-    await expect(carousel).toHaveAttribute('data-active-index', '0')
+      await expect(activeSlide).toHaveAccessibleName(slideTitle(0))
 
-    // Wraps around from the first slide to the last.
-    await page
-      .getByRole('button', { name: t('events.hero.prevSlide', 'en') })
-      .click()
-    await expect(carousel).toHaveAttribute(
-      'data-active-index',
-      String(featuredEvents.length - 1)
-    )
+      // Retry the first advance until the island hydrates and the click lands.
+      await expect(async () => {
+        await nextSlide.click()
+        await expect(activeSlide).toHaveAccessibleName(slideTitle(1))
+      }).toPass()
+
+      await prevSlide.click()
+      await expect(activeSlide).toHaveAccessibleName(slideTitle(0))
+
+      // Prev from the first slide wraps to the last.
+      await prevSlide.click()
+      await expect(activeSlide).toHaveAccessibleName(
+        slideTitle(featuredEvents.length - 1)
+      )
+    }
   })
 
   test('upcoming section lists one row per event with localized content and links', async ({
