@@ -1,12 +1,13 @@
 import { createSharedComposable, useEventListener } from '@vueuse/core'
 import { delay } from 'es-toolkit'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, readonly, ref, shallowRef, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 
 import { canvasTransformValid } from './canvasCoachTarget'
@@ -26,10 +27,12 @@ function useFirstRunTourControllerInternal() {
   const engine = useOnboardingTourStore()
   const billing = useBillingContext()
   const executionStore = useExecutionStore()
+  const executionErrorStore = useExecutionErrorStore()
   const workflowStore = useWorkflowStore()
 
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const runState = ref<RunState>('idle')
+  const nudgeArmed = ref(false)
   const onRunStep = computed(
     () => engine.activeTour === 'firstRun' && engine.step?.name === 'run'
   )
@@ -76,15 +79,32 @@ function useFirstRunTourControllerInternal() {
     }
   )
 
+  /**
+   * A prompt the queue refuses is never executed, so no status ever reports it
+   * and the error it raises instead is the only word the Result step gets.
+   */
+  watch(
+    () =>
+      executionErrorStore.hasNodeError || executionErrorStore.hasPromptError,
+    (refused) => {
+      if (refused && runState.value === 'generating') runState.value = 'failed'
+    }
+  )
+
   watch(
     () => engine.activeTour === 'firstRun',
     (active) => {
       if (active) return
+      nudgeArmed.value = true
       releaseFirstRunTargets()
       tourWorkflow.value = null
       runState.value = 'idle'
     }
   )
+
+  function dismissNudge() {
+    nudgeArmed.value = false
+  }
 
   /** False when this template has no tour to give; the caller keeps the loaded graph. */
   async function beginTour(templateId: string): Promise<boolean> {
@@ -92,6 +112,7 @@ function useFirstRunTourControllerInternal() {
 
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
+    nudgeArmed.value = false
     registerTour('firstRun', () => firstRunTourSteps(templateId, runState))
     await delay(INTRO_PREVIEW_MS)
     const started = await engine.startTour('firstRun')
@@ -102,7 +123,7 @@ function useFirstRunTourControllerInternal() {
     return started
   }
 
-  return { beginTour }
+  return { beginTour, nudgeArmed: readonly(nudgeArmed), dismissNudge }
 }
 
 export const useFirstRunTourController = createSharedComposable(

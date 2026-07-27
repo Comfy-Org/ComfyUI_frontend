@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   canRunWorkflows: { value: true },
   showSubscriptionDialog: vi.fn(),
   workflowStatus: { value: new Map<unknown, string>() },
+  executionErrors: { hasNodeError: false, hasPromptError: false },
   activeWorkflow: null as unknown,
   transformValid: true,
   steps: [] as CoachStep[],
@@ -47,6 +48,15 @@ vi.mock('@/stores/executionStore', async () => {
         mocks.workflowStatus.value.get(workflow)
     })
   }
+})
+
+vi.mock('@/stores/executionErrorStore', async () => {
+  const { reactive } = await import('vue')
+  mocks.executionErrors = reactive({
+    hasNodeError: false,
+    hasPromptError: false
+  })
+  return { useExecutionErrorStore: () => mocks.executionErrors }
 })
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
@@ -141,6 +151,8 @@ describe('useFirstRunTourController', () => {
     vi.useFakeTimers()
     mocks.canRunWorkflows = ref(true)
     mocks.workflowStatus.value = new Map()
+    mocks.executionErrors.hasNodeError = false
+    mocks.executionErrors.hasPromptError = false
     mocks.activeWorkflow = null
     mocks.transformValid = true
     mocks.steps = []
@@ -263,6 +275,73 @@ describe('useFirstRunTourController', () => {
         mocks.runState.value,
         'sharing a state with never-ran leaves the Result step unable to tell them apart'
       ).toBe('succeeded')
+    })
+
+    it('gives up on a run the queue refused', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+
+      mocks.executionErrors.hasNodeError = true
+      await nextTick()
+
+      expect(
+        mocks.runState.value,
+        'a refused prompt never executes, so no status will ever end the wait'
+      ).toBe('failed')
+    })
+
+    it('leaves errors alone until the tour has run something', async () => {
+      await tourOnRunStep()
+
+      mocks.executionErrors.hasPromptError = true
+      await nextTick()
+
+      expect(
+        mocks.runState.value,
+        'errors already on screen when the tour reaches Run are not its run'
+      ).toBe('idle')
+    })
+  })
+
+  describe('the nudge', () => {
+    it('arms only once the tour is over', async () => {
+      const { controller } = await tourOnRunStep()
+      expect(
+        controller.nudgeArmed.value,
+        'a nudge fighting a live tour for the screen helps nobody'
+      ).toBe(false)
+
+      mocks.engine.activeTour = null
+      await nextTick()
+
+      expect(controller.nudgeArmed.value).toBe(true)
+    })
+
+    it('arms whatever the run did', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await finishRun(TOUR_WORKFLOW, 'failed')
+
+      mocks.engine.activeTour = null
+      await nextTick()
+
+      expect(
+        controller.nudgeArmed.value,
+        'the user who most needs somewhere to go next is the one whose first run failed'
+      ).toBe(true)
+    })
+
+    it('stops offering the nudge once it is waved away', async () => {
+      const { controller } = await tourOnRunStep()
+      mocks.engine.activeTour = null
+      await nextTick()
+
+      controller.dismissNudge()
+
+      expect(
+        controller.nudgeArmed.value,
+        'nothing re-arms it, so dismissal has to be the end of it'
+      ).toBe(false)
     })
   })
 

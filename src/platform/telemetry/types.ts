@@ -99,6 +99,8 @@ export type OnboardingTourStage =
   | 'step_shown'
   | 'completed'
   | 'skipped'
+  | 'nudge_shown'
+  | 'explore_templates_clicked'
 
 export type OnboardingTourSkipReason =
   | 'user'
@@ -110,11 +112,12 @@ export type OnboardingTourSkipReason =
  * `step_number` is 1-based and matches the "Step N of M" indicator the user
  * sees, with `step_count` as M. Both `step_number` and `coach_id` are absent
  * for steps with no numbered spotlight (e.g. the landing). `skip_reason` is
- * present only on the `skipped` stage.
+ * present only on the `skipped` stage, and `step_count` only on the stages that
+ * happen inside the step sequence — the nudge stages follow the tour's end.
  */
 export interface OnboardingTourMetadata {
   tour: string
-  step_count: number
+  step_count?: number
   step_number?: number
   coach_id?: string
   skip_reason?: OnboardingTourSkipReason
@@ -727,6 +730,9 @@ export const TelemetryEvents = {
   ONBOARDING_TOUR_STEP_SHOWN: 'app:onboarding_tour_step_shown',
   ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
   ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
+  ONBOARDING_TOUR_NUDGE_SHOWN: 'app:onboarding_tour_nudge_shown',
+  ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED:
+    'app:onboarding_tour_explore_templates_clicked',
 
   // Email Verification
   USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
@@ -798,7 +804,10 @@ export const OnboardingTourEvents: Record<
   started: TelemetryEvents.ONBOARDING_TOUR_STARTED,
   step_shown: TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
   completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,
-  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED
+  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED,
+  nudge_shown: TelemetryEvents.ONBOARDING_TOUR_NUDGE_SHOWN,
+  explore_templates_clicked:
+    TelemetryEvents.ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED
 }
 
 export const CANCELLATION_STAGE_EVENTS = {

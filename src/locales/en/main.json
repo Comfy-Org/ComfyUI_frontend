@@ -4688,6 +4688,12 @@
           "title": "And there it is",
           "body": "Your new video lands right here — ready to download or share."
         }
+      },
+      "nudge": {
+        "title": "That was one of hundreds",
+        "body": "You just made your first. Explore what else you can build.",
+        "dismiss": "Not now",
+        "explore": "Explore templates"
       }
     }
   }
