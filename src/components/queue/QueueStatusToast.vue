@@ -140,7 +140,7 @@
         align="end"
         :side-offset="8"
         data-testid="queue-status-idle-panel"
-        class="flex w-[326px] flex-col items-center gap-3 rounded-lg border-none bg-comfy-menu-bg py-3 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
+        class="flex w-[326px] flex-col items-center gap-3 rounded-lg border-none bg-comfy-menu-bg px-0 py-3 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
       >
         <!-- Idle is exactly when someone goes looking for what they just
              made, so recent runs are here rather than a tab away. Figma
