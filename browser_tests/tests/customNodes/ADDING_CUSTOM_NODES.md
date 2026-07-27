@@ -414,6 +414,23 @@ are authored differently:
   it is overwritten on the next regeneration and a hand-edit hides real
   drift. Fix the inputs (the vendored yaml, the snapshot, or the overlay)
   and regenerate.
+- **Cloud `expectedExtensions` come from the JS Cloud serves, and are not yet
+  burn-in confirmed.** Core rows are calibrated by grepping the pinned source;
+  cloud packs are not checked out locally, so the sentinels in
+  `browser_tests/fixtures/data/cloud/cloudExtensionSentinels.json` (the second
+  hand-maintained generator input) were read off the live
+  `/extensions/<pack>/...` files, which Cloud serves unauthenticated, taking
+  the name from each `registerExtension({ name })` call site. 21 of 87 packs
+  carry one; the rest serve no JS the listing exposes and keep `[]`. Caveat
+  for whoever runs the first cloud burn-in: a name appearing at a
+  `registerExtension` call site does NOT prove it registers UNCONDITIONALLY at
+  boot, and the assert requires boot registration. If the load tier reds with
+  `frontend extension "X" not registered`, first check whether that extension
+  is conditional (a setting, a feature flag, a try/catch) before assuming the
+  pack's JS failed - the fix is to swap in an unconditional sentinel from the
+  same pack, never to delete the assert or empty the list, because `[]` means
+  "this pack ships no frontend JS" and would be a false declaration.
+
 - **Regeneration tracks Cloud deploys, not our pins.** A `.cloud.json` change
   belongs in the commit that re-vendors `supported_nodes.yaml` or re-takes the
   snapshot after Cloud redeploys; `.core.json` still tracks our own pin bumps.
