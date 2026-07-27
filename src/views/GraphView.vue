@@ -60,6 +60,7 @@ import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
+import { useModelDownloadEffects } from '@/platform/modelManager/composables/useModelDownloadEffects'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
@@ -230,6 +231,7 @@ useMenuItemStore().registerCoreMenuCommands()
 useKeybindingService().registerCoreKeybindings()
 useSidebarTabStore().registerCoreSidebarTabs()
 void useBottomPanelStore().registerCoreBottomPanelTabs()
+useModelDownloadEffects()
 
 useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()

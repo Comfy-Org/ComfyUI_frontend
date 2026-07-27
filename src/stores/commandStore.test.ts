@@ -113,6 +113,27 @@ describe('commandStore', () => {
     })
   })
 
+  describe('unregisterCommand', () => {
+    it('removes a registered command', () => {
+      const store = useCommandStore()
+      store.registerCommand({ id: 'to.remove', function: vi.fn() })
+
+      store.unregisterCommand('to.remove')
+
+      expect(store.isRegistered('to.remove')).toBe(false)
+    })
+
+    it('is a no-op for an unregistered id', () => {
+      const store = useCommandStore()
+      store.registerCommand({ id: 'keep.me', function: vi.fn() })
+
+      store.unregisterCommand('nonexistent')
+
+      expect(store.isRegistered('keep.me')).toBe(true)
+      expect(store.commands).toHaveLength(1)
+    })
+  })
+
   describe('isRegistered', () => {
     it('returns false for unregistered command', () => {
       const store = useCommandStore()

@@ -38,6 +38,7 @@ export enum ServerFeatureFlag {
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile'
+  SERVER_SIDE_MODEL_DOWNLOADS = 'server_side_model_downloads'
 }
 
 /**
@@ -235,6 +236,12 @@ export function useFeatureFlags() {
         ServerFeatureFlag.SIGNUP_TURNSTILE,
         remoteConfig.value.signup_turnstile,
         'off'
+      )
+    },
+    get serverSideModelDownloads() {
+      return api.getServerFeature(
+        ServerFeatureFlag.SERVER_SIDE_MODEL_DOWNLOADS,
+        false
       )
     }
   })
