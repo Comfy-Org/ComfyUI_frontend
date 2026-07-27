@@ -124,6 +124,26 @@ describe('heuristicRoles', () => {
     ).toBe(positive)
   })
 
+  it('prefers the prompt wired to positive over one merely titled positive', () => {
+    const graph = createTestRootGraph()
+    addWiredSink(graph)
+    const sampler = addSampler(graph)
+    addNode(graph, 'StringConstant', {
+      title: 'Positive Prompt',
+      prompts: ['value']
+    })
+    const wired = addNode(graph, 'CLIPTextEncode', {
+      prompts: ['text'],
+      outputs: ['CONDITIONING']
+    })
+    wired.connect(0, sampler, 0)
+
+    expect(
+      heuristicRoles(graph)?.prompt,
+      'if a title could match wiring they would tie, and a tie teaches nobody where to type'
+    ).toBe(wired)
+  })
+
   it('prefers the prompt wired to positive over an unrelated text box', () => {
     const graph = createTestRootGraph()
     addWiredSink(graph)

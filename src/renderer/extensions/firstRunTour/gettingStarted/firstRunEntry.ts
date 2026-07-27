@@ -58,7 +58,9 @@ export const useFirstRunEntry = createSharedComposable(() => {
     sharedStatus?: SharedWorkflowUrlLoadStatus
   ) {
     if (outcome !== 'url-intent' || !isFirstRunCandidate()) return
-    if (sharedStatus === 'failed' || sharedStatus === 'cancelled') return
+    const shareLoaded =
+      sharedStatus === 'loaded' || sharedStatus === 'loaded-without-assets'
+    if (templateId === undefined && !shareLoaded) return
     await useFirstRunTourController().beginTour(templateId)
   }
 

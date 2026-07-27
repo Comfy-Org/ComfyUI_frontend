@@ -144,16 +144,19 @@ describe('useFirstRunEntry', () => {
   )
 
   describe('a workflow that arrived by URL', () => {
-    it('offers the tour over a shared workflow, which has no template id', async () => {
-      const entry = await freshEntry()
+    it.for(['loaded', 'loaded-without-assets'] as const)(
+      'offers the tour over a shared workflow that %s, which has no template id',
+      async (sharedStatus) => {
+        const entry = await freshEntry()
 
-      await entry.handleUrlWorkflow('url-intent')
+        await entry.handleUrlWorkflow('url-intent', undefined, sharedStatus)
 
-      expect(
-        mocks.beginTour,
-        'a share link is the case no pin can ever cover'
-      ).toHaveBeenCalledWith(undefined)
-    })
+        expect(
+          mocks.beginTour,
+          'a share link is the case no pin can ever cover'
+        ).toHaveBeenCalledWith(undefined)
+      }
+    )
 
     it('passes a template id through so its pins beat the heuristic', async () => {
       const entry = await freshEntry()
@@ -163,8 +166,8 @@ describe('useFirstRunEntry', () => {
       expect(mocks.beginTour).toHaveBeenCalledWith('image_z_image_turbo')
     })
 
-    it.for(['failed', 'cancelled'] as const)(
-      'offers no tour when the share %s',
+    it.for(['failed', 'cancelled', 'not-present'] as const)(
+      'offers no tour when nothing the user asked for arrived (%s)',
       async (sharedStatus) => {
         const entry = await freshEntry()
 
@@ -172,7 +175,7 @@ describe('useFirstRunEntry', () => {
 
         expect(
           mocks.beginTour,
-          'the canvas still holds the blank workflow the share never replaced'
+          'touring a graph the user never asked for is worse than no tour'
         ).not.toHaveBeenCalled()
       }
     )

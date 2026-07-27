@@ -245,4 +245,37 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
     ).toBeHidden()
     await expect(page.getByTestId('coach-spotlight')).toBeHidden()
   })
+
+  test('tours a template a first-run user arrived on by link', async ({
+    comfyPage
+  }) => {
+    test.slow()
+    const { page } = comfyPage
+
+    const templateId = await firstPinnedTemplateOnScreen(page)
+
+    await comfyPage.setup({ url: `/?template=${templateId}` })
+
+    await expect(
+      page.getByRole('dialog', { name: GETTING_STARTED_TITLE }),
+      'the link already chose a workflow, so there is nothing to choose'
+    ).toBeHidden()
+    await expect(page.getByTestId('coach-spotlight')).toBeVisible({
+      timeout: 30_000
+    })
+    await expect(page.getByTestId('coach-card')).toContainText('Step 1 of')
+  })
+
+  test('offers no tour when the template link loads nothing', async ({
+    comfyPage
+  }) => {
+    const { page } = comfyPage
+
+    await comfyPage.setup({ url: '/?template=no_such_template_exists' })
+
+    await expect(
+      page.getByTestId('coach-spotlight'),
+      'touring a graph the user never asked for is worse than no tour'
+    ).toBeHidden()
+  })
 })
