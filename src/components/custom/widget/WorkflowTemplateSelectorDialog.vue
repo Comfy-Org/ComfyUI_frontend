@@ -153,7 +153,7 @@
         <!-- Template Cards Grid -->
         <div
           :key="templateListKey"
-          class="-mx-2 grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] items-start gap-2"
+          class="-mx-2 grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] items-stretch gap-2"
           data-testid="template-workflows-content"
         >
           <!-- Loading Skeletons (show while loading initial data) -->
@@ -195,7 +195,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card transition-colors hover:bg-secondary-background/50"
+            class="group/card h-full transition-colors hover:bg-secondary-background/50"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -940,30 +940,30 @@ const { isLoading } = useAsyncState(
   }
 )
 
-// The template grid mounts asynchronously after the dialog opens. When the
-// catalog finishes loading and the grid renders, Reka's focus scope reclaims
-// focus to the dialog container (in a microtask after the mutation), undoing
-// the search input's initial autofocus. Re-assert focus on the search once the
-// catalog settles — across a few macrotask ticks so we win after Reka — unless
-// the user has already moved to another field.
+// The dialog's focus scope grabs focus to the dialog container both on open and
+// again when the async template grid mounts, which undoes the search field's
+// autofocus. The exact timing depends on whether the catalog is already cached,
+// so a one-shot re-focus races unreliably. Instead, while the modal is settling
+// (~1.5s), bounce any focus that lands on the dialog container itself back to
+// the search field. Focusing a real control (a card, the nav, the filters)
+// targets that element, not the container, so this never fights the user.
 const searchInputRef = ref<{ focus: () => void }>()
-function refocusSearchAfterLoad() {
-  const isTypingElsewhere = () => {
+onMounted(() => {
+  // The dialog's focus scope parks focus on the dialog shell both on open and
+  // again when the async template grid mounts, undoing the search field's
+  // autofocus. The timing shifts with whether the catalog is cached, so racing
+  // it with a single re-focus is unreliable. Instead, poll briefly while the
+  // modal settles and, whenever focus is sitting on the dialog shell itself,
+  // move it to the search field. Focusing a real control (card, nav, filters)
+  // parks focus on that element, not the shell, so this never fights the user.
+  let ticks = 0
+  const timer = window.setInterval(() => {
     const active = document.activeElement
-    return (
-      active instanceof HTMLInputElement ||
-      active instanceof HTMLTextAreaElement ||
-      (active instanceof HTMLElement && active.isContentEditable)
-    )
-  }
-  for (const delay of [0, 80, 200]) {
-    window.setTimeout(() => {
-      if (!isTypingElsewhere()) searchInputRef.value?.focus()
-    }, delay)
-  }
-}
-watch(isLoading, (loading, wasLoading) => {
-  if (wasLoading && !loading) refocusSearchAfterLoad()
+    if (active instanceof HTMLElement && active.getAttribute('role') === 'dialog') {
+      searchInputRef.value?.focus()
+    }
+    if (++ticks >= 15) window.clearInterval(timer)
+  }, 100)
 })
 
 onBeforeUnmount(() => {
