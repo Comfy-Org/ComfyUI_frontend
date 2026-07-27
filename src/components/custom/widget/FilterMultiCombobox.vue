@@ -84,7 +84,7 @@ const clearAll = () => {
 
     <PopoverContent
       align="start"
-      class="w-(--reka-popover-trigger-width) min-w-56 p-0"
+      class="z-3000 w-(--reka-popover-trigger-width) min-w-56 p-0"
     >
       <Command>
         <CommandInput :placeholder="searchPlaceholder ?? t('g.search')" />

@@ -55,11 +55,11 @@
             :key="tab.value"
             type="button"
             :aria-pressed="selectedType === tab.value"
-            class="flex h-8 shrink-0 cursor-pointer appearance-none items-center gap-1 rounded-lg border-none text-xs whitespace-nowrap transition-colors"
+            class="flex h-8 shrink-0 cursor-pointer appearance-none items-center gap-1 rounded-lg border-none px-3 text-xs font-medium whitespace-nowrap transition-colors"
             :class="
               selectedType === tab.value
-                ? 'bg-base-foreground px-4 font-bold text-base-background'
-                : 'bg-secondary-background px-3 font-medium text-base-foreground opacity-70 hover:opacity-100'
+                ? 'bg-base-foreground text-base-background'
+                : 'bg-secondary-background text-base-foreground opacity-70 hover:opacity-100'
             "
             @click="selectedType = tab.value"
           >
@@ -81,7 +81,6 @@
               v-model="selectedModels"
               :label="$t('templateWorkflows.modelFilter', 'Model Filter')"
               :options="modelOptions"
-              icon="icon-[lucide--cpu]"
             />
           </div>
 
@@ -91,7 +90,6 @@
               v-model="selectedUseCases"
               :label="$t('templateWorkflows.useCaseFilter', 'Use Case')"
               :options="useCaseOptions"
-              icon="icon-[lucide--target]"
             />
           </div>
 
@@ -101,7 +99,6 @@
               v-model="selectedRunsOn"
               :label="$t('templateWorkflows.runsOnFilter', 'Runs On')"
               :options="runsOnOptions"
-              icon="icon-[lucide--server]"
             />
           </div>
 
@@ -154,7 +151,7 @@
         <div
           :key="templateListKey"
           :style="gridStyle"
-          class="-mx-2 items-start"
+          class="-mx-2"
           data-testid="template-workflows-content"
         >
           <!-- Loading Skeletons (show while loading initial data) -->
@@ -196,7 +193,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card aspect-auto! h-fit! hover:bg-base-background"
+            class="group/card aspect-auto! transition-colors hover:bg-secondary-background/50"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -275,7 +272,7 @@
                 <!-- Type badge (Node Graph / App) -->
                 <template #top-left>
                   <div
-                    class="flex h-7 items-center gap-1.5 rounded-lg bg-zinc-700/50 px-2 py-1.5 backdrop-blur-[20px]"
+                    class="flex h-6 items-center gap-1 rounded-lg bg-zinc-700/50 px-2 py-1 backdrop-blur-[20px]"
                   >
                     <i
                       :class="
@@ -283,9 +280,9 @@
                           ? 'icon-[lucide--app-window]'
                           : 'icon-[comfy--workflow]'
                       "
-                      class="size-4 text-white"
+                      class="size-3 text-white"
                     />
-                    <span class="text-sm font-medium whitespace-nowrap text-white">
+                    <span class="text-xs font-medium whitespace-nowrap text-white">
                       {{
                         isAppTemplate(template)
                           ? $t('builderToolbar.app', 'App')
