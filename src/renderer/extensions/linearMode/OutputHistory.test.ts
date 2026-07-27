@@ -665,9 +665,9 @@ describe('OutputHistory', () => {
   })
 
   describe('keyboard navigation', () => {
-    function pressKey(key: string) {
+    function pressKey(key: string, options: KeyboardEventInit = {}) {
       document.body.dispatchEvent(
-        new KeyboardEvent('keydown', { key, bubbles: true })
+        new KeyboardEvent('keydown', { key, bubbles: true, ...options })
       )
     }
 
@@ -748,6 +748,26 @@ describe('OutputHistory', () => {
 
       expect(selectFn).not.toHaveBeenCalled()
       document.body.removeChild(input)
+    })
+
+    it('ignores shift-modified arrow keys', async () => {
+      const a1 = makeAsset('a1')
+      const a2 = makeAsset('a2')
+      mediaRef.value = [a1, a2]
+      allOutputsFn.mockReturnValue([makeResult('out.png')])
+      hasOutputsRef.value = true
+
+      mountComponent()
+      await nextTick()
+      selectedIdRef.value = 'history:a1:0'
+      vi.clearAllMocks()
+      await nextTick()
+
+      pressKey('ArrowRight', { shiftKey: true })
+      await nextTick()
+
+      expect(selectedIdRef.value).toBe('history:a1:0')
+      expect(selectFn).not.toHaveBeenCalled()
     })
 
     it('navigates across in-progress and history items', async () => {
