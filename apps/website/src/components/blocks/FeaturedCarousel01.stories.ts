@@ -16,14 +16,16 @@ const meta: Meta<typeof FeaturedCarousel01> = {
         media: { type: 'image', src: sampleImage, alt: 'Featured event' },
         eyebrow: 'UPCOMING LIVESTREAM',
         title: 'LTX x Comfy: Open world models in production',
-        href: '#'
+        href: '#',
+        autoplayMs: 3000
       },
       {
         id: 'b',
         media: { type: 'image', src: sampleImage, alt: 'Second event' },
         eyebrow: 'UPCOMING LIVESTREAM',
         title: 'Comfy MCP: Live demo & Q&A',
-        href: '#'
+        href: '#',
+        autoplayMs: 5000
       }
     ],
     prevLabel: 'Previous featured event',

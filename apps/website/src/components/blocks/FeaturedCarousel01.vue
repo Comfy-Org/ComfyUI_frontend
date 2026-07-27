@@ -3,7 +3,9 @@ import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 import IconButton from '../ui/icon-button/IconButton.vue'
+import { useCarouselAutoplay } from '../../composables/useCarouselAutoplay'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { resolveRel } from '../../utils/cta'
 
 type FeaturedSlideMedia = {
   type: 'image' | 'video'
@@ -19,7 +21,11 @@ export type FeaturedSlide = {
   title?: string
   showTitle?: boolean
   href?: string
+  newTab?: boolean
+  autoplayMs?: number
 }
+
+const DEFAULT_AUTOPLAY_MS = 6000
 
 const { slides, prevLabel, nextLabel } = defineProps<{
   slides: FeaturedSlide[]
@@ -34,6 +40,10 @@ function goTo(index: number): void {
   activeIndex.value = (index + count) % count
 }
 
+const autoplayDelay = computed(
+  () => slides[activeIndex.value]?.autoplayMs ?? DEFAULT_AUTOPLAY_MS
+)
+
 // Respect prefers-reduced-motion (WCAG 2.2.2): don't autoplay the looping
 // slide video. Removing the reactive `autoplay` attribute only suppresses the
 // initial play under SSR (the server can't read the client's preference and
@@ -44,6 +54,14 @@ const reduceMotion = computed(() => prefersReducedMotion())
 const pauseIfReduced = (el: unknown) => {
   if (el instanceof HTMLVideoElement && reduceMotion.value) el.pause()
 }
+
+// Reduced motion disables autoplay entirely (WCAG 2.2.2).
+useCarouselAutoplay({
+  delayMs: autoplayDelay,
+  active: () => !reduceMotion.value && slides.length > 1,
+  resetKey: activeIndex,
+  advance: () => goTo(activeIndex.value + 1)
+})
 </script>
 
 <template>
@@ -122,6 +140,8 @@ const pauseIfReduced = (el: unknown) => {
             <a
               v-if="slide.href"
               :href="slide.href"
+              :target="slide.newTab ? '_blank' : undefined"
+              :rel="resolveRel({ target: slide.newTab ? '_blank' : undefined })"
               :aria-label="slide.title ?? slide.media.alt"
               :tabindex="index === activeIndex ? undefined : -1"
               class="focus-visible:ring-primary-comfy-yellow absolute inset-0 focus-visible:ring-2 focus-visible:outline-none"

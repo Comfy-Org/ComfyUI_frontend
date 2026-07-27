@@ -13,6 +13,8 @@ export type FeaturedEvent = {
   showTitle: boolean
   media: EventMedia
   href?: LocalizedText
+  newTab?: boolean
+  autoplayMs?: number
 }
 
 export type UpcomingEvent = {
@@ -22,7 +24,7 @@ export type UpcomingEvent = {
   location: LocalizedText
   dateLabel: LocalizedText
   dateTime?: string
-  link: { href: LocalizedText }
+  link: { href: LocalizedText; newTab?: boolean }
 }
 
 export type PastEvent = {
@@ -31,7 +33,7 @@ export type PastEvent = {
   title: LocalizedText
   description: LocalizedText
   media: EventMedia
-  watch: { href: LocalizedText }
+  watch: { href: LocalizedText; newTab?: boolean }
   youtubeVideoId?: string
   publishedDate: string
 }
@@ -93,7 +95,7 @@ const blackMathHackathon: PastEvent = {
     en: 'Black Math X Comfy livestream with Jeremy Sahlman',
     'zh-CN': 'Black Math X Comfy 直播，嘉宾 Jeremy Sahlman'
   }),
-  watch: { href: youtubeWatchHref('O72yyU-jupU') },
+  watch: { href: youtubeWatchHref('O72yyU-jupU'), newTab: true },
   youtubeVideoId: 'O72yyU-jupU',
   publishedDate: '2026-07-23'
 }
@@ -115,7 +117,9 @@ const foundersLiveFeatured: FeaturedEvent = {
     },
     'founders-live-thumb.png'
   ),
-  href: foundersLiveStreamHref
+  href: foundersLiveStreamHref,
+  newTab: true,
+  autoplayMs: 17000
 }
 
 const blackMathFeatured: FeaturedEvent = {
@@ -124,14 +128,16 @@ const blackMathFeatured: FeaturedEvent = {
   title: blackMathHackathon.title,
   // The artwork already carries the title, date, and speaker.
   showTitle: false,
-  media: eventImage('july-launches.jpg', {
+  media: eventImage('july-launches.png', {
     en: 'July Launches livestream',
     'zh-CN': '七月发布直播'
   }),
   href: {
     en: 'https://www.youtube.com/live/8RGN69h_xTU',
     'zh-CN': 'https://www.youtube.com/live/8RGN69h_xTU'
-  }
+  },
+  newTab: true,
+  autoplayMs: 7000
 }
 
 export const featuredEvents: readonly FeaturedEvent[] = [
@@ -158,7 +164,8 @@ export const upcomingEvents: readonly UpcomingEvent[] = [
       href: {
         en: 'https://www.youtube.com/live/8RGN69h_xTU',
         'zh-CN': 'https://www.youtube.com/live/8RGN69h_xTU'
-      }
+      },
+      newTab: true
     }
   }
 ]
@@ -181,7 +188,7 @@ const pastEventEntries: readonly PastEvent[] = [
       en: 'Run ComfyUI From Claude/Cursor with Comfy MCP livestream recording',
       'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI 的直播回放'
     }),
-    watch: { href: youtubeWatchHref('sX2sJ5-4MS4') },
+    watch: { href: youtubeWatchHref('sX2sJ5-4MS4'), newTab: true },
     youtubeVideoId: 'sX2sJ5-4MS4',
     publishedDate: '2026-07-15'
   },
@@ -197,11 +204,11 @@ const pastEventEntries: readonly PastEvent[] = [
       'zh-CN':
         'Erin Sarofsky（Sarofsky COO/创始人）与 Ryan Summers（Sarofsky 创意创新负责人）分享他们的团队如何用 ComfyUI 重塑工作室的生产流水线。'
     },
-    media: eventImage('reinventing-the.jpg', {
+    media: eventImage('reinventing-the.png', {
       en: 'Reinventing the Production Pipeline livestream recording',
       'zh-CN': '重塑生产流水线直播回放'
     }),
-    watch: { href: youtubeWatchHref('dsYggO4lsSo') },
+    watch: { href: youtubeWatchHref('dsYggO4lsSo'), newTab: true },
     youtubeVideoId: 'dsYggO4lsSo',
     publishedDate: '2026-07-08'
   },
@@ -221,7 +228,7 @@ const pastEventEntries: readonly PastEvent[] = [
       en: 'June Launches livestream recording',
       'zh-CN': '六月发布直播回放'
     }),
-    watch: { href: youtubeWatchHref('yo7b_zHd20g') },
+    watch: { href: youtubeWatchHref('yo7b_zHd20g'), newTab: true },
     youtubeVideoId: 'yo7b_zHd20g',
     publishedDate: '2026-06-29'
   },
@@ -241,7 +248,7 @@ const pastEventEntries: readonly PastEvent[] = [
       en: 'Krea X Comfy Founders Live recording',
       'zh-CN': 'Krea X Comfy 创始人直播回放'
     }),
-    watch: { href: youtubeWatchHref('31jiUhCEjJ4') },
+    watch: { href: youtubeWatchHref('31jiUhCEjJ4'), newTab: true },
     youtubeVideoId: '31jiUhCEjJ4',
     publishedDate: '2026-06-24'
   }

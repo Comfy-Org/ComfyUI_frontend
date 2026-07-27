@@ -23,7 +23,9 @@ const slides = computed<FeaturedSlide[]>(() =>
     eyebrow: event.eyebrow[locale],
     title: event.title[locale],
     showTitle: event.showTitle,
-    href: event.href?.[locale]
+    href: event.href?.[locale],
+    newTab: event.newTab,
+    autoplayMs: event.autoplayMs
   }))
 )
 </script>

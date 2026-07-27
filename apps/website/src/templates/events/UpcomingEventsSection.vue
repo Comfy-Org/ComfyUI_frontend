@@ -6,6 +6,7 @@ import type { Locale } from '../../i18n/translations'
 import Button from '../../components/ui/button/Button.vue'
 import { upcomingEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
+import { resolveRel } from '../../utils/cta'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
@@ -59,8 +60,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
               as="a"
               variant="link"
               :href="event.link.href[locale]"
-              target="_blank"
-              rel="noopener noreferrer"
+              :target="event.link.newTab ? '_blank' : undefined"
+              :rel="
+                resolveRel({ target: event.link.newTab ? '_blank' : undefined })
+              "
               :append-icon="ArrowRight"
               :aria-label="`${event.name[locale]} — ${t('events.upcoming.learnMore', locale)}`"
               class="shrink-0 normal-case"
