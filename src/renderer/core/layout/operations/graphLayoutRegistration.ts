@@ -1,8 +1,8 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 export function canvasLayoutMutations() {
@@ -13,11 +13,20 @@ export function canvasLayoutMutations() {
 
 export function registerNodeLayout(graph: LGraph, node: LGraphNode): void {
   canvasLayoutMutations().createNode(graph.rootGraph.id, node.id, {
-    position: { x: node.pos[0], y: node.pos[1] },
-    size: { width: node.size[0], height: node.size[1] },
+    position: { x: node._pos[0], y: node._pos[1] },
+    size: { width: node._size[0], height: node._size[1] },
     zIndex: layoutStore.allocateZIndex(),
     visible: true
   })
+  node._layoutRegistered = true
+  node._geometryVersion = layoutStore.geometryVersion
+}
+
+export function unregisterNodeLayout(graph: LGraph, node: LGraphNode): void {
+  if (!node._layoutRegistered) return
+
+  node._layoutRegistered = false
+  canvasLayoutMutations().deleteNode(graph.rootGraph.id, node.id)
 }
 
 export function registerGroupLayout(graph: LGraph, group: LGraphGroup): void {
@@ -40,7 +49,7 @@ export function unregisterAllGraphLayout(graph: LGraph): void {
 
   function unregisterEntities(target: LGraph) {
     for (const node of target._nodes) {
-      mutations.deleteNode(rootGraphId, node.id)
+      unregisterNodeLayout(target, node)
     }
     for (const group of target._groups) {
       mutations.deleteGroup(rootGraphId, group.id)

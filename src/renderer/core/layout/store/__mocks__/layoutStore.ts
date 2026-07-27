@@ -10,6 +10,7 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   batchUpdateNodeBounds: vi.fn(),
   clearGraph: vi.fn(),
   clearViewGeometry: vi.fn(),
+  geometryVersion: 0,
   getAllGroups: vi.fn(() => ({ value: new Map() })),
   getCurrentActor: vi.fn(() => 'test-actor'),
   getCurrentSource: vi.fn(() => 'canvas'),
@@ -27,6 +28,7 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   queryLinkSegmentAtPoint: vi.fn(() => null),
   queryRerouteAtPoint: vi.fn(() => null),
   querySlotAtPoint: vi.fn(() => null),
+  readNodeRect: vi.fn(() => false),
   setActor: vi.fn(),
   setPendingSlotSync: vi.fn(),
   setSource: vi.fn()
