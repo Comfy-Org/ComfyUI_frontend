@@ -712,6 +712,16 @@ function onStop(): void {
   void stopTurn()
 }
 
+function onRenameChat(title: string): void {
+  if (threadId.value !== null) history.rename(threadId.value, title)
+}
+
+function onDeleteHistory(id: string): void {
+  history.remove(id)
+  // Deleting the open chat also ends it; a dead thread must not stay editable.
+  if (id === threadId.value) onNewChat()
+}
+
 function onNewChat(): void {
   resetSnapshotGuard()
   workflowDetached.value = false
@@ -804,6 +814,8 @@ function onPanelDrop(event: DragEvent): void {
       :can-open-assets="!isBuilderMode"
       :is-maximized="agentPanelStore.isMaximized"
       :history-groups="history.grouped"
+      :session-id="threadId"
+      :custom-title="history.titleFor(threadId)"
       :selection-tags="selectionTags"
       :active-tab="activeTab"
       :workflow-tabs="workflowTabs"
@@ -823,7 +835,8 @@ function onPanelDrop(event: DragEvent): void {
       @close="onClosePanel"
       @open-history="refreshHistory()"
       @select-history="onSelectHistory"
-      @delete-history="history.remove($event)"
+      @delete-history="onDeleteHistory"
+      @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
     />
     <OnboardingCoach
