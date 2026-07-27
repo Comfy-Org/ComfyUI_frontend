@@ -152,7 +152,7 @@ test.describe('customNode manifest', () => {
       ).toThrow(/pack/)
   })
 
-  test('CUSTOM_NODES_ENV selects the manifest; unknown values and the missing cloud file fail loudly', () => {
+  test('CUSTOM_NODES_ENV selects the manifest; unknown values fail loudly', () => {
     const prior = process.env.CUSTOM_NODES_ENV
     try {
       delete process.env.CUSTOM_NODES_ENV
@@ -163,11 +163,13 @@ test.describe('customNode manifest', () => {
       expect(loadManifest()).toEqual(defaulted)
       expect(loadCloudCoreDisabledNodes()).toEqual({})
       process.env.CUSTOM_NODES_ENV = 'cloud'
-      expect(() => loadManifest()).toThrow(
-        /customNodeManifest\.cloud\.json.*gen-cloud-manifest.*snapshot/s
-      )
-      expect(() => loadCloudCoreDisabledNodes()).toThrow(
-        /customNodeManifest\.cloud\.json/
+      const cloud = loadManifest()
+      expect(cloud.length).toBeGreaterThan(0)
+      expect(cloud).not.toEqual(defaulted)
+      // Cloud rows are generated, so they carry deployRef where core carries pin.
+      expect(cloud.every((entry) => 'deployRef' in entry)).toBe(true)
+      expect(Object.keys(loadCloudCoreDisabledNodes()).length).toBeGreaterThan(
+        0
       )
       process.env.CUSTOM_NODES_ENV = 'clod'
       expect(() => loadManifest()).toThrow(/CUSTOM_NODES_ENV/)

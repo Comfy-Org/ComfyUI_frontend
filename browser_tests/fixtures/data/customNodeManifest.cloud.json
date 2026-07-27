@@ -1,0 +1,1501 @@
+{
+  "coreDisabledNodes": {
+    "CLIPSave": ["WritesToDisk"],
+    "CheckpointSave": ["CreatesLargeOutputs"],
+    "ImageOnlyCheckpointSave": ["CreatesLargeOutputs"],
+    "LoadImageDataSetFromFolder": ["ReadsArbitraryFile"],
+    "LoadImageTextDataSetFromFolder": ["ReadsArbitraryFile"],
+    "LoadTrainingDataset": ["ReadsArbitraryFile"],
+    "LoraSave": ["WritesToDisk"],
+    "ModelSave": ["CreatesLargeOutputs"],
+    "ModelSaveKJ": ["CreatesLargeOutputs"],
+    "SaveImageDataSetToFolder": ["WritesToDisk"],
+    "SaveImageTextDataSetToFolder": ["WritesToDisk"],
+    "SaveLoRA": ["CreatesLargeOutputs"],
+    "SaveTrainingDataset": ["WritesToDisk"],
+    "VAESave": ["WritesToDisk"]
+  },
+  "packs": [
+    {
+      "pack": "ComfyQR",
+      "deployRef": "https://github.com/coreyryanhanson/ComfyQR@e31449c99a6ba8c5c567646659e0a75e4056259f",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["comfy-qr-by-image-size", "comfy-qr-by-module-size"],
+      "expectedNodeCount": 4,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-AdvancedLivePortrait",
+      "deployRef": "https://github.com/PowerHouseMan/ComfyUI-AdvancedLivePortrait@3bba732915e22f18af0d221b9c5c282990181f1b",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AdvancedLivePortrait", "ExpData"],
+      "expectedNodeCount": 4,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "LoadExpData": ["DisabledOnCloud", "ReadsArbitraryFile"],
+        "SaveExpData": ["DisabledOnCloud", "WritesToDisk"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-DepthAnythingV2",
+      "deployRef": "https://github.com/kijai/ComfyUI-DepthAnythingV2@d505cbca99803fc63327b8305618a23e59a18b42",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "DepthAnything_V2",
+        "DownloadAndLoadDepthAnythingV2Model"
+      ],
+      "expectedNodeCount": 2,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-DepthAnythingV3",
+      "deployRef": "ComfyUI-DepthAnythingV3@0.1.2",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["DA3_CreateCameraParams", "DA3_EnableTiledProcessing"],
+      "expectedNodeCount": 9,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "DA3_DownloadModel": ["NetworkAccess"],
+        "DA3_FilterGaussians": ["WritesToDisk"],
+        "DA3_PreviewPointCloud": ["WritesToDisk"],
+        "DA3_SavePointCloud": ["WritesToDisk"],
+        "DepthAnythingV3_Streaming": ["WritesToDisk"],
+        "LoadSALADModel": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-DynamiCrafterWrapper",
+      "deployRef": "https://github.com/kijai/ComfyUI-DynamiCrafterWrapper@d312c62982f1582b7955444d3a22ac948fb9c603",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "DownloadAndLoadCLIPVisionModel",
+        "DownloadAndLoadDynamiCrafterCNModel"
+      ],
+      "expectedNodeCount": 11,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "DownloadAndLoadCLIPModel": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-EditUtils",
+      "deployRef": "https://github.com/lrzjason/ComfyUI-EditUtils@256a2340b161da3f814e5982ca4aa999f474df93",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AdaptiveLongestEdge_EditUtils", "Any2Image_EditUtils"],
+      "expectedNodeCount": 17,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-FlashVSR_Ultra_Fast",
+      "deployRef": "https://github.com/lihaoyun6/ComfyUI-FlashVSR_Ultra_Fast@4820b3f02347bddcbbb9a5a85ab7638fe976366e",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["FlashVSRInitPipe", "FlashVSRNode"],
+      "expectedNodeCount": 3,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-Fluxtapoz",
+      "deployRef": "https://github.com/logtd/ComfyUI-Fluxtapoz@17c71bea20e932945e9c1be0586cfd4b7e51cbf6",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["ApplyRegionalConds", "ConfigureModifiedFlux"],
+      "expectedNodeCount": 22,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-GIMM-VFI",
+      "deployRef": "https://github.com/kijai/ComfyUI-GIMM-VFI@4c9a3123762af85e7c796e41737da0b70c75d72d",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["DownloadAndLoadGIMMVFIModel", "GIMMVFI_interpolate"],
+      "expectedNodeCount": 2,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-Image-Filters",
+      "deployRef": "https://github.com/spacepxl/ComfyUI-Image-Filters@bbb3fb0045461adf3602faeedaf40af57090d4e2",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AdainFilterLatent", "AdainImage"],
+      "expectedNodeCount": 60,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "ModelTest": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-KJNodes",
+      "deployRef": "https://github.com/kijai/ComfyUI-KJNodes@377ed49f540da1c5e419cd2fc494ccc79543d3c4",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AddLabel", "AddNoiseToTrackPath"],
+      "expectedNodeCount": 227,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "CameraPoseVisualizer": ["ReadsArbitraryFile"],
+        "EndRecordCUDAMemoryHistory": ["Stateful", "WritesToDisk"],
+        "GGUFLoaderKJ": ["DisabledOnCloud"],
+        "LoadImagesFromFolderKJ": ["ReadsArbitraryFile"],
+        "LoadVideosFromFolder": ["ReadsArbitraryFile"],
+        "ModelSaveKJ": ["WritesToDisk"],
+        "PlaySoundKJ": ["ReadsArbitraryFile"],
+        "SaveImageKJ": ["WritesToDisk"],
+        "SaveStringKJ": ["WritesToDisk"],
+        "ScreencapStream": ["DisabledOnCloud"],
+        "StartRecordCUDAMemoryHistory": ["Stateful"],
+        "VisualizeCUDAMemoryHistory": ["WritesToDisk"],
+        "WebcamCaptureCV2": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-KwaiKolorsWrapper",
+      "deployRef": "https://github.com/kijai/ComfyUI-KwaiKolorsWrapper@6fc1cd9d20bb7537facf180e5494b486b9710e24",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "DownloadAndLoadChatGLM3",
+        "DownloadAndLoadKolorsModel"
+      ],
+      "expectedNodeCount": 5,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-LTXVideo",
+      "deployRef": "https://github.com/Lightricks/ComfyUI-LTXVideo@229437c6b65796d6a7a63ae34be2bd5ba31fa543",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["APGGuider", "AddLatentGuide"],
+      "expectedNodeCount": 73,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "GemmaAPITextEncode": ["NetworkAccess", "RequiresExternalAPI"],
+        "LTXVHDRDecodePostprocess": ["WritesToDisk"],
+        "LTXVSaveConditioning": ["WritesToDisk"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-Licon-MSR",
+      "deployRef": "https://github.com/liconstudio/ComfyUI-Licon-MSR@cc4f26f4eb60fc6f8abd5c4d58facdb0eb6d5470",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["LiconMSR"],
+      "expectedNodeCount": 1,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-LivePortraitKJ",
+      "deployRef": "https://github.com/kijai/ComfyUI-LivePortraitKJ@4d9dc6205b79e50f81c0e6d245a2e0e5e53d5ecd",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "DownloadAndLoadLivePortraitModels",
+        "KeypointsToImage"
+      ],
+      "expectedNodeCount": 9,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-Lotus",
+      "deployRef": "https://github.com/kijai/ComfyUI-Lotus@dcd5bea7a418717a6e0c27a5f607058cb9c24a5e",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["LoadLotusModel", "LotusSampler"],
+      "expectedNodeCount": 2,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-MelBandRoFormer",
+      "deployRef": "ComfyUI-MelBandRoFormer@1.0.2",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["MelBandRoFormerModelLoader", "MelBandRoFormerSampler"],
+      "expectedNodeCount": 2,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-MimicMotionWrapper",
+      "deployRef": "https://github.com/kijai/ComfyUI-MimicMotionWrapper@89d0ed551dbb1e0a14e89a01d42a39e9ed755d9c",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "DiffusersScheduler",
+        "DownloadAndLoadMimicMotionModel"
+      ],
+      "expectedNodeCount": 5,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-NormalCrafterWrapper",
+      "deployRef": "https://github.com/AIWarper/ComfyUI-NormalCrafterWrapper@10408381e60f42775a977966e111f1353d86e970",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["DetailTransfer", "NormalCrafterNode"],
+      "expectedNodeCount": 2,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-Prompt-Combinator",
+      "deployRef": "https://github.com/lquesada/ComfyUI-Prompt-Combinator@3576ace3f2776918c1046b6674fbe345a46dba2f",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["PromptCombinator", "PromptCombinatorMerger"],
+      "expectedNodeCount": 3,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "PromptCombinatorExportGallery": ["WritesToDisk"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-Qwen-TTS",
+      "deployRef": "https://github.com/flybirdxx/ComfyUI-Qwen-TTS@5e97d3cce967c842aeee02854725c371c8a101d7",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "FB_Qwen3TTSCustomVoice",
+        "FB_Qwen3TTSDialogueInference"
+      ],
+      "expectedNodeCount": 6,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "FB_Qwen3TTSLoadSpeaker": ["DisabledOnCloud", "ReadsArbitraryFile"],
+        "FB_Qwen3TTSSaveVoice": ["DisabledOnCloud", "WritesToDisk"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-QwenVL",
+      "deployRef": "ComfyUI-QwenVL@2.1.1",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AILab_QwenVL", "AILab_QwenVL_Advanced"],
+      "expectedNodeCount": 3,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "AILab_QwenVL_GGUF": ["DisabledOnCloud"],
+        "AILab_QwenVL_GGUF_Advanced": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-SCAIL-Pose",
+      "deployRef": "ComfyUI-SCAIL-Pose@1.0.1",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "ConvertOpenPoseKeypointsToDWPose",
+        "PoseDetectionVitPoseToDWPose"
+      ],
+      "expectedNodeCount": 3,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-SeedVR2_VideoUpscaler",
+      "deployRef": "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler@4490bd1f482e026674543386bb2a4d176da245b9",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["SeedVR2LoadDiTModel", "SeedVR2LoadVAEModel"],
+      "expectedNodeCount": 4,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-TiledDiffusion",
+      "deployRef": "https://github.com/shiimizu/ComfyUI-TiledDiffusion@a155b1bac39147381aeaa52b9be42e545626a44f",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["SpotDiffusionParams_TiledDiffusion", "TiledDiffusion"],
+      "expectedNodeCount": 4,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-UltraShape1",
+      "deployRef": "https://github.com/jtydhr88/ComfyUI-UltraShape1@2f8ea9b59bda7528ea2884b0868e205ece342e9e",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["UltraShapeConvertToGLB", "UltraShapeLoadCoarseMesh"],
+      "expectedNodeCount": 4,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "UltraShapeMeshSelector": ["DisabledOnCloud"],
+        "UltraShapeSaveGLB": ["DisabledOnCloud", "WritesToDisk"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-Upscaler-Tensorrt",
+      "deployRef": "https://github.com/yuvraj108c/ComfyUI-Upscaler-Tensorrt@dfc266538368e4c9a03a296917716a214517ccb5",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["LoadUpscalerTensorrtModel", "UpscalerTensorrt"],
+      "expectedNodeCount": 2,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-WanAnimatePreprocess",
+      "deployRef": "ComfyUI-WanAnimatePreprocess@1.0.1",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["DrawViTPose", "OnnxDetectionModelLoader"],
+      "expectedNodeCount": 4,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-WanVideoWrapper",
+      "deployRef": "ComfyUI-WanVideoWrapper@1.4.7",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "CreateCFGScheduleFloatList",
+        "CreateScheduleFloatList"
+      ],
+      "expectedNodeCount": 141,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "DownloadAndLoadNLFModel": ["DisabledOnCloud", "NetworkAccess"],
+        "WanVideoBlockSwap": ["DisabledOnCloud"],
+        "WanVideoLoraSelectByName": ["DisabledOnCloud"],
+        "WanVideoSetBlockSwap": ["DisabledOnCloud"],
+        "WanVideoVRAMManagement": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI-test-framework",
+      "deployRef": "https://github.com/Comfy-Org/ComfyUI-test-framework@80caae462d3293a2d40c2938de33a5f50eea8333",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AssertContainsColor", "AssertEqual"],
+      "expectedNodeCount": 9,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI_AudioTools",
+      "deployRef": "https://github.com/lum3on/ComfyUI_AudioTools@c816d0a1629c05a0f463ddb77ea96ada69875d32",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AudioAmplify", "AudioBPMDetector"],
+      "expectedNodeCount": 29,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "AudioGetFromList": ["DisabledOnCloud"],
+        "AudioLoadBatch": ["ReadsArbitraryFile"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI_Fill-ChatterBox",
+      "deployRef": "https://github.com/filliptm/ComfyUI_Fill-ChatterBox@2f72aca98e4ceda18caceaef91ddf5683f5f093e",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "FL_ChatterboxDialogTTS",
+        "FL_ChatterboxMultilingualTTS"
+      ],
+      "expectedNodeCount": 5,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI_Fill-Nodes",
+      "deployRef": "https://github.com/filliptm/ComfyUI_Fill-Nodes@12c5bcded72a7f2c31c3df37516987c5d3691e28",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["FL_AnimatedShapePatterns", "FL_AnimeLineExtractor"],
+      "expectedNodeCount": 110,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "FL_API_Base64_ImageLoader": ["DisabledOnCloud"],
+        "FL_API_ImageSaver": ["WritesToDisk"],
+        "FL_BulkPDFLoader": ["ReadsArbitraryFile"],
+        "FL_CaptionSaver_V2": ["ReadsArbitraryFile", "WritesToDisk"],
+        "FL_CaptionToCSV": ["ReadsArbitraryFile"],
+        "FL_ClipScanner": ["Stateful"],
+        "FL_CodeNode": ["DisabledOnCloud", "ReadsArbitraryFile"],
+        "FL_Dalle3": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_DirectoryCrawl": ["ReadsArbitraryFile"],
+        "FL_FILM": ["NetworkAccess", "Stateful", "WritesToDisk"],
+        "FL_Fal_Gemini_ImageEdit": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_Fal_Kling_AIAvatar": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_Fal_Kontext": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_Fal_Pixverse": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_Fal_Pixverse_LipSync": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_Fal_Pixverse_Transition": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_Fal_SeedVR_Upscale": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_Fal_Seedance_i2v": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_Fal_Seedream_Edit": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_Fal_Sora": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_GPT_Image1": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_GPT_Image1_ADV": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_GPT_Text": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_GPT_Vision": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_GeminiImageEditor": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_GeminiImageGenADV": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_GeminiTextAPI": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_GeminiVideoCaptioner": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_GoogleCloudStorage": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_GoogleDriveDownloader": ["DisabledOnCloud", "NetworkAccess"],
+        "FL_GoogleDriveImageDownloader": ["DisabledOnCloud", "NetworkAccess"],
+        "FL_HFDatasetDownloader": ["DisabledOnCloud", "NetworkAccess"],
+        "FL_HFHubModelUploader": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_HF_Character": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_HF_UploaderAbsolute": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_Hedra_API": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_ImageCaptionLayout": ["ReadsArbitraryFile"],
+        "FL_ImageCaptionLayoutPDF": ["ReadsArbitraryFile", "WritesToDisk"],
+        "FL_ImageCaptionSaver": ["WritesToDisk"],
+        "FL_ImagePicker": ["HasCustomEndpoints", "Stateful"],
+        "FL_ImageRandomizer": ["ReadsArbitraryFile"],
+        "FL_InfiniteZoom": ["DisabledOnCloud"],
+        "FL_JS": ["DisabledOnCloud"],
+        "FL_KartelJobInput": ["DisabledOnCloud", "NetworkAccess"],
+        "FL_KartelJobOutput": ["DisabledOnCloud", "NetworkAccess"],
+        "FL_LoadCSV": ["ReadsArbitraryFile"],
+        "FL_LoadImage": ["HasCustomEndpoints", "ReadsArbitraryFile"],
+        "FL_MirrorAndAppendCaptions": ["ReadsArbitraryFile", "WritesToDisk"],
+        "FL_ModelInspector": ["ReadsArbitraryFile"],
+        "FL_NFTGenerator": ["ReadsArbitraryFile"],
+        "FL_OllamaCaptioner": ["DisabledOnCloud", "NetworkAccess"],
+        "FL_PDFLoader": ["ReadsArbitraryFile"],
+        "FL_PDFSaver": ["WritesToDisk"],
+        "FL_PaperDrawn": ["DisabledOnCloud"],
+        "FL_PixVerseAPI": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_ProResVideo": [
+          "DisabledOnCloud",
+          "ReadsArbitraryFile",
+          "WritesToDisk"
+        ],
+        "FL_RIFE": ["NetworkAccess", "Stateful", "WritesToDisk"],
+        "FL_RunwayAct2": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_RunwayImageAPI": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_SaveAndDisplayImage": ["WritesToDisk"],
+        "FL_SaveCSV": ["WritesToDisk"],
+        "FL_SaveImages": ["ReadsArbitraryFile", "WritesToDisk"],
+        "FL_SaveRGBAAnimatedWebP": ["WritesToDisk"],
+        "FL_SaveWebM": ["ReadsArbitraryFile", "WritesToDisk"],
+        "FL_SaveWebPImage(SaveImage)": ["WritesToDisk"],
+        "FL_SendToDiscordWebhook": ["DisabledOnCloud", "NetworkAccess"],
+        "FL_Shadertoy": ["DisabledOnCloud"],
+        "FL_SimpleGPTVision": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_SystemCheck": ["DisabledOnCloud", "HasCustomEndpoints"],
+        "FL_TimeLine": ["HasCustomEndpoints"],
+        "FL_Veo3VideoGen": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_VertexGemini25FlashImage": [
+          "DisabledOnCloud",
+          "NetworkAccess",
+          "RequiresExternalAPI"
+        ],
+        "FL_VideoCaptionSaver": ["CreatesLargeOutputs", "WritesToDisk"],
+        "FL_VideoCut": ["DisabledOnCloud", "WritesToDisk"],
+        "FL_WF_Agent": ["DisabledOnCloud"],
+        "FL_WordFrequencyGraph": ["ReadsArbitraryFile"],
+        "FL_ZipDirectory": ["ReadsArbitraryFile"],
+        "FL_ZipSave": ["ReadsArbitraryFile", "WritesToDisk"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI_LayerStyle_Advance",
+      "deployRef": "ComfyUI_LayerStyle_Advance@2.0.37",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["LayerMask: BBoxJoin", "LayerMask: BenUltra"],
+      "expectedNodeCount": 46,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "LayerFilter: LightLeak": ["DisabledOnCloud"],
+        "LayerMask: Florence2Ultra": ["DisabledOnCloud"],
+        "LayerMask: HumanPartsUltra": ["DisabledOnCloud", "NetworkAccess"],
+        "LayerMask: LoadFlorence2Model": ["DisabledOnCloud"],
+        "LayerMask: ObjectDetectorGemini": ["RequiresExternalAPI"],
+        "LayerMask: ObjectDetectorGeminiV2": ["RequiresExternalAPI"],
+        "LayerUtility: AddBlindWaterMark": ["DisabledOnCloud"],
+        "LayerUtility: DeepSeekAPI": ["RequiresExternalAPI"],
+        "LayerUtility: DeepSeekAPIV2": ["RequiresExternalAPI"],
+        "LayerUtility: Florence2Image2Prompt": ["DisabledOnCloud"],
+        "LayerUtility: Gemini": ["RequiresExternalAPI"],
+        "LayerUtility: GeminiImageEdit": ["RequiresExternalAPI"],
+        "LayerUtility: GeminiV2": ["RequiresExternalAPI"],
+        "LayerUtility: ImageRewardFilter": ["DisabledOnCloud"],
+        "LayerUtility: JimengI2IAPI": ["RequiresExternalAPI"],
+        "LayerUtility: JoyCaption2": ["DisabledOnCloud"],
+        "LayerUtility: JoyCaption2ExtraOptions": ["DisabledOnCloud"],
+        "LayerUtility: JoyCaption2Split": ["DisabledOnCloud"],
+        "LayerUtility: JoyCaptionBeta1": ["DisabledOnCloud"],
+        "LayerUtility: JoyCaptionBeta1ExtraOptions": ["DisabledOnCloud"],
+        "LayerUtility: LlamaVision": ["DisabledOnCloud"],
+        "LayerUtility: LoadJoyCaption2Model": ["DisabledOnCloud"],
+        "LayerUtility: LoadJoyCaptionBeta1Model": ["DisabledOnCloud"],
+        "LayerUtility: LoadPSD": ["ReadsArbitraryFile"],
+        "LayerUtility: PhiPrompt": ["DisabledOnCloud"],
+        "LayerUtility: PromptEmbellish": ["RequiresExternalAPI"],
+        "LayerUtility: PromptTagger": ["RequiresExternalAPI"],
+        "LayerUtility: SaveImagePlus": ["WritesToDisk"],
+        "LayerUtility: SaveImagePlusV2": ["WritesToDisk"],
+        "LayerUtility: ShowBlindWaterMark": ["DisabledOnCloud"],
+        "LayerUtility: ZhipuGLM4": ["RequiresExternalAPI"],
+        "LayerUtility: ZhipuGLM4V": ["RequiresExternalAPI"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ComfyUI_SchemaNodes",
+      "deployRef": "https://github.com/Liquid-XO/ComfyUI_SchemaNodes@8e5676d89f046e8c28cbe7f2548f4abdaf86ca35",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["SchemaAudioParameter", "SchemaBooleanParameter"],
+      "expectedNodeCount": 8,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "Comfyui-SecNodes",
+      "deployRef": "https://github.com/9nate-drake/Comfyui-SecNodes@af39e6260bc414873fbb2dc8df355904d1609754",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["CoordinatePlotter", "SeCModelLoader"],
+      "expectedNodeCount": 3,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "ControlAltAI-Nodes",
+      "deployRef": "https://github.com/gseth/ControlAltAI-Nodes@721492b66c9cede8ae23ae10615462ad80cfd061",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["BooleanBasic", "BooleanReverse"],
+      "expectedNodeCount": 21,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "FluxAttentionControl": ["DisabledOnCloud", "Stateful"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "CustomNodeComfyMath",
+      "deployRef": "https://github.com/Comfy-Org/CustomNodeComfyMath@c01177221c31b8e5fbc062778fc8254aeb541638",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["CM_BoolBinaryOperation", "CM_BoolToInt"],
+      "expectedNodeCount": 53,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "OneButtonPrompt",
+      "deployRef": "https://github.com/AIrjen/OneButtonPrompt@2129c5dfe6a73d4a0cf971c3af6c3cddbd0e97f8",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AutoNegativePrompt", "CreatePromptVariant"],
+      "expectedNodeCount": 7,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "SavePromptToFile": ["WritesToDisk"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "RES4LYF",
+      "deployRef": "https://github.com/ClownsharkBatwing/RES4LYF@119679d8d8d26e6db52757e705488abb6399d7d4",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AdvancedNoise", "BongSampler"],
+      "expectedNodeCount": 285,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "Base64ToConditioning": ["DisabledOnCloud"],
+        "ClownsharKSamplerOptions": ["DisabledOnCloud"],
+        "ConditioningToBase64": ["DisabledOnCloud"],
+        "SamplerOptions_TimestepScaling": ["DisabledOnCloud"],
+        "Sigmas Math1": ["DisabledOnCloud"],
+        "Sigmas Math3": ["DisabledOnCloud"],
+        "TextLoadFile": ["ReadsArbitraryFile"],
+        "UNetSave": ["CreatesLargeOutputs", "WritesToDisk"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "Skimmed_CFG",
+      "deployRef": "https://github.com/Extraltodeus/Skimmed_CFG@b2cf6e99303f9f310054b888fa23c37da9a4d224",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "CFG_Skimming_Single_Scale_Pre_CFG",
+        "ConstantSkimPreCFG"
+      ],
+      "expectedNodeCount": 7,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "WhatDreamsCost-ComfyUI",
+      "deployRef": "https://github.com/WhatDreamsCost/WhatDreamsCost-ComfyUI@faa372880a4410af86f9a856f8617876cd55d17e",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["LTXDirector", "LTXDirectorGuide"],
+      "expectedNodeCount": 6,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "LoadVideoUI": ["HasCustomEndpoints", "ReadsArbitraryFile"],
+        "MultiImageLoader": ["ReadsArbitraryFile"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "audio-separation-nodes-comfyui",
+      "deployRef": "audio-separation-nodes-comfyui@1.5.0",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AudioCombine", "AudioCrop"],
+      "expectedNodeCount": 7,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "basic_data_handling",
+      "deployRef": "basic_data_handling@1.4.0",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "Basic data handling: Boolean And",
+        "Basic data handling: Boolean Nand"
+      ],
+      "expectedNodeCount": 279,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "Basic data handling: PathAbspath": ["PathParsing"],
+        "Basic data handling: PathBasename": ["PathParsing"],
+        "Basic data handling: PathCommonPrefix": ["PathParsing"],
+        "Basic data handling: PathDirname": ["PathParsing"],
+        "Basic data handling: PathExists": ["ReadsArbitraryFile"],
+        "Basic data handling: PathExpandVars": ["PathParsing"],
+        "Basic data handling: PathGetCwd": ["PathParsing"],
+        "Basic data handling: PathGetExtension": ["PathParsing"],
+        "Basic data handling: PathGetSize": ["ReadsArbitraryFile"],
+        "Basic data handling: PathGlob": ["ReadsArbitraryFile"],
+        "Basic data handling: PathInputDir": ["PathParsing"],
+        "Basic data handling: PathIsAbsolute": ["PathParsing"],
+        "Basic data handling: PathIsDir": ["ReadsArbitraryFile"],
+        "Basic data handling: PathIsFile": ["ReadsArbitraryFile"],
+        "Basic data handling: PathJoin": ["PathParsing"],
+        "Basic data handling: PathListDir": ["ReadsArbitraryFile"],
+        "Basic data handling: PathLoadImageRGB": ["ReadsArbitraryFile"],
+        "Basic data handling: PathLoadImageRGBA": ["ReadsArbitraryFile"],
+        "Basic data handling: PathLoadMaskFromAlpha": ["ReadsArbitraryFile"],
+        "Basic data handling: PathLoadMaskFromGreyscale": [
+          "ReadsArbitraryFile"
+        ],
+        "Basic data handling: PathLoadStringFile": ["ReadsArbitraryFile"],
+        "Basic data handling: PathNormalize": ["PathParsing"],
+        "Basic data handling: PathOutputDir": ["PathParsing"],
+        "Basic data handling: PathRelative": ["PathParsing"],
+        "Basic data handling: PathSaveImageRGB": ["WritesToDisk"],
+        "Basic data handling: PathSaveImageRGBA": ["WritesToDisk"],
+        "Basic data handling: PathSaveStringFile": ["WritesToDisk"],
+        "Basic data handling: PathSetExtension": ["PathParsing"],
+        "Basic data handling: PathSplit": ["PathParsing"],
+        "Basic data handling: PathSplitExt": ["PathParsing"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "bfsnodes",
+      "deployRef": "bfsnodes@1.0.0",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["ReservedRegionFrameComposer"],
+      "expectedNodeCount": 1,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-PlyPreview",
+      "deployRef": "comfyui-PlyPreview@1.1.0",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "PlyPreviewPreviewGaussianEnhance",
+        "PlyPreviewProcessGaussianPLYEnhance"
+      ],
+      "expectedNodeCount": 2,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "PlyPreviewLoadGaussianPLYEnhance": ["ReadsArbitraryFile"],
+        "PlyPreviewLoadGaussianPLYPathEnhance": ["ReadsArbitraryFile"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-advanced-controlnet",
+      "deployRef": "comfyui-advanced-controlnet@1.5.6",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "ACN_AdvancedControlNetApply",
+        "ACN_AdvancedControlNetApplySingle"
+      ],
+      "expectedNodeCount": 42,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "LoadImagesFromDirectory": ["ReadsArbitraryFile"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-animatediff-evolved",
+      "deployRef": "comfyui-animatediff-evolved@1.5.6",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["ADE_ADBlockCombo", "ADE_ADBlockIndiv"],
+      "expectedNodeCount": 144,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "ADE_LoadCameraPosesFromPath": ["ReadsArbitraryFile"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-cogvideoxwrapper",
+      "deployRef": "comfyui-cogvideoxwrapper@1.5.1",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["CogVideoContextOptions", "CogVideoControlNet"],
+      "expectedNodeCount": 24,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-enricos-nodes",
+      "deployRef": "comfyui-enricos-nodes@3.1.6",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["Compositor3", "CompositorColorPicker"],
+      "expectedNodeCount": 7,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-florence2",
+      "deployRef": "comfyui-florence2@1.0.7",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "DownloadAndLoadFlorence2Lora",
+        "DownloadAndLoadFlorence2Model"
+      ],
+      "expectedNodeCount": 3,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "Florence2ModelLoader": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-frame-interpolation",
+      "deployRef": "comfyui-frame-interpolation@1.0.8",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["CAIN VFI", "FILM VFI"],
+      "expectedNodeCount": 9,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "AMT VFI": ["NetworkAccess"],
+        "GMFSS Fortuna VFI": ["NetworkAccess"],
+        "M2M VFI": ["NetworkAccess"],
+        "STMFNet VFI": ["NetworkAccess"],
+        "Sepconv VFI": ["NetworkAccess"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-ic-light-native",
+      "deployRef": "comfyui-ic-light-native@1.0.1",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["ICLightApplyMaskGrey", "ICLightAppply"],
+      "expectedNodeCount": 3,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-impact-pack",
+      "deployRef": "comfyui-impact-pack@8.28.2",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AddMask", "AnyPipeToBasic"],
+      "expectedNodeCount": 185,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "ImageReceiver": ["DisabledOnCloud"],
+        "ImageSender": ["DisabledOnCloud"],
+        "ImpactQueueTrigger": ["DisabledOnCloud"],
+        "ImpactQueueTriggerCountdown": ["DisabledOnCloud"],
+        "ImpactSEGSPicker": ["DisabledOnCloud"],
+        "ImpactSetWidgetValue": ["DisabledOnCloud"],
+        "ImpactValueReceiver": ["DisabledOnCloud"],
+        "LatentReceiver": ["DisabledOnCloud"],
+        "MaskRectArea": ["DisabledOnCloud"],
+        "MaskRectAreaAdvanced": ["DisabledOnCloud"],
+        "PreviewBridge": ["DisabledOnCloud"],
+        "PreviewBridgeLatent": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-impact-subpack",
+      "deployRef": "comfyui-impact-subpack@1.3.5",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["UltralyticsDetectorProvider"],
+      "expectedNodeCount": 1,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-inpaint-cropandstitch",
+      "deployRef": "comfyui-inpaint-cropandstitch@2.1.8",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["InpaintCrop", "InpaintCropImproved"],
+      "expectedNodeCount": 6,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-inpaint-nodes",
+      "deployRef": "comfyui-inpaint-nodes@1.4.0",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["INPAINT_ApplyFooocusInpaint", "INPAINT_ColorMatch"],
+      "expectedNodeCount": 12,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-itools",
+      "deployRef": "comfyui-itools@0.6.8",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["iToolsAddOverlay", "iToolsCheckerBoard"],
+      "expectedNodeCount": 14,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "iToolsCropImage": ["HasCustomEndpoints"],
+        "iToolsLoadImages": ["ReadsArbitraryFile"],
+        "iToolsLoadRandomImage": ["ReadsArbitraryFile"],
+        "iToolsPaintNode": ["DisabledOnCloud", "HasCustomEndpoints"],
+        "iToolsPromptLoader": ["ReadsArbitraryFile"],
+        "iToolsPromptSaver": ["WritesToDisk"],
+        "iToolsPromptStyler": ["DisabledOnCloud", "HasCustomEndpoints"],
+        "iToolsPromptStylerExtra": ["DisabledOnCloud", "HasCustomEndpoints"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-layerdiffuse",
+      "deployRef": "comfyui-layerdiffuse@1.0.4",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["LayeredDiffusionApply", "LayeredDiffusionCondApply"],
+      "expectedNodeCount": 6,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "LayeredDiffusionCondJointApply": ["DisabledOnCloud"],
+        "LayeredDiffusionJointApply": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-logic",
+      "deployRef": "comfyui-logic@1.0.0",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["Bool", "Compare"],
+      "expectedNodeCount": 6,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "DebugPrint": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-qwenmultiangle",
+      "deployRef": "comfyui-qwenmultiangle@0.6.1",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["QwenMultiangleCameraNode"],
+      "expectedNodeCount": 1,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-rmbg",
+      "deployRef": "comfyui-rmbg@3.0.0",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AILab_ColorInput", "AILab_ColorToMask"],
+      "expectedNodeCount": 35,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "AILab_LoadImage": ["ReadsArbitraryFile"],
+        "AILab_LoadImageAdvanced": ["ReadsArbitraryFile"],
+        "AILab_LoadImageBatch": ["ReadsArbitraryFile"],
+        "AILab_LoadImageSimple": ["ReadsArbitraryFile"],
+        "AILab_YoloV8": ["DisabledOnCloud"],
+        "AILab_YoloV8Adv": ["DisabledOnCloud"],
+        "Segment": ["DisabledOnCloud"],
+        "SegmentV2": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-sam3",
+      "deployRef": "comfyui-sam3@0.1.2",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["LoadSAM3Model", "SAM3BBoxCollector"],
+      "expectedNodeCount": 14,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-segment-anything-2",
+      "deployRef": "comfyui-segment-anything-2@1.0.2",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["DownloadAndLoadSAM2Model", "Florence2toCoordinates"],
+      "expectedNodeCount": 6,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-sharp",
+      "deployRef": "comfyui-sharp@0.0.3",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["LoadImageWithExif", "LoadSharpModel"],
+      "expectedNodeCount": 3,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-string-converter",
+      "deployRef": "https://github.com/glowcone/comfyui-string-converter@0e1e78f877e4d5fc2b46ace8fa21a0ef70e92f11",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["StringToFloat", "StringToInt"],
+      "expectedNodeCount": 2,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-supir",
+      "deployRef": "comfyui-supir@1.0.4",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["SUPIR_Upscale", "SUPIR_conditioner"],
+      "expectedNodeCount": 10,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-systms-facecomposite",
+      "deployRef": "comfyui-systms-facecomposite@1.0.0",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["FaceComposite"],
+      "expectedNodeCount": 1,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-various",
+      "deployRef": "https://github.com/jamesWalker55/comfyui-various@5bd85aaf7616878471469c4ec7e11bbd0cef3bf2",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["JWAudioBlend", "JWDatetimeString"],
+      "expectedNodeCount": 55,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "JWAudioSaveToPath": ["WritesToDisk"],
+        "JWImageLoadRGB": ["ReadsArbitraryFile"],
+        "JWImageLoadRGBA": ["ReadsArbitraryFile"],
+        "JWImageLoadRGBA From Clipboard": ["DisabledOnCloud"],
+        "JWImageLoadRGBFromClipboard": ["DisabledOnCloud"],
+        "JWImageLoadRGBIfExists": ["ReadsArbitraryFile"],
+        "JWImageSaveToPath": ["WritesToDisk"],
+        "JWLoadAudio": ["ReadsArbitraryFile"],
+        "JWLoadImageSequence": ["ReadsArbitraryFile"],
+        "JWLoadImageSequenceWithStopIndex": ["ReadsArbitraryFile"],
+        "JWLoadImagesFromString": ["ReadsArbitraryFile"],
+        "JWSaveImageSequence": ["WritesToDisk"],
+        "RAFTLoadFlowFromEXRChannels": ["ReadsArbitraryFile"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui-videohelpersuite",
+      "deployRef": "comfyui-videohelpersuite@1.7.9",
+      "tiers": ["load", "connectivity", "run"],
+      "workflow": "assets/customNodes/vhs_video_pipeline_cloud_run.json",
+      "expectedNodes": ["VHS_AudioToVHSAudio", "VHS_DuplicateImages"],
+      "expectedNodeCount": 32,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "VHS_BatchManager": ["DisabledOnCloud"],
+        "VHS_LoadAudio": ["ReadsArbitraryFile"],
+        "VHS_LoadImagePath": ["ReadsArbitraryFile"],
+        "VHS_LoadImages": ["ReadsArbitraryFile"],
+        "VHS_LoadImagesPath": ["ReadsArbitraryFile"],
+        "VHS_LoadVideoFFmpegPath": ["ReadsArbitraryFile"],
+        "VHS_LoadVideoPath": ["ReadsArbitraryFile"],
+        "VHS_SelectFilename": ["ReadsArbitraryFile"]
+      },
+      "timeoutMs": 90000
+    },
+    {
+      "pack": "comfyui-workflow-prettier",
+      "deployRef": "comfyui-workflow-prettier@1.0.5",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["WorkflowPrettifier"],
+      "expectedNodeCount": 1,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui_controlnet_aux",
+      "deployRef": "comfyui_controlnet_aux@1.1.5",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AIO_Preprocessor", "AnimalPosePreprocessor"],
+      "expectedNodeCount": 64,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui_essentials",
+      "deployRef": "comfyui_essentials@1.1.0",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["ApplyCLIPSeg+", "BatchCount+"],
+      "expectedNodeCount": 62,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui_face_parsing",
+      "deployRef": "comfyui_face_parsing@1.0.5",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": [
+        "BBoxDecompose(FaceParsing)",
+        "BBoxDetect(FaceParsing)"
+      ],
+      "expectedNodeCount": 27,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui_ipadapter_plus",
+      "deployRef": "comfyui_ipadapter_plus@2.0.0",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["IPAAdapterFaceIDBatch", "IPAdapter"],
+      "expectedNodeCount": 29,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "IPAdapterSaveEmbeds": ["DisabledOnCloud", "WritesToDisk"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui_layerstyle",
+      "deployRef": "comfyui_layerstyle@2.0.32",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["LayerColor: AutoAdjust", "LayerColor: AutoAdjustV2"],
+      "expectedNodeCount": 156,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "LayerFilter: LightLeak": ["DisabledOnCloud"],
+        "LayerMask: RemBgUltra": ["DisabledOnCloud", "NetworkAccess"],
+        "LayerMask: RmBgUltra V2": ["DisabledOnCloud", "NetworkAccess"],
+        "LayerUtility: ImageTaggerSave": ["WritesToDisk"],
+        "LayerUtility: ImageTaggerSaveV2": ["WritesToDisk"],
+        "LayerUtility: LoadImagesFromPath": ["ReadsArbitraryFile"],
+        "LayerUtility: PurgeVRAM": ["DisabledOnCloud", "Stateful"],
+        "LayerUtility: PurgeVRAM V2": ["DisabledOnCloud", "Stateful"],
+        "LayerUtility: QueueStop": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui_nvidia_rtx_nodes",
+      "deployRef": "comfyui_nvidia_rtx_nodes@0.1.2",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["RTXVideoSuperResolution"],
+      "expectedNodeCount": 1,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui_steudio",
+      "deployRef": "comfyui_steudio@2.0.5",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["Combine Tiles", "Divide Image and Select Tile"],
+      "expectedNodeCount": 8,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "Display UI": ["DisabledOnCloud", "DuplicateOfCoreNode"],
+        "Load Images into List": ["ReadsArbitraryFile"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "comfyui_ultimatesdupscale",
+      "deployRef": "comfyui_ultimatesdupscale@1.6.2",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["UltimateSDUpscale", "UltimateSDUpscaleCustomSample"],
+      "expectedNodeCount": 3,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "feedback-sampler",
+      "deployRef": "feedback-sampler@2.0.0",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["FeedbackSampler"],
+      "expectedNodeCount": 1,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "masquerade-nodes-comfyui",
+      "deployRef": "https://github.com/BadCafeCode/masquerade-nodes-comfyui@432cb4d146a391b387a0cd25ace824328b5b61cf",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["Blur", "Change Channel Count"],
+      "expectedNodeCount": 20,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "Create QR Code": ["DisabledOnCloud"],
+        "Mask By Text": ["DisabledOnCloud", "NetworkAccess"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "nodesweet",
+      "deployRef": "nodesweet@1.0.1",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["AudioReactiveTransform", "AudioWeightsRemap"],
+      "expectedNodeCount": 6,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "radiance",
+      "deployRef": "https://github.com/fxtdstudios/radiance@f262f47ddfda01ece154bf80c22769b1e4cef795",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["ACES2OutputTransform", "ARRIWideGamut4"],
+      "expectedNodeCount": 70,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "RadianceLUTApply": ["DisabledOnCloud"],
+        "◎ RadianceDigitalCinemaRead": ["ReadsArbitraryFile"],
+        "◎ RadianceNukeBridge": ["NetworkAccess", "WritesToDisk"],
+        "◎ RadianceQCExport": ["WritesToDisk"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "sd-dynamic-thresholding",
+      "deployRef": "sd-dynamic-thresholding@1.0.1",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["DynamicThresholdingFull", "DynamicThresholdingSimple"],
+      "expectedNodeCount": 2,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "vewd",
+      "deployRef": "vewd@1.7.2",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["Vewd"],
+      "expectedNodeCount": 1,
+      "expectedExtensions": [],
+      "disabledNodes": {},
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "wanvaceadvanced",
+      "deployRef": "wanvaceadvanced@1.4.0",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["HuMoI2VPatch", "StringToFloatListRanged"],
+      "expectedNodeCount": 11,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "WanVacePhantomDual": ["DisabledOnCloud"],
+        "WanVacePhantomExperimental": ["DisabledOnCloud"]
+      },
+      "timeoutMs": 30000
+    },
+    {
+      "pack": "was-node-suite-comfyui",
+      "deployRef": "https://github.com/ltdrdata/was-node-suite-comfyui@afeee09ba44e713ec52a413ac6b105fd06b2d356",
+      "tiers": ["load", "connectivity"],
+      "workflow": "",
+      "expectedNodes": ["Blend Latents", "Boolean To Text"],
+      "expectedNodeCount": 183,
+      "expectedExtensions": [],
+      "disabledNodes": {
+        "BLIP Analyze Image": ["DisabledOnCloud"],
+        "BLIP Model Loader": ["DisabledOnCloud"],
+        "CLIPSEG2": ["DisabledOnCloud"],
+        "CLIPSeg Batch Masking": ["DisabledOnCloud"],
+        "CLIPSeg Masking": ["DisabledOnCloud"],
+        "CLIPSeg Model Loader": ["DisabledOnCloud"],
+        "Cache Node": ["DisabledOnCloud"],
+        "Checkpoint Loader": ["DisabledOnCloud", "DuplicateOfCoreNode"],
+        "Checkpoint Loader (Simple)": [
+          "DisabledOnCloud",
+          "DuplicateOfCoreNode"
+        ],
+        "Create Grid Image": ["ReadsArbitraryFile"],
+        "Create Morph Image from Path": ["ReadsArbitraryFile"],
+        "Create Video from Path": ["ReadsArbitraryFile"],
+        "Debug Number to Console": ["DisabledOnCloud"],
+        "Dictionary to Console": ["DisabledOnCloud"],
+        "Diffusers Hub Model Down-Loader": ["NetworkAccess"],
+        "Export API": ["DisabledOnCloud"],
+        "Image Bounds to Console": ["DisabledOnCloud"],
+        "Image History Loader": ["ReadsArbitraryFile"],
+        "Image Load": ["ReadsArbitraryFile"],
+        "Image Save": ["WritesToDisk"],
+        "Image Send HTTP": ["NetworkAccess"],
+        "Load Cache": ["DisabledOnCloud"],
+        "Load Image Batch": ["ReadsArbitraryFile"],
+        "Load Text File": ["ReadsArbitraryFile"],
+        "MiDaS Depth Approximation": ["DisabledOnCloud"],
+        "MiDaS Mask Image": ["DisabledOnCloud"],
+        "MiDaS Model Loader": ["DisabledOnCloud"],
+        "SAM Model Loader": ["DisabledOnCloud"],
+        "Save Text File": ["WritesToDisk"],
+        "Text File History Loader": ["ReadsArbitraryFile"],
+        "Text Load Line From File": ["ReadsArbitraryFile"],
+        "Text Random Prompt": ["DisabledOnCloud"],
+        "True Random.org Number Generator": ["NetworkAccess"],
+        "Upscale Model Loader": ["DisabledOnCloud", "DuplicateOfCoreNode"],
+        "Video Dump Frames": ["WritesToDisk"],
+        "Write to GIF": ["WritesToDisk"],
+        "Write to Video": ["WritesToDisk"]
+      },
+      "timeoutMs": 30000
+    }
+  ],
+  "unjoinedYamlPacks": ["comfyui-fl-path-animator"]
+}

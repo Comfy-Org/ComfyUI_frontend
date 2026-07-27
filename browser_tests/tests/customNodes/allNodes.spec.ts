@@ -38,6 +38,7 @@ import {
 } from '@e2e/fixtures/customNode/geometry'
 import {
   loadCloudCoreDisabledNodes,
+  loadCloudUnjoinedYamlPacks,
   loadManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
@@ -502,6 +503,28 @@ async function packNodeKeys(
 // Invariant across manifest entries: which harness nodes the target backend
 // label-disables is a property of the backend, not of any pack row.
 const disabledHarness = disabledHarnessNodes(loadCloudCoreDisabledNodes())
+
+// The generator records yaml packs it could not join to any snapshot node
+// instead of dropping them. That record is only honest if the live backend
+// still agrees, so assert it two-way like every other ledger: a pack listed
+// here that now registers nodes has coverage to gain, and the manifest must be
+// regenerated rather than left silently short.
+const unjoinedYamlPacks = loadCloudUnjoinedYamlPacks()
+if (unjoinedYamlPacks.length > 0) {
+  test.describe('cloud manifest: unjoined yaml packs @custom-nodes', () => {
+    test('still register no nodes on the live backend', async ({
+      comfyPage
+    }) => {
+      for (const pack of unjoinedYamlPacks) {
+        const { keys } = await packNodeKeys(comfyPage.page, pack)
+        expect(
+          keys,
+          `${pack} is recorded as registering no nodes, but the live backend registers ${keys.length} - it has cloud coverage to gain: regenerate the cloud manifest ('pnpm gen:cloud-manifest')`
+        ).toHaveLength(0)
+      }
+    })
+  })
+}
 
 for (const entry of loadManifest()) {
   test.describe(`all nodes: ${entry.pack} @custom-nodes`, () => {
