@@ -25,13 +25,19 @@
           </Button>
           <span class="font-bold">{{ $t('assetBrowser.jobId') }}:</span>
           <span class="text-sm">{{ folderJobId?.substring(0, 8) }}</span>
-          <button
-            class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
-            role="button"
+          <Button
+            v-tooltip.bottom="{
+              value: $t('g.copyJobId'),
+              showDelay: 300
+            }"
+            variant="muted-textonly"
+            size="icon"
+            type="button"
+            :aria-label="$t('g.copyJobId')"
             @click="copyJobId"
           >
-            <i class="icon-[lucide--copy] text-sm"></i>
-          </button>
+            <i class="icon-[lucide--copy] size-4" />
+          </Button>
         </div>
         <div>
           <span>{{ formattedExecutionTime }}</span>
