@@ -228,6 +228,7 @@ export const STATES: ViewerState[] = [
     cfg: { ...HEALTHY, balance: 'partial' },
     spec: [
       'Member tile replaces the workspace credits tile — same number as the menu (<span class="mono">useMemberCreditDisplay</span>).',
+      "Bar meters the member's own usage of their limit, with a Monthly limit / {n}% used label row. Uncapped members get no bar.",
       'No Additional credits row, no workspace inventory, no auto-reload section — hidden for members by design.',
       'Plan header (name · credits/mo · renewal) stays member-visible: metadata, not runway.'
     ]
@@ -241,8 +242,8 @@ export const STATES: ViewerState[] = [
     group: 'Plan & Credits',
     cfg: { ...HEALTHY, balance: 'low' },
     spec: [
-      'Bar hides — a limit-denominated bar would contradict the substituted number.',
-      'Inline explainer mirrors the menu popover copy exactly.',
+      'Bar hides here — and <b>only</b> here. The number belongs to the pool, so a limit-denominated bar would contradict it; at limit-reached the bar stays (full).',
+      'Inline explainer mirrors the menu popover copy exactly. No button, same as the menu.',
       '<span class="mono">Figma 5217-35986</span>'
     ]
   },
@@ -255,7 +256,9 @@ export const STATES: ViewerState[] = [
     group: 'Plan & Credits',
     cfg: { ...HEALTHY, balance: 'partial', capSpent: true },
     spec: [
-      'White zero (revised 2026-07-27); reset date in the tile label answers "when do I get more?".',
+      'White zero; bar stays <b>visible and full</b> at 100%, and the tile repeats the request button (revised 2026-07-27, Figma 5271-18878).',
+      'The bar hides when the number stops being limit-denominated (the edge state) — not when the limit is exhausted.',
+      "Button is <b>secondary, never primary</b> — asking for headroom is a quiet escape hatch, not the surface's main action.",
       "The plan header's renewal date is the wrong date for a capped member — the tile label carries the right one."
     ]
   },
