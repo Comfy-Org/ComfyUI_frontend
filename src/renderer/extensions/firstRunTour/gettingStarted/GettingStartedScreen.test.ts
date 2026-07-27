@@ -74,7 +74,10 @@ describe('GettingStartedScreen', () => {
     mocks.loadCatalog.mockResolvedValue(undefined)
   })
 
-  afterEach(cleanup)
+  afterEach(() => {
+    cleanup()
+    document.body.replaceChildren()
+  })
 
   it('loads the chosen template and dismisses', async () => {
     await renderScreen()
