@@ -112,6 +112,7 @@
           <MediaTitle :file-name="fileName" />
           <!-- Metadata -->
           <div class="flex gap-1.5 text-xs text-muted-foreground">
+            <span v-if="fileExtension">{{ fileExtension }}</span>
             <span v-if="formattedDuration">{{ formattedDuration }}</span>
             <span v-if="metaInfo">{{ metaInfo }}</span>
           </div>
@@ -140,6 +141,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -191,6 +193,7 @@ const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
   outputCount?: number
 }>()
 
+const { t } = useI18n()
 const assetsStore = useAssetsStore()
 
 // Get deletion state from store
@@ -236,6 +239,14 @@ const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
 // Get filename without extension
 const fileName = computed(() => {
   return getFilenameDetails(asset ? getAssetDisplayName(asset) : '').filename
+})
+
+const fileExtension = computed(() => {
+  if (!asset) return ''
+  const suffix = getFilenameDetails(getAssetDisplayName(asset)).suffix
+  return suffix
+    ? t('mediaAsset.fileExtension', { ext: suffix.toUpperCase() })
+    : ''
 })
 
 // Adapt AssetItem to legacy AssetMeta format for existing components
