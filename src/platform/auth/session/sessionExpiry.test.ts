@@ -76,7 +76,7 @@ describe('endExpiredSession', () => {
     expect(isVoluntarySignOutInProgress()).toBe(false)
   })
 
-  it('re-attempts the navigation, and keeps traffic stopped, when the browser refuses to leave', async () => {
+  it('keeps offering the way out, and keeps traffic stopped, when the browser refuses to leave', async () => {
     vi.useFakeTimers()
     try {
       const { endExpiredSession, isSessionTerminated } =
@@ -86,11 +86,14 @@ describe('endExpiredSession', () => {
       expect(mockLocation.href).toBe('/cloud/login')
 
       // A successful navigation would have destroyed the page, so a firing
-      // timer means the user cancelled the unload prompt.
-      mockLocation.href = ''
-      await vi.advanceTimersByTimeAsync(10_001)
+      // timer means the user cancelled the unload prompt. Cancelling twice
+      // must not leave the tab silently dead.
+      for (const _ of [1, 2, 3]) {
+        mockLocation.href = ''
+        await vi.advanceTimersByTimeAsync(10_001)
+        expect(mockLocation.href).toBe('/cloud/login')
+      }
 
-      expect(mockLocation.href).toBe('/cloud/login')
       expect(isSessionTerminated()).toBe(true)
     } finally {
       vi.useRealTimers()

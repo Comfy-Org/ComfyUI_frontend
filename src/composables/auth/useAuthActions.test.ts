@@ -12,7 +12,8 @@ const mockAuthStore = vi.hoisted(() => ({
   loginWithGoogle: vi.fn().mockResolvedValue(undefined),
   loginWithGithub: vi.fn().mockResolvedValue(undefined),
   register: vi.fn().mockResolvedValue(undefined),
-  logout: vi.fn().mockResolvedValue(undefined)
+  logout: vi.fn().mockResolvedValue(undefined),
+  updatePassword: vi.fn().mockResolvedValue(undefined)
 }))
 
 const mockToastStore = vi.hoisted(() => ({
@@ -28,7 +29,8 @@ const mockWorkflowService = vi.hoisted(() => ({
 }))
 
 const mockDialogService = vi.hoisted(() => ({
-  confirm: vi.fn()
+  confirm: vi.fn(),
+  showSignInDialog: vi.fn()
 }))
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
@@ -95,12 +97,26 @@ vi.mock('@/composables/useErrorHandling', () => ({
     wrapWithErrorHandlingAsync:
       <TArgs extends unknown[], TReturn>(
         action: (...args: TArgs) => Promise<TReturn> | TReturn,
-        errorHandler?: (error: unknown) => void
+        errorHandler?: (error: unknown) => void,
+        _finally?: unknown,
+        recoveries?: {
+          shouldHandle: (error: unknown) => boolean
+          recover: (
+            error: unknown,
+            retry: (...args: TArgs) => Promise<TReturn> | TReturn,
+            args: TArgs
+          ) => Promise<unknown>
+        }[]
       ) =>
       async (...args: TArgs) => {
         try {
           return await action(...args)
         } catch (error) {
+          const recovery = recoveries?.find((r) => r.shouldHandle(error))
+          if (recovery) {
+            await recovery.recover(error, action, args)
+            return undefined
+          }
           ;(errorHandler ?? mockToastErrorHandler)(error)
           return undefined
         }
@@ -417,5 +433,53 @@ describe('useAuthActions.reportError', () => {
 
     expect(mockToastErrorHandler).toHaveBeenCalledWith(networkError)
     expect(mockToastStore.add).not.toHaveBeenCalled()
+  })
+})
+
+describe('reauthentication recovery', () => {
+  async function triggerReauth() {
+    const { FirebaseError } = await import('firebase/app')
+    mockAuthStore.updatePassword.mockRejectedValueOnce(
+      new FirebaseError('auth/requires-recent-login', 'too old')
+    )
+    await useAuthActions().updatePassword('new-password')
+  }
+
+  it('does not sign the user out when they dismiss the prompt', async () => {
+    mockDialogService.confirm.mockResolvedValue(false)
+
+    await triggerReauth()
+
+    expect(mockAuthStore.logout).not.toHaveBeenCalled()
+    expect(mockDialogService.showSignInDialog).not.toHaveBeenCalled()
+  })
+
+  it('brackets the sign-out so the expiry handler cannot hijack the re-prompt', async () => {
+    const { isVoluntarySignOutInProgress } =
+      await import('@/platform/auth/session/sessionExpiry')
+    mockDialogService.confirm.mockResolvedValue(true)
+    mockDialogService.showSignInDialog.mockResolvedValue(false)
+    let heldDuringSignOut = false
+    mockAuthStore.logout.mockImplementation(async () => {
+      heldDuringSignOut = isVoluntarySignOutInProgress()
+    })
+
+    await triggerReauth()
+
+    // This sign-out exists only to re-prompt in place; a redirect here would
+    // destroy the dialog and the pending retry.
+    expect(heldDuringSignOut).toBe(true)
+    expect(isVoluntarySignOutInProgress()).toBe(false)
+    expect(mockDialogService.showSignInDialog).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries the original operation once the user signs back in', async () => {
+    mockDialogService.confirm.mockResolvedValue(true)
+    mockDialogService.showSignInDialog.mockResolvedValue(true)
+
+    mockAuthStore.updatePassword.mockClear()
+    await triggerReauth()
+
+    expect(mockAuthStore.updatePassword).toHaveBeenCalledTimes(2)
   })
 })

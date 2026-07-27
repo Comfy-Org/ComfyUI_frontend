@@ -2,16 +2,21 @@ import { isPublicRoutePath } from '@/platform/auth/session/publicRoutes'
 import { isCloud } from '@/platform/distribution/types'
 
 /**
- * A successful navigation destroys this module, so if the timer ever fires the
- * browser refused to leave — a `beforeunload` confirm the user cancelled, which
- * is the default configuration whenever there are unsaved workflows. Re-attempt
- * rather than release: the session really is dead, so letting cloud traffic
- * resume would restore the 401 storm this exists to end.
+ * A successful navigation destroys this module, so a firing timer means the
+ * browser refused to leave — a `beforeunload` the user cancelled, which is the
+ * default whenever there are unsaved workflows.
+ *
+ * Keep offering the way out rather than giving up after one attempt. The latch
+ * stays set either way, because the session really is dead and letting cloud
+ * traffic resume would restore the 401 storm this exists to end; but a tab that
+ * has stopped all traffic AND stopped asking is indistinguishable from the
+ * silent breakage this change was written to remove.
  */
 const NAVIGATION_RETRY_MS = 10_000
 
 let terminated = false
 let voluntarySignOutDepth = 0
+let retryTimer: ReturnType<typeof setInterval> | undefined
 
 /**
  * True once the session has ended. Request seams check this to stop generating
@@ -79,6 +84,6 @@ export function endExpiredSession(reason: string): void {
 
   console.warn(`Cloud session ended (${reason}); returning to sign-in.`)
 
-  setTimeout(() => redirectToLogin(), NAVIGATION_RETRY_MS)
   redirectToLogin()
+  retryTimer ??= setInterval(() => redirectToLogin(), NAVIGATION_RETRY_MS)
 }
