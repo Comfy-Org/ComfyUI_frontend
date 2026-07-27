@@ -75,6 +75,16 @@ test.describe('diffGeometry', () => {
     ])
   })
 
+  // The non-numeric compare: numbers route through the epsilon branch, so
+  // without this the only cross-run rename detector rides a dead leg.
+  test('a renamed widget reds even when every coordinate is unchanged', () => {
+    const measured = node()
+    measured.litegraph.widgets = [{ name: 'noise_seed', y: 915 }]
+    expect(diffGeometry({ A: node() }, { A: measured })).toEqual([
+      'A.litegraph.widgets[0].name: expected "seed", got "noise_seed"'
+    ])
+  })
+
   test('a widget added or removed reds as a length mismatch', () => {
     const measured = node()
     measured.litegraph.widgets = [
