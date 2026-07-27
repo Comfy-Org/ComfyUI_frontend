@@ -21,14 +21,14 @@
         :side-offset="2"
         :align-offset="-5"
         :collision-padding="10"
-        class="z-1700 min-w-40 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm"
+        :class="submenuClass"
       >
         <DropdownMenuCheckboxItem
-          v-for="filter in filters"
-          :key="filter.type"
-          :model-value="mediaTypeFilters.includes(filter.type)"
+          v-for="filter in mediaTypeFilterOptions"
+          :key="filter.value"
+          :model-value="mediaTypeFilters.includes(filter.value)"
           :class="menuItemClass"
-          @click="toggleMediaType(filter.type)"
+          @click="toggleMediaType(filter.value)"
           @select.prevent
         >
           <span class="flex-1">{{ $t(filter.label) }}</span>
@@ -36,6 +36,45 @@
             <i class="icon-[lucide--check]" />
           </DropdownMenuItemIndicator>
         </DropdownMenuCheckboxItem>
+      </DropdownMenuSubContent>
+    </DropdownMenuPortal>
+  </DropdownMenuSub>
+
+  <DropdownMenuSub>
+    <DropdownMenuSubTrigger :class="menuItemClass">
+      <i
+        class="icon-[lucide--calendar] size-4 shrink-0 text-muted-foreground"
+      />
+      <span class="flex-1 text-left">
+        {{ $t('sideToolbar.mediaAssets.filterDate') }}
+      </span>
+      <i
+        class="icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground"
+      />
+    </DropdownMenuSubTrigger>
+
+    <DropdownMenuPortal>
+      <DropdownMenuSubContent
+        :side-offset="2"
+        :align-offset="-5"
+        :collision-padding="10"
+        :class="submenuClass"
+      >
+        <DropdownMenuRadioGroup :model-value="dateFilter">
+          <DropdownMenuRadioItem
+            v-for="filter in dateFilterOptions"
+            :key="filter.value"
+            :value="filter.value"
+            :class="menuItemClass"
+            @click="emit('update:dateFilter', filter.value)"
+            @select.prevent
+          >
+            <span class="flex-1">{{ $t(filter.label) }}</span>
+            <DropdownMenuItemIndicator class="size-4 shrink-0">
+              <i class="icon-[lucide--check]" />
+            </DropdownMenuItemIndicator>
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
       </DropdownMenuSubContent>
     </DropdownMenuPortal>
   </DropdownMenuSub>
@@ -47,31 +86,35 @@ import {
   DropdownMenuItemIndicator,
   DropdownMenuLabel,
   DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger
 } from 'reka-ui'
 import { nextTick, ref } from 'vue'
 
-const { mediaTypeFilters } = defineProps<{
+import {
+  dateFilterOptions,
+  mediaTypeFilterOptions
+} from '@/platform/assets/mediaAssetFilterOptions'
+import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
+
+const { dateFilter, mediaTypeFilters } = defineProps<{
+  dateFilter: MediaAssetDateFilter
   mediaTypeFilters: string[]
 }>()
 
 const emit = defineEmits<{
+  'update:dateFilter': [value: MediaAssetDateFilter]
   'update:mediaTypeFilters': [value: string[]]
 }>()
 
 const menuItemClass =
   'flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-highlighted:bg-secondary-background-hover'
+const submenuClass =
+  'z-1700 min-w-40 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm'
 const mediaTypeMenuOpen = ref(false)
-
-const filters = [
-  { type: 'image', label: 'sideToolbar.mediaAssets.filterImage' },
-  { type: 'video', label: 'sideToolbar.mediaAssets.filterVideo' },
-  { type: 'audio', label: 'sideToolbar.mediaAssets.filterAudio' },
-  { type: '3d', label: 'sideToolbar.mediaAssets.filter3D' },
-  { type: 'text', label: 'sideToolbar.mediaAssets.filterText' }
-]
 
 function toggleMediaType(type: string) {
   if (mediaTypeFilters.includes(type)) {

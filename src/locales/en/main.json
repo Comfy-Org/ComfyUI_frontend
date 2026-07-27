@@ -901,7 +901,13 @@
       "filter3D": "3D",
       "filterText": "Text",
       "filterMediaType": "Media type",
+      "filterDate": "Date",
       "filterGroupAttribute": "Attribute",
+      "dateAll": "All time",
+      "dateToday": "Today",
+      "datePastWeek": "Past 7 days",
+      "datePastMonth": "Past 30 days",
+      "dateThisYear": "This year",
       "viewSettings": "View settings"
     },
     "backToAssets": "Back to all assets",

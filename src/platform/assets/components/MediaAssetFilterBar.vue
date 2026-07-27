@@ -14,7 +14,9 @@
       >
         <template #default>
           <MediaAssetFilterMenu
+            :date-filter
             :media-type-filters
+            @update:date-filter="handleDateFilterChange"
             @update:media-type-filters="handleMediaTypeFiltersChange"
           />
         </template>
@@ -39,6 +41,7 @@
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { isCloud } from '@/platform/distribution/types'
+import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
@@ -49,12 +52,14 @@ import type { SortBy } from './MediaAssetSettingsMenu.vue'
 const { showGenerationTimeSort = false, bottomDivider = false } = defineProps<{
   searchQuery: string
   showGenerationTimeSort?: boolean
+  dateFilter: MediaAssetDateFilter
   mediaTypeFilters: string[]
   bottomDivider?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
+  'update:dateFilter': [value: MediaAssetDateFilter]
   'update:mediaTypeFilters': [value: string[]]
 }>()
 
@@ -67,5 +72,9 @@ const handleSearchChange = (value: string | undefined) => {
 
 const handleMediaTypeFiltersChange = (value: string[]) => {
   emit('update:mediaTypeFilters', value)
+}
+
+const handleDateFilterChange = (value: MediaAssetDateFilter) => {
+  emit('update:dateFilter', value)
 }
 </script>

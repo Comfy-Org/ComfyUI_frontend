@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
-import type { Ref } from 'vue'
 
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -36,13 +35,6 @@ function makeAsset(spec: AssetSpec): AssetItem {
 
 function ids(assets: AssetItem[]): string[] {
   return assets.map((a) => a.id)
-}
-
-function getDateFilter(
-  filtering: ReturnType<typeof useMediaAssetFiltering>
-): Ref<string> {
-  return (filtering as typeof filtering & { dateFilter: Ref<string> })
-    .dateFilter
 }
 
 describe('useMediaAssetFiltering', () => {
@@ -140,9 +132,8 @@ describe('useMediaAssetFiltering', () => {
         makeAsset({ id: 'later', name: 'later.png', createTime: now })
       ])
       const filtering = useMediaAssetFiltering(assets)
-      const dateFilter = getDateFilter(filtering)
 
-      dateFilter.value = 'today'
+      filtering.dateFilter.value = 'today'
 
       expect(ids(filtering.filteredAssets.value)).toEqual(['later', 'midnight'])
     })
@@ -159,9 +150,8 @@ describe('useMediaAssetFiltering', () => {
         makeAsset({ id: 'recent', name: 'recent.png', createTime: now })
       ])
       const filtering = useMediaAssetFiltering(assets)
-      const dateFilter = getDateFilter(filtering)
 
-      dateFilter.value = 'week'
+      filtering.dateFilter.value = 'week'
 
       expect(ids(filtering.filteredAssets.value)).toEqual([
         'recent',
@@ -180,9 +170,8 @@ describe('useMediaAssetFiltering', () => {
         })
       ])
       const filtering = useMediaAssetFiltering(assets)
-      const dateFilter = getDateFilter(filtering)
 
-      dateFilter.value = 'month'
+      filtering.dateFilter.value = 'month'
 
       expect(ids(filtering.filteredAssets.value)).toEqual(['boundary'])
     })
@@ -202,9 +191,8 @@ describe('useMediaAssetFiltering', () => {
         })
       ])
       const filtering = useMediaAssetFiltering(assets)
-      const dateFilter = getDateFilter(filtering)
 
-      dateFilter.value = 'year'
+      filtering.dateFilter.value = 'year'
 
       expect(ids(filtering.filteredAssets.value)).toEqual(['year-start'])
     })
@@ -225,9 +213,8 @@ describe('useMediaAssetFiltering', () => {
         })
       ])
       const filtering = useMediaAssetFiltering(assets)
-      const dateFilter = getDateFilter(filtering)
 
-      dateFilter.value = 'month'
+      filtering.dateFilter.value = 'month'
 
       expect(ids(filtering.filteredAssets.value)).toEqual(['imported'])
     })
@@ -340,10 +327,9 @@ describe('useMediaAssetFiltering', () => {
         })
       ])
       const filtering = useMediaAssetFiltering(assets)
-      const dateFilter = getDateFilter(filtering)
 
       filtering.mediaTypeFilters.value = ['image']
-      dateFilter.value = 'month'
+      filtering.dateFilter.value = 'month'
 
       expect(ids(filtering.filteredAssets.value)).toEqual(['recent-image'])
     })
