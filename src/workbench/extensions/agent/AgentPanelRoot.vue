@@ -760,7 +760,8 @@ const attachment = useAttachment({
   }),
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
-  onError: (message) => toast.add({ severity: 'warn', detail: message }),
+  onError: (message) =>
+    toast.add({ severity: 'warn', detail: message, life: 5000 }),
   stage: (staged) => panelRef.value?.addAttachment(staged),
   update: (id, patch) => panelRef.value?.updateAttachment(id, patch),
   remove: (id) => panelRef.value?.removeAttachment(id)
