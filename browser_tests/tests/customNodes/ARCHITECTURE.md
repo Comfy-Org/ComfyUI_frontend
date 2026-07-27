@@ -781,8 +781,14 @@ a per-PR cloud red after a deploy is the deploy drifting, which is why the
 cloud side needs no separate drift canary the way the pinned core side does.
 
 Fork-safety matches the core gate: the same same-repo `if:` skips fork PRs
-(which have no secrets), and a skipped job counts as passing. Two
-cloud-specific differences: because runs share one Cloud test instance, the
+(which have no secrets), and a skipped job counts as passing. Three
+cloud-specific differences: tracing is off under `CUSTOM_NODES_ENV=cloud`
+(`playwright.config.ts`), because the seeded smoke-user session rides
+`page.evaluate` arguments and a trace records those verbatim into a report
+this workflow uploads as a public artifact - so a cloud red is triaged from
+the list/json/html report, not a trace, and the fixture refuses to seed at
+all if it ever finds itself in a traced project; because runs share one
+Cloud test instance, the
 gate and the cloud geometry record serialize on one shared literal
 `concurrency` group (`cancel-in-progress: false`) instead of per-ref, so no
 two runs cross-talk on the shared backend's execution stream - at the cost
