@@ -4628,7 +4628,7 @@
     "gotIt": "Got it",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Ask Comfy Agent…",
+    "placeholder": "Describe ideas, {'@'} to reference, add nodes from graph or drag in assets",
     "suggestedPrompts": [
       "Generate a yellow duck with a hockey mask",
       "List my saved workflows",
@@ -4674,6 +4674,7 @@
     "toolOpenedNewTab": "Opened a new tab",
     "toolSwitchedTabs": "Switched tabs",
     "toolSavedPreference": "Saved a preference",
-    "toolForgotPreference": "Forgot a preference"
+    "toolForgotPreference": "Forgot a preference",
+    "openWorkflowTab": "Open {name}"
   }
 }

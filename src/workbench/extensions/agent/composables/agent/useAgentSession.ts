@@ -351,6 +351,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
           void resyncDraft()
         return
       case 'agent_active_tab':
+        // Every thread records the link in its own transcript; only the thread
+        // on screen is allowed to move the user's tabs.
+        conversationStore.ingest(event)
         if (
           event.data.thread_id === undefined ||
           event.data.thread_id === conversationStore.threadId

@@ -50,6 +50,21 @@ const historyRow = (
   content: { text }
 })
 
+const activeTab = (
+  workflowId: string,
+  id?: string,
+  threadId = 'th'
+): AgentChatEvent =>
+  chat({
+    type: 'agent_active_tab',
+    data: { workflow_id: workflowId, message_id: id, thread_id: threadId }
+  })
+
+const tabLinkIds = (store: ReturnType<typeof useAgentConversationStore>) =>
+  store.messages.flatMap((m) =>
+    m.parts.flatMap((p) => (p.type === 'tabLink' ? [p.workflowId] : []))
+  )
+
 const partTexts = (store: ReturnType<typeof useAgentConversationStore>) =>
   store.messages.flatMap((m) =>
     m.parts.flatMap((p) => (p.type === 'text' ? [p.text] : []))
@@ -74,6 +89,47 @@ describe('useAgentConversationStore', () => {
 
     expect(spy).toHaveBeenCalled()
     expect(store.messages[0].parts.map((p) => p.type)).toEqual(['text'])
+  })
+
+  it('records a tab link on the live turn for the wire shape carrying a message id', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+
+    store.ingest(activeTab('wf-1', 't1'))
+
+    expect(tabLinkIds(store)).toEqual(['wf-1'])
+  })
+
+  it('records a tab link on the live turn when the optional message id is absent', () => {
+    // message_id is optional on agent_active_tab alone, so the thread has to be
+    // enough to place the link.
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+
+    store.ingest(activeTab('wf-1'))
+
+    expect(tabLinkIds(store)).toEqual(['wf-1'])
+  })
+
+  it('records a tab link on a stashed background thread, not on the displayed one', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'work in the background')
+    store.stashActiveTurn()
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.startTurn(T2)
+
+    store.ingest(activeTab('wf-9', undefined, 'th'))
+
+    expect(tabLinkIds(store)).toEqual([])
+    store.setThreadId('th')
+    store.hydrate([])
+    store.resumeBackgroundTurn()
+    expect(tabLinkIds(store)).toEqual(['wf-9'])
   })
 
   it('(M2) isStreaming is false after abortActiveTurn() with no done', () => {

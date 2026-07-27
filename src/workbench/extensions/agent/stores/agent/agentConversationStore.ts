@@ -106,7 +106,20 @@ export const useAgentConversationStore = defineStore(
         transport.ingest(event)
         return
       }
-      const entry = backgroundTurns.get(event.data.thread_id)
+      const eventThreadId = event.data.thread_id
+      // agent_active_tab is the one event whose message_id is optional; without
+      // it the thread is the only routing key left.
+      if (
+        event.type === 'agent_active_tab' &&
+        event.data.message_id === undefined
+      ) {
+        if (eventThreadId === undefined || eventThreadId === threadId.value)
+          transport?.ingest(event)
+        else backgroundTurns.get(eventThreadId)?.transport.ingest(event)
+        return
+      }
+      if (eventThreadId === undefined) return
+      const entry = backgroundTurns.get(eventThreadId)
       if (!entry || entry.turnId !== event.data.message_id) return
       if (event.type === 'agent_message_done') {
         entry.transport.settle()

@@ -11,6 +11,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { hasImageType, hasVideoType } from '@/utils/eventUtils'
 import { appendWorkflowJsonExt } from '@/utils/formatUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -456,6 +457,9 @@ async function onAgentActiveTab(
         draftStore.version !== null
       await workflowService.openWorkflow(bound)
       if (stale()) return
+      // boundTabFor can resolve by cloud name, which leaves no binding behind
+      // for everything downstream that only reads tabPathFor.
+      bindingStore.bind(data.workflow_id, bound.path)
       if (status.value !== 'idle') tabActivity.setEditing(bound.path)
       draftStore.bind(data.workflow_id)
       const snapshot = await fetchDraftSnapshot(data.workflow_id)
@@ -779,10 +783,30 @@ async function onFilesPicked(event: Event): Promise<void> {
   if (files && files.length > 0) await attachment.addFiles(Array.from(files))
   input.value = ''
 }
+
+function onPanelDragOver(event: DragEvent): void {
+  if (event.dataTransfer?.types.includes('Files')) event.preventDefault()
+}
+
+function onPanelDrop(event: DragEvent): void {
+  // Anything the composer cannot attach still belongs to the graph loader, which
+  // only runs while the drop is unclaimed, so claim the attachable files alone.
+  const files = Array.from(event.dataTransfer?.files ?? []).filter(
+    (file) => hasImageType(file) || hasVideoType(file)
+  )
+  if (files.length === 0) return
+  event.preventDefault()
+  void attachment.addFiles(files)
+}
 </script>
 
 <template>
-  <div id="agent-panel-root" class="size-full">
+  <div
+    id="agent-panel-root"
+    class="size-full"
+    @dragover="onPanelDragOver"
+    @drop="onPanelDrop"
+  >
     <input
       ref="fileInput"
       type="file"

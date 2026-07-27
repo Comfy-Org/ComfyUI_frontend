@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { PartState } from '../../../services/agent/agentMessageParts'
+import { knownTool, toolGlyph } from '../../../services/agent/agentToolGlyph'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -21,34 +22,18 @@ const {
 
 const { t } = useI18n()
 
-const FRIENDLY_TOOL_KEYS: Record<string, string> = {
-  new_tab: 'agent.toolOpenedNewTab',
-  switch_tab: 'agent.toolSwitchedTabs',
-  remember: 'agent.toolSavedPreference',
-  forget: 'agent.toolForgotPreference'
-}
-
-const friendlyKey = computed(() =>
-  Object.hasOwn(FRIENDLY_TOOL_KEYS, name) ? FRIENDLY_TOOL_KEYS[name] : undefined
-)
-
 const label = computed(() => {
-  if (friendlyKey.value !== undefined) return t(friendlyKey.value)
+  const known = knownTool(name)
+  if (known) return t(known.labelKey)
   const spaced = name.replaceAll('_', ' ')
   return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 })
 
-const glyph = computed(() => {
-  if (state === 'streaming') return 'animate-spin icon-[lucide--loader-circle]'
-  return ok === false
-    ? 'icon-[lucide--circle-x]'
-    : 'icon-[lucide--circle-check]'
-})
+const glyph = computed(() => toolGlyph(name, state, ok))
 
-const glyphColor = computed(() => {
-  if (state === 'streaming') return 'text-agent-fg-subtle'
-  return ok === false ? 'text-agent-danger' : 'text-agent-fg-subtle'
-})
+const glyphColor = computed(() =>
+  ok === false ? 'text-agent-danger' : 'text-agent-fg-subtle'
+)
 </script>
 
 <template>

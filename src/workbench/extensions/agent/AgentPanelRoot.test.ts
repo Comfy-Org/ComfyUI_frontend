@@ -315,6 +315,43 @@ describe('AgentPanelRoot session notices', () => {
   })
 })
 
+// happy-dom aliases DragEvent to Event, dropping any dataTransfer init, and its
+// DataTransfer.types reports item MIME types rather than the browser's 'Files'
+// marker the panel tests for, so the payload is hand-built.
+// Returns whether the panel claimed the event, which is what the graph loader
+// checks before opening a dropped workflow.
+function dispatchDrag(
+  target: Element,
+  type: 'dragover' | 'drop',
+  data: { files?: File[]; types?: string[] }
+): boolean {
+  const event = new Event(type, { bubbles: true, cancelable: true })
+  Object.defineProperty(event, 'dataTransfer', {
+    value: { files: data.files ?? [], types: data.types ?? ['Files'] }
+  })
+  target.dispatchEvent(event)
+  return event.defaultPrevented
+}
+
+// Records what actually reached the upload endpoint, so an exclusion can be
+// asserted on the request rather than on a chip that has not rendered yet.
+function stubUploadFetch(uploaded: string[] = []): string[] {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (!url.includes('/upload/')) return json(200, { threads: [] })
+      const body = init?.body
+      if (body instanceof FormData) {
+        const file = body.get('image')
+        if (file instanceof File) uploaded.push(file.name)
+      }
+      return json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+    })
+  )
+  return uploaded
+}
+
 describe('AgentPanelRoot attach flow', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -372,6 +409,58 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
     expect(screen.getByText('cat.png')).toBeInTheDocument()
+  })
+
+  it('claims a dragover carrying files so a drop can reach the panel', async () => {
+    // Without cancelling dragover the browser fires no drop at all, so this is
+    // what makes the advertised drag-and-drop work.
+    stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+    const target = screen.getByRole('textbox')
+
+    expect(dispatchDrag(target, 'dragover', { types: ['Files'] })).toBe(true)
+    expect(dispatchDrag(target, 'dragover', { types: ['text/plain'] })).toBe(
+      false
+    )
+  })
+
+  it('attaches dropped assets and leaves other files to the graph loader', async () => {
+    // The graph loader only opens a dropped workflow while the drop is
+    // unclaimed, so the panel must not claim files it cannot attach.
+    stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+    const target = screen.getByRole('textbox')
+
+    const workflow = new File(['{}'], 'flow.json', {
+      type: 'application/json'
+    })
+    expect(dispatchDrag(target, 'drop', { files: [workflow] })).toBe(false)
+    expect(screen.queryByText('flow.json')).not.toBeInTheDocument()
+
+    const asset = new File(['x'], 'cat.png', { type: 'image/png' })
+    expect(dispatchDrag(target, 'drop', { files: [asset] })).toBe(true)
+    expect(await screen.findByText('cat.png')).toBeInTheDocument()
+  })
+
+  it('attaches only the assets out of a mixed drop', async () => {
+    const uploaded = stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    // The non-attachable file comes first: addFiles uploads sequentially, so a
+    // regression that forwards the whole drop would upload flow.json before
+    // cat.png and the settled assertion below could never latch a lucky
+    // intermediate state.
+    const files = [
+      new File(['{}'], 'flow.json', { type: 'application/json' }),
+      new File(['x'], 'cat.png', { type: 'image/png' })
+    ]
+    dispatchDrag(screen.getByRole('textbox'), 'drop', { files })
+
+    expect(await screen.findByText('cat.png')).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual(['cat.png']))
   })
 
   it('shows an uploading chip and blocks send until the upload settles', async () => {
@@ -1700,6 +1789,10 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(workflowService.openWorkflow).toHaveBeenCalledWith(tab)
     )
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+    // The whole FE-1310 chain: wire event -> session -> store -> rendered card.
+    expect(
+      await screen.findByRole('button', { name: /^Open / })
+    ).toBeInTheDocument()
 
     const draftStore = useAgentDraftStore()
     await vi.waitFor(() => expect(draftStore.version).toBe(3))
@@ -2674,6 +2767,14 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(hostStores.workflow.tabs.get('workflows/duck (2).json')).toBe(
       undefined
     )
+    // Resolving by cloud name has to leave the binding behind, or the transcript
+    // link renders nothing for the tab the user was just moved to.
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-cloud-duck')).toBe(
+      duck.path
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Open duck' })
+    ).toBeInTheDocument()
   })
 
   it('sends every open tab that has a cloud id with the message', async () => {

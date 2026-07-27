@@ -23,7 +23,13 @@ export interface NoticePart {
   text: string
 }
 
-type MessagePart = TextPart | ToolPart | NoticePart
+export interface TabLinkPart {
+  type: 'tabLink'
+  workflowId: string
+  name?: string
+}
+
+type MessagePart = TextPart | ToolPart | NoticePart | TabLinkPart
 
 export interface AssistantMessage {
   id: TurnId

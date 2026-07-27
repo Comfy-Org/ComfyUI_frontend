@@ -1281,6 +1281,39 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
+  it('(l19) a backgrounded thread still records tab links in its own transcript', async () => {
+    const activeTab = vi.fn()
+    const rest = fakeRest()
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: { current: () => undefined, adopted: vi.fn(), activeTab }
+    })
+    session.start()
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'working'))
+    await session.loadThread('th-2')
+
+    emit(
+      wire({
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-9', message_id: 'msg-1', thread_id: 'th-1' }
+      })
+    )
+    expect(activeTab).not.toHaveBeenCalled()
+
+    await session.loadThread('th-1')
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toContainEqual({
+        type: 'tabLink',
+        workflowId: 'wf-9',
+        name: undefined
+      })
+  })
+
   it('(l12) draft patches from a backgrounded thread cannot drive the displayed draft', async () => {
     const rest = fakeRest()
     const { source, emit } = fakeEvents()

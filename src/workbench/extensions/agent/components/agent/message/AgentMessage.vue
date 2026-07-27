@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import type {
   AssistantMessage,
   NoticePart,
+  TabLinkPart,
   TextPart,
   ToolPart
 } from '../../../services/agent/agentMessageParts'
@@ -11,6 +12,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import MarkdownStream from './MarkdownStream.vue'
 import MessageFeedback from './MessageFeedback.vue'
+import TabLinkCard from './TabLinkCard.vue'
 import ToolCallGroup from './ToolCallGroup.vue'
 
 const { message } = defineProps<{ message: AssistantMessage }>()
@@ -20,6 +22,7 @@ type Group =
   | { kind: 'text'; part: TextPart }
   | { kind: 'notice'; part: NoticePart }
   | { kind: 'tools'; parts: ToolPart[] }
+  | { kind: 'tabLink'; part: TabLinkPart }
 
 const groups = computed<Group[]>(() => {
   const out: Group[] = []
@@ -30,6 +33,8 @@ const groups = computed<Group[]>(() => {
       else out.push({ kind: 'tools', parts: [part] })
     } else if (part.type === 'text') {
       out.push({ kind: 'text', part })
+    } else if (part.type === 'tabLink') {
+      out.push({ kind: 'tabLink', part })
     } else {
       out.push({ kind: 'notice', part })
     }
@@ -67,6 +72,11 @@ const showActions = computed(
         v-else-if="group.kind === 'tools'"
         :tools="group.parts"
         :streaming="message.streaming"
+      />
+      <TabLinkCard
+        v-else-if="group.kind === 'tabLink'"
+        :workflow-id="group.part.workflowId"
+        :name="group.part.name"
       />
       <div
         v-else

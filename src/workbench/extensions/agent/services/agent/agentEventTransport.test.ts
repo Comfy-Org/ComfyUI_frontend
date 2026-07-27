@@ -43,7 +43,8 @@ function isChatEvent(event: AgentWsEvent): event is AgentChatEvent {
     event.type === 'agent_thinking' ||
     event.type === 'agent_tool_call' ||
     event.type === 'agent_message_delta' ||
-    event.type === 'agent_message_done'
+    event.type === 'agent_message_done' ||
+    event.type === 'agent_active_tab'
   )
 }
 
@@ -75,6 +76,13 @@ function delta(text: string): AgentChatEvent {
   return {
     type: 'agent_message_delta',
     data: { delta: text, message_id: 'm', thread_id: 't' }
+  }
+}
+
+function activeTab(workflow_id: string, name?: string): AgentChatEvent {
+  return {
+    type: 'agent_active_tab',
+    data: { workflow_id, name, message_id: 'm', thread_id: 't' }
   }
 }
 
@@ -262,5 +270,56 @@ describe('agentEventTransport settle lifecycle', () => {
       state: 'done'
     })
     expect(toolParts(message)).toHaveLength(0)
+  })
+
+  it('records an in-line tab link when the agent switches workflow tabs', () => {
+    const message = drive([
+      delta('opening it now'),
+      activeTab('wf-1', 'Portrait upscale'),
+      delta('and here it is')
+    ])
+
+    // The link closes the open text part, so prose streamed after it starts a
+    // new part below the card instead of being absorbed by the one above.
+    expect(parts(message).map((part) => part.type)).toEqual([
+      'text',
+      'tabLink',
+      'text'
+    ])
+    expect(parts(message)[1]).toEqual({
+      type: 'tabLink',
+      workflowId: 'wf-1',
+      name: 'Portrait upscale'
+    })
+  })
+
+  it('links a tab once even when the agent keeps working between announcements', () => {
+    const message = drive([
+      activeTab('wf-1', 'First'),
+      delta('adding the nodes'),
+      toolCall('add_node', 'ok'),
+      activeTab('wf-1', 'First')
+    ])
+
+    expect(
+      parts(message).flatMap((part) =>
+        part.type === 'tabLink' ? [part.workflowId] : []
+      )
+    ).toEqual(['wf-1'])
+  })
+
+  it('links a tab again when the agent returns to it after switching away', () => {
+    const message = drive([
+      activeTab('wf-1', 'First'),
+      activeTab('wf-1', 'First'),
+      activeTab('wf-2', 'Second'),
+      activeTab('wf-1', 'First')
+    ])
+
+    expect(
+      parts(message).flatMap((part) =>
+        part.type === 'tabLink' ? [part.workflowId] : []
+      )
+    ).toEqual(['wf-1', 'wf-2', 'wf-1'])
   })
 })
