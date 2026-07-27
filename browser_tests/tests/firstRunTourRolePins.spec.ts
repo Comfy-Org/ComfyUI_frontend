@@ -62,8 +62,8 @@ test.describe('first-run tour role pins', { tag: '@workflow' }, () => {
     }
 
     expect(
-      pinnedTemplates.length - unserved.length,
-      `the Getting Started grid fills ${CURATED_TEMPLATE_IDS.length} cards from these pins, but this backend serves too few of them — unserved: ${unserved.join(', ')}`
-    ).toBeGreaterThanOrEqual(CURATED_TEMPLATE_IDS.length)
+      CURATED_TEMPLATE_IDS.filter((id) => unserved.includes(id)),
+      'the Getting Started grid ships a card for each of these, so an unserved one 404s the user'
+    ).toEqual([])
   })
 })
