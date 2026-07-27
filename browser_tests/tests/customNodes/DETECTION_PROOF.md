@@ -91,6 +91,14 @@ baselined nodes.
 
 Sections refer to [ARCHITECTURE.md](ARCHITECTURE.md).
 
+**Proof run:** matrix run
+[30305166953](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/30305166953) -
+all 12 legs green. Row N's evidence is its own leg, job
+`custom-nodes-e2e-core (N)`: the suite's red (with the row's message) is in
+that leg's "Run custom-node suite" log, and the leg's assert step quotes the
+matched pattern. Every push to this branch re-runs the whole matrix, so the
+proof is repeatable, not archival.
+
 | #   | Surface (ARCH section)                           | Mode | Real regression it recreates                                                                                                                                                                                                       | The one-file break                                                                                                                                                                                                            | CI check that catches it                   | Exact red                                                                                                                                                       |
 | --- | ------------------------------------------------ | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | Mount completeness, canvas / v1 (s1, s5)         | FE   | A change dropping declared parts on the canvas renderer (class; no single ticket - the v2 wave below shows how this family presents)                                                                                               | `row-01` patch: `src/services/litegraphService.ts` `addInputs` stops materializing the last declared input, for every node                                                                                                    | Tests Custom Nodes / mount tier            | `ImpactBoolean: instance is missing declared input "value" (litegraph)`                                                                                         |
