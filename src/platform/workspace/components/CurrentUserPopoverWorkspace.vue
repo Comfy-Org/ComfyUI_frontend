@@ -60,7 +60,7 @@
 
     <!-- Credits Section -->
 
-    <div class="flex items-center gap-2 px-4 py-2">
+    <div class="relative flex items-center gap-2 px-4 py-2">
       <i class="icon-[lucide--component] text-sm text-credit" />
       <Skeleton
         v-if="isLoadingBalance"
@@ -71,6 +71,39 @@
       <span v-else class="text-base font-semibold text-base-foreground">{{
         displayedCredits
       }}</span>
+      <span
+        v-if="isEdgeState"
+        @mouseenter="isEdgePopoverOpen = true"
+        @mouseleave="isEdgePopoverOpen = false"
+        @focusin="isEdgePopoverOpen = true"
+        @focusout="isEdgePopoverOpen = false"
+      >
+        <Button
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="$t('workspacePanel.memberCredits.edgeExplainer')"
+          data-testid="member-credits-info-button"
+        >
+          <i class="icon-[lucide--info]" />
+        </Button>
+      </span>
+      <div
+        v-if="isEdgeState && isEdgePopoverOpen && memberCap"
+        class="absolute top-1/2 right-full z-50 mr-3 w-72 -translate-y-1/2 rounded-lg border border-border-default bg-base-background p-3 shadow-lg"
+        data-testid="member-credits-edge-popover"
+      >
+        <p class="m-0 text-sm text-base-foreground">
+          {{ $t('workspacePanel.memberCredits.edgeLead') }}
+          {{ $t('workspacePanel.memberCredits.edgeExplainer') }}
+        </p>
+        <p class="m-0 mt-1 text-sm text-muted-foreground">
+          {{
+            $t('workspacePanel.memberCredits.monthlyLimit', {
+              n: memberCap.limit.toLocaleString()
+            })
+          }}
+        </p>
+      </div>
       <Button
         v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
         variant="muted-textonly"
@@ -123,6 +156,22 @@
           isCancelled
             ? $t('subscription.resubscribe')
             : $t('workspaceSwitcher.subscribe')
+        }}
+      </Button>
+    </div>
+
+    <div v-if="requestAction" class="px-4 py-1">
+      <Button
+        variant="secondary"
+        class="w-full"
+        :disabled="requestSent"
+        data-testid="member-credits-request-button"
+        @click="requestSent = true"
+      >
+        {{
+          requestSent
+            ? $t('workspacePanel.memberCredits.requested')
+            : $t(`workspacePanel.memberCredits.${requestAction}`)
         }}
       </Button>
     </div>
@@ -228,6 +277,7 @@ import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeB
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { useMemberCreditDisplay } from '@/platform/workspace/composables/useMemberCreditDisplay'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -277,8 +327,23 @@ const subscriptionDialog = useSubscriptionDialog()
 const { locale } = useI18n()
 const isLoadingBalance = isLoading
 
+const {
+  memberCap,
+  displayedNumber,
+  isEdgeState,
+  requestAction
+} = useMemberCreditDisplay()
+
+const requestSent = ref(false)
+const isEdgePopoverOpen = ref(false)
+
 const displayedCredits = computed(() => {
   if (initState.value !== 'ready') return ''
+
+  // Capped members see min(limit - used, workspace balance) rather than the
+  // raw pool -- the workspace total is not their spendable number (DES-504).
+  if (memberCap.value)
+    return Math.round(displayedNumber.value).toLocaleString(locale.value)
 
   // API field is named _micros but contains cents (naming inconsistency)
   const cents =
