@@ -1093,6 +1093,49 @@ describe('SubgraphWidgetPromotion', () => {
           'second host value'
         ])
       })
+
+      it('preserves null promoted values through serialize and reload', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, TEXT_PAIR)
+
+        const host = createTestSubgraphNode(subgraph, { id: 101 })
+        writePromotedWidgetValue(host, 0, null)
+        writePromotedWidgetValue(host, 1, null)
+
+        const serialized = host.serialize()
+        expect(serialized.widgets_values).toEqual([null, null])
+
+        const widgetStore = useWidgetValueStore()
+        widgetStore.clearGraph(host.rootGraph.id)
+        const reloaded = createTestSubgraphNode(subgraph, { id: 101 })
+        reloaded.configure(serialized)
+
+        expect(
+          promotedWidgetStates(reloaded).map((state) => state.value)
+        ).toEqual([null, null])
+      })
+
+      it('reads a null store value back through the projected widget', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, TEXT_PAIR)
+        const host = createTestSubgraphNode(subgraph)
+
+        writePromotedWidgetValue(host, 0, null)
+
+        expect(host.widgets[0]?.value).toBeNull()
+      })
+
+      it('preserves a null promoted value across reorder', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, TEXT_PAIR)
+        const host = createTestSubgraphNode(subgraph)
+        writePromotedWidgetValue(host, 0, null)
+        writePromotedWidgetValue(host, 1, 'second value')
+
+        reorderSubgraphInputsByName(host, ['second', 'first'])
+
+        expect(host.serialize().widgets_values).toEqual(['second value', null])
+      })
     })
 
     describe('proxyWidgets is no longer re-emitted', () => {
@@ -1396,6 +1439,43 @@ describe('SubgraphWidgetPromotion', () => {
         expect(byName.get('unet_name')).toBe('z_image_turbo_bf16.safetensors')
         expect(byName.get('clip_name')).toBe('qwen_3_4b.safetensors')
         expect(byName.get('steps')).toBe(8)
+      })
+
+      it('applies a null quarantined host value instead of falling through to widgets_values', () => {
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'STRING' }]
+        })
+        const { node: interiorNode } = createNodeWithWidget(
+          'Interior',
+          'text',
+          'interior default',
+          'STRING'
+        )
+        subgraph.add(interiorNode)
+        subgraph.inputNode.slots[0].connect(
+          interiorNode.inputs[0],
+          interiorNode
+        )
+
+        const hostNode = createTestSubgraphNode(subgraph)
+        const serialized = hostNode.serialize()
+        serialized.widgets_values = ['stale value']
+        serialized.properties = {
+          ...serialized.properties,
+          proxyWidgetErrorQuarantine: [
+            {
+              originalEntry: ['-1', 'value'] as SerializedProxyWidgetTuple,
+              reason: 'missingSourceNode',
+              hostValue: null,
+              attemptedAtVersion: 1
+            }
+          ]
+        }
+
+        const reloaded = createTestSubgraphNode(subgraph)
+        reloaded.configure(serialized)
+
+        expect(promotedWidgetStateByName(reloaded, 'value').value).toBeNull()
       })
     })
   })

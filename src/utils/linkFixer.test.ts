@@ -4,6 +4,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { useLinkStore } from '@/stores/linkStore'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type {
@@ -349,5 +350,22 @@ describe('fixBadLinks ↔ linkStore integration', () => {
     expect(result).toMatchObject({ hasBadLinks: false, deleted: 0 })
     expect(graph._links.has(link.id)).toBe(true)
     expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
+  })
+
+  it('inspects live output slots without touching the deprecated links getter', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', '*')
+    b.addInput('in', '*')
+    graph.add(a)
+    graph.add(b)
+    graph._addLink(new LLink(toLinkId(9), '*', a.id, 0, b.id, 0))
+
+    const linksGetter = vi.spyOn(NodeOutputSlot.prototype, 'links', 'get')
+
+    fixBadLinks(graph, { fix: true, silent: true })
+
+    expect(linksGetter).not.toHaveBeenCalled()
   })
 })

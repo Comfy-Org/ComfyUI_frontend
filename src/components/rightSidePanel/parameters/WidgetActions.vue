@@ -49,12 +49,11 @@ const defaultValue = computed(() => getWidgetDefaultValue(inputSpec.value))
 
 const hasDefault = computed(() => defaultValue.value !== undefined)
 
-const currentValue = computed(
-  () =>
-    (widget.widgetId &&
-      useWidgetValueStore().getWidget(widget.widgetId)?.value) ??
-    widget.value
-)
+const currentValue = computed(() => {
+  if (!widget.widgetId) return widget.value
+  const state = useWidgetValueStore().getWidget(widget.widgetId)
+  return state ? state.value : widget.value
+})
 
 const isCurrentValueDefault = computed(() => {
   if (!hasDefault.value) return true

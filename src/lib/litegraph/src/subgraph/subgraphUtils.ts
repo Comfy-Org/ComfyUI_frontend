@@ -30,7 +30,7 @@ import type {
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
 
-import type { GraphOrSubgraph } from './Subgraph'
+import type { GraphOrSubgraph, Subgraph } from './Subgraph'
 import type { SubgraphInput } from './SubgraphInput'
 import { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphNode } from './SubgraphNode'
@@ -496,6 +496,53 @@ export function findUsedSubgraphIds(
   }
 
   return usedSubgraphIds
+}
+
+function findLiveSubgraphIds(
+  rootGraph: LGraph,
+  removedNode: SubgraphNode
+): Set<SubgraphId> {
+  const liveIds = new Set<SubgraphId>()
+  const toVisit: GraphOrSubgraph[] = [rootGraph]
+
+  while (toVisit.length > 0) {
+    const graph = toVisit.shift()!
+    for (const node of graph._nodes) {
+      if (node === removedNode || !node.isSubgraphNode()) continue
+      if (liveIds.has(node.subgraph.id)) continue
+      liveIds.add(node.subgraph.id)
+      toVisit.push(node.subgraph)
+    }
+  }
+
+  return liveIds
+}
+
+function collectSubgraphsPostOrder(
+  subgraph: Subgraph,
+  visitedIds: Set<SubgraphId>,
+  result: Subgraph[]
+): void {
+  if (visitedIds.has(subgraph.id)) return
+  visitedIds.add(subgraph.id)
+
+  for (const node of subgraph._nodes) {
+    if (node.isSubgraphNode()) {
+      collectSubgraphsPostOrder(node.subgraph, visitedIds, result)
+    }
+  }
+
+  result.push(subgraph)
+}
+
+export function findReleasableSubgraphs(
+  rootGraph: LGraph,
+  removedNode: SubgraphNode
+): Subgraph[] {
+  const liveIds = findLiveSubgraphIds(rootGraph, removedNode)
+  const removedSubtree: Subgraph[] = []
+  collectSubgraphsPostOrder(removedNode.subgraph, new Set(), removedSubtree)
+  return removedSubtree.filter((subgraph) => !liveIds.has(subgraph.id))
 }
 
 function reorderInPlace<T>(arr: T[], indices: readonly number[]): void {

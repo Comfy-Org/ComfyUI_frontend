@@ -150,7 +150,12 @@ export class PrimitiveNode extends LGraphNode {
     }
     const [link] = outputLinks(this.graph, this.id, 0)
     if (!link) {
-      if (!outputHasLinks(this.graph, this.id, 0)) this.onLastDisconnect()
+      if (outputHasLinks(this.graph, this.id, 0)) {
+        console.warn(
+          `PrimitiveNode ${this.id}: link store reports output 0 connected but no link resolves in the graph; resetting the widget.`
+        )
+      }
+      this.onLastDisconnect()
       return
     }
 
@@ -428,7 +433,6 @@ function getConfig(this: LGraphNode, widgetName: string) {
  * @param node The node to convert the widget to an input slot for.
  * @param widget The widget to convert to an input slot.
  * @returns The input slot that was converted from the widget or undefined if the widget is not found.
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export function convertToInput(
   node: LGraphNode,

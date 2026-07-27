@@ -1,4 +1,4 @@
-import type { LGraphState } from '../LGraph'
+import type { LGraph, LGraphState } from '../LGraph'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -151,6 +151,16 @@ function patchPromotedWidgets(
     const newId = remappedIds.get(toNodeId(widget.id))
     if (newId !== undefined) widget.id = newId
   }
+}
+
+export function collectReservedRerouteIds(
+  graph: Pick<LGraph, 'reroutes' | 'subgraphs'>
+): Set<number> {
+  return new Set<number>(
+    [graph, ...graph.subgraphs.values()].flatMap((g) =>
+      [...g.reroutes.values()].map((reroute) => reroute.id)
+    )
+  )
 }
 
 /**

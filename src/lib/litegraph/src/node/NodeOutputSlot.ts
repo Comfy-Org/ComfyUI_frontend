@@ -113,7 +113,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
 Object.defineProperty(NodeOutputSlot.prototype, 'links', {
   get(this: NodeOutputSlot): readonly LinkId[] | null {
     warnDeprecated(
-      'output.links is deprecated. Read connectivity via node.isOutputConnected(slot) / node.getOutputNodes(slot); mutate via node.connect() / node.disconnectOutput().'
+      'output.links is deprecated. Read connectivity via node.isOutputConnected(slot) / node.getOutputNodes(slot); enumerate links via outputLinks(graph, node.id, slot); mutate via node.connect() / node.disconnectOutput().'
     )
     const { graph } = this._node
     if (!graph) return null

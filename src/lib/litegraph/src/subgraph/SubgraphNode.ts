@@ -480,9 +480,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     let valueIndex = 0
     for (const input of this.inputs) {
       if (!input.widgetId) continue
-      const value =
-        quarantineValuesByInputName.get(input.name) ??
-        widgetValues?.[valueIndex]
+      const value = quarantineValuesByInputName.has(input.name)
+        ? quarantineValuesByInputName.get(input.name)
+        : widgetValues?.[valueIndex]
       if (value !== undefined) {
         useWidgetValueStore().setValue(input.widgetId, value)
       }

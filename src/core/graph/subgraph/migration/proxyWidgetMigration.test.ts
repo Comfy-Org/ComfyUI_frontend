@@ -204,6 +204,28 @@ describe('flushProxyWidgetMigration', () => {
       expect(getPromotedInputValue(host, 'seed')).toBe(7)
     })
 
+    it('alreadyLinked: applies a null host value instead of treating it as a hole', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'seed', type: 'INT' }]
+      })
+      const host = createTestSubgraphNode(subgraph)
+      host.graph!.add(host)
+      const inner = addInnerNode(host, 'Inner', (n) => {
+        const slot = n.addInput('seed', 'INT')
+        const innerWidget = n.addWidget('number', 'seed', 7, () => {})
+        slot.widget = { name: innerWidget.name }
+      })
+      subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
+
+      host.properties.proxyWidgets = [[String(inner.id), 'seed']]
+      flushProxyWidgetMigration({
+        hostNode: host,
+        hostWidgetValues: [null]
+      })
+
+      expect(getPromotedInputValue(host, 'seed')).toBeNull()
+    })
+
     it('createSubgraphInput: creates exactly one new SubgraphInput linked to the source widget', () => {
       const host = buildHost()
       const inner = addInnerNode(host, 'Inner', (n) => {

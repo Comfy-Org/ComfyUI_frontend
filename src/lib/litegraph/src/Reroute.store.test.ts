@@ -1,9 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
@@ -219,6 +220,28 @@ describe('Reroute ↔ rerouteStore integration', () => {
     second.parentId = undefined
 
     expect(second.parentId).toBeUndefined()
+  })
+
+  it('convertToSubgraph hands reroute registrations to the subgraph', () => {
+    const { graph, a, b, link } = connectedGraph()
+    const store = useRerouteStore()
+    const reroute = graph.createReroute([10, 10], link)!
+    const graphId = graph.rootGraph.id
+
+    onTestFinished(enableSubgraphNodeCreation(graph))
+
+    const { subgraph } = graph.convertToSubgraph(new Set([a, b, reroute]))
+
+    expect(graph.reroutes.size).toBe(0)
+    const converted = subgraph.reroutes.get(reroute.id)
+    expect(converted).toBeDefined()
+
+    const [innerLink] = [...subgraph._links.values()]
+    expect(innerLink.parentId).toBe(reroute.id)
+    expect(store.getReroute(graphId, reroute.id)).toBeDefined()
+
+    subgraph.removeReroute(reroute.id)
+    expect(store.getReroute(graphId, reroute.id)).toBeUndefined()
   })
 
   it('floating marker survives through the store state', () => {

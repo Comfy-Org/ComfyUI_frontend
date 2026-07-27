@@ -59,6 +59,39 @@ function nextFixtureUuid(): UUID {
 export function resetSubgraphFixtureState(): void {
   fixtureUuidSequence = 1
   cleanupComplexPromotionFixtureNodeType()
+  disposeSubgraphNodeCreation()
+}
+
+const subgraphNodeTypesToDispose: string[] = []
+
+function disposeSubgraphNodeCreation(): void {
+  for (const type of subgraphNodeTypesToDispose) {
+    delete LiteGraph.registered_node_types[type]
+  }
+  subgraphNodeTypesToDispose.length = 0
+}
+
+export function enableSubgraphNodeCreation(rootGraph: LGraph): () => void {
+  rootGraph.events.addEventListener('subgraph-created', (e) => {
+    const { subgraph } = e.detail
+    LiteGraph.registered_node_types[subgraph.id] = class extends SubgraphNode {
+      constructor() {
+        super(rootGraph, subgraph, {
+          id: -1,
+          type: subgraph.id,
+          pos: [0, 0],
+          size: [100, 100],
+          inputs: [],
+          outputs: [],
+          flags: {},
+          mode: 0,
+          order: 0
+        })
+      }
+    }
+    subgraphNodeTypesToDispose.push(subgraph.id)
+  })
+  return disposeSubgraphNodeCreation
 }
 
 export function createTestRootGraph(id: UUID = nextFixtureUuid()): LGraph {

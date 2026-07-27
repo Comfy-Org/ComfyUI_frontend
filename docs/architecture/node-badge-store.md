@@ -212,7 +212,7 @@ prototype replaces the store with a memoized derivation:
   seams: graph-id-keyed reads and subgraph aggregation re-resolve after
   loads and structural changes. Bumps only invalidate; recomputes happen
   lazily on the next read.
-- `setBadgeRowsProvider` (in `nodeBadgeDraw.ts`) — a one-function seam
+- `registerBadgeRowsProvider` (in `nodeBadgeDraw.ts`) — a one-function seam
   installed by `useNodeBadge`, so litegraph never imports the
   derivation's pricing/nodeDef dependency graph (same acyclicity
   property the store's import-light trio provided). The identity-keyed
