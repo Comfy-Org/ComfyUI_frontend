@@ -1,5 +1,5 @@
 import { expect, mergeTests } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
@@ -9,6 +9,7 @@ import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscript
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -24,6 +25,13 @@ const CARD_TESTID_PREFIX = 'getting-started-card-'
 
 /** The prompt id the tour's run is queued under, so WS events can address it. */
 const TOUR_JOB_ID = 'first-run-tour-prompt'
+
+/** A prompt the queue accepts, so the walk does not depend on the backend's models. */
+const QUEUED_PROMPT = {
+  prompt_id: TOUR_JOB_ID,
+  number: 1,
+  node_errors: {}
+}
 
 const ACTIVE_SUBSCRIPTION: CloudSubscriptionStatusResponse = {
   is_active: true,
@@ -96,24 +104,23 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
   /**
    * The shared half of the walk: a fresh user reaches Getting Started, picks a
-   * pinned template, and the tour guides them to Run — where the outcomes part.
-   * The run is queued under a known id so WS events can address it afterwards.
+   * pinned template, and the tour guides them to Run — where the funded and
+   * paywalled branches part. The run is queued under a known id, so whoever
+   * goes on to click Run can address it over the websocket.
    */
-  async function tourToGeneratingStep(page: Page) {
+  async function tourToRunStep(page: Page) {
     const screen = page.getByRole('dialog', { name: GETTING_STARTED_TITLE })
     const spotlight = page.getByTestId('coach-spotlight')
     const card = page.getByTestId('coach-card')
 
     await page.route('**/api/prompt', (route) =>
-      route.fulfill(
-        jsonRoute({ prompt_id: TOUR_JOB_ID, number: 1, node_errors: {} })
-      )
+      route.fulfill(jsonRoute(QUEUED_PROMPT))
     )
 
     await expect(screen).toBeVisible()
 
     const templateId = await firstPinnedTemplateOnScreen(page)
-    await page.getByTestId(`getting-started-card-${templateId}`).click()
+    await page.getByTestId(`${CARD_TESTID_PREFIX}${templateId}`).click()
 
     await expect(screen).toBeHidden()
     await expect(
@@ -134,6 +141,11 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       'the Run step must offer no way forward except running'
     ).toBeHidden()
 
+    return { spotlight, card }
+  }
+
+  /** Clicks Run and waits for the Result step to admit the run is in flight. */
+  async function runFromTourStep(page: Page, card: Locator) {
     await page.getByTestId('queue-button').click()
 
     await expect(
@@ -141,8 +153,6 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       'the run outlives its step, so the click moves the tour on and Result reports it'
     ).toBeVisible({ timeout: 15_000 })
     await expect(page.getByTestId('coach-busy')).toBeVisible()
-
-    return { card, spotlight }
   }
 
   wstest(
@@ -153,7 +163,8 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       const { page } = comfyPage
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-      const { card } = await tourToGeneratingStep(page)
+      const { card } = await tourToRunStep(page)
+      await runFromTourStep(page, card)
 
       execution.executionStart(TOUR_JOB_ID)
       execution.executionSuccess(TOUR_JOB_ID)
@@ -176,7 +187,8 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       const { page } = comfyPage
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-      const { card } = await tourToGeneratingStep(page)
+      const { card } = await tourToRunStep(page)
+      await runFromTourStep(page, card)
 
       execution.executionStart(TOUR_JOB_ID)
       execution.executionError(TOUR_JOB_ID, '1', 'the run blew up')
@@ -188,6 +200,38 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       await expect(page.getByTestId('coach-busy')).toBeHidden()
     }
   )
+
+  test.describe('without a subscription', () => {
+    test.beforeEach(async ({ page }) => {
+      await mockBilling(page)
+    })
+
+    test('leaves the nudge until the upgrade dialog closes', async ({
+      comfyPage
+    }) => {
+      test.slow()
+      const { page } = comfyPage
+      const { spotlight } = await tourToRunStep(page)
+      const nudge = page.getByTestId('first-run-nudge')
+      const upgradeDialog = page.getByTestId('dialog-overlay')
+
+      await page.getByTestId('subscribe-to-run-button').click()
+
+      await expect(upgradeDialog).toBeVisible()
+      await expect(
+        spotlight,
+        'a tour parked on a button that will never run has nowhere to go'
+      ).toBeHidden()
+
+      await page.keyboard.press('Escape')
+
+      await expect(upgradeDialog).toBeHidden()
+      await expect(
+        nudge,
+        'the tour ended, so the user still needs somewhere to go next'
+      ).toBeVisible({ timeout: 10_000 })
+    })
+  })
 
   test('starts no tour for a user who takes the blank canvas', async ({
     comfyPage
