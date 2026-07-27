@@ -937,11 +937,18 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       if (!minted) return null
       return getUnifiedToken() ?? null
     } catch (err) {
-      // Mirror refreshUnified: a permanent failure tears down the session;
-      // guard the toast on a live token so a concurrent burst surfaces it once.
+      // Mirror refreshUnified: guard the toast on a live token so a concurrent
+      // burst surfaces it once.
       if (isPermanentAuthError(err)) {
         if (getUnifiedToken()) surfacePermanentAuthError(err)
         clearUnifiedContext()
+        // Clearing the context is what makes this reachable only once, and also
+        // what severs the app's last link to the provider: with no unified token
+        // `getAuthHeader` returns null, so `getIdToken` is never called again and
+        // Firebase never gets to notice a revoked credential. Ask it directly.
+        if (isIdentityRevoked(err)) {
+          void askProviderToRevalidate()
+        }
       } else {
         console.warn('Unified reactive re-mint failed:', err)
       }

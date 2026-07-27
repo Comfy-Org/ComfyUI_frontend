@@ -2209,6 +2209,43 @@ describe('useWorkspaceAuthStore', () => {
         })
       )
       expect(unifiedToken.value).toBeNull()
+
+      // Clearing the context severs the app's only remaining link to the
+      // identity provider, so the reactive path must ask it directly; otherwise
+      // getIdToken is never called again and a revoked credential is never
+      // noticed, which is the original dead-end.
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mockGetIdToken).toHaveBeenCalledWith(true)
+      // Asking is not deciding: nothing here ends the session.
+      expect(mockEndExpiredSession).not.toHaveBeenCalled()
+    })
+
+    it('remintUnifiedOnce does not ask the provider when the workspace, not the identity, was refused', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(personalTokenResponse)
+        })
+        .mockResolvedValue({
+          ok: false,
+          status: 403,
+          statusText: 'Forbidden',
+          json: () => Promise.resolve({ message: 'Forbidden' })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.mintAtLogin()
+      await store.remintUnifiedOnce('unified-token-1')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockGetIdToken.mock.calls.some(([force]) => force === true)).toBe(
+        false
+      )
+      expect(mockEndExpiredSession).not.toHaveBeenCalled()
     })
 
     it('remintUnifiedOnce does not toast or clear the slot on a transient re-mint failure', async () => {
