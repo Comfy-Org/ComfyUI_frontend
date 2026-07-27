@@ -224,6 +224,7 @@ describe('useFirstRunTourController', () => {
 
     it('ignores a run that finished for another workflow', async () => {
       await tourOnRunStep()
+      mocks.activeWorkflow = OTHER_WORKFLOW
 
       await finishRun(OTHER_WORKFLOW, 'failed')
 
@@ -270,12 +271,23 @@ describe('useFirstRunTourController', () => {
       await tourOnRunStep()
       mocks.canRunWorkflows.value = false
       const underlyingHandler = vi.fn()
-      mountRunButton('subscribe-to-run-button', underlyingHandler).click()
+      const click = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true
+      })
+      mountRunButton(
+        'subscribe-to-run-button',
+        underlyingHandler
+      ).dispatchEvent(click)
 
       expect(
         underlyingHandler,
         'a refused run must never reach the handler that queues it'
       ).not.toHaveBeenCalled()
+      expect(
+        click.defaultPrevented,
+        'the browser activates the button on its own unless the click is cancelled'
+      ).toBe(true)
       expect(mocks.showSubscriptionDialog).toHaveBeenCalled()
       expect(
         mocks.engine.postpone,

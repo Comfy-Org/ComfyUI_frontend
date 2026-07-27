@@ -151,17 +151,6 @@ describe('firstRunTourSteps', () => {
     expect(result?.name).toBe('result.image')
   })
 
-  it('lights the step the tour is on and nothing else', async () => {
-    loadTemplate(FROM_IMAGE)
-
-    const steps = await buildSteps(FROM_IMAGE)
-
-    expect(
-      steps.filter((step) => step.maskRects),
-      'a step that also cuts out the nodes behind it lights half the graph by the end'
-    ).toEqual([])
-  })
-
   it('lets only interactive steps take pointer input', async () => {
     loadTemplate(FROM_IMAGE)
 

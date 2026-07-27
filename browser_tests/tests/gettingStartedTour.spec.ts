@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -8,13 +8,22 @@ import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/rol
 import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const wstest = mergeTests(test, webSocketFixture)
 
 const { firstRun } = enMessages.onboardingCoachmarks
 const GETTING_STARTED_TITLE = enMessages.gettingStarted.title
 const RUN_STEP_TITLE = firstRun.run.title
 const GENERATING_TITLE = firstRun.result.generating.title
+const RESULT_IMAGE_TITLE = firstRun.result.image.title
+const RESULT_FAILED_TITLE = firstRun.result.failed.title
 const CARD_TESTID_PREFIX = 'getting-started-card-'
+
+/** The prompt id the tour's run is queued under, so WS events can address it. */
+const TOUR_JOB_ID = 'first-run-tour-prompt'
 
 const ACTIVE_SUBSCRIPTION: CloudSubscriptionStatusResponse = {
   is_active: true,
@@ -85,15 +94,21 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
     })
   })
 
-  test('guides a first-run user from a template to a result', async ({
-    comfyPage
-  }) => {
-    // A template load, three camera flights and a queued run do not fit the default budget.
-    test.slow()
-    const { page } = comfyPage
+  /**
+   * The shared half of the walk: a fresh user reaches Getting Started, picks a
+   * pinned template, and the tour guides them to Run — where the outcomes part.
+   * The run is queued under a known id so WS events can address it afterwards.
+   */
+  async function tourToGeneratingStep(page: Page) {
     const screen = page.getByRole('dialog', { name: GETTING_STARTED_TITLE })
     const spotlight = page.getByTestId('coach-spotlight')
     const card = page.getByTestId('coach-card')
+
+    await page.route('**/api/prompt', (route) =>
+      route.fulfill(
+        jsonRoute({ prompt_id: TOUR_JOB_ID, number: 1, node_errors: {} })
+      )
+    )
 
     await expect(screen).toBeVisible()
 
@@ -126,7 +141,53 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       'the run outlives its step, so the click moves the tour on and Result reports it'
     ).toBeVisible({ timeout: 15_000 })
     await expect(page.getByTestId('coach-busy')).toBeVisible()
-  })
+
+    return { card, spotlight }
+  }
+
+  wstest(
+    'guides a first-run user from a template to a finished result',
+    async ({ comfyPage, getWebSocket }) => {
+      // A template load, three camera flights and a queued run do not fit the default budget.
+      test.slow()
+      const { page } = comfyPage
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+
+      const { card } = await tourToGeneratingStep(page)
+
+      execution.executionStart(TOUR_JOB_ID)
+      execution.executionSuccess(TOUR_JOB_ID)
+
+      await expect(
+        card.getByText(RESULT_IMAGE_TITLE),
+        'the run finished, so the Result step has to stop saying it is still coming'
+      ).toBeVisible({ timeout: 15_000 })
+      await expect(
+        page.getByTestId('coach-busy'),
+        'nothing is in flight once the run succeeds'
+      ).toBeHidden()
+    }
+  )
+
+  wstest(
+    'tells a first-run user when the run produced nothing',
+    async ({ comfyPage, getWebSocket }) => {
+      test.slow()
+      const { page } = comfyPage
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+
+      const { card } = await tourToGeneratingStep(page)
+
+      execution.executionStart(TOUR_JOB_ID)
+      execution.executionError(TOUR_JOB_ID, '1', 'the run blew up')
+
+      await expect(
+        card.getByText(RESULT_FAILED_TITLE),
+        'announcing a result that does not exist is the bug D2 filed'
+      ).toBeVisible({ timeout: 15_000 })
+      await expect(page.getByTestId('coach-busy')).toBeHidden()
+    }
+  )
 
   test('starts no tour for a user who takes the blank canvas', async ({
     comfyPage
