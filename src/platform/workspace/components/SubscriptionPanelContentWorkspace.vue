@@ -246,7 +246,8 @@
 
         <div class="flex flex-col gap-6 pt-6 lg:flex-row lg:items-stretch">
           <div class="w-full lg:max-w-md">
-            <CreditsTile :zero-state="showZeroState" />
+            <MemberCreditsTile v-if="memberCap" />
+            <CreditsTile v-else :zero-state="showZeroState" />
           </div>
 
           <div
@@ -323,6 +324,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import MemberCreditsTile from '@/platform/workspace/components/MemberCreditsTile.vue'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
@@ -334,6 +336,7 @@ import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierB
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
+import { useMemberCreditDisplay } from '@/platform/workspace/composables/useMemberCreditDisplay'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -346,6 +349,7 @@ const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
 const { permissions, isSubscriptionCancelled } = useWorkspaceUI()
+const { memberCap } = useMemberCreditDisplay()
 const { t, n, locale } = useI18n()
 
 const billingOperationStore = useBillingOperationStore()
