@@ -69,7 +69,9 @@
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
     "typecheck:desktop": "pnpm --filter @comfyorg/desktop-ui run typecheck",
     "typecheck:website": "pnpm --filter @comfyorg/website run typecheck",
-    "zipdist": "node scripts/zipdist.js"
+    "zipdist": "node scripts/zipdist.js",
+    "test:custom-nodes:local": "node scripts/run-custom-nodes-local.mjs core",
+    "test:custom-nodes:local:cloud": "node scripts/run-custom-nodes-local.mjs cloud"
   },
   "dependencies": {
     "@alloc/quick-lru": "catalog:",

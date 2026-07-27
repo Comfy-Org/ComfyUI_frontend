@@ -24,6 +24,22 @@ System design, data flow, and the reasoning behind every invariant:
 
 ## Running
 
+One-command orchestrators (boot whatever is missing, reuse whatever is
+already running, tear down only what they started; extra args pass through
+to Playwright after `--`):
+
+| Script                               | What it does                                                                                                                                                    |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm test:custom-nodes:local`       | CORE: boots the `TEST_COMFYUI_DIR` backend on :8288 (`--multi-user --cache-none`, venv auto-detected, video asset staged) + the dev server, then runs the suite |
+| `pnpm test:custom-nodes:local:cloud` | CLOUD: checks `SMOKE_ACCOUNT_*` in `.env`, builds the cloud dist, serves the preview (`/api` -> testcloud), runs the suite. `--skip-build` to iterate           |
+
+Both still require the one-time setup above (core: packs + devtools
+installed in the checkout; cloud: credentials in `.env`). Cloud caution:
+it drives the ONE shared Cloud test instance - do not overlap with a CI
+cloud run.
+
+The building blocks, runnable individually:
+
 | Script                                | What it does                                                                                                                                                                                                                                                                                     |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `pnpm test:custom-nodes`              | whole suite headless against the Vite dev server - the fast local loop for suite-code iteration. NOT the gate: the dev server never loads pack frontend JS (see Gotchas)                                                                                                                         |
