@@ -7,6 +7,7 @@ import { nextTick } from 'vue'
 import { i18n } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
@@ -70,6 +71,7 @@ type FakeTab = {
   isModified: boolean
   activeState: { id?: string } | null
   initialMode?: 'app' | 'graph'
+  activeMode?: 'builder:inputs'
 }
 const hostStores = vi.hoisted(() => ({
   workflow: null as unknown as {
@@ -333,6 +335,23 @@ function dispatchDrag(
   return event.defaultPrevented
 }
 
+// DES-527 replaced the paperclip and @ buttons with a single + menu, so every
+// attach or node-mention gesture now starts by opening it.
+async function openAddMenu(): Promise<void> {
+  await userEvent.click(
+    screen.getByRole('button', { name: i18n.global.t('agent.addToPrompt') })
+  )
+}
+
+async function openNodePicker(): Promise<void> {
+  await openAddMenu()
+  await userEvent.click(
+    await screen.findByRole('menuitem', {
+      name: i18n.global.t('agent.addNodesFromGraph')
+    })
+  )
+}
+
 // Records what actually reached the upload endpoint, so an exclusion can be
 // asserted on the request rather than on a chip that has not rendered yet.
 function stubUploadFetch(uploaded: string[] = []): string[] {
@@ -383,8 +402,11 @@ describe('AgentPanelRoot attach flow', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
+    await openAddMenu()
     await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.attach') })
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.attachFiles')
+      })
     )
     expect(telemetry.trackAgentAttachButtonClicked).toHaveBeenCalled()
 
@@ -409,6 +431,67 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
     expect(screen.getByText('cat.png')).toBeInTheDocument()
+  })
+
+  it('opens the assets sidebar from the add menu', async () => {
+    stubUploadFetch()
+    const sidebar = useSidebarTabStore()
+    sidebar.activeSidebarTabId = 'workflows'
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.addFromAssets')
+      })
+    )
+
+    expect(sidebar.activeSidebarTabId).toBe('assets')
+  })
+
+  it('leaves the assets sidebar open when it is already the active tab', async () => {
+    stubUploadFetch()
+    const sidebar = useSidebarTabStore()
+    sidebar.activeSidebarTabId = 'assets'
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.addFromAssets')
+      })
+    )
+
+    expect(sidebar.activeSidebarTabId).toBe('assets')
+  })
+
+  it('hides the assets entry in builder mode', async () => {
+    stubUploadFetch()
+    hostStores.workflow.activeWorkflow = {
+      path: 'workflows/current.json',
+      directory: 'workflows',
+      filename: 'current',
+      isTemporary: false,
+      isModified: false,
+      activeState: null,
+      activeMode: 'builder:inputs'
+    }
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await openAddMenu()
+    expect(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.addNodesFromGraph')
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('menuitem', {
+        name: i18n.global.t('agent.addFromAssets')
+      })
+    ).toBeNull()
   })
 
   it('warns without a server error when a video is over the size limit', async () => {
@@ -2882,9 +2965,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.mention') })
-    )
+    await openNodePicker()
     await userEvent.click(await screen.findByText('KSampler'))
 
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
@@ -2907,9 +2988,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ]
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
 
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.mention') })
-    )
+    await openNodePicker()
     const matches = await screen.findAllByText('KSampler')
     await userEvent.click(matches[matches.length - 1])
 
@@ -3233,7 +3312,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('stages a chip from the @ node picker and sends its id', async () => {
+  it('stages a chip from the add-menu node picker and sends its id', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
     appMock.graph.nodes = [{ id: 9, title: 'VAE Decode' }]
@@ -3241,9 +3320,7 @@ describe('AgentPanelRoot workflow binding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
 
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.mention') })
-    )
+    await openNodePicker()
     await userEvent.click(await screen.findByText('VAE Decode'))
     expect(
       screen.getByRole('button', { name: i18n.global.t('agent.remove') })
@@ -3254,7 +3331,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['9'] } })
   })
 
-  it('resolves @ picker nodes from the viewed subgraph, not the root graph', async () => {
+  it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
     appMock.canvas = {
@@ -3264,9 +3341,7 @@ describe('AgentPanelRoot workflow binding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
 
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.mention') })
-    )
+    await openNodePicker()
     await userEvent.click(await screen.findByText('KSampler'))
     await sendFromComposer('explain this')
 

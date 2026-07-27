@@ -4628,7 +4628,7 @@
     "gotIt": "Got it",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Describe ideas, {'@'} to reference, add nodes from graph or drag in assets",
+    "placeholder": "Describe ideas, add nodes from graph or drop in images or videos",
     "suggestedPrompts": [
       "Generate a yellow duck with a hockey mask",
       "List my saved workflows",
@@ -4636,10 +4636,12 @@
       "Explain the selected node",
       "Build a workflow for image to video with 3 models"
     ],
-    "attach": "Attach a file",
+    "attachFiles": "Attach images or files",
+    "addToPrompt": "Add to prompt",
+    "addNodesFromGraph": "Add nodes from graph",
+    "addFromAssets": "Add from assets panel",
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
-    "mention": "Mention a node",
     "changeWorkflowForChat": "Change the workflow for this chat",
     "chooseWorkflow": "Choose a workflow",
     "dontWorkInWorkflow": "Don't work in a workflow",

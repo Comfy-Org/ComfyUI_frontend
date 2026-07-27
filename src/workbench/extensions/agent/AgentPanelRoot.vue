@@ -11,6 +11,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useAppMode } from '@/composables/useAppMode'
 import { hasImageType, hasVideoType } from '@/utils/eventUtils'
 import { appendWorkflowJsonExt } from '@/utils/formatUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -19,6 +20,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
@@ -56,6 +58,8 @@ import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 
 const { t } = useI18n()
 const toast = useToastStore()
+const sidebarTabStore = useSidebarTabStore()
+const { isBuilderMode } = useAppMode()
 
 const { userDisplayName } = useCurrentUser()
 const userName = computed(
@@ -767,6 +771,10 @@ function onAttach(): void {
   fileInput.value?.click()
 }
 
+function onOpenAssets(): void {
+  sidebarTabStore.activeSidebarTabId = 'assets'
+}
+
 function onMentionPick(node: SelectedNode): void {
   const stagedBefore = selectionTags.value.length
   addSelectionTag(node)
@@ -825,6 +833,7 @@ function onPanelDrop(event: DragEvent): void {
       :streaming="isStreaming"
       :submitting="status === 'thinking'"
       :can-attach="true"
+      :can-open-assets="!isBuilderMode"
       :is-maximized="agentPanelStore.isMaximized"
       :history-groups="history.grouped"
       :selection-tags="selectionTags"
@@ -838,6 +847,7 @@ function onPanelDrop(event: DragEvent): void {
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
+      @open-assets="onOpenAssets"
       @remove-tag="removeSelectionTag"
       @mention-pick="onMentionPick"
       @resolve-conflict="onResolveConflict"

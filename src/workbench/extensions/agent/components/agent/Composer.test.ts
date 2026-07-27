@@ -26,17 +26,17 @@ describe('Composer', () => {
     expect(send).toBeEnabled()
   })
 
-  it('hints every composer affordance without tripping i18n linked-message syntax', () => {
+  it('renders without vue-i18n message compilation errors', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    mount()
+    mount({ canAttach: true, canOpenAssets: true })
 
-    // A bare "@" is vue-i18n linked-message syntax: it fails compilation and
-    // only reaches the screen because the raw message is used as a fallback.
-    expect(
-      (screen.getByRole('textbox') as HTMLTextAreaElement).placeholder
-    ).toBe(
-      'Describe ideas, @ to reference, add nodes from graph or drag in assets'
-    )
+    // The menu strings only compile once reka mounts the (lazy) menu content,
+    // so walk into the submenu before asserting.
+    await userEvent.click(await openAddMenu())
+    await screen.findByText('No nodes in this workflow')
+
+    // Unescaped syntax characters (@, |, {) in a locale message compile to an
+    // error and silently fall back to the raw string.
     expect(consoleError.mock.calls.flat().join(' ')).not.toContain(
       'Message compilation error'
     )
@@ -81,15 +81,67 @@ describe('Composer', () => {
     )
   })
 
-  it('hides the paperclip by default', () => {
+  async function openAddMenu() {
+    await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
+    // Anchor on the entry that is always present, so the absence assertions
+    // below cannot pass against a menu that never opened.
+    return screen.findByRole('menuitem', { name: 'Add nodes from graph' })
+  }
+
+  it('hides the conditional entries from the add menu by default', async () => {
     mount()
-    expect(screen.queryByRole('button', { name: 'Attach a file' })).toBeNull()
+
+    await openAddMenu()
+
+    expect(
+      screen.queryByRole('menuitem', { name: 'Attach images or files' })
+    ).toBeNull()
+    expect(
+      screen.queryByRole('menuitem', { name: 'Add from assets panel' })
+    ).toBeNull()
   })
 
-  it('emits attach when the paperclip is clicked and canAttach is set', async () => {
+  it('emits attach from the add menu when canAttach is set', async () => {
     const { emitted } = mount({ canAttach: true })
-    await userEvent.click(screen.getByRole('button', { name: 'Attach a file' }))
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Attach images or files' })
+    )
+
     expect(emitted().attach).toHaveLength(1)
+  })
+
+  it('emits openAssets from the add menu when canOpenAssets is set', async () => {
+    const { emitted } = mount({ canOpenAssets: true })
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Add from assets panel' })
+    )
+
+    expect(emitted().openAssets).toHaveLength(1)
+  })
+
+  it('explains an empty graph inside the node picker', async () => {
+    mount()
+
+    await userEvent.click(await openAddMenu())
+
+    expect(
+      await screen.findByText('No nodes in this workflow')
+    ).toBeInTheDocument()
+  })
+
+  it('reads the graph when the node picker opens, not when the add menu does', async () => {
+    const getMentionNodes = vi.fn(() => [])
+    mount({ getMentionNodes })
+
+    const picker = await openAddMenu()
+    expect(getMentionNodes).not.toHaveBeenCalled()
+
+    await userEvent.click(picker)
+    expect(getMentionNodes).toHaveBeenCalledOnce()
   })
 
   describe('insert highlight', () => {
