@@ -204,10 +204,17 @@ function snapshotPacksOf(snapshot: ObjectInfoSnapshot): Map<string, string[]> {
   return nodesByPack
 }
 
+// One boot-registered extension name per pack, read off the JS Cloud actually
+// serves at /extensions/. One sentinel, not the full set: the assert only has
+// to prove the pack's JS loaded, and a conditionally-registered extra would
+// red a healthy run.
+export type CloudExtensionSentinels = Record<string, string[]>
+
 export function buildCloudManifest(
   doc: SupportedNodesDoc,
   snapshot: ObjectInfoSnapshot,
-  overlay: CuratedCloudOverlay = {}
+  overlay: CuratedCloudOverlay = {},
+  sentinels: CloudExtensionSentinels = {}
 ): CloudManifest {
   const nodesByPack = snapshotPacksOf(snapshot)
   const dirnameByJoinKey = new Map<string, string>()
@@ -256,7 +263,7 @@ export function buildCloudManifest(
       workflow: curated?.workflow ?? '',
       expectedNodes: enabled.slice(0, 2),
       expectedNodeCount: enabled.length,
-      expectedExtensions: [],
+      expectedExtensions: sentinels[dirname] ?? [],
       disabledNodes: sortedRecordOf(pack.node_labels ?? {}),
       timeoutMs: curated?.timeoutMs ?? 30_000
     })

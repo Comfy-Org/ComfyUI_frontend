@@ -62,7 +62,7 @@
       "workflow": "",
       "expectedNodes": ["DA3_CreateCameraParams", "DA3_EnableTiledProcessing"],
       "expectedNodeCount": 9,
-      "expectedExtensions": [],
+      "expectedExtensions": ["DepthAnythingV3.ToMesh.Download"],
       "disabledNodes": {
         "DA3_DownloadModel": ["NetworkAccess"],
         "DA3_FilterGaussians": ["WritesToDisk"],
@@ -153,7 +153,7 @@
       "workflow": "",
       "expectedNodes": ["AddLabel", "AddNoiseToTrackPath"],
       "expectedNodeCount": 227,
-      "expectedExtensions": [],
+      "expectedExtensions": ["KJNodes.GetNode"],
       "disabledNodes": {
         "CameraPoseVisualizer": ["ReadsArbitraryFile"],
         "EndRecordCUDAMemoryHistory": ["Stateful", "WritesToDisk"],
@@ -192,7 +192,7 @@
       "workflow": "",
       "expectedNodes": ["APGGuider", "AddLatentGuide"],
       "expectedNodeCount": 73,
-      "expectedExtensions": [],
+      "expectedExtensions": ["LTXVideo.SparseTrackEditor"],
       "disabledNodes": {
         "GemmaAPITextEncode": ["NetworkAccess", "RequiresExternalAPI"],
         "LTXVHDRDecodePostprocess": ["WritesToDisk"],
@@ -373,7 +373,7 @@
       "workflow": "",
       "expectedNodes": ["LoadUpscalerTensorrtModel", "UpscalerTensorrt"],
       "expectedNodeCount": 2,
-      "expectedExtensions": [],
+      "expectedExtensions": ["UpscalerTensorrt.CustomResize"],
       "disabledNodes": {},
       "timeoutMs": 30000
     },
@@ -415,7 +415,7 @@
       "workflow": "",
       "expectedNodes": ["AssertContainsColor", "AssertEqual"],
       "expectedNodeCount": 9,
-      "expectedExtensions": [],
+      "expectedExtensions": ["comfyui.test.framework.auto.save.api"],
       "disabledNodes": {},
       "timeoutMs": 30000
     },
@@ -454,7 +454,7 @@
       "workflow": "",
       "expectedNodes": ["FL_AnimatedShapePatterns", "FL_AnimeLineExtractor"],
       "expectedNodeCount": 110,
-      "expectedExtensions": [],
+      "expectedExtensions": ["Fill-Nodes.TetrisGame"],
       "disabledNodes": {
         "FL_API_Base64_ImageLoader": ["DisabledOnCloud"],
         "FL_API_ImageSaver": ["WritesToDisk"],
@@ -734,7 +734,7 @@
       "workflow": "",
       "expectedNodes": ["BooleanBasic", "BooleanReverse"],
       "expectedNodeCount": 21,
-      "expectedExtensions": [],
+      "expectedExtensions": ["ControlAltAI.IntegerSettingsAdvanced"],
       "disabledNodes": {
         "FluxAttentionControl": ["DisabledOnCloud", "Stateful"]
       },
@@ -771,7 +771,7 @@
       "workflow": "",
       "expectedNodes": ["AdvancedNoise", "BongSampler"],
       "expectedNodeCount": 285,
-      "expectedExtensions": [],
+      "expectedExtensions": ["Comfy.RES4LYF.DisplayInfo"],
       "disabledNodes": {
         "Base64ToConditioning": ["DisabledOnCloud"],
         "ClownsharKSamplerOptions": ["DisabledOnCloud"],
@@ -891,7 +891,7 @@
         "PlyPreviewProcessGaussianPLYEnhance"
       ],
       "expectedNodeCount": 2,
-      "expectedExtensions": [],
+      "expectedExtensions": ["plypreview.gaussianpreview"],
       "disabledNodes": {
         "PlyPreviewLoadGaussianPLYEnhance": ["ReadsArbitraryFile"],
         "PlyPreviewLoadGaussianPLYPathEnhance": ["ReadsArbitraryFile"]
@@ -945,7 +945,7 @@
       "workflow": "",
       "expectedNodes": ["Compositor3", "CompositorColorPicker"],
       "expectedNodeCount": 7,
-      "expectedExtensions": [],
+      "expectedExtensions": ["ComfyUI.Enrico.ColorPicker"],
       "disabledNodes": {},
       "timeoutMs": 30000
     },
@@ -1035,7 +1035,7 @@
       "workflow": "",
       "expectedNodes": ["InpaintCrop", "InpaintCropImproved"],
       "expectedNodeCount": 6,
-      "expectedExtensions": [],
+      "expectedExtensions": ["inpaint-cropandstitch.showcontrol"],
       "disabledNodes": {},
       "timeoutMs": 30000
     },
@@ -1104,7 +1104,7 @@
       "workflow": "",
       "expectedNodes": ["QwenMultiangleCameraNode"],
       "expectedNodeCount": 1,
-      "expectedExtensions": [],
+      "expectedExtensions": ["ComfyUI.QwenMultiangle"],
       "disabledNodes": {},
       "timeoutMs": 30000
     },
@@ -1115,7 +1115,7 @@
       "workflow": "",
       "expectedNodes": ["AILab_ColorInput", "AILab_ColorToMask"],
       "expectedNodeCount": 35,
-      "expectedExtensions": [],
+      "expectedExtensions": ["AILab.colorWidget"],
       "disabledNodes": {
         "AILab_LoadImage": ["ReadsArbitraryFile"],
         "AILab_LoadImageAdvanced": ["ReadsArbitraryFile"],
@@ -1135,7 +1135,7 @@
       "workflow": "",
       "expectedNodes": ["LoadSAM3Model", "SAM3BBoxCollector"],
       "expectedNodeCount": 14,
-      "expectedExtensions": [],
+      "expectedExtensions": ["comfyui.sam3.video_dynamic"],
       "disabledNodes": {},
       "timeoutMs": 30000
     },
@@ -1226,7 +1226,7 @@
       "workflow": "assets/customNodes/vhs_video_pipeline_cloud_run.json",
       "expectedNodes": ["VHS_AudioToVHSAudio", "VHS_DuplicateImages"],
       "expectedNodeCount": 32,
-      "expectedExtensions": [],
+      "expectedExtensions": ["VideoHelperSuite.Core"],
       "disabledNodes": {
         "VHS_BatchManager": ["DisabledOnCloud"],
         "VHS_LoadAudio": ["ReadsArbitraryFile"],
@@ -1246,7 +1246,7 @@
       "workflow": "",
       "expectedNodes": ["WorkflowPrettifier"],
       "expectedNodeCount": 1,
-      "expectedExtensions": [],
+      "expectedExtensions": ["comfyui.workflow.prettier"],
       "disabledNodes": {},
       "timeoutMs": 30000
     },
@@ -1399,7 +1399,7 @@
       "workflow": "",
       "expectedNodes": ["ACES2OutputTransform", "ARRIWideGamut4"],
       "expectedNodeCount": 70,
-      "expectedExtensions": [],
+      "expectedExtensions": ["Radiance.IO"],
       "disabledNodes": {
         "RadianceLUTApply": ["DisabledOnCloud"],
         "◎ RadianceDigitalCinemaRead": ["ReadsArbitraryFile"],
