@@ -1,94 +1,106 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import MediaAssetFilterButton from '@/platform/assets/components/MediaAssetFilterButton.vue'
 import MediaAssetFilterMenu from '@/platform/assets/components/MediaAssetFilterMenu.vue'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
 function renderMenu(mediaTypeFilters: string[] = []) {
   const onUpdate = vi.fn()
-  const utils = render(MediaAssetFilterMenu, {
-    props: {
-      mediaTypeFilters,
-      'onUpdate:mediaTypeFilters': onUpdate
-    },
-    global: {
-      mocks: {
-        $t: (key: string) => key
-      }
-    }
+  const TestHost = defineComponent({
+    components: { MediaAssetFilterButton, MediaAssetFilterMenu },
+    setup: () => ({ mediaTypeFilters, onUpdate }),
+    template: `
+      <MediaAssetFilterButton>
+        <MediaAssetFilterMenu
+          :media-type-filters="mediaTypeFilters"
+          @update:media-type-filters="onUpdate"
+        />
+      </MediaAssetFilterButton>
+    `
+  })
+
+  const utils = render(TestHost, {
+    global: { plugins: [i18n] }
   })
   return { ...utils, onUpdate, user: userEvent.setup() }
 }
 
-const labelByType: Record<string, string> = {
-  image: 'sideToolbar.mediaAssets.filterImage',
-  video: 'sideToolbar.mediaAssets.filterVideo',
-  audio: 'sideToolbar.mediaAssets.filterAudio',
-  '3d': 'sideToolbar.mediaAssets.filter3D',
-  text: 'sideToolbar.mediaAssets.filterText'
+async function openMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Filter by' }))
 }
 
-function getCheckbox(type: keyof typeof labelByType): HTMLElement {
-  return screen.getByRole('checkbox', { name: labelByType[type] })
+async function openMediaTypeMenu(user: ReturnType<typeof userEvent.setup>) {
+  await openMenu(user)
+  await user.click(screen.getByRole('menuitem', { name: /Media type/ }))
 }
+
+const mediaTypeLabels = ['Image', 'Video', 'Audio', '3D', 'Text']
 
 describe('MediaAssetFilterMenu', () => {
-  it('renders all media-type checkboxes', () => {
-    renderMenu()
+  it('groups media types under the Attribute section', async () => {
+    const { user } = renderMenu()
+    await openMenu(user)
 
-    const checkboxes = screen.getAllByRole('checkbox')
-    expect(checkboxes).toHaveLength(5)
-    for (const type of Object.keys(labelByType)) {
-      expect(getCheckbox(type)).toBeTruthy()
+    expect(screen.getByText('Attribute')).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: /Media type/ })).toBeVisible()
+    expect(screen.queryByRole('menuitemcheckbox', { name: 'Image' })).toBeNull()
+  })
+
+  it('shows every media type in the nested menu', async () => {
+    const { user } = renderMenu()
+    await openMediaTypeMenu(user)
+
+    for (const label of mediaTypeLabels) {
+      expect(
+        screen.getByRole('menuitemcheckbox', { name: label })
+      ).toBeVisible()
     }
   })
 
-  it('reflects checked state from the prop via aria-checked', () => {
-    renderMenu(['image', '3d'])
+  it('reflects the selected media types', async () => {
+    const { user } = renderMenu(['image', '3d'])
+    await openMediaTypeMenu(user)
 
-    expect(getCheckbox('image').getAttribute('aria-checked')).toBe('true')
-    expect(getCheckbox('3d').getAttribute('aria-checked')).toBe('true')
-    expect(getCheckbox('video').getAttribute('aria-checked')).toBe('false')
-    expect(getCheckbox('audio').getAttribute('aria-checked')).toBe('false')
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Image' })
+    ).toHaveAttribute('aria-checked', 'true')
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: '3D' })
+    ).toHaveAttribute('aria-checked', 'true')
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Video' })
+    ).toHaveAttribute('aria-checked', 'false')
   })
 
-  it('emits an array containing the new type when an unchecked box is clicked', async () => {
-    const { onUpdate, user } = renderMenu([])
-    await user.click(getCheckbox('video'))
-
-    expect(onUpdate).toHaveBeenCalledTimes(1)
-    expect(onUpdate).toHaveBeenCalledWith(['video'])
-  })
-
-  it('emits an array without the type when a checked box is clicked again', async () => {
-    const { onUpdate, user } = renderMenu(['image', 'audio'])
-    await user.click(getCheckbox('audio'))
-
-    expect(onUpdate).toHaveBeenCalledWith(['image'])
-  })
-
-  it('appends to the existing filter list rather than replacing it', async () => {
+  it('adds a media type without closing either menu', async () => {
     const { onUpdate, user } = renderMenu(['image'])
-    await user.click(getCheckbox('video'))
+    await openMediaTypeMenu(user)
+
+    await user.click(screen.getByRole('menuitemcheckbox', { name: 'Video' }))
 
     expect(onUpdate).toHaveBeenCalledWith(['image', 'video'])
+    expect(screen.getByRole('menu', { name: 'Filter by' })).toBeVisible()
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Video' })
+    ).toBeVisible()
   })
 
-  it('toggles via keyboard (Enter and Space)', async () => {
-    const { onUpdate, user } = renderMenu([])
+  it('removes an already selected media type', async () => {
+    const { onUpdate, user } = renderMenu(['image', 'audio'])
+    await openMediaTypeMenu(user)
 
-    getCheckbox('image').focus()
-    await user.keyboard('{Enter}')
-    expect(onUpdate).toHaveBeenLastCalledWith(['image'])
+    await user.click(screen.getByRole('menuitemcheckbox', { name: 'Audio' }))
 
-    getCheckbox('audio').focus()
-    await user.keyboard(' ')
-    expect(onUpdate).toHaveBeenLastCalledWith(['audio'])
+    expect(onUpdate).toHaveBeenCalledWith(['image'])
   })
 })
