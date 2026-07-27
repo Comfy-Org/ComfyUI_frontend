@@ -73,7 +73,8 @@ export function useKeybindingService() {
           event.key === 'Escape' &&
           !event.ctrlKey &&
           !event.altKey &&
-          !event.metaKey
+          !event.metaKey &&
+          !event.shiftKey
         ) {
           return
         }
