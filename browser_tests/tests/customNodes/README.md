@@ -24,19 +24,21 @@ System design, data flow, and the reasoning behind every invariant:
 
 ## Running
 
-One-command orchestrators (boot whatever is missing, reuse whatever is
-already running, tear down only what they started; extra args pass through
-to Playwright after `--`):
+One-command runs, composed from the building blocks below with
+`start-server-and-test` (starts what is missing, waits on real readiness
+URLs, reuses services already running, tears down what it started):
 
 | Script                               | What it does                                                                                                                                                    |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm test:custom-nodes:local`       | CORE: boots the `TEST_COMFYUI_DIR` backend on :8288 (`--multi-user --cache-none`, venv auto-detected, video asset staged) + the dev server, then runs the suite |
-| `pnpm test:custom-nodes:local:cloud` | CLOUD: checks `SMOKE_ACCOUNT_*` in `.env`, builds the cloud dist, serves the preview (`/api` -> testcloud), runs the suite. `--skip-build` to iterate           |
+| `pnpm test:custom-nodes:local:cloud` | CLOUD: builds the cloud dist, serves the preview (`/api` -> testcloud), runs the suite with the `.env` smoke credentials                                        |
 
 Both still require the one-time setup above (core: packs + devtools
-installed in the checkout; cloud: credentials in `.env`). Cloud caution:
-it drives the ONE shared Cloud test instance - do not overlap with a CI
-cloud run.
+installed in the checkout; cloud: `SMOKE_ACCOUNT_EMAIL` /
+`SMOKE_ACCOUNT_PASSWORD` in the gitignored `.env` - the suite fails
+closed with the exact remedy if they are missing). Cloud caution: it
+drives the ONE shared Cloud test instance - do not overlap with a CI
+cloud run. For a `-g`-filtered run, use the building blocks directly.
 
 The building blocks, runnable individually:
 
