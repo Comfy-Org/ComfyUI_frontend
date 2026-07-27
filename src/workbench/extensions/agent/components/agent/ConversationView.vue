@@ -89,12 +89,13 @@ watch(
 
     <button
       v-if="!atBottom"
+      v-tooltip.top="{ value: t('agent.latest'), showDelay: 300 }"
       type="button"
-      class="rounded-agent border-agent-border bg-agent-surface-raised text-agent-fg-muted hover:text-agent-fg absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 border px-3 py-1.5 text-xs shadow-md transition-colors"
+      :aria-label="t('agent.latest')"
+      class="border-agent-border bg-agent-surface-raised text-agent-fg-muted hover:text-agent-fg absolute bottom-3 left-1/2 flex size-8 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border shadow-md transition-colors"
       @click="scrollToLatest"
     >
-      <span class="icon-[lucide--arrow-down] size-3.5" />
-      {{ t('agent.latest') }}
+      <span class="icon-[lucide--arrow-down] size-4" />
     </button>
   </div>
 </template>
