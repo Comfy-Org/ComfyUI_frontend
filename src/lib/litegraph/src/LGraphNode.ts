@@ -3072,13 +3072,19 @@ export class LGraphNode
       output
     )
 
-    inputNode.onConnectionsChange?.(
-      NodeSlotType.INPUT,
-      inputIndex,
-      true,
-      link,
-      input
-    )
+    // DETECTION PROOF (row 13, story S12): the live-connect INPUT callback
+    // that pack JS overrides to grow a dynamic input never fires. Backend
+    // nodes and static slots are unaffected, so the def-driven tiers cannot
+    // see it - only the autogrow tier can. Captured red (CI 30292391836):
+    // "ImpactMakeImageList via drag with VueNodes=false: input count grows by
+    // one on connect" (expected 2, got 1).
+    // inputNode.onConnectionsChange?.(
+    //   NodeSlotType.INPUT,
+    //   inputIndex,
+    //   true,
+    //   link,
+    //   input
+    // )
 
     this.setDirtyCanvas(false, true)
     graph.afterChange()

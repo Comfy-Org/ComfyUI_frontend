@@ -54,6 +54,14 @@ export const useExtensionService = () => {
         .filter((extension) =>
           shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
         )
+        // DETECTION PROOF (row 12, story S11): recreate a pack whose frontend
+        // JS silently fails to load (wrong web dir / a loadExtensions
+        // regression) while its backend nodes stay in /object_info. Expected
+        // red: the load tier's expectedExtensions assert names
+        // ComfyUI-KJNodes' extension as not registered. Captured red
+        // (CI 30292373406): 'ComfyUI-KJNodes: frontend extension
+        // "KJNodes.appearance" not registered - pack JS did not load'.
+        .filter((extension) => !extension.includes('ComfyUI-KJNodes'))
         .map(async (ext) => {
           try {
             await import(/* @vite-ignore */ api.fileURL(ext))
