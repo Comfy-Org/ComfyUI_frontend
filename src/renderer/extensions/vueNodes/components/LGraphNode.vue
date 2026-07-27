@@ -112,6 +112,7 @@
         <NodeHeader
           :node-data="nodeData"
           :collapsed="isCollapsed"
+          :compact="compactCollapsed"
           :price-badges="headerPricingBadges"
           :show-status-badge="showStatusBadge"
           @collapse="handleCollapse"

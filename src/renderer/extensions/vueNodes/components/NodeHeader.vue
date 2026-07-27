@@ -6,8 +6,9 @@
     v-else
     :class="
       cn(
-        'lg-node-header w-full min-w-0 p-1 text-xs',
+        'lg-node-header w-full min-w-0 py-1 pl-1 text-xs',
         'text-node-component-slot-text',
+        compact ? 'pr-2' : 'pr-1',
         headerShapeClass
       )
     "
@@ -91,6 +92,7 @@ import type { NodeBadgeProps } from './NodeBadge.vue'
 interface NodeHeaderProps {
   nodeData?: VueNodeData
   collapsed?: boolean
+  compact?: boolean
   priceBadges?: { required: string; rest?: string }[]
   showStatusBadge?: boolean
 }
@@ -98,6 +100,7 @@ interface NodeHeaderProps {
 const {
   nodeData,
   collapsed,
+  compact,
   showStatusBadge = true
 } = defineProps<NodeHeaderProps>()
 
