@@ -116,13 +116,6 @@ export const useLinkStore = defineStore('link', () => {
     return next
   }
 
-  /**
-   * Adds a link to the reverse index over origin endpoints. Floating links are
-   * skipped: link queries return fully-assigned links only, matching the
-   * `output.links` mirror this index replaces. Entries are held raw so a
-   * topology indexes and unindexes under one identity whether the caller
-   * passes the raw object or the reactive state handed back by `placeValidated`.
-   */
   function indexOrigin(graphId: UUID, topology: LinkTopology): void {
     if (isFloatingTopology(topology)) return
     const origins = graphOrigins(graphId)
@@ -135,7 +128,6 @@ export const useLinkStore = defineStore('link', () => {
     origins.set(key, reactive(new Set([toRaw(topology)])))
   }
 
-  /** Removes a link from the origin index, dropping the key when it empties. */
   function unindexOrigin(graphId: UUID, topology: LinkTopology): void {
     const origins = originIndex.value.get(graphId)
     if (!origins) return

@@ -92,16 +92,8 @@ export const useRerouteStore = defineStore('reroute', () => {
 
   /**
    * Registers a reroute's chain state.
-   *
-   * Refuses to overwrite a registration held by a different chain: silent
-   * last-wins would let a throwaway graph hijack a live reroute's entry,
-   * leaving the live owner unable to update or vacate it. The refused caller
-   * keeps its own (untracked) chain. To hand an id to another chain, the
-   * registered owner must vacate first via {@link deleteReroute}.
-   *
    * @returns The store-held reactive state — callers keep it as their live
-   * state object so later field writes are tracked — or `chain` unchanged
-   * when registration was refused.
+   * state object so later field writes are tracked.
    */
   function registerReroute(graphId: UUID, chain: RerouteChain): RerouteChain {
     const bucket = graphChains(graphId)

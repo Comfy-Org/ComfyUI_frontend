@@ -60,12 +60,6 @@ function getNodeById(graph: ISerialisedGraph | LGraph, id: SerializedNodeId) {
   return graph.nodes.find((node: ISerialisedNode) => node.id == id)!
 }
 
-/**
- * Output link ids for either shape of node: live slots read through the link
- * store, serialized slots through their own array. Mirrors what the deprecated
- * `output.links` getter reported, `undefined` included, so the checks below
- * can still tell "slot absent" from "slot has no links".
- */
 function outputLinkIdsOf(
   node: ISerialisedNode | LGraphNode,
   slot: number

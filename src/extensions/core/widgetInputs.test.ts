@@ -7,8 +7,6 @@ import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
-// widgetInputs registers a ComfyUI extension at module load, which needs an
-// active pinia, so it is imported per-test rather than at module scope.
 async function loadPrimitiveNode() {
   return (await import('./widgetInputs')).PrimitiveNode
 }

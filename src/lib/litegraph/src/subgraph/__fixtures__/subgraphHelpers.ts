@@ -71,13 +71,6 @@ function disposeSubgraphNodeCreation(): void {
   subgraphNodeTypesToDispose.length = 0
 }
 
-/**
- * Registers a {@link SubgraphNode} type for every subgraph created under
- * `rootGraph`, so that operations which rehydrate a subgraph instance by type
- * (`convertToSubgraph`, clipboard paste, `configure`) can resolve one.
- * @returns A disposer that unregisters the types. Test files that call
- * {@link resetSubgraphFixtureState} between tests may ignore it.
- */
 export function enableSubgraphNodeCreation(rootGraph: LGraph): () => void {
   rootGraph.events.addEventListener('subgraph-created', (e) => {
     const { subgraph } = e.detail

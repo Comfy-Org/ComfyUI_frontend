@@ -1,9 +1,3 @@
-/**
- * Generic node factories for litegraph tests.
- *
- * Both helpers lazily register a node type keyed by its shape, so repeated calls
- * reuse the same registration.
- */
 import { onTestFinished } from 'vitest'
 
 import type { ISlotType, LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -11,13 +5,6 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 const WIDGET_NODE_TYPE = 'test/widgetNode'
 
-/**
- * Creates a registered node with the requested slots and adds it to `graph`.
- *
- * Unlike a bare `new LGraphNode()`, the node's type exists in
- * {@link LiteGraph.registered_node_types}, so it survives a serialize/configure
- * round-trip.
- */
 export function createTestNode(
   graph: LGraph | Subgraph,
   inputs: ISlotType[] = [],
@@ -48,10 +35,6 @@ export function createTestNode(
   return node
 }
 
-/**
- * Creates a registered node carrying a serializable text widget and adds it to
- * `graph`.
- */
 export function createTestWidgetNode(graph: LGraph | Subgraph): LGraphNode {
   if (!LiteGraph.registered_node_types[WIDGET_NODE_TYPE]) {
     class WidgetTestNode extends LGraphNode {

@@ -535,15 +535,6 @@ function collectSubgraphsPostOrder(
   result.push(subgraph)
 }
 
-/**
- * Finds the subgraph definitions that lose their last remaining instance when
- * `removedNode` leaves its graph: the removed instance's own definition plus
- * definitions nested within it, excluding any definition still instanced
- * outside the removed subtree. Innermost definitions are ordered first.
- * @param rootGraph The root graph whose live instances anchor definitions
- * @param removedNode The subgraph instance being removed
- * @returns Definitions with no remaining instances, ready for cleanup
- */
 export function findReleasableSubgraphs(
   rootGraph: LGraph,
   removedNode: SubgraphNode

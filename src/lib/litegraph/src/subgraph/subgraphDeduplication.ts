@@ -153,10 +153,6 @@ function patchPromotedWidgets(
   }
 }
 
-/**
- * Collects every reroute ID in use by a root graph and its subgraphs, for
- * use as the reserved set of {@link deduplicateSubgraphRerouteIds}.
- */
 export function collectReservedRerouteIds(
   graph: Pick<LGraph, 'reroutes' | 'subgraphs'>
 ): Set<number> {
