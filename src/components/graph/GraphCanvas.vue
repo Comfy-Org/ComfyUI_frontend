@@ -174,8 +174,8 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -255,7 +255,19 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-const { startSync, stopSync } = useLayoutSync()
+let cleanupLayoutNotifications: (() => void) | null = null
+
+function stopSync() {
+  cleanupLayoutNotifications?.()
+  cleanupLayoutNotifications = null
+}
+
+function startSync() {
+  const canvas = canvasStore.canvas
+  if (!canvas) return
+  stopSync()
+  cleanupLayoutNotifications = notifyLayoutChanges(canvas)
+}
 
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
@@ -274,7 +286,7 @@ async function enterVueRendering(graph: LGraph | null) {
 
   // Revalidate after nextTick: rendering mode or the current graph may change.
   if (!shouldRenderVueNodes.value || canvasStore.currentGraph !== graph) return
-  startSync(canvasStore.canvas)
+  startSync()
 }
 
 function exitToLegacyRendering(graph: LGraph | null) {
