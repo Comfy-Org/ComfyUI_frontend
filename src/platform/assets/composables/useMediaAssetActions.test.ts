@@ -374,8 +374,9 @@ describe('useMediaAssetActions', () => {
         mockIsCloud.value = true
       })
 
-      it('assigns annotated hashes to each non-input loader node', async () => {
+      it('assigns hashes with annotations derived from each asset type', async () => {
         mockGetAssetType
+          .mockReturnValueOnce('input')
           .mockReturnValueOnce('temp')
           .mockReturnValueOnce('output')
         const { actions, unmount } = mountMediaActions()
@@ -390,6 +391,11 @@ describe('useMediaAssetActions', () => {
             id: '2',
             name: 'file2.jpeg',
             hash: 'hash2.jpeg'
+          }),
+          createMockAsset({
+            id: '3',
+            name: 'file3.jpeg',
+            hash: 'hash3.jpeg'
           })
         ]
 
@@ -398,8 +404,9 @@ describe('useMediaAssetActions', () => {
         unmount()
 
         expect(widgetValues).toEqual([
-          'hash1.jpeg [temp]',
-          'hash2.jpeg [output]'
+          'hash1.jpeg',
+          'hash2.jpeg [temp]',
+          'hash3.jpeg [output]'
         ])
       })
     })
