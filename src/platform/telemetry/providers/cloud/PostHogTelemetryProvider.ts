@@ -25,6 +25,8 @@ import type {
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OnboardingTourMetadata,
+  OnboardingTourStage,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -56,6 +58,7 @@ import {
   CANCELLATION_STAGE_EVENTS,
   getBillingTelemetryEventName,
   getBillingTelemetryEventPayload,
+  OnboardingTourEvents,
   TelemetryEvents
 } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
@@ -437,6 +440,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackRunButton(properties: RunButtonProperties): void {
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
+  }
+
+  trackOnboardingTour(
+    stage: OnboardingTourStage,
+    metadata: OnboardingTourMetadata
+  ): void {
+    this.trackEvent(OnboardingTourEvents[stage], metadata)
   }
 
   trackSurvey(
