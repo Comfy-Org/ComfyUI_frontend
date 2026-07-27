@@ -1,6 +1,7 @@
 import { datadogRum } from '@datadog/browser-rum'
 
 import { rumBeforeSend } from './datadogRumBeforeSend'
+import { trackUserManualRefresh } from './manualRefreshTracker'
 
 const DATADOG_ENV_BY_HOSTNAME = new Map([
   ['cloud.comfy.org', 'prod-v2'],
@@ -44,6 +45,7 @@ async function initializeDatadogRum(env: string): Promise<void> {
     sessionReplaySampleRate: 0,
     allowedTracingUrls: [/^https:\/\/[^/]+\.comfy\.org/]
   })
+  trackUserManualRefresh()
 }
 
 export function initDatadogRum(
