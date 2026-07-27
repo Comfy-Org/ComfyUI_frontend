@@ -8,6 +8,9 @@ import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -90,6 +93,10 @@ async function runButtonClick(e: Event) {
 function handleDragDrop() {
   return widgetListRef.value?.handleDragDrop()
 }
+
+function replayAppModeTour() {
+  useOnboardingTourStore().replayTour('appMode')
+}
 </script>
 <template>
   <div
@@ -103,16 +110,29 @@ function handleDragDrop() {
       class="flex h-12 items-center gap-2 border-x border-border-subtle bg-comfy-menu-bg px-4 py-2 contain-size"
     >
       <span
-        class="truncate font-bold"
+        class="min-w-0 flex-1 truncate font-bold"
         v-text="workflowStore.activeWorkflow?.filename"
       />
-      <div class="flex-1" />
-      <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
+      <Button
+        v-tooltip.bottom="{
+          value: t('onboardingCoachmarks.appMode.replay'),
+          showDelay: 300,
+          hideDelay: 300
+        }"
+        variant="textonly"
+        size="icon"
+        :aria-label="t('onboardingCoachmarks.appMode.replay')"
+        class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
+        @click="replayAppModeTour"
+      >
+        <i class="icon-[lucide--circle-question-mark] size-4" />
+      </Button>
     </section>
     <div
       class="flex h-full flex-col gap-2 border-x border-(--interface-stroke) bg-comfy-menu-bg px-2 md:border-y"
     >
       <section
+        v-coachmark="COACH_IDS.inputsList"
         data-testid="linear-widgets"
         class="grow scroll-shadows-comfy-menu-bg overflow-y-auto contain-size"
       >
@@ -153,31 +173,72 @@ function handleDragDrop() {
         class="border-t border-node-component-border p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
-        <SubscribeToRunButton v-if="!canRunWorkflows" class="mt-4 w-full" />
-        <div v-else class="mt-4 flex">
-          <PartnerNodesList mobile />
-          <Popover side="top" @open-auto-focus.prevent>
-            <template #button>
-              <Button size="lg" class="-mr-3 pr-7">
-                <i v-if="batchCount == 1" class="icon-[lucide--chevron-down]" />
-                <div v-else class="tabular-nums" v-text="`${batchCount}x`" />
-              </Button>
-            </template>
-            <div
-              class="m-1 mb-2 text-node-component-slot-text"
-              v-text="t('linearMode.runCount')"
-            />
-            <ScrubableNumberInput
-              v-model="batchCount"
-              :aria-label="t('linearMode.runCount')"
-              :min="1"
-              :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
-              class="h-10 min-w-40"
-            />
-          </Popover>
+        <div v-coachmark="COACH_IDS.appRunButton">
+          <SubscribeToRunButton v-if="!canRunWorkflows" class="mt-4 w-full" />
+          <div v-else class="mt-4 flex">
+            <PartnerNodesList mobile />
+            <Popover side="top" @open-auto-focus.prevent>
+              <template #button>
+                <Button size="lg" class="-mr-3 pr-7">
+                  <i
+                    v-if="batchCount == 1"
+                    class="icon-[lucide--chevron-down]"
+                  />
+                  <div v-else class="tabular-nums" v-text="`${batchCount}x`" />
+                </Button>
+              </template>
+              <div
+                class="m-1 mb-2 text-node-component-slot-text"
+                v-text="t('linearMode.runCount')"
+              />
+              <ScrubableNumberInput
+                v-model="batchCount"
+                :aria-label="t('linearMode.runCount')"
+                :min="1"
+                :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
+                class="h-10 min-w-40"
+              />
+            </Popover>
+            <Button
+              variant="primary"
+              class="grow"
+              size="lg"
+              :aria-describedby="
+                showRunErrorWarning
+                  ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+                  : undefined
+              "
+              @click="runButtonClick"
+            >
+              <i aria-hidden="true" class="icon-[lucide--play]" />
+              {{ t('menu.run') }}
+            </Button>
+          </div>
+        </div>
+      </section>
+      <section
+        v-else
+        :data-testid="linearRunButtonTestId"
+        class="border-t border-node-component-border p-4 pb-6"
+      >
+        <LinearRunErrorWarning v-if="showRunErrorWarning" />
+        <div v-coachmark="COACH_IDS.appRunButton">
+          <div
+            class="m-1 mb-2 text-node-component-slot-text"
+            v-text="t('linearMode.runCount')"
+          />
+          <ScrubableNumberInput
+            v-model="batchCount"
+            :aria-label="t('linearMode.runCount')"
+            :min="1"
+            :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
+            class="h-7 min-w-40"
+          />
+          <SubscribeToRunButton v-if="!canRunWorkflows" class="mt-4 w-full" />
           <Button
+            v-else
             variant="primary"
-            class="grow"
+            class="mt-4 w-full text-sm"
             size="lg"
             :aria-describedby="
               showRunErrorWarning
@@ -190,40 +251,6 @@ function handleDragDrop() {
             {{ t('menu.run') }}
           </Button>
         </div>
-      </section>
-      <section
-        v-else
-        :data-testid="linearRunButtonTestId"
-        class="border-t border-node-component-border p-4 pb-6"
-      >
-        <LinearRunErrorWarning v-if="showRunErrorWarning" />
-        <div
-          class="m-1 mb-2 text-node-component-slot-text"
-          v-text="t('linearMode.runCount')"
-        />
-        <ScrubableNumberInput
-          v-model="batchCount"
-          :aria-label="t('linearMode.runCount')"
-          :min="1"
-          :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
-          class="h-7 min-w-40"
-        />
-        <SubscribeToRunButton v-if="!canRunWorkflows" class="mt-4 w-full" />
-        <Button
-          v-else
-          variant="primary"
-          class="mt-4 w-full text-sm"
-          size="lg"
-          :aria-describedby="
-            showRunErrorWarning
-              ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
-              : undefined
-          "
-          @click="runButtonClick"
-        >
-          <i aria-hidden="true" class="icon-[lucide--play]" />
-          {{ t('menu.run') }}
-        </Button>
         <FreeTierQuota />
       </section>
     </div>
