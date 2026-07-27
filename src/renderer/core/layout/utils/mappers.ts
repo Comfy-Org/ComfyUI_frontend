@@ -1,26 +1,27 @@
 import * as Y from 'yjs'
 
+import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
 import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 /**
- * A node's stored geometry: one `[x, y, width, height]` tuple. Position, size
- * and bounds are views of it rather than fields of their own, so they cannot
- * disagree, and a whole-tuple replace is the write a CRDT register wants.
+ * Stored geometry: one `[x, y, width, height]` tuple. Position, size and bounds
+ * are views of it rather than fields of their own, so they cannot disagree, and
+ * a whole-tuple replace is the write a CRDT register wants.
  */
-type StoredNodeRect = [x: number, y: number, width: number, height: number]
+type StoredRect = [x: number, y: number, width: number, height: number]
 
 type StoredNode = {
   id: NodeId
-  rect: StoredNodeRect
+  rect: StoredRect
   zIndex: number
   visible: boolean
 }
 
 export type NodeLayoutMap = Y.Map<StoredNode[keyof StoredNode]>
 
-const DEFAULT_RECT: StoredNodeRect = [0, 0, 100, 50]
+const DEFAULT_NODE_RECT: StoredRect = [0, 0, 100, 50]
 
 export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
   const ynode = new Y.Map<StoredNode[keyof StoredNode]>() as NodeLayoutMap
@@ -36,8 +37,8 @@ export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
   return ynode
 }
 
-function yNodeRect(ynode: NodeLayoutMap): StoredNodeRect {
-  return (ynode.get('rect') as StoredNodeRect | undefined) ?? DEFAULT_RECT
+function yNodeRect(ynode: NodeLayoutMap): StoredRect {
+  return (ynode.get('rect') as StoredRect | undefined) ?? DEFAULT_NODE_RECT
 }
 
 export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
@@ -52,30 +53,44 @@ export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
   }
 }
 
-export type GroupLayoutMap = Y.Map<GroupLayout[keyof GroupLayout]>
-
-const GROUP_LAYOUT_DEFAULTS: Omit<GroupLayout, 'id'> = {
-  position: { x: 0, y: 0 },
-  size: { width: 140, height: 80 }
+type StoredGroup = {
+  id: GroupId
+  rect: StoredRect
 }
 
+export type GroupLayoutMap = Y.Map<StoredGroup[keyof StoredGroup]>
+
+const DEFAULT_GROUP_RECT: StoredRect = [0, 0, 140, 80]
+
 export function layoutToYGroup(layout: GroupLayout): GroupLayoutMap {
-  const ygroup = new Y.Map<GroupLayout[keyof GroupLayout]>() as GroupLayoutMap
+  const ygroup = new Y.Map<StoredGroup[keyof StoredGroup]>() as GroupLayoutMap
   ygroup.set('id', layout.id)
-  ygroup.set('position', layout.position)
-  ygroup.set('size', layout.size)
+  ygroup.set('rect', [
+    layout.position.x,
+    layout.position.y,
+    layout.size.width,
+    layout.size.height
+  ])
   return ygroup
+}
+
+export function setYGroupRect(
+  ygroup: GroupLayoutMap,
+  position: GroupLayout['position'],
+  size: GroupLayout['size']
+): void {
+  ygroup.set('rect', [position.x, position.y, size.width, size.height])
 }
 
 export function yGroupToLayout(
   ygroup: GroupLayoutMap,
-  groupId: GroupLayout['id']
+  groupId: GroupId
 ): GroupLayout {
+  const [x, y, width, height] =
+    (ygroup.get('rect') as StoredRect | undefined) ?? DEFAULT_GROUP_RECT
   return {
-    id: (ygroup.get('id') ?? groupId) as GroupLayout['id'],
-    position: (ygroup.get('position') ??
-      GROUP_LAYOUT_DEFAULTS.position) as GroupLayout['position'],
-    size: (ygroup.get('size') ??
-      GROUP_LAYOUT_DEFAULTS.size) as GroupLayout['size']
+    id: (ygroup.get('id') ?? groupId) as GroupId,
+    position: { x, y },
+    size: { width, height }
   }
 }

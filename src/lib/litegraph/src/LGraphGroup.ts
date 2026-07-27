@@ -120,19 +120,15 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
    * Callers that must not clamp (deserialisation, fit-to-contents) use this
    * directly; the public setters clamp first and then delegate here.
    */
-  protected setBounds(x: number, y: number, width: number, height: number) {
+  private setBounds(x: number, y: number, width: number, height: number) {
     this._bounding.set([x, y, width, height])
-    this.commitBounds()
-  }
-
-  private commitBounds() {
     if (!this.graph || this.id === -1) return
 
     layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.setGroupBounds(
       this.id,
-      { x: this._pos[0], y: this._pos[1] },
-      { width: this._size[0], height: this._size[1] },
+      { x, y },
+      { width, height },
       this.graph.rootGraph.id
     )
   }

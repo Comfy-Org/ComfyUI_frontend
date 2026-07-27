@@ -94,7 +94,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       position: newPosition,
-      previousPosition: layout.position,
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -127,7 +126,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       size: newSize,
-      previousSize: layout.size,
       timestamp: Date.now(),
       source: LayoutSource.Canvas,
       actor: 'test'
@@ -158,7 +156,6 @@ describe('layoutStore CRDT operations', () => {
       type: 'deleteNode',
       entity: 'node',
       nodeId,
-      previousLayout: layout,
       timestamp: Date.now(),
       source: LayoutSource.External,
       actor: 'test'
@@ -242,7 +239,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId: nodeB,
       position: { x: 400, y: 400 },
-      previousPosition: layoutB.position,
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -257,7 +253,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId: nodeA,
       position: { x: 200, y: 250 },
-      previousPosition: layoutA.position,
       timestamp: Date.now(),
       source: LayoutSource.Canvas,
       actor: 'test'
@@ -298,7 +293,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       position: { x: 320, y: 180 },
-      previousPosition: layout.position,
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -333,7 +327,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       position: { x: 10, y: 20 },
-      previousPosition: { x: 0, y: 0 },
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -366,7 +359,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       position: { x: 120, y: 110 },
-      previousPosition: layout.position,
       timestamp: Date.now(),
       source: LayoutSource.External,
       actor: 'test'
@@ -376,7 +368,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       position: { x: 150, y: 140 },
-      previousPosition: { x: 120, y: 110 },
       timestamp: Date.now(),
       source: LayoutSource.External,
       actor: 'test'
@@ -427,7 +418,7 @@ describe('layoutStore CRDT operations', () => {
     const lastChange = changes[changes.length - 1]
     if (lastChange.operation.type === 'batchUpdateBounds') {
       expect(lastChange.nodeIds).toContain(nodeId)
-      expect(lastChange.operation.bounds[nodeId]?.bounds).toEqual(newBounds)
+      expect(lastChange.operation.bounds[nodeId]).toEqual(newBounds)
     }
 
     const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
@@ -505,7 +496,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       position: { x: 150, y: 150 },
-      previousPosition: { x: 100, y: 100 },
       timestamp: startTime + 100,
       source: LayoutSource.Vue,
       actor: 'test-actor'
@@ -673,7 +663,6 @@ describe('layoutStore CRDT operations', () => {
         type: 'deleteNode',
         entity: 'node',
         nodeId,
-        previousLayout: layout,
         timestamp: Date.now(),
         source: LayoutSource.External,
         actor: 'test'
@@ -735,8 +724,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       expectedOperation: {
         type: 'moveNode',
         nodeId: REF_NODE,
-        position: { x: 99, y: 88 },
-        previousPosition: baseLayout().position
+        position: { x: 99, y: 88 }
       }
     },
     {
@@ -749,8 +737,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       expectedOperation: {
         type: 'resizeNode',
         nodeId: REF_NODE,
-        size: { width: 200, height: 80 },
-        previousSize: baseLayout().size
+        size: { width: 200, height: 80 }
       }
     },
     {
@@ -759,8 +746,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       expectedOperation: {
         type: 'setNodeZIndex',
         nodeId: REF_NODE,
-        zIndex: 5,
-        previousZIndex: 0
+        zIndex: 5
       }
     }
   ])(

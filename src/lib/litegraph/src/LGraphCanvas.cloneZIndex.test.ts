@@ -104,13 +104,12 @@ function createLayoutEntry(node: LGraphNode, zIndex: number) {
   })
 }
 
-function setZIndex(nodeId: NodeId, zIndex: number, previousZIndex: number) {
+function setZIndex(nodeId: NodeId, zIndex: number) {
   layoutStore.applyOperation({
     type: 'setNodeZIndex',
     entity: 'node',
     nodeId,
     zIndex,
-    previousZIndex,
     timestamp: Date.now(),
     source: LayoutSource.Canvas,
     actor: 'test'
@@ -152,7 +151,7 @@ describe('cloned node z-index in Vue renderer', () => {
 
     const originalNodeId = originalNode.id
 
-    setZIndex(originalNodeId, 5, 0)
+    setZIndex(originalNodeId, 5)
 
     const originalLayout = layoutStore.getNodeLayoutRef(originalNodeId).value
     expect(originalLayout?.zIndex).toBe(5)
@@ -176,13 +175,13 @@ describe('cloned node z-index in Vue renderer', () => {
     nodeA.pos = [100, 100]
     nodeA.size = [200, 100]
     graph.add(nodeA)
-    setZIndex(nodeA.id, 3, 0)
+    setZIndex(nodeA.id, 3)
 
     const nodeB = new TestNode()
     nodeB.pos = [400, 100]
     nodeB.size = [200, 100]
     graph.add(nodeB)
-    setZIndex(nodeB.id, 7, 0)
+    setZIndex(nodeB.id, 7)
 
     const result = LGraphCanvas.cloneNodes([nodeA, nodeB])
     expect(result).toBeDefined()

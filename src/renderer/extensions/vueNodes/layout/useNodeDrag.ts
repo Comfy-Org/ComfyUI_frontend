@@ -41,7 +41,9 @@ function useNodeDragIndividual() {
 
   // Non-node positionables (groups, reroutes) are driven from their own start
   // positions, exactly like nodes; `pos` is readonly on Positionable, so the
-  // absolute target is reached via move().
+  // absolute target is reached via move(). Auto-pan shifts these alongside
+  // dragStartPos, so they track the panned frame rather than the pointer-down
+  // one.
   let nonNodeStartPositions: Map<Positionable, Point> | null = null
 
   // Auto-pan state
@@ -181,8 +183,8 @@ function useNodeDragIndividual() {
     mutations.batchMoveNodes(updates)
 
     for (const [item, start] of nonNodeStartPositions ?? []) {
-      // Re-derived from the start position every frame, so a dropped frame
-      // cannot leave the item behind and deltas cannot accumulate error.
+      // Absolute target every frame, so a dropped frame cannot leave the item
+      // behind and per-frame deltas cannot drift out of step with the nodes.
       item.move(
         start.x + canvasDelta.x - item.pos[0],
         start.y + canvasDelta.y - item.pos[1],

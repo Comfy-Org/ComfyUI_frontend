@@ -7,7 +7,6 @@
 import type { ComputedRef, Ref } from 'vue'
 
 import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
-export type { GroupId }
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
@@ -165,7 +164,6 @@ type OperationType =
 export interface MoveNodeOperation extends NodeOpBase {
   type: 'moveNode'
   position: Point
-  previousPosition: Point
 }
 
 /**
@@ -174,7 +172,6 @@ export interface MoveNodeOperation extends NodeOpBase {
 export interface ResizeNodeOperation extends NodeOpBase {
   type: 'resizeNode'
   size: { width: number; height: number }
-  previousSize: { width: number; height: number }
 }
 
 /**
@@ -183,7 +180,6 @@ export interface ResizeNodeOperation extends NodeOpBase {
 export interface SetNodeZIndexOperation extends NodeOpBase {
   type: 'setNodeZIndex'
   zIndex: number
-  previousZIndex: number
 }
 
 /**
@@ -199,7 +195,6 @@ export interface CreateNodeOperation extends NodeOpBase {
  */
 export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
-  previousLayout: NodeLayout
 }
 
 /**
@@ -208,7 +203,6 @@ export interface DeleteNodeOperation extends NodeOpBase {
 interface SetNodeVisibilityOperation extends NodeOpBase {
   type: 'setNodeVisibility'
   visible: boolean
-  previousVisible: boolean
 }
 
 /**
@@ -218,7 +212,7 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
   entity: 'node'
   type: 'batchUpdateBounds'
   nodeIds: NodeId[]
-  bounds: Record<NodeId, { bounds: Bounds; previousBounds: Bounds }>
+  bounds: Record<NodeId, Bounds>
 }
 
 /**
@@ -242,12 +236,8 @@ export interface DeleteRerouteOperation extends RerouteOpBase {
 export interface MoveRerouteOperation extends RerouteOpBase {
   type: 'moveReroute'
   position: Point
-  previousPosition: Point
 }
 
-/**
- * Union of all operation types
- */
 type GroupOpBase = OperationMeta & { entity: 'group'; groupId: GroupId }
 
 interface CreateGroupOperation extends GroupOpBase {
@@ -263,14 +253,15 @@ export interface SetGroupBoundsOperation extends GroupOpBase {
   type: 'setGroupBounds'
   position: Point
   size: Size
-  previousPosition?: Point
-  previousSize?: Size
 }
 
 interface DeleteGroupOperation extends GroupOpBase {
   type: 'deleteGroup'
 }
 
+/**
+ * Union of all operation types
+ */
 export type LayoutOperation =
   | MoveNodeOperation
   | ResizeNodeOperation

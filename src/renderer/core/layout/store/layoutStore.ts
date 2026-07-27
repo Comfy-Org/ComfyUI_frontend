@@ -9,6 +9,7 @@ import { computed, customRef, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
+import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -23,7 +24,6 @@ import type {
   CreateRerouteOperation,
   DeleteNodeOperation,
   DeleteRerouteOperation,
-  GroupId,
   GroupLayout,
   LayoutChange,
   LayoutOperation,
@@ -57,6 +57,7 @@ import {
 import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
 import {
   layoutToYGroup,
+  setYGroupRect,
   layoutToYNode,
   yGroupToLayout,
   yNodeToLayout
@@ -265,7 +266,6 @@ class LayoutStoreImpl implements LayoutStore {
                   entity: 'node',
                   nodeId,
                   position: newLayout.position,
-                  previousPosition: existingLayout.position,
                   timestamp: Date.now(),
                   source: this.currentSource,
                   actor: this.currentActor
@@ -280,7 +280,6 @@ class LayoutStoreImpl implements LayoutStore {
                   entity: 'node',
                   nodeId,
                   size: newLayout.size,
-                  previousSize: existingLayout.size,
                   timestamp: Date.now(),
                   source: this.currentSource,
                   actor: this.currentActor
@@ -292,7 +291,6 @@ class LayoutStoreImpl implements LayoutStore {
                   entity: 'node',
                   nodeId,
                   zIndex: newLayout.zIndex,
-                  previousZIndex: existingLayout.zIndex,
                   timestamp: Date.now(),
                   source: this.currentSource,
                   actor: this.currentActor
@@ -1114,8 +1112,7 @@ class LayoutStoreImpl implements LayoutStore {
     const ygroup = this.ygroups.get(String(operation.groupId))
     if (!ygroup) return
 
-    ygroup.set('position', operation.position)
-    ygroup.set('size', operation.size)
+    setYGroupRect(ygroup, operation.position, operation.size)
   }
 
   private handleSetNodeZIndex(
@@ -1176,18 +1173,13 @@ class LayoutStoreImpl implements LayoutStore {
     const spatialUpdates: Array<{ nodeId: NodeId; bounds: Bounds }> = []
 
     for (const nodeId of operation.nodeIds) {
-      const data = operation.bounds[nodeId]
+      const bounds = operation.bounds[nodeId]
       const ynode = this.ynodes.get(String(nodeId))
-      if (!ynode || !data) continue
+      if (!ynode || !bounds) continue
 
-      ynode.set('rect', [
-        data.bounds.x,
-        data.bounds.y,
-        data.bounds.width,
-        data.bounds.height
-      ])
+      ynode.set('rect', [bounds.x, bounds.y, bounds.width, bounds.height])
 
-      spatialUpdates.push({ nodeId, bounds: data.bounds })
+      spatialUpdates.push({ nodeId, bounds })
       change.nodeIds.push(nodeId)
     }
 
@@ -1447,21 +1439,11 @@ class LayoutStoreImpl implements LayoutStore {
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
     for (const { nodeId, bounds } of updates) {
-      const ynode = this.ynodes.get(String(nodeId))
-      if (!ynode) continue
-      const currentLayout = yNodeToLayout(ynode)
+      if (!this.ynodes.has(String(nodeId))) continue
 
-      const normalizedBounds = shouldNormalizeHeights
-        ? {
-            ...bounds,
-            height: removeNodeTitleHeight(bounds.height)
-          }
+      boundsRecord[nodeId] = shouldNormalizeHeights
+        ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
         : bounds
-
-      boundsRecord[nodeId] = {
-        bounds: normalizedBounds,
-        previousBounds: currentLayout.bounds
-      }
       nodeIds.push(nodeId)
     }
 

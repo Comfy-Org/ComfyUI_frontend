@@ -8,8 +8,8 @@ import log from 'loglevel'
 
 import type { NodeId } from '@/types/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
 import type {
-  GroupId,
   GroupLayout,
   LayoutSource,
   NodeLayout,
@@ -38,12 +38,7 @@ interface LayoutMutations {
   // Reroute operations
   createReroute(rerouteId: RerouteId, position: Point): void
   deleteReroute(rerouteId: RerouteId): void
-  /** `previousPosition` defaults to the stored one; callers rarely have a better answer. */
-  moveReroute(
-    rerouteId: RerouteId,
-    position: Point,
-    previousPosition?: Point
-  ): void
+  moveReroute(rerouteId: RerouteId, position: Point): void
 
   // Group operations
   createGroup(
@@ -94,7 +89,6 @@ export function useLayoutMutations(): LayoutMutations {
       entity: 'node',
       nodeId,
       position,
-      previousPosition: existing.position,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor(),
@@ -140,7 +134,6 @@ export function useLayoutMutations(): LayoutMutations {
       entity: 'node',
       nodeId,
       size,
-      previousSize: existing.size,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor(),
@@ -160,7 +153,6 @@ export function useLayoutMutations(): LayoutMutations {
       entity: 'node',
       nodeId,
       zIndex,
-      previousZIndex: existing.zIndex,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -212,7 +204,6 @@ export function useLayoutMutations(): LayoutMutations {
       type: 'deleteNode',
       entity: 'node',
       nodeId,
-      previousLayout: existing,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor(),
@@ -283,8 +274,6 @@ export function useLayoutMutations(): LayoutMutations {
       groupId,
       position,
       size,
-      previousPosition: existing.position,
-      previousSize: existing.size,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor(),
@@ -322,20 +311,12 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Move a reroute
    */
-  const moveReroute = (
-    rerouteId: RerouteId,
-    position: Point,
-    previousPosition?: Point
-  ): void => {
+  const moveReroute = (rerouteId: RerouteId, position: Point): void => {
     layoutStore.applyOperation({
       type: 'moveReroute',
       entity: 'reroute',
       rerouteId,
       position,
-      previousPosition:
-        previousPosition ??
-        layoutStore.getRerouteLayout(rerouteId)?.position ??
-        position,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
