@@ -101,10 +101,10 @@
           </div>
         </div>
 
-        <div v-if="hasActiveFilters" class="flex items-center pt-3">
+        <div v-if="hasActiveFilters" class="flex items-center pt-5">
           <span
             v-if="activeFilterCount > 0"
-            class="text-xs font-semibold text-muted-foreground"
+            class="text-xs font-medium text-muted-foreground"
           >
             {{
               $t('templateWorkflows.filtersApplied', {

@@ -75,7 +75,7 @@
           v-if="hasActions"
           :class="
             cn(
-              'flex shrink-0 items-center justify-between px-2',
+              '-mx-2 flex shrink-0 items-center justify-between px-4',
               actionsPlacement === 'header'
                 ? 'mt-2 border-b border-border-default pb-4'
                 : 'order-last mt-2 border-t border-border-default pt-3 pb-1'
