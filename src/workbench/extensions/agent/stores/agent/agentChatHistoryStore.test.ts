@@ -58,7 +58,51 @@ describe('groupSessionsByRecency', () => {
 })
 
 describe('useAgentChatHistoryStore', () => {
-  beforeEach(() => setActivePinia(createPinia()))
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  it('overlays a rename onto the grouped list and titleFor', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', NOW - 1_000)])
+    store.setActive('a')
+
+    store.rename('a', '  Duck pipeline  ')
+
+    expect(store.titleFor('a')).toBe('Duck pipeline')
+    expect(store.grouped.current[0]).toMatchObject({
+      id: 'a',
+      title: 'Duck pipeline'
+    })
+  })
+
+  it('ignores a whitespace-only rename', () => {
+    const store = useAgentChatHistoryStore()
+    store.rename('a', '   ')
+
+    expect(store.titleFor('a')).toBeUndefined()
+  })
+
+  it('drops the rename override with the session', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', 1)])
+    store.rename('a', 'kept?')
+
+    store.remove('a')
+
+    expect(store.titleFor('a')).toBeUndefined()
+  })
+
+  it('holds a removed session out of later refreshes', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', 1), session('b', 2)])
+
+    store.remove('a')
+    store.replaceAll([session('a', 1), session('b', 2)])
+
+    expect(store.sessions.map((s) => s.id)).toEqual(['b'])
+  })
 
   it('clears the active id when the active session is removed', () => {
     const store = useAgentChatHistoryStore()

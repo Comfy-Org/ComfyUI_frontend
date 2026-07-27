@@ -4643,6 +4643,7 @@
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
     "changeWorkflowForChat": "Change the workflow for this chat",
+    "chatOptions": "Chat options",
     "chooseWorkflow": "Choose a workflow",
     "dontWorkInWorkflow": "Don't work in a workflow",
     "searchWorkflows": "Search workflows",

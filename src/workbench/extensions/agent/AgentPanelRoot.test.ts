@@ -907,11 +907,137 @@ describe('AgentPanelRoot history', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     ws.clear()
+    localStorage.clear()
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
+  })
+
+  async function renderWithActiveThread(): Promise<void> {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.endsWith('/api/agent/threads')
+          ? new Response(
+              JSON.stringify({
+                threads: [
+                  {
+                    id: 'th-active',
+                    title: 'build a duck',
+                    last_message_at: '2026-07-07T10:00:00Z'
+                  }
+                ]
+              }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          : new Response('[]', {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            })
+      )
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().setThreadId('th-active')
+    await nextTick()
+  }
+
+  it('renames the current chat from the title menu on Enter', async () => {
+    await renderWithActiveThread()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.rename') })
+    )
+    const input = await screen.findByRole<HTMLInputElement>('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    // DES-522: the full name arrives focused and pre-selected, so typing
+    // replaces it without a manual clear.
+    expect(input).toHaveFocus()
+    expect(input.selectionStart).toBe(0)
+    expect(input.selectionEnd).toBe(input.value.length)
+    await userEvent.type(input, 'my masterpiece{Enter}')
+
+    expect(await screen.findByText('my masterpiece')).toBeInTheDocument()
+    expect(useAgentChatHistoryStore().grouped.current[0]).toMatchObject({
+      id: 'th-active',
+      title: 'my masterpiece'
+    })
+  })
+
+  it('commits a rename when the input loses focus', async () => {
+    await renderWithActiveThread()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.rename') })
+    )
+    const input = await screen.findByRole<HTMLInputElement>('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    await userEvent.type(input, 'renamed by blur')
+    input.blur()
+
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().titleFor('th-active')).toBe(
+        'renamed by blur'
+      )
+    )
+  })
+
+  it('abandons a rename on Escape', async () => {
+    await renderWithActiveThread()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.rename') })
+    )
+    const input = await screen.findByRole('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    await userEvent.clear(input)
+    await userEvent.type(input, 'discarded{Escape}')
+
+    expect(
+      screen.queryByRole('textbox', { name: i18n.global.t('g.rename') })
+    ).toBeNull()
+    expect(screen.queryByText('discarded')).toBeNull()
+    expect(useAgentChatHistoryStore().titleFor('th-active')).toBeUndefined()
+  })
+
+  it('deletes the current chat from the title menu and starts fresh', async () => {
+    await renderWithActiveThread()
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+
+    expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
+    // The fresh chat has no thread yet, so the menu disappears with it.
+    expect(
+      screen.queryByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    ).toBeNull()
+
+    // The server has no delete endpoint yet, so the tombstone must hold the
+    // thread out of the next refresh instead of letting it resurrect.
+    useAgentChatHistoryStore().replaceAll([
+      { id: 'th-active', title: 'build a duck', updatedAt: Date.now() }
+    ])
+    expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
   it('populates Chat History from the server thread list on mount', async () => {
