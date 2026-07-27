@@ -25,6 +25,7 @@ const CARD_TESTID_PREFIX = 'getting-started-card-'
 
 /** The prompt id the tour's run is queued under, so WS events can address it. */
 const TOUR_JOB_ID = 'first-run-tour-prompt'
+const LINKED_TEMPLATE_ID: SupportedTemplateId = 'image_z_image_turbo'
 
 /** A prompt the queue accepts, so the walk does not depend on the backend's models. */
 const QUEUED_PROMPT = {
@@ -50,19 +51,27 @@ function isPinned(id: string): id is SupportedTemplateId {
 async function firstPinnedTemplateOnScreen(
   page: Page
 ): Promise<SupportedTemplateId> {
-  const testIds = await page
-    .locator(`[data-testid^="${CARD_TESTID_PREFIX}"]`)
-    .evaluateAll((cards) =>
-      cards.map((card) => card.getAttribute('data-testid') ?? '')
+  const cardTestIds = () =>
+    page
+      .locator(`[data-testid^="${CARD_TESTID_PREFIX}"]`)
+      .evaluateAll((cards) =>
+        cards.map((card) => card.getAttribute('data-testid') ?? '')
+      )
+
+  await expect
+    .poll(
+      async () =>
+        (await cardTestIds()).some((testId) =>
+          isPinned(testId.slice(CARD_TESTID_PREFIX.length))
+        ),
+      { message: 'the Getting Started grid never rendered a pinned template' }
     )
-  const templateId = testIds
+    .toBe(true)
+
+  const templateId = (await cardTestIds())
     .map((testId) => testId.slice(CARD_TESTID_PREFIX.length))
     .find(isPinned)
 
-  expect(
-    templateId,
-    `this backend serves none of the pinned templates: ${testIds.join(', ')}`
-  ).toBeDefined()
   return templateId!
 }
 
@@ -246,36 +255,39 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
     await expect(page.getByTestId('coach-spotlight')).toBeHidden()
   })
 
-  test('tours a template a first-run user arrived on by link', async ({
-    comfyPage
-  }) => {
-    test.slow()
-    const { page } = comfyPage
+  test.describe('arriving on a link', () => {
+    test('tours the template the link loaded', async ({ comfyPage }) => {
+      test.slow()
+      const { page } = comfyPage
 
-    const templateId = await firstPinnedTemplateOnScreen(page)
+      await comfyPage.setup({
+        clearStorage: false,
+        url: `/?template=${LINKED_TEMPLATE_ID}`
+      })
 
-    await comfyPage.setup({ url: `/?template=${templateId}` })
-
-    await expect(
-      page.getByRole('dialog', { name: GETTING_STARTED_TITLE }),
-      'the link already chose a workflow, so there is nothing to choose'
-    ).toBeHidden()
-    await expect(page.getByTestId('coach-spotlight')).toBeVisible({
-      timeout: 30_000
+      await expect(
+        page.getByRole('dialog', { name: GETTING_STARTED_TITLE }),
+        'the link already chose a workflow, so there is nothing to choose'
+      ).toBeHidden()
+      await expect(page.getByTestId('coach-spotlight')).toBeVisible()
+      await expect(page.getByTestId('coach-card')).toContainText('Step 1 of')
     })
-    await expect(page.getByTestId('coach-card')).toContainText('Step 1 of')
-  })
 
-  test('offers no tour when the template link loads nothing', async ({
-    comfyPage
-  }) => {
-    const { page } = comfyPage
+    test('offers no tour when the link loads nothing', async ({
+      comfyPage
+    }) => {
+      test.slow()
+      const { page } = comfyPage
 
-    await comfyPage.setup({ url: '/?template=no_such_template_exists' })
+      await comfyPage.setup({
+        clearStorage: false,
+        url: '/?template=no_such_template_exists'
+      })
 
-    await expect(
-      page.getByTestId('coach-spotlight'),
-      'touring a graph the user never asked for is worse than no tour'
-    ).toBeHidden()
+      await expect(
+        page.getByTestId('coach-spotlight'),
+        'touring a graph the user never asked for is worse than no tour'
+      ).toBeHidden()
+    })
   })
 })
