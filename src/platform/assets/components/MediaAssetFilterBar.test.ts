@@ -59,6 +59,23 @@ function renderFilterBar({
 }
 
 describe('MediaAssetFilterBar', () => {
+  it('switches directly from filters to view settings', async () => {
+    const { user } = renderFilterBar()
+    const filterButton = screen.getByRole('button', { name: 'Filter by' })
+    const settingsButton = screen.getByRole('button', {
+      name: 'View settings'
+    })
+
+    await user.click(filterButton)
+    expect(filterButton).toHaveAttribute('aria-expanded', 'true')
+
+    await user.click(settingsButton)
+
+    expect(filterButton).toHaveAttribute('aria-expanded', 'false')
+    expect(settingsButton).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('List view')).toBeVisible()
+  })
+
   it('does not show applied-filter controls when no filters are active', () => {
     renderFilterBar()
 
