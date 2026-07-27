@@ -754,7 +754,9 @@ const attachment = useAttachment({
   upload: async (file) => ({
     ref: (await rest.uploadImage(file, file.name)).name
   }),
-  onError: (message) => surfaceAgentError('agent_api_failed', message),
+  // A rejected file is the user's problem to fix, not an agent failure, so it
+  // must not raise the server-error overlay.
+  onError: (message) => toast.add({ severity: 'warn', detail: message }),
   stage: (staged) => panelRef.value?.addAttachment(staged),
   update: (id, patch) => panelRef.value?.updateAttachment(id, patch),
   remove: (id) => panelRef.value?.removeAttachment(id)
