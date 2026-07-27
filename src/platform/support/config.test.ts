@@ -50,3 +50,40 @@ describe('buildFeedbackTypeformUrl', () => {
     expect(url.hash).toBe('#distribution=ccloud&source=topbar')
   })
 })
+
+describe('buildFeedbackHiddenFields', () => {
+  beforeEach(() => {
+    distribution.isCloud = false
+    distribution.isNightly = false
+  })
+
+  async function build(
+    source: 'topbar' | 'action-bar' | 'help-center',
+    extraTags?: Record<string, string>
+  ) {
+    vi.resetModules()
+    const { buildFeedbackHiddenFields } = await import('./config')
+    return buildFeedbackHiddenFields(source, extraTags)
+  }
+
+  it('reflects the build distribution', async () => {
+    distribution.isNightly = true
+    expect(await build('action-bar')).toBe(
+      'distribution=oss-nightly,source=action-bar'
+    )
+  })
+
+  it('appends extra tags after the base segmentation tags', async () => {
+    distribution.isCloud = true
+    expect(await build('topbar', { email: 'user@example.com' })).toBe(
+      'distribution=ccloud,source=topbar,email=user@example.com'
+    )
+  })
+
+  it('escapes commas in values so they survive the data-tf-hidden parser', async () => {
+    distribution.isCloud = true
+    expect(await build('topbar', { email: 'a,b@example.com' })).toBe(
+      'distribution=ccloud,source=topbar,email=a\\,b@example.com'
+    )
+  })
+})

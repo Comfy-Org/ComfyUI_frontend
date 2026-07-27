@@ -49,7 +49,6 @@
       <div class="flex flex-col gap-6">
         <template v-if="ssoAllowed">
           <Button
-            v-if="!googleSsoBlockedReason"
             type="button"
             class="h-10"
             variant="secondary"
@@ -76,6 +75,14 @@
                 : t('auth.signup.signUpWithGithub')
             }}
           </Button>
+
+          <p
+            v-if="showGoogleSsoInAppBrowserNotice"
+            class="my-0 text-xs text-muted"
+            data-testid="google-sso-in-app-browser-notice"
+          >
+            {{ t('auth.login.googleSsoInAppBrowserNotice') }}
+          </p>
         </template>
 
         <template v-if="!isCloud">
@@ -126,7 +133,7 @@
         </a>
         {{ t('auth.login.andText') }}
         <a
-          href="https://www.comfy.org/privacy"
+          href="https://www.comfy.org/privacy-policy"
           target="_blank"
           class="cursor-pointer text-blue-500"
         >
@@ -147,6 +154,7 @@ import Message from 'primevue/message'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isEmbeddedWebView } from '@/base/webviewDetection'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
@@ -158,7 +166,6 @@ import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 import { isInChina } from '@/utils/networkUtil'
-import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
 import SignInForm from './signin/SignInForm.vue'
@@ -174,7 +181,7 @@ const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
 const ssoAllowed = isHostWhitelisted(normalizeHost(window.location.hostname))
-const googleSsoBlockedReason = getGoogleSsoBlockedReason()
+const showGoogleSsoInAppBrowserNotice = isEmbeddedWebView()
 const comfyPlatformBaseUrl = computed(() =>
   configValueOrDefault(
     remoteConfig.value,

@@ -30,14 +30,25 @@ import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspa
 // carries a team_credit_stop. The hyphen prefix alone separates the two, so a
 // new sub is never misrouted even before its credit stop is populated.
 const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
+const PER_CREDIT_TEAM_PLAN_SLUG_PREFIX = 'team_per_credit_'
+
+function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
+  const normalizedSlug = planSlug?.toLowerCase()
+  return (
+    normalizedSlug?.startsWith(LEGACY_TEAM_PLAN_SLUG_PREFIX) === true ||
+    normalizedSlug?.startsWith(PER_CREDIT_TEAM_PLAN_SLUG_PREFIX) === true
+  )
+}
 
 /**
- * Unified billing context that selects the billing implementation by build/flag.
+ * Unified billing context that selects billing state and account actions by
+ * billing rail. When unified pricing is enabled, its catalog and checkout
+ * actions use workspace billing independently so legacy Stripe workspaces can
+ * migrate plans while balance, top-up, and subscription management stay legacy.
  *
  * - Team workspaces disabled (OSS/Desktop): legacy billing via /customers/*
- * - Team workspaces enabled: workspace billing via /api/billing/* for team
- *   workspaces, and for personal workspaces once billing control is enabled;
- *   personal workspaces otherwise stay on legacy billing
+ * - Unified pricing: plan catalog and checkout via /api/billing/*
+ * - Other state and actions: legacy or workspace billing selected by rail
  *
  * The context automatically initializes when the workspace changes and provides
  * a unified interface for subscription status, balance, and billing actions.
@@ -70,7 +81,7 @@ const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
  */
 function useBillingContextInternal(): BillingContext {
   const store = useTeamWorkspaceStore()
-  const { type } = useBillingRouting()
+  const { type, shouldUseUnifiedPricing } = useBillingRouting()
 
   const legacyBillingRef = shallowRef<(BillingState & BillingActions) | null>(
     null
@@ -100,6 +111,9 @@ function useBillingContextInternal(): BillingContext {
   const activeContext = computed(() =>
     type.value === 'legacy' ? getLegacyBilling() : getWorkspaceBilling()
   )
+  const checkoutContext = computed(() =>
+    shouldUseUnifiedPricing.value ? getWorkspaceBilling() : activeContext.value
+  )
 
   // Proxy state from active context
   const subscription = computed<SubscriptionInfo | null>(() =>
@@ -110,14 +124,14 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.balance)
   )
 
-  const plans = computed(() => toValue(activeContext.value.plans))
+  const plans = computed(() => toValue(checkoutContext.value.plans))
 
   const currentPlanSlug = computed(() =>
-    toValue(activeContext.value.currentPlanSlug)
+    toValue(checkoutContext.value.currentPlanSlug)
   )
 
   const teamCreditStops = computed(() =>
-    toValue(activeContext.value.teamCreditStops)
+    toValue(checkoutContext.value.teamCreditStops)
   )
 
   const currentTeamCreditStop = computed(() =>
@@ -161,10 +175,7 @@ function useBillingContextInternal(): BillingContext {
     () =>
       type.value === 'workspace' &&
       (currentTeamCreditStop.value !== null ||
-        (currentPlanSlug.value
-          ?.toLowerCase()
-          .startsWith(LEGACY_TEAM_PLAN_SLUG_PREFIX) ??
-          false))
+        isTeamPlanSlug(currentPlanSlug.value))
   )
 
   const billingStatus = computed(() =>
@@ -217,9 +228,9 @@ function useBillingContextInternal(): BillingContext {
     error.value = null
   }
 
-  // type flips when the team-workspaces or billing-control flag resolves from
-  // authenticated config, swapping the active backend. Reset then reinit on
-  // every workspace-id or type change.
+  // type flips when the team-workspaces or consolidated-billing flag resolves
+  // from authenticated config, swapping the active backend. Reset then reinit
+  // on every workspace-id or type change.
   watch(
     [() => store.activeWorkspace?.id, () => type.value],
     async ([newWorkspaceId]) => {
@@ -263,15 +274,24 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.fetchBalance()
   }
 
+  async function reconcileSubscriptionSuccess(): Promise<void> {
+    const checkout = checkoutContext.value
+    await checkout.fetchStatus()
+
+    const account = activeContext.value
+    if (account !== checkout) await account.fetchStatus()
+    await account.fetchBalance()
+  }
+
   async function subscribe(planSlug: string, options?: SubscribeOptions) {
-    return activeContext.value.subscribe(planSlug, options)
+    return checkoutContext.value.subscribe(planSlug, options)
   }
 
   async function previewSubscribe(
     planSlug: string,
     options?: PreviewSubscribeOptions
   ) {
-    return activeContext.value.previewSubscribe(planSlug, options)
+    return checkoutContext.value.previewSubscribe(planSlug, options)
   }
 
   async function manageSubscription() {
@@ -300,7 +320,7 @@ function useBillingContextInternal(): BillingContext {
   }
 
   async function fetchPlans() {
-    return activeContext.value.fetchPlans()
+    return checkoutContext.value.fetchPlans()
   }
 
   async function requireActiveSubscription() {
@@ -336,6 +356,7 @@ function useBillingContextInternal(): BillingContext {
     initialize,
     fetchStatus,
     fetchBalance,
+    reconcileSubscriptionSuccess,
     subscribe,
     previewSubscribe,
     manageSubscription,

@@ -63,10 +63,7 @@ const LOADER_NODE = { id: '2', title: 'LoaderNode' }
 
 function seedTwoErrorGroups(pinia: TestingPinia) {
   const executionErrorStore = useExecutionErrorStore(pinia)
-  executionErrorStore.lastNodeErrors = fromAny<
-    typeof executionErrorStore.lastNodeErrors,
-    unknown
-  >({
+  executionErrorStore.recordNodeErrors({
     '1': {
       class_type: 'KSampler',
       dependent_outputs: [],
@@ -83,7 +80,11 @@ function seedTwoErrorGroups(pinia: TestingPinia) {
       class_type: 'CLIPLoader',
       dependent_outputs: [],
       errors: [
-        { type: 'weird_error', message: 'Something odd happened', details: '' }
+        {
+          type: 'weird_error',
+          message: 'Something odd happened',
+          details: ''
+        }
       ]
     }
   })
@@ -235,5 +236,28 @@ describe('ErrorGroupList selection emphasis', () => {
     await waitFor(() => {
       expect(strip).toHaveTextContent('2 nodes — 2 errors')
     })
+  })
+
+  it('preserves special characters in execution item accessible names', () => {
+    const nodeDisplayName = 'A & B <C>'
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      fromAny<LGraphNode, unknown>(
+        String(nodeId) === '1'
+          ? { ...SAMPLER_NODE, title: nodeDisplayName }
+          : LOADER_NODE
+      )
+    )
+    const pinia = createPinia()
+    seedTwoErrorGroups(pinia)
+
+    renderList(pinia)
+
+    expect(
+      screen.getByRole('button', { name: /Info for A & B <C>/ })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Locate A & B <C>/ })
+    ).toBeInTheDocument()
+    expect(screen.queryAllByLabelText(/&(?:amp|lt|gt);/)).toHaveLength(0)
   })
 })
