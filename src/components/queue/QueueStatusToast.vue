@@ -128,17 +128,17 @@
         <button
           type="button"
           data-testid="queue-status-idle"
-          class="group pointer-events-auto flex h-6 cursor-pointer items-center gap-1 rounded-md border border-solid border-base-foreground/25 bg-transparent pr-1.5 pl-2 text-xs text-base-foreground opacity-70 transition-[opacity,background-color] hover:bg-secondary-background hover:opacity-100 data-[state=open]:bg-secondary-background data-[state=open]:opacity-100"
+          class="group pointer-events-auto flex cursor-pointer items-center gap-1 rounded-lg border border-solid border-[#2d2e32] bg-[#232426] px-2 py-1 text-sm leading-5 text-base-foreground transition-colors hover:bg-[#2d2e32]"
         >
           {{ activeJobsLabel }}
           <i
-            class="icon-[lucide--chevron-down] size-3.5 opacity-60 transition-transform duration-200 group-data-[state=open]:rotate-180"
+            class="icon-[lucide--chevron-down] size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"
           />
         </button>
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        :side-offset="6"
+        :side-offset="8"
         data-testid="queue-status-idle-panel"
         class="flex w-[326px] flex-col items-center gap-3 rounded-lg border-none bg-comfy-menu-bg py-3 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
       >
@@ -167,7 +167,7 @@
               v-for="job in recentJobs"
               :key="job.id"
               type="button"
-              class="relative flex h-[52px] cursor-pointer items-center gap-2.5 overflow-clip rounded-[10px] border-none bg-secondary-background px-3 py-2 text-left transition-colors hover:bg-secondary-background-hover"
+              class="relative flex h-[52px] cursor-pointer items-center gap-2.5 overflow-clip rounded-[10px] border-none bg-[#1c1c1d] px-3 py-2 text-left transition-colors hover:bg-[#232426]"
               :aria-label="t('queueStatus.viewResult')"
               data-testid="queue-status-recent-job"
               @click="openRecentJob(job)"
