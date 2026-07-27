@@ -309,6 +309,18 @@ describe('ComfyApp', () => {
           trigger_source: 'button',
           subscribe_to_run: true
         })
+        expect(
+          useExecutionStore().queuedJobs['job-1']?.workflowContext
+        ).toEqual({
+          workflow_type: 'custom',
+          view_mode: 'graph',
+          execution_scope: 'full',
+          total_node_count: 0,
+          executable_node_count: 0,
+          custom_node_count: 0,
+          api_node_count: 0,
+          subgraph_count: 0
+        })
       } finally {
         setTelemetryRegistry(null)
       }

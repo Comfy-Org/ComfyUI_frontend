@@ -6,6 +6,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
+import type { WorkflowExecutionContext } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -52,6 +53,7 @@ interface QueuedJob {
    */
   nodes: Record<string, boolean>
   startTime?: number
+  workflowContext?: WorkflowExecutionContext
   /**
    * The workflow that is queued to be executed
    */
@@ -183,11 +185,15 @@ export const useExecutionStore = defineStore('execution', () => {
     status: WorkflowExecutionStatus
   ) {
     if (status === 'running') return
-    const startTime = queuedJobs.value[jobId]?.startTime
+    const queuedJob = queuedJobs.value[jobId]
+    const startTime = queuedJob?.startTime
     if (startTime === undefined) return
     useTelemetry()?.trackExecutionOutcome({
       startTime,
-      outcome: status === 'completed' ? 'success' : 'failure'
+      outcome: status === 'completed' ? 'success' : 'failure',
+      ...(queuedJob.workflowContext && {
+        workflowContext: queuedJob.workflowContext
+      })
     })
   }
 
@@ -734,13 +740,15 @@ export const useExecutionStore = defineStore('execution', () => {
     id,
     promptOutput,
     startTime,
-    workflow
+    workflow,
+    workflowContext
   }: {
     nodes: string[]
     id: JobId
     promptOutput: ComfyApiWorkflow
     startTime?: number
     workflow: ComfyWorkflow
+    workflowContext?: WorkflowExecutionContext
   }) {
     queuedJobs.value[id] ??= { nodes: {} }
     const queuedJob = queuedJobs.value[id]
@@ -753,6 +761,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
     queuedJob.startTime = startTime
+    queuedJob.workflowContext = workflowContext
     queuedJob.workflow = workflow
     if (workflow) jobIdToWorkflow.set(String(id), workflow)
     queuedJob.shareId = workflow?.shareId

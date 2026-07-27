@@ -207,6 +207,7 @@ export interface WorkflowQueuedMetadata {
 export interface ExecutionOutcomeMetadata {
   startTime: number
   outcome: 'success' | 'failure'
+  workflowContext?: WorkflowExecutionContext
 }
 
 /**
