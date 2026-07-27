@@ -23,7 +23,8 @@ const {
   mockTrackExecutionError,
   mockTrackExecutionOutcome,
   mockTrackExecutionSuccess,
-  mockTrackSharedWorkflowRun
+  mockTrackSharedWorkflowRun,
+  mockTrackWorkflowExecutionStarted
 } = await vi.hoisted(async () => {
   const { shallowRef } = await import('vue')
   return {
@@ -36,7 +37,8 @@ const {
     mockTrackExecutionError: vi.fn(),
     mockTrackExecutionOutcome: vi.fn(),
     mockTrackExecutionSuccess: vi.fn(),
-    mockTrackSharedWorkflowRun: vi.fn()
+    mockTrackSharedWorkflowRun: vi.fn(),
+    mockTrackWorkflowExecutionStarted: vi.fn()
   }
 })
 
@@ -99,6 +101,7 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackExecutionError: mockTrackExecutionError,
     trackExecutionOutcome: mockTrackExecutionOutcome,
+    trackWorkflowExecutionStarted: mockTrackWorkflowExecutionStarted,
     trackExecutionSuccess: mockTrackExecutionSuccess,
     trackSharedWorkflowRun: mockTrackSharedWorkflowRun
   })
@@ -665,7 +668,8 @@ describe('useExecutionStore - workflowStatus', () => {
       submittedAt: 142,
       executionStartedAt: 92,
       terminalAt: 192,
-      outcome: 'success'
+      outcome: 'success',
+      jobId: 'job-1'
     })
     expect(store.getWorkflowStatus(workflowA)).toBe('completed')
     expect(store.queuedJobs['job-1']).toBeUndefined()
@@ -680,7 +684,8 @@ describe('useExecutionStore - workflowStatus', () => {
       startTime: 42,
       submittedAt: 142,
       terminalAt: 192,
-      outcome: 'failure'
+      outcome: 'failure',
+      jobId: 'job-1'
     })
     expect(store.getWorkflowStatus(workflowA)).toBe('failed')
   })
@@ -697,7 +702,8 @@ describe('useExecutionStore - workflowStatus', () => {
       submittedAt: 142,
       executionStartedAt: 92,
       terminalAt: 192,
-      outcome: 'interrupted'
+      outcome: 'interrupted',
+      jobId: 'job-1'
     })
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
@@ -714,7 +720,8 @@ describe('useExecutionStore - workflowStatus', () => {
       submittedAt: 142,
       executionStartedAt: 142,
       terminalAt: 242,
-      outcome: 'success'
+      outcome: 'success',
+      jobId: 'job-1'
     })
     expect(store.getWorkflowStatus(workflowA)).toBe('completed')
   })
@@ -751,6 +758,7 @@ describe('useExecutionStore - workflowStatus', () => {
       executionStartedAt: 142,
       terminalAt: 242,
       outcome: 'success',
+      jobId: 'job-1',
       workflowContext
     })
   })
@@ -775,7 +783,8 @@ describe('useExecutionStore - workflowStatus', () => {
       submittedAt: 142,
       executionStartedAt: 142,
       terminalAt: 242,
-      outcome: 'interrupted'
+      outcome: 'interrupted',
+      jobId: 'job-1'
     })
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
@@ -1413,6 +1422,15 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         nodes: {},
         executionStartedAt: expect.any(Number)
       })
+    })
+
+    it('emits the execution start funnel step once per job', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackWorkflowExecutionStarted).toHaveBeenCalledExactlyOnceWith(
+        { jobId: 'job-1' }
+      )
     })
 
     it('clears transient errors while preserving validation errors', () => {

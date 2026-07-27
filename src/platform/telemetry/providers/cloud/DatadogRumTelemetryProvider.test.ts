@@ -72,6 +72,7 @@ describe('DatadogRumTelemetryProvider', () => {
       startTime: 42,
       submittedAt: 92,
       outcome: 'accepted',
+      jobId: 'job-1',
       workflowContext
     })
 
@@ -93,6 +94,41 @@ describe('DatadogRumTelemetryProvider', () => {
         workflow_type: 'custom'
       }
     })
+    expect(addAction).toHaveBeenCalledWith('workflow_submission', {
+      ...workflowContext,
+      job_id: 'job-1',
+      outcome: 'accepted',
+      product: 'cloud_generation'
+    })
+  })
+
+  it('emits a submission funnel step when the backend rejects the prompt', () => {
+    new DatadogRumTelemetryProvider().trackWorkflowSubmission({
+      startTime: 42,
+      submittedAt: 92,
+      outcome: 'prompt_rejected',
+      workflowContext
+    })
+
+    expect(addAction).toHaveBeenCalledWith('workflow_submission', {
+      ...workflowContext,
+      outcome: 'prompt_rejected',
+      product: 'cloud_generation'
+    })
+  })
+
+  it('emits an execution start funnel step without a duration vital', () => {
+    new DatadogRumTelemetryProvider().trackWorkflowExecutionStarted({
+      jobId: 'job-1',
+      workflowContext
+    })
+
+    expect(addAction).toHaveBeenCalledWith('workflow_execution_start', {
+      ...workflowContext,
+      job_id: 'job-1',
+      product: 'cloud_generation'
+    })
+    expect(addDurationVital).not.toHaveBeenCalled()
   })
 
   it.for(['success', 'failure', 'interrupted'] as const)(
@@ -106,9 +142,16 @@ describe('DatadogRumTelemetryProvider', () => {
         executionStartedAt: 142,
         terminalAt: 242,
         outcome,
+        jobId: 'job-1',
         workflowContext
       })
 
+      expect(addAction).toHaveBeenCalledWith('workflow_run_finished', {
+        ...workflowContext,
+        job_id: 'job-1',
+        outcome,
+        product: 'cloud_generation'
+      })
       expect(getInternalContext).toHaveBeenCalledWith(42)
       const context = {
         ...workflowContext,
@@ -160,7 +203,8 @@ describe('DatadogRumTelemetryProvider', () => {
       executionStartedAt: 92,
       submittedAt: 142,
       terminalAt: 242,
-      outcome: 'success'
+      outcome: 'success',
+      jobId: 'job-1'
     })
 
     expect(addDurationVital).toHaveBeenCalledWith('workflow_queue_wait', {

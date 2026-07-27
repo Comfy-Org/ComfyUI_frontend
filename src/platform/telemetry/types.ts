@@ -188,6 +188,12 @@ export interface WorkflowSubmissionMetadata {
   startTime: number
   submittedAt: number
   outcome: WorkflowSubmissionOutcome
+  jobId?: string
+  workflowContext?: WorkflowExecutionContext
+}
+
+export interface WorkflowExecutionStartedMetadata {
+  jobId: string
   workflowContext?: WorkflowExecutionContext
 }
 
@@ -197,6 +203,7 @@ export interface ExecutionOutcomeMetadata {
   executionStartedAt?: number
   terminalAt: number
   outcome: 'success' | 'failure' | 'interrupted'
+  jobId: string
   workflowContext?: WorkflowExecutionContext
 }
 
@@ -678,6 +685,9 @@ export interface TelemetryProvider {
   trackWorkflowExecution?(): void
   trackWorkflowQueued?(metadata: WorkflowQueuedMetadata): void
   trackWorkflowSubmission?(metadata: WorkflowSubmissionMetadata): void
+  trackWorkflowExecutionStarted?(
+    metadata: WorkflowExecutionStartedMetadata
+  ): void
   trackExecutionOutcome?(metadata: ExecutionOutcomeMetadata): void
   trackExecutionError?(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void
