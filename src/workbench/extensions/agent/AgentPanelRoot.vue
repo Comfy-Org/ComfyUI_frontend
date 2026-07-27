@@ -585,10 +585,7 @@ async function applyDraft(): Promise<void> {
     if (!Array.isArray(nodes) || nodes.length === 0) return
     const boundTab = boundTabFor(workflowId)
     if (boundTab) {
-      if (workflowStore.activeWorkflow?.path !== boundTab.path) {
-        tabActivity.markModified(boundTab.path)
-        return
-      }
+      if (workflowStore.activeWorkflow?.path !== boundTab.path) return
       await loadDraft(workflowId, version, content, boundTab)
       return
     }
@@ -818,8 +815,6 @@ function onPanelDrop(event: DragEvent): void {
       :custom-title="history.titleFor(threadId)"
       :selection-tags="selectionTags"
       :active-tab="activeTab"
-      :workflow-tabs="workflowTabs"
-      :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       @select-tab="onSelectTab"
       @clear-workflow="onClearWorkflow"

@@ -1745,94 +1745,6 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('chip X detaches the chat so the next send carries no workflow context', async () => {
-    makeTab('wf-42')
-    const bodies = mockMessagesEndpoint('wf-42')
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.dontWorkInWorkflow')
-      })
-    )
-    expect(
-      await screen.findAllByText(i18n.global.t('agent.chooseWorkflow'))
-    ).not.toHaveLength(0)
-
-    await sendFromComposer('work without a canvas')
-
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
-    expect(bodies[0]).not.toHaveProperty('current_tab')
-    expect(bodies[0]).toMatchObject({
-      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
-    })
-  })
-
-  it('re-attaches by picking a row so the next send carries the workflow again', async () => {
-    makeTab('wf-42')
-    const bodies = mockMessagesEndpoint('wf-42')
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.dontWorkInWorkflow')
-      })
-    )
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.switchWorkflow')
-      })
-    )
-    await userEvent.click(
-      await screen.findByRole('menuitemradio', { name: /current/ })
-    )
-
-    await sendFromComposer('back on the canvas')
-
-    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
-  })
-
-  it('a new chat resets the detached state', async () => {
-    makeTab('wf-42')
-    const bodies = mockMessagesEndpoint('wf-42')
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.dontWorkInWorkflow')
-      })
-    )
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
-    )
-
-    await sendFromComposer('fresh chat')
-
-    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
-  })
-
-  it('a detached send never re-arms the editing spinner on the old tab', async () => {
-    makeTab('wf-42')
-    mockMessagesEndpoint('wf-42')
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-
-    await sendFromComposer('attached turn')
-    const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
-
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
-    await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
-
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.dontWorkInWorkflow')
-      })
-    )
-    await sendFromComposer('detached turn')
-
-    expect(activity.editingTabPath).toBeNull()
-  })
-
   it('autosaves a minted tab so the next patch applies in place', async () => {
     mockMessagesEndpoint('wf-42')
     const mintedPath = 'workflows/Unsaved Workflow.json'
@@ -3171,57 +3083,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).toHaveBeenCalledTimes(1)
   })
 
-  it('overwrites a user-edited bound tab without prompting', async () => {
-    const tab = makeTab('wf-42')
-    mockMessagesEndpoint('wf-42')
-
-    await renderAndSend('add an upscaler')
-
-    tab.isModified = true
-    const graph = { version: 0.4, nodes: [{ id: 5 }] }
-    patch(1, graph)
-
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
-    )
-    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-    await vi.waitFor(() =>
-      expect(workflowService.saveWorkflow).toHaveBeenCalledWith(tab)
-    )
-    expect(tab.isModified).toBe(false)
-  })
-
-  it('drops a parked draft when a new chat starts', async () => {
-    const tab = makeTab('wf-42')
-    mockMessagesEndpoint('wf-42')
-
-    await renderAndSend('add an upscaler')
-
-    const other = addTab('workflows/other.json')
-    hostStores.workflow.activeWorkflow = other
-    patch(1, { version: 0.4, nodes: [{ id: 2 }] })
-    await nextTick()
-    await nextTick()
-    expect(app.loadGraphData).not.toHaveBeenCalled()
-
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
-    )
-
-    hostStores.workflow.activeWorkflow = tab
-    await nextTick()
-    await nextTick()
-    expect(app.loadGraphData).not.toHaveBeenCalled()
-
-    // Only the parked draft was dropped; the next turn's drafts still apply.
-    await sendFromComposer('fresh start')
-    const graph = { version: 0.4, nodes: [{ id: 9 }] }
-    patch(2, graph)
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
-    )
-  })
-
   it('sends only the surviving chip ids after one is dismissed', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
@@ -3250,6 +3111,21 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     expect(screen.getByText('VAEDecode')).toBeInTheDocument()
     expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+  })
+
+  it('overwrites a user-edited bound tab with the agent draft, no prompt', async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    tab.isModified = true
+    const graph = { version: 0.4, nodes: [{ id: 1 }] }
+    patch(1, graph)
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
+    )
+    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
   })
 
   it('stages selected nodes as chips and sends their ids once', async () => {

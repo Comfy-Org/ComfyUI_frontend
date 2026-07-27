@@ -21,8 +21,6 @@ import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
 import PanelHeader from './PanelHeader.vue'
-import RunNoticeBanner from './RunNoticeBanner.vue'
-import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
 
 const {
   entries,
@@ -65,8 +63,6 @@ const emit = defineEmits<{
   removeTag: [id: string]
   mentionPick: [node: SelectedNode]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
-  selectTab: [path: string]
-  clearWorkflow: []
   newChat: []
   toggleSize: []
   close: []
