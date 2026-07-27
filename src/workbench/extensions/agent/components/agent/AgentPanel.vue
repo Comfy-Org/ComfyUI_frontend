@@ -26,6 +26,7 @@ const {
   submitting = false,
   conflictOpen = false,
   canAttach = false,
+  canOpenAssets = false,
   isMaximized = false,
   selectionTags = [],
   activeTab = null,
@@ -40,6 +41,7 @@ const {
   submitting?: boolean
   conflictOpen?: boolean
   canAttach?: boolean
+  canOpenAssets?: boolean
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
   activeTab?: ActiveTab | null
@@ -52,6 +54,7 @@ const emit = defineEmits<{
   send: [text: string, attachments: ComposerAttachment[]]
   stop: []
   attach: []
+  openAssets: []
   removeTag: [id: string]
   mentionPick: [node: SelectedNode]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
@@ -187,11 +190,13 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :streaming="streaming"
             :submitting="submitting"
             :can-attach="canAttach"
+            :can-open-assets="canOpenAssets"
             :selection-tags="selectionTags"
             :get-mention-nodes="getMentionNodes"
             @send="(text, attachments) => emit('send', text, attachments)"
             @stop="emit('stop')"
             @attach="emit('attach')"
+            @open-assets="emit('openAssets')"
             @remove-tag="emit('removeTag', $event)"
             @mention-pick="emit('mentionPick', $event)"
           />

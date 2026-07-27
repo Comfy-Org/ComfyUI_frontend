@@ -5,6 +5,9 @@ import {
   DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuRoot,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
 import { ref, useTemplateRef } from 'vue'
@@ -22,12 +25,14 @@ const {
   streaming = false,
   submitting = false,
   canAttach = false,
+  canOpenAssets = false,
   selectionTags = [],
   getMentionNodes = () => []
 } = defineProps<{
   streaming?: boolean
   submitting?: boolean
   canAttach?: boolean
+  canOpenAssets?: boolean
   selectionTags?: SelectedNode[]
   getMentionNodes?: () => SelectedNode[]
 }>()
@@ -35,12 +40,13 @@ const emit = defineEmits<{
   send: [text: string, attachments: ComposerAttachment[]]
   stop: []
   attach: []
+  openAssets: []
   removeTag: [id: string]
   mentionPick: [node: SelectedNode]
 }>()
 
 const mentionNodes = ref<SelectedNode[]>([])
-function onMentionOpen(open: boolean): void {
+function onAddNodesOpen(open: boolean): void {
   if (open) mentionNodes.value = getMentionNodes()
 }
 
@@ -136,52 +142,78 @@ defineExpose({
     />
 
     <div class="flex items-center justify-between px-3 py-2">
-      <div class="flex items-center gap-1">
-        <button
-          v-if="canAttach"
-          type="button"
-          :aria-label="t('agent.attach')"
+      <DropdownMenuRoot>
+        <DropdownMenuTrigger
+          v-tooltip.top="{ value: t('agent.addToPrompt'), showDelay: 300 }"
+          :aria-label="t('agent.addToPrompt')"
           class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
-          @click="emit('attach')"
         >
-          <span class="icon-[lucide--paperclip] size-4" />
-        </button>
-        <DropdownMenuRoot @update:open="onMentionOpen">
-          <DropdownMenuTrigger
-            :aria-label="t('agent.mention')"
-            class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
+          <span class="icon-[lucide--plus] size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuContent
+            side="top"
+            align="start"
+            :side-offset="4"
+            class="agent-scope rounded-agent border-agent-border bg-agent-surface-raised z-1100 w-64 border p-1 shadow-lg"
           >
-            <span class="icon-[lucide--at-sign] size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuContent
-              side="top"
-              align="start"
-              :side-offset="4"
-              class="rounded-agent border-agent-border bg-agent-surface-raised z-1100 max-h-64 w-64 overflow-y-auto border p-1 shadow-lg"
-            >
-              <DropdownMenuItem
-                v-for="node in mentionNodes"
-                :key="node.id"
+            <DropdownMenuSub @update:open="onAddNodesOpen">
+              <DropdownMenuSubTrigger
                 class="text-agent-fg data-highlighted:bg-agent-surface-hover rounded-agent flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs outline-none"
-                @select="emit('mentionPick', node)"
               >
-                <span class="truncate">{{ node.title }}</span>
-                <span class="text-agent-fg-subtle ml-auto shrink-0">
-                  #{{ node.id }}
+                <span class="icon-[lucide--box-select] size-3.5 shrink-0" />
+                <span class="truncate">
+                  {{ t('agent.addNodesFromGraph') }}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                v-if="!mentionNodes.length"
-                disabled
-                class="text-agent-fg-subtle px-2 py-1.5 text-xs"
-              >
-                {{ t('agent.noNodesToMention') }}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenuPortal>
-        </DropdownMenuRoot>
-      </div>
+                <span
+                  class="ml-auto icon-[lucide--chevron-right] size-3.5 shrink-0"
+                />
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent
+                  :side-offset="4"
+                  class="agent-scope rounded-agent border-agent-border bg-agent-surface-raised z-1100 max-h-64 w-64 overflow-y-auto border p-1 shadow-lg"
+                >
+                  <DropdownMenuItem
+                    v-for="node in mentionNodes"
+                    :key="node.id"
+                    class="text-agent-fg data-highlighted:bg-agent-surface-hover rounded-agent flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs outline-none"
+                    @select="emit('mentionPick', node)"
+                  >
+                    <span class="truncate">{{ node.title }}</span>
+                    <span class="text-agent-fg-subtle ml-auto shrink-0">
+                      #{{ node.id }}
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    v-if="!mentionNodes.length"
+                    disabled
+                    class="text-agent-fg-subtle px-2 py-1.5 text-xs"
+                  >
+                    {{ t('agent.noNodesToMention') }}
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+            <DropdownMenuItem
+              v-if="canOpenAssets"
+              class="text-agent-fg data-highlighted:bg-agent-surface-hover rounded-agent flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs outline-none"
+              @select="emit('openAssets')"
+            >
+              <span class="icon-[lucide--image] size-3.5 shrink-0" />
+              <span class="truncate">{{ t('agent.addFromAssets') }}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              v-if="canAttach"
+              class="text-agent-fg data-highlighted:bg-agent-surface-hover rounded-agent flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs outline-none"
+              @select="emit('attach')"
+            >
+              <span class="icon-[lucide--paperclip] size-3.5 shrink-0" />
+              <span class="truncate">{{ t('agent.attachFiles') }}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
 
       <div class="flex items-center gap-1">
         <button
