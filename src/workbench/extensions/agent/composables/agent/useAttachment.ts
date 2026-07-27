@@ -1,4 +1,5 @@
 import { i18n } from '@/i18n'
+import { hasImageType } from '@/utils/eventUtils'
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
@@ -36,7 +37,9 @@ export function useAttachment(options: UseAttachmentOptions) {
         id,
         name: file.name,
         ref: '',
-        previewUrl: URL.createObjectURL(file),
+        // Only images can be shown in an <img>; anything else falls back to the
+        // icon tile rather than rendering a broken thumbnail.
+        previewUrl: hasImageType(file) ? URL.createObjectURL(file) : undefined,
         uploading: true
       })
       try {

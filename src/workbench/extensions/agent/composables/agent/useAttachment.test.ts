@@ -26,6 +26,25 @@ function chipRegistry() {
 }
 
 describe('useAttachment', () => {
+  it('gives an image a thumbnail but leaves a video to the icon tile', async () => {
+    // A video object URL in an <img> renders as a broken thumbnail, so only
+    // images get a previewUrl.
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    await addFiles([
+      new File(['x'], 'shot.png', { type: 'image/png' }),
+      new File(['x'], 'clip.mp4', { type: 'video/mp4' })
+    ])
+
+    const previews = Object.fromEntries(
+      registry.chips.map((chip) => [chip.name, chip.previewUrl !== undefined])
+    )
+    expect(previews).toEqual({ 'shot.png': true, 'clip.mp4': false })
+    expect(upload).toHaveBeenCalledTimes(2)
+  })
+
   it('rejects files over 20MB before staging or uploading', async () => {
     const upload = vi.fn()
     const onError = vi.fn()
