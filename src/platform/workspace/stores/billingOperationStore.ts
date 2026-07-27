@@ -158,10 +158,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     const billingContext = useBillingContext()
-    await Promise.allSettled([
-      billingContext.fetchStatus(),
-      billingContext.fetchBalance()
-    ])
+    if (operation.type === 'subscription') {
+      await Promise.allSettled([billingContext.reconcileSubscriptionSuccess()])
+    } else {
+      await Promise.allSettled([
+        billingContext.fetchStatus(),
+        billingContext.fetchBalance()
+      ])
+    }
 
     if (operation.type === 'cancel') {
       useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })

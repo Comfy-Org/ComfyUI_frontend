@@ -50,8 +50,10 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionCancellationMetadata } from '@/platform/telemetry/types'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
@@ -65,6 +67,8 @@ const dialogStore = useDialogStore()
 const toast = useToast()
 const { cancelSubscription, fetchStatus, subscription, tier } =
   useBillingContext()
+const { shouldUseWorkspaceBilling } = useBillingRouting()
+const { permissions } = useWorkspaceUI()
 const telemetry = useTelemetry()
 
 const isLoading = ref(false)
@@ -119,6 +123,13 @@ function onClose() {
 }
 
 async function onConfirmCancel() {
+  if (
+    shouldUseWorkspaceBilling.value &&
+    !permissions.value.canManageSubscriptionLifecycle
+  ) {
+    return
+  }
+
   telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
   isLoading.value = true
   try {

@@ -224,9 +224,10 @@ function resolveValues(values: unknown): string[] {
 }
 
 const modelValue = defineModel<string | undefined>({
-  default(modelProps: Props) {
+  default(modelProps: Record<string, unknown>) {
     try {
-      const values = modelProps.widget.options?.values
+      const modelWidget = modelProps.widget as Props['widget'] | undefined
+      const values = modelWidget?.options?.values
       const resolved = typeof values === 'function' ? values() : values
       const firstValue = Array.isArray(resolved)
         ? resolved.find((value) => value !== null && value !== undefined)
