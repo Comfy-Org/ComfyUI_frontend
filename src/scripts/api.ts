@@ -462,7 +462,9 @@ export class ComfyApi extends EventTarget {
     let unifiedRetryOn401 = false
 
     if (isCloud) {
-      if (isSessionTerminated()) return new Response(null, { status: 401 })
+      if (isSessionTerminated()) {
+        return new Response('{}', { status: 401, statusText: 'Unauthorized' })
+      }
       await this.waitForAuthInitialization()
 
       // Get Firebase JWT token if user is logged in

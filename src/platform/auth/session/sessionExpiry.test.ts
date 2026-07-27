@@ -7,8 +7,6 @@ import { SessionRequestError } from '@/platform/auth/session/useSessionCookie'
 
 vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
 
-vi.mock('@/i18n', () => ({ t: (key: string) => key }))
-
 const mocks = vi.hoisted(() => ({
   getIdToken: vi.fn(),
   currentUser: null as {
@@ -16,8 +14,7 @@ const mocks = vi.hoisted(() => ({
   } | null,
   createSessionOrThrow: vi.fn(),
   deleteSession: vi.fn(),
-  logout: vi.fn(),
-  toastAdd: vi.fn()
+  logout: vi.fn()
 }))
 
 vi.mock('@/stores/authStore', () => ({
@@ -37,17 +34,12 @@ vi.mock('@/platform/auth/session/useSessionCookie', async () => {
   }
 })
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: mocks.toastAdd })
-}))
-
 const mockLocation = { href: '' }
 Object.defineProperty(window, 'location', {
   value: mockLocation,
   writable: true
 })
 
-/** Module state is intentionally module-scoped, so each test gets a fresh copy. */
 async function loadSessionExpiry() {
   vi.resetModules()
   return import('@/platform/auth/session/sessionExpiry')
@@ -120,7 +112,6 @@ describe('reportUnauthorized', () => {
     expect(mocks.getIdToken).toHaveBeenCalledTimes(1)
     expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(1)
     expect(mocks.logout).toHaveBeenCalledTimes(1)
-    expect(mocks.toastAdd).toHaveBeenCalledTimes(1)
   })
 
   it('ignores further reports once terminated, so the poll loop cannot restart it', async () => {
@@ -135,6 +126,72 @@ describe('reportUnauthorized', () => {
 
     expect(mocks.logout).toHaveBeenCalledTimes(1)
     expect(mockLocation.href).toBe('')
+  })
+
+  it('still redirects when teardown throws, so a failed logout cannot strand the app', async () => {
+    mocks.createSessionOrThrow.mockRejectedValue(
+      new SessionRequestError('unauthorized', 401)
+    )
+    mocks.deleteSession.mockRejectedValue(new Error('network down'))
+    mocks.logout.mockRejectedValue(new Error('firebase unavailable'))
+    const { reportUnauthorized } = await loadSessionExpiry()
+
+    await reportUnauthorized()
+
+    expect(mockLocation.href).toBe('/cloud/login')
+  })
+
+  it('never rejects, so the fire-and-forget callers cannot raise unhandled rejections', async () => {
+    mocks.getIdToken.mockRejectedValue(new Error('chunk load failed'))
+    mocks.createSessionOrThrow.mockRejectedValue(new Error('chunk load failed'))
+    const { reportUnauthorized } = await loadSessionExpiry()
+
+    await expect(
+      Promise.all(Array.from({ length: 10 }, () => reportUnauthorized()))
+    ).resolves.toBeDefined()
+    expect(mocks.logout).not.toHaveBeenCalled()
+  })
+
+  it('treats a 403 as an authorization refusal, not a revoked session', async () => {
+    mocks.createSessionOrThrow.mockRejectedValue(
+      new SessionRequestError('forbidden', 403)
+    )
+    const { reportUnauthorized, isSessionTerminated } =
+      await loadSessionExpiry()
+
+    await reportUnauthorized()
+
+    expect(mocks.logout).not.toHaveBeenCalled()
+    expect(isSessionTerminated()).toBe(false)
+  })
+
+  it('does not burn the cooldown when no user is signed in yet', async () => {
+    mocks.currentUser = null
+    const { reportUnauthorized } = await loadSessionExpiry()
+
+    await reportUnauthorized()
+    mocks.currentUser = signedInUser()
+    await reportUnauthorized()
+
+    expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(1)
+  })
+
+  it('gives up with no verdict when an oracle hangs, rather than wedging every later report', async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.createSessionOrThrow.mockReturnValue(new Promise(() => {}))
+      const { reportUnauthorized, isSessionTerminated } =
+        await loadSessionExpiry()
+
+      const pending = reportUnauthorized()
+      await vi.advanceTimersByTimeAsync(15_001)
+      await pending
+
+      expect(isSessionTerminated()).toBe(false)
+      expect(mocks.logout).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('does not log out when the identity oracle is unreachable', async () => {

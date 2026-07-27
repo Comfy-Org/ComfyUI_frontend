@@ -7,9 +7,15 @@ import {
   fetchWithUnifiedRemint
 } from '@/platform/auth/unified/remintRetry'
 
-const { mockRemint, flagState } = vi.hoisted(() => ({
+const { mockRemint, flagState, mockReportUnauthorized } = vi.hoisted(() => ({
   mockRemint: vi.fn(),
-  flagState: { unifiedCloudAuthEnabled: true }
+  flagState: { unifiedCloudAuthEnabled: true },
+  mockReportUnauthorized: vi.fn()
+}))
+
+vi.mock('@/platform/auth/session/sessionExpiry', () => ({
+  reportUnauthorized: mockReportUnauthorized,
+  isSessionTerminated: () => false
 }))
 
 vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
@@ -37,6 +43,7 @@ describe('fetchWithUnifiedRemint', () => {
 
   beforeEach(() => {
     mockRemint.mockReset()
+    mockReportUnauthorized.mockReset()
     flagState.unifiedCloudAuthEnabled = true
     mockFetch = vi.fn()
     vi.stubGlobal('fetch', mockFetch)
@@ -44,6 +51,72 @@ describe('fetchWithUnifiedRemint', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  describe('reporting a surviving 401 to the session-expiry investigator', () => {
+    it('reports when a 401 carried no bearer at all, which is what a revoked identity sends', async () => {
+      mockFetch.mockResolvedValue(unauthorized)
+
+      const result = await fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { headers: { 'Comfy-User': 'u1' } },
+        true
+      )
+
+      expect(result).toBe(unauthorized)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockRemint).not.toHaveBeenCalled()
+      expect(mockReportUnauthorized).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports a 401 that survives the re-mint retry', async () => {
+      mockFetch.mockResolvedValue(unauthorized)
+      mockRemint.mockResolvedValue('tokenB')
+
+      await fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { headers: { Authorization: 'Bearer tokenA' } },
+        true
+      )
+
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(mockReportUnauthorized).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports a 401 while the unified flag is OFF, since the dead-end predates it', async () => {
+      flagState.unifiedCloudAuthEnabled = false
+      mockFetch.mockResolvedValue(unauthorized)
+
+      await fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { headers: { Authorization: 'Bearer tokenA' } },
+        false
+      )
+
+      expect(mockRemint).not.toHaveBeenCalled()
+      expect(mockReportUnauthorized).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not report when the request succeeds', async () => {
+      mockFetch.mockResolvedValue(ok)
+
+      await fetchWithUnifiedRemint('https://cloud/x', {}, true)
+
+      expect(mockReportUnauthorized).not.toHaveBeenCalled()
+    })
+
+    it('does not report when the re-mint retry recovers', async () => {
+      mockFetch.mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok)
+      mockRemint.mockResolvedValue('tokenB')
+
+      await fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { headers: { Authorization: 'Bearer tokenA' } },
+        true
+      )
+
+      expect(mockReportUnauthorized).not.toHaveBeenCalled()
+    })
   })
 
   it('re-mints once and retries with the fresh token on a 401 (AC1)', async () => {

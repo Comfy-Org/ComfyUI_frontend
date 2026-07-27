@@ -72,8 +72,13 @@ function fetchRequestHeaders(
  * current cloud caller sends one).
  *
  * `shouldRetryOn401` is the caller's gate (see {@link shouldRemintCloudRequest}):
- * flag-OFF traffic returns after a single `fetch` and never enters the re-mint
- * path, so the legacy cascade stays untouched for instant rollback.
+ * flag-OFF traffic never enters the re-mint path, so the legacy token cascade
+ * stays untouched for instant rollback.
+ *
+ * Reporting a surviving `401` to {@link reportUnauthorized} is deliberately NOT
+ * behind that flag — the session dead-end it ends predates unified auth and
+ * reproduces with the flag off. The report only opens an investigation; the
+ * decision to end a session stays with that module's own oracles.
  */
 export async function fetchWithUnifiedRemint(
   input: RequestInfo | URL,
@@ -91,17 +96,18 @@ export async function fetchWithUnifiedRemint(
 
   const requestHeaders = fetchRequestHeaders(input, init)
   const expectedToken = bearerToken(requestHeaders.get('Authorization'))
-  if (!expectedToken) return response
-
   const replayable = !(init.body instanceof ReadableStream)
-  if (shouldRetryOn401 && !replayable) {
+
+  if (shouldRetryOn401 && expectedToken && !replayable) {
     console.warn(
       'fetchWithUnifiedRemint: a ReadableStream body is not replayable; surfacing the original 401'
     )
   }
 
   const token =
-    shouldRetryOn401 && replayable ? await tryRemintToken(expectedToken) : null
+    shouldRetryOn401 && expectedToken && replayable
+      ? await tryRemintToken(expectedToken)
+      : null
   if (!token) {
     void reportUnauthorized()
     return response
@@ -114,7 +120,7 @@ export async function fetchWithUnifiedRemint(
   return retried
 }
 
-function isAuthenticated401(
+function isUnauthorizedWithConfig(
   error: unknown
 ): error is AxiosError & { config: InternalAxiosRequestConfig } {
   if (!axios.isAxiosError(error)) return false
@@ -125,27 +131,28 @@ function isAuthenticated401(
 /**
  * Installs a response interceptor that gives a cloud axios client the same
  * reactive 401 guard as {@link fetchWithUnifiedRemint}: a single re-mint + a
- * single retry on `401`, surfacing a persistent `401` unchanged. A strict
- * no-op while `unified_cloud_auth` is OFF — the original error rejects exactly
- * as it does today.
+ * single retry on `401`, surfacing a persistent `401` unchanged. While
+ * `unified_cloud_auth` is OFF no re-mint is attempted and the original error
+ * rejects exactly as it does today; a surviving `401` is still reported, for
+ * the reason given on {@link fetchWithUnifiedRemint}.
  */
 export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
   client.interceptors.response.use(
     (response) => response,
     async (error: unknown) => {
-      if (!isAuthenticated401(error)) throw error
+      if (!isUnauthorizedWithConfig(error)) throw error
 
       const { config } = error
       const expectedToken = bearerToken(
         new AxiosHeaders(config.headers).get('Authorization')
       )
-      if (!expectedToken) throw error
-
       const mayRemint =
+        expectedToken !== undefined &&
         !config.__unifiedRetried &&
         !config.__skipUnifiedRemint &&
         (await shouldRemintCloudRequest())
-      const token = mayRemint ? await tryRemintToken(expectedToken) : null
+      const token =
+        mayRemint && expectedToken ? await tryRemintToken(expectedToken) : null
 
       if (!token) {
         void reportUnauthorized()

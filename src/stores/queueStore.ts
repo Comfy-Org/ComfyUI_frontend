@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
-import { isSessionTerminated } from '@/platform/auth/session/sessionExpiry'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
   APITaskType,
@@ -523,10 +522,6 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const update = async () => {
-    // The poller is the loudest 401 offender; a terminated session is going to
-    // redirect, so stop re-polling instead of logging a failure per tick.
-    if (isSessionTerminated()) return
-
     if (inFlight) {
       dirty = true
       return
