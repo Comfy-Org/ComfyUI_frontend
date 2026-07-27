@@ -16,13 +16,13 @@ This command will:
 The `.agents/setup` script handles the full toolchain setup — Node.js from `.nvmrc`, pnpm from `package.json#packageManager`, workspace dependencies, and Playwright Chromium:
 
 ```bash
-.agents/setup
+source .agents/setup
 ```
 
 For fast verification that the toolchain is already in place (e.g. after an environment restart), use the readiness check instead:
 
 ```bash
-.agents/resume
+source .agents/resume
 ```
 
 ## Step 2: Verify Build
