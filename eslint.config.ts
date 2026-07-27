@@ -337,6 +337,14 @@ export default defineConfig([
     }
   },
   {
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
+    }
+  },
+  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {

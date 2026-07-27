@@ -31,6 +31,7 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     getAssetsPageByTag: vi.fn(),
     getAllAssetsByTag: vi.fn(),
     getAssetsForNodeType: vi.fn(),
+    getAssetsPageForNodeType: vi.fn(),
     invalidateInputAssetsIncludingPublic: vi.fn(),
     updateAsset: vi.fn(),
     addAssetTags: vi.fn(),
@@ -794,6 +795,17 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     preview_url: `http://test.com/${id}`
   })
 
+  /** Wraps assets in the paginated response envelope the asset API returns. */
+  const makePage = (
+    assets: AssetItem[],
+    page: { has_more?: boolean; next_cursor?: string } = {}
+  ): AssetResponse => ({
+    assets,
+    total: assets.length,
+    has_more: page.has_more ?? false,
+    ...(page.next_cursor === undefined ? {} : { next_cursor: page.next_cursor })
+  })
+
   describe('getAssets cache invalidation', () => {
     it('should invalidate cache before mutating assets during batch loading', async () => {
       const store = useAssetsStore()
@@ -807,10 +819,12 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       )
 
       let callCount = 0
-      vi.mocked(assetService.getAssetsForNodeType).mockImplementation(
+      vi.mocked(assetService.getAssetsPageForNodeType).mockImplementation(
         async () => {
           callCount++
-          return callCount === 1 ? firstBatch : secondBatch
+          return callCount === 1
+            ? makePage(firstBatch, { has_more: true })
+            : makePage(secondBatch)
         }
       )
 
@@ -819,7 +833,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       // Wait for background batch loading to complete
       await vi.waitFor(() => {
         expect(
-          vi.mocked(assetService.getAssetsForNodeType)
+          vi.mocked(assetService.getAssetsPageForNodeType)
         ).toHaveBeenCalledTimes(2)
       })
 
@@ -838,10 +852,12 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const secondBatch = [createMockAsset('new-asset')]
 
       let callCount = 0
-      vi.mocked(assetService.getAssetsForNodeType).mockImplementation(
+      vi.mocked(assetService.getAssetsPageForNodeType).mockImplementation(
         async () => {
           callCount++
-          return callCount === 1 ? firstBatch : secondBatch
+          return callCount === 1
+            ? makePage(firstBatch, { has_more: true })
+            : makePage(secondBatch)
         }
       )
 
@@ -850,7 +866,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       // Wait for background batch loading to complete
       await vi.waitFor(() => {
         expect(
-          vi.mocked(assetService.getAssetsForNodeType)
+          vi.mocked(assetService.getAssetsPageForNodeType)
         ).toHaveBeenCalledTimes(2)
       })
 
@@ -864,7 +880,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const nodeType = 'CheckpointLoaderSimple'
       const assets = [createMockAsset('cache-test-1')]
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage(assets)
+      )
       await store.updateModelsForNodeType(nodeType)
 
       const firstCall = store.getAssets(nodeType)
@@ -872,6 +890,102 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       expect(secondCall).toBe(firstCall)
       expect(firstCall).toHaveLength(1)
+    })
+  })
+
+  describe('cursor walk anomalies (regression)', () => {
+    it('follows an empty-string cursor instead of falling back to offset paging', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      vi.mocked(assetService.getAssetsPageForNodeType).mockImplementation(
+        async (_nodeType, opts) => {
+          if (opts?.after === undefined) {
+            return makePage([createMockAsset('p1')], {
+              has_more: true,
+              next_cursor: ''
+            })
+          }
+          return makePage([createMockAsset('p2')])
+        }
+      )
+
+      await store.updateModelsForNodeType(nodeType)
+
+      const calls = vi.mocked(assetService.getAssetsPageForNodeType).mock.calls
+      expect(calls).toHaveLength(2)
+      expect(calls[1]?.[1]?.after).toBe('')
+      expect(store.getAssets(nodeType).map((a) => a.id)).toEqual(['p1', 'p2'])
+    })
+
+    it('keeps previously cached assets when a refresh hits an empty page with has_more', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+      const cached = [
+        createMockAsset('keep-1'),
+        createMockAsset('keep-2'),
+        createMockAsset('keep-3')
+      ]
+
+      // Initial load: a complete walk populates the cache.
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage(cached)
+      )
+      await store.updateModelsForNodeType(nodeType)
+      expect(store.getAssets(nodeType)).toHaveLength(3)
+
+      // Refresh: the server returns an empty page while still claiming more.
+      // The walk must stop without pruning the still-valid cached assets.
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([], { has_more: true })
+      )
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(store.getAssets(nodeType).map((a) => a.id)).toEqual([
+        'keep-1',
+        'keep-2',
+        'keep-3'
+      ])
+    })
+
+    it('terminates on a cycling cursor (A->B->A) instead of looping forever', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      vi.mocked(assetService.getAssetsPageForNodeType).mockImplementation(
+        async (_nodeType, opts) => {
+          const after = opts?.after
+          if (after === undefined) {
+            return makePage([createMockAsset('p1')], {
+              has_more: true,
+              next_cursor: 'B'
+            })
+          }
+          if (after === 'B') {
+            return makePage([createMockAsset('p2')], {
+              has_more: true,
+              next_cursor: 'A'
+            })
+          }
+          // after === 'A' returns cursor 'B' again — a cycle the walk must
+          // detect and break out of.
+          return makePage([createMockAsset('p3')], {
+            has_more: true,
+            next_cursor: 'B'
+          })
+        }
+      )
+
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(3)
+      expect(store.getAssets(nodeType).map((a) => a.id)).toEqual([
+        'p1',
+        'p2',
+        'p3'
+      ])
     })
   })
 
@@ -883,7 +997,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         createMockAsset(`first-${i}`)
       )
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(firstBatch)
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage(firstBatch)
+      )
 
       // Start two concurrent requests for the same category
       const firstRequest = store.updateModelsForNodeType(nodeType)
@@ -892,7 +1008,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       // Second request should be short-circuited, only one API call made
       expect(
-        vi.mocked(assetService.getAssetsForNodeType)
+        vi.mocked(assetService.getAssetsPageForNodeType)
       ).toHaveBeenCalledTimes(1)
       expect(store.getAssets(nodeType)).toHaveLength(5)
     })
@@ -906,22 +1022,22 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         createMockAsset('second-2')
       ]
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
-        firstBatch
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage(firstBatch)
       )
       await store.updateModelsForNodeType(nodeType)
       expect(store.getAssets(nodeType)).toHaveLength(1)
 
       // After first completes, a new request should work
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
-        secondBatch
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage(secondBatch)
       )
       store.invalidateCategory('checkpoints')
       await store.updateModelsForNodeType(nodeType)
 
       expect(store.getAssets(nodeType)).toHaveLength(2)
       expect(
-        vi.mocked(assetService.getAssetsForNodeType)
+        vi.mocked(assetService.getAssetsPageForNodeType)
       ).toHaveBeenCalledTimes(2)
     })
   })
@@ -938,7 +1054,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         { immediate: true }
       )
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue([])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage([])
+      )
       await store.updateModelsForNodeType(nodeType)
       await nextTick()
 
@@ -952,14 +1070,16 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const assets = [createMockAsset('shared-1'), createMockAsset('shared-2')]
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage(assets)
+      )
 
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
       expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(2)
       expect(store.getAssets('ImageOnlyCheckpointLoader')).toHaveLength(2)
       expect(
-        vi.mocked(assetService.getAssetsForNodeType)
+        vi.mocked(assetService.getAssetsPageForNodeType)
       ).toHaveBeenCalledTimes(1)
     })
 
@@ -972,7 +1092,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       await store.updateModelsForNodeType('UnknownNodeType')
       expect(
-        vi.mocked(assetService.getAssetsForNodeType)
+        vi.mocked(assetService.getAssetsPageForNodeType)
       ).not.toHaveBeenCalled()
     })
   })
@@ -982,7 +1102,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const assets = [createMockAsset('asset-1'), createMockAsset('asset-2')]
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage(assets)
+      )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
       expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(2)
 
@@ -1000,16 +1122,16 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         createMockAsset('refreshed-2')
       ]
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
-        initialAssets
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage(initialAssets)
       )
       await store.updateModelsForNodeType('LoraLoader')
       expect(store.getAssets('LoraLoader')).toHaveLength(1)
 
       store.invalidateCategory('loras')
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
-        refreshedAssets
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage(refreshedAssets)
       )
       await store.updateModelsForNodeType('LoraLoader')
 
@@ -1020,7 +1142,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const assets = [createMockAsset('tag-asset-1')]
 
-      vi.mocked(assetService.getAssetsByTag).mockResolvedValue(assets)
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+        makePage(assets)
+      )
       await store.updateModelsForTag('models')
       expect(store.getAssets('tag:models')).toHaveLength(1)
 
@@ -1035,7 +1159,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const assets = [createMockAsset('asset-1')]
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage(assets)
+      )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
       expect(store.hasCategory('checkpoints')).toBe(true)
@@ -1045,7 +1171,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const assets = [createMockAsset('asset-1')]
 
-      vi.mocked(assetService.getAssetsByTag).mockResolvedValue(assets)
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+        makePage(assets)
+      )
       await store.updateModelsForTag('models')
 
       // hasCategory('models') checks for both 'models' and 'tag:models'
@@ -1063,7 +1191,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const assets = [createMockAsset('asset-1')]
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage(assets)
+      )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
       expect(store.hasCategory('checkpoints')).toBe(true)
@@ -1083,8 +1213,8 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         createMockAsset('refreshed-2')
       ]
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
-        initialAssets
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage(initialAssets)
       )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
       expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(1)
@@ -1096,8 +1226,8 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(store.getAssets('CheckpointLoaderSimple')).toEqual([])
 
       // Next fetch should get fresh data
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
-        refreshedAssets
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage(refreshedAssets)
       )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
       expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(2)
@@ -1107,7 +1237,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const tagAssets = [createMockAsset('tag-1'), createMockAsset('tag-2')]
 
-      vi.mocked(assetService.getAssetsByTag).mockResolvedValue(tagAssets)
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+        makePage(tagAssets)
+      )
       await store.updateModelsForTag('checkpoints')
       await store.updateModelsForTag('models')
 
@@ -1137,9 +1269,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         user_metadata: { note: 'before' } as Record<string, unknown>
       }
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        original
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([original])
+      )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
       const serverResponse = {
@@ -1165,9 +1297,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         user_metadata: { note: 'before' } as Record<string, unknown>
       }
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        original
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([original])
+      )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
       vi.mocked(assetService.updateAsset).mockRejectedValueOnce(
@@ -1192,9 +1324,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-noop', ['models', 'checkpoints'])
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        asset
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([asset])
+      )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
       await store.updateAssetTags(
@@ -1211,9 +1343,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-add-only', ['models'])
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        asset
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([asset])
+      )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
       vi.mocked(assetService.addAssetTags).mockResolvedValueOnce({
@@ -1254,9 +1386,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-partial-fail', ['models', 'loras'])
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        asset
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([asset])
+      )
       await store.updateModelsForNodeType('LoraLoader')
 
       vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
@@ -1296,9 +1428,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'loras'
       ])
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        asset
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([asset])
+      )
       await store.updateModelsForNodeType('LoraLoader')
 
       vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
@@ -1323,11 +1455,13 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-overlap-fail', ['models', 'loras'])
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        asset
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([asset])
+      )
       await store.updateModelsForNodeType('LoraLoader')
-      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([asset])
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+        makePage([asset])
+      )
       await store.updateModelsForTag('models')
 
       expect(store.hasCategory('loras')).toBe(true)
@@ -1355,9 +1489,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-add-only-fail', ['models'])
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        asset
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([asset])
+      )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
       vi.mocked(assetService.addAssetTags).mockRejectedValueOnce(
@@ -1381,9 +1515,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-empty-removed', ['models', 'loras'])
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        asset
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([asset])
+      )
       await store.updateModelsForNodeType('LoraLoader')
 
       vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
@@ -1409,11 +1543,13 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-no-cachekey', ['models', 'loras'])
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        asset
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([asset])
+      )
       await store.updateModelsForNodeType('LoraLoader')
-      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([asset])
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+        makePage([asset])
+      )
       await store.updateModelsForTag('models')
 
       expect(store.hasCategory('loras')).toBe(true)
@@ -1431,6 +1567,310 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       expect(store.hasCategory('loras')).toBe(false)
       expect(store.hasCategory('tag:models')).toBe(false)
+    })
+  })
+
+  describe('cursor pagination batch walk', () => {
+    it('walks pages via the after cursor even when pages are short', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+      const firstPage = Array.from({ length: 5 }, (_, i) =>
+        createMockAsset(`first-${i}`)
+      )
+      const secondPage = Array.from({ length: 3 }, (_, i) =>
+        createMockAsset(`second-${i}`)
+      )
+
+      vi.mocked(assetService.getAssetsPageForNodeType)
+        .mockResolvedValueOnce(
+          makePage(firstPage, { has_more: true, next_cursor: 'cursor-1' })
+        )
+        .mockResolvedValueOnce(makePage(secondPage))
+
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(2)
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenNthCalledWith(1, nodeType, {
+        limit: 500,
+        offset: 0,
+        signal: expect.any(AbortSignal)
+      })
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenNthCalledWith(2, nodeType, {
+        limit: 500,
+        after: 'cursor-1',
+        signal: expect.any(AbortSignal)
+      })
+      expect(store.getAssets(nodeType)).toHaveLength(8)
+    })
+
+    it('terminates when has_more is false even if a cursor is present', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+      const fullPage = Array.from({ length: 500 }, (_, i) =>
+        createMockAsset(`asset-${i}`)
+      )
+
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage(fullPage, { has_more: false, next_cursor: 'cursor-1' })
+      )
+
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(1)
+      expect(store.getAssets(nodeType)).toHaveLength(500)
+    })
+
+    it('terminates when the cursor stops advancing', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      vi.mocked(assetService.getAssetsPageForNodeType)
+        .mockResolvedValueOnce(
+          makePage([createMockAsset('a')], {
+            has_more: true,
+            next_cursor: 'stuck'
+          })
+        )
+        .mockResolvedValueOnce(
+          makePage([createMockAsset('b')], {
+            has_more: true,
+            next_cursor: 'stuck'
+          })
+        )
+
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(2)
+      expect(store.getAssets(nodeType)).toHaveLength(2)
+    })
+
+    it('terminates on an empty page even when has_more is true', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage([], { has_more: true, next_cursor: 'cursor-1' })
+      )
+
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(1)
+      expect(store.getAssets(nodeType)).toHaveLength(0)
+    })
+
+    it('falls back to the offset walk when responses carry no cursor', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+      const fullPage = Array.from({ length: 500 }, (_, i) =>
+        createMockAsset(`full-${i}`)
+      )
+      const shortPage = Array.from({ length: 10 }, (_, i) =>
+        createMockAsset(`short-${i}`)
+      )
+
+      vi.mocked(assetService.getAssetsPageForNodeType)
+        .mockResolvedValueOnce(makePage(fullPage, { has_more: true }))
+        .mockResolvedValueOnce(makePage(shortPage, { has_more: true }))
+
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(2)
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenNthCalledWith(2, nodeType, {
+        limit: 500,
+        offset: 500,
+        signal: expect.any(AbortSignal)
+      })
+      expect(store.getAssets(nodeType)).toHaveLength(510)
+    })
+
+    it('commits the first cursor batch before the walk finishes', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+      const firstPage = Array.from({ length: 5 }, (_, i) =>
+        createMockAsset(`first-${i}`)
+      )
+
+      let resolveSecondPage!: (page: AssetResponse) => void
+      const secondPagePromise = new Promise<AssetResponse>((resolve) => {
+        resolveSecondPage = resolve
+      })
+
+      vi.mocked(assetService.getAssetsPageForNodeType)
+        .mockResolvedValueOnce(
+          makePage(firstPage, { has_more: true, next_cursor: 'cursor-1' })
+        )
+        .mockReturnValueOnce(secondPagePromise)
+
+      const update = store.updateModelsForNodeType(nodeType)
+
+      // The first short page is committed and loading flips off while the
+      // cursor walk is still in flight (isFirstBatch no longer keys off
+      // offset === 0).
+      await vi.waitFor(() => {
+        expect(store.getAssets(nodeType)).toHaveLength(5)
+      })
+      expect(store.isModelLoading(nodeType)).toBe(false)
+
+      resolveSecondPage(makePage([createMockAsset('late')]))
+      await update
+
+      expect(store.getAssets(nodeType)).toHaveLength(6)
+    })
+
+    it('starts a refresh from the first page, not the stale cursor', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      vi.mocked(assetService.getAssetsPageForNodeType)
+        .mockResolvedValueOnce(
+          makePage([createMockAsset('walk-1')], {
+            has_more: true,
+            next_cursor: 'cursor-1'
+          })
+        )
+        .mockResolvedValueOnce(makePage([createMockAsset('walk-2')]))
+        .mockResolvedValueOnce(makePage([createMockAsset('fresh')]))
+
+      await store.updateModelsForNodeType(nodeType)
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenNthCalledWith(3, nodeType, {
+        limit: 500,
+        offset: 0,
+        signal: expect.any(AbortSignal)
+      })
+      expect(store.getAssets(nodeType).map((a) => a.id)).toEqual(['fresh'])
+    })
+
+    it('aborts an in-flight walk when the category is invalidated', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      // Every page claims more work, so the walk only stops if it is aborted.
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage([createMockAsset('p1')], {
+          has_more: true,
+          next_cursor: 'c1'
+        })
+      )
+
+      const walk = store.updateModelsForNodeType(nodeType)
+
+      // Wait for the first fetch, then invalidate during the inter-batch delay
+      // so the walk aborts instead of issuing further requests.
+      await vi.waitFor(() =>
+        expect(
+          vi.mocked(assetService.getAssetsPageForNodeType)
+        ).toHaveBeenCalledTimes(1)
+      )
+      store.invalidateCategory('checkpoints')
+
+      await walk
+
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not clear a superseding walk when an aborted walk tears down', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      // Walk A claims more work so it enters the inter-batch delay and can be
+      // aborted mid-walk by invalidateCategory.
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([createMockAsset('a1')], { has_more: true, next_cursor: 'ca' })
+      )
+      // Walk B stays in-flight (deferred), so its dedupe guard must remain
+      // registered while walk A's aborted teardown runs.
+      let resolveB!: (page: AssetResponse) => void
+      const bPage = new Promise<AssetResponse>((resolve) => {
+        resolveB = resolve
+      })
+      vi.mocked(assetService.getAssetsPageForNodeType).mockReturnValueOnce(
+        bPage
+      )
+
+      const walkA = store.updateModelsForNodeType(nodeType)
+      await vi.waitFor(() =>
+        expect(
+          vi.mocked(assetService.getAssetsPageForNodeType)
+        ).toHaveBeenCalledTimes(1)
+      )
+
+      // Abort walk A, then start walk B before A's teardown runs.
+      store.invalidateCategory('checkpoints')
+      const walkB = store.updateModelsForNodeType(nodeType)
+      await vi.waitFor(() =>
+        expect(
+          vi.mocked(assetService.getAssetsPageForNodeType)
+        ).toHaveBeenCalledTimes(2)
+      )
+
+      // Let walk A's aborted teardown settle; it must not delete walk B's guard.
+      await walkA
+
+      // A concurrent call must dedupe into walk B, not start a duplicate fetch.
+      const walkC = store.updateModelsForNodeType(nodeType)
+      resolveB(makePage([createMockAsset('b1')]))
+      await Promise.all([walkB, walkC])
+
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(2)
+      expect(store.getAssets(nodeType).map((a) => a.id)).toEqual(['b1'])
+    })
+
+    it('drives updateModelsForTag through getAssetsPageByTag with cursors', async () => {
+      const store = useAssetsStore()
+
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockResolvedValueOnce(
+          makePage([createMockAsset('tag-a')], {
+            has_more: true,
+            next_cursor: 'cursor-tag'
+          })
+        )
+        .mockResolvedValueOnce(makePage([createMockAsset('tag-b')]))
+
+      await store.updateModelsForTag('models')
+
+      expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledTimes(
+        2
+      )
+      expect(
+        vi.mocked(assetService.getAssetsPageByTag)
+      ).toHaveBeenNthCalledWith(1, 'models', true, {
+        limit: 500,
+        offset: 0,
+        signal: expect.any(AbortSignal)
+      })
+      expect(
+        vi.mocked(assetService.getAssetsPageByTag)
+      ).toHaveBeenNthCalledWith(2, 'models', true, {
+        limit: 500,
+        after: 'cursor-tag',
+        signal: expect.any(AbortSignal)
+      })
+      expect(store.getAssets('tag:models')).toHaveLength(2)
     })
   })
 })
@@ -1604,6 +2044,27 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
       'output',
       true,
       { limit: FLAT_OUTPUT_PAGE_SIZE, after: 'cursor-1' }
+    )
+  })
+
+  it('threads an empty-string cursor into after instead of falling back to offset', async () => {
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: ''
+        })
+      )
+      .mockResolvedValueOnce(makePage([makeAsset('a2', 'f2.png')]))
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+    await store.loadMoreFlatOutputs()
+
+    expect(assetService.getAssetsPageByTag).toHaveBeenLastCalledWith(
+      'output',
+      true,
+      { limit: FLAT_OUTPUT_PAGE_SIZE, after: '' }
     )
   })
 

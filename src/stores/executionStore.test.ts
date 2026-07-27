@@ -21,6 +21,7 @@ const {
   mockOpenWorkflows,
   mockShowTextPreview,
   mockTrackExecutionError,
+  mockTrackExecutionOutcome,
   mockTrackExecutionSuccess,
   mockTrackSharedWorkflowRun
 } = await vi.hoisted(async () => {
@@ -33,6 +34,7 @@ const {
     mockOpenWorkflows: shallowRef<{ path: string }[]>([]),
     mockShowTextPreview: vi.fn(),
     mockTrackExecutionError: vi.fn(),
+    mockTrackExecutionOutcome: vi.fn(),
     mockTrackExecutionSuccess: vi.fn(),
     mockTrackSharedWorkflowRun: vi.fn()
   }
@@ -92,6 +94,7 @@ vi.mock('@/platform/distribution/types', async () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackExecutionError: mockTrackExecutionError,
+    trackExecutionOutcome: mockTrackExecutionOutcome,
     trackExecutionSuccess: mockTrackExecutionSuccess,
     trackSharedWorkflowRun: mockTrackSharedWorkflowRun
   })
@@ -614,6 +617,7 @@ describe('useExecutionStore - workflowStatus', () => {
       nodes: ['1'],
       id: jobId,
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
+      startTime: 42,
       workflow
     })
   }
@@ -631,6 +635,7 @@ describe('useExecutionStore - workflowStatus', () => {
     callStoreJob('job-1', workflowA)
     fireExecutionStart('job-1')
 
+    expect(mockTrackExecutionOutcome).not.toHaveBeenCalled()
     expect(store.getWorkflowStatus(workflowA)).toBe('running')
   })
 
@@ -648,7 +653,13 @@ describe('useExecutionStore - workflowStatus', () => {
     fireExecutionSuccess('job-1')
 
     callStoreJob('job-1', workflowA)
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledOnce()
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
+      startTime: 42,
+      outcome: 'success'
+    })
     expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+    expect(store.queuedJobs['job-1']).toBeUndefined()
   })
 
   it('flushes terminal failed when WS errors before storeJob', () => {
@@ -656,6 +667,10 @@ describe('useExecutionStore - workflowStatus', () => {
     fireExecutionError('job-1')
 
     callStoreJob('job-1', workflowA)
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
+      startTime: 42,
+      outcome: 'failure'
+    })
     expect(store.getWorkflowStatus(workflowA)).toBe('failed')
   })
 
@@ -672,6 +687,10 @@ describe('useExecutionStore - workflowStatus', () => {
     fireExecutionStart('job-1')
     fireExecutionSuccess('job-1')
 
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
+      startTime: 42,
+      outcome: 'success'
+    })
     expect(store.getWorkflowStatus(workflowA)).toBe('completed')
   })
 
