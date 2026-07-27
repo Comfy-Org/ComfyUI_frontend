@@ -4,7 +4,6 @@ const hoisted = vi.hoisted(() => {
   const context: Record<string, unknown> = {}
 
   return {
-    addAction: vi.fn(),
     context,
     fetch: vi.fn<typeof fetch>(),
     getInitConfiguration: vi.fn(),
@@ -18,22 +17,13 @@ const hoisted = vi.hoisted(() => {
 vi.mock('@datadog/browser-rum', () => ({
   datadogRum: hoisted
 }))
+vi.mock('./manualRefreshTracker', () => ({
+  trackUserManualRefresh: vi.fn()
+}))
 
 import { rumBeforeSend } from './datadogRumBeforeSend'
 import { initDatadogRum } from './initDatadogRum'
-
-function createNavigationEntry(type: string): PerformanceEntry & {
-  type: string
-} {
-  return {
-    duration: 0,
-    entryType: 'navigation',
-    name: window.location.href,
-    startTime: 0,
-    toJSON: () => ({}),
-    type
-  }
-}
+import { trackUserManualRefresh } from './manualRefreshTracker'
 
 describe('initDatadogRum', () => {
   beforeEach(() => {
@@ -47,7 +37,6 @@ describe('initDatadogRum', () => {
     hoisted.fetch.mockResolvedValue(new Response(null, { status: 503 }))
     hoisted.getInitConfiguration.mockReturnValue(undefined)
     vi.stubGlobal('fetch', hoisted.fetch)
-    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([])
   })
 
   afterEach(() => {
@@ -242,24 +231,13 @@ describe('initDatadogRum', () => {
     expect(hoisted.init).not.toHaveBeenCalled()
   })
 
-  it('tracks a page reload', async () => {
-    vi.mocked(performance.getEntriesByType).mockReturnValue([
-      createNavigationEntry('reload')
-    ])
+  it('tracks manual refreshes only once RUM is initialized', async () => {
+    await initDatadogRum('localhost')
+
+    expect(vi.mocked(trackUserManualRefresh)).not.toHaveBeenCalled()
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(hoisted.addAction).toHaveBeenCalledWith('user_manual_refresh')
-  })
-
-  it('does not track a non-reload navigation', async () => {
-    vi.mocked(performance.getEntriesByType).mockReturnValue([
-      createNavigationEntry('navigate')
-    ])
-
-    await initDatadogRum('cloud.comfy.org')
-
-    expect(hoisted.init).toHaveBeenCalledOnce()
-    expect(hoisted.addAction).not.toHaveBeenCalled()
+    expect(vi.mocked(trackUserManualRefresh)).toHaveBeenCalledOnce()
   })
 })
