@@ -76,15 +76,8 @@ describe('MediaAssetFilterBar', () => {
     expect(screen.getByText('List view')).toBeVisible()
   })
 
-  it('does not show applied-filter controls when no filters are active', () => {
-    renderFilterBar()
-
-    expect(screen.queryByRole('button', { name: 'Clear all' })).toBeNull()
-    expect(screen.queryByTestId('active-filter-indicator')).toBeNull()
-  })
-
-  it('shows each applied filter and the active indicator', () => {
-    renderFilterBar({
+  it('manages applied filters without changing unrelated filters', async () => {
+    const { user } = renderFilterBar({
       mediaTypeFilters: ['image', 'video'],
       dateFilter: 'week'
     })
@@ -98,16 +91,6 @@ describe('MediaAssetFilterBar', () => {
     expect(
       screen.getByRole('button', { name: 'Remove Past 7 days filter' })
     ).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Clear all' })).toBeVisible()
-    expect(screen.getByTestId('active-filter-indicator')).toBeVisible()
-  })
-
-  it('removes one media or date filter without changing the others', async () => {
-    const { user } = renderFilterBar({
-      mediaTypeFilters: ['image', 'video'],
-      dateFilter: 'week'
-    })
-
     await user.click(
       screen.getByRole('button', { name: 'Remove Image filter' })
     )
@@ -132,23 +115,12 @@ describe('MediaAssetFilterBar', () => {
     expect(
       screen.getByRole('button', { name: 'Remove Video filter' })
     ).toBeVisible()
-  })
-
-  it('clears every applied filter', async () => {
-    const { user } = renderFilterBar({
-      mediaTypeFilters: ['image'],
-      dateFilter: 'today'
-    })
 
     await user.click(screen.getByRole('button', { name: 'Clear all' }))
 
     expect(
-      screen.queryByRole('button', { name: 'Remove Image filter' })
-    ).toBeNull()
-    expect(
-      screen.queryByRole('button', { name: 'Remove Today filter' })
+      screen.queryByRole('button', { name: 'Remove Video filter' })
     ).toBeNull()
     expect(screen.queryByRole('button', { name: 'Clear all' })).toBeNull()
-    expect(screen.queryByTestId('active-filter-indicator')).toBeNull()
   })
 })

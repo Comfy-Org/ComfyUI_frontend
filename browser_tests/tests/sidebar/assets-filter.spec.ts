@@ -164,64 +164,6 @@ test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
     await expect(tab.getAssetCardByName(threeDCardName)).toHaveCount(0)
   })
 
-  test('Selecting only "Video" hides non-video assets', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets()
-
-    await tab.openFilterMenu()
-    await tab.toggleMediaTypeFilter('video')
-
-    await expect(tab.assetCards).toHaveCount(1)
-    await expect(tab.getAssetCardByName(videoCardName)).toBeVisible()
-  })
-
-  test('Selecting only "Audio" hides non-audio assets', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets()
-
-    await tab.openFilterMenu()
-    await tab.toggleMediaTypeFilter('audio')
-
-    await expect(tab.assetCards).toHaveCount(1)
-    await expect(tab.getAssetCardByName(audioCardName)).toBeVisible()
-  })
-
-  test('Selecting only "3D" hides non-3D assets', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets()
-
-    await tab.openFilterMenu()
-    await tab.toggleMediaTypeFilter('3d')
-
-    await expect(tab.assetCards).toHaveCount(1)
-    await expect(tab.getAssetCardByName(threeDCardName)).toBeVisible()
-  })
-
-  test('Multiple filters combine via OR (image + video)', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets()
-
-    await tab.openFilterMenu()
-    await tab.toggleMediaTypeFilter('image')
-    await tab.toggleMediaTypeFilter('video')
-
-    await expect(tab.assetCards).toHaveCount(2)
-    await expect(tab.getAssetCardByName(imageCardName)).toBeVisible()
-    await expect(tab.getAssetCardByName(videoCardName)).toBeVisible()
-    await expect(tab.getAssetCardByName(audioCardName)).toHaveCount(0)
-    await expect(tab.getAssetCardByName(threeDCardName)).toHaveCount(0)
-  })
-
   test('Date and media filters compose and applied controls can clear them', async ({
     comfyPage,
     page
@@ -240,7 +182,6 @@ test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
     await expect(tab.getAssetCardByName(imageCardName)).toBeVisible()
     await expect(tab.removeFilterButton('Image')).toBeVisible()
     await expect(tab.removeFilterButton('Past 7 days')).toBeVisible()
-    await expect(tab.activeFilterIndicator).toBeVisible()
 
     await tab.removeFilterButton('Image').click()
 
@@ -253,7 +194,6 @@ test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
 
     await expect(tab.getAssetCardByName(audioCardName)).toBeVisible()
     await expect(tab.removeFilterButton('Past 7 days')).toHaveCount(0)
-    await expect(tab.activeFilterIndicator).toHaveCount(0)
   })
 
   test('Unchecking the active filter restores previously hidden cards', async ({

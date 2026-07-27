@@ -75,49 +75,34 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
     return results.map((result) => result.item)
   })
 
-  const typeFiltered = computed(() => {
-    // Apply media type filter
-    if (mediaTypeFilters.value.length === 0) {
-      return searchFiltered.value
-    }
-
-    return searchFiltered.value.filter((asset) => {
-      const mediaType = getMediaTypeFromFilename(asset.name)
-      // Convert '3D' to '3d' for comparison
-      const normalizedType = mediaType.toLowerCase()
-      return mediaTypeFilters.value.includes(normalizedType)
-    })
-  })
-
-  const dateFiltered = computed(() => {
-    const threshold = getDateThreshold(dateFilter.value)
-    if (threshold === null) {
-      return typeFiltered.value
-    }
-
-    return typeFiltered.value.filter(
-      (asset) => getAssetTime(asset) >= threshold
-    )
-  })
-
   const filteredAssets = computed(() => {
+    const threshold = getDateThreshold(dateFilter.value)
+    const filtered = searchFiltered.value.filter((asset) => {
+      const matchesMediaType =
+        mediaTypeFilters.value.length === 0 ||
+        mediaTypeFilters.value.includes(
+          getMediaTypeFromFilename(asset.name).toLowerCase()
+        )
+      const matchesDate = threshold === null || getAssetTime(asset) >= threshold
+
+      return matchesMediaType && matchesDate
+    })
+
     // Sort by create_time (output assets) or created_at (input assets)
     switch (sortBy.value) {
       case 'oldest':
         // Ascending order (oldest first)
-        return sortByUtil(dateFiltered.value, [getAssetTime])
+        return sortByUtil(filtered, [getAssetTime])
       case 'longest':
         // Descending order (longest execution time first)
-        return sortByUtil(dateFiltered.value, [
-          (asset) => -getAssetExecutionTime(asset)
-        ])
+        return sortByUtil(filtered, [(asset) => -getAssetExecutionTime(asset)])
       case 'fastest':
         // Ascending order (fastest execution time first)
-        return sortByUtil(dateFiltered.value, [getAssetExecutionTime])
+        return sortByUtil(filtered, [getAssetExecutionTime])
       case 'newest':
       default:
         // Descending order (newest first) - negate for descending
-        return sortByUtil(dateFiltered.value, [(asset) => -getAssetTime(asset)])
+        return sortByUtil(filtered, [(asset) => -getAssetTime(asset)])
     }
   })
 

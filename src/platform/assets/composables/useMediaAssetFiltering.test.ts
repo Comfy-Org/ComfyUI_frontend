@@ -138,8 +138,11 @@ describe('useMediaAssetFiltering', () => {
       expect(ids(filtering.filteredAssets.value)).toEqual(['later', 'midnight'])
     })
 
-    it('includes the exact Past 7 days boundary', () => {
-      const boundary = now - 7 * 86_400_000
+    it.for([
+      { filter: 'week' as const, days: 7 },
+      { filter: 'month' as const, days: 30 }
+    ])('includes the exact $days-day boundary', ({ filter, days }) => {
+      const boundary = now - days * 86_400_000
       const assets = ref<AssetItem[]>([
         makeAsset({ id: 'older', name: 'older.png', createTime: boundary - 1 }),
         makeAsset({
@@ -151,29 +154,12 @@ describe('useMediaAssetFiltering', () => {
       ])
       const filtering = useMediaAssetFiltering(assets)
 
-      filtering.dateFilter.value = 'week'
+      filtering.dateFilter.value = filter
 
       expect(ids(filtering.filteredAssets.value)).toEqual([
         'recent',
         'boundary'
       ])
-    })
-
-    it('includes the exact Past 30 days boundary', () => {
-      const boundary = now - 30 * 86_400_000
-      const assets = ref<AssetItem[]>([
-        makeAsset({ id: 'older', name: 'older.png', createTime: boundary - 1 }),
-        makeAsset({
-          id: 'boundary',
-          name: 'boundary.png',
-          createTime: boundary
-        })
-      ])
-      const filtering = useMediaAssetFiltering(assets)
-
-      filtering.dateFilter.value = 'month'
-
-      expect(ids(filtering.filteredAssets.value)).toEqual(['boundary'])
     })
 
     it('includes local January 1 and excludes the previous year', () => {

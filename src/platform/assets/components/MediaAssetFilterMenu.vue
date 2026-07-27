@@ -68,7 +68,7 @@
             :key="filter.value"
             :value="filter.value"
             :class="menuItemClass"
-            @click="emit('update:dateFilter', filter.value)"
+            @click="dateFilter = filter.value"
             @select.prevent
           >
             <span class="flex-1">{{ $t(filter.label) }}</span>
@@ -102,15 +102,12 @@ import {
 } from '@/platform/assets/mediaAssetFilterOptions'
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
 
-const { dateFilter, mediaTypeFilters } = defineProps<{
-  dateFilter: MediaAssetDateFilter
-  mediaTypeFilters: string[]
-}>()
-
-const emit = defineEmits<{
-  'update:dateFilter': [value: MediaAssetDateFilter]
-  'update:mediaTypeFilters': [value: string[]]
-}>()
+const dateFilter = defineModel<MediaAssetDateFilter>('dateFilter', {
+  required: true
+})
+const mediaTypeFilters = defineModel<string[]>('mediaTypeFilters', {
+  required: true
+})
 
 const menuItemClass =
   'flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-highlighted:bg-secondary-background-hover'
@@ -119,13 +116,12 @@ const submenuClass =
 const mediaTypeMenuOpen = ref(false)
 
 function toggleMediaType(type: string) {
-  if (mediaTypeFilters.includes(type)) {
-    emit(
-      'update:mediaTypeFilters',
-      mediaTypeFilters.filter((filter) => filter !== type)
+  if (mediaTypeFilters.value.includes(type)) {
+    mediaTypeFilters.value = mediaTypeFilters.value.filter(
+      (filter) => filter !== type
     )
   } else {
-    emit('update:mediaTypeFilters', [...mediaTypeFilters, type])
+    mediaTypeFilters.value = [...mediaTypeFilters.value, type]
   }
 
   // Reka closes a submenu after selection. Reopen it after that state update

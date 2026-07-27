@@ -296,7 +296,6 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly filterVideoCheckbox: Locator
   public readonly filterAudioCheckbox: Locator
   public readonly filter3DCheckbox: Locator
-  public readonly activeFilterIndicator: Locator
 
   // --- View mode ---
   public readonly listViewOption: Locator
@@ -355,7 +354,6 @@ export class AssetsSidebarTab extends SidebarTab {
       name: 'Audio'
     })
     this.filter3DCheckbox = page.getByRole('menuitemcheckbox', { name: '3D' })
-    this.activeFilterIndicator = page.getByTestId('active-filter-indicator')
     this.listViewOption = page.getByText('List view')
     this.gridViewOption = page.getByText('Grid view')
     this.sortNewestFirst = page.getByText('Newest first')

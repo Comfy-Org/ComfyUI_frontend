@@ -2,13 +2,12 @@
   <div>
     <SidebarTopArea>
       <SearchInput
-        :model-value="searchQuery"
+        v-model="searchQuery"
         :placeholder="
           $t('g.searchPlaceholder', {
             subject: $t('sideToolbar.labels.assets')
           })
         "
-        @update:model-value="handleSearchChange"
       />
       <template #actions>
         <MediaAssetFilterButton
@@ -18,10 +17,8 @@
         >
           <template #default>
             <MediaAssetFilterMenu
-              :date-filter
-              :media-type-filters
-              @update:date-filter="handleDateFilterChange"
-              @update:media-type-filters="handleMediaTypeFiltersChange"
+              v-model:date-filter="dateFilter"
+              v-model:media-type-filters="mediaTypeFilters"
             />
           </template>
         </MediaAssetFilterButton>
@@ -44,12 +41,26 @@
       v-if="filterChips.length"
       class="flex flex-wrap items-center gap-1.5 px-2 pb-2 2xl:px-4"
     >
-      <MediaAssetFilterChip
+      <span
         v-for="chip in filterChips"
         :key="chip.key"
-        :label="chip.label"
-        @remove="removeFilter(chip.key)"
-      />
+        class="inline-flex items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap"
+      >
+        <span>{{ chip.label }}</span>
+        <Button
+          variant="textonly"
+          size="icon"
+          class="size-4 rounded-sm p-0"
+          :aria-label="
+            $t('sideToolbar.mediaAssets.removeFilter', {
+              label: chip.label
+            })
+          "
+          @click="removeFilter(chip.key)"
+        >
+          <i class="icon-[lucide--x] size-3" />
+        </Button>
+      </span>
       <Button
         variant="textonly"
         class="h-6 px-1.5 text-xs text-muted-foreground"
@@ -81,33 +92,25 @@ import {
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
-import MediaAssetFilterChip from './MediaAssetFilterChip.vue'
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
 import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'
 import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
 import type { SortBy } from './MediaAssetSettingsMenu.vue'
 
-const {
-  showGenerationTimeSort = false,
-  bottomDivider = false,
-  dateFilter,
-  mediaTypeFilters
-} = defineProps<{
-  searchQuery: string
+const { showGenerationTimeSort = false, bottomDivider = false } = defineProps<{
   showGenerationTimeSort?: boolean
-  dateFilter: MediaAssetDateFilter
-  mediaTypeFilters: string[]
   bottomDivider?: boolean
 }>()
 
-const emit = defineEmits<{
-  'update:searchQuery': [value: string]
-  'update:dateFilter': [value: MediaAssetDateFilter]
-  'update:mediaTypeFilters': [value: string[]]
-}>()
-
+const searchQuery = defineModel<string>('searchQuery', { required: true })
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
+const dateFilter = defineModel<MediaAssetDateFilter>('dateFilter', {
+  required: true
+})
+const mediaTypeFilters = defineModel<string[]>('mediaTypeFilters', {
+  required: true
+})
 
 const { t } = useI18n()
 
@@ -116,15 +119,15 @@ function labelFor(options: { value: string; label: string }[], value: string) {
 }
 
 const filterChips = computed(() => {
-  const chips = mediaTypeFilters.map((value) => ({
+  const chips = mediaTypeFilters.value.map((value) => ({
     key: `media:${value}`,
     label: labelFor(mediaTypeFilterOptions, value)
   }))
 
-  if (dateFilter) {
+  if (dateFilter.value) {
     chips.push({
       key: 'date',
-      label: labelFor(dateFilterOptions, dateFilter)
+      label: labelFor(dateFilterOptions, dateFilter.value)
     })
   }
 
@@ -133,33 +136,20 @@ const filterChips = computed(() => {
 
 const hasActiveFilters = computed(() => filterChips.value.length > 0)
 
-function handleSearchChange(value: string | undefined) {
-  emit('update:searchQuery', value ?? '')
-}
-
-function handleMediaTypeFiltersChange(value: string[]) {
-  emit('update:mediaTypeFilters', value)
-}
-
-function handleDateFilterChange(value: MediaAssetDateFilter) {
-  emit('update:dateFilter', value)
-}
-
 function removeFilter(key: string) {
   if (key === 'date') {
-    emit('update:dateFilter', '')
+    dateFilter.value = ''
     return
   }
 
   const mediaType = key.slice('media:'.length)
-  emit(
-    'update:mediaTypeFilters',
-    mediaTypeFilters.filter((value) => value !== mediaType)
+  mediaTypeFilters.value = mediaTypeFilters.value.filter(
+    (value) => value !== mediaType
   )
 }
 
 function clearFilters() {
-  emit('update:dateFilter', '')
-  emit('update:mediaTypeFilters', [])
+  dateFilter.value = ''
+  mediaTypeFilters.value = []
 }
 </script>
