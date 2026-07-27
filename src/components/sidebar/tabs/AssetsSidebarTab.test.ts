@@ -92,6 +92,7 @@ const i18n = createI18n({
   messages: {
     en: {
       assetBrowser: { jobId: 'Job ID' },
+      g: { copyJobId: 'Copy Job ID' },
       sideToolbar: {
         backToAssets: 'Back to all assets',
         mediaAssets: { title: 'Media Assets' },
@@ -125,7 +126,9 @@ const assetsGridStub = {
 }
 
 const buttonStub = {
-  template: '<button><slot /></button>'
+  props: ['size', 'variant'],
+  template:
+    '<button :data-size="size" :data-variant="variant"><slot /></button>'
 }
 
 function renderTab() {
@@ -156,7 +159,7 @@ function renderTab() {
 }
 
 describe('AssetsSidebarTab folder navigation', () => {
-  it('places an icon-only back action beside the job ID', async () => {
+  it('places accessible folder actions beside the job ID', async () => {
     renderTab()
     await userEvent.click(
       screen.getByRole('button', { name: 'Enter output folder' })
@@ -166,9 +169,15 @@ describe('AssetsSidebarTab folder navigation', () => {
     const backButton = within(folderTitle).getByRole('button', {
       name: 'Back to all assets'
     })
+    const copyButton = within(folderTitle).getByRole('button', {
+      name: 'Copy Job ID'
+    })
 
     expect(backButton).toHaveTextContent('')
     expect(backButton).toHaveAttribute('data-tooltip', 'Back to all assets')
+    expect(copyButton).toHaveAttribute('data-tooltip', 'Copy Job ID')
+    expect(copyButton).toHaveAttribute('data-size', 'icon')
+    expect(copyButton).toHaveAttribute('data-variant', 'muted-textonly')
     expect(screen.getByTestId('folder-controls')).not.toHaveTextContent(
       'Back to all assets'
     )
