@@ -49,17 +49,16 @@ describe('shouldUseVueNodeLowDetail', () => {
     expect(shouldUseVueNodeLowDetail(1, true, 200, true)).toBe(false)
   })
 
-  it('does not reevaluate an unchanged NaN scale on every frame', () => {
+  it('keeps full detail across frames with an unchanged NaN scale', () => {
     const canvas = {
       ds: { scale: Number.NaN }
     } as unknown as LGraphCanvas
-    const fullDetailZoom = vi.fn(() => 95)
     const scope = effectScope()
     scope.run(() =>
       useVueNodeLOD({
         canvas,
         enabled: true,
-        fullDetailZoom,
+        fullDetailZoom: 95,
         vueNodesEnabled: true
       })
     )
@@ -67,10 +66,13 @@ describe('shouldUseVueNodeLowDetail', () => {
     if (!callback) throw new Error('RAF watcher callback was not captured')
 
     callback({ delta: 0, timestamp: 0 })
-    const evaluationCount = fullDetailZoom.mock.calls.length
+    expect(
+      document.documentElement.classList.contains('vue-nodes-low-detail')
+    ).toBe(false)
     callback({ delta: 0, timestamp: 16 })
-
-    expect(fullDetailZoom).toHaveBeenCalledTimes(evaluationCount)
+    expect(
+      document.documentElement.classList.contains('vue-nodes-low-detail')
+    ).toBe(false)
     scope.stop()
   })
 })

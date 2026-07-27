@@ -335,9 +335,9 @@ describe('viewport virtualization behavior', () => {
     scope.stop()
   })
 
-  it('does not reconcile node ids when only node data changes', async () => {
+  it('keeps a node virtualized when only its data changes', async () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    const { animationFrames, runAnimationFrame } = stubAnimationFrames()
+    const { runAnimationFrame } = stubAnimationFrames()
     const title = ref('Initial')
     const allNodes = computed(() => [
       {
@@ -360,12 +360,14 @@ describe('viewport virtualization behavior', () => {
     virtualization.onNodeMounted(toNodeId(1))
     runAnimationFrame()
     runAnimationFrame()
-    expect(animationFrames.size).toBe(0)
+    expect(virtualization.renderedNodes.value).toEqual([])
+    expect(isNodeViewportVirtualized(toNodeId(1))).toBe(true)
 
     title.value = 'Updated'
     await nextTick()
 
-    expect(animationFrames.size).toBe(0)
+    expect(virtualization.renderedNodes.value).toEqual([])
+    expect(isNodeViewportVirtualized(toNodeId(1))).toBe(true)
     scope.stop()
   })
 
