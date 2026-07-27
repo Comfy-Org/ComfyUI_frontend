@@ -248,11 +248,11 @@ testWithMockedObjectInfo.describe(
           }, LGraphEventMode.BYPASS)
 
           await comfyPage.vueNodes.waitForNodes(1)
-          const node = await comfyPage.nodeOps.getNodeRefById(String(nodeId))
           const vueNode = comfyPage.vueNodes.getNodeLocator(String(nodeId))
           const header = vueNode.locator(
             `[data-testid="node-header-${nodeId}"]`
           )
+          const collapseButton = vueNode.getByTestId('node-collapse-button')
           const pricing = header.locator(
             'span:has(> i[class*="lucide--component"])'
           )
@@ -263,7 +263,7 @@ testWithMockedObjectInfo.describe(
           const expandedBox = await vueNode.boundingBox()
           if (!expandedBox) throw new Error('Expanded node has no bounds')
 
-          await node.toggleCollapse()
+          await collapseButton.press('Enter')
           await expect(vueNode).toHaveAttribute('data-collapsed', 'true')
           await expect(pricing).toHaveCount(compact ? 0 : 1)
           await expect(status).toHaveCount(compact || hideStatus ? 0 : 1)
@@ -282,7 +282,7 @@ testWithMockedObjectInfo.describe(
               .toBeGreaterThanOrEqual(225)
           }
 
-          await node.toggleCollapse()
+          await collapseButton.press('Enter')
           await expect(pricing).toHaveCount(1)
           await expect(status).toHaveCount(hideStatus ? 0 : 1)
           await expect
@@ -321,7 +321,6 @@ testWithMockedObjectInfo.describe(
         }, LGraphEventMode.NEVER)
 
         await comfyPage.vueNodes.waitForNodes(1)
-        const node = await comfyPage.nodeOps.getNodeRefById(String(nodeId))
         const nodeFixture = await comfyPage.vueNodes.getFixtureByTitle('API')
         const vueNode = comfyPage.vueNodes.getNodeLocator(String(nodeId))
         const header = vueNode.locator(`[data-testid="node-header-${nodeId}"]`)
@@ -331,7 +330,7 @@ testWithMockedObjectInfo.describe(
         const status = header.getByText('Muted', { exact: true })
 
         await expect(pricing).toContainText('10.6')
-        await node.toggleCollapse()
+        await nodeFixture.collapseButton.press('Enter')
         await expect(pricing).toHaveCount(1)
         await expect(status).toHaveCount(1)
         const normalCollapsedBox = await vueNode.boundingBox()
@@ -361,7 +360,7 @@ testWithMockedObjectInfo.describe(
         await expect(status).toHaveCount(0)
         await expect(pricing).toHaveCount(1)
 
-        await node.toggleCollapse()
+        await nodeFixture.collapseButton.press('Enter')
         await expect(status).toHaveCount(0)
         await expect(pricing).toHaveCount(1)
 
@@ -381,7 +380,7 @@ testWithMockedObjectInfo.describe(
         const expandedBox = await vueNode.boundingBox()
         if (!expandedBox) throw new Error('Expanded node has no bounds')
 
-        await node.toggleCollapse()
+        await nodeFixture.collapseButton.press('Enter')
         await expect
           .poll(async () => (await vueNode.boundingBox())?.width)
           .toBeLessThanOrEqual(expandedBox.width)
