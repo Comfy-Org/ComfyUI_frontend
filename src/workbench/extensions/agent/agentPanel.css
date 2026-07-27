@@ -59,6 +59,13 @@
    dropdowns, drawer carry .agent-scope). :where() holds the selectors at zero specificity so
    each element's own bg-* / border utilities still win. */
 @layer base {
+  /* Thin the scrollbar and drop the UA track fill, leaving the thumb as the
+     only mark on the surface. */
+  :where(#agent-panel-root, .agent-scope) :where(*) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-agent-border-strong) transparent;
+  }
+
   :where(#agent-panel-root, .agent-scope)
     :where(button, [type='button'], [type='reset'], [type='submit']) {
     appearance: none;

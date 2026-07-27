@@ -90,7 +90,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           side="top"
           align="start"
           :side-offset="4"
-          class="rounded-agent border-agent-border bg-agent-surface-raised z-1100 max-h-64 w-64 overflow-y-auto border p-1 shadow-lg"
+          class="agent-scope rounded-agent border-agent-border bg-agent-surface-raised z-1100 max-h-64 w-64 overflow-y-auto border p-1 shadow-lg"
         >
           <input
             ref="searchInput"
