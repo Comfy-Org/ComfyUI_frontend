@@ -29,6 +29,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
 import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
@@ -1735,10 +1736,10 @@ export class ComfyApp {
             if (res.prompt_id && telemetry && !workflowQueuedMetadata) {
               workflowQueuedMetadata = {
                 ...(workflowContext && { workflowContext }),
-                ...(workflowQueueIntent?.trigger_source && {
-                  trigger_source: workflowQueueIntent.trigger_source
-                }),
-                subscribe_to_run: workflowQueueIntent?.subscribe_to_run ?? false
+                trigger_source: normalizeExecutionTriggerSource(
+                  workflowQueueIntent?.trigger_source
+                ),
+                subscribe_to_run: workflowQueueIntent?.subscribe_to_run === true
               }
               telemetry.trackWorkflowQueued(workflowQueuedMetadata)
             }

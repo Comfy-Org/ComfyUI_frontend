@@ -1,19 +1,14 @@
 import { useAppMode } from '@/composables/useAppMode'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
-  ExecutionTriggerSource,
-  RunButtonProperties
+  RunButtonProperties,
+  WorkflowQueueIntent
 } from '@/platform/telemetry/types'
 import { getActionbarDockState } from '@/platform/telemetry/utils/getActionbarDockState'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
-type RunButtonTelemetryOptions = {
-  subscribe_to_run?: boolean
-  trigger_source?: ExecutionTriggerSource
-}
-
 export function getRunButtonTelemetryProperties(
-  options?: RunButtonTelemetryOptions
+  options?: WorkflowQueueIntent
 ): RunButtonProperties {
   const executionContext = getExecutionContext()
   const { mode, isAppMode } = useAppMode()
@@ -37,7 +32,7 @@ export function getRunButtonTelemetryProperties(
 }
 
 export function useRunButtonTelemetry() {
-  function trackRunButton(options?: RunButtonTelemetryOptions): void {
+  function trackRunButton(options?: WorkflowQueueIntent): void {
     const telemetry = useTelemetry()
     if (!telemetry) return
 

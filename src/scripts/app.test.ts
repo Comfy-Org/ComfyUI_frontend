@@ -376,6 +376,39 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('normalizes runtime queue intent from extension callers', async () => {
+      prepareEmptyPromptQueue()
+      const trackWorkflowQueued = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackWorkflowQueued })
+      setTelemetryRegistry(registry)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      try {
+        await Reflect.apply(app.queuePrompt, app, [
+          0,
+          1,
+          undefined,
+          {
+            trigger_source: 'private-workflow-name',
+            subscribe_to_run: 'yes'
+          }
+        ])
+
+        expect(trackWorkflowQueued).toHaveBeenCalledWith(
+          expect.objectContaining({
+            trigger_source: 'unknown',
+            subscribe_to_run: false
+          })
+        )
+      } finally {
+        setTelemetryRegistry(null)
+      }
+    })
+
     it('skips workflow context collection without telemetry', async () => {
       prepareEmptyPromptQueue()
       const getExecutionContext = vi.spyOn(

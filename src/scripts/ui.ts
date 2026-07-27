@@ -441,7 +441,9 @@ export class ComfyUI {
       if (this.autoQueueMode === 'change' && this.autoQueueEnabled === true) {
         if (this.lastQueueSize === 0) {
           this.graphHasChanged = false
-          app.queuePrompt(0, this.batchCount)
+          app.queuePrompt(0, this.batchCount, undefined, {
+            trigger_source: 'auto_queue'
+          })
         } else {
           this.graphHasChanged = true
         }
@@ -718,7 +720,9 @@ export class ComfyUI {
         (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
         !app.lastExecutionError
       ) {
-        app.queuePrompt(0, this.batchCount)
+        app.queuePrompt(0, this.batchCount, undefined, {
+          trigger_source: 'auto_queue'
+        })
         status.exec_info.queue_remaining += this.batchCount
         this.graphHasChanged = false
       }
