@@ -61,38 +61,20 @@ describe('endExpiredSession', () => {
     }
   )
 
-  it('does not fire while the app is deliberately signing the user out', async () => {
-    const { endExpiredSession, beginVoluntarySignOut, isSessionTerminated } =
-      await loadSessionExpiry()
+  it('reports a deliberate sign-out only while one is in flight', async () => {
+    const {
+      beginVoluntarySignOut,
+      endVoluntarySignOut,
+      isVoluntarySignOutInProgress
+    } = await loadSessionExpiry()
 
-    beginVoluntarySignOut()
-    endExpiredSession('token revoked')
-
-    expect(mockLocation.href).toBe('')
-    expect(isSessionTerminated()).toBe(false)
-  })
-
-  it('resumes ending sessions once the deliberate sign-out finishes', async () => {
-    const { endExpiredSession, beginVoluntarySignOut, endVoluntarySignOut } =
-      await loadSessionExpiry()
-
-    beginVoluntarySignOut()
-    endVoluntarySignOut()
-    endExpiredSession('token revoked')
-
-    expect(mockLocation.href).toBe('/cloud/login')
-  })
-
-  it('handles nested deliberate sign-outs without unlatching early', async () => {
-    const { endExpiredSession, beginVoluntarySignOut, endVoluntarySignOut } =
-      await loadSessionExpiry()
-
+    expect(isVoluntarySignOutInProgress()).toBe(false)
     beginVoluntarySignOut()
     beginVoluntarySignOut()
     endVoluntarySignOut()
-    endExpiredSession('token revoked')
-
-    expect(mockLocation.href).toBe('')
+    expect(isVoluntarySignOutInProgress()).toBe(true)
+    endVoluntarySignOut()
+    expect(isVoluntarySignOutInProgress()).toBe(false)
   })
 
   it('releases the latch when the browser refuses to leave, rather than bricking the tab', async () => {

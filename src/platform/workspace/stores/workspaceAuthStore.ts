@@ -15,7 +15,6 @@ import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { endExpiredSession } from '@/platform/auth/session/sessionExpiry'
 
 const WorkspaceWithRoleSchema = z.object({
   id: z.string(),
@@ -841,32 +840,21 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   /**
-   * A single 401 from our own backend is not enough to end a session.
+   * Asks the identity provider to re-issue a token, and lets IT decide.
    *
-   * The refresh that just failed presented a token the client SDK was willing to
-   * issue, so at this instant the identity provider and our backend disagree, and
-   * one un-retried disagreement is exactly the overloaded-401 inference this
-   * design exists to avoid. Force a fresh token straight from the provider: if it
-   * refuses, Firebase signs the user out itself and that is the verdict; if it
-   * succeeds and the exchange still rejects the identity, the rejection is
-   * corroborated. Anything else is treated as transient and left alone.
+   * A 401 from our own backend is not a verdict on the credential: `requestToken`
+   * collapses every 401 into `INVALID_FIREBASE_TOKEN` regardless of why, which is
+   * exactly the overloaded-401 inference this design removes. So this never ends
+   * the session itself. It only forces a refresh: if the credential is genuinely
+   * revoked, Firebase signs the user out and the sign-out hook terminates the
+   * session; if the provider issues a token, the identity is alive and the
+   * disagreement was our backend's, so nothing happens.
    */
-  async function endSessionIfIdentityIsReallyGone(): Promise<void> {
-    const user = useAuthStore().currentUser
-    if (!user) return
-
+  async function askProviderToRevalidate(): Promise<void> {
     try {
-      await user.getIdToken(true)
+      await useAuthStore().currentUser?.getIdToken(true)
     } catch {
-      return
-    }
-
-    try {
-      await requestToken(undefined)
-    } catch (retryErr) {
-      if (isIdentityRevoked(retryErr)) {
-        endExpiredSession('the identity provider rejected this account')
-      }
+      // Firebase raised and, when the credential is dead, signed out already.
     }
   }
 
@@ -893,11 +881,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       if (isPermanentAuthError(err)) {
         if (getUnifiedToken()) surfacePermanentAuthError(err)
         clearUnifiedContext()
-        // Only an identity rejection ends the session, and only once a forced
-        // refresh has corroborated it. A denied or missing workspace clears the
-        // token but leaves the credential valid.
+        // A denied or missing workspace clears the token but leaves the
+        // credential valid, so only an identity rejection is worth re-checking
+        // with the provider.
         if (isIdentityRevoked(err)) {
-          void endSessionIfIdentityIsReallyGone()
+          void askProviderToRevalidate()
         }
       } else {
         console.warn('Unified token refresh failed:', err)

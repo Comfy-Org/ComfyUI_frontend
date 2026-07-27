@@ -8,7 +8,7 @@ import {
 import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { PUBLIC_ROUTE_PATHS as PUBLIC_ROUTE_PATH_LIST } from '@/platform/auth/session/publicRoutes'
+import { isPublicRoutePath } from '@/platform/auth/session/publicRoutes'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -147,13 +147,12 @@ if (isCloud) {
     'cloud-oauth-consent',
     'cloud-sorry-contact-support'
   ])
-  const PUBLIC_ROUTE_PATHS = new Set<string>(PUBLIC_ROUTE_PATH_LIST)
 
   function isPublicRoute(to: RouteLocationNormalized) {
     const name = String(to.name)
     if (PUBLIC_ROUTE_NAMES.has(name)) return true
     const path = to.path
-    return PUBLIC_ROUTE_PATHS.has(path)
+    return isPublicRoutePath(path)
   }
   // Global authentication guard
   router.beforeEach(async (to, _from, next) => {

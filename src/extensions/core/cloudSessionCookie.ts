@@ -1,5 +1,8 @@
 import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
-import { endExpiredSession } from '@/platform/auth/session/sessionExpiry'
+import {
+  endExpiredSession,
+  isVoluntarySignOutInProgress
+} from '@/platform/auth/session/sessionExpiry'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { useExtensionService } from '@/services/extensionService'
 
@@ -21,12 +24,14 @@ useExtensionService().registerExtension({
   },
 
   onAuthUserLogout: async () => {
+    // Read before the await: the flag is released when the sign-out resolves,
+    // which happens while deleteSession is still in flight.
+    const deliberate = isVoluntarySignOutInProgress()
     clearOAuthRequestId()
     const { deleteSession } = useSessionCookie()
     await deleteSession()
-    // Firebase signs the user out itself when the identity provider rejects the
-    // credential, which is the only signal that the token is genuinely stale.
-    // The voluntary sign-out path redirects on its own; this is idempotent.
-    endExpiredSession('identity provider invalidated the credential')
+    if (!deliberate) {
+      endExpiredSession('identity provider invalidated the credential')
+    }
   }
 })

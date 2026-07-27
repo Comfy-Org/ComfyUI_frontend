@@ -2485,23 +2485,23 @@ describe('useWorkspaceAuthStore', () => {
         status: 403,
         statusText: 'Forbidden',
         detailKey: 'workspaceAuth.errors.accessDenied',
-        endsSession: false
+        rechecksIdentity: false
       },
       {
         status: 404,
         statusText: 'Not Found',
         detailKey: 'workspaceAuth.errors.workspaceNotFound',
-        endsSession: false
+        rechecksIdentity: false
       },
       {
         status: 401,
         statusText: 'Unauthorized',
         detailKey: 'workspaceAuth.errors.invalidFirebaseToken',
-        endsSession: true
+        rechecksIdentity: true
       }
     ])(
       'surfaces the $status permanent refresh error as a toast and clears the slot',
-      async ({ status, statusText, detailKey, endsSession }) => {
+      async ({ status, statusText, detailKey, rechecksIdentity }) => {
         mockUnifiedCloudAuthEnabled.value = true
         mockGetIdToken.mockResolvedValue('firebase-token-xyz')
         const expiresInMs = 3600 * 1000
@@ -2537,14 +2537,17 @@ describe('useWorkspaceAuthStore', () => {
         )
         expect(unifiedToken.value).toBeNull()
 
-        // A denied (403) or missing (404) workspace clears the token but leaves
-        // the credential valid, so only a rejected identity ends the session.
+        // Nothing here ends the session: only the identity provider does that.
+        // A rejected identity is re-checked with a forced refresh, and Firebase
+        // signs the user out itself if the credential is really gone.
         await vi.advanceTimersByTimeAsync(0)
-        expect(mockEndExpiredSession).toHaveBeenCalledTimes(endsSession ? 1 : 0)
-
-        // Only a rejected identity is worth corroborating; a workspace error
-        // must not cost an extra /auth/token round-trip.
-        expect(mockFetch).toHaveBeenCalledTimes(endsSession ? 3 : 2)
+        expect(mockEndExpiredSession).not.toHaveBeenCalled()
+        expect(mockFetch).toHaveBeenCalledTimes(2)
+        // A rejected identity is re-checked with the provider; a denied or
+        // missing workspace is not, since the credential is not in question.
+        expect(
+          mockGetIdToken.mock.calls.some(([force]) => force === true)
+        ).toBe(rechecksIdentity)
       }
     )
 
