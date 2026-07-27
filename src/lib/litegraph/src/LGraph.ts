@@ -12,7 +12,8 @@ import {
   canvasLayoutMutations,
   registerGroupLayout,
   registerNodeLayout,
-  unregisterAllGraphLayout
+  unregisterAllGraphLayout,
+  unregisterNodeLayout
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toLinkId } from '@/types/linkId'
@@ -1246,7 +1247,7 @@ export class LGraph
     node.onRemoved?.()
 
     unregisterNodeState(node)
-    canvasLayoutMutations().deleteNode(this.rootGraph.id, node.id)
+    unregisterNodeLayout(this, node)
 
     node.graph = null
     this.incrementVersion()
