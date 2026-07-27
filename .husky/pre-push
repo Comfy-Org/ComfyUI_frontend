@@ -8,6 +8,21 @@ if [ -n "${CI-}" ]; then
   exit 0
 fi
 
+# Skip when every pushed ref is a deletion: there is no source state to check,
+# so knip only adds latency to `git push --delete`. git feeds one
+# "<local ref> <local sha> <remote ref> <remote sha>" line per ref on stdin,
+# and a deletion carries the all-zero local sha.
+deleting_only=1
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+  [ -z "${local_sha}" ] && continue
+  case "${local_sha}" in
+    *[!0]*) deleting_only=0 ;;
+  esac
+done
+if [ "${deleting_only}" -eq 1 ]; then
+  exit 0
+fi
+
 # Run Knip with cache via package script
 pnpm knip 1>&2
 

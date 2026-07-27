@@ -805,7 +805,7 @@
       "workflow": "",
       "expectedNodes": ["LTXDirector", "LTXDirectorGuide"],
       "expectedNodeCount": 6,
-      "expectedExtensions": [],
+      "expectedExtensions": ["Comfy.LTXDirectorGuide"],
       "disabledNodes": {
         "LoadVideoUI": ["HasCustomEndpoints", "ReadsArbitraryFile"],
         "MultiImageLoader": ["ReadsArbitraryFile"]
@@ -833,7 +833,7 @@
         "Basic data handling: Boolean Nand"
       ],
       "expectedNodeCount": 279,
-      "expectedExtensions": [],
+      "expectedExtensions": ["Basic data handling: dynamic input"],
       "disabledNodes": {
         "Basic data handling: PathAbspath": ["PathParsing"],
         "Basic data handling: PathBasename": ["PathParsing"],
@@ -1057,7 +1057,7 @@
       "workflow": "",
       "expectedNodes": ["iToolsAddOverlay", "iToolsCheckerBoard"],
       "expectedNodeCount": 14,
-      "expectedExtensions": [],
+      "expectedExtensions": ["iTools.compareNode"],
       "disabledNodes": {
         "iToolsCropImage": ["HasCustomEndpoints"],
         "iToolsLoadImages": ["ReadsArbitraryFile"],
@@ -1426,7 +1426,7 @@
       "workflow": "",
       "expectedNodes": ["Vewd"],
       "expectedNodeCount": 1,
-      "expectedExtensions": [],
+      "expectedExtensions": ["vewd"],
       "disabledNodes": {},
       "timeoutMs": 30000
     },
