@@ -289,11 +289,14 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly settingsButton: Locator
   public readonly filterButton: Locator
 
-  // --- Filter menu checkboxes (cloud-only, shown inside filter popover) ---
+  // --- Filter menu (cloud-only) ---
+  public readonly mediaTypeFilterMenuItem: Locator
+  public readonly dateFilterMenuItem: Locator
   public readonly filterImageCheckbox: Locator
   public readonly filterVideoCheckbox: Locator
   public readonly filterAudioCheckbox: Locator
   public readonly filter3DCheckbox: Locator
+  public readonly activeFilterIndicator: Locator
 
   // --- View mode ---
   public readonly listViewOption: Locator
@@ -338,10 +341,21 @@ export class AssetsSidebarTab extends SidebarTab {
     this.searchInput = page.getByPlaceholder('Search Assets...')
     this.settingsButton = page.getByRole('button', { name: 'View settings' })
     this.filterButton = page.getByRole('button', { name: 'Filter by' })
-    this.filterImageCheckbox = page.getByRole('checkbox', { name: 'Image' })
-    this.filterVideoCheckbox = page.getByRole('checkbox', { name: 'Video' })
-    this.filterAudioCheckbox = page.getByRole('checkbox', { name: 'Audio' })
-    this.filter3DCheckbox = page.getByRole('checkbox', { name: '3D' })
+    this.mediaTypeFilterMenuItem = page.getByRole('menuitem', {
+      name: /Media type/
+    })
+    this.dateFilterMenuItem = page.getByRole('menuitem', { name: 'Date' })
+    this.filterImageCheckbox = page.getByRole('menuitemcheckbox', {
+      name: 'Image'
+    })
+    this.filterVideoCheckbox = page.getByRole('menuitemcheckbox', {
+      name: 'Video'
+    })
+    this.filterAudioCheckbox = page.getByRole('menuitemcheckbox', {
+      name: 'Audio'
+    })
+    this.filter3DCheckbox = page.getByRole('menuitemcheckbox', { name: '3D' })
+    this.activeFilterIndicator = page.getByTestId('active-filter-indicator')
     this.listViewOption = page.getByText('List view')
     this.gridViewOption = page.getByText('Grid view')
     this.sortNewestFirst = page.getByText('Newest first')
@@ -372,8 +386,18 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   filterCheckbox(filter: MediaFilterKind | MediaFilterLabel) {
-    return this.page.getByRole('checkbox', {
+    return this.page.getByRole('menuitemcheckbox', {
       name: getMediaFilterLabel(filter)
+    })
+  }
+
+  dateFilterOption(label: string) {
+    return this.page.getByRole('menuitemradio', { name: label })
+  }
+
+  removeFilterButton(label: string) {
+    return this.page.getByRole('button', {
+      name: `Remove ${label} filter`
     })
   }
 
@@ -432,6 +456,27 @@ export class AssetsSidebarTab extends SidebarTab {
   async openFilterMenu() {
     await this.dismissToasts()
     await this.filterButton.click()
+    await this.mediaTypeFilterMenuItem.waitFor({
+      state: 'visible',
+      timeout: 3000
+    })
+  }
+
+  async closeFilterMenu() {
+    for (let depth = 0; depth < 2; depth++) {
+      if ((await this.filterButton.getAttribute('aria-expanded')) !== 'true') {
+        return
+      }
+      await this.page.keyboard.press('Escape')
+    }
+    await expect(this.filterButton).toHaveAttribute('aria-expanded', 'false')
+  }
+
+  async openMediaTypeFilterMenu() {
+    if (await this.filterCheckbox('Image').isVisible()) {
+      return
+    }
+    await this.mediaTypeFilterMenuItem.click()
     await this.filterCheckbox('Image').waitFor({
       state: 'visible',
       timeout: 3000
@@ -441,11 +486,19 @@ export class AssetsSidebarTab extends SidebarTab {
   async toggleMediaTypeFilter(
     filter: MediaFilterKind | MediaFilterLabel
   ): Promise<void> {
+    await this.openMediaTypeFilterMenu()
     const checkbox = this.filterCheckbox(filter)
     const before = await checkbox.getAttribute('aria-checked')
     await checkbox.click()
     const expected = before === 'true' ? 'false' : 'true'
     await expect(checkbox).toHaveAttribute('aria-checked', expected)
+  }
+
+  async selectDateFilter(label: string): Promise<void> {
+    if (!(await this.dateFilterOption(label).isVisible())) {
+      await this.dateFilterMenuItem.click()
+    }
+    await this.dateFilterOption(label).click()
   }
 
   async getAssetCardOrder(): Promise<string[]> {
