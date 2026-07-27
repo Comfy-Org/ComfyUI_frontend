@@ -9,21 +9,6 @@ interface InFlightCreateSession {
   promise: Promise<void>
 }
 
-/**
- * A `/auth/session` request that reached the server and was refused. Carries the
- * status so callers can tell an identity rejection (401/403) apart from a
- * transport failure, which throws a plain `Error` instead.
- */
-export class SessionRequestError extends Error {
-  constructor(
-    message: string,
-    readonly status: number
-  ) {
-    super(message)
-    this.name = 'SessionRequestError'
-  }
-}
-
 let inFlightCreateSession: InFlightCreateSession | null = null
 let confirmedSessionOwnerUid: string | null = null
 let sessionMutationTail = Promise.resolve()
@@ -97,10 +82,7 @@ export const useSessionCookie = () => {
     const response = await createSessionWithHeader(authHeader)
 
     if (!response.ok) {
-      throw new SessionRequestError(
-        await readSessionError(response),
-        response.status
-      )
+      throw new Error(await readSessionError(response))
     }
   }
 

@@ -1,40 +1,8 @@
-import { FirebaseError } from 'firebase/app'
-import { AuthErrorCodes } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type * as SessionCookieModule from '@/platform/auth/session/useSessionCookie'
-import { SessionRequestError } from '@/platform/auth/session/useSessionCookie'
 
 vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
 
-const mocks = vi.hoisted(() => ({
-  getIdToken: vi.fn(),
-  currentUser: null as {
-    getIdToken: (force: boolean) => Promise<string>
-  } | null,
-  createSessionOrThrow: vi.fn(),
-  deleteSession: vi.fn(),
-  logout: vi.fn()
-}))
-
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({ currentUser: mocks.currentUser, logout: mocks.logout })
-}))
-
-vi.mock('@/platform/auth/session/useSessionCookie', async () => {
-  const actual = await vi.importActual<typeof SessionCookieModule>(
-    '@/platform/auth/session/useSessionCookie'
-  )
-  return {
-    SessionRequestError: actual.SessionRequestError,
-    useSessionCookie: () => ({
-      createSessionOrThrow: mocks.createSessionOrThrow,
-      deleteSession: mocks.deleteSession
-    })
-  }
-})
-
-const mockLocation = { href: '' }
+const mockLocation = { href: '', pathname: '/', reload: vi.fn() }
 Object.defineProperty(window, 'location', {
   value: mockLocation,
   writable: true
@@ -45,281 +13,71 @@ async function loadSessionExpiry() {
   return import('@/platform/auth/session/sessionExpiry')
 }
 
-function signedInUser() {
-  return { getIdToken: mocks.getIdToken }
-}
-
 beforeEach(() => {
   vi.clearAllMocks()
   mockLocation.href = ''
-  mocks.currentUser = signedInUser()
-  mocks.getIdToken.mockResolvedValue('fresh-token')
-  mocks.createSessionOrThrow.mockResolvedValue(undefined)
-  mocks.deleteSession.mockResolvedValue(undefined)
-  mocks.logout.mockResolvedValue(undefined)
+  mockLocation.pathname = '/'
 })
 
-describe('reportUnauthorized', () => {
-  it('does not log out when the session proves healthy, so an endpoint-specific 401 is survivable', async () => {
-    const { reportUnauthorized, isSessionTerminated } =
-      await loadSessionExpiry()
+describe('endExpiredSession', () => {
+  it('returns the user to sign-in when the identity provider invalidated the credential', async () => {
+    const { endExpiredSession, isSessionTerminated } = await loadSessionExpiry()
 
-    await reportUnauthorized()
+    endExpiredSession('token revoked')
 
-    expect(mocks.getIdToken).toHaveBeenCalledWith(true)
-    expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(1)
-    expect(mocks.logout).not.toHaveBeenCalled()
-    expect(mockLocation.href).toBe('')
-    expect(isSessionTerminated()).toBe(false)
-  })
-
-  it('logs out when the identity provider refuses to re-issue a token', async () => {
-    mocks.getIdToken.mockRejectedValue(
-      new FirebaseError(AuthErrorCodes.TOKEN_EXPIRED, 'token expired')
-    )
-    const { reportUnauthorized, isSessionTerminated } =
-      await loadSessionExpiry()
-
-    await reportUnauthorized()
-
-    expect(mocks.createSessionOrThrow).not.toHaveBeenCalled()
-    expect(mocks.deleteSession).toHaveBeenCalledTimes(1)
-    expect(mocks.logout).toHaveBeenCalledTimes(1)
     expect(mockLocation.href).toBe('/cloud/login')
     expect(isSessionTerminated()).toBe(true)
   })
 
-  it('logs out when the backend rejects a freshly refreshed identity', async () => {
-    mocks.createSessionOrThrow.mockRejectedValue(
-      new SessionRequestError('unauthorized', 401)
-    )
-    const { reportUnauthorized } = await loadSessionExpiry()
+  it('redirects only once, however many callers fire', async () => {
+    const { endExpiredSession } = await loadSessionExpiry()
 
-    await reportUnauthorized()
-
-    expect(mocks.logout).toHaveBeenCalledTimes(1)
-    expect(mockLocation.href).toBe('/cloud/login')
-  })
-
-  it('logs out and redirects exactly once for a burst of concurrent 401s', async () => {
-    mocks.createSessionOrThrow.mockRejectedValue(
-      new SessionRequestError('unauthorized', 401)
-    )
-    const { reportUnauthorized } = await loadSessionExpiry()
-
-    await Promise.all(Array.from({ length: 50 }, () => reportUnauthorized()))
-
-    expect(mocks.getIdToken).toHaveBeenCalledTimes(1)
-    expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(1)
-    expect(mocks.logout).toHaveBeenCalledTimes(1)
-  })
-
-  it('ignores further reports once terminated, so the poll loop cannot restart it', async () => {
-    mocks.createSessionOrThrow.mockRejectedValue(
-      new SessionRequestError('unauthorized', 401)
-    )
-    const { reportUnauthorized } = await loadSessionExpiry()
-
-    await reportUnauthorized()
+    endExpiredSession('token revoked')
     mockLocation.href = ''
-    await reportUnauthorized()
+    endExpiredSession('cloud session could not be renewed')
+    endExpiredSession('token revoked')
 
-    expect(mocks.logout).toHaveBeenCalledTimes(1)
     expect(mockLocation.href).toBe('')
   })
 
-  it('still redirects when teardown throws, so a failed logout cannot strand the app', async () => {
-    mocks.createSessionOrThrow.mockRejectedValue(
-      new SessionRequestError('unauthorized', 401)
-    )
-    mocks.deleteSession.mockRejectedValue(new Error('network down'))
-    mocks.logout.mockRejectedValue(new Error('firebase unavailable'))
-    const { reportUnauthorized } = await loadSessionExpiry()
+  it('does not redirect a user who is already on a public route', async () => {
+    mockLocation.pathname = '/cloud/login'
+    const { endExpiredSession, isSessionTerminated } = await loadSessionExpiry()
 
-    await reportUnauthorized()
+    endExpiredSession('token revoked')
 
-    expect(mockLocation.href).toBe('/cloud/login')
-  })
-
-  it('never rejects, so the fire-and-forget callers cannot raise unhandled rejections', async () => {
-    mocks.getIdToken.mockRejectedValue(new Error('chunk load failed'))
-    mocks.createSessionOrThrow.mockRejectedValue(new Error('chunk load failed'))
-    const { reportUnauthorized } = await loadSessionExpiry()
-
-    await expect(
-      Promise.all(Array.from({ length: 10 }, () => reportUnauthorized()))
-    ).resolves.toBeDefined()
-    expect(mocks.logout).not.toHaveBeenCalled()
-  })
-
-  it('treats a 403 as an authorization refusal, not a revoked session', async () => {
-    mocks.createSessionOrThrow.mockRejectedValue(
-      new SessionRequestError('forbidden', 403)
-    )
-    const { reportUnauthorized, isSessionTerminated } =
-      await loadSessionExpiry()
-
-    await reportUnauthorized()
-
-    expect(mocks.logout).not.toHaveBeenCalled()
+    expect(mockLocation.href).toBe('')
     expect(isSessionTerminated()).toBe(false)
   })
 
-  it('does not burn the cooldown when no user is signed in yet', async () => {
-    mocks.currentUser = null
-    const { reportUnauthorized } = await loadSessionExpiry()
+  it('does not interrupt an in-flight sign-in', async () => {
+    mockLocation.pathname = '/cloud/oauth/consent'
+    const { endExpiredSession } = await loadSessionExpiry()
 
-    await reportUnauthorized()
-    mocks.currentUser = signedInUser()
-    await reportUnauthorized()
+    endExpiredSession('token revoked')
 
-    expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(1)
-  })
-
-  it('gives up with no verdict when an oracle hangs, rather than wedging every later report', async () => {
-    vi.useFakeTimers()
-    try {
-      mocks.createSessionOrThrow.mockReturnValue(new Promise(() => {}))
-      const { reportUnauthorized, isSessionTerminated } =
-        await loadSessionExpiry()
-
-      const pending = reportUnauthorized()
-      await vi.advanceTimersByTimeAsync(15_001)
-      await pending
-
-      expect(isSessionTerminated()).toBe(false)
-      expect(mocks.logout).not.toHaveBeenCalled()
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('never logs out a healthy session, and backs off, when one endpoint 401s all day', async () => {
-    vi.useFakeTimers()
-    try {
-      const { reportUnauthorized, isSessionTerminated } =
-        await loadSessionExpiry()
-
-      // Eight hours of a poller 401ing every 10s against a healthy session.
-      for (let elapsed = 0; elapsed < 8 * 60 * 60_000; elapsed += 10_000) {
-        await reportUnauthorized()
-        await vi.advanceTimersByTimeAsync(10_000)
-      }
-
-      expect(isSessionTerminated()).toBe(false)
-      expect(mocks.logout).not.toHaveBeenCalled()
-      // A flat 60s cooldown would be ~480 probes; backoff must cut it hard.
-      expect(mocks.createSessionOrThrow.mock.calls.length).toBeLessThan(40)
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('does not delay the first probe, however long the session has been healthy', async () => {
-    vi.useFakeTimers()
-    try {
-      const { reportUnauthorized } = await loadSessionExpiry()
-
-      await reportUnauthorized()
-      expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(1)
-
-      mocks.createSessionOrThrow.mockRejectedValue(
-        new SessionRequestError('unauthorized', 401)
-      )
-      await vi.advanceTimersByTimeAsync(60_001)
-      await reportUnauthorized()
-
-      expect(mocks.logout).toHaveBeenCalledTimes(1)
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('resets the backoff once a verdict stops being healthy', async () => {
-    vi.useFakeTimers()
-    try {
-      const { reportUnauthorized } = await loadSessionExpiry()
-
-      await reportUnauthorized()
-      await vi.advanceTimersByTimeAsync(60_001)
-      await reportUnauthorized()
-      await vi.advanceTimersByTimeAsync(120_001)
-      await reportUnauthorized()
-      expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(3)
-
-      mocks.createSessionOrThrow.mockRejectedValue(
-        new SessionRequestError('server exploded', 500)
-      )
-      await vi.advanceTimersByTimeAsync(240_001)
-      await reportUnauthorized()
-
-      // The 500 resets the streak, so the next window is the 60s base again.
-      mocks.createSessionOrThrow.mockResolvedValue(undefined)
-      await vi.advanceTimersByTimeAsync(60_001)
-      await reportUnauthorized()
-
-      expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(5)
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('does not log out when the identity oracle is unreachable', async () => {
-    mocks.getIdToken.mockRejectedValue(
-      new FirebaseError(AuthErrorCodes.NETWORK_REQUEST_FAILED, 'offline')
-    )
-    const { reportUnauthorized, isSessionTerminated } =
-      await loadSessionExpiry()
-
-    await reportUnauthorized()
-
-    expect(mocks.logout).not.toHaveBeenCalled()
-    expect(isSessionTerminated()).toBe(false)
-  })
-
-  it('does not log out when the session probe fails for a non-auth reason', async () => {
-    mocks.createSessionOrThrow.mockRejectedValue(
-      new SessionRequestError('server exploded', 500)
-    )
-    const { reportUnauthorized } = await loadSessionExpiry()
-
-    await reportUnauthorized()
-
-    expect(mocks.logout).not.toHaveBeenCalled()
     expect(mockLocation.href).toBe('')
   })
 
-  it('does not investigate when no user is signed in', async () => {
-    mocks.currentUser = null
-    const { reportUnauthorized } = await loadSessionExpiry()
+  it('falls back to a reload when assigning the location throws', async () => {
+    const { endExpiredSession } = await loadSessionExpiry()
+    Object.defineProperty(mockLocation, 'href', {
+      set() {
+        throw new Error('navigation blocked')
+      },
+      get() {
+        return ''
+      },
+      configurable: true
+    })
 
-    await reportUnauthorized()
+    expect(() => endExpiredSession('token revoked')).not.toThrow()
+    expect(mockLocation.reload).toHaveBeenCalledTimes(1)
 
-    expect(mocks.createSessionOrThrow).not.toHaveBeenCalled()
-    expect(mocks.logout).not.toHaveBeenCalled()
-  })
-
-  it('throttles re-investigation after a healthy verdict', async () => {
-    const { reportUnauthorized } = await loadSessionExpiry()
-
-    await reportUnauthorized()
-    await reportUnauthorized()
-
-    expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(1)
-  })
-
-  it('re-investigates once the throttle window has elapsed', async () => {
-    vi.useFakeTimers()
-    try {
-      const { reportUnauthorized } = await loadSessionExpiry()
-
-      await reportUnauthorized()
-      vi.advanceTimersByTime(60_001)
-      await reportUnauthorized()
-
-      expect(mocks.createSessionOrThrow).toHaveBeenCalledTimes(2)
-    } finally {
-      vi.useRealTimers()
-    }
+    Object.defineProperty(mockLocation, 'href', {
+      value: '',
+      writable: true,
+      configurable: true
+    })
   })
 })

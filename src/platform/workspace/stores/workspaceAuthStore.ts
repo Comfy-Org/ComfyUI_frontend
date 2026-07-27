@@ -15,6 +15,7 @@ import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { endExpiredSession } from '@/platform/auth/session/sessionExpiry'
 
 const WorkspaceWithRoleSchema = z.object({
   id: z.string(),
@@ -849,6 +850,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       if (isPermanentAuthError(err)) {
         if (getUnifiedToken()) surfacePermanentAuthError(err)
         clearUnifiedContext()
+        // The scheduled refresh is the authoritative check on this identity:
+        // /api/auth/token refused to re-issue, so clearing the token would
+        // otherwise leave the app running with no way to make a cloud call.
+        endExpiredSession('the cloud session could not be renewed')
       } else {
         console.warn('Unified token refresh failed:', err)
       }
