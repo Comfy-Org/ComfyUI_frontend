@@ -43,6 +43,7 @@ import type {
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
+  WorkflowQueuedMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
 } from './types'
@@ -277,6 +278,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWorkflowExecution(): void {
     this.dispatch((provider) => provider.trackWorkflowExecution?.())
+  }
+
+  trackWorkflowQueued(metadata: WorkflowQueuedMetadata): void {
+    this.dispatch((provider) => provider.trackWorkflowQueued?.(metadata))
   }
 
   trackExecutionOutcome(metadata: ExecutionOutcomeMetadata): void {

@@ -1,8 +1,22 @@
 import { datadogRum } from '@datadog/browser-rum'
 
-import type { ExecutionOutcomeMetadata, TelemetryProvider } from '../../types'
+import type {
+  ExecutionOutcomeMetadata,
+  TelemetryProvider,
+  WorkflowQueuedMetadata
+} from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
+  trackWorkflowQueued({
+    workflowContext,
+    ...metadata
+  }: WorkflowQueuedMetadata): void {
+    datadogRum.addAction('workflow_queue', {
+      ...workflowContext,
+      ...metadata
+    })
+  }
+
   trackExecutionOutcome({
     startTime,
     outcome

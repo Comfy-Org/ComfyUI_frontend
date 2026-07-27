@@ -29,10 +29,16 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
+import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
+import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
 import type {
+  ExecutionContext,
+  WorkflowExecutionContext,
   WorkflowOpenSource,
-  WorkflowQueueIntent
+  WorkflowQueueIntent,
+  WorkflowQueuedMetadata
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
@@ -117,6 +123,7 @@ import {
   verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
 
+import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import {
   collectAllNodes,
@@ -1677,6 +1684,7 @@ export class ComfyApp {
     this.processingQueue = true
     const executionStore = useExecutionStore()
     const executionErrorStore = useExecutionErrorStore()
+    const telemetry = useTelemetry()
     executionErrorStore.clearAllErrors()
     let queueResultOverride: boolean | null = null
 
@@ -1686,15 +1694,33 @@ export class ComfyApp {
 
     try {
       while (this.queueItems.length) {
-        const { number, batchCount, queueNodeIds, requestId } =
-          this.queueItems.pop()!
+        const {
+          number,
+          batchCount,
+          queueNodeIds,
+          requestId,
+          workflowQueueIntent
+        } = this.queueItems.pop()!
         let queuedCount = 0
+        let workflowQueuedMetadata: WorkflowQueuedMetadata | undefined
         const previewMethod = useSettingStore().get(
           'Comfy.Execution.PreviewMethod'
         )
 
         const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
+          let executionContext: ExecutionContext | undefined
+          if (telemetry) {
+            try {
+              executionContext = getExecutionContext()
+            } catch (error) {
+              console.error(
+                '[Telemetry] Workflow context collection failed',
+                error
+              )
+            }
+          }
+
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
@@ -1713,6 +1739,14 @@ export class ComfyApp {
           const startTime = performance.now()
           const p = await this.graphToPrompt(this.rootGraph)
           const queuedNodes = collectAllNodes(this.rootGraph)
+          let workflowContext: WorkflowExecutionContext | undefined
+          if (executionContext) {
+            workflowContext = toWorkflowExecutionContext(executionContext, {
+              executableNodeCount: Object.keys(p.output).length,
+              executionScope: isPartialExecution ? 'partial' : 'full',
+              viewMode: getWorkflowMode(queuedWorkflow)
+            })
+          }
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
@@ -1722,6 +1756,16 @@ export class ComfyApp {
             })
             delete api.authToken
             delete api.apiKey
+            if (res.prompt_id && telemetry && !workflowQueuedMetadata) {
+              workflowQueuedMetadata = {
+                ...(workflowContext && { workflowContext }),
+                trigger_source: normalizeExecutionTriggerSource(
+                  workflowQueueIntent?.trigger_source
+                ),
+                subscribe_to_run: workflowQueueIntent?.subscribe_to_run === true
+              }
+              telemetry.trackWorkflowQueued(workflowQueuedMetadata)
+            }
             executionErrorStore.recordNodeErrors(res.node_errors ?? null)
             queueResultOverride = null
             try {
