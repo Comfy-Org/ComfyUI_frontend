@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "Применить Anima LLLite",
+    "inputs": {
+      "end_percent": {
+        "name": "конечный процент"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "mask": {
+        "name": "маска"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "начальный процент"
+      },
+      "strength": {
+        "name": "интенсивность"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "Регулирует громкость аудио на заданное значение в децибелах (дБ).",
     "display_name": "Аудио - Настроить громкость",
@@ -2010,9 +2036,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "temperature"
       },
       "prompt": {
         "name": "prompt",
@@ -5861,6 +5884,212 @@
       }
     }
   },
+  "HeyGenAvatarVideoNode": {
+    "description": "Создайте видео с говорящим ведущим на основе аватара HeyGen. Включает самые популярные публичные аватары HeyGen; можно указать любой look ID для замены.",
+    "display_name": "HeyGen Аватар Видео",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "соотношение сторон",
+        "tooltip": "Соотношение сторон выходного видео. 'auto' соответствует исходному видео аватара."
+      },
+      "background_color": {
+        "name": "цвет фона",
+        "tooltip": "Необязательный сплошной цвет фона в hex-коде (например, '#00ff00'). Оставьте пустым для фонового изображения аватара."
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "custom_avatar_id": {
+        "name": "custom_avatar_id",
+        "tooltip": "Необязательный look ID аватара HeyGen. При указании заменяет выбранного выше аватара. Можно использовать любой из 3000+ публичных образов HeyGen (или ваши приватные аватары)."
+      },
+      "engine": {
+        "name": "движок",
+        "tooltip": "Рендеринг-движок; для каждого варианта отображаются только поддерживаемые аватары. 'auto' предлагает все аватары и выбирает лучший движок (предпочтительно Avatar IV). Avatar V — наивысшее качество, Avatar III — самый доступный."
+      },
+      "engine_avatar": {
+        "name": "аватар"
+      },
+      "resolution": {
+        "name": "разрешение",
+        "tooltip": "Разрешение выходного видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Не отправляется в HeyGen; измените для принудительного повторного запуска."
+      },
+      "speech": {
+        "name": "речь",
+        "tooltip": "Управляйте аватаром с помощью текстового сценария (HeyGen text-to-speech) или собственного аудио."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "текст"
+      },
+      "speech_voice": {
+        "name": "голос"
+      },
+      "speech_voice_speed": {
+        "name": "скорость голоса"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "Создайте собственного аватара HeyGen из фотографии человека или текстового запроса (сгенерированный персонаж). Передайте полученный avatar_id в custom_avatar_id узла HeyGen Avatar Video — и сохраните ID для повторного использования аватара в будущих рабочих процессах.",
+    "display_name": "HeyGen Создать Аватар",
+    "inputs": {
+      "source": {
+        "name": "источник",
+        "tooltip": "Создайте нового персонажа по текстовому запросу или создайте аватара из подключённой фотографии человека."
+      },
+      "source_prompt": {
+        "name": "промпт"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "avatar_id",
+        "tooltip": "Look ID аватара. Передайте его в custom_avatar_id HeyGen Avatar Video; сохраните для повторного использования аватара."
+      },
+      "1": {
+        "name": "превью",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "Анимируйте любое изображение человека в синхронизированное с губами говорящee видео (HeyGen Avatar IV). Управляйте им с помощью текстового сценария или собственного аудио.",
+    "display_name": "HeyGen Talking Photo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Соотношение сторон выходного видео. 'auto' соответствует входному изображению."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "expressiveness": {
+        "name": "expressiveness",
+        "tooltip": "Насколько выразительны анимированные лицо и жесты."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Изображение человека для анимации. Автоматически уменьшается, если больше 2K."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Разрешение выходного видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Не отправляется в HeyGen; измените для принудительного повторного запуска."
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "Управляйте аватаром с помощью текстового сценария (HeyGen text-to-speech) или собственного аудио."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "text"
+      },
+      "speech_voice": {
+        "name": "voice"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "Генерируйте аудио речи из текста с помощью движка HeyGen Starfish TTS. Включает самые популярные голоса HeyGen на 17 языках.",
+    "display_name": "HeyGen Text to Speech",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "custom_voice_id": {
+        "name": "custom_voice_id",
+        "tooltip": "Необязательный ID голоса HeyGen. При указании переопределяет выбранный выше голос. Голос должен поддерживать движок Starfish."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Не отправляется в HeyGen; измените для принудительного повторного запуска."
+      },
+      "speed": {
+        "name": "speed",
+        "tooltip": "Множитель скорости речи."
+      },
+      "ssml": {
+        "name": "ssml",
+        "tooltip": "Обрабатывать текст как SSML-разметку (для пауз, акцентов и управления произношением)."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Текст для синтеза (до 5000 символов). Сгенерированная речь должна быть не менее 1 секунды."
+      },
+      "voice": {
+        "name": "voice",
+        "tooltip": "Голос для использования (отобран из самых популярных голосов, совместимых с HeyGen Starfish)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "Переводит видео с речью на другой язык. Клонирует голос оригинального говорящего и повторно анимирует рот в соответствии с переведённой речью.",
+    "display_name": "HeyGen Перевод Видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "mode": {
+        "name": "режим",
+        "tooltip": "'speed' — быстрее; 'precision' обеспечивает более качественную синхронизацию губ, но в два раза дороже."
+      },
+      "output_language": {
+        "name": "язык_перевода",
+        "tooltip": "Целевой язык для переведённого видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Не отправляется в HeyGen; измените для принудительного повторного запуска."
+      },
+      "speaker_count": {
+        "name": "количество_говорящих",
+        "tooltip": "Количество говорящих в видео. 0 = определить автоматически."
+      },
+      "translate_audio_only": {
+        "name": "только_аудио",
+        "tooltip": "Заменить только аудиодорожку, сохраняя оригинальные движения рта (без синхронизации губ)."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Видео с речью для перевода."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "Усредняет выход модели по нескольким смещённым позициям сетки патчей на поздних этапах сэмплирования. Устраняет швы.",
     "display_name": "Сглаживание швов патчей HiDream-O1",
@@ -9493,6 +9722,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "description": "Загружает набор видео из указанной папки и возвращает список видео. Поддерживаемые форматы: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "Загрузить Видео (из папки)",
+    "inputs": {
+      "folder": {
+        "name": "папка",
+        "tooltip": "Папка, содержащая видеофайлы."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "видео",
+        "tooltip": "Ленивые ссылки на видео; кадры декодируются только по мере необходимости далее по цепочке."
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "Загружает набор пар видео и текстовых подписей из указанной папки и возвращает их в виде списка. Поддерживаемые форматы: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "Загрузить Видео-Текст (из папки)",
+    "inputs": {
+      "folder": {
+        "name": "папка",
+        "tooltip": "Папка, содержащая видеофайлы и .txt подписи."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "видео",
+        "tooltip": "Ленивые ссылки на видео; кадры декодируются только по мере необходимости далее по цепочке."
+      },
+      "1": {
+        "name": "тексты",
+        "tooltip": "Список текстовых подписей."
       }
     }
   },
@@ -18445,6 +18710,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "Случайным образом перемешивает порядок видео в списке.",
+    "display_name": "Перемешать Список Видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Случайное зерно."
+      },
+      "videos": {
+        "name": "видео",
+        "tooltip": "Список видео для перемешивания."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "видео",
+        "tooltip": "Перемешанные видео"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "Случайным образом перемешивает порядок пар видео и текста в списке.",
+    "display_name": "Перемешать Пары Видео-Текст",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Случайное зерно."
+      },
+      "texts": {
+        "name": "тексты",
+        "tooltip": "Список текстов для перемешивания."
+      },
+      "videos": {
+        "name": "видео",
+        "tooltip": "Список видео для перемешивания."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "видео",
+        "tooltip": "Перемешанные видео"
+      },
+      "1": {
+        "name": "тексты",
+        "tooltip": "Перемешанные тексты"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "Универсальная версия ноды SkipLayerGuidance, которую можно использовать на любой модели DiT.",
     "display_name": "Пропустить руководство по слоям DiT",
@@ -19644,6 +19963,28 @@
       },
       "prompt": {
         "name": "подсказка"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "изображения"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -21644,6 +21985,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "Выберите фиксированное количество кадров из видео с использованием различных стратегий.",
+    "display_name": "Выбор кадра из видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "num_frames": {
+        "name": "количество_кадров",
+        "tooltip": "Количество кадров для выборки."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Случайное зерно (используется только со стратегией 'random')."
+      },
+      "strategy": {
+        "name": "стратегия",
+        "tooltip": "uniform: равномерно распределённые, head: первые N, tail: последние N, random: случайные отсортированные."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Входное видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "видео",
+        "tooltip": "Выбранное видео."
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "Направление Video Linear CFG",
     "inputs": {
@@ -21652,6 +22024,57 @@
       },
       "model": {
         "name": "модель"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "Случайным образом обрезает непрерывный диапазон кадров из видео.",
+    "display_name": "Обрезка видео (случайная по времени)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "length": {
+        "name": "длина",
+        "tooltip": "Количество сохраняемых кадров."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Случайное зерно."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Входное видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "видео",
+        "tooltip": "Обрезанное видео (ленивое)."
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "Обрезает непрерывный диапазон кадров из видео.",
+    "display_name": "Обрезка видео (по времени)",
+    "inputs": {
+      "length": {
+        "name": "длина",
+        "tooltip": "Количество сохраняемых кадров."
+      },
+      "start_frame": {
+        "name": "начальный_кадр",
+        "tooltip": "Индекс начального кадра."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Входное видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "видео",
+        "tooltip": "Обрезанное видео (ленивое)."
       }
     }
   },
@@ -23886,6 +24309,33 @@
       "2": {
         "name": "латентный",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "Применить Wan Uni3C ControlNet",
+    "inputs": {
+      "end_percent": {
+        "name": "конечный_процент"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "render_video": {
+        "name": "рендер-видео",
+        "tooltip": "Видео-направление, сгенерированное по траектории камеры, чаще всего — искажённые рендеры облака точек исходного изображения."
+      },
+      "start_percent": {
+        "name": "начальный_процент"
+      },
+      "strength": {
+        "name": "интенсивность"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },
