@@ -422,26 +422,22 @@ export class AssetsSidebarTab extends SidebarTab {
   async openSettingsMenu() {
     await this.dismissToasts()
     await this.settingsButton.click()
-    // Wait for popover content to render
-    await this.listViewOption
-      .or(this.gridViewOption)
-      .first()
-      .waitFor({ state: 'visible', timeout: 3000 })
+    await expect(
+      this.listViewOption.or(this.gridViewOption).first()
+    ).toBeVisible()
   }
 
   async openFilterMenu() {
     await this.dismissToasts()
     await this.filterButton.click()
-    await this.filterCheckbox('Image').waitFor({
-      state: 'visible',
-      timeout: 3000
-    })
+    await expect(this.filterCheckbox('Image')).toBeVisible()
   }
 
   async toggleMediaTypeFilter(
     filter: MediaFilterKind | MediaFilterLabel
   ): Promise<void> {
     const checkbox = this.filterCheckbox(filter)
+    await expect(checkbox).toBeVisible()
     const before = await checkbox.getAttribute('aria-checked')
     await checkbox.click()
     const expected = before === 'true' ? 'false' : 'true'
