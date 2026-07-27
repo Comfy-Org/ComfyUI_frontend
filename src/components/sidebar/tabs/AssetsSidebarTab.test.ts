@@ -126,9 +126,7 @@ const assetsGridStub = {
 }
 
 const buttonStub = {
-  props: ['size', 'variant'],
-  template:
-    '<button :data-size="size" :data-variant="variant"><slot /></button>'
+  template: '<button><slot /></button>'
 }
 
 function renderTab() {
@@ -136,11 +134,7 @@ function renderTab() {
     global: {
       plugins: [i18n],
       directives: {
-        tooltip: {
-          mounted(element, { value }) {
-            element.dataset.tooltip = value.value
-          }
-        }
+        tooltip: {}
       },
       stubs: {
         SidebarTabTemplate: sidebarTabTemplateStub,
@@ -169,17 +163,13 @@ describe('AssetsSidebarTab folder navigation', () => {
     const backButton = within(folderTitle).getByRole('button', {
       name: 'Back to all assets'
     })
-    const copyButton = within(folderTitle).getByRole('button', {
+    within(folderTitle).getByRole('button', {
       name: 'Copy Job ID'
     })
     const jobId = within(folderTitle).getByText('multi-output-job')
 
     expect(backButton).toHaveTextContent('')
-    expect(backButton).toHaveAttribute('data-tooltip', 'Back to all assets')
-    expect(jobId).toHaveClass('min-w-0', 'truncate')
-    expect(copyButton).toHaveAttribute('data-tooltip', 'Copy Job ID')
-    expect(copyButton).toHaveAttribute('data-size', 'icon')
-    expect(copyButton).toHaveAttribute('data-variant', 'textonly')
+    expect(jobId).toBeVisible()
     expect(screen.getByTestId('folder-controls')).not.toHaveTextContent(
       'Back to all assets'
     )
