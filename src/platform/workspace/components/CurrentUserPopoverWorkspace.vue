@@ -327,12 +327,8 @@ const subscriptionDialog = useSubscriptionDialog()
 const { locale } = useI18n()
 const isLoadingBalance = isLoading
 
-const {
-  memberCap,
-  displayedNumber,
-  isEdgeState,
-  requestAction
-} = useMemberCreditDisplay()
+const { memberCap, displayedNumber, isEdgeState, requestAction } =
+  useMemberCreditDisplay()
 
 const requestSent = ref(false)
 const isEdgePopoverOpen = ref(false)
