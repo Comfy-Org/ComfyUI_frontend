@@ -54,14 +54,30 @@ export const ROLE_LABELS: Record<ViewerRole, string> = {
   'member-uncapped': 'Member (Uncapped)'
 }
 
+// Terminal failure state of the checkout / top-up flow (Figma 4198-20323).
+// Centred alert layout — deliberately not the header-bar shape the run-lock
+// dialogs use. `backLink` is the plan-change variant; top-up omits it.
+const declineDialog = (backLink: boolean) => `
+  <div class="mock-dialog alert">
+    <span class="x corner">✕</span>
+    <div class="alerticon">!</div>
+    <div class="alerttitle">Payment declined</div>
+    <div class="alertbody">Your card couldn't be charged. Try another card, or contact your bank if this looks wrong.</div>
+    <div class="reason">Stripe reasoning:<br /><span class="strong">Insufficient funds</span></div>
+    <button class="mbtn wide">Update payment method</button>
+    ${backLink ? `<div class="backlink">← Back to all plans</div>` : ''}
+  </div>`
+
 const MOCK_DECLINE = `
-  <div class="mock-dialog">
-    <div class="dhead"><b>Payment declined</b><span class="x">✕</span></div>
-    <div class="dbody">
-      <p class="strong">Your card couldn't be charged. Try another card, or contact your bank if this looks wrong.</p>
-      <p class="reason">Stripe reasoning:<br /><span class="strong">Insufficient funds</span></p>
+  <div class="mock-row">
+    <div class="mock-col">
+      <div class="mocklabel">Top-up flow</div>
+      ${declineDialog(false)}
     </div>
-    <div class="dfoot"><button class="mbtn wide">Update payment method</button></div>
+    <div class="mock-col">
+      <div class="mocklabel">Plan-change flow</div>
+      ${declineDialog(true)}
+    </div>
   </div>`
 
 const MOCK_PAUSED_DIALOG_OWNER = `
@@ -166,7 +182,7 @@ export const STATES: ViewerState[] = [
     cfg: { ...HEALTHY, balance: 'empty' },
     spec: [
       "Workspace-empty wins over limit-reached — raising a cap wouldn't help when the pool is dry.",
-      'Same state for capped and uncapped members; button routes to "Notify workspace owner".',
+      'Same state for capped and uncapped members; button routes to "Notify workspace owner". For uncapped members this is the <b>only</b> state with a button (settled 2026-07-27, Figma 5217-36374).',
       '<span class="mono">Run-lock: out-of-credits dialog on Run click (shipped, cfaf89ede)</span>'
     ]
   },
@@ -180,20 +196,8 @@ export const STATES: ViewerState[] = [
     cfg: { ...HEALTHY, balance: 'partial' },
     spec: [
       'Uncapped members see the plain workspace balance — pool numbers never wear bars or denominators.',
-      'No button above the 1,500 floor.'
-    ]
-  },
-  {
-    id: 'menu-uncapped-low',
-    title: 'Menu — low balance',
-    crumb: 'no cap · balance 1,500 → request button',
-    roles: ['member-uncapped'],
-    host: 'menu',
-    group: 'Profile menu',
-    cfg: { ...HEALTHY, balance: 'low' },
-    spec: [
-      'Button label follows the binding cause: pool → "Request more credits".',
-      '<span class="mono">≤ 1,500 floor · placeholder pending balance-at-top-up instrumentation</span>'
+      '<b>Uncapped members have exactly two states</b> (settled 2026-07-27, Figma 5217-36374): this one and workspace-out. There is no low-balance request state — the ≤ 1,500 floor now governs capped members only.',
+      'Rationale: with no cap there is nothing workspace-specific to ask for until the pool is actually dry, and the zero state already covers that. Fewer paths now; add one back if requests come in.'
     ]
   },
   {
@@ -352,9 +356,12 @@ export const STATES: ViewerState[] = [
     group: 'Payment failed',
     mock: MOCK_DECLINE,
     spec: [
+      '<b>Where it appears:</b> the terminal failure state of the checkout / top-up flow — the third step after "Confirm your payment" → "You\'re all set". It fires on a charge the user just attempted, so it is <i>transactional</i>, not a lifecycle state. The banner covers the lifecycle side.',
+      '<b>Two variants</b> in the same family: the plan-change flow keeps "← Back to all plans" under the button; the top-up flow drops it, because there is no plan list to go back to.',
+      'Centred alert layout (amber ⚠ glyph, centred title and body) — deliberately different from the run-lock dialogs, which use a left-aligned header bar. Alarm vs. notice.',
       'Update payment method → <span class="mono">accessBillingPortal()</span> in a new tab; dialog closes; intent preserved.',
       '<b>No auto-success</b> — refetch-on-refocus converges the banner.',
-      '<span class="mono">Figma 4198-20207 · DES-380</span>'
+      '<span class="mono">Figma 4198-20323 (family) · 4198-20207 · DES-380</span>'
     ]
   },
   {

@@ -3187,7 +3187,6 @@
       "monthlyLimitLabel": "Monthly limit",
       "percentUsed": "{n}% used",
       "requestLimitIncrease": "Request limit increase",
-      "requestMoreCredits": "Request more credits",
       "notifyOwner": "Notify workspace owner",
       "requested": "Your workspace owner has been notified by email",
       "tileLabel": "Credits",

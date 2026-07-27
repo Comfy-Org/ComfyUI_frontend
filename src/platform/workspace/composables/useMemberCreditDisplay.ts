@@ -85,10 +85,12 @@ export function useMemberCreditDisplay() {
     // Edge state shows no button — the popover alone explains the substituted
     // number, and a limit increase wouldn't help while the pool binds.
     if (isEdgeState.value) return null
+    // Uncapped members have exactly two states, healthy and workspace-out
+    // (2026-07-27): with no cap there is nothing workspace-specific to ask for
+    // short of the pool running dry, which the zero state already covers.
+    if (!memberCap.value) return null
     if (displayedNumber.value > REQUEST_BUTTON_FLOOR) return null
-    return memberCap.value
-      ? ('requestLimitIncrease' as const)
-      : ('requestMoreCredits' as const)
+    return 'requestLimitIncrease' as const
   })
 
   return {

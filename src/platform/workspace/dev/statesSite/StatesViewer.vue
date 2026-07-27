@@ -293,6 +293,64 @@ function onRoleChange(e: Event) {
   gap: 16px;
   align-items: center;
 }
+.mockhost :deep(.mock-row) {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.mockhost :deep(.mocklabel) {
+  font-size: 12px;
+  color: #8a8a8a;
+  padding-bottom: 8px;
+  text-align: center;
+}
+.mockhost :deep(.mock-dialog.alert) {
+  position: relative;
+  width: 320px;
+  padding: 28px 20px 20px;
+  text-align: center;
+}
+.mockhost :deep(.x.corner) {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+}
+.mockhost :deep(.alerticon) {
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 12px;
+  border: 2px solid #fbbf24;
+  border-radius: 50%;
+  color: #fbbf24;
+  font-weight: 700;
+  line-height: 24px;
+}
+.mockhost :deep(.alerttitle) {
+  font-size: 16px;
+  font-weight: 700;
+  padding-bottom: 6px;
+}
+.mockhost :deep(.alertbody) {
+  font-size: 13px;
+  color: #8a8a8a;
+  padding-bottom: 14px;
+}
+.mockhost :deep(.mock-dialog.alert .reason) {
+  text-align: left;
+  margin: 0 0 16px;
+  background: #1b1d23;
+  border-radius: 8px;
+  padding: 10px;
+  color: #8a8a8a;
+  font-size: 13px;
+}
+.mockhost :deep(.backlink) {
+  padding-top: 12px;
+  font-size: 13px;
+  color: #8a8a8a;
+}
 .mockhost :deep(.mock-dialog) {
   width: 400px;
   background: #141519;
