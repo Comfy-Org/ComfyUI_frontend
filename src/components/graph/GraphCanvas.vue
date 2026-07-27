@@ -110,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { until, useEventListener } from '@vueuse/core'
+import { until, useEventListener, whenever } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -153,7 +153,6 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { NodeState } from '@/types/nodeState'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
@@ -173,7 +172,9 @@ import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/w
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -253,8 +254,22 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-// Vue node system
-const vueNodeLifecycle = useVueNodeLifecycle()
+// Layout↔LiteGraph sync. Node geometry registers itself in LGraph.add, so all
+// that is needed here is dropping view-scoped geometry when the viewed graph
+// changes and running the sync for as long as Vue nodes are rendering.
+const { startSync, stopSync } = useLayoutSync()
+
+const startVueNodeLayout = () => {
+  layoutStore.clearViewGeometry()
+  // Start sync AFTER the reset so bootstrap operations don't trigger the
+  // Layout→LiteGraph writeback loop redundantly.
+  startSync(canvasStore.canvas)
+}
+
+const stopVueNodeLayout = () => {
+  stopSync()
+  layoutStore.clearViewGeometry()
+}
 
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
@@ -267,12 +282,31 @@ watch(
 )
 
 const handleVueNodeLifecycleReset = async () => {
-  if (shouldRenderVueNodes.value) {
-    vueNodeLifecycle.disposeVueNodeLayout()
-    await nextTick()
-    vueNodeLifecycle.initializeVueNodeLayout()
-  }
+  if (!shouldRenderVueNodes.value) return
+
+  stopSync()
+  await nextTick()
+  startVueNodeLayout()
 }
+
+watch(
+  () => shouldRenderVueNodes.value && Boolean(comfyApp.canvas?.graph),
+  (enabled) => {
+    if (enabled) startVueNodeLayout()
+  },
+  { immediate: true }
+)
+
+whenever(
+  () => !shouldRenderVueNodes.value,
+  () => {
+    stopVueNodeLayout()
+
+    const graph = comfyApp.canvas?.graph
+    if (graph) arrangeForLegacyRender(graph)
+    comfyApp.canvas?.setDirty(true, true)
+  }
+)
 
 watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
 
@@ -585,7 +619,7 @@ onMounted(async () => {
 onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
-  vueNodeLifecycle.disposeVueNodeLayout()
+  stopSync()
 })
 function forwardPointerDownPanEvent(e: PointerEvent) {
   forwardPanEvent(e, isMiddlePointerInput)
