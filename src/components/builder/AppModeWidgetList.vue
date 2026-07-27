@@ -26,14 +26,32 @@ import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 
-interface WidgetEntry {
+interface WidgetAction {
+  widget: IBaseWidget
+  node: LGraphNode
+}
+
+interface AvailableWidgetEntry {
+  status: 'available'
   key: string
+  label: string
+  nodeTitle: string
   persistedHeight: number | undefined
   nodeData: ReturnType<typeof nodeToNodeData> & {
     widgets: NonNullable<ReturnType<typeof nodeToNodeData>['widgets']>
   }
-  action: { widget: IBaseWidget; node: LGraphNode }
+  action: WidgetAction
 }
+
+interface UnavailableWidgetEntry {
+  status: 'unavailable'
+  key: string
+  label: string
+  nodeTitle?: string
+  action?: WidgetAction
+}
+
+type WidgetEntry = AvailableWidgetEntry | UnavailableWidgetEntry
 
 const { mobile = false, builderMode = false } = defineProps<{
   mobile?: boolean
@@ -60,10 +78,28 @@ const mappedSelections = computed((): WidgetEntry[] => {
     ReturnType<typeof nodeToNodeData>
   >()
 
-  return resolvedInputs.value.flatMap((entry) => {
-    if (entry.status !== 'resolved') return []
+  return resolvedInputs.value.flatMap((entry): WidgetEntry[] => {
+    if (entry.status !== 'resolved') {
+      return [
+        {
+          status: 'unavailable',
+          key: entry.widgetId,
+          label: entry.displayName
+        }
+      ]
+    }
     const { widgetId, node, widget, config } = entry
-    if (node.mode !== LGraphEventMode.ALWAYS) return []
+    if (node.mode !== LGraphEventMode.ALWAYS) {
+      return [
+        {
+          status: 'unavailable',
+          key: widgetId,
+          label: widget.label || widget.name,
+          nodeTitle: node.title,
+          action: { widget, node }
+        }
+      ]
+    }
 
     if (!nodeDataByNode.has(node)) {
       nodeDataByNode.set(node, nodeToNodeData(node))
@@ -81,7 +117,10 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
     return [
       {
+        status: 'available',
         key: widgetId,
+        label: widget.label || widget.name,
+        nodeTitle: node.title,
         persistedHeight: config?.height,
         nodeData: {
           ...fullNodeData,
@@ -92,6 +131,21 @@ const mappedSelections = computed((): WidgetEntry[] => {
     ]
   })
 })
+
+function widgetMenuEntries({ widget, node }: WidgetAction) {
+  return [
+    {
+      label: t('g.rename'),
+      icon: 'icon-[lucide--pencil]',
+      command: () => promptRenameWidget(widget, node, t)
+    },
+    {
+      label: t('g.remove'),
+      icon: 'icon-[lucide--x]',
+      command: () => appModeStore.removeSelectedInput(widget)
+    }
+  ]
+}
 
 function getDropIndicator(node: LGraphNode) {
   if (node.type !== 'LoadImage') return undefined
@@ -135,8 +189,12 @@ function nodeToNodeData(node: LGraphNode) {
 
 async function handleDragDrop() {
   const onDragDrop = async (e: DragEvent) => {
-    for (const { nodeData } of mappedSelections.value)
-      if (nodeData?.onDragOver?.(e) && (await nodeData.onDragDrop?.(e)))
+    for (const entry of mappedSelections.value)
+      if (
+        entry.status === 'available' &&
+        entry.nodeData.onDragOver?.(e) &&
+        (await entry.nodeData.onDragDrop?.(e))
+      )
         return true
     return false
   }
@@ -148,8 +206,8 @@ defineExpose({ handleDragDrop })
 </script>
 <template>
   <div
-    v-for="{ key, persistedHeight, nodeData, action } in mappedSelections"
-    :key
+    v-for="entry in mappedSelections"
+    :key="entry.key"
     :class="
       cn(
         builderMode &&
@@ -158,11 +216,11 @@ defineExpose({ handleDragDrop })
     "
     :aria-label="
       builderMode
-        ? `${action.widget.label ?? action.widget.name} — ${action.node.title}`
+        ? [entry.label, entry.nodeTitle].filter(Boolean).join(' — ')
         : undefined
     "
     :data-testid="builderMode ? 'builder-widget-item' : 'app-mode-widget-item'"
-    :data-widget-key="key"
+    :data-widget-key="entry.key"
   >
     <div
       :class="
@@ -176,29 +234,19 @@ defineExpose({ handleDragDrop })
         :class="cn('truncate text-sm/8', builderMode && 'pointer-events-none')"
         data-testid="builder-widget-label"
       >
-        {{ action.widget.label || action.widget.name }}
+        {{ entry.label }}
       </span>
       <span
-        v-if="builderMode"
+        v-if="builderMode && entry.nodeTitle"
         class="pointer-events-none mx-1 min-w-10 flex-1 truncate text-right text-xs text-muted-foreground"
       >
-        {{ action.node.title }}
+        {{ entry.nodeTitle }}
       </span>
       <div v-else class="flex-1" />
       <Popover
+        v-if="entry.action"
         :class="cn('shrink-0', builderMode && 'pointer-events-auto')"
-        :entries="[
-          {
-            label: t('g.rename'),
-            icon: 'icon-[lucide--pencil]',
-            command: () => promptRenameWidget(action.widget, action.node, t)
-          },
-          {
-            label: t('g.remove'),
-            icon: 'icon-[lucide--x]',
-            command: () => appModeStore.removeSelectedInput(action.widget)
-          }
-        ]"
+        :entries="widgetMenuEntries(entry.action)"
       >
         <template #button>
           <Button
@@ -212,37 +260,47 @@ defineExpose({ handleDragDrop })
       </Popover>
     </div>
     <div
+      v-if="entry.status === 'available'"
       :style="
-        persistedHeight
-          ? { '--persisted-height': `${persistedHeight}px` }
+        entry.persistedHeight
+          ? { '--persisted-height': `${entry.persistedHeight}px` }
           : undefined
       "
       :class="
         cn(
           builderMode && 'pointer-events-none',
-          persistedHeight &&
+          entry.persistedHeight &&
             '**:data-[slot=drop-zone-indicator]:h-(--persisted-height) [&_textarea]:h-(--persisted-height)'
         )
       "
       :inert="builderMode || undefined"
-      @pointerdown.capture="(e) => onPointerDown(action.widget, e)"
+      @pointerdown.capture="(e) => onPointerDown(entry.action.widget, e)"
     >
       <DropZone
-        :on-drag-over="nodeData.onDragOver"
-        :on-drag-drop="nodeData.onDragDrop"
-        :drop-indicator="nodeData.dropIndicator"
+        :on-drag-over="entry.nodeData.onDragOver"
+        :on-drag-drop="entry.nodeData.onDragDrop"
+        :drop-indicator="entry.nodeData.dropIndicator"
         class="text-muted-foreground"
       >
         <NodeWidgets
-          :node-data
+          :node-data="entry.nodeData"
           :class="
             cn(
               'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
-              nodeData.hasErrors && 'ring-2 ring-node-stroke-error ring-inset'
+              entry.nodeData.hasErrors &&
+                'ring-2 ring-node-stroke-error ring-inset'
             )
           "
         />
       </DropZone>
+    </div>
+    <div
+      v-else
+      class="mx-3 mb-1.5 flex items-center gap-2 rounded-lg border border-dashed border-border-subtle px-3 py-2 text-sm text-muted-foreground"
+      data-testid="widget-unavailable"
+    >
+      <i class="icon-[lucide--eye-off] shrink-0" />
+      <span>{{ t('linearMode.widgetUnavailable') }}</span>
     </div>
   </div>
 </template>
