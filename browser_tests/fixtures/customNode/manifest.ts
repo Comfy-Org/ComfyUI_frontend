@@ -265,10 +265,17 @@ export function assertCloudManifestShape(
     manifest === null ||
     invalidRecordOf(manifest.coreDisabledNodes, isLabelList) ||
     !Array.isArray(manifest.packs) ||
-    manifest.packs.length === 0
+    manifest.packs.length === 0 ||
+    // Required, and an empty array is the deliberate "every yaml pack joined"
+    // declaration - the live assert reads this list, so a missing or malformed
+    // one would silently assert nothing.
+    !Array.isArray(manifest.unjoinedYamlPacks) ||
+    !manifest.unjoinedYamlPacks.every(isNonEmptyString) ||
+    new Set(manifest.unjoinedYamlPacks).size !==
+      manifest.unjoinedYamlPacks.length
   )
     throw new Error(
-      `${sourcePath} is malformed (expected { coreDisabledNodes, packs } with at least one pack): regenerate it via 'pnpm gen:cloud-manifest'`
+      `${sourcePath} is malformed (expected { coreDisabledNodes, packs, unjoinedYamlPacks } with at least one pack): regenerate it via 'pnpm gen:cloud-manifest'`
     )
   manifest.packs.forEach(assertCloudEntry)
   return manifest
