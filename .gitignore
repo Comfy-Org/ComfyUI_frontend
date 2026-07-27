@@ -96,4 +96,4 @@ vitest.config.*.timestamp*
 # Weekly docs check output
 /output.txt
 
-.amp
+.ampdist-states/

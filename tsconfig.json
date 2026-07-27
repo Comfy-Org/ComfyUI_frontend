@@ -50,6 +50,7 @@
     "playwright.config.ts",
     "playwright.i18n.config.ts",
     "vite.config.mts",
+    "vite.states.config.mts",
     "vitest.config.ts"
     // "vitest.setup.ts",
   ]
