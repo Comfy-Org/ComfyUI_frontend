@@ -5,6 +5,7 @@ import type {
 } from 'axios'
 import axios, { AxiosHeaders } from 'axios'
 
+import { reportUnauthorized } from '@/platform/auth/session/sessionExpiry'
 import { isCloud } from '@/platform/distribution/types'
 
 let cachedUnifiedFlags:
@@ -84,14 +85,7 @@ export async function fetchWithUnifiedRemint(
       ? input.clone()
       : input
   const response = await fetch(input, init)
-  if (!shouldRetryOn401 || response.status !== 401) {
-    return response
-  }
-
-  if (init.body instanceof ReadableStream) {
-    console.warn(
-      'fetchWithUnifiedRemint: a ReadableStream body is not replayable; surfacing the original 401'
-    )
+  if (response.status !== 401) {
     return response
   }
 
@@ -99,25 +93,33 @@ export async function fetchWithUnifiedRemint(
   const expectedToken = bearerToken(requestHeaders.get('Authorization'))
   if (!expectedToken) return response
 
-  const token = await tryRemintToken(expectedToken)
+  const replayable = !(init.body instanceof ReadableStream)
+  if (shouldRetryOn401 && !replayable) {
+    console.warn(
+      'fetchWithUnifiedRemint: a ReadableStream body is not replayable; surfacing the original 401'
+    )
+  }
+
+  const token =
+    shouldRetryOn401 && replayable ? await tryRemintToken(expectedToken) : null
   if (!token) {
+    void reportUnauthorized()
     return response
   }
 
   const headers = requestHeaders
   headers.set('Authorization', `Bearer ${token}`)
-  return fetch(retryInput, { ...init, headers })
+  const retried = await fetch(retryInput, { ...init, headers })
+  if (retried.status === 401) void reportUnauthorized()
+  return retried
 }
 
-function isRetriableUnauthorized(
+function isAuthenticated401(
   error: unknown
 ): error is AxiosError & { config: InternalAxiosRequestConfig } {
   if (!axios.isAxiosError(error)) return false
-  const config = error.config
-  if (!config || config.__unifiedRetried || config.__skipUnifiedRemint) {
-    return false
-  }
-  return error.response?.status === 401
+  if (error.response?.status !== 401) return false
+  return error.config !== undefined
 }
 
 /**
@@ -131,28 +133,27 @@ export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
   client.interceptors.response.use(
     (response) => response,
     async (error: unknown) => {
-      if (
-        !isRetriableUnauthorized(error) ||
-        !(await shouldRemintCloudRequest())
-      ) {
-        throw error
-      }
+      if (!isAuthenticated401(error)) throw error
 
+      const { config } = error
       const expectedToken = bearerToken(
-        new AxiosHeaders(error.config.headers).get('Authorization')
+        new AxiosHeaders(config.headers).get('Authorization')
       )
-      if (!expectedToken) {
-        throw error
-      }
+      if (!expectedToken) throw error
 
-      const token = await tryRemintToken(expectedToken)
+      const mayRemint =
+        !config.__unifiedRetried &&
+        !config.__skipUnifiedRemint &&
+        (await shouldRemintCloudRequest())
+      const token = mayRemint ? await tryRemintToken(expectedToken) : null
+
       if (!token) {
+        void reportUnauthorized()
         throw error
       }
 
       // Clone (don't mutate) the caller's config so the re-minted Bearer never
       // leaks into a caller-retained reference, matching fetchWithUnifiedRemint.
-      const { config } = error
       const headers = new AxiosHeaders(config.headers)
       headers.set('Authorization', `Bearer ${token}`)
       return client.request({ ...config, headers, __unifiedRetried: true })

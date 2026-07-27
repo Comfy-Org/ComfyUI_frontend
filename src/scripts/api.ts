@@ -6,6 +6,7 @@ import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import { isSessionTerminated } from '@/platform/auth/session/sessionExpiry'
 import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
@@ -461,6 +462,7 @@ export class ComfyApi extends EventTarget {
     let unifiedRetryOn401 = false
 
     if (isCloud) {
+      if (isSessionTerminated()) return new Response(null, { status: 401 })
       await this.waitForAuthInitialization()
 
       // Get Firebase JWT token if user is logged in

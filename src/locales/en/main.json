@@ -2447,6 +2447,10 @@
     "loginButton": {
       "tooltipHelp": "Login to be able to use \"API Nodes\"",
       "tooltipLearnMore": "Learn more..."
+    },
+    "sessionExpired": {
+      "title": "Session expired",
+      "detail": "Your session is no longer valid. Please sign in again."
     }
   },
   "desktopLogin": {
