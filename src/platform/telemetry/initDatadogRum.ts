@@ -28,12 +28,18 @@ async function setFrontendContext(): Promise<void> {
   datadogRum.setGlobalContextProperty('version', frontendVersion)
 }
 
-async function initializeDatadogRum(env: string): Promise<void> {
+async function initializeDatadogRum(
+  env: string,
+  clientToken?: string
+): Promise<void> {
   await setFrontendContext().catch(() => {})
   if (datadogRum.getInitConfiguration()) return
+  if (clientToken) {
+    datadogRum.setGlobalContextProperty('local_rum', true)
+  }
 
   datadogRum.init({
-    clientToken: 'pub7704486e5b64eb4ff6f62891cda45559',
+    clientToken: clientToken ?? 'pub7704486e5b64eb4ff6f62891cda45559',
     applicationId: '041a9897-5516-4b1f-a245-1a9aa6895488',
     site: 'us5.datadoghq.com',
     service: 'comfy-cloud-frontend',
@@ -49,13 +55,19 @@ async function initializeDatadogRum(env: string): Promise<void> {
 export function initDatadogRum(
   hostname = window.location.hostname
 ): Promise<void> {
+  const clientToken =
+    hostname === 'localhost'
+      ? import.meta.env.VITE_LOCAL_DATADOG_RUM_CLIENT_TOKEN
+      : undefined
   const env =
-    DATADOG_ENV_BY_HOSTNAME.get(hostname) ??
+    (clientToken ? 'test-v2' : DATADOG_ENV_BY_HOSTNAME.get(hostname)) ??
     (hostname.endsWith('.testenvs.comfy.org') ? 'test-v2' : undefined)
   if (!env || datadogRum.getInitConfiguration()) return Promise.resolve()
 
-  initializationPromise ??= initializeDatadogRum(env).finally(() => {
-    initializationPromise = undefined
-  })
+  initializationPromise ??= initializeDatadogRum(env, clientToken).finally(
+    () => {
+      initializationPromise = undefined
+    }
+  )
   return initializationPromise
 }

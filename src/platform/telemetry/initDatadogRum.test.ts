@@ -37,6 +37,7 @@ describe('initDatadogRum', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
     vi.unstubAllGlobals()
   })
 
@@ -64,6 +65,20 @@ describe('initDatadogRum', () => {
       })
     }
   )
+
+  it('initializes opted-in localhost RUM in test-v2', async () => {
+    vi.stubEnv('VITE_LOCAL_DATADOG_RUM_CLIENT_TOKEN', 'local-client-token')
+
+    await initDatadogRum('localhost')
+
+    expect(hoisted.context).toEqual({ local_rum: true })
+    expect(hoisted.init).toHaveBeenCalledWith(
+      expect.objectContaining({
+        clientToken: 'local-client-token',
+        env: 'test-v2'
+      })
+    )
+  })
 
   it('tags canary traffic with its bucket and frontend version', async () => {
     let resolveProbe: (response: Response) => void
