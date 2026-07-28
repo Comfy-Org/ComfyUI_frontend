@@ -4,6 +4,23 @@ import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 describe('markdownRendererUtil', () => {
   describe('renderMarkdownToHtml', () => {
+    it('resolves a relative link href against the base URL', () => {
+      const html = renderMarkdownToHtml(
+        '[result](view?filename=gen.png)',
+        'http://host/api'
+      )
+      expect(html).toContain('href="http://host/api/view?filename=gen.png"')
+    })
+
+    it('leaves absolute and rooted link hrefs alone', () => {
+      const html = renderMarkdownToHtml(
+        '[a](https://example.com/x) [b](/api/view?f=1)',
+        'http://host/api'
+      )
+      expect(html).toContain('href="https://example.com/x"')
+      expect(html).toContain('href="/api/view?f=1"')
+    })
+
     it('should render basic markdown to HTML', () => {
       const markdown = '# Hello\n\nThis is a test.'
       const html = renderMarkdownToHtml(markdown)
