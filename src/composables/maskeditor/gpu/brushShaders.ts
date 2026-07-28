@@ -32,7 +32,7 @@ fn vs(
     vec4<f32>(ndcX, ndcY, 0.0, 1.0),
     quadPos,
     globals.brushColor,
-    pressure * globals.opacity,
+    pressure * globals.brushOpacity,
     globals.hardness
   );
 }
@@ -119,7 +119,7 @@ const compositeShaderTemplate = `
 @fragment fn fs(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
   let sampled = textureLoad(myTexture, vec2<i32>(pos.xy), 0);
   // Apply global brush opacity to accumulated coverage
-  return sampled * globals.opacity;
+  return sampled * globals.brushOpacity;
 }
 `
 
