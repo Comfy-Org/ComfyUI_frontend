@@ -61,11 +61,18 @@ export interface ChurnkeySession {
 }
 
 class UnsupportedChurnkeyOfferError extends Error {}
+class ChurnkeySessionTimeoutError extends Error {}
 
 export function isUnsupportedChurnkeyOfferError(
   error: unknown
 ): error is UnsupportedChurnkeyOfferError {
   return error instanceof UnsupportedChurnkeyOfferError
+}
+
+export function isChurnkeySessionTimeoutError(
+  error: unknown
+): error is ChurnkeySessionTimeoutError {
+  return error instanceof ChurnkeySessionTimeoutError
 }
 
 function createSession(
@@ -124,7 +131,9 @@ function createSession(
             runBestEffort(() => {
               window.churnkey?.hide?.()
             })
-            reject(new Error('ChurnKey session timed out'))
+            reject(
+              new ChurnkeySessionTimeoutError('ChurnKey session timed out')
+            )
           })
         }, SESSION_TIMEOUT_MS)
 

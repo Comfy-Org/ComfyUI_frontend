@@ -730,7 +730,13 @@ export const workspaceApi = {
         { headers }
       )
       const result = churnkeyAuthResponseSchema.safeParse(response.data)
-      return result.success ? result.data : null
+      if (result.success) return result.data
+
+      console.warn(
+        'Received invalid ChurnKey auth response',
+        result.error.issues
+      )
+      return null
     } catch (err) {
       if (
         axios.isAxiosError(err) &&

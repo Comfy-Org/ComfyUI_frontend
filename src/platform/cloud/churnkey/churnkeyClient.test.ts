@@ -30,6 +30,7 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
 }))
 
 import {
+  isChurnkeySessionTimeoutError,
   isUnsupportedChurnkeyOfferError,
   prepareChurnkey
 } from './churnkeyClient'
@@ -216,9 +217,7 @@ describe('churnkeyClient', () => {
 
       await vi.runOnlyPendingTimersAsync()
 
-      expect(await timeoutResult).toEqual(
-        new Error('ChurnKey session timed out')
-      )
+      expect(isChurnkeySessionTimeoutError(await timeoutResult)).toBe(true)
       expect(mocks.hide).toHaveBeenCalledOnce()
       expect(mocks.clearState).toHaveBeenCalledOnce()
     } finally {

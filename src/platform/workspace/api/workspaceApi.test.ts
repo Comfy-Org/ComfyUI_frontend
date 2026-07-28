@@ -419,8 +419,13 @@ describe('workspaceApi', () => {
       }
     ])('getChurnkeyAuth() falls back on malformed data', async (data) => {
       mockAxiosInstance.get.mockResolvedValue({ data })
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
 
       await expect(workspaceApi.getChurnkeyAuth()).resolves.toBeNull()
+      expect(warn).toHaveBeenCalledWith(
+        'Received invalid ChurnKey auth response',
+        expect.any(Array)
+      )
     })
 
     it.for([404, 503])(

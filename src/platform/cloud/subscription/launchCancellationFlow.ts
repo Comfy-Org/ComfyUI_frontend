@@ -3,6 +3,7 @@ import { withTimeout } from 'es-toolkit/promise'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import {
+  isChurnkeySessionTimeoutError,
   isUnsupportedChurnkeyOfferError,
   prepareChurnkey
 } from '@/platform/cloud/churnkey/churnkeyClient'
@@ -51,6 +52,8 @@ export async function launchCancellationFlow({
   inFlight = true
   try {
     await runCancellationFlow(cancelAt, showFallback)
+  } catch (error) {
+    console.error('Failed to launch subscription cancellation flow:', error)
   } finally {
     inFlight = false
   }
@@ -102,7 +105,7 @@ async function runCancellationFlow(
   telemetry?.trackSubscriptionCancellation('flow_opened', metadata)
 
   try {
-    const results = await session.show({
+    await session.show({
       customerAttributes: customerAttributes(billing),
       handleCancel: async () => {
         if (!isLaunchWorkspaceCurrent()) {
@@ -132,11 +135,15 @@ async function runCancellationFlow(
     })
 
     if (cancelError) throw cancelError
-    if (!didCancelSucceed && results.aborted === true) {
+    if (!didCancelSucceed) {
       telemetry?.trackSubscriptionCancellation('abandoned', metadata)
     }
   } catch (error) {
     if (didCancelSucceed || !isLaunchWorkspaceCurrent()) return
+    if (isChurnkeySessionTimeoutError(error)) {
+      telemetry?.trackSubscriptionCancellation('abandoned', metadata)
+      return
+    }
     telemetry?.trackSubscriptionCancellation('failed', {
       ...metadata,
       error_message:

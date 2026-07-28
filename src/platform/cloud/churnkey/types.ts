@@ -6,11 +6,7 @@ export interface ChurnkeyHandlerResult {
   message?: string
 }
 
-export interface ChurnkeySessionResults {
-  aborted?: boolean
-  canceled?: boolean
-  acceptedOffer?: Record<string, unknown> | null
-}
+export type ChurnkeySessionResults = unknown
 
 type ChurnkeyUnsupportedHandler = (
   ...args: unknown[]

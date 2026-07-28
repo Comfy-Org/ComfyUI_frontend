@@ -25,7 +25,8 @@ const mocks = vi.hoisted(() => ({
   trackCancellation: vi.fn(),
   toastAdd: vi.fn(),
   canManageSubscriptionLifecycle: true,
-  unsupportedOfferError: new Error('Unsupported ChurnKey offer')
+  unsupportedOfferError: new Error('Unsupported ChurnKey offer'),
+  sessionTimeoutError: new Error('ChurnKey session timed out')
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -42,6 +43,8 @@ vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
 vi.mock('@/platform/cloud/churnkey/churnkeyClient', () => ({
   prepareChurnkey: mocks.prepare,
+  isChurnkeySessionTimeoutError: (error: unknown) =>
+    error === mocks.sessionTimeoutError,
   isUnsupportedChurnkeyOfferError: (error: unknown) =>
     error === mocks.unsupportedOfferError
 }))
@@ -93,6 +96,7 @@ describe('launchCancellationFlow', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     mocks.billingType.value = 'workspace'
     mocks.activeWorkspaceId = 'workspace-1'
     mocks.billingRail = 'stripe'
@@ -162,7 +166,7 @@ describe('launchCancellationFlow', () => {
   })
 
   it('tracks an abandoned flow when the user closes the embed', async () => {
-    mocks.prepare.mockResolvedValue(session(async () => ({ aborted: true })))
+    mocks.prepare.mockResolvedValue(session(async () => ({})))
 
     await launchCancellationFlow({ showFallback: vi.fn() })
 
@@ -250,6 +254,28 @@ describe('launchCancellationFlow', () => {
     expect(showFallback).not.toHaveBeenCalled()
   })
 
+  it('treats an expired embed session as abandoned', async () => {
+    mocks.prepare.mockResolvedValue(
+      session(async () => {
+        throw mocks.sessionTimeoutError
+      })
+    )
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(mocks.trackCancellation).toHaveBeenLastCalledWith(
+      'abandoned',
+      expect.anything()
+    )
+    expect(mocks.trackCancellation).not.toHaveBeenCalledWith(
+      'failed',
+      expect.anything()
+    )
+    expect(mocks.toastAdd).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
+  })
+
   it('times out a cancellation without opening the native dialog', async () => {
     vi.useFakeTimers()
     try {
@@ -297,6 +323,21 @@ describe('launchCancellationFlow', () => {
     expect(mocks.trackCancellation).not.toHaveBeenCalledWith(
       'failed',
       expect.anything()
+    )
+  })
+
+  it('contains failures from the native fallback', async () => {
+    mocks.billingType.value = 'legacy'
+    const error = new Error('Dialog failed')
+    const showFallback = vi.fn().mockRejectedValue(error)
+
+    await expect(
+      launchCancellationFlow({ showFallback })
+    ).resolves.toBeUndefined()
+
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to launch subscription cancellation flow:',
+      error
     )
   })
 
