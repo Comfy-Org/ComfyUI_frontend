@@ -8,15 +8,8 @@ import type { ChurnkeySessionResults } from '@/platform/cloud/churnkey/types'
 
 const mocks = vi.hoisted(() => ({
   billingType: { value: 'workspace' },
-  subscription: {
-    value: {
-      tier: 'PRO',
-      duration: 'MONTHLY',
-      planSlug: 'creator-monthly',
-      endDate: '2026-08-01T00:00:00Z'
-    }
-  },
   tier: { value: 'PRO' },
+  activeWorkspaceId: 'workspace-1' as string | null,
   billingRail: 'stripe' as 'legacy_stripe' | 'metronome' | 'stripe' | null,
   cancelSubscription: vi.fn(),
   prepare: vi.fn(),
@@ -26,7 +19,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     type: mocks.billingType,
-    subscription: mocks.subscription,
     tier: mocks.tier,
     cancelSubscription: mocks.cancelSubscription
   })
@@ -46,6 +38,9 @@ vi.mock('@/platform/telemetry', () => ({
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
+    get activeWorkspaceId() {
+      return mocks.activeWorkspaceId
+    },
     get activeWorkspaceBillingRail() {
       return mocks.billingRail
     }
@@ -64,6 +59,7 @@ describe('launchCancellationFlow', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mocks.billingType.value = 'workspace'
+    mocks.activeWorkspaceId = 'workspace-1'
     mocks.billingRail = 'stripe'
     mocks.cancelSubscription.mockResolvedValue(undefined)
   })
@@ -107,17 +103,12 @@ describe('launchCancellationFlow', () => {
     )
     const showFallback = vi.fn()
 
-    await launchCancellationFlow({
-      cancelAt: '2026-08-01T00:00:00Z',
-      showFallback
-    })
+    await launchCancellationFlow({ showFallback })
 
     expect(mocks.cancelSubscription).toHaveBeenCalledOnce()
     expect(mocks.trackCancellation).toHaveBeenNthCalledWith(1, 'flow_opened', {
       source: 'cancel_plan_menu',
-      current_tier: 'pro',
-      cycle: 'monthly',
-      end_date: '2026-08-01T00:00:00Z'
+      current_tier: 'pro'
     })
     expect(mocks.trackCancellation).toHaveBeenNthCalledWith(
       2,
@@ -185,5 +176,41 @@ describe('launchCancellationFlow', () => {
       expect.objectContaining({ error_message: 'API down' })
     )
     expect(showFallback).toHaveBeenCalledOnce()
+  })
+
+  it('stops when the active workspace changes during preparation', async () => {
+    let finishPreparation: ((value: ChurnkeySession) => void) | undefined
+    const show = vi.fn().mockResolvedValue({ aborted: true })
+    mocks.prepare.mockReturnValue(
+      new Promise((resolve) => {
+        finishPreparation = resolve
+      })
+    )
+    const showFallback = vi.fn()
+
+    const flow = launchCancellationFlow({ showFallback })
+    await vi.waitFor(() => expect(finishPreparation).toBeTypeOf('function'))
+    mocks.activeWorkspaceId = 'workspace-2'
+    finishPreparation?.(session(show))
+    await flow
+
+    expect(show).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
+  })
+
+  it('does not cancel after the active workspace changes', async () => {
+    mocks.prepare.mockResolvedValue(
+      session(async (options) => {
+        mocks.activeWorkspaceId = 'workspace-2'
+        await options.handleCancel()
+        return { aborted: false }
+      })
+    )
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(mocks.cancelSubscription).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
   })
 })

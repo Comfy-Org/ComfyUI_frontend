@@ -7,59 +7,49 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { getErrorMessage } from '@/utils/errorUtil'
 
 interface LaunchCancellationFlowOptions {
-  cancelAt?: string
   showFallback: () => void | Promise<unknown>
 }
 
-function cancellationMetadata(
-  billing: ReturnType<typeof useBillingContext>,
-  cancelAt?: string
-): SubscriptionCancellationMetadata {
-  const subscription = billing.subscription.value
-  const endDate = cancelAt ?? subscription?.endDate
-  return {
-    source: 'cancel_plan_menu',
-    current_tier: billing.tier.value?.toLowerCase(),
-    ...(subscription?.duration
-      ? {
-          cycle:
-            subscription.duration === 'ANNUAL'
-              ? ('yearly' as const)
-              : ('monthly' as const)
-        }
-      : {}),
-    ...(endDate ? { end_date: endDate } : {})
-  }
-}
-
 export async function launchCancellationFlow({
-  cancelAt,
   showFallback
 }: LaunchCancellationFlowOptions): Promise<void> {
   const billing = useBillingContext()
   const workspaceStore = useTeamWorkspaceStore()
+  const launchWorkspaceId = workspaceStore.activeWorkspaceId
   if (
     billing.type.value !== 'workspace' ||
+    !launchWorkspaceId ||
     workspaceStore.activeWorkspaceBillingRail !== 'stripe'
   ) {
     await showFallback()
     return
   }
 
-  const session = await prepareChurnkey().catch(() => null)
-  if (!session) {
-    await showFallback()
-    return
+  function isLaunchWorkspaceCurrent() {
+    return workspaceStore.activeWorkspaceId === launchWorkspaceId
   }
 
+  const session = await prepareChurnkey().catch(() => null)
+  if (!session) {
+    if (isLaunchWorkspaceCurrent()) await showFallback()
+    return
+  }
+  if (!isLaunchWorkspaceCurrent()) return
+
   const telemetry = useTelemetry()
-  const metadata = cancellationMetadata(billing, cancelAt)
+  const metadata: SubscriptionCancellationMetadata = {
+    source: 'cancel_plan_menu',
+    current_tier: billing.tier.value?.toLowerCase()
+  }
 
   telemetry?.trackSubscriptionCancellation('flow_opened', metadata)
 
   try {
     const results = await session.show({
       handleCancel: async () => {
+        if (!isLaunchWorkspaceCurrent()) {
+          throw new Error('Active workspace changed during cancellation')
+        }
         telemetry?.trackSubscriptionCancellation('confirmed', metadata)
         try {
           await billing.cancelSubscription()
@@ -77,6 +67,7 @@ export async function launchCancellationFlow({
       telemetry?.trackSubscriptionCancellation('abandoned', metadata)
     }
   } catch (error) {
+    if (!isLaunchWorkspaceCurrent()) return
     telemetry?.trackSubscriptionCancellation('failed', {
       ...metadata,
       error_message: getErrorMessage(error) ?? t('g.unknownError')

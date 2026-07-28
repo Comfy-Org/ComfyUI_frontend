@@ -106,6 +106,35 @@ describe('churnkeyClient', () => {
     expect(mocks.init).not.toHaveBeenCalled()
   })
 
+  it('waits for an in-flight cancellation before settling close', async () => {
+    let rejectCancellation: ((reason: Error) => void) | undefined
+    const cancellation = new Promise<never>((_resolve, reject) => {
+      rejectCancellation = reject
+    })
+    const session = await prepareChurnkey()
+    if (!session) throw new Error('Expected a Churnkey session')
+
+    const showPromise = session.show({
+      handleCancel: () => cancellation
+    })
+    const config = capturedConfig()
+    const handlerPromise = config.handleCancel({}, null, null)
+    config.onClose({ aborted: true })
+
+    const pending = Symbol('pending')
+    await expect(
+      Promise.race([showPromise, Promise.resolve(pending)])
+    ).resolves.toBe(pending)
+
+    const error = new Error('cancel failed')
+    void handlerPromise.catch(() => undefined)
+    void showPromise.catch(() => undefined)
+    rejectCancellation?.(error)
+
+    await expect(handlerPromise).rejects.toThrow(error)
+    await expect(showPromise).rejects.toThrow(error)
+  })
+
   it('cleans up when ChurnKey initialization throws synchronously', async () => {
     const session = await prepareChurnkey()
     if (!session) throw new Error('Expected a Churnkey session')

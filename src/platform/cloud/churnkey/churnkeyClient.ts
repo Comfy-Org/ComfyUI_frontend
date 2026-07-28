@@ -56,6 +56,7 @@ function createSession(
     show: (options) =>
       new Promise<ChurnkeySessionResults>((resolve, reject) => {
         let settled = false
+        let pendingCancellation: Promise<ChurnkeyHandlerResult> | null = null
 
         function settle(fn: () => void) {
           if (settled) return
@@ -70,15 +71,29 @@ function createSession(
           customerId: auth.customer_id,
           provider: 'stripe',
           mode: auth.mode,
-          handleCancel: (_customer, surveyResponse, freeformFeedback) =>
-            options.handleCancel(surveyResponse, freeformFeedback),
+          handleCancel: (_customer, surveyResponse, freeformFeedback) => {
+            pendingCancellation = options.handleCancel(
+              surveyResponse,
+              freeformFeedback
+            )
+            return pendingCancellation
+          },
           handlePause: rejectUnsupportedOffer,
           handleDiscount: rejectUnsupportedOffer,
           handleTrialExtension: rejectUnsupportedOffer,
           handlePlanChange: rejectUnsupportedOffer,
           handleRebate: rejectUnsupportedOffer,
           handleRedirect: rejectUnsupportedOffer,
-          onClose: (results) => settle(() => resolve(results)),
+          onClose: (results) => {
+            if (!pendingCancellation) {
+              settle(() => resolve(results))
+              return
+            }
+            void pendingCancellation.then(
+              () => settle(() => resolve(results)),
+              (error) => settle(() => reject(toError(error)))
+            )
+          },
           onError: (error, type) =>
             settle(() => {
               window.churnkey?.hide?.()
