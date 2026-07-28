@@ -53,6 +53,18 @@ function isPinned(id: string): id is SupportedTemplateId {
 }
 
 /**
+ * A link test keeps its storage so the URL survives setup, which also keeps the
+ * drafts a previous test left behind. Those drafts read as prior use, and the
+ * tour is only ever offered to a new user.
+ */
+async function clearWorkflowHistory(page: Page) {
+  await page.evaluate(() => {
+    for (const key of Object.keys(localStorage))
+      if (key.startsWith('Comfy.Workflow.')) localStorage.removeItem(key)
+  })
+}
+
+/**
  * The grid backfills whichever curated templates a backend does not serve, so
  * the walk tours a card that is actually on screen rather than a fixed id.
  */
@@ -260,6 +272,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
   test.describe('arriving on a template link', () => {
     test.beforeEach(async ({ comfyPage }) => {
+      await clearWorkflowHistory(comfyPage.page)
       await comfyPage.setup({
         clearStorage: false,
         url: `/?template=${LINKED_TEMPLATE_ID}`
@@ -280,6 +293,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
   test.describe('arriving on a link that loads nothing', () => {
     test.beforeEach(async ({ comfyPage }) => {
+      await clearWorkflowHistory(comfyPage.page)
       await comfyPage.setup({
         clearStorage: false,
         url: '/?template=no_such_template_exists'
