@@ -1,4 +1,5 @@
 import { useStepper } from '@vueuse/core'
+import { isUndefined, omitBy } from 'es-toolkit'
 import { v4 as uuidv4 } from 'uuid'
 import { computed, ref } from 'vue'
 
@@ -74,8 +75,22 @@ export function getCachedPrefill(workflowPath: string): PublishPrefill | null {
   return cachedPrefills.get(workflowPath) ?? null
 }
 
+/**
+ * Server details win field by field, so a response that omits metadata the user
+ * just published still falls back to what was cached locally.
+ */
+export function mergePrefill(
+  base: PublishPrefill | null,
+  override: PublishPrefill | null
+): PublishPrefill | null {
+  if (!base) return override
+  if (!override) return base
+  return { ...base, ...omitBy(override, isUndefined) }
+}
+
 export function useComfyHubPublishWizard() {
   const stepper = useStepper([...PUBLISH_STEPS])
+  const defaults = createDefaultFormData()
   const formData = ref<ComfyHubPublishFormData>(createDefaultFormData())
 
   const canGoNext = computed(() => {
@@ -99,7 +114,6 @@ export function useComfyHubPublishWizard() {
   }
 
   function applyPrefill(prefill: PublishPrefill) {
-    const defaults = createDefaultFormData()
     const current = formData.value
     const hasThumbnail = !!(current.thumbnailFile || current.thumbnailUrl)
     const hasComparisonAfter = !!(

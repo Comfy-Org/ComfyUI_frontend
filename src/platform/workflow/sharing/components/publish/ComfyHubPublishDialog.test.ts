@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import type * as PublishWizard from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
+
 vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -46,7 +48,8 @@ vi.mock(
 
 vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubPublishWizard',
-  () => {
+  async (importOriginal) => {
+    const actual = await importOriginal<typeof PublishWizard>()
     mockFormDataHolder.value = {
       name: '',
       description: '',
@@ -65,6 +68,7 @@ vi.mock(
       metadata: {}
     }
     return {
+      ...actual,
       useComfyHubPublishWizard: () => ({
         currentStep: ref('finish'),
         formData: ref(mockFormDataHolder.value),
@@ -116,7 +120,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   mockWorkflowStore.instance = reactive({
     activeWorkflow: {
       path: 'workflows/test.json',
-      filename: 'test.json',
+      filename: 'test',
       directory: 'workflows',
       isTemporary: false,
       isModified: false
@@ -150,7 +154,7 @@ describe('ComfyHubPublishDialog', () => {
     vi.clearAllMocks()
     setActiveWorkflow({
       path: 'workflows/test.json',
-      filename: 'test.json',
+      filename: 'test',
       directory: 'workflows',
       isTemporary: false,
       isModified: false
@@ -344,6 +348,30 @@ describe('ComfyHubPublishDialog', () => {
     })
   })
 
+  it('fills gaps in the server prefill from the cached prefill', async () => {
+    mockGetCachedPrefill.mockReturnValue({
+      name: 'Cached title',
+      description: 'Cached description',
+      tags: ['art']
+    })
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: true,
+      shareId: 'abc123',
+      shareUrl: 'http://localhost/?share=abc123',
+      publishedAt: new Date(),
+      prefill: { name: 'Published title' }
+    })
+
+    renderComponent()
+    await flushPromises()
+
+    expect(mockApplyPrefill).toHaveBeenCalledWith({
+      name: 'Published title',
+      description: 'Cached description',
+      tags: ['art']
+    })
+  })
+
   it('does not apply prefill when workflow is not published', async () => {
     renderComponent()
     await flushPromises()
@@ -395,7 +423,7 @@ describe('ComfyHubPublishDialog', () => {
     mockGetPublishStatus.mockClear()
     setActiveWorkflow({
       path: 'workflows/renamed.json',
-      filename: 'renamed.json',
+      filename: 'renamed',
       directory: 'workflows',
       isTemporary: false,
       isModified: false
@@ -413,7 +441,7 @@ describe('ComfyHubPublishDialog', () => {
     mockGetPublishStatus.mockClear()
     setActiveWorkflow({
       path: 'workflows/test.json',
-      filename: 'test.json',
+      filename: 'test',
       directory: 'workflows',
       isTemporary: false,
       isModified: true
@@ -447,7 +475,7 @@ describe('ComfyHubPublishDialog', () => {
 
     setActiveWorkflow({
       path: 'workflows/renamed.json',
-      filename: 'renamed.json',
+      filename: 'renamed',
       directory: 'workflows',
       isTemporary: false,
       isModified: false

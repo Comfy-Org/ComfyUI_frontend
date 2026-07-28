@@ -214,24 +214,51 @@ describe(useWorkflowShareService, () => {
     expect(mockFetchApi).toHaveBeenNthCalledWith(2, '/hub/workflows/wf-prefill')
   })
 
-  it('rejects hub workflow details that violate the generated contract', async () => {
+  it('keeps prefill when hub details omit fields the dialog never reads', async () => {
     mockFetchApi
       .mockResolvedValueOnce(
         mockJsonResponse({
-          workflow_id: 'wf-invalid',
-          share_id: 'wf-invalid',
+          workflow_id: 'wf-partial',
+          share_id: 'wf-partial',
           publish_time: '2026-02-23T00:00:00Z',
           listed: true
         })
       )
       .mockResolvedValueOnce(
         mockJsonResponse({
-          name: 'Incomplete response'
+          name: 'Published title',
+          description: 'A cool workflow'
         })
       )
 
     const service = useWorkflowShareService()
-    const status = await service.getPublishStatus('wf-invalid')
+    const status = await service.getPublishStatus('wf-partial')
+
+    expect(status.prefill).toEqual({
+      name: 'Published title',
+      description: 'A cool workflow',
+      tags: undefined,
+      thumbnailType: undefined,
+      thumbnailUrl: undefined,
+      thumbnailComparisonUrl: undefined,
+      sampleImageUrls: undefined
+    })
+  })
+
+  it('returns null prefill when hub details carry no usable fields', async () => {
+    mockFetchApi
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          workflow_id: 'wf-empty',
+          share_id: 'wf-empty',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      )
+      .mockResolvedValueOnce(mockJsonResponse({ status: 'approved' }))
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-empty')
 
     expect(status.isPublished).toBe(true)
     expect(status.prefill).toBeNull()
