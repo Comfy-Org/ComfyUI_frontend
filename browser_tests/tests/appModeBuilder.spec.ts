@@ -13,29 +13,32 @@ test.describe('App mode builder selection', () => {
     await comfyPage.appMode.enableLinearMode()
   })
 
-  test('Can independently select inputs of same name', async ({
-    comfyPage
-  }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    const items = comfyPage.appMode.select.inputItems
+  test(
+    'Can independently select inputs of same name',
+    {
+      tag: '@vue-nodes'
+    },
+    async ({ comfyPage }) => {
+      const items = comfyPage.appMode.select.inputItems
 
-    await comfyPage.vueNodes.selectNodes(['6', '7'])
-    await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
+      await comfyPage.vueNodes.selectNodes(['6', '7'])
+      await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
 
-    await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.steps.goToInputs()
-    await expect(items).toHaveCount(0)
+      await comfyPage.appMode.enterBuilder()
+      await comfyPage.appMode.steps.goToInputs()
+      await expect(items).toHaveCount(0)
 
-    const prompts = comfyPage.vueNodes
-      .getNodeByTitle('New Subgraph')
-      .locator('.lg-node-widget')
-    const count = await prompts.count()
-    for (let i = 0; i < count; i++) {
-      await expect(prompts.nth(i)).toBeVisible()
-      await prompts.nth(i).click()
-      await expect(items).toHaveCount(i + 1)
+      const prompts = comfyPage.vueNodes
+        .getNodeByTitle('New Subgraph')
+        .locator('.lg-node-widget')
+      const count = await prompts.count()
+      for (let i = 0; i < count; i++) {
+        await expect(prompts.nth(i)).toBeVisible()
+        await prompts.nth(i).click()
+        await expect(items).toHaveCount(i + 1)
+      }
     }
-  })
+  )
 
   test('Can select outputs', async ({ comfyPage }) => {
     await comfyPage.appMode.enterBuilder()
