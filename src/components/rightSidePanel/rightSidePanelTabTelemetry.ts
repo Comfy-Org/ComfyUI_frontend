@@ -6,11 +6,10 @@ import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
  * button_id reported on `trackUiButtonClicked`. Tabs not listed here are
  * intentionally left untracked.
  */
-export const TAB_OPENED_BUTTON_IDS: Partial<Record<RightSidePanelTab, string>> =
-  {
-    settings: 'right_side_panel_settings_tab_opened',
-    info: 'right_side_panel_info_tab_opened'
-  }
+const TAB_OPENED_BUTTON_IDS: Partial<Record<RightSidePanelTab, string>> = {
+  settings: 'right_side_panel_settings_tab_opened',
+  info: 'right_side_panel_info_tab_opened'
+}
 
 /**
  * Fires a `trackUiButtonClicked` event when the right side panel switches to
