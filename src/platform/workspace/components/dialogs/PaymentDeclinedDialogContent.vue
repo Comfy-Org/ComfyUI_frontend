@@ -26,11 +26,11 @@
       "
     >
       <i
-        class="mt-8 icon-[lucide--circle-alert] size-12 shrink-0 text-muted-foreground"
+        class="mt-8 icon-[lucide--circle-alert] size-12 shrink-0 text-warning-background"
       />
       <h2
         id="payment-declined"
-        class="m-0 mt-4 text-center text-xl/6 font-semibold text-base-foreground"
+        class="m-0 mt-4 text-center text-2xl/6 font-semibold text-base-foreground"
       >
         {{ $t('paymentDeclined.title') }}
       </h2>
@@ -38,19 +38,19 @@
         {{ $t('paymentDeclined.body') }}
       </p>
       <div
-        class="mt-[45px] flex h-[94px] w-full shrink-0 flex-col gap-1.5 rounded-lg bg-secondary-background p-6"
+        class="mt-[45px] flex h-[94px] w-full shrink-0 flex-col gap-2 rounded-lg bg-tertiary-background p-6"
       >
-        <span class="text-sm/5 text-muted-foreground">
+        <span class="text-base/4 text-muted-foreground">
           {{ $t('paymentDeclined.reasonLabel') }}
         </span>
-        <span class="text-sm/5 font-medium text-base-foreground">
+        <span class="text-base/4 text-base-foreground">
           {{ reason }}
         </span>
       </div>
 
       <div class="mt-auto flex w-full flex-col gap-4">
         <Button
-          variant="primary"
+          variant="tertiary"
           size="lg"
           class="w-full"
           :loading="isOpeningPortal"
