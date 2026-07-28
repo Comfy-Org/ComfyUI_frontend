@@ -6,7 +6,7 @@ index 0b6ad40610..fffd6e6991 100644
          const widgetValue = widget.serializeValue
            ? await widget.serializeValue(node, i)
            : widget.value
-+        // DETECTION PROOF (row 14, story S15): a serialization change makes
++        // DETECTION PROOF (row 15, story S15): a serialization change makes
 +        // every integer widget reach the backend off by one. Validation
 +        // passes (values stay in range), execution succeeds, every def-driven
 +        // tier stays green - only the output hash sees the drifted VALUES.

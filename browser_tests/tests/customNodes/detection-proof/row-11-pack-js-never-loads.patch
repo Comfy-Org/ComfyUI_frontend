@@ -6,7 +6,7 @@ index bc3564f596..6d5e1bae00 100644
          .filter((extension) =>
            shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
          )
-+        // DETECTION PROOF (row 12, story S11): recreate a pack whose frontend
++        // DETECTION PROOF (row 11, story S11): recreate a pack whose frontend
 +        // JS silently fails to load (wrong web dir / a loadExtensions
 +        // regression) while its backend nodes stay in /object_info. Expected
 +        // red: the load tier's expectedExtensions assert names
