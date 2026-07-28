@@ -79,6 +79,15 @@ lazy (on read) rather than reactive (on refresh). Invariant 5 is the remaining
 gap and is tracked by FE-950 (Unified Cloud Auth) and FE-963 (reactive 401
 re-mint + single retry).
 
+FE-1390 is the second increment, and closes the terminal half of invariant 5:
+when the identity provider rejects the credential outright, Firebase's own
+sign-out now drives the app into a suspended session that stops derived-credential
+traffic and prompts re-authentication in place. Invalidation for that case is
+identity-driven rather than polled or timed, and it deliberately does not infer
+session death from a `401` — a `401` is per-endpoint and overloaded, so treating
+one as terminal would disrupt a working user. The bounded re-mint-and-retry half
+of invariant 5 remains open under FE-963.
+
 Alternatives considered:
 
 - **Layer more defensive checks per call site.** Rejected: this is what produced
@@ -106,9 +115,10 @@ Alternatives considered:
 - Fail-closed surfaces auth failures that silent downgrade previously masked; some
   transient conditions now show errors instead of degrading quietly, so
   transient-vs-permanent classification must be correct.
-- The invariants are not yet fully realized. Until invariant 5 lands, recovery is
-  lazy and a backgrounded tab still relies on the next read to heal, leaving a
-  visible gap against FE-613's reactive ideal.
+- The invariants are not yet fully realized. Recoverable failures are still lazy:
+  a backgrounded tab relies on the next read to heal, leaving a visible gap
+  against FE-613's reactive ideal. Terminal rejection is now reactive (FE-1390),
+  so the gap is narrower than it was, but it is not closed.
 - Existing lifecycles remain non-uniform during migration, so the mental model is
   "target vs. current" until the reactive credential store exists.
 
@@ -117,4 +127,4 @@ Alternatives considered:
 - Related: [ADR-0003](0003-crdt-based-layout-system.md) is unrelated in domain but
   shares the philosophy of designing invariants that make illegal states
   unrepresentable rather than guarding against them per call site.
-- Tickets: FE-613, FE-950, FE-963, FE-1072. PR: #13511.
+- Tickets: FE-613, FE-950, FE-963, FE-1072, FE-1390. PRs: #13511.

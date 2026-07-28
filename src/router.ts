@@ -8,6 +8,7 @@ import {
 import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isSessionSuspended } from '@/platform/auth/session/sessionExpiry'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -180,6 +181,14 @@ if (isCloud) {
     const authHeader = await authStore.getAuthHeader()
     const isLoggedIn = !!authHeader
     preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
+
+    // A suspended session has no credential but still has the user's unsaved
+    // work on screen. Redirecting to login unmounts the canvas and destroys it,
+    // which is the outcome the in-place banner exists to prevent; the banner
+    // owns recovery and cloud traffic is already short-circuited.
+    if (isSessionSuspended()) {
+      return next()
+    }
 
     // Allow public routes
     if (isPublicRoute(to)) {

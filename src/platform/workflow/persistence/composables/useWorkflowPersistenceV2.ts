@@ -15,18 +15,11 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import {
-  forgetIdentity,
-  isSameUserAsRemembered,
-  isVoluntarySignOutInProgress
-} from '@/platform/auth/session/sessionExpiry'
-import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -34,7 +27,6 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
-import { clearAllV2Storage } from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
@@ -57,32 +49,9 @@ export function useWorkflowPersistenceV2() {
   const draftStore = useWorkflowDraftStoreV2()
   const tabState = useWorkflowTabState()
   const toast = useToast()
-  const { onUserLogout, onUserResolved } = useCurrentUser()
 
   // Run migration on module load, passing clientId for tab state migration
   migrateV1toV2(undefined, api.clientId ?? api.initialClientId ?? undefined)
-
-  // A deliberate sign-out clears persisted work so it cannot leak to the next
-  // person on a shared machine. An expired session must NOT: the user never
-  // asked to leave, and re-authenticating is meant to restore what they had.
-  //
-  // The deliberate flag is the only one readable here. Suspension is set behind
-  // an awaited network call in the sign-out hook, and this watcher is created
-  // first, so it would always observe the pre-suspension value.
-  onUserLogout(() => {
-    if (isCloud && isVoluntarySignOutInProgress()) {
-      clearAllV2Storage()
-      forgetIdentity()
-    }
-  })
-
-  // Drafts kept across an expiry belong to whoever expired, so a different
-  // account signing in on this machine clears them instead of inheriting them.
-  onUserResolved((user) => {
-    if (isCloud && !isSameUserAsRemembered(user.id)) {
-      clearAllV2Storage()
-    }
-  })
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)

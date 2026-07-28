@@ -72,6 +72,8 @@ describe('SessionExpiredBanner', () => {
 
     render(SessionExpiredBanner)
 
+    // The shared popup is a polite status by default; this one interrupts,
+    // because the user has unsaved work and every cloud request is failing.
     const banner = screen.getByTestId('session-expired-banner')
     expect(banner.getAttribute('role')).toBe('alert')
     expect(banner.getAttribute('aria-live')).toBe('assertive')

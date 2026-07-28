@@ -8,8 +8,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 import type * as StorageIO from '../base/storageIO'
-import { clearAllV2Storage } from '../base/storageIO'
-import * as sessionExpiry from '@/platform/auth/session/sessionExpiry'
 
 const settingMocks = vi.hoisted(() => ({
   persistRef: null as { value: boolean } | null
@@ -92,21 +90,6 @@ vi.mock('vue-router', () => ({
   }),
   useRouter: () => ({
     replace: vi.fn()
-  })
-}))
-
-// Capture the callbacks rather than discarding them: stubbing these away is
-// what let two data-loss defects ship against a green suite.
-const authHooks = vi.hoisted(() => ({
-  onLogout: [] as (() => void)[],
-  onResolved: [] as ((user: { id: string }) => void)[]
-}))
-
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    onUserLogout: (cb: () => void) => authHooks.onLogout.push(cb),
-    onUserResolved: (cb: (user: { id: string }) => void) =>
-      authHooks.onResolved.push(cb)
   })
 }))
 
@@ -634,82 +617,5 @@ describe('useWorkflowPersistenceV2', () => {
         'Comfy.BrowseTemplates'
       )
     })
-  })
-})
-
-describe('persisted work across a session change', () => {
-  function fireLogout() {
-    authHooks.onLogout.forEach((cb) => cb())
-  }
-  function fireResolved(id: string) {
-    authHooks.onResolved.forEach((cb) => cb({ id }))
-  }
-
-  beforeEach(() => {
-    authHooks.onLogout.length = 0
-    authHooks.onResolved.length = 0
-    localStorage.clear()
-    vi.mocked(clearAllV2Storage).mockClear()
-    // The real sessionExpiry module is a singleton; without releasing the
-    // bracket, one test's deliberate sign-out makes the next test's expiry look
-    // deliberate — the exact defect these tests exist to catch.
-    sessionExpiry.endVoluntarySignOut()
-    sessionExpiry.forgetIdentity()
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
-    // The composable calls useI18n, so it needs a real setup context.
-    const app = createApp(
-      defineComponent({
-        setup() {
-          useWorkflowPersistenceV2()
-          return () => null
-        }
-      })
-    )
-    app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
-    const container = document.createElement('div')
-    document.body.appendChild(container)
-    app.mount(container)
-  })
-
-  it('keeps drafts when the session expires, so re-authenticating restores them', () => {
-    sessionExpiry.rememberIdentity('uid-a', 'google.com')
-
-    // A genuine expiry: nothing called beginVoluntarySignOut.
-    fireLogout()
-
-    expect(clearAllV2Storage).not.toHaveBeenCalled()
-  })
-
-  it('clears drafts on a deliberate sign-out, so they cannot leak to the next person', () => {
-    sessionExpiry.beginVoluntarySignOut()
-
-    fireLogout()
-
-    expect(clearAllV2Storage).toHaveBeenCalledTimes(1)
-  })
-
-  it('keeps drafts when the same user signs back in', () => {
-    sessionExpiry.rememberIdentity('uid-a', 'google.com')
-
-    fireResolved('uid-a')
-
-    expect(clearAllV2Storage).not.toHaveBeenCalled()
-  })
-
-  it('clears drafts when a different account signs in on this machine', () => {
-    sessionExpiry.rememberIdentity('uid-a', 'google.com')
-
-    fireResolved('uid-b')
-
-    expect(clearAllV2Storage).toHaveBeenCalledTimes(1)
-  })
-
-  it('keeps drafts on a cold start, when no previous identity is known', () => {
-    // Nothing remembered and nothing persisted: the reset in beforeEach is what
-    // makes this a real cold start rather than a leftover from an earlier test.
-    fireResolved('uid-z')
-
-    expect(clearAllV2Storage).not.toHaveBeenCalled()
   })
 })

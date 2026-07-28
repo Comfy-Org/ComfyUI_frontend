@@ -2451,7 +2451,8 @@
     "sessionExpired": {
       "title": "Your session expired",
       "detail": "Export any unsaved changes before continuing, or you may lose them.",
-      "action": "Sign in again"
+      "action": "Sign in again",
+      "resumeFailed": "We couldn't restore your session. Please try signing in again."
     }
   },
   "desktopLogin": {

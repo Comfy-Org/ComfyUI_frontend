@@ -1,5 +1,6 @@
 import { FirebaseError } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
+import { isVoluntarySignOutInProgress } from '@/platform/auth/session/sessionExpiry'
 import * as firebaseAuth from 'firebase/auth'
 import { setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
@@ -492,9 +493,20 @@ describe('useAuthStore', () => {
           : Promise.reject(new Error('Unexpected API call'))
       )
 
+      // delete() signs the user out through the same hook a real expiry uses,
+      // so without the bracket the rollback pops "your session expired" at
+      // someone who never had a session.
+      let bracketedDuringDelete: boolean | undefined
+      vi.mocked(mockUser.delete).mockImplementation(() => {
+        bracketedDuringDelete = isVoluntarySignOutInProgress()
+        return Promise.resolve()
+      })
+
       await expect(
         store.register('new@example.com', 'password', 'turnstile-bad')
       ).rejects.toThrow()
+
+      expect(bracketedDuringDelete).toBe(true)
 
       // The just-created user is deleted so the email is freed for retry.
       expect(mockUser.delete).toHaveBeenCalledTimes(1)

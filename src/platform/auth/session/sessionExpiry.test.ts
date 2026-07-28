@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
-
 async function loadSessionExpiry() {
   vi.resetModules()
   return import('@/platform/auth/session/sessionExpiry')
@@ -24,6 +22,17 @@ describe('suspendSession', () => {
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('rejected the credential')
     )
+    warn.mockRestore()
+  })
+
+  it('warns once, so a 401 storm cannot flood the console', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { suspendSession } = await loadSessionExpiry()
+
+    suspendSession()
+    suspendSession()
+
+    expect(warn).toHaveBeenCalledTimes(1)
     warn.mockRestore()
   })
 
@@ -85,95 +94,94 @@ describe('suspendSession', () => {
     expect(isVoluntarySignOutInProgress()).toBe(false)
 
     // An unbalanced release must not drive the count negative and permanently
-    // disarm the guard.
+    // disarm the guard: without the floor this lands on 0 and the next
+    // deliberate sign-out is misread as an expiry.
     endVoluntarySignOut()
     beginVoluntarySignOut()
     expect(isVoluntarySignOutInProgress()).toBe(true)
-  })
-
-  it('releases the guard so a genuine expiry moments later still suspends', async () => {
-    const { beginVoluntarySignOut, endVoluntarySignOut } =
-      await loadSessionExpiry()
-
-    beginVoluntarySignOut()
-    endVoluntarySignOut()
-
-    // A sibling tab reads the same shared marker.
-    const sibling = await loadSessionExpiry()
-
-    expect(sibling.isVoluntarySignOutInProgress()).toBe(false)
-  })
-
-  it('tells a sibling tab that this sign-out was deliberate', async () => {
-    const { beginVoluntarySignOut } = await loadSessionExpiry()
-    beginVoluntarySignOut()
-
-    // A second tab has its own module state and never called begin; Firebase
-    // propagates the sign-out to it through the same shared storage.
-    const sibling = await loadSessionExpiry()
-
-    expect(sibling.isVoluntarySignOutInProgress()).toBe(true)
-  })
-
-  it('stops trusting a stale marker, so it cannot mask a later expiry', async () => {
-    vi.useFakeTimers()
-    try {
-      const { beginVoluntarySignOut } = await loadSessionExpiry()
-      beginVoluntarySignOut()
-
-      vi.advanceTimersByTime(10_001)
-      const sibling = await loadSessionExpiry()
-
-      expect(sibling.isVoluntarySignOutInProgress()).toBe(false)
-    } finally {
-      vi.useRealTimers()
-    }
   })
 })
 
 describe('remembered identity', () => {
   it('offers the provider the user actually signed in with', async () => {
-    const { rememberIdentity, lastKnownProviderId } = await loadSessionExpiry()
+    const { adoptIdentity, lastKnownProviderId } = await loadSessionExpiry()
 
-    rememberIdentity('uid-a', 'github.com')
+    adoptIdentity('uid-a', 'github.com')
 
     expect(lastKnownProviderId()).toBe('github.com')
   })
 
   it('reports no provider when none was captured, so callers offer a choice', async () => {
-    const { rememberIdentity, lastKnownProviderId } = await loadSessionExpiry()
+    const { adoptIdentity, lastKnownProviderId } = await loadSessionExpiry()
 
-    rememberIdentity('uid-a')
+    adoptIdentity('uid-a')
 
     expect(lastKnownProviderId()).toBeUndefined()
   })
 
   it('recognises the same user returning, and a different one arriving', async () => {
-    const { rememberIdentity, isSameUserAsRemembered } =
-      await loadSessionExpiry()
+    const { adoptIdentity } = await loadSessionExpiry()
 
-    rememberIdentity('uid-a', 'google.com')
+    adoptIdentity('uid-a', 'google.com')
 
-    expect(isSameUserAsRemembered('uid-a')).toBe(true)
-    expect(isSameUserAsRemembered('uid-b')).toBe(false)
+    expect(adoptIdentity('uid-a')).toBe(true)
+    expect(adoptIdentity('uid-b')).toBe(false)
   })
 
   it('keeps work on a cold start, when nothing has been recorded yet', async () => {
-    const { isSameUserAsRemembered } = await loadSessionExpiry()
+    const { adoptIdentity } = await loadSessionExpiry()
 
     // In-memory identity is null on every page load. Treating that as "someone
     // else" would delete the drafts of the user about to sign in.
-    expect(isSameUserAsRemembered('uid-a')).toBe(true)
+    expect(adoptIdentity('uid-a')).toBe(true)
+  })
+
+  it('keeps the work when storage is unreadable, rather than guessing', async () => {
+    // Seeded with a different user, so a readable store would answer false.
+    const seeding = await loadSessionExpiry()
+    seeding.adoptIdentity('uid-b')
+
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get: () => {
+        throw new Error('private mode')
+      }
+    })
+
+    try {
+      const { adoptIdentity } = await loadSessionExpiry()
+
+      // Private browsing throws on access. Treating that as "someone else"
+      // would delete the drafts of the user signing in right now.
+      expect(adoptIdentity('uid-a')).toBe(true)
+    } finally {
+      if (original) Object.defineProperty(globalThis, 'localStorage', original)
+    }
   })
 
   it('recognises the previous user across a reload, and a different one', async () => {
     const first = await loadSessionExpiry()
-    first.rememberIdentity('uid-a', 'google.com')
+    first.adoptIdentity('uid-a', 'google.com')
 
     // A reload drops module state but not storage.
     const afterReload = await loadSessionExpiry()
 
-    expect(afterReload.isSameUserAsRemembered('uid-a')).toBe(true)
-    expect(afterReload.isSameUserAsRemembered('uid-b')).toBe(false)
+    expect(afterReload.adoptIdentity('uid-a')).toBe(true)
+
+    const secondReload = await loadSessionExpiry()
+
+    expect(secondReload.adoptIdentity('uid-b')).toBe(false)
+  })
+
+  it('decides and records atomically, so a second account cannot be compared to itself', async () => {
+    const { adoptIdentity } = await loadSessionExpiry()
+    adoptIdentity('uid-a', 'google.com')
+
+    // Splitting the verdict from the record is the defect: whoever recorded
+    // first overwrote the only evidence of the previous owner, and the later
+    // comparison then matched the new account against itself.
+    expect(adoptIdentity('uid-b')).toBe(false)
+    expect(adoptIdentity('uid-b')).toBe(true)
   })
 })

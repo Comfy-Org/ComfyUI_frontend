@@ -1,8 +1,6 @@
 import type { ShallowRef } from 'vue'
 import { readonly, shallowRef } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
-
 /**
  * Identity of the user who was signed in, captured while the session was still
  * healthy. Firebase clears `currentUser` before anything can observe an expiry,
@@ -29,23 +27,22 @@ let rememberedIdentity: RememberedIdentity | null = null
  */
 const LAST_SIGNED_IN_UID_KEY = 'Comfy.Cloud.LastSignedInUid'
 
-/**
- * Firebase propagates a sign-out to every tab through shared persistence, but a
- * per-tab counter cannot: the sibling tab never called `beginVoluntarySignOut`,
- * so it would read a deliberate sign-out as an expiry and suspend a healthy
- * session. The marker travels the same way the sign-out does.
- *
- * It expires on a timestamp rather than being cleared, so a tab that closes
- * mid-sign-out cannot mask a later genuine expiry indefinitely.
- */
-const VOLUNTARY_SIGN_OUT_KEY = 'Comfy.Cloud.VoluntarySignOut'
-const VOLUNTARY_SIGN_OUT_WINDOW_MS = 10_000
-
 function readLastSignedInUid(): string | null {
   try {
     return localStorage.getItem(LAST_SIGNED_IN_UID_KEY)
   } catch {
+    // Storage is unavailable in private mode. With no evidence of a previous
+    // owner, the caller keeps the work.
     return null
+  }
+}
+
+function persistLastSignedInUid(uid: string | null): void {
+  try {
+    if (uid === null) localStorage.removeItem(LAST_SIGNED_IN_UID_KEY)
+    else localStorage.setItem(LAST_SIGNED_IN_UID_KEY, uid)
+  } catch {
+    // Surviving a reload is an optimisation; the in-memory record still works.
   }
 }
 
@@ -76,42 +73,25 @@ export function lastKnownProviderId(): string | undefined {
 }
 
 /**
- * Records who is signed in, for the two things that must outlive the session:
- * which provider to re-authenticate with, and whether a later sign-in is the
- * same person.
- */
-export function rememberIdentity(uid: string, providerId?: string): void {
-  rememberedIdentity = { uid, providerId }
-  try {
-    localStorage.setItem(LAST_SIGNED_IN_UID_KEY, uid)
-  } catch {
-    // Persisting is an optimisation for the next page load, not a requirement.
-  }
-}
-
-/** Drops the remembered identity, so nothing is inherited by the next user. */
-export function forgetIdentity(): void {
-  rememberedIdentity = null
-  try {
-    localStorage.removeItem(LAST_SIGNED_IN_UID_KEY)
-  } catch {
-    // Nothing to forget if storage is unavailable.
-  }
-}
-
-/**
- * Whether locally persisted work belongs to whoever just signed in.
+ * Records who is signed in, and reports whether locally persisted work is
+ * theirs.
  *
- * Drafts survive an expiry so re-authenticating restores the user's work, but
- * they must not survive into a different account on a shared machine.
+ * Deciding and recording are one call because splitting them is a defect:
+ * whichever caller records first destroys the evidence the other needs, so a
+ * second account can be compared against itself and inherit the first one's
+ * drafts. Callers get the verdict for the identity they just installed.
  */
-export function isSameUserAsRemembered(uid: string): boolean {
-  if (rememberedIdentity) return rememberedIdentity.uid === uid
+export function adoptIdentity(uid: string, providerId?: string): boolean {
+  const previousUid = rememberedIdentity
+    ? rememberedIdentity.uid
+    : readLastSignedInUid()
+
+  rememberedIdentity = { uid, providerId }
+  persistLastSignedInUid(uid)
 
   // Nothing recorded yet means a cold start, not a stranger: with no evidence
   // that the work belongs to someone else, keeping it is the safe default.
-  const lastUid = readLastSignedInUid()
-  return lastUid === null || lastUid === uid
+  return previousUid === null || previousUid === uid
 }
 
 /**
@@ -120,43 +100,30 @@ export function isSameUserAsRemembered(uid: string): boolean {
  * The deliberate logout, the `requires-recent-login` recovery that signs out
  * only to re-prompt, and the signup rollback that deletes a half-created user
  * all reach the same sign-out hook as a genuine expiry. Read the flag
- * synchronously at that hook, before any `await`: it is released as soon as the
- * sign-out resolves, which happens while the hook is still awaiting teardown.
+ * synchronously at that hook, before any `await`: the bracket is still open
+ * while the hook runs, and closes once the sign-out call it wraps returns.
+ * `signOutSeam.test.ts` pins it against a model of that dispatch: the observer
+ * is notified from inside the awaited call, never after it resolves.
+ *
+ * Deliberately in-memory and per-tab. A shared marker would let a sibling tab
+ * recognise the sign-out, but it can only say "a sign-out happened recently",
+ * never "this sign-out" — so for as long as it lives, a genuine expiry in any
+ * tab reads as deliberate and the user's drafts are wiped. The cost of not
+ * sharing it is a sibling tab showing an expiry banner it did not need; the
+ * cost of sharing it is losing work, which is the thing this feature exists to
+ * prevent.
  */
 export function beginVoluntarySignOut(): void {
   voluntarySignOutDepth++
-  try {
-    localStorage.setItem(VOLUNTARY_SIGN_OUT_KEY, String(Date.now()))
-  } catch {
-    // Same-tab sign-outs still work; only the cross-tab hint is lost.
-  }
 }
 
 export function endVoluntarySignOut(): void {
+  // Floored so an unbalanced release cannot go negative and disarm the guard.
   voluntarySignOutDepth = Math.max(0, voluntarySignOutDepth - 1)
-  if (voluntarySignOutDepth > 0) return
-
-  try {
-    // Leaving it behind would make a genuine expiry in the next few seconds
-    // look deliberate: no banner, no short-circuit, and the drafts wiped.
-    localStorage.removeItem(VOLUNTARY_SIGN_OUT_KEY)
-  } catch {
-    // The timestamp window is the backstop when storage is unavailable.
-  }
 }
 
 export function isVoluntarySignOutInProgress(): boolean {
-  if (voluntarySignOutDepth > 0) return true
-
-  try {
-    const startedAt = Number(localStorage.getItem(VOLUNTARY_SIGN_OUT_KEY))
-    return (
-      Number.isFinite(startedAt) &&
-      Date.now() - startedAt < VOLUNTARY_SIGN_OUT_WINDOW_MS
-    )
-  } catch {
-    return false
-  }
+  return voluntarySignOutDepth > 0
 }
 
 /**
@@ -177,7 +144,7 @@ export function isVoluntarySignOutInProgress(): boolean {
  * work, and re-authenticating in place resumes the session.
  */
 export function suspendSession(): void {
-  if (!isCloud || suspended) return
+  if (suspended) return
   suspended = true
   suspendedRef.value = true
 

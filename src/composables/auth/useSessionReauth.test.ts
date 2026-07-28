@@ -3,17 +3,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSessionReauth } from '@/composables/auth/useSessionReauth'
 
 const mocks = vi.hoisted(() => ({
-  loginWithGoogle: vi.fn(),
-  loginWithGithub: vi.fn(),
+  signInWithGoogle: vi.fn(),
+  signInWithGithub: vi.fn(),
   showSignInDialog: vi.fn(),
+  restoreCloudSession: vi.fn(),
   lastKnownProviderId: vi.fn<() => string | undefined>()
 }))
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({
-    loginWithGoogle: mocks.loginWithGoogle,
-    loginWithGithub: mocks.loginWithGithub
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: () => ({
+    signInWithGoogle: mocks.signInWithGoogle,
+    signInWithGithub: mocks.signInWithGithub
   })
+}))
+
+vi.mock('@/platform/auth/session/restoreCloudSession', () => ({
+  restoreCloudSession: mocks.restoreCloudSession
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -26,9 +31,10 @@ vi.mock('@/platform/auth/session/sessionExpiry', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.loginWithGoogle.mockResolvedValue(undefined)
-  mocks.loginWithGithub.mockResolvedValue(undefined)
+  mocks.signInWithGoogle.mockResolvedValue(undefined)
+  mocks.signInWithGithub.mockResolvedValue(undefined)
   mocks.showSignInDialog.mockResolvedValue(true)
+  mocks.restoreCloudSession.mockResolvedValue(undefined)
 })
 
 describe('useSessionReauth', () => {
@@ -37,8 +43,8 @@ describe('useSessionReauth', () => {
 
     await useSessionReauth().reauthenticate()
 
-    expect(mocks.loginWithGoogle).toHaveBeenCalledTimes(1)
-    expect(mocks.loginWithGithub).not.toHaveBeenCalled()
+    expect(mocks.signInWithGoogle).toHaveBeenCalledTimes(1)
+    expect(mocks.signInWithGithub).not.toHaveBeenCalled()
     expect(mocks.showSignInDialog).not.toHaveBeenCalled()
   })
 
@@ -47,8 +53,8 @@ describe('useSessionReauth', () => {
 
     await useSessionReauth().reauthenticate()
 
-    expect(mocks.loginWithGithub).toHaveBeenCalledTimes(1)
-    expect(mocks.loginWithGoogle).not.toHaveBeenCalled()
+    expect(mocks.signInWithGithub).toHaveBeenCalledTimes(1)
+    expect(mocks.signInWithGoogle).not.toHaveBeenCalled()
   })
 
   it('falls back to the in-app dialog for email, which has no popup', async () => {
@@ -57,7 +63,7 @@ describe('useSessionReauth', () => {
     await useSessionReauth().reauthenticate()
 
     expect(mocks.showSignInDialog).toHaveBeenCalledTimes(1)
-    expect(mocks.loginWithGoogle).not.toHaveBeenCalled()
+    expect(mocks.signInWithGoogle).not.toHaveBeenCalled()
   })
 
   it('asks rather than guesses when the provider was never captured', async () => {
@@ -68,24 +74,44 @@ describe('useSessionReauth', () => {
     expect(mocks.showSignInDialog).toHaveBeenCalledTimes(1)
   })
 
-  it('survives a cancelled popup so the banner can be retried', async () => {
+  it('finishes its own recovery, since a same-user retry raises no auth event', async () => {
     mocks.lastKnownProviderId.mockReturnValue('google.com')
-    mocks.loginWithGoogle.mockRejectedValue(
-      new Error('auth/popup-closed-by-user')
-    )
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await useSessionReauth().reauthenticate()
+
+    // Leaving the restore to the auth-resolved hook would strand the banner:
+    // that hook only runs on a uid change, and a retry is the same uid.
+    expect(mocks.restoreCloudSession).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves failure reporting to the shared sign-in action', async () => {
+    mocks.lastKnownProviderId.mockReturnValue('google.com')
+    // The shared action already toasts and records auth telemetry. Swallowing a
+    // failure here instead would silence it and then run the restore anyway.
+    mocks.signInWithGoogle.mockRejectedValue(new Error('popup blocked'))
     const { reauthenticate, isReauthenticating } = useSessionReauth()
 
-    await expect(reauthenticate()).resolves.toBeUndefined()
+    await expect(reauthenticate()).rejects.toThrow('popup blocked')
 
+    expect(mocks.restoreCloudSession).not.toHaveBeenCalled()
     expect(isReauthenticating.value).toBe(false)
-    warn.mockRestore()
+  })
+
+  it('frees the action again when the sign-in dialog throws', async () => {
+    mocks.lastKnownProviderId.mockReturnValue(undefined)
+    mocks.showSignInDialog.mockRejectedValue(new Error('dialog exploded'))
+    const { reauthenticate, isReauthenticating } = useSessionReauth()
+
+    await expect(reauthenticate()).rejects.toThrow('dialog exploded')
+
+    // A stuck flag would permanently disable the banner's only way out.
+    expect(isReauthenticating.value).toBe(false)
   })
 
   it('ignores a second click while the first is still open', async () => {
     mocks.lastKnownProviderId.mockReturnValue('google.com')
     let release: () => void = () => {}
-    mocks.loginWithGoogle.mockReturnValue(
+    mocks.signInWithGoogle.mockReturnValue(
       new Promise<void>((resolve) => {
         release = () => resolve()
       })
@@ -97,6 +123,6 @@ describe('useSessionReauth', () => {
     release()
     await first
 
-    expect(mocks.loginWithGoogle).toHaveBeenCalledTimes(1)
+    expect(mocks.signInWithGoogle).toHaveBeenCalledTimes(1)
   })
 })
