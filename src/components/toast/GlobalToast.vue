@@ -78,8 +78,12 @@ function updateToastPosition() {
   // App mode hides the graph container; anchor beside the docked panel there.
   const anchor = container ?? visibleRect('.docked-agent-panel')
   if (anchor === undefined) return
+  // With the agent panel closed the pane gutter still offsets the splitter
+  // rect, so only its edge counts while the panel actually takes space.
   const edge = container
-    ? (visibleRect('.graph-canvas-panel') ?? container)
+    ? agentPanelOpen.value
+      ? (visibleRect('.graph-canvas-panel') ?? container)
+      : container
     : undefined
   const right =
     edge === undefined
