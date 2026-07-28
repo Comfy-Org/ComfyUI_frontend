@@ -27,6 +27,7 @@
         :model-value="mediaTypeFilters.includes(filter.value)"
         :class="menuItemClass"
         @click="toggleMediaType(filter.value)"
+        @keydown="handleSearchResultKeydown"
         @select.prevent
       >
         <span class="flex-1">{{ $t(filter.label) }}</span>
@@ -46,6 +47,7 @@
         :model-value="dateFilter === filter.value"
         :class="menuItemClass"
         @click="toggleDateFilter(filter.value)"
+        @keydown="handleSearchResultKeydown"
         @select.prevent
       >
         <span class="flex-1">{{ $t(filter.label) }}</span>
@@ -220,6 +222,18 @@ function toggleDateFilter(value: MediaAssetDateFilter) {
 }
 
 function handleSearchKeydown(event: KeyboardEvent) {
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    const results = getSearchResults()
+    const result = event.key === 'ArrowDown' ? results.at(0) : results.at(-1)
+
+    if (result) {
+      event.preventDefault()
+      event.stopPropagation()
+      result.focus()
+    }
+    return
+  }
+
   if (
     event.key.length === 1 &&
     !event.ctrlKey &&
@@ -228,5 +242,28 @@ function handleSearchKeydown(event: KeyboardEvent) {
   ) {
     event.stopPropagation()
   }
+}
+
+function handleSearchResultKeydown(event: KeyboardEvent) {
+  const results = getSearchResults()
+  const currentIndex = results.indexOf(event.currentTarget as HTMLElement)
+  const movingPastEnd =
+    event.key === 'ArrowDown' && currentIndex === results.length - 1
+  const movingBeforeStart = event.key === 'ArrowUp' && currentIndex === 0
+
+  if (!movingPastEnd && !movingBeforeStart) return
+
+  event.preventDefault()
+  event.stopPropagation()
+  searchInput.value?.focus()
+}
+
+function getSearchResults() {
+  const menu = searchInput.value?.closest('[role="menu"]')
+  return menu
+    ? Array.from(
+        menu.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]')
+      )
+    : []
 }
 </script>
