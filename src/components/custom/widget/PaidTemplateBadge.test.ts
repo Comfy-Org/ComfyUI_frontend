@@ -23,17 +23,10 @@ const i18n = createI18n({
   messages
 })
 
-function renderBadge(openSource?: boolean) {
-  return render(PaidTemplateBadge, {
-    props: { openSource },
-    global: { plugins: [i18n] }
-  })
-}
-
 describe('PaidTemplateBadge', () => {
   it('explains the paid-plan requirement for partner templates', async () => {
     const user = userEvent.setup()
-    renderBadge(false)
+    render(PaidTemplateBadge, { global: { plugins: [i18n] } })
 
     const badge = screen.getByTestId('paid-template-badge')
     expect(badge).toHaveAccessibleName('Premium template Runs with credits')
@@ -44,15 +37,4 @@ describe('PaidTemplateBadge', () => {
     expect(within(tooltip).getByText('Premium template')).toBeInTheDocument()
     expect(within(tooltip).getByText('Runs with credits')).toBeInTheDocument()
   })
-
-  it.for([true, undefined])(
-    'does not mark open-source value %s as paid',
-    (openSource) => {
-      renderBadge(openSource)
-
-      expect(
-        screen.queryByTestId('paid-template-badge')
-      ).not.toBeInTheDocument()
-    }
-  )
 })

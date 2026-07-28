@@ -302,7 +302,7 @@
                   </div>
                 </template>
                 <template
-                  v-if="template.openSource === false || template.tutorialUrl"
+                  v-if="template.isPartnerNode || template.tutorialUrl"
                   #top-right
                 >
                   <Button
@@ -316,7 +316,7 @@
                   >
                     <i class="icon-[lucide--info] size-4" />
                   </Button>
-                  <PaidTemplateBadge :open-source="template.openSource" />
+                  <PaidTemplateBadge v-if="template.isPartnerNode" />
                 </template>
               </CardTop>
             </template>

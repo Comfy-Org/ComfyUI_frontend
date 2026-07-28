@@ -5,10 +5,6 @@ import { useI18n } from 'vue-i18n'
 import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 
-const { openSource } = defineProps<{
-  openSource?: boolean
-}>()
-
 const { t } = useI18n()
 
 const tooltipCopy = computed(() => {
@@ -25,7 +21,6 @@ const tooltipCopy = computed(() => {
 
 <template>
   <AccessibleTooltip
-    v-if="openSource === false"
     :label="tooltipCopy.label"
     test-id="paid-template-badge"
     side="bottom"
