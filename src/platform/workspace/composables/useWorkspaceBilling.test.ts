@@ -30,8 +30,26 @@ const mockShow = vi.hoisted(() => vi.fn())
 const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockSetWorkspaceBillingRail = vi.hoisted(() => vi.fn())
 
+// Hoisted so the vi.mock factory below can reference it: a plain top-level
+// const is in its temporal dead zone when the hoisted factory runs under
+// coverage instrumentation, which collects the file to zero tests.
+const mockWorkspaceApiError = vi.hoisted(
+  () =>
+    class WorkspaceApiError extends Error {
+      constructor(
+        message: string,
+        public readonly status?: number,
+        public readonly code?: string
+      ) {
+        super(message)
+        this.name = 'WorkspaceApiError'
+      }
+    }
+)
+
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
-  workspaceApi: mockWorkspaceApi
+  workspaceApi: mockWorkspaceApi,
+  WorkspaceApiError: mockWorkspaceApiError
 }))
 
 vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
@@ -736,6 +754,79 @@ describe('useWorkspaceBilling', () => {
       await expect(billing.cancelSubscription()).rejects.toBe('boom')
       expect(billing.error.value).toBe('Failed to cancel subscription')
     })
+
+    it('treats an already-cancelled subscription as success and resyncs status', async () => {
+      mockWorkspaceApi.cancelSubscription.mockRejectedValue(
+        new mockWorkspaceApiError(
+          'Subscription is already scheduled for cancellation',
+          400,
+          'ALREADY_CANCELED'
+        )
+      )
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        subscription_status: 'canceled',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).resolves.toBeUndefined()
+      expect(billing.error.value).toBeNull()
+      // The scheduled cancellation the server already held is now what the UI
+      // shows — the point of resyncing rather than reporting a failure.
+      expect(billing.subscription.value?.endDate).toBe('2026-06-01T00:00:00Z')
+      expect(billing.subscription.value?.tier).toBe('CREATOR')
+      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(billing.isLoading.value).toBe(false)
+    })
+
+    it('stays a success when the follow-up status read also fails', async () => {
+      mockWorkspaceApi.cancelSubscription.mockRejectedValue(
+        new mockWorkspaceApiError('Already cancelled', 400, 'ALREADY_CANCELED')
+      )
+      mockWorkspaceApi.getBillingStatus.mockRejectedValue(
+        new Error('status read failed')
+      )
+
+      const billing = setupBilling()
+
+      // The flaky network that lost the original response is the same one that
+      // can drop this read; it must not resurrect the false failure.
+      await expect(billing.cancelSubscription()).resolves.toBeUndefined()
+      expect(billing.error.value).toBeNull()
+      expect(billing.isLoading.value).toBe(false)
+    })
+
+    it('does not swallow a 5xx that happens to echo the code', async () => {
+      mockWorkspaceApi.cancelSubscription.mockRejectedValue(
+        new mockWorkspaceApiError('Upstream failure', 500, 'ALREADY_CANCELED')
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow(
+        'Upstream failure'
+      )
+      expect(billing.error.value).toBe('Upstream failure')
+    })
+
+    it('still surfaces other API errors that carry a code', async () => {
+      mockWorkspaceApi.cancelSubscription.mockRejectedValue(
+        new mockWorkspaceApiError(
+          'No active subscription to cancel',
+          400,
+          'NO_ACTIVE_SUBSCRIPTION'
+        )
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow(
+        'No active subscription to cancel'
+      )
+      expect(billing.error.value).toBe('No active subscription to cancel')
+    })
   })
 
   describe('resubscribe', () => {
@@ -777,6 +868,88 @@ describe('useWorkspaceBilling', () => {
 
       await expect(billing.resubscribe()).rejects.toBe('boom')
       expect(billing.error.value).toBe('Failed to resubscribe')
+    })
+    it('treats a subscription with no scheduled cancellation as success and resyncs status', async () => {
+      mockWorkspaceApi.resubscribe.mockRejectedValue(
+        new mockWorkspaceApiError(
+          'Subscription is not scheduled for cancellation',
+          400,
+          'NOT_SCHEDULED_FOR_CANCELLATION'
+        )
+      )
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+
+      const billing = setupBilling()
+
+      await expect(billing.resubscribe()).resolves.toBeUndefined()
+      expect(billing.error.value).toBeNull()
+      // No scheduled cancellation left on the resynced subscription.
+      expect(billing.subscription.value?.endDate).toBeNull()
+      expect(billing.subscription.value?.tier).toBe('CREATOR')
+      expect(billing.isActiveSubscription.value).toBe(true)
+      expect(billing.isLoading.value).toBe(false)
+    })
+
+    it('refreshes balance too, matching the successful resubscribe path', async () => {
+      mockWorkspaceApi.resubscribe.mockRejectedValue(
+        new mockWorkspaceApiError(
+          'Not scheduled',
+          400,
+          'NOT_SCHEDULED_FOR_CANCELLATION'
+        )
+      )
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+      await billing.resubscribe()
+
+      expect(billing.balance.value?.amountMicros).toBe(5_000_000)
+    })
+
+    it('waits for both reconciliation reads to settle before clearing the error', async () => {
+      mockWorkspaceApi.resubscribe.mockRejectedValue(
+        new mockWorkspaceApiError(
+          'Not scheduled',
+          400,
+          'NOT_SCHEDULED_FOR_CANCELLATION'
+        )
+      )
+      // Staggered on purpose: the status read fails immediately, the balance
+      // read fails only after the branch has had every chance to finish.
+      // Releasing on the first rejection lets the late one write its failure
+      // into error after the branch already cleared it.
+      mockWorkspaceApi.getBillingStatus.mockRejectedValue(
+        new Error('status down')
+      )
+      const balance = createDeferred<never>()
+      mockWorkspaceApi.getBillingBalance.mockReturnValue(balance.promise)
+
+      const billing = setupBilling()
+      const pending = billing.resubscribe()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      balance.reject(new Error('balance down'))
+
+      await expect(pending).resolves.toBeUndefined()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(billing.error.value).toBeNull()
+    })
+
+    it('stays a success when the follow-up reads also fail', async () => {
+      mockWorkspaceApi.resubscribe.mockRejectedValue(
+        new mockWorkspaceApiError(
+          'Not scheduled',
+          400,
+          'NOT_SCHEDULED_FOR_CANCELLATION'
+        )
+      )
+      mockWorkspaceApi.getBillingStatus.mockRejectedValue(new Error('down'))
+      mockWorkspaceApi.getBillingBalance.mockRejectedValue(new Error('down'))
+
+      const billing = setupBilling()
+
+      await expect(billing.resubscribe()).resolves.toBeUndefined()
+      expect(billing.error.value).toBeNull()
     })
   })
 
