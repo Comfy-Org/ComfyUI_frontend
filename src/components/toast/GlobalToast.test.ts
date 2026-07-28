@@ -88,15 +88,26 @@ describe('GlobalToast dynamic positioning', () => {
     vi.useRealTimers()
   })
 
-  it('anchors the toast offset to the graph panel, excluding the docked agent panel', async () => {
+  it('anchors the toast offset to the graph panel while the agent panel is open', async () => {
+    addCanvasElement('graph-canvas-container', 0, 1000)
+    addCanvasElement('graph-canvas-panel', 0, 600)
+
+    renderToast()
+    useAgentPanelStore().isOpen = true
+    await flushDebouncedPosition()
+
+    expect(injectedToastStyle()).toContain('right: 620px')
+    expect(injectedToastStyle()).not.toContain('right: 220px')
+  })
+
+  it('matches the container anchor while the agent panel is closed', async () => {
     addCanvasElement('graph-canvas-container', 0, 1000)
     addCanvasElement('graph-canvas-panel', 0, 600)
 
     renderToast()
     await nextTick()
 
-    expect(injectedToastStyle()).toContain('right: 620px')
-    expect(injectedToastStyle()).not.toContain('right: 220px')
+    expect(injectedToastStyle()).toContain('right: 220px')
   })
 
   it('falls back to the graph canvas container when the graph panel is absent', async () => {
@@ -114,7 +125,7 @@ describe('GlobalToast dynamic positioning', () => {
 
     renderToast()
     await nextTick()
-    expect(injectedToastStyle()).toContain('right: 620px')
+    expect(injectedToastStyle()).toContain('right: 220px')
 
     stubRect(panel, 0, 400)
     useAgentPanelStore().isOpen = true
@@ -128,7 +139,8 @@ describe('GlobalToast dynamic positioning', () => {
     const panel = addCanvasElement('graph-canvas-panel', 0, 600)
 
     renderToast()
-    await nextTick()
+    useAgentPanelStore().isOpen = true
+    await flushDebouncedPosition()
 
     stubRect(panel, 0, 350)
     useAgentPanelStore().width = 720
@@ -142,7 +154,8 @@ describe('GlobalToast dynamic positioning', () => {
     addCanvasElement('graph-canvas-panel', 0, 600, 88)
 
     renderToast()
-    await nextTick()
+    useAgentPanelStore().isOpen = true
+    await flushDebouncedPosition()
 
     expect(injectedToastStyle()).toContain('top: 100px')
     expect(injectedToastStyle()).toContain('right: 620px')
@@ -154,7 +167,8 @@ describe('GlobalToast dynamic positioning', () => {
     const panel = addCanvasElement('graph-canvas-panel', 0, 600)
 
     renderToast()
-    await nextTick()
+    useAgentPanelStore().isOpen = true
+    await flushDebouncedPosition()
     expect(injectedToastStyle()).toContain('right: 620px')
 
     stubRect(container, 0, 0)
@@ -194,7 +208,8 @@ describe('GlobalToast dynamic positioning', () => {
     const panel = addCanvasElement('graph-canvas-panel', 0, 600)
 
     renderToast()
-    await nextTick()
+    useAgentPanelStore().isOpen = true
+    await flushDebouncedPosition()
     expect(injectedToastStyle()).toContain('right: 620px')
 
     stubRect(panel, 0, 500)
