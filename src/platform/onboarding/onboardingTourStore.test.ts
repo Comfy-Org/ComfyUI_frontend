@@ -436,6 +436,29 @@ describe('onboardingTourStore', () => {
     expect(store.step?.coachId).toBe('inputs-list')
   })
 
+  it('emits step_shown once per step, not again on back-navigation', async () => {
+    registerAppModeTargets()
+    const store = mountStore()
+    store.replayTour('appMode')
+    await nextTick()
+
+    store.next() // landing -> inputs-list
+    await nextTick()
+    store.next() // inputs-list -> app-run-button
+    await nextTick()
+    store.back() // back to inputs-list (already seen)
+    await nextTick()
+    store.next() // forward to app-run-button again (already seen)
+    await nextTick()
+
+    const shownFor = (coachId: CoachId) =>
+      telemetry.track.mock.calls.filter(
+        ([stage, meta]) => stage === 'step_shown' && meta?.coach_id === coachId
+      )
+    expect(shownFor('inputs-list')).toHaveLength(1)
+    expect(shownFor('app-run-button')).toHaveLength(1)
+  })
+
   it('reports step index 0 while no tour is active', () => {
     const store = mountStore()
     expect(store.countedStepIdx).toBe(0)

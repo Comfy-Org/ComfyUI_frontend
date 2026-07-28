@@ -88,6 +88,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
 
   const backLabel = computed(() => t('onboardingCoachmarks.back'))
 
+  // step_shown is a per-step impression — it fires the first time each step is
+  // reached in a run, not again on back-navigation (which re-enters showStep).
+  const shownStepIndices = new Set<number>()
+
   async function showStep(idx: number) {
     const nextStep = steps.value[idx]
     if (!nextStep) return
@@ -127,7 +131,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       }
     }
     stepIdx.value = idx
-    trackTour('step_shown')
+    if (!shownStepIndices.has(idx)) {
+      shownStepIndices.add(idx)
+      trackTour('step_shown')
+    }
   }
 
   function openSidebarTab(tabId: string) {
@@ -199,6 +206,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     if (!resolved.length) return
     steps.value = resolved
     activeTour.value = entryPath
+    shownStepIndices.clear()
     trackTour('started')
     void showStep(0)
   }
