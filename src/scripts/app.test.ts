@@ -326,21 +326,117 @@ describe('ComfyApp', () => {
       }
     })
 
-    it('does not track a resolved prompt response without a prompt ID', async () => {
+    it('tracks a resolved prompt rejection at the submission stage', async () => {
       prepareEmptyPromptQueue()
       const trackWorkflowQueued = vi.fn()
+      const trackExecutionOutcome = vi.fn()
       const registry = new TelemetryRegistry()
-      registry.registerProvider({ trackWorkflowQueued })
+      registry.registerProvider({
+        trackWorkflowQueued,
+        trackExecutionOutcome
+      })
       setTelemetryRegistry(registry)
-      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        error: 'Prompt rejected'
+      const now = vi.spyOn(performance, 'now').mockReturnValue(42)
+      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
+        now.mockReturnValue(62)
+        return {
+          error: 'Prompt rejected'
+        }
       })
 
       try {
         await app.queuePrompt(0)
 
         expect(trackWorkflowQueued).not.toHaveBeenCalled()
+        expect(trackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+          startTime: 42,
+          endTime: 62,
+          success: false,
+          failureReason: 'submission_rejected',
+          workflowContext: {
+            workflow_type: 'custom',
+            view_mode: 'graph',
+            execution_scope: 'full',
+            total_node_count: 0,
+            executable_node_count: 0,
+            custom_node_count: 0,
+            api_node_count: 0,
+            subgraph_count: 0
+          }
+        })
       } finally {
+        now.mockRestore()
+        setTelemetryRegistry(null)
+      }
+    })
+
+    it('tracks a rejected queue request at the submission stage', async () => {
+      prepareEmptyPromptQueue()
+      const trackExecutionOutcome = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackExecutionOutcome })
+      setTelemetryRegistry(registry)
+      const now = vi.spyOn(performance, 'now').mockReturnValue(42)
+      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
+        now.mockReturnValue(62)
+        throw new PromptExecutionError({
+          error: {
+            type: 'prompt_no_outputs',
+            message: 'Prompt has no outputs',
+            details: ''
+          }
+        })
+      })
+
+      try {
+        await app.queuePrompt(0)
+
+        expect(trackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+          startTime: 42,
+          endTime: 62,
+          success: false,
+          failureReason: 'submission_rejected',
+          workflowContext: {
+            workflow_type: 'custom',
+            view_mode: 'graph',
+            execution_scope: 'full',
+            total_node_count: 0,
+            executable_node_count: 0,
+            custom_node_count: 0,
+            api_node_count: 0,
+            subgraph_count: 0
+          }
+        })
+      } finally {
+        now.mockRestore()
+        setTelemetryRegistry(null)
+      }
+    })
+
+    it('tracks prompt construction failures at the submission stage', async () => {
+      prepareEmptyPromptQueue()
+      const trackExecutionOutcome = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackExecutionOutcome })
+      setTelemetryRegistry(registry)
+      const now = vi.spyOn(performance, 'now').mockReturnValue(42)
+      vi.spyOn(app, 'graphToPrompt').mockImplementation(async () => {
+        now.mockReturnValue(62)
+        throw new Error('Prompt construction failed')
+      })
+
+      try {
+        await expect(app.queuePrompt(0)).rejects.toThrow(
+          'Prompt construction failed'
+        )
+        expect(trackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+          startTime: 42,
+          endTime: 62,
+          success: false,
+          failureReason: 'prompt_build_failed'
+        })
+      } finally {
+        now.mockRestore()
         setTelemetryRegistry(null)
       }
     })

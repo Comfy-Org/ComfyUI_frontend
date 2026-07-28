@@ -204,11 +204,32 @@ export interface WorkflowQueuedMetadata {
   subscribe_to_run: boolean
 }
 
-export interface ExecutionOutcomeMetadata {
+export type WorkflowExecutionFailureReason =
+  | 'prompt_build_failed'
+  | 'submission_rejected'
+  | 'submission_failed'
+  | 'execution_failed'
+  | 'execution_interrupted'
+
+interface ExecutionOutcomeBaseMetadata {
   startTime: number
-  outcome: 'success' | 'failure'
+  submissionAcceptedAt?: number
+  executionStartedAt?: number
+  endTime: number
   workflowContext?: WorkflowExecutionContext
 }
+
+export type ExecutionOutcomeMetadata = ExecutionOutcomeBaseMetadata &
+  (
+    | {
+        success: true
+        failureReason: ''
+      }
+    | {
+        success: false
+        failureReason: WorkflowExecutionFailureReason
+      }
+  )
 
 /**
  * Execution success metadata

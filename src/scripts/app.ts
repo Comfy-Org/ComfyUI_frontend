@@ -1737,7 +1737,17 @@ export class ComfyApp {
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
           const startTime = performance.now()
-          const p = await this.graphToPrompt(this.rootGraph)
+          const p = await this.graphToPrompt(this.rootGraph).catch(
+            (error: unknown) => {
+              telemetry?.trackExecutionOutcome({
+                startTime,
+                endTime: performance.now(),
+                success: false,
+                failureReason: 'prompt_build_failed'
+              })
+              throw error
+            }
+          )
           const queuedNodes = collectAllNodes(this.rootGraph)
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
@@ -1754,8 +1764,18 @@ export class ComfyApp {
               partialExecutionTargets: queueNodeIds,
               previewMethod
             })
+            const responseReceivedAt = performance.now()
             delete api.authToken
             delete api.apiKey
+            if (!res.prompt_id) {
+              telemetry?.trackExecutionOutcome({
+                startTime,
+                endTime: responseReceivedAt,
+                success: false,
+                failureReason: 'submission_rejected',
+                ...(workflowContext && { workflowContext })
+              })
+            }
             if (res.prompt_id && telemetry && !workflowQueuedMetadata) {
               workflowQueuedMetadata = {
                 ...(workflowContext && { workflowContext }),
@@ -1775,6 +1795,7 @@ export class ComfyApp {
                   nodes: Object.keys(p.output),
                   promptOutput: p.output,
                   startTime,
+                  submissionAcceptedAt: responseReceivedAt,
                   workflow: queuedWorkflow,
                   workflowContext
                 })
@@ -1792,6 +1813,16 @@ export class ComfyApp {
               this.canvas.draw(true, true)
             }
           } catch (error: unknown) {
+            telemetry?.trackExecutionOutcome({
+              startTime,
+              endTime: performance.now(),
+              success: false,
+              failureReason:
+                error instanceof PromptExecutionError
+                  ? 'submission_rejected'
+                  : 'submission_failed',
+              ...(workflowContext && { workflowContext })
+            })
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&
               Object.keys(error.response.node_errors ?? {}).length > 0
