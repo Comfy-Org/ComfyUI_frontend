@@ -1,6 +1,22 @@
 /* oxlint-disable playwright/no-skipped-test -- tiers conditionally skip when the target backend lacks the required packs (installed custom nodes or devtools); this is the framework's designed environment gating, not a disabled test */
-import { existsSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { basename, resolve } from 'node:path'
+
+import type { CuratedOutputHashes } from '@e2e/fixtures/customNode/outputHashes'
+import {
+  compareOutputHashes,
+  hashPngPixels,
+  imageRefsFrom,
+  outputKey
+} from '@e2e/fixtures/customNode/outputHashes'
+
+const curatedOutputHashes: CuratedOutputHashes = JSON.parse(
+  readFileSync(
+    resolve('browser_tests/fixtures/data/curatedOutputHashes.core.json'),
+    'utf-8'
+  )
+)
+const recordedOutputHashes: CuratedOutputHashes = {}
 
 import type { Page } from '@playwright/test'
 
@@ -227,6 +243,54 @@ for (const entry of loadManifest()) {
             result.outputsByNode[sinkId],
             `sink node ${sinkId} produced no ui payload`
           ).toBeTruthy()
+
+        // S15 output regression: the sinks proved data ARRIVED; the hashes
+        // prove it is the SAME data. Core only: the fetch is node-side, which
+        // on cloud carries no session (the run-30309274120 lesson) - cloud
+        // enrolls when an in-app fetch path lands.
+        if (customNodesEnv() !== 'cloud') {
+          const refs = imageRefsFrom(
+            result.outputsByNode as Record<string, unknown>
+          )
+          const observed: Record<string, string> = {}
+          for (const [index, ref] of refs.entries()) {
+            const res = await comfyPage.request.get(
+              `${comfyPage.apiUrl}/api/view?filename=${encodeURIComponent(ref.filename)}` +
+                `&subfolder=${encodeURIComponent(ref.subfolder)}&type=${encodeURIComponent(ref.type)}`
+            )
+            expect(
+              res.status(),
+              `S15: /api/view ${ref.filename} for sink ${ref.nodeId}`
+            ).toBe(200)
+            observed[outputKey(ref, index)] = hashPngPixels(
+              Buffer.from(await res.body())
+            )
+          }
+          const workflowKey = `${entry.pack}/${basename(entry.workflow)}`
+          if (process.env.RECORD_OUTPUT_HASHES) {
+            recordedOutputHashes[workflowKey] = observed
+            mkdirSync('test-results', { recursive: true })
+            writeFileSync(
+              'test-results/curatedOutputHashes.recorded.json',
+              JSON.stringify(recordedOutputHashes, null, 2)
+            )
+            // A record run must never read as a green test run (the
+            // CN_GEOMETRY record convention): fail after writing.
+            expect(
+              null,
+              `RECORD_OUTPUT_HASHES: wrote ${Object.keys(observed).length} hash(es) for ${workflowKey} - the artifact is the product, this is not a pass`
+            ).not.toBeNull()
+          } else {
+            expect(
+              compareOutputHashes({
+                workflowKey,
+                observed,
+                committed: curatedOutputHashes
+              }),
+              'S15 output regression'
+            ).toEqual([])
+          }
+        }
         await expectNoVisibleErrors(comfyPage.page, 'after run')
         consoleErrors.stop()
         expect(
