@@ -166,19 +166,21 @@ describe('ModelInfoPanel', () => {
       mockDistribution.isCloud = true
       renderPanel(createMockAsset({ is_immutable: true }))
       expect(
-        screen.getByTitle('assetBrowser.modelInfo.modelTypeImmutableReadonly')
+        screen.getByText('assetBrowser.modelInfo.modelTypeImmutableReadonly')
       ).toBeInTheDocument()
       expect(
-        screen.queryByTitle('assetBrowser.modelInfo.modelTypeCoreReadonly')
+        screen.queryByText('assetBrowser.modelInfo.modelTypeCoreReadonly')
       ).not.toBeInTheDocument()
     })
 
     it('blames core for a read-only model type off-cloud', () => {
       mockDistribution.isCloud = false
       renderPanel(createMockAsset({ is_immutable: false }))
-      expect(
-        screen.getByTitle('assetBrowser.modelInfo.modelTypeCoreReadonly')
-      ).toBeInTheDocument()
+      const field = screen.getByText('assetBrowser.unknown')
+      expect(field).toHaveAttribute('aria-disabled', 'true')
+      expect(field).toHaveAccessibleDescription(
+        'assetBrowser.modelInfo.modelTypeCoreReadonly'
+      )
     })
 
     it('renders base models field', () => {
