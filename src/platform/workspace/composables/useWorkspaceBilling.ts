@@ -304,6 +304,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function cancelSubscription(): Promise<void> {
     isLoading.value = true
     error.value = null
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'started',
+      outcome: 'pending',
+      operation_type: 'cancel'
+    })
     // Set once the initiating call returns a billing_op_id: the poller then
     // owns failure telemetry for this operation (see billingOperationStore's
     // handleFailure). While it is still undefined, nothing is polling this

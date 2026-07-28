@@ -754,6 +754,24 @@ describe('useWorkspaceBilling', () => {
       expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
+    it('fires a started event before the cancel API call resolves', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-cancel',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      mockStartOperation.mockResolvedValue(operation())
+
+      const billing = setupBilling()
+      await billing.cancelSubscription()
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'cancel'
+      })
+    })
+
     it('fires billing telemetry directly when the initiating call fails before a billing_op_id exists', async () => {
       mockWorkspaceApi.cancelSubscription.mockRejectedValue(
         new mockWorkspaceApiError('Upstream failure', 502)
@@ -802,7 +820,9 @@ describe('useWorkspaceBilling', () => {
       )
       // The billing-op poller (billingOperationStore) already fires failure
       // telemetry for this case — the composable must not fire a duplicate.
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'failed' })
+      )
     })
 
     it('falls back to a generic error message when cancel rejects with a non-Error', async () => {
@@ -838,8 +858,10 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.tier).toBe('CREATOR')
       expect(mockStartOperation).not.toHaveBeenCalled()
       expect(billing.isLoading.value).toBe(false)
-      // Already being in the requested state is not a failure — no telemetry.
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      // Already being in the requested state is not a failure — no failure telemetry.
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'failed' })
+      )
     })
 
     it('stays a success when the follow-up status read also fails', async () => {

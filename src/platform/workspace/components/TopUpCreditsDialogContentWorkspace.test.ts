@@ -166,6 +166,19 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     mockFetchStatus.mockResolvedValue(undefined)
   })
 
+  it('fires a started event before the purchase resolves', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+
+    renderDialog()
+    await clickAddCredits()
+
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'started',
+      outcome: 'pending'
+    })
+  })
+
   it('refreshes both balance and status after a completed top-up', async () => {
     mockTopup.mockResolvedValue(topupResponse('completed'))
 
@@ -191,7 +204,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     renderDialog()
     await clickAddCredits()
 
-    expect(mockTrackBillingEvent).toHaveBeenCalledTimes(1)
+    expect(mockTrackBillingEvent).toHaveBeenCalledTimes(2)
     expect(mockTrackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'succeeded',
@@ -210,7 +223,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup')
     expect(mockFetchBalance).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
-    expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+    expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ stage: 'succeeded' })
+    )
   })
 
   it('does not refresh balance or status for a failed top-up', async () => {

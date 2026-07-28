@@ -265,6 +265,11 @@ async function handleBuy() {
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'started',
+      outcome: 'pending'
+    })
 
     const amountCents = payAmount.value * 100
     const response = await topup(amountCents)

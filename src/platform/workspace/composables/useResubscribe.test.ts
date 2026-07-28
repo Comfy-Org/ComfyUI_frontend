@@ -79,6 +79,19 @@ describe('useResubscribe', () => {
     expect(isResubscribing.value).toBe(false)
   })
 
+  it('fires a started event before resubscribe resolves', async () => {
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'started',
+      outcome: 'pending',
+      source: 'settings_billing_panel'
+    })
+  })
+
   it('fires resubscribe success telemetry on the legacy rail too', async () => {
     state.shouldUseWorkspaceBilling = false
     state.canManageSubscriptionLifecycle = false

@@ -32,6 +32,12 @@ export function useResubscribe() {
     useTelemetry()?.trackResubscribeClicked({
       source: 'settings_billing_panel'
     })
+    useTelemetry()?.trackBillingEvent({
+      operation: 'resubscribe',
+      stage: 'started',
+      outcome: 'pending',
+      source: 'settings_billing_panel'
+    })
     isResubscribing.value = true
     try {
       await resubscribe()

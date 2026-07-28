@@ -10,6 +10,7 @@ import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useTelemetry } from '@/platform/telemetry'
 import type { BillingFailure } from '@/platform/telemetry/types'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   PreviewSubscribeResponse,
   SubscribeResponse
@@ -72,7 +73,7 @@ export function useDowngradeToPersonal() {
     let memberRemovalFailures = 0
     let targetTier: TierKey | undefined
     let targetCycle: BillingCycle | undefined
-    let telemetryFailure: BillingFailure = { failure_category: 'unknown' }
+    let telemetryFailure: BillingFailure | undefined
 
     telemetry?.trackBillingEvent({
       operation: 'downgrade_to_personal',
@@ -121,7 +122,7 @@ export function useDowngradeToPersonal() {
         } catch (error) {
           memberRemovalFailures += 1
           telemetryFailure = {
-            failure_category: 'unknown',
+            failure_category: categorizeBillingApiError(error),
             error_code: 'member_removal_failed'
           }
           throw new Error(
@@ -211,7 +212,9 @@ export function useDowngradeToPersonal() {
         member_removal_count: membersToRemove.length,
         member_removal_failures: memberRemovalFailures,
         target_tier: targetTier,
-        ...telemetryFailure
+        ...(telemetryFailure ?? {
+          failure_category: categorizeBillingApiError(error)
+        })
       })
       throw error
     }

@@ -185,6 +185,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
+    const durationMs = Date.now() - operation.startedAt
     if (operation.type === 'subscription') {
       telemetry?.trackBillingEvent({
         operation: 'subscription_checkout',
@@ -194,7 +195,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         cycle: operation.cycle,
         checkout_type: operation.checkoutType,
         payment_intent_source: operation.paymentIntentSource,
-        billing_op_id: opId
+        billing_op_id: opId,
+        duration_ms: durationMs
       })
       // Also fires the pre-existing generic event so the seven providers that
       // don't yet implement trackBillingEvent (Mixpanel, GTM, Impact,
@@ -215,7 +217,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
             operation.downgradeToPersonal.memberRemovalCount,
           member_removal_failures:
             operation.downgradeToPersonal.memberRemovalFailures,
-          target_tier: operation.downgradeToPersonal.targetTier
+          target_tier: operation.downgradeToPersonal.targetTier,
+          duration_ms: durationMs
         })
       }
     } else if (operation.type === 'topup') {
@@ -223,7 +226,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         operation: 'topup',
         stage: 'succeeded',
         outcome: 'success',
-        billing_op_id: opId
+        billing_op_id: opId,
+        duration_ms: durationMs
       })
     } else {
       telemetry?.trackBillingEvent({
@@ -231,7 +235,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         stage: 'succeeded',
         outcome: 'success',
         billing_op_id: opId,
-        operation_type: 'cancel'
+        operation_type: 'cancel',
+        duration_ms: durationMs
       })
     }
 
@@ -284,6 +289,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     const telemetry = useTelemetry()
     const failureCategory = categorizePollFailure(operation.type)
+    const durationMs = Date.now() - operation.startedAt
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'failed',
@@ -294,7 +300,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       cycle: operation.cycle,
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
-      failure_category: failureCategory
+      failure_category: failureCategory,
+      duration_ms: durationMs
     })
     if (operation.downgradeToPersonal) {
       telemetry?.trackBillingEvent({
@@ -305,7 +312,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         member_removal_failures:
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
-        failure_category: failureCategory
+        failure_category: failureCategory,
+        duration_ms: durationMs
       })
     }
 
@@ -330,6 +338,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
+    const durationMs = Date.now() - operation.startedAt
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'timeout',
@@ -340,7 +349,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       cycle: operation.cycle,
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
-      failure_category: 'poll_timeout'
+      failure_category: 'poll_timeout',
+      duration_ms: durationMs
     })
     if (operation.downgradeToPersonal) {
       telemetry?.trackBillingEvent({
@@ -351,7 +361,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         member_removal_failures:
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
-        failure_category: 'poll_timeout'
+        failure_category: 'poll_timeout',
+        duration_ms: durationMs
       })
     }
 

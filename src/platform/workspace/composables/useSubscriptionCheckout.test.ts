@@ -723,6 +723,35 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleTeamSubscribe', () => {
+    it('fires a started event before subscribing', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly'
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-1'
+      })
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'subscription_checkout',
+        stage: 'started',
+        outcome: 'pending',
+        tier: 'team',
+        cycle: 'monthly',
+        checkout_type: 'new',
+        payment_intent_source: undefined
+      })
+    })
+
     it('subscribes with the team plan slug, stop id and billing cycle', async () => {
       const checkout = await setup()
       await checkout.handleSubscribeTeamClick({
@@ -924,6 +953,28 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleAddCreditCard', () => {
+    it('fires a started event before subscribing', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-1'
+      })
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'subscription_checkout',
+        stage: 'started',
+        outcome: 'pending',
+        tier: 'standard',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        payment_intent_source: undefined
+      })
+    })
+
     it('shows existing success immediately without owning reconciliation', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'

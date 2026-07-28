@@ -293,6 +293,11 @@ export function useSubscriptionCheckout(
         ? 'change'
         : 'new'
 
+    trackSubscriptionStarted({
+      tier: tierKey,
+      cycle: billingCycle,
+      checkoutType
+    })
     isSubscribing.value = true
     try {
       const planSlug = getApiPlanSlug(tierKey, billingCycle)
@@ -347,6 +352,20 @@ export function useSubscriptionCheckout(
     tier: CheckoutTierKey | 'team'
     cycle: BillingCycle
     checkoutType: SubscriptionCheckoutType
+  }
+
+  function trackSubscriptionStarted(context: SubscriptionOutcomeContext) {
+    if (!shouldUseWorkspaceBilling.value) return
+
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'started',
+      outcome: 'pending',
+      tier: context.tier,
+      cycle: context.cycle,
+      checkout_type: context.checkoutType,
+      payment_intent_source: paymentIntentSource
+    })
   }
 
   function trackSubscriptionFailure(
@@ -470,6 +489,11 @@ export function useSubscriptionCheckout(
     const { stop, checkoutType } = teamCheckout
     const billingCycle = selectedBillingCycle.value
 
+    trackSubscriptionStarted({
+      tier: 'team',
+      cycle: billingCycle,
+      checkoutType
+    })
     isSubscribing.value = true
     try {
       const planSlug = getTeamPlanSlug(billingCycle)

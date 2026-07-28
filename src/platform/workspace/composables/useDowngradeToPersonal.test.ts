@@ -74,6 +74,13 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
+vi.mock('@/platform/telemetry/utils/billingFailureCategory', () => ({
+  categorizeBillingApiError: (err: unknown) =>
+    err instanceof Error && err.name === 'WorkspaceApiError'
+      ? 'network'
+      : 'unknown'
+}))
+
 function createMember(
   overrides: Partial<WorkspaceMember> = {}
 ): WorkspaceMember {
@@ -513,6 +520,51 @@ describe('useDowngradeToPersonal', () => {
         member_removal_failures: 0,
         target_tier: undefined,
         failure_category: 'unknown'
+      })
+    })
+
+    it('categorizes an uncaught previewSubscribe failure via the shared classifier', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      const workspaceApiError = new Error('offline')
+      workspaceApiError.name = 'WorkspaceApiError'
+      mockPreviewSubscribe.mockRejectedValue(workspaceApiError)
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'offline'
+      )
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: 1,
+        member_removal_failures: 0,
+        target_tier: undefined,
+        failure_category: 'network'
+      })
+    })
+
+    it('categorizes a member-removal failure via the shared classifier', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      const workspaceApiError = new Error('rejected')
+      workspaceApiError.name = 'WorkspaceApiError'
+      mockRemoveMember.mockRejectedValue(workspaceApiError)
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'm1@example.com'
+      )
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: 1,
+        member_removal_failures: 1,
+        target_tier: undefined,
+        failure_category: 'network',
+        error_code: 'member_removal_failed'
       })
     })
   })
