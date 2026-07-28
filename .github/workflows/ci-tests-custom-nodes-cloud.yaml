@@ -65,7 +65,14 @@ concurrency:
   # for real. Do not mark this check required until open item 7 lands a
   # per-run instance (then switch to the core gate's per-ref group) or an
   # in-job lock replaces group serialization.
-  group: custom-nodes-cloud-instance
+  # workflow_dispatch runs get their own group: main-push runs share the
+  # instance group and each new pending run EVICTS the older pending one
+  # (GitHub keeps one pending slot per group) - calibration dispatches
+  # 30312432225/30316897509/30317780440/30318407927 all died queued or
+  # displaced under main churn. Pre-merge this overlap is safe: main runs
+  # no-op green in seconds (the manifest gate). Re-unify via the in-job
+  # lock (open item 7) before this check is marked required.
+  group: ${{ github.event_name == 'workflow_dispatch' && 'custom-nodes-cloud-dispatch' || 'custom-nodes-cloud-instance' }}
   cancel-in-progress: false
 
 jobs:
