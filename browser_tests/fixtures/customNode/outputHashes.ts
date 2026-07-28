@@ -152,11 +152,11 @@ export function compareOutputHashes(input: {
     if (actual === undefined)
       problems.push(
         `${workflowKey} ${key}: committed hash but the output is gone - the ` +
-          `sink no longer produces this image`
+          `sink no longer produces this output`
       )
     else if (actual !== digest)
       problems.push(
-        `${workflowKey} ${key}: pixel hash changed - expected ${digest}, got ` +
+        `${workflowKey} ${key}: output hash changed - expected ${digest}, got ` +
           `${actual}. A frontend change altered what this workflow produces`
       )
   }
@@ -164,7 +164,7 @@ export function compareOutputHashes(input: {
     if (!(key in expected))
       problems.push(
         `${workflowKey} ${key}: new output with no committed hash - enroll it ` +
-          `(a new image appearing is also a behavior change)`
+          `(a new output appearing is also a behavior change)`
       )
   return problems
 }

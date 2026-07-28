@@ -104,7 +104,7 @@ test.describe('S15 output hashes', () => {
         observed: { '5': 'sha256:aa', '7': 'sha256:XX' },
         committed
       })[0]
-    ).toContain('hash changed')
+    ).toContain('output hash changed')
     expect(
       compareOutputHashes({
         workflowKey: 'pack/wf.json',
