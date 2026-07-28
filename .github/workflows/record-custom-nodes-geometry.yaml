@@ -12,6 +12,11 @@ name: 'Record Custom Nodes Geometry'
 
 on:
   workflow_dispatch:
+  # workflow_dispatch cannot see a workflow that has never been on the
+  # default branch; pushing a record/custom-nodes-* ref runs this file
+  # from that ref instead. Delete the ref after collecting the artifact.
+  push:
+    branches: ['record/custom-nodes-*']
 
 concurrency:
   group: ${{ github.workflow }}
@@ -110,10 +115,30 @@ jobs:
             --project=custom-nodes --reporter=list --workers=1 --retries=0 \
             --grep "mounts in both renderers"
 
+      # S15 output hashes ride the same backend boot: the T1 curated runs in
+      # record mode write test-results/curatedOutputHashes.recorded.json and
+      # deliberately fail each recording test (a record is not a pass).
+      - name: Record output hashes (S15)
+        continue-on-error: true
+        env:
+          RECORD_OUTPUT_HASHES: '1'
+        run: |
+          pnpm exec playwright test browser_tests/tests/customNodes/customNode.regression.spec.ts \
+            --project=custom-nodes --reporter=list --workers=1 --retries=0 \
+            --grep "T1 run"
+
       - name: Upload recorded baselines
         uses: actions/upload-artifact@v6
         with:
           name: custom-nodes-geometry-baselines
           path: browser_tests/fixtures/customNode/geometry/
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload recorded output hashes
+        uses: actions/upload-artifact@v6
+        with:
+          name: custom-nodes-output-hashes
+          path: test-results/curatedOutputHashes.recorded.json
           retention-days: 7
           if-no-files-found: error

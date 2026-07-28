@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.48.5",
+  "version": "1.49.0",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -69,7 +69,12 @@
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
     "typecheck:desktop": "pnpm --filter @comfyorg/desktop-ui run typecheck",
     "typecheck:website": "pnpm --filter @comfyorg/website run typecheck",
-    "zipdist": "node scripts/zipdist.js"
+    "zipdist": "node scripts/zipdist.js",
+    "test:custom-nodes:local": "start-server-and-test backend:custom-nodes http-get://127.0.0.1:8288/system_stats dev:custom-nodes http-get://localhost:5173 test:custom-nodes",
+    "test:custom-nodes:local:cloud": "pnpm build:cloud-e2e && start-server-and-test preview:cloud-e2e http-get://localhost:4173 test:custom-nodes:cloud-suite",
+    "backend:custom-nodes": "sh -c 'cd \"${TEST_COMFYUI_DIR:?point at your ComfyUI checkout (README Prerequisites)}\"; cp \"$OLDPWD/browser_tests/assets/plain_video.mp4\" input/ 2>/dev/null; PY=python3; [ -x venv/bin/python ] && PY=venv/bin/python; [ -x .venv/bin/python ] && PY=.venv/bin/python; \"$PY\" main.py --port 8288 --multi-user --cache-none'",
+    "dev:custom-nodes": "cross-env DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8288 vite --config vite.config.mts",
+    "test:custom-nodes:cloud-suite": "cross-env CUSTOM_NODES_ENV=cloud PLAYWRIGHT_TEST_URL=http://localhost:4173 playwright test browser_tests/tests/customNodes/ --project=custom-nodes --workers=1"
   },
   "dependencies": {
     "@alloc/quick-lru": "catalog:",
@@ -84,6 +89,7 @@
     "@comfyorg/tailwind-utils": "workspace:*",
     "@customerio/cdp-analytics-browser": "catalog:",
     "@datadog/browser-rum": "catalog:",
+    "@floating-ui/vue": "catalog:",
     "@formkit/auto-animate": "catalog:",
     "@iconify/json": "catalog:",
     "@primeuix/forms": "catalog:",
@@ -204,6 +210,7 @@
     "postcss-html": "catalog:",
     "pretty-bytes": "catalog:",
     "rollup-plugin-visualizer": "catalog:",
+    "start-server-and-test": "catalog:",
     "storybook": "catalog:",
     "stylelint": "catalog:",
     "tailwindcss": "catalog:",
