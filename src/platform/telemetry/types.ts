@@ -197,10 +197,36 @@ export interface WorkflowQueueIntent {
   trigger_source?: ExecutionTriggerSource
 }
 
-export interface ExecutionOutcomeMetadata {
-  startTime: number
-  outcome: 'success' | 'failure'
+export interface WorkflowExecutionIntent {
+  trigger_source: ExecutionTriggerSource
 }
+
+export type WorkflowExecutionFailureReason =
+  | 'prompt_build_failed'
+  | 'submission_rejected'
+  | 'submission_failed'
+  | 'execution_failed'
+  | 'execution_interrupted'
+
+interface ExecutionOutcomeBaseMetadata extends WorkflowExecutionIntent {
+  startTime: number
+  submissionAcceptedAt?: number
+  executionStartedAt?: number
+  endTime: number
+  workflowContext?: WorkflowExecutionContext
+}
+
+export type ExecutionOutcomeMetadata = ExecutionOutcomeBaseMetadata &
+  (
+    | {
+        success: true
+        failureReason: ''
+      }
+    | {
+        success: false
+        failureReason: WorkflowExecutionFailureReason
+      }
+  )
 
 /**
  * Execution success metadata
@@ -1015,13 +1041,25 @@ export const CANCELLATION_STAGE_EVENTS = {
   failed: TelemetryEvents.SUBSCRIPTION_CANCEL_FAILED
 } as const
 
-export type ExecutionTriggerSource =
-  | 'button'
-  | 'keybinding'
-  | 'legacy_ui'
-  | 'unknown'
-  | 'linear'
-  | 'auto_queue'
+const executionTriggerSources = [
+  'button',
+  'keybinding',
+  'legacy_ui',
+  'unknown',
+  'linear',
+  'auto_queue'
+] as const
+
+export type ExecutionTriggerSource = (typeof executionTriggerSources)[number]
+
+export function normalizeExecutionTriggerSource(
+  value: unknown
+): ExecutionTriggerSource {
+  return (
+    executionTriggerSources.find((triggerSource) => triggerSource === value) ??
+    'unknown'
+  )
+}
 
 /**
  * Union type for all possible telemetry event properties
