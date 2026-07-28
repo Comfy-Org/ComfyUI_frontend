@@ -1,10 +1,13 @@
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTelemetry } from '@/platform/telemetry'
-import type { SubscriptionCancellationMetadata } from '@/platform/telemetry/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getErrorMessage } from '@/utils/errorUtil'
+
+import { createCancellationMetadata } from './cancellationTelemetry'
 
 export interface CancellationFallbackOptions {
   flowAlreadyOpened?: boolean
@@ -15,27 +18,6 @@ interface LaunchCancellationFlowOptions {
   showFallback: (
     options?: CancellationFallbackOptions
   ) => void | Promise<unknown>
-}
-
-function cancellationMetadata(
-  billing: ReturnType<typeof useBillingContext>,
-  cancelAt?: string
-): SubscriptionCancellationMetadata {
-  const subscription = billing.subscription.value
-  const endDate = cancelAt ?? subscription?.endDate
-  return {
-    source: 'cancel_plan_menu',
-    current_tier: billing.tier.value?.toLowerCase(),
-    ...(subscription?.duration
-      ? {
-          cycle:
-            subscription.duration === 'ANNUAL'
-              ? ('yearly' as const)
-              : ('monthly' as const)
-        }
-      : {}),
-    ...(endDate ? { end_date: endDate } : {})
-  }
 }
 
 function customerAttributes(
@@ -74,6 +56,7 @@ async function runCancellationFlow(
   ) => void | Promise<unknown>
 ): Promise<void> {
   const billing = useBillingContext()
+  const { permissions } = useWorkspaceUI()
   const workspaceStore = useTeamWorkspaceStore()
   const launchWorkspaceId = workspaceStore.activeWorkspaceId
   if (
@@ -100,7 +83,12 @@ async function runCancellationFlow(
   if (!isLaunchWorkspaceCurrent()) return
 
   const telemetry = useTelemetry()
-  const metadata = cancellationMetadata(billing, cancelAt)
+  const subscription = billing.subscription.value
+  const metadata = createCancellationMetadata({
+    currentTier: billing.tier.value,
+    duration: subscription?.duration,
+    endDate: cancelAt ?? subscription?.endDate
+  })
   let didCancelSucceed = false
   let cancelError: unknown
 
@@ -112,6 +100,10 @@ async function runCancellationFlow(
       handleCancel: async () => {
         if (!isLaunchWorkspaceCurrent()) {
           throw new Error('Active workspace changed during cancellation')
+        }
+        if (!permissions.value.canManageSubscriptionLifecycle) {
+          cancelError = new Error(t('subscription.cancelDialog.failed'))
+          throw cancelError
         }
         telemetry?.trackSubscriptionCancellation('confirmed', metadata)
         try {
@@ -140,6 +132,14 @@ async function runCancellationFlow(
       error_message:
         getErrorMessage(cancelError ?? error) ?? t('g.unknownError')
     })
+    if (cancelError) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('subscription.cancelDialog.failed'),
+        detail: getErrorMessage(cancelError) ?? t('g.unknownError')
+      })
+      return
+    }
     await showFallback({ flowAlreadyOpened: true })
   }
 }

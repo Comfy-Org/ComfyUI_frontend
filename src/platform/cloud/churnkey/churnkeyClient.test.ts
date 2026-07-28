@@ -1,6 +1,8 @@
 import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { i18n } from '@/i18n'
+
 import type { ChurnkeyInitConfig } from './types'
 
 const mocks = vi.hoisted(() => ({
@@ -73,11 +75,14 @@ describe('churnkeyClient', () => {
       customerId: 'cus_test_1',
       provider: 'stripe',
       mode: 'test',
+      record: false,
+      i18n: {
+        lang: String(i18n.global.locale.value)
+      },
       customerAttributes: { tier: 'PRO' }
     })
     expect(config).not.toHaveProperty('customer')
     expect(config).not.toHaveProperty('subscriptions')
-    expect(config).not.toHaveProperty('record')
 
     await expect(
       config.handleCancel({ id: 'cus_test_1' }, 'Too expensive', 'Feedback')
@@ -96,6 +101,9 @@ describe('churnkeyClient', () => {
       'Unsupported ChurnKey offer'
     )
     await expect(config.handleRebate()).rejects.toThrow(
+      'Unsupported ChurnKey offer'
+    )
+    await expect(config.handleRedirect()).rejects.toThrow(
       'Unsupported ChurnKey offer'
     )
 
@@ -162,11 +170,100 @@ describe('churnkeyClient', () => {
     expect(mocks.clearState).toHaveBeenCalledOnce()
   })
 
+  it('waits for pending cancellation before reporting a provider error', async () => {
+    const session = await prepareChurnkey()
+    if (!session) throw new Error('Expected a Churnkey session')
+
+    let finishCancellation: (() => void) | undefined
+    const cancellation = new Promise<{ message: string }>((resolve) => {
+      finishCancellation = () => resolve({ message: 'Canceled' })
+    })
+    const showPromise = session.show({
+      handleCancel: vi.fn().mockReturnValue(cancellation)
+    })
+    const config = capturedConfig()
+
+    const handlerPromise = config.handleCancel({ id: 'cus_test_1' })
+    config.onError('Provider failed')
+    await Promise.resolve()
+
+    expect(mocks.hide).not.toHaveBeenCalled()
+    expect(mocks.clearState).not.toHaveBeenCalled()
+    const resolveCancellation = finishCancellation
+    if (!resolveCancellation) throw new Error('Expected cancellation to start')
+    resolveCancellation()
+
+    await expect(handlerPromise).resolves.toEqual({ message: 'Canceled' })
+    await expect(showPromise).rejects.toThrow('Provider failed')
+    expect(mocks.hide).toHaveBeenCalledOnce()
+    expect(mocks.clearState).toHaveBeenCalledOnce()
+  })
+
+  it('rejects and cleans up when the embed session never settles', async () => {
+    const session = await prepareChurnkey()
+    if (!session) throw new Error('Expected a Churnkey session')
+
+    vi.useFakeTimers()
+    try {
+      const showPromise = session.show({ handleCancel: vi.fn() })
+      const timeoutResult = showPromise.catch((error: unknown) => error)
+
+      await vi.runOnlyPendingTimersAsync()
+
+      expect(await timeoutResult).toEqual(
+        new Error('ChurnKey session timed out')
+      )
+      expect(mocks.hide).toHaveBeenCalledOnce()
+      expect(mocks.clearState).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('does not load the embed when backend credentials are unavailable', async () => {
     mocks.getChurnkeyAuth.mockResolvedValue(null)
 
     await expect(prepareChurnkey()).resolves.toBeNull()
     expect(mocks.init).not.toHaveBeenCalled()
+  })
+
+  it('loads the configured embed and surfaces script failures', async () => {
+    mocks.appId = 'app_load_failure'
+    window.churnkey = undefined
+
+    const appendedScript = {
+      value: null as HTMLScriptElement | null
+    }
+    const appendChild = vi
+      .spyOn(document.head, 'appendChild')
+      .mockImplementation((node) => {
+        if (!(node instanceof HTMLScriptElement)) {
+          throw new Error('Expected the ChurnKey script element')
+        }
+        appendedScript.value = node
+        return node
+      })
+
+    try {
+      const preparation = prepareChurnkey()
+      const loadFailure = preparation.catch((error: unknown) => error)
+      await vi.waitFor(() => expect(appendedScript.value).not.toBeNull())
+
+      expect(window.churnkey).toEqual({ created: true })
+      expect(
+        new URL(appendedScript.value?.src ?? '').searchParams.get('appId')
+      ).toBe('app_load_failure')
+      appendedScript.value?.dispatchEvent(new Event('error'))
+
+      expect(await loadFailure).toEqual(
+        new Error(
+          'Script failed to load: https://assets.churnkey.co/js/app.js?appId=app_load_failure'
+        )
+      )
+      expect(appendedScript.value?.isConnected).toBe(false)
+    } finally {
+      appendChild.mockRestore()
+    }
   })
 
   it('cleans up when ChurnKey initialization throws synchronously', async () => {

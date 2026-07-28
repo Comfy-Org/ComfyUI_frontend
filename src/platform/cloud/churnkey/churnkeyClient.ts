@@ -1,6 +1,7 @@
 import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { i18n } from '@/i18n'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { toError } from '@/utils/errorUtil'
 import { createScriptLoader } from '@/utils/loadExternalScript'
@@ -13,18 +14,25 @@ import type {
 } from './types'
 
 const EMBED_SCRIPT_URL = 'https://assets.churnkey.co/js/app.js'
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000
 
-const scriptLoaders = new Map<string, () => Promise<ChurnkeyInit>>()
+let churnkeyScript:
+  | {
+      src: string
+      load: () => Promise<ChurnkeyInit>
+    }
+  | undefined
 
 function loadChurnkey(appId: string): Promise<ChurnkeyInit> {
   window.churnkey ??= { created: true }
   const src = `${EMBED_SCRIPT_URL}?appId=${encodeURIComponent(appId)}`
-  let loadScript = scriptLoaders.get(src)
-  if (!loadScript) {
-    loadScript = createScriptLoader(src, () => window.churnkey?.init ?? null)
-    scriptLoaders.set(src, loadScript)
+  if (churnkeyScript?.src !== src) {
+    churnkeyScript = {
+      src,
+      load: createScriptLoader(src, () => window.churnkey?.init ?? null)
+    }
   }
-  return loadScript()
+  return churnkeyScript.load()
 }
 
 function churnkeyError(error: unknown, type?: string): Error {
@@ -70,6 +78,7 @@ function createSession(
         function settle(fn: () => void, { deferClearState = false } = {}) {
           if (settled) return
           settled = true
+          window.clearTimeout(sessionTimeoutId)
           const clearState = () =>
             runBestEffort(() => {
               window.churnkey?.clearState?.()
@@ -83,12 +92,40 @@ function createSession(
           fn()
         }
 
+        function settleAfterCancellation(
+          fn: () => void,
+          options?: { deferClearState?: boolean }
+        ) {
+          const cancellation = pendingCancellation
+          if (!cancellation) {
+            settle(fn, options)
+            return
+          }
+          void cancellation.then(
+            () => settle(fn, options),
+            () => settle(fn, options)
+          )
+        }
+
+        const sessionTimeoutId = window.setTimeout(() => {
+          settleAfterCancellation(() => {
+            runBestEffort(() => {
+              window.churnkey?.hide?.()
+            })
+            reject(new Error('ChurnKey session timed out'))
+          })
+        }, SESSION_TIMEOUT_MS)
+
         const config: ChurnkeyInitConfig = {
           appId: configuredAppId,
           authHash: auth.auth_hash,
           customerId: auth.customer_id,
           provider: 'stripe',
           mode: auth.mode,
+          record: false,
+          i18n: {
+            lang: String(i18n.global.locale.value)
+          },
           customerAttributes: options.customerAttributes,
           handleCancel: (_customer, surveyResponse, freeformFeedback) => {
             const cancellation = options.handleCancel(
@@ -115,19 +152,10 @@ function createSession(
           handleTrialExtension: rejectUnsupportedOffer,
           handlePlanChange: rejectUnsupportedOffer,
           handleRebate: rejectUnsupportedOffer,
-          onClose: (results) => {
-            const cancellation = pendingCancellation
-            if (!cancellation) {
-              settle(() => resolve(results))
-              return
-            }
-            void cancellation.then(
-              () => settle(() => resolve(results)),
-              () => settle(() => resolve(results))
-            )
-          },
+          handleRedirect: rejectUnsupportedOffer,
+          onClose: (results) => settleAfterCancellation(() => resolve(results)),
           onError: (error, type) =>
-            settle(
+            settleAfterCancellation(
               () => {
                 runBestEffort(() => {
                   window.churnkey?.hide?.()

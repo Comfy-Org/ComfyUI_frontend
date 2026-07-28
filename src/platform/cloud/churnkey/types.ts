@@ -10,7 +10,6 @@ export interface ChurnkeySessionResults {
   aborted?: boolean
   canceled?: boolean
   acceptedOffer?: Record<string, unknown> | null
-  [key: string]: unknown
 }
 
 type ChurnkeyUnsupportedHandler = (
@@ -23,6 +22,10 @@ export interface ChurnkeyInitConfig {
   customerId: string
   provider: 'stripe'
   mode: ChurnkeyMode
+  record: false
+  i18n: {
+    lang: string
+  }
   customerAttributes?: Record<string, string | number | boolean>
   handleCancel: (
     customer: unknown,
@@ -34,6 +37,7 @@ export interface ChurnkeyInitConfig {
   handleTrialExtension: ChurnkeyUnsupportedHandler
   handlePlanChange: ChurnkeyUnsupportedHandler
   handleRebate: ChurnkeyUnsupportedHandler
+  handleRedirect: ChurnkeyUnsupportedHandler
   onClose: (results: ChurnkeySessionResults) => void
   onError: (error: unknown, type?: string) => void
 }

@@ -22,7 +22,9 @@ const mocks = vi.hoisted(() => ({
   cancelSubscription: vi.fn(),
   fetchStatus: vi.fn(),
   prepare: vi.fn(),
-  trackCancellation: vi.fn()
+  trackCancellation: vi.fn(),
+  toastAdd: vi.fn(),
+  canManageSubscriptionLifecycle: true
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -44,6 +46,24 @@ vi.mock('@/platform/cloud/churnkey/churnkeyClient', () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackSubscriptionCancellation: mocks.trackCancellation
+  })
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({
+    add: mocks.toastAdd
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    permissions: {
+      get value() {
+        return {
+          canManageSubscriptionLifecycle: mocks.canManageSubscriptionLifecycle
+        }
+      }
+    }
   })
 }))
 
@@ -73,6 +93,7 @@ describe('launchCancellationFlow', () => {
     mocks.billingType.value = 'workspace'
     mocks.activeWorkspaceId = 'workspace-1'
     mocks.billingRail = 'stripe'
+    mocks.canManageSubscriptionLifecycle = true
     mocks.cancelSubscription.mockResolvedValue(undefined)
     mocks.fetchStatus.mockResolvedValue(undefined)
   })
@@ -178,7 +199,7 @@ describe('launchCancellationFlow', () => {
     )
   })
 
-  it('falls back and records a failed cancel callback', async () => {
+  it('reports a failed cancel callback without reopening the native dialog', async () => {
     mocks.cancelSubscription.mockRejectedValue(new Error('API down'))
     mocks.prepare.mockResolvedValue(
       session(async (options) => {
@@ -198,7 +219,13 @@ describe('launchCancellationFlow', () => {
       'failed',
       expect.objectContaining({ error_message: 'API down' })
     )
-    expect(showFallback).toHaveBeenCalledWith({ flowAlreadyOpened: true })
+    expect(mocks.toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'API down'
+      })
+    )
+    expect(showFallback).not.toHaveBeenCalled()
   })
 
   it('does not reopen cancellation after the API already succeeded', async () => {
@@ -299,6 +326,29 @@ describe('launchCancellationFlow', () => {
     await launchCancellationFlow({ showFallback })
 
     expect(mocks.cancelSubscription).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
+  })
+
+  it('rejects cancellation after workspace permission is revoked', async () => {
+    mocks.prepare.mockResolvedValue(
+      session(async (options) => {
+        mocks.canManageSubscriptionLifecycle = false
+        await options.handleCancel('Too expensive')
+        return { canceled: true }
+      })
+    )
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(mocks.cancelSubscription).not.toHaveBeenCalled()
+    expect(mocks.trackCancellation).not.toHaveBeenCalledWith(
+      'confirmed',
+      expect.anything()
+    )
+    expect(mocks.toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error' })
+    )
     expect(showFallback).not.toHaveBeenCalled()
   })
 })
