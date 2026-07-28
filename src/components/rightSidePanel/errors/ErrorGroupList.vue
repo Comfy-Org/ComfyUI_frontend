@@ -331,6 +331,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
+import { useTelemetry } from '@/platform/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -423,6 +424,10 @@ function toggleExecutionItemDetail(key: string) {
     nextKeys.delete(key)
   } else {
     nextKeys.add(key)
+    useTelemetry()?.trackUiButtonClicked({
+      button_id: 'error_tab_info_opened',
+      element_group: 'errors_panel'
+    })
   }
   expandedExecutionItemDetailKeys.value = nextKeys
 }

@@ -24,6 +24,8 @@ import type {
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OnboardingTourMetadata,
+  OnboardingTourStage,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -45,12 +47,17 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
 } from '../../types'
-import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
+import {
+  CANCELLATION_STAGE_EVENTS,
+  OnboardingTourEvents,
+  TelemetryEvents
+} from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -421,6 +428,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
   }
 
+  trackOnboardingTour(
+    stage: OnboardingTourStage,
+    metadata: OnboardingTourMetadata
+  ): void {
+    this.trackEvent(OnboardingTourEvents[stage], metadata)
+  }
+
   trackSurvey(
     stage: 'opened' | 'submitted',
     responses?: SurveyResponses
@@ -567,6 +581,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
+    this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

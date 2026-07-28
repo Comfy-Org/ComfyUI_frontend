@@ -95,6 +95,7 @@ export const TestIds = {
   },
   topbar: {
     queueButton: 'queue-button',
+    queueButtonIcon: 'queue-button-icon',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
     subscribeButton: 'topbar-subscribe-button',
@@ -220,6 +221,7 @@ export const TestIds = {
   },
   appMode: {
     widgetItem: 'app-mode-widget-item',
+    widgetDescription: 'app-mode-widget-description',
     welcome: 'linear-welcome',
     emptyWorkflow: 'linear-welcome-empty-workflow',
     buildApp: 'linear-welcome-build-app',

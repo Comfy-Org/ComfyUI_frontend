@@ -94,6 +94,31 @@ export interface SurveyResponses {
   usage?: string
 }
 
+export type OnboardingTourStage =
+  | 'started'
+  | 'step_shown'
+  | 'completed'
+  | 'skipped'
+
+export type OnboardingTourSkipReason =
+  | 'user'
+  | 'target_timeout'
+  | 'trigger_lost'
+
+/**
+ * `step_number` is 1-based and matches the "Step N of M" indicator the user
+ * sees, with `step_count` as M. Both `step_number` and `coach_id` are absent
+ * for steps with no numbered spotlight (e.g. the landing). `skip_reason` is
+ * present only on the `skipped` stage.
+ */
+export interface OnboardingTourMetadata {
+  tour: string
+  step_count: number
+  step_number?: number
+  coach_id?: string
+  skip_reason?: OnboardingTourSkipReason
+}
+
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
   industry_raw?: string
@@ -408,6 +433,18 @@ export interface UiButtonClickMetadata {
 }
 
 /**
+ * Widget (input/parameter) favorite toggle tracking metadata.
+ * Used to measure discoverability of the right side panel favoriting feature.
+ */
+export interface WidgetFavoriteToggledMetadata {
+  node_type: string
+  widget_name: string
+  widget_type: string
+  is_favorited: boolean
+  source: 'right_side_panel'
+}
+
+/**
  * Help center opened metadata
  */
 export interface HelpCenterOpenedMetadata {
@@ -589,6 +626,12 @@ export interface TelemetryProvider {
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 
+  // Onboarding coachmark tour events
+  trackOnboardingTour?(
+    stage: OnboardingTourStage,
+    metadata: OnboardingTourMetadata
+  ): void
+
   // Email verification events
   trackEmailVerification?(stage: 'opened' | 'requested' | 'completed'): void
 
@@ -649,6 +692,9 @@ export interface TelemetryProvider {
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
 
+  // Right side panel widget favorite events
+  trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
+
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
 }
@@ -695,6 +741,12 @@ export const TelemetryEvents = {
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
+
+  // Onboarding Coachmarks
+  ONBOARDING_TOUR_STARTED: 'app:onboarding_tour_started',
+  ONBOARDING_TOUR_STEP_SHOWN: 'app:onboarding_tour_step_shown',
+  ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
+  ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
 
   // Email Verification
   USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
@@ -752,12 +804,25 @@ export const TelemetryEvents = {
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
+  // Right Side Panel Widget Favorites
+  WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
+
   // Page View
   PAGE_VIEW: 'app:page_view'
 } as const
 
 export type TelemetryEventName =
   (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+
+export const OnboardingTourEvents: Record<
+  OnboardingTourStage,
+  TelemetryEventName
+> = {
+  started: TelemetryEvents.ONBOARDING_TOUR_STARTED,
+  step_shown: TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
+  completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,
+  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED
+}
 
 export const CANCELLATION_STAGE_EVENTS = {
   flow_opened: TelemetryEvents.SUBSCRIPTION_CANCEL_FLOW_OPENED,
@@ -778,6 +843,7 @@ export type ExecutionTriggerSource =
  */
 export type TelemetryEventProperties =
   | AuthMetadata
+  | OnboardingTourMetadata
   | AuthErrorMetadata
   | SurveyResponses
   | TemplateMetadata
@@ -799,6 +865,7 @@ export type TelemetryEventProperties =
   | TemplateFilterMetadata
   | SettingChangedMetadata
   | UiButtonClickMetadata
+  | WidgetFavoriteToggledMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
