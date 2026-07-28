@@ -347,10 +347,14 @@ export function useSubscriptionCheckout(
 
     if (response.status === 'subscribed') {
       if (shouldTrackSubscriptionSuccess) {
-        telemetry?.trackMonthlySubscriptionSucceeded({
+        telemetry?.trackBillingEvent({
+          operation: 'subscription_checkout',
+          stage: 'succeeded',
+          outcome: 'success',
           tier: context.tier,
           cycle: context.cycle,
           checkout_type: context.checkoutType,
+          payment_intent_source: paymentIntentSource,
           billing_op_id: response.billing_op_id
         })
       }
@@ -390,7 +394,12 @@ export function useSubscriptionCheckout(
     const operation = await billingOperationStore.startOperation(
       opId,
       'subscription',
-      { tier: context.tier, cycle: context.cycle }
+      {
+        tier: context.tier,
+        cycle: context.cycle,
+        checkoutType: context.checkoutType,
+        paymentIntentSource
+      }
     )
     if (operation.status === 'succeeded') checkoutStep.value = 'success'
   }
@@ -452,7 +461,13 @@ export function useSubscriptionCheckout(
     isResubscribing.value = true
     try {
       await resubscribe()
-      telemetry?.trackResubscribeSucceeded({ source: 'pricing_dialog' })
+      telemetry?.trackBillingEvent({
+        operation: 'resubscribe',
+        stage: 'succeeded',
+        outcome: 'success',
+        source: 'pricing_dialog',
+        payment_intent_source: paymentIntentSource
+      })
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),
@@ -462,9 +477,13 @@ export function useSubscriptionCheckout(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to resubscribe'
-      telemetry?.trackResubscribeFailed({
+      telemetry?.trackBillingEvent({
+        operation: 'resubscribe',
+        stage: 'failed',
+        outcome: 'failure',
         source: 'pricing_dialog',
-        error_message: message
+        payment_intent_source: paymentIntentSource,
+        failure_category: 'unknown'
       })
       toast.add({
         severity: 'error',

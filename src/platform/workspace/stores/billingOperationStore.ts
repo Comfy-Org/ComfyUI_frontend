@@ -4,10 +4,15 @@ import { computed, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
-import type { SubscriptionCheckoutTier } from '@/platform/telemetry/types'
+import type {
+  PaymentIntentSource,
+  SubscriptionCheckoutTier,
+  SubscriptionCheckoutType
+} from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -24,6 +29,13 @@ type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
 export interface StartOperationMetadata {
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
+  checkoutType?: SubscriptionCheckoutType
+  paymentIntentSource?: PaymentIntentSource
+  downgradeToPersonal?: {
+    memberRemovalCount: number
+    memberRemovalFailures: number
+    targetTier?: TierKey
+  }
 }
 
 interface BillingOperation {
@@ -34,6 +46,9 @@ interface BillingOperation {
   startedAt: number
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
+  checkoutType?: SubscriptionCheckoutType
+  paymentIntentSource?: PaymentIntentSource
+  downgradeToPersonal?: StartOperationMetadata['downgradeToPersonal']
 }
 
 type TerminalResolver = (operation: BillingOperation) => void
@@ -83,7 +98,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       errorMessage: null,
       startedAt: Date.now(),
       tier: metadata?.tier,
-      cycle: metadata?.cycle
+      cycle: metadata?.cycle,
+      checkoutType: metadata?.checkoutType,
+      paymentIntentSource: metadata?.paymentIntentSource,
+      downgradeToPersonal: metadata?.downgradeToPersonal
     }
 
     operations.value = new Map(operations.value).set(opId, operation)
@@ -165,14 +183,37 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperationStatus(opId, 'succeeded', null)
     cleanup(opId)
 
+    const telemetry = useTelemetry()
     if (operation.type === 'subscription') {
-      useTelemetry()?.trackMonthlySubscriptionSucceeded({
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'succeeded',
+        outcome: 'success',
         tier: operation.tier,
         cycle: operation.cycle,
+        checkout_type: operation.checkoutType,
+        payment_intent_source: operation.paymentIntentSource,
         billing_op_id: opId
       })
+      if (operation.downgradeToPersonal) {
+        telemetry?.trackBillingEvent({
+          operation: 'downgrade_to_personal',
+          stage: 'succeeded',
+          outcome: 'success',
+          member_removal_count:
+            operation.downgradeToPersonal.memberRemovalCount,
+          member_removal_failures:
+            operation.downgradeToPersonal.memberRemovalFailures,
+          target_tier: operation.downgradeToPersonal.targetTier
+        })
+      }
     } else if (operation.type === 'topup') {
-      useTelemetry()?.trackApiCreditTopupSucceeded()
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: opId
+      })
     }
 
     const billingContext = useBillingContext()
@@ -222,13 +263,31 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperationStatus(opId, 'failed', errorMessage ?? defaultMessage)
     cleanup(opId)
 
-    useTelemetry()?.trackBillingOperationFailed({
+    const telemetry = useTelemetry()
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'failed',
+      outcome: 'failure',
       billing_op_id: opId,
       operation_type: operation.type,
       tier: operation.tier,
       cycle: operation.cycle,
-      failure_reason: errorMessage ?? defaultMessage
+      checkout_type: operation.checkoutType,
+      payment_intent_source: operation.paymentIntentSource,
+      failure_category: 'unknown'
     })
+    if (operation.downgradeToPersonal) {
+      telemetry?.trackBillingEvent({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
+        member_removal_failures:
+          operation.downgradeToPersonal.memberRemovalFailures,
+        target_tier: operation.downgradeToPersonal.targetTier,
+        failure_category: 'unknown'
+      })
+    }
 
     if (operation.type !== 'cancel') {
       useToastStore().add({
@@ -250,13 +309,31 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperationStatus(opId, 'timeout', message)
     cleanup(opId)
 
-    useTelemetry()?.trackBillingOperationTimeout({
+    const telemetry = useTelemetry()
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'timeout',
+      outcome: 'failure',
       billing_op_id: opId,
       operation_type: operation.type,
       tier: operation.tier,
       cycle: operation.cycle,
-      failure_reason: message
+      checkout_type: operation.checkoutType,
+      payment_intent_source: operation.paymentIntentSource,
+      failure_category: 'poll_timeout'
     })
+    if (operation.downgradeToPersonal) {
+      telemetry?.trackBillingEvent({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
+        member_removal_failures:
+          operation.downgradeToPersonal.memberRemovalFailures,
+        target_tier: operation.downgradeToPersonal.targetTier,
+        failure_category: 'poll_timeout'
+      })
+    }
 
     if (operation.type !== 'cancel') {
       useToastStore().add({

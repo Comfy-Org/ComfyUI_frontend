@@ -273,7 +273,12 @@ async function handleBuy() {
 
     const errorMessage =
       error instanceof Error ? error.message : t('credits.topUp.unknownError')
-    telemetry?.trackApiCreditTopupFailed({ error_message: errorMessage })
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: 'unknown'
+    })
     toast.add({
       severity: 'error',
       summary: t('credits.topUp.purchaseError'),

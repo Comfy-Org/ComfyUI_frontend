@@ -7,7 +7,9 @@ import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useTelemetry } from '@/platform/telemetry'
+import type { BillingFailure } from '@/platform/telemetry/types'
 import type {
   PreviewSubscribeResponse,
   SubscribeResponse
@@ -69,21 +71,35 @@ export function useDowngradeToPersonal() {
     const membersToRemove = removableMembers.value
     let memberRemovalFailures = 0
     let targetTier: TierKey | undefined
+    let targetCycle: BillingCycle | undefined
+    let telemetryFailure: BillingFailure = { failure_category: 'unknown' }
 
-    telemetry?.trackDowngradeToPersonalStarted({
-      member_removal_count: membersToRemove.length
+    telemetry?.trackBillingEvent({
+      operation: 'downgrade_to_personal',
+      stage: 'started',
+      outcome: 'pending',
+      member_removal_count: membersToRemove.length,
+      member_removal_failures: 0
     })
 
-    const trackSucceeded = () =>
-      telemetry?.trackDowngradeToPersonalSucceeded({
+    function trackSucceeded() {
+      telemetry?.trackBillingEvent({
+        operation: 'downgrade_to_personal',
+        stage: 'succeeded',
+        outcome: 'success',
         member_removal_count: membersToRemove.length,
         member_removal_failures: memberRemovalFailures,
         target_tier: targetTier
       })
+    }
 
     try {
       const preview = await previewSubscribe(planSlug)
       if (!preview?.allowed) {
+        telemetryFailure = {
+          failure_category: 'validation',
+          error_code: 'downgrade_not_allowed'
+        }
         throw new Error(
           preview?.reason || t('subscription.downgrade.notAllowed')
         )
@@ -92,6 +108,11 @@ export function useDowngradeToPersonal() {
       targetTier = preview.new_plan?.tier
         ? TIER_TO_KEY[preview.new_plan.tier]
         : undefined
+      targetCycle = preview.new_plan
+        ? preview.new_plan.duration === 'ANNUAL'
+          ? 'yearly'
+          : 'monthly'
+        : undefined
 
       for (const member of membersToRemove) {
         ensureCanDowngrade()
@@ -99,6 +120,10 @@ export function useDowngradeToPersonal() {
           await workspaceStore.removeMember(member.id)
         } catch (error) {
           memberRemovalFailures += 1
+          telemetryFailure = {
+            failure_category: 'unknown',
+            error_code: 'member_removal_failed'
+          }
           throw new Error(
             t('subscription.downgrade.memberRemovalFailed', {
               email: member.email
@@ -114,6 +139,10 @@ export function useDowngradeToPersonal() {
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
       })
       if (!response) {
+        telemetryFailure = {
+          failure_category: 'unknown',
+          error_code: 'missing_checkout_response'
+        }
         throw new Error(
           membersToRemove.length > 0
             ? t('subscription.downgrade.failedAfterMemberRemoval')
@@ -123,18 +152,34 @@ export function useDowngradeToPersonal() {
 
       if (response.status === 'needs_payment_method') {
         if (!response.payment_method_url) {
+          telemetryFailure = {
+            failure_category: 'redirect',
+            error_code: 'missing_payment_method_url'
+          }
           throw new Error(t('subscription.downgrade.paymentMethodRequired'))
         }
         const paymentTab = window.open(response.payment_method_url, '_blank')
         if (!paymentTab) {
+          telemetryFailure = {
+            failure_category: 'redirect',
+            error_code: 'payment_popup_blocked'
+          }
           throw new Error(t('subscription.downgrade.paymentPageBlocked'))
         }
         void billingOperationStore.startOperation(
           response.billing_op_id,
           'subscription',
-          { tier: targetTier }
+          {
+            tier: targetTier,
+            cycle: targetCycle,
+            checkoutType: 'change',
+            downgradeToPersonal: {
+              memberRemovalCount: membersToRemove.length,
+              memberRemovalFailures,
+              targetTier
+            }
+          }
         )
-        trackSucceeded()
         return null
       }
 
@@ -142,19 +187,31 @@ export function useDowngradeToPersonal() {
         void billingOperationStore.startOperation(
           response.billing_op_id,
           'subscription',
-          { tier: targetTier }
+          {
+            tier: targetTier,
+            cycle: targetCycle,
+            checkoutType: 'change',
+            downgradeToPersonal: {
+              memberRemovalCount: membersToRemove.length,
+              memberRemovalFailures,
+              targetTier
+            }
+          }
         )
-        trackSucceeded()
         return null
       }
 
       trackSucceeded()
       return { preview, response }
     } catch (error) {
-      telemetry?.trackDowngradeToPersonalFailed({
+      telemetry?.trackBillingEvent({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
         member_removal_count: membersToRemove.length,
         member_removal_failures: memberRemovalFailures,
-        failure_reason: error instanceof Error ? error.message : 'unknown error'
+        target_tier: targetTier,
+        ...telemetryFailure
       })
       throw error
     }

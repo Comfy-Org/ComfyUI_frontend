@@ -535,12 +535,15 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
             { paymentIntentSource: reason }
           )
         } catch (error) {
-          telemetry?.trackSubscriptionCheckoutFailed({
+          telemetry?.trackBillingEvent({
+            operation: 'subscription_checkout',
+            stage: 'failed',
+            outcome: 'failure',
             tier: tierKey,
             cycle: currentBillingCycle.value,
             checkout_type: 'new',
-            error_message:
-              error instanceof Error ? error.message : 'unknown error'
+            payment_intent_source: reason,
+            failure_category: 'unknown'
           })
           throw error
         }
