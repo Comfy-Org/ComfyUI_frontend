@@ -12,6 +12,27 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('href="http://host/api/view?filename=gen.png"')
     })
 
+    it('leaves fragment and query hrefs alone', () => {
+      const html = renderMarkdownToHtml('[jump](#section)', 'http://host/api')
+      expect(html).toContain('href="#section"')
+    })
+
+    it('does not rebase a data-URI image', () => {
+      const html = renderMarkdownToHtml(
+        '![p](data:image/png;base64,AAAA)',
+        'http://host/api'
+      )
+      expect(html).toContain('src="data:image/png;base64,AAAA"')
+    })
+
+    it('joins a slashless base onto raw media srcs with a separator', () => {
+      const html = renderMarkdownToHtml(
+        '<video src="view?filename=out.mp4"></video>',
+        '/api'
+      )
+      expect(html).toContain('src="/api/view?filename=out.mp4"')
+    })
+
     it('leaves absolute and rooted link hrefs alone', () => {
       const html = renderMarkdownToHtml(
         '[a](https://example.com/x) [b](/api/view?f=1)',
