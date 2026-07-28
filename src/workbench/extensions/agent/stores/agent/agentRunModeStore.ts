@@ -11,8 +11,8 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
 
   function save(nextMode: AgentRunMode, nextLimit: number): void {
     mode.value = nextMode
-    if (Number.isFinite(nextLimit) && nextLimit > 0)
-      creditLimit.value = Math.floor(nextLimit)
+    const floored = Math.floor(nextLimit)
+    if (Number.isFinite(floored) && floored > 0) creditLimit.value = floored
   }
 
   return { mode, creditLimit, save }
