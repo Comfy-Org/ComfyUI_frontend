@@ -15,6 +15,7 @@ const INITIAL_INTERVAL_MS = 1000
 const MAX_INTERVAL_MS = 8000
 const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000 // 2 minutes
+const PENDING_OPERATIONS_STORAGE_KEY = 'comfy.billing.pendingOperations'
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
@@ -25,14 +26,34 @@ interface BillingOperation {
   status: OperationStatus
   errorMessage: string | null
   startedAt: number
+  returnUrl: string | null
+  paymentNavigationStarted: boolean
 }
+
+type PersistedBillingOperation = Pick<
+  BillingOperation,
+  'opId' | 'type' | 'startedAt' | 'returnUrl' | 'paymentNavigationStarted'
+>
 
 type TerminalResolver = (operation: BillingOperation) => void
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {
-  const operations = ref<Map<string, BillingOperation>>(new Map())
+  const operations = ref<Map<string, BillingOperation>>(
+    new Map(
+      readPendingOperations().map((operation) => [
+        operation.opId,
+        {
+          ...operation,
+          status: 'pending',
+          errorMessage: null,
+          startedAt: Date.now()
+        }
+      ])
+    )
+  )
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
   const intervals = new Map<string, number>()
+  const polling = new Set<string>()
   const receivedToasts = new Map<string, ToastMessageOptions>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
@@ -59,7 +80,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function startOperation(
     opId: string,
-    type: OperationType
+    type: OperationType,
+    returnUrl: string | null = null
   ): Promise<BillingOperation> {
     const existing = operations.value.get(opId)
     if (existing) {
@@ -71,10 +93,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       type,
       status: 'pending',
       errorMessage: null,
-      startedAt: Date.now()
+      startedAt: Date.now(),
+      returnUrl,
+      paymentNavigationStarted: false
     }
 
     operations.value = new Map(operations.value).set(opId, operation)
+    persistPendingOperations()
     intervals.set(opId, INITIAL_INTERVAL_MS)
 
     if (type !== 'cancel') {
@@ -104,10 +129,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   async function poll(opId: string) {
     const operation = operations.value.get(opId)
-    if (!operation || operation.status !== 'pending') return
+    if (!operation || operation.status !== 'pending' || polling.has(opId))
+      return
+
+    polling.add(opId)
 
     if (Date.now() - operation.startedAt > TIMEOUT_MS) {
       handleTimeout(opId)
+      polling.delete(opId)
       return
     }
 
@@ -124,6 +153,16 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         return
       }
 
+      if (
+        response.customer_action?.type === 'pay_hosted_invoice' &&
+        !operation.paymentNavigationStarted &&
+        isSafePaymentUrl(response.customer_action.url)
+      ) {
+        updatePaymentNavigationStarted(opId)
+        window.location.assign(response.customer_action.url)
+        return
+      }
+
       scheduleNextPoll(opId)
     } catch {
       if (Date.now() - operation.startedAt > TIMEOUT_MS) {
@@ -131,6 +170,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         return
       }
       scheduleNextPoll(opId)
+    } finally {
+      polling.delete(opId)
     }
   }
 
@@ -267,6 +308,18 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     const updated = { ...operation, status, errorMessage }
     operations.value = new Map(operations.value).set(opId, updated)
+    persistPendingOperations()
+  }
+
+  function updatePaymentNavigationStarted(opId: string) {
+    const operation = operations.value.get(opId)
+    if (!operation) return
+
+    operations.value = new Map(operations.value).set(opId, {
+      ...operation,
+      paymentNavigationStarted: true
+    })
+    persistPendingOperations()
   }
 
   function cleanup(opId: string) {
@@ -290,9 +343,49 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const newMap = new Map(operations.value)
     newMap.delete(opId)
     operations.value = newMap
+    persistPendingOperations()
     terminalResolvers.delete(opId)
     terminalPromises.delete(opId)
   }
+
+  function resumePendingOperations() {
+    for (const [opId, operation] of operations.value) {
+      if (operation.status !== 'pending') continue
+      intervals.set(opId, INITIAL_INTERVAL_MS)
+      void poll(opId)
+    }
+  }
+
+  function persistPendingOperations() {
+    const pendingOperations: PersistedBillingOperation[] = [
+      ...operations.value.values()
+    ]
+      .filter((operation) => operation.status === 'pending')
+      .map(
+        ({ opId, type, startedAt, returnUrl, paymentNavigationStarted }) => ({
+          opId,
+          type,
+          startedAt,
+          returnUrl,
+          paymentNavigationStarted
+        })
+      )
+
+    try {
+      if (pendingOperations.length === 0) {
+        localStorage.removeItem(PENDING_OPERATIONS_STORAGE_KEY)
+      } else {
+        localStorage.setItem(
+          PENDING_OPERATIONS_STORAGE_KEY,
+          JSON.stringify(pendingOperations)
+        )
+      }
+    } catch {
+      return
+    }
+  }
+
+  resumePendingOperations()
 
   return {
     operations,
@@ -301,6 +394,44 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     isAddingCredits,
     getOperation,
     startOperation,
+    resumePendingOperations,
     clearOperation
   }
 })
+
+function readPendingOperations(): PersistedBillingOperation[] {
+  try {
+    const stored = localStorage.getItem(PENDING_OPERATIONS_STORAGE_KEY)
+    if (!stored) return []
+
+    const value: unknown = JSON.parse(stored)
+    if (!Array.isArray(value)) return []
+
+    return value.filter(isPersistedBillingOperation)
+  } catch {
+    return []
+  }
+}
+
+function isPersistedBillingOperation(
+  value: unknown
+): value is PersistedBillingOperation {
+  if (!value || typeof value !== 'object') return false
+
+  const operation = value as Record<string, unknown>
+  return (
+    typeof operation.opId === 'string' &&
+    ['subscription', 'topup', 'cancel'].includes(String(operation.type)) &&
+    typeof operation.startedAt === 'number' &&
+    (operation.returnUrl === null || typeof operation.returnUrl === 'string') &&
+    typeof operation.paymentNavigationStarted === 'boolean'
+  )
+}
+
+function isSafePaymentUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === 'https:'
+  } catch {
+    return false
+  }
+}

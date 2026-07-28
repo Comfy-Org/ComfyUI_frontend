@@ -1004,7 +1004,8 @@ describe('useSubscriptionCheckout', () => {
       expect(openSpy).not.toHaveBeenCalled()
       expect(mockStartOperation).toHaveBeenCalledWith(
         'op-no-url',
-        'subscription'
+        'subscription',
+        'https://platform.comfy.org/payment/success'
       )
       expect(checkout.checkoutStep.value).toBe('success')
       openSpy.mockRestore()
@@ -1026,7 +1027,8 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockStartOperation).toHaveBeenCalledWith(
         'op-async-1',
-        'subscription'
+        'subscription',
+        'https://platform.comfy.org/payment/success'
       )
       expect(checkout.checkoutStep.value).toBe('success')
       openSpy.mockRestore()
@@ -1047,7 +1049,8 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockStartOperation).toHaveBeenCalledWith(
         'op-async-2',
-        'subscription'
+        'subscription',
+        'https://platform.comfy.org/payment/success'
       )
       expect(checkout.checkoutStep.value).toBe('preview')
     })

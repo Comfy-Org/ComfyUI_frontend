@@ -310,6 +310,10 @@ export interface BillingOpStatusResponse {
   error_message?: string
   started_at: string
   completed_at?: string
+  customer_action?: {
+    type: 'pay_hosted_invoice'
+    url: string
+  }
 }
 
 interface BillingEvent {

@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
+import { useEventListener } from '@vueuse/core'
 import BlockUI from 'primevue/blockui'
 import { computed, onMounted, watch } from 'vue'
 
@@ -17,12 +18,18 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { parsePreloadError } from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
+const billingOperationStore = useBillingOperationStore()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
+
+useEventListener(window, 'pageshow', () => {
+  billingOperationStore.resumePendingOperations()
+})
 
 watch(
   isLoading,

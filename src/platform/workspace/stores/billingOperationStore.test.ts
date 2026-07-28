@@ -75,6 +75,7 @@ import { useBillingOperationStore } from './billingOperationStore'
 
 describe('billingOperationStore', () => {
   beforeEach(() => {
+    localStorage.clear()
     setActivePinia(createPinia())
     vi.clearAllMocks()
     vi.useFakeTimers()
@@ -171,6 +172,100 @@ describe('billingOperationStore', () => {
         summary: 'billingOperation.topupProcessing',
         group: 'billing-operation'
       })
+    })
+
+    it('persists only pending operation recovery data', () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-hosted',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation(
+        'op-hosted',
+        'subscription',
+        'https://platform.comfy.org/payment/success'
+      )
+
+      const stored = JSON.parse(
+        localStorage.getItem('comfy.billing.pendingOperations') ?? '[]'
+      )
+      expect(stored).toEqual([
+        {
+          opId: 'op-hosted',
+          type: 'subscription',
+          startedAt: expect.any(Number),
+          returnUrl: 'https://platform.comfy.org/payment/success',
+          paymentNavigationStarted: false
+        }
+      ])
+    })
+  })
+
+  describe('hosted invoice recovery', () => {
+    it('recovers and polls a persisted pending operation', async () => {
+      localStorage.setItem(
+        'comfy.billing.pendingOperations',
+        JSON.stringify([
+          {
+            opId: 'op-recovered',
+            type: 'subscription',
+            startedAt: Date.now(),
+            returnUrl: 'https://platform.comfy.org/payment/success',
+            paymentNavigationStarted: true
+          }
+        ])
+      )
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-recovered',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledWith(
+        'op-recovered'
+      )
+      expect(store.getOperation('op-recovered')?.status).toBe('succeeded')
+      expect(localStorage.getItem('comfy.billing.pendingOperations')).toBeNull()
+    })
+
+    it('marks navigation before opening a hosted invoice in the same tab', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-hosted',
+        status: 'pending',
+        started_at: new Date().toISOString(),
+        customer_action: {
+          type: 'pay_hosted_invoice',
+          url: 'https://invoice.stripe.com/i/example'
+        }
+      })
+      const assignSpy = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => undefined)
+
+      const store = useBillingOperationStore()
+      void store.startOperation(
+        'op-hosted',
+        'subscription',
+        'https://platform.comfy.org/payment/success'
+      )
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(assignSpy).toHaveBeenCalledWith(
+        'https://invoice.stripe.com/i/example'
+      )
+      expect(store.getOperation('op-hosted')?.paymentNavigationStarted).toBe(
+        true
+      )
+      expect(
+        JSON.parse(
+          localStorage.getItem('comfy.billing.pendingOperations') ?? '[]'
+        )[0]
+      ).not.toHaveProperty('url')
     })
   })
 
