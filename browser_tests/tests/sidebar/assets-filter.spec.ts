@@ -164,6 +164,39 @@ test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
     await expect(tab.getAssetCardByName(threeDCardName)).toHaveCount(0)
   })
 
+  test('Applied filters survive sidebar remounts', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    const imageFilter = tab.removeFilterButton('Image')
+    const dateFilter = tab.removeFilterButton('Past 7 days')
+
+    await tab.open()
+    await tab.waitForAssets()
+    await tab.openFilterMenu()
+    await tab.selectDateFilter('Past 7 days')
+    await tab.toggleMediaTypeFilter('image')
+    await tab.closeFilterMenu()
+
+    await expect(imageFilter).toBeVisible()
+    await expect(dateFilter).toBeVisible()
+    await expect(tab.assetCards).toHaveCount(1)
+
+    await comfyPage.menu.nodeLibraryTab.tabButton.click()
+    await expect(tab.generatedTab).toBeHidden()
+    await tab.open()
+
+    await expect(imageFilter).toBeVisible()
+    await expect(dateFilter).toBeVisible()
+    await expect(tab.assetCards).toHaveCount(1)
+
+    await tab.close()
+    await expect(tab.generatedTab).toBeHidden()
+    await tab.open()
+
+    await expect(imageFilter).toBeVisible()
+    await expect(dateFilter).toBeVisible()
+    await expect(tab.assetCards).toHaveCount(1)
+  })
+
   test('Date and media filters compose and applied controls can clear them', async ({
     comfyPage,
     page

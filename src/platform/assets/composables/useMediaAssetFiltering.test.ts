@@ -1,5 +1,6 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { effectScope, ref } from 'vue'
 
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -38,6 +39,10 @@ function ids(assets: AssetItem[]): string[] {
 }
 
 describe('useMediaAssetFiltering', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   afterEach(() => {
     vi.useRealTimers()
   })
@@ -318,6 +323,32 @@ describe('useMediaAssetFiltering', () => {
       filtering.dateFilter.value = 'month'
 
       expect(ids(filtering.filteredAssets.value)).toEqual(['recent-image'])
+    })
+  })
+
+  describe('state lifetime', () => {
+    it('preserves applied filters across consumer remounts', () => {
+      const assets = ref<AssetItem[]>([
+        makeAsset({ id: 'image', name: 'image.png' }),
+        makeAsset({ id: 'video', name: 'video.mp4' })
+      ])
+      const firstScope = effectScope()
+      const first = firstScope.run(() => useMediaAssetFiltering(assets))!
+
+      first.mediaTypeFilters.value = ['image']
+      first.dateFilter.value = 'week'
+      first.searchQuery.value = 'image'
+      first.sortBy.value = 'oldest'
+      firstScope.stop()
+
+      const secondScope = effectScope()
+      const second = secondScope.run(() => useMediaAssetFiltering(assets))!
+
+      expect(second.mediaTypeFilters.value).toEqual(['image'])
+      expect(second.dateFilter.value).toBe('week')
+      expect(second.searchQuery.value).toBe('')
+      expect(second.sortBy.value).toBe('newest')
+      secondScope.stop()
     })
   })
 })
