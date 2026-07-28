@@ -10,7 +10,7 @@
 
 ### Problem
 
-`billing_op_id` is minted by the backend and only reaches the frontend once the initiating request *succeeds* — `useBillingOperationStore.startOperation(opId, type, metadata)` receives `opId` as a required argument, and `startedAt: Date.now()` is stamped only after that call, purely for client-side timeout bookkeeping. Every terminal path inside the store (`handleSuccess`/`handleFailure`/`handleTimeout`) already carries `billing_op_id` in its `trackBillingEvent()` call. The actual hole is narrower than "billing has no attempt ID": it's the single initiating HTTP call (`workspaceApi.cancelSubscription()`, `subscribe()`, `purchaseCredits()`, etc.) — if *that* call throws or times out before a `billing_op_id` is ever returned, the resulting failure event (where one is even fired — PR #14216, in flight, closes one such gap for the cancel rail) has no identifier to join against whatever the backend logged for that same attempt.
+`billing_op_id` is minted by the backend and only reaches the frontend once the initiating request _succeeds_ — `useBillingOperationStore.startOperation(opId, type, metadata)` receives `opId` as a required argument, and `startedAt: Date.now()` is stamped only after that call, purely for client-side timeout bookkeeping. Every terminal path inside the store (`handleSuccess`/`handleFailure`/`handleTimeout`) already carries `billing_op_id` in its `trackBillingEvent()` call. The actual hole is narrower than "billing has no attempt ID": it's the single initiating HTTP call (`workspaceApi.cancelSubscription()`, `subscribe()`, `purchaseCredits()`, etc.) — if _that_ call throws or times out before a `billing_op_id` is ever returned, the resulting failure event (where one is even fired — PR #14216, in flight, closes one such gap for the cancel rail) has no identifier to join against whatever the backend logged for that same attempt.
 
 ### Options considered
 
@@ -20,11 +20,11 @@
 
 ### Tradeoffs
 
-| | Effort | Cross-repo coordination | Correlation strength |
-|---|---|---|---|
-| (a) | Highest — new backend field, request plumbing, review on both repos | Yes — Comfy-Org/cloud | Full: frontend attempt ↔ backend record, even pre-response |
-| (b) | Low — one client-side field | None | Frontend-only: attempt ↔ its own outcome, not backend logs |
-| (c) | None | None | Timestamp-window fallback only |
+|     | Effort                                                              | Cross-repo coordination | Correlation strength                                       |
+| --- | ------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------- |
+| (a) | Highest — new backend field, request plumbing, review on both repos | Yes — Comfy-Org/cloud   | Full: frontend attempt ↔ backend record, even pre-response |
+| (b) | Low — one client-side field                                         | None                    | Frontend-only: attempt ↔ its own outcome, not backend logs |
+| (c) | None                                                                | None                    | Timestamp-window fallback only                             |
 
 The gap (a) fully closes is real but narrow: every operation that reaches `billingOperationStore.startOperation()` already has a `billing_op_id`, so this only affects failures in the single initiating call — network errors, immediate 4xx/5xx, client-side validation — before any op ID exists. That's a small, bursty slice of total billing failures relative to poll-timeout and webhook failures downstream, which are already covered. Standing up a second, backend-coordinated ID scheme for that slice is disproportionate until we know its actual size.
 
@@ -44,17 +44,17 @@ Ship the frontend-only attempt ID now — cheap, no cross-repo dependency, and i
 
 ### Problem
 
-`getBillingTelemetryEventPayload()` builds its output purely from fields on the `BillingTelemetryEvent` union (`operation`, `stage`, `outcome`, `billing_op_id`, `tier`, `cycle`, `checkout_type`, `failure_category`, etc.) — no workspace identity anywhere. No `posthog.group()`/`groupIdentify()` call exists in the codebase today (confirmed by search); the only identity primitive in use is per-user `posthog.identify(user.id)` in `PostHogTelemetryProvider.ts`, fired once from `useCurrentUser().onUserResolved()`. Because `DatadogRumTelemetryProvider.trackBillingEvent()` calls the *same* `getBillingTelemetryEventPayload()` for its `addAction()` payload, this is a single shared gap, not two — fixing the payload builder fixes both PostHog events and Datadog RUM actions at once. Workspace identity is already available reactively via `useTeamWorkspaceStore().workspaceId` (a computed off `activeWorkspaceId`).
+`getBillingTelemetryEventPayload()` builds its output purely from fields on the `BillingTelemetryEvent` union (`operation`, `stage`, `outcome`, `billing_op_id`, `tier`, `cycle`, `checkout_type`, `failure_category`, etc.) — no workspace identity anywhere. No `posthog.group()`/`groupIdentify()` call exists in the codebase today (confirmed by search); the only identity primitive in use is per-user `posthog.identify(user.id)` in `PostHogTelemetryProvider.ts`, fired once from `useCurrentUser().onUserResolved()`. Because `DatadogRumTelemetryProvider.trackBillingEvent()` calls the _same_ `getBillingTelemetryEventPayload()` for its `addAction()` payload, this is a single shared gap, not two — fixing the payload builder fixes both PostHog events and Datadog RUM actions at once. Workspace identity is already available reactively via `useTeamWorkspaceStore().workspaceId` (a computed off `activeWorkspaceId`).
 
 ### Options considered
 
-- **(a) Plain field on the existing payload.** Read `useTeamWorkspaceStore().workspaceId` into `getBillingTelemetryEventPayload()`'s return spread. One shared function, so every provider that already consumes it (PostHog, Datadog RUM, and any future one) gets `workspace_id` for free. Doesn't get PostHog's native group-analytics surface — group-scoped dashboards, cohorts, "workspaces with declining success rate" insights — since those require the workspace to be a registered PostHog *group*, not just an event property.
+- **(a) Plain field on the existing payload.** Read `useTeamWorkspaceStore().workspaceId` into `getBillingTelemetryEventPayload()`'s return spread. One shared function, so every provider that already consumes it (PostHog, Datadog RUM, and any future one) gets `workspace_id` for free. Doesn't get PostHog's native group-analytics surface — group-scoped dashboards, cohorts, "workspaces with declining success rate" insights — since those require the workspace to be a registered PostHog _group_, not just an event property.
 - **(b) `posthog.group('workspace', workspaceId)`.** Fire once when workspace context is established or changes — same shape as the existing `setSubscriptionProperties()` watcher in `PostHogTelemetryProvider.ts` (a `watch()` on a reactive value driving a PostHog side effect). Unlocks PostHog's group-analytics UI. PostHog-specific: has no Datadog equivalent, so it does nothing for RUM segmentation on its own.
 - **(c) Both.**
 
 ### Tradeoffs
 
-(a) is nearly free and covers both tools' *event-level* segmentation immediately. (b) is a few extra lines, mirrors an existing pattern in the same file, and is the only way to get PostHog's group-analytics features — but it's additive to (a), not a substitute: even with (b) shipped, Datadog RUM sessions still need `workspace_id` as a global RUM context property (e.g. via `datadogRum.setGlobalContextProperty`) to segment *whole sessions*, not just the one billing action — (a) alone only tags that specific `addAction()` call, not the rest of the RUM session.
+(a) is nearly free and covers both tools' _event-level_ segmentation immediately. (b) is a few extra lines, mirrors an existing pattern in the same file, and is the only way to get PostHog's group-analytics features — but it's additive to (a), not a substitute: even with (b) shipped, Datadog RUM sessions still need `workspace_id` as a global RUM context property (e.g. via `datadogRum.setGlobalContextProperty`) to segment _whole sessions_, not just the one billing action — (a) alone only tags that specific `addAction()` call, not the rest of the RUM session.
 
 ### Recommendation: (c) — do both, cheaply
 
