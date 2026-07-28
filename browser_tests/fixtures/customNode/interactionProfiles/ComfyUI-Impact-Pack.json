@@ -1,0 +1,1071 @@
+{
+  "recordedAt": {
+    "core": "b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2",
+    "pin": "429d0159ad429e64d2b3916e6e7be9c22d025c3c"
+  },
+  "schema": 1,
+  "nodes": {
+    "AddMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "AnyPipeToBasic": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "BasicPipeToDetailerPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BasicPipeToDetailerPipeSDXL": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BboxDetectorCombined_v2": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BboxDetectorSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BitwiseAndMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BitwiseAndMaskForEach": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BlackPatchRetryHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CfgScheduleHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CLIPSegDetectorProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CombineRegionalPrompts": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "CoreMLDetailerHookProvider": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "CustomSamplerDetailerHookProvider": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "DenoiseScheduleHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DenoiseSchedulerDetailerHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DetailerForEach": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DetailerForEachAutoRetry": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DetailerForEachDebug": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DetailerForEachDebugPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DetailerForEachPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DetailerForEachPipeForAnimateDiff": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DetailerHookCombine": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DetailerPipeToBasicPipe": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "EditBasicPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "EditDetailerPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "EditDetailerPipeSDXL": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "EmptySegs": {
+      "connectFirst": "NO_INPUTS",
+      "connectLast": "NO_INPUTS",
+      "disconnect": "NO_INPUTS"
+    },
+    "FaceDetailer": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FaceDetailerPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FromBasicPipe": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "FromBasicPipe_v2": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "FromDetailerPipe": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "FromDetailerPipe_v2": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "FromDetailerPipeSDXL": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "GITSSchedulerFuncProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageListToImageBatch": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImageMaskSwitch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageReceiver": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageSender": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactAssembleSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactBoolean": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactCombineConditionings": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactCompare": {
+      "connectFirst": [],
+      "connectLast": [
+        "+input:a:INT",
+        "+input:b:INT",
+        "-input:a:*",
+        "-input:b:*"
+      ],
+      "disconnect": []
+    },
+    "ImpactConcatConditionings": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactConditionalBranch": {
+      "connectFirst": [],
+      "connectLast": [
+        "+input:ff_value:INT",
+        "+input:tt_value:INT",
+        "+output:*:INT",
+        "-input:ff_value:*",
+        "-input:tt_value:*",
+        "-output:*:*"
+      ],
+      "disconnect": []
+    },
+    "ImpactConditionalBranchSelMode": {
+      "connectFirst": [],
+      "connectLast": [
+        "+input:ff_value:INT",
+        "+input:tt_value:INT",
+        "+output:*:INT",
+        "-input:ff_value:*",
+        "-input:tt_value:*",
+        "-output:*:*"
+      ],
+      "disconnect": []
+    },
+    "ImpactConditionalStopIteration": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactControlBridge": {
+      "connectFirst": [
+        "+input:value:INT",
+        "+output:value:INT",
+        "-input:value:*",
+        "-output:value:*"
+      ],
+      "connectLast": [
+        "+input:value:INT",
+        "+output:value:INT",
+        "-input:value:*",
+        "-output:value:*"
+      ],
+      "disconnect": []
+    },
+    "ImpactControlNetApplyAdvancedSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactControlNetApplySEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactControlNetClearSEGS": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactConvertDataType": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactCount_Elts_in_SEGS": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactDecomposeSEGS": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactDilate_Mask_SEG_ELT": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactDilateMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactDilateMaskInSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactDummyInput": {
+      "connectFirst": "NO_INPUTS",
+      "connectLast": "NO_INPUTS",
+      "disconnect": "NO_INPUTS"
+    },
+    "ImpactEdit_SEG_ELT": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactExecutionOrderController": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactFlattenMask": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactFloat": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactFrom_SEG_ELT": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactFrom_SEG_ELT_bbox": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactFrom_SEG_ELT_crop_region": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactGaussianBlurMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactGaussianBlurMaskInSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactHFTransformersClassifierProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactIfNone": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactImageBatchToImageList": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactImageInfo": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactInt": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactInversedSwitch": {
+      "connectFirst": [
+        "+input:input:INT",
+        "+input:sel_mode:INT",
+        "+output:output1:INT",
+        "-input:input:*",
+        "-input:sel_mode:BOOLEAN",
+        "-output:output1:*"
+      ],
+      "connectLast": [
+        "+input:input:INT",
+        "+input:sel_mode:INT",
+        "+output:output1:INT",
+        "-input:input:*",
+        "-input:sel_mode:BOOLEAN",
+        "-output:output1:*"
+      ],
+      "disconnect": []
+    },
+    "ImpactIPAdapterApplySEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactIsNotEmptySEGS": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactKSamplerAdvancedBasicPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactKSamplerBasicPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactLatentInfo": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactListBridge": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactLogger": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactLogicalOperators": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactMakeAnyList": {
+      "connectFirst": [
+        "+input:value1:INT",
+        "+input:value2:INT",
+        "+output:INT:INT",
+        "-input:value1:*",
+        "-output:*:*"
+      ],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": ["-input:value2:INT"]
+    },
+    "ImpactMakeImageBatch": {
+      "connectFirst": ["+input:image2:IMAGE"],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": ["-input:image2:IMAGE"]
+    },
+    "ImpactMakeImageList": {
+      "connectFirst": ["+input:image2:IMAGE"],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": ["-input:image2:IMAGE"]
+    },
+    "ImpactMakeMaskBatch": {
+      "connectFirst": ["+input:mask2:MASK"],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": ["-input:mask2:MASK"]
+    },
+    "ImpactMakeMaskList": {
+      "connectFirst": ["+input:mask2:MASK"],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": ["-input:mask2:MASK"]
+    },
+    "ImpactMakeTileSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactMinMax": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactNeg": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactNegativeConditioningPlaceholder": {
+      "connectFirst": "NO_INPUTS",
+      "connectLast": "NO_INPUTS",
+      "disconnect": "NO_INPUTS"
+    },
+    "ImpactNodeSetMuteState": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactQueueTrigger": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactQueueTriggerCountdown": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactRemoteBoolean": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactRemoteInt": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSAM2VideoDetectorSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactScaleBy_BBOX_SEG_ELT": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSchedulerAdapter": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSegsAndMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSegsAndMaskForEach": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSEGSClassify": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSEGSConcat": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactSEGSIntersectionFilter": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSEGSLabelAssign": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSEGSLabelFilter": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSEGSMerge": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactSEGSNMSFilter": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSEGSOrderedFilter": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSEGSPicker": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSEGSRangeFilter": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSEGSToMaskBatch": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactSEGSToMaskList": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImpactSelectNthItemOfAnyList": {
+      "connectFirst": [
+        "+input:any_list:INT",
+        "+output:*:INT",
+        "-input:any_list:*",
+        "-output:*:*"
+      ],
+      "connectLast": [
+        "+input:any_list:INT",
+        "+output:*:INT",
+        "-input:any_list:*",
+        "-output:*:*"
+      ],
+      "disconnect": []
+    },
+    "ImpactSetWidgetValue": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSimpleDetectorSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSimpleDetectorSEGS_for_AD": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSimpleDetectorSEGSPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSleep": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactStringSelector": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactSwitch": {
+      "connectFirst": [],
+      "connectLast": [
+        "+input:input1:INT",
+        "+input:input2:INT",
+        "+output:INT:INT",
+        "-input:input1:*",
+        "-output:selected_value:*"
+      ],
+      "disconnect": ["-input:input2:INT"]
+    },
+    "ImpactValueReceiver": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactValueSender": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactWildcardEncode": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImpactWildcardProcessor": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "IterativeImageUpscale": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "IterativeLatentUpscale": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "KSamplerAdvancedProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "KSamplerProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LamaRemoverDetailerHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LatentPixelScale": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LatentReceiver": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LatentSender": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LatentSwitch": {
+      "connectFirst": [],
+      "connectLast": [
+        "+input:input1:INT",
+        "+input:input2:INT",
+        "+output:INT:INT",
+        "-input:input1:*",
+        "-output:selected_value:*"
+      ],
+      "disconnect": ["-input:input2:INT"]
+    },
+    "MaskDetailerPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskListToMaskBatch": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "MaskRectArea": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskRectAreaAdvanced": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MasksToMaskList": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "MaskToSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskToSEGS_for_AnimateDiff": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MediaPipeFaceMeshToSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "NoiseInjectionDetailerHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "NoiseInjectionHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ONNXDetectorProvider": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ONNXDetectorSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PixelKSampleHookCombine": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PixelKSampleUpscalerProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PixelKSampleUpscalerProviderPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PixelTiledKSampleUpscalerProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PixelTiledKSampleUpscalerProviderPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PreviewBridge": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PreviewBridgeLatent": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PreviewDetailerHookProvider": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ReencodeLatent": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ReencodeLatentPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "RegionalPrompt": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "RegionalSampler": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "RegionalSamplerAdvanced": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "RemoveImageFromSEGS": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "RemoveNoiseMask": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SAMDetectorCombined": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SAMDetectorSegmented": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SAMLoader": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SegmDetectorCombined_v2": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SegmDetectorSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SEGSDetailer": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SEGSDetailerForAnimateDiff": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SEGSLabelFilterDetailerHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SEGSOrderedFilterDetailerHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SEGSPaste": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SEGSPreview": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SEGSPreviewCNet": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SEGSRangeFilterDetailerHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SEGSSwitch": {
+      "connectFirst": [],
+      "connectLast": [
+        "+input:input1:INT",
+        "+input:input2:INT",
+        "+output:INT:INT",
+        "-input:input1:*",
+        "-output:selected_value:*"
+      ],
+      "disconnect": ["-input:input2:INT"]
+    },
+    "SegsToCombinedMask": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SEGSToImageList": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SEGSUpscaler": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SEGSUpscalerPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SetDefaultImageForSEGS": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "StepsScheduleHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "StringListToString": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SubtractMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SubtractMaskForEach": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TiledKSamplerProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ToBasicPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ToBinaryMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ToDetailerPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ToDetailerPipeSDXL": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TwoAdvancedSamplersForMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TwoSamplersForMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TwoSamplersForMaskUpscalerProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TwoSamplersForMaskUpscalerProviderPipe": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "UnsamplerDetailerHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "UnsamplerHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VariationNoiseDetailerHookProvider": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "WildcardPromptFromString": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    }
+  }
+}

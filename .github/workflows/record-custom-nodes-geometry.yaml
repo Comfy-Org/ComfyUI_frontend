@@ -137,6 +137,13 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+      - name: Upload recorded output hashes
+        uses: actions/upload-artifact@v6
+        with:
+          name: custom-nodes-output-hashes
+          path: test-results/curatedOutputHashes.recorded.json
+          retention-days: 7
+          if-no-files-found: error
       # S13 interaction profiles ride the same boot: record mode writes the
       # per-pack fixture files and deliberately fails each test.
       - name: Record interaction profiles (S13)
@@ -153,13 +160,5 @@ jobs:
         with:
           name: custom-nodes-interaction-profiles
           path: browser_tests/fixtures/customNode/interactionProfiles/
-          retention-days: 7
-          if-no-files-found: error
-
-      - name: Upload recorded output hashes
-        uses: actions/upload-artifact@v6
-        with:
-          name: custom-nodes-output-hashes
-          path: test-results/curatedOutputHashes.recorded.json
           retention-days: 7
           if-no-files-found: error
