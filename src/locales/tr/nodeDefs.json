@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "Ses yüksekliği. 0 = normal, 100 = 2.0x, -50 = 0.5x."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: 20 dil (İngilizce, Çince, Japonca, Korece, Meksika & Kastilya İspanyolcası, Endonezce, Almanca, Brezilya Portekizcesi, Fransızca, Tayca, Vietnamca, Malayca, Filipince, İtalyanca, Rusça, Hollandaca, Lehçe, Türkçe, İsveççe) ve cümle başına zaman kontrolü \"[5.5s:8.0s] ...\" zaman damgaları ile. seed-audio-1.0: Sadece İngilizce ve Çince, zaman kontrolü yok."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "Ton kaydırma (yarım ses olarak, -12 ile 12 arası)."
@@ -19989,6 +19993,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Mage-Flow-Edit için bir veya daha fazla referans görsel ile bir düzenleme talimatı kodlayın. Referans latent'ler çıktı çözünürlüğüne (genişlik/yükseklik veya 0 ise ilk görselin boyutu) yeniden boyutlandırılır. Boyutların her zaman eşleşmesi için örnekleme sırasında latent çıktısını kullanın.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Çıktı yüksekliği. 0 = ilk referans görselin boyutunu kullan."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Düzenlenecek referans görsel(ler)i. Tüm referanslar kodlamadan önce çıktı çözünürlüğüne yeniden boyutlandırılır."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Çıktı genişliği. 0 = ilk referans görselin boyutunu kullan."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }

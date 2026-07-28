@@ -2099,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "少なくとも1つ",
       "connectAtLeastOne": "ユーザーが実行後に結果を確認できるよう、{atLeastOne} 出力ノードを接続してください。",
+      "descriptionPlaceholder": "ダブルクリックして説明を追加",
       "noOutputs": "まだ出力が追加されていません",
       "outputExamples": "例：「画像を保存」や「動画を保存」",
       "outputs": "出力",
@@ -2892,6 +2893,7 @@
     "lotus": "lotus",
     "ltxv": "LTXV",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "マスク",
     "merging": "マージ",
     "mochi": "mochi",
@@ -3512,6 +3514,7 @@
     "Load 3D": "3Dを読み込む",
     "Locale": "ロケール",
     "Mask Editor": "マスクエディタ",
+    "Members": "メンバー",
     "Menu": "メニュー",
     "ModelLibrary": "モデルライブラリ",
     "Node": "ノード",
@@ -3874,6 +3877,7 @@
     "freeTier": {
       "description": "無料プランには、Comfy Cloudをお試しいただける毎月{credits}クレジットが含まれています。",
       "descriptionGeneric": "無料プランには、Comfy Cloudをお試しいただける毎月のクレジット枠が含まれています。",
+      "descriptionQuota": "無料プランには Comfy Cloud を始めるための {runs} 回の実行が含まれています（クレジットカード不要）。",
       "nextRefresh": "クレジットは{date}にリフレッシュされます。",
       "outOfCredits": {
         "subtitle": "サブスクリプションでチャージや追加機能を利用しましょう",
@@ -4406,6 +4410,24 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "クレジット",
+        "date": "日付",
+        "eventDetails": "イベント詳細",
+        "eventType": "イベントタイプ",
+        "user": "ユーザー"
+      },
+      "empty": "まだアクティビティがありません。",
+      "fullActivity": "すべてのアクティビティ",
+      "hoverCard": {
+        "lastActivity": "最終アクティビティ",
+        "partnerNodeUsed": "パートナーノード使用",
+        "totalCreditsUsed": "合計クレジット使用量"
+      },
+      "perUserHint": "ユーザーごとの合計使用量をお探しですか？",
+      "seeMembers": "メンバーを見る"
+    },
     "billingStatus": {
       "ending": {
         "body": "それまではメンバーはすべての機能にアクセスできます。共有クレジットとシートを維持するには再アクティベートしてください。",
@@ -4493,14 +4515,31 @@
         "cancelInvite": "招待をキャンセル",
         "changeRole": "役割を変更",
         "removeMember": "メンバーを削除",
-        "resendInvite": "招待を再送信"
+        "resendInvite": "招待を再送信",
+        "setCreditLimit": "クレジット上限を設定"
+      },
+      "activity": {
+        "daysAgo": "{count}日前",
+        "hoursAgo": "{n}時間前",
+        "justNow": "たった今",
+        "minutesAgo": "{n}分前"
       },
       "columns": {
+        "creditsUsed": "月間クレジット",
         "expiryDate": "有効期限",
         "inviteDate": "招待日",
         "role": "役割"
       },
       "contactUs": "お問い合わせ",
+      "creditLimitDialog": {
+        "description": "この上限に達すると、ワークフローの実行ができなくなります。",
+        "invalidLimit": "1以上のクレジット上限を入力してください。",
+        "limitOption": "月間クレジット使用量を制限：",
+        "noLimit": "制限なし",
+        "title": "{name} の月間クレジット上限を設定",
+        "update": "上限を更新",
+        "warning": "このユーザーはすでに {credits} クレジットを使用しています。現在の使用量以下に上限を設定すると、来月まで実行できなくなります。"
+      },
       "header": "メンバー",
       "membersCount": "{count}/50人のメンバー",
       "needMoreMembers": "さらにメンバーが必要ですか？",
@@ -4523,6 +4562,12 @@
       "deleteWorkspaceDisabledTooltip": "まずワークスペースの有効なサブスクリプションをキャンセルしてください",
       "editWorkspace": "ワークスペースの詳細を編集",
       "leaveWorkspace": "ワークスペースを退出"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "アクティビティ",
+        "overview": "クレジット"
+      }
     },
     "removeMemberDialog": {
       "error": "メンバーの削除に失敗しました",

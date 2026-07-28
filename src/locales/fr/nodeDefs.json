@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "Volume. 0 = normal, 100 = 2,0x, -50 = 0,5x."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual : 20 langues (anglais, chinois, japonais, coréen, espagnol mexicain et castillan, indonésien, allemand, portugais brésilien, français, thaï, vietnamien, malais, philippin, italien, russe, néerlandais, polonais, turc, suédois) avec contrôle du timing par phrase via des horodatages \"[5.5s:8.0s] ...\". seed-audio-1.0 : anglais et chinois uniquement, sans contrôle du timing."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "Décalage de hauteur en demi-tons (-12 à 12)."
@@ -19989,6 +19993,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Encode une instruction d’édition avec une ou plusieurs images de référence pour Mage-Flow-Edit. Les latents de référence sont redimensionnés à la résolution de sortie (largeur/hauteur, ou à la taille de la première image si 0). Utilisez la sortie latent pour l’échantillonnage afin que les tailles correspondent toujours.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Hauteur de sortie. 0 = utiliser la taille de la première image de référence."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) de référence à éditer. Toutes les références sont redimensionnées à la résolution de sortie avant l’encodage."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Largeur de sortie. 0 = utiliser la taille de la première image de référence."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }

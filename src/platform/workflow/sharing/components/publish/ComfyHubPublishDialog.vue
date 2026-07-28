@@ -207,27 +207,6 @@ function handleRequireProfile() {
   openProfileCreationStep()
 }
 
-async function syncWorkflowName(): Promise<void> {
-  const workflow = workflowStore.activeWorkflow
-  if (!workflow || workflow.isTemporary) return
-
-  const desiredName = formData.value.name.trim().replace(/\.json$/i, '')
-  const currentName = workflow.filename.replace(/\.json$/i, '')
-  if (!desiredName || desiredName === currentName) return
-
-  const newPath = buildWorkflowPath(workflow.directory, desiredName)
-  try {
-    await workflowService.renameWorkflow(workflow, newPath)
-  } catch (error) {
-    console.error('Failed to rename workflow after publish:', error)
-    toast.add({
-      severity: 'warn',
-      summary: t('comfyHubPublish.renameFailedTitle'),
-      detail: t('comfyHubPublish.renameFailedDescription')
-    })
-  }
-}
-
 async function handlePublish(): Promise<void> {
   if (isPublishing.value) {
     return
@@ -236,7 +215,6 @@ async function handlePublish(): Promise<void> {
   isPublishing.value = true
   try {
     await submitToComfyHub(formData.value)
-    await syncWorkflowName()
     const path = workflowStore.activeWorkflow?.path
     if (path) {
       cachePublishPrefill(path, formData.value)

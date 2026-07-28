@@ -2099,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "לפחות אחד",
       "connectAtLeastOne": "חבר {atLeastOne} צומת פלט כדי שמשתמשים יוכלו לראות תוצאות לאחר ההרצה.",
+      "descriptionPlaceholder": "לחץ פעמיים להוספת תיאור",
       "noOutputs": "עדיין לא נוספו פלטים",
       "outputExamples": "דוגמאות: 'שמירת תמונה' או 'שמירת סרטון'",
       "outputs": "פלטים",
@@ -2892,6 +2893,7 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "mask",
     "merging": "merging",
     "mochi": "mochi",
@@ -3512,6 +3514,7 @@
     "Load 3D": "טעינת תלת-ממד ואנימציה",
     "Locale": "שפה",
     "Mask Editor": "עורך המסכות",
+    "Members": "חברים",
     "Menu": "תפריט",
     "ModelLibrary": "ספריית המודלים",
     "Node": "צומת",
@@ -3886,6 +3889,7 @@
     "freeTier": {
       "description": "המסלול החינמי שלך כולל {credits} קרדיטים בכל חודש להתנסות ב-Comfy Cloud.",
       "descriptionGeneric": "המסלול החינמי שלך כולל מכסת קרדיטים חודשית להתנסות ב-Comfy Cloud.",
+      "descriptionQuota": "התוכנית החינמית שלך כוללת {runs} הרצות כדי להתחיל עם Comfy Cloud — ללא צורך בכרטיס אשראי.",
       "nextRefresh": "הקרדיטים שלך מתחדשים ב-{date}.",
       "outOfCredits": {
         "subtitle": "הירשם כדי לפתוח טעינות ועוד",
@@ -4418,6 +4422,24 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "קרדיטים",
+        "date": "תאריך",
+        "eventDetails": "פרטי אירוע",
+        "eventType": "סוג אירוע",
+        "user": "משתמש"
+      },
+      "empty": "אין פעילות עדיין.",
+      "fullActivity": "כל הפעילות",
+      "hoverCard": {
+        "lastActivity": "פעילות אחרונה",
+        "partnerNodeUsed": "צומת שותף בשימוש",
+        "totalCreditsUsed": "סך הקרדיטים שנוצלו"
+      },
+      "perUserHint": "מחפש סך שימוש לכל משתמש?",
+      "seeMembers": "הצג חברים"
+    },
     "billingStatus": {
       "ending": {
         "body": "החברים שומרים על גישה מלאה עד אז. הפעל מחדש כדי לשמור על הקרדיטים והמושבים המשותפים.",
@@ -4505,14 +4527,31 @@
         "cancelInvite": "בטל הזמנה",
         "changeRole": "שנה תפקיד",
         "removeMember": "הסרת החבר",
-        "resendInvite": "שלח הזמנה מחדש"
+        "resendInvite": "שלח הזמנה מחדש",
+        "setCreditLimit": "הגדר מגבלת קרדיטים"
+      },
+      "activity": {
+        "daysAgo": "לפני {count} יום | לפני {count} ימים",
+        "hoursAgo": "לפני {n} שעות",
+        "justNow": "הרגע",
+        "minutesAgo": "לפני {n} דקות"
       },
       "columns": {
+        "creditsUsed": "קרדיטים חודשיים",
         "expiryDate": "תאריך התפוגה",
         "inviteDate": "תאריך ההזמנה",
         "role": "תפקיד"
       },
       "contactUs": "צור קשר",
+      "creditLimitDialog": {
+        "description": "כאשר יגיעו למגבלה זו, לא יוכלו להריץ תהליכי עבודה.",
+        "invalidLimit": "הזן מגבלת קרדיטים גדולה מאפס.",
+        "limitOption": "הגבל שימוש חודשי בקרדיטים ל:",
+        "noLimit": "ללא הגבלה",
+        "title": "הגדר מגבלת קרדיטים חודשית עבור {name}",
+        "update": "עדכן מגבלה",
+        "warning": "משתמש זה כבר ניצל {credits} קרדיטים. הגדרת מגבלה השווה או נמוכה מהשימוש הנוכחי תמנע הרצות נוספות עד לחודש הבא."
+      },
       "header": "חברים",
       "membersCount": "{count}/{maxSeats} חברים",
       "needMoreMembers": "צריך עוד חברים?",
@@ -4535,6 +4574,12 @@
       "deleteWorkspaceDisabledTooltip": "בטל תחילה את המנוי הפעיל של סביבת העבודה שלך",
       "editWorkspace": "עריכת פרטי סביבת העבודה",
       "leaveWorkspace": "עזיבת סביבת העבודה"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "פעילות",
+        "overview": "קרדיטים"
+      }
     },
     "removeMemberDialog": {
       "error": "הסרת החבר נכשלה",
