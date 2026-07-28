@@ -1,6 +1,7 @@
 <!-- A popover that shows current user information and actions -->
 <template>
   <div
+    data-testid="current-user-popover"
     class="current-user-popover -m-3 w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- User Info Section -->
@@ -31,7 +32,7 @@
 
     <!-- Credits Section -->
     <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-2">
-      <i class="icon-[lucide--component] text-sm text-amber-400" />
+      <i class="icon-[lucide--component] text-sm text-credit" />
       <Skeleton v-if="isLoading" width="4rem" height="1.25rem" class="w-full" />
       <span v-else class="text-base font-semibold text-base-foreground">{{
         formattedBalance
@@ -48,7 +49,7 @@
       </Button>
       <Button
         v-if="isCloud && isFreeTier"
-        variant="gradient"
+        variant="subscribe"
         size="sm"
         data-testid="upgrade-to-add-credits-button"
         @click="handleUpgradeToAddCredits"
@@ -72,7 +73,7 @@
         :fluid="false"
         :label="$t('subscription.subscribeToComfyCloud')"
         size="sm"
-        button-variant="gradient"
+        button-variant="subscribe"
         @subscribed="handleSubscribed"
       />
     </div>
@@ -224,7 +225,7 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlansAndPricing = () => {
-  subscriptionDialog.showPricingTable()
+  subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
   emit('close')
 }
 
@@ -239,8 +240,7 @@ const handleOpenPlanAndCreditsSettings = () => {
 }
 
 const handleTopUp = () => {
-  // Track purchase credits entry from avatar popover
-  useTelemetry()?.trackAddApiCreditButtonClicked()
+  useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'avatar_menu' })
   dialogService.showTopUpCreditsDialog()
   emit('close')
 }
@@ -254,7 +254,7 @@ const handleOpenPartnerNodesInfo = () => {
 }
 
 const handleUpgradeToAddCredits = () => {
-  subscriptionDialog.showPricingTable()
+  subscriptionDialog.showPricingTable({ reason: 'upgrade_to_add_credits' })
   emit('close')
 }
 

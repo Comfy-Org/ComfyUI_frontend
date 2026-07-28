@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="video-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2"
+    class="video-preview flex size-full min-h-55 min-w-16 flex-col px-2"
     @keydown="handleKeyDown"
   >
     <!-- Video Wrapper -->
@@ -45,7 +45,12 @@
       <video
         v-if="!videoError"
         :src="currentVideoUrl"
-        :class="cn('block size-full object-contain', showLoader && 'invisible')"
+        :class="
+          cn(
+            'absolute inset-0 size-full object-contain',
+            showLoader && 'invisible'
+          )
+        "
         preload="metadata"
         controls
         loop

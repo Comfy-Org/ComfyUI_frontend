@@ -4,6 +4,7 @@ import {
   SUPPORTED_LOCALE_OPTIONS
 } from '@/locales/localeConfig'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
@@ -779,7 +780,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools.',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     versionAdded: '1.36.1'
   },
   {
@@ -945,6 +946,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: 'dark',
     versionModified: '1.6.7',
+    telemetry: { trackChanges: true, includeValues: true },
     migrateDeprecatedValue(val: unknown) {
       const value = val as string
       // Legacy custom palettes were prefixed with 'custom_'
@@ -975,6 +977,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.8.7'
+  },
+  {
+    id: TOUR_SEEN_SETTING,
+    name: 'Onboarding coachmark tours the user has already seen',
+    type: 'hidden',
+    defaultValue: [],
+    versionAdded: '1.48.0'
   },
   {
     id: 'Comfy.InstalledVersion',
@@ -1205,18 +1214,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'App Builder Vue Node switch dismissed',
     type: 'hidden',
     defaultValue: false
-  },
-  {
-    id: 'Comfy.VueNodes.AutoScaleLayout',
-    category: ['Comfy', 'Nodes 2.0', 'AutoScaleLayout'],
-    name: 'Auto-scale layout (Nodes 2.0)',
-    tooltip:
-      'Automatically scale node positions when switching to Nodes 2.0 rendering to prevent overlap',
-    type: 'boolean',
-    sortOrder: 50,
-    experimental: true,
-    defaultValue: true,
-    versionAdded: '1.30.3'
   },
   {
     id: 'Comfy.Assets.UseAssetAPI',

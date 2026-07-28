@@ -45,7 +45,7 @@ interface RunMissingModelPipelineOptions {
 
 interface RefreshMissingModelPipelineOptions {
   graph: LGraph
-  reloadNodeDefs: () => Promise<void>
+  reloadNodeDefs?: () => Promise<void>
   missingModelStore: MissingModelPipelineStore
   silent?: boolean
 }
@@ -228,7 +228,7 @@ export async function refreshMissingModelPipeline({
   missingModelStore,
   silent = true
 }: RefreshMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
-  await reloadNodeDefs()
+  await reloadNodeDefs?.()
   const graphData: MissingModelWorkflowData = graph.serialize()
   const activeWorkflowState =
     useWorkspaceStore().workflow.activeWorkflow?.activeState

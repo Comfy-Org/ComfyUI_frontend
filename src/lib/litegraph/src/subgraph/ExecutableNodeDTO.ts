@@ -1,3 +1,4 @@
+import { toLinkId } from '@/types/linkId'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -112,7 +113,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     this._id = [...this.subgraphNodePath, this.node.id].join(':')
     this.graph = node.graph
     this.inputs = this.node.inputs.map((x) => ({
-      linkId: x.link,
+      linkId: x.link == null ? null : toLinkId(x.link),
       name: x.name,
       type: x.type
     }))

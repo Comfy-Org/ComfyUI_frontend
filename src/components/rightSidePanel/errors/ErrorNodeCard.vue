@@ -1,9 +1,6 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-    <div
-      v-if="card.nodeId && !compact"
-      class="flex min-h-8 flex-wrap items-center gap-2"
-    >
+    <div v-if="card.nodeId" class="flex min-h-8 flex-wrap items-center gap-2">
       <span class="flex min-w-0 flex-1">
         <button
           v-if="hasRuntimeError && (card.nodeTitle || card.title)"
@@ -103,7 +100,7 @@
 
         <TransitionCollapse>
           <div
-            v-if="error.isRuntimeError && isRuntimeDisclosureExpanded"
+            v-if="error.isRuntimeError && runtimeDetailsExpanded"
             :id="getRuntimeDetailsId(idx)"
             role="region"
             data-testid="runtime-error-panel"
@@ -179,6 +176,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'
 import TransitionCollapse from '../layout/TransitionCollapse.vue'
 
@@ -186,9 +184,8 @@ import type { ErrorCardData, ErrorItem } from './types'
 import { useErrorActions } from './useErrorActions'
 import { useErrorReport } from './useErrorReport'
 
-const { card, compact = false } = defineProps<{
+const { card } = defineProps<{
   card: ErrorCardData
-  compact?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -202,9 +199,6 @@ const { findOnGitHub, contactSupport: handleGetHelp } = useErrorActions()
 const runtimeDetailsExpanded = ref(true)
 const hasRuntimeError = computed(() =>
   card.errors.some((error) => error.isRuntimeError)
-)
-const isRuntimeDisclosureExpanded = computed(
-  () => compact || runtimeDetailsExpanded.value
 )
 const runtimeDetailsControlIds = computed(() =>
   card.errors
@@ -224,6 +218,10 @@ function handleLocateNode() {
 }
 
 function handleCopyError(idx: number) {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'error_tab_copy_error_clicked',
+    element_group: 'errors_panel'
+  })
   const details = displayedDetailsMap.value[idx]
   const message = getCopyMessage(card.errors[idx])
   emit('copyToClipboard', [message, details].filter(Boolean).join('\n\n'))

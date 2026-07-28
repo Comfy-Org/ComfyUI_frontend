@@ -4,6 +4,7 @@ import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
 
 import { TelemetryEvents } from '../../types'
+import type { OnboardingTourStage } from '../../types'
 
 const hoisted = vi.hoisted(() => {
   const mockCapture = vi.fn()
@@ -109,7 +110,7 @@ describe('PostHogTelemetryProvider', () => {
           api_host: 'https://t.comfy.org',
           ui_host: 'https://us.posthog.com',
           autocapture: false,
-          capture_pageview: false,
+          capture_pageview: 'history_change',
           capture_pageleave: false,
           persistence: 'localStorage+cookie'
         })
@@ -195,6 +196,46 @@ describe('PostHogTelemetryProvider', () => {
     })
   })
 
+  describe('platform axes (client / deployment)', () => {
+    afterEach(() => {
+      delete window.__comfyDesktop2
+    })
+
+    it('registers client=web and deployment=cloud in a plain browser', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+        client: 'web',
+        deployment: 'cloud'
+      })
+    })
+
+    it('registers client=desktop when the desktop preload bridge is present', async () => {
+      window.__comfyDesktop2 = {
+        isRemote: () => false,
+        Telemetry: { capture: vi.fn() }
+      }
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+        client: 'desktop',
+        deployment: 'cloud'
+      })
+    })
+
+    it('registers platform axes before flushing pre-init queued events', async () => {
+      const provider = createProvider()
+      provider.trackSignupOpened()
+      await vi.dynamicImportSettled()
+
+      const registerOrder = hoisted.mockRegister.mock.invocationCallOrder[0]
+      const captureOrder = hoisted.mockCapture.mock.invocationCallOrder[0]
+      expect(registerOrder).toBeLessThan(captureOrder)
+    })
+  })
+
   describe('desktop entry capture', () => {
     function setLocation(search: string): void {
       Object.defineProperty(window.location, 'search', {
@@ -208,12 +249,20 @@ describe('PostHogTelemetryProvider', () => {
       setLocation('')
     })
 
+    // The platform-axes register (client/deployment) always fires, so these
+    // assert no register call carrying desktop-entry attribution props.
+    function desktopEntryRegisterCalls(): unknown[][] {
+      return hoisted.mockRegister.mock.calls.filter(
+        ([props]) => props && 'source_app' in (props as Record<string, unknown>)
+      )
+    }
+
     it('does not register desktop props when utm_source is absent', async () => {
       setLocation('')
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockRegister).not.toHaveBeenCalled()
+      expect(desktopEntryRegisterCalls()).toHaveLength(0)
     })
 
     it('does not register desktop props when utm_source is not comfy.desktop', async () => {
@@ -221,7 +270,7 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockRegister).not.toHaveBeenCalled()
+      expect(desktopEntryRegisterCalls()).toHaveLength(0)
     })
 
     it('registers source_app and desktop_device_id when arriving from desktop', async () => {
@@ -310,6 +359,123 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
         { method: 'google', share_id: 'share-1' }
+      )
+    })
+
+    it('captures auth failure events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAuthFailed({
+        error_code: 'auth/user-not-found',
+        auth_action: 'email_sign_in'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.USER_AUTH_FAILED,
+        {
+          error_code: 'auth/user-not-found',
+          auth_action: 'email_sign_in'
+        }
+      )
+    })
+
+    it.for([
+      ['flow_opened', TelemetryEvents.SUBSCRIPTION_CANCEL_FLOW_OPENED, {}],
+      ['confirmed', TelemetryEvents.SUBSCRIPTION_CANCEL_CONFIRMED, {}],
+      ['abandoned', TelemetryEvents.SUBSCRIPTION_CANCEL_ABANDONED, {}],
+      [
+        'failed',
+        TelemetryEvents.SUBSCRIPTION_CANCEL_FAILED,
+        { error_message: 'timed out' }
+      ]
+    ] as const)(
+      'captures %s cancellation stage',
+      async ([stage, event, extra]) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
+
+        provider.trackSubscriptionCancellation(stage, {
+          current_tier: 'standard',
+          ...extra
+        })
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(event, {
+          current_tier: 'standard',
+          ...extra
+        })
+      }
+    )
+
+    it('captures resubscribe clicks with their source', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackResubscribeClicked({ source: 'settings_billing_panel' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED,
+        { source: 'settings_billing_panel' }
+      )
+    })
+
+    it('captures widget favorite toggled events with their metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackWidgetFavoriteToggled({
+        node_type: 'CheckpointLoaderSimple',
+        widget_name: 'ckpt_name',
+        widget_type: 'combo',
+        is_favorited: true,
+        source: 'right_side_panel'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.WIDGET_FAVORITE_TOGGLED,
+        {
+          node_type: 'CheckpointLoaderSimple',
+          widget_name: 'ckpt_name',
+          widget_type: 'combo',
+          is_favorited: true,
+          source: 'right_side_panel'
+        }
+      )
+    })
+
+    it('captures begin_checkout with intent metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackBeginCheckout({
+        user_id: 'user-1',
+        tier: 'pro',
+        cycle: 'monthly',
+        checkout_type: 'new',
+        payment_intent_source: 'subscribe_to_run'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.BEGIN_CHECKOUT,
+        {
+          user_id: 'user-1',
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          payment_intent_source: 'subscribe_to_run'
+        }
+      )
+    })
+
+    it('captures add-credit clicks with their source', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED,
+        { source: 'credits_panel' }
       )
     })
 
@@ -577,6 +743,38 @@ describe('PostHogTelemetryProvider', () => {
         shellLayoutMetadata
       )
     })
+
+    it.for<
+      [
+        OnboardingTourStage,
+        (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+      ]
+    >([
+      ['started', TelemetryEvents.ONBOARDING_TOUR_STARTED],
+      ['step_shown', TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN],
+      ['completed', TelemetryEvents.ONBOARDING_TOUR_COMPLETED],
+      ['skipped', TelemetryEvents.ONBOARDING_TOUR_SKIPPED]
+    ])(
+      'maps onboarding tour stage %s to %s',
+      async ([stage, expectedEvent]) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
+
+        const metadata = {
+          tour: 'appMode',
+          step_count: 6,
+          step_number: 2,
+          coach_id: 'app-run-button'
+        } as const
+
+        provider.trackOnboardingTour(stage, metadata)
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(
+          expectedEvent,
+          metadata
+        )
+      }
+    )
   })
 
   describe('survey tracking', () => {
@@ -635,7 +833,7 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('page view', () => {
-    it('captures page view with page_name property', async () => {
+    it('captures legacy page view event with page_name property', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
 
@@ -645,9 +843,13 @@ describe('PostHogTelemetryProvider', () => {
         TelemetryEvents.PAGE_VIEW,
         { page_name: 'workflow_editor' }
       )
+      expect(hoisted.mockCapture).not.toHaveBeenCalledWith(
+        '$pageview',
+        expect.anything()
+      )
     })
 
-    it('forwards additional metadata', async () => {
+    it('forwards additional metadata to legacy page view event', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
 
@@ -658,6 +860,20 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.PAGE_VIEW,
         { page_name: 'workflow_editor', path: '/workflows/123' }
+      )
+    })
+
+    it('queues legacy page view event before initialization', async () => {
+      const provider = createProvider()
+
+      provider.trackPageView('workflow_editor')
+      expect(hoisted.mockCapture).not.toHaveBeenCalled()
+
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.PAGE_VIEW,
+        { page_name: 'workflow_editor' }
       )
     })
   })

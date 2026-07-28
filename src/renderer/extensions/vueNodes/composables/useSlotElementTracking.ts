@@ -16,6 +16,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { app } from '@/scripts/app'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/types/nodeId'
+import type { SlotId } from '@/types/slotId'
 import {
   isBoundsEqual,
   isPointEqual,
@@ -160,7 +161,7 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
     return
   }
 
-  const batch: Array<{ key: string; layout: SlotLayout }> = []
+  const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
 
   for (const [slotKey, entry] of node.slots) {
     const rect = getSlotElementRect(entry.el)
@@ -232,7 +233,7 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
 
-  const batch: Array<{ key: string; layout: SlotLayout }> = []
+  const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
 
   for (const [slotKey, entry] of node.slots) {
     if (!entry.cachedOffset) {
@@ -318,7 +319,7 @@ export function useSlotElementTracking(options: {
           layoutStore.deleteSlotLayout(slotKey)
         }
 
-        el.dataset.slotKey = slotKey
+        el.dataset.slotKey = String(slotKey)
         node.slots.set(slotKey, { el, index, type })
 
         // Seed initial sync from DOM

@@ -215,6 +215,7 @@ import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Select from '@/components/ui/select/Select.vue'
@@ -231,15 +232,16 @@ import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBro
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { AssetUserMetadata } from '@/platform/assets/schemas/assetSchema'
 import {
+  buildModelTypeTagUpdate,
   getAssetAdditionalTags,
   getAssetBaseModels,
   getAssetDescription,
   getAssetDisplayName,
   getAssetFilename,
-  getAssetModelType,
   getAssetSourceUrl,
   getAssetTriggerPhrases,
   getAssetUserDescription,
+  getEditableModelType,
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -265,6 +267,7 @@ const { asset, cacheKey, selectContentStyle } = defineProps<{
 }>()
 
 const assetsStore = useAssetsStore()
+const { flags } = useFeatureFlags()
 const { modelTypes } = useModelTypes()
 
 const pendingUpdates = ref<AssetUserMetadata>({})
@@ -319,11 +322,16 @@ function handleDisplayNameEdit(newName: string) {
 
 const debouncedSaveModelType = useDebounceFn((newModelType: string) => {
   if (isImmutable.value) return
-  const currentModelType = getAssetModelType(asset)
+  const currentModelType = getEditableModelType(
+    asset,
+    flags.supportsModelTypeTags
+  )
   if (currentModelType === newModelType) return
-  const newTags = asset.tags
-    .filter((tag) => tag !== currentModelType)
-    .concat(newModelType)
+  const newTags = buildModelTypeTagUpdate(
+    asset,
+    newModelType,
+    flags.supportsModelTypeTags
+  )
   assetsStore.updateAssetTags(asset, newTags, cacheKey)
 }, 500)
 
@@ -345,7 +353,10 @@ const userDescription = computed({
 })
 
 const selectedModelType = computed({
-  get: () => pendingModelType.value ?? getAssetModelType(asset) ?? undefined,
+  get: () =>
+    pendingModelType.value ??
+    getEditableModelType(asset, flags.supportsModelTypeTags) ??
+    undefined,
   set: (value: string | undefined) => {
     if (!value) return
     pendingModelType.value = value

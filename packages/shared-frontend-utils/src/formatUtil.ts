@@ -598,7 +598,10 @@ const THREE_D_EXTENSIONS = [
   'glb',
   'stl',
   'usdz',
-  'ply'
+  'ply',
+  'spz',
+  'splat',
+  'ksplat'
 ] as const
 const TEXT_EXTENSIONS = [
   'txt',
@@ -677,12 +680,7 @@ export function getMediaTypeFromFilename(
 }
 
 export function isPreviewableMediaType(mediaType: MediaType): boolean {
-  return (
-    mediaType === 'image' ||
-    mediaType === 'video' ||
-    mediaType === 'audio' ||
-    mediaType === '3D'
-  )
+  return mediaType !== 'other'
 }
 
 export function formatTime(seconds: number): string {

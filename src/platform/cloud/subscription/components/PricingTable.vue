@@ -123,7 +123,7 @@
               </span>
               <div class="flex flex-row items-center gap-1">
                 <i
-                  class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400"
+                  class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span
@@ -277,13 +277,19 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import { recordPendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import {
+  recordPendingSubscriptionCheckoutAttempt,
+  withPendingCheckoutAttemptId
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
+import type {
+  CheckoutAttributionMetadata,
+  PaymentIntentSource
+} from '@/platform/telemetry/types'
 import { useAuthStore } from '@/stores/authStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
@@ -320,6 +326,10 @@ interface PricingTierConfig {
   customLoRAs: boolean
   isPopular?: boolean
 }
+
+const { reason } = defineProps<{
+  reason?: PaymentIntentSource
+}>()
 
 const emit = defineEmits<{
   chooseTeamWorkspace: []
@@ -463,16 +473,17 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
         } as const
         const previousPlan = currentPlanDescriptor.value
         const checkoutAttribution = await getCheckoutAttributionForCloud()
-        if (userId.value) {
-          telemetry?.trackBeginCheckout({
-            user_id: userId.value,
-            tier: targetPlan.tierKey,
-            cycle: targetPlan.billingCycle,
-            checkout_type: 'change',
-            ...checkoutAttribution,
-            ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {})
-          })
-        }
+        const beginCheckoutMetadata = userId.value
+          ? {
+              user_id: userId.value,
+              tier: targetPlan.tierKey,
+              cycle: targetPlan.billingCycle,
+              checkout_type: 'change' as const,
+              ...(reason ? { payment_intent_source: reason } : {}),
+              ...checkoutAttribution,
+              ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {})
+            }
+          : null
         // Pass the target tier to create a deep link to subscription update confirmation
         const checkoutTier = getCheckoutTier(
           targetPlan.tierKey,
@@ -487,29 +498,39 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
         if (downgrade) {
           // TODO(COMFY-StripeProration): Remove once backend checkout creation mirrors portal proration ("change at billing end")
-          await accessBillingPortal()
+          const didOpenPortal = await accessBillingPortal()
+          if (didOpenPortal && beginCheckoutMetadata) {
+            telemetry?.trackBeginCheckout(beginCheckoutMetadata)
+          }
         } else {
           const didOpenPortal = await accessBillingPortal(checkoutTier)
           if (!didOpenPortal) {
             return
           }
 
-          recordPendingSubscriptionCheckoutAttempt({
+          const pendingAttempt = recordPendingSubscriptionCheckoutAttempt({
             tier: targetPlan.tierKey,
             cycle: targetPlan.billingCycle,
             checkout_type: 'change',
+            payment_intent_source: reason,
             ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {}),
             ...(previousPlan
               ? { previous_cycle: previousPlan.billingCycle }
               : {})
           })
+          if (beginCheckoutMetadata) {
+            telemetry?.trackBeginCheckout(
+              withPendingCheckoutAttemptId(
+                beginCheckoutMetadata,
+                pendingAttempt
+              )
+            )
+          }
         }
       } else {
-        await performSubscriptionCheckout(
-          tierKey,
-          currentBillingCycle.value,
-          true
-        )
+        await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
+          paymentIntentSource: reason
+        })
       }
     } finally {
       isLoading.value = false

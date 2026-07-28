@@ -3,6 +3,9 @@
     "dockToTop": "עיגון למעלה",
     "feedback": "משוב",
     "feedbackTooltip": "משוב",
+    "freeTierPartner": "צמתים של שותפים דורשים תוכנית בתשלום",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} הרצות נותרו",
+    "freeTierRunsExhausted": "לא נותרו הרצות",
     "share": "שיתוף",
     "shareTooltip": "שיתוף תהליך העבודה"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "זכאי לדרגה החינמית",
       "freeTierDescription": "הירשם באמצעות Google כדי לקבל {credits} קרדיטים חינם בכל חודש. אין צורך בכרטיס אשראי.",
       "freeTierDescriptionGeneric": "הירשם באמצעות Google כדי לקבל קרדיטים חינם בכל חודש. אין צורך בכרטיס אשראי.",
+      "googleSsoInAppBrowserNotice": "אם פתחת דף זה מתוך דפדפן מובנה באפליקציה (למשל אינסטגרם, לינקדאין), ייתכן שכניסה עם Google לא תעבוד. השתמש ב-GitHub או בדוא\"ל, או פתח דף זה בדפדפן ברירת המחדל של המכשיר שלך.",
       "insecureContextWarning": "חיבור זה אינו מאובטח (HTTP) - פרטי הכניסה שלך עלולים להיירט על-ידי תוקפים אם תמשיך בהתחברות.",
       "loginButton": "התחברות",
       "loginWithGithub": "התחברות באמצעות Github",
@@ -359,12 +363,14 @@
     "colors": "פלטת צבעים",
     "descLabel": "תיאור",
     "descPlaceholder": "תיאור האזור הזה",
+    "grid": "רשת",
     "textLabel": "טקסט",
     "textPlaceholder": "טקסט להצגה (מילולי)",
     "typeObj": "אובייקט",
     "typeText": "טקסט"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "מצב {mode}, פעולות תהליך עבודה",
     "app": "יישום",
     "blueprint": "תבנית",
     "clearWorkflow": "ניקוי תהליך העבודה",
@@ -515,57 +521,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "אנא שמרו את התשובה שלכם עד {max} תווים.",
         "chooseAnOption": "אנא בחר אפשרות.",
         "describeAnswer": "אנא תאר את תשובתך.",
         "selectAtLeastOne": "אנא בחר לפחות אפשרות אחת."
       },
       "intro": "עזרו לנו להתאים את חוויית ה-ComfyUI שלך.",
       "options": {
-        "familiarity": {
-          "advanced": "מתקדם — בונה ועורך תהליכי עבודה",
-          "basics": "בינוני — מרגיש בנוח עם היסודות",
-          "expert": "מומחה — אני עוזר לאחרים",
-          "new": "חדש — מעולם לא השתמשתי",
-          "starting": "מתחיל — עוקב אחר מדריכים"
+        "experience": {
+          "new": "חדש/ה ב-ComfyUI",
+          "pro": "משתמש/ת מתקדם/ת",
+          "some": "מכיר/ה את המערכת"
+        },
+        "focus": {
+          "custom_nodes": "צמתים מותאמים אישית",
+          "pipelines": "צינורות עבודה אוטומטיים",
+          "products": "מוצרים לאחרים"
         },
         "intent": {
-          "3d_game": "נכסי תלת-ממד / נכסי משחקים",
-          "api": "נקודות קצה של API להרצת תהליכי עבודה",
-          "apps": "יישומים מפושטים מתהליכי עבודה",
-          "audio": "שמע / מוזיקה",
-          "custom_nodes": "צמתים מותאמים",
+          "apps_api": "אפליקציות ו-API",
+          "exploring": "רק בודק/ת",
           "images": "תמונות",
-          "not_sure": "לא בטוח",
-          "videos": "סרטונים",
+          "other": "משהו אחר",
+          "otherPlaceholder": "מה תרצו ליצור?",
+          "video": "וידאו",
           "workflows": "תהליכי עבודה או צינורות (pipelines) מותאמים"
         },
         "source": {
-          "conference": "כנס או אירוע",
-          "discord": "Discord / קהילה",
+          "community": "קהילה או פורום",
           "friend": "חבר או עמית",
-          "github": "GitHub",
+          "other": "אחר",
+          "otherPlaceholder": "היכן שמעתם עלינו?",
+          "search": "Google / חיפוש",
+          "social": "רשתות חברתיות"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "ניוזלטר או בלוג",
-          "other": "אחר",
           "reddit": "Reddit",
-          "search": "Google / חיפוש",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "חינוך (סטודנט או מרצה)",
-          "personal": "שימוש אישי",
-          "work": "עבודה"
         }
       },
+      "otherPlaceholder": "ספרו לנו עוד",
       "placeholder": "מציין מיקום לשאלות הסקר",
-      "steps": {
-        "familiarity": "עד כמה אתה מכיר את ComfyUI?",
-        "intent": "מה ברצונך ליצור עם ComfyUI?",
-        "source": "היכן שמעת על ComfyUI?",
-        "usage": "כיצד אתה מתכנן להשתמש ב-ComfyUI?"
-      },
       "title": "סקר ענן"
     }
   },
@@ -578,10 +579,11 @@
   "cloudStart_learnAboutButton": "למד על הענן",
   "cloudStart_title": "התחל ליצור תוך שניות",
   "cloudStart_wantToRun": "מעדיף להריץ את ComfyUI מקומית?",
-  "cloudSurvey_steps_familiarity": "עד כמה אתה מכיר את ComfyUI?",
+  "cloudSurvey_steps_experience": "עד כמה אתם מכירים את ComfyUI?",
+  "cloudSurvey_steps_focus": "מה אתם בונים?",
   "cloudSurvey_steps_intent": "מה ברצונך ליצור עם ComfyUI?",
   "cloudSurvey_steps_source": "היכן שמעת על ComfyUI?",
-  "cloudSurvey_steps_usage": "כיצד אתה מתכנן להשתמש ב-ComfyUI?",
+  "cloudSurvey_steps_source_social": "באיזו פלטפורמה?",
   "cloudWaitlist_contactLink": "כאן",
   "cloudWaitlist_questionsText": "שאלות? צור איתנו קשר",
   "color": {
@@ -621,10 +623,13 @@
     "namePlaceholder": "הזן את שמך כאן",
     "profileCreationNav": "יצירת פרופיל",
     "startPublishingButton": "התחל לפרסם",
+    "startUpdatingButton": "עדכן תהליך עבודה",
     "successDescription": "כעת תוכל להעלות את תהליך העבודה שלך לדף היוצר שלך",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "דף הפרופיל שלך פעיל בכתובת",
     "successTitle": "נראה מצוין, {'@'}{username}!",
+    "updateIntroDescription": "העלו את השינויים האחרונים שלכם ל-ComfyHub. קישור השיתוף והסטטיסטיקות שלכם יישארו ללא שינוי.",
+    "updateIntroTitle": "עדכון תהליך העבודה שלך ב-ComfyHub",
     "uploadCover": "+ העלאת תמונת שער",
     "uploadProfilePicture": "+ העלאת תמונת פרופיל",
     "uploadWorkflowButton": "העלאת תהליך העבודה שלי",
@@ -648,6 +653,8 @@
     "publishSuccessDescription": "תהליך העבודה שלך פעיל כעת ב-ComfyHub.",
     "publishSuccessTitle": "פורסם בהצלחה",
     "removeExampleImage": "הסרת תמונת הדוגמה",
+    "renameFailedDescription": "תהליך העבודה פורסם בהצלחה, אך שינוי שם הקובץ המקומי נכשל. נסו לשנות את השם שוב כדי להתאים.",
+    "renameFailedTitle": "השם החדש נכשל",
     "selectAThumbnail": "בחר תמונה ממוזערת",
     "shareAs": "שתף בתור",
     "showLessTags": "הצג פחות...",
@@ -665,6 +672,7 @@
     "thumbnailVideo": "סרטון",
     "title": "פרסום ל-ComfyHub",
     "unsavedDescription": "עליך לשמור את תהליך העבודה שלך לפני הפרסום ל-ComfyHub. שמור אותו כעת כדי להמשיך.",
+    "updateButton": "עדכן תהליך עבודה",
     "uploadAnImage": "לחץ לעיון או גרור תמונה",
     "uploadComparison": "העלאת 'לפני' ו'אחרי'",
     "uploadComparisonAfterPrompt": "אחרי",
@@ -781,8 +789,15 @@
       "gpuUsage": "שימוש ב-GPU"
     },
     "faqs": "שאלות נפוצות",
+    "insufficient": {
+      "memberCta": "הבנתי",
+      "memberDescription": "הצוות שלך השתמש בכל הקרדיטים. מנהלי סביבת העבודה צריכים להוסיף קרדיטים נוספים כדי להריץ תהליכי עבודה.",
+      "memberTitle": "לסביבת עבודה זו אזלו הקרדיטים"
+    },
     "invoiceHistory": "היסטוריית חשבוניות",
     "lastUpdated": "עודכן לאחרונה",
+    "loadEventsError": "טעינת הפעילות נכשלה. אנא נסו שוב.",
+    "loadEventsUnknownError": "משהו השתבש בעת טעינת הפעילות. רעננו ונסו שוב.",
     "messageSupport": "שליחת הודעה לתמיכה",
     "model": "מודל",
     "purchaseCredits": "רכישת קרדיטים",
@@ -949,6 +964,16 @@
       "message": "סופק מזהה חלון לא תקין.",
       "title": "חלון לא תקין"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "אפליקציית ComfyUI במחשב ממתינה לכניסה עם החשבון שלך. המשך רק אם התחלת כעת את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
+    "confirmSummary": "לאשר כניסה משולחן העבודה?",
+    "expiredDetail": "בקשת הכניסה פגה או כבר נוצלה. יש להתחיל מחדש את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
+    "expiredSummary": "הכניסה משולחן העבודה נכשלה",
+    "failedDetail": "אירעה שגיאה במהלך השלמת הכניסה משולחן העבודה. יש להתחיל מחדש את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
+    "failedSummary": "הכניסה משולחן העבודה נכשלה",
+    "successDetail": "ניתן לחזור לאפליקציית ComfyUI במחשב.",
+    "successSummary": "הכניסה בוצעה בהצלחה"
   },
   "desktopMenu": {
     "confirmQuit": "ישנם תהליכי עבודה פתוחים שלא נשמרו; כל שינוי שלא נשמר יאבד. להתעלם מכך ולצאת?",
@@ -1437,6 +1462,9 @@
     "preparingExport": "מכין ייצוא...",
     "retryDownload": "נסה להוריד שוב"
   },
+  "feedback": {
+    "title": "שתף משוב"
+  },
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -1564,6 +1592,7 @@
     "extensions": "הרחבות",
     "failed": "נכשל",
     "failedToCopyJobId": "העתקת מזהה המשימה נכשלה",
+    "failedToDownloadFile": "הורדת הקובץ נכשלה",
     "failedToDownloadImage": "הורדת התמונה נכשלה",
     "failedToDownloadVideo": "הורדת הסרטון נכשלה",
     "favorites": "מועדפים",
@@ -1808,6 +1837,7 @@
     "systemStatsRAMTotal": "RAM כולל",
     "systemStatsTemplatesVersion": "גרסת תבניות",
     "terminal": "טרמינל",
+    "textFailedToLoad": "טעינת הטקסט נכשלה",
     "title": "כותרת",
     "triggerPhrase": "ביטוי הפעלה",
     "unknownError": "שגיאה לא ידועה",
@@ -2061,11 +2091,15 @@
       "appBuilder": "בונה היישומים",
       "apps": "יישומים",
       "appsEmptyMessage": "יישומים שנשמרו יופיעו כאן.",
-      "appsEmptyMessageAction": "לחץ למטה כדי לבנות את היישום הראשון שלך."
+      "appsEmptyMessageAction": "לחץ למטה כדי לבנות את היישום הראשון שלך.",
+      "buildAnApp": "בנה אפליקציה",
+      "create": "צור",
+      "createApp": "צור אפליקציה"
     },
     "arrange": {
       "atLeastOne": "לפחות אחד",
       "connectAtLeastOne": "חבר {atLeastOne} צומת פלט כדי שמשתמשים יוכלו לראות תוצאות לאחר ההרצה.",
+      "descriptionPlaceholder": "לחץ פעמיים להוספת תיאור",
       "noOutputs": "עדיין לא נוספו פלטים",
       "outputExamples": "דוגמאות: 'שמירת תמונה' או 'שמירת סרטון'",
       "outputs": "פלטים",
@@ -2074,8 +2108,6 @@
       "switchToOutputsButton": "מעבר לפלטים"
     },
     "backToWorkflow": "חזרה לתהליך העבודה",
-    "beta": "מצב יישום בבטא",
-    "buildAnApp": "בניית יישום",
     "builder": {
       "exit": "יציאה מהבונה",
       "exitConfirmMessage": "יש לך שינויים שלא נשמרו אשר יאבדו\nלצאת מבלי לשמור?",
@@ -2113,6 +2145,7 @@
       "requiresGraph": "משהו השתבש במהלך היצירה. הדבר עשוי לנבוע מקלטים מוסתרים לא תקינים, משאבים חסרים או בעיות בהגדרת תהליך העבודה.",
       "support": "צור קשר עם התמיכה שלנו"
     },
+    "feedbackLoadError": "טעינת טופס המשוב נכשלה. נסה שוב מאוחר יותר.",
     "giveFeedback": "שליחת משוב",
     "graphMode": "מצב גרף",
     "hasCreditCost": "דורש קרדיטים נוספים",
@@ -2181,6 +2214,7 @@
     "loadingModel": "טוען מודל תלת-ממד...",
     "materialMode": "מצב חומר",
     "materialModes": {
+      "clay": "חימר",
       "depth": "עומק",
       "lineart": "ציור קווי (Lineart)",
       "normal": "רגיל",
@@ -2188,7 +2222,29 @@
       "pointCloud": "ענן נקודות",
       "wireframe": "מסגרת חוטים (Wireframe)"
     },
+    "menuBar": {
+      "bgColor": "צבע רקע",
+      "bgImage": "תמונת רקע",
+      "deleteRecording": "מחק הקלטה",
+      "downloadRecording": "הורד הקלטה",
+      "fov": "שדה ראייה (FOV)",
+      "intensity": "עוצמה",
+      "material": "חומר",
+      "originalMaterialOnly": "חומר מקורי בלבד",
+      "panorama": "פנורמה",
+      "record": "הקלט",
+      "recording": "בהקלטה",
+      "removeBackground": "הסר רקע",
+      "showGrid": "הצג רשת",
+      "skeleton": "שלד",
+      "startNewRecording": "התחל הקלטה חדשה",
+      "stopRecording": "הפסק הקלטה",
+      "switchProjection": "החלף הקרנה",
+      "upDirection": "כיוון מעלה",
+      "videoRecordingTooltip": "הקלטת וידאו של הסצנה [mp4]"
+    },
     "model": "מודל",
+    "model3d": "מודל תלת-ממד",
     "openIn3DViewer": "פתיחה במציג התלת-ממד",
     "panoramaMode": "פנורמה",
     "previewOutput": "תצוגה מקדימה של הפלט",
@@ -2400,6 +2456,11 @@
       "importFailed": "שגיאת התקנה",
       "pending": "ממתין",
       "unknown": "לא ידוע"
+    },
+    "survey": {
+      "error": "לא ניתן היה לטעון את הסקר. אנא נסו שוב מאוחר יותר.",
+      "intro": "התקנת צמתים מותאמים אישית תגיע בקרוב ל-Comfy Cloud. ענו על מספר שאלות קצרות כדי להצטרף לרשימת ההמתנה ולעזור לעצב את הפיצ'ר הזה.",
+      "title": "הצטרפות לרשימת המתנה"
     },
     "title": "מנהל הצמתים",
     "toFinishSetup": "כדי לסיים את ההתקנה",
@@ -2735,7 +2796,6 @@
     "accept": "בטח, אשמח לעזור!",
     "description": "השתמשת בתכונה זו. האם תוכל להקדיש רגע לשיתוף המשוב שלך?",
     "dontAskAgain": "אל תשאל שוב",
-    "loadError": "טעינת הסקר נכשלה. אנא נסה שוב מאוחר יותר.",
     "notNow": "לא עכשיו",
     "title": "עזרו לנו להשתפר"
   },
@@ -2750,6 +2810,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2769,7 +2830,6 @@
     "Runway": "Runway",
     "Sonilo": "Sonilo",
     "Sora": "Sora",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -2780,6 +2840,7 @@
     "ace": "ace",
     "adjustments": "adjustments",
     "advanced": "advanced",
+    "anima": "anima",
     "animate": "אנימציה",
     "attention_experiments": "attention_experiments",
     "audio": "audio",
@@ -2801,8 +2862,8 @@
     "cosmos": "cosmos",
     "create": "create",
     "custom": "מותאם אישית",
-    "custom_sampling": "custom_sampling",
     "dancer": "רקדן",
+    "dataset": "מאגר נתונים",
     "debug": "debug",
     "detection": "detection",
     "experimental": "experimental",
@@ -2824,6 +2885,7 @@
     "image": "image",
     "infinite talk": "infinite talk",
     "instructpix2pix": "instructpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "latent",
     "loaders": "loaders",
@@ -2831,11 +2893,13 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "mask",
     "merging": "merging",
     "mochi": "mochi",
     "model": "model",
     "model specific": "מותאם למודל",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "multigpu",
     "noise": "noise",
@@ -2845,6 +2909,8 @@
     "phantom subject": "phantom subject",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "מעבדי פוסט",
+    "pre-processors": "מעבדי פרה",
     "preprocessors": "preprocessors",
     "primitive": "primitive",
     "qwen": "qwen",
@@ -2865,8 +2931,8 @@
     "stable video": "stable video",
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
-    "stable_cascade": "stable_cascade",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "text",
     "training": "training",
     "transform": "transform",
@@ -2953,6 +3019,7 @@
       "appTypeNative": "יישום מקורי (Native)",
       "appTypeWeb": "יישום אינטרנט",
       "deny": "ביטול",
+      "detailsHeader": "פרטים",
       "errorExpired": "בקשת הסכמה זו פגה או כבר נוצלה. אנא התחל מחדש מיישום הלקוח.",
       "errorScopeBroadening": "ההרשאות שאושרו בעבר אינן מכסות בקשה זו. יהיה עליך לאשר מחדש עם ההרשאות החדשות.",
       "errorUnavailable": "תכונה זו אינה זמינה כרגע. אנא פנה לתמיכה אם הבעיה נמשכת.",
@@ -2967,7 +3034,6 @@
       "sessionErrorToastSummary": "לא ניתן היה להמשיך בהתחברות OAuth",
       "subtitle": "התחבר אל {resource} כדי להמשיך",
       "title": "{client} מבקש גישה",
-      "workspaceHelp": "ההרשאות חלות על סביבת עבודה זו בלבד.",
       "workspaceLabel": "סביבת עבודה"
     },
     "scopes": {
@@ -3102,8 +3168,11 @@
     "errorHelpGithub": "שלח דיווח (issue) ב-GitHub",
     "errorHelpSupport": "צור קשר עם התמיכה שלנו",
     "errorLog": "יומן השגיאות",
+    "errorNodeSummary": "{nodes} צומת — {count} שגיאה | {nodes} צומת — {count} שגיאות",
+    "errorNodesSummary": "{nodes} צמתים — {count} שגיאה | {nodes} צמתים — {count} שגיאות",
     "errors": "שגיאות",
     "errorsDetected": "שגיאה זוהתה | שגיאות זוהו",
+    "errorsSummary": "{count} שגיאה | {count} שגיאות",
     "executionErrorOccurred": "אירעה שגיאה במהלך ההרצה. בדוק את כרטיסיית השגיאות לפרטים.",
     "expand": "הרחב",
     "fallbackGroupTitle": "קבוצה",
@@ -3193,6 +3262,8 @@
     "resetToDefault": "איפוס לברירת המחדל",
     "resolveBeforeRun": "פתור לפני הרצת תהליך העבודה",
     "seeError": "הצגת השגיאה",
+    "selectedNodeErrors": "{node} — {count} שגיאה | {node} — {count} שגיאות",
+    "selectedNodesErrors": "{nodes} צמתים נבחרו — {count} שגיאה | {nodes} צמתים נבחרו — {count} שגיאות",
     "settings": "הגדרות",
     "showAdvancedInputsButton": "הצגת קלטים מתקדמים",
     "showAdvancedShort": "הצג מתקדמים",
@@ -3212,24 +3283,35 @@
     "errors": {
       "duplicateName": "כבר קיים סוד עם שם זה",
       "duplicateProvider": "כבר קיים סוד עבור ספק זה",
+      "fileReadFailed": "לא ניתן לקרוא את הקובץ שנבחר",
+      "fileTooLarge": "הקובץ גדול מדי. העלה אישור JSON קטן מ-1 מגה-בייט",
+      "invalidJson": "הקובץ חייב להכיל אובייקט JSON תקני",
       "nameRequired": "שם הוא שדה חובה",
       "nameTooLong": "השם חייב להכיל 255 תווים או פחות",
       "providerRequired": "ספק הוא שדה חובה",
       "secretValueRequired": "ערך הסוד הוא שדה חובה"
     },
+    "jsonFileHint": "הדבק את ה-JSON או העלה קובץ. הוא יוצפן ולא יהיה ניתן לצפייה חוזרת.",
+    "jsonFileHintEdit": "השאר ריק כדי לשמור את הערך הנוכחי, או העלה קובץ JSON חדש להחלפה.",
+    "jsonFilePlaceholder": "העלה או הדבק את אישור ה-JSON של הספק",
     "lastUsed": "שימוש אחרון {date}",
     "modelProviders": "ספקי מודלים",
     "name": "שם",
     "namePlaceholder": "לדוגמה, מפתח ה-API שלי",
     "noSecrets": "לא אוחסנו סודות. הוסף את מפתח ה-API הראשון שלך כדי להתחיל.",
     "provider": "ספק",
+    "providerHelp": {
+      "gemini": "הזן את מפתח ה-API של Google Gemini. ניתן ליצור אחד ב-Google AI Studio.",
+      "runway": "הזן את מפתח ה-API של Runway. ניתן למצוא אותו בהגדרות החשבון שלך ב-Runway תחת מפתחות API."
+    },
     "providerHint": "אופציונלי. בחירת ספק מאפשרת שימוש אוטומטי באסימון.",
     "secretValue": "ערך הסוד",
     "secretValueHint": "ערך זה יוצפן ולא ניתן יהיה לצפות בו שוב.",
     "secretValueHintEdit": "השאר ריק כדי לשמור על הערך הנוכחי.",
     "secretValuePlaceholder": "הזן את מפתח ה-API שלך",
     "secretValuePlaceholderEdit": "הזן ערך חדש כדי לשנות",
-    "title": "מפתחות API וסודות"
+    "title": "מפתחות API וסודות",
+    "uploadJsonFile": "העלה קובץ JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "עקיפת צמתי הקבוצה",
@@ -3432,6 +3514,7 @@
     "Load 3D": "טעינת תלת-ממד ואנימציה",
     "Locale": "שפה",
     "Mask Editor": "עורך המסכות",
+    "Members": "חברים",
     "Menu": "תפריט",
     "ModelLibrary": "ספריית המודלים",
     "Node": "צומת",
@@ -3806,6 +3889,7 @@
     "freeTier": {
       "description": "המסלול החינמי שלך כולל {credits} קרדיטים בכל חודש להתנסות ב-Comfy Cloud.",
       "descriptionGeneric": "המסלול החינמי שלך כולל מכסת קרדיטים חודשית להתנסות ב-Comfy Cloud.",
+      "descriptionQuota": "התוכנית החינמית שלך כוללת {runs} הרצות כדי להתחיל עם Comfy Cloud — ללא צורך בכרטיס אשראי.",
       "nextRefresh": "הקרדיטים שלך מתחדשים ב-{date}.",
       "outOfCredits": {
         "subtitle": "הירשם כדי לפתוח טעינות ועוד",
@@ -3946,6 +4030,7 @@
       "waitingForSubscription": "השלם את ההרשמה שלך בכרטיסייה החדשה. נזהה אוטומטית כשתסיים!"
     },
     "resubscribe": "הירשם מחדש",
+    "resubscribeFailed": "נכשל ניסיון להפעיל מחדש את המנוי",
     "resubscribeSuccess": "המנוי הופעל מחדש בהצלחה",
     "resubscribeTo": "הירשם מחדש ל-{plan}",
     "saveYearly": "חסוך 20%",
@@ -4071,7 +4156,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "מסננים:",
     "allTemplates": "כל התבניות",
     "categories": "קטגוריות",
     "category": {
@@ -4096,9 +4180,12 @@
       "Video": "סרטון",
       "Video API": "Video API"
     },
+    "clearAllFilters": "נקה את כל המסננים",
     "error": {
       "templateNotFound": "התבנית \"{templateName}\" לא נמצאה"
     },
+    "filtersApplied": "{count} מסנן הופעל | {count} מסננים הופעלו",
+    "filtersButton": "מסננים",
     "licenseFilter": "רישיון",
     "loading": "טוען תבניות...",
     "loadingMore": "טוען תבניות נוספות...",
@@ -4106,7 +4193,6 @@
     "modelsSelected": "{count} מודלים",
     "noResults": "לא נמצאו תבניות",
     "noResultsHint": "נסה לשנות את החיפוש או המסננים",
-    "resetFilters": "ניקוי המסננים",
     "resultsCount": "מציג {count} מתוך {total} תבניות",
     "runsOnFilter": "פועל על",
     "runsOnSelected": "{count} פועל על",
@@ -4118,6 +4204,7 @@
       "newest": "החדשים ביותר",
       "popular": "פופולרי",
       "recommended": "מומלץ",
+      "relevance": "רלוונטיות",
       "searchPlaceholder": "חיפוש..."
     },
     "sorting": "מיון לפי",
@@ -4196,6 +4283,9 @@
     "updateRequested": "התבקש עדכון",
     "useApiKeyTip": "טיפ: לא מצליח לגשת להתחברות הרגילה? השתמש באפשרות מפתח ה-API של Comfy.",
     "userNotAuthenticated": "המשתמש לא אומת"
+  },
+  "typeform": {
+    "loadError": "טעינת הטופס נכשלה. נסה שוב מאוחר יותר."
   },
   "userSelect": {
     "enterUsername": "הזן שם משתמש",
@@ -4332,6 +4422,50 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "קרדיטים",
+        "date": "תאריך",
+        "eventDetails": "פרטי אירוע",
+        "eventType": "סוג אירוע",
+        "user": "משתמש"
+      },
+      "empty": "אין פעילות עדיין.",
+      "fullActivity": "כל הפעילות",
+      "hoverCard": {
+        "lastActivity": "פעילות אחרונה",
+        "partnerNodeUsed": "צומת שותף בשימוש",
+        "totalCreditsUsed": "סך הקרדיטים שנוצלו"
+      },
+      "perUserHint": "מחפש סך שימוש לכל משתמש?",
+      "seeMembers": "הצג חברים"
+    },
+    "billingStatus": {
+      "ending": {
+        "body": "החברים שומרים על גישה מלאה עד אז. הפעל מחדש כדי לשמור על הקרדיטים והמושבים המשותפים.",
+        "reactivate": "הפעל מחדש את התוכנית",
+        "title": "תוכנית הצוות שלך מסתיימת ב-{date}"
+      },
+      "outOfCredits": {
+        "addCredits": "הוסף קרדיטים",
+        "body": "הצוות שלך השתמש בכל הקרדיטים. הוסף קרדיטים כדי להמשיך ביצירה או המתן עד למילוי הקרדיטים ב-{date}.",
+        "bodyNoDate": "הצוות שלך השתמש בכל הקרדיטים. הוסף קרדיטים כדי להמשיך ביצירה.",
+        "dismiss": "סגור",
+        "memberBody": "הצוות שלך השתמש בכל הקרדיטים. מנהלי סביבת העבודה צריכים להוסיף קרדיטים נוספים כדי להמשיך ביצירה.",
+        "title": "אזלו הקרדיטים"
+      },
+      "paused": {
+        "body": "המנוי של סביבת עבודה זו מושהה. עדכן את התשלום כדי להמשיך.",
+        "memberBody": "המנוי של סביבת עבודה זו מושהה. מנהלי סביבת העבודה צריכים לעדכן את אמצעי התשלום.",
+        "title": "המנוי מושהה"
+      },
+      "updatePayment": "עדכן תשלום",
+      "warning": {
+        "body": "התשלום האחרון שלך לא עבר. המנוי יושהה ב-{date} אלא אם תעדכן את התשלום.",
+        "bodyNoDate": "התשלום האחרון שלך לא עבר. עדכן את התשלום כדי למנוע השהיה.",
+        "title": "התשלום נדחה"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "הורד לחבר רגיל",
       "demoteMessage": "הגישה הניהולית תוסר.",
@@ -4393,14 +4527,31 @@
         "cancelInvite": "בטל הזמנה",
         "changeRole": "שנה תפקיד",
         "removeMember": "הסרת החבר",
-        "resendInvite": "שלח הזמנה מחדש"
+        "resendInvite": "שלח הזמנה מחדש",
+        "setCreditLimit": "הגדר מגבלת קרדיטים"
+      },
+      "activity": {
+        "daysAgo": "לפני {count} יום | לפני {count} ימים",
+        "hoursAgo": "לפני {n} שעות",
+        "justNow": "הרגע",
+        "minutesAgo": "לפני {n} דקות"
       },
       "columns": {
+        "creditsUsed": "קרדיטים חודשיים",
         "expiryDate": "תאריך התפוגה",
         "inviteDate": "תאריך ההזמנה",
         "role": "תפקיד"
       },
       "contactUs": "צור קשר",
+      "creditLimitDialog": {
+        "description": "כאשר יגיעו למגבלה זו, לא יוכלו להריץ תהליכי עבודה.",
+        "invalidLimit": "הזן מגבלת קרדיטים גדולה מאפס.",
+        "limitOption": "הגבל שימוש חודשי בקרדיטים ל:",
+        "noLimit": "ללא הגבלה",
+        "title": "הגדר מגבלת קרדיטים חודשית עבור {name}",
+        "update": "עדכן מגבלה",
+        "warning": "משתמש זה כבר ניצל {credits} קרדיטים. הגדרת מגבלה השווה או נמוכה מהשימוש הנוכחי תמנע הרצות נוספות עד לחודש הבא."
+      },
       "header": "חברים",
       "membersCount": "{count}/{maxSeats} חברים",
       "needMoreMembers": "צריך עוד חברים?",
@@ -4423,6 +4574,12 @@
       "deleteWorkspaceDisabledTooltip": "בטל תחילה את המנוי הפעיל של סביבת העבודה שלך",
       "editWorkspace": "עריכת פרטי סביבת העבודה",
       "leaveWorkspace": "עזיבת סביבת העבודה"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "פעילות",
+        "overview": "קרדיטים"
+      }
     },
     "removeMemberDialog": {
       "error": "הסרת החבר נכשלה",

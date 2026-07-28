@@ -55,6 +55,18 @@ export function useKeybindingService() {
         }
       }
 
+      /**
+       * Block global keybindings from triggering background actions while a
+       * modal dialog is open. Keybindings whose event target lives inside an
+       * open dialog still fire, so dialog-scoped shortcuts keep working.
+       */
+      if (dialogStore.dialogStack.length > 0) {
+        const inDialog = target.closest?.('[role="dialog"]') != null
+        if (!inDialog) {
+          return
+        }
+      }
+
       event.preventDefault()
       const runCommandIds = new Set([
         'Comfy.QueuePrompt',
@@ -109,6 +121,9 @@ export function useKeybindingService() {
   function registerUserKeybindings() {
     const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
     for (const keybinding of unsetBindings) {
+      if (!commandStore.isRegistered(keybinding.commandId)) {
+        continue
+      }
       keybindingStore.unsetKeybinding(new KeybindingImpl(keybinding))
     }
     const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')

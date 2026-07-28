@@ -111,9 +111,11 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
+import { onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
@@ -121,10 +123,11 @@ import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
 
-const { onClose, reason, initialPlanMode } = defineProps<{
+const { onClose, reason, initialPlanMode, initialCheckout } = defineProps<{
   onClose: () => void
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
   initialPlanMode?: 'personal' | 'team'
+  initialCheckout?: SubscriptionCheckoutSelection
 }>()
 
 const emit = defineEmits<{
@@ -152,7 +155,16 @@ const {
   handleConfirmTransition,
   handleTeamSubscribe,
   handleResubscribe
-} = useSubscriptionCheckout(emit)
+} = useSubscriptionCheckout(emit, reason)
+
+onMounted(() => {
+  if (!initialCheckout) return
+  if (initialCheckout.planMode === 'team') {
+    void handleSubscribeTeamClick(initialCheckout)
+    return
+  }
+  void handleSubscribeClick(initialCheckout)
+})
 
 // Backspace mirrors the back arrow on the confirm step, but never while an
 // editable element is focused (let it delete text there).

@@ -374,6 +374,9 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
     return map
   })
+  const allNodeDefsByDisplayName = computed(() => {
+    return Object.fromEntries(nodeDefs.value.map((d) => [d.display_name, d]))
+  })
 
   const visibleNodeDefs = computed(() => {
     return nodeDefs.value.filter((nodeDef) =>
@@ -508,6 +511,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     nodeDefsByName,
     nodeDefsByDisplayName,
     allNodeDefsByName,
+    allNodeDefsByDisplayName,
     showDeprecated,
     showExperimental,
     showDevOnly,

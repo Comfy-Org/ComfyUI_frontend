@@ -1,6 +1,14 @@
 <template>
   <div class="mb-1 flex w-full flex-col gap-0.5 last:mb-0">
-    <div class="flex min-h-8 w-full items-center gap-1">
+    <div
+      :aria-current="highlighted ? 'true' : undefined"
+      :class="
+        cn(
+          'flex min-h-8 items-center gap-1',
+          selectionEmphasisClass(highlighted)
+        )
+      "
+    >
       <Button
         v-if="hasMultipleReferences"
         data-testid="missing-model-expand"
@@ -191,6 +199,8 @@ import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
@@ -217,12 +227,15 @@ const {
   model,
   directory,
   isAssetSupported,
-  canCloudImport = true
+  canCloudImport = true,
+  highlighted
 } = defineProps<{
   model: MissingModelViewModel
   directory: string | null
   isAssetSupported: boolean
   canCloudImport?: boolean
+  /** Emphasize the header row (model referenced by the canvas selection). */
+  highlighted?: boolean
 }>()
 
 const emit = defineEmits<{

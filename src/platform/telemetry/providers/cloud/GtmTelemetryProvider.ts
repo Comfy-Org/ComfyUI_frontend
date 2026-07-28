@@ -1,3 +1,5 @@
+import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
+
 import type {
   AuthMetadata,
   BeginCheckoutMetadata,
@@ -138,16 +140,11 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
+    const normalizedEmail = normalizeEmail(metadata.email)
     const payload = {
       method: metadata.method,
       ...(metadata.user_id ? { user_id: metadata.user_id } : {}),
-      ...(metadata.email
-        ? {
-            user_data: {
-              email: metadata.email.trim().toLowerCase()
-            }
-          }
-        : {})
+      ...(normalizedEmail ? { user_data: { email: normalizedEmail } } : {})
     }
 
     this.pushEvent(metadata.is_new_user ? 'sign_up' : 'login', payload)

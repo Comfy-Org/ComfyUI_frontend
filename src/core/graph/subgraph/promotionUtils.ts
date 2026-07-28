@@ -5,6 +5,7 @@ import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { LinkId } from '@/types/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
@@ -61,9 +62,45 @@ export function findHostInputForPromotion(
   })
 }
 
+/**
+ * Host-first resolver for promoted widget value keys.
+ *
+ * Anchors on the host `SubgraphNode.inputs` (which own the promoted `widgetId`
+ * per ADR 0009) and walks host -> interior only to key each host widget by the
+ * interior source it projects. Consumers that discover an interior source can
+ * then look up the host value key without a per-source reverse walk.
+ */
+export function createPromotedHostWidgetIdLookup(
+  subgraphNode: SubgraphNode
+): (
+  sourceNodeId: SerializedNodeId,
+  sourceWidgetName: string
+) => WidgetId | undefined {
+  const key = (nodeId: SerializedNodeId, name: string): string =>
+    `${toNodeId(nodeId)}\u0000${name}`
+
+  const hostWidgetIdBySource = new Map<string, WidgetId>()
+  for (const input of subgraphNode.inputs) {
+    const hostWidgetId = input.widgetId
+    const subgraphSlot = input._subgraphSlot
+    if (!hostWidgetId || !subgraphSlot) continue
+
+    const source = resolvePromotionSource(subgraphNode, subgraphSlot)
+    if (!source) continue
+
+    hostWidgetIdBySource.set(
+      key(source.sourceNodeId, source.sourceWidgetName),
+      hostWidgetId
+    )
+  }
+
+  return (sourceNodeId, sourceWidgetName) =>
+    hostWidgetIdBySource.get(key(sourceNodeId, sourceWidgetName))
+}
+
 function resolvePromotionSource(
   subgraphNode: SubgraphNode,
-  subgraphInput: { linkIds: readonly number[] }
+  subgraphInput: { linkIds: readonly LinkId[] }
 ): PromotedWidgetSource | undefined {
   for (const linkId of subgraphInput.linkIds) {
     const link = subgraphNode.subgraph.getLink(linkId)
@@ -378,12 +415,14 @@ export function demotePromotedInput(
   )
   const linkedInput = hostInput?._subgraphSlot
   if (!linkedInput) return false
+  const hostWidgetId = hostInput.widgetId
 
   if (hostInput.link != null) {
     linkedInput.disconnect()
   } else {
     subgraphNode.subgraph.removeInput(linkedInput)
   }
+  if (hostWidgetId) useWidgetValueStore().deleteWidget(hostWidgetId)
   return true
 }
 

@@ -57,7 +57,7 @@
           role="progressbar"
           :aria-valuenow="usage.used"
           :aria-valuemin="0"
-          :aria-valuemax="monthlyTotalCredits ?? 0"
+          :aria-valuemax="creditPoolTotalCredits ?? 0"
           :aria-valuetext="monthlyUsageLabel"
           class="h-2 w-full overflow-hidden rounded-full bg-secondary-background-hover"
         >
@@ -86,7 +86,7 @@
               {{
                 $t('subscription.creditsLeftOfTotal', {
                   remaining: monthlyBonusCredits,
-                  total: monthlyTotalDisplay
+                  total: creditPoolTotalDisplay
                 })
               }}
             </span>
@@ -94,7 +94,7 @@
               {{
                 $t('subscription.creditsLeftOfTotal', {
                   remaining: monthlyRemainingCompact,
-                  total: monthlyTotalCompact
+                  total: creditPoolTotalCompact
                 })
               }}
             </span>
@@ -110,17 +110,18 @@
         >
           <span class="flex items-center gap-1 text-text-primary">
             {{ $t('subscription.additionalCredits') }}
-            <button
+            <Button
               v-tooltip="{
                 value: $t('subscription.additionalCreditsTooltip'),
                 showDelay: 300
               }"
-              type="button"
+              variant="muted-textonly"
+              size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
-              class="flex items-center text-muted"
+              class="text-muted"
             >
               <i class="icon-[lucide--info] size-4" />
-            </button>
+            </Button>
             <span
               v-if="isSpendingAdditional"
               class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-2xs/none font-semibold text-base-background uppercase"
@@ -146,7 +147,7 @@
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
         v-if="isFreeTier"
-        variant="gradient"
+        variant="subscribe"
         size="lg"
         class="w-full font-normal"
         @click="handleUpgradeToAddCredits"
@@ -232,16 +233,20 @@ const tierKey = computed(() => {
   return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
 })
 
-const monthlyTotalCredits = computed<number | null>(() => {
-  const teamStop = currentTeamCreditStop.value
-  if (teamStop) return teamStop.credits_monthly
-  return getTierCredits(tierKey.value)
+const creditPoolTotalCredits = computed<number | null>(() => {
+  const monthlyCredits =
+    currentTeamCreditStop.value?.credits_monthly ??
+    getTierCredits(tierKey.value)
+  if (monthlyCredits === null) return null
+  return subscription.value?.duration === 'ANNUAL'
+    ? monthlyCredits * 12
+    : monthlyCredits
 })
 
 const usage = computed(() =>
   computeMonthlyUsage(
     monthlyBonusCreditsValue.value,
-    monthlyTotalCredits.value ?? 0
+    creditPoolTotalCredits.value ?? 0
   )
 )
 
@@ -269,8 +274,8 @@ const formatCreditCount = (value: number) =>
     numberOptions: { maximumFractionDigits: 0 }
   })
 
-const monthlyTotalDisplay = computed(() => {
-  const total = monthlyTotalCredits.value
+const creditPoolTotalDisplay = computed(() => {
+  const total = creditPoolTotalCredits.value
   return total === null ? '—' : formatCreditCount(total)
 })
 
@@ -282,8 +287,8 @@ const compactNumber = computed(
 const monthlyRemainingCompact = computed(() =>
   compactNumber.value.format(monthlyBonusCreditsValue.value)
 )
-const monthlyTotalCompact = computed(() => {
-  const total = monthlyTotalCredits.value
+const creditPoolTotalCompact = computed(() => {
+  const total = creditPoolTotalCredits.value
   return total === null ? '—' : compactNumber.value.format(total)
 })
 
@@ -295,7 +300,7 @@ const usedBarWidth = computed(
 const monthlyUsageLabel = computed(() =>
   t('subscription.monthlyUsageProgress', {
     used: usedDisplay.value,
-    total: monthlyTotalDisplay.value
+    total: creditPoolTotalDisplay.value
   })
 )
 
@@ -303,8 +308,8 @@ const showBreakdown = computed(() => isActiveSubscription.value && !zeroState)
 const showBar = computed(
   () =>
     showBreakdown.value &&
-    monthlyTotalCredits.value !== null &&
-    monthlyTotalCredits.value > 0
+    creditPoolTotalCredits.value !== null &&
+    creditPoolTotalCredits.value > 0
 )
 const showActionButton = computed(
   () => isActiveSubscription.value && !zeroState && permissions.value.canTopUp
@@ -351,12 +356,12 @@ const handleRefresh = wrapWithErrorHandlingAsync(async () => {
 })
 
 function handleAddCredits() {
-  telemetry?.trackAddApiCreditButtonClicked()
+  telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
   void dialogService.showTopUpCreditsDialog()
 }
 
 function handleUpgradeToAddCredits() {
-  showPricingTable()
+  showPricingTable({ reason: 'upgrade_to_add_credits' })
 }
 
 async function handleWindowFocus() {
