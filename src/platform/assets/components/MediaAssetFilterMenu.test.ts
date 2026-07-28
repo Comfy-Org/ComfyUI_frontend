@@ -108,25 +108,45 @@ describe('MediaAssetFilterMenu', () => {
     expect(screen.getByRole('textbox', { name: 'Filter by' })).toBeVisible()
   })
 
-  it('finds and toggles date options without closing the menu', async () => {
+  it('finds and selects date options without closing the menu', async () => {
     const { onDateUpdate, user } = renderMenu()
     await openMenu(user)
 
     await user.type(screen.getByRole('textbox', { name: 'Filter by' }), 'past')
 
     expect(
-      screen.getByRole('menuitemcheckbox', { name: 'Past 7 days' })
+      screen.getByRole('menuitemradio', { name: 'Past 7 days' })
     ).toBeVisible()
     expect(
-      screen.getByRole('menuitemcheckbox', { name: 'Past 30 days' })
+      screen.getByRole('menuitemradio', { name: 'Past 30 days' })
     ).toBeVisible()
 
-    await user.click(
-      screen.getByRole('menuitemcheckbox', { name: 'Past 7 days' })
-    )
+    await user.click(screen.getByRole('menuitemradio', { name: 'Past 7 days' }))
 
     expect(onDateUpdate).toHaveBeenCalledWith('week')
     expect(screen.getByRole('menu', { name: 'Filter by' })).toBeVisible()
+  })
+
+  it('keeps the selected date active and clears it with All time', async () => {
+    const { onDateUpdate, user } = renderMenu({ dateFilter: 'week' })
+    await openMenu(user)
+
+    const searchInput = screen.getByRole('textbox', { name: 'Filter by' })
+    await user.type(searchInput, 'past')
+
+    const pastWeek = screen.getByRole('menuitemradio', {
+      name: 'Past 7 days'
+    })
+    expect(pastWeek).toHaveAttribute('aria-checked', 'true')
+
+    await user.click(pastWeek)
+    expect(onDateUpdate).not.toHaveBeenCalled()
+
+    await user.clear(searchInput)
+    await user.type(searchInput, 'all')
+    await user.click(screen.getByRole('menuitemradio', { name: 'All time' }))
+
+    expect(onDateUpdate).toHaveBeenLastCalledWith('')
   })
 
   it('navigates matching options and toggles the focused result', async () => {
@@ -136,10 +156,10 @@ describe('MediaAssetFilterMenu', () => {
     const searchInput = screen.getByRole('textbox', { name: 'Filter by' })
     await user.type(searchInput, 'past')
 
-    const pastWeek = screen.getByRole('menuitemcheckbox', {
+    const pastWeek = screen.getByRole('menuitemradio', {
       name: 'Past 7 days'
     })
-    const pastMonth = screen.getByRole('menuitemcheckbox', {
+    const pastMonth = screen.getByRole('menuitemradio', {
       name: 'Past 30 days'
     })
 
@@ -169,10 +189,10 @@ describe('MediaAssetFilterMenu', () => {
     const searchInput = screen.getByRole('textbox', { name: 'Filter by' })
     await user.type(searchInput, 'past')
 
-    const pastWeek = screen.getByRole('menuitemcheckbox', {
+    const pastWeek = screen.getByRole('menuitemradio', {
       name: 'Past 7 days'
     })
-    const pastMonth = screen.getByRole('menuitemcheckbox', {
+    const pastMonth = screen.getByRole('menuitemradio', {
       name: 'Past 30 days'
     })
 

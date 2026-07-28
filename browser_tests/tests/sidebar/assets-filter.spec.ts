@@ -208,12 +208,8 @@ test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
     await tab.openFilterMenu()
     await tab.filterSearchInput.fill('past')
 
-    const pastWeek = page.getByRole('menuitemcheckbox', {
-      name: 'Past 7 days'
-    })
-    const pastMonth = page.getByRole('menuitemcheckbox', {
-      name: 'Past 30 days'
-    })
+    const pastWeek = tab.dateFilterOption('Past 7 days')
+    const pastMonth = tab.dateFilterOption('Past 30 days')
 
     await tab.filterSearchInput.press('ArrowDown')
     await expect(pastWeek).toBeFocused()
