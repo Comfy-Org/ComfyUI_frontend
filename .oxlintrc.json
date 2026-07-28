@@ -125,8 +125,7 @@
     {
       "files": ["scripts/**"],
       "rules": {
-        "no-console": "allow",
-        "typescript/no-floating-promises": "off"
+        "no-console": "allow"
       }
     },
     {
