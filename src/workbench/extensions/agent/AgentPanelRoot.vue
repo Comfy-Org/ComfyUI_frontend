@@ -703,7 +703,10 @@ const coachStep: CoachStep = {
 
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   void applyDraft()
-  const nodeTags = consumeSelection()
+  // PM-124: an already-consumed selection stays staged-out of the chips, but
+  // the turn must still tell the agent what is selected right now.
+  const consumed = consumeSelection()
+  const nodeTags = consumed.length > 0 ? consumed : selectedNodes.value
   useTelemetry()?.trackAgentMessageSent({
     attachment_count: attachments.length,
     node_tag_count: nodeTags.length

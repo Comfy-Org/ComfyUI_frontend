@@ -3327,6 +3327,30 @@ describe('AgentPanelRoot workflow binding', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByText('KSampler #5')).toBeInTheDocument()
   })
+  it('keeps sending the live selection after the chips were consumed', async () => {
+    makeTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 7, title: 'KSampler' }
+    ]
+    expect(await screen.findByText('KSampler')).toBeInTheDocument()
+
+    await sendFromComposer('first ask')
+    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['7'] } })
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    // The node is still selected on canvas, so the second turn carries it
+    // even though no fresh chip was staged.
+    await sendFromComposer('second ask')
+    expect(bodies[1]).toMatchObject({ selection: { node_ids: ['7'] } })
+  })
+
   it('coalesces patches that stream faster than the canvas apply settles', async () => {
     const tab = makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
