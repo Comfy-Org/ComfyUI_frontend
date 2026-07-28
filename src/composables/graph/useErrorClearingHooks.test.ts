@@ -254,8 +254,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
   it('clears missing media when an upload emits onWidgetChanged', () => {
     const graph = new LGraph()
-    const node = new LGraphNode('LoadImage')
-    node._state.type = 'LoadImage'
+    const node = new LGraphNode('LoadImage', 'LoadImage')
     const widget = node.addWidget(
       'combo',
       'image',
@@ -406,8 +405,10 @@ describe('installErrorClearingHooks lifecycle', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
     installErrorClearingHooks(graph)
 
-    const node = new LGraphNode('CheckpointLoaderSimple')
-    node._state.type = 'CheckpointLoaderSimple'
+    const node = new LGraphNode(
+      'CheckpointLoaderSimple',
+      'CheckpointLoaderSimple'
+    )
     const widget = node.addWidget('combo', 'ckpt_name', '', () => undefined, {
       values: []
     })
@@ -443,8 +444,10 @@ describe('installErrorClearingHooks lifecycle', () => {
       .mockReturnValue([])
     installErrorClearingHooks(graph)
 
-    const node = new LGraphNode('CheckpointLoaderSimple')
-    node._state.type = 'CheckpointLoaderSimple'
+    const node = new LGraphNode(
+      'CheckpointLoaderSimple',
+      'CheckpointLoaderSimple'
+    )
     graph.add(node)
 
     await Promise.resolve()
@@ -470,8 +473,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     const mediaScan = vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates')
     installErrorClearingHooks(graph)
 
-    const node = new LGraphNode('LoadVideo')
-    node._state.type = 'LoadVideo'
+    const node = new LGraphNode('LoadVideo', 'LoadVideo')
     node.addWidget('combo', 'file', 'uploading.mp4', () => undefined, {
       values: []
     })

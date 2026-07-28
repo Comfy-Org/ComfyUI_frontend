@@ -51,9 +51,8 @@ function makeNode(
   class TestNode extends LGraphNode {
     static override nodeData = { name: type, api_node: apiNode }
   }
-  const node = new TestNode(type)
+  const node = new TestNode(type, type)
   node.id = NODE_ID
-  node._state.type = type
   seedGraph(node)
   return node
 }

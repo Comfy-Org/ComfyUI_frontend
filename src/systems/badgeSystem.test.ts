@@ -162,9 +162,8 @@ describe('nodeBadges', () => {
   })
 
   function makeNode(id: number): LGraphNode {
-    const node = new LGraphNode('Test')
+    const node = new LGraphNode('Test', 'TestNode')
     node.id = toNodeId(id)
-    node._state.type = 'TestNode'
     return node
   }
 
