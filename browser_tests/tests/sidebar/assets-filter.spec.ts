@@ -224,6 +224,18 @@ test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
     await page.keyboard.press('ArrowUp')
     await expect(pastWeek).toBeFocused()
 
+    await page.keyboard.press('ArrowUp')
+    await expect(tab.filterSearchInput).toBeFocused()
+
+    await page.keyboard.press('ArrowUp')
+    await expect(pastMonth).toBeFocused()
+
+    await page.keyboard.press('ArrowDown')
+    await expect(tab.filterSearchInput).toBeFocused()
+
+    await page.keyboard.press('ArrowDown')
+    await expect(pastWeek).toBeFocused()
+
     await page.keyboard.press('Enter')
 
     await expect(pastWeek).toHaveAttribute('aria-checked', 'true')

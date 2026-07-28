@@ -162,6 +162,55 @@ describe('MediaAssetFilterMenu', () => {
     expect(screen.queryByRole('menu', { name: 'Filter by' })).toBeNull()
   })
 
+  it('loops focus between the search input and matching options', async () => {
+    const { user } = renderMenu()
+    await openMenu(user)
+
+    const searchInput = screen.getByRole('textbox', { name: 'Filter by' })
+    await user.type(searchInput, 'past')
+
+    const pastWeek = screen.getByRole('menuitemcheckbox', {
+      name: 'Past 7 days'
+    })
+    const pastMonth = screen.getByRole('menuitemcheckbox', {
+      name: 'Past 30 days'
+    })
+
+    await user.keyboard('{ArrowDown}')
+    expect(pastWeek).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(pastMonth).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(searchInput).toHaveFocus()
+
+    await user.keyboard('{ArrowUp}')
+    expect(pastMonth).toHaveFocus()
+    await user.keyboard('{ArrowUp}')
+    expect(pastWeek).toHaveFocus()
+    await user.keyboard('{ArrowUp}')
+    expect(searchInput).toHaveFocus()
+  })
+
+  it('loops focus when search has one matching option', async () => {
+    const { user } = renderMenu()
+    await openMenu(user)
+
+    const searchInput = screen.getByRole('textbox', { name: 'Filter by' })
+    await user.type(searchInput, 'video')
+
+    const video = screen.getByRole('menuitemcheckbox', { name: 'Video' })
+
+    await user.keyboard('{ArrowDown}')
+    expect(video).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(searchInput).toHaveFocus()
+
+    await user.keyboard('{ArrowUp}')
+    expect(video).toHaveFocus()
+    await user.keyboard('{ArrowUp}')
+    expect(searchInput).toHaveFocus()
+  })
+
   it('shows an empty state when no filter options match', async () => {
     const { user } = renderMenu()
     await openMenu(user)
