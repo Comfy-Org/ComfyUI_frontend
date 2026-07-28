@@ -22,6 +22,18 @@ vi.mock('@/platform/distribution/types', async (importOriginal) => ({
   }
 }))
 
+vi.mock('@/platform/assets/composables/useModelTypes', async () => {
+  const { ref } = await import('vue')
+  return {
+    useModelTypes: () => ({
+      modelTypes: ref([{ name: 'Checkpoint', value: 'checkpoints' }]),
+      isLoading: ref(false),
+      error: ref(null),
+      fetchModelTypes: vi.fn()
+    })
+  }
+})
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -160,6 +172,14 @@ describe('ModelInfoPanel', () => {
       mockDistribution.isCloud = false
       renderPanel(createMockAsset({ is_immutable: false }))
       expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+      expect(screen.getByText('Checkpoint')).toBeInTheDocument()
+    })
+
+    it('keeps the model type read-only for an immutable asset on cloud', () => {
+      mockDistribution.isCloud = true
+      renderPanel(createMockAsset({ is_immutable: true }))
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+      expect(screen.getByText('Checkpoint')).toBeInTheDocument()
     })
 
     it('blames immutability, not core, for a read-only immutable asset on cloud', () => {
@@ -176,7 +196,7 @@ describe('ModelInfoPanel', () => {
     it('blames core for a read-only model type off-cloud', () => {
       mockDistribution.isCloud = false
       renderPanel(createMockAsset({ is_immutable: false }))
-      const field = screen.getByText('assetBrowser.unknown')
+      const field = screen.getByText('Checkpoint')
       expect(field).toHaveAttribute('aria-disabled', 'true')
       expect(field).toHaveAccessibleDescription(
         'assetBrowser.modelInfo.modelTypeCoreReadonly'
