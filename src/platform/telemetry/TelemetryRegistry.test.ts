@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { TelemetryRegistry } from './TelemetryRegistry'
-import type { TelemetryProvider } from './types'
+import type { BillingTelemetryEvent, TelemetryProvider } from './types'
 
 describe('TelemetryRegistry', () => {
   it('dispatches trackSearchQuery to every registered provider', () => {
@@ -133,6 +133,49 @@ describe('TelemetryRegistry', () => {
 
     expect(a.trackResubscribeClicked).toHaveBeenCalledExactlyOnceWith(payload)
     expect(b.trackResubscribeClicked).toHaveBeenCalledExactlyOnceWith(payload)
+  })
+
+  it('dispatches trackWorkspaceInviteFailed to every registered provider', () => {
+    const a: TelemetryProvider = { trackWorkspaceInviteFailed: vi.fn() }
+    const b: TelemetryProvider = { trackWorkspaceInviteFailed: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = {
+      source: 'settings_members' as const,
+      attempted_count: 3,
+      failed_count: 1
+    }
+    registry.trackWorkspaceInviteFailed(payload)
+
+    expect(a.trackWorkspaceInviteFailed).toHaveBeenCalledExactlyOnceWith(
+      payload
+    )
+    expect(b.trackWorkspaceInviteFailed).toHaveBeenCalledExactlyOnceWith(
+      payload
+    )
+  })
+
+  it('dispatches the same canonical billing event to every provider', () => {
+    const a: TelemetryProvider = { trackBillingEvent: vi.fn() }
+    const b: TelemetryProvider = { trackBillingEvent: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event: BillingTelemetryEvent = {
+      operation: 'operation',
+      stage: 'failed',
+      outcome: 'failure',
+      billing_op_id: 'op-1',
+      operation_type: 'subscription',
+      failure_category: 'provider_decline'
+    }
+    registry.trackBillingEvent(event)
+
+    expect(a.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
+    expect(b.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
   it('dispatches trackWidgetFavoriteToggled to every registered provider', () => {

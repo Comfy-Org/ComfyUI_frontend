@@ -198,6 +198,12 @@ async function onSubmit() {
       return
     }
 
+    telemetry?.trackWorkspaceInviteFailed({
+      source,
+      attempted_count: emailSnapshot.length,
+      failed_count: failedEmails.length
+    })
+
     emails.value = failedEmails
     toast.add({
       severity: 'error',
