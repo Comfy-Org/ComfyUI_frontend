@@ -325,11 +325,15 @@ describe('AgentPanelRoot session notices', () => {
 function dispatchDrag(
   target: Element,
   type: 'dragover' | 'drop',
-  data: { files?: File[]; types?: string[] }
+  data: { files?: File[]; types?: string[]; getData?: (t: string) => string }
 ): boolean {
   const event = new Event(type, { bubbles: true, cancelable: true })
   Object.defineProperty(event, 'dataTransfer', {
-    value: { files: data.files ?? [], types: data.types ?? ['Files'] }
+    value: {
+      files: data.files ?? [],
+      types: data.types ?? ['Files'],
+      getData: data.getData ?? (() => '')
+    }
   })
   target.dispatchEvent(event)
   return event.defaultPrevented
@@ -526,6 +530,49 @@ describe('AgentPanelRoot attach flow', () => {
     expect(dispatchDrag(target, 'dragover', { types: ['text/plain'] })).toBe(
       false
     )
+  })
+
+  it('attaches an asset-card drag that carries a URI instead of a File', async () => {
+    // PM-116: MediaAssetCard.dragStart sets asset-info + text/uri-list on the
+    // transfer and never a File, so the panel must claim and fetch the URI.
+    const png = new Uint8Array([137, 80, 78, 71])
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Response(new Blob([png], { type: 'image/png' }))
+        if (url.endsWith('/api/upload/image'))
+          return new Response(
+            JSON.stringify({ name: 'gen.png', subfolder: '', type: 'input' }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        return new Response('{"threads":[]}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      })
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+    const target = screen.getByRole('textbox')
+
+    expect(
+      dispatchDrag(target, 'dragover', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list']
+      })
+    ).toBe(true)
+
+    const claimed = dispatchDrag(target, 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({ filename: 'gen.png', type: 'output' })
+          : 'http://localhost/api/view?filename=gen.png'
+    })
+    expect(claimed).toBe(true)
+
+    expect(await screen.findByText('gen.png')).toBeInTheDocument()
   })
 
   it('attaches dropped assets and leaves other files to the graph loader', async () => {

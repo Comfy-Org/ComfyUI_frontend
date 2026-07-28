@@ -12,7 +12,12 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useAppMode } from '@/composables/useAppMode'
-import { hasImageType, hasVideoType } from '@/utils/eventUtils'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import {
+  extractFilesFromDragEvent,
+  hasImageType,
+  hasVideoType
+} from '@/utils/eventUtils'
 import { appendWorkflowJsonExt } from '@/utils/formatUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -772,11 +777,31 @@ async function onFilesPicked(event: Event): Promise<void> {
   input.value = ''
 }
 
+function isAssetDrag(event: DragEvent): boolean {
+  const types = event.dataTransfer?.types ?? []
+  return types.includes(MIME_ASSET_INFO) || types.includes('text/uri-list')
+}
+
+async function attachDroppedAsset(event: DragEvent): Promise<void> {
+  const files = (await extractFilesFromDragEvent(event)).filter(
+    (file) => hasImageType(file) || hasVideoType(file)
+  )
+  if (files.length > 0) await attachment.addFiles(files)
+}
+
 function onPanelDragOver(event: DragEvent): void {
-  if (event.dataTransfer?.types.includes('Files')) event.preventDefault()
+  if (event.dataTransfer?.types.includes('Files') || isAssetDrag(event))
+    event.preventDefault()
 }
 
 function onPanelDrop(event: DragEvent): void {
+  // A dropped asset card carries a URI, not a File, so the claim must happen
+  // before the async fetch resolves it into one.
+  if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
+    event.preventDefault()
+    void attachDroppedAsset(event)
+    return
+  }
   // Anything the composer cannot attach still belongs to the graph loader, which
   // only runs while the drop is unclaimed, so claim the attachable files alone.
   const files = Array.from(event.dataTransfer?.files ?? []).filter(
