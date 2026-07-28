@@ -1,7 +1,7 @@
 <template>
   <div :class="cn('relative w-full overflow-auto', className)">
     <table
-      class="w-full caption-bottom border-separate border-spacing-0 text-sm"
+      class="w-full table-fixed caption-bottom border-separate border-spacing-0 text-sm"
     >
       <slot />
     </table>
