@@ -21,6 +21,7 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import '@/lib/litegraph/public/css/litegraph.css'
+import { installChunkReload } from '@/platform/updates/common/chunkReload'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -157,5 +158,10 @@ LGraph.autoExposePreviewNodes = (hostNode) =>
 
 const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
+
+// Recover from stale-chunk failures (post-deploy dynamic-import errors) with a
+// guarded, dirty-state-aware reload. Registered after pinia is installed so the
+// error-time store lookups resolve.
+installChunkReload(router)
 
 app.mount('#vue-app')
