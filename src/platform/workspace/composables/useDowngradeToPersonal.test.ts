@@ -13,6 +13,7 @@ const mockRemoveMember = vi.hoisted(() => vi.fn())
 const mockFetchMembers = vi.hoisted(() => vi.fn())
 const mockSubscribe = vi.hoisted(() => vi.fn())
 const mockPreviewSubscribe = vi.hoisted(() => vi.fn())
+const mockFetchStatus = vi.hoisted(() => vi.fn())
 const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
 const mockPermissions = vi.hoisted(() => ({
@@ -53,7 +54,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     subscribe: mockSubscribe,
     previewSubscribe: mockPreviewSubscribe,
     subscription: mockSubscription,
-    isInitialized: mockIsInitialized
+    isInitialized: mockIsInitialized,
+    fetchStatus: mockFetchStatus
   })
 }))
 
@@ -114,6 +116,7 @@ describe('useDowngradeToPersonal', () => {
     mockSubscription.value = null
     mockIsInitialized.value = true
     mockPreviewSubscribe.mockResolvedValue({ allowed: true })
+    mockFetchStatus.mockResolvedValue(undefined)
     mockSubscribe.mockResolvedValue({
       billing_op_id: 'op-1',
       status: 'subscribed'
@@ -294,6 +297,31 @@ describe('useDowngradeToPersonal', () => {
       await expect(
         downgradeToPersonal('founder-monthly', true, 1500)
       ).rejects.toThrow('subscription.downgrade.reactivationAmountChanged')
+      expect(mockRemoveMember).not.toHaveBeenCalled()
+      expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
+    it('refuses to remove members when a status refresh discovers a cancellation the cached read missed', async () => {
+      // Mirrors the previewDowngrade race: the subscription looked active at
+      // the time of the earlier preview, but was cancelled before this
+      // confirm call. The pre-billing status refresh must catch it so
+      // members are never removed for a doomed request.
+      mockSubscription.value = { isCancelled: false }
+      mockFetchStatus.mockImplementation(() => {
+        mockSubscription.value = { isCancelled: true }
+        return Promise.resolve()
+      })
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.reactivationConfirmationRequired'
+      )
+      expect(mockFetchStatus).toHaveBeenCalled()
       expect(mockRemoveMember).not.toHaveBeenCalled()
       expect(mockSubscribe).not.toHaveBeenCalled()
     })
@@ -674,6 +702,27 @@ describe('useDowngradeToPersonal', () => {
       await expect(previewDowngrade('founder-monthly')).rejects.toThrow(
         'Outstanding balance'
       )
+    })
+
+    it('reports the cancellation discovered by refreshing status, not the stale cached read', async () => {
+      // The cached subscription (loaded earlier) still says "not cancelled";
+      // the status refresh this call triggers is what discovers the
+      // cancellation, so the decision must reflect the refreshed value.
+      mockSubscription.value = { isCancelled: false }
+      mockFetchStatus.mockImplementation(() => {
+        mockSubscription.value = { isCancelled: true }
+        return Promise.resolve()
+      })
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      const result = await previewDowngrade('founder-monthly')
+
+      expect(mockFetchStatus).toHaveBeenCalled()
+      expect(result.requiresReactivationConfirmation).toBe(true)
     })
   })
 

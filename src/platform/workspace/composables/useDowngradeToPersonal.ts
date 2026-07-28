@@ -57,8 +57,13 @@ class ReactivationAmountChangedError extends Error {
 export function useDowngradeToPersonal() {
   const workspaceStore = useTeamWorkspaceStore()
   const { members } = storeToRefs(workspaceStore)
-  const { subscribe, previewSubscribe, subscription, isInitialized } =
-    useBillingContext()
+  const {
+    subscribe,
+    previewSubscribe,
+    subscription,
+    isInitialized,
+    fetchStatus
+  } = useBillingContext()
   const billingOperationStore = useBillingOperationStore()
   const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
@@ -108,6 +113,10 @@ export function useDowngradeToPersonal() {
       throw new Error(preview?.reason || t('subscription.downgrade.notAllowed'))
     }
     ensureCanDowngrade()
+    // `subscription` is a cached snapshot from the last billing-context load,
+    // which can predate a cancellation; refresh it before reading isCancelled
+    // so this decision reflects the current server state, not a stale one.
+    await fetchStatus()
     return {
       preview,
       requiresReactivationConfirmation:
@@ -173,7 +182,10 @@ export function useDowngradeToPersonal() {
 
       // Guard before touching membership: the BE rejects this subscribe
       // without confirm_reactivation, so members must never be removed for a
-      // transition that's going to fail on consent anyway.
+      // transition that's going to fail on consent anyway. Refresh the
+      // cached subscription first — it can predate a cancellation that
+      // happened after the earlier previewDowngrade() call.
+      await fetchStatus()
       if (requiresReactivationConfirmation(preview)) {
         if (!confirmReactivation) {
           telemetryFailure = {

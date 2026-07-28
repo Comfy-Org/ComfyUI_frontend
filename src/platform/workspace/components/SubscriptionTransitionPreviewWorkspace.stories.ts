@@ -65,13 +65,14 @@ function plan(
 }
 
 function cancelledSubscription(
-  tier: NonNullable<SubscriptionInfo['tier']>
+  tier: NonNullable<SubscriptionInfo['tier']>,
+  duration: NonNullable<SubscriptionInfo['duration']> = 'MONTHLY'
 ): SubscriptionInfo {
   return {
     isActive: true,
     tier,
-    duration: 'MONTHLY',
-    planSlug: `${tier.toLowerCase()}-monthly`,
+    duration,
+    planSlug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
     renewalDate: null,
     endDate: CANCEL_DATE,
     isCancelled: true,
@@ -199,7 +200,7 @@ export const ReactivatingAnnualToMonthly: Story = story(
     current_plan: plan('CREATOR', 'ANNUAL', 33_600, CANCEL_DATE),
     new_plan: plan('CREATOR', 'MONTHLY', 3500, NEXT_MONTHLY_RENEWAL)
   } satisfies PreviewSubscribeResponse,
-  cancelledSubscription('CREATOR')
+  cancelledSubscription('CREATOR', 'ANNUAL')
 )
 
 /**
