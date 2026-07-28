@@ -5,10 +5,8 @@ import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
 
 /**
- * Node shell-state store. Holds one plain {@link NodeState} per node in
- * root-graph-scoped buckets; the {@link LGraphNode} adopts the returned reactive
- * proxy as its `_state`. Membership is by state identity, not by node id, so a
- * node that is renumbered while registered cannot strand its entry.
+ * One {@link NodeState} per node in root-graph-scoped buckets. Membership is by
+ * state identity, so renumbering a registered node cannot strand its entry.
  * See docs/architecture/node-data-store.md.
  */
 export const useNodeDataStore = defineStore('nodeData', () => {
@@ -45,9 +43,9 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   }
 
   return {
-    registerNode,
-    getGraphNodesFor,
+    clearGraph,
     deleteNode,
-    clearGraph
+    getGraphNodesFor,
+    registerNode
   }
 })

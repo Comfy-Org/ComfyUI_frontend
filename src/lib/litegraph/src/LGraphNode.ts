@@ -921,15 +921,15 @@ export class LGraphNode
 
   constructor(title: string, type?: string) {
     this._state = {
-      id: UNASSIGNED_NODE_ID,
-      graphId: zeroUuid,
-      type: type ?? '',
-      title: title || 'Unnamed',
-      titleMode: this.title_mode,
-      mode: LGraphEventMode.ALWAYS,
       flags: {},
+      graphId: zeroUuid,
+      id: UNASSIGNED_NODE_ID,
       inputs: shallowReactive<INodeInputSlot[]>([]),
-      outputs: shallowReactive<INodeOutputSlot[]>([])
+      mode: LGraphEventMode.ALWAYS,
+      outputs: shallowReactive<INodeOutputSlot[]>([]),
+      title: title || 'Unnamed',
+      type: type ?? '',
+      titleMode: this.title_mode
     }
     this.size = [LiteGraph.NODE_WIDTH, 60]
     this.pos = [10, 10]

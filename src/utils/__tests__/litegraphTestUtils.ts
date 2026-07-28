@@ -29,14 +29,14 @@ import { zeroUuid } from '@/utils/uuid'
 /** Creates a node shell state with minimal required fields. */
 export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
   return {
-    id: toNodeId(1),
-    graphId: zeroUuid,
-    type: 'TestNode',
-    title: 'Test Node',
-    mode: LGraphEventMode.ALWAYS,
     flags: {},
+    graphId: zeroUuid,
+    id: toNodeId(1),
     inputs: [],
+    mode: LGraphEventMode.ALWAYS,
     outputs: [],
+    title: 'Test Node',
+    type: 'TestNode',
     ...overrides
   }
 }
