@@ -607,11 +607,16 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response, {
-        tier: 'team',
-        cycle: billingCycle,
-        checkoutType
-      }, true, true)
+      await handleSubscribeResponse(
+        response,
+        {
+          tier: 'team',
+          cycle: billingCycle,
+          checkoutType
+        },
+        true,
+        true
+      )
     } catch (error) {
       trackSubscriptionFailure({
         tier: 'team',
