@@ -166,6 +166,7 @@ describe('CreditsTile', () => {
     state.isLoading = false
     state.canTopUp = true
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   it('renders the total balance (cents converted to credits) with the remaining suffix', () => {
@@ -225,6 +226,15 @@ describe('CreditsTile', () => {
     // Annual billing still grants the monthly nominal (21,100), not 12x.
     expect(container.textContent).toContain('422 left of 21,100')
     expect(container.textContent).not.toContain('253,200')
+  })
+
+  it('formats the renewal date in the local timezone, not UTC', () => {
+    activeProSubscription()
+    expect(renderTile().container.textContent).toContain('Refills Feb 20')
+
+    // The suite is pinned to TZ=UTC, so opt this render into a UTC+13 viewer.
+    vi.stubEnv('TZ', 'Pacific/Auckland')
+    expect(renderTile().container.textContent).toContain('Refills Feb 21')
   })
 
   it('falls back to a dateless refills label when renewal date is missing', () => {
