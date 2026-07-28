@@ -77,7 +77,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        row: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13]
+        row: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -344,6 +344,8 @@ jobs:
             9) pat='Constant Number: EXECUTION_ERROR \(Constant Number: ValueError\)' ;;
             12) pat='not registered - pack JS did not load' ;;
             13) pat='input count grows by one on connect' ;;
+            # S15: execution succeeds, pixels differ - only the hash sees it.
+            14) pat='pixel hash changed' ;;
             *) echo "::error::no expected pattern for row $ROW"; exit 1 ;;
           esac
           grep -Eq -- "$pat" custom-nodes-results.json || { echo "::error::row $ROW: suite redded but WITHOUT the expected message /$pat/ - the red is not attributable to this break"; exit 1; }
