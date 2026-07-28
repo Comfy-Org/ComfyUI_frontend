@@ -2,18 +2,15 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 
-// S15 output-regression tier: pixel-content hashes for curated run outputs.
+// S15 output-regression tier: content hashes for curated run outputs.
 //
 // A frontend regression can corrupt what a workflow PRODUCES while the run
-// still ends in execution_success (a serialization change that flips a seed,
-// a widget value that stops reaching the prompt). The run tier proves "it
-// ran"; this tier proves "it produced the same pixels".
-//
-// Hashes cover PNG pixel data ONLY (the concatenated IDAT chunks): ComfyUI
-// embeds the prompt and workflow as tEXt/iTXt metadata, so whole-file hashes
-// would false-fail on byte-identical pixels whenever the embedded workflow
-// JSON shifts. Non-PNG outputs (video containers embed timestamps) are not
-// hashable this way; enroll only PNG-producing sinks.
+// still ends in execution_success (a serialization change that drifts a
+// widget value without invalidating it). The run tier proves "it ran"; this
+// tier proves "it produced the same outputs": one digest per sink over its
+// canonicalized ui payload, with PNG file refs hashed by pixel content
+// (IDAT chunks only - ComfyUI embeds the prompt as tEXt metadata, so
+// whole-file hashes would false-fail on byte-identical pixels).
 
 export interface OutputImageRef {
   filename: string
