@@ -48,6 +48,9 @@ test.describe('App mode builder selection', () => {
   })
 
   test('Can not select a node with an error', async ({ comfyPage }) => {
+    // Seeding a real error costs a queue round trip on top of two setting
+    // changes, which does not fit the default per-test budget.
+    test.slow()
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 
     const [checkpointLoader] = await comfyPage.nodeOps.getNodeRefsByType(
