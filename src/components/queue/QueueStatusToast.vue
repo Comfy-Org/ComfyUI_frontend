@@ -128,7 +128,7 @@
         <button
           type="button"
           data-testid="queue-status-idle"
-          class="group pointer-events-auto flex cursor-pointer items-center gap-1 rounded-lg border border-solid border-[#2d2e32] bg-[#232426] px-2 py-1 text-sm leading-5 text-base-foreground transition-colors hover:bg-[#2d2e32]"
+          class="group pointer-events-auto flex cursor-pointer items-center gap-1 rounded-lg border border-solid border-[#2d2e32] bg-transparent px-2 py-1 text-sm leading-5 text-base-foreground transition-colors hover:bg-[#232426] data-[state=open]:bg-[#232426]"
         >
           {{ activeJobsLabel }}
           <i
