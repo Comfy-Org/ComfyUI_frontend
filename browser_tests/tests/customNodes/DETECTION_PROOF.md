@@ -92,8 +92,8 @@ baselined nodes.
 Sections refer to [ARCHITECTURE.md](ARCHITECTURE.md).
 
 **Proof run:** matrix run
-[30329945730](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/30329945730) -
-all 13 legs green on the reviewed final state, every verdict from the
+[30333224848](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/30333224848) -
+all 13 legs green at a head containing every behavior-bearing byte of the final state (the only later commits are doc-only), every verdict from the
 hardened assert (patterns match failure MESSAGES extracted via jq, never raw
 results text: an earlier run's leg 14 went green on a pattern hitting a
 SOURCE SNIPPET in the results file, exactly the fraud class this closes).
