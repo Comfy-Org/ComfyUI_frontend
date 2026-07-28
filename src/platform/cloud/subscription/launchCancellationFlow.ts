@@ -15,6 +15,7 @@ import { getErrorMessage } from '@/utils/errorUtil'
 
 import { createCancellationMetadata } from './cancellationTelemetry'
 
+const PREPARATION_TIMEOUT_MS = 15_000
 const CANCELLATION_TIMEOUT_MS = 3 * 60 * 1000
 
 export interface CancellationFallbackOptions {
@@ -81,7 +82,10 @@ async function runCancellationFlow(
   const isLaunchWorkspaceCurrent = () =>
     workspaceStore.activeWorkspaceId === launchWorkspaceId
 
-  const session = await prepareChurnkey().catch((error) => {
+  const session = await withTimeout(
+    () => prepareChurnkey(),
+    PREPARATION_TIMEOUT_MS
+  ).catch((error) => {
     console.warn('Failed to prepare ChurnKey cancellation flow:', error)
     return null
   })
@@ -122,7 +126,7 @@ async function runCancellationFlow(
             CANCELLATION_TIMEOUT_MS
           )
           didCancelSucceed = true
-          await billing.fetchStatus().catch(() => undefined)
+          void billing.fetchStatus().catch(() => undefined)
           return { message: t('subscription.cancelSuccess') }
         } catch (error) {
           cancelError = error

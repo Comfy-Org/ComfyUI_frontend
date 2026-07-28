@@ -135,6 +135,26 @@ describe('launchCancellationFlow', () => {
     expect(mocks.trackCancellation).not.toHaveBeenCalled()
   })
 
+  it('falls back and releases the launch lock when preparation times out', async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.prepare
+        .mockReturnValueOnce(new Promise<never>(() => undefined))
+        .mockResolvedValueOnce(null)
+      const showFallback = vi.fn()
+
+      const firstFlow = launchCancellationFlow({ showFallback })
+      await vi.runOnlyPendingTimersAsync()
+      await firstFlow
+      await launchCancellationFlow({ showFallback })
+
+      expect(mocks.prepare).toHaveBeenCalledTimes(2)
+      expect(showFallback).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('cancels workspace billing through the existing API callback', async () => {
     mocks.prepare.mockResolvedValue(
       session(async (options) => {
@@ -175,6 +195,23 @@ describe('launchCancellationFlow', () => {
       expect.anything()
     )
     expect(mocks.cancelSubscription).not.toHaveBeenCalled()
+  })
+
+  it('does not wait for the best-effort status refresh after cancellation', async () => {
+    mocks.fetchStatus.mockReturnValue(new Promise<never>(() => undefined))
+    mocks.prepare.mockResolvedValue(
+      session(async (options) => {
+        await options.handleCancel('Too expensive')
+        return {}
+      })
+    )
+
+    await expect(
+      launchCancellationFlow({ showFallback: vi.fn() })
+    ).resolves.toBeUndefined()
+
+    expect(mocks.cancelSubscription).toHaveBeenCalledOnce()
+    expect(mocks.fetchStatus).toHaveBeenCalledOnce()
   })
 
   it('falls back when preparation or the provider fails', async () => {

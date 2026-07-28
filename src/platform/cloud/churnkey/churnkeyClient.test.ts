@@ -107,9 +107,6 @@ describe('churnkeyClient', () => {
     await expect(config.handleRebate()).rejects.toThrow(
       'Unsupported ChurnKey offer'
     )
-    await expect(config.handleRedirect()).rejects.toThrow(
-      'Unsupported ChurnKey offer'
-    )
 
     config.onClose({ aborted: true })
     await expect(showPromise).resolves.toEqual({ aborted: true })
@@ -225,19 +222,17 @@ describe('churnkeyClient', () => {
     }
   })
 
-  it('identifies an unsupported offer when ChurnKey reports its failure', async () => {
+  it('rejects the session synchronously for an unsupported redirect', async () => {
     const session = await prepareChurnkey()
     if (!session) throw new Error('Expected a Churnkey session')
 
     const showPromise = session.show({ handleCancel: vi.fn() })
     const config = capturedConfig()
-    const offerError = await config
-      .handleRedirect()
-      .catch((error: unknown) => error)
-    config.onError('Handler rejected', 'redirect')
+    config.handleRedirect()
 
     await expect(showPromise).rejects.toSatisfy(isUnsupportedChurnkeyOfferError)
-    expect(isUnsupportedChurnkeyOfferError(offerError)).toBe(true)
+    expect(mocks.hide).toHaveBeenCalledOnce()
+    expect(mocks.clearState).toHaveBeenCalledOnce()
   })
 
   it('does not load the embed when backend credentials are unavailable', async () => {

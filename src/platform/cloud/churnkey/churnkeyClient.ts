@@ -87,11 +87,15 @@ function createSession(
         let pendingCancellation: Promise<ChurnkeyHandlerResult> | null = null
         let unsupportedOfferError: UnsupportedChurnkeyOfferError | null = null
 
-        function rejectUnsupportedOffer(): Promise<never> {
+        function createUnsupportedOfferError(): UnsupportedChurnkeyOfferError {
           unsupportedOfferError = new UnsupportedChurnkeyOfferError(
             'Unsupported ChurnKey offer'
           )
-          return Promise.reject(unsupportedOfferError)
+          return unsupportedOfferError
+        }
+
+        function rejectUnsupportedOffer(): Promise<never> {
+          return Promise.reject(createUnsupportedOfferError())
         }
 
         function settle(fn: () => void, { deferClearState = false } = {}) {
@@ -124,6 +128,14 @@ function createSession(
             () => settle(fn, options),
             () => settle(fn, options)
           )
+        }
+
+        function handleUnsupportedRedirect(): void {
+          const error = createUnsupportedOfferError()
+          runBestEffort(() => {
+            window.churnkey?.hide?.()
+          })
+          settle(() => reject(error), { deferClearState: true })
         }
 
         const sessionTimeoutId = window.setTimeout(() => {
@@ -173,7 +185,7 @@ function createSession(
           handleTrialExtension: rejectUnsupportedOffer,
           handlePlanChange: rejectUnsupportedOffer,
           handleRebate: rejectUnsupportedOffer,
-          handleRedirect: rejectUnsupportedOffer,
+          handleRedirect: handleUnsupportedRedirect,
           onClose: (results) => settleAfterCancellation(() => resolve(results)),
           onError: (error, type) => {
             runBestEffort(() => {
