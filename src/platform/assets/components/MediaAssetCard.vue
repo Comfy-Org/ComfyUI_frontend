@@ -58,7 +58,9 @@
           cn(
             'pointer-events-none absolute top-2 left-2 z-1 size-6 rounded-full opacity-0 transition-opacity',
             'group-hover:pointer-events-auto group-hover:opacity-100',
-            'focus-visible:pointer-events-auto focus-visible:opacity-100'
+            'focus-visible:pointer-events-auto focus-visible:opacity-100',
+            !selected &&
+              'bg-transparent text-white shadow-sm ring-2 ring-white ring-inset hover:bg-white/20'
           )
         "
         :aria-label="
@@ -72,7 +74,9 @@
       >
         <i
           aria-hidden="true"
-          :class="cn('icon-[lucide--check] size-4', !selected && 'opacity-0')"
+          :class="
+            cn('icon-[lucide--check] size-4 shrink-0', !selected && 'opacity-0')
+          "
         />
       </Button>
 
