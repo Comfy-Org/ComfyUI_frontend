@@ -54,6 +54,7 @@ import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { createCancellationMetadata } from '@/platform/cloud/subscription/cancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
@@ -61,6 +62,7 @@ import { getErrorMessage } from '@/utils/errorUtil'
 const props = defineProps<{
   cancelAt?: string
   flowAlreadyOpened?: boolean
+  expectedWorkspaceId?: string
 }>()
 
 const { t } = useI18n()
@@ -70,6 +72,7 @@ const { cancelSubscription, fetchStatus, subscription, tier } =
   useBillingContext()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { permissions } = useWorkspaceUI()
+const workspaceStore = useTeamWorkspaceStore()
 const telemetry = useTelemetry()
 
 const isLoading = ref(false)
@@ -116,6 +119,13 @@ function onClose() {
 }
 
 async function onConfirmCancel() {
+  if (
+    props.expectedWorkspaceId &&
+    workspaceStore.activeWorkspaceId !== props.expectedWorkspaceId
+  ) {
+    onClose()
+    return
+  }
   if (
     shouldUseWorkspaceBilling.value &&
     !permissions.value.canManageSubscriptionLifecycle

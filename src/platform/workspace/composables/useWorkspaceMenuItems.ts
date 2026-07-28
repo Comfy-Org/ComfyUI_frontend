@@ -5,6 +5,7 @@ import type { MenuItem } from 'primevue/menuitem'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
 /**
@@ -25,6 +26,7 @@ export function useWorkspaceMenuItems() {
     isDeleteDisabled,
     deleteDisabledTooltipKey
   } = useWorkspaceUI()
+  const workspaceStore = useTeamWorkspaceStore()
   const {
     showCancelSubscriptionFlow,
     showEditWorkspaceDialog,
@@ -43,7 +45,12 @@ export function useWorkspaceMenuItems() {
     ) {
       return
     }
-    void showCancelSubscriptionFlow(subscription.value?.endDate ?? undefined)
+    const workspaceId = workspaceStore.activeWorkspaceId
+    if (!workspaceId) return
+    void showCancelSubscriptionFlow(
+      subscription.value?.endDate ?? undefined,
+      workspaceId
+    )
   }
 
   function deleteWorkspace() {

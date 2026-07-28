@@ -139,6 +139,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
+    activeWorkspaceId: 'workspace-1',
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
     isWorkspaceSubscribed: mockIsWorkspaceSubscribed
   })
@@ -696,7 +697,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Cancel plan' }))
-    expect(mockShowCancelSubscriptionFlow).toHaveBeenCalledWith(END_DATE_ISO)
+    expect(mockShowCancelSubscriptionFlow).toHaveBeenCalledWith(
+      END_DATE_ISO,
+      'workspace-1'
+    )
   })
 
   it('enables Delete for any additional workspace owner once the plan is cancelled', () => {

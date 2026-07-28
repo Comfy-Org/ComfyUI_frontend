@@ -84,7 +84,20 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
-import { launchCancellationFlow } from './launchCancellationFlow'
+import { launchCancellationFlow as launchCancellationFlowForWorkspace } from './launchCancellationFlow'
+
+type LaunchCancellationFlowOptions = Parameters<
+  typeof launchCancellationFlowForWorkspace
+>[0]
+
+function launchCancellationFlow(
+  options: Omit<LaunchCancellationFlowOptions, 'workspaceId'>
+) {
+  return launchCancellationFlowForWorkspace({
+    workspaceId: 'workspace-1',
+    ...options
+  })
+}
 
 function session(
   show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionResults>
@@ -113,6 +126,18 @@ describe('launchCancellationFlow', () => {
 
     expect(showFallback).toHaveBeenCalledOnce()
     expect(mocks.prepare).not.toHaveBeenCalled()
+  })
+
+  it('does nothing when the expected workspace is no longer active', async () => {
+    const showFallback = vi.fn()
+
+    await launchCancellationFlowForWorkspace({
+      workspaceId: 'workspace-2',
+      showFallback
+    })
+
+    expect(mocks.prepare).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
   })
 
   it('uses the native dialog for Metronome billing', async () => {

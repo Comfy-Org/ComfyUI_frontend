@@ -24,6 +24,7 @@ import type { ComponentAttrs } from 'vue-component-type-helpers'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -101,6 +102,13 @@ export interface ExecutionErrorDialogInput {
 
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
+
+  function isExpectedWorkspaceCurrent(expectedWorkspaceId?: string) {
+    return (
+      !expectedWorkspaceId ||
+      useTeamWorkspaceStore().activeWorkspaceId === expectedWorkspaceId
+    )
+  }
 
   function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
@@ -655,32 +663,45 @@ export const useDialogService = () => {
 
   async function showCancelSubscriptionDialog(
     cancelAt?: string,
-    flowAlreadyOpened = false
+    flowAlreadyOpened = false,
+    expectedWorkspaceId?: string
   ) {
+    if (!isExpectedWorkspaceCurrent(expectedWorkspaceId)) return
     const { default: component } =
       await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
+    if (!isExpectedWorkspaceCurrent(expectedWorkspaceId)) return
     return dialogStore.showDialog({
       key: 'cancel-subscription',
       component,
-      props: { cancelAt, flowAlreadyOpened },
+      props: { cancelAt, flowAlreadyOpened, expectedWorkspaceId },
       dialogComponentProps: {
         ...workspaceDialogProps
       }
     })
   }
 
-  async function showCancelSubscriptionFlow(cancelAt?: string) {
+  async function showCancelSubscriptionFlow(
+    cancelAt: string | undefined,
+    expectedWorkspaceId: string
+  ) {
+    if (!isExpectedWorkspaceCurrent(expectedWorkspaceId)) return
     const cancellationFlow =
       await import('@/platform/cloud/subscription/launchCancellationFlow').catch(
         () => null
       )
+    if (!isExpectedWorkspaceCurrent(expectedWorkspaceId)) return
     if (!cancellationFlow) {
-      return showCancelSubscriptionDialog(cancelAt)
+      return showCancelSubscriptionDialog(cancelAt, false, expectedWorkspaceId)
     }
     return cancellationFlow.launchCancellationFlow({
       cancelAt,
+      workspaceId: expectedWorkspaceId,
       showFallback: ({ flowAlreadyOpened } = {}) =>
-        showCancelSubscriptionDialog(cancelAt, flowAlreadyOpened)
+        showCancelSubscriptionDialog(
+          cancelAt,
+          flowAlreadyOpened,
+          expectedWorkspaceId
+        )
     })
   }
 

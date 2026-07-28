@@ -24,6 +24,7 @@ export interface CancellationFallbackOptions {
 
 interface LaunchCancellationFlowOptions {
   cancelAt?: string
+  workspaceId: string
   showFallback: (
     options?: CancellationFallbackOptions
   ) => void | Promise<unknown>
@@ -47,12 +48,13 @@ let inFlight = false
 
 export async function launchCancellationFlow({
   cancelAt,
+  workspaceId,
   showFallback
 }: LaunchCancellationFlowOptions): Promise<void> {
   if (inFlight) return
   inFlight = true
   try {
-    await runCancellationFlow(cancelAt, showFallback)
+    await runCancellationFlow(cancelAt, workspaceId, showFallback)
   } catch (error) {
     console.error('Failed to launch subscription cancellation flow:', error)
   } finally {
@@ -62,6 +64,7 @@ export async function launchCancellationFlow({
 
 async function runCancellationFlow(
   cancelAt: string | undefined,
+  launchWorkspaceId: string,
   showFallback: (
     options?: CancellationFallbackOptions
   ) => void | Promise<unknown>
@@ -69,10 +72,9 @@ async function runCancellationFlow(
   const billing = useBillingContext()
   const { permissions } = useWorkspaceUI()
   const workspaceStore = useTeamWorkspaceStore()
-  const launchWorkspaceId = workspaceStore.activeWorkspaceId
+  if (workspaceStore.activeWorkspaceId !== launchWorkspaceId) return
   if (
     billing.type.value !== 'workspace' ||
-    !launchWorkspaceId ||
     workspaceStore.activeWorkspaceBillingRail !== 'stripe'
   ) {
     await showFallback()
