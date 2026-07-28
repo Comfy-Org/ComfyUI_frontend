@@ -37,7 +37,7 @@ const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
-const { hasAnyError } = storeToRefs(useExecutionErrorStore())
+const { hasAnyError, hasMissingError } = storeToRefs(useExecutionErrorStore())
 const { overlayMessage } = useErrorOverlayState()
 
 const { toastTo, mobile } = defineProps<{
@@ -55,6 +55,11 @@ const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
 )
 const widgetListRef = useTemplateRef('widgetListRef')
 const linearRunButtonTestId = 'linear-run-button'
+const runButtonIconClass = computed(() =>
+  hasMissingError.value
+    ? 'icon-[lucide--triangle-alert]'
+    : 'icon-[lucide--play]'
+)
 const showRunErrorWarning = computed(
   () =>
     hasAnyError.value &&
@@ -210,7 +215,11 @@ function replayAppModeTour() {
               "
               @click="runButtonClick"
             >
-              <i aria-hidden="true" class="icon-[lucide--play]" />
+              <i
+                aria-hidden="true"
+                :class="runButtonIconClass"
+                data-testid="linear-run-button-icon"
+              />
               {{ t('menu.run') }}
             </Button>
           </div>
@@ -247,7 +256,11 @@ function replayAppModeTour() {
             "
             @click="runButtonClick"
           >
-            <i aria-hidden="true" class="icon-[lucide--play]" />
+            <i
+              aria-hidden="true"
+              :class="runButtonIconClass"
+              data-testid="linear-run-button-icon"
+            />
             {{ t('menu.run') }}
           </Button>
         </div>
