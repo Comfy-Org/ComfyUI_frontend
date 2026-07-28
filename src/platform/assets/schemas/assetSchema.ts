@@ -78,7 +78,14 @@ export const assetFilenameSchema = z
   .trim()
   .min(1, 'Filename cannot be empty')
   .regex(/^[^\\:*?"<>|]+$/, 'Invalid filename characters') // Allow forward slashes, block backslashes and other unsafe chars
-  .regex(/^(?!\/|.*\.\.)/, 'Path must not start with / or contain ..') // Prevent absolute paths and directory traversal
+  .regex(/^(?!\/)/, 'Path must not be absolute')
+  // Traversal check is segment-aware: `..` as a whole path segment is
+  // blocked, while double dots inside a filename (`flux..v2.safetensors`)
+  // stay valid.
+  .refine(
+    (value) => !value.split('/').includes('..'),
+    'Path must not contain ".." segments'
+  )
 
 // Export schemas following repository patterns
 export const assetItemSchema = zAsset

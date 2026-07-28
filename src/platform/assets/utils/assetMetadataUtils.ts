@@ -145,7 +145,8 @@ export function getSourceName(url: string): string {
   return 'Source'
 }
 
-const MODEL_TYPE_TAG_PREFIX = 'model_type:'
+/** Prefix for the namespaced tag that carries a model's folder category, e.g. `model_type:checkpoints`. */
+export const MODEL_TYPE_TAG_PREFIX = 'model_type:'
 
 /**
  * Extracts the model type from asset tags as a bare (non-namespaced) value.

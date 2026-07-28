@@ -457,6 +457,8 @@ describe(assetService.getAssetModels, () => {
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_tags')).toBe('models')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
+    // Private-only, matching the legacy per-folder listing this walk replaces.
+    expect(params.get('include_public')).toBe('false')
   })
 
   it('deduplicates concurrent reads into a single in-flight walk', async () => {
@@ -618,13 +620,23 @@ describe(assetService.getAssetModels, () => {
           id: 'ok',
           name: 'fine.safetensors',
           tags: ['models', 'model_type:checkpoints']
+        }),
+        validAsset({
+          id: 'benign-dots',
+          name: 'flux..v2.safetensors',
+          // Double dots inside a single segment are not traversal.
+          loader_path: 'flux..v2.safetensors',
+          tags: ['models', 'model_type:checkpoints']
         })
       ])
     )
 
     const models = await assetService.getAssetModels('checkpoints')
 
-    expect(models).toEqual([{ name: 'fine.safetensors', pathIndex: 0 }])
+    expect(models).toEqual([
+      { name: 'fine.safetensors', pathIndex: 0 },
+      { name: 'flux..v2.safetensors', pathIndex: 0 }
+    ])
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('unsafe'))
     warn.mockRestore()
   })
@@ -978,6 +990,28 @@ describe(assetService.getAllAssetsByTag, () => {
     }
     const secondParams = new URL(secondUrl, 'http://localhost').searchParams
     expect(secondParams.get('after')).toBe('cursor-next')
+  })
+
+  it('caps a runaway cursor walk at the batch backstop', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    let page = 0
+    fetchApiMock.mockImplementation(() =>
+      Promise.resolve(
+        buildAssetListResponse(
+          [validAsset({ id: `asset-${page}`, tags: ['input'] })],
+          { hasMore: true, nextCursor: `cursor-${page++}` }
+        )
+      )
+    )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 1
+    })
+
+    expect(fetchApiMock).toHaveBeenCalledTimes(1000)
+    expect(assets).toHaveLength(1000)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('backstop'))
+    warn.mockRestore()
   })
 
   it('stops walking when next_cursor is absent even if has_more is true', async () => {

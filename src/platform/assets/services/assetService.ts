@@ -21,7 +21,10 @@ import type {
   ModelFile,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  MODEL_TYPE_TAG_PREFIX,
+  getAssetFilename
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -188,10 +191,13 @@ const ASSETS_EXPORT_ENDPOINT = '/assets/export'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
 const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
+// Defensive backstop against a server that never signals exhaustion (e.g. an
+// unbounded stream of unique cursors); mirrors assetsStore's walk cap. At
+// DEFAULT_LIMIT per page this allows 500k assets per walk, so it only ever
+// trips on pathological pagination.
+const MAX_PAGINATION_BATCHES = 1000
 
 export const MODELS_TAG = 'models'
-/** Prefix for the namespaced tag that carries a model's folder category, e.g. `model_type:checkpoints`. */
-const MODEL_TYPE_TAG_PREFIX = 'model_type:'
 export const INPUT_TAG = 'input'
 export const OUTPUT_TAG = 'output'
 /** Asset tag used by the backend for placeholder records that are not installed. */
@@ -413,7 +419,9 @@ function createAssetService() {
   async function buildModelBuckets(
     modelTypeMode: boolean
   ): Promise<Map<string, AssetItem[]>> {
-    const assets = await getAllAssetsByTag(MODELS_TAG, true)
+    // Private-only, matching the legacy per-folder listing this walk
+    // replaces: the local sidebar never surfaced public/community assets.
+    const assets = await getAllAssetsByTag(MODELS_TAG, false)
     const buckets = new Map<string, AssetItem[]>()
 
     for (const asset of assets) {
@@ -767,9 +775,16 @@ function createAssetService() {
     const assets: AssetItem[] = []
     const pageSize = limit > 0 ? limit : DEFAULT_LIMIT
     let after: string | undefined
+    let batchCount = 0
 
     while (true) {
       if (signal?.aborted) throw createAbortError()
+      if (batchCount++ >= MAX_PAGINATION_BATCHES) {
+        console.warn(
+          `Paginated walk for tag '${tag}' hit the ${MAX_PAGINATION_BATCHES}-batch backstop; returning a truncated listing.`
+        )
+        return assets
+      }
 
       const data = await getAssetsPageByTag(tag, includePublic, {
         limit: pageSize,
