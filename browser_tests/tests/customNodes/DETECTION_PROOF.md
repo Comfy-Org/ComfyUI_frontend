@@ -92,15 +92,15 @@ baselined nodes.
 Sections refer to [ARCHITECTURE.md](ARCHITECTURE.md).
 
 **Proof run:** matrix run
-[30326018611](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/30326018611) -
-all 13 legs green, every verdict from the hardened assert (patterns match
-failure MESSAGES extracted via jq, never raw results text - an earlier run's
-leg 14 went green on a pattern hitting a SOURCE SNIPPET embedded in the
-results file, which is exactly the fraud class the hardening closes). Row
-14's real compare message from that run: `impact_primitives_run.json 2:
-output hash changed - expected sha256:20a57b5f..., got sha256:9b1e4b7e...`.
-Every push to this branch re-runs the whole matrix, so the proof is
-repeatable, not archival.
+[30329945730](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/30329945730) -
+all 13 legs green on the reviewed final state, every verdict from the
+hardened assert (patterns match failure MESSAGES extracted via jq, never raw
+results text: an earlier run's leg 14 went green on a pattern hitting a
+SOURCE SNIPPET in the results file, exactly the fraud class this closes).
+Leg 14's log carries `9 failed, 30 passed` from the suite and then
+`row 14 caught: a failure message matched /output hash changed/`. Every push
+to this branch re-runs the whole matrix, so the proof is repeatable, not
+archival.
 
 | #   | Surface (ARCH section)                           | Mode | Real regression it recreates                                                                                                                                                                                                       | The one-file break                                                                                                                                                                                                            | CI check that catches it                   | Exact red                                                                                                                                                       |
 | --- | ------------------------------------------------ | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
