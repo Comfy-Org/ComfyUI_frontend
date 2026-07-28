@@ -18,6 +18,7 @@ catalog:
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@customerio/cdp-analytics-browser': ^0.5.3
   '@eslint/js': ^10.0.1
+  '@floating-ui/vue': ^1.1.11
   '@formkit/auto-animate': ^0.9.0
   '@iconify-json/lucide': ^1.1.178
   '@iconify/json': ^2.2.380
