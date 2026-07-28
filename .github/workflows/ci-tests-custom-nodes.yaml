@@ -73,12 +73,11 @@ jobs:
     # each with exactly ONE break live. Stacking breaks in a single tree makes
     # a red unattributable - two of them silently cannibalised each other, and
     # the fix was distorting the breaks to coexist rather than isolating them.
-    # Leg N = story SN (1:1). Row 13 is reserved for S13 (shelved by the
-    # lead; unshelves after actual ship-it of these legs).
+    # Leg N = story SN (1:1), all fifteen stories live.
     strategy:
       fail-fast: false
       matrix:
-        row: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15]
+        row: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -350,6 +349,8 @@ jobs:
             9) pat='Constant Number: EXECUTION_ERROR \(Constant Number: ValueError\)' ;;
             11) pat='not registered - pack JS did not load' ;;
             12) pat='input count grows by one on connect' ;;
+            # S13: pack JS reaction to unplug vanishes - only the deltas see it.
+            13) pat='interaction delta drifted' ;;
             # S14: layout drifts with no error - only geometry baselines see it.
             14) pat='widgets\[[0-9]+\]\.y: expected' ;;
             # S15: execution succeeds, values differ - only the hash sees it.

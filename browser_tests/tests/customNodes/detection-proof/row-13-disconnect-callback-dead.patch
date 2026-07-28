@@ -1,0 +1,31 @@
+diff --git a/src/lib/litegraph/src/LGraphNode.ts b/src/lib/litegraph/src/LGraphNode.ts
+index a928d93992..a795a4a48f 100644
+--- a/src/lib/litegraph/src/LGraphNode.ts
++++ b/src/lib/litegraph/src/LGraphNode.ts
+@@ -3376,13 +3376,19 @@ export class LGraphNode
+         link_info.disconnect(graph, keepReroutes ? 'output' : undefined)
+         if (graph) graph.incrementVersion()
+ 
+-        this.onConnectionsChange?.(
+-          NodeSlotType.INPUT,
+-          slot,
+-          false,
+-          link_info,
+-          input
+-        )
++        // DETECTION PROOF (row 13, story S13): the disconnect-side INPUT
++        // callback pack JS uses to clean up after an unplug never fires.
++        // Def-driven tiers cannot see it; S12 sees it only for curated
++        // autogrow nodes; S13's disconnect deltas drift for EVERY node
++        // whose JS reacts to unplug.
++        // Expected: interaction-profile red 'interaction delta drifted'.
++        // this.onConnectionsChange?.(
++        //   NodeSlotType.INPUT,
++        //   slot,
++        //   false,
++        //   link_info,
++        //   input
++        // )
+         target_node.onConnectionsChange?.(
+           NodeSlotType.OUTPUT,
+           i,
