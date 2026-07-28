@@ -34,7 +34,6 @@
 
     <template #contentFilter>
       <div
-        :ref="primeVueOverlay.overlayScopeRef"
         :class="
           cn(
             '@container/filters relative px-6',
@@ -444,7 +443,6 @@ import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
-import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
@@ -708,8 +706,6 @@ const mobileFiltersOpen = ref(false)
 const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
-const primeVueOverlay = usePrimeVueOverlayChildStyle()
-const selectContentStyle = primeVueOverlay.contentStyle
 
 // Force re-render key for templates when sorting changes
 const templateListKey = ref(0)
@@ -838,8 +834,7 @@ const filterControlBindings = computed(() => ({
   sortOptions: sortOptions.value,
   modelFilterLabel: modelFilterLabel.value,
   useCaseFilterLabel: useCaseFilterLabel.value,
-  runsOnFilterLabel: runsOnFilterLabel.value,
-  contentStyle: selectContentStyle.value
+  runsOnFilterLabel: runsOnFilterLabel.value
 }))
 
 // Lazy pagination setup

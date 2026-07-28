@@ -449,6 +449,22 @@ describe(assetService.getAssetModelFolders, () => {
     expect(params.has('include_public')).toBe(false)
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
   })
+
+  it('excludes namespaced model_type: tags from folder names', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'a',
+          tags: ['models', 'checkpoints', 'model_type:checkpoints']
+        }),
+        validAsset({ id: 'b', tags: ['models', 'model_type:loras'] })
+      ])
+    )
+
+    const folders = await assetService.getAssetModelFolders()
+
+    expect(folders).toEqual([{ name: 'checkpoints', folders: [] }])
+  })
 })
 
 describe(assetService.updateAsset, () => {

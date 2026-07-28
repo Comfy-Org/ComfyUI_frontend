@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "עוצמת קול. 0 = רגיל, 100 = פי 2.0, ‎-50 = פי 0.5."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: 20 שפות (אנגלית, סינית, יפנית, קוריאנית, ספרדית מקסיקנית וקסטיליאנית, אינדונזית, גרמנית, פורטוגזית ברזילאית, צרפתית, תאית, וייטנאמית, מלאית, פיליפינית, איטלקית, רוסית, הולנדית, פולנית, טורקית, שוודית) בנוסף לשליטה בתזמון לכל משפט באמצעות חותמות זמן \"[5.5s:8.0s] ...\". seed-audio-1.0: אנגלית וסינית בלבד, ללא שליטה בתזמון."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "הסטת גובה צליל בסמי-טונים (‎-12 עד 12)."
@@ -19989,6 +19993,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "קידוד הוראת עריכה עם תמונת ייחוס אחת או יותר עבור Mage-Flow-Edit. ה-latents של הייחוס מותאמים לגודל הפלט (רוחב/גובה, או גודל התמונה הראשונה כאשר 0). השתמשו בפלט ה-latent לדגימה כדי שהגדלים תמיד יתאימו.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "גובה הפלט. 0 = השתמשו בגודל התמונה הראשונה כייחוס."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "תמונת ייחוס/תמונות לעריכה. כל הייחוסים מותאמים לגודל הפלט לפני הקידוד."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "רוחב הפלט. 0 = השתמשו בגודל התמונה הראשונה כייחוס."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }

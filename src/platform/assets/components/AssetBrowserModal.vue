@@ -32,6 +32,7 @@
           v-model="searchQuery"
           :autofocus="true"
           size="lg"
+          :aria-label="$t('assetBrowser.searchModels')"
           :placeholder="$t('g.searchPlaceholder', { subject: '' })"
           class="max-w-lg flex-1"
         />
@@ -39,6 +40,7 @@
           v-if="isUploadButtonEnabled"
           variant="primary"
           :size="breakpoints.md ? 'lg' : 'icon'"
+          :aria-label="$t('assetBrowser.uploadModel')"
           data-attr="upload-model-button"
           @click="showUploadDialog"
         >
