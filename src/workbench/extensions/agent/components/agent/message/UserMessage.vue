@@ -27,8 +27,8 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
         :key="`${tag}:${index}`"
         class="rounded-agent bg-agent-pill text-agent-fg-muted inline-flex items-center gap-1 px-1.5 py-0.5 text-xs"
       >
-        <span class="icon-[lucide--at-sign] size-3" />
-        {{ tag }}
+        <span class="icon-[lucide--at-sign] size-3 shrink-0" />
+        <span class="max-w-40 truncate">{{ tag }}</span>
       </span>
     </div>
     <div
