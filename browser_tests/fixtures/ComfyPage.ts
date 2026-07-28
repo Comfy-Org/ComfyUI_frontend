@@ -553,6 +553,8 @@ export const comfyPageFixture = base.extend<{
         // Disable errors tab to prevent missing model detection from
         // rendering error indicators on nodes during unrelated tests.
         'Comfy.RightSidePanel.ShowErrorsTab': false,
+        'Comfy.VueNodes.CompactCollapsedNodes': false,
+        'Comfy.VueNodes.HideStatusBadges': false,
         ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
         ...initialSettings
       })

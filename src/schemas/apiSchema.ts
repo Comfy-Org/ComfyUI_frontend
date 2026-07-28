@@ -427,6 +427,8 @@ const zSettings = z.object({
   'Comfy.Canvas.LeftMouseClickBehavior': z.string(),
   'Comfy.Canvas.MouseWheelScroll': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
+  'Comfy.VueNodes.CompactCollapsedNodes': z.boolean(),
+  'Comfy.VueNodes.HideStatusBadges': z.boolean(),
   'Comfy.AppBuilder.VueNodeSwitchDismissed': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy.ModelLibrary.UseAssetBrowser': z.boolean(),

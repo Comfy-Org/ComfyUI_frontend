@@ -6,8 +6,9 @@
     v-else
     :class="
       cn(
-        'lg-node-header relative z-10 w-full min-w-0 p-1 text-xs',
+        'lg-node-header relative z-10 w-full min-w-0 py-1 pl-1 text-xs',
         'text-node-component-slot-text',
+        compact ? 'pr-2' : 'pr-1',
         headerShapeClass
       )
     "
@@ -61,7 +62,7 @@
         :text="badge.required"
         :rest="badge.rest"
       />
-      <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
+      <NodeBadge v-if="showStatusBadge && statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
         class="icon-[comfy--pin] size-4"
@@ -91,10 +92,17 @@ import type { NodeBadgeProps } from './NodeBadge.vue'
 interface NodeHeaderProps {
   nodeData?: VueNodeData
   collapsed?: boolean
+  compact?: boolean
   priceBadges?: { required: string; rest?: string }[]
+  showStatusBadge?: boolean
 }
 
-const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
+const {
+  nodeData,
+  collapsed,
+  compact,
+  showStatusBadge = true
+} = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []

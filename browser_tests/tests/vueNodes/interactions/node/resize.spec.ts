@@ -40,6 +40,13 @@ test.describe(
       await comfyPage.canvasOps.resetView()
     })
 
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.VueNodes.CompactCollapsedNodes',
+        false
+      )
+    })
+
     test('Resizing', async ({ comfyPage }) => {
       const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
       const box = (await node.boundingBox())!
@@ -152,23 +159,29 @@ test.describe(
       })
     })
 
-    test('preserves expanded size through collapse and expansion', async ({
-      comfyPage
-    }) => {
-      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-      const nodeId = await node.root.getAttribute('data-node-id')
-      if (!nodeId) throw new Error('Node ID not found')
-      const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
-      const expandedSize = await resizeExpandedNode(node, nodeRef)
+    for (const compact of [false, true]) {
+      test(`preserves expanded size through ${compact ? 'compact' : 'normal'} collapse and expansion`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.VueNodes.CompactCollapsedNodes',
+          compact
+        )
+        const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+        const nodeId = await node.root.getAttribute('data-node-id')
+        if (!nodeId) throw new Error('Node ID not found')
+        const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
+        const expandedSize = await resizeExpandedNode(node, nodeRef)
 
-      await node.collapseButton.dispatchEvent('click')
-      await expect(node.root).toHaveAttribute('data-collapsed', 'true')
-      await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
+        await node.collapseButton.dispatchEvent('click')
+        await expect(node.root).toHaveAttribute('data-collapsed', 'true')
+        await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
 
-      await node.collapseButton.dispatchEvent('click')
-      await expect(node.root).not.toHaveAttribute('data-collapsed', 'true')
-      await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
-    })
+        await node.collapseButton.dispatchEvent('click')
+        await expect(node.root).not.toHaveAttribute('data-collapsed', 'true')
+        await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
+      })
+    }
 
     test('preserves expanded size when a collapsed workflow is reloaded', async ({
       comfyPage
