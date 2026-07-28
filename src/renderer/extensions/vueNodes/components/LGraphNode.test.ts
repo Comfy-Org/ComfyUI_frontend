@@ -256,6 +256,8 @@ describe('LGraphNode', () => {
     })
     const root = getNodeRoot(container)
 
+    expect(root.style.getPropertyValue('--node-width')).toBe('')
+    expect(root.style.getPropertyValue('--node-width-x')).toBe('200px')
     expect(root.style.getPropertyValue('--node-height')).toBe('')
     expect(root.style.getPropertyValue('--node-height-x')).toBe('130px')
   })

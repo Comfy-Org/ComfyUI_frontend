@@ -1151,11 +1151,13 @@ class LayoutStoreImpl implements LayoutStore {
       const ynode = this.ynodes.get(String(nodeId))
       if (!ynode || !data) continue
 
-      ynode.set('position', { x: data.bounds.x, y: data.bounds.y })
-      ynode.set('size', {
-        width: data.bounds.width,
-        height: data.bounds.height
-      })
+      if (!data.preserveSize) {
+        ynode.set('position', { x: data.bounds.x, y: data.bounds.y })
+        ynode.set('size', {
+          width: data.bounds.width,
+          height: data.bounds.height
+        })
+      }
       ynode.set('bounds', data.bounds)
 
       spatialUpdates.push({ nodeId, bounds: data.bounds })
@@ -1502,7 +1504,7 @@ class LayoutStoreImpl implements LayoutStore {
     const nodeIds: NodeId[] = []
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
-    for (const { nodeId, bounds } of updates) {
+    for (const { nodeId, bounds, preserveSize } of updates) {
       const ynode = this.ynodes.get(String(nodeId))
       if (!ynode) continue
       const currentLayout = yNodeToLayout(ynode)
@@ -1516,7 +1518,8 @@ class LayoutStoreImpl implements LayoutStore {
 
       boundsRecord[nodeId] = {
         bounds: normalizedBounds,
-        previousBounds: currentLayout.bounds
+        previousBounds: currentLayout.bounds,
+        ...(preserveSize ? { preserveSize: true } : {})
       }
       nodeIds.push(nodeId)
     }

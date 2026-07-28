@@ -2,12 +2,34 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import type { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import {
   RESIZE_HANDLES,
   hasNorthEdge,
   hasWestEdge
 } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+
+async function resizeExpandedNode(
+  node: VueNodeFixture,
+  nodeRef: NodeReference
+) {
+  const initialSize = await nodeRef.getSize()
+  const box = await node.boundingBox()
+  if (!box) throw new Error('Node bounding box not found')
+
+  await node.resizeFromCorner('SE', 73, 47)
+
+  await expect
+    .poll(async () => {
+      const size = await nodeRef.getSize()
+      return size.width > initialSize.width && size.height > initialSize.height
+    })
+    .toBe(true)
+
+  return nodeRef.getSize()
+}
 
 test.describe(
   'Vue Node Resizing',
@@ -84,13 +106,16 @@ test.describe(
           return bounds ? bounds.x + bounds.width : -1
         }
         const getWidth = async () => (await node.boundingBox())?.width ?? -1
+        const scale = await comfyPage.canvasOps.getScale()
 
         const initialRight = await getRight()
 
         await node.resizeFromCorner('SW', box.width + 100, 0)
 
         await expect.poll(getRight).toBeCloseTo(initialRight, 0)
-        await expect.poll(getWidth).toBeGreaterThanOrEqual(MIN_NODE_WIDTH)
+        await expect
+          .poll(getWidth)
+          .toBeGreaterThanOrEqual(MIN_NODE_WIDTH * scale)
       })
 
       test('NE resize clamps height at its lower bound', async ({
@@ -125,6 +150,53 @@ test.describe(
         await expect.poll(getHeight).toBeCloseTo(clampedHeight, 0)
         await expect.poll(getBottom).toBeCloseTo(bottomEdge, 0)
       })
+    })
+
+    test('preserves expanded size through collapse and expansion', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const nodeId = await node.root.getAttribute('data-node-id')
+      if (!nodeId) throw new Error('Node ID not found')
+      const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
+      const expandedSize = await resizeExpandedNode(node, nodeRef)
+
+      await node.collapseButton.dispatchEvent('click')
+      await expect(node.root).toHaveAttribute('data-collapsed', 'true')
+      await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
+
+      await node.collapseButton.dispatchEvent('click')
+      await expect(node.root).not.toHaveAttribute('data-collapsed', 'true')
+      await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
+    })
+
+    test('preserves expanded size when a collapsed workflow is reloaded', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const nodeId = await node.root.getAttribute('data-node-id')
+      if (!nodeId) throw new Error('Node ID not found')
+      const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
+      const expandedSize = await resizeExpandedNode(node, nodeRef)
+
+      await node.collapseButton.dispatchEvent('click')
+      await expect(node.root).toHaveAttribute('data-collapsed', 'true')
+      await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
+
+      const savedWorkflow = await comfyPage.workflow.getExportedWorkflow()
+      await comfyPage.workflow.loadGraphData(savedWorkflow)
+      await comfyPage.vueNodes.waitForNodes()
+
+      const reloadedNode =
+        await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      await expect(reloadedNode.root).toHaveAttribute('data-collapsed', 'true')
+
+      await reloadedNode.collapseButton.dispatchEvent('click')
+      await expect(reloadedNode.root).not.toHaveAttribute(
+        'data-collapsed',
+        'true'
+      )
+      await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
     })
   }
 )
