@@ -31,6 +31,7 @@ const ws = vi.hoisted(() => {
 
 vi.mock('@/scripts/api', () => ({
   api: {
+    apiURL: (route: string) => `/api${route}`,
     fetchApi: (route: string, options?: RequestInit) =>
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     socket: { readyState: 1 },
