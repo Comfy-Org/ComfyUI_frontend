@@ -313,6 +313,11 @@ jobs:
         run: |
           set -euo pipefail
           [ -f custom-nodes-results.json ] || { echo "::error::no results json - the suite never ran; that is a broken leg, not a caught break"; exit 1; }
+          # Failure MESSAGES only, extracted once for every row's match:
+          # playwright results embed source snippets, and a raw grep of the
+          # file can hit a pattern in spec SOURCE (leg 14 went green that way
+          # on run 30318248639 while its real compare never fired).
+          jq -r '[.. | objects | select(has("message")) | .message | strings] | .[]' custom-nodes-results.json > /tmp/failure-messages.txt
           skipped=$(jq '.stats.skipped' custom-nodes-results.json)
           if [ "$ROW" = "10" ]; then
             # Row 10's red is the skip gate, not a test failure: the renamed
@@ -322,7 +327,7 @@ jobs:
             # deterministically surfaces it (a never-before-seen node type
             # fails the geometry-baseline check by name, run 30305166953).
             [ "$skipped" != "0" ] || { echo "::error::row 10: no tests skipped - the registration break was NOT caught"; exit 1; }
-            jq -r '[.. | objects | select(has("message")) | .message | strings] | .[]' custom-nodes-results.json | grep -q 'ImpactIntDETECTIONPROOF' || { echo "::error::row 10: tests skipped but the renamed key never surfaced in a failure message - the skips are not attributable to this break"; exit 1; }
+            grep -q 'ImpactIntDETECTIONPROOF' /tmp/failure-messages.txt || { echo "::error::row 10: tests skipped but the renamed key never surfaced in a failure message - the skips are not attributable to this break"; exit 1; }
             echo "row 10 caught: $skipped test(s) skipped on the renamed node key"
             exit 0
           fi
@@ -348,11 +353,6 @@ jobs:
             14) pat='output hash changed' ;;
             *) echo "::error::no expected pattern for row $ROW"; exit 1 ;;
           esac
-          # Match FAILURE MESSAGES only, never the raw file: playwright
-          # results embed source snippets, and a pattern string that appears
-          # in spec SOURCE would satisfy a raw grep (leg 14 went green that
-          # way on run 30318248639 while its real compare never fired).
-          jq -r '[.. | objects | select(has("message")) | .message | strings] | .[]' custom-nodes-results.json > /tmp/failure-messages.txt
           grep -Eq -- "$pat" /tmp/failure-messages.txt || { echo "::error::row $ROW: suite redded but no FAILURE MESSAGE matches /$pat/ - the red is not attributable to this break"; exit 1; }
           echo "row $ROW caught: a failure message matched /$pat/"
 
