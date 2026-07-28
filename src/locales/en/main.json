@@ -4692,6 +4692,7 @@
     "addToPrompt": "Add to prompt",
     "addNodesFromGraph": "Add nodes from graph",
     "addFromAssets": "Add from assets panel",
+    "assetNotAttachable": "Only images and videos can be attached",
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
     "changeWorkflowForChat": "Change the workflow for this chat",

@@ -152,6 +152,13 @@ describe('Composer', () => {
     expect(getMentionNodes).toHaveBeenCalledOnce()
   })
 
+  it('shows the id beside each staged selection chip', () => {
+    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
+
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+    expect(screen.getByText('#5')).toBeInTheDocument()
+  })
+
   describe('insert highlight', () => {
     beforeEach(() => {
       vi.useFakeTimers()

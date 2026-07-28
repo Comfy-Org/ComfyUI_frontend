@@ -3351,6 +3351,26 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[1]).toMatchObject({ selection: { node_ids: ['7'] } })
   })
 
+  it('sends no selection after the user dismisses every chip', async () => {
+    makeTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 7, title: 'KSampler' }
+    ]
+    expect(await screen.findByText('KSampler')).toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.remove') })
+    )
+    await sendFromComposer('no nodes please')
+
+    expect(bodies[0]).not.toHaveProperty('selection')
+  })
+
   it('coalesces patches that stream faster than the canvas apply settles', async () => {
     const tab = makeTab('wf-42')
     mockMessagesEndpoint('wf-42')

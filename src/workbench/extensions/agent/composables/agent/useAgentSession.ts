@@ -183,6 +183,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return false
     }
     sending.value = true
+    stopRequestedWhileSending = false
     if (workflow?.prepare)
       await Promise.race([
         workflow.prepare().catch(() => undefined),
@@ -254,6 +255,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags?.map((tag) => `${tag.title} #${tag.id}`)
       )
       conversationStore.startTurn(turnId)
+      if (stopRequestedWhileSending) {
+        stopRequestedWhileSending = false
+        void stopTurn()
+      }
       return true
     } catch (error) {
       const message =
@@ -273,10 +278,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  let stopRequestedWhileSending = false
+
   async function stopTurn(): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
-    if (threadId === null || turnId === null) return
+    if (threadId === null || turnId === null) {
+      // The POST has not acked yet; remember the intent and cancel on ack.
+      if (sending.value) stopRequestedWhileSending = true
+      return
+    }
     try {
       await rest.cancelMessage(threadId, turnId)
     } catch (error) {
@@ -374,7 +385,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.dropBackgroundTurns()
   }
 
+  const isSending = computed(() => sending.value)
+
   return {
+    isSending,
     start,
     stop,
     sendMessage,
