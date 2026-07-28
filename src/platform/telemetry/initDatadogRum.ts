@@ -8,6 +8,9 @@ const DATADOG_ENV_BY_HOSTNAME = new Map([
   ['stagingcloud.comfy.org', 'stg-v2'],
   ['testcloud.comfy.org', 'test-v2']
 ])
+const FRONTEND_RELEASE_MINOR = __COMFYUI_FRONTEND_VERSION__
+  .split('.', 2)
+  .join('.')
 const FRONTEND_CONTEXT_FETCH_TIMEOUT_MS = 1_000
 let initializationPromise: Promise<void> | undefined
 
@@ -30,6 +33,7 @@ async function setFrontendContext(): Promise<void> {
 }
 
 async function initializeDatadogRum(env: string): Promise<void> {
+  datadogRum.setGlobalContextProperty('release_minor', FRONTEND_RELEASE_MINOR)
   await setFrontendContext().catch(() => {})
   if (datadogRum.getInitConfiguration()) return
 
