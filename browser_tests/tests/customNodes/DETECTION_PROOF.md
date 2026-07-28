@@ -92,15 +92,15 @@ baselined nodes.
 Sections refer to [ARCHITECTURE.md](ARCHITECTURE.md).
 
 **Proof run:** matrix run
-[30379606688](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/30379606688) -
-all 14 story-aligned legs green on this branch HEAD, every assert step individually verified; leg 14 (S14 geometry) catches the 2px widget drift with e.g. `widgets[0].y: expected 46, got 48`, every verdict from the
-hardened assert (patterns match failure MESSAGES extracted via jq, never raw
-results text: an earlier run's leg 14 went green on a pattern hitting a
-SOURCE SNIPPET in the results file, exactly the fraud class this closes).
-Leg 14's log carries `9 failed, 30 passed` from the suite and then
-`row 14 caught: a failure message matched /output hash changed/`. Every push
-to this branch re-runs the whole matrix, so the proof is repeatable, not
-archival.
+[30392502687](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/30392502687) -
+ALL FIFTEEN story-aligned legs green on this branch HEAD, every leg's assert
+step individually verified (patterns match failure MESSAGES extracted via
+jq, never raw results text - an earlier design's raw grep once matched a
+SOURCE SNIPPET, exactly the fraud class this closes). Leg 13's first S13
+catch, verbatim: `ImpactMakeImageBatch: interaction delta drifted -
+disconnect: expected ["-input:image2:IMAGE"], got []` with the baseline's
+provenance in the message. Every push to this branch re-runs the whole
+matrix, so the proof is repeatable, not archival.
 
 | #   | Surface (ARCH section)                           | Mode | Real regression it recreates                                                                                                                                                                                                       | The one-file break                                                                                                                                                                                                            | CI check that catches it                   | Exact red                                                                                                                                                       |
 | --- | ------------------------------------------------ | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
