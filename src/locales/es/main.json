@@ -2099,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "al menos uno",
       "connectAtLeastOne": "Conecta {atLeastOne} nodo de salida para que los usuarios puedan ver los resultados después de ejecutar.",
+      "descriptionPlaceholder": "Haz doble clic para agregar una descripción",
       "noOutputs": "Aún no se han añadido salidas",
       "outputExamples": "Ejemplos: 'Guardar imagen' o 'Guardar video'",
       "outputs": "Salidas",
@@ -2892,6 +2893,7 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "mask",
     "merging": "fusión",
     "mochi": "mochi",
@@ -3512,6 +3514,7 @@
     "Load 3D": "Cargar 3D",
     "Locale": "Localización",
     "Mask Editor": "Editor de Máscara",
+    "Members": "Miembros",
     "Menu": "Menú",
     "ModelLibrary": "Biblioteca de Modelos",
     "Node": "Nodo",
@@ -3874,6 +3877,7 @@
     "freeTier": {
       "description": "Tu plan gratuito incluye {credits} créditos cada mes para probar Comfy Cloud.",
       "descriptionGeneric": "Tu plan gratuito incluye una asignación mensual de créditos para probar Comfy Cloud.",
+      "descriptionQuota": "Tu plan gratuito incluye {runs} ejecuciones para comenzar con Comfy Cloud — no se necesita tarjeta.",
       "nextRefresh": "Tus créditos se renovarán el {date}.",
       "outOfCredits": {
         "subtitle": "Suscríbete para desbloquear recargas y más",
@@ -4406,6 +4410,24 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "Créditos",
+        "date": "Fecha",
+        "eventDetails": "Detalles del evento",
+        "eventType": "Tipo de evento",
+        "user": "Usuario"
+      },
+      "empty": "Aún no hay actividad.",
+      "fullActivity": "Actividad completa",
+      "hoverCard": {
+        "lastActivity": "Última actividad",
+        "partnerNodeUsed": "Nodo de socio usado",
+        "totalCreditsUsed": "Total de créditos usados"
+      },
+      "perUserHint": "¿Buscas el uso total por usuario?",
+      "seeMembers": "Ver miembros"
+    },
     "billingStatus": {
       "ending": {
         "body": "Los miembros mantienen el acceso completo hasta entonces. Reactiva para conservar tus créditos y plazas compartidas.",
@@ -4493,14 +4515,31 @@
         "cancelInvite": "Cancelar invitación",
         "changeRole": "Cambiar rol",
         "removeMember": "Eliminar miembro",
-        "resendInvite": "Reenviar invitación"
+        "resendInvite": "Reenviar invitación",
+        "setCreditLimit": "Establecer límite de crédito"
+      },
+      "activity": {
+        "daysAgo": "hace {count} día | hace {count} días",
+        "hoursAgo": "hace {n} h",
+        "justNow": "justo ahora",
+        "minutesAgo": "hace {n} min"
       },
       "columns": {
+        "creditsUsed": "Créditos mensuales",
         "expiryDate": "Fecha de vencimiento",
         "inviteDate": "Fecha de invitación",
         "role": "Rol"
       },
       "contactUs": "Contáctanos",
+      "creditLimitDialog": {
+        "description": "Una vez que alcancen este límite, no podrán ejecutar workflows.",
+        "invalidLimit": "Introduce un límite de crédito mayor que cero.",
+        "limitOption": "Limitar el uso mensual de créditos a:",
+        "noLimit": "Sin límite",
+        "title": "Establecer un límite mensual de crédito para {name}",
+        "update": "Actualizar límite",
+        "warning": "Este usuario ya ha gastado {credits} créditos. Establecer el límite en o por debajo de su uso actual impedirá más ejecuciones hasta el próximo mes."
+      },
       "header": "Miembros",
       "membersCount": "{count}/50 Miembros",
       "needMoreMembers": "¿Necesitas más miembros?",
@@ -4523,6 +4562,12 @@
       "deleteWorkspaceDisabledTooltip": "Primero cancela la suscripción activa de tu espacio de trabajo",
       "editWorkspace": "Editar detalles del espacio de trabajo",
       "leaveWorkspace": "Abandonar espacio de trabajo"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "Actividad",
+        "overview": "Créditos"
+      }
     },
     "removeMemberDialog": {
       "error": "No se pudo eliminar al miembro",

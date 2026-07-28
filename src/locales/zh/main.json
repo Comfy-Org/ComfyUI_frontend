@@ -2099,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "至少一个",
       "connectAtLeastOne": "请连接{atLeastOne}个输出节点，以便用户在运行后查看结果。",
+      "descriptionPlaceholder": "双击添加描述",
       "noOutputs": "尚未添加输出",
       "outputExamples": "示例：“保存图像”或“保存视频”",
       "outputs": "输出",
@@ -2892,6 +2893,7 @@
     "lotus": "lotus",
     "ltxv": "LTXV",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "遮罩",
     "merging": "合并",
     "mochi": "mochi",
@@ -3512,6 +3514,7 @@
     "Load 3D": "加载3D",
     "Locale": "区域设置",
     "Mask Editor": "遮罩编辑器",
+    "Members": "成员",
     "Menu": "菜单",
     "ModelLibrary": "模型库",
     "Node": "节点",
@@ -3886,6 +3889,7 @@
     "freeTier": {
       "description": "您的免费套餐每月包含 {credits} 积分，可体验 Comfy Cloud。",
       "descriptionGeneric": "您的免费套餐每月包含积分额度，可体验 Comfy Cloud。",
+      "descriptionQuota": "您的免费计划包含 {runs} 次运行，可开始使用 Comfy Cloud — 无需信用卡。",
       "nextRefresh": "您的积分将在 {date} 刷新。",
       "outOfCredits": {
         "subtitle": "订阅以解锁补充积分和更多功能",
@@ -4418,6 +4422,24 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "积分",
+        "date": "日期",
+        "eventDetails": "事件详情",
+        "eventType": "事件类型",
+        "user": "用户"
+      },
+      "empty": "暂无活动。",
+      "fullActivity": "全部活动",
+      "hoverCard": {
+        "lastActivity": "最近活动",
+        "partnerNodeUsed": "已使用合作节点",
+        "totalCreditsUsed": "已用总积分"
+      },
+      "perUserHint": "想查看每位用户的总使用量？",
+      "seeMembers": "查看成员"
+    },
     "billingStatus": {
       "ending": {
         "body": "在此之前成员可保持全部访问权限。重新激活以保留共享积分和席位。",
@@ -4505,14 +4527,31 @@
         "cancelInvite": "取消邀请",
         "changeRole": "更改角色",
         "removeMember": "移除成员",
-        "resendInvite": "重新发送邀请"
+        "resendInvite": "重新发送邀请",
+        "setCreditLimit": "设置积分上限"
+      },
+      "activity": {
+        "daysAgo": "{count} 天前",
+        "hoursAgo": "{n} 小时前",
+        "justNow": "刚刚",
+        "minutesAgo": "{n} 分钟前"
       },
       "columns": {
+        "creditsUsed": "每月积分",
         "expiryDate": "过期日期",
         "inviteDate": "邀请日期",
         "role": "角色"
       },
       "contactUs": "联系我们",
+      "creditLimitDialog": {
+        "description": "达到上限后，将无法继续运行工作流。",
+        "invalidLimit": "请输入大于零的积分上限。",
+        "limitOption": "每月积分上限：",
+        "noLimit": "无限制",
+        "title": "为 {name} 设置每月积分上限",
+        "update": "更新上限",
+        "warning": "该用户已消耗 {credits} 积分。将上限设置为当前用量或更低将导致本月无法继续运行。"
+      },
       "header": "成员",
       "membersCount": "{count}/50 名成员",
       "needMoreMembers": "需要更多成员？",
@@ -4535,6 +4574,12 @@
       "deleteWorkspaceDisabledTooltip": "请先取消工作区的有效订阅",
       "editWorkspace": "编辑工作区详情",
       "leaveWorkspace": "离开工作区"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "活动",
+        "overview": "积分"
+      }
     },
     "removeMemberDialog": {
       "error": "移除成员失败",

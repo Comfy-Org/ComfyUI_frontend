@@ -2099,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "至少一個",
       "connectAtLeastOne": "請連接{atLeastOne}個輸出節點，讓使用者在執行後能看到結果。",
+      "descriptionPlaceholder": "雙擊以新增描述",
       "noOutputs": "尚未新增任何輸出",
       "outputExamples": "範例：「儲存圖像」或「儲存影片」",
       "outputs": "輸出",
@@ -2892,6 +2893,7 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "遮罩",
     "merging": "合併",
     "mochi": "mochi",
@@ -3512,6 +3514,7 @@
     "Load 3D": "載入 3D",
     "Locale": "語言地區",
     "Mask Editor": "遮罩編輯器",
+    "Members": "成員",
     "Menu": "選單",
     "ModelLibrary": "模型庫",
     "Node": "節點",
@@ -3874,6 +3877,7 @@
     "freeTier": {
       "description": "您的免費方案每月包含 {credits} 點數，可體驗 Comfy Cloud。",
       "descriptionGeneric": "您的免費方案每月包含點數額度，可體驗 Comfy Cloud。",
+      "descriptionQuota": "您的免費方案包含 {runs} 次運行，可開始使用 Comfy Cloud — 無需信用卡。",
       "nextRefresh": "您的點數將於 {date} 重置。",
       "outOfCredits": {
         "subtitle": "訂閱以解鎖加值與更多功能",
@@ -4406,6 +4410,24 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "點數",
+        "date": "日期",
+        "eventDetails": "事件詳情",
+        "eventType": "事件類型",
+        "user": "使用者"
+      },
+      "empty": "尚無活動。",
+      "fullActivity": "完整活動記錄",
+      "hoverCard": {
+        "lastActivity": "最近活動",
+        "partnerNodeUsed": "已使用合作夥伴節點",
+        "totalCreditsUsed": "已用總點數"
+      },
+      "perUserHint": "想查看每位使用者的總用量？",
+      "seeMembers": "查看成員"
+    },
     "billingStatus": {
       "ending": {
         "body": "在此之前成員可保有完整存取權。重新啟用可保留共享點數與席次。",
@@ -4493,14 +4515,31 @@
         "cancelInvite": "取消邀請",
         "changeRole": "變更角色",
         "removeMember": "移除成員",
-        "resendInvite": "重新發送邀請"
+        "resendInvite": "重新發送邀請",
+        "setCreditLimit": "設定點數上限"
+      },
+      "activity": {
+        "daysAgo": "{count} 天前",
+        "hoursAgo": "{n} 小時前",
+        "justNow": "剛剛",
+        "minutesAgo": "{n} 分鐘前"
       },
       "columns": {
+        "creditsUsed": "每月點數",
         "expiryDate": "到期日",
         "inviteDate": "邀請日期",
         "role": "角色"
       },
       "contactUs": "聯絡我們",
+      "creditLimitDialog": {
+        "description": "一旦達到上限，他們將無法再執行工作流程。",
+        "invalidLimit": "請輸入大於零的點數上限。",
+        "limitOption": "每月點數上限：",
+        "noLimit": "無上限",
+        "title": "為 {name} 設定每月點數上限",
+        "update": "更新上限",
+        "warning": "此使用者已花費 {credits} 點數。若將上限設於目前用量或更低，將會阻止其本月進一步運行。"
+      },
       "header": "成員",
       "membersCount": "{count}/50 位成員",
       "needMoreMembers": "需要更多成員？",
@@ -4523,6 +4562,12 @@
       "deleteWorkspaceDisabledTooltip": "請先取消工作區的有效訂閱",
       "editWorkspace": "編輯工作區詳細資料",
       "leaveWorkspace": "離開工作區"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "活動",
+        "overview": "點數"
+      }
     },
     "removeMemberDialog": {
       "error": "移除成員失敗",

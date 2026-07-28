@@ -2099,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "عقدة واحدة على الأقل",
       "connectAtLeastOne": "قم بتوصيل {atLeastOne} عقدة مخرجات حتى يتمكن المستخدمون من رؤية النتائج بعد التشغيل.",
+      "descriptionPlaceholder": "انقر مرتين لإضافة وصف",
       "noOutputs": "لم تتم إضافة أي مخرجات بعد",
       "outputExamples": "أمثلة: 'حفظ صورة' أو 'حفظ فيديو'",
       "outputs": "المخرجات",
@@ -2892,6 +2893,7 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "قناع",
     "merging": "دمج",
     "mochi": "mochi",
@@ -3512,6 +3514,7 @@
     "Load 3D": "تحميل ثلاثي الأبعاد",
     "Locale": "اللغة",
     "Mask Editor": "محرر القناع",
+    "Members": "الأعضاء",
     "Menu": "القائمة",
     "ModelLibrary": "مكتبة النماذج",
     "Node": "العقدة",
@@ -3874,6 +3877,7 @@
     "freeTier": {
       "description": "تشمل خطتك المجانية {credits} رصيد شهري لتجربة Comfy Cloud.",
       "descriptionGeneric": "تشمل خطتك المجانية رصيدًا شهريًا لتجربة Comfy Cloud.",
+      "descriptionQuota": "تشمل خطتك المجانية {runs} تشغيل للبدء مع Comfy Cloud — لا حاجة لبطاقة.",
       "nextRefresh": "سيتم تجديد رصيدك في {date}.",
       "outOfCredits": {
         "subtitle": "اشترك لفتح الشحن والمزيد",
@@ -4406,6 +4410,24 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "الرصيد المستخدم",
+        "date": "التاريخ",
+        "eventDetails": "تفاصيل الحدث",
+        "eventType": "نوع الحدث",
+        "user": "المستخدم"
+      },
+      "empty": "لا يوجد نشاط بعد.",
+      "fullActivity": "كل الأنشطة",
+      "hoverCard": {
+        "lastActivity": "آخر نشاط",
+        "partnerNodeUsed": "تم استخدام عقدة الشريك",
+        "totalCreditsUsed": "إجمالي الرصيد المستخدم"
+      },
+      "perUserHint": "تبحث عن إجمالي الاستخدام لكل مستخدم؟",
+      "seeMembers": "عرض الأعضاء"
+    },
     "billingStatus": {
       "ending": {
         "body": "يحتفظ الأعضاء بكامل الوصول حتى ذلك الحين. أعد تفعيل الخطة للاحتفاظ بالأرصدة والمقاعد المشتركة.",
@@ -4493,14 +4515,31 @@
         "cancelInvite": "إلغاء الدعوة",
         "changeRole": "تغيير الدور",
         "removeMember": "إزالة العضو",
-        "resendInvite": "إعادة إرسال الدعوة"
+        "resendInvite": "إعادة إرسال الدعوة",
+        "setCreditLimit": "تعيين حد الرصيد"
+      },
+      "activity": {
+        "daysAgo": "منذ {count} يوم | منذ {count} أيام",
+        "hoursAgo": "منذ {n} ساعة",
+        "justNow": "الآن",
+        "minutesAgo": "منذ {n} دقيقة"
       },
       "columns": {
+        "creditsUsed": "الرصيد الشهري",
         "expiryDate": "تاريخ الانتهاء",
         "inviteDate": "تاريخ الدعوة",
         "role": "الدور"
       },
       "contactUs": "تواصل معنا",
+      "creditLimitDialog": {
+        "description": "عند وصولهم لهذا الحد، لن يتمكنوا من تشغيل سير العمل.",
+        "invalidLimit": "أدخل حد رصيد أكبر من الصفر.",
+        "limitOption": "تقييد استخدام الرصيد الشهري إلى:",
+        "noLimit": "بدون حد",
+        "title": "تعيين حد شهري للرصيد لـ {name}",
+        "update": "تحديث الحد",
+        "warning": "لقد أنفق هذا المستخدم بالفعل {credits} رصيد. تعيين الحد عند أو أقل من الاستخدام الحالي سيمنع المزيد من التشغيل حتى الشهر القادم."
+      },
       "header": "الأعضاء",
       "membersCount": "{count}/٥٠ عضواً",
       "needMoreMembers": "تحتاج إلى المزيد من الأعضاء؟",
@@ -4523,6 +4562,12 @@
       "deleteWorkspaceDisabledTooltip": "يرجى إلغاء الاشتراك النشط لمساحة العمل أولاً",
       "editWorkspace": "تعديل تفاصيل مساحة العمل",
       "leaveWorkspace": "مغادرة مساحة العمل"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "النشاط",
+        "overview": "الرصيد"
+      }
     },
     "removeMemberDialog": {
       "error": "فشل في إزالة العضو",

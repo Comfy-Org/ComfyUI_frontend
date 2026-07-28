@@ -11,6 +11,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-01',
     date: new Date('2026-07-14T09:32:00Z'),
+    userId: 'user-ada',
     userName: 'Ada Lovelace',
     eventType: 'Cloud workflow run',
     detail: '2 runs',
@@ -19,6 +20,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-02',
     date: new Date('2026-07-14T08:10:00Z'),
+    userId: 'user-grace',
     userName: 'Grace Hopper',
     eventType: 'Partner node usage',
     detail: '1 run',
@@ -28,6 +30,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-03',
     date: new Date('2026-07-13T22:47:00Z'),
+    userId: 'user-ada',
     userName: 'Ada Lovelace',
     eventType: 'Partner node usage',
     detail: '4 runs',
@@ -37,6 +40,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-04',
     date: new Date('2026-07-13T18:05:00Z'),
+    userId: 'user-alan',
     userName: 'Alan Turing',
     eventType: 'Cloud workflow run',
     detail: '7 runs',
@@ -45,6 +49,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-05',
     date: new Date('2026-07-13T12:00:00Z'),
+    userId: null,
     userName: '',
     eventType: 'Auto-reload',
     detail: '—',
@@ -54,6 +59,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-06',
     date: new Date('2026-07-12T16:22:00Z'),
+    userId: 'user-grace',
     userName: 'Grace Hopper',
     eventType: 'Cloud workflow run',
     detail: '3 runs',
@@ -62,6 +68,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-07',
     date: new Date('2026-07-12T11:41:00Z'),
+    userId: 'user-alan',
     userName: 'Alan Turing',
     eventType: 'Partner node usage',
     detail: '2 runs',
@@ -71,6 +78,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-08',
     date: new Date('2026-07-11T20:15:00Z'),
+    userId: 'user-ada',
     userName: 'Ada Lovelace',
     eventType: 'Cloud workflow run',
     detail: '5 runs',
@@ -79,6 +87,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-09',
     date: new Date('2026-07-11T09:03:00Z'),
+    userId: 'user-katherine',
     userName: 'Katherine Johnson',
     eventType: 'Cloud workflow run',
     detail: '1 run',
@@ -87,6 +96,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-10',
     date: new Date('2026-07-10T14:38:00Z'),
+    userId: 'user-grace',
     userName: 'Grace Hopper',
     eventType: 'Partner node usage',
     detail: '6 runs',
@@ -96,6 +106,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-11',
     date: new Date('2026-07-10T07:26:00Z'),
+    userId: 'user-alan',
     userName: 'Alan Turing',
     eventType: 'Cloud workflow run',
     detail: '2 runs',
@@ -104,8 +115,9 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-12',
     date: new Date('2026-07-09T19:52:00Z'),
+    userId: null,
     userName: '',
-    eventType: 'Top-up',
+    eventType: 'Additional credits added',
     detail: '—',
     credits: 50000,
     credited: true
@@ -113,6 +125,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-13',
     date: new Date('2026-07-09T13:14:00Z'),
+    userId: 'user-katherine',
     userName: 'Katherine Johnson',
     eventType: 'Partner node usage',
     detail: '3 runs',
@@ -122,6 +135,7 @@ export const activityFixture: ActivityEvent[] = [
   {
     id: 'evt-14',
     date: new Date('2026-07-08T10:48:00Z'),
+    userId: 'user-ada',
     userName: 'Ada Lovelace',
     eventType: 'Cloud workflow run',
     detail: '4 runs',
