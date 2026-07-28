@@ -22,9 +22,10 @@ defineProps<{
       >
         {{ heading }}
       </h2>
-      <p class="mx-auto mt-4 max-w-2xl text-base text-primary-comfy-canvas/70">
-        {{ subheading }}
-      </p>
+      <p
+        class="mx-auto mt-4 max-w-2xl text-base text-primary-comfy-canvas/70"
+        v-html="subheading"
+      />
     </div>
 
     <ul
