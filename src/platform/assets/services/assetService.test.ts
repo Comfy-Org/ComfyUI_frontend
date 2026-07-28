@@ -555,6 +555,44 @@ describe(assetService.getAssetModels, () => {
     expect(models).toEqual([{ name: 'legacy.safetensors', pathIndex: 0 }])
   })
 
+  it('does not double-bucket an asset carrying both a model_type: tag and its bare-tag twin', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'mid-retag',
+          name: 'mid_retag.safetensors',
+          tags: ['models', 'model_type:checkpoints', 'checkpoints']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('checkpoints')
+
+    expect(models).toEqual([{ name: 'mid_retag.safetensors', pathIndex: 0 }])
+  })
+
+  it('does not cross-list a model_type-covered asset into an unrelated bare tag folder', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'mid-retag',
+          name: 'mid_retag.safetensors',
+          tags: ['models', 'model_type:checkpoints', 'loras']
+        })
+      ])
+    )
+
+    const [checkpoints, loras] = await Promise.all([
+      assetService.getAssetModels('checkpoints'),
+      assetService.getAssetModels('loras')
+    ])
+
+    expect(checkpoints).toEqual([
+      { name: 'mid_retag.safetensors', pathIndex: 0 }
+    ])
+    expect(loras).toEqual([])
+  })
+
   it('drops uncategorized model assets with a warning', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     fetchApiMock.mockResolvedValueOnce(
