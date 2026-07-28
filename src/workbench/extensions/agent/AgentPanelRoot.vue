@@ -91,6 +91,7 @@ const selectedNodes = computed<SelectedNode[]>(() =>
 const {
   staged: selectionTags,
   consume: consumeSelection,
+  dismissed: selectionDismissed,
   remove: removeSelectionTag,
   add: addSelectionTag
 } = useCanvasSelection({
@@ -252,6 +253,7 @@ function onWorkflowAdopted(
 const {
   sendMessage,
   stopTurn,
+  isSending,
   newChat,
   start,
   stop,
@@ -704,12 +706,14 @@ const coachStep: CoachStep = {
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   void applyDraft()
   // PM-124: an already-consumed selection stays staged-out of the chips, but
-  // the turn must still tell the agent what is selected right now.
+  // the turn must still tell the agent what is selected right now - unless the
+  // user dismissed every chip for this exact selection.
   const consumed = consumeSelection()
-  const nodeTags = consumed.length > 0 ? consumed : selectedNodes.value
+  const nodeTags =
+    consumed.length > 0 || selectionDismissed() ? consumed : selectedNodes.value
   useTelemetry()?.trackAgentMessageSent({
     attachment_count: attachments.length,
-    node_tag_count: nodeTags.length
+    node_tag_count: consumed.length
   })
   void sendMessage(text, attachments, nodeTags).then((ok) => {
     if (!ok) resetSnapshotGuard()
@@ -781,15 +785,24 @@ async function onFilesPicked(event: Event): Promise<void> {
 }
 
 function isAssetDrag(event: DragEvent): boolean {
-  const types = event.dataTransfer?.types ?? []
-  return types.includes(MIME_ASSET_INFO) || types.includes('text/uri-list')
+  // Bare text/uri-list matches any dragged hyperlink; only claim real asset
+  // cards, which always carry the asset-info payload.
+  return (event.dataTransfer?.types ?? []).includes(MIME_ASSET_INFO)
 }
 
 async function attachDroppedAsset(event: DragEvent): Promise<void> {
   const files = (await extractFilesFromDragEvent(event)).filter(
     (file) => hasImageType(file) || hasVideoType(file)
   )
-  if (files.length > 0) await attachment.addFiles(files)
+  if (files.length === 0) {
+    toast.add({
+      severity: 'warn',
+      detail: t('agent.assetNotAttachable'),
+      life: 5000
+    })
+    return
+  }
+  await attachment.addFiles(files)
 }
 
 function onPanelDragOver(event: DragEvent): void {
@@ -837,7 +850,7 @@ function onPanelDrop(event: DragEvent): void {
       :entries
       :user-name="userName"
       :streaming="isStreaming"
-      :submitting="status === 'thinking'"
+      :submitting="isSending || status === 'thinking'"
       :can-attach="true"
       :can-open-assets="!isBuilderMode"
       :is-maximized="agentPanelStore.isMaximized"
