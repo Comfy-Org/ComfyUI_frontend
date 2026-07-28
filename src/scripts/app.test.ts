@@ -29,6 +29,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import {
   createTestRootGraph,
   createTestSubgraph,
@@ -265,6 +266,25 @@ describe('ComfyApp', () => {
         'workflows/review.json'
       )
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+    })
+
+    it('preserves legacy partial execution calls from extensions', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+      const queueNodeIds = [createNodeExecutionId([1])]
+
+      await app.queuePrompt(0, 1, queueNodeIds)
+
+      expect(api.queuePrompt).toHaveBeenCalledWith(
+        0,
+        expect.anything(),
+        expect.objectContaining({
+          partialExecutionTargets: queueNodeIds
+        })
+      )
     })
 
     it('preserves a failed result when prompt errors include an empty node error record', async () => {

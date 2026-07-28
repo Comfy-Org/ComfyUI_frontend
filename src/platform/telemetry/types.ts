@@ -193,6 +193,10 @@ export interface WorkflowExecutionContext {
   subgraph_count: number
 }
 
+export interface WorkflowQueueIntent {
+  trigger_source?: ExecutionTriggerSource
+}
+
 export interface ExecutionOutcomeMetadata {
   startTime: number
   outcome: 'success' | 'failure'
@@ -1017,6 +1021,7 @@ export type ExecutionTriggerSource =
   | 'legacy_ui'
   | 'unknown'
   | 'linear'
+  | 'auto_queue'
 
 /**
  * Union type for all possible telemetry event properties

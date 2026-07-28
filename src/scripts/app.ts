@@ -30,7 +30,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
-import type { WorkflowOpenSource } from '@/platform/telemetry/types'
+import type {
+  WorkflowOpenSource,
+  WorkflowQueueIntent
+} from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -229,6 +232,15 @@ type Clipspace = {
   combinedIndex: number
 }
 
+/**
+ * Optional inputs to {@link ComfyApp.queuePrompt}. `intent` is telemetry
+ * attribution only and never affects what gets executed.
+ */
+export interface QueuePromptOptions {
+  queueNodeIds?: NodeExecutionId[]
+  intent?: WorkflowQueueIntent
+}
+
 export class ComfyApp {
   /**
    * List of entries to queue
@@ -238,6 +250,7 @@ export class ComfyApp {
     batchCount: number
     requestId: number
     queueNodeIds?: NodeExecutionId[]
+    workflowQueueIntent?: WorkflowQueueIntent
   }[] = []
   private nextQueueRequestId = 1
   /**
@@ -1626,11 +1639,31 @@ export class ComfyApp {
 
   async queuePrompt(
     number: number,
+    batchCount?: number,
+    options?: QueuePromptOptions
+  ): Promise<boolean>
+  async queuePrompt(
+    number: number,
+    batchCount: number,
+    queueNodeIds: NodeExecutionId[]
+  ): Promise<boolean>
+  async queuePrompt(
+    number: number,
     batchCount: number = 1,
-    queueNodeIds?: NodeExecutionId[]
+    optionsOrQueueNodeIds: QueuePromptOptions | NodeExecutionId[] = {}
   ): Promise<boolean> {
+    const options = Array.isArray(optionsOrQueueNodeIds)
+      ? { queueNodeIds: optionsOrQueueNodeIds }
+      : optionsOrQueueNodeIds
+    const { queueNodeIds, intent } = options
     const requestId = this.nextQueueRequestId++
-    this.queueItems.push({ number, batchCount, queueNodeIds, requestId })
+    this.queueItems.push({
+      number,
+      batchCount,
+      queueNodeIds,
+      requestId,
+      workflowQueueIntent: intent
+    })
     api.dispatchCustomEvent('promptQueueing', {
       requestId,
       batchCount
