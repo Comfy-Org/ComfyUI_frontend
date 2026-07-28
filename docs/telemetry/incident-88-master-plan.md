@@ -216,5 +216,5 @@ No code is included here — this is sequencing and scope only.
 ## Already shipped as of 2026-07-28
 
 - `Comfy-Org/ComfyUI_frontend#14111` (+ backports #14195/#14197/#14199) — frontend PostHog billing telemetry instrumentation.
-- `Comfy-Org/comfy-infra#454` — 6 new Datadog monitors (cancel/plan-transition success-rate anomaly detection, 3 legacy-rail failure alerts, 1 invite-email failure alert).
+- `Comfy-Org/comfy-infra#454` — OPEN, awaiting review (6 new Datadog monitors: cancel/plan-transition success-rate anomaly detection, 3 legacy-rail failure alerts, 1 invite-email failure alert). CI is green; blocked only on a required human approving review per branch protection.
 - `Comfy-Org/ComfyUI_frontend#14208` — ADR-0013 documenting the telemetry service split above.
