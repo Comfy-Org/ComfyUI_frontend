@@ -17,6 +17,8 @@ const env = vi.hoisted(() => {
     isDesktop: false,
     isLoggedIn: false,
     teamWorkspacesEnabled: false,
+    billingControlEnabled: false,
+    authenticatedConfigLoaded: false,
     userSecretsEnabled: false,
     isActiveSubscription: false,
     billingType: 'legacy' as 'legacy' | 'workspace'
@@ -50,6 +52,9 @@ vi.mock('@/composables/useFeatureFlags', () => ({
       get teamWorkspacesEnabled() {
         return env.state.teamWorkspacesEnabled
       },
+      get billingControlEnabled() {
+        return env.state.billingControlEnabled
+      },
       get userSecretsEnabled() {
         return env.state.userSecretsEnabled
       }
@@ -68,6 +73,10 @@ vi.mock('@/platform/distribution/types', () => ({
   get isDesktop() {
     return env.state.isDesktop
   }
+}))
+
+vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+  isAuthenticatedConfigLoaded: env.fakeRef('authenticatedConfigLoaded')
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -114,6 +123,8 @@ describe('useSettingUI', () => {
       isDesktop: false,
       isLoggedIn: false,
       teamWorkspacesEnabled: false,
+      billingControlEnabled: false,
+      authenticatedConfigLoaded: false,
       userSecretsEnabled: false,
       isActiveSubscription: false,
       billingType: 'legacy'
@@ -178,6 +189,78 @@ describe('useSettingUI', () => {
   it('gives defaultPanel precedence over scrollToSettingId', () => {
     const { defaultCategory } = useSettingUI('about', 'Comfy.Locale')
     expect(defaultCategory.value.key).toBe('about')
+  })
+
+  describe('billing-controlled workspace panels', () => {
+    beforeEach(() => {
+      Object.assign(env.state, {
+        isCloud: true,
+        isLoggedIn: true,
+        teamWorkspacesEnabled: true,
+        authenticatedConfigLoaded: true,
+        isActiveSubscription: true,
+        billingType: 'workspace'
+      })
+      window.__CONFIG__ = {
+        subscription_required: false
+      } as typeof window.__CONFIG__
+    })
+
+    it('keeps the legacy Workspace panel and standalone Credits when disabled', () => {
+      const { defaultCategory, findPanelByKey, navGroups } =
+        useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'Workspace' },
+        { id: 'credits', label: 'Credits' }
+      ])
+      expect(findPanelByKey('workspace')?.node.label).toBe('Workspace')
+      expect(findPanelByKey('workspace-members')).toBeNull()
+      expect(defaultCategory.value).toMatchObject({
+        key: 'workspace',
+        label: 'Workspace'
+      })
+    })
+
+    it('keeps the legacy Workspace panel until authenticated config loads', () => {
+      env.state.authenticatedConfigLoaded = false
+      env.state.billingControlEnabled = true
+
+      const { findPanelByKey, navGroups } = useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'Workspace' },
+        { id: 'credits', label: 'Credits' }
+      ])
+      expect(findPanelByKey('workspace')?.node.label).toBe('Workspace')
+      expect(findPanelByKey('workspace-members')).toBeNull()
+    })
+
+    it('shows only Plan & Credits and hides standalone Credits when enabled', () => {
+      env.state.billingControlEnabled = true
+      const { defaultCategory, findPanelByKey, navGroups } =
+        useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+      const planCreditsPanel = findPanelByKey('workspace')
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'PlanCredits' }
+      ])
+      expect(planCreditsPanel?.props).toEqual({ section: 'planCredits' })
+      expect(findPanelByKey('workspace-members')).toBeNull()
+      expect(defaultCategory.value).toMatchObject({
+        key: 'workspace',
+        label: 'PlanCredits'
+      })
+    })
   })
 
   describe('plan and credits navigation', () => {

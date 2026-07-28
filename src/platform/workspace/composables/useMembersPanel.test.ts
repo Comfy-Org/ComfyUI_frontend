@@ -251,6 +251,7 @@ const mockResendInvite = vi.fn()
 const mockShowRemoveMemberDialog = vi.fn()
 const mockShowRevokeInviteDialog = vi.fn()
 const mockShowChangeMemberRoleDialog = vi.fn()
+const mockShowSetMemberCreditLimitDialog = vi.fn()
 const mockShowSubscriptionDialog = vi.fn()
 const mockShowInviteMemberDialog = vi.fn()
 const mockShowInviteMemberUpsellDialog = vi.fn()
@@ -299,6 +300,7 @@ const {
       showPendingTab: true,
       showSearch: true,
       showRoleColumn: true,
+      showCreditsColumn: false,
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
@@ -401,14 +403,28 @@ vi.mock('@/services/dialogService', () => ({
     showRemoveMemberDialog: mockShowRemoveMemberDialog,
     showRevokeInviteDialog: mockShowRevokeInviteDialog,
     showChangeMemberRoleDialog: mockShowChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog: mockShowSetMemberCreditLimitDialog,
     showInviteMemberDialog: mockShowInviteMemberDialog,
     showInviteMemberUpsellDialog: mockShowInviteMemberUpsellDialog
+  })
+}))
+
+const mockBillingControlEnabled = vi.hoisted(() => ({ value: true }))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get billingControlEnabled() {
+        return mockBillingControlEnabled.value
+      }
+    }
   })
 }))
 
 describe('useMembersPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockBillingControlEnabled.value = true
     mockActiveWorkspace.value = { type: 'personal' }
     mockMembers.value = []
     mockPendingInvites.value = []
@@ -437,6 +453,7 @@ describe('useMembersPanel', () => {
       showPendingTab: true,
       showSearch: true,
       showRoleColumn: true,
+      showCreditsColumn: false,
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
@@ -497,6 +514,25 @@ describe('useMembersPanel', () => {
       expect(panel.uiConfig.value.showMembersList).toBe(true)
       expect(panel.uiConfig.value.showPendingTab).toBe(true)
       expect(panel.uiConfig.value.showRoleColumn).toBe(true)
+    })
+
+    it('preserves the credit column layout for a Team owner', async () => {
+      mockUiConfig.value = {
+        ...mockUiConfig.value,
+        showCreditsColumn: true,
+        membersGridCols: 'grid-cols-[38%_18%_30%_14%]',
+        headerGridCols: 'grid-cols-[38%_18%_30%_14%]'
+      }
+
+      const panel = await setup()
+
+      expect(panel.uiConfig.value.showCreditsColumn).toBe(true)
+      expect(panel.uiConfig.value.membersGridCols).toBe(
+        'grid-cols-[38%_18%_30%_14%]'
+      )
+      expect(panel.uiConfig.value.headerGridCols).toBe(
+        'grid-cols-[38%_18%_30%_14%]'
+      )
     })
 
     it('uses the single-user member layout for a personal plan', async () => {
@@ -665,6 +701,7 @@ describe('useMembersPanel', () => {
 
       expect(items.map((i) => i.label)).toEqual([
         'workspacePanel.members.actions.changeRole',
+        'workspacePanel.members.actions.setCreditLimit',
         'workspacePanel.members.actions.removeMember'
       ])
 
@@ -701,7 +738,7 @@ describe('useMembersPanel', () => {
     it('routes Remove member to the remove dialog', async () => {
       const panel = await setup()
       const member = createMember({ id: 'mem-9' })
-      const removeItem = panel.memberMenuItems(member)[1]
+      const removeItem = panel.memberMenuItems(member)[2]
 
       removeItem.command?.({
         originalEvent: new Event('click'),
@@ -709,6 +746,88 @@ describe('useMembersPanel', () => {
       })
 
       expect(mockShowRemoveMemberDialog).toHaveBeenCalledWith('mem-9')
+    })
+
+    it('opens the credit-limit dialog with the member usage and cap', async () => {
+      const panel = await setup()
+      const member = createMember({
+        id: 'mem-9',
+        name: 'Jane',
+        creditsUsedThisMonth: 645,
+        monthlyCreditLimit: 3000
+      })
+      const limitItem = panel.memberMenuItems(member)[1]
+
+      limitItem.command?.({
+        originalEvent: new Event('click'),
+        item: limitItem
+      })
+
+      expect(mockShowSetMemberCreditLimitDialog).toHaveBeenCalledWith({
+        memberId: 'mem-9',
+        memberName: 'Jane',
+        creditsUsed: 645,
+        currentLimit: 3000
+      })
+    })
+
+    it('preserves unavailable usage and limit values for the dialog', async () => {
+      const panel = await setup()
+      const member = createMember({ id: 'mem-9', name: 'Jane' })
+      const limitItem = panel.memberMenuItems(member)[1]
+
+      limitItem.command?.({
+        originalEvent: new Event('click'),
+        item: limitItem
+      })
+
+      expect(mockShowSetMemberCreditLimitDialog).toHaveBeenCalledWith({
+        memberId: 'mem-9',
+        memberName: 'Jane',
+        creditsUsed: undefined,
+        currentLimit: undefined
+      })
+    })
+
+    it('returns no actions without member-management permission', async () => {
+      mockWorkspaceRole.value = 'member'
+      const panel = await setup()
+
+      expect(panel.memberMenuItems(createMember())).toEqual([])
+    })
+
+    it('exposes only Set credit limit for the workspace creator', async () => {
+      mockOriginalOwnerId.value = 'creator-1'
+      const panel = await setup()
+      const items = panel.memberMenuItems(
+        createMember({ id: 'creator-1', role: 'owner' })
+      )
+
+      expect(items.map((item) => item.label)).toEqual([
+        'workspacePanel.members.actions.setCreditLimit'
+      ])
+    })
+
+    it('omits the credit-limit action when the flag is disabled', async () => {
+      mockBillingControlEnabled.value = false
+      const panel = await setup()
+
+      expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
+        [
+          'workspacePanel.members.actions.changeRole',
+          'workspacePanel.members.actions.removeMember'
+        ]
+      )
+    })
+
+    it('gives the creator no menu when the flag is disabled', async () => {
+      mockBillingControlEnabled.value = false
+      mockOriginalOwnerId.value = 'creator-1'
+      const panel = await setup()
+
+      expect(
+        panel.memberMenuItems(createMember({ id: 'creator-1', role: 'owner' }))
+      ).toEqual([])
     })
   })
 
