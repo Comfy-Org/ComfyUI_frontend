@@ -207,7 +207,7 @@ describe('MultiSelect', () => {
     await user.type(searchBox, 'query')
     await nextTick()
 
-    expect(document.activeElement).toBe(searchBox)
+    expect(searchBox).toHaveFocus()
     expect(searchBox).toHaveValue('query')
 
     unmount()
