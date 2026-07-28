@@ -5,12 +5,16 @@ import type {
   Rect,
   VirtualElement
 } from '@floating-ui/vue'
-import { useEventListener, useRafFn } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { computed, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
-import { coachmarkElements, isLaidOut } from './coachmarkRegistry'
+import {
+  coachmarkElements,
+  isLaidOut,
+  isMovingTarget
+} from './coachmarkRegistry'
 import type { CoachTarget } from './coachmarkRegistry'
 import type { CoachPlacement, CoachStep } from './onboardingTours'
 
@@ -89,11 +93,7 @@ export function useCoachmarkTarget(
     topInset.value = topSafeInset()
   })
 
-  /**
-   * A virtual target follows a camera that reports through no DOM event, so one
-   * loop samples it per frame and everything downstream reads that one sample —
-   * spotlight and card positioned from different samples drift apart on screen.
-   */
+  /** One sample feeds both card and spotlight, so they cannot drift apart. */
   const sampledRect = shallowRef(new DOMRect())
   const sampledTarget: VirtualElement = {
     getBoundingClientRect: () => sampledRect.value
@@ -113,19 +113,18 @@ export function useCoachmarkTarget(
     }
   )
 
-  const { pause: pauseSampling, resume: resumeSampling } = useRafFn(
-    () => {
-      const el = targetEl.value
-      if (!el) return
-      const { x, y, width, height } = el.getBoundingClientRect()
-      sampledRect.value = new DOMRect(x, y, width, height)
-      void update()
-    },
-    { immediate: false }
-  )
-  watchEffect(() =>
-    isVirtualTarget.value ? resumeSampling() : pauseSampling()
-  )
+  function sampleTarget(el: CoachTarget) {
+    const { x, y, width, height } = el.getBoundingClientRect()
+    sampledRect.value = new DOMRect(x, y, width, height)
+    void update()
+  }
+
+  watchEffect((onCleanup) => {
+    const el = targetEl.value
+    if (!el || !isVirtualTarget.value) return
+    sampleTarget(el)
+    if (isMovingTarget(el)) onCleanup(el.onMove(() => sampleTarget(el)))
+  })
 
   const targetRect = computed<DOMRect | null>(() => {
     const data = middlewareData.value.captureReference as
