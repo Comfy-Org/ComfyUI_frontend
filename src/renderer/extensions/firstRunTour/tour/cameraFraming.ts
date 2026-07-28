@@ -49,7 +49,7 @@ function prefersReducedMotion(): boolean {
 function fitInstantly(bounds: ReadOnlyRect) {
   const canvas = app.canvas
   const viewport = canvas?.canvas.getBoundingClientRect()
-  if (!canvas || !viewport?.width) return
+  if (!canvas || !viewport?.width || !viewport.height) return
   canvas.ds.fitToBounds(bounds, { zoom: focusFill(bounds, viewport) })
   canvas.setDirty(true, true)
 }
@@ -69,7 +69,7 @@ export async function frameNode(
   const canvas = app.canvas
   const node = canvas?.graph?.getNodeById(nodeId)
   const viewport = canvas?.canvas.getBoundingClientRect()
-  if (!canvas || !node || !viewport?.width) return
+  if (!canvas || !node || !viewport?.width || !viewport.height) return
 
   const bounds = node.boundingRect
 

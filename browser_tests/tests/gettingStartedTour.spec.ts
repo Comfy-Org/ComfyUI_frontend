@@ -5,7 +5,10 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 
+import type { PromptResponse } from '@comfyorg/ingest-types'
+
 import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
@@ -27,10 +30,15 @@ const CARD_TESTID_PREFIX = 'getting-started-card-'
 const TOUR_JOB_ID = 'first-run-tour-prompt'
 
 /** A prompt the queue accepts, so the walk does not depend on the backend's models. */
-const QUEUED_PROMPT = {
+const QUEUED_PROMPT: PromptResponse = {
   prompt_id: TOUR_JOB_ID,
   number: 1,
   node_errors: {}
+}
+
+const TOUR_FEATURE_FLAGS: RemoteConfig = {
+  onboarding_tour_enabled: true,
+  subscription_required: true
 }
 
 const ACTIVE_SUBSCRIPTION: CloudSubscriptionStatusResponse = {
@@ -81,12 +89,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
   test.beforeEach(async ({ page }) => {
     await page.route('**/api/features', (route) =>
-      route.fulfill(
-        jsonRoute({
-          onboarding_tour_enabled: true,
-          subscription_required: true
-        })
-      )
+      route.fulfill(jsonRoute(TOUR_FEATURE_FLAGS))
     )
     // Without this the toolbar offers Subscribe to Run, and the tour's paywall
     // guard consumes that click instead of running anything.
