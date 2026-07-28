@@ -165,7 +165,7 @@ interface SubscribeRequest {
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
-  checkout_invoice_payment?: boolean
+  use_checkout?: boolean
   /** Required for the per-credit Team plan; selects the slider stop. */
   team_credit_stop_id?: string
   billing_cycle?: SubscribeBillingCycle
@@ -176,7 +176,7 @@ interface SubscribeRequest {
 export interface SubscribeOptions {
   returnUrl?: string
   cancelUrl?: string
-  checkoutInvoicePayment?: boolean
+  useCheckout?: boolean
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
   confirmReactivation?: boolean
@@ -308,7 +308,7 @@ export interface CreateTopupResponse {
 }
 
 interface BillingOpCustomerAction {
-  type: 'pay_hosted_invoice' | 'pay_checkout_invoice'
+  type: 'pay_hosted_invoice' | 'open_checkout'
   url: string
 }
 
@@ -706,7 +706,7 @@ export const workspaceApi = {
           plan_slug: planSlug,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
-          checkout_invoice_payment: options.checkoutInvoicePayment,
+          use_checkout: options.useCheckout,
           team_credit_stop_id: options.teamCreditStopId,
           billing_cycle: options.billingCycle,
           confirm_reactivation: options.confirmReactivation

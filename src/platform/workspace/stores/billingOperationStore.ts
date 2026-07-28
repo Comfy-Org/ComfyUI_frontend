@@ -32,7 +32,7 @@ export interface StartOperationMetadata {
   cycle?: BillingCycle
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
-  hostedInvoiceReturnUrl?: string
+  checkoutReturnUrl?: string
   downgradeToPersonal?: {
     memberRemovalCount: number
     memberRemovalFailures: number
@@ -115,7 +115,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       checkoutType: metadata.checkoutType,
       paymentIntentSource: metadata.paymentIntentSource,
       downgradeToPersonal: metadata.downgradeToPersonal,
-      returnUrl: getSameOriginUrl(metadata.hostedInvoiceReturnUrl),
+      returnUrl: getSameOriginUrl(metadata.checkoutReturnUrl),
       paymentNavigationStarted: false
     }
 
@@ -178,7 +178,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
       if (
         (response.customer_action?.type === 'pay_hosted_invoice' ||
-          response.customer_action?.type === 'pay_checkout_invoice') &&
+          response.customer_action?.type === 'open_checkout') &&
         !currentOperation.paymentNavigationStarted &&
         currentOperation.returnUrl
       ) {

@@ -1285,7 +1285,7 @@ describe('useSubscriptionCheckout', () => {
         returnUrl: 'https://platform.comfy.org/payment/success',
         cancelUrl: 'https://platform.comfy.org/payment/failed',
         confirmReactivation: false,
-        checkoutInvoicePayment: true
+        useCheckout: true
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
@@ -1417,7 +1417,11 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleAddCreditCard()
 
       expect(mockStartOperation).toHaveBeenCalledWith('op-2', 'subscription', {
-        hostedInvoiceReturnUrl: 'http://localhost:3000/'
+        tier: 'standard',
+        cycle: 'yearly',
+        checkoutType: 'new',
+        paymentIntentSource: undefined,
+        checkoutReturnUrl: 'http://localhost:3000/'
       })
     })
 
@@ -1438,7 +1442,13 @@ describe('useSubscriptionCheckout', () => {
       expect(mockStartOperation).toHaveBeenCalledWith(
         'op-blocked',
         'subscription',
-        { hostedInvoiceReturnUrl: 'http://localhost:3000/' }
+        {
+          tier: 'standard',
+          cycle: 'yearly',
+          checkoutType: 'new',
+          paymentIntentSource: undefined,
+          checkoutReturnUrl: 'http://localhost:3000/'
+        }
       )
       openSpy.mockRestore()
     })
@@ -1465,7 +1475,7 @@ describe('useSubscriptionCheckout', () => {
           cycle: 'yearly',
           checkoutType: 'new',
           paymentIntentSource: undefined,
-          hostedInvoiceReturnUrl: 'http://localhost:3000/'
+          checkoutReturnUrl: 'http://localhost:3000/'
         }
       )
       expect(checkout.checkoutStep.value).toBe('success')
@@ -1494,7 +1504,7 @@ describe('useSubscriptionCheckout', () => {
           cycle: 'yearly',
           checkoutType: 'new',
           paymentIntentSource: undefined,
-          hostedInvoiceReturnUrl: 'http://localhost:3000/'
+          checkoutReturnUrl: 'http://localhost:3000/'
         }
       )
       expect(checkout.checkoutStep.value).toBe('success')
@@ -1522,7 +1532,7 @@ describe('useSubscriptionCheckout', () => {
           cycle: 'yearly',
           checkoutType: 'new',
           paymentIntentSource: undefined,
-          hostedInvoiceReturnUrl: 'http://localhost:3000/'
+          checkoutReturnUrl: 'http://localhost:3000/'
         }
       )
       expect(checkout.checkoutStep.value).toBe('preview')

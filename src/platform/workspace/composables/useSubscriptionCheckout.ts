@@ -432,7 +432,7 @@ export function useSubscriptionCheckout(
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
         confirmReactivation,
-        checkoutInvoicePayment: true
+        useCheckout: true
       })
 
       if (response) {
@@ -551,7 +551,7 @@ export function useSubscriptionCheckout(
         cycle: context.cycle,
         checkoutType: context.checkoutType,
         paymentIntentSource,
-        hostedInvoiceReturnUrl: globalThis.location.href
+        checkoutReturnUrl: globalThis.location.href
       }
     )
     if (operation.status === 'succeeded') checkoutStep.value = 'success'

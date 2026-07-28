@@ -191,7 +191,7 @@ describe('billingOperationStore', () => {
 
       const store = useBillingOperationStore()
       void store.startOperation('op-hosted', 'subscription', {
-        hostedInvoiceReturnUrl: globalThis.location.href
+        checkoutReturnUrl: globalThis.location.href
       })
       await vi.advanceTimersByTimeAsync(0)
 
@@ -208,12 +208,12 @@ describe('billingOperationStore', () => {
       expect(persisted).not.toContain('bearer-token')
     })
 
-    it('persists recovery context before navigating to exact-invoice Checkout', async () => {
+    it('persists recovery context before opening Checkout', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-checkout',
         status: 'pending',
         customer_action: {
-          type: 'pay_checkout_invoice',
+          type: 'open_checkout',
           url: 'https://checkout.stripe.com/c/pay/cs_test_exact'
         },
         started_at: new Date().toISOString()
@@ -224,7 +224,7 @@ describe('billingOperationStore', () => {
       const store = useBillingOperationStore()
 
       void store.startOperation('op-checkout', 'subscription', {
-        hostedInvoiceReturnUrl: globalThis.location.href
+        checkoutReturnUrl: globalThis.location.href
       })
       await vi.advanceTimersByTimeAsync(0)
 
@@ -262,7 +262,7 @@ describe('billingOperationStore', () => {
 
       const store = useBillingOperationStore()
       const terminal = store.startOperation('op-return', 'subscription', {
-        hostedInvoiceReturnUrl: globalThis.location.href
+        checkoutReturnUrl: globalThis.location.href
       })
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1500)
@@ -293,7 +293,7 @@ describe('billingOperationStore', () => {
 
       const store = useBillingOperationStore()
       void store.startOperation('op-storage-failure', 'subscription', {
-        hostedInvoiceReturnUrl: globalThis.location.href
+        checkoutReturnUrl: globalThis.location.href
       })
       await vi.advanceTimersByTimeAsync(0)
 
@@ -391,7 +391,14 @@ describe('billingOperationStore', () => {
       })
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'subscription_checkout',
+          stage: 'succeeded',
+          outcome: 'success',
+          billing_op_id: 'op-single-flight'
+        })
+      )
       expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
     })
   })
