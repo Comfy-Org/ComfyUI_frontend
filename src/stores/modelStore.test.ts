@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -228,6 +228,69 @@ describe('useModelStore', () => {
       expect(api.getModels).not.toHaveBeenCalled()
     })
 
+    it('keeps the visible tree until the reload commits (double-buffered)', async () => {
+      enableMocks(true)
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+
+      let resolveReload!: (value: { name: string; pathIndex: number }[]) => void
+      vi.mocked(assetService.getAssetModels).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveReload = resolve
+        })
+      )
+      const reload = store.refresh()
+      await vi.waitFor(() => {
+        expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
+      })
+
+      // The in-flight reload has not blanked the visible folder.
+      const visible = store.modelFolders.find(
+        (f) => f.directory === 'checkpoints'
+      )!
+      expect(visible.state).toBe(ResourceState.Loaded)
+      expect(visible.models['0/sdxl.safetensors']).toBeDefined()
+
+      resolveReload([{ name: 'fresh.safetensors', pathIndex: 0 }])
+      await expect(reload).resolves.toBe(true)
+      const committed = store.modelFolders.find(
+        (f) => f.directory === 'checkpoints'
+      )!
+      expect(committed.models['0/fresh.safetensors']).toBeDefined()
+      expect(committed.models['0/sdxl.safetensors']).toBeUndefined()
+    })
+
+    it('discards a reload superseded while its folder contents loaded', async () => {
+      enableMocks(true)
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+
+      let resolveSlow!: (value: { name: string; pathIndex: number }[]) => void
+      vi.mocked(assetService.getAssetModels).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSlow = resolve
+        })
+      )
+      const slowReload = store.refresh()
+      await vi.waitFor(() => {
+        expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
+      })
+
+      // A newer structure load commits while the reload's contents load.
+      vi.mocked(api.getModelFolders).mockResolvedValueOnce([
+        { name: 'fresh-folder', folders: ['/f'] }
+      ])
+      await store.loadModelFolders()
+
+      resolveSlow([{ name: 'stale.safetensors', pathIndex: 0 }])
+      await expect(slowReload).resolves.toBe(false)
+      expect(store.modelFolders.map((f) => f.directory)).toEqual([
+        'fresh-folder'
+      ])
+    })
+
     it('kicks off a backend scan when models come from the asset API', async () => {
       enableMocks(true)
       store = useModelStore()
@@ -422,6 +485,23 @@ describe('useModelStore', () => {
   })
 
   describe('scan fast-phase completion', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    function getScanCallback() {
+      return vi.mocked(assetService.onModelsScanned).mock.calls[0]?.[0]
+    }
+
+    /** Runs the debounced post-scan reload to completion. */
+    async function flushScanReload() {
+      await vi.advanceTimersByTimeAsync(1000)
+    }
+
     it('re-loads folders whose eager load was still in flight when the reload fired', async () => {
       enableMocks(true)
       store = useModelStore()
@@ -436,9 +516,8 @@ describe('useModelStore', () => {
       )
       const eagerLoad = store.getLoadedModelFolder('checkpoints')
 
-      const scanCallback = vi.mocked(assetService.onModelsScanned).mock
-        .calls[0]?.[0]
-      await scanCallback!()
+      await getScanCallback()!()
+      await flushScanReload()
 
       // The rebuilt folder must have been re-loaded, not left uninitialized
       // while the original request finishes into a detached folder object.
@@ -460,35 +539,62 @@ describe('useModelStore', () => {
       await store.getLoadedModelFolder('checkpoints')
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
 
-      const scanCallback = vi.mocked(assetService.onModelsScanned).mock
-        .calls[0]?.[0]
+      const scanCallback = getScanCallback()
       expect(scanCallback).toBeDefined()
       await scanCallback!()
-      await vi.waitFor(() => {
-        expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
-      })
+      await flushScanReload()
 
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
       expect(assetService.invalidateModelBuckets).toHaveBeenCalled()
       expect(assetService.seedModelAssets).not.toHaveBeenCalled()
+    })
+
+    it('coalesces a burst of scan events into a single reload', async () => {
+      enableMocks(true)
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
+
+      const scanCallback = getScanCallback()!
+      await scanCallback()
+      await scanCallback()
+      await scanCallback()
+      await flushScanReload()
+
+      expect(api.getModelFolders).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
+    })
+
+    it('skips the reload while nothing has consumed model data', async () => {
+      enableMocks(true)
+      store = useModelStore()
+
+      await getScanCallback()!()
+      await flushScanReload()
+
+      // The bucket cache is still dropped so the eventual first read is
+      // fresh, but no background walk runs for an unopened library.
+      expect(assetService.invalidateModelBuckets).toHaveBeenCalled()
+      expect(api.getModelFolders).not.toHaveBeenCalled()
     })
 
     it('logs instead of rejecting when the post-scan reload fails', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       enableMocks(true)
+      store = useModelStore()
+      await store.loadModels()
       vi.mocked(api.getModelFolders).mockRejectedValue(
         new Error('transient network failure')
       )
-      store = useModelStore()
-      const scanCallback = vi.mocked(assetService.onModelsScanned).mock
-        .calls[0]?.[0]
 
-      await scanCallback!()
-      await vi.waitFor(() => {
-        expect(error).toHaveBeenCalledWith(
-          expect.stringContaining('reload'),
-          expect.any(Error)
-        )
-      })
+      await getScanCallback()!()
+      await flushScanReload()
+
+      expect(error).toHaveBeenCalledWith(
+        expect.stringContaining('reload'),
+        expect.any(Error)
+      )
       error.mockRestore()
     })
   })

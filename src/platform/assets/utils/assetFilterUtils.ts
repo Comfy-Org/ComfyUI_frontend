@@ -33,7 +33,9 @@ export function filterByBaseModels(models: string[] | Set<string>) {
 export function filterByOwnership(ownership: OwnershipOption) {
   return (asset: AssetItem) => {
     if (ownership === 'all') return true
-    if (ownership === 'my-models') return asset.is_immutable === false
+    // is_immutable is optional; an asset omitting it counts as owned so it
+    // never vanishes from both ownership views.
+    if (ownership === 'my-models') return asset.is_immutable !== true
     if (ownership === 'public-models') return asset.is_immutable === true
     return true
   }
@@ -44,8 +46,10 @@ export function filterItemByOwnership<T extends { is_immutable?: boolean }>(
   ownership: OwnershipOption
 ): T[] {
   if (ownership === 'all') return items
-  const isPublic = ownership === 'public-models'
-  return items.filter((item) => item.is_immutable === isPublic)
+  if (ownership === 'public-models') {
+    return items.filter((item) => item.is_immutable === true)
+  }
+  return items.filter((item) => item.is_immutable !== true)
 }
 
 export function filterItemByBaseModels<T extends { base_models?: string[] }>(

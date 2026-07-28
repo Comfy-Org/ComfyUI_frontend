@@ -1,3 +1,4 @@
+import { debounce } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, onScopeDispose, ref } from 'vue'
 
@@ -323,24 +324,36 @@ export const useModelStore = defineStore('models', () => {
   let modelFoldersRequestId = 0
 
   /**
-   * Loads the model folders from the server.
+   * Whether anything has consumed this store's model data (sidebar loads,
+   * folder refreshes). The boot-registered scan subscription uses this to
+   * skip background reloads nothing is displaying.
+   */
+  let modelDataConsumed = false
+
+  interface PreparedModelFolders {
+    requestId: number
+    names: string[]
+    folders: Record<string, ModelFolder>
+  }
+
+  /**
+   * Fetches the folder structure and builds a fresh, uncommitted folder map.
    *
    * The folder list (and its registration order) always comes from
    * `/experiment/models`, the source of truth for which model folders exist;
    * only the per-folder contents differ between the asset API and legacy paths.
    * Concurrent loads (manual refresh racing the scan-complete reload) commit
-   * only the newest request so a slow stale response cannot overwrite a
-   * fresher folder structure.
+   * only the newest request, so returns null when superseded — a slow stale
+   * response cannot overwrite a fresher folder structure.
    */
-  async function loadModelFolders(): Promise<boolean> {
+  async function prepareModelFolders(): Promise<PreparedModelFolders | null> {
     const requestId = ++modelFoldersRequestId
     const resData = await api.getModelFolders()
-    if (requestId !== modelFoldersRequestId) return false
-    modelFolderNames.value = resData.map((folder) => folder.name)
-    modelFolderByName.value = {}
+    if (requestId !== modelFoldersRequestId) return null
     const getModelsFunc = createGetModelsFunc()
+    const folders: Record<string, ModelFolder> = {}
     for (const folder of resData) {
-      modelFolderByName.value[folder.name] = new ModelFolder(
+      folders[folder.name] = new ModelFolder(
         folder.name,
         getModelsFunc,
         // Display filtering applies to the asset walk only; the legacy
@@ -348,12 +361,26 @@ export const useModelStore = defineStore('models', () => {
         usesAssetApi() ? effectiveModelExtensions(folder.extensions) : []
       )
     }
+    return { requestId, names: resData.map((folder) => folder.name), folders }
+  }
+
+  function commitModelFolders({ names, folders }: PreparedModelFolders): void {
+    modelFolderNames.value = names
+    modelFolderByName.value = folders
+  }
+
+  /** Loads the model folder structure from the server; false when superseded. */
+  async function loadModelFolders(): Promise<boolean> {
+    const prepared = await prepareModelFolders()
+    if (!prepared) return false
+    commitModelFolders(prepared)
     return true
   }
 
   async function getLoadedModelFolder(
     folderName: string
   ): Promise<ModelFolder | null> {
+    modelDataConsumed = true
     const folder = modelFolderByName.value[folderName]
     return folder ? await folder.load() : null
   }
@@ -365,6 +392,7 @@ export const useModelStore = defineStore('models', () => {
    * empty folder list would silently load nothing.
    */
   async function loadModels() {
+    modelDataConsumed = true
     // A load superseded by a newer concurrent one commits nothing, which
     // would leave the folder list empty and silently load no models; retry
     // until a load of ours commits (even a genuinely empty result) or a
@@ -386,6 +414,7 @@ export const useModelStore = defineStore('models', () => {
   const folderRefreshIds = new Map<string, number>()
 
   async function refreshModelFolder(folderName: string) {
+    modelDataConsumed = true
     assetService.invalidateModelBuckets()
     if (!(folderName in modelFolderByName.value)) {
       await refresh()
@@ -415,9 +444,13 @@ export const useModelStore = defineStore('models', () => {
   /**
    * Re-fetches the folder structure and re-loads any folder whose contents
    * had previously been loaded, picking up server-side changes without
-   * losing the currently-visible contents.
+   * losing the currently-visible contents. Double-buffered: the new
+   * structure loads its contents off-screen and swaps in whole, so the
+   * visible tree never blanks to uninitialized folders mid-reload. Returns
+   * false without committing when a newer concurrent load superseded this
+   * one — the winning load populates the fresh data.
    */
-  async function reloadModels() {
+  async function reloadModels(): Promise<boolean> {
     assetService.invalidateModelBuckets()
     // Loading counts as previously loaded: a scan-complete reload can land
     // while the eager load is still in flight, and replacing those folder
@@ -427,12 +460,18 @@ export const useModelStore = defineStore('models', () => {
     const previouslyLoaded = modelFolders.value
       .filter((folder) => folder.state !== ResourceState.Uninitialized)
       .map((folder) => folder.directory)
-    await loadModelFolders()
+    const prepared = await prepareModelFolders()
+    if (!prepared) return false
     await Promise.all(
       previouslyLoaded
-        .filter((name) => name in modelFolderByName.value)
-        .map((name) => modelFolderByName.value[name].load())
+        .filter((name) => name in prepared.folders)
+        .map((name) => prepared.folders[name].load())
     )
+    // Re-check before the swap: a newer request may have started while the
+    // off-screen contents loaded.
+    if (prepared.requestId !== modelFoldersRequestId) return false
+    commitModelFolders(prepared)
+    return true
   }
 
   /**
@@ -456,21 +495,42 @@ export const useModelStore = defineStore('models', () => {
    * rescan and immediately re-loads the currently known server state; the
    * scan completion subscription below re-loads again with whatever the
    * scan discovered. The scan is deliberately not awaited so it runs
-   * concurrently with the reload.
+   * concurrently with the reload. False means a newer concurrent load
+   * superseded this one, not a failure.
    */
-  async function refresh() {
+  async function refresh(): Promise<boolean> {
+    modelDataConsumed = true
     void requestModelScan()
-    await reloadModels()
+    return await reloadModels()
   }
 
-  const unsubscribeModelsScanned = assetService.onModelsScanned(async () => {
+  /**
+   * Scan completions arrive as one event per scanned root and can land in
+   * bursts; coalesce them into one trailing reload instead of one full
+   * library walk per event.
+   */
+  const SCAN_RELOAD_DEBOUNCE_MS = 500
+
+  const reloadAfterScan = debounce(async () => {
     try {
       await reloadModels()
     } catch (error) {
       console.error('Failed to reload the model library after a scan', error)
     }
+  }, SCAN_RELOAD_DEBOUNCE_MS)
+
+  const unsubscribeModelsScanned = assetService.onModelsScanned(() => {
+    // A scan changes bucket contents even when no UI has read this store
+    // yet; drop the cache so the eventual first read walks fresh data, but
+    // skip the reload nothing is displaying.
+    assetService.invalidateModelBuckets()
+    if (!modelDataConsumed) return
+    reloadAfterScan()
   })
-  onScopeDispose(unsubscribeModelsScanned)
+  onScopeDispose(() => {
+    reloadAfterScan.cancel()
+    unsubscribeModelsScanned()
+  })
 
   return {
     models,

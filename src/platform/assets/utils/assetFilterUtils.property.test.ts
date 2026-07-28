@@ -16,7 +16,7 @@ const arbAssetItem: fc.Arbitrary<AssetItem> = fc.record({
   id: fc.uuid(),
   name: fc.stringMatching(/^[a-z0-9_-]{1,12}\.[a-z]{2,6}$/),
   tags: fc.array(fc.stringMatching(/^[a-z0-9/]{1,15}$/), { maxLength: 5 }),
-  is_immutable: fc.boolean(),
+  is_immutable: fc.option(fc.boolean(), { nil: undefined }),
   metadata: fc.option(
     fc.record({
       base_model: fc.array(fc.stringMatching(/^[A-Z0-9.]{1,8}$/), {
@@ -112,7 +112,7 @@ describe('assetFilterUtils properties', () => {
   it('filterItemByOwnership result is a subset of the input', () => {
     const arbItem = fc.record({
       id: fc.uuid(),
-      is_immutable: fc.boolean()
+      is_immutable: fc.option(fc.boolean(), { nil: undefined })
     })
 
     fc.assert(
@@ -133,7 +133,7 @@ describe('assetFilterUtils properties', () => {
   it('filterItemByOwnership("all") returns all items', () => {
     const arbItem = fc.record({
       id: fc.uuid(),
-      is_immutable: fc.boolean()
+      is_immutable: fc.option(fc.boolean(), { nil: undefined })
     })
 
     fc.assert(

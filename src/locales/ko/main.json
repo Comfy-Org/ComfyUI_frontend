@@ -2099,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "최소 한 개",
       "connectAtLeastOne": "사용자가 실행 후 결과를 볼 수 있도록 {atLeastOne}개의 출력 노드를 연결하세요.",
+      "descriptionPlaceholder": "더블 클릭하여 설명 추가",
       "noOutputs": "아직 출력이 추가되지 않았습니다",
       "outputExamples": "예시: '이미지 저장' 또는 '비디오 저장'",
       "outputs": "출력",
@@ -2892,6 +2893,7 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "마스크",
     "merging": "병합",
     "mochi": "mochi",
@@ -3512,6 +3514,7 @@
     "Load 3D": "3D 불러오기",
     "Locale": "언어 설정",
     "Mask Editor": "마스크 편집기",
+    "Members": "멤버",
     "Menu": "메뉴",
     "ModelLibrary": "모델 라이브러리",
     "Node": "노드",
@@ -3874,6 +3877,7 @@
     "freeTier": {
       "description": "무료 플랜에는 Comfy Cloud를 체험할 수 있도록 매월 {credits} 크레딧이 포함되어 있습니다.",
       "descriptionGeneric": "무료 플랜에는 Comfy Cloud를 체험할 수 있는 월간 크레딧이 포함되어 있습니다.",
+      "descriptionQuota": "무료 플랜에는 Comfy Cloud를 시작할 수 있도록 {runs}회의 실행이 포함되어 있습니다 — 카드가 필요하지 않습니다.",
       "nextRefresh": "크레딧은 {date}에 새로 고침됩니다.",
       "outOfCredits": {
         "subtitle": "충전 및 추가 혜택을 위해 구독하세요",
@@ -4406,6 +4410,24 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "크레딧",
+        "date": "날짜",
+        "eventDetails": "이벤트 세부정보",
+        "eventType": "이벤트 유형",
+        "user": "사용자"
+      },
+      "empty": "아직 활동이 없습니다.",
+      "fullActivity": "전체 활동",
+      "hoverCard": {
+        "lastActivity": "최근 활동",
+        "partnerNodeUsed": "파트너 노드 사용",
+        "totalCreditsUsed": "총 사용 크레딧"
+      },
+      "perUserHint": "사용자별 총 사용량을 찾고 계신가요?",
+      "seeMembers": "멤버 보기"
+    },
     "billingStatus": {
       "ending": {
         "body": "그때까지 멤버들은 전체 접근 권한을 유지합니다. 공유 크레딧과 좌석을 유지하려면 플랜을 재활성화하세요.",
@@ -4493,14 +4515,31 @@
         "cancelInvite": "초대 취소",
         "changeRole": "역할 변경",
         "removeMember": "멤버 제거",
-        "resendInvite": "초대 다시 보내기"
+        "resendInvite": "초대 다시 보내기",
+        "setCreditLimit": "크레딧 한도 설정"
+      },
+      "activity": {
+        "daysAgo": "{count}일 전",
+        "hoursAgo": "{n}시간 전",
+        "justNow": "방금 전",
+        "minutesAgo": "{n}분 전"
       },
       "columns": {
+        "creditsUsed": "월별 크레딧",
         "expiryDate": "만료 날짜",
         "inviteDate": "초대 날짜",
         "role": "역할"
       },
       "contactUs": "문의하기",
+      "creditLimitDialog": {
+        "description": "이 한도에 도달하면 워크플로우 실행이 불가능합니다.",
+        "invalidLimit": "0보다 큰 크레딧 한도를 입력하세요.",
+        "limitOption": "월별 크레딧 사용 한도:",
+        "noLimit": "제한 없음",
+        "title": "{name}의 월별 크레딧 한도 설정",
+        "update": "한도 업데이트",
+        "warning": "이 사용자는 이미 {credits} 크레딧을 사용했습니다. 한도를 현재 사용량 이하로 설정하면 다음 달까지 추가 실행이 불가합니다."
+      },
       "header": "멤버",
       "membersCount": "{count}/50 멤버",
       "needMoreMembers": "더 많은 멤버가 필요하신가요?",
@@ -4523,6 +4562,12 @@
       "deleteWorkspaceDisabledTooltip": "먼저 워크스페이스의 활성 구독을 취소하세요",
       "editWorkspace": "워크스페이스 정보 수정",
       "leaveWorkspace": "워크스페이스 나가기"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "활동",
+        "overview": "크레딧"
+      }
     },
     "removeMemberDialog": {
       "error": "멤버 제거에 실패했습니다",
