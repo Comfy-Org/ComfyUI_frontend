@@ -905,6 +905,8 @@
       "filterMediaType": "Media type",
       "filterDate": "Date",
       "filterGroupAttribute": "Attribute",
+      "filterBy": "Filter by...",
+      "filterNoMatches": "No matches",
       "dateAll": "All time",
       "dateToday": "Today",
       "datePastWeek": "Past 7 days",
