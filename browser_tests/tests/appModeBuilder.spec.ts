@@ -2,7 +2,6 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
 test.describe('App mode builder selection', () => {
@@ -69,7 +68,12 @@ test.describe('App mode builder selection', () => {
       }
     })
     await comfyPage.runButton.click()
-    await dismissErrorOverlay(comfyPage)
+
+    // The error ring is the user-visible signal that the store took the error;
+    // waiting on it keeps the builder assertions below from racing the response.
+    await expect(
+      comfyPage.vueNodes.getNodeInnerWrapper(String(checkpointLoader.id))
+    ).toHaveClass(/ring-destructive-background/)
 
     const items = comfyPage.appMode.select.inputItems
     await comfyPage.appMode.enterBuilder()
