@@ -116,7 +116,13 @@ jobs:
     # + save/reload shard in parallel - they queue nothing; auto-run stays
     # serial), or per-run instances (open item 7) which make row sharding
     # safe. Until one lands, this job cannot be a required check.
-    timeout-minutes: 150
+    # 360 is GitHub's hosted-runner hard maximum - there is no knob past it.
+    # Raised to the wall so ONE complete run can produce the timing map that
+    # sizes the tier split; the ceiling also remains the fuse that stops a
+    # hung pack (non-interruptible loops exist in the corpus) from squatting
+    # on the one shared instance all day. A multi-hour job is calibration
+    # only, never a required gate.
+    timeout-minutes: 360
     permissions:
       contents: read
     steps:
