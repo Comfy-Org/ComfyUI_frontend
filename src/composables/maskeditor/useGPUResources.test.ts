@@ -205,7 +205,7 @@ describe('gpuRender', () => {
     await expect(gpuDrawPoint({ x: 10, y: 20 })).resolves.toBeUndefined()
   })
 
-  it('uses full coverage for each GPU stroke sample', async () => {
+  it('uses full coverage for GPU stroke paths', async () => {
     vi.stubGlobal('GPUTextureUsage', {
       TEXTURE_BINDING: 0x0004,
       STORAGE_BINDING: 0x0008,
@@ -243,6 +243,14 @@ describe('gpuRender', () => {
     const resources = setup()
     await resources.initGPUResources()
     resources.gpuRender([{ x: 2, y: 2 }])
+
+    expect(mockRenderer.renderStrokeToAccumulator).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ coverage: 1 })
+    )
+
+    mockRenderer.renderStrokeToAccumulator.mockClear()
+    await resources.gpuDrawPoint({ x: 2, y: 2 })
 
     expect(mockRenderer.renderStrokeToAccumulator).toHaveBeenCalledWith(
       expect.any(Array),
