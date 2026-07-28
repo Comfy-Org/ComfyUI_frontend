@@ -970,6 +970,28 @@ export type ResubscribeRequest = {
 }
 
 /**
+ * Credentials the Churnkey embed requires to launch the cancel flow.
+ * `auth_hash` is hex-encoded HMAC-SHA256 of `customer_id` signed with the
+ * server's CHURNKEY_HMAC_SECRET; it is bound to that single customer ID
+ * and must not be reused for other customers.
+ *
+ */
+export type ChurnkeyAuthResponse = {
+  /**
+   * Hex-encoded HMAC-SHA256(customer_id, CHURNKEY_HMAC_SECRET)
+   */
+  auth_hash: string
+  /**
+   * Stripe customer ID for the workspace
+   */
+  customer_id: string
+  /**
+   * Churnkey environment matching the configured app
+   */
+  mode: 'live' | 'test' | 'sandbox'
+}
+
+/**
  * Response after successfully cancelling a subscription.
  */
 export type CancelSubscriptionResponse = {

@@ -68,6 +68,7 @@ export type {
   CheckHubUsernameErrors,
   CheckHubUsernameResponse,
   CheckHubUsernameResponses,
+  ChurnkeyAuthResponse,
   ClientOptions,
   CreateAssetData,
   CreateAssetDownloadData,

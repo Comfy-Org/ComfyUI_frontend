@@ -1,6 +1,5 @@
+import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { ChurnkeyAuthResponse } from './churnkeyAuthSchema'
 
 import type { ChurnkeyInitConfig } from './types'
 

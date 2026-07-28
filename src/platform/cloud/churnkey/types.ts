@@ -1,4 +1,4 @@
-import type { ChurnkeyAuthResponse } from './churnkeyAuthSchema'
+import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
 
 type ChurnkeyMode = ChurnkeyAuthResponse['mode']
 

@@ -1,5 +1,6 @@
+import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
+
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { ChurnkeyAuthResponse } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { toError } from '@/utils/errorUtil'
 import { createScriptLoader } from '@/utils/loadExternalScript'
