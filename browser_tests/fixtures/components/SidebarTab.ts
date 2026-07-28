@@ -309,7 +309,9 @@ export class AssetsSidebarTab extends SidebarTab {
 
   // --- View mode ---
   public readonly listViewOption: Locator
-  public readonly gridViewOption: Locator
+  public readonly gridSmallOption: Locator
+  public readonly gridLargeOption: Locator
+  public readonly gridItems: Locator
 
   // --- Sort options (cloud-only, shown inside settings popover) ---
   public readonly sortNewestFirst: Locator
@@ -355,7 +357,9 @@ export class AssetsSidebarTab extends SidebarTab {
     this.filterAudioCheckbox = page.getByRole('checkbox', { name: 'Audio' })
     this.filter3DCheckbox = page.getByRole('checkbox', { name: '3D' })
     this.listViewOption = page.getByText('List view')
-    this.gridViewOption = page.getByText('Grid view')
+    this.gridSmallOption = page.getByText('Grid (small)')
+    this.gridLargeOption = page.getByText('Grid (large)')
+    this.gridItems = page.locator('[data-virtual-grid-item]')
     this.sortNewestFirst = page.getByText('Newest first')
     this.sortOldestFirst = page.getByText('Oldest first')
     this.sortLongestFirst = page.getByText('Generation time (longest first)')
@@ -391,6 +395,12 @@ export class AssetsSidebarTab extends SidebarTab {
 
   getAssetCardByName(name: string) {
     return this.assetCards.filter({ hasText: name })
+  }
+
+  async getFirstGridItemWidth() {
+    return await this.gridItems.first().evaluate((element) => {
+      return element.getBoundingClientRect().width
+    })
   }
 
   contextMenuItem(label: string) {
@@ -436,7 +446,8 @@ export class AssetsSidebarTab extends SidebarTab {
     await this.settingsButton.click()
     // Wait for popover content to render
     await this.listViewOption
-      .or(this.gridViewOption)
+      .or(this.gridSmallOption)
+      .or(this.gridLargeOption)
       .first()
       .waitFor({ state: 'visible', timeout: 3000 })
   }

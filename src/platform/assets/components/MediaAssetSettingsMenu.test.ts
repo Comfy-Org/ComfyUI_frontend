@@ -5,10 +5,12 @@ import { defineComponent, ref } from 'vue'
 
 import MediaAssetSettingsMenu from '@/platform/assets/components/MediaAssetSettingsMenu.vue'
 import type { SortBy } from '@/platform/assets/components/MediaAssetSettingsMenu.vue'
+import type { MediaAssetViewMode } from '@/platform/assets/components/mediaAssetViewOptions'
 
 const KEYS = {
   list: 'sideToolbar.queueProgressOverlay.viewList',
-  grid: 'sideToolbar.queueProgressOverlay.viewGrid',
+  gridSmall: 'sideToolbar.mediaAssets.viewGridSmall',
+  grid: 'sideToolbar.mediaAssets.viewGridLarge',
   newest: 'sideToolbar.mediaAssets.sortNewestFirst',
   oldest: 'sideToolbar.mediaAssets.sortOldestFirst',
   longest: 'sideToolbar.mediaAssets.sortLongestFirst',
@@ -16,14 +18,14 @@ const KEYS = {
 } as const
 
 interface MountOptions {
-  viewMode?: 'list' | 'grid'
+  viewMode?: MediaAssetViewMode
   sortBy?: SortBy
   showSortOptions?: boolean
   showGenerationTimeSort?: boolean
 }
 
 function mountWithModels(options: MountOptions = {}) {
-  const viewMode = ref<'list' | 'grid'>(options.viewMode ?? 'list')
+  const viewMode = ref<MediaAssetViewMode>(options.viewMode ?? 'list')
   const sortBy = ref<SortBy>(options.sortBy ?? 'newest')
 
   const Host = defineComponent({
@@ -62,17 +64,24 @@ function getButton(label: string): HTMLElement {
 
 describe('MediaAssetSettingsMenu', () => {
   describe('view-mode options (always visible)', () => {
-    it('renders both list and grid view options', () => {
+    it('renders list and both grid view options', () => {
       mountWithModels()
       expect(getButton(KEYS.list)).toBeTruthy()
+      expect(getButton(KEYS.gridSmall)).toBeTruthy()
       expect(getButton(KEYS.grid)).toBeTruthy()
     })
 
-    it('updates the v-model:viewMode when an option is clicked', async () => {
-      const { viewMode, user } = mountWithModels({ viewMode: 'list' })
-      await user.click(getButton(KEYS.grid))
-      expect(viewMode.value).toBe('grid')
-    })
+    it.for([
+      { label: KEYS.gridSmall, expected: 'grid-small' },
+      { label: KEYS.grid, expected: 'grid' }
+    ] as const)(
+      'updates the v-model:viewMode to $expected when clicked',
+      async ({ label, expected }) => {
+        const { viewMode, user } = mountWithModels({ viewMode: 'list' })
+        await user.click(getButton(label))
+        expect(viewMode.value).toBe(expected)
+      }
+    )
   })
 
   describe('sort options (gated by showSortOptions)', () => {
