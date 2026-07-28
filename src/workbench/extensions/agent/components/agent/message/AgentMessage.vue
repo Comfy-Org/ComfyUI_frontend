@@ -55,7 +55,7 @@ const showActions = computed(
 </script>
 
 <template>
-  <div class="space-y-1.5">
+  <div class="space-y-4">
     <template v-for="(group, index) in groups" :key="index">
       <MarkdownStream v-if="group.kind === 'text'" :text="group.part.text" />
       <ToolCallGroup
@@ -97,6 +97,7 @@ const showActions = computed(
 
     <MessageFeedback
       v-if="showActions"
+      class="-mt-1"
       :markdown
       @feedback="emit('feedback', $event)"
     />

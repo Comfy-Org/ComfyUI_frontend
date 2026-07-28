@@ -269,8 +269,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     </template>
 
     <template v-if="!showHistory">
-      <footer class="shrink-0 p-4">
-        <div class="mx-auto flex w-full max-w-[640px] flex-col gap-2.5">
+      <footer class="shrink-0 px-4 pt-4 pb-3">
+        <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4">
           <WorkflowSelectorChip
             :active-tab="activeTab"
             :tabs="workflowTabs"
@@ -294,7 +294,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @remove-tag="emit('removeTag', $event)"
             @mention-pick="emit('mentionPick', $event)"
           />
-          <p class="text-agent-fg-muted my-0 text-center text-xs">
+          <p class="text-agent-fg-muted -mt-1 mb-0 text-center text-xs">
             {{ t('agent.caption') }}
           </p>
         </div>
