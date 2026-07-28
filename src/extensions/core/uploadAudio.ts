@@ -22,7 +22,7 @@ import { useAudioService } from '@/services/audioService'
 import { type NodeLocatorId } from '@/types'
 import { widgetId } from '@/types/widgetId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-import { isViewableResultItem } from '@/utils/resultItemUtil'
+import { findViewableResultItem, toViewRequest } from '@/utils/resultItemUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
@@ -141,13 +141,10 @@ app.registerExtension({
           const onExecuted = node.onExecuted
           node.onExecuted = function (output: NodeExecutionOutput) {
             onExecuted?.call(this, output)
-            const audio = output.audio?.find(isViewableResultItem)
+            const audio = findViewableResultItem(output.audio)
             if (!audio) return
-            const resourceUrl = getResourceURL(
-              audio.subfolder ?? '',
-              audio.filename,
-              audio.type
-            )
+            const { subfolder, filename, type } = toViewRequest(audio)
+            const resourceUrl = getResourceURL(subfolder, filename, type)
             updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
           }
         }
@@ -176,7 +173,7 @@ app.registerExtension({
     nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
   ) {
     for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
-      const audio = output.audio?.find(isViewableResultItem)
+      const audio = findViewableResultItem(output.audio)
       if (!audio) continue
 
       const node = getNodeByLocatorId(app.rootGraph, nodeLocatorId)
@@ -185,11 +182,8 @@ app.registerExtension({
       const audioUIWidget = node.widgets?.find(
         (w) => w.name === 'audioUI'
       ) as unknown as DOMWidget<HTMLAudioElement, string>
-      const resourceUrl = getResourceURL(
-        audio.subfolder ?? '',
-        audio.filename,
-        audio.type
-      )
+      const { subfolder, filename, type } = toViewRequest(audio)
+      const resourceUrl = getResourceURL(subfolder, filename, type)
       updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
     }
   }

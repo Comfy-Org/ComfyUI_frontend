@@ -7,7 +7,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import type { ViewableResultItem } from '@/utils/resultItemUtil'
-import { isViewableResultItem } from '@/utils/resultItemUtil'
+import { findViewableResultItem, toViewRequest } from '@/utils/resultItemUtil'
 
 export function extractWidgetStringValue(value: unknown): string | undefined {
   if (typeof value === 'string') return value
@@ -64,11 +64,7 @@ function toRef(filename: string, subfolder: string): ImageRef {
 }
 
 function buildViewUrl(image: ViewableResultItem): string {
-  const params = new URLSearchParams({
-    filename: image.filename,
-    type: image.type || 'output',
-    subfolder: image.subfolder || ''
-  })
+  const params = new URLSearchParams(toViewRequest(image))
   return api.apiURL(`/view?${params.toString()}`)
 }
 
@@ -253,12 +249,12 @@ export function useMaskEditorLoader() {
   }
 
   function getNodeImageUrl(node: LGraphNode): string {
-    const widgetImage = node.images?.find(isViewableResultItem)
+    const widgetImage = findViewableResultItem(node.images)
     if (widgetImage) return buildViewUrl(widgetImage)
 
-    const outputImage = nodeOutputStore
-      .getNodeOutputs(node)
-      ?.images?.find(isViewableResultItem)
+    const outputImage = findViewableResultItem(
+      nodeOutputStore.getNodeOutputs(node)?.images
+    )
     if (outputImage) return buildViewUrl(outputImage)
 
     if (node.imgs?.length) {

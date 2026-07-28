@@ -267,6 +267,28 @@ describe('nodeOutputStore input preview preservation', () => {
     )
   })
 
+  it('should preserve input preview when every execution image is degenerate', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(3)])
+
+    const inputPreview = createMockOutputs([
+      { filename: 'example.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId(executionId, inputPreview)
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs(
+        fromAny([null, { status: 'unavailable', reason: 'upload_failed' }])
+      )
+    )
+
+    expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
+    expect(store.nodeOutputs[executionId]?.images?.[0]?.filename).toBe(
+      'example.png'
+    )
+  })
+
   it('should preserve input preview when execution sends output with empty images array', () => {
     const store = useNodeOutputStore()
     const executionId = createNodeExecutionId([toNodeId(3)])

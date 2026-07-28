@@ -28,7 +28,7 @@ import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
 } from '@/utils/objectUrlUtil'
-import { isViewableResultItem } from '@/utils/resultItemUtil'
+import { isViewableResultItem, toViewRequest } from '@/utils/resultItemUtil'
 
 const PREVIEW_REVOKE_DELAY_MS = 400
 
@@ -115,7 +115,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const previewParam = getPreviewParam(node, outputs)
 
     return outputs.images.filter(isViewableResultItem).map((image) => {
-      const params = new URLSearchParams(image)
+      const params = new URLSearchParams(toViewRequest(image))
       return api.apiURL(`/view?${params}${previewParam}${rand}`)
     })
   }
@@ -173,7 +173,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     const incomingImages = (outputs as ExecutedWsMessage['output']).images
     const hasIncomingImages =
-      Array.isArray(incomingImages) && incomingImages.length > 0
+      Array.isArray(incomingImages) && incomingImages.some(isViewableResultItem)
     if (
       !hasIncomingImages &&
       isInputPreviewOutput(app.nodeOutputs[nodeLocatorId])
