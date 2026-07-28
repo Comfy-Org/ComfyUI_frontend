@@ -41,20 +41,22 @@
       <DropdownMenuLabel :class="groupLabelClass">
         {{ $t('sideToolbar.mediaAssets.filterDate') }}
       </DropdownMenuLabel>
-      <DropdownMenuCheckboxItem
-        v-for="filter in matchingDates"
-        :key="filter.value"
-        :model-value="dateFilter === filter.value"
-        :class="menuItemClass"
-        @click="toggleDateFilter(filter.value)"
-        @keydown="handleSearchResultKeydown"
-        @select.prevent
-      >
-        <span class="flex-1">{{ $t(filter.label) }}</span>
-        <DropdownMenuItemIndicator class="size-4 shrink-0">
-          <i class="icon-[lucide--check]" />
-        </DropdownMenuItemIndicator>
-      </DropdownMenuCheckboxItem>
+      <DropdownMenuRadioGroup :model-value="dateFilter">
+        <DropdownMenuRadioItem
+          v-for="filter in matchingDates"
+          :key="filter.value"
+          :value="filter.value"
+          :class="menuItemClass"
+          @click="dateFilter = filter.value"
+          @keydown="handleSearchResultKeydown"
+          @select.prevent
+        >
+          <span class="flex-1">{{ $t(filter.label) }}</span>
+          <DropdownMenuItemIndicator class="size-4 shrink-0">
+            <i class="icon-[lucide--check]" />
+          </DropdownMenuItemIndicator>
+        </DropdownMenuRadioItem>
+      </DropdownMenuRadioGroup>
     </template>
 
     <div
@@ -186,10 +188,8 @@ const matchingMediaTypes = computed(() =>
   )
 )
 const matchingDates = computed(() =>
-  dateFilterOptions.filter(
-    (filter) =>
-      filter.value &&
-      t(filter.label).toLowerCase().includes(normalizedQuery.value)
+  dateFilterOptions.filter((filter) =>
+    t(filter.label).toLowerCase().includes(normalizedQuery.value)
   )
 )
 const hasSearchResults = computed(
@@ -215,10 +215,6 @@ function toggleMediaType(type: string) {
   } else {
     mediaTypeFilters.value = [...mediaTypeFilters.value, type]
   }
-}
-
-function toggleDateFilter(value: MediaAssetDateFilter) {
-  dateFilter.value = dateFilter.value === value ? '' : value
 }
 
 function handleSearchKeydown(event: KeyboardEvent) {
@@ -262,7 +258,9 @@ function getSearchResults() {
   const menu = searchInput.value?.closest('[role="menu"]')
   return menu
     ? Array.from(
-        menu.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]')
+        menu.querySelectorAll<HTMLElement>(
+          '[role="menuitemcheckbox"], [role="menuitemradio"]'
+        )
       )
     : []
 }
