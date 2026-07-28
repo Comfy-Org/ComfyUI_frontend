@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+
 import type {
   ChatSession,
   HistoryGroups
@@ -39,10 +41,7 @@ function pick(session: ChatSession): void {
   <div class="flex h-full flex-col overflow-hidden">
     <div class="flex shrink-0 items-center px-2 py-1.5">
       <button
-        v-tooltip.bottom="{
-          value: t('agent.backToPreviousChat'),
-          showDelay: 500
-        }"
+        v-tooltip.bottom="buildTooltipConfig(t('agent.backToPreviousChat'))"
         type="button"
         class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex h-6 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors"
         @click="emit('back')"

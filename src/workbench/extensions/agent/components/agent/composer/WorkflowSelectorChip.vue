@@ -11,6 +11,8 @@ import {
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import type { ActiveTab } from '../ActiveTabStrip.vue'
@@ -63,12 +65,13 @@ function onSearchKeydown(event: KeyboardEvent): void {
   <div class="flex w-full items-center justify-between gap-1.5">
     <DropdownMenuRoot v-model:open="open">
       <DropdownMenuTrigger
-        v-tooltip.bottom="{
-          value: current
-            ? t('agent.changeWorkflowForChat')
-            : t('agent.selectWorkflowToGenerate'),
-          showDelay: 500
-        }"
+        v-tooltip.bottom="
+          buildTooltipConfig(
+            current
+              ? t('agent.changeWorkflowForChat')
+              : t('agent.selectWorkflowToGenerate')
+          )
+        "
         :aria-label="t('agent.switchWorkflow')"
         class="rounded-agent bg-agent-pill text-agent-fg hover:bg-agent-surface-hover inline-flex min-w-0 cursor-pointer items-center gap-1.5 px-2 py-1 text-xs transition-colors"
       >
@@ -142,10 +145,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
     </DropdownMenuRoot>
     <button
       v-if="current"
-      v-tooltip.bottom="{
-        value: t('agent.dontWorkInWorkflow'),
-        showDelay: 500
-      }"
+      v-tooltip.bottom="buildTooltipConfig(t('agent.dontWorkInWorkflow'))"
       type="button"
       :aria-label="t('agent.dontWorkInWorkflow')"
       class="text-agent-fg-subtle hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors"
