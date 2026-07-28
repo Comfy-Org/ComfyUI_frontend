@@ -1,6 +1,5 @@
 <template>
   <section
-    v-if="status !== 'ineligible' && status !== 'inactive'"
     class="flex min-h-0 grow flex-col gap-6 overflow-auto"
     aria-labelledby="partner-node-access-title"
   >
@@ -89,6 +88,16 @@
       <Button variant="secondary" @click="loadPolicy">
         {{ $t('workspacePanel.partnerNodes.retry') }}
       </Button>
+    </div>
+
+    <div
+      v-else-if="status === 'ineligible' || status === 'inactive'"
+      role="status"
+      class="flex min-h-48 items-center justify-center rounded-2xl border border-interface-stroke p-6 text-center"
+    >
+      <p class="text-sm text-muted-foreground">
+        {{ $t('workspacePanel.partnerNodes.unavailable') }}
+      </p>
     </div>
 
     <template v-else>
@@ -453,7 +462,21 @@ async function handleEnableAll() {
   await performSave(() => setAllProvidersEnabled(true))
 }
 
+function createPolicyConfirmationGuard() {
+  const sourceWorkspaceId = governedWorkspaceId.value
+  const sourcePolicy = policy.value
+  if (!sourceWorkspaceId) return null
+
+  return () =>
+    workspaceRole.value === 'owner' &&
+    governedWorkspaceId.value === sourceWorkspaceId &&
+    policy.value === sourcePolicy
+}
+
 function confirmDisableAll() {
+  const canConfirm = createPolicyConfirmationGuard()
+  if (!canConfirm) return
+
   const dialog = showConfirmDialog({
     headerProps: { title: t('workspacePanel.partnerNodes.disableAllTitle') },
     props: { promptText: t('workspacePanel.partnerNodes.disableAllMessage') },
@@ -463,6 +486,10 @@ function confirmDisableAll() {
       optionsDisabled: isSaving,
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {
+        if (!canConfirm()) {
+          dialogStore.closeDialog(dialog)
+          return
+        }
         await performSave(() => setAllProvidersEnabled(false))
         dialogStore.closeDialog(dialog)
       }
@@ -480,9 +507,8 @@ function confirmAccessModeChange(
   enabled: boolean,
   action: () => Promise<void>
 ) {
-  const sourceWorkspaceId = governedWorkspaceId.value
-  const sourcePolicy = policy.value
-  if (!sourceWorkspaceId) return
+  const canConfirm = createPolicyConfirmationGuard()
+  if (!canConfirm) return
 
   const key = enabled ? 'restrictAccess' : 'allowAllAccess'
   const dialog = showConfirmDialog({
@@ -500,10 +526,7 @@ function confirmAccessModeChange(
       optionsDisabled: isSaving,
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {
-        if (
-          governedWorkspaceId.value !== sourceWorkspaceId ||
-          policy.value !== sourcePolicy
-        ) {
+        if (!canConfirm()) {
           dialogStore.closeDialog(dialog)
           return
         }

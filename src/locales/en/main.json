@@ -3035,6 +3035,7 @@
       "saveError": "Partner node access couldn't be updated. Try again.",
       "loading": "Loading partner node access",
       "loadError": "Partner node access couldn't be loaded.",
+      "unavailable": "Partner node access is unavailable for this workspace.",
       "retry": "Try again",
       "ownerOnly": "Only workspace owners can update partner node access.",
       "noResults": "No providers or partner nodes found"

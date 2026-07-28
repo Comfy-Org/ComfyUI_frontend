@@ -446,6 +446,40 @@ describe('PartnerNodeAccessPanel', () => {
     expect(mockCloseDialog).toHaveBeenCalled()
   })
 
+  it('ignores a disable-all confirmation after the workspace changes', async () => {
+    const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Disable all' }))
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    mockGovernedWorkspaceId.value = 'workspace-two'
+    await options.footerProps.onConfirm()
+
+    expect(mockSetAllProvidersEnabled).not.toHaveBeenCalled()
+    expect(mockCloseDialog).toHaveBeenCalled()
+  })
+
+  it('ignores a disable-all confirmation after the owner loses access', async () => {
+    const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Disable all' }))
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    mockWorkspaceRole.value = 'member'
+    await options.footerProps.onConfirm()
+
+    expect(mockSetAllProvidersEnabled).not.toHaveBeenCalled()
+    expect(mockCloseDialog).toHaveBeenCalled()
+  })
+
   it('confirms before turning on restrictions', async () => {
     const user = userEvent.setup()
     renderComponent()
@@ -516,6 +550,20 @@ describe('PartnerNodeAccessPanel', () => {
       expect(
         screen.queryByRole('radio', { name: 'Restricted' })
       ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for(['ineligible', 'inactive'] as const)(
+    'shows an unavailable state while policy status is %s',
+    (status) => {
+      mockStatus.value = status
+      renderComponent()
+
+      expect(
+        screen.getByText(
+          'Partner node access is unavailable for this workspace.'
+        )
+      ).toBeInTheDocument()
     }
   )
 

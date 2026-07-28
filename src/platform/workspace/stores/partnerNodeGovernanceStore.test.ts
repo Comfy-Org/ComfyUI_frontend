@@ -257,6 +257,41 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.isSaving).toBe(false)
   })
 
+  it('rejects an overlapping save after switching away and back', async () => {
+    let resolveSave!: (policy: PartnerNodePolicy) => void
+    const acceptedPolicy: PartnerNodePolicy = {
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: true },
+        { providerId: 'route-only', enabled: true }
+      ]
+    }
+    mockUpdatePartnerNodePolicy
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSave = resolve
+        })
+      )
+      .mockResolvedValueOnce(acceptedPolicy)
+    store = await createLoadedStore()
+
+    const savePromise = store.setEnforcementEnabled(true)
+    activateWorkspace('workspace-two')
+    await vi.waitFor(() => expect(store?.status).toBe('unconfigured'))
+    activateWorkspace('workspace-one')
+    await vi.waitFor(() => expect(store?.status).toBe('unconfigured'))
+
+    expect(store.isSaving).toBe(true)
+    await expect(store.setProviderEnabled('openai', false)).rejects.toThrow(
+      'Provider policy save already in progress'
+    )
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledOnce()
+
+    resolveSave(acceptedPolicy)
+    await savePromise
+    expect(store.isSaving).toBe(false)
+  })
+
   it('ignores a load response after a save completes', async () => {
     let resolveLoad!: (policy: PartnerNodePolicy | null) => void
     const savedPolicy: PartnerNodePolicy = {
