@@ -17,6 +17,13 @@ describe('MarkdownStream', () => {
     expect(container.textContent).toBe('')
   })
 
+  it('resolves relative reply links through the API base', () => {
+    const { html } = render(MarkdownStream, {
+      props: { text: '[result](view?filename=gen.png)' }
+    })
+    expect(html()).toContain('href="/api/view?filename=gen.png"')
+  })
+
   it('strips a script tag (XSS guard)', () => {
     const { html } = render(MarkdownStream, {
       props: { text: 'hi <script>alert(1)</script> there' }
