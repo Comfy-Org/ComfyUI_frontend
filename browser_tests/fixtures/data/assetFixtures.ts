@@ -99,7 +99,7 @@ export const STABLE_LORA: Asset = createModelAsset({
 })
 
 function createCoreModelAsset(
-  overrides: Partial<CoreModelAsset>
+  overrides: Partial<CoreModelAsset> = {}
 ): CoreModelAsset {
   return { ...createModelAsset(), ...overrides }
 }
@@ -140,6 +140,31 @@ export const MODEL_TYPE_CHECKPOINT_SCANNED: CoreModelAsset =
     loader_path: 'freshly_scanned.safetensors',
     created_at: '2025-02-10T09:00:00Z',
     updated_at: '2025-02-10T09:00:00Z'
+  })
+
+/** An orphan: tagged and categorized, but unloadable (`loader_path: null`). */
+export const MODEL_TYPE_CHECKPOINT_ORPHAN: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-005',
+    name: 'orphaned_checkpoint.safetensors',
+    tags: ['models', 'model_type:checkpoints'],
+    loader_path: null,
+    created_at: '2025-02-15T09:00:00Z',
+    updated_at: '2025-02-15T09:00:00Z'
+  })
+
+/**
+ * The loader_path cutover window: a backend that already reports
+ * `supports_model_type_tags` but whose loader_path writer has not run yet,
+ * so walked assets carry the namespaced tag with no loader_path at all.
+ */
+export const MODEL_TYPE_CHECKPOINT_PRE_CUTOVER: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-006',
+    name: 'pre_cutover_checkpoint.safetensors',
+    tags: ['models', 'model_type:checkpoints'],
+    created_at: '2025-02-18T09:00:00Z',
+    updated_at: '2025-02-18T09:00:00Z'
   })
 
 export const MODEL_TYPE_LORA: CoreModelAsset = createCoreModelAsset({

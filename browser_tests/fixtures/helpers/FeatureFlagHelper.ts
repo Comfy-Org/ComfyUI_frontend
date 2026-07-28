@@ -103,6 +103,26 @@ export class FeatureFlagHelper {
   }
 
   /**
+   * Remove server feature flags and keep them removed across websocket
+   * reconnects, pinning the flag-ABSENT state. The real backend may or may
+   * not emit a given flag in its `feature_flags` handshake, so a test that
+   * asserts absent-flag defaults must strip the key from every handshake
+   * rather than trust the server to omit it.
+   */
+  async clearServerFlagsPersistent(flagNames: string[]): Promise<void> {
+    await this.page.evaluate((names: string[]) => {
+      const api = window.app!.api
+      const apply = () => {
+        const flags = { ...api.serverFeatureFlags.value }
+        for (const name of names) delete flags[name]
+        api.serverFeatureFlags.value = flags
+      }
+      apply()
+      api.addEventListener('feature_flags', apply)
+    }, flagNames)
+  }
+
+  /**
    * Mock server feature flags via route interception on /api/features.
    */
   async mockServerFeatures(features: Record<string, unknown>): Promise<void> {

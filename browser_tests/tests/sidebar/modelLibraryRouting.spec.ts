@@ -68,12 +68,14 @@ test.describe('Model library tab routing on cloud', { tag: '@cloud' }, () => {
     await comfyPage.menu.modelLibraryTab.tabButton.click()
 
     // Assert the defaults themselves, not only the routing result.
-    expect(
-      await comfyPage.settings.getSetting('Comfy.Assets.UseAssetAPI')
-    ).toBe(true)
-    expect(
-      await comfyPage.settings.getSetting('Comfy.ModelLibrary.UseAssetBrowser')
-    ).toBe(true)
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.Assets.UseAssetAPI'))
+      .toBe(true)
+    await expect
+      .poll(() =>
+        comfyPage.settings.getSetting('Comfy.ModelLibrary.UseAssetBrowser')
+      )
+      .toBe(true)
     await expect(comfyPage.page.locator(assetBrowserModal)).toBeVisible()
     await expect(comfyPage.menu.modelLibraryTab.modelTree).toHaveCount(0)
   })

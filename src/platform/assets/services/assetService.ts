@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
+import { ASSETS_SEED_FAST_COMPLETE_EVENT } from '@/platform/assets/constants/assetEvents'
 
 import {
   assetFilenameSchema,
@@ -535,16 +536,16 @@ function createAssetService() {
   /**
    * Subscribes to the backend's scan fast-phase completion broadcast — the
    * moment newly scanned files' tags and loader paths become queryable. The
-   * wire-level event (`assets.seed.fast_complete`) is owned here; consumers
-   * receive a callback and an unsubscribe function.
+   * wire-level event name is shared via `ASSETS_SEED_FAST_COMPLETE_EVENT`;
+   * consumers receive a callback and an unsubscribe function.
    */
   function onModelsScanned(callback: () => void | Promise<void>): () => void {
     const handler = () => {
       void callback()
     }
-    api.addCustomEventListener('assets.seed.fast_complete', handler)
+    api.addCustomEventListener(ASSETS_SEED_FAST_COMPLETE_EVENT, handler)
     return () => {
-      api.removeCustomEventListener('assets.seed.fast_complete', handler)
+      api.removeCustomEventListener(ASSETS_SEED_FAST_COMPLETE_EVENT, handler)
     }
   }
 
