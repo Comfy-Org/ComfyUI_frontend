@@ -30,6 +30,7 @@ import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
 import TabNormalInputs from './parameters/TabNormalInputs.vue'
 import TabSubgraphInputs from './parameters/TabSubgraphInputs.vue'
+import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
 import {
@@ -113,19 +114,8 @@ function closePanel() {
   rightSidePanelStore.closePanel()
 }
 
-const TAB_OPENED_BUTTON_IDS: Partial<Record<RightSidePanelTab, string>> = {
-  settings: 'right_side_panel_settings_tab_opened',
-  info: 'right_side_panel_info_tab_opened'
-}
-
 function handleTabChange(newTab: RightSidePanelTab) {
-  const buttonId = TAB_OPENED_BUTTON_IDS[newTab]
-  if (buttonId) {
-    useTelemetry()?.trackUiButtonClicked({
-      button_id: buttonId,
-      element_group: 'right_side_panel'
-    })
-  }
+  trackRightSidePanelTabOpened(newTab)
   rightSidePanelStore.openPanel(newTab)
 }
 
