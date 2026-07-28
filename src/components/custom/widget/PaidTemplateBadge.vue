@@ -13,14 +13,12 @@ const { t } = useI18n()
 
 const tooltipCopy = computed(() => {
   const title = t('templateWorkflows.paidTemplate.title')
-  const partnerNodes = t('templateWorkflows.paidTemplate.partnerNodes')
-  const paidPlan = t('templateWorkflows.paidTemplate.paidPlan')
+  const credits = t('templateWorkflows.paidTemplate.credits')
 
   return {
     title,
-    partnerNodes,
-    paidPlan,
-    label: [title, partnerNodes, paidPlan].join(' ')
+    credits,
+    label: [title, credits].join(' ')
   }
 })
 </script>
@@ -49,10 +47,7 @@ const tooltipCopy = computed(() => {
     <template #content>
       <div class="text-left leading-normal">
         <p class="m-0 font-semibold">{{ tooltipCopy.title }}</p>
-        <p class="m-0">
-          {{ tooltipCopy.partnerNodes }}<br />
-          {{ tooltipCopy.paidPlan }}
-        </p>
+        <p class="m-0">{{ tooltipCopy.credits }}</p>
       </div>
     </template>
   </AccessibleTooltip>

@@ -11,8 +11,7 @@ const messages = {
       paidTemplate: {
         badgeLabel: 'Partner API',
         title: 'Premium template',
-        partnerNodes: 'Uses partner nodes.',
-        paidPlan: 'Runs with a paid plan'
+        credits: 'Runs with credits'
       }
     }
   }
@@ -37,17 +36,13 @@ describe('PaidTemplateBadge', () => {
     renderBadge(false)
 
     const badge = screen.getByTestId('paid-template-badge')
-    expect(badge).toHaveAccessibleName(
-      'Premium template Uses partner nodes. Runs with a paid plan'
-    )
+    expect(badge).toHaveAccessibleName('Premium template Runs with credits')
 
     await user.hover(badge)
 
     const tooltip = await screen.findByTestId('disclosure-tooltip')
     expect(within(tooltip).getByText('Premium template')).toBeInTheDocument()
-    expect(
-      within(tooltip).getByText(/Uses partner nodes\.\s*Runs with a paid plan/)
-    ).toBeInTheDocument()
+    expect(within(tooltip).getByText('Runs with credits')).toBeInTheDocument()
   })
 
   it.for([true, undefined])(

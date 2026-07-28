@@ -1166,8 +1166,7 @@
     "paidTemplate": {
       "badgeLabel": "Partner API",
       "title": "Premium template",
-      "partnerNodes": "Uses partner nodes.",
-      "paidPlan": "Runs with a paid plan"
+      "credits": "Runs with credits"
     },
     "sort": {
       "relevance": "Relevance",
