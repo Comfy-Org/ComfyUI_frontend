@@ -212,10 +212,10 @@ against an environment that changed under it, not a suite defect. Therefore:
 
 1. Branch off the suite branch: `git checkout -b nathaniel/detection-proof nathaniel/custom-node-e2e-suite`.
 2. The tree stays CLEAN: `src/` is byte-identical to the suite branch. Each
-   src-mode row (1-7, 12, 13) is a checked-in patch file under
+   src-mode row (1-7, 12-14) is a checked-in patch file under
    `browser_tests/tests/customNodes/detection-proof/`, carrying an inline
    comment naming the regression class and the expected red.
-3. The CI job becomes a matrix (`row: [1..10, 12, 13]`, `fail-fast: false`).
+3. The CI job becomes a matrix (`row: [1..10, 12, 13, 14]`, `fail-fast: false`).
    A src-mode leg applies its one patch BEFORE the frontend build and fails
    loudly if it does not apply - a silently-clean tree reporting a catch is
    the worst possible outcome. A pack-mode leg (8-10) pokes its one break

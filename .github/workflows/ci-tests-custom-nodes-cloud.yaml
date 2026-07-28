@@ -68,11 +68,12 @@ concurrency:
   # DETECTION-PROOF BRANCH: dp runs skip every job yet still claim their
   # group before job ifs evaluate (a dp skip-run displaced queued e2e run
   # 30317780440) - dp gets its own group. workflow_dispatch runs also get
-  # their own: main-push runs evict older PENDING runs from the shared
-  # group (one pending slot per group; calibration dispatches died queued
-  # four times). Pre-merge the dispatch overlap is safe: main runs no-op
-  # in seconds at the manifest gate. Re-unify via the in-job lock (open
-  # item 7) before this check is marked required.
+  # their own: main-push runs evict older PENDING runs from the shared group
+  # (GitHub keeps one pending slot per group) - calibration dispatches
+  # 30316897509/30317780440/30318407927 died queued or displaced under main
+  # churn (30312432225 is the separate timeout kill, cited above). Pre-merge
+  # the dispatch overlap is safe: main runs no-op in seconds at the manifest
+  # gate. Re-unify via the in-job lock (open item 7) before required.
   group: ${{ github.head_ref == 'nathaniel/detection-proof' && 'custom-nodes-cloud-dp-noop' || github.event_name == 'workflow_dispatch' && 'custom-nodes-cloud-dispatch' || 'custom-nodes-cloud-instance' }}
   cancel-in-progress: false
 

@@ -582,7 +582,7 @@ export const comfyPageFixture = base.extend<{
 
     if (testInfo.tags.includes('@cloud')) {
       await comfyPage.cloudAuth.mockAuth()
-    } else if (customNodesEnv() === 'cloud') {
+    } else if (isCloudEnv) {
       // A real smoke-user session (no route mocks), seeded before the app
       // boots so the Firebase SDK restores it. Mutually exclusive with the
       // @cloud mock above: its interceptions would corrupt a real session.
@@ -610,7 +610,8 @@ export const comfyPageFixture = base.extend<{
     if (isCloudEnv) {
       // The devtools settings endpoint is unreachable node-side on cloud
       // (401, see above), so apply the same startup settings through the
-      // booted app's own authenticated session.
+      // booted app's own authenticated session. Boot-time-read settings
+      // land one boot late on a freshly reset smoke account only.
       for (const [key, value] of Object.entries(startupSettings))
         await comfyPage.settings.setSetting(key, value)
       await comfyPage.nextFrame()

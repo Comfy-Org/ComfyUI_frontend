@@ -33,6 +33,9 @@ concurrency:
   # Shared literal group with ci-tests-custom-nodes-cloud.yaml: both drive the
   # one shared Cloud instance, so a record run and a gate run must never
   # overlap (see the gate's concurrency comment for the full semantics).
+  # EXCEPTION since the gate's dispatch-group split: gate workflow_dispatch
+  # calibration runs use their own group and CAN overlap this record - do not
+  # dispatch both at once (manual exclusion until the in-job lock, item 7).
   group: custom-nodes-cloud-instance
   cancel-in-progress: false
 

@@ -342,6 +342,29 @@ The submission guard is why a crash inside a pack's own script can never
 abort the tier: the throw is caught in the page, recorded as that node's
 failure with the client error text, and the run moves on.
 
+## 7b. The output-regression tier (S15)
+
+execution_success proves a curated workflow RAN; nothing above proves it
+produced the SAME outputs. A serialization regression can drift a widget
+value without invalidating it: validation passes, execution succeeds, every
+def-driven tier stays green, and only the produced content changes.
+
+After a T1 curated run PASSes (core env, CI only), each sink's `executed` ui
+payload is canonicalized (sorted keys; file refs keep their sibling keys and
+collapse only the run-varying filename to its extension; PNG refs embed a
+pixel hash over IDAT chunks only, because ComfyUI writes the prompt into
+tEXt metadata) and hashed. One digest per sink, compared against the
+CI-recorded `fixtures/data/curatedOutputHashes.core.json`.
+
+Fail-closed drift classes, all red: a curated run workflow with no committed
+entry (enrollment is explicit), a changed hash (the drift message names both
+digests and the baseline's provenance), a committed output that vanished,
+and a NEW output with no entry. The fixture carries `recordedAt`
+(core SHA + record run id) because hashes are only comparable against the
+environment that recorded them; compare is CI-gated for the same reason
+(the geometry-tier convention). Cloud is excluded: the fetch is node-side,
+which carries no cloud session; cloud enrolls when an in-app fetch lands.
+
 ## 8. The persistence check
 
 Why it is staged: the DOM renderer's widget components react to creation

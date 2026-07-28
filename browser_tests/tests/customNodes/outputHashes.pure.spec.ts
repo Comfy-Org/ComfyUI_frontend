@@ -2,10 +2,15 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { mkdtempSync, readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import {
   compareOutputHashes,
   hashPngPixels,
-  hashSinkPayloads
+  hashSinkPayloads,
+  recordObservedHashes
 } from '@e2e/fixtures/customNode/outputHashes'
 
 function pngChunk(type: string, data: Buffer): Buffer {
@@ -90,7 +95,11 @@ test.describe('S15 output hashes', () => {
   })
 
   test('compare fails closed on every drift class', () => {
-    const committed = { 'pack/wf.json': { '5': 'sha256:aa', '7': 'sha256:bb' } }
+    const committed = {
+      recordedAt: { core: 'abc123', run: '42' },
+      schema: 1 as const,
+      workflows: { 'pack/wf.json': { '5': 'sha256:aa', '7': 'sha256:bb' } }
+    }
     expect(
       compareOutputHashes({
         workflowKey: 'pack/other.json',
@@ -105,6 +114,13 @@ test.describe('S15 output hashes', () => {
         committed
       })[0]
     ).toContain('output hash changed')
+    expect(
+      compareOutputHashes({
+        workflowKey: 'pack/wf.json',
+        observed: { '5': 'sha256:aa', '7': 'sha256:XX' },
+        committed
+      })[0]
+    ).toContain('recorded at core abc123')
     expect(
       compareOutputHashes({
         workflowKey: 'pack/wf.json',
@@ -126,5 +142,64 @@ test.describe('S15 output hashes', () => {
         committed
       })
     ).toEqual([])
+  })
+
+  test('record accumulates across calls to the same file (worker-restart survival)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 's15-'))
+    const file = join(dir, 'recorded.json')
+    recordObservedHashes(file, 'a/one.json', { '1': 'sha256:aa' })
+    recordObservedHashes(file, 'b/two.json', { '2': 'sha256:bb' })
+    const written = JSON.parse(readFileSync(file, 'utf-8'))
+    expect(Object.keys(written.workflows).sort()).toEqual([
+      'a/one.json',
+      'b/two.json'
+    ])
+    expect(written.schema).toBe(1)
+    expect(written.recordedAt.run).toBeTruthy()
+  })
+
+  test('empty observed vs empty committed entry passes (console-sink state)', () => {
+    const committed = {
+      recordedAt: { core: 'abc', run: '1' },
+      schema: 1 as const,
+      workflows: { 'was/wf.json': {} }
+    }
+    expect(
+      compareOutputHashes({
+        workflowKey: 'was/wf.json',
+        observed: {},
+        committed
+      })
+    ).toEqual([])
+  })
+
+  test('a truncated PNG chunk throws instead of hashing', () => {
+    const good = pngWith({ idat: Buffer.from([1, 2, 3]) })
+    // Cut inside the IDAT chunk (13 = IEND's 12 bytes + 1 byte of IDAT crc)
+    // so the chunk header is readable but its declared length overruns.
+    expect(() => hashPngPixels(good.subarray(0, good.length - 13))).toThrow(
+      /overruns the buffer/
+    )
+  })
+
+  test('value objects that merely contain a filename keep their sibling keys', async () => {
+    const bare = await hashSinkPayloads(
+      { '9': { filename: 'display.txt', text: ['A'] } },
+      never
+    )
+    const changed = await hashSinkPayloads(
+      { '9': { filename: 'display.txt', text: ['B'] } },
+      never
+    )
+    expect(bare['9']).not.toBe(changed['9'])
+    const ref1 = await hashSinkPayloads(
+      { '9': { gifs: [{ filename: 'a.mp4', type: 'temp', frame_rate: 8 }] } },
+      never
+    )
+    const ref2 = await hashSinkPayloads(
+      { '9': { gifs: [{ filename: 'b.mp4', type: 'temp', frame_rate: 9 }] } },
+      never
+    )
+    expect(ref1['9']).not.toBe(ref2['9'])
   })
 })

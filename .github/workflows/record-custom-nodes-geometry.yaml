@@ -122,6 +122,8 @@ jobs:
         continue-on-error: true
         env:
           RECORD_OUTPUT_HASHES: '1'
+          # Stamped into the fixture's recordedAt.core; must match comfyui_ref.
+          CN_OUTPUT_HASHES_CORE: b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2
         run: |
           pnpm exec playwright test browser_tests/tests/customNodes/customNode.regression.spec.ts \
             --project=custom-nodes --reporter=list --workers=1 --retries=0 \

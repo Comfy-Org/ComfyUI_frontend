@@ -233,6 +233,19 @@ written down; entries are registration-guarded, so a stale one fails the
 suite. Re-record only with the pin/core change that legitimately moved the
 layout, in the same commit.
 
+## Step 5c - record the pack's output hashes (curated run workflows only)
+
+A row enrolled in the run tier is also enrolled in the S15 output-regression
+tier: its T1 run fails closed with `S15: no committed hashes` until the
+workflow's sink hashes are recorded. Record them the same way as geometry
+(Step 5b): push the branch to a `record/custom-nodes-*` ref (or dispatch the
+record workflow), download the `custom-nodes-output-hashes` artifact, and
+commit it as `browser_tests/fixtures/data/curatedOutputHashes.core.json`.
+The record run stamps `recordedAt` provenance; never hand-edit hashes. A
+workflow whose only sinks are console-style (no ui payload) records an empty
+entry - that is the documented state, and a sink appearing later fails the
+run until re-recorded.
+
 ## Step 6 - prove it green locally, in both environments
 
 ### 6a - fast loop (dev server)
