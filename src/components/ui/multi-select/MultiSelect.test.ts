@@ -1,6 +1,7 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { FocusScope } from 'reka-ui'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -178,5 +179,35 @@ describe('MultiSelect', () => {
 
       unmount()
     })
+  })
+
+  it('keeps focus on the search input when nested in a trapped focus scope', async () => {
+    const user = userEvent.setup()
+    const InTrap = {
+      components: { FocusScope, MultiSelect },
+      template: `
+        <FocusScope trapped as-child>
+          <div>
+            <MultiSelect v-model="sel" :options="options" :show-search-box="true" />
+          </div>
+        </FocusScope>`,
+      setup: () => ({ sel: ref([]), options })
+    }
+
+    const { unmount } = render(InTrap, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: { plugins: [i18n] }
+    })
+
+    await user.click(screen.getByRole('button'))
+    await new Promise((resolve) => setTimeout(resolve))
+
+    const searchBox = findContentElement()?.querySelector('input')
+    searchBox?.focus()
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(document.activeElement).toBe(searchBox)
+
+    unmount()
   })
 })
