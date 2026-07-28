@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import { useIntersectionObserver } from '@vueuse/core'
+import {
+  useElementHover,
+  useFocusWithin,
+  useIntersectionObserver
+} from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import IconButton from '../ui/icon-button/IconButton.vue'
@@ -55,6 +59,13 @@ useIntersectionObserver(rootEl, ([entry]) => {
   isVisible.value = entry?.isIntersecting ?? false
 })
 
+// Pause the carousel's auto-advance while the user hovers or has keyboard focus
+// inside it (WCAG 2.2.2). The video keeps playing but the carousel stays put, so
+// autoplay never moves it or pulls focus into a now-hidden slide.
+const isHovered = useElementHover(rootEl)
+const { focused: isFocusWithin } = useFocusWithin(rootEl)
+const autoplayPaused = computed(() => isHovered.value || isFocusWithin.value)
+
 // Slides are mixed image/video, so keep video elements keyed by slide index
 // rather than a DOM-order refs list.
 const videoEls = ref<(HTMLVideoElement | null)[]>([])
@@ -92,8 +103,15 @@ watch(
   { immediate: true }
 )
 
-// When the active video ends (or fails), advance like any other slide.
+// A finished video advances to the next slide, unless the carousel is paused
+// (hover/focus) — then it stays put. Switching slides restarts the video.
 const onVideoEnded = (index: number) => {
+  if (index !== activeIndex.value || autoplayPaused.value) return
+  goTo(activeIndex.value + 1)
+}
+
+// A broken video is skipped even while paused; retrying it would loop the error.
+const onVideoError = (index: number) => {
   if (index === activeIndex.value) goTo(activeIndex.value + 1)
 }
 
@@ -104,7 +122,8 @@ useCarouselAutoplay({
     !reduceMotion.value &&
     isVisible.value &&
     slides.length > 1 &&
-    !activeIsVideo.value,
+    !activeIsVideo.value &&
+    !autoplayPaused.value,
   resetKey: activeIndex,
   advance: () => goTo(activeIndex.value + 1)
 })
@@ -152,7 +171,7 @@ useCarouselAutoplay({
               preload="metadata"
               class="absolute inset-0 size-full object-cover object-center"
               @ended="onVideoEnded(index)"
-              @error="onVideoEnded(index)"
+              @error="onVideoError(index)"
             />
             <div class="absolute inset-0 bg-black/20" />
 
