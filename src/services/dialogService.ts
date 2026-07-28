@@ -667,9 +667,10 @@ export const useDialogService = () => {
   }
 
   /**
-   * Downgrade a team plan to a personal plan (FE-977). Skips the type-"I
-   * understand" confirm dialog when the workspace has no other members;
-   * failures on that path surface as an error toast.
+   * Downgrade a team plan to a personal plan. Skips the type-"I understand"
+   * confirm dialog only when there's nothing to confirm: no other members to
+   * remove and no reactivation charge to disclose. Failures on that fast
+   * path surface as an error toast.
    */
   async function showDowngradeToPersonalDialog(options: {
     planName: string
@@ -677,12 +678,21 @@ export const useDialogService = () => {
   }): Promise<DowngradeToPersonalResult | null> {
     const { useDowngradeToPersonal } =
       await import('@/platform/workspace/composables/useDowngradeToPersonal')
-    const { hasOtherMembers, refreshMembers, downgradeToPersonal } =
-      useDowngradeToPersonal()
+    const {
+      hasOtherMembers,
+      refreshMembers,
+      previewDowngrade,
+      downgradeToPersonal
+    } = useDowngradeToPersonal()
 
+    let requiresReactivation = false
+    let chargeCents = 0
     try {
       await refreshMembers()
-      if (!hasOtherMembers.value) {
+      const preview = await previewDowngrade(options.planSlug)
+      requiresReactivation = preview.requiresReactivationConfirmation
+      chargeCents = preview.preview.cost_today_cents
+      if (!hasOtherMembers.value && !requiresReactivation) {
         return await downgradeToPersonal(options.planSlug)
       }
     } catch (error) {
@@ -717,8 +727,14 @@ export const useDialogService = () => {
         props: {
           planName: options.planName,
           planSlug: options.planSlug,
-          onConfirm: async (planSlug: string) => {
-            const result = await downgradeToPersonal(planSlug)
+          requiresRemoval: hasOtherMembers.value,
+          requiresReactivation,
+          chargeCents,
+          onConfirm: async (planSlug: string, confirmReactivation: boolean) => {
+            const result = await downgradeToPersonal(
+              planSlug,
+              confirmReactivation
+            )
             resolveResult(result)
           }
         },

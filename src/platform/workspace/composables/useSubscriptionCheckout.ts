@@ -88,7 +88,8 @@ export function useSubscriptionCheckout(
     plans,
     fetchPlans,
     isTeamPlan,
-    resubscribe
+    resubscribe,
+    subscription
   } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
   const { permissions } = useWorkspaceUI()
@@ -109,6 +110,21 @@ export function useSubscriptionCheckout(
     () => selectedTeamCheckout.value?.stop ?? null
   )
   const isTeamCheckout = computed(() => selectedTeamCheckout.value !== null)
+  const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+
+  // A cancelled subscription needs confirm_reactivation, and the only place
+  // that can honestly collect it is the reactivation banner. Paths with no
+  // banner (add-payment preview, a preview-less team-new fallback) always
+  // call in with confirmReactivation=false, so block here instead of sending
+  // a request the BE is guaranteed to reject with no way for the user to
+  // consent.
+  function notifyReactivationConfirmationRequired(): void {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('subscription.preview.reactivation.confirmationRequired')
+    })
+  }
 
   function canSelectTierPlan(): boolean {
     return (
@@ -297,6 +313,10 @@ export function useSubscriptionCheckout(
       const planSlug = getApiPlanSlug(tierKey, billingCycle)
       if (!planSlug) return
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      if (!confirmReactivation && isCancelled.value) {
+        notifyReactivationConfirmationRequired()
+        return
+      }
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
@@ -444,6 +464,11 @@ export function useSubscriptionCheckout(
         summary: t('subscription.teamPlan.name'),
         detail: t('subscription.teamPlan.unavailable')
       })
+      return
+    }
+
+    if (!confirmReactivation && isCancelled.value) {
+      notifyReactivationConfirmationRequired()
       return
     }
 

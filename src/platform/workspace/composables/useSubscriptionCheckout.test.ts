@@ -781,11 +781,13 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    // Regression guard: confirmReactivation must come from the
-    // disclosure banner's own confirm action, never be re-derived from
-    // subscription.isCancelled (which is true for every reactivation request
-    // and would make the server-side consent check vacuous).
-    it('does not forward confirmReactivation true for a cancelled subscription unless the disclosure was confirmed', async () => {
+    // Regression guard: confirmReactivation must come from the disclosure
+    // banner's own confirm action, never be re-derived from
+    // subscription.isCancelled. A path with no banner (team-new fallback)
+    // always calls in with confirmReactivation=false, so a cancelled
+    // subscription must block the request rather than silently send it and
+    // let the BE reject it with no way for the user to consent.
+    it('blocks the team subscribe and shows an error for a cancelled subscription with no confirmation', async () => {
       mockSubscription.value = { isCancelled: true }
       const checkout = await setup()
       await checkout.handleSubscribeTeamClick({
@@ -797,18 +799,12 @@ describe('useSubscriptionCheckout', () => {
         },
         billingCycle: 'monthly'
       })
-      mockSubscribe.mockResolvedValueOnce({
-        status: 'subscribed',
-        billing_op_id: 'op-team-1'
-      })
-      mockFetchStatus.mockResolvedValueOnce(undefined)
-      mockFetchBalance.mockResolvedValueOnce(undefined)
 
       await checkout.handleTeamSubscribe()
 
-      expect(mockSubscribe).toHaveBeenCalledWith(
-        'team_per_credit_monthly',
-        expect.objectContaining({ confirmReactivation: false })
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
       )
     })
 
@@ -1296,27 +1292,23 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    // Regression guard: confirmReactivation must come from the
-    // disclosure banner's own confirm action, never be re-derived from
-    // subscription.isCancelled (which is true for every reactivation request
-    // and would make the server-side consent check vacuous).
-    it('does not forward confirmReactivation true for a cancelled subscription unless the disclosure was confirmed', async () => {
+    // Regression guard: confirmReactivation must come from the disclosure
+    // banner's own confirm action, never be re-derived from
+    // subscription.isCancelled. A path with no banner (add-payment preview)
+    // always calls in with confirmReactivation=false, so a cancelled
+    // subscription must block the request rather than silently send it and
+    // let the BE reject it with no way for the user to consent.
+    it('blocks the subscribe and shows an error for a cancelled subscription with no confirmation', async () => {
       mockSubscription.value = { isCancelled: true }
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
-      mockSubscribe.mockResolvedValueOnce({
-        status: 'subscribed',
-        billing_op_id: 'op-3'
-      })
-      mockFetchStatus.mockResolvedValueOnce(undefined)
-      mockFetchBalance.mockResolvedValueOnce(undefined)
 
       await checkout.handleConfirmTransition()
 
-      expect(mockSubscribe).toHaveBeenCalledWith(
-        'standard-yearly',
-        expect.objectContaining({ confirmReactivation: false })
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
       )
     })
 

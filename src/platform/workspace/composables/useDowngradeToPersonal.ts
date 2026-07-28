@@ -23,16 +23,32 @@ export interface DowngradeToPersonalResult {
   response: SubscribeResponse
 }
 
+export interface DowngradePreview {
+  preview: PreviewSubscribeResponse
+  /** Cancelled subscription + a real plan change: the BE requires
+   *  `confirm_reactivation` on the subscribe call or it rejects the change. */
+  requiresReactivationConfirmation: boolean
+}
+
+/** Thrown by `downgradeToPersonal` before any member is removed, so a caller
+ *  can collect consent and retry with `confirmReactivation: true` instead of
+ *  losing team members on a request the BE was always going to reject. */
+export class ReactivationConfirmationRequiredError extends Error {
+  constructor(public readonly preview: PreviewSubscribeResponse) {
+    super(t('subscription.downgrade.reactivationConfirmationRequired'))
+  }
+}
+
 /**
  * Team-plan downgrade to personal: validate via `previewSubscribe`, remove
  * every member except the original owner, then initiate the tier change.
- * BE seam (BE-1337): removal email and an atomic downgrade endpoint are
- * BE-owned; until then the FE orchestrates the two steps non-atomically.
+ * The removal-email and an atomic downgrade endpoint are backend-owned future
+ * work; until then the frontend orchestrates the two steps non-atomically.
  */
 export function useDowngradeToPersonal() {
   const workspaceStore = useTeamWorkspaceStore()
   const { members } = storeToRefs(workspaceStore)
-  const { subscribe, previewSubscribe } = useBillingContext()
+  const { subscribe, previewSubscribe, subscription } = useBillingContext()
   const billingOperationStore = useBillingOperationStore()
   const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
@@ -63,8 +79,34 @@ export function useDowngradeToPersonal() {
     ensureCanDowngrade()
   }
 
+  function requiresReactivationConfirmation(
+    preview: PreviewSubscribeResponse
+  ): boolean {
+    return (
+      (subscription.value?.isCancelled ?? false) &&
+      preview.transition_type !== 'new_subscription'
+    )
+  }
+
+  /** Read-only preview so a caller can decide whether to collect reactivation
+   *  consent before ever invoking `downgradeToPersonal`. */
+  async function previewDowngrade(planSlug: string): Promise<DowngradePreview> {
+    ensureCanDowngrade()
+    const preview = await previewSubscribe(planSlug)
+    if (!preview?.allowed) {
+      throw new Error(preview?.reason || t('subscription.downgrade.notAllowed'))
+    }
+    ensureCanDowngrade()
+    return {
+      preview,
+      requiresReactivationConfirmation:
+        requiresReactivationConfirmation(preview)
+    }
+  }
+
   async function downgradeToPersonal(
-    planSlug: string
+    planSlug: string,
+    confirmReactivation = false
   ): Promise<DowngradeToPersonalResult | null> {
     ensureCanDowngrade()
 
@@ -114,6 +156,17 @@ export function useDowngradeToPersonal() {
           : 'monthly'
         : undefined
 
+      // Guard before touching membership: the BE rejects this subscribe
+      // without confirm_reactivation, so members must never be removed for a
+      // transition that's going to fail on consent anyway.
+      if (requiresReactivationConfirmation(preview) && !confirmReactivation) {
+        telemetryFailure = {
+          failure_category: 'validation',
+          error_code: 'reactivation_not_confirmed'
+        }
+        throw new ReactivationConfirmationRequiredError(preview)
+      }
+
       for (const member of membersToRemove) {
         ensureCanDowngrade()
         try {
@@ -136,7 +189,8 @@ export function useDowngradeToPersonal() {
       ensureCanDowngrade()
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
-        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
+        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
+        confirmReactivation
       })
       if (!response) {
         telemetryFailure = {
@@ -221,6 +275,7 @@ export function useDowngradeToPersonal() {
     removableMembers,
     hasOtherMembers,
     refreshMembers,
+    previewDowngrade,
     downgradeToPersonal
   }
 }

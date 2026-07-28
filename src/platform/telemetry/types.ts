@@ -611,6 +611,7 @@ type BillingErrorCode =
   | 'missing_checkout_response'
   | 'missing_payment_method_url'
   | 'payment_popup_blocked'
+  | 'reactivation_not_confirmed'
 
 export interface BillingFailure {
   failure_category: BillingFailureCategory

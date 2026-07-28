@@ -32,6 +32,10 @@ const i18n = createI18n({
         downgrade: {
           title: 'Change to {plan} plan?',
           body: 'All other members of this workspace will be immediately removed.',
+          bodyReactivation:
+            "Your subscription is cancelled. Changing your plan will resume it, and you'll be charged {amount} today.",
+          bodyRemovalAndReactivation:
+            "All other members of this workspace will be immediately removed. Your subscription is cancelled, so changing your plan will also resume it, and you'll be charged {amount} today.",
           confirmationPhrase: 'I understand',
           confirmationPrompt: 'Type "{phrase}" to confirm.',
           confirm: 'Change plan',
@@ -91,10 +95,53 @@ describe('DowngradeRemoveMembersDialogContent', () => {
     await user.type(getPhraseInput(), 'I understand')
     await user.click(getChangePlanButton())
 
-    expect(onConfirm).toHaveBeenCalledWith('founder-monthly')
+    expect(onConfirm).toHaveBeenCalledWith('founder-monthly', false)
     expect(mockCloseDialog).toHaveBeenCalledWith({
       key: 'downgrade-remove-members'
     })
+  })
+
+  it('shows the removal-only body when reactivation is not required', () => {
+    mountComponent()
+
+    expect(
+      screen.getByText(
+        'All other members of this workspace will be immediately removed.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('shows the reactivation charge and forwards confirmReactivation true when only reactivation is required', async () => {
+    const { user, onConfirm } = mountComponent({
+      requiresRemoval: false,
+      requiresReactivation: true,
+      chargeCents: 1500
+    })
+
+    expect(
+      screen.getByText(
+        "Your subscription is cancelled. Changing your plan will resume it, and you'll be charged $15.00 today."
+      )
+    ).toBeInTheDocument()
+
+    await user.type(getPhraseInput(), 'I understand')
+    await user.click(getChangePlanButton())
+
+    expect(onConfirm).toHaveBeenCalledWith('founder-monthly', true)
+  })
+
+  it('shows the combined removal-and-reactivation body when both are required', () => {
+    mountComponent({
+      requiresRemoval: true,
+      requiresReactivation: true,
+      chargeCents: 5454
+    })
+
+    expect(
+      screen.getByText(
+        "All other members of this workspace will be immediately removed. Your subscription is cancelled, so changing your plan will also resume it, and you'll be charged $54.54 today."
+      )
+    ).toBeInTheDocument()
   })
 
   it('closes without calling onConfirm when cancelled', async () => {

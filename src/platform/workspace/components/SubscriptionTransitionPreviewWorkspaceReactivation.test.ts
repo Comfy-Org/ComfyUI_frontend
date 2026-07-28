@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -11,15 +11,17 @@ import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPrev
 // Real i18n plugin (not the mocked `vue-i18n` module used by the sibling
 // SubscriptionTransitionPreviewWorkspace.test.ts) so <i18n-t> resolves and
 // renders its named slots for these reactivation-banner assertions.
-const { mockSubscription } = vi.hoisted(() => ({
+const { mockSubscription, mockIsInitialized } = vi.hoisted(() => ({
   mockSubscription: {
     value: null as { isCancelled: boolean; endDate: string | null } | null
-  }
+  },
+  mockIsInitialized: { value: true }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    subscription: computed(() => mockSubscription.value)
+    subscription: computed(() => mockSubscription.value),
+    isInitialized: computed(() => mockIsInitialized.value)
   })
 }))
 
@@ -69,9 +71,13 @@ const i18n = createI18n({
               "Your {plan} was set to end on {date}. Switching to {newPlan} reactivates it — you won't be charged today, but it will now renew automatically on {nextDate} at the new price instead of ending.",
             durationChangeBody:
               'Your {plan} was set to end on {date}. Switching to annual billing reactivates it and charges the full year, {amount}, today. It will then renew annually on {nextDate} instead of ending.',
+            durationChangeBodyMonthly:
+              "Your {plan} was set to end on {date}. Switching to monthly billing reactivates it — you'll be charged {amount} today, and it will renew automatically on {nextDate} instead of ending.",
             confirmButton: 'Confirm & reactivate',
             confirmButtonWithCharge: 'Confirm & reactivate — {amount} today',
-            checkboxLabel: "I understand I'll be charged {amount} today"
+            checkboxLabel: "I understand I'll be charged {amount} today",
+            confirmationRequired:
+              'Your subscription is cancelled — please confirm the reactivation charge before continuing'
           }
         }
       }
@@ -128,6 +134,10 @@ function renderComponent(previewData: PreviewSubscribeResponse) {
 }
 
 describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () => {
+  beforeEach(() => {
+    mockIsInitialized.value = true
+  })
+
   describe('banner visibility', () => {
     it('does not render when the subscription is not cancelled', () => {
       mockSubscription.value = { isCancelled: false, endDate: null }
@@ -166,12 +176,12 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       expect(bodyText).toContain(
         "Upgrading now reactivates it — you'll be charged"
       )
-      expect(bodyText).toContain('$15')
+      expect(bodyText).toContain('$15.00')
       expect(bodyText).toContain('today, and it will renew automatically on')
       expect(bodyText).toContain('Sep 15, 2026')
       expect(
         screen.getByRole('button', {
-          name: 'Confirm & reactivate — $15 today'
+          name: 'Confirm & reactivate — $15.00 today'
         })
       ).toBeInTheDocument()
     })
@@ -256,11 +266,69 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         )
       ).toBeInTheDocument()
       expect(bodyText).toContain('charges the full year')
-      expect(bodyText).toContain('$336')
+      expect(bodyText).toContain('$336.00')
       expect(bodyText).toContain('today')
       expect(
         screen.getByRole('button', {
-          name: 'Confirm & reactivate — $336 today'
+          name: 'Confirm & reactivate — $336.00 today'
+        })
+      ).toBeInTheDocument()
+    })
+
+    it('shows the monthly-target duration-change copy and title, distinct from the annual variant', () => {
+      mockSubscription.value = {
+        isCancelled: true,
+        endDate: '2026-08-15T00:00:00Z'
+      }
+      const { container } = renderComponent(
+        makePreview({
+          transition_type: 'duration_change',
+          cost_today_cents: 1200,
+          current_plan: {
+            slug: 'standard-annual',
+            tier: 'STANDARD',
+            duration: 'ANNUAL',
+            price_cents: 24_000,
+            credits_cents: 0,
+            seat_summary: {
+              seat_count: 1,
+              total_cost_cents: 24_000,
+              total_credits_cents: 0
+            }
+          },
+          new_plan: {
+            slug: 'standard-monthly',
+            tier: 'STANDARD',
+            duration: 'MONTHLY',
+            price_cents: 2000,
+            credits_cents: 0,
+            period_end: '2026-09-15T00:00:00Z',
+            seat_summary: {
+              seat_count: 1,
+              total_cost_cents: 2000,
+              total_credits_cents: 0
+            }
+          }
+        })
+      )
+      const bodyText = container.textContent ?? ''
+
+      // Not the annual-only title/copy: an annual→monthly switch doesn't
+      // charge a full year.
+      expect(
+        screen.queryByText(
+          'Reactivating your subscription — full year billed today'
+        )
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByText('Reactivating your subscription')
+      ).toBeInTheDocument()
+      expect(bodyText).not.toContain('charges the full year')
+      expect(bodyText).toContain('Switching to monthly billing reactivates it')
+      expect(bodyText).toContain('$12.00')
+      expect(
+        screen.getByRole('button', {
+          name: 'Confirm & reactivate — $12.00 today'
         })
       ).toBeInTheDocument()
     })
@@ -279,7 +347,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
       expect(
         screen.getByRole('button', {
-          name: 'Confirm & reactivate — $15 today'
+          name: 'Confirm & reactivate — $15.00 today'
         })
       ).toBeEnabled()
     })
@@ -311,7 +379,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       )
 
       const confirmButton = screen.getByRole('button', {
-        name: 'Confirm & reactivate — $336 today'
+        name: 'Confirm & reactivate — $336.00 today'
       })
       const checkbox = screen.getByRole('checkbox')
       expect(confirmButton).toBeDisabled()
@@ -319,6 +387,36 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       await user.click(checkbox)
 
       expect(confirmButton).toBeEnabled()
+    })
+
+    it('uses the whole-subscription seat total, not the per-seat price, on a multi-seat team plan', () => {
+      // 3 seats at 2000/seat = 6000 total; a 5000 charge is below the
+      // per-seat price (2000) x... actually below the *total* (6000) so no
+      // checkbox should appear even though it exceeds the per-seat price.
+      mockSubscription.value = {
+        isCancelled: true,
+        endDate: '2026-08-15T00:00:00Z'
+      }
+      renderComponent(
+        makePreview({
+          transition_type: 'upgrade',
+          cost_today_cents: 5000,
+          current_plan: {
+            slug: 'team-per-credit-monthly',
+            tier: 'PRO',
+            duration: 'MONTHLY',
+            price_cents: 2000,
+            credits_cents: 0,
+            seat_summary: {
+              seat_count: 3,
+              total_cost_cents: 6000,
+              total_credits_cents: 0
+            }
+          }
+        })
+      )
+
+      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
     })
   })
 
@@ -346,7 +444,9 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       )
 
       await user.click(
-        screen.getByRole('button', { name: 'Confirm & reactivate — $15 today' })
+        screen.getByRole('button', {
+          name: 'Confirm & reactivate — $15.00 today'
+        })
       )
 
       expect(emitted().confirm).toEqual([[true]])
@@ -378,13 +478,205 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         })
       )
       const confirmButton = screen.getByRole('button', {
-        name: 'Confirm & reactivate — $336 today'
+        name: 'Confirm & reactivate — $336.00 today'
       })
 
       await user.click(screen.getByRole('checkbox'))
       await user.click(confirmButton)
 
       expect(emitted().confirm).toEqual([[true]])
+    })
+
+    it('emits the exact fractional charge, not rounded to whole dollars', () => {
+      // 5454 cents is $54.54; the old maximumFractionDigits:0 formatting
+      // would have rounded this to "$55", misstating what the user is
+      // actually charged on the one control meant to secure their consent.
+      mockSubscription.value = {
+        isCancelled: true,
+        endDate: '2026-08-15T00:00:00Z'
+      }
+      renderComponent(
+        makePreview({ transition_type: 'upgrade', cost_today_cents: 5454 })
+      )
+
+      expect(
+        screen.getByRole('button', {
+          name: 'Confirm & reactivate — $54.54 today'
+        })
+      ).toBeInTheDocument()
+    })
+  })
+
+  describe('confirm gating on load state', () => {
+    it('disables confirm while billing context has not finished initializing, even below the charge threshold', () => {
+      mockSubscription.value = { isCancelled: false, endDate: null }
+      mockIsInitialized.value = false
+      renderComponent(
+        makePreview({ transition_type: 'downgrade', is_immediate: false })
+      )
+
+      expect(
+        screen.getByRole('button', { name: 'Confirm change' })
+      ).toBeDisabled()
+    })
+
+    it('re-enables confirm once billing context finishes initializing', () => {
+      mockSubscription.value = { isCancelled: false, endDate: null }
+      mockIsInitialized.value = true
+      renderComponent(
+        makePreview({ transition_type: 'downgrade', is_immediate: false })
+      )
+
+      expect(
+        screen.getByRole('button', { name: 'Confirm change' })
+      ).toBeEnabled()
+    })
+  })
+
+  describe('missing reactivation data', () => {
+    it('hides the banner when the subscription has no end date', () => {
+      mockSubscription.value = { isCancelled: true, endDate: null }
+      renderComponent(makePreview({ transition_type: 'upgrade' }))
+
+      expect(
+        screen.queryByText('Reactivating your subscription')
+      ).not.toBeInTheDocument()
+      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    })
+
+    it('hides the banner when the preview carries no current_plan', () => {
+      mockSubscription.value = {
+        isCancelled: true,
+        endDate: '2026-08-15T00:00:00Z'
+      }
+      renderComponent(
+        makePreview({ transition_type: 'upgrade', current_plan: undefined })
+      )
+
+      expect(
+        screen.queryByText('Reactivating your subscription')
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  describe('reactivation consent lifetime', () => {
+    it('resets a ticked checkbox when the charge amount changes', async () => {
+      const user = userEvent.setup()
+      mockSubscription.value = {
+        isCancelled: true,
+        endDate: '2026-08-15T00:00:00Z'
+      }
+      const { rerender } = renderComponent(
+        makePreview({
+          transition_type: 'duration_change',
+          cost_today_cents: 33_600,
+          new_plan: {
+            slug: 'standard-annual',
+            tier: 'STANDARD',
+            duration: 'ANNUAL',
+            price_cents: 33_600,
+            credits_cents: 0,
+            period_end: '2027-08-15T00:00:00Z',
+            seat_summary: {
+              seat_count: 1,
+              total_cost_cents: 33_600,
+              total_credits_cents: 0
+            }
+          }
+        })
+      )
+      await user.click(screen.getByRole('checkbox'))
+      expect(
+        screen.getByRole('button', {
+          name: 'Confirm & reactivate — $336.00 today'
+        })
+      ).toBeEnabled()
+
+      // A different preview loads (e.g. user went back and re-previewed) with
+      // a higher charge; the earlier tick must not carry over as consent.
+      await rerender({
+        previewData: makePreview({
+          transition_type: 'duration_change',
+          cost_today_cents: 50_000,
+          new_plan: {
+            slug: 'standard-annual',
+            tier: 'STANDARD',
+            duration: 'ANNUAL',
+            price_cents: 50_000,
+            credits_cents: 0,
+            period_end: '2027-08-15T00:00:00Z',
+            seat_summary: {
+              seat_count: 1,
+              total_cost_cents: 50_000,
+              total_credits_cents: 0
+            }
+          }
+        })
+      })
+
+      expect(screen.getByRole('checkbox')).not.toBeChecked()
+      expect(
+        screen.getByRole('button', {
+          name: 'Confirm & reactivate — $500.00 today'
+        })
+      ).toBeDisabled()
+    })
+  })
+
+  describe('downgrade variant checkbox suppression', () => {
+    it('never shows a checkbox for the downgrade variant, even if cost_today_cents is unexpectedly positive', () => {
+      mockSubscription.value = {
+        isCancelled: true,
+        endDate: '2026-08-15T00:00:00Z'
+      }
+      renderComponent(
+        makePreview({
+          transition_type: 'downgrade',
+          is_immediate: false,
+          // A downgrade should never charge today; this asserts the FE
+          // doesn't surface a contradictory checkbox even if it did.
+          cost_today_cents: 999_999
+        })
+      )
+
+      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Confirm & reactivate' })
+      ).toBeEnabled()
+    })
+  })
+
+  describe('next payment date fallback', () => {
+    it('falls back to one month after activation for a monthly plan with no period_end', () => {
+      mockSubscription.value = {
+        isCancelled: true,
+        endDate: '2026-08-15T00:00:00Z'
+      }
+      const { container } = renderComponent(
+        makePreview({
+          transition_type: 'upgrade',
+          effective_at: '2026-08-01T00:00:00Z',
+          new_plan: {
+            slug: 'creator-monthly',
+            tier: 'CREATOR',
+            duration: 'MONTHLY',
+            price_cents: 3500,
+            credits_cents: 0,
+            seat_summary: {
+              seat_count: 1,
+              total_cost_cents: 3500,
+              total_credits_cents: 0
+            }
+            // No period_end.
+          }
+        })
+      )
+      const bodyText = container.textContent ?? ''
+
+      // Not the activation date itself (which would misreport as "renews
+      // today"); one month later instead.
+      expect(bodyText).not.toContain('renew automatically on Aug 1, 2026')
+      expect(bodyText).toContain('renew automatically on Sep 1, 2026')
     })
   })
 })

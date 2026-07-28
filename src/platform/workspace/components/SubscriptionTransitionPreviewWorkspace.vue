@@ -196,7 +196,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatUsdFromCents } from '@/base/credits/comfyCredits'
@@ -231,19 +231,19 @@ defineEmits<{
 }>()
 
 const { t, n } = useI18n()
-const { subscription } = useBillingContext()
+const { subscription, isInitialized } = useBillingContext()
 
 function formatTierName(tier: string): string {
   return t(`subscription.tiers.${tier.toLowerCase()}.name`)
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
     timeZone: 'UTC'
-  }).format(new Date(dateStr))
+  }).format(typeof date === 'string' ? new Date(date) : date)
 }
 
 function money(usd: number): string {
@@ -305,37 +305,56 @@ const reactivationVariant = computed<
       return null
   }
 })
+// Requires the data the banner and threshold math actually read
+// (subscription.endDate, previewData.current_plan) — without it the banner
+// would render broken copy or force the checkbox on a bogus $0 threshold.
 const isReactivating = computed(
-  () => isCancelled.value && reactivationVariant.value !== null
+  () =>
+    isCancelled.value &&
+    reactivationVariant.value !== null &&
+    !!subscription.value?.endDate &&
+    !!previewData.current_plan
 )
 
 const cancelDate = computed(() =>
   subscription.value?.endDate ? formatDate(subscription.value.endDate) : ''
 )
 
-// PreviewPlanInfo.price_cents isn't duration-normalized; divide ANNUAL by 12 to
-// get a monthly-equivalent, matching PricingTableWorkspace's getPriceFromApi.
+// seat_summary.total_cost_cents is the whole-subscription price; price_cents
+// is per-seat and understates the threshold on multi-seat team plans. Divide
+// ANNUAL by 12 to get a monthly-equivalent, matching
+// PricingTableWorkspace's getPriceFromApi.
 const currentMonthlyPriceCents = computed(() => {
   const plan = previewData.current_plan
   if (!plan) return 0
-  return plan.duration === 'ANNUAL' ? plan.price_cents / 12 : plan.price_cents
+  const totalCents = plan.seat_summary.total_cost_cents
+  return currentIsYearly.value ? totalCents / 12 : totalCents
 })
 const chargeCents = computed(() => previewData.cost_today_cents)
+// The downgrade variant's copy always says "you won't be charged today" with
+// no amount shown, so it never gets the checkbox even if cost_today_cents is
+// unexpectedly positive.
 const exceedsMonthlyThreshold = computed(
   () =>
-    isReactivating.value && chargeCents.value > currentMonthlyPriceCents.value
+    isReactivating.value &&
+    reactivationVariant.value !== 'downgrade' &&
+    chargeCents.value > currentMonthlyPriceCents.value
 )
 const chargeDisplay = computed(
-  () =>
-    `$${formatUsdFromCents({
-      cents: chargeCents.value,
-      numberOptions: { maximumFractionDigits: 0 }
-    })}`
+  () => `$${formatUsdFromCents({ cents: chargeCents.value })}`
 )
 
 const reactivationConfirmed = ref(false)
+// A checked box is consent to *this* charge; a later charge change (e.g. a
+// different preview loads) must not carry that consent forward.
+watch(chargeCents, () => {
+  reactivationConfirmed.value = false
+})
+
 const confirmDisabled = computed(
-  () => exceedsMonthlyThreshold.value && !reactivationConfirmed.value
+  () =>
+    !isInitialized.value ||
+    (exceedsMonthlyThreshold.value && !reactivationConfirmed.value)
 )
 const confirmReactivation = computed(
   () =>
@@ -344,7 +363,7 @@ const confirmReactivation = computed(
 )
 
 const bannerTitle = computed(() =>
-  reactivationVariant.value === 'duration_change'
+  reactivationVariant.value === 'duration_change' && newIsYearly.value
     ? t('subscription.preview.reactivation.titleAnnual')
     : t('subscription.preview.reactivation.title')
 )
@@ -355,7 +374,9 @@ const bannerBodyKey = computed<string>(() => {
     case 'downgrade':
       return 'subscription.preview.reactivation.downgradeBody'
     case 'duration_change':
-      return 'subscription.preview.reactivation.durationChangeBody'
+      return newIsYearly.value
+        ? 'subscription.preview.reactivation.durationChangeBody'
+        : 'subscription.preview.reactivation.durationChangeBodyMonthly'
     default:
       return ''
   }
@@ -407,11 +428,17 @@ const refillLabel = computed(() =>
 )
 
 const effectiveDateLabel = computed(() => formatDate(previewData.effective_at))
-const nextPaymentDate = computed(() =>
-  previewData.new_plan.period_end
-    ? formatDate(previewData.new_plan.period_end)
-    : effectiveDateLabel.value
-)
+// Without an explicit period_end, fall back to one billing period after
+// activation rather than the activation date itself — the activation date
+// reads as "renews today" for an immediate reactivation, which is wrong.
+const nextPaymentDate = computed(() => {
+  if (previewData.new_plan.period_end) {
+    return formatDate(previewData.new_plan.period_end)
+  }
+  const fallback = new Date(previewData.effective_at)
+  fallback.setUTCMonth(fallback.getUTCMonth() + (newIsYearly.value ? 12 : 1))
+  return formatDate(fallback)
+})
 const currentPeriodEnd = computed(() =>
   previewData.current_plan?.period_end
     ? formatDate(previewData.current_plan.period_end)
