@@ -182,7 +182,11 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await args.props.onConfirm('standard-monthly', false)
 
-    expect(downgradeToPersonal).toHaveBeenCalledWith('standard-monthly', false)
+    expect(downgradeToPersonal).toHaveBeenCalledWith(
+      'standard-monthly',
+      false,
+      0
+    )
     await expect(resultPromise).resolves.toStrictEqual(result)
   })
 
@@ -204,7 +208,11 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await args.props.onConfirm('standard-monthly', true)
 
-    expect(downgradeToPersonal).toHaveBeenCalledWith('standard-monthly', true)
+    expect(downgradeToPersonal).toHaveBeenCalledWith(
+      'standard-monthly',
+      true,
+      1500
+    )
     await resultPromise
   })
 

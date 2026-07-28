@@ -733,7 +733,8 @@ export const useDialogService = () => {
           onConfirm: async (planSlug: string, confirmReactivation: boolean) => {
             const result = await downgradeToPersonal(
               planSlug,
-              confirmReactivation
+              confirmReactivation,
+              chargeCents
             )
             resolveResult(result)
           }

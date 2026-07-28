@@ -39,6 +39,15 @@ class ReactivationConfirmationRequiredError extends Error {
   }
 }
 
+/** Thrown by `downgradeToPersonal` when the amount a caller confirmed no
+ *  longer matches a fresh preview taken right before billing — refuses to
+ *  charge an amount the user never actually saw and consented to. */
+class ReactivationAmountChangedError extends Error {
+  constructor(public readonly preview: PreviewSubscribeResponse) {
+    super(t('subscription.downgrade.reactivationAmountChanged'))
+  }
+}
+
 /**
  * Team-plan downgrade to personal: validate via `previewSubscribe`, remove
  * every member except the original owner, then initiate the tier change.
@@ -48,7 +57,8 @@ class ReactivationConfirmationRequiredError extends Error {
 export function useDowngradeToPersonal() {
   const workspaceStore = useTeamWorkspaceStore()
   const { members } = storeToRefs(workspaceStore)
-  const { subscribe, previewSubscribe, subscription } = useBillingContext()
+  const { subscribe, previewSubscribe, subscription, isInitialized } =
+    useBillingContext()
   const billingOperationStore = useBillingOperationStore()
   const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
@@ -82,10 +92,11 @@ export function useDowngradeToPersonal() {
   function requiresReactivationConfirmation(
     preview: PreviewSubscribeResponse
   ): boolean {
-    return (
-      (subscription.value?.isCancelled ?? false) &&
-      preview.transition_type !== 'new_subscription'
-    )
+    if (preview.transition_type === 'new_subscription') return false
+    // Billing context not yet loaded means "cancelled or not" is unknown, not
+    // "not cancelled" — fail closed so an unloaded subscription can't skip
+    // the reactivation disclosure.
+    return !isInitialized.value || (subscription.value?.isCancelled ?? false)
   }
 
   /** Read-only preview so a caller can decide whether to collect reactivation
@@ -106,7 +117,11 @@ export function useDowngradeToPersonal() {
 
   async function downgradeToPersonal(
     planSlug: string,
-    confirmReactivation = false
+    confirmReactivation = false,
+    /** The `cost_today_cents` the caller displayed and got consent for.
+     *  Compared against this call's own fresh preview so a price change
+     *  between that consent and this charge can't slip through unnoticed. */
+    confirmedChargeCents?: number
   ): Promise<DowngradeToPersonalResult | null> {
     ensureCanDowngrade()
 
@@ -159,12 +174,21 @@ export function useDowngradeToPersonal() {
       // Guard before touching membership: the BE rejects this subscribe
       // without confirm_reactivation, so members must never be removed for a
       // transition that's going to fail on consent anyway.
-      if (requiresReactivationConfirmation(preview) && !confirmReactivation) {
-        telemetryFailure = {
-          failure_category: 'validation',
-          error_code: 'reactivation_not_confirmed'
+      if (requiresReactivationConfirmation(preview)) {
+        if (!confirmReactivation) {
+          telemetryFailure = {
+            failure_category: 'validation',
+            error_code: 'reactivation_not_confirmed'
+          }
+          throw new ReactivationConfirmationRequiredError(preview)
         }
-        throw new ReactivationConfirmationRequiredError(preview)
+        if (preview.cost_today_cents !== confirmedChargeCents) {
+          telemetryFailure = {
+            failure_category: 'validation',
+            error_code: 'reactivation_amount_changed'
+          }
+          throw new ReactivationAmountChangedError(preview)
+        }
       }
 
       for (const member of membersToRemove) {

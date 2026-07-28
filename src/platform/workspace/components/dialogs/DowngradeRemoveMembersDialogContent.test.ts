@@ -102,7 +102,7 @@ describe('DowngradeRemoveMembersDialogContent', () => {
   })
 
   it('shows the removal-only body when reactivation is not required', () => {
-    mountComponent()
+    mountComponent({ requiresRemoval: true, requiresReactivation: false })
 
     expect(
       screen.getByText(
