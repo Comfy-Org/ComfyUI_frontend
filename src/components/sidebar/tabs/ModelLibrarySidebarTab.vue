@@ -6,16 +6,17 @@
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.refresh')"
-        @click="modelStore.refresh"
+        @click="withLoadFailureToast(() => modelStore.refresh())"
       >
         <i class="icon-[lucide--refresh-cw] size-4" />
       </Button>
       <Button
+        v-if="!usesAssetApi"
         v-tooltip.bottom="$t('g.loadAllFolders')"
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.loadAllFolders')"
-        @click="modelStore.loadModels"
+        @click="withLoadFailureToast(() => modelStore.loadModels())"
       >
         <i class="icon-[lucide--cloud-download] size-4" />
       </Button>
@@ -32,6 +33,17 @@
           "
           @search="handleSearch"
         />
+        <p
+          v-if="searchResults.capped"
+          role="status"
+          class="mx-2 my-1 text-xs text-muted"
+        >
+          {{
+            $t('sideToolbar.searchResultsCapped', {
+              limit: SEARCH_RESULT_LIMIT
+            })
+          }}
+        </p>
       </SidebarTopArea>
     </template>
     <template #body>
@@ -41,6 +53,7 @@
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
         class="model-lib-tree-explorer"
+        :aria-label="$t('sideToolbar.modelLibrary')"
         :root="renderedRoot"
       >
         <template #node="{ node }">
@@ -55,6 +68,7 @@
 <script setup lang="ts">
 import { Divider } from 'primevue'
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
@@ -66,6 +80,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
 import { ResourceState, useModelStore } from '@/stores/modelStore'
@@ -77,40 +92,76 @@ import { buildTree } from '@/utils/treeUtil'
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
+const toastStore = useToastStore()
+const { t } = useI18n()
+const usesAssetApi = computed(() =>
+  settingStore.get('Comfy.Assets.UseAssetAPI')
+)
 const assetDownloadStore = useAssetDownloadStore()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
+/**
+ * The committed query the tree derives from. SearchInput debounces its
+ * `search` emit, so the full recompute-and-mount cost of a query change runs
+ * once per typing pause instead of on every keystroke of `searchQuery`.
+ */
+const activeSearchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
-const filteredModels = ref<ComfyModelDef[]>([])
+// Search results render expanded and un-virtualized, and the tree's cost is
+// O(n^2) in mounted rows, so an unbounded result set hangs the tab on large
+// libraries (measured: seconds at 5k models). Cap what renders; refining the
+// query is the path to the tail.
+const SEARCH_RESULT_LIMIT = 500
+
+const searchResults = computed<{ models: ComfyModelDef[]; capped: boolean }>(
+  () => {
+    const search = activeSearchQuery.value.toLocaleLowerCase()
+    if (!search) return { models: [], capped: false }
+    const matches: ComfyModelDef[] = []
+    for (const model of modelStore.models) {
+      if (!model.searchable.includes(search)) continue
+      if (matches.length === SEARCH_RESULT_LIMIT) {
+        return { models: matches, capped: true }
+      }
+      matches.push(model)
+    }
+    return { models: matches, capped: false }
+  }
+)
+
 const handleSearch = async (query: string) => {
+  activeSearchQuery.value = query
   if (!query) {
-    filteredModels.value = []
     expandedKeys.value = {}
     return
   }
-  // Load all models to ensure we have the latest data
+  // Load all models to ensure results cover folders not yet opened
   await modelStore.loadModels()
-  const search = query.toLocaleLowerCase()
-  filteredModels.value = modelStore.models.filter((model: ComfyModelDef) => {
-    return model.searchable.includes(search)
-  })
-
-  await nextTick()
-  expandNode(root.value)
+  await expandSearchResults()
 }
 
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
 const root = computed<TreeNode>(() => {
-  const allNodes: ModelOrFolder[] = searchQuery.value
-    ? filteredModels.value
-    : [...modelStore.modelFolders, ...modelStore.models]
+  const allNodes: ModelOrFolder[] = activeSearchQuery.value
+    ? searchResults.value.models
+    : [...modelStore.visibleModelFolders, ...modelStore.models]
   return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
     modelOrFolder.key.split('/')
   )
 })
+
+// Expansion runs from handleSearch when the QUERY commits, never on root
+// recomputes: a background reload during an active search must neither
+// re-expand folders the user collapsed nor pay a full expand-and-mount pass
+// per folder commit.
+async function expandSearchResults() {
+  if (!activeSearchQuery.value) return
+  await nextTick()
+  expandNode(root.value)
+}
 
 const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
@@ -191,10 +242,30 @@ watch(
   }
 )
 
+async function withLoadFailureToast(action: () => Promise<unknown>) {
+  try {
+    await action()
+  } catch (error) {
+    console.error('Model library load failed', error)
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('sideToolbar.modelLibraryLoadFailed'),
+      life: 5000
+    })
+  }
+}
+
 onMounted(async () => {
   searchBoxRef.value?.focus()
-  if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
-    await modelStore.loadModels()
+  // In asset mode the whole library resolves from one cached walk, so eager
+  // loading is cheap and keeps search and folder badges complete from the
+  // start; AutoLoadAll remains the opt-in for the request-per-folder legacy path.
+  if (
+    usesAssetApi.value ||
+    settingStore.get('Comfy.ModelLibrary.AutoLoadAll')
+  ) {
+    await withLoadFailureToast(() => modelStore.loadModels())
   }
 })
 </script>
