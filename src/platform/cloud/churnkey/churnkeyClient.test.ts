@@ -29,7 +29,10 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   }
 }))
 
-import { prepareChurnkey } from './churnkeyClient'
+import {
+  isUnsupportedChurnkeyOfferError,
+  prepareChurnkey
+} from './churnkeyClient'
 
 function authResponse(): ChurnkeyAuthResponse {
   return {
@@ -187,7 +190,7 @@ describe('churnkeyClient', () => {
     config.onError('Provider failed')
     await Promise.resolve()
 
-    expect(mocks.hide).not.toHaveBeenCalled()
+    expect(mocks.hide).toHaveBeenCalledOnce()
     expect(mocks.clearState).not.toHaveBeenCalled()
     const resolveCancellation = finishCancellation
     if (!resolveCancellation) throw new Error('Expected cancellation to start')
@@ -195,18 +198,21 @@ describe('churnkeyClient', () => {
 
     await expect(handlerPromise).resolves.toEqual({ message: 'Canceled' })
     await expect(showPromise).rejects.toThrow('Provider failed')
-    expect(mocks.hide).toHaveBeenCalledOnce()
     expect(mocks.clearState).toHaveBeenCalledOnce()
   })
 
-  it('rejects and cleans up when the embed session never settles', async () => {
+  it('rejects and cleans up when cancellation outlives the session', async () => {
     const session = await prepareChurnkey()
     if (!session) throw new Error('Expected a Churnkey session')
 
     vi.useFakeTimers()
     try {
-      const showPromise = session.show({ handleCancel: vi.fn() })
+      const showPromise = session.show({
+        handleCancel: vi.fn(() => new Promise<never>(() => undefined))
+      })
+      const config = capturedConfig()
       const timeoutResult = showPromise.catch((error: unknown) => error)
+      void config.handleCancel({ id: 'cus_test_1' })
 
       await vi.runOnlyPendingTimersAsync()
 
@@ -218,6 +224,21 @@ describe('churnkeyClient', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('identifies an unsupported offer when ChurnKey reports its failure', async () => {
+    const session = await prepareChurnkey()
+    if (!session) throw new Error('Expected a Churnkey session')
+
+    const showPromise = session.show({ handleCancel: vi.fn() })
+    const config = capturedConfig()
+    const offerError = await config
+      .handleRedirect()
+      .catch((error: unknown) => error)
+    config.onError('Handler rejected', 'redirect')
+
+    await expect(showPromise).rejects.toSatisfy(isUnsupportedChurnkeyOfferError)
+    expect(isUnsupportedChurnkeyOfferError(offerError)).toBe(true)
   })
 
   it('does not load the embed when backend credentials are unavailable', async () => {

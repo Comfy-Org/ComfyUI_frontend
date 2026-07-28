@@ -24,7 +24,8 @@ const mocks = vi.hoisted(() => ({
   prepare: vi.fn(),
   trackCancellation: vi.fn(),
   toastAdd: vi.fn(),
-  canManageSubscriptionLifecycle: true
+  canManageSubscriptionLifecycle: true,
+  unsupportedOfferError: new Error('Unsupported ChurnKey offer')
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -40,7 +41,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
 vi.mock('@/platform/cloud/churnkey/churnkeyClient', () => ({
-  prepareChurnkey: mocks.prepare
+  prepareChurnkey: mocks.prepare,
+  isUnsupportedChurnkeyOfferError: (error: unknown) =>
+    error === mocks.unsupportedOfferError
 }))
 
 vi.mock('@/platform/telemetry', () => ({
@@ -226,6 +229,56 @@ describe('launchCancellationFlow', () => {
       })
     )
     expect(showFallback).not.toHaveBeenCalled()
+  })
+
+  it('does not open the native dialog after an unsupported offer', async () => {
+    mocks.prepare.mockResolvedValue(
+      session(async () => {
+        throw mocks.unsupportedOfferError
+      })
+    )
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(mocks.toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'Unsupported ChurnKey offer'
+      })
+    )
+    expect(showFallback).not.toHaveBeenCalled()
+  })
+
+  it('times out a cancellation without opening the native dialog', async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.cancelSubscription.mockReturnValue(
+        new Promise<never>(() => undefined)
+      )
+      mocks.prepare.mockResolvedValue(
+        session(async (options) => {
+          await options.handleCancel('Too expensive')
+          return { canceled: true }
+        })
+      )
+      const showFallback = vi.fn()
+
+      const flow = launchCancellationFlow({ showFallback })
+      const flowResult = flow.then(
+        () => undefined,
+        (error: unknown) => error
+      )
+      await vi.runOnlyPendingTimersAsync()
+
+      await expect(flowResult).resolves.toBeUndefined()
+      expect(mocks.toastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(showFallback).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('does not reopen cancellation after the API already succeeded', async () => {

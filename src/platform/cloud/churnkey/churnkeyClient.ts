@@ -60,8 +60,12 @@ export interface ChurnkeySession {
   show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionResults>
 }
 
-function rejectUnsupportedOffer(): Promise<never> {
-  return Promise.reject(new Error('Unsupported ChurnKey offer'))
+class UnsupportedChurnkeyOfferError extends Error {}
+
+export function isUnsupportedChurnkeyOfferError(
+  error: unknown
+): error is UnsupportedChurnkeyOfferError {
+  return error instanceof UnsupportedChurnkeyOfferError
 }
 
 function createSession(
@@ -74,6 +78,14 @@ function createSession(
       new Promise<ChurnkeySessionResults>((resolve, reject) => {
         let settled = false
         let pendingCancellation: Promise<ChurnkeyHandlerResult> | null = null
+        let unsupportedOfferError: UnsupportedChurnkeyOfferError | null = null
+
+        function rejectUnsupportedOffer(): Promise<never> {
+          unsupportedOfferError = new UnsupportedChurnkeyOfferError(
+            'Unsupported ChurnKey offer'
+          )
+          return Promise.reject(unsupportedOfferError)
+        }
 
         function settle(fn: () => void, { deferClearState = false } = {}) {
           if (settled) return
@@ -108,7 +120,7 @@ function createSession(
         }
 
         const sessionTimeoutId = window.setTimeout(() => {
-          settleAfterCancellation(() => {
+          settle(() => {
             runBestEffort(() => {
               window.churnkey?.hide?.()
             })
@@ -154,16 +166,17 @@ function createSession(
           handleRebate: rejectUnsupportedOffer,
           handleRedirect: rejectUnsupportedOffer,
           onClose: (results) => settleAfterCancellation(() => resolve(results)),
-          onError: (error, type) =>
+          onError: (error, type) => {
+            runBestEffort(() => {
+              window.churnkey?.hide?.()
+            })
             settleAfterCancellation(
               () => {
-                runBestEffort(() => {
-                  window.churnkey?.hide?.()
-                })
-                reject(churnkeyError(error, type))
+                reject(unsupportedOfferError ?? churnkeyError(error, type))
               },
               { deferClearState: true }
             )
+          }
         }
 
         try {

@@ -1,6 +1,11 @@
+import { withTimeout } from 'es-toolkit/promise'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
-import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
+import {
+  isUnsupportedChurnkeyOfferError,
+  prepareChurnkey
+} from '@/platform/cloud/churnkey/churnkeyClient'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTelemetry } from '@/platform/telemetry'
@@ -8,6 +13,8 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { getErrorMessage } from '@/utils/errorUtil'
 
 import { createCancellationMetadata } from './cancellationTelemetry'
+
+const CANCELLATION_TIMEOUT_MS = 3 * 60 * 1000
 
 export interface CancellationFallbackOptions {
   flowAlreadyOpened?: boolean
@@ -107,7 +114,10 @@ async function runCancellationFlow(
         }
         telemetry?.trackSubscriptionCancellation('confirmed', metadata)
         try {
-          await billing.cancelSubscription()
+          await withTimeout(
+            () => billing.cancelSubscription(),
+            CANCELLATION_TIMEOUT_MS
+          )
           didCancelSucceed = true
           await billing.fetchStatus().catch(() => undefined)
           return { message: t('subscription.cancelSuccess') }
@@ -132,11 +142,11 @@ async function runCancellationFlow(
       error_message:
         getErrorMessage(cancelError ?? error) ?? t('g.unknownError')
     })
-    if (cancelError) {
+    if (cancelError || isUnsupportedChurnkeyOfferError(error)) {
       useToastStore().add({
         severity: 'error',
         summary: t('subscription.cancelDialog.failed'),
-        detail: getErrorMessage(cancelError) ?? t('g.unknownError')
+        detail: getErrorMessage(cancelError ?? error) ?? t('g.unknownError')
       })
       return
     }
