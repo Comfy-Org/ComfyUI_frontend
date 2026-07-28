@@ -49,7 +49,7 @@
         lgraphNode?.constructor?.nodeData?.output_node &&
         isSelectOutputsMode &&
         nodeData.mode === LGraphEventMode.ALWAYS &&
-        !lgraphNode?.has_errors
+        !hasAnyError
       "
       :id="nodeId"
     />
@@ -97,7 +97,7 @@
             class="absolute left-0 -translate-x-1/2"
           />
           <SlotConnectionDot
-            v-if="hasOutputs"
+            v-if="nodeData.outputs.length"
             multi
             class="absolute right-0 translate-x-1/2"
           />
@@ -183,7 +183,7 @@
       :has-any-error="hasAnyError"
       :show-errors-tab-enabled="showErrorsTabEnabled"
       :show-advanced-inputs-button="showAdvancedInputsButton"
-      :show-advanced-state="showAdvancedState"
+      :show-advanced-state="!!nodeData.showAdvanced"
       :header-color="applyLightThemeColor(nodeData?.color)"
       :shape="nodeData.shape"
       @enter-subgraph="handleEnterSubgraph"
@@ -285,13 +285,9 @@ import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import { nodeHasError } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
@@ -301,9 +297,9 @@ import {
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
-  getLocatorIdFromNodeData,
   getNodeByLocatorId,
-  nodeLocatorFromState
+  locatorIdFromState,
+  subgraphIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { toNodeId } from '@/types/nodeId'
@@ -343,9 +339,6 @@ const nodeId = computed(() => nodeData.id)
 useVueElementTracking(nodeId.value, 'node')
 
 const canvasStore = useCanvasStore()
-const nodeLocatorInput = computed(() =>
-  nodeLocatorFromState(nodeData, canvasStore.rootGraphId)
-)
 
 const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
@@ -353,40 +346,12 @@ const isSelected = computed(() => {
 })
 
 const nodeLocatorId = computed(
-  () => getLocatorIdFromNodeData(nodeLocatorInput.value) ?? undefined
+  () => locatorIdFromState(nodeData, canvasStore.rootGraphId) ?? undefined
 )
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
-const executionErrorStore = useExecutionErrorStore()
-const missingModelStore = useMissingModelStore()
-const missingNodesErrorStore = useMissingNodesErrorStore()
-const missingMediaStore = useMissingMediaStore()
-const hasExecutionError = computed(
-  () => executionErrorStore.lastExecutionErrorNodeId === nodeId.value
+const hasAnyError = computed(() =>
+  nodeHasError(nodeData, canvasStore.rootGraphId, lgraphNode.value)
 )
-
-/**
- * Derived from the error stores only. `node.has_errors` is deliberately not
- * consulted: it is a plain class field written by a watcher, so Vue cannot
- * track it and the ring would latch on after the underlying error cleared.
- * Every source that watcher folds in is queried directly here instead.
- */
-const hasAnyError = computed((): boolean => {
-  const locatorId = nodeLocatorId.value
-  const node = lgraphNode.value
-  const hasNodeScopedError =
-    locatorId !== undefined &&
-    (executionErrorStore.getNodeErrors(locatorId) ||
-      missingModelStore.hasMissingModelOnNode(locatorId) ||
-      missingMediaStore.hasMissingMediaOnNode(locatorId))
-  const hasContainerError =
-    node !== null &&
-    (executionErrorStore.isContainerWithInternalError(node) ||
-      missingNodesErrorStore.isContainerWithMissingNode(node) ||
-      missingModelStore.isContainerWithMissingModel(node) ||
-      missingMediaStore.isContainerWithMissingMedia(node))
-
-  return !!(hasExecutionError.value || hasNodeScopedError || hasContainerError)
-})
 
 const showErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
@@ -415,17 +380,7 @@ const nodeOpacity = computed(() => {
   return globalOpacity
 })
 
-const nodeDataStore = useNodeDataStore()
-const storedSlots = computed(() => {
-  const rootGraphId = canvasStore.rootGraphId
-  return rootGraphId
-    ? nodeDataStore.getNodeSlots(rootGraphId, nodeId.value)
-    : undefined
-})
-const hasInputs = computed(
-  () => nonWidgetedInputs(storedSlots.value?.inputs).length > 0
-)
-const hasOutputs = computed((): boolean => !!storedSlots.value?.outputs?.length)
+const hasInputs = computed(() => nonWidgetedInputs(nodeData.inputs).length > 0)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
@@ -441,7 +396,7 @@ onErrorCaptured((error) => {
 })
 
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
-const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
+const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
 const badges = usePartitionedBadges(nodeData)
@@ -682,7 +637,16 @@ const handleOpenErrors = () => {
 }
 
 const handleToggleAdvanced = () => {
-  showAdvancedState.value = !showAdvancedState.value
+  const node = lgraphNode.value
+  if (!node) return
+
+  // A subgraph node has no advanced section of its own; the side panel hosts it.
+  if (node instanceof SubgraphNode) {
+    if (rightSidePanelStore.isOpen) rightSidePanelStore.closePanel()
+    else rightSidePanelStore.focusSection('advanced-inputs')
+    return
+  }
+  node.showAdvanced = !node.showAdvanced
 }
 
 const handleEnterSubgraph = () => {
@@ -696,7 +660,7 @@ const handleEnterSubgraph = () => {
     return
   }
 
-  const locatorId = getLocatorIdFromNodeData(nodeLocatorInput.value)
+  const locatorId = nodeLocatorId.value
   if (!locatorId) return
 
   const litegraphNode = getNodeByLocatorId(graph, locatorId)
@@ -718,12 +682,12 @@ const handleEnterSubgraph = () => {
 const nodeOutputs = useNodeOutputStore()
 
 const nodeOutputLocatorId = computed(() => {
-  const subgraphId = nodeLocatorInput.value.subgraphId
+  const subgraphId = subgraphIdFromState(nodeData, canvasStore.rootGraphId)
   return subgraphId ? `${subgraphId}:${nodeData.id}` : nodeData.id
 })
 
 const lgraphNode = computed(() => {
-  const locatorId = getLocatorIdFromNodeData(nodeLocatorInput.value)
+  const locatorId = nodeLocatorId.value
   if (!locatorId) return null
 
   return getNodeByLocatorId(app.rootGraph, locatorId)
@@ -765,32 +729,8 @@ const showAdvancedInputsButton = computed(() => {
   return hasAdvancedWidgets && !alwaysShowAdvanced
 })
 
-/**
- * Reads through to `nodeDataStore`, so an external `node.showAdvanced` write is
- * reflected here. Subgraph nodes have no advanced section of their own; toggling
- * them opens the side panel instead.
- */
-const showAdvancedState = computed({
-  get: () => !!nodeData.showAdvanced,
-  set(value: boolean) {
-    const node = lgraphNode.value
-    if (!node) return
-
-    if (node instanceof SubgraphNode) {
-      if (value) {
-        rightSidePanelStore.focusSection('advanced-inputs')
-      } else {
-        rightSidePanelStore.closePanel()
-      }
-      return
-    }
-    node.showAdvanced = value
-  }
-})
-
-const hasVideoInput = computed(
-  () =>
-    storedSlots.value?.inputs.some((input) => input.type === 'VIDEO') ?? false
+const hasVideoInput = computed(() =>
+  nodeData.inputs.some((input) => input.type === 'VIDEO')
 )
 
 const nodeMedia = computed(() => {

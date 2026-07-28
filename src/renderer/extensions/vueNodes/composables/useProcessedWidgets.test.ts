@@ -125,7 +125,9 @@ function processWidgets({
       type: nodeType,
       title: 'Test',
       mode: 0,
-      flags: {}
+      flags: {},
+      inputs: [],
+      outputs: []
     },
     widgetIds,
     graphId: GRAPH_ID,

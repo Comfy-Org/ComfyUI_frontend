@@ -2,6 +2,8 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
 test.describe('App mode builder selection', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -47,10 +49,27 @@ test.describe('App mode builder selection', () => {
   })
 
   test('Can not select nodes with errors or notes', async ({ comfyPage }) => {
-    //Manually set error state on checkpoint loader
-    //Shouldn't be needed on ci, but has spotty reliability
-    await comfyPage.page.evaluate(() => (graph!.nodes[6].has_errors = true))
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+
+    const [checkpointLoader] = await comfyPage.nodeOps.getNodeRefsByType(
+      'CheckpointLoaderSimple'
+    )
+    await new ExecutionHelper(comfyPage).mockValidationFailure({
+      [String(checkpointLoader.id)]: {
+        class_type: 'CheckpointLoaderSimple',
+        dependent_outputs: [],
+        errors: [
+          {
+            type: 'value_not_in_list',
+            message: 'Value not in list',
+            details: '',
+            extra_info: { input_name: 'ckpt_name' }
+          }
+        ]
+      }
+    })
+    await comfyPage.runButton.click()
+    await dismissErrorOverlay(comfyPage)
 
     const items = comfyPage.appMode.select.inputItems
     await comfyPage.appMode.enterBuilder()

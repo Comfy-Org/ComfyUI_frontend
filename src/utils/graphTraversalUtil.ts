@@ -19,26 +19,23 @@ import type { UUID } from '@/utils/uuid'
 import { isSubgraphIoNode } from './typeGuardUtil'
 
 /**
- * Reconstructs the legacy `subgraphId` (null at the root graph) from a
- * `NodeState`'s owning `graphId`. Locator/execution-id helpers key root nodes
- * by bare id, so a root-owned node must map to `null`, not the root graph id.
+ * The containing subgraph's id, or `null` when the node belongs to the root
+ * graph. Locator/execution ids key root nodes by bare id, so a root-owned node —
+ * or one whose root graph is not yet known — must map to `null`.
  */
-export function subgraphIdFromGraphId(
-  graphId: UUID | undefined,
+export function subgraphIdFromState(
+  state: Pick<NodeState, 'graphId'>,
   rootGraphId: UUID | undefined
-): string | null {
-  return graphId && graphId !== rootGraphId ? graphId : null
+): UUID | null {
+  return rootGraphId && state.graphId !== rootGraphId ? state.graphId : null
 }
 
-/** Builds the `{ id, subgraphId }` locator shape the traversal helpers expect from a node's shell state. */
-export function nodeLocatorFromState(
+/** The locator id for a node described by its shell state. */
+export function locatorIdFromState(
   state: Pick<NodeState, 'id' | 'graphId'>,
   rootGraphId: UUID | undefined
-): { id: NodeId; subgraphId: string | null } {
-  return {
-    id: state.id,
-    subgraphId: subgraphIdFromGraphId(state.graphId, rootGraphId)
-  }
+): NodeLocatorId | null {
+  return createNodeLocatorId(subgraphIdFromState(state, rootGraphId), state.id)
 }
 
 function parseNodeIdPath(path: string[]): NodeId[] | null {
@@ -56,22 +53,6 @@ function createExecutionIdFromPath(
   if (!parentNodeIds) return null
 
   return createNodeExecutionId([...parentNodeIds, nodeId])
-}
-
-/**
- * Constructs a locator ID from node data with optional subgraph context.
- *
- * @param nodeData - Node data containing id and optional subgraphId
- * @returns The locator ID string
- */
-export function getLocatorIdFromNodeData(nodeData: {
-  id: string | number
-  subgraphId?: string | null
-}): NodeLocatorId | null {
-  const nodeId = parseNodeId(nodeData.id)
-  if (!nodeId) return null
-
-  return createNodeLocatorId(nodeData.subgraphId ?? null, nodeId)
 }
 
 /**
@@ -579,25 +560,20 @@ export function getExecutionIdForNodeInGraph(
 }
 
 /**
- * Returns the execution ID for a node described by plain data (id + subgraphId),
- * without requiring a pre-existing {@link LGraphNode} reference.
- * Subgraph nodes return the full colon-separated path (e.g. `"65:70:63"`).
- * Falls back to `String(nodeData.id)` if the node cannot be resolved.
- *
- * @param rootGraph - The root graph to resolve from
- * @param nodeData  - Object with `id` (local node ID) and optional `subgraphId` (UUID)
+ * Returns the execution ID for a node described by its shell state, without
+ * requiring a pre-existing {@link LGraphNode} reference. Subgraph nodes return
+ * the full colon-separated path (e.g. `"65:70:63"`). Falls back to the local id
+ * if the node cannot be resolved.
  */
-export function getExecutionIdFromNodeData(
+export function executionIdFromState(
   rootGraph: LGraph,
-  nodeData: { id: string | number; subgraphId?: string | null }
+  state: Pick<NodeState, 'id' | 'graphId'>
 ): NodeExecutionId | null {
-  const localNodeId = parseNodeId(nodeData.id)
+  const localNodeId = parseNodeId(state.id)
   if (!localNodeId) return null
 
-  const locatorId = getLocatorIdFromNodeData(nodeData)
-  if (!locatorId) return createNodeExecutionId([localNodeId])
-
-  const node = getNodeByLocatorId(rootGraph, locatorId)
+  const locatorId = locatorIdFromState(state, rootGraph.id)
+  const node = locatorId && getNodeByLocatorId(rootGraph, locatorId)
   if (!node) return createNodeExecutionId([localNodeId])
 
   return (

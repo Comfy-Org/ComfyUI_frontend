@@ -20,6 +20,8 @@ import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import NodeHeader from './NodeHeader.vue'
 
 const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
+  inputs: [],
+  outputs: [],
   id: toNodeId('1'),
   graphId: 'test-graph',
   title: 'KSampler',

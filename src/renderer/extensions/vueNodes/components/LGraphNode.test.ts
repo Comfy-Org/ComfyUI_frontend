@@ -29,7 +29,6 @@ vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>
   return {
     ...actual,
-    getLocatorIdFromNodeData: vi.fn(() => 'test-node-123'),
     getNodeByLocatorId: vi.fn(
       () => mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
     )
@@ -163,7 +162,9 @@ const mockNodeData: NodeState = {
   title: 'Test Node',
   type: 'TestNode',
   mode: 0,
-  flags: {}
+  flags: {},
+  inputs: [],
+  outputs: []
 }
 
 const mockRerouteNodeData: NodeState = {

@@ -1433,32 +1433,6 @@ export class LGraph
       : LiteGraph.CANVAS_GRID_SIZE
   }
 
-  /**
-   * @deprecated Will be removed in 0.9
-   * Checks that the node type matches the node type registered,
-   * used when replacing a nodetype by a newer version during execution
-   * this replaces the ones using the old version with the new version
-   */
-  checkNodeTypes() {
-    const { _nodes } = this
-    for (const [i, node] of _nodes.entries()) {
-      const ctor = LiteGraph.registered_node_types[node.type]
-      if (node.constructor == ctor) continue
-
-      console.warn('node being replaced by newer version:', node.type)
-      const newnode = LiteGraph.createNode(node.type)
-      if (!newnode) continue
-      _nodes[i] = newnode
-      newnode.configure(node.serialize())
-      newnode.graph = this
-      this._nodes_by_id[newnode.id] = newnode
-
-      if (node.inputs) newnode.inputs = [...node.inputs]
-      if (node.outputs) newnode.outputs = [...node.outputs]
-    }
-    this.updateExecutionOrder()
-  }
-
   // ********** GLOBALS *****************
   trigger<A extends LGraphTriggerAction>(
     action: A,

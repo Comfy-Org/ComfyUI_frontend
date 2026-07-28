@@ -17,11 +17,7 @@
       class="pointer-events-none flex flex-1 flex-col gap-1 pb-2"
       :data-testid="`node-body-${nodeData.id}`"
     >
-      <NodeSlots
-        :node-data="nodeData"
-        :inputs="previewInputs"
-        :outputs="previewOutputs"
-      />
+      <NodeSlots :node-data="nodeData" />
 
       <WidgetGrid
         v-if="previewWidgets.length"
@@ -106,7 +102,9 @@ const nodeData = computed<NodeState>(() => ({
   mode: LGraphEventMode.ALWAYS,
   flags: {
     collapsed: false
-  }
+  },
+  inputs: previewInputs.value,
+  outputs: previewOutputs.value
 }))
 
 const previewWidgets = computed<WidgetGridItem[]>(() =>
