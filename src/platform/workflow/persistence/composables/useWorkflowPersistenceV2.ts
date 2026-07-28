@@ -174,9 +174,7 @@ export function useWorkflowPersistenceV2() {
   const hasTemplateUrlIntent = () =>
     hasPreservedIntent(TEMPLATE_NAMESPACE, 'template')
 
-  /** Reads `Comfy.TutorialCompleted` but never writes it: a user who reloads
-   * before choosing anything is still new on the next boot. */
-  const loadDefaultWorkflow = async (): Promise<StartupOutcome> => {
+  const resolveStartupOutcome = async (): Promise<StartupOutcome> => {
     if (settingStore.get('Comfy.TutorialCompleted')) {
       await comfyApp.loadGraphData()
       return 'restored'
@@ -202,7 +200,7 @@ export function useWorkflowPersistenceV2() {
 
   const initializeWorkflow = async (): Promise<StartupOutcome> => {
     if (!workflowPersistenceEnabled.value) {
-      return await loadDefaultWorkflow()
+      return await resolveStartupOutcome()
     }
 
     try {
@@ -214,10 +212,10 @@ export function useWorkflowPersistenceV2() {
 
       await workflowStore.loadWorkflows()
       const restored = await loadPreviousWorkflowFromStorage()
-      return restored ? 'restored' : await loadDefaultWorkflow()
+      return restored ? 'restored' : await resolveStartupOutcome()
     } catch (err) {
       console.error('Error loading previous workflow', err)
-      return await loadDefaultWorkflow()
+      return await resolveStartupOutcome()
     }
   }
 
@@ -302,7 +300,7 @@ export function useWorkflowPersistenceV2() {
       await workflowStore.loadWorkflows()
     } catch (err) {
       console.error('Error loading workflows for tab restore', err)
-      await loadDefaultWorkflow()
+      await resolveStartupOutcome()
       tabStateRestored = true
       return
     }
