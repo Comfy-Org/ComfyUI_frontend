@@ -831,7 +831,8 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'monthly',
         returnUrl: 'https://platform.comfy.org/payment/success',
         cancelUrl: 'https://platform.comfy.org/payment/failed',
-        confirmReactivation: false
+        confirmReactivation: false,
+        useCheckout: true
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
@@ -1170,6 +1171,10 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleTeamSubscribe()
 
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({ useCheckout: false })
+      )
       expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
         expect.objectContaining({
           tier: 'team',

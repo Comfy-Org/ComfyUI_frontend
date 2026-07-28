@@ -3,6 +3,7 @@ import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPla
 import { isCloud } from '@/platform/distribution/types'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 import type { BillingCycle } from './subscriptionTierRank'
@@ -14,7 +15,7 @@ interface PerformTeamSubscriptionCheckoutOptions {
 /**
  * Direct team-plan checkout for the marketing `/cloud/subscribe?tier=team` deep
  * link: subscribes to the per-credit Team plan at the chosen slider stop and
- * sends the user straight to the Stripe payment page.
+ * follows the billing operation to Stripe Checkout.
  *
  * Mirrors `performSubscriptionCheckout` (personal) but routes through the
  * workspace billing endpoint (`POST /api/billing/subscribe`), because the
@@ -22,9 +23,7 @@ interface PerformTeamSubscriptionCheckoutOptions {
  * included — subscribe to it. The slug encodes the cadence; the stop id is
  * validated and priced server-side.
  *
- * Caller guards on `isCloud`, owns loading state, and wraps error handling. A
- * `needs_payment_method` response is a full-page redirect to Stripe; the other
- * statuses land back in the app, which polls the billing op to completion.
+ * Caller guards on `isCloud`, owns loading state, and wraps error handling.
  */
 export async function performTeamSubscriptionCheckout(
   teamCreditStopId: string,
@@ -37,7 +36,8 @@ export async function performTeamSubscriptionCheckout(
   const response = await workspaceApi.subscribe(planSlug, {
     returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
     cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
-    teamCreditStopId
+    teamCreditStopId,
+    useCheckout: true
   })
 
   trackWorkspaceCheckoutStarted({
@@ -59,6 +59,20 @@ export async function performTeamSubscriptionCheckout(
     }
     globalThis.location.href = response.payment_method_url
     return
+  }
+
+  if (response.status !== 'subscribed') {
+    await useBillingOperationStore().startOperation(
+      response.billing_op_id,
+      'subscription',
+      {
+        tier: 'team',
+        cycle: billingCycle,
+        checkoutType: 'new',
+        paymentIntentSource: options.paymentIntentSource,
+        checkoutReturnUrl: globalThis.location.href
+      }
+    )
   }
 
   globalThis.location.href = '/'

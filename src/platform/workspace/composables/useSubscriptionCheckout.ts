@@ -595,7 +595,8 @@ export function useSubscriptionCheckout(
         billingCycle,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
-        confirmReactivation
+        confirmReactivation,
+        useCheckout: checkoutType === 'new'
       })
 
       if (response) {
