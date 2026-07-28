@@ -5,7 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LiteGraph,
+  registerNodeState,
+  unregisterNodeState
+} from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { toLinkId } from '@/types/linkId'
@@ -512,6 +516,12 @@ describe('useNodeReplacement', () => {
       expect(newNode.pos).toEqual([300, 400])
       expect(newNode.size).toEqual([250, 150])
       expect(graph._nodes[0]).toBe(newNode)
+
+      expect(unregisterNodeState).toHaveBeenCalledWith(placeholder)
+      expect(registerNodeState).toHaveBeenCalledWith(graph, newNode)
+      expect(
+        vi.mocked(unregisterNodeState).mock.invocationCallOrder[0]
+      ).toBeLessThan(vi.mocked(registerNodeState).mock.invocationCallOrder[0])
     })
 
     it('should transfer all widget values for ImageScaleBy with real workflow data', () => {

@@ -6,6 +6,7 @@ import {
 import { shallowRef, watch } from 'vue'
 
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -13,8 +14,6 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
-
-type NodeLifecycleEvent = CustomEvent<{ node: LGraphNode }>
 
 /**
  * Bootstraps the renderer's layout view of the active graph and owns the

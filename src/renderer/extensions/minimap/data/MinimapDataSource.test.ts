@@ -188,6 +188,7 @@ describe('MinimapDataSource', () => {
       )
 
       expect(dataSource.getNodes()).toEqual([])
+      expect(dataSource.hasData()).toBe(false)
     })
   })
 

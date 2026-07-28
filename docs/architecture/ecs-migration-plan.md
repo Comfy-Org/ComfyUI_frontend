@@ -74,7 +74,7 @@ Five factual errors verified during code review (see
 ## Phase 1: Types and Dedicated Stores
 
 Introduces the ID type vocabulary and the dedicated stores. Phase 1 end-state is
-N dedicated Pinia stores, each keyed by a composite string ID, coexisting with
+N dedicated Pinia stores, each keyed by its own entity ID, coexisting with
 legacy class instances.
 
 ### 1a. Branded string ID types ✅ Shipped (PR 12617)
@@ -109,8 +109,10 @@ endpoints).
 ### 1c. Dedicated stores
 
 Phase 1 end-state is a set of dedicated Pinia stores, one per concern, each
-keyed by its own composite string ID. Each store owns its data and exposes a
-narrow accessor surface. There is no single container that fronts all entities.
+keyed by its own entity ID — a composite string where the key has to carry the
+graph relationship, a bare ID inside root-graph-scoped buckets where the bucket
+already supplies it. Each store owns its data and exposes a narrow accessor
+surface. There is no single container that fronts all entities.
 
 Shipped stores:
 

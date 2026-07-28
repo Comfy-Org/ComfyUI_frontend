@@ -1,12 +1,14 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope, shallowReactive, shallowRef } from 'vue'
+import type { EffectScope } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-const shouldRenderVueNodes = vi.hoisted(() => ({ value: false }))
-const canvas = vi.hoisted(() => ({ graph: null as LGraph | null }))
+const shouldRenderVueNodes = shallowRef(false)
+const canvas = shallowReactive({ graph: null as LGraph | null })
 
 vi.mock('@/composables/useVueFeatureFlags', () => ({
   useVueFeatureFlags: () => ({ shouldRenderVueNodes })
@@ -29,6 +31,18 @@ const { useVueNodeLifecycle } =
   await import('@/composables/graph/useVueNodeLifecycle')
 
 describe('useVueNodeLifecycle layout seeding', () => {
+  let scope: EffectScope | undefined
+
+  // The shared composable only tears down once every owning scope stops.
+  function mountLifecycle() {
+    scope = effectScope()
+    const lifecycle = scope.run(() => useVueNodeLifecycle())
+    if (!lifecycle) {
+      throw new Error('Failed to mount useVueNodeLifecycle')
+    }
+    return lifecycle
+  }
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     shouldRenderVueNodes.value = false
@@ -36,9 +50,15 @@ describe('useVueNodeLifecycle layout seeding', () => {
     layoutStore.initializeFromLiteGraph([])
   })
 
+  afterEach(() => {
+    scope?.stop()
+    scope = undefined
+  })
+
   it('leaves layoutStore untouched while the Vue renderer is off', () => {
     const graph = new LGraph()
     canvas.graph = graph
+    mountLifecycle()
 
     graph.add(new LGraphNode('test'))
 
@@ -52,8 +72,7 @@ describe('useVueNodeLifecycle layout seeding', () => {
     canvas.graph = graph
     shouldRenderVueNodes.value = true
 
-    const lifecycle = useVueNodeLifecycle()
-    lifecycle.initializeVueNodeLayout()
+    mountLifecycle()
 
     const node = new LGraphNode('test')
     node.pos = [120, 340]
@@ -74,8 +93,12 @@ describe('useVueNodeLifecycle layout seeding', () => {
     canvas.graph = graph
     shouldRenderVueNodes.value = true
 
-    const lifecycle = useVueNodeLifecycle()
-    lifecycle.initializeVueNodeLayout()
+    const lifecycle = mountLifecycle()
+
+    const seeded = new LGraphNode('seeded')
+    graph.add(seeded)
+    expect(layoutStore.getNodeLayoutRef(seeded.id).value).not.toBeNull()
+
     lifecycle.disposeVueNodeLayout()
 
     const node = new LGraphNode('test')
@@ -89,8 +112,7 @@ describe('useVueNodeLifecycle layout seeding', () => {
     canvas.graph = viewed
     shouldRenderVueNodes.value = true
 
-    const lifecycle = useVueNodeLifecycle()
-    lifecycle.initializeVueNodeLayout()
+    mountLifecycle()
 
     const offscreen = new LGraph()
     const node = new LGraphNode('interior')
