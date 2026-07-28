@@ -356,6 +356,26 @@ jobs:
             PR_AUTHOR=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
           fi
 
+          # A merged PR can be locked (the CLA check locks merged PRs), which
+          # makes `gh pr comment` fail and would otherwise silently drop the
+          # "PR creation failed, backport manually" notice — leaving a pushed
+          # branch stranded with nobody told, the gap that left PRs
+          # #14018-#14021 to be recreated by hand. Fall back to a tracking
+          # issue that mentions the author. Bash functions don't cross steps,
+          # so this mirrors the `notify()` helper in "Comment on failures".
+          notify() {
+            local body="$1"
+            local context="$2"
+            if gh pr comment "${PR_NUMBER}" --body "${body}"; then
+              return
+            fi
+            echo "::warning::Could not comment on PR #${PR_NUMBER} (${context}); opening a tracking issue instead."
+            local title="Backport of #${PR_NUMBER} to ${target} failed"
+            gh issue create --title "${title}" --body "${body}" --label backport \
+              || gh issue create --title "${title}" --body "${body}" \
+              || echo "::warning::Also failed to open a tracking issue for #${PR_NUMBER} (${context})."
+          }
+
           for backport in ${{ steps.backport.outputs.success }}; do
             IFS=':' read -r target branch <<< "${backport}"
 
@@ -372,12 +392,11 @@ jobs:
               if [ -n "${PR_NUM}" ]; then
                 gh pr merge "${PR_NUM}" --auto --squash --repo "${{ github.repository }}" \
                   || echo "::warning::Failed to enable auto-merge for PR #${PR_NUM}"
-                gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}"
+                gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}" || true
               fi
             else
               echo "::error::Failed to create PR for ${target}: ${PR_URL}"
-              # Still try to comment on the original PR about the failure
-              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport branch created but PR creation failed for \`${target}\`. Please create the PR manually from branch \`${branch}\`"
+              notify "@${PR_AUTHOR} Backport branch created but PR creation failed for \`${target}\`. Please create the PR manually from branch \`${branch}\`" "PR creation failed for ${target} (branch ${branch})"
             fi
           done
 
