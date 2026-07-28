@@ -781,7 +781,7 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    // Regression guard for BE-4782: confirmReactivation must come from the
+    // Regression guard: confirmReactivation must come from the
     // disclosure banner's own confirm action, never be re-derived from
     // subscription.isCancelled (which is true for every reactivation request
     // and would make the server-side consent check vacuous).
@@ -1296,7 +1296,7 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    // Regression guard for BE-4782: confirmReactivation must come from the
+    // Regression guard: confirmReactivation must come from the
     // disclosure banner's own confirm action, never be re-derived from
     // subscription.isCancelled (which is true for every reactivation request
     // and would make the server-side consent check vacuous).
