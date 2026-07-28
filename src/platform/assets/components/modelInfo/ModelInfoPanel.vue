@@ -87,16 +87,21 @@
             </SelectItem>
           </SelectContent>
         </Select>
-        <div
-          v-else
-          :title="t('assetBrowser.modelInfo.modelTypeCoreReadonly')"
-          class="cursor-not-allowed p-2 text-sm text-muted-foreground"
-        >
-          {{
-            modelTypes.find((o) => o.value === selectedModelType)?.name ??
-            t('assetBrowser.unknown')
-          }}
-        </div>
+        <template v-else>
+          <div
+            aria-disabled="true"
+            :aria-describedby="modelTypeReadonlyReasonId"
+            class="cursor-not-allowed p-2 text-sm text-muted-foreground"
+          >
+            {{
+              modelTypes.find((o) => o.value === selectedModelType)?.name ??
+              t('assetBrowser.unknown')
+            }}
+          </div>
+          <span :id="modelTypeReadonlyReasonId" class="sr-only">
+            {{ modelTypeReadonlyReason }}
+          </span>
+        </template>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.compatibleBaseModels')">
         <TagsInput
@@ -213,7 +218,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -283,6 +288,15 @@ const isImmutable = computed(() => asset.is_immutable ?? true)
 // Retagging a model rewrites its asset tags; core is filesystem-backed and does
 // not yet move the file to match, so the model type is read-only off-cloud.
 const isModelTypeEditable = computed(() => !isImmutable.value && isCloud)
+// The read-only field is reached for an immutable asset (even on cloud) or on
+// core. Immutability is the more specific, actionable reason, so it wins when
+// both hold rather than blaming "core" on a cloud deployment.
+const modelTypeReadonlyReason = computed(() =>
+  isImmutable.value
+    ? t('assetBrowser.modelInfo.modelTypeImmutableReadonly')
+    : t('assetBrowser.modelInfo.modelTypeCoreReadonly')
+)
+const modelTypeReadonlyReasonId = useId()
 const displayName = computed(
   () => pendingUpdates.value.name ?? getAssetDisplayName(asset)
 )

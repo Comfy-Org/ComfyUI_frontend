@@ -12,7 +12,10 @@ import type {
   SubscribeOptions,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -22,6 +25,40 @@ import type {
   BillingState,
   SubscriptionInfo
 } from '../../../composables/billing/types'
+
+/**
+ * Whether a rejection means the subscription already holds the state the caller
+ * asked for. The request did nothing, but the user's intent is satisfied, so
+ * surfacing it as a failure would report a problem that does not exist — most
+ * visibly when a request succeeds and its response is lost, and the retry is
+ * then refused.
+ *
+ * The 4xx check keeps a server fault that happens to echo one of these codes
+ * from being swallowed as success.
+ */
+function isAlreadyInRequestedState(err: unknown, code: string): boolean {
+  return (
+    err instanceof WorkspaceApiError &&
+    err.code === code &&
+    err.status !== undefined &&
+    err.status >= 400 &&
+    err.status < 500
+  )
+}
+
+/**
+ * Refreshes local state after a no-op, without letting the refresh overturn the
+ * outcome. The desired state already holds on the server, so a failed read must
+ * not turn it back into a reported failure — which is exactly what would happen
+ * on the flaky network that caused the no-op in the first place.
+ */
+async function resyncQuietly(refresh: () => Promise<unknown>): Promise<void> {
+  try {
+    await refresh()
+  } catch {
+    // Intentionally ignored: the next read corrects the view.
+  }
+}
 
 /**
  * Adapter for workspace-scoped billing via /billing/* endpoints.
@@ -277,6 +314,13 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         )
       }
     } catch (err) {
+      if (isAlreadyInRequestedState(err, 'ALREADY_CANCELED')) {
+        await resyncQuietly(fetchStatus)
+        // fetchStatus records its own read failure; the cancellation still
+        // holds, so the operation is not in error.
+        error.value = null
+        return
+      }
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
       throw err
@@ -292,6 +336,17 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       await workspaceApi.resubscribe()
       await Promise.all([fetchStatus(), fetchBalance()])
     } catch (err) {
+      if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
+        // Mirrors the success path, which refreshes balance too. allSettled,
+        // not all: a rejection from one read must not release this branch while
+        // the other is still in flight, or that one writes its failure into
+        // error after the clear below.
+        await resyncQuietly(() =>
+          Promise.allSettled([fetchStatus(), fetchBalance()])
+        )
+        error.value = null
+        return
+      }
       error.value = err instanceof Error ? err.message : 'Failed to resubscribe'
       throw err
     } finally {

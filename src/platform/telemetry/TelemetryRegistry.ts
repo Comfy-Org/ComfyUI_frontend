@@ -16,6 +16,8 @@ import type {
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OnboardingTourMetadata,
+  OnboardingTourStage,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -38,6 +40,7 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
@@ -171,6 +174,13 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
   }
 
+  trackOnboardingTour(
+    stage: OnboardingTourStage,
+    metadata: OnboardingTourMetadata
+  ): void {
+    this.dispatch((provider) => provider.trackOnboardingTour?.(stage, metadata))
+  }
+
   trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
     this.dispatch((provider) => provider.trackEmailVerification?.(stage))
   }
@@ -291,6 +301,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.dispatch((provider) => provider.trackUiButtonClicked?.(metadata))
+  }
+
+  trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
+    this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
