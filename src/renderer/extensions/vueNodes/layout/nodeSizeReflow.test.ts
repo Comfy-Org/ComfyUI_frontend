@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
   LayoutOperation,
@@ -15,6 +16,14 @@ function setup() {
   node.size[0] = 210
   node.size[1] = 100
   graph.add(node)
+  if (!layoutStore.getNodeLayoutRef(node.id).value) {
+    useLayoutMutations().createNode(node.id, {
+      position: { x: node.pos[0], y: node.pos[1] },
+      size: { width: node.size[0], height: node.size[1] },
+      zIndex: 0,
+      visible: true
+    })
+  }
 
   const applySpy = vi.spyOn(layoutStore, 'applyOperation')
   const resizeCommits = (): ResizeNodeOperation[] =>
