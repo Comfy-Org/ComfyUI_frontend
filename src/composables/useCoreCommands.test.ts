@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -56,6 +57,7 @@ vi.mock('@/scripts/app', () => {
         }
       }),
       openClipspace: vi.fn(),
+      queuePrompt: vi.fn().mockResolvedValue(undefined),
       refreshComboInNodes: vi.fn().mockResolvedValue(undefined),
       canvas: mockCanvas,
       rootGraph: {
@@ -135,7 +137,8 @@ vi.mock('@/services/litegraphService', () => ({
 const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackHelpResourceClicked: mockTrackHelpResourceClicked
+    trackHelpResourceClicked: mockTrackHelpResourceClicked,
+    trackWorkflowExecution: vi.fn()
   }))
 }))
 
@@ -217,6 +220,8 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
     isActiveSubscription: { value: true },
+    isInitialized: { value: true },
+    fetchStatus: vi.fn(),
     showSubscriptionDialog: vi.fn()
   }))
 }))
@@ -762,6 +767,80 @@ describe('useCoreCommands', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
+    })
+  })
+
+  describe('run subscription gate', () => {
+    const getQueuePromptCommand = () =>
+      useCoreCommands().find((cmd) => cmd.id === 'Comfy.QueuePrompt')
+
+    it('fetches the subscription status before paywalling a run', async () => {
+      const isActiveSubscription = ref(false)
+      const isInitialized = ref(false)
+      const fetchStatus = vi.fn(async () => {
+        // Status resolves, but there is genuinely no active subscription.
+        isInitialized.value = true
+      })
+      const showSubscriptionDialog = vi.fn()
+      vi.mocked(useBillingContext).mockReturnValueOnce(
+        fromPartial({
+          isActiveSubscription,
+          isInitialized,
+          fetchStatus,
+          showSubscriptionDialog
+        })
+      )
+
+      await getQueuePromptCommand()?.function()
+
+      expect(fetchStatus).toHaveBeenCalledOnce()
+      expect(showSubscriptionDialog).toHaveBeenCalledWith({
+        reason: 'subscribe_to_run'
+      })
+      expect(app.queuePrompt).not.toHaveBeenCalled()
+    })
+
+    it('runs without paywalling once the status loads as active', async () => {
+      const isActiveSubscription = ref(false)
+      const isInitialized = ref(false)
+      const fetchStatus = vi.fn(async () => {
+        isInitialized.value = true
+        isActiveSubscription.value = true
+      })
+      const showSubscriptionDialog = vi.fn()
+      vi.mocked(useBillingContext).mockReturnValueOnce(
+        fromPartial({
+          isActiveSubscription,
+          isInitialized,
+          fetchStatus,
+          showSubscriptionDialog
+        })
+      )
+
+      await getQueuePromptCommand()?.function()
+
+      expect(fetchStatus).toHaveBeenCalledOnce()
+      expect(showSubscriptionDialog).not.toHaveBeenCalled()
+      expect(app.queuePrompt).toHaveBeenCalled()
+    })
+
+    it('does not re-fetch when the subscription is already active', async () => {
+      const fetchStatus = vi.fn()
+      const showSubscriptionDialog = vi.fn()
+      vi.mocked(useBillingContext).mockReturnValueOnce(
+        fromPartial({
+          isActiveSubscription: ref(true),
+          isInitialized: ref(true),
+          fetchStatus,
+          showSubscriptionDialog
+        })
+      )
+
+      await getQueuePromptCommand()?.function()
+
+      expect(fetchStatus).not.toHaveBeenCalled()
+      expect(showSubscriptionDialog).not.toHaveBeenCalled()
+      expect(app.queuePrompt).toHaveBeenCalled()
     })
   })
 })
