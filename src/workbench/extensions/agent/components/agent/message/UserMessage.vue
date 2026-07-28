@@ -59,7 +59,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
     </div>
     <div
       v-if="text"
-      class="bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-lg px-4 py-3 text-xs whitespace-pre-wrap"
+      class="bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-lg px-4 py-3 text-sm whitespace-pre-wrap"
     >
       {{ text }}
     </div>
