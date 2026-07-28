@@ -58,7 +58,7 @@ describe('PaymentDeclinedDialogContent', () => {
     state.manageSubscription.mockResolvedValue(undefined)
   })
 
-  it('opens the billing portal without dismissing the declined subscription', async () => {
+  it('opens the billing portal and returns to the preserved subscription flow', async () => {
     const { onClose } = renderDialog('subscription')
 
     expect(
@@ -72,10 +72,7 @@ describe('PaymentDeclinedDialogContent', () => {
     )
 
     expect(state.manageSubscription).toHaveBeenCalledOnce()
-    expect(onClose).not.toHaveBeenCalled()
-    expect(
-      screen.getByRole('heading', { name: 'Payment declined' })
-    ).toBeInTheDocument()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('returns to the preserved subscription flow from the secondary action', async () => {

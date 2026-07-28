@@ -87,7 +87,7 @@ const { origin, reason } = defineProps<{
   reason: string
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   close: []
 }>()
 
@@ -102,6 +102,7 @@ async function handleUpdatePaymentMethod() {
   isOpeningPortal.value = true
   try {
     await manageSubscription()
+    emit('close')
   } catch (error) {
     toast.add({
       severity: 'error',
