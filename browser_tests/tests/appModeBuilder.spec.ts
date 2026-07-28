@@ -47,7 +47,7 @@ test.describe('App mode builder selection', () => {
     await expect(items).toHaveCount(1)
   })
 
-  test('Can not select nodes with errors or notes', async ({ comfyPage }) => {
+  test('Can not select a node with an error', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 
     const [checkpointLoader] = await comfyPage.nodeOps.getNodeRefsByType(
@@ -78,18 +78,21 @@ test.describe('App mode builder selection', () => {
     const items = comfyPage.appMode.select.inputItems
     await comfyPage.appMode.enterBuilder()
     await comfyPage.appMode.steps.goToInputs()
-    await expect(items).toHaveCount(0)
 
     await comfyPage.appMode.select.selectInputWidget(
       'Load Checkpoint',
       'ckpt_name'
     )
     await expect(items).toHaveCount(0)
+  })
 
+  test('Can not select note nodes', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
+
+    const items = comfyPage.appMode.select.inputItems
     await comfyPage.appMode.enterBuilder()
     await comfyPage.appMode.steps.goToInputs()
-    await expect(items).toHaveCount(0)
 
     await comfyPage.appMode.select.selectInputWidget('Note', 'text')
     await comfyPage.appMode.select.selectInputWidget('Markdown Note', 'text')
