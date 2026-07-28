@@ -104,6 +104,37 @@ describe('workspaceApi', () => {
       })
     })
 
+    it('carries the typed error code through', async () => {
+      const axiosErr = {
+        isAxiosError: true,
+        response: {
+          status: 400,
+          data: { message: 'Already cancelled', code: 'ALREADY_CANCELED' }
+        },
+        message: 'Request failed'
+      }
+      mockAxiosInstance.get.mockRejectedValue(axiosErr)
+
+      await expect(workspaceApi.list()).rejects.toMatchObject({
+        code: 'ALREADY_CANCELED',
+        status: 400
+      })
+    })
+
+    it('drops a non-string code so callers cannot match on a surprise', async () => {
+      const axiosErr = {
+        isAxiosError: true,
+        response: { status: 400, data: { message: 'Bad', code: { a: 1 } } },
+        message: 'Request failed'
+      }
+      mockAxiosInstance.get.mockRejectedValue(axiosErr)
+
+      await expect(workspaceApi.list()).rejects.toMatchObject({
+        code: undefined,
+        message: 'Bad'
+      })
+    })
+
     it('rethrows non-axios errors as-is', async () => {
       const err = new TypeError('unexpected')
       mockAxiosInstance.get.mockRejectedValue(err)
