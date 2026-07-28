@@ -1156,4 +1156,124 @@ describe('useSecretForm', () => {
       expect(errors.secretValue).toBe('')
     })
   })
+
+  describe('stored credential class in edit mode', () => {
+    const geminiProviders: SecretProviderInfo[] = [
+      {
+        id: 'gemini',
+        credential_options: [
+          {
+            credential_type: 'api_key',
+            input_type: 'text',
+            label: 'API key (Google AI Studio)'
+          },
+          {
+            credential_type: 'gcp_service_account',
+            input_type: 'json_file',
+            label: 'Service account (Vertex AI)'
+          }
+        ]
+      }
+    ]
+
+    it('follows the stored class rather than the first advertised option', async () => {
+      const visible = ref(false)
+
+      const { credentialType, selectedInputType } = useSecretForm({
+        mode: 'edit',
+        secret: () =>
+          createMockSecret({
+            provider: 'gemini',
+            credential_type: 'gcp_service_account'
+          }),
+        existingProviders: () => ['gemini'],
+        availableProviders: () => geminiProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      visible.value = true
+      await nextTick()
+
+      expect(credentialType.value).toBe('gcp_service_account')
+      expect(selectedInputType.value).toBe('json_file')
+    })
+
+    it('validates a rotated gcp_service_account value as JSON', async () => {
+      const visible = ref(false)
+      mockUpdate.mockResolvedValue({})
+
+      const { form, errors, handleSubmit } = useSecretForm({
+        mode: 'edit',
+        secret: () =>
+          createMockSecret({
+            id: 'secret-sa',
+            provider: 'gemini',
+            credential_type: 'gcp_service_account'
+          }),
+        existingProviders: () => ['gemini'],
+        availableProviders: () => geminiProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      visible.value = true
+      await nextTick()
+
+      form.secretValue = 'AIza-not-a-service-account'
+      await handleSubmit()
+
+      expect(mockUpdate).not.toHaveBeenCalled()
+      expect(errors.secretValue).toBe('secrets.errors.invalidJson')
+
+      form.secretValue = '{"type":"service_account"}'
+      await handleSubmit()
+
+      expect(mockUpdate).toHaveBeenCalledWith('secret-sa', {
+        name: 'Test Secret',
+        secret_value: '{"type":"service_account"}'
+      })
+    })
+
+    it('keeps a stored api_key secret on the single-line input', async () => {
+      const visible = ref(false)
+
+      const { selectedInputType } = useSecretForm({
+        mode: 'edit',
+        secret: () =>
+          createMockSecret({
+            provider: 'gemini',
+            credential_type: 'api_key'
+          }),
+        existingProviders: () => ['gemini'],
+        availableProviders: () => geminiProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      visible.value = true
+      await nextTick()
+
+      expect(selectedInputType.value).toBe('text')
+    })
+
+    it('falls back to the first advertised option when no class was stored', async () => {
+      const visible = ref(false)
+
+      const { credentialType, selectedInputType } = useSecretForm({
+        mode: 'edit',
+        secret: () => createMockSecret({ provider: 'gemini' }),
+        existingProviders: () => ['gemini'],
+        availableProviders: () => geminiProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      visible.value = true
+      await nextTick()
+
+      expect(credentialType.value).toBe('api_key')
+      expect(selectedInputType.value).toBe('text')
+    })
+  })
 })

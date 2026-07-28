@@ -78,8 +78,8 @@
             Studio key vs a Vertex service account). Labels come from the
             server so adding a provider option needs no frontend change.
 
-            Create-only: the class is immutable once stored, and defaulting the
-            control to the stored class on edit is tracked separately.
+            Create-only: the class is immutable once stored, so edit mode has
+            nothing to choose and instead follows the stored class.
           -->
           <div
             v-if="mode === 'create' && credentialOptions.length > 1"

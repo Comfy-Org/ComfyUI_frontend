@@ -145,30 +145,36 @@ export function useSecretForm(options: UseSecretFormOptions) {
     return providerInfoById.value.get(form.provider)?.credential_options ?? []
   })
 
-  // Which credential class the user is entering: their selection while the
-  // provider still advertises it, else the provider's first advertised option,
-  // else null (the provider advertises none, so `credential_type` is omitted on
-  // create and the server applies its own default). Derived rather than stored
-  // so the rendered class and the submitted class cannot drift apart when the
-  // server's option list resolves or changes under an open form.
+  // The credential class of the secret being edited. The server treats it as
+  // immutable on update, so it — not a create-time selection — fixes how the
+  // replacement value is entered and validated.
+  const storedCredentialType = computed(() =>
+    mode === 'edit' ? (toValue(secretRef)?.credential_type ?? null) : null
+  )
+
+  // Which credential class the value belongs to: on edit the stored class; on
+  // create the user's selection while the provider still advertises it, else the
+  // provider's first advertised option, else null (the provider advertises none,
+  // so `credential_type` is omitted on create and the server applies its own
+  // default). Derived rather than stored so the rendered class and the submitted
+  // class cannot drift apart when the server's option list resolves or changes
+  // under an open form.
   const credentialType = computed<SecretCredentialType | null>({
     get: () =>
+      storedCredentialType.value ??
       (
         credentialOptions.value.find(
           (o) => o.credential_type === selectedCredentialType.value
         ) ?? credentialOptions.value[0]
-      )?.credential_type ?? null,
+      )?.credential_type ??
+      null,
     set: (value) => {
       selectedCredentialType.value = value
     }
   })
 
-  // How the selected provider's credential is entered, per the credential class
-  // in effect; providers advertising no options take a single-line secret.
-  //
-  // Edit mode intentionally follows the same path here. Deriving the input from
-  // the *stored* credential class (which the server treats as immutable on
-  // update) is tracked separately.
+  // How the credential is entered, per the credential class in effect; providers
+  // advertising no options take a single-line secret.
   const selectedInputType = computed<SecretInputType>(
     () =>
       credentialOptions.value.find(
