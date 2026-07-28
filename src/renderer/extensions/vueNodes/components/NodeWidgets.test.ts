@@ -57,7 +57,9 @@ function createMockNodeData(
     type: nodeType,
     title: 'Test Node',
     mode: 0,
-    flags: {}
+    flags: {},
+    inputs: [],
+    outputs: []
   }
 }
 

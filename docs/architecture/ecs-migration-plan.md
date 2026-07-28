@@ -221,19 +221,20 @@ migration map.
 `useGraphNodeManager` is **deleted**. Its four responsibilities were resolved
 rather than relocated:
 
-| Responsibility                                                | Resolution                                                                                        |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `VueNodeData` mirror + `node:property:changed` handlers       | deleted; the renderer drills the `NodeState` proxy from `nodeDataStore`                           |
-| `getNode()` / `nodeRefs` map                                  | deleted; pinned-state reads go to `nodeDataStore`, live-node lookups to `graph.getNodeById`       |
-| `shallowReactive` graft onto `inputs` / `outputs` / `widgets` | deleted; see 2e                                                                                   |
-| `layoutStore` seeding on add/remove                           | moved to `LGraph.add` / `LGraph.remove`, matching the reroute precedent in `LGraph.createReroute` |
+| Responsibility                                                | Resolution                                                                                                                |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `VueNodeData` mirror + `node:property:changed` handlers       | deleted; the renderer drills the `NodeState` proxy from `nodeDataStore`                                                   |
+| `getNode()` / `nodeRefs` map                                  | deleted; pinned state is read off the `NodeState` the renderer already holds, live-node lookups go to `graph.getNodeById` |
+| `shallowReactive` graft onto `inputs` / `outputs` / `widgets` | deleted; see 2e                                                                                                           |
+| `layoutStore` seeding on add/remove                           | moved to `useVueNodeLifecycle`, driven by the `node:added` / `node:removed` graph events                                  |
 
 Two consequences worth recording:
 
-- The **`configuringGraph` deferral is gone.** `LGraph.add` seeds the layout
-  entry with whatever geometry the node has; the `pos`/`size` setters already
-  write through to `layoutStore`, so `configure()` updates the entry as the real
-  values land. No `onAfterGraphConfigured` chaining, no `window.app` read.
+- The **`configuringGraph` deferral is gone.** The `node:added` listener seeds
+  the layout entry with whatever geometry the node has; the `pos`/`size` setters
+  already write through to `layoutStore`, so `configure()` updates the entry as
+  the real values land. No `onAfterGraphConfigured` chaining, no `window.app`
+  read.
 - The **`onNodeAdded` replay loop is gone.** It re-fired `onNodeAdded` for every
   pre-existing node on each graph switch, which leaked spurious node-added
   notifications to unrelated subscribers (`useErrorClearingHooks` still carries

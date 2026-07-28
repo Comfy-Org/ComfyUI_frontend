@@ -125,15 +125,15 @@ export function useMinimapGraph(
     // Use unified data source for change detection
     const dataSource = MinimapDataSourceFactory.create(g)
 
+    const nodes = dataSource.getNodes()
+
     // Check for node count changes
-    const currentNodeCount = dataSource.getNodeCount()
-    if (currentNodeCount !== lastNodeCount.value) {
+    if (nodes.length !== lastNodeCount.value) {
       structureChanged = true
-      lastNodeCount.value = currentNodeCount
+      lastNodeCount.value = nodes.length
     }
 
     // Check for node position/size changes
-    const nodes = dataSource.getNodes()
     for (const node of nodes) {
       const nodeId = node.id
       const currentState = `${node.x},${node.y},${node.width},${node.height}`

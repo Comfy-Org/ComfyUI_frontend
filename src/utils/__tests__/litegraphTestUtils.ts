@@ -21,6 +21,23 @@ import type { ChangeTracker } from '@/scripts/changeTracker'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
+import { zeroUuid } from '@/utils/uuid'
+
+/** Creates a node shell state with minimal required fields. */
+export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
+  return {
+    id: toNodeId(1),
+    graphId: zeroUuid,
+    type: 'TestNode',
+    title: 'Test Node',
+    mode: LGraphEventMode.ALWAYS,
+    flags: {},
+    inputs: [],
+    outputs: [],
+    ...overrides
+  }
+}
 
 /**
  * Creates a mock LGraphNode with minimal required properties

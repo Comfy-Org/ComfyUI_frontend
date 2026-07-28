@@ -59,6 +59,8 @@ function registerNodeState(id: string, graphId: UUID = GRAPH_ID) {
   useNodeDataStore().registerNode(GRAPH_ID, {
     id: toNodeId(id),
     graphId,
+    inputs: [],
+    outputs: [],
     type: 'TestNode',
     title: id,
     mode: LGraphEventMode.ALWAYS,

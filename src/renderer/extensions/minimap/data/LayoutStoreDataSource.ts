@@ -41,8 +41,6 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
           height: layout.size.height,
           bgcolor: state.bgcolor,
           mode: state.mode,
-          // `has_errors` unions several error sources and is still a class
-          // field; this is a keyed lookup, not a scan.
           hasErrors: this.graph?.getNodeById(state.id)?.has_errors,
           executionState:
             nodeProgressStates[createNodeLocatorId(null, state.id)]?.state ??
@@ -57,6 +55,6 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
   }
 
   hasData(): boolean {
-    return this.viewedNodes().length > 0
+    return this.getNodeCount() > 0
   }
 }

@@ -171,8 +171,7 @@ function replaceWithMapping(
   newNode.graph = nodeGraph
   nodeGraph._nodes_by_id[newNode.id] = newNode
 
-  // Bypasses graph.add(), so move the node-data registration by hand: vacate
-  // the replaced node's entry and adopt the store proxy for the new node.
+  // Bypasses graph.add(), so move the node-data registration by hand.
   unregisterNodeState(node)
   registerNodeState(nodeGraph, newNode)
 
@@ -230,9 +229,7 @@ function replaceWithMapping(
 
   newNode.has_errors = false
 
-  // This bypasses graph.add(), which is where an add is normally announced.
-  // Node-data registration is handled above; this is for the subscribers
-  // (error-clearing hooks, minimap, telemetry).
+  // Announce the add that graph.add() would have.
   nodeGraph.onNodeAdded?.(newNode)
   nodeGraph.events.dispatch('node:added', { node: newNode })
 }

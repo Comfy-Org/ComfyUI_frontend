@@ -1,6 +1,5 @@
-import { shallowReactive, toValue } from 'vue'
+import { reactive, shallowReactive, toValue } from 'vue'
 
-import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
   calculateInputSlotPosFromSlot,
   getSlotPosition
@@ -238,14 +237,14 @@ export interface LGraphNode {
 
 // #endregion Types
 
-/**
- * Overwrites `target` with `value` without swapping the array, so subscribers
- * keep tracking the same reactive target. A self-assignment is a no-op.
- */
-function replaceInPlace<T>(target: T[], value: readonly T[]): void {
-  if (target === value) return
-  target.splice(0, target.length, ...value)
-}
+/** Shape aliases used by the canvas "Shapes" context menu (`LiteGraph.VALID_SHAPES`). */
+const NAMED_SHAPES = {
+  default: undefined,
+  box: RenderShape.BOX,
+  round: RenderShape.ROUND,
+  circle: RenderShape.CIRCLE,
+  card: RenderShape.CARD
+} as const
 
 /**
  * Base class for all nodes
@@ -279,13 +278,30 @@ export class LGraphNode
   /** Default setting for {@link LGraphNode.connectInputToOutput}. @see {@link INodeFlags.keepAllLinksOnBypass} */
   static keepAllLinksOnBypass: boolean = false
 
+  /** Writes a shell-state field, emitting `node:property:changed` on change. */
+  private setTrackedState<K extends keyof NodeState>(
+    property: K,
+    value: NodeState[K]
+  ): void {
+    const oldValue = this._state[property]
+    if (oldValue === value) return
+
+    this._state[property] = value
+    this.graph?.trigger('node:property:changed', {
+      nodeId: this.id,
+      property,
+      oldValue,
+      newValue: value
+    })
+  }
+
   /** The title text of the node. */
   get title(): string {
     return this._state.title
   }
 
   set title(value: string) {
-    this._state.title = value
+    this.setTrackedState('title', value)
   }
   /**
    * The font style used to render the node's title text.
@@ -329,9 +345,6 @@ export class LGraphNode
     return this._state.type
   }
 
-  protected _inputs?: INodeInputSlot[]
-  protected _outputs?: INodeOutputSlot[]
-
   /**
    * Input slots, held in a `shallowReactive` array so the Vue renderer tracks
    * slot add / remove / reorder. Slot objects themselves are not made reactive.
@@ -340,20 +353,22 @@ export class LGraphNode
    * so the identity the renderer subscribed to survives.
    */
   get inputs(): INodeInputSlot[] {
-    return (this._inputs ??= shallowReactive<INodeInputSlot[]>([]))
+    return this._state.inputs
   }
 
-  set inputs(value: INodeInputSlot[]) {
-    replaceInPlace(this.inputs, value)
+  set inputs(value: INodeInputSlot[] | null | undefined) {
+    const { inputs } = this._state
+    inputs.splice(0, inputs.length, ...(value ?? []))
   }
 
   /** @see {@link inputs} */
   get outputs(): INodeOutputSlot[] {
-    return (this._outputs ??= shallowReactive<INodeOutputSlot[]>([]))
+    return this._state.outputs
   }
 
-  set outputs(value: INodeOutputSlot[]) {
-    replaceInPlace(this.outputs, value)
+  set outputs(value: INodeOutputSlot[] | null | undefined) {
+    const { outputs } = this._state
+    outputs.splice(0, outputs.length, ...(value ?? []))
   }
 
   private _concreteInputs: NodeInputSlot[] = []
@@ -382,9 +397,6 @@ export class LGraphNode
    */
   widgets?: IBaseWidget[]
 
-  /** Property manager for this node */
-  changeTracker: LGraphNodeProperties
-
   /**
    * The amount of space available for widgets to grow into.
    * @see {@link layoutWidgets}
@@ -406,7 +418,7 @@ export class LGraphNode
   }
 
   set mode(value: LGraphEventMode) {
-    this._state.mode = value
+    this.setTrackedState('mode', value)
   }
   last_serialization?: ISerialisedNode
   serialize_widgets?: boolean
@@ -419,7 +431,7 @@ export class LGraphNode
   }
 
   set color(value: string | undefined) {
-    this._state.color = value
+    this.setTrackedState('color', value)
   }
   /**
    * The overridden bg color used to render the node.
@@ -430,7 +442,7 @@ export class LGraphNode
   }
 
   set bgcolor(value: string | undefined) {
-    this._state.bgcolor = value
+    this.setTrackedState('bgcolor', value)
   }
   /**
    * The overridden box color used to render the node.
@@ -582,7 +594,7 @@ export class LGraphNode
   }
 
   set showAdvanced(value: boolean | undefined) {
-    this._state.showAdvanced = value
+    this.setTrackedState('showAdvanced', value)
   }
 
   declare comfyDynamic?: Record<string, object>
@@ -683,35 +695,8 @@ export class LGraphNode
     return this._state.shape
   }
 
-  set shape(v: RenderShape | 'default' | 'box' | 'round' | 'circle' | 'card') {
-    const oldValue = this._state.shape
-    switch (v) {
-      case 'default':
-        this._state.shape = undefined
-        break
-      case 'box':
-        this._state.shape = RenderShape.BOX
-        break
-      case 'round':
-        this._state.shape = RenderShape.ROUND
-        break
-      case 'circle':
-        this._state.shape = RenderShape.CIRCLE
-        break
-      case 'card':
-        this._state.shape = RenderShape.CARD
-        break
-      default:
-        this._state.shape = v
-    }
-    if (oldValue !== this._state.shape) {
-      this.graph?.trigger('node:property:changed', {
-        nodeId: this.id,
-        property: 'shape',
-        oldValue,
-        newValue: this._state.shape
-      })
-    }
+  set shape(v: RenderShape | keyof typeof NAMED_SHAPES) {
+    this.setTrackedState('shape', typeof v === 'string' ? NAMED_SHAPES[v] : v)
   }
 
   /**
@@ -962,12 +947,11 @@ export class LGraphNode
       graphId: zeroUuid,
       type: type ?? '',
       title: title || 'Unnamed',
-      // Fixed per node class (`static title_mode`), but the renderer reads shell
-      // state from the store, so it is carried here rather than looked up on the
-      // class. Without it, NO_TITLE types such as reroutes draw a title bar.
       titleMode: this.title_mode,
       mode: LGraphEventMode.ALWAYS,
-      flags: {}
+      flags: {},
+      inputs: shallowReactive<INodeInputSlot[]>([]),
+      outputs: shallowReactive<INodeOutputSlot[]>([])
     }
     this.size = [LiteGraph.NODE_WIDTH, 60]
     this.pos = [10, 10]
@@ -975,8 +959,6 @@ export class LGraphNode
       error: this._getErrorStrokeStyle,
       selected: this._getSelectedStrokeStyle
     }
-    // Initialize property manager with tracked properties
-    this.changeTracker = new LGraphNodeProperties(this)
   }
 
   /** Internal callback for subgraph nodes. Do not implement externally. */
@@ -999,14 +981,18 @@ export class LGraphNode
         continue
       }
 
-      if (j === 'id') {
-        const id = toNodeId(info.id)
-        if (id !== UNASSIGNED_NODE_ID) this.id = id
+      if (j === 'type') {
+        if (info.type != null) this._state.type = String(info.type)
         continue
       }
 
-      if (j === 'type') {
-        this._state.type = String(info.type)
+      if (j === 'id') {
+        // Once registered, the owning graph owns the id — it may have
+        // renumbered this node to resolve a collision that the serialised id
+        // would reinstate.
+        if (this._graphId) continue
+        const id = toNodeId(info.id)
+        if (id !== UNASSIGNED_NODE_ID) this.id = id
         continue
       }
 
@@ -4351,12 +4337,11 @@ export class LGraphNode
 }
 
 /**
- * Registers a node's shell state and slot arrays into {@link useNodeDataStore}
- * and adopts the store's reactive proxy as {@link LGraphNode._state}, so the
- * store and the node always agree and field writes are tracked. Call this at
- * every site that adds a node to a graph. Sets both ids: `_graphId` (root bucket
- * key + ownership marker) and `_state.graphId` (owning (sub)graph, for renderer
- * partitioning).
+ * Registers a node's shell state into {@link useNodeDataStore} and adopts the
+ * store's reactive proxy as {@link LGraphNode._state}, so the store and the node
+ * always agree and field writes are tracked. Call this at every site that adds a
+ * node to a graph. Sets both ids: `_graphId` (root bucket key) and
+ * `_state.graphId` (owning (sub)graph, for renderer partitioning).
  * @param graph The graph (or subgraph) the node belongs to
  * @param node The node to register
  */
@@ -4366,41 +4351,34 @@ export function registerNodeState(
 ): void {
   const rootGraphId = graph.rootGraph.id
   node._state.graphId = graph.id
-
-  const store = useNodeDataStore()
-  const registered = store.registerNode(rootGraphId, node._state)
-  if (!registered) return
-
-  node._state = registered
+  node._state = reactive(node._state)
+  useNodeDataStore().registerNode(rootGraphId, node._state)
   node._graphId = rootGraphId
-  // By reference: the node keeps mutating these arrays in place.
-  store.registerNodeSlots(rootGraphId, node.id, {
-    inputs: node.inputs,
-    outputs: node.outputs
-  })
 }
 
 /**
- * Removes a node's shell state and slot arrays from {@link useNodeDataStore} and
- * detaches the node. No-op for nodes that never won registration
- * ({@link LGraphNode._graphId} unset), so a collision loser cannot remove the
- * winner's entry.
+ * Removes a node's shell state from {@link useNodeDataStore} and detaches the
+ * node. No-op for nodes that were never registered.
  * @param node The node to unregister
  */
 export function unregisterNodeState(node: LGraphNode): void {
   if (!node._graphId) return
-  const store = useNodeDataStore()
-  store.deleteNodeSlots(node._graphId, node.id)
-  store.deleteNode(node._graphId, node._state)
+  useNodeDataStore().deleteNode(node._graphId, node._state)
   node._graphId = undefined
 }
 
 /**
- * Unregisters every node a graph owns. Used when a graph's nodes leave the store
- * without a whole-bucket wipe: subgraph-definition removal, and clearing a graph
- * that shares its bucket with other graphs.
+ * Unregisters every node a graph owns, including those inside the subgraph
+ * definitions it holds. Used when a graph's nodes leave the store without a
+ * whole-bucket wipe: subgraph-definition removal, and clearing a graph that
+ * shares its bucket with other graphs.
  * @param graph The graph whose nodes should be unregistered
  */
-export function unregisterAllNodeStates(graph: Pick<LGraph, '_nodes'>): void {
+export function unregisterAllNodeStates(
+  graph: Pick<LGraph, '_nodes' | '_subgraphs'>
+): void {
   for (const node of graph._nodes) unregisterNodeState(node)
+  for (const subgraph of graph._subgraphs.values()) {
+    unregisterAllNodeStates(subgraph)
+  }
 }

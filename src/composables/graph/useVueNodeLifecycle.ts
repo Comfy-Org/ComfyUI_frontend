@@ -23,9 +23,7 @@ type NodeLifecycleEvent = CustomEvent<{ node: LGraphNode }>
  * current from the graph's node lifecycle events.
  *
  * Seeding lives here rather than in `LGraph.add` so `layoutStore` stays empty
- * while the Vue renderer is off, and holds only the graph being viewed. The
- * minimap depends on both: it picks its data source by asking whether
- * `layoutStore` has any nodes.
+ * while the Vue renderer is off, and holds only the graph being viewed.
  */
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()

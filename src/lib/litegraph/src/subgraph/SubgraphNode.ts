@@ -55,7 +55,6 @@ workflowSvg.src =
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
-  /** Narrows the base accessor: a subgraph node's inputs carry slot metadata. */
   override get inputs(): (INodeInputSlot & Partial<ISubgraphInput>)[] {
     return super.inputs
   }

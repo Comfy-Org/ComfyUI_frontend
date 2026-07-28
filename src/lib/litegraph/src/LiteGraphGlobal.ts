@@ -537,18 +537,14 @@ export class LiteGraphGlobal {
 
     let node: LGraphNode
 
-    if (this.catch_exceptions) {
-      try {
-        node = new base_class(title)
-      } catch (error) {
-        console.error(error)
-        return null
-      }
-    } else {
+    try {
       node = new base_class(title)
+      node._state.type = type
+    } catch (error) {
+      if (!this.catch_exceptions) throw error
+      console.error(error)
+      return null
     }
-
-    node._state.type = type
 
     if (!node.title && title) node.title = title
     node.properties ||= {}

@@ -39,7 +39,7 @@ import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { getControlWidget } from '@/types/simplifiedWidget'
@@ -51,12 +51,12 @@ import type {
 } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
 import {
-  getExecutionIdFromNodeData,
-  getLocatorIdFromNodeData,
+  executionIdFromState,
   getNodeByLocatorId,
-  nodeLocatorFromState,
-  subgraphIdFromGraphId
+  locatorIdFromState,
+  subgraphIdFromState
 } from '@/utils/graphTraversalUtil'
+import { nodeHasError } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
 
 const TOOLTIP_VALUE_TYPES = ['asset', 'combo', 'number', 'text'] as const
@@ -151,42 +151,12 @@ function buildSlotMetadata(
   return metadata
 }
 
-function getProcessedNodeExecutionId(
-  isGraphReady: boolean,
-  rootGraph: LGraph | null,
-  nodeData: NodeState
-): NodeExecutionId | null {
-  if (!isGraphReady || !rootGraph) return createNodeExecutionId([nodeData.id])
-
-  return getExecutionIdFromNodeData(
-    rootGraph,
-    nodeLocatorFromState(nodeData, rootGraph.id)
-  )
-}
-
-function getWidgetNodeLocatorId(
-  nodeData: NodeState,
-  bareWidgetId: NodeId | null,
-  rootGraph: LGraph | null
-): NodeLocatorId | undefined {
-  if (!bareWidgetId) return undefined
-
-  return (
-    createNodeLocatorId(
-      subgraphIdFromGraphId(nodeData.graphId, rootGraph?.id),
-      bareWidgetId
-    ) ?? undefined
-  )
-}
-
 function getHostNode(
   rootGraph: LGraph | null,
   nodeData: NodeState
 ): LGraphNode | null {
   if (!rootGraph) return null
-  const locatorId = getLocatorIdFromNodeData(
-    nodeLocatorFromState(nodeData, rootGraph.id)
-  )
+  const locatorId = locatorIdFromState(nodeData, rootGraph.id)
   return locatorId ? getNodeByLocatorId(rootGraph, locatorId) : null
 }
 
@@ -337,6 +307,8 @@ interface WidgetProcessingContext {
   nodeData: NodeState
   showAdvanced: boolean
   rootGraph: LGraph | null
+  /** Root graph id, known even before `app.isGraphReady`. */
+  rootGraphId: string | undefined
   hostNode: LGraphNode | null
   liveWidgets: Map<WidgetId, IBaseWidget>
   slotMetadata: Map<string, WidgetSlotMetadata>
@@ -400,11 +372,12 @@ function processWidget(
     controlWidget,
     label: widgetState.label,
     linkedUpstream,
-    nodeLocatorId: getWidgetNodeLocatorId(
-      ctx.nodeData,
-      bareWidgetId,
-      ctx.rootGraph
-    ),
+    nodeLocatorId: bareWidgetId
+      ? (createNodeLocatorId(
+          subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
+          bareWidgetId
+        ) ?? undefined)
+      : undefined,
     options: widgetOptions,
     spec: live
       ? ctx.nodeDefStore.getInputSpecForWidget(live.node, live.widget.name)
@@ -465,11 +438,10 @@ export function computeProcessedWidgets({
   const widgetValueStore = useWidgetValueStore()
   const nodeDefStore = useNodeDefStore()
 
-  const nodeExecId = getProcessedNodeExecutionId(
-    isGraphReady,
-    rootGraph,
-    nodeData
-  )
+  const nodeExecId =
+    isGraphReady && rootGraph
+      ? executionIdFromState(rootGraph, nodeData)
+      : createNodeExecutionId([nodeData.id])
   if (!nodeExecId) return []
 
   const hostNode = getHostNode(rootGraph, nodeData)
@@ -497,6 +469,7 @@ export function computeProcessedWidgets({
     nodeData,
     showAdvanced,
     rootGraph,
+    rootGraphId: graphId,
     hostNode,
     liveWidgets,
     slotMetadata,
@@ -544,12 +517,15 @@ export function useProcessedWidgets(
     const nodeData = nodeDataGetter()
     if (!nodeData) return false
     const rootGraph = app.isGraphReady ? app.rootGraph : null
-    const hostNode = getHostNode(rootGraph, nodeData)
     return (
       isSelectInputsMode.value &&
       nodeData.mode === LGraphEventMode.ALWAYS &&
       nodeTypeValidForApp(nodeData.type) &&
-      !hostNode?.has_errors
+      !nodeHasError(
+        nodeData,
+        canvasStore.rootGraphId,
+        getHostNode(rootGraph, nodeData)
+      )
     )
   })
 
