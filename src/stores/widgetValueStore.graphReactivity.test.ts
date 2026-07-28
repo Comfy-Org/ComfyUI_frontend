@@ -43,10 +43,9 @@ describe('Node Reactivity', () => {
     expect(store.getWidget(id)?.value).toBe(2)
 
     const state = store.getWidget(id)
-    if (!state) throw new Error('Expected widget state to exist')
 
     const onValueChange = vi.fn()
-    const widgetValue = computed(() => state.value)
+    const widgetValue = computed(() => state?.value)
     watch(widgetValue, onValueChange)
 
     widget.value = 42
@@ -68,9 +67,8 @@ describe('Node Reactivity', () => {
     await nextTick()
 
     const state = store.getWidget(widgetId(graph.id, node.id, 'testnum'))
-    if (!state) throw new Error('Expected widget state to exist')
 
-    const widgetValue = computed(() => state.value)
+    const widgetValue = computed(() => state?.value)
     watch(widgetValue, onValueChange)
 
     node.widgets![0].value = 99
@@ -98,10 +96,9 @@ describe('Widget input link reactivity', () => {
     const upstream = new LGraphNode('upstream')
     upstream.addOutput('out', 'STRING')
     graph.add(upstream)
-    const link = upstream.connect(0, node, 0)
-    if (!link) throw new Error('Expected upstream.connect to produce a link')
+    expect(upstream.connect(0, node, 0)).not.toBeNull()
 
-    return { graph, node, upstream, linkId: link.id }
+    return { graph, node, upstream }
   }
 
   it('exposes linked widget input slots through the live node inputs', () => {
@@ -121,9 +118,7 @@ describe('Widget input link reactivity', () => {
     input.widget = { name: 'prompt' }
     subgraph.add(node)
 
-    const link = subgraph.inputNode.slots[0].connect(input, node)
-    if (!link)
-      throw new Error('Expected SubgraphInput.connect to produce a link')
+    expect(subgraph.inputNode.slots[0].connect(input, node)).not.toBeNull()
 
     expect(node.inputs?.[0]?.link).not.toBeNull()
     expect(

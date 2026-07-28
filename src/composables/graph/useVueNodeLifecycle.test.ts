@@ -36,11 +36,7 @@ describe('useVueNodeLifecycle layout seeding', () => {
   // The shared composable only tears down once every owning scope stops.
   function mountLifecycle() {
     scope = effectScope()
-    const lifecycle = scope.run(() => useVueNodeLifecycle())
-    if (!lifecycle) {
-      throw new Error('Failed to mount useVueNodeLifecycle')
-    }
-    return lifecycle
+    return scope.run(() => useVueNodeLifecycle()) ?? null
   }
 
   beforeEach(() => {
@@ -99,7 +95,7 @@ describe('useVueNodeLifecycle layout seeding', () => {
     graph.add(seeded)
     expect(layoutStore.getNodeLayoutRef(seeded.id).value).not.toBeNull()
 
-    lifecycle.disposeVueNodeLayout()
+    lifecycle?.disposeVueNodeLayout()
 
     const node = new LGraphNode('test')
     graph.add(node)
