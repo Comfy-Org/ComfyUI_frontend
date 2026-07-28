@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, reactive } from 'vue'
 import type { EffectScope } from 'vue'
@@ -9,12 +10,12 @@ vi.mock('typegpu', () => ({
 }))
 
 const mockRenderer = vi.hoisted(() => ({
+  blitToCanvas: vi.fn(),
   clearPreview: vi.fn(),
   compositeStroke: vi.fn(),
   destroy: vi.fn(),
   prepareStroke: vi.fn(),
-  renderStrokeToAccumulator: vi.fn(),
-  blitToCanvas: vi.fn()
+  renderStrokeToAccumulator: vi.fn()
 }))
 
 vi.mock('./gpu/GPUBrushRenderer', () => ({
@@ -207,24 +208,24 @@ describe('gpuRender', () => {
 
   it('uses full coverage for GPU stroke paths', async () => {
     vi.stubGlobal('GPUTextureUsage', {
-      TEXTURE_BINDING: 0x0004,
-      STORAGE_BINDING: 0x0008,
-      RENDER_ATTACHMENT: 0x0010,
       COPY_DST: 0x0002,
-      COPY_SRC: 0x0001
+      COPY_SRC: 0x0001,
+      RENDER_ATTACHMENT: 0x0010,
+      STORAGE_BINDING: 0x0008,
+      TEXTURE_BINDING: 0x0004
     })
     Object.defineProperty(navigator, 'gpu', {
       configurable: true,
       value: { getPreferredCanvasFormat: vi.fn(() => 'rgba8unorm') }
     })
 
-    const imageData = {
+    const imageData = fromPartial<ImageData>({
       data: new Uint8ClampedArray(4 * 4 * 4)
-    } as ImageData
-    const context = {
+    })
+    const context = fromPartial<CanvasRenderingContext2D>({
       getImageData: vi.fn(() => imageData),
       putImageData: vi.fn()
-    } as unknown as CanvasRenderingContext2D
+    })
     const gpuDevice = {
       createTexture: vi.fn(() => ({
         createView: vi.fn(),
@@ -234,9 +235,15 @@ describe('gpuRender', () => {
         writeTexture: vi.fn()
       }
     }
-    mockStore.tgpuRoot = { device: gpuDevice } as unknown
-    mockStore.maskCanvas = { width: 4, height: 4 } as HTMLCanvasElement
-    mockStore.rgbCanvas = { width: 4, height: 4 } as HTMLCanvasElement
+    mockStore.tgpuRoot = { device: gpuDevice }
+    mockStore.maskCanvas = fromPartial<HTMLCanvasElement>({
+      width: 4,
+      height: 4
+    })
+    mockStore.rgbCanvas = fromPartial<HTMLCanvasElement>({
+      width: 4,
+      height: 4
+    })
     mockStore.maskCtx = context
     mockStore.rgbCtx = context
 
