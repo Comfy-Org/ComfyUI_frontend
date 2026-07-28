@@ -22,6 +22,7 @@ import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
+import RunModePopover from './composer/RunModePopover.vue'
 
 const {
   streaming = false,
@@ -226,14 +227,7 @@ defineExpose({
       </DropdownMenuRoot>
 
       <div class="flex items-center gap-1">
-        <button
-          type="button"
-          class="text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors"
-          :aria-label="t('agent.modelAuto')"
-        >
-          <span>{{ t('agent.modelAuto') }}</span>
-          <span class="icon-[lucide--chevron-down] size-3" />
-        </button>
+        <RunModePopover />
         <button
           type="button"
           :aria-label="running ? t('agent.stop') : t('agent.send')"
