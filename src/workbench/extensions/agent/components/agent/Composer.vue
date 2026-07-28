@@ -116,6 +116,7 @@ defineExpose({
       >
         <span class="text-agent-fg-subtle icon-[lucide--at-sign] size-3.5" />
         <span class="max-w-40 truncate">{{ tag.title }}</span>
+        <span class="text-agent-fg-subtle shrink-0">#{{ tag.id }}</span>
         <button
           type="button"
           :aria-label="t('agent.remove')"
