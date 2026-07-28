@@ -64,7 +64,7 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       )) {
         await expect(coach.coachAnchor(id)).toBeVisible()
       }
-      await comfyPage.menu.assetsTab.tabButton.click()
+      await comfyPage.page.getByRole('button', { name: 'Media Assets' }).click()
       await expect(coach.coachAnchor(COACH_IDS.assetsPanel)).toBeVisible()
     })
   })
