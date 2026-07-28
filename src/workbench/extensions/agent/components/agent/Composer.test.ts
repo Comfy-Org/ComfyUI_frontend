@@ -7,6 +7,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 
+import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
 
 function mount(props: ComponentProps<typeof Composer> = {}) {
@@ -76,6 +77,72 @@ describe('Composer', () => {
     await userEvent.click(stop)
     expect(emitted().stop).toHaveLength(1)
     expect(emitted().send).toBeUndefined()
+  })
+
+  describe('run permissions popover', () => {
+    beforeEach(() => {
+      localStorage.clear()
+    })
+
+    it('opens from the Auto control with the ask mode selected by default', async () => {
+      mount()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Run permissions' })
+      )
+
+      expect(
+        await screen.findByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('radio', { name: /Ask before a workflow runs/ })
+      ).toBeChecked()
+    })
+
+    it('saves a new run mode with its credit limit and closes', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Run permissions' })
+      )
+      await userEvent.click(
+        await screen.findByRole('radio', { name: /Auto-run with limits/ })
+      )
+      const input = screen.getByRole('spinbutton', { name: 'credits' })
+      await userEvent.clear(input)
+      await userEvent.type(input, '500')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Save changes' })
+      )
+
+      expect(store.mode).toBe('auto-limit')
+      expect(store.creditLimit).toBe(500)
+      expect(
+        screen.queryByText('Choose when the agent needs your consent')
+      ).toBeNull()
+    })
+
+    it('discards an unsaved draft when the popover closes without saving', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Run permissions' })
+      )
+      await userEvent.click(
+        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+      )
+      await userEvent.keyboard('{Escape}')
+      expect(store.mode).toBe('ask')
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Run permissions' })
+      )
+      expect(
+        await screen.findByRole('radio', { name: /Ask before a workflow runs/ })
+      ).toBeChecked()
+    })
   })
 
   it('restores the typed draft after unmount and remount', async () => {
