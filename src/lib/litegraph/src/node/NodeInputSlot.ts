@@ -45,6 +45,12 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     return this._node.inputs.indexOf(this)
   }
 
+  get linkId(): LinkId | null {
+    const { graph } = this._node
+    if (!graph) return null
+    return inputLinkId(graph, this._node.id, this.index) ?? null
+  }
+
   constructor(
     slot: OptionalProps<INodeInputSlot, 'boundingRect'>,
     node: LGraphNode
@@ -93,12 +99,9 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   }
 
   override toJSON(): INodeInputSlot {
-    const { graph } = this._node
     return {
       ...super.toJSON(),
-      link: graph
-        ? (inputLinkId(graph, this._node.id, this.index) ?? null)
-        : null,
+      link: this.linkId,
       widget: this.widget
     }
   }
@@ -115,9 +118,7 @@ Object.defineProperty(NodeInputSlot.prototype, 'link', {
     warnDeprecated(
       'input.link is deprecated. Read connectivity via node.isInputConnected(slot) / node.getInputLink(slot); mutate via node.connect() / node.disconnectInput().'
     )
-    const { graph } = this._node
-    if (!graph) return null
-    return inputLinkId(graph, this._node.id, this.index) ?? null
+    return this.linkId
   },
   set(this: NodeInputSlot): void {
     warnDeprecated(

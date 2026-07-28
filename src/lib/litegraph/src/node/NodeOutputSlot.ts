@@ -40,6 +40,11 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     return this._node.outputs.indexOf(this)
   }
 
+  get linkIds(): LinkId[] {
+    const { graph } = this._node
+    return graph ? outputLinkIds(graph, this._node.id, this.index) : []
+  }
+
   constructor(
     slot: OptionalProps<INodeOutputSlot, 'boundingRect'>,
     node: LGraphNode
@@ -92,8 +97,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   }
 
   override toJSON(): INodeOutputSlot {
-    const { graph } = this._node
-    const ids = graph ? outputLinkIds(graph, this._node.id, this.index) : []
+    const ids = this.linkIds
     return {
       ...super.toJSON(),
       links: ids.length ? ids : null,
@@ -113,9 +117,7 @@ Object.defineProperty(NodeOutputSlot.prototype, 'links', {
     warnDeprecated(
       'output.links is deprecated. Read connectivity via node.isOutputConnected(slot) / node.getOutputNodes(slot); enumerate links via outputLinks(graph, node.id, slot); mutate via node.connect() / node.disconnectOutput().'
     )
-    const { graph } = this._node
-    if (!graph) return null
-    const ids = outputLinkIds(graph, this._node.id, this.index)
+    const ids = this.linkIds
     return ids.length ? Object.freeze(ids) : null
   },
   set(this: NodeOutputSlot): void {
