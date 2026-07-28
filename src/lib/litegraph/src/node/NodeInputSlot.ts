@@ -41,6 +41,10 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     return [0, LiteGraph.NODE_TITLE_HEIGHT * -0.5]
   }
 
+  get index(): number {
+    return this._node.inputs.indexOf(this)
+  }
+
   constructor(
     slot: OptionalProps<INodeInputSlot, 'boundingRect'>,
     node: LGraphNode
@@ -55,7 +59,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   override get isConnected(): boolean {
     const { graph } = this._node
     if (!graph) return false
-    return inputHasLink(graph, this._node.id, this._node.inputs.indexOf(this))
+    return inputHasLink(graph, this._node.id, this.index)
   }
 
   override isValidTarget(
@@ -93,8 +97,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     return {
       ...super.toJSON(),
       link: graph
-        ? (inputLinkId(graph, this._node.id, this._node.inputs.indexOf(this)) ??
-          null)
+        ? (inputLinkId(graph, this._node.id, this.index) ?? null)
         : null,
       widget: this.widget
     }
@@ -114,9 +117,7 @@ Object.defineProperty(NodeInputSlot.prototype, 'link', {
     )
     const { graph } = this._node
     if (!graph) return null
-    return (
-      inputLinkId(graph, this._node.id, this._node.inputs.indexOf(this)) ?? null
-    )
+    return inputLinkId(graph, this._node.id, this.index) ?? null
   },
   set(this: NodeInputSlot): void {
     warnDeprecated(

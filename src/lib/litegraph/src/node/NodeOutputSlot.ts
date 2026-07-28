@@ -36,6 +36,10 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     ]
   }
 
+  get index(): number {
+    return this._node.outputs.indexOf(this)
+  }
+
   constructor(
     slot: OptionalProps<INodeOutputSlot, 'boundingRect'>,
     node: LGraphNode
@@ -66,11 +70,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   override get isConnected(): boolean {
     const { graph } = this._node
     if (!graph) return false
-    return outputHasLinks(
-      graph,
-      this._node.id,
-      this._node.outputs.indexOf(this)
-    )
+    return outputHasLinks(graph, this._node.id, this.index)
   }
 
   override draw(
@@ -93,9 +93,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
 
   override toJSON(): INodeOutputSlot {
     const { graph } = this._node
-    const ids = graph
-      ? outputLinkIds(graph, this._node.id, this._node.outputs.indexOf(this))
-      : []
+    const ids = graph ? outputLinkIds(graph, this._node.id, this.index) : []
     return {
       ...super.toJSON(),
       links: ids.length ? ids : null,
@@ -117,11 +115,7 @@ Object.defineProperty(NodeOutputSlot.prototype, 'links', {
     )
     const { graph } = this._node
     if (!graph) return null
-    const ids = outputLinkIds(
-      graph,
-      this._node.id,
-      this._node.outputs.indexOf(this)
-    )
+    const ids = outputLinkIds(graph, this._node.id, this.index)
     return ids.length ? Object.freeze(ids) : null
   },
   set(this: NodeOutputSlot): void {
