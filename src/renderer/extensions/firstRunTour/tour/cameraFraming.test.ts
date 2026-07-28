@@ -220,6 +220,20 @@ describe('frameNode', () => {
     ).toBe(focusFill(node.boundingRect, resized))
   })
 
+  it('leaves the camera alone when a resize collapses the viewport', async () => {
+    const node = mountCanvas()
+    void frameStep(node.id)
+    await vi.advanceTimersByTimeAsync(CARD_GLIDE_MS)
+
+    canvasRect = new DOMRect(0, 0, 640, 0)
+    window.dispatchEvent(new Event('resize'))
+
+    expect(
+      camera.ds.fitToBounds,
+      'dividing by a collapsed height hands the camera a NaN zoom it never recovers from'
+    ).not.toHaveBeenCalled()
+  })
+
   it('stops re-fitting once the step ends', async () => {
     const node = mountCanvas()
     const controller = new AbortController()

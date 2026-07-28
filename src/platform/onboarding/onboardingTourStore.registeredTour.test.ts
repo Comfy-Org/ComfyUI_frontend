@@ -64,7 +64,12 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
   })
 
   it('reports no start for an entry no one registered', async () => {
-    const store = mountStore()
+    vi.resetModules()
+    const { useOnboardingTourStore: freshStore } =
+      await import('./onboardingTourStore')
+    pinia = createPinia()
+    setActivePinia(pinia)
+    const store = freshStore()
 
     await expect(store.startTour('firstRun')).resolves.toBe(false)
     expect(store.activeTour).toBeNull()
@@ -188,6 +193,13 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
 
     store.postpone()
 
+    expect(
+      telemetry.track,
+      'a postponement counted as a plain skip reads as a user who refused the tour'
+    ).toHaveBeenCalledWith(
+      'skipped',
+      expect.objectContaining({ skip_reason: 'postponed' })
+    )
     expect(store.activeTour).toBeNull()
     await expect(
       store.startTour('firstRun'),

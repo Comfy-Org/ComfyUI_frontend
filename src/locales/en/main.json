@@ -4728,7 +4728,7 @@
       },
       "run": {
         "title": "Run your workflow",
-        "body": "Press Run to start generating your result"
+        "body": "Press Run to start generating your result."
       },
       "result": {
         "generating": {
