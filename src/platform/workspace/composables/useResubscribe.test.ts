@@ -81,12 +81,7 @@ describe('useResubscribe', () => {
 
     expect(state.resubscribe).toHaveBeenCalledOnce()
     expect(state.trackResubscribeClicked).toHaveBeenCalledOnce()
-    expect(state.trackBillingEvent).toHaveBeenCalledWith({
-      operation: 'resubscribe',
-      stage: 'succeeded',
-      outcome: 'success',
-      source: 'settings_billing_panel'
-    })
+    expect(state.trackBillingEvent).not.toHaveBeenCalled()
     expect(state.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
     )

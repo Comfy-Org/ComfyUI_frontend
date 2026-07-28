@@ -57,6 +57,7 @@ import type {
 import {
   CANCELLATION_STAGE_EVENTS,
   getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload,
   OnboardingTourEvents,
   TelemetryEvents
 } from '../../types'
@@ -431,7 +432,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackBillingEvent(event: BillingTelemetryEvent): void {
-    this.trackEvent(getBillingTelemetryEventName(event), event)
+    this.trackEvent(
+      getBillingTelemetryEventName(event),
+      getBillingTelemetryEventPayload(event)
+    )
   }
 
   trackRunButton(properties: RunButtonProperties): void {

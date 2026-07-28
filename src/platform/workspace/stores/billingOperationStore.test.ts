@@ -489,6 +489,13 @@ describe('billingOperationStore', () => {
       expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
         isSubscribed: false
       })
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op-1',
+        operation_type: 'cancel'
+      })
     })
 
     it('resolves the terminal outcome even when the post-success refresh fails', async () => {
@@ -542,6 +549,14 @@ describe('billingOperationStore', () => {
       expect(operation.errorMessage).toBe('billingOperation.cancelFailed')
       expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'operation',
+          stage: 'failed',
+          billing_op_id: 'op-1',
+          operation_type: 'cancel'
+        })
+      )
     })
 
     it('resolves with a timeout operation after 2 minutes, no toast', async () => {
@@ -562,6 +577,14 @@ describe('billingOperationStore', () => {
       expect(operation.errorMessage).toBe('billingOperation.cancelTimeout')
       expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'operation',
+          stage: 'timeout',
+          billing_op_id: 'op-1',
+          operation_type: 'cancel'
+        })
+      )
     })
   })
 

@@ -5,11 +5,17 @@ import type {
   ExecutionOutcomeMetadata,
   TelemetryProvider
 } from '../../types'
-import { getBillingTelemetryEventName } from '../../types'
+import {
+  getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload
+} from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
   trackBillingEvent(event: BillingTelemetryEvent): void {
-    datadogRum.addAction(getBillingTelemetryEventName(event), event)
+    datadogRum.addAction(
+      getBillingTelemetryEventName(event),
+      getBillingTelemetryEventPayload(event)
+    )
   }
 
   trackExecutionOutcome({

@@ -214,6 +214,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         outcome: 'success',
         billing_op_id: opId
       })
+    } else {
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: opId,
+        operation_type: 'cancel'
+      })
     }
 
     const billingContext = useBillingContext()

@@ -83,6 +83,7 @@ const {
   mockShowDowngradeToPersonalDialog,
   mockUserId,
   mockIsTeamPlan,
+  mockShouldUseWorkspaceBilling,
   mockPermissions
 } = vi.hoisted(() => ({
   mockSubscribe: vi.fn(),
@@ -99,6 +100,7 @@ const {
   mockShowDowngradeToPersonalDialog: vi.fn(),
   mockUserId: { value: 'user-1' as string | null },
   mockIsTeamPlan: { value: false },
+  mockShouldUseWorkspaceBilling: { value: true },
   mockPermissions: {
     value: {
       canManageSubscription: true,
@@ -118,6 +120,14 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     fetchBalance: mockFetchBalance,
     isTeamPlan: computed(() => mockIsTeamPlan.value),
     resubscribe: mockResubscribe
+  })
+}))
+
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
   })
 }))
 
@@ -204,6 +214,7 @@ describe('useSubscriptionCheckout', () => {
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
     mockUserId.value = 'user-1'
     mockIsTeamPlan.value = false
+    mockShouldUseWorkspaceBilling.value = true
     mockPermissions.value = {
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
@@ -832,6 +843,16 @@ describe('useSubscriptionCheckout', () => {
         })
       )
       expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: 'team',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        payment_intent_source: undefined,
+        failure_category: 'unknown'
+      })
     })
 
     it('keeps team checkout_type as change when the preview request fails', async () => {
@@ -1103,6 +1124,49 @@ describe('useSubscriptionCheckout', () => {
         })
       )
       expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: 'standard',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        payment_intent_source: undefined,
+        failure_category: 'unknown'
+      })
+    })
+
+    it('reports an empty workspace response as a sanitized failure', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce(undefined)
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: 'standard',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        payment_intent_source: undefined,
+        failure_category: 'unknown',
+        error_code: 'missing_checkout_response'
+      })
+    })
+
+    it('does not report an empty legacy checkout launch as failure', async () => {
+      mockShouldUseWorkspaceBilling.value = false
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce(undefined)
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('does not submit when workspace ownership is revoked', async () => {
@@ -1221,6 +1285,18 @@ describe('useSubscriptionCheckout', () => {
         payment_intent_source: undefined,
         failure_category: 'unknown'
       })
+    })
+
+    it('does not report checkout launch as terminal legacy success', async () => {
+      mockShouldUseWorkspaceBilling.value = false
+      mockResubscribe.mockResolvedValueOnce(undefined)
+      const checkout = await setup('subscribe_to_run')
+
+      await checkout.handleResubscribe()
+
+      expect(mockResubscribe).toHaveBeenCalledOnce()
+      expect(mockTrackResubscribeClicked).toHaveBeenCalledOnce()
+      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('does not resubscribe for a member', async () => {

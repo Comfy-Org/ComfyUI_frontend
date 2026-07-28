@@ -463,6 +463,16 @@ describe('PostHogTelemetryProvider', () => {
       [
         {
           operation: 'operation',
+          stage: 'succeeded',
+          outcome: 'success',
+          billing_op_id: 'op-cancel',
+          operation_type: 'cancel'
+        },
+        TelemetryEvents.BILLING_OPERATION_SUCCEEDED
+      ],
+      [
+        {
+          operation: 'operation',
           stage: 'failed',
           outcome: 'failure',
           billing_op_id: 'opaque-op-id',
@@ -558,6 +568,36 @@ describe('PostHogTelemetryProvider', () => {
       provider.trackBillingEvent(event)
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, event)
+    })
+
+    it('drops fields outside the billing telemetry contract', async () => {
+      const provider = createProvider()
+      const event = {
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: 'opaque-op-id',
+        failure_category: 'unknown',
+        error_message: 'raw provider response',
+        email: 'user@example.com'
+      } satisfies BillingTelemetryEvent & {
+        error_message: string
+        email: string
+      }
+      await vi.dynamicImportSettled()
+
+      provider.trackBillingEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.BILLING_TOPUP_FAILED,
+        {
+          operation: 'topup',
+          stage: 'failed',
+          outcome: 'failure',
+          billing_op_id: 'opaque-op-id',
+          failure_category: 'unknown'
+        }
+      )
     })
 
     it('captures begin_checkout with intent metadata', async () => {

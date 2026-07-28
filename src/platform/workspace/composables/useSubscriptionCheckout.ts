@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
@@ -89,6 +90,7 @@ export function useSubscriptionCheckout(
     isTeamPlan,
     resubscribe
   } = useBillingContext()
+  const { shouldUseWorkspaceBilling } = useBillingRouting()
   const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
@@ -315,6 +317,11 @@ export function useSubscriptionCheckout(
         checkoutType
       })
     } catch (error) {
+      trackSubscriptionFailure({
+        tier: tierKey,
+        cycle: billingCycle,
+        checkoutType
+      })
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
@@ -338,12 +345,34 @@ export function useSubscriptionCheckout(
     checkoutType: SubscriptionCheckoutType
   }
 
+  function trackSubscriptionFailure(
+    context: SubscriptionOutcomeContext,
+    errorCode?: 'missing_checkout_response'
+  ) {
+    if (!shouldUseWorkspaceBilling.value) return
+
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      tier: context.tier,
+      cycle: context.cycle,
+      checkout_type: context.checkoutType,
+      payment_intent_source: paymentIntentSource,
+      failure_category: 'unknown',
+      ...(errorCode && { error_code: errorCode })
+    })
+  }
+
   async function handleSubscribeResponse(
     response: SubscribeResponse | void,
     context: SubscriptionOutcomeContext,
     shouldTrackSubscriptionSuccess = true
   ): Promise<void> {
-    if (!response) return
+    if (!response) {
+      trackSubscriptionFailure(context, 'missing_checkout_response')
+      return
+    }
 
     if (response.status === 'subscribed') {
       if (shouldTrackSubscriptionSuccess) {
@@ -445,6 +474,11 @@ export function useSubscriptionCheckout(
         checkoutType
       })
     } catch (error) {
+      trackSubscriptionFailure({
+        tier: 'team',
+        cycle: billingCycle,
+        checkoutType
+      })
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
@@ -461,13 +495,15 @@ export function useSubscriptionCheckout(
     isResubscribing.value = true
     try {
       await resubscribe()
-      telemetry?.trackBillingEvent({
-        operation: 'resubscribe',
-        stage: 'succeeded',
-        outcome: 'success',
-        source: 'pricing_dialog',
-        payment_intent_source: paymentIntentSource
-      })
+      if (shouldUseWorkspaceBilling.value) {
+        telemetry?.trackBillingEvent({
+          operation: 'resubscribe',
+          stage: 'succeeded',
+          outcome: 'success',
+          source: 'pricing_dialog',
+          payment_intent_source: paymentIntentSource
+        })
+      }
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),
@@ -477,14 +513,16 @@ export function useSubscriptionCheckout(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to resubscribe'
-      telemetry?.trackBillingEvent({
-        operation: 'resubscribe',
-        stage: 'failed',
-        outcome: 'failure',
-        source: 'pricing_dialog',
-        payment_intent_source: paymentIntentSource,
-        failure_category: 'unknown'
-      })
+      if (shouldUseWorkspaceBilling.value) {
+        telemetry?.trackBillingEvent({
+          operation: 'resubscribe',
+          stage: 'failed',
+          outcome: 'failure',
+          source: 'pricing_dialog',
+          payment_intent_source: paymentIntentSource,
+          failure_category: 'unknown'
+        })
+      }
       toast.add({
         severity: 'error',
         summary: 'Error',

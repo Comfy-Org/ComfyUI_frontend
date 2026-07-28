@@ -643,7 +643,7 @@ type BillingOperationBillingEvent = {
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
   payment_intent_source?: PaymentIntentSource
-} & (BillingFailed | BillingTimedOut)
+} & (BillingSucceeded | BillingFailed | BillingTimedOut)
 
 type ResubscribeBillingEvent = {
   operation: 'resubscribe'
@@ -682,6 +682,44 @@ export function getBillingTelemetryEventName(
   event: BillingTelemetryEvent
 ): BillingTelemetryEventName {
   return `billing.${event.operation}.${event.stage}` as BillingTelemetryEventName
+}
+
+export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
+  return {
+    operation: event.operation,
+    stage: event.stage,
+    outcome: event.outcome,
+    ...('billing_op_id' in event &&
+      event.billing_op_id !== undefined && {
+        billing_op_id: event.billing_op_id
+      }),
+    ...('operation_type' in event && {
+      operation_type: event.operation_type
+    }),
+    ...('tier' in event && event.tier !== undefined && { tier: event.tier }),
+    ...('cycle' in event &&
+      event.cycle !== undefined && { cycle: event.cycle }),
+    ...('checkout_type' in event &&
+      event.checkout_type !== undefined && {
+        checkout_type: event.checkout_type
+      }),
+    ...('payment_intent_source' in event &&
+      event.payment_intent_source !== undefined && {
+        payment_intent_source: event.payment_intent_source
+      }),
+    ...('source' in event && { source: event.source }),
+    ...('failure_category' in event && {
+      failure_category: event.failure_category
+    }),
+    ...('error_code' in event &&
+      event.error_code !== undefined && { error_code: event.error_code }),
+    ...('member_removal_count' in event && {
+      member_removal_count: event.member_removal_count,
+      member_removal_failures: event.member_removal_failures
+    }),
+    ...('target_tier' in event &&
+      event.target_tier !== undefined && { target_tier: event.target_tier })
+  }
 }
 
 /**
@@ -841,6 +879,7 @@ export const TelemetryEvents = {
   BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
     'billing.subscription_checkout.succeeded',
   BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
+  BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
   BILLING_OPERATION_FAILED: 'billing.operation.failed',
   BILLING_OPERATION_TIMEOUT: 'billing.operation.timeout',
   BILLING_RESUBSCRIBE_SUCCEEDED: 'billing.resubscribe.succeeded',

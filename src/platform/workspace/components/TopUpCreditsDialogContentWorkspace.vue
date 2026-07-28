@@ -281,7 +281,7 @@ async function handleBuy() {
         summary: t('credits.topUp.purchaseSuccess'),
         life: 5000
       })
-      await Promise.all([fetchBalance(), fetchStatus()])
+      await Promise.allSettled([fetchBalance(), fetchStatus()])
       handleClose(false)
       settingsDialog.show('workspace')
     } else if (response.status === 'pending') {

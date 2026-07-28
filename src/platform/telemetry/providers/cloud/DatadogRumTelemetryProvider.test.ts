@@ -42,6 +42,34 @@ describe('DatadogRumTelemetryProvider', () => {
     )
   })
 
+  it('drops fields outside the billing telemetry contract', () => {
+    const event = {
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      billing_op_id: 'opaque-op-id',
+      failure_category: 'unknown',
+      error_message: 'raw provider response',
+      email: 'user@example.com'
+    } satisfies BillingTelemetryEvent & {
+      error_message: string
+      email: string
+    }
+
+    new DatadogRumTelemetryProvider().trackBillingEvent(event)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BILLING_TOPUP_FAILED,
+      {
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: 'opaque-op-id',
+        failure_category: 'unknown'
+      }
+    )
+  })
+
   it.for(['success', 'failure'] as const)(
     'records a workflow vital with a %s outcome',
     (outcome) => {

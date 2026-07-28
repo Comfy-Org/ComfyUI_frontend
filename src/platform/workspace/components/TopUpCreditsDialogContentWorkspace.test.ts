@@ -176,6 +176,24 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     })
   })
 
+  it('keeps completed top-up telemetry successful when refresh fails', async () => {
+    mockTopup.mockResolvedValue(topupResponse('completed'))
+    mockFetchBalance.mockRejectedValueOnce(new Error('balance unavailable'))
+    mockFetchStatus.mockRejectedValueOnce(new Error('status unavailable'))
+
+    renderDialog()
+    await clickAddCredits()
+
+    expect(mockTrackBillingEvent).toHaveBeenCalledTimes(1)
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'succeeded',
+      outcome: 'success',
+      billing_op_id: 'op-1'
+    })
+    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+  })
+
   it('does not refresh balance or status for a pending top-up', async () => {
     mockTopup.mockResolvedValue(topupResponse('pending'))
 
