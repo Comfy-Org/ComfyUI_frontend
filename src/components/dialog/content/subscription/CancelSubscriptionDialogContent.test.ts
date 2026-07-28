@@ -178,11 +178,32 @@ describe('CancelSubscriptionDialogContent', () => {
       await waitFor(() =>
         expect(mockTrackCancellation).toHaveBeenCalledWith(
           'failed',
-          expect.objectContaining({ error_message: 'timed out' })
+          expect.not.objectContaining({ error_message: expect.anything() })
         )
       )
       expect(mockTrackCancellation).toHaveBeenCalledWith(
         'confirmed',
+        expect.anything()
+      )
+    })
+
+    it('leaves workspace terminal failure telemetry to the billing poller', async () => {
+      mockSubscription.value = null
+      mockShouldUseWorkspaceBilling.value = true
+      mockCancelSubscription.mockRejectedValueOnce({ message: 'timed out' })
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      await waitFor(() =>
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error' })
+        )
+      )
+      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
+        'failed',
         expect.anything()
       )
     })

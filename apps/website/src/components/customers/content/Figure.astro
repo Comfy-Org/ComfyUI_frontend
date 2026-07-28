@@ -1,15 +1,18 @@
 ---
+import { cn } from '@comfyorg/tailwind-utils'
+
 interface Props {
   src: string
   alt: string
   caption?: string
+  width?: 'full' | 'compact'
 }
 
-const { src, alt, caption } = Astro.props
+const { src, alt, caption, width = 'full' } = Astro.props
 const hasCaptionSlot = Astro.slots.has('default')
 ---
 
-<figure class="my-8">
+<figure class={cn('my-8', width === 'compact' && 'max-w-md')}>
   <img
     src={src}
     alt={alt}

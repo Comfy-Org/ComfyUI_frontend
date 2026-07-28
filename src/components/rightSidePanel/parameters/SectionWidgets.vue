@@ -18,6 +18,7 @@ import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromot
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -224,6 +225,11 @@ const canShowLocateButton = computed(
 function handleLocateNode() {
   if (!targetNode.value || !canvasStore.canvas) return
 
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_locate_node_clicked',
+    element_group: 'right_side_panel_nodes'
+  })
+
   const graphNode = canvasStore.canvas.graph?.getNodeById(targetNode.value.id)
   if (graphNode) {
     canvasStore.canvas.animateToBounds(graphNode.boundingRect)
@@ -284,6 +290,11 @@ function setWidgetValue(
 }
 
 function handleResetAllWidgets() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_reset_all_parameters_clicked',
+    element_group: 'right_side_panel_nodes'
+  })
+
   for (const { widget, node: widgetNode } of widgetsProp) {
     const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
     const defaultValue = getWidgetDefaultValue(spec)
