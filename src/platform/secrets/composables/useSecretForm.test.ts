@@ -553,6 +553,7 @@ describe('useSecretForm', () => {
 
       form.name = 'Vertex SA'
       form.provider = 'gemini'
+      await nextTick()
       form.secretValue = 'not json'
 
       await handleSubmit()
@@ -573,6 +574,7 @@ describe('useSecretForm', () => {
 
       form.name = 'Vertex SA'
       form.provider = 'gemini'
+      await nextTick()
       form.secretValue = '["not", "an", "object"]'
 
       await handleSubmit()
@@ -694,10 +696,13 @@ describe('useSecretForm', () => {
 
       await handleSubmit()
 
+      // The advertised class is submitted with the value it was entered under,
+      // without waiting for a watcher to settle.
       expect(mockCreate).toHaveBeenCalledWith({
         name: 'Vertex SA',
         secret_value: '{"type":"service_account"}',
-        provider: 'gemini'
+        provider: 'gemini',
+        credential_type: 'gcp_service_account'
       })
     })
   })
@@ -999,6 +1004,156 @@ describe('useSecretForm', () => {
         secret_value: 'token123',
         provider: 'civitai'
       })
+    })
+
+    it('adopts the advertised class when the option list resolves after the provider is picked', async () => {
+      const visible = ref(true)
+      mockCreate.mockResolvedValue({})
+      const providers = ref<SecretProviderInfo[] | null>(null)
+
+      const { form, credentialType, selectedInputType, handleSubmit } =
+        useSecretForm({
+          mode: 'create',
+          existingProviders: () => [],
+          availableProviders: () => providers.value,
+          visible,
+          onSaved: vi.fn()
+        })
+
+      form.provider = 'civitai'
+      await nextTick()
+      form.name = 'Civitai token'
+      form.secretValue = 'token123'
+
+      providers.value = [
+        {
+          id: 'civitai',
+          credential_options: [
+            { credential_type: 'api_key', input_type: 'text', label: 'API key' }
+          ]
+        }
+      ]
+      await nextTick()
+
+      expect(credentialType.value).toBe('api_key')
+      expect(selectedInputType.value).toBe('text')
+
+      // Resolving the server's options is not a user switch, so the value the
+      // user already entered survives.
+      await handleSubmit()
+
+      expect(mockCreate).toHaveBeenCalledWith({
+        name: 'Civitai token',
+        secret_value: 'token123',
+        provider: 'civitai',
+        credential_type: 'api_key'
+      })
+    })
+
+    it('discards a typed value when the resolving option list changes how it is entered', async () => {
+      const visible = ref(true)
+      const providers = ref<SecretProviderInfo[] | null>(null)
+
+      const { form, selectedInputType } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => providers.value,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'civitai'
+      await nextTick()
+      form.secretValue = 'typed-as-an-api-key'
+
+      providers.value = [
+        {
+          id: 'civitai',
+          credential_options: [
+            {
+              credential_type: 'gcp_service_account',
+              input_type: 'json_file',
+              label: 'Service account'
+            }
+          ]
+        }
+      ]
+      await nextTick()
+
+      expect(selectedInputType.value).toBe('json_file')
+      expect(form.secretValue).toBe('')
+    })
+
+    it('falls back to the first advertised option when the selected class is withdrawn', async () => {
+      const visible = ref(true)
+      mockCreate.mockResolvedValue({})
+      const providers = ref<SecretProviderInfo[] | null>(geminiProviders)
+
+      const { form, credentialType, selectedInputType, handleSubmit } =
+        useSecretForm({
+          mode: 'create',
+          existingProviders: () => [],
+          availableProviders: () => providers.value,
+          visible,
+          onSaved: vi.fn()
+        })
+
+      form.provider = 'gemini'
+      await nextTick()
+      credentialType.value = 'gcp_service_account'
+      await nextTick()
+
+      providers.value = [
+        {
+          id: 'gemini',
+          credential_options: [
+            { credential_type: 'api_key', input_type: 'text', label: 'API key' }
+          ]
+        }
+      ]
+      await nextTick()
+
+      expect(credentialType.value).toBe('api_key')
+      expect(selectedInputType.value).toBe('text')
+
+      form.name = 'Gemini key'
+      form.secretValue = 'AIza-test-key'
+      await handleSubmit()
+
+      // The rendered class and the submitted class cannot diverge.
+      expect(mockCreate).toHaveBeenCalledWith({
+        name: 'Gemini key',
+        secret_value: 'AIza-test-key',
+        provider: 'gemini',
+        credential_type: 'api_key'
+      })
+    })
+
+    it('clears a stale value error when the credential class changes', async () => {
+      const visible = ref(true)
+
+      const { form, errors, credentialType, handleSubmit } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => geminiProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      await nextTick()
+      credentialType.value = 'gcp_service_account'
+      await nextTick()
+
+      form.name = 'Vertex SA'
+      form.secretValue = 'not-json'
+      await handleSubmit()
+      expect(errors.secretValue).toBe('secrets.errors.invalidJson')
+
+      credentialType.value = 'api_key'
+      await nextTick()
+
+      expect(errors.secretValue).toBe('')
     })
   })
 })
