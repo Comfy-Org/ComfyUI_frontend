@@ -118,6 +118,21 @@ describe('LGraph', () => {
     }
   })
 
+  it('does not throw but still refuses the duplicate add outside DEV', () => {
+    vi.stubEnv('DEV', false)
+    try {
+      const graph = new LGraph()
+      const node = new DummyNode()
+      graph.add(node)
+
+      expect(() => graph.add(node)).not.toThrow()
+      // Reporting instead of throwing must not corrupt graph state.
+      expect(graph.nodes).toHaveLength(1)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('allows adding two different instances of the same node type', () => {
     const graph = new LGraph()
     const node1 = new DummyNode()

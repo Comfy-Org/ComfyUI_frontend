@@ -980,10 +980,14 @@ export class LGraph
     // instance being added to this graph a second time. Without this check
     // the code below would silently mint it a new id and push it into
     // `_nodes` again, leaving one node object registered under two ids.
+    // Bail out here (after assert reports/throws) so production users still
+    // get the "refuse to add" behavior instead of the corruption above.
+    const isDuplicateNode = this._nodes.includes(node)
     assert(
-      !this._nodes.includes(node),
+      !isDuplicateNode,
       `LGraph.add: node "${node.type}" (id: ${node.id}) is already present in this graph - refusing to add the same node instance again`
     )
+    if (isDuplicateNode) return
 
     node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
 
