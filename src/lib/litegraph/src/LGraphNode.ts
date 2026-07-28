@@ -320,14 +320,7 @@ export class LGraphNode
 
   graph: LGraph | Subgraph | null = null
 
-  /**
-   * The node's shell state and the single source of truth for the fields the
-   * renderer draws. Once registered with {@link useNodeDataStore} via
-   * {@link registerNodeState}, this is the store's reactive proxy, so both
-   * reads (through the scalar getters below) and writes are tracked. Built with
-   * placeholders in the constructor; the owning graph id is filled in and the
-   * state registered at {@link LGraph.add}.
-   */
+  /** Shell state for the fields the renderer draws; the {@link useNodeDataStore} proxy once registered. */
   _state: NodeState
 
   /** The root graph this node is registered with in {@link useNodeDataStore}, if any. */
@@ -345,13 +338,7 @@ export class LGraphNode
     return this._state.type
   }
 
-  /**
-   * Input slots, held in a `shallowReactive` array so the Vue renderer tracks
-   * slot add / remove / reorder. Slot objects themselves are not made reactive.
-   *
-   * Assignment replaces the contents in place rather than swapping the array,
-   * so the identity the renderer subscribed to survives.
-   */
+  /** Assignment splices in place: the `shallowReactive` array identity is what the renderer tracks. */
   get inputs(): INodeInputSlot[] {
     return this._state.inputs
   }
@@ -385,16 +372,7 @@ export class LGraphNode
     this._state.flags = value
   }
 
-  /**
-   * The node's widgets. Created `shallowReactive` by {@link addWidget} /
-   * {@link addCustomWidget}, so the renderer tracks add / remove / reorder —
-   * including direct mutation (`node.widgets.pop()`), which carries no store
-   * call to notice. Assigning a whole new array drops that tracking; prefer
-   * mutating in place.
-   *
-   * Render order is owned by `widgetValueStore`; {@link addWidget},
-   * {@link addCustomWidget} and {@link removeWidget} keep the two in step.
-   */
+  /** Mutate in place; assigning a new array drops the renderer's tracking. */
   widgets?: IBaseWidget[]
 
   /**
@@ -4338,12 +4316,7 @@ export class LGraphNode
 
 /**
  * Registers a node's shell state into {@link useNodeDataStore} and adopts the
- * store's reactive proxy as {@link LGraphNode._state}, so the store and the node
- * always agree and field writes are tracked. Call this at every site that adds a
- * node to a graph. Sets both ids: `_graphId` (root bucket key) and
- * `_state.graphId` (owning (sub)graph, for renderer partitioning).
- * @param graph The graph (or subgraph) the node belongs to
- * @param node The node to register
+ * store's proxy as {@link LGraphNode._state}. Call wherever a node joins a graph.
  */
 export function registerNodeState(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,

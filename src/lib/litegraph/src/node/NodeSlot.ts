@@ -94,12 +94,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
     Object.assign(this, rest)
     this._node = node
 
-    // Slot fields the renderer draws (label, name, type, shape, …) are mutated
-    // in place by renames and type changes. Returning the proxy from the
-    // constructor makes every reference to this slot the tracked one, so those
-    // writes reach Vue without a reprojection pass. Shallow by design: nested
-    // values (`boundingRect`, `_widget`, `pos`) stay raw, so identity
-    // comparisons against them keep working.
+    // Return the proxy so in-place field writes (rename, retype) reach Vue.
     return shallowReactive(this)
   }
 

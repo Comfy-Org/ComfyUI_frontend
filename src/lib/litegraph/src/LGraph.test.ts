@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
@@ -550,16 +551,16 @@ describe('node:before-removed event', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
 
-    let attached: string | undefined
-    graph.events.addEventListener('node:added', (e) => {
-      attached = `graph=${e.detail.node.graph === graph ? 'set' : 'null'},byId=${
-        graph.getNodeById(e.detail.node.id) === e.detail.node
-      }`
-    })
+    const added = vi.fn((e: NodeLifecycleEvent) => ({
+      graph: e.detail.node.graph,
+      byId: graph.getNodeById(e.detail.node.id)
+    }))
+    graph.events.addEventListener('node:added', added)
 
     graph.add(node)
 
-    expect(attached).toBe('graph=set,byId=true')
+    expect(added).toHaveBeenCalledOnce()
+    expect(added).toHaveReturnedWith({ graph, byId: node })
   })
 
   it('fires node:removed after the node is detached', () => {
@@ -567,16 +568,16 @@ describe('node:before-removed event', () => {
     const node = new LGraphNode('test')
     graph.add(node)
 
-    let detached: string | undefined
-    graph.events.addEventListener('node:removed', (e) => {
-      detached = `graph=${e.detail.node.graph === null ? 'null' : 'set'},byId=${
-        graph.getNodeById(node.id) == null
-      }`
-    })
+    const removed = vi.fn((e: NodeLifecycleEvent) => ({
+      graph: e.detail.node.graph,
+      byId: graph.getNodeById(node.id) ?? null
+    }))
+    graph.events.addEventListener('node:removed', removed)
 
     graph.remove(node)
 
-    expect(detached).toBe('graph=null,byId=true')
+    expect(removed).toHaveBeenCalledOnce()
+    expect(removed).toHaveReturnedWith({ graph: null, byId: null })
   })
 
   it('fires node:before-removed for every node cleared by clear()', () => {
