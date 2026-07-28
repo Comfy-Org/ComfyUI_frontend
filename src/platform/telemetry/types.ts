@@ -433,6 +433,18 @@ export interface UiButtonClickMetadata {
 }
 
 /**
+ * Widget (input/parameter) favorite toggle tracking metadata.
+ * Used to measure discoverability of the right side panel favoriting feature.
+ */
+export interface WidgetFavoriteToggledMetadata {
+  node_type: string
+  widget_name: string
+  widget_type: string
+  is_favorited: boolean
+  source: 'right_side_panel'
+}
+
+/**
  * Help center opened metadata
  */
 export interface HelpCenterOpenedMetadata {
@@ -680,6 +692,9 @@ export interface TelemetryProvider {
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
 
+  // Right side panel widget favorite events
+  trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
+
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
 }
@@ -789,6 +804,9 @@ export const TelemetryEvents = {
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
+  // Right Side Panel Widget Favorites
+  WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
+
   // Page View
   PAGE_VIEW: 'app:page_view'
 } as const
@@ -847,6 +865,7 @@ export type TelemetryEventProperties =
   | TemplateFilterMetadata
   | SettingChangedMetadata
   | UiButtonClickMetadata
+  | WidgetFavoriteToggledMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata

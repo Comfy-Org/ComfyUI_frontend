@@ -1090,7 +1090,7 @@
     "onChangeTooltip": "The workflow will be queued once a change is made",
     "runWorkflow": "Run workflow (Shift to queue at front)",
     "runWorkflowFront": "Run workflow (Queue at front)",
-    "runWorkflowDisabled": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow.",
+    "runWorkflowMissingResources": "Workflow contains missing resources.",
     "run": "Run",
     "stopRunInstant": "Stop Run (Instant)",
     "stopRunInstantTooltip": "Stop running",
@@ -3491,6 +3491,7 @@
     "processingModelDescription": "You can close this dialog. The download will continue in the background.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
+    "searchModels": "Search models",
     "selectFrameworks": "Select Frameworks",
     "selectModelType": "Select model type",
     "selectProjects": "Select Projects",
@@ -4200,6 +4201,13 @@
         "itemLabel": "{nodeName}",
         "toastTitle": "Validation failed",
         "toastMessage": "{nodeName} returned an unrecognized validation error."
+      },
+      "PARTNER_NODE_DISABLED": {
+        "title": "Disabled node",
+        "message": "This node has been disabled by your workspace policy. Use a different node.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Partner nodes",
+        "toastMessage": "This node has been disabled by your workspace policy."
       },
       "exception_during_inner_validation": {
         "title": "Validation failed",

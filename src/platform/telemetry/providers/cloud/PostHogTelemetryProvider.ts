@@ -47,6 +47,7 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
@@ -580,6 +581,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
+    this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

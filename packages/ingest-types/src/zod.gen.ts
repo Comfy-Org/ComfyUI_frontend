@@ -902,7 +902,7 @@ export const zOAuthRegisterResponse = z.object({
 })
 
 /**
- * RFC 7591 §2 client metadata document. Only the fields the server honors are listed; presence of `scope` or `resource_grants` in the request is rejected (`invalid_client_metadata`) because those are server-owned for dynamic clients. `additionalProperties: false` mirrors the runtime middleware that rejects any unknown metadata key.
+ * RFC 7591 §2 client metadata document. Fields fall into three groups: the ones the server honors, the purely informational ones it accepts and ignores (`scope` plus the client-profile fields `client_uri`, `logo_uri`, `tos_uri`, `policy_uri`, `contacts`, `software_id`, `software_version` — parsed, never persisted, never echoed, per RFC 7591 §2's "MAY ignore" allowance), and the ones it rejects with `invalid_client_metadata` (`resource_grants`, because scopes/grants are server-owned for dynamic clients; `jwks`/`jwks_uri`, because they only apply to the JWT client-authentication methods DCR does not offer). `additionalProperties: false` mirrors the runtime middleware that rejects any unknown metadata key.
  *
  */
 export const zOAuthRegisterRequest = z.object({
@@ -923,7 +923,7 @@ export const zOAuthRegisterRequest = z.object({
   scope: z.string().nullish(),
   software_id: z.string().nullish(),
   software_version: z.string().nullish(),
-  token_endpoint_auth_method: z.enum(['none']).optional(),
+  token_endpoint_auth_method: z.string().optional(),
   tos_uri: z.string().nullish()
 })
 

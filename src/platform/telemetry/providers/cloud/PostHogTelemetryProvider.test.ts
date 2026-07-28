@@ -419,6 +419,30 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures widget favorite toggled events with their metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackWidgetFavoriteToggled({
+        node_type: 'CheckpointLoaderSimple',
+        widget_name: 'ckpt_name',
+        widget_type: 'combo',
+        is_favorited: true,
+        source: 'right_side_panel'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.WIDGET_FAVORITE_TOGGLED,
+        {
+          node_type: 'CheckpointLoaderSimple',
+          widget_name: 'ckpt_name',
+          widget_type: 'combo',
+          is_favorited: true,
+          source: 'right_side_panel'
+        }
+      )
+    })
+
     it('captures begin_checkout with intent metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

@@ -1406,7 +1406,7 @@ export type OAuthRegisterResponse = {
 }
 
 /**
- * RFC 7591 §2 client metadata document. Only the fields the server honors are listed; presence of `scope` or `resource_grants` in the request is rejected (`invalid_client_metadata`) because those are server-owned for dynamic clients. `additionalProperties: false` mirrors the runtime middleware that rejects any unknown metadata key.
+ * RFC 7591 §2 client metadata document. Fields fall into three groups: the ones the server honors, the purely informational ones it accepts and ignores (`scope` plus the client-profile fields `client_uri`, `logo_uri`, `tos_uri`, `policy_uri`, `contacts`, `software_id`, `software_version` — parsed, never persisted, never echoed, per RFC 7591 §2's "MAY ignore" allowance), and the ones it rejects with `invalid_client_metadata` (`resource_grants`, because scopes/grants are server-owned for dynamic clients; `jwks`/`jwks_uri`, because they only apply to the JWT client-authentication methods DCR does not offer). `additionalProperties: false` mirrors the runtime middleware that rejects any unknown metadata key.
  *
  */
 export type OAuthRegisterRequest = {
@@ -1420,11 +1420,11 @@ export type OAuthRegisterRequest = {
    */
   client_name?: string
   /**
-   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
    */
   client_uri?: string | null
   /**
-   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
    */
   contacts?: Array<string> | null
   /**
@@ -1432,21 +1432,21 @@ export type OAuthRegisterRequest = {
    */
   grant_types?: Array<'authorization_code' | 'refresh_token'>
   /**
-   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   * **REJECTED IF PRESENT.** A JWK set only applies to the `private_key_jwt` / `client_secret_jwt` client-authentication methods, which DCR does not offer — `token_endpoint_auth_method` is forced to `none` (public clients only). Accepting it silently would leave the client believing it had negotiated an authentication posture the server never agreed to, so this returns `invalid_client_metadata`.
    */
   jwks?: {
     [key: string]: unknown
   } | null
   /**
-   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   * **REJECTED IF PRESENT.** Same reason as `jwks`: JWT client authentication is not offered by DCR, so a JWK set URI cannot be honored and returns `invalid_client_metadata` rather than being silently dropped.
    */
   jwks_uri?: string | null
   /**
-   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
    */
   logo_uri?: string | null
   /**
-   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
    */
   policy_uri?: string | null
   /**
@@ -1465,24 +1465,24 @@ export type OAuthRegisterRequest = {
    */
   response_types?: Array<'code'>
   /**
-   * **REJECTED IF PRESENT.** Dynamic clients do not pick scopes — the server assigns scopes from the active MCP resource's published list. Sending `scope` in the registration body is treated as a privilege-escalation attempt and returns `invalid_client_metadata`. The field is documented here so clients see a well-defined error rather than silent drop.
+   * **ACCEPTED AND IGNORED.** Dynamic clients do not pick scopes — the server assigns scopes from the active MCP resource's published list, so a caller-supplied value cannot escalate. The field is accepted (RFC 7591 §2 defines it and the MCP SDK always sends it) but the value is dropped: it is never persisted and never echoed in the registration response.
    *
    */
   scope?: string | null
   /**
-   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
    */
   software_id?: string | null
   /**
-   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
    */
   software_version?: string | null
   /**
-   * Public clients only this phase — must be `none` if present. The server forces `none` regardless.
+   * Optional. Any value is accepted and substituted with `none` (RFC 7591 §3.2.1); the registration response reports `none`. Public clients only, so authenticate with PKCE.
    */
-  token_endpoint_auth_method?: 'none'
+  token_endpoint_auth_method?: string
   /**
-   * **REJECTED IF PRESENT.** Unsupported RFC 7591 metadata for this public MCP-client phase.
+   * **ACCEPTED AND IGNORED.** Informational RFC 7591 §2 client-profile metadata. Parsed so spec-compliant clients are not 400'd, then dropped — never persisted, never echoed in the registration response.
    */
   tos_uri?: string | null
 }
