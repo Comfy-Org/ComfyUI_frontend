@@ -242,6 +242,7 @@ describe('MediaAssetFilterMenu', () => {
 
     expect(screen.getByText('No matches')).toBeVisible()
     expect(screen.queryAllByRole('menuitemcheckbox')).toHaveLength(0)
+    expect(screen.queryAllByRole('menuitemradio')).toHaveLength(0)
   })
 
   it('groups media type and date under the Attribute section', async () => {
