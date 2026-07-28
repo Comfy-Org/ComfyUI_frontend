@@ -96,6 +96,7 @@ import { useComfyHubPublishSubmission } from '@/platform/workflow/sharing/compos
 import {
   cachePublishPrefill,
   getCachedPrefill,
+  mergePrefill,
   useComfyHubPublishWizard
 } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
@@ -253,9 +254,7 @@ async function fetchPublishPrefill() {
     const status = await shareService.getPublishStatus(path)
     if (workflowStore.activeWorkflow?.path !== path) return
     isAlreadyPublished.value = status.isPublished
-    const prefill = status.isPublished
-      ? (status.prefill ?? getCachedPrefill(path))
-      : getCachedPrefill(path)
+    const prefill = mergePrefill(getCachedPrefill(path), status.prefill)
     if (prefill) {
       applyPrefill(prefill)
     }

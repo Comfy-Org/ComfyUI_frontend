@@ -1,8 +1,4 @@
-import type {
-  HubWorkflowDetail,
-  ImportPublishedAssetsRequest
-} from '@comfyorg/ingest-types'
-import { zGetHubWorkflowResponse } from '@comfyorg/ingest-types/zod'
+import type { ImportPublishedAssetsRequest } from '@comfyorg/ingest-types'
 
 import type {
   PublishPrefill,
@@ -14,7 +10,9 @@ import { assetService } from '@/platform/assets/services/assetService'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { AssetInfo } from '@/schemas/apiSchema'
+import type { HubWorkflowPrefillResponse } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import {
+  zHubWorkflowPrefillResponse,
   zPublishRecordResponse,
   zSharedWorkflowResponse
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
@@ -44,41 +42,37 @@ function mapApiThumbnailType(
   return value
 }
 
-function extractPrefill(fields: HubWorkflowDetail): PublishPrefill | null {
-  const name = fields.name
-  const description = fields.description
-  const tags = fields.tags?.map((tag) => tag.display_name)
-  const thumbnailType = mapApiThumbnailType(fields.thumbnail_type)
-  const thumbnailUrl = fields.thumbnail_url
-  const thumbnailComparisonUrl = fields.thumbnail_comparison_url
-  const sampleImageUrls = fields.sample_image_urls
-
-  if (
-    !name &&
-    !description &&
-    !tags?.length &&
-    !thumbnailType &&
-    !thumbnailUrl &&
-    !thumbnailComparisonUrl &&
-    !sampleImageUrls?.length
-  ) {
-    return null
+function extractPrefill(
+  fields: HubWorkflowPrefillResponse
+): PublishPrefill | null {
+  const prefill: PublishPrefill = {
+    name: fields.name,
+    description: fields.description,
+    tags: fields.tags,
+    thumbnailType: mapApiThumbnailType(fields.thumbnail_type),
+    thumbnailUrl: fields.thumbnail_url,
+    thumbnailComparisonUrl: fields.thumbnail_comparison_url,
+    sampleImageUrls: fields.sample_image_urls
   }
 
-  return {
-    name,
-    description,
-    tags,
-    thumbnailType,
-    thumbnailUrl,
-    thumbnailComparisonUrl,
-    sampleImageUrls
-  }
+  const isEmpty =
+    !prefill.name &&
+    !prefill.description &&
+    !prefill.tags?.length &&
+    !prefill.thumbnailType &&
+    !prefill.thumbnailUrl &&
+    !prefill.thumbnailComparisonUrl &&
+    !prefill.sampleImageUrls?.length
+
+  return isEmpty ? null : prefill
 }
 
 function decodeHubWorkflowPrefill(payload: unknown): PublishPrefill | null {
-  const result = zGetHubWorkflowResponse.safeParse(payload)
-  if (!result.success) return null
+  const result = zHubWorkflowPrefillResponse.safeParse(payload)
+  if (!result.success) {
+    console.warn('Hub workflow details failed validation:', result.error)
+    return null
+  }
   return extractPrefill(result.data)
 }
 

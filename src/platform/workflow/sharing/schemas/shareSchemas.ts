@@ -1,3 +1,4 @@
+import { zHubWorkflowDetail, zLabelRef } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import { zAssetInfo, zComfyHubProfile } from '@/schemas/apiSchema'
@@ -9,6 +10,48 @@ export const zPublishRecordResponse = z.object({
   publish_time: z.string().nullable(),
   assets: z.array(zAssetInfo).optional()
 })
+
+const zPrefillTag = zLabelRef
+  .transform((label) => label.display_name)
+  .or(z.string())
+
+const zPrefillTagList = z
+  .array(zPrefillTag.optional().catch(undefined))
+  .transform((tags) => tags.filter((tag): tag is string => tag !== undefined))
+
+function omitNullFields(payload: unknown): unknown {
+  if (!payload || typeof payload !== 'object') return payload
+  return Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => value !== null)
+  )
+}
+
+/**
+ * Prefill is best-effort, so it validates only the fields the publish dialog
+ * reads: gating on the rest of `zHubWorkflowDetail` would discard every field
+ * whenever `workflow_json`, `assets`, `profile`, or `publish_time` drift.
+ */
+export const zHubWorkflowPrefillResponse = z.preprocess(
+  omitNullFields,
+  zHubWorkflowDetail
+    .pick({
+      name: true,
+      description: true,
+      thumbnail_url: true,
+      thumbnail_comparison_url: true
+    })
+    .partial()
+    .extend({
+      tags: zPrefillTagList.optional().catch(undefined),
+      thumbnail_type: zHubWorkflowDetail.shape.thumbnail_type.catch(undefined),
+      sample_image_urls:
+        zHubWorkflowDetail.shape.sample_image_urls.catch(undefined)
+    })
+)
+
+export type HubWorkflowPrefillResponse = z.infer<
+  typeof zHubWorkflowPrefillResponse
+>
 
 /**
  * Strips path separators and control characters from a workflow name to prevent
