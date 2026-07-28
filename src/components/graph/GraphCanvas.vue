@@ -76,6 +76,7 @@
       v-for="nodeData in allNodes"
       :key="nodeData.id"
       :node-data="nodeData"
+      :paint-order="nodePaintOrder.get(nodeData.id) ?? 0"
       :error="
         executionErrorStore.lastExecutionErrorNodeId === nodeData.id
           ? 'Execution error'
@@ -178,16 +179,19 @@ import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/w
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { NodeLayout } from '@/renderer/core/layout/types'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { orderNodesForPainting } from '@/renderer/extensions/vueNodes/utils/nodePaintOrder'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
+import type { NodeId } from '@/types/nodeId'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 import { storeToRefs } from 'pinia'
 
@@ -220,7 +224,7 @@ const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
-const { linearMode } = storeToRefs(canvasStore)
+const { linearMode, selectedNodeIds } = storeToRefs(canvasStore)
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toastStore = useToastStore()
@@ -292,6 +296,33 @@ watch(
 
 const allNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
+)
+const nodeLayouts = shallowRef<ReadonlyMap<NodeId, NodeLayout>>(new Map())
+
+function updateNodeLayouts() {
+  nodeLayouts.value = layoutStore.getAllNodes().value
+}
+
+watch(allNodes, updateNodeLayouts, { immediate: true })
+const stopNodeLayoutWatcher = layoutStore.onChange((change) => {
+  if (
+    change.operation.type !== 'setNodeZIndex' &&
+    change.operation.type !== 'createNode' &&
+    change.operation.type !== 'deleteNode'
+  )
+    return
+
+  updateNodeLayouts()
+})
+const nodePaintOrder = computed(
+  () =>
+    new Map(
+      orderNodesForPainting(
+        allNodes.value,
+        nodeLayouts.value,
+        selectedNodeIds.value
+      ).map((node, index) => [node.id, index])
+    )
 )
 watch(
   () => linearMode.value,
@@ -585,6 +616,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  stopNodeLayoutWatcher()
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
   vueNodeLifecycle.cleanup()
