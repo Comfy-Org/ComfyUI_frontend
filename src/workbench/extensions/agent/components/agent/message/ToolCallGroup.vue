@@ -113,7 +113,7 @@ watch(
     <CollapsibleContent
       class="data-[state=closed]:animate-agent-collapsible-up data-[state=open]:animate-agent-collapsible-down overflow-hidden"
     >
-      <div class="border-agent-border ml-5 flex flex-col border-l pt-1">
+      <div class="border-agent-border ml-4 flex flex-col border-l pt-1">
         <ToolCallCard
           v-for="(row, index) in rows"
           :key="index"

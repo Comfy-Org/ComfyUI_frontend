@@ -4703,6 +4703,7 @@
     "selectWorkflowToGenerate": "Select a workflow to generate in",
     "switchWorkflow": "Switch workflow",
     "modelAuto": "Auto",
+    "runModeTriggerAsk": "Ask",
     "runPermissions": "Run permissions",
     "runPermissionsDescription": "Choose when the agent needs your consent",
     "runModeAsk": "Ask before a workflow runs",
