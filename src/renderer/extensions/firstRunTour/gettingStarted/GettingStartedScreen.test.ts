@@ -14,7 +14,8 @@ const mocks = vi.hoisted(() => ({
   loadTemplate: vi.fn(),
   loadCatalog: vi.fn(),
   isLoaded: true,
-  toastAdd: vi.fn()
+  toastAdd: vi.fn(),
+  loadingTemplateId: { value: null as string | null }
 }))
 
 vi.mock('./firstRunEntry', () => ({
@@ -25,10 +26,11 @@ vi.mock(
   '@/platform/workflow/templates/composables/useTemplateWorkflows',
   async () => {
     const { ref } = await import('vue')
+    mocks.loadingTemplateId = ref<string | null>(null)
     return {
       useTemplateWorkflows: () => ({
         loadWorkflowTemplate: mocks.loadTemplate,
-        loadingTemplateId: ref<string | null>(null),
+        loadingTemplateId: mocks.loadingTemplateId,
         getTemplateThumbnailUrl: () => 'thumb.png',
         getTemplateTitle: (template: { name: string }) => template.name
       })
@@ -72,6 +74,7 @@ describe('GettingStartedScreen', () => {
     mocks.isLoaded = true
     mocks.loadTemplate.mockResolvedValue(true)
     mocks.loadCatalog.mockResolvedValue(undefined)
+    mocks.loadingTemplateId.value = null
   })
 
   afterEach(() => {
@@ -93,6 +96,20 @@ describe('GettingStartedScreen', () => {
       )
     )
     expect(mocks.dismiss).toHaveBeenCalled()
+  })
+
+  it('ignores a second pick while one is still loading', async () => {
+    await renderScreen()
+    mocks.loadingTemplateId.value = CURATED_TEMPLATE_IDS[0]
+
+    await userEvent.click(
+      screen.getByTestId(`getting-started-card-${CURATED_TEMPLATE_IDS[1]}`)
+    )
+
+    expect(
+      mocks.loadTemplate,
+      'a second template loading over the first leaves the tour on the wrong graph'
+    ).not.toHaveBeenCalled()
   })
 
   describe('exits', () => {
