@@ -103,6 +103,33 @@ describe('LGraph', () => {
     expect(graph.last_node_id).toBe(7)
   })
 
+  it('rejects adding the same node instance twice', () => {
+    vi.stubEnv('DEV', true)
+    try {
+      const graph = new LGraph()
+      const node = new DummyNode()
+      graph.add(node)
+
+      expect(() => graph.add(node)).toThrow(/already present in this graph/)
+      // Only registered once - the aliased add must not have mutated state.
+      expect(graph.nodes).toHaveLength(1)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('allows adding two different instances of the same node type', () => {
+    const graph = new LGraph()
+    const node1 = new DummyNode()
+    const node2 = new DummyNode()
+
+    expect(() => {
+      graph.add(node1)
+      graph.add(node2)
+    }).not.toThrow()
+    expect(graph.nodes).toHaveLength(2)
+  })
+
   test('can be instantiated', ({ expect }) => {
     // @ts-expect-error Intentional - extra holds any / all consumer data that should be serialised
     const graph = new LGraph({ extra: 'TestGraph' })

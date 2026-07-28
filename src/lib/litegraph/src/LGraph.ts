@@ -1,5 +1,6 @@
 import { toString } from 'es-toolkit/compat'
 
+import { assert } from '@/base/assert'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -974,6 +975,15 @@ export class LGraph
       this.incrementVersion()
       return
     }
+
+    // Catches a duplicate/aliased-node bug class: the exact same node
+    // instance being added to this graph a second time. Without this check
+    // the code below would silently mint it a new id and push it into
+    // `_nodes` again, leaving one node object registered under two ids.
+    assert(
+      !this._nodes.includes(node),
+      `LGraph.add: node "${node.type}" (id: ${node.id}) is already present in this graph - refusing to add the same node instance again`
+    )
 
     node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
 
