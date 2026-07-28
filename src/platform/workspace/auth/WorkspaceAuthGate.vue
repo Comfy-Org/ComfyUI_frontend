@@ -25,7 +25,9 @@ import { onMounted, ref } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -61,24 +63,26 @@ async function initialize(): Promise<void> {
     // Step 3: Refresh feature flags with auth context
     // This ensures teamWorkspacesEnabled reflects the authenticated user's state
     // Timeout prevents hanging if server is slow/unresponsive
-    try {
-      await Promise.race([
-        refreshRemoteConfig({ useAuth: true }),
-        promiseTimeout(CONFIG_REFRESH_TIMEOUT_MS).then(() => {
-          throw new Error('Config refresh timeout')
-        })
-      ])
-    } catch (error) {
-      console.warn(
-        '[WorkspaceAuthGate] Failed to refresh remote config:',
-        error
-      )
-      // Continue - feature flags will use defaults (teamWorkspacesEnabled=false)
-      // App will render with Firebase auth fallback
+    await Promise.race([
+      refreshRemoteConfig({ useAuth: true }),
+      promiseTimeout(CONFIG_REFRESH_TIMEOUT_MS).then(() => {
+        throw new Error('Config refresh timeout')
+      })
+    ])
+    if (remoteConfigState.value !== 'authenticated') {
+      throw new Error('Failed to load authenticated remote config')
     }
 
     // Step 4: THE CHECKPOINT - Are we in workspace mode?
     const { flags } = useFeatureFlags()
+    const workspaceAuthStore = useWorkspaceAuthStore()
+    if (flags.unifiedCloudAuthEnabled) {
+      const authenticated = await workspaceAuthStore.mintAtLogin()
+      if (!authenticated) {
+        throw new Error('Failed to initialize unified cloud auth')
+      }
+    }
+
     if (!flags.teamWorkspacesEnabled) {
       // Not in workspace mode - use existing Firebase auth flow
       // No additional initialization needed
@@ -88,6 +92,12 @@ async function initialize(): Promise<void> {
 
     // Step 5: WORKSPACE MODE - Full initialization
     await initializeWorkspaceMode()
+    if (
+      flags.unifiedCloudAuthEnabled &&
+      !workspaceAuthStore.getUnifiedToken()
+    ) {
+      throw new Error('Unified cloud auth was cleared during workspace setup')
+    }
 
     // Step 6: Resume any pending pricing flow from team workspace creation
     // Only safe after workspace store initialized successfully — the pricing
@@ -96,12 +106,10 @@ async function initialize(): Promise<void> {
     if (workspaceStore.initState === 'ready') {
       subscriptionDialog.resumePendingPricingFlow()
     }
+
+    isReady.value = true
   } catch (error) {
     console.error('[WorkspaceAuthGate] Initialization failed:', error)
-  } finally {
-    // Always render (graceful degradation)
-    // If workspace init failed, API calls fall back to Firebase token
-    isReady.value = true
   }
 }
 
@@ -111,18 +119,15 @@ async function initializeWorkspaceMode(): Promise<void> {
   // - Fetching workspace list
   // - Switching to last used workspace if needed
   // - Setting active workspace
-  try {
-    const workspaceStore = useTeamWorkspaceStore()
-    if (workspaceStore.initState === 'uninitialized') {
-      await workspaceStore.initialize()
-    }
-  } catch (error) {
-    // Log but don't block - workspace UI features may not work but app will render
-    // API calls will fall back to Firebase token
-    console.warn(
-      '[WorkspaceAuthGate] Failed to initialize workspace store:',
-      error
-    )
+  const workspaceStore = useTeamWorkspaceStore()
+  if (workspaceStore.initState === 'uninitialized') {
+    await workspaceStore.initialize()
+  }
+  if (
+    workspaceStore.initState !== 'ready' ||
+    !workspaceStore.activeWorkspaceId
+  ) {
+    throw new Error('Failed to initialize workspace context')
   }
 }
 
