@@ -27,7 +27,7 @@
           <Switch
             :model-value="displayEnabled"
             class="disabled:opacity-100"
-            :disabled="frozen"
+            :disabled="frozen || isMutating"
             :aria-label="$t('workspacePanel.autoReload.toggleLabel')"
             @update:model-value="handleEnabledChange"
           />
@@ -44,7 +44,30 @@
       </div>
     </div>
 
-    <div v-if="!isConfigured" class="grid grid-cols-1 gap-4 @4xl:grid-cols-2">
+    <p v-if="error" role="alert" class="text-danger m-0 text-sm">
+      {{ error }}
+    </p>
+
+    <div v-if="isLoading" role="status" class="text-sm text-muted-foreground">
+      {{ $t('workspacePanel.autoReload.loading') }}
+    </div>
+
+    <div
+      v-else-if="!isInitialized"
+      class="flex items-center justify-between gap-4"
+    >
+      <span class="text-sm text-muted-foreground">
+        {{ $t('workspacePanel.autoReload.loadFailed') }}
+      </span>
+      <Button variant="secondary" size="lg" @click="retry">
+        {{ $t('workspacePanel.autoReload.retry') }}
+      </Button>
+    </div>
+
+    <div
+      v-else-if="!isConfigured"
+      class="grid grid-cols-1 gap-4 @4xl:grid-cols-2"
+    >
       <div
         class="flex flex-col gap-3 rounded-xl bg-modal-panel-background px-6 py-5"
       >
@@ -160,14 +183,21 @@ const {
   budgetUsedFraction,
   isPaused,
   isWarning,
+  isInitialized,
+  isLoading,
+  isMutating,
+  error,
   setEnabled,
-  scopeToWorkspace
+  scopeToWorkspace,
+  retry
 } = useAutoReload()
 const { activeWorkspaceId } = storeToRefs(useTeamWorkspaceStore())
 const { canConfigureNow } = useAutoReloadAccess()
 
-scopeToWorkspace(activeWorkspaceId.value)
-watch(activeWorkspaceId, scopeToWorkspace)
+void scopeToWorkspace(activeWorkspaceId.value)
+watch(activeWorkspaceId, (workspaceId) => {
+  void scopeToWorkspace(workspaceId)
+})
 
 const displayEnabled = computed(() => !frozen && isEnabled.value)
 let isAlive = true
@@ -190,9 +220,9 @@ function openConfig() {
   })
 }
 
-function handleEnabledChange(value: boolean) {
+async function handleEnabledChange(value: boolean) {
   if (frozen || !canConfigureNow()) return
-  setEnabled(value)
+  await setEnabled(value).catch(() => undefined)
 }
 
 function fmtCredits(value: number) {

@@ -1,4 +1,13 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mockWorkspaceApi = vi.hoisted(() => ({
+  getAutoReload: vi.fn(),
+  updateAutoReload: vi.fn()
+}))
+
+vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+  workspaceApi: mockWorkspaceApi
+}))
 
 import {
   deriveAutoReloadState,
@@ -158,49 +167,210 @@ describe('deriveAutoReloadState', () => {
 
 describe('useAutoReload', () => {
   const autoReload = useAutoReload()
+  const unconfiguredResponse = {
+    configured: false,
+    enabled: false,
+    threshold_credits: null,
+    reload_credits: null,
+    monthly_budget_cents: null,
+    spent_this_cycle_cents: 0
+  }
 
-  beforeEach(() => {
-    Object.assign(autoReload.config, {
+  beforeEach(async () => {
+    await autoReload.scopeToWorkspace(null)
+    vi.resetAllMocks()
+    mockWorkspaceApi.getAutoReload.mockResolvedValue(unconfiguredResponse)
+  })
+
+  it('maps the persisted six-field configuration', async () => {
+    mockWorkspaceApi.getAutoReload.mockResolvedValue({
+      configured: true,
+      enabled: true,
+      threshold_credits: 2000,
+      reload_credits: 6000,
+      monthly_budget_cents: 25_000,
+      spent_this_cycle_cents: 1200
+    })
+
+    await autoReload.scopeToWorkspace('workspace-a')
+
+    expect(autoReload.config).toEqual({
+      configured: true,
+      enabled: true,
+      thresholdCredits: 2000,
+      reloadCredits: 6000,
+      monthlyBudgetCents: 25_000,
+      spentThisCycleCents: 1200
+    })
+    expect(autoReload.isInitialized.value).toBe(true)
+    expect(autoReload.isLoading.value).toBe(false)
+  })
+
+  it('uses setup defaults only for an unconfigured response', async () => {
+    await autoReload.scopeToWorkspace('workspace-a')
+
+    expect(autoReload.config).toEqual({
       configured: false,
       enabled: false,
       thresholdCredits: 1000,
       reloadCredits: 5000,
       monthlyBudgetCents: null,
       spentThisCycleCents: 0
-    } satisfies AutoReloadConfig)
+    })
   })
 
-  it('saves a configuration and enables auto-reload', () => {
-    autoReload.save({
-      thresholdCredits: 2000,
-      reloadCredits: 6000,
-      monthlyBudgetCents: 25_000
+  it('retries the initial read once before succeeding', async () => {
+    mockWorkspaceApi.getAutoReload
+      .mockRejectedValueOnce(new Error('temporary'))
+      .mockResolvedValueOnce(unconfiguredResponse)
+
+    await autoReload.scopeToWorkspace('workspace-a')
+
+    expect(mockWorkspaceApi.getAutoReload).toHaveBeenCalledTimes(2)
+    expect(autoReload.isInitialized.value).toBe(true)
+    expect(autoReload.error.value).toBeNull()
+  })
+
+  it('exposes a terminal read error and supports a successful retry', async () => {
+    mockWorkspaceApi.getAutoReload.mockRejectedValue(new Error('offline'))
+
+    await autoReload.scopeToWorkspace('workspace-a')
+
+    expect(mockWorkspaceApi.getAutoReload).toHaveBeenCalledTimes(2)
+    expect(autoReload.isInitialized.value).toBe(false)
+    expect(autoReload.error.value).toBe('offline')
+
+    mockWorkspaceApi.getAutoReload.mockResolvedValue(unconfiguredResponse)
+    await autoReload.retry()
+
+    expect(autoReload.isInitialized.value).toBe(true)
+    expect(autoReload.error.value).toBeNull()
+  })
+
+  it('ignores a late response from the previous workspace', async () => {
+    let resolveOlder!: (value: typeof unconfiguredResponse) => void
+    const older = new Promise<typeof unconfiguredResponse>((resolve) => {
+      resolveOlder = resolve
     })
+    mockWorkspaceApi.getAutoReload
+      .mockReturnValueOnce(older)
+      .mockResolvedValueOnce({
+        ...unconfiguredResponse,
+        configured: true,
+        enabled: true,
+        threshold_credits: 3000,
+        reload_credits: 7000
+      })
+
+    const firstLoad = autoReload.scopeToWorkspace('workspace-a')
+    const secondLoad = autoReload.scopeToWorkspace('workspace-b')
+    await secondLoad
+    resolveOlder(unconfiguredResponse)
+    await firstLoad
 
     expect(autoReload.config).toMatchObject({
+      configured: true,
+      thresholdCredits: 3000,
+      reloadCredits: 7000
+    })
+  })
+
+  it('saves the exact payload and applies the canonical response', async () => {
+    await autoReload.scopeToWorkspace('workspace-a')
+    mockWorkspaceApi.updateAutoReload.mockResolvedValue({
       configured: true,
       enabled: true,
+      threshold_credits: 2100,
+      reload_credits: 6100,
+      monthly_budget_cents: 26_000,
+      spent_this_cycle_cents: 500
+    })
+
+    await autoReload.save({
       thresholdCredits: 2000,
       reloadCredits: 6000,
       monthlyBudgetCents: 25_000
     })
+
+    expect(mockWorkspaceApi.updateAutoReload).toHaveBeenCalledWith({
+      enabled: true,
+      threshold_credits: 2000,
+      reload_credits: 6000,
+      monthly_budget_cents: 25_000
+    })
+    expect(autoReload.config).toEqual({
+      configured: true,
+      enabled: true,
+      thresholdCredits: 2100,
+      reloadCredits: 6100,
+      monthlyBudgetCents: 26_000,
+      spentThisCycleCents: 500
+    })
   })
 
-  it('updates the enabled state without discarding the configuration', () => {
-    autoReload.save({
-      thresholdCredits: 2000,
-      reloadCredits: 6000,
-      monthlyBudgetCents: null
-    })
-
-    autoReload.setEnabled(false)
-
-    expect(autoReload.isEnabled.value).toBe(false)
-    expect(autoReload.config).toMatchObject({
+  it('disables with retained settings and applies the canonical response', async () => {
+    mockWorkspaceApi.getAutoReload.mockResolvedValue({
       configured: true,
+      enabled: true,
+      threshold_credits: 2000,
+      reload_credits: 6000,
+      monthly_budget_cents: null,
+      spent_this_cycle_cents: 400
+    })
+    await autoReload.scopeToWorkspace('workspace-a')
+    mockWorkspaceApi.updateAutoReload.mockResolvedValue({
+      configured: true,
+      enabled: false,
+      threshold_credits: 2000,
+      reload_credits: 6000,
+      monthly_budget_cents: null,
+      spent_this_cycle_cents: 400
+    })
+
+    await autoReload.setEnabled(false)
+
+    expect(mockWorkspaceApi.updateAutoReload).toHaveBeenCalledWith({
+      enabled: false,
+      threshold_credits: 2000,
+      reload_credits: 6000,
+      monthly_budget_cents: null
+    })
+    expect(autoReload.isEnabled.value).toBe(false)
+  })
+
+  it('keeps persisted state after a failed PUT and succeeds when retried', async () => {
+    await autoReload.scopeToWorkspace('workspace-a')
+    const before = { ...autoReload.config }
+    mockWorkspaceApi.updateAutoReload.mockRejectedValueOnce(
+      new Error('save failed')
+    )
+
+    await expect(
+      autoReload.save({
+        thresholdCredits: 2000,
+        reloadCredits: 6000,
+        monthlyBudgetCents: null
+      })
+    ).rejects.toThrow('save failed')
+
+    expect({ ...autoReload.config }).toEqual(before)
+    expect(autoReload.error.value).toBe('save failed')
+
+    mockWorkspaceApi.updateAutoReload.mockResolvedValue({
+      configured: true,
+      enabled: true,
+      threshold_credits: 2000,
+      reload_credits: 6000,
+      monthly_budget_cents: null,
+      spent_this_cycle_cents: 0
+    })
+    await autoReload.save({
       thresholdCredits: 2000,
       reloadCredits: 6000,
       monthlyBudgetCents: null
     })
+
+    expect(autoReload.config.configured).toBe(true)
+    expect(autoReload.error.value).toBeNull()
   })
 })

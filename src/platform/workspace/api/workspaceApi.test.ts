@@ -8,6 +8,7 @@ const {
   mockAxiosInstance: {
     get: vi.fn(),
     post: vi.fn(),
+    put: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
     interceptors: { response: { use: vi.fn() } }
@@ -294,6 +295,15 @@ describe('workspaceApi', () => {
   })
 
   describe('billing', () => {
+    const autoReload = {
+      configured: true,
+      enabled: true,
+      threshold_credits: 1000,
+      reload_credits: 5000,
+      monthly_budget_cents: 50_000,
+      spent_this_cycle_cents: 2500
+    }
+
     it('getBillingStatus() sends GET /billing/status', async () => {
       const data = { is_active: true, has_funds: true }
       mockAxiosInstance.get.mockResolvedValue({ data })
@@ -322,6 +332,60 @@ describe('workspaceApi', () => {
         }
       )
       expect(result).toEqual(data)
+    })
+
+    it('getAutoReload() sends authenticated GET /billing/auto-reload', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ data: autoReload })
+
+      const result = await workspaceApi.getAutoReload()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/auto-reload',
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(autoReload)
+    })
+
+    it('updateAutoReload() sends the exact authenticated PUT payload', async () => {
+      const payload = {
+        enabled: false,
+        threshold_credits: 2000,
+        reload_credits: 6000,
+        monthly_budget_cents: null
+      }
+      mockAxiosInstance.put.mockResolvedValue({
+        data: { ...autoReload, ...payload }
+      })
+
+      const result = await workspaceApi.updateAutoReload(payload)
+
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/billing/auto-reload',
+        payload,
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual({ ...autoReload, ...payload })
+    })
+
+    it('updateAutoReload() wraps API errors', async () => {
+      mockAxiosInstance.put.mockRejectedValue({
+        isAxiosError: true,
+        response: { status: 503, data: { message: 'Unavailable' } },
+        message: 'Request failed'
+      })
+
+      await expect(
+        workspaceApi.updateAutoReload({
+          enabled: true,
+          threshold_credits: 1000,
+          reload_credits: 5000,
+          monthly_budget_cents: null
+        })
+      ).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 503,
+        message: 'Unavailable'
+      })
     })
 
     it('getBillingPlans() sends GET /billing/plans', async () => {
