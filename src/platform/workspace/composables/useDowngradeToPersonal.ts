@@ -33,7 +33,7 @@ export interface DowngradePreview {
 /** Thrown by `downgradeToPersonal` before any member is removed, so a caller
  *  can collect consent and retry with `confirmReactivation: true` instead of
  *  losing team members on a request the BE was always going to reject. */
-export class ReactivationConfirmationRequiredError extends Error {
+class ReactivationConfirmationRequiredError extends Error {
   constructor(public readonly preview: PreviewSubscribeResponse) {
     super(t('subscription.downgrade.reactivationConfirmationRequired'))
   }
