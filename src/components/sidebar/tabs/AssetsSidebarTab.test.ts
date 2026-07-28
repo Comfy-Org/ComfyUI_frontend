@@ -168,7 +168,7 @@ describe('AssetsSidebarTab folder navigation', () => {
     })
     const jobId = within(folderTitle).getByText('multi-output-job')
 
-    expect(backButton).toHaveTextContent('')
+    expect(backButton).not.toHaveTextContent(/\S/)
     expect(jobId).toBeVisible()
     expect(screen.getByTestId('folder-controls')).not.toHaveTextContent(
       'Back to all assets'
