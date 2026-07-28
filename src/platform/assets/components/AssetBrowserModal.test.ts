@@ -9,6 +9,20 @@ import { useAssetsStore } from '@/stores/assetsStore'
 
 const mockAssetsByKey = vi.hoisted(() => new Map<string, AssetItem[]>())
 const mockLoadingByKey = vi.hoisted(() => new Map<string, boolean>())
+const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get supportsModelTypeTags() {
+        return mockSupportsModelTypeTags.value
+      },
+      get modelUploadButtonEnabled() {
+        return false
+      }
+    }
+  })
+}))
 
 vi.mock('@/i18n', () => ({
   t: (key: string, params?: Record<string, string>) =>
@@ -226,6 +240,7 @@ describe('AssetBrowserModal', () => {
     vi.resetAllMocks()
     mockAssetsByKey.clear()
     mockLoadingByKey.clear()
+    mockSupportsModelTypeTags.value = false
   })
 
   describe('Integration with useAssetBrowser', () => {
@@ -423,6 +438,21 @@ describe('AssetBrowserModal', () => {
 
     it('passes computed contentTitle to BaseModalLayout when no title prop', async () => {
       const assets = [createTestAsset('asset1', 'Model A', 'checkpoints')]
+      mockAssetsByKey.set('CheckpointLoaderSimple', assets)
+
+      renderModal({ nodeType: 'CheckpointLoaderSimple' })
+      await flushPromises()
+
+      expect(screen.getByTestId('modal-title').textContent).toBe(
+        'assetBrowser.allCategory:{"category":"Checkpoints"}'
+      )
+    })
+
+    it('strips the model_type: prefix from the title when the flag is on', async () => {
+      mockSupportsModelTypeTags.value = true
+      const assets = [
+        createTestAsset('asset1', 'Model A', 'model_type:checkpoints')
+      ]
       mockAssetsByKey.set('CheckpointLoaderSimple', assets)
 
       renderModal({ nodeType: 'CheckpointLoaderSimple' })

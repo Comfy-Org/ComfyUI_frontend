@@ -1714,6 +1714,9 @@ export class ComfyApp {
               this.canvas.draw(true, true)
             }
           } catch (error: unknown) {
+            const hasPromptNodeErrors =
+              error instanceof PromptExecutionError &&
+              Object.keys(error.response.node_errors ?? {}).length > 0
             const preconditionResponseError =
               error instanceof PromptExecutionError &&
               typeof error.response.error === 'object'
@@ -1741,7 +1744,8 @@ export class ComfyApp {
               rescanAndSurfaceMissingNodes(this.rootGraph)
             } else if (
               error instanceof PromptExecutionError &&
-              error.status === 403
+              error.status === 403 &&
+              !hasPromptNodeErrors
             ) {
               // User is authenticated but not authorized (e.g. not whitelisted).
               // Show a clear message instead of a generic error or sign-in prompt.
