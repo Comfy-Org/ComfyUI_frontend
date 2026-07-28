@@ -123,6 +123,24 @@ describe('Composer', () => {
       expect(screen.getByRole('button', { name: 'Auto' })).toBeInTheDocument()
     })
 
+    it('enables Save when only the credit limit changes', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+      store.save('auto-limit', 450)
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Auto' }))
+      const save = await screen.findByRole('button', { name: 'Save changes' })
+      expect(save).toBeDisabled()
+
+      const input = screen.getByRole('spinbutton', { name: 'credits' })
+      await userEvent.clear(input)
+      await userEvent.type(input, '460')
+      expect(save).toBeEnabled()
+
+      await userEvent.click(save)
+      expect(store.creditLimit).toBe(460)
+    })
+
     it('discards an unsaved draft when the popover closes without saving', async () => {
       mount()
       const store = useAgentRunModeStore()
