@@ -61,8 +61,8 @@ function isTemplateVisibleForDistributions(
   return distributions.some((d) => template.includeOnDistributions!.includes(d))
 }
 
-export function useTemplateFiltering(
-  templates: Ref<TemplateInfo[]> | TemplateInfo[]
+export function useTemplateFiltering<T extends TemplateInfo>(
+  templates: Ref<T[]> | T[]
 ) {
   const settingStore = useSettingStore()
   const systemStatsStore = useSystemStatsStore()
@@ -196,7 +196,7 @@ export function useTemplateFiltering(
     )
     return searchTemplates(searchIndex.value, searchQuery.value)
       .map((name) => templatesByName.get(name))
-      .filter((template): template is TemplateInfo => template !== undefined)
+      .filter((template): template is T => template !== undefined)
   })
 
   const filteredByModels = computed(() => {
