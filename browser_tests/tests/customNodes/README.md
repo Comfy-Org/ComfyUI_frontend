@@ -92,7 +92,9 @@ Any `-g` pattern works against the generic scripts, e.g.
   Curated cases live in the spec's `AUTOGROW_CASES` table.
 - **Every-node tiers** (`allNodes.spec.ts`): the pack's FULL node list,
   discovered live from `/object_info`, is exercised with zero
-  configuration - every registered node mounts in both renderers (chunked
+  configuration, in ONE test per pack (one app boot serves all three
+  tiers; a tier's failure is collected, never allowed to skip the tiers
+  after it) - every registered node mounts in both renderers (chunked
   at an empirically measured batch size), survives a serialize/configure
   save-reload round-trip, and executes for real on the backend when
   self-sufficient (all required inputs are widgets with valid defaults).

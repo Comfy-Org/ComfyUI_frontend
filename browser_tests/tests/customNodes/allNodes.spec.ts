@@ -564,657 +564,675 @@ if (unjoinedYamlPacks.length > 0) {
 
 for (const entry of loadManifest()) {
   test.describe(`all nodes: ${entry.pack} @custom-nodes`, () => {
-    test('every registered node mounts in both renderers', async ({
+    test('every registered node mounts, survives save/reload, and executes', async ({
       comfyPage
     }) => {
-      test.setTimeout(240_000)
+      test.setTimeout(1_620_000)
       const { keys, defs } = await packNodeKeys(comfyPage.page, entry.pack)
       test.skip(
         keys.length === 0,
         `${entry.pack} not installed on this backend`
       )
-      // Exact-count guard: the corpus below comes from the live backend, so
-      // a pack silently registering fewer nodes (broken sub-import, a core
-      // change breaking registration) would shrink coverage while every
-      // remaining assertion stays green. At a fixed pin the count is
-      // deterministic; a delta in either direction fails until the manifest
-      // is deliberately recalibrated with the pin/core change that moved it.
-      console.log(`custom-nodes count: ${entry.pack} = ${keys.length}`)
-      expect(
-        keys,
-        `${entry.pack} registers ${keys.length} nodes but the manifest expects ${entry.expectedNodeCount} - a pack node failed to register (or the pack changed); recalibrate expectedNodeCount only with the change that moved it`
-      ).toHaveLength(entry.expectedNodeCount)
-      const declaredByKey = new Map(
-        keys.map((key) => [key, declaredShape(defs[key])])
-      )
-      const ledger = entry.vueIncompatibleNodes ?? {}
-      // S14: geometry accumulates across both renderer passes (LiteGraph
-      // first, Vue second per rendererPassesFor), then records or compares
-      // once at the end of the test.
-      const geometryRecordMode = process.env.CN_GEOMETRY === 'record'
-      if (process.env.CN_GEOMETRY && !geometryRecordMode)
-        throw new Error(
-          `unrecognized CN_GEOMETRY value "${process.env.CN_GEOMETRY}" - the only mode is "record"`
-        )
-      const measuredGeometry: Record<string, NodeGeometry> = {}
-      const geometryUnstable = GEOMETRY_UNSTABLE_NODES[entry.pack] ?? {}
-      for (const ledgered of Object.keys(geometryUnstable))
-        expect(
-          keys,
-          `stale GEOMETRY_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
-        ).toContain(ledgered)
-      for (const ledgered of Object.keys(ledger))
-        expect(
-          keys,
-          `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
-        ).toContain(ledgered)
-      for (const ledgered of Object.keys(
-        MOUNT_WIDGET_ALLOWLIST[entry.pack] ?? {}
-      ))
-        expect(
-          keys,
-          `stale MOUNT_WIDGET_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
-        ).toContain(ledgered)
+      // One app boot serves all three tiers: measured on cloud, per-test
+      // boots were 113 of 148 suite-minutes. A tier's failure is collected,
+      // never allowed to skip the tiers after it; the graph is cleared and
+      // the backend drained at every tier boundary.
+      const tierFailures: string[] = []
+      async function runTier(tierName: string, tier: () => Promise<void>) {
+        try {
+          await tier()
+        } catch (error) {
+          tierFailures.push(
+            `[${tierName}] ${error instanceof Error ? error.message : String(error)}`
+          )
+        }
+        await comfyPage.nodeOps.clearGraph()
+        await drainBackendToIdle(comfyPage.page, 10_000)
+      }
 
-      for (const vueNodesEnabled of rendererPassesFor(entry)) {
-        const consoleErrors = collectConsoleErrors(comfyPage.page)
-        await comfyPage.settings.setSetting(
-          'Comfy.VueNodes.Enabled',
-          vueNodesEnabled
+      await runTier('mount', async () => {
+        // Exact-count guard: the corpus below comes from the live backend, so
+        // a pack silently registering fewer nodes (broken sub-import, a core
+        // change breaking registration) would shrink coverage while every
+        // remaining assertion stays green. At a fixed pin the count is
+        // deterministic; a delta in either direction fails until the manifest
+        // is deliberately recalibrated with the pin/core change that moved it.
+        console.log(`custom-nodes count: ${entry.pack} = ${keys.length}`)
+        expect(
+          keys,
+          `${entry.pack} registers ${keys.length} nodes but the manifest expects ${entry.expectedNodeCount} - a pack node failed to register (or the pack changed); recalibrate expectedNodeCount only with the change that moved it`
+        ).toHaveLength(entry.expectedNodeCount)
+        const declaredByKey = new Map(
+          keys.map((key) => [key, declaredShape(defs[key])])
         )
-        const failures: string[] = []
-        const renderer = vueNodesEnabled ? 'vue' : 'litegraph'
-        for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {
-          const chunk = keys.slice(offset, offset + BATCH_SIZE)
-          const shapes = await addChunk(comfyPage.page, chunk)
-          await comfyPage.nextFrame()
-          const count = await comfyPage.nodeOps.getGraphNodesCount()
-          if (count !== chunk.length)
-            failures.push(
-              `chunk@${offset}: graph has ${count} of ${chunk.length} nodes`
-            )
-          // Geometry rides the same mounted chunk. A null measurement means
-          // the node never materialized - already red via the mount checks,
-          // so geometry stays silent rather than double-reporting.
-          const chunkGeometry = await measureChunkGeometry(
-            comfyPage.page,
-            shapes.map((shape) => shape?.id ?? null),
+        const ledger = entry.vueIncompatibleNodes ?? {}
+        // S14: geometry accumulates across both renderer passes (LiteGraph
+        // first, Vue second per rendererPassesFor), then records or compares
+        // once at the end of the test.
+        const geometryRecordMode = process.env.CN_GEOMETRY === 'record'
+        if (process.env.CN_GEOMETRY && !geometryRecordMode)
+          throw new Error(
+            `unrecognized CN_GEOMETRY value "${process.env.CN_GEOMETRY}" - the only mode is "record"`
+          )
+        const measuredGeometry: Record<string, NodeGeometry> = {}
+        const geometryUnstable = GEOMETRY_UNSTABLE_NODES[entry.pack] ?? {}
+        for (const ledgered of Object.keys(geometryUnstable))
+          expect(
+            keys,
+            `stale GEOMETRY_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
+          ).toContain(ledgered)
+        for (const ledgered of Object.keys(ledger))
+          expect(
+            keys,
+            `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
+          ).toContain(ledgered)
+        for (const ledgered of Object.keys(
+          MOUNT_WIDGET_ALLOWLIST[entry.pack] ?? {}
+        ))
+          expect(
+            keys,
+            `stale MOUNT_WIDGET_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
+          ).toContain(ledgered)
+
+        for (const vueNodesEnabled of rendererPassesFor(entry)) {
+          const consoleErrors = collectConsoleErrors(comfyPage.page)
+          await comfyPage.settings.setSetting(
+            'Comfy.VueNodes.Enabled',
             vueNodesEnabled
           )
-          for (const [index, measured] of chunkGeometry.entries()) {
-            const key = chunk[index]
-            if (measured === null || key in geometryUnstable) continue
-            if (!vueNodesEnabled)
-              measuredGeometry[key] = {
-                litegraph: measured as LitegraphNodeGeometry
-              }
-            else if (measuredGeometry[key] && !(key in ledger))
-              measuredGeometry[key].vue = measured as VueNodeGeometry
-          }
-          for (const [index, shape] of shapes.entries()) {
-            const key = chunk[index]
-            if (shape === null) {
-              failures.push(`${key}: createNode returned null`)
-              continue
-            }
-            // Renderer-independent fidelity: the instance must materialize
-            // everything the def declares. Pack JS converting a widget to a
-            // socket (or back) is legal; dropping the input entirely is not.
-            const declared = declaredByKey.get(key)!
-            const present = new Set([...shape.widgetNames, ...shape.inputNames])
-            for (const name of declared.inputNames)
-              if (!present.has(name))
-                failures.push(
-                  `${key}: instance is missing declared input "${name}" (${renderer})`
-                )
-            for (const { container, expansion } of declared.autogrow)
-              if (
-                !present.has(container) &&
-                !expansion.every((name) => present.has(name))
-              )
-                failures.push(
-                  `${key}: autogrow input "${container}" materialized neither its container nor its first ${expansion.length} slot(s) (${renderer})`
-                )
-            if (shape.outputCount < declared.outputCount)
+          const failures: string[] = []
+          const renderer = vueNodesEnabled ? 'vue' : 'litegraph'
+          for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {
+            const chunk = keys.slice(offset, offset + BATCH_SIZE)
+            const shapes = await addChunk(comfyPage.page, chunk)
+            await comfyPage.nextFrame()
+            const count = await comfyPage.nodeOps.getGraphNodesCount()
+            if (count !== chunk.length)
               failures.push(
-                `${key}: instance has ${shape.outputCount} of ${declared.outputCount} declared outputs (${renderer})`
+                `chunk@${offset}: graph has ${count} of ${chunk.length} nodes`
               )
-            if (!vueNodesEnabled) continue
-            if (key in ledger) continue
-            const visible = await comfyPage.page
-              .locator(`[data-node-id="${shape.id}"]`)
-              .isVisible({ timeout: 2_000 })
-              .catch(() => false)
-            if (!visible) failures.push(`${key}: no Vue mount`)
-          }
-          // A mount with missing widgets or slots is a broken node, not a
-          // pass. Extra DOM elements are tolerated; missing ones fail.
-          if (vueNodesEnabled)
-            failures.push(
-              ...(await comfyPage.page.evaluate(
-                ([chunkIds, ledgered, customWidgetNodes]) => {
-                  const problems: string[] = []
-                  for (const id of chunkIds) {
-                    if (id === null) continue
-                    const node = window.app!.graph.nodes.find(
-                      (candidate) => String(candidate.id) === id
-                    )
-                    const root = document.querySelector(
-                      `[data-node-id="${id}"]`
-                    )
-                    if (!node || !root || ledgered.includes(node.type!))
-                      continue
-                    const widgets = (
-                      (node.widgets ?? []) as Array<{
-                        advanced?: boolean
-                        hidden?: boolean
-                        name?: string
-                        type?: string
-                      }>
-                    ).filter(
-                      (widget) =>
-                        !widget.advanced &&
-                        !widget.hidden &&
-                        widget.type !== 'converted-widget' &&
-                        // Vue renders the seed-control combo inside its
-                        // parent widget row, not as its own row.
-                        widget.name !== 'control_after_generate'
-                    ).length
-                    const domWidgets = root.querySelectorAll(
-                      '[data-testid="node-widget"]'
-                    ).length
-                    if (
-                      domWidgets < widgets &&
-                      !customWidgetNodes.includes(node.type!)
-                    )
-                      problems.push(
-                        `${node.type}: Vue mounts ${domWidgets} of ${widgets} widgets`
-                      )
-                    const slots =
-                      (node.inputs ?? []).filter(
-                        (input) => !(input as { widget?: unknown }).widget
-                      ).length + (node.outputs ?? []).length
-                    const domSlots = root.querySelectorAll(
-                      '[data-testid="slot-connection-dot"]'
-                    ).length
-                    if (domSlots < slots)
-                      problems.push(
-                        `${node.type}: Vue mounts ${domSlots} of ${slots} slots`
-                      )
-                  }
-                  return problems
-                },
-                [
-                  shapes.map((shape) => shape?.id ?? null),
-                  Object.keys(ledger),
-                  Object.keys(MOUNT_WIDGET_ALLOWLIST[entry.pack] ?? {})
-                ] as const
-              ))
+            // Geometry rides the same mounted chunk. A null measurement means
+            // the node never materialized - already red via the mount checks,
+            // so geometry stays silent rather than double-reporting.
+            const chunkGeometry = await measureChunkGeometry(
+              comfyPage.page,
+              shapes.map((shape) => shape?.id ?? null),
+              vueNodesEnabled
             )
-        }
-        if (vueNodesEnabled && Object.keys(ledger).length > 0)
-          console.log(
-            `${entry.pack}: ${Object.keys(ledger).length} node(s) ledgered Vue-incompatible; Vue mount not asserted for them`
-          )
-        consoleErrors.stop()
-        expect(
-          failures,
-          `VueNodes=${vueNodesEnabled}: ${JSON.stringify(failures, null, 1)}`
-        ).toEqual([])
-        const allowlist = CONSOLE_ERROR_ALLOWLIST[entry.pack] ?? []
-        const allowed = consoleErrors.errors.filter((error) =>
-          allowlist.some((rule) => rule.pattern.test(error))
-        )
-        if (allowed.length > 0)
-          console.log(
-            `${entry.pack}: ${allowed.length} console error(s) matched the pack's allowlist (${allowlist.map((rule) => rule.reason).join('; ')})`
-          )
-        expect(
-          consoleErrors.errors.filter(
-            (error) =>
-              !allowlist.some((rule) => rule.pattern.test(error)) &&
-              !isForeignExecutionNoise(error)
-          ),
-          `console errors with VueNodes=${vueNodesEnabled}`
-        ).toEqual([])
-        await expectNoVisibleErrors(
-          comfyPage.page,
-          `after all-nodes VueNodes=${vueNodesEnabled} pass`
-        )
-      }
-      // S14 epilogue. The exclusion is announced like every other escape
-      // hatch, record fails loudly (never a green run that rewrote its own
-      // expectations), and compare runs in CI ONLY: the baselines encode
-      // pack-JS-built layout and CI font metrics, so a dev-server run (no
-      // pack JS) reds structurally and a non-Linux machine reds on fonts -
-      // neither is signal. The skip is loud and provably inert in CI.
-      if (Object.keys(geometryUnstable).length > 0)
-        console.log(
-          `${entry.pack}: ${Object.keys(geometryUnstable).length} node(s) ledgered geometry-unstable; geometry not asserted for them`
-        )
-      if (geometryRecordMode) {
-        savePackGeometry(entry.pack, {
-          recordedAt: {
-            core: process.env.CN_GEOMETRY_CORE ?? 'unrecorded',
-            pin: 'pin' in entry ? entry.pin : entry.deployRef
-          },
-          schema: 1,
-          nodes: measuredGeometry
-        })
-        throw new Error(
-          `geometry baselines recorded for ${entry.pack} - commit ${packGeometryRelativePath(entry.pack)} and re-run without CN_GEOMETRY`
-        )
-      } else if (!process.env.CI) {
-        console.log(
-          `${entry.pack}: geometry compare skipped off-CI (baselines encode CI fonts and pack-JS layout); CI enforces`
-        )
-      } else {
-        const geometryBaseline = loadPackGeometry(entry.pack)
-        expect(
-          geometryBaseline,
-          `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (ADDING_CUSTOM_NODES.md Step 5b)`
-        ).not.toBeNull()
-        expect(
-          diffGeometry(geometryBaseline!.nodes, measuredGeometry),
-          'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per ADDING_CUSTOM_NODES.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger by mechanism in GEOMETRY_UNSTABLE_NODES'
-        ).toEqual([])
-      }
-    })
-
-    test('every registered node survives save/reload', async ({
-      comfyPage
-    }) => {
-      test.setTimeout(480_000)
-      const { keys } = await packNodeKeys(comfyPage.page, entry.pack)
-      test.skip(
-        keys.length === 0,
-        `${entry.pack} not installed on this backend`
-      )
-
-      const allowedWidgets = WIDGET_SET_ALLOWLIST[entry.pack] ?? {}
-      for (const ledgered of Object.keys(allowedWidgets))
-        expect(
-          keys,
-          `stale WIDGET_SET_ALLOWLIST entry: ${ledgered} names a node not registered by ${entry.pack}`
-        ).toContain(ledgered.slice(0, ledgered.indexOf('.')))
-      const allowedValueDrift = ROUNDTRIP_VALUE_ALLOWLIST[entry.pack] ?? {}
-      for (const ledgered of Object.keys(allowedValueDrift))
-        expect(
-          keys,
-          `stale ROUNDTRIP_VALUE_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
-        ).toContain(ledgered)
-      // Widget values flow through the same store in both renderers, but
-      // only the Vue pass runs component mount/configure effects that can
-      // write back into that store - so the round-trip must hold under
-      // both. Each stage yields a frame so those effects actually flush
-      // before the next serialize (a single evaluate would serialize before
-      // any Vue component reacted).
-      for (const vueNodesEnabled of rendererPassesFor(entry)) {
-        await comfyPage.settings.setSetting(
-          'Comfy.VueNodes.Enabled',
-          vueNodesEnabled
-        )
-        const consoleErrors = collectConsoleErrors(comfyPage.page)
-        const mismatches: string[] = []
-        for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {
-          const chunk = keys.slice(offset, offset + BATCH_SIZE)
-          // Stage 1 - create the chunk and park the comparison rig on the
-          // window; its closures carry state across the staged evaluates.
-          await comfyPage.page.evaluate(
-            ([types, packManaged, valueDriftNodes]) => {
-              window.app!.graph.clear()
-              window.app!.graph.last_node_id = window.__cnIdBase ?? 0
-              const created = new Map<
-                string,
-                { type: string; widgetCount: number }
-              >()
-              for (const type of types) {
-                const node = window.LiteGraph!.createNode(type)
-                if (!node) continue
-                window.app!.graph.add(node)
-                created.set(String(node.id), {
-                  type,
-                  widgetCount: (node.widgets ?? []).length
-                })
-              }
-              window.__cnIdBase = window.app!.graph.last_node_id
-              const problems: string[] = []
-              // Serialized widgets_values can be an array or a named object;
-              // reload may legitimately APPEND entries (control_after_generate
-              // materializes, packs add value-driven dynamic widgets) but must
-              // never lose or change what was saved.
-              const preserves = (before: unknown, after: unknown): boolean => {
-                const beforeNormalized =
-                  Array.isArray(before) && before.length === 0 ? null : before
-                const afterNormalized =
-                  Array.isArray(after) && after.length === 0 ? null : after
-                if (beforeNormalized === null) return true
-                if (Array.isArray(beforeNormalized))
-                  return (
-                    Array.isArray(afterNormalized) &&
-                    afterNormalized.length >= beforeNormalized.length &&
-                    beforeNormalized.every(
-                      (value, index) =>
-                        JSON.stringify(value) ===
-                        JSON.stringify(afterNormalized[index])
-                    )
-                  )
-                if (typeof beforeNormalized === 'object')
-                  return (
-                    typeof afterNormalized === 'object' &&
-                    afterNormalized !== null &&
-                    Object.entries(beforeNormalized).every(
-                      ([key, value]) =>
-                        JSON.stringify(value) ===
-                        JSON.stringify(
-                          (afterNormalized as Record<string, unknown>)[key]
-                        )
-                    )
-                  )
-                return (
-                  JSON.stringify(beforeNormalized) ===
-                  JSON.stringify(afterNormalized)
-                )
-              }
-              const widgetNamesById = () =>
-                new Map(
-                  window.app!.graph.nodes.map((node) => [
-                    String(node.id),
-                    (node.widgets ?? []).map((widget) => widget.name).join(',')
-                  ])
-                )
-              let namesBefore = new Map<string, string>()
-              let firstPass: ReturnType<
-                NonNullable<typeof window.app>['graph']['serialize']
-              > | null = null
-              window.__cnRt = {
-                problems,
-                snapshotAndConfigure() {
-                  namesBefore = widgetNamesById()
-                  firstPass = window.app!.graph.serialize()
-                  window.app!.graph.configure(firstPass)
-                },
-                // strict = pristine pass: reload may add dynamic widgets but
-                // must never shrink a node (the "widgets disappear after
-                // save/reload" bug class) and must preserve every value. The
-                // set-values pass is not strict: a changed combo/toggle
-                // legitimately rebuilds a dynamic node's widget set, so
-                // values are only compared where the topology stayed put.
-                compare(label: string, strict: boolean) {
-                  const secondPass = window.app!.graph.serialize()
-                  const namesAfter = widgetNamesById()
-                  const byId = (pass: NonNullable<typeof firstPass>) =>
-                    new Map(
-                      (pass.nodes ?? []).map((node) => [String(node.id), node])
-                    )
-                  const beforeNodes = byId(firstPass!)
-                  const afterNodes = byId(secondPass)
-                  for (const [id, expected] of created) {
-                    const before = beforeNodes.get(id)
-                    const after = afterNodes.get(id)
-                    const restored = window.app!.graph.nodes.find(
-                      (node) => String(node.id) === id
-                    )
-                    if (!before || !after || !restored) {
-                      problems.push(`${expected.type}: lost on ${label} reload`)
-                      continue
-                    }
-                    if (after.type !== before.type)
-                      problems.push(
-                        `${expected.type}: type became ${String(after.type)} on ${label} reload`
-                      )
-                    const widgets = (restored.widgets ?? []).length
-                    if (strict && widgets < expected.widgetCount)
-                      problems.push(
-                        `${expected.type}: widgets ${expected.widgetCount} -> ${widgets} on ${label} reload`
-                      )
-                    if (!strict && namesBefore.get(id) !== namesAfter.get(id))
-                      continue
-                    if (valueDriftNodes.includes(expected.type)) continue
-                    if (!preserves(before.widgets_values, after.widgets_values))
-                      problems.push(
-                        `${expected.type}: widgets_values ${JSON.stringify(before.widgets_values ?? null)} -> ${JSON.stringify(after.widgets_values ?? null)} on ${label} reload`
-                      )
-                  }
-                },
-                // Set-and-stick: every plain widget must hold a programmatic
-                // non-default write. Widget types owned by pack JS (editors,
-                // previews, annotated controls) are skipped: their values are
-                // not a user-writable contract.
-                setAndStick() {
-                  const SETTABLE = new Set([
-                    'number',
-                    'slider',
-                    'toggle',
-                    'text',
-                    'string',
-                    'customtext',
-                    'combo'
-                  ])
-                  for (const node of window.app!.graph.nodes) {
-                    const nodeType = created.get(String(node.id))?.type
-                    if (!nodeType) continue
-                    // Value-drift-ledgered nodes own their values wholesale;
-                    // writing probe values into them just makes pack JS choke
-                    // on our markers (e.g. editors parsing `..._cn` as JSON).
-                    if (valueDriftNodes.includes(nodeType)) continue
-                    for (const widget of node.widgets ?? []) {
-                      if (!SETTABLE.has(String(widget.type))) continue
-                      if (`${nodeType}.${widget.name}` in packManaged) continue
-                      const target = ((): unknown => {
-                        const options = (
-                          widget as {
-                            options?: {
-                              values?: unknown
-                              min?: number
-                              max?: number
-                              step2?: number
-                            }
-                          }
-                        ).options
-                        if (typeof widget.value === 'boolean')
-                          return !widget.value
-                        if (typeof widget.value === 'number') {
-                          const step = options?.step2 || 1
-                          const up = widget.value + step
-                          if (options?.max === undefined || up <= options.max)
-                            return up
-                          const down = widget.value - step
-                          if (options?.min === undefined || down >= options.min)
-                            return down
-                          return undefined
-                        }
-                        if (typeof widget.value === 'string') {
-                          if (widget.type === 'combo')
-                            return Array.isArray(options?.values)
-                              ? options.values.find(
-                                  (option: unknown) => option !== widget.value
-                                )
-                              : undefined
-                          return `${widget.value}_cn`
-                        }
-                        return undefined
-                      })()
-                      if (target === undefined || target === null) continue
-                      widget.value = target as typeof widget.value
-                      if (widget.value !== target)
-                        problems.push(
-                          `${nodeType}.${widget.name}: set ${JSON.stringify(target)} but widget kept ${JSON.stringify(widget.value)}`
-                        )
-                    }
-                  }
-                },
-                finish() {
-                  const out = [...problems]
-                  window.app!.graph.clear()
-                  return out
+            for (const [index, measured] of chunkGeometry.entries()) {
+              const key = chunk[index]
+              if (measured === null || key in geometryUnstable) continue
+              if (!vueNodesEnabled)
+                measuredGeometry[key] = {
+                  litegraph: measured as LitegraphNodeGeometry
                 }
+              else if (measuredGeometry[key] && !(key in ledger))
+                measuredGeometry[key].vue = measured as VueNodeGeometry
+            }
+            for (const [index, shape] of shapes.entries()) {
+              const key = chunk[index]
+              if (shape === null) {
+                failures.push(`${key}: createNode returned null`)
+                continue
               }
-            },
-            [chunk, allowedWidgets, Object.keys(allowedValueDrift)] as const
+              // Renderer-independent fidelity: the instance must materialize
+              // everything the def declares. Pack JS converting a widget to a
+              // socket (or back) is legal; dropping the input entirely is not.
+              const declared = declaredByKey.get(key)!
+              const present = new Set([
+                ...shape.widgetNames,
+                ...shape.inputNames
+              ])
+              for (const name of declared.inputNames)
+                if (!present.has(name))
+                  failures.push(
+                    `${key}: instance is missing declared input "${name}" (${renderer})`
+                  )
+              for (const { container, expansion } of declared.autogrow)
+                if (
+                  !present.has(container) &&
+                  !expansion.every((name) => present.has(name))
+                )
+                  failures.push(
+                    `${key}: autogrow input "${container}" materialized neither its container nor its first ${expansion.length} slot(s) (${renderer})`
+                  )
+              if (shape.outputCount < declared.outputCount)
+                failures.push(
+                  `${key}: instance has ${shape.outputCount} of ${declared.outputCount} declared outputs (${renderer})`
+                )
+              if (!vueNodesEnabled) continue
+              if (key in ledger) continue
+              const visible = await comfyPage.page
+                .locator(`[data-node-id="${shape.id}"]`)
+                .isVisible({ timeout: 2_000 })
+                .catch(() => false)
+              if (!visible) failures.push(`${key}: no Vue mount`)
+            }
+            // A mount with missing widgets or slots is a broken node, not a
+            // pass. Extra DOM elements are tolerated; missing ones fail.
+            if (vueNodesEnabled)
+              failures.push(
+                ...(await comfyPage.page.evaluate(
+                  ([chunkIds, ledgered, customWidgetNodes]) => {
+                    const problems: string[] = []
+                    for (const id of chunkIds) {
+                      if (id === null) continue
+                      const node = window.app!.graph.nodes.find(
+                        (candidate) => String(candidate.id) === id
+                      )
+                      const root = document.querySelector(
+                        `[data-node-id="${id}"]`
+                      )
+                      if (!node || !root || ledgered.includes(node.type!))
+                        continue
+                      const widgets = (
+                        (node.widgets ?? []) as Array<{
+                          advanced?: boolean
+                          hidden?: boolean
+                          name?: string
+                          type?: string
+                        }>
+                      ).filter(
+                        (widget) =>
+                          !widget.advanced &&
+                          !widget.hidden &&
+                          widget.type !== 'converted-widget' &&
+                          // Vue renders the seed-control combo inside its
+                          // parent widget row, not as its own row.
+                          widget.name !== 'control_after_generate'
+                      ).length
+                      const domWidgets = root.querySelectorAll(
+                        '[data-testid="node-widget"]'
+                      ).length
+                      if (
+                        domWidgets < widgets &&
+                        !customWidgetNodes.includes(node.type!)
+                      )
+                        problems.push(
+                          `${node.type}: Vue mounts ${domWidgets} of ${widgets} widgets`
+                        )
+                      const slots =
+                        (node.inputs ?? []).filter(
+                          (input) => !(input as { widget?: unknown }).widget
+                        ).length + (node.outputs ?? []).length
+                      const domSlots = root.querySelectorAll(
+                        '[data-testid="slot-connection-dot"]'
+                      ).length
+                      if (domSlots < slots)
+                        problems.push(
+                          `${node.type}: Vue mounts ${domSlots} of ${slots} slots`
+                        )
+                    }
+                    return problems
+                  },
+                  [
+                    shapes.map((shape) => shape?.id ?? null),
+                    Object.keys(ledger),
+                    Object.keys(MOUNT_WIDGET_ALLOWLIST[entry.pack] ?? {})
+                  ] as const
+                ))
+              )
+          }
+          if (vueNodesEnabled && Object.keys(ledger).length > 0)
+            console.log(
+              `${entry.pack}: ${Object.keys(ledger).length} node(s) ledgered Vue-incompatible; Vue mount not asserted for them`
+            )
+          consoleErrors.stop()
+          expect(
+            failures,
+            `VueNodes=${vueNodesEnabled}: ${JSON.stringify(failures, null, 1)}`
+          ).toEqual([])
+          const allowlist = CONSOLE_ERROR_ALLOWLIST[entry.pack] ?? []
+          const allowed = consoleErrors.errors.filter((error) =>
+            allowlist.some((rule) => rule.pattern.test(error))
           )
-          await comfyPage.nextFrame()
-          // Stage 2 - pristine snapshot + reload.
-          await comfyPage.page.evaluate(() =>
-            window.__cnRt!.snapshotAndConfigure()
-          )
-          await comfyPage.nextFrame()
-          // Stage 3 - pristine verdict, then write non-default values.
-          await comfyPage.page.evaluate(() => {
-            window.__cnRt!.compare('pristine', true)
-            window.__cnRt!.setAndStick()
-          })
-          await comfyPage.nextFrame()
-          // Stage 4 - reload again with the written values.
-          await comfyPage.page.evaluate(() =>
-            window.__cnRt!.snapshotAndConfigure()
-          )
-          await comfyPage.nextFrame()
-          // Stage 5 - set-values verdict; collect and reset.
-          mismatches.push(
-            ...(await comfyPage.page.evaluate(() => {
-              window.__cnRt!.compare('set-values', false)
-              return window.__cnRt!.finish()
-            }))
-          )
-        }
-        consoleErrors.stop()
-        const allowlist = CONSOLE_ERROR_ALLOWLIST[entry.pack] ?? []
-        expect(
-          consoleErrors.errors.filter(
-            (error) =>
-              !allowlist.some((rule) => rule.pattern.test(error)) &&
-              !isForeignExecutionNoise(error)
-          ),
-          `console errors during save/reload with VueNodes=${vueNodesEnabled}`
-        ).toEqual([])
-        expect(
-          mismatches,
-          `VueNodes=${vueNodesEnabled}: ${JSON.stringify(mismatches, null, 1)}`
-        ).toEqual([])
-      }
-      await expectNoVisibleErrors(comfyPage.page, 'after save/reload sweep')
-    })
-
-    // Runs under one renderer by design: execution is a backend contract,
-    // and graphToPrompt reads widget values through the same store in both
-    // renderers - Vue-specific value effects are covered by the save/reload
-    // tier's Vue pass. Also deliberately NOT asserted here: zero visible
-    // errors - this tier provokes real execution failures (baselined
-    // cannotRunAlone nodes), and the app surfaces those as toasts/dialogs
-    // by design.
-    test('every auto-runnable node executes without error', async ({
-      comfyPage
-    }) => {
-      test.setTimeout(900_000)
-      const { keys, defs } = await packNodeKeys(comfyPage.page, entry.pack)
-      test.skip(
-        keys.length === 0,
-        `${entry.pack} not installed on this backend`
-      )
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-
-      // A prior pack's slow CPU execution can still be draining when this tier
-      // starts (all packs share one backend, locally and on CI alike; CI's
-      // unloaded runner keeps executions fast, a busy local machine may not).
-      // Wait it out rather than hard-fail: interrupt,
-      // clear the pending queue, and poll until the backend is idle. Slow-but-
-      // finite executions drain within the budget; only a truly wedged backend
-      // (which the exclusions already prevent) stays busy past it. The wait is
-      // free when the queue is already idle, so it costs nothing on CI.
-      const queueBusy = await drainBackendToIdle(comfyPage.page, 150_000)
-      expect(
-        queueBusy,
-        'backend still has a running prompt after a 150s drain - a genuinely wedged (non-interruptible) execution; restart the test backend'
-      ).toBe(0)
-
-      expect(
-        disabledHarness,
-        'Cloud label-disables auto-run harness node(s); synthesized chains cannot run without them'
-      ).toEqual([])
-      const excluded = {
-        ...(AUTO_RUN_EXCLUDE[entry.pack] ?? {}),
-        ...cloudAutoRunExclusions(entry)
-      }
-      for (const [key, reason] of Object.entries(excluded)) {
-        expect(
-          keys,
-          `stale AUTO_RUN_EXCLUDE entry: ${key} is not registered by ${entry.pack}`
-        ).toContain(key)
-        console.log(`${entry.pack}: ${key} excluded from auto-run (${reason})`)
-      }
-      const verdicts = planAutoRuns(
-        defs,
-        keys.filter((key) => !(key in excluded))
-      )
-      const counts = new Map<string, number>()
-      for (const verdict of verdicts)
-        counts.set(verdict.verdict, (counts.get(verdict.verdict) ?? 0) + 1)
-      console.log(
-        `${entry.pack} auto-run plan: ${[...counts.entries()]
-          .map(([verdict, count]) => `${verdict}=${count}`)
-          .join(' ')}`
-      )
-
-      const batches = batchAutoRunnable(verdicts, AUTO_RUN_BATCH)
-      const hardFailures: string[] = []
-      const cannotRun = new Map<string, string>()
-      const ranClean = new Set<string>()
-      for (const batch of batches) {
-        const outcome = await runBatch(comfyPage.page, batch)
-        if (outcome === 'PASS') {
-          for (const verdict of batch) ranClean.add(verdict.key)
-          continue
-        }
-        // A jammed queue false-timeouts everything after it - stop here.
-        if (outcome.startsWith('HUNG_BACKEND')) {
-          hardFailures.push(
-            `[${batch.map((verdict) => verdict.key).join(', ')}]: ${outcome} - add the offender to AUTO_RUN_EXCLUDE with its mechanism`
-          )
-          break
-        }
-        // Rerun singles so the bad node names itself, with a longer timeout
-        // so a slow-under-load node is not misread as a regression.
-        for (const verdict of batch) {
-          const single = await runBatch(
+          if (allowed.length > 0)
+            console.log(
+              `${entry.pack}: ${allowed.length} console error(s) matched the pack's allowlist (${allowlist.map((rule) => rule.reason).join('; ')})`
+            )
+          expect(
+            consoleErrors.errors.filter(
+              (error) =>
+                !allowlist.some((rule) => rule.pattern.test(error)) &&
+                !isForeignExecutionNoise(error)
+            ),
+            `console errors with VueNodes=${vueNodesEnabled}`
+          ).toEqual([])
+          await expectNoVisibleErrors(
             comfyPage.page,
-            [verdict],
-            SINGLE_RERUN_TIMEOUT
+            `after all-nodes VueNodes=${vueNodesEnabled} pass`
           )
-          if (single === 'PASS') ranClean.add(verdict.key)
-          else if (single.startsWith('HUNG_BACKEND')) {
+        }
+        // S14 epilogue. The exclusion is announced like every other escape
+        // hatch, record fails loudly (never a green run that rewrote its own
+        // expectations), and compare runs in CI ONLY: the baselines encode
+        // pack-JS-built layout and CI font metrics, so a dev-server run (no
+        // pack JS) reds structurally and a non-Linux machine reds on fonts -
+        // neither is signal. The skip is loud and provably inert in CI.
+        if (Object.keys(geometryUnstable).length > 0)
+          console.log(
+            `${entry.pack}: ${Object.keys(geometryUnstable).length} node(s) ledgered geometry-unstable; geometry not asserted for them`
+          )
+        if (geometryRecordMode) {
+          savePackGeometry(entry.pack, {
+            recordedAt: {
+              core: process.env.CN_GEOMETRY_CORE ?? 'unrecorded',
+              pin: 'pin' in entry ? entry.pin : entry.deployRef
+            },
+            schema: 1,
+            nodes: measuredGeometry
+          })
+          throw new Error(
+            `geometry baselines recorded for ${entry.pack} - commit ${packGeometryRelativePath(entry.pack)} and re-run without CN_GEOMETRY`
+          )
+        } else if (!process.env.CI) {
+          console.log(
+            `${entry.pack}: geometry compare skipped off-CI (baselines encode CI fonts and pack-JS layout); CI enforces`
+          )
+        } else {
+          const geometryBaseline = loadPackGeometry(entry.pack)
+          expect(
+            geometryBaseline,
+            `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (ADDING_CUSTOM_NODES.md Step 5b)`
+          ).not.toBeNull()
+          expect(
+            diffGeometry(geometryBaseline!.nodes, measuredGeometry),
+            'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per ADDING_CUSTOM_NODES.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger by mechanism in GEOMETRY_UNSTABLE_NODES'
+          ).toEqual([])
+        }
+      })
+
+      await runTier('save/reload', async () => {
+        const allowedWidgets = WIDGET_SET_ALLOWLIST[entry.pack] ?? {}
+        for (const ledgered of Object.keys(allowedWidgets))
+          expect(
+            keys,
+            `stale WIDGET_SET_ALLOWLIST entry: ${ledgered} names a node not registered by ${entry.pack}`
+          ).toContain(ledgered.slice(0, ledgered.indexOf('.')))
+        const allowedValueDrift = ROUNDTRIP_VALUE_ALLOWLIST[entry.pack] ?? {}
+        for (const ledgered of Object.keys(allowedValueDrift))
+          expect(
+            keys,
+            `stale ROUNDTRIP_VALUE_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
+          ).toContain(ledgered)
+        // Widget values flow through the same store in both renderers, but
+        // only the Vue pass runs component mount/configure effects that can
+        // write back into that store - so the round-trip must hold under
+        // both. Each stage yields a frame so those effects actually flush
+        // before the next serialize (a single evaluate would serialize before
+        // any Vue component reacted).
+        for (const vueNodesEnabled of rendererPassesFor(entry)) {
+          await comfyPage.settings.setSetting(
+            'Comfy.VueNodes.Enabled',
+            vueNodesEnabled
+          )
+          const consoleErrors = collectConsoleErrors(comfyPage.page)
+          const mismatches: string[] = []
+          for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {
+            const chunk = keys.slice(offset, offset + BATCH_SIZE)
+            // Stage 1 - create the chunk and park the comparison rig on the
+            // window; its closures carry state across the staged evaluates.
+            await comfyPage.page.evaluate(
+              ([types, packManaged, valueDriftNodes]) => {
+                window.app!.graph.clear()
+                window.app!.graph.last_node_id = window.__cnIdBase ?? 0
+                const created = new Map<
+                  string,
+                  { type: string; widgetCount: number }
+                >()
+                for (const type of types) {
+                  const node = window.LiteGraph!.createNode(type)
+                  if (!node) continue
+                  window.app!.graph.add(node)
+                  created.set(String(node.id), {
+                    type,
+                    widgetCount: (node.widgets ?? []).length
+                  })
+                }
+                window.__cnIdBase = window.app!.graph.last_node_id
+                const problems: string[] = []
+                // Serialized widgets_values can be an array or a named object;
+                // reload may legitimately APPEND entries (control_after_generate
+                // materializes, packs add value-driven dynamic widgets) but must
+                // never lose or change what was saved.
+                const preserves = (
+                  before: unknown,
+                  after: unknown
+                ): boolean => {
+                  const beforeNormalized =
+                    Array.isArray(before) && before.length === 0 ? null : before
+                  const afterNormalized =
+                    Array.isArray(after) && after.length === 0 ? null : after
+                  if (beforeNormalized === null) return true
+                  if (Array.isArray(beforeNormalized))
+                    return (
+                      Array.isArray(afterNormalized) &&
+                      afterNormalized.length >= beforeNormalized.length &&
+                      beforeNormalized.every(
+                        (value, index) =>
+                          JSON.stringify(value) ===
+                          JSON.stringify(afterNormalized[index])
+                      )
+                    )
+                  if (typeof beforeNormalized === 'object')
+                    return (
+                      typeof afterNormalized === 'object' &&
+                      afterNormalized !== null &&
+                      Object.entries(beforeNormalized).every(
+                        ([key, value]) =>
+                          JSON.stringify(value) ===
+                          JSON.stringify(
+                            (afterNormalized as Record<string, unknown>)[key]
+                          )
+                      )
+                    )
+                  return (
+                    JSON.stringify(beforeNormalized) ===
+                    JSON.stringify(afterNormalized)
+                  )
+                }
+                const widgetNamesById = () =>
+                  new Map(
+                    window.app!.graph.nodes.map((node) => [
+                      String(node.id),
+                      (node.widgets ?? [])
+                        .map((widget) => widget.name)
+                        .join(',')
+                    ])
+                  )
+                let namesBefore = new Map<string, string>()
+                let firstPass: ReturnType<
+                  NonNullable<typeof window.app>['graph']['serialize']
+                > | null = null
+                window.__cnRt = {
+                  problems,
+                  snapshotAndConfigure() {
+                    namesBefore = widgetNamesById()
+                    firstPass = window.app!.graph.serialize()
+                    window.app!.graph.configure(firstPass)
+                  },
+                  // strict = pristine pass: reload may add dynamic widgets but
+                  // must never shrink a node (the "widgets disappear after
+                  // save/reload" bug class) and must preserve every value. The
+                  // set-values pass is not strict: a changed combo/toggle
+                  // legitimately rebuilds a dynamic node's widget set, so
+                  // values are only compared where the topology stayed put.
+                  compare(label: string, strict: boolean) {
+                    const secondPass = window.app!.graph.serialize()
+                    const namesAfter = widgetNamesById()
+                    const byId = (pass: NonNullable<typeof firstPass>) =>
+                      new Map(
+                        (pass.nodes ?? []).map((node) => [
+                          String(node.id),
+                          node
+                        ])
+                      )
+                    const beforeNodes = byId(firstPass!)
+                    const afterNodes = byId(secondPass)
+                    for (const [id, expected] of created) {
+                      const before = beforeNodes.get(id)
+                      const after = afterNodes.get(id)
+                      const restored = window.app!.graph.nodes.find(
+                        (node) => String(node.id) === id
+                      )
+                      if (!before || !after || !restored) {
+                        problems.push(
+                          `${expected.type}: lost on ${label} reload`
+                        )
+                        continue
+                      }
+                      if (after.type !== before.type)
+                        problems.push(
+                          `${expected.type}: type became ${String(after.type)} on ${label} reload`
+                        )
+                      const widgets = (restored.widgets ?? []).length
+                      if (strict && widgets < expected.widgetCount)
+                        problems.push(
+                          `${expected.type}: widgets ${expected.widgetCount} -> ${widgets} on ${label} reload`
+                        )
+                      if (!strict && namesBefore.get(id) !== namesAfter.get(id))
+                        continue
+                      if (valueDriftNodes.includes(expected.type)) continue
+                      if (
+                        !preserves(before.widgets_values, after.widgets_values)
+                      )
+                        problems.push(
+                          `${expected.type}: widgets_values ${JSON.stringify(before.widgets_values ?? null)} -> ${JSON.stringify(after.widgets_values ?? null)} on ${label} reload`
+                        )
+                    }
+                  },
+                  // Set-and-stick: every plain widget must hold a programmatic
+                  // non-default write. Widget types owned by pack JS (editors,
+                  // previews, annotated controls) are skipped: their values are
+                  // not a user-writable contract.
+                  setAndStick() {
+                    const SETTABLE = new Set([
+                      'number',
+                      'slider',
+                      'toggle',
+                      'text',
+                      'string',
+                      'customtext',
+                      'combo'
+                    ])
+                    for (const node of window.app!.graph.nodes) {
+                      const nodeType = created.get(String(node.id))?.type
+                      if (!nodeType) continue
+                      // Value-drift-ledgered nodes own their values wholesale;
+                      // writing probe values into them just makes pack JS choke
+                      // on our markers (e.g. editors parsing `..._cn` as JSON).
+                      if (valueDriftNodes.includes(nodeType)) continue
+                      for (const widget of node.widgets ?? []) {
+                        if (!SETTABLE.has(String(widget.type))) continue
+                        if (`${nodeType}.${widget.name}` in packManaged)
+                          continue
+                        const target = ((): unknown => {
+                          const options = (
+                            widget as {
+                              options?: {
+                                values?: unknown
+                                min?: number
+                                max?: number
+                                step2?: number
+                              }
+                            }
+                          ).options
+                          if (typeof widget.value === 'boolean')
+                            return !widget.value
+                          if (typeof widget.value === 'number') {
+                            const step = options?.step2 || 1
+                            const up = widget.value + step
+                            if (options?.max === undefined || up <= options.max)
+                              return up
+                            const down = widget.value - step
+                            if (
+                              options?.min === undefined ||
+                              down >= options.min
+                            )
+                              return down
+                            return undefined
+                          }
+                          if (typeof widget.value === 'string') {
+                            if (widget.type === 'combo')
+                              return Array.isArray(options?.values)
+                                ? options.values.find(
+                                    (option: unknown) => option !== widget.value
+                                  )
+                                : undefined
+                            return `${widget.value}_cn`
+                          }
+                          return undefined
+                        })()
+                        if (target === undefined || target === null) continue
+                        widget.value = target as typeof widget.value
+                        if (widget.value !== target)
+                          problems.push(
+                            `${nodeType}.${widget.name}: set ${JSON.stringify(target)} but widget kept ${JSON.stringify(widget.value)}`
+                          )
+                      }
+                    }
+                  },
+                  finish() {
+                    const out = [...problems]
+                    window.app!.graph.clear()
+                    return out
+                  }
+                }
+              },
+              [chunk, allowedWidgets, Object.keys(allowedValueDrift)] as const
+            )
+            await comfyPage.nextFrame()
+            // Stage 2 - pristine snapshot + reload.
+            await comfyPage.page.evaluate(() =>
+              window.__cnRt!.snapshotAndConfigure()
+            )
+            await comfyPage.nextFrame()
+            // Stage 3 - pristine verdict, then write non-default values.
+            await comfyPage.page.evaluate(() => {
+              window.__cnRt!.compare('pristine', true)
+              window.__cnRt!.setAndStick()
+            })
+            await comfyPage.nextFrame()
+            // Stage 4 - reload again with the written values.
+            await comfyPage.page.evaluate(() =>
+              window.__cnRt!.snapshotAndConfigure()
+            )
+            await comfyPage.nextFrame()
+            // Stage 5 - set-values verdict; collect and reset.
+            mismatches.push(
+              ...(await comfyPage.page.evaluate(() => {
+                window.__cnRt!.compare('set-values', false)
+                return window.__cnRt!.finish()
+              }))
+            )
+          }
+          consoleErrors.stop()
+          const allowlist = CONSOLE_ERROR_ALLOWLIST[entry.pack] ?? []
+          expect(
+            consoleErrors.errors.filter(
+              (error) =>
+                !allowlist.some((rule) => rule.pattern.test(error)) &&
+                !isForeignExecutionNoise(error)
+            ),
+            `console errors during save/reload with VueNodes=${vueNodesEnabled}`
+          ).toEqual([])
+          expect(
+            mismatches,
+            `VueNodes=${vueNodesEnabled}: ${JSON.stringify(mismatches, null, 1)}`
+          ).toEqual([])
+        }
+        await expectNoVisibleErrors(comfyPage.page, 'after save/reload sweep')
+      })
+
+      await runTier('auto-run', async () => {
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+
+        // A prior pack's slow CPU execution can still be draining when this tier
+        // starts (all packs share one backend, locally and on CI alike; CI's
+        // unloaded runner keeps executions fast, a busy local machine may not).
+        // Wait it out rather than hard-fail: interrupt,
+        // clear the pending queue, and poll until the backend is idle. Slow-but-
+        // finite executions drain within the budget; only a truly wedged backend
+        // (which the exclusions already prevent) stays busy past it. The wait is
+        // free when the queue is already idle, so it costs nothing on CI.
+        const queueBusy = await drainBackendToIdle(comfyPage.page, 150_000)
+        expect(
+          queueBusy,
+          'backend still has a running prompt after a 150s drain - a genuinely wedged (non-interruptible) execution; restart the test backend'
+        ).toBe(0)
+
+        expect(
+          disabledHarness,
+          'Cloud label-disables auto-run harness node(s); synthesized chains cannot run without them'
+        ).toEqual([])
+        const excluded = {
+          ...(AUTO_RUN_EXCLUDE[entry.pack] ?? {}),
+          ...cloudAutoRunExclusions(entry)
+        }
+        for (const [key, reason] of Object.entries(excluded)) {
+          expect(
+            keys,
+            `stale AUTO_RUN_EXCLUDE entry: ${key} is not registered by ${entry.pack}`
+          ).toContain(key)
+          console.log(
+            `${entry.pack}: ${key} excluded from auto-run (${reason})`
+          )
+        }
+        const verdicts = planAutoRuns(
+          defs,
+          keys.filter((key) => !(key in excluded))
+        )
+        const counts = new Map<string, number>()
+        for (const verdict of verdicts)
+          counts.set(verdict.verdict, (counts.get(verdict.verdict) ?? 0) + 1)
+        console.log(
+          `${entry.pack} auto-run plan: ${[...counts.entries()]
+            .map(([verdict, count]) => `${verdict}=${count}`)
+            .join(' ')}`
+        )
+
+        const batches = batchAutoRunnable(verdicts, AUTO_RUN_BATCH)
+        const hardFailures: string[] = []
+        const cannotRun = new Map<string, string>()
+        const ranClean = new Set<string>()
+        for (const batch of batches) {
+          const outcome = await runBatch(comfyPage.page, batch)
+          if (outcome === 'PASS') {
+            for (const verdict of batch) ranClean.add(verdict.key)
+            continue
+          }
+          // A jammed queue false-timeouts everything after it - stop here.
+          if (outcome.startsWith('HUNG_BACKEND')) {
             hardFailures.push(
-              `${verdict.key}: ${single} - add to AUTO_RUN_EXCLUDE with its mechanism`
+              `[${batch.map((verdict) => verdict.key).join(', ')}]: ${outcome} - add the offender to AUTO_RUN_EXCLUDE with its mechanism`
             )
             break
-          } else cannotRun.set(verdict.key, single)
+          }
+          // Rerun singles so the bad node names itself, with a longer timeout
+          // so a slow-under-load node is not misread as a regression.
+          for (const verdict of batch) {
+            const single = await runBatch(
+              comfyPage.page,
+              [verdict],
+              SINGLE_RERUN_TIMEOUT
+            )
+            if (single === 'PASS') ranClean.add(verdict.key)
+            else if (single.startsWith('HUNG_BACKEND')) {
+              hardFailures.push(
+                `${verdict.key}: ${single} - add to AUTO_RUN_EXCLUDE with its mechanism`
+              )
+              break
+            } else cannotRun.set(verdict.key, single)
+          }
         }
-      }
-      // Two-way reconciliation: unlisted failure = regression; listed node
-      // that runs clean (or is not auto-runnable) = stale entry.
-      const baseline = new Set(entry.cannotRunAlone ?? [])
-      const runnable = new Set(
-        batches.flatMap((batch) => batch.map((verdict) => verdict.key))
-      )
-      for (const [key, detail] of cannotRun)
-        if (!baseline.has(key))
-          hardFailures.push(
-            `${key}: ${detail} - not in cannotRunAlone; a regression, or a new baseline entry (attach the run log)`
-          )
-      for (const key of baseline) {
-        if (ranClean.has(key))
-          hardFailures.push(
-            `${key}: ran clean but is listed in cannotRunAlone - remove the stale entry`
-          )
-        else if (!runnable.has(key))
-          hardFailures.push(
-            `${key}: listed in cannotRunAlone but is not auto-runnable on this backend - remove the stale entry`
-          )
-      }
-      console.log(
-        `${entry.pack} auto-ran ${ranClean.size} node(s) clean; ${cannotRun.size} cannot run alone (baseline ${baseline.size})`
-      )
-      expect(hardFailures, JSON.stringify(hardFailures, null, 1)).toEqual([])
+        // Two-way reconciliation: unlisted failure = regression; listed node
+        // that runs clean (or is not auto-runnable) = stale entry.
+        const baseline = new Set(entry.cannotRunAlone ?? [])
+        const runnable = new Set(
+          batches.flatMap((batch) => batch.map((verdict) => verdict.key))
+        )
+        for (const [key, detail] of cannotRun)
+          if (!baseline.has(key))
+            hardFailures.push(
+              `${key}: ${detail} - not in cannotRunAlone; a regression, or a new baseline entry (attach the run log)`
+            )
+        for (const key of baseline) {
+          if (ranClean.has(key))
+            hardFailures.push(
+              `${key}: ran clean but is listed in cannotRunAlone - remove the stale entry`
+            )
+          else if (!runnable.has(key))
+            hardFailures.push(
+              `${key}: listed in cannotRunAlone but is not auto-runnable on this backend - remove the stale entry`
+            )
+        }
+        console.log(
+          `${entry.pack} auto-ran ${ranClean.size} node(s) clean; ${cannotRun.size} cannot run alone (baseline ${baseline.size})`
+        )
+        expect(hardFailures, JSON.stringify(hardFailures, null, 1)).toEqual([])
+      })
+
+      expect(tierFailures, 'tier failures').toEqual([])
     })
   })
 }

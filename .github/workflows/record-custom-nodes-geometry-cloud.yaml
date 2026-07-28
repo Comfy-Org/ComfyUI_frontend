@@ -28,6 +28,12 @@ name: 'Record Custom Nodes Geometry (Cloud)'
 
 on:
   workflow_dispatch:
+  # workflow_dispatch cannot see a workflow that has never been on the
+  # default branch; pushing a record/custom-nodes-cloud-* ref runs this
+  # file from that ref (the core record workflow's escape hatch). Delete
+  # the ref after collecting the artifact.
+  push:
+    branches: ['record/custom-nodes-cloud-*']
 
 concurrency:
   # Shared literal group with ci-tests-custom-nodes-cloud.yaml: both drive the
@@ -122,7 +128,7 @@ jobs:
         run: |
           pnpm exec playwright test browser_tests/tests/customNodes/allNodes.spec.ts \
             --project=custom-nodes --reporter=list --workers=1 --retries=0 \
-            --grep "mounts in both renderers"
+            --grep "all nodes:"
 
       # S13 cloud profiles: same probes, same session; CUSTOM_NODES_ENV=cloud
       # routes writes into interactionProfiles/cloud/.
