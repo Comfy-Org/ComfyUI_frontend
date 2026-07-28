@@ -288,6 +288,10 @@ for (const entry of loadManifest()) {
               }),
               'S15 output regression'
             ).toEqual([])
+          } else {
+            console.log(
+              `S15 compare skipped off-CI for ${workflowKey} - baselines encode the CI recording environment; CI enforces`
+            )
           }
         }
         await expectNoVisibleErrors(comfyPage.page, 'after run')
