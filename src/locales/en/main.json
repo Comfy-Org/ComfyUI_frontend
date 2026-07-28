@@ -3711,7 +3711,7 @@
     "stepDescribe": "Describe your workflow",
     "stepExamples": "Add output examples",
     "stepFinish": "Finish publishing",
-    "workflowName": "Workflow name",
+    "workflowName": "Hub title",
     "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
     "workflowDescription": "Workflow description",
     "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people know what to expect.",
@@ -3753,8 +3753,6 @@
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
     "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
-    "renameFailedTitle": "Rename failed",
-    "renameFailedDescription": "Your workflow was published successfully, but renaming the local file failed. Rename it again to match.",
     "publishSuccessTitle": "Published successfully",
     "publishSuccessDescription": "Your workflow is now live on ComfyHub."
   },
@@ -4202,6 +4200,13 @@
         "itemLabel": "{nodeName}",
         "toastTitle": "Validation failed",
         "toastMessage": "{nodeName} returned an unrecognized validation error."
+      },
+      "PARTNER_NODE_DISABLED": {
+        "title": "Disabled node",
+        "message": "This node has been disabled by your workspace policy. Use a different node.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Partner nodes",
+        "toastMessage": "This node has been disabled by your workspace policy."
       },
       "exception_during_inner_validation": {
         "title": "Validation failed",
