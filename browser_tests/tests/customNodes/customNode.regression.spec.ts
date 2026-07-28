@@ -5,9 +5,7 @@ import { basename, resolve } from 'node:path'
 import type { CuratedOutputHashes } from '@e2e/fixtures/customNode/outputHashes'
 import {
   compareOutputHashes,
-  hashPngPixels,
-  imageRefsFrom,
-  outputKey,
+  hashSinkPayloads,
   recordObservedHashes
 } from '@e2e/fixtures/customNode/outputHashes'
 
@@ -249,23 +247,17 @@ for (const entry of loadManifest()) {
         // on cloud carries no session (the run-30309274120 lesson) - cloud
         // enrolls when an in-app fetch path lands.
         if (customNodesEnv() !== 'cloud') {
-          const refs = imageRefsFrom(
-            result.outputsByNode as Record<string, unknown>
+          const observed = await hashSinkPayloads(
+            result.outputsByNode as Record<string, unknown>,
+            async (ref) => {
+              const res = await comfyPage.request.get(
+                `${comfyPage.apiUrl}/api/view?filename=${encodeURIComponent(ref.filename)}` +
+                  `&subfolder=${encodeURIComponent(ref.subfolder)}&type=${encodeURIComponent(ref.type)}`
+              )
+              expect(res.status(), `S15: /api/view ${ref.filename}`).toBe(200)
+              return Buffer.from(await res.body())
+            }
           )
-          const observed: Record<string, string> = {}
-          for (const [index, ref] of refs.entries()) {
-            const res = await comfyPage.request.get(
-              `${comfyPage.apiUrl}/api/view?filename=${encodeURIComponent(ref.filename)}` +
-                `&subfolder=${encodeURIComponent(ref.subfolder)}&type=${encodeURIComponent(ref.type)}`
-            )
-            expect(
-              res.status(),
-              `S15: /api/view ${ref.filename} for sink ${ref.nodeId}`
-            ).toBe(200)
-            observed[outputKey(ref, index)] = hashPngPixels(
-              Buffer.from(await res.body())
-            )
-          }
           const workflowKey = `${entry.pack}/${basename(entry.workflow)}`
           if (process.env.RECORD_OUTPUT_HASHES) {
             recordObservedHashes(

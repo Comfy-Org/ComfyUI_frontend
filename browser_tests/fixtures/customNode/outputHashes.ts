@@ -16,13 +16,12 @@ import { dirname } from 'node:path'
 // hashable this way; enroll only PNG-producing sinks.
 
 export interface OutputImageRef {
-  nodeId: string
   filename: string
   subfolder: string
   type: string
 }
 
-function isImageRef(
+function isFileRef(
   value: unknown
 ): value is { filename: string; subfolder?: string; type?: string } {
   return (
@@ -32,30 +31,59 @@ function isImageRef(
   )
 }
 
-// `executed` ui payloads carry `images: [{filename, subfolder, type}]` for
-// image-producing sinks (SaveImage/PreviewImage classes). Shape-tolerant
-// walk; anything without a filename is not an image output.
-export function imageRefsFrom(
-  outputsByNode: Record<string, unknown>
-): OutputImageRef[] {
-  const refs: OutputImageRef[] = []
-  for (const [nodeId, payload] of Object.entries(outputsByNode)) {
-    const images = (payload as { images?: unknown } | null)?.images
-    if (!Array.isArray(images)) continue
-    for (const image of images) {
-      if (!isImageRef(image)) continue
-      refs.push({
-        nodeId,
-        filename: image.filename,
-        subfolder: image.subfolder ?? '',
-        type: image.type ?? 'output'
-      })
-    }
+// Deterministic canonical form of a sink's ui payload. The curated corpus's
+// sinks are mostly VALUE displays (text/number payloads) - the displayed
+// value IS the output, so the payload itself is what gets hashed (record run
+// 30316904957: zero `images` arrays across all six curated workflows).
+// File refs embed run-varying counters (ComfyUI_00001_.png), so a ref
+// canonicalizes to its extension plus, for PNGs, the pixel hash of the
+// fetched file - content-stable where content is checkable, position-stable
+// where it is not (video containers embed timestamps).
+async function canonicalize(
+  value: unknown,
+  fetchFile: (ref: OutputImageRef) => Promise<Buffer>
+): Promise<unknown> {
+  if (Array.isArray(value)) {
+    const out = []
+    for (const item of value) out.push(await canonicalize(item, fetchFile))
+    return out
   }
-  return refs.sort(
-    (a, b) =>
-      a.nodeId.localeCompare(b.nodeId) || a.filename.localeCompare(b.filename)
-  )
+  if (isFileRef(value)) {
+    const ext = (value.filename.match(/\.[a-z0-9]+$/i)?.[0] ?? '').toLowerCase()
+    const ref: OutputImageRef = {
+      filename: value.filename,
+      subfolder: value.subfolder ?? '',
+      type: value.type ?? 'output'
+    }
+    if (ext === '.png')
+      return { file: ext, pixels: hashPngPixels(await fetchFile(ref)) }
+    return { file: ext }
+  }
+  if (typeof value === 'object' && value !== null) {
+    const out: Record<string, unknown> = {}
+    for (const key of Object.keys(value).sort())
+      out[key] = await canonicalize(
+        (value as Record<string, unknown>)[key],
+        fetchFile
+      )
+    return out
+  }
+  return value
+}
+
+// One digest per sink node: sha256 over the canonicalized payload JSON.
+export async function hashSinkPayloads(
+  outputsByNode: Record<string, unknown>,
+  fetchFile: (ref: OutputImageRef) => Promise<Buffer>
+): Promise<Record<string, string>> {
+  const observed: Record<string, string> = {}
+  for (const nodeId of Object.keys(outputsByNode).sort()) {
+    const canonical = await canonicalize(outputsByNode[nodeId], fetchFile)
+    observed[nodeId] = `sha256:${createHash('sha256')
+      .update(JSON.stringify(canonical))
+      .digest('hex')}`
+  }
+  return observed
 }
 
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
@@ -84,13 +112,6 @@ export function hashPngPixels(file: Buffer): string {
   }
   if (!sawIdat) throw new Error('PNG has no IDAT chunk - truncated file?')
   return `sha256:${hash.digest('hex')}`
-}
-
-// Key for one output inside one curated workflow: node id + filename index
-// (filenames embed run-varying counters, e.g. ComfyUI_00001_.png, so the
-// POSITION is stable while the NAME is not).
-export function outputKey(ref: OutputImageRef, index: number): string {
-  return `${ref.nodeId}[${index}]`
 }
 
 export type CuratedOutputHashes = Record<string, Record<string, string>>
