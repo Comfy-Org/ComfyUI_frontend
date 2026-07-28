@@ -59,7 +59,7 @@
     />
     <FocusScope
       as-child
-      :trapped="!waitingForTarget && !step.interactive"
+      :trapped="!waitingForTarget && !opening && !step.interactive"
       loop
       @mount-auto-focus.prevent
     >
