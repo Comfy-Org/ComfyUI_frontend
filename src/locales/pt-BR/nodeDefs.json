@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "Volume. 0 = normal, 100 = 2.0x, -50 = 0.5x."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: 20 idiomas (Inglês, Chinês, Japonês, Coreano, Espanhol Mexicano e Castelhano, Indonésio, Alemão, Português Brasileiro, Francês, Tailandês, Vietnamita, Malaio, Filipino, Italiano, Russo, Holandês, Polonês, Turco, Sueco) além de controle de tempo por frase via timestamps como \"[5.5s:8.0s] ...\". seed-audio-1.0: Apenas Inglês e Chinês, sem controle de tempo."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "Alteração de tom em semitons (-12 a 12)."
@@ -19989,6 +19993,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Codifica uma instrução de edição com uma ou mais imagens de referência para Mage-Flow-Edit. Os latents de referência são redimensionados para a resolução de saída (largura/altura, ou o tamanho da primeira imagem quando 0). Use a saída latent para amostragem para que os tamanhos sempre correspondam.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Altura de saída. 0 = usar o tamanho da primeira imagem de referência."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Imagem(ns) de referência para editar. Todas as referências são redimensionadas para a resolução de saída antes da codificação."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Largura de saída. 0 = usar o tamanho da primeira imagem de referência."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
