@@ -160,8 +160,11 @@ const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
 
 // Recover from stale-chunk failures (post-deploy dynamic-import errors) with a
-// guarded, dirty-state-aware reload. Registered after pinia is installed so the
-// error-time store lookups resolve.
-installChunkReload(router)
+// guarded, dirty-state-aware reload. Cloud-only: the stale-versioned-chunk
+// problem only exists behind the GCS-served deployment. Gating off `isCloud`
+// keeps it out of dev/desktop/nightly/E2E, where a chunk/HMR hiccup should
+// surface the error rather than reload. Registered after pinia is installed so
+// the error-time store lookups resolve.
+if (isCloud) installChunkReload(router)
 
 app.mount('#vue-app')

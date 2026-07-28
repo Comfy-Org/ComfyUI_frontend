@@ -25,6 +25,8 @@ describe('chunkReload', () => {
     window.sessionStorage.clear()
     workflowState.modifiedWorkflows = []
     executionState.runningJobIds = []
+    // performReload() logs a recovery marker; silence it in tests.
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     // location.reload is not implemented/allowed under jsdom; replace it.
     // A minimal stub is sufficient — chunkReload only ever calls

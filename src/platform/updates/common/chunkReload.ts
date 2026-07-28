@@ -73,6 +73,11 @@ function isReloadSafe(): boolean {
 }
 
 function performReload(): void {
+  // Emit a distinctive marker before reloading so recovery reloads are
+  // observable in logs/RUM — this is how we measure how often the mechanism
+  // actually fires in prod (and catch any unexpected spike). It is only ever
+  // reached on a genuine chunk-load failure, at most once per session.
+  console.warn('[chunkReload] stale-chunk detected — reloading to recover')
   window.location.reload()
 }
 
