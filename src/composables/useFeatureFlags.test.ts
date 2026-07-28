@@ -414,14 +414,6 @@ describe('useFeatureFlags', () => {
 
       expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_server')
     })
-
-    it('uses a non-string development override to disable the flag', () => {
-      vi.mocked(distributionTypes).isCloud = true
-      remoteConfig.value = { churnkey_app_id: 'app_test' }
-      localStorage.setItem(`ff:${ServerFeatureFlag.CHURNKEY_APP_ID}`, '123')
-
-      expect(useFeatureFlags().flags.churnkeyAppId).toBe('')
-    })
   })
 
   describe('unifiedCloudAuthEnabled', () => {

@@ -10,7 +10,7 @@ import type {
 } from '@/platform/workspace/workspaceTypes'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader, UserId } from '@/types/authTypes'
+import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
@@ -704,10 +704,9 @@ export const workspaceApi = {
    * POST /api/billing/subscription/cancel
    */
   async cancelSubscription(
-    idempotencyKey?: string,
-    authHeader?: AuthHeader
+    idempotencyKey?: string
   ): Promise<CancelSubscriptionResponse> {
-    const headers = authHeader ?? (await getAuthHeaderOrThrow())
+    const headers = await getAuthHeaderOrThrow()
     try {
       const response =
         await workspaceApiClient.post<CancelSubscriptionResponse>(
@@ -723,30 +722,13 @@ export const workspaceApi = {
     }
   },
 
-  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse | null> {
+  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse> {
     const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.get<unknown>(
-        api.apiURL('/billing/churnkey/auth'),
-        { headers }
-      )
-      const result = churnkeyAuthResponseSchema.safeParse(response.data)
-      if (result.success) return result.data
-
-      console.warn(
-        'Received invalid ChurnKey auth response',
-        result.error.issues
-      )
-      return null
-    } catch (err) {
-      if (
-        axios.isAxiosError(err) &&
-        (err.response?.status === 404 || err.response?.status === 503)
-      ) {
-        return null
-      }
-      handleAxiosError(err)
-    }
+    const response = await workspaceApiClient.get<unknown>(
+      api.apiURL('/billing/churnkey/auth'),
+      { headers }
+    )
+    return churnkeyAuthResponseSchema.parse(response.data)
   },
 
   /**
@@ -834,11 +816,8 @@ export const workspaceApi = {
    * Get billing operation status
    * GET /api/billing/ops/:id
    */
-  async getBillingOpStatus(
-    opId: string,
-    authHeader?: AuthHeader
-  ): Promise<BillingOpStatusResponse> {
-    const headers = authHeader ?? (await getAuthHeaderOrThrow())
+  async getBillingOpStatus(opId: string): Promise<BillingOpStatusResponse> {
+    const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
         api.apiURL(`/billing/ops/${opId}`),

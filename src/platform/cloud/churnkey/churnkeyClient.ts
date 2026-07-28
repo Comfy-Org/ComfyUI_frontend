@@ -1,7 +1,6 @@
 import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { i18n } from '@/i18n'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { toError } from '@/utils/errorUtil'
 import { createScriptLoader } from '@/utils/loadExternalScript'
@@ -14,25 +13,18 @@ import type {
 } from './types'
 
 const EMBED_SCRIPT_URL = 'https://assets.churnkey.co/js/app.js'
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000
 
-let churnkeyScript:
-  | {
-      src: string
-      load: () => Promise<ChurnkeyInit>
-    }
-  | undefined
+const scriptLoaders = new Map<string, () => Promise<ChurnkeyInit>>()
 
 function loadChurnkey(appId: string): Promise<ChurnkeyInit> {
   window.churnkey ??= { created: true }
   const src = `${EMBED_SCRIPT_URL}?appId=${encodeURIComponent(appId)}`
-  if (churnkeyScript?.src !== src) {
-    churnkeyScript = {
-      src,
-      load: createScriptLoader(src, () => window.churnkey?.init ?? null)
-    }
+  let loadScript = scriptLoaders.get(src)
+  if (!loadScript) {
+    loadScript = createScriptLoader(src, () => window.churnkey?.init ?? null)
+    scriptLoaders.set(src, loadScript)
   }
-  return churnkeyScript.load()
+  return loadScript()
 }
 
 function churnkeyError(error: unknown, type?: string): Error {
@@ -40,16 +32,7 @@ function churnkeyError(error: unknown, type?: string): Error {
   return type ? new Error(`${baseError.message} (${type})`) : baseError
 }
 
-function runBestEffort(cleanup: () => void): void {
-  try {
-    cleanup()
-  } catch {
-    return
-  }
-}
-
 export interface ChurnkeyShowOptions {
-  customerAttributes?: Record<string, string | number | boolean>
   handleCancel: (
     surveyResponse?: string | null,
     freeformFeedback?: string | null
@@ -60,19 +43,8 @@ export interface ChurnkeySession {
   show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionResults>
 }
 
-class UnsupportedChurnkeyOfferError extends Error {}
-class ChurnkeySessionTimeoutError extends Error {}
-
-export function isUnsupportedChurnkeyOfferError(
-  error: unknown
-): error is UnsupportedChurnkeyOfferError {
-  return error instanceof UnsupportedChurnkeyOfferError
-}
-
-export function isChurnkeySessionTimeoutError(
-  error: unknown
-): error is ChurnkeySessionTimeoutError {
-  return error instanceof ChurnkeySessionTimeoutError
+function rejectUnsupportedOffer(): Promise<never> {
+  return Promise.reject(new Error('Unsupported ChurnKey offer'))
 }
 
 function createSession(
@@ -84,70 +56,13 @@ function createSession(
     show: (options) =>
       new Promise<ChurnkeySessionResults>((resolve, reject) => {
         let settled = false
-        let pendingCancellation: Promise<ChurnkeyHandlerResult> | null = null
-        let unsupportedOfferError: UnsupportedChurnkeyOfferError | null = null
 
-        function createUnsupportedOfferError(): UnsupportedChurnkeyOfferError {
-          unsupportedOfferError = new UnsupportedChurnkeyOfferError(
-            'Unsupported ChurnKey offer'
-          )
-          return unsupportedOfferError
-        }
-
-        function rejectUnsupportedOffer(): Promise<never> {
-          return Promise.reject(createUnsupportedOfferError())
-        }
-
-        function settle(fn: () => void, { deferClearState = false } = {}) {
+        function settle(fn: () => void) {
           if (settled) return
           settled = true
-          window.clearTimeout(sessionTimeoutId)
-          const clearState = () =>
-            runBestEffort(() => {
-              window.churnkey?.clearState?.()
-            })
-          if (deferClearState) {
-            // ChurnKey checks its error state after onError returns.
-            queueMicrotask(clearState)
-          } else {
-            clearState()
-          }
           fn()
+          window.churnkey?.clearState?.()
         }
-
-        function settleAfterCancellation(
-          fn: () => void,
-          options?: { deferClearState?: boolean }
-        ) {
-          const cancellation = pendingCancellation
-          if (!cancellation) {
-            settle(fn, options)
-            return
-          }
-          void cancellation.then(
-            () => settle(fn, options),
-            () => settle(fn, options)
-          )
-        }
-
-        function handleUnsupportedRedirect(): void {
-          const error = createUnsupportedOfferError()
-          runBestEffort(() => {
-            window.churnkey?.hide?.()
-          })
-          settle(() => reject(error), { deferClearState: true })
-        }
-
-        const sessionTimeoutId = window.setTimeout(() => {
-          settle(() => {
-            runBestEffort(() => {
-              window.churnkey?.hide?.()
-            })
-            reject(
-              new ChurnkeySessionTimeoutError('ChurnKey session timed out')
-            )
-          })
-        }, SESSION_TIMEOUT_MS)
 
         const config: ChurnkeyInitConfig = {
           appId: configuredAppId,
@@ -155,58 +70,27 @@ function createSession(
           customerId: auth.customer_id,
           provider: 'stripe',
           mode: auth.mode,
-          record: false,
-          i18n: {
-            lang: String(i18n.global.locale.value)
-          },
-          customerAttributes: options.customerAttributes,
-          handleCancel: (_customer, surveyResponse, freeformFeedback) => {
-            const cancellation = options.handleCancel(
-              surveyResponse,
-              freeformFeedback
-            )
-            pendingCancellation = cancellation
-            void cancellation.then(
-              () => {
-                if (pendingCancellation === cancellation) {
-                  pendingCancellation = null
-                }
-              },
-              () => {
-                if (pendingCancellation === cancellation) {
-                  pendingCancellation = null
-                }
-              }
-            )
-            return cancellation
-          },
+          handleCancel: (_customer, surveyResponse, freeformFeedback) =>
+            options.handleCancel(surveyResponse, freeformFeedback),
           handlePause: rejectUnsupportedOffer,
           handleDiscount: rejectUnsupportedOffer,
           handleTrialExtension: rejectUnsupportedOffer,
           handlePlanChange: rejectUnsupportedOffer,
           handleRebate: rejectUnsupportedOffer,
-          handleRedirect: handleUnsupportedRedirect,
-          onClose: (results) => settleAfterCancellation(() => resolve(results)),
-          onError: (error, type) => {
-            runBestEffort(() => {
+          handleRedirect: rejectUnsupportedOffer,
+          onClose: (results) => settle(() => resolve(results)),
+          onError: (error, type) =>
+            settle(() => {
               window.churnkey?.hide?.()
+              reject(churnkeyError(error, type))
             })
-            settleAfterCancellation(
-              () => {
-                reject(unsupportedOfferError ?? churnkeyError(error, type))
-              },
-              { deferClearState: true }
-            )
-          }
         }
 
         try {
           init('show', config)
         } catch (error) {
           settle(() => {
-            runBestEffort(() => {
-              window.churnkey?.hide?.()
-            })
+            window.churnkey?.hide?.()
             reject(churnkeyError(error))
           })
         }
@@ -219,7 +103,6 @@ export async function prepareChurnkey(): Promise<ChurnkeySession | null> {
   if (!configuredAppId) return null
 
   const auth = await workspaceApi.getChurnkeyAuth()
-  if (!auth) return null
 
   const init = await loadChurnkey(configuredAppId)
   return createSession(init, auth, configuredAppId)

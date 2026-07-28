@@ -51,18 +51,15 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import { createCancellationMetadata } from '@/platform/cloud/subscription/cancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
+import type { SubscriptionCancellationMetadata } from '@/platform/telemetry/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
 
 const props = defineProps<{
   cancelAt?: string
-  flowAlreadyOpened?: boolean
-  expectedWorkspaceId?: string
 }>()
 
 const { t } = useI18n()
@@ -72,22 +69,29 @@ const { cancelSubscription, fetchStatus, subscription, tier } =
   useBillingContext()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { permissions } = useWorkspaceUI()
-const workspaceStore = useTeamWorkspaceStore()
 const telemetry = useTelemetry()
 
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
 
-function cancellationMetadata() {
-  return createCancellationMetadata({
-    currentTier: tier.value,
-    duration: subscription.value?.duration,
-    endDate: props.cancelAt ?? subscription.value?.endDate
-  })
+function cancellationMetadata(): SubscriptionCancellationMetadata {
+  const endDate = props.cancelAt ?? subscription.value?.endDate
+  return {
+    source: 'cancel_plan_menu' as const,
+    current_tier: tier.value?.toLowerCase(),
+    ...(subscription.value?.duration
+      ? {
+          cycle:
+            subscription.value.duration === 'ANNUAL'
+              ? ('yearly' as const)
+              : ('monthly' as const)
+        }
+      : {}),
+    ...(endDate ? { end_date: endDate } : {})
+  }
 }
 
 onMounted(() => {
-  if (props.flowAlreadyOpened) return
   telemetry?.trackSubscriptionCancellation(
     'flow_opened',
     cancellationMetadata()
@@ -120,13 +124,6 @@ function onClose() {
 
 async function onConfirmCancel() {
   if (
-    props.expectedWorkspaceId &&
-    workspaceStore.activeWorkspaceId !== props.expectedWorkspaceId
-  ) {
-    onClose()
-    return
-  }
-  if (
     shouldUseWorkspaceBilling.value &&
     !permissions.value.canManageSubscriptionLifecycle
   ) {
@@ -136,7 +133,7 @@ async function onConfirmCancel() {
   telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
   isLoading.value = true
   try {
-    await cancelSubscription(props.expectedWorkspaceId)
+    await cancelSubscription()
   } catch (error) {
     const errorMessage = getErrorMessage(error)
     if (!shouldUseWorkspaceBilling.value) {
@@ -152,15 +149,10 @@ async function onConfirmCancel() {
   }
 
   didCancelSucceed.value = true
-  if (
-    !props.expectedWorkspaceId ||
-    workspaceStore.activeWorkspaceId === props.expectedWorkspaceId
-  ) {
-    try {
-      await fetchStatus()
-    } catch {
-      // Cancellation already succeeded; stale local subscription status should not report failure.
-    }
+  try {
+    await fetchStatus()
+  } catch {
+    // Cancellation already succeeded; stale local subscription status should not report failure.
   }
   dialogStore.closeDialog({ key: 'cancel-subscription' })
   toast.add({

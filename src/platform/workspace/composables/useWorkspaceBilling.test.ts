@@ -29,12 +29,6 @@ const mockBillingPlans = vi.hoisted(() => ({
 const mockShow = vi.hoisted(() => vi.fn())
 const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockSetWorkspaceBillingRail = vi.hoisted(() => vi.fn())
-const mockSetWorkspaceSubscribed = vi.hoisted(() => vi.fn())
-const mockGetAuthHeaderOrThrow = vi.hoisted(() => vi.fn())
-const mockActiveWorkspaceId = vi.hoisted(() => ({ value: 'workspace-1' }))
-const workspaceAuthHeader = {
-  Authorization: 'Bearer workspace-token'
-} as const
 
 // Hoisted so the vi.mock factory below can reference it: a plain top-level
 // const is in its temporal dead zone when the hoisted factory runs under
@@ -79,18 +73,8 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return mockActiveWorkspaceId.value
-    },
     activeWorkspace: { id: 'workspace-1' },
-    setWorkspaceSubscribed: mockSetWorkspaceSubscribed,
     setWorkspaceBillingRail: mockSetWorkspaceBillingRail
-  })
-}))
-
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({
-    getAuthHeaderOrThrow: mockGetAuthHeaderOrThrow
   })
 }))
 
@@ -169,8 +153,6 @@ describe('useWorkspaceBilling', () => {
     mockBillingPlans.currentPlanSlug.value = null
     mockBillingPlans.error.value = null
     mockBillingPlans.fetchPlans.mockResolvedValue(undefined)
-    mockActiveWorkspaceId.value = 'workspace-1'
-    mockGetAuthHeaderOrThrow.mockResolvedValue(workspaceAuthHeader)
   })
 
   afterEach(() => {
@@ -694,34 +676,10 @@ describe('useWorkspaceBilling', () => {
       mockStartOperation.mockResolvedValue(operation())
 
       const billing = setupBilling()
-      await billing.cancelSubscription('workspace-1')
+      await billing.cancelSubscription()
 
-      expect(mockWorkspaceApi.cancelSubscription).toHaveBeenCalledWith(
-        undefined,
-        workspaceAuthHeader
-      )
-      expect(mockStartOperation).toHaveBeenCalledWith(
-        'op-cancel',
-        'cancel',
-        undefined,
-        {
-          workspaceId: 'workspace-1',
-          authHeader: workspaceAuthHeader
-        }
-      )
+      expect(mockStartOperation).toHaveBeenCalledWith('op-cancel', 'cancel')
       expect(billing.error.value).toBeNull()
-    })
-
-    it('does not cancel a workspace that is no longer active', async () => {
-      const billing = setupBilling()
-
-      await expect(billing.cancelSubscription('workspace-2')).rejects.toThrow(
-        'Active workspace changed during cancellation'
-      )
-
-      expect(mockGetAuthHeaderOrThrow).not.toHaveBeenCalled()
-      expect(mockWorkspaceApi.cancelSubscription).not.toHaveBeenCalled()
-      expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
     it('throws the op error message when the cancel op fails', async () => {
@@ -820,34 +778,7 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.endDate).toBe('2026-06-01T00:00:00Z')
       expect(billing.subscription.value?.tier).toBe('CREATOR')
       expect(mockStartOperation).not.toHaveBeenCalled()
-      expect(mockSetWorkspaceSubscribed).toHaveBeenCalledWith(
-        'workspace-1',
-        false
-      )
       expect(billing.isLoading.value).toBe(false)
-    })
-
-    it('does not refresh another workspace after an already-cancelled response', async () => {
-      mockWorkspaceApi.cancelSubscription.mockImplementation(async () => {
-        mockActiveWorkspaceId.value = 'workspace-2'
-        throw new mockWorkspaceApiError(
-          'Subscription is already scheduled for cancellation',
-          400,
-          'ALREADY_CANCELED'
-        )
-      })
-
-      const billing = setupBilling()
-
-      await expect(
-        billing.cancelSubscription('workspace-1')
-      ).resolves.toBeUndefined()
-
-      expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(mockSetWorkspaceSubscribed).toHaveBeenCalledWith(
-        'workspace-1',
-        false
-      )
     })
 
     it('stays a success when the follow-up status read also fails', async () => {

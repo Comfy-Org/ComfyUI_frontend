@@ -401,57 +401,16 @@ describe('workspaceApi', () => {
       )
     })
 
-    it.for([
-      {
-        customer_id: '',
-        auth_hash: 'hash-1',
-        mode: 'test'
-      },
-      {
-        customer_id: 'cus_test_1',
-        auth_hash: '',
-        mode: 'test'
-      },
-      {
-        customer_id: 'cus_test_1',
-        auth_hash: 'hash-1',
-        mode: 'invalid'
-      }
-    ])('getChurnkeyAuth() falls back on malformed data', async (data) => {
-      mockAxiosInstance.get.mockResolvedValue({ data })
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-
-      await expect(workspaceApi.getChurnkeyAuth()).resolves.toBeNull()
-      expect(warn).toHaveBeenCalledWith(
-        'Received invalid ChurnKey auth response',
-        expect.any(Array)
-      )
-    })
-
-    it.for([404, 503])(
-      'getChurnkeyAuth() falls back on HTTP %s',
-      async (status) => {
-        mockAxiosInstance.get.mockRejectedValue({
-          isAxiosError: true,
-          response: { status },
-          message: 'Request failed'
-        })
-
-        await expect(workspaceApi.getChurnkeyAuth()).resolves.toBeNull()
-      }
-    )
-
-    it('getChurnkeyAuth() preserves unexpected API failures', async () => {
-      mockAxiosInstance.get.mockRejectedValue({
-        isAxiosError: true,
-        response: { status: 500, data: { message: 'Server Error' } },
-        message: 'Request failed'
+    it('getChurnkeyAuth() rejects malformed credentials', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: {
+          customer_id: 'cus_test_1',
+          auth_hash: '',
+          mode: 'test'
+        }
       })
 
-      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
-        name: 'WorkspaceApiError',
-        status: 500
-      })
+      await expect(workspaceApi.getChurnkeyAuth()).rejects.toThrow()
     })
   })
 
@@ -518,22 +477,15 @@ describe('workspaceApi', () => {
 
     it('cancelSubscription() sends POST with idempotency_key', async () => {
       const data = { billing_op_id: 'op-2', cancel_at: '2026-05-01' }
-      const operationHeader = {
-        Authorization: 'Bearer workspace-token' as const
-      }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.cancelSubscription(
-        'key-1',
-        operationHeader
-      )
+      const result = await workspaceApi.cancelSubscription('key-1')
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/subscription/cancel',
         { idempotency_key: 'key-1' },
-        { headers: operationHeader }
+        { headers: AUTH_HEADER }
       )
-      expect(mockGetAuthHeaderOrThrow).not.toHaveBeenCalled()
       expect(result).toEqual(data)
     })
 
@@ -615,23 +567,16 @@ describe('workspaceApi', () => {
         status: 'succeeded',
         started_at: '2026-01-01'
       }
-      const operationHeader = {
-        Authorization: 'Bearer workspace-token' as const
-      }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingOpStatus(
-        'op-1',
-        operationHeader
-      )
+      const result = await workspaceApi.getBillingOpStatus('op-1')
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/ops/op-1',
         {
-          headers: operationHeader
+          headers: AUTH_HEADER
         }
       )
-      expect(mockGetAuthHeaderOrThrow).not.toHaveBeenCalled()
       expect(result).toEqual(data)
     })
   })

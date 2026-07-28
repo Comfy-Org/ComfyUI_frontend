@@ -61,30 +61,17 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-const mockSetWorkspaceSubscribed = vi.fn()
+const mockUpdateActiveWorkspace = vi.fn()
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    setWorkspaceSubscribed: mockSetWorkspaceSubscribed
+    updateActiveWorkspace: mockUpdateActiveWorkspace
   })
 }))
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
-import type { BillingOperationContext } from './billingOperationStore'
 import { useBillingOperationStore } from './billingOperationStore'
-
-const cancelContext = {
-  workspaceId: 'workspace-1',
-  authHeader: { Authorization: 'Bearer workspace-token' }
-} satisfies BillingOperationContext
-
-function startCancelOperation(
-  store: ReturnType<typeof useBillingOperationStore>,
-  opId = 'op-1'
-) {
-  return store.startOperation(opId, 'cancel', undefined, cancelContext)
-}
 
 describe('billingOperationStore', () => {
   beforeEach(() => {
@@ -139,8 +126,8 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      const first = startCancelOperation(store)
-      const second = startCancelOperation(store)
+      const first = store.startOperation('op-1', 'cancel')
+      const second = store.startOperation('op-1', 'cancel')
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -148,7 +135,7 @@ describe('billingOperationStore', () => {
       expect(firstOutcome.status).toBe('succeeded')
       expect(secondOutcome.status).toBe('succeeded')
 
-      const afterTerminal = await startCancelOperation(store)
+      const afterTerminal = await store.startOperation('op-1', 'cancel')
       expect(afterTerminal.status).toBe('succeeded')
     })
 
@@ -479,12 +466,12 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      void startCancelOperation(store)
+      void store.startOperation('op-1', 'cancel')
 
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
-    it('resolves success against the initiating workspace', async () => {
+    it('resolves with the succeeded operation and refreshes status', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
@@ -492,21 +479,16 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      const terminal = startCancelOperation(store)
+      const terminal = store.startOperation('op-1', 'cancel')
 
       await vi.advanceTimersByTimeAsync(0)
       const operation = await terminal
 
       expect(operation.status).toBe('succeeded')
-      expect(mockFetchStatus).not.toHaveBeenCalled()
-      expect(mockSetWorkspaceSubscribed).toHaveBeenCalledWith(
-        'workspace-1',
-        false
-      )
-      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledWith(
-        'op-1',
-        cancelContext.authHeader
-      )
+      expect(mockFetchStatus).toHaveBeenCalled()
+      expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
+        isSubscribed: false
+      })
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         stage: 'succeeded',
@@ -525,7 +507,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      const terminal = startCancelOperation(store)
+      const terminal = store.startOperation('op-1', 'cancel')
 
       await vi.advanceTimersByTimeAsync(0)
       const operation = await terminal
@@ -541,7 +523,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      const terminal = startCancelOperation(store)
+      const terminal = store.startOperation('op-1', 'cancel')
 
       await vi.advanceTimersByTimeAsync(0)
       await terminal
@@ -558,14 +540,14 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      const terminal = startCancelOperation(store)
+      const terminal = store.startOperation('op-1', 'cancel')
 
       await vi.advanceTimersByTimeAsync(0)
       const operation = await terminal
 
       expect(operation.status).toBe('failed')
       expect(operation.errorMessage).toBe('billingOperation.cancelFailed')
-      expect(mockSetWorkspaceSubscribed).not.toHaveBeenCalled()
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockTrackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -585,7 +567,7 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      const terminal = startCancelOperation(store)
+      const terminal = store.startOperation('op-1', 'cancel')
 
       await vi.advanceTimersByTimeAsync(121_000)
       await vi.runAllTimersAsync()
@@ -593,7 +575,7 @@ describe('billingOperationStore', () => {
 
       expect(operation.status).toBe('timeout')
       expect(operation.errorMessage).toBe('billingOperation.cancelTimeout')
-      expect(mockSetWorkspaceSubscribed).not.toHaveBeenCalled()
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockTrackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -56,7 +56,6 @@ const mockTier = vi.hoisted(() => ({ value: 'STANDARD' as string | null }))
 const mockTrackCancellation = vi.hoisted(() => vi.fn())
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 const mockCanManageSubscriptionLifecycle = vi.hoisted(() => ({ value: true }))
-const mockActiveWorkspaceId = vi.hoisted(() => ({ value: 'workspace-1' }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
@@ -86,14 +85,6 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return mockActiveWorkspaceId.value
-    }
-  })
-}))
-
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackSubscriptionCancellation: mockTrackCancellation
@@ -112,13 +103,7 @@ vi.mock('primevue/usetoast', () => ({
   }))
 }))
 
-function renderComponent(
-  props: {
-    cancelAt?: string
-    flowAlreadyOpened?: boolean
-    expectedWorkspaceId?: string
-  } = {}
-) {
+function renderComponent(props: { cancelAt?: string } = {}) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -145,7 +130,6 @@ describe('CancelSubscriptionDialogContent', () => {
     mockTier.value = 'STANDARD'
     mockShouldUseWorkspaceBilling.value = false
     mockCanManageSubscriptionLifecycle.value = true
-    mockActiveWorkspaceId.value = 'workspace-1'
   })
 
   describe('cancellation telemetry', () => {
@@ -159,17 +143,6 @@ describe('CancelSubscriptionDialogContent', () => {
         current_tier: 'standard',
         end_date: '2026-08-01T00:00:00.000Z'
       })
-    })
-
-    it('does not duplicate flow_opened after a provider fallback', () => {
-      mockSubscription.value = null
-
-      renderComponent({ flowAlreadyOpened: true })
-
-      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
-        'flow_opened',
-        expect.anything()
-      )
     })
 
     it('tracks confirmed before the cancel request and no abandoned on success', async () => {
@@ -295,7 +268,7 @@ describe('CancelSubscriptionDialogContent', () => {
       mockSubscription.value = null
       mockCancelSubscription.mockResolvedValueOnce(undefined)
 
-      renderComponent({ expectedWorkspaceId: 'workspace-1' })
+      renderComponent()
       await userEvent.click(
         screen.getByRole('button', { name: /^cancel subscription$/i })
       )
@@ -305,7 +278,6 @@ describe('CancelSubscriptionDialogContent', () => {
           key: 'cancel-subscription'
         })
       )
-      expect(mockCancelSubscription).toHaveBeenCalledWith('workspace-1')
       expect(mockFetchStatus).toHaveBeenCalled()
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'success' })
@@ -330,25 +302,6 @@ describe('CancelSubscriptionDialogContent', () => {
       )
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockCloseDialog).not.toHaveBeenCalled()
-    })
-
-    it('closes without canceling after the active workspace changes', async () => {
-      mockSubscription.value = null
-
-      renderComponent({ expectedWorkspaceId: 'workspace-1' })
-      mockActiveWorkspaceId.value = 'workspace-2'
-      await userEvent.click(
-        screen.getByRole('button', { name: /^cancel subscription$/i })
-      )
-
-      expect(mockCancelSubscription).not.toHaveBeenCalled()
-      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
-        'confirmed',
-        expect.anything()
-      )
-      expect(mockCloseDialog).toHaveBeenCalledWith({
-        key: 'cancel-subscription'
-      })
     })
 
     it('does not track cancellation failure when status refresh fails after cancellation succeeds', async () => {

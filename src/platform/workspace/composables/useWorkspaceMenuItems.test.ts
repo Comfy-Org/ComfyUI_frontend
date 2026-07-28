@@ -11,8 +11,7 @@ const state = vi.hoisted(() => ({
   isDeleteDisabled: false,
   isFreeTier: false,
   isInPersonalWorkspace: false,
-  isSubscriptionCancelled: false,
-  activeWorkspaceId: 'workspace-1' as string | null
+  isSubscriptionCancelled: false
 }))
 
 const dialogMocks = vi.hoisted(() => ({
@@ -65,14 +64,6 @@ vi.mock('@/services/dialogService', () => ({
   useDialogService: () => dialogMocks
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return state.activeWorkspaceId
-    }
-  })
-}))
-
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -84,7 +75,6 @@ describe('useWorkspaceMenuItems', () => {
     state.isFreeTier = false
     state.isInPersonalWorkspace = false
     state.isSubscriptionCancelled = false
-    state.activeWorkspaceId = 'workspace-1'
   })
 
   it('allows a promoted owner to cancel an active plan', () => {
@@ -101,8 +91,7 @@ describe('useWorkspaceMenuItems', () => {
     })
 
     expect(dialogMocks.showCancelSubscriptionFlow).toHaveBeenCalledWith(
-      '2026-08-01T00:00:00Z',
-      'workspace-1'
+      '2026-08-01T00:00:00Z'
     )
   })
 

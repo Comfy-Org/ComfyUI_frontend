@@ -357,22 +357,6 @@ describe('useTeamWorkspaceStore', () => {
     })
   })
 
-  describe('workspace subscription state', () => {
-    it('updates the specified workspace without changing the active workspace', async () => {
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-
-      const activeWorkspaceId = store.activeWorkspaceId
-      store.setWorkspaceSubscribed(mockTeamWorkspace.id, false)
-
-      expect(
-        store.workspaces.find(({ id }) => id === mockTeamWorkspace.id)
-          ?.isSubscribed
-      ).toBe(false)
-      expect(store.activeWorkspaceId).toBe(activeWorkspaceId)
-    })
-  })
-
   describe('switchWorkspace', () => {
     it('does nothing if switching to current workspace', async () => {
       const store = useTeamWorkspaceStore()

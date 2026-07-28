@@ -234,12 +234,11 @@ export function useFeatureFlags() {
     },
     get churnkeyAppId() {
       if (!isCloud) return ''
-      const value = resolveFlag<unknown>(
+      return resolveFlag(
         ServerFeatureFlag.CHURNKEY_APP_ID,
         remoteConfig.value.churnkey_app_id,
         ''
-      )
-      return typeof value === 'string' ? value.trim() : ''
+      ).trim()
     },
     get signupTurnstileMode() {
       return resolveFlag(

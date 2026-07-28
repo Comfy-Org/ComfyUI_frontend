@@ -17,7 +17,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { AuthHeader } from '@/types/authTypes'
 
 const INITIAL_INTERVAL_MS = 1000
 const MAX_INTERVAL_MS = 8000
@@ -37,11 +36,6 @@ export interface StartOperationMetadata {
     memberRemovalFailures: number
     targetTier?: TierKey
   }
-}
-
-export interface BillingOperationContext {
-  workspaceId: string
-  authHeader: AuthHeader
 }
 
 interface BillingOperation {
@@ -66,7 +60,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const receivedToasts = new Map<string, ToastMessageOptions>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
-  const operationContexts = new Map<string, BillingOperationContext>()
 
   const hasPendingOperations = computed(() =>
     [...operations.value.values()].some((op) => op.status === 'pending')
@@ -90,24 +83,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function startOperation(
     opId: string,
-    type: 'cancel',
-    metadata: undefined,
-    context: BillingOperationContext
-  ): Promise<BillingOperation>
-  function startOperation(
-    opId: string,
-    type: Exclude<OperationType, 'cancel'>,
-    metadata?: StartOperationMetadata
-  ): Promise<BillingOperation>
-  function startOperation(
-    opId: string,
     type: OperationType,
-    metadata?: StartOperationMetadata,
-    context?: BillingOperationContext
+    metadata?: StartOperationMetadata
   ): Promise<BillingOperation> {
-    if (type === 'cancel' && !context) {
-      throw new Error('Cancel billing operation requires workspace context')
-    }
     const existing = operations.value.get(opId)
     if (existing) {
       return terminalPromises.get(opId) ?? Promise.resolve(existing)
@@ -127,7 +105,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     operations.value = new Map(operations.value).set(opId, operation)
-    if (context) operationContexts.set(opId, context)
     intervals.set(opId, INITIAL_INTERVAL_MS)
 
     if (type !== 'cancel') {
@@ -165,11 +142,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     try {
-      const context = operationContexts.get(opId)
-      const response = await workspaceApi.getBillingOpStatus(
-        opId,
-        context?.authHeader
-      )
+      const response = await workspaceApi.getBillingOpStatus(opId)
 
       if (response.status === 'succeeded') {
         await handleSuccess(opId)
@@ -251,15 +224,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type === 'cancel') {
-      const workspaceId = operationContexts.get(opId)?.workspaceId
-      if (workspaceId) {
-        useTeamWorkspaceStore().setWorkspaceSubscribed(workspaceId, false)
-      }
-      resolveTerminal(opId)
-      return
-    }
-
     const billingContext = useBillingContext()
     if (operation.type === 'subscription') {
       await Promise.allSettled([billingContext.reconcileSubscriptionSuccess()])
@@ -268,6 +232,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         billingContext.fetchStatus(),
         billingContext.fetchBalance()
       ])
+    }
+
+    if (operation.type === 'cancel') {
+      useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })
+      resolveTerminal(opId)
+      return
     }
 
     // A subscription checkout shows its own success step in the pricing dialog,
@@ -404,7 +374,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
     terminalResolvers.delete(opId)
     terminalPromises.delete(opId)
-    operationContexts.delete(opId)
   }
 
   function updateOperationStatus(
@@ -442,7 +411,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     operations.value = newMap
     terminalResolvers.delete(opId)
     terminalPromises.delete(opId)
-    operationContexts.delete(opId)
   }
 
   return {
