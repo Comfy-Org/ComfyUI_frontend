@@ -251,7 +251,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         turnId,
         text,
         attachments?.map(({ name, previewUrl }) => ({ name, previewUrl })),
-        tags?.map((tag) => tag.title)
+        tags?.map((tag) => `${tag.title} #${tag.id}`)
       )
       conversationStore.startTurn(turnId)
       return true
