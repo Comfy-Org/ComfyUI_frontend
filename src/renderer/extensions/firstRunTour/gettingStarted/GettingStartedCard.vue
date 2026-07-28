@@ -24,8 +24,8 @@
     <DefaultThumbnail
       :src="imageSrc"
       :alt="title"
-      :is-hovered="isHovered"
-      :is-video="isVideo"
+      :is-hovered
+      :is-video
       :hover-zoom="5"
     />
     <div
@@ -50,7 +50,7 @@
       aria-live="polite"
       class="absolute inset-0 flex items-center justify-center bg-base-background/70 backdrop-blur-md"
     >
-      <ProgressSpinner class="size-10" />
+      <Loader size="md" />
     </div>
     <div
       v-else-if="failed"
@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import { useElementHover } from '@vueuse/core'
-import ProgressSpinner from 'primevue/progressspinner'
+import Loader from '@/components/loader/Loader.vue'
 import { useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -80,12 +80,7 @@ import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 const {
   imageSrc = '',
   title = '',
-  loading = false,
-  failed = false,
-  skeleton = false,
-  isVideo = false,
-  badgeIcon = '',
-  testid
+  loading
 } = defineProps<{
   imageSrc?: string
   title?: string

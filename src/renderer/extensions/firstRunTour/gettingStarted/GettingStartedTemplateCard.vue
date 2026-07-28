@@ -18,11 +18,7 @@ import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
 import GettingStartedCard from './GettingStartedCard.vue'
 
-const {
-  template,
-  loading = false,
-  failed = false
-} = defineProps<{
+const { template } = defineProps<{
   template: TemplateInfo
   loading?: boolean
   failed?: boolean
