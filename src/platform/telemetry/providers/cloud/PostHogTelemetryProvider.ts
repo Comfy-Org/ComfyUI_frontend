@@ -14,6 +14,7 @@ import type {
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
+  BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -50,10 +51,13 @@ import type {
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
+  WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
 } from '../../types'
 import {
   CANCELLATION_STAGE_EVENTS,
+  getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload,
   OnboardingTourEvents,
   TelemetryEvents
 } from '../../types'
@@ -421,6 +425,17 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
     this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
+  }
+
+  trackWorkspaceInviteFailed(metadata: WorkspaceInviteFailedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_FAILED, metadata)
+  }
+
+  trackBillingEvent(event: BillingTelemetryEvent): void {
+    this.trackEvent(
+      getBillingTelemetryEventName(event),
+      getBillingTelemetryEventPayload(event)
+    )
   }
 
   trackRunButton(properties: RunButtonProperties): void {
