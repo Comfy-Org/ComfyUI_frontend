@@ -12,6 +12,11 @@ name: 'Record Custom Nodes Geometry'
 
 on:
   workflow_dispatch:
+  # workflow_dispatch cannot see a workflow that has never been on the
+  # default branch; pushing a record/custom-nodes-* ref runs this file
+  # from that ref instead. Delete the ref after collecting the artifact.
+  push:
+    branches: ['record/custom-nodes-*']
 
 concurrency:
   group: ${{ github.workflow }}
