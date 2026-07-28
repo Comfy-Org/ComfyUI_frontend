@@ -243,6 +243,23 @@ export function buildModelTypeTagUpdate(
   return retained.includes(newTag) ? retained : retained.concat(newTag)
 }
 
+/**
+ * Save gate for a model-type change: returns the tag set to persist, or null
+ * when the change must not be written (the type is read-only, or unchanged).
+ * Keeps tag-set semantics in buildModelTypeTagUpdate; this only decides whether
+ * to save.
+ */
+export function resolveModelTypeTagUpdate(
+  asset: AssetItem,
+  newFolderName: string,
+  isEditable: boolean,
+  modelTypeMode: boolean
+): string[] | null {
+  if (!isEditable) return null
+  if (getEditableModelType(asset, modelTypeMode) === newFolderName) return null
+  return buildModelTypeTagUpdate(asset, newFolderName, modelTypeMode)
+}
+
 /** Legacy grouping: each non-`models` tag's top-level path segment. */
 function getBareTagCategories(asset: AssetItem): string[] {
   return asset.tags
