@@ -12,7 +12,7 @@ const DOT_COLORS = [
   'bg-success-background'
 ]
 
-const { showSubscriptionDialog } = useBillingContext()
+const { isFreeTier, showSubscriptionDialog } = useBillingContext()
 const { t } = useI18n()
 const { available, hasInvalidNodes, maxAvailable, quotaEnabled } =
   useFreeTierQuota()
@@ -34,7 +34,7 @@ const label = computed(() =>
 </script>
 <template>
   <div
-    v-if="quotaEnabled"
+    v-if="quotaEnabled && isFreeTier"
     class="mt-2 w-full cursor-pointer border-t border-border-subtle bg-comfy-menu-bg px-4 pt-2 select-none"
     data-testid="free-tier-quota"
     @click="showSubscriptionDialog({ reason: 'free_tier_quota' })"
@@ -43,7 +43,7 @@ const label = computed(() =>
       v-if="hasInvalidNodes"
       class="flex w-full items-center justify-center gap-2"
     >
-      <i class="icon-[comfy--credits] bg-amber-400" />
+      <i class="icon-[comfy--credits] bg-credit" />
       {{ t('actionbar.freeTierPartner') }}
     </div>
     <div v-else class="flex w-full items-center justify-between">
