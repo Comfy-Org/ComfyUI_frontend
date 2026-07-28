@@ -447,8 +447,13 @@ test.describe('Model library sidebar - asset mode with a mid-retag twin tag', ()
     // empty" and "never loaded".
     await tab.getFolderRowByLabel('loras').click()
     await expect(tab.getLeafByLabel('detail_enhancer_v1.2')).toBeVisible()
+
+    // Scoped to the loras subtree, not tab.modelTree: checkpoints is still
+    // expanded from the assertion above, and its (correct) copy of the leaf
+    // would otherwise satisfy a tree-wide query on its own.
     await expect(
-      tab.modelTree
+      tab
+        .getFolderByLabel('loras')
         .locator('.p-tree-node-leaf')
         .filter({ hasText: 'mid_retag_checkpoint' })
     ).toHaveCount(0)
