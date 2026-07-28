@@ -32,9 +32,32 @@ import type {
  * surfacing it as a failure would report a problem that does not exist — most
  * visibly when a request succeeds and its response is lost, and the retry is
  * then refused.
+ *
+ * The 4xx check keeps a server fault that happens to echo one of these codes
+ * from being swallowed as success.
  */
 function isAlreadyInRequestedState(err: unknown, code: string): boolean {
-  return err instanceof WorkspaceApiError && err.code === code
+  return (
+    err instanceof WorkspaceApiError &&
+    err.code === code &&
+    err.status !== undefined &&
+    err.status >= 400 &&
+    err.status < 500
+  )
+}
+
+/**
+ * Refreshes local state after a no-op, without letting the refresh overturn the
+ * outcome. The desired state already holds on the server, so a failed read must
+ * not turn it back into a reported failure — which is exactly what would happen
+ * on the flaky network that caused the no-op in the first place.
+ */
+async function resyncQuietly(refresh: () => Promise<unknown>): Promise<void> {
+  try {
+    await refresh()
+  } catch {
+    // Intentionally ignored: the next read corrects the view.
+  }
 }
 
 /**
@@ -292,7 +315,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       }
     } catch (err) {
       if (isAlreadyInRequestedState(err, 'ALREADY_CANCELED')) {
-        await fetchStatus()
+        await resyncQuietly(fetchStatus)
+        // fetchStatus records its own read failure; the cancellation still
+        // holds, so the operation is not in error.
+        error.value = null
         return
       }
       error.value =
@@ -311,7 +337,9 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       await Promise.all([fetchStatus(), fetchBalance()])
     } catch (err) {
       if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
-        await fetchStatus()
+        // Mirrors the success path, which refreshes balance too.
+        await resyncQuietly(() => Promise.all([fetchStatus(), fetchBalance()]))
+        error.value = null
         return
       }
       error.value = err instanceof Error ? err.message : 'Failed to resubscribe'
