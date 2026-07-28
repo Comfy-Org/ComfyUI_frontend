@@ -41,6 +41,7 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
@@ -310,6 +311,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.dispatch((provider) => provider.trackUiButtonClicked?.(metadata))
+  }
+
+  trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
+    this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

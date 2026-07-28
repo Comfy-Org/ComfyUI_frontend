@@ -177,4 +177,28 @@ describe('TelemetryRegistry', () => {
     expect(a.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
     expect(b.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
+
+  it('dispatches trackWidgetFavoriteToggled to every registered provider', () => {
+    const a: TelemetryProvider = { trackWidgetFavoriteToggled: vi.fn() }
+    const b: TelemetryProvider = { trackWidgetFavoriteToggled: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = {
+      node_type: 'CheckpointLoaderSimple',
+      widget_name: 'ckpt_name',
+      widget_type: 'combo',
+      is_favorited: true,
+      source: 'right_side_panel' as const
+    }
+    registry.trackWidgetFavoriteToggled(payload)
+
+    expect(a.trackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith(
+      payload
+    )
+    expect(b.trackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith(
+      payload
+    )
+  })
 })

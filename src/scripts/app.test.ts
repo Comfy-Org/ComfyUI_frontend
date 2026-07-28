@@ -26,6 +26,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import {
@@ -286,6 +287,68 @@ describe('ComfyApp', () => {
       expect(errorStore.lastPromptError).toMatchObject({
         type: 'prompt_no_outputs'
       })
+    })
+
+    it('surfaces governance 403 node errors without an access dialog', async () => {
+      prepareEmptyPromptQueue()
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+      const nodeErrors: Record<string, NodeError> = {
+        '1': {
+          class_type: 'KlingImage2VideoNode',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'PARTNER_NODE_DISABLED',
+              message: 'This node has been disabled by your workspace policy.',
+              details: '',
+              extra_info: { provider: 'kling' }
+            }
+          ]
+        }
+      }
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            node_errors: nodeErrors,
+            error: {
+              type: 'PARTNER_NODE_DISABLED',
+              message: 'Workspace policy denied one or more partner nodes',
+              details: ''
+            }
+          },
+          403
+        )
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(useExecutionErrorStore().lastNodeErrors).toEqual(nodeErrors)
+      expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+      expect(showDialog).not.toHaveBeenCalled()
+    })
+
+    it('keeps the access dialog for unrelated 403 responses', async () => {
+      prepareEmptyPromptQueue()
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            error: {
+              type: 'access_denied',
+              message: 'This workspace cannot run prompts',
+              details: ''
+            }
+          },
+          403
+        )
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(true)
+
+      expect(showDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'global-error' })
+      )
+      expect(useExecutionErrorStore().lastNodeErrors).toBeNull()
     })
 
     it('preserves a successful result when prompt errors omit node errors', async () => {

@@ -20,6 +20,7 @@ import type {
   ModelFolder,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
+import { MODEL_TYPE_TAG_PREFIX } from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -351,7 +352,12 @@ function createAssetService() {
 
     const folderTags = data.assets
       .flatMap((asset) => asset.tags)
-      .filter((tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag))
+      .filter(
+        (tag) =>
+          tag !== MODELS_TAG &&
+          !blacklistedDirectories.has(tag) &&
+          !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+      )
     const discoveredFolders = new Set<string>(folderTags)
 
     // Return only discovered folders in alphabetical order
