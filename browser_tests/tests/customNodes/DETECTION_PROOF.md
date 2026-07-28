@@ -92,8 +92,13 @@ baselined nodes.
 Sections refer to [ARCHITECTURE.md](ARCHITECTURE.md).
 
 **Proof run:** matrix run
-[30305166953](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/30305166953) -
-all 12 legs green. Row N's evidence is its own leg, job
+[30318248639](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/30318248639) -
+legs 1-13 green with in-log catch verdicts for rows 1-13. Row 14's leg in
+that run is RETIRED as evidence: its green came from the pattern matching a
+source snippet embedded in the results file, not a real compare message
+(the assert has since been hardened to match failure MESSAGES only, via jq,
+for every row). Row 14's valid evidence is the next matrix run after that
+hardening. Row N's evidence is its own leg, job
 `custom-nodes-e2e-core (N)`: the suite's red (with the row's message) is in
 that leg's "Run custom-node suite" log, and the leg's assert step quotes the
 matched pattern. Every push to this branch re-runs the whole matrix, so the

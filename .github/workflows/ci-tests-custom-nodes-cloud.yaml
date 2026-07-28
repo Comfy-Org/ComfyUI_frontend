@@ -65,7 +65,11 @@ concurrency:
   # for real. Do not mark this check required until open item 7 lands a
   # per-run instance (then switch to the core gate's per-ref group) or an
   # in-job lock replaces group serialization.
-  group: custom-nodes-cloud-instance
+  # DETECTION-PROOF BRANCH: dp runs skip every job (see the branch gate on
+  # the job) yet a run still CLAIMS its concurrency group before job ifs
+  # evaluate - a dp skip-run displaced queued e2e run 30317780440. Give dp
+  # runs their own group so they can never evict a real cloud run.
+  group: ${{ github.head_ref == 'nathaniel/detection-proof' && 'custom-nodes-cloud-dp-noop' || 'custom-nodes-cloud-instance' }}
   cancel-in-progress: false
 
 jobs:
