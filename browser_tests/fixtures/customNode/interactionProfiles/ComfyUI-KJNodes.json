@@ -1,0 +1,1229 @@
+{
+  "recordedAt": {
+    "core": "b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2",
+    "pin": "e27a505b3ba6ce42687fe00500deda103d9d6071"
+  },
+  "schema": 1,
+  "nodes": {
+    "AddLabel": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "AddNoiseToTrackPath": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "AppendInstanceDiffusionTracking": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "AppendStringsToList": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ApplyRifleXRoPE_HunuyanVideo": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ApplyRifleXRoPE_WanVideo": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "AudioConcatenate": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BatchCLIPSeg": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BatchCropFromMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BatchCropFromMaskAdvanced": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BatchUncrop": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BatchUncropAdvanced": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BboxToInt": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BboxVisualize": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BlockifyMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BOOLConstant": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "CameraPoseVisualizer": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CFGZeroStarAndInit": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CheckpointLoaderKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CheckpointPerturbWeights": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ColorMatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ColorMatchV2": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ColorToMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ConditioningMultiCombine": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ConditioningSetMaskAndCombine": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ConditioningSetMaskAndCombine3": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ConditioningSetMaskAndCombine4": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ConditioningSetMaskAndCombine5": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CondPassThrough": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ConsolidateMasksKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ContextWindowsVisualizerKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateAudioMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateFadeMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateFadeMaskAdvanced": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateFluidMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateGradientFromCoords": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateGradientMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateInstanceDiffusionTracking": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateMagicMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateShapeImageOnPath": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateShapeMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateShapeMaskOnPath": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateTextMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateTextOnPath": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CreateVoronoiMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CrossFadeImages": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CrossFadeImagesMulti": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CustomControlNetWeightsFluxFromList": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CustomSigmas": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "CutAndDragOnPath": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DecodeAndSaveVideo": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DifferentialDiffusionAdvanced": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DiffusionModelLoaderKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DiffusionModelSelector": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "DiTBlockLoraLoader": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DownloadAndLoadCLIPSeg": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "DrawInstanceDiffusionTracking": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DrawMaskOnImage": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DummyOut": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "EmptyLatentImageCustomPresets": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "EmptyLatentImagePresets": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "EncodeVideoComponents": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "EndRecordCUDAMemoryHistory": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FastPreview": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FastPreviewBatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FilterZeroMasksAndCorrespondingImages": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FlipSigmasAdjusted": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FloatConstant": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "FloatToMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FloatToSigmas": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "FluxBlockLoraSelect": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "GenerateNoise": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "GetImageRangeFromBatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "GetImagesFromBatchIndexed": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "GetImageSizeAndCount": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "GetLatentRangeFromBatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "GetLatentsFromBatchIndexed": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "GetLatentSizeAndCount": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "GetMaskSizeAndCount": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "GetPreviewOverrideFramesKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "GetTrackRange": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "GGUFLoaderKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "GLIGENTextBoxApplyBatchCoords": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "GradientToFloat": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "GrowMaskWithBlur": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "HDRPreviewKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "HunyuanVideoBlockLoraSelect": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "HunyuanVideoEncodeKeyframesToCond": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "Ideogram4OptimizationsKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "Ideogram4PromptBuilderKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageAddMulti": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageAndMaskPreview": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageBatchExtendWithOverlap": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageBatchFilter": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageBatchJoinWithTransition": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageBatchMulti": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageBatchRepeatInterleaving": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageBatchTestPattern": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageConcanate": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageConcatFromBatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageConcatMulti": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageCropByMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageCropByMaskAndResize": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageCropByMaskBatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageGrabPIL": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageGridComposite2x2": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageGridComposite3x3": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageGridtoBatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageNoiseAugmentation": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageNormalize_Neg1_To_1": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImagePadForOutpaintMasked": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImagePadForOutpaintTargetSize": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImagePadKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImagePass": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImagePrepForICLora": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageResizeKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageResizeKJv2": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageSharpenKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageTensorList": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageTransformByNormalizedAmplitude": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageTransformKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageUncropByMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageUpscaleWithModelBatched": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "InjectNoiseToLatent": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "InsertImageBatchByIndexes": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "InsertImagesToBatchIndexed": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "InsertLatentToIndexed": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "INTConstant": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "InterpolateCoords": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "JoinStringMulti": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "JoinStrings": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "Krea2PromptWeight": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LatentInpaintTTM": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LazySwitchKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LeapfusionHunyuanI2VPatcher": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LoadAndResizeImage": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LoadImagesFromFolderKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LoadVideosFromFolder": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LoraExtractKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LoraReduceRankKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTX2_NAG": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTX2AttentionTunerPatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTX2AudioLatentNormalizingSampling": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTX2BlockLoraSelect": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTX2LoraLoaderAdvanced": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTX2MemoryEfficientSageAttentionPatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTX2SamplingPreviewOverride": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTXVAddGuideMulti": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTXVAddGuidesFromBatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTXVAudioVideoMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTXVChunkFeedForward": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTXVEnhanceAVideoKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LTXVImgToVideoInplaceKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskBatchMulti": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskOrImageToWeight": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MergeImageChannels": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ModelMemoryUsageFactorOverride": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ModelMemoryUseReportPatch": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ModelPassThrough": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ModelPatchTorchSettings": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ModelPreviewOverrideKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ModelSaveKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "NABLA_AttentionKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "NormalizedAmplitudeToFloatList": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "NormalizedAmplitudeToMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "OffsetMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "OffsetMaskByNormalizedAmplitude": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PadImageBatchInterleaved": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PatchFlashAttentionKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PatchModelPatcherOrder": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PathchSageAttentionKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PiDColorBiasCorrection": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PlaySoundKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PlotCoordinates": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PointsEditor": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PreviewAnimation": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PreviewImageOrMask": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "PreviewLatentNoiseMask": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "RandomImageFromBatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "RemapImageRange": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "RemapMaskRange": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ReplaceImagesInBatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ResizeMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ReverseImageBatch": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "RoundMask": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SamplerSelfRefineVideo": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SaveImageKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SaveImageWithAlpha": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SaveStringKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ScaleBatchPromptSchedule": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ScheduledCFGGuidance": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "Screencap_mss": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ScreencapStream": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SeparateMasks": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SetShakkerLabsUnionControlNetType": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ShuffleImageBatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SigmasToFloat": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SimpleCalculatorKJ": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "SkipLayerGuidanceWanVideo": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "Sleep": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SomethingToString": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SoundReactive": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SplineEditor": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SplitBboxes": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SplitImageChannels": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "StableZero123_BatchSchedule": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "StartRecordCUDAMemoryHistory": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "StringConstant": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "StringConstantMultiline": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "StringToFloatList": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "StyleModelApplyAdvanced": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "Superprompt": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SV3D_BatchSchedule": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TimerNodeKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TorchCompileControlNet": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TorchCompileCosmosModel": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "TorchCompileLTXModel": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "TorchCompileModelAdvanced": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TorchCompileModelFluxAdvanced": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "TorchCompileModelFluxAdvancedV2": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TorchCompileModelHyVideo": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "TorchCompileModelQwenImage": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "TorchCompileModelWanVideo": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "TorchCompileModelWanVideoV2": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TorchCompileVAE": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TransitionImagesInBatch": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TransitionImagesMulti": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VAEDecodeLoopKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VAELoaderKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VAEMergeKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VisualizeCUDAMemoryHistory": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "VisualizeSigmasKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VRAM_Debug": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "Wan21BlockLoraSelect": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "WanChunkFeedForward": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "WanImageToVideoSVIPro": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "WanVideoEnhanceAVideoKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "WanVideoMemoryEfficientSageAttentionPatch": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "WanVideoNAG": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "WanVideoTeaCacheKJ": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "WebcamCaptureCV2": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "WeightScheduleConvert": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "WeightScheduleExtend": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "WidgetToString": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    }
+  }
+}
