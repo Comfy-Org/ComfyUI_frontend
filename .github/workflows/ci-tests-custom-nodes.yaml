@@ -73,11 +73,12 @@ jobs:
     # each with exactly ONE break live. Stacking breaks in a single tree makes
     # a red unattributable - two of them silently cannibalised each other, and
     # the fix was distorting the breaks to coexist rather than isolating them.
-    # Row 11 has no leg: it was caught live, no synthetic break exists.
+    # Leg N = story SN (1:1). Row 13 is reserved for S13 (shelved by the
+    # lead; unshelves after actual ship-it of these legs).
     strategy:
       fail-fast: false
       matrix:
-        row: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14]
+        row: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -347,10 +348,12 @@ jobs:
             # any node raising for any reason. The node and exception are
             # ours by construction, so this stays stable.
             9) pat='Constant Number: EXECUTION_ERROR \(Constant Number: ValueError\)' ;;
-            12) pat='not registered - pack JS did not load' ;;
-            13) pat='input count grows by one on connect' ;;
+            11) pat='not registered - pack JS did not load' ;;
+            12) pat='input count grows by one on connect' ;;
+            # S14: layout drifts with no error - only geometry baselines see it.
+            14) pat='widgets\[[0-9]+\]\.y: expected' ;;
             # S15: execution succeeds, values differ - only the hash sees it.
-            14) pat='output hash changed' ;;
+            15) pat='output hash changed' ;;
             *) echo "::error::no expected pattern for row $ROW"; exit 1 ;;
           esac
           grep -Eq -- "$pat" /tmp/failure-messages.txt || { echo "::error::row $ROW: suite redded but no FAILURE MESSAGE matches /$pat/ - the red is not attributable to this break"; exit 1; }
