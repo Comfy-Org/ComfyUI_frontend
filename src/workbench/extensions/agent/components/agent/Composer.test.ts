@@ -84,10 +84,10 @@ describe('Composer', () => {
       localStorage.clear()
     })
 
-    it('opens from the Auto control with the ask mode selected by default', async () => {
+    it('opens from the mode control with the ask mode selected by default', async () => {
       mount()
 
-      await userEvent.click(screen.getByRole('button', { name: 'Auto' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
 
       expect(
         await screen.findByText('Choose when the agent needs your consent')
@@ -95,42 +95,46 @@ describe('Composer', () => {
       expect(
         screen.getByRole('radio', { name: /Ask before a workflow runs/ })
       ).toBeChecked()
+      expect(
+        screen.getByRole('button', { name: 'Save changes' })
+      ).toBeDisabled()
     })
 
     it('saves a new run mode with its credit limit and closes', async () => {
       mount()
       const store = useAgentRunModeStore()
 
-      await userEvent.click(screen.getByRole('button', { name: 'Auto' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
         await screen.findByRole('radio', { name: /Auto-run with limits/ })
       )
       const input = screen.getByRole('spinbutton', { name: 'credits' })
       await userEvent.clear(input)
       await userEvent.type(input, '500')
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Save changes' })
-      )
+      const save = screen.getByRole('button', { name: 'Save changes' })
+      expect(save).toBeEnabled()
+      await userEvent.click(save)
 
       expect(store.mode).toBe('auto-limit')
       expect(store.creditLimit).toBe(500)
       expect(
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
+      expect(screen.getByRole('button', { name: 'Auto' })).toBeInTheDocument()
     })
 
     it('discards an unsaved draft when the popover closes without saving', async () => {
       mount()
       const store = useAgentRunModeStore()
 
-      await userEvent.click(screen.getByRole('button', { name: 'Auto' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
         await screen.findByRole('radio', { name: /Auto-run without approval/ })
       )
       await userEvent.keyboard('{Escape}')
       expect(store.mode).toBe('ask')
 
-      await userEvent.click(screen.getByRole('button', { name: 'Auto' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       expect(
         await screen.findByRole('radio', { name: /Ask before a workflow runs/ })
       ).toBeChecked()

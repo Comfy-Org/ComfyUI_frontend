@@ -7,7 +7,7 @@ import {
   RadioGroupItem,
   RadioGroupRoot
 } from 'reka-ui'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
@@ -41,6 +41,14 @@ function onDraftMode(value: string | undefined): void {
   if (match) draftMode.value = match.mode
 }
 
+const dirty = computed(
+  () => draftMode.value !== store.mode || draftLimit.value !== store.creditLimit
+)
+
+const triggerLabel = computed(() =>
+  store.mode === 'ask' ? t('agent.runModeTriggerAsk') : t('agent.modelAuto')
+)
+
 const options: {
   mode: AgentRunMode
   icon: string
@@ -72,9 +80,14 @@ const options: {
   <PopoverRoot :open @update:open="onOpenChange">
     <PopoverTrigger
       v-tooltip.top="buildTooltipConfig(t('agent.runPermissions'))"
-      class="text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors"
+      :class="
+        cn(
+          'text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors',
+          open && 'bg-agent-surface-hover text-agent-fg'
+        )
+      "
     >
-      <span>{{ t('agent.modelAuto') }}</span>
+      <span>{{ triggerLabel }}</span>
       <span class="icon-[lucide--chevron-down] size-3" />
     </PopoverTrigger>
     <PopoverPortal>
@@ -97,19 +110,15 @@ const options: {
           class="mt-3 flex flex-col gap-1"
           @update:model-value="onDraftMode"
         >
-          <div
-            v-for="option in options"
-            :key="option.mode"
-            :class="
-              cn(
-                'rounded-agent',
-                draftMode === option.mode && 'border-agent-border border'
-              )
-            "
-          >
+          <div v-for="option in options" :key="option.mode">
             <RadioGroupItem
               :value="option.mode"
-              class="hover:bg-agent-surface-hover rounded-agent flex w-full cursor-pointer items-start gap-2.5 p-2 text-left"
+              :class="
+                cn(
+                  'hover:bg-agent-surface-hover rounded-agent flex w-full cursor-pointer items-start gap-2.5 p-2 text-left',
+                  draftMode === option.mode && 'bg-agent-surface-hover'
+                )
+              "
             >
               <span
                 :class="
@@ -125,8 +134,13 @@ const options: {
                 </span>
               </span>
               <span
-                v-if="draftMode === option.mode"
-                class="text-agent-fg mt-0.5 icon-[lucide--check] size-4 shrink-0"
+                :class="
+                  cn(
+                    'mt-0.5 size-4 shrink-0',
+                    draftMode === option.mode &&
+                      'text-agent-fg icon-[lucide--check]'
+                  )
+                "
               />
             </RadioGroupItem>
             <div
@@ -149,7 +163,8 @@ const options: {
 
         <button
           type="button"
-          class="bg-agent-fg text-agent-surface hover:bg-agent-fg/90 mt-3 w-full cursor-pointer rounded-md py-1.5 text-xs font-medium transition-colors"
+          :disabled="!dirty"
+          class="bg-agent-fg text-agent-surface hover:bg-agent-fg/90 mt-3 w-full cursor-pointer rounded-md py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           @click="saveChanges"
         >
           {{ t('agent.saveChanges') }}
