@@ -21,6 +21,10 @@ export function useKeybindingService() {
     }
 
     const target = event.composedPath()[0] as HTMLElement
+    if (event.key === 'Escape' && target.closest?.('[role="menu"]')) {
+      return
+    }
+
     if (
       keyCombo.isReservedByTextInput &&
       (target.tagName === 'TEXTAREA' ||
