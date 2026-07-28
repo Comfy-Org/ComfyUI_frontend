@@ -385,14 +385,19 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       : lastNodeErrors.value
   )
 
+  const hasMissingError = computed(
+    () =>
+      missingNodesStore.hasMissingNodes ||
+      missingModelStore.hasMissingModels ||
+      missingMediaStore.hasMissingMedia
+  )
+
   const hasAnyError = computed(
     () =>
       hasExecutionError.value ||
       hasPromptError.value ||
       hasNodeError.value ||
-      missingNodesStore.hasMissingNodes ||
-      missingModelStore.hasMissingModels ||
-      missingMediaStore.hasMissingMedia
+      hasMissingError.value
   )
 
   const allErrorExecutionIds = computed<string[]>(() => {
@@ -545,6 +550,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     hasExecutionError,
     hasPromptError,
     hasNodeError,
+    hasMissingError,
     hasAnyError,
     allErrorExecutionIds,
     totalErrorCount,
