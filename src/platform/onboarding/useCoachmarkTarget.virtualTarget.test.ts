@@ -12,34 +12,16 @@ function virtualStep(): CoachStep {
   return { name: 'inputs', placement: 'auto', coachId: COACH_ID }
 }
 
-/** A target under a moving camera: every read reports a different position. */
+/** A target under a moving camera, which reports its motion to whoever asks. */
 function movingTarget() {
-  let reads = 0
   const listeners = new Set<() => void>()
   return {
-    getBoundingClientRect: () => {
-      reads++
-      return new DOMRect(reads, reads, 80, 40)
-    },
+    getBoundingClientRect: () => new DOMRect(10, 10, 80, 40),
     onMove: (notify: () => void) => {
       listeners.add(notify)
       return () => listeners.delete(notify)
     },
-    move: () => listeners.forEach((notify) => notify()),
-    readCount: () => reads,
     listenerCount: () => listeners.size
-  }
-}
-
-/** A virtual target that never moves, so it offers nothing to subscribe to. */
-function stillTarget() {
-  let reads = 0
-  return {
-    getBoundingClientRect: () => {
-      reads++
-      return new DOMRect(10, 10, 80, 40)
-    },
-    readCount: () => reads
   }
 }
 
@@ -47,8 +29,8 @@ function mountTarget(target: { getBoundingClientRect: () => DOMRect }) {
   registerCoachmark(COACH_ID, target)
   const scope = effectScope()
   const card = ref<HTMLElement | null>(document.createElement('div'))
-  scope.run(() => useCoachmarkTarget(ref(virtualStep()), card))
-  return { scope }
+  const api = scope.run(() => useCoachmarkTarget(ref(virtualStep()), card))
+  return { scope, api }
 }
 
 describe('useCoachmarkTarget with a virtual target', () => {
@@ -56,44 +38,15 @@ describe('useCoachmarkTarget with a virtual target', () => {
     clearCoachmarks()
   })
 
-  it('traces a target that never moves, which has no subscription to offer', async () => {
-    const target = stillTarget()
-    const { scope } = mountTarget(target)
-    await nextTick()
-
-    expect(
-      target.readCount(),
-      'the card positions against the sample, so an unsampled target sits at the zero rect'
-    ).toBe(2)
-    scope.stop()
-  })
-
-  it('traces the target on arrival, before it has moved at all', async () => {
+  it('follows a target that reports its own motion', async () => {
     const target = movingTarget()
     const { scope } = mountTarget(target)
     await nextTick()
 
     expect(
-      target.readCount(),
-      'a step on a still canvas would otherwise show no spotlight until the user pans'
-    ).toBe(2)
-    scope.stop()
-  })
-
-  it('reads the moving target once per move however many things follow it', async () => {
-    const target = movingTarget()
-    const { scope } = mountTarget(target)
-    await nextTick()
-
-    const before = target.readCount()
-    target.move()
-    target.move()
-    await nextTick()
-
-    expect(
-      target.readCount() - before,
-      'the spotlight and the card must trace one sample, or they drift apart on screen'
-    ).toBe(2)
+      target.listenerCount(),
+      'a target the camera carries moves with no DOM event to announce it'
+    ).toBe(1)
     scope.stop()
   })
 
@@ -101,7 +54,6 @@ describe('useCoachmarkTarget with a virtual target', () => {
     const target = movingTarget()
     const { scope } = mountTarget(target)
     await nextTick()
-    expect(target.listenerCount()).toBe(1)
 
     scope.stop()
 
@@ -109,5 +61,18 @@ describe('useCoachmarkTarget with a virtual target', () => {
       target.listenerCount(),
       'a subscription outliving its tour follows the target forever'
     ).toBe(0)
+  })
+
+  it('leaves a still target alone, having nothing to subscribe to', async () => {
+    const { scope, api } = mountTarget({
+      getBoundingClientRect: () => new DOMRect(10, 10, 80, 40)
+    })
+    await nextTick()
+
+    expect(
+      api?.isVirtualTarget.value,
+      'a plain rect still counts as virtual, so the ring must not tween after it'
+    ).toBe(true)
+    scope.stop()
   })
 })

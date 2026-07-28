@@ -1,12 +1,7 @@
 import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
-import type {
-  Middleware,
-  Placement,
-  Rect,
-  VirtualElement
-} from '@floating-ui/vue'
+import type { Middleware, Placement, Rect } from '@floating-ui/vue'
 import { useEventListener } from '@vueuse/core'
-import { computed, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
+import { computed, ref, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
@@ -93,17 +88,8 @@ export function useCoachmarkTarget(
     topInset.value = topSafeInset()
   })
 
-  /** One sample feeds both card and spotlight, so they cannot drift apart. */
-  const sampledRect = shallowRef(new DOMRect())
-  const sampledTarget: VirtualElement = {
-    getBoundingClientRect: () => sampledRect.value
-  }
-  const reference = computed<CoachTarget | null>(() =>
-    isVirtualTarget.value ? sampledTarget : targetEl.value
-  )
-
   const { floatingStyles, middlewareData, isPositioned, update } = useFloating(
-    reference,
+    targetEl,
     cardRef,
     {
       strategy: 'fixed',
@@ -113,17 +99,11 @@ export function useCoachmarkTarget(
     }
   )
 
-  function sampleTarget(el: CoachTarget) {
-    const { x, y, width, height } = el.getBoundingClientRect()
-    sampledRect.value = new DOMRect(x, y, width, height)
-    void update()
-  }
-
   watchEffect((onCleanup) => {
     const el = targetEl.value
-    if (!el || !isVirtualTarget.value) return
-    sampleTarget(el)
-    if (isMovingTarget(el)) onCleanup(el.onMove(() => sampleTarget(el)))
+    if (!el || !isMovingTarget(el)) return
+    void update()
+    onCleanup(el.onMove(() => void update()))
   })
 
   const targetRect = computed<DOMRect | null>(() => {
@@ -158,7 +138,7 @@ export function useCoachmarkTarget(
   })
 
   watchEffect((onCleanup) => {
-    const anchor = reference.value
+    const anchor = targetEl.value
     const floating = cardRef.value
     if (!anchor || !floating) return
     onCleanup(
