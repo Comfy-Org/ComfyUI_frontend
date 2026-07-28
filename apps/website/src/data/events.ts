@@ -71,34 +71,17 @@ const foundersLiveStreamHref: LocalizedText = {
   'zh-CN': 'https://www.youtube.com/live/dbp5Jnto7S8'
 }
 
+const julyLaunchesStreamHref: LocalizedText = {
+  en: 'https://www.youtube.com/live/8RGN69h_xTU',
+  'zh-CN': 'https://www.youtube.com/live/8RGN69h_xTU'
+}
+
 function youtubeWatchHref(videoId: string): LocalizedText {
   const href = `https://www.youtube.com/watch?v=${videoId}`
   return { en: href, 'zh-CN': href }
 }
 
 export const pastEventPath = (event: PastEvent): string => `/events/${event.id}`
-
-// Referenced by both the hero carousel and the past-events grid.
-const blackMathHackathon: PastEvent = {
-  id: 'black-math-hackathon',
-  category: 'livestream',
-  title: {
-    en: 'Experience Design: How Black Math Built a Hackathon in 3 Weeks with ComfyUI',
-    'zh-CN': '体验设计：Black Math 如何用 ComfyUI 在 3 周内打造一场黑客松'
-  },
-  description: {
-    en: 'Design and technology studio Black Math used ComfyUI to build a full hackathon experience in just three weeks. Jeremy Sahlman (Co-Founder & Chief Creative Officer, Black Math) shares how.',
-    'zh-CN':
-      '设计与技术工作室 Black Math 用 ComfyUI 在短短三周内打造了一场完整的黑客松体验。Jeremy Sahlman（Black Math 联合创始人兼首席创意官）分享幕后故事。'
-  },
-  media: eventImage('black-math_comfy.png', {
-    en: 'Black Math X Comfy livestream with Jeremy Sahlman',
-    'zh-CN': 'Black Math X Comfy 直播，嘉宾 Jeremy Sahlman'
-  }),
-  watch: { href: youtubeWatchHref('O72yyU-jupU'), newTab: true },
-  youtubeVideoId: 'O72yyU-jupU',
-  publishedDate: '2026-07-23'
-}
 
 const foundersLiveFeatured: FeaturedEvent = {
   id: 'krea-founders-live',
@@ -121,56 +104,67 @@ const foundersLiveFeatured: FeaturedEvent = {
   newTab: true
 }
 
-const blackMathFeatured: FeaturedEvent = {
-  id: blackMathHackathon.id,
-  eyebrow: { en: 'LIVESTREAM', 'zh-CN': '直播' },
-  title: blackMathHackathon.title,
-  // The artwork already carries the title, date, and speaker.
+// Referenced by both the hero carousel and the upcoming-events list.
+const julyLaunches: UpcomingEvent = {
+  id: 'july-launches',
+  name: { en: 'July Launches', 'zh-CN': '七月发布' },
+  description: {
+    en: 'Our monthly livestream covering the latest ComfyUI launches and updates.',
+    'zh-CN': '我们的月度直播，介绍 ComfyUI 最新发布与更新。'
+  },
+  location: { en: 'Online', 'zh-CN': '线上' },
+  dateLabel: {
+    en: 'July 29, 2026 · 10AM PT',
+    'zh-CN': '2026年7月29日 · 上午10点（PT）'
+  },
+  dateTime: '2026-07-29T10:00:00-07:00',
+  link: { href: julyLaunchesStreamHref, newTab: true }
+}
+
+const julyLaunchesFeatured: FeaturedEvent = {
+  id: julyLaunches.id,
+  eyebrow: UPCOMING_LIVESTREAM,
+  title: julyLaunches.name,
+  // The artwork already carries the title and date.
   showTitle: false,
   media: eventImage('july-launches.png', {
     en: 'July Launches livestream',
     'zh-CN': '七月发布直播'
   }),
-  href: {
-    en: 'https://www.youtube.com/live/8RGN69h_xTU',
-    'zh-CN': 'https://www.youtube.com/live/8RGN69h_xTU'
-  },
+  href: julyLaunches.link.href,
   newTab: true,
   autoplayMs: 7000
 }
 
 export const featuredEvents: readonly FeaturedEvent[] = [
   foundersLiveFeatured,
-  blackMathFeatured
+  julyLaunchesFeatured
 ]
 
 // zh-CN copy is a first pass and pending native review.
-export const upcomingEvents: readonly UpcomingEvent[] = [
-  {
-    id: 'july-launches',
-    name: { en: 'July Launches', 'zh-CN': '七月发布' },
-    description: {
-      en: 'Our monthly livestream covering the latest ComfyUI launches and updates.',
-      'zh-CN': '我们的月度直播，介绍 ComfyUI 最新发布与更新。'
-    },
-    location: { en: 'Online', 'zh-CN': '线上' },
-    dateLabel: {
-      en: 'July 29, 2026 · 10AM PT',
-      'zh-CN': '2026年7月29日 · 上午10点（PT）'
-    },
-    dateTime: '2026-07-29T10:00:00-07:00',
-    link: {
-      href: {
-        en: 'https://www.youtube.com/live/8RGN69h_xTU',
-        'zh-CN': 'https://www.youtube.com/live/8RGN69h_xTU'
-      },
-      newTab: true
-    }
-  }
-]
+export const upcomingEvents: readonly UpcomingEvent[] = [julyLaunches]
 
 const pastEventEntries: readonly PastEvent[] = [
-  blackMathHackathon,
+  {
+    id: 'black-math-hackathon',
+    category: 'livestream',
+    title: {
+      en: 'Experience Design: How Black Math Built a Hackathon in 3 Weeks with ComfyUI',
+      'zh-CN': '体验设计：Black Math 如何用 ComfyUI 在 3 周内打造一场黑客松'
+    },
+    description: {
+      en: 'Design and technology studio Black Math used ComfyUI to build a full hackathon experience in just three weeks. Jeremy Sahlman (Co-Founder & Chief Creative Officer, Black Math) shares how.',
+      'zh-CN':
+        '设计与技术工作室 Black Math 用 ComfyUI 在短短三周内打造了一场完整的黑客松体验。Jeremy Sahlman（Black Math 联合创始人兼首席创意官）分享幕后故事。'
+    },
+    media: eventImage('black-math_comfy.png', {
+      en: 'Black Math X Comfy livestream with Jeremy Sahlman',
+      'zh-CN': 'Black Math X Comfy 直播，嘉宾 Jeremy Sahlman'
+    }),
+    watch: { href: youtubeWatchHref('O72yyU-jupU'), newTab: true },
+    youtubeVideoId: 'O72yyU-jupU',
+    publishedDate: '2026-07-23'
+  },
   {
     id: 'comfy-mcp-claude-cursor',
     category: 'livestream',
