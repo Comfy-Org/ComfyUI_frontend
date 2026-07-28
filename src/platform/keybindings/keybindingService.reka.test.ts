@@ -73,13 +73,13 @@ describe('keybindingService - reka dialog integration', () => {
     window.removeEventListener('keydown', keybindHandler)
   })
 
-  function pressEscape(): KeyboardEvent {
+  function pressKey(key: string): KeyboardEvent {
     const event = new KeyboardEvent('keydown', {
-      key: 'Escape',
+      key,
       bubbles: true,
       cancelable: true
     })
-    // eslint-disable-next-line testing-library/no-node-access -- reka focus-traps into DialogContent, so a real Escape originates inside the dialog
+    // eslint-disable-next-line testing-library/no-node-access -- reka focus-traps into DialogContent, so a real keypress originates inside the dialog
     ;(document.activeElement ?? document.body).dispatchEvent(event)
     return event
   }
@@ -87,7 +87,7 @@ describe('keybindingService - reka dialog integration', () => {
   it('runs the Escape command when no reka dialog is open', async () => {
     render(RekaDialogHost)
 
-    pressEscape()
+    pressKey('Escape')
 
     await waitFor(() =>
       expect(mockCommandExecute).toHaveBeenCalledWith(
@@ -108,11 +108,13 @@ describe('keybindingService - reka dialog integration', () => {
     const popover = await screen.findByRole('dialog')
     expect(popover.getAttribute('data-state')).toBe('open')
 
-    pressEscape()
+    // Probed with a plain key, not Escape: Escape would also assert that reka's
+    // own popover dismissal stays suppressed, which is not this guard's contract.
+    pressKey('w')
 
     await waitFor(() =>
       expect(mockCommandExecute).toHaveBeenCalledWith(
-        'Comfy.Graph.ExitSubgraph'
+        'Workspace.ToggleSidebarTab.workflows'
       )
     )
   })
@@ -123,7 +125,7 @@ describe('keybindingService - reka dialog integration', () => {
     const dialog = await screen.findByRole('dialog')
     expect(dialog.getAttribute('data-state')).toBe('open')
 
-    const event = pressEscape()
+    const event = pressKey('Escape')
 
     expect(event.defaultPrevented).toBe(false)
     expect(mockCommandExecute).not.toHaveBeenCalled()
