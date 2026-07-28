@@ -51,7 +51,7 @@ const segments = computed<Segment[]>(() => {
 const proseClass = cn(
   'text-agent-fg text-sm/relaxed',
   '[&_a]:text-agent-accent [&_a]:cursor-pointer [&_a]:underline',
-  '[&_p]:my-0 [&_p]:pt-1 [&_strong]:font-semibold',
+  '[&_p]:my-0 [&_p]:pt-4 [&_p:first-child]:pt-0 [&_strong]:font-semibold',
   '[&_h1]:mt-0 [&_h1]:pt-4 [&_h1]:pb-2 [&_h1]:text-2xl [&_h1]:font-semibold',
   '[&_h2]:pt-3.5 [&_h2]:pb-1.5 [&_h2]:text-base [&_h2]:font-semibold [&_h3]:pt-2 [&_h3]:font-semibold',
   '[&_ol]:my-0 [&_ol]:list-decimal [&_ol]:pt-1 [&_ol]:pb-2 [&_ol]:pl-5',
