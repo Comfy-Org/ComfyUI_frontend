@@ -21,11 +21,6 @@ function profileDir(): string {
   return customNodesEnv() === 'cloud' ? `${PROFILE_DIR}cloud/` : PROFILE_DIR
 }
 
-export function packProfileRelativePath(pack: string): string {
-  const cloudSegment = customNodesEnv() === 'cloud' ? 'cloud/' : ''
-  return `browser_tests/fixtures/customNode/interactionProfiles/${cloudSegment}${pack}.json`
-}
-
 // One facet entry per slot/widget: `kind:name:type`, model order ignored
 // (entries are sorted) so reordering alone is not drift.
 export interface LogicalShape {
@@ -42,7 +37,7 @@ export type ShapeDelta = string[]
 // A probe that could not run carries its mechanism instead of a delta:
 // NO_PRODUCER = no synthesizable model-free source matches the input type;
 // NO_INPUTS = the node declares no connectable inputs (instantiate-only).
-export type ProbeResult = ShapeDelta | 'NO_PRODUCER' | 'NO_INPUTS'
+type ProbeResult = ShapeDelta | 'NO_PRODUCER' | 'NO_INPUTS'
 
 export interface NodeInteractionProfile {
   connectFirst: ProbeResult
