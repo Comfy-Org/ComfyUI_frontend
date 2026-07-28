@@ -246,6 +246,19 @@ workflow whose only sinks are console-style (no ui payload) records an empty
 entry - that is the documented state, and a sink appearing later fails the
 run until re-recorded. Local runs log and skip the compare, same as geometry.
 
+## Step 5d - record the pack's interaction profiles (S13)
+
+Every registered node is probed automatically - there is nothing to curate.
+The tier fails closed ON CI with `S13: no committed interaction profiles`
+until the pack's baselines are recorded: same flow as Steps 5b/5c (push a
+`record/custom-nodes-*` ref or dispatch the record workflow, download the
+`custom-nodes-interaction-profiles` artifact, commit it under
+`browser_tests/fixtures/customNode/interactionProfiles/`). The record run
+stamps provenance; never hand-edit deltas. Local runs log and skip the
+compare, same as geometry. A node whose deltas prove unstable across the
+record/compare cycle gets an `INTERACTION_UNSTABLE_NODES` entry with its
+mechanism, like the geometry ledger.
+
 ## Step 6 - prove it green locally, in both environments
 
 ### 6a - fast loop (dev server)

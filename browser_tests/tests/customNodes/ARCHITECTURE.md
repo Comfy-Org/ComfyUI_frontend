@@ -365,6 +365,31 @@ environment that recorded them; compare is CI-gated for the same reason
 (the geometry-tier convention). Cloud is excluded: the fetch is node-side,
 which carries no cloud session; cloud enrolls when an in-app fetch lands.
 
+## 7c. The interaction-profile tier (S13)
+
+The def-driven tiers cannot see what pack JS does IN RESPONSE to an
+interaction, and the curated tiers (S12 autogrow, S15 outputs) cover
+hand-picked nodes only. S13 locks the observed interaction behavior of
+EVERY registered node without understanding any pack: probe each node with
+instantiate / connect-first-input / connect-last-input / disconnect
+(producers synthesized from the auto-run tier's model-free set), snapshot
+the node's logical shape (inputs, outputs, widgets as `kind:name:type`
+entries) before and after, and record the DELTAS. Whatever a node's JS does
+today is the baseline; a frontend change that alters it reds against the
+committed delta. Deltas, not absolute shapes, keep baselines invariant to
+def changes a pin bump legitimately makes.
+
+Probes queue no prompts - pure browser-side graph interaction - so the tier
+carries no backend-queue exclusivity constraint and the same spec runs
+unchanged under core and cloud, with per-environment baseline fixtures
+(`fixtures/customNode/interactionProfiles/`, cloud under `cloud/`),
+provenance-stamped like every recorded fixture family. Nodes with no
+compatible model-free producer record `NO_PRODUCER`; input-less nodes
+record `NO_INPUTS` - markers are locked observations too, so a node whose
+inputs vanish drifts loudly. `INTERACTION_UNSTABLE_NODES` is the
+mechanism-keyed escape hatch, empty until instability is observed across a
+record/compare cycle.
+
 ## 8. The persistence check
 
 Why it is staged: the DOM renderer's widget components react to creation
