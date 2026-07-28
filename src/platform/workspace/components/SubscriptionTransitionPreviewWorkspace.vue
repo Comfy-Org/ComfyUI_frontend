@@ -16,10 +16,10 @@
           <i class="pi pi-info-circle" />
         </div>
         <div class="flex flex-col gap-2">
-          <p class="m-0 text-sm font-bold text-text-primary">
+          <p class="m-0 text-sm font-bold text-base-foreground">
             {{ bannerTitle }}
           </p>
-          <p class="m-0 text-sm text-text-secondary">
+          <p class="m-0 text-sm text-muted-foreground">
             <i18n-t :keypath="bannerBodyKey" tag="span">
               <template #plan>{{ currentTierName }}</template>
               <template #date>{{ cancelDate }}</template>
@@ -40,12 +40,12 @@
           </p>
           <label
             v-if="exceedsMonthlyThreshold"
-            class="flex items-center gap-2 pt-1 text-sm text-text-secondary"
+            class="flex items-center gap-2 pt-1 text-sm text-muted-foreground"
           >
             <input
               v-model="reactivationConfirmed"
               type="checkbox"
-              class="size-4 rounded-sm border-border-default"
+              class="size-4 rounded-sm border-interface-stroke"
             />
             {{
               $t('subscription.preview.reactivation.checkboxLabel', {
