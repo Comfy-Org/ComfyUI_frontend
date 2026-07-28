@@ -92,17 +92,15 @@ baselined nodes.
 Sections refer to [ARCHITECTURE.md](ARCHITECTURE.md).
 
 **Proof run:** matrix run
-[30318248639](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/30318248639) -
-legs 1-13 green with in-log catch verdicts for rows 1-13. Row 14's leg in
-that run is RETIRED as evidence: its green came from the pattern matching a
-source snippet embedded in the results file, not a real compare message
-(the assert has since been hardened to match failure MESSAGES only, via jq,
-for every row). Row 14's valid evidence is the next matrix run after that
-hardening. Row N's evidence is its own leg, job
-`custom-nodes-e2e-core (N)`: the suite's red (with the row's message) is in
-that leg's "Run custom-node suite" log, and the leg's assert step quotes the
-matched pattern. Every push to this branch re-runs the whole matrix, so the
-proof is repeatable, not archival.
+[30326018611](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/30326018611) -
+all 13 legs green, every verdict from the hardened assert (patterns match
+failure MESSAGES extracted via jq, never raw results text - an earlier run's
+leg 14 went green on a pattern hitting a SOURCE SNIPPET embedded in the
+results file, which is exactly the fraud class the hardening closes). Row
+14's real compare message from that run: `impact_primitives_run.json 2:
+output hash changed - expected sha256:20a57b5f..., got sha256:9b1e4b7e...`.
+Every push to this branch re-runs the whole matrix, so the proof is
+repeatable, not archival.
 
 | #   | Surface (ARCH section)                           | Mode | Real regression it recreates                                                                                                                                                                                                       | The one-file break                                                                                                                                                                                                            | CI check that catches it                   | Exact red                                                                                                                                                       |
 | --- | ------------------------------------------------ | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
