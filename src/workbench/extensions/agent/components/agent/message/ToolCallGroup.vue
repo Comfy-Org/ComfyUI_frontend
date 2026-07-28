@@ -7,6 +7,8 @@ import {
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { ToolPart } from '../../../services/agent/agentMessageParts'
 
 import ToolCallCard from './ToolCallCard.vue'
@@ -85,15 +87,20 @@ watch(
         class="text-agent-danger icon-[lucide--circle-x] size-4 shrink-0"
       />
       <span v-else class="icon-[lucide--wrench] size-4 shrink-0" />
-      <span class="flex-1 text-left">{{
-        totalSeconds === null
-          ? t('agent.ranToolCalls', tools.length)
-          : t(
-              'agent.ranToolCallsTimed',
-              { seconds: totalSeconds },
-              tools.length
-            )
-      }}</span>
+      <span
+        :class="
+          cn('flex-1 text-left', (streaming || running) && 'agent-shimmer-text')
+        "
+        >{{
+          totalSeconds === null
+            ? t('agent.ranToolCalls', tools.length)
+            : t(
+                'agent.ranToolCallsTimed',
+                { seconds: totalSeconds },
+                tools.length
+              )
+        }}</span
+      >
       <span
         class="icon-[lucide--chevron-down] size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180"
       />

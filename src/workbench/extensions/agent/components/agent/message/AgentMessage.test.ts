@@ -37,4 +37,22 @@ describe('AgentMessage thinking narration', () => {
 
     expect(screen.getByText('Thinking...')).toBeInTheDocument()
   })
+
+  it('narrates below the tool calls it follows, not above them', () => {
+    const message = thinkingMessage('Planning the next step')
+    message.parts = [
+      { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' }
+    ]
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const summary = screen.getByText('Ran 1 tool call')
+    const narration = screen.getByText('Planning the next step')
+    expect(
+      summary.compareDocumentPosition(narration) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
 })
