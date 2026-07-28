@@ -7,11 +7,9 @@ import type { LinkId } from '@/lib/litegraph/src/LLink'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 /** `isConnected` is on the class, not the INodeInputSlot interface. */
-function inputSlot(node: LGraphNode, index: number): NodeInputSlot {
+function inputSlot(node: LGraphNode, index: number): NodeInputSlot | null {
   const slot = node.inputs[index]
-  if (!(slot instanceof NodeInputSlot))
-    throw new Error('expected NodeInputSlot')
-  return slot
+  return slot instanceof NodeInputSlot ? slot : null
 }
 
 function createConnectedPair() {
@@ -72,19 +70,16 @@ describe('NodeInputSlot', () => {
     graph.add(target)
     const firstLink = source.connect(0, target, 0)!
     const secondLink = source.connect(0, target, 1)!
-    const input = target.inputs[0]
-    if (!(input instanceof NodeInputSlot)) {
-      throw new Error('expected NodeInputSlot')
-    }
-    expect(input.toJSON().link).toBe(firstLink.id)
-    expect(input.isConnected).toBe(true)
+    const input = inputSlot(target, 0)
+    expect(input?.toJSON().link).toBe(firstLink.id)
+    expect(input?.isConnected).toBe(true)
 
     // Links keep naming slot indices, so a reordered slot picks up whichever
     // link now targets its position.
     target.inputs.reverse()
 
-    expect(input.toJSON().link).toBe(secondLink.id)
-    expect(input.isConnected).toBe(true)
+    expect(input?.toJSON().link).toBe(secondLink.id)
+    expect(input?.isConnected).toBe(true)
   })
 
   it('ignores writes, warns, and keeps the store-derived value', () => {
@@ -109,17 +104,17 @@ describe('NodeInputSlot.isConnected', () => {
 
   it('reflects connect and disconnect', () => {
     const { target } = createConnectedPair()
-    expect(inputSlot(target, 0).isConnected).toBe(true)
+    expect(inputSlot(target, 0)?.isConnected).toBe(true)
 
     target.disconnectInput(0, true)
-    expect(inputSlot(target, 0).isConnected).toBe(false)
+    expect(inputSlot(target, 0)?.isConnected).toBe(false)
   })
 
   it('reports false for a slot on a graphless node', () => {
     const orphan = new LGraphNode('Orphan')
     orphan.addInput('in', 'INT')
 
-    expect(inputSlot(orphan, 0).isConnected).toBe(false)
+    expect(inputSlot(orphan, 0)?.isConnected).toBe(false)
   })
 })
 
