@@ -178,7 +178,7 @@
         class="w-full rounded-lg"
         :loading="isLoading"
         :disabled="confirmDisabled"
-        @click="$emit('confirm')"
+        @click="$emit('confirm', confirmReactivation)"
       >
         {{ confirmCta }}
       </Button>
@@ -224,7 +224,9 @@ const {
 }>()
 
 defineEmits<{
-  confirm: []
+  /** True only once the reactivation banner was shown and confirmed (checkbox
+   *  ticked above the charge threshold, since confirmDisabled gates the button). */
+  confirm: [confirmReactivation: boolean]
   back: []
 }>()
 
@@ -334,6 +336,11 @@ const chargeDisplay = computed(
 const reactivationConfirmed = ref(false)
 const confirmDisabled = computed(
   () => exceedsMonthlyThreshold.value && !reactivationConfirmed.value
+)
+const confirmReactivation = computed(
+  () =>
+    isReactivating.value &&
+    (!exceedsMonthlyThreshold.value || reactivationConfirmed.value)
 )
 
 const bannerTitle = computed(() =>

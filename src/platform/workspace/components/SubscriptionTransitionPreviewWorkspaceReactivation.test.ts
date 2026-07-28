@@ -323,7 +323,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
   })
 
   describe('confirm', () => {
-    it('emits confirm when clicked', async () => {
+    it('emits confirmReactivation false when the subscription is not cancelled', async () => {
       const user = userEvent.setup()
       mockSubscription.value = { isCancelled: false, endDate: null }
       const { emitted } = renderComponent(
@@ -332,7 +332,59 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
 
       await user.click(screen.getByRole('button', { name: 'Confirm change' }))
 
-      expect(emitted().confirm).toBeTruthy()
+      expect(emitted().confirm).toEqual([[false]])
+    })
+
+    it('emits confirmReactivation true below the charge threshold, with no checkbox to tick', async () => {
+      const user = userEvent.setup()
+      mockSubscription.value = {
+        isCancelled: true,
+        endDate: '2026-08-15T00:00:00Z'
+      }
+      const { emitted } = renderComponent(
+        makePreview({ transition_type: 'upgrade', cost_today_cents: 1500 })
+      )
+
+      await user.click(
+        screen.getByRole('button', { name: 'Confirm & reactivate — $15 today' })
+      )
+
+      expect(emitted().confirm).toEqual([[true]])
+    })
+
+    it('emits confirmReactivation true above the threshold only once the checkbox is ticked', async () => {
+      const user = userEvent.setup()
+      mockSubscription.value = {
+        isCancelled: true,
+        endDate: '2026-08-15T00:00:00Z'
+      }
+      const { emitted } = renderComponent(
+        makePreview({
+          transition_type: 'duration_change',
+          cost_today_cents: 33_600,
+          new_plan: {
+            slug: 'standard-annual',
+            tier: 'STANDARD',
+            duration: 'ANNUAL',
+            price_cents: 33_600,
+            credits_cents: 0,
+            period_end: '2027-08-15T00:00:00Z',
+            seat_summary: {
+              seat_count: 1,
+              total_cost_cents: 33_600,
+              total_credits_cents: 0
+            }
+          }
+        })
+      )
+      const confirmButton = screen.getByRole('button', {
+        name: 'Confirm & reactivate — $336 today'
+      })
+
+      await user.click(screen.getByRole('checkbox'))
+      await user.click(confirmButton)
+
+      expect(emitted().confirm).toEqual([[true]])
     })
   })
 })

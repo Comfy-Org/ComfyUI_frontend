@@ -88,8 +88,7 @@ export function useSubscriptionCheckout(
     plans,
     fetchPlans,
     isTeamPlan,
-    resubscribe,
-    subscription
+    resubscribe
   } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
   const { permissions } = useWorkspaceUI()
@@ -280,7 +279,7 @@ export function useSubscriptionCheckout(
     emit('close', true)
   }
 
-  async function handleSubscription() {
+  async function handleSubscription(confirmReactivation = false) {
     if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
 
     const tierKey = selectedTierKey.value
@@ -301,7 +300,7 @@ export function useSubscriptionCheckout(
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
-        confirmReactivation: subscription.value?.isCancelled ?? false
+        confirmReactivation
       })
 
       if (response) {
@@ -435,7 +434,7 @@ export function useSubscriptionCheckout(
     if (operation.status === 'succeeded') checkoutStep.value = 'success'
   }
 
-  async function handleTeamSubscription() {
+  async function handleTeamSubscription(confirmReactivation = false) {
     if (!permissions.value.canManageSubscription) return
 
     const teamCheckout = selectedTeamCheckout.value
@@ -459,7 +458,7 @@ export function useSubscriptionCheckout(
         billingCycle,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
-        confirmReactivation: subscription.value?.isCancelled ?? false
+        confirmReactivation
       })
 
       if (response) {

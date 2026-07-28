@@ -755,8 +755,7 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    it('forwards confirmReactivation true for a team change when the current subscription is cancelled', async () => {
-      mockSubscription.value = { isCancelled: true }
+    it('forwards confirmReactivation true when the disclosure banner reports consent', async () => {
       const checkout = await setup()
       await checkout.handleSubscribeTeamClick({
         stop: {
@@ -774,11 +773,42 @@ describe('useSubscriptionCheckout', () => {
       mockFetchStatus.mockResolvedValueOnce(undefined)
       mockFetchBalance.mockResolvedValueOnce(undefined)
 
-      await checkout.handleTeamSubscribe()
+      await checkout.handleTeamSubscribe(true)
 
       expect(mockSubscribe).toHaveBeenCalledWith(
         'team_per_credit_monthly',
         expect.objectContaining({ confirmReactivation: true })
+      )
+    })
+
+    // Regression guard for BE-4782: confirmReactivation must come from the
+    // disclosure banner's own confirm action, never be re-derived from
+    // subscription.isCancelled (which is true for every reactivation request
+    // and would make the server-side consent check vacuous).
+    it('does not forward confirmReactivation true for a cancelled subscription unless the disclosure was confirmed', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly'
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-1'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({ confirmReactivation: false })
       )
     })
 
@@ -1247,8 +1277,7 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    it('forwards confirmReactivation true when the current subscription is cancelled', async () => {
-      mockSubscription.value = { isCancelled: true }
+    it('forwards confirmReactivation true when the disclosure banner reports consent', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -1259,11 +1288,35 @@ describe('useSubscriptionCheckout', () => {
       mockFetchStatus.mockResolvedValueOnce(undefined)
       mockFetchBalance.mockResolvedValueOnce(undefined)
 
-      await checkout.handleConfirmTransition()
+      await checkout.handleConfirmTransition(true)
 
       expect(mockSubscribe).toHaveBeenCalledWith(
         'standard-yearly',
         expect.objectContaining({ confirmReactivation: true })
+      )
+    })
+
+    // Regression guard for BE-4782: confirmReactivation must come from the
+    // disclosure banner's own confirm action, never be re-derived from
+    // subscription.isCancelled (which is true for every reactivation request
+    // and would make the server-side consent check vacuous).
+    it('does not forward confirmReactivation true for a cancelled subscription unless the disclosure was confirmed', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-3'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleConfirmTransition()
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.objectContaining({ confirmReactivation: false })
       )
     })
 
