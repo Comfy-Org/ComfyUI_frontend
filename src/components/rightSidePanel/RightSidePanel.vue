@@ -113,6 +113,22 @@ function closePanel() {
   rightSidePanelStore.closePanel()
 }
 
+const TAB_OPENED_BUTTON_IDS: Partial<Record<RightSidePanelTab, string>> = {
+  settings: 'right_side_panel_settings_tab_opened',
+  info: 'right_side_panel_info_tab_opened'
+}
+
+function handleTabChange(newTab: RightSidePanelTab) {
+  const buttonId = TAB_OPENED_BUTTON_IDS[newTab]
+  if (buttonId) {
+    useTelemetry()?.trackUiButtonClicked({
+      button_id: buttonId,
+      element_group: 'right_side_panel'
+    })
+  }
+  rightSidePanelStore.openPanel(newTab)
+}
+
 type RightSidePanelTabList = Array<{
   label: () => string
   value: RightSidePanelTab
@@ -347,14 +363,7 @@ function handleTitleCancel() {
         </div>
       </div>
       <nav class="overflow-x-auto px-4 pt-1 pb-2">
-        <TabList
-          :model-value="activeTab"
-          @update:model-value="
-            (newTab: RightSidePanelTab) => {
-              rightSidePanelStore.openPanel(newTab)
-            }
-          "
-        >
+        <TabList :model-value="activeTab" @update:model-value="handleTabChange">
           <Tab
             v-for="tab in tabs"
             :key="tab.value"
