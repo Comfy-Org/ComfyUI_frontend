@@ -1,9 +1,3 @@
-/**
- * Manager dialog migration regression net: `useManagerDialog().show()` must
- * route through the Reka renderer at the legacy Manager dimensions (1724px
- * max-width × 80vh, expanding at 3000px). Catches accidental reverts of the
- * Phase 4 renderer flip.
- */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
@@ -22,11 +16,10 @@ describe('useManagerDialog', () => {
     closeDialog.mockReset()
   })
 
-  it("show() opens the Reka renderer with size 'full' and Manager content sizing", () => {
+  it("show() opens with size 'full' and Manager content sizing", () => {
     useManagerDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('global-manager')
-    expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('full')
     expect(args.dialogComponentProps.contentClass).toContain('max-w-[1724px]')
     expect(args.dialogComponentProps.contentClass).toContain('h-[80vh]')

@@ -41,7 +41,6 @@ const openIn3DViewer = () => {
     component: Load3DViewerContent,
     props: props,
     dialogComponentProps: {
-      renderer: 'reka',
       size: 'full',
       contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
       maximizable: true,

@@ -11,7 +11,7 @@ describe('openTypeformDialog', () => {
     setActivePinia(createPinia())
   })
 
-  it('opens the form embed in a Reka dialog with the given id and hidden fields', () => {
+  it('opens the form embed with the given id and hidden fields', () => {
     const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
 
     openTypeformDialog({
@@ -26,7 +26,7 @@ describe('openTypeformDialog', () => {
         title: 'A Form',
         component: TypeformDialogContent,
         props: { typeformId: 'abc123', hiddenFields: 'foo=bar' },
-        dialogComponentProps: expect.objectContaining({ renderer: 'reka' })
+        dialogComponentProps: expect.objectContaining({ size: 'lg' })
       })
     )
   })

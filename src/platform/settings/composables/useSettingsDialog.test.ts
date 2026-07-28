@@ -1,9 +1,3 @@
-/**
- * Settings dialog migration regression net: `useSettingsDialog().show()` must
- * open the Reka-renderer path with sizing that matches the previous
- * `BaseModalLayout size="sm"` (960px × 80vh). Catches accidental reverts of
- * the Phase 3 renderer flip.
- */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
@@ -53,11 +47,10 @@ describe('useSettingsDialog', () => {
     isCloudRef.value = false
   })
 
-  it("show() opens the Reka renderer with size 'full' and 1280px content sizing", () => {
+  it("show() opens with size 'full' and 1280px content sizing", () => {
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('global-settings')
-    expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('full')
     expect(args.dialogComponentProps.contentClass).toContain('max-w-[1280px]')
     expect(args.dialogComponentProps.contentClass).not.toContain(

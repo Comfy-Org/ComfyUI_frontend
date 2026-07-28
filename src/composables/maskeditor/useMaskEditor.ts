@@ -23,7 +23,6 @@ export function useMaskEditor() {
         node
       },
       dialogComponentProps: {
-        renderer: 'reka',
         size: 'full',
         // `mask-editor-dialog` is a styling-free hook class consumed by
         // browser_tests (MaskEditorHelper, maskEditor.spec).
