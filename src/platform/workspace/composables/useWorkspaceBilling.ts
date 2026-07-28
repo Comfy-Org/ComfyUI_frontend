@@ -337,8 +337,13 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       await Promise.all([fetchStatus(), fetchBalance()])
     } catch (err) {
       if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
-        // Mirrors the success path, which refreshes balance too.
-        await resyncQuietly(() => Promise.all([fetchStatus(), fetchBalance()]))
+        // Mirrors the success path, which refreshes balance too. allSettled,
+        // not all: a rejection from one read must not release this branch while
+        // the other is still in flight, or that one writes its failure into
+        // error after the clear below.
+        await resyncQuietly(() =>
+          Promise.allSettled([fetchStatus(), fetchBalance()])
+        )
         error.value = null
         return
       }

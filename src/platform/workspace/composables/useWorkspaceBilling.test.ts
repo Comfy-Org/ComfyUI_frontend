@@ -907,6 +907,34 @@ describe('useWorkspaceBilling', () => {
       expect(billing.balance.value?.amountMicros).toBe(5_000_000)
     })
 
+    it('waits for both reconciliation reads to settle before clearing the error', async () => {
+      mockWorkspaceApi.resubscribe.mockRejectedValue(
+        new mockWorkspaceApiError(
+          'Not scheduled',
+          400,
+          'NOT_SCHEDULED_FOR_CANCELLATION'
+        )
+      )
+      // Staggered on purpose: the status read fails immediately, the balance
+      // read fails only after the branch has had every chance to finish.
+      // Releasing on the first rejection lets the late one write its failure
+      // into error after the branch already cleared it.
+      mockWorkspaceApi.getBillingStatus.mockRejectedValue(
+        new Error('status down')
+      )
+      const balance = createDeferred<never>()
+      mockWorkspaceApi.getBillingBalance.mockReturnValue(balance.promise)
+
+      const billing = setupBilling()
+      const pending = billing.resubscribe()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      balance.reject(new Error('balance down'))
+
+      await expect(pending).resolves.toBeUndefined()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(billing.error.value).toBeNull()
+    })
+
     it('stays a success when the follow-up reads also fail', async () => {
       mockWorkspaceApi.resubscribe.mockRejectedValue(
         new mockWorkspaceApiError(
