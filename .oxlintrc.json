@@ -123,6 +123,13 @@
   },
   "overrides": [
     {
+      "files": ["scripts/**"],
+      "rules": {
+        "no-console": "allow",
+        "typescript/no-floating-promises": "off"
+      }
+    },
+    {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"

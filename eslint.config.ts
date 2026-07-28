@@ -88,6 +88,8 @@ export default defineConfig([
       'src/types/generatedManagerTypes.ts',
       'src/types/vue-shim.d.ts',
       'packages/design-system/src/css/lucideStrokePlugin.js',
+      // Opt-in strict-audit config; its plugins are intentionally not installed
+      '.agents/checks/eslint.strict.config.js',
       'test-results/*',
       'vitest.setup.ts'
     ]
@@ -102,7 +104,9 @@ export default defineConfig([
         projectService: {
           allowDefaultProject: [
             'vite.electron.config.mts',
-            'vite.types.config.mts'
+            'vite.types.config.mts',
+            'packages/ingest-types/openapi-ts.config.ts',
+            'packages/object-info-parser/vitest.config.ts'
           ]
         }
       }
@@ -346,6 +350,26 @@ export default defineConfig([
     rules: {
       '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off'
+    }
+  },
+  // Root-level scripts reach into workspace packages by path: they run from the
+  // repo root, where the package specifiers those imports would be rewritten to
+  // (`@comfyorg/desktop-ui/...`, `@comfyorg/shared-frontend-utils/src/...`) do
+  // not resolve — desktop-ui is not a root dependency and shared-frontend-utils
+  // exposes no `./src/*` export.
+  {
+    files: ['scripts/**/*.ts'],
+    rules: {
+      'import-x/no-relative-packages': 'off'
+    }
+  },
+  // Dev-only extensions loaded by the ComfyUI backend in a browser page
+  {
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
     }
   },
 
