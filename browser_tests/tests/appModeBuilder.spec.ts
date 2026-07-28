@@ -2,6 +2,10 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import {
+  dismissErrorOverlay,
+  enableErrorsOverlay
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
 test.describe('App mode builder selection', () => {
@@ -48,10 +52,13 @@ test.describe('App mode builder selection', () => {
   })
 
   test('Can not select a node with an error', async ({ comfyPage }) => {
-    // Seeding a real error costs a queue round trip on top of two setting
-    // changes, which does not fit the default per-test budget.
+    // This test seeds a real error through a prompt round trip, on top of two
+    // setting changes and the builder navigation.
     test.slow()
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    // Without the errors tab, a failed prompt raises a modal error dialog
+    // instead, and a modal makes the topbar inert (app.ts:1754).
+    await enableErrorsOverlay(comfyPage)
 
     const [checkpointLoader] = await comfyPage.nodeOps.getNodeRefsByType(
       'CheckpointLoaderSimple'
@@ -71,6 +78,7 @@ test.describe('App mode builder selection', () => {
       }
     })
     await comfyPage.runButton.click()
+    await dismissErrorOverlay(comfyPage)
 
     // The error ring is the user-visible signal that the store took the error;
     // waiting on it keeps the builder assertions below from racing the response.
