@@ -614,6 +614,11 @@ export default defineConfig({
               test: /[\\/]node_modules[\\/]@sentry[\\/]/,
               priority: 15
             },
+            {
+              name: 'vendor-datadog',
+              test: /[\\/]node_modules[\\/]@datadog[\\/]/,
+              priority: 15
+            },
 
             // UI component libraries
             {
