@@ -58,6 +58,8 @@ describe('OnboardingCoach', () => {
     const left = Number.parseFloat(card.style.left)
     expect(left + 256).toBeLessThanOrEqual(700)
     expect(left).toBeGreaterThanOrEqual(8)
+    // Anchored near the panel's top, not its bottom edge.
+    expect(Number.parseFloat(card.style.top)).toBe(108)
   })
 
   it('offers a single Got it action and no Skip', async () => {

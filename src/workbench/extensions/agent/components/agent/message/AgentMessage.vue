@@ -62,6 +62,7 @@ const showActions = computed(
         v-else-if="group.kind === 'tools'"
         :tools="group.parts"
         :streaming="message.streaming"
+        :active="message.streaming && index === groups.length - 1"
       />
       <TabLinkCard
         v-else-if="group.kind === 'tabLink'"

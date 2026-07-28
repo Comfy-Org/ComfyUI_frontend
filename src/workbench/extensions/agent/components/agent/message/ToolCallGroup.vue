@@ -13,9 +13,14 @@ import type { ToolPart } from '../../../services/agent/agentMessageParts'
 
 import ToolCallCard from './ToolCallCard.vue'
 
-const { tools, streaming = false } = defineProps<{
+const {
+  tools,
+  streaming = false,
+  active = false
+} = defineProps<{
   tools: ToolPart[]
   streaming?: boolean
+  active?: boolean
 }>()
 
 const { t } = useI18n()
@@ -89,7 +94,7 @@ watch(
       <span v-else class="icon-[lucide--wrench] size-4 shrink-0" />
       <span
         :class="
-          cn('flex-1 text-left', (streaming || running) && 'agent-shimmer-text')
+          cn('flex-1 text-left', (active || running) && 'agent-shimmer-text')
         "
         >{{
           totalSeconds === null
