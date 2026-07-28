@@ -498,6 +498,149 @@ describe('useSecretForm', () => {
     })
   })
 
+  describe('stored credential type in edit mode', () => {
+    it('uses json_file input for a stored gcp_service_account secret even when provider metadata omits input_type', async () => {
+      const visible = ref(false)
+      const secret = createMockSecret({
+        provider: 'gemini',
+        credential_type: 'gcp_service_account'
+      })
+
+      const { selectedInputType } = useSecretForm({
+        mode: 'edit',
+        secret: () => secret,
+        existingProviders: () => ['gemini'],
+        availableProviders: () => [{ id: 'gemini' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      visible.value = true
+      await nextTick()
+
+      expect(selectedInputType.value).toBe('json_file')
+    })
+
+    it('validates the updated value as JSON for a stored gcp_service_account secret', async () => {
+      const visible = ref(false)
+      const secret = createMockSecret({
+        id: 'secret-sa',
+        provider: 'gemini',
+        credential_type: 'gcp_service_account'
+      })
+      mockUpdate.mockResolvedValue({})
+
+      const { form, errors, handleSubmit } = useSecretForm({
+        mode: 'edit',
+        secret: () => secret,
+        existingProviders: () => ['gemini'],
+        availableProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      visible.value = true
+      await nextTick()
+
+      form.secretValue = 'not json'
+      await handleSubmit()
+
+      expect(mockUpdate).not.toHaveBeenCalled()
+      expect(errors.secretValue).toBe('secrets.errors.invalidJson')
+
+      form.secretValue = '{"type":"service_account"}'
+      await handleSubmit()
+
+      expect(mockUpdate).toHaveBeenCalledWith('secret-sa', {
+        name: secret.name,
+        secret_value: '{"type":"service_account"}'
+      })
+    })
+
+    it('allows a name-only update for a stored gcp_service_account secret without JSON validation', async () => {
+      const visible = ref(false)
+      const secret = createMockSecret({
+        id: 'secret-sa',
+        provider: 'gemini',
+        credential_type: 'gcp_service_account'
+      })
+      mockUpdate.mockResolvedValue({})
+
+      const { form, errors, handleSubmit } = useSecretForm({
+        mode: 'edit',
+        secret: () => secret,
+        existingProviders: () => ['gemini'],
+        availableProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      visible.value = true
+      await nextTick()
+
+      form.name = 'Renamed SA'
+      form.secretValue = ''
+
+      await handleSubmit()
+
+      expect(errors.secretValue).toBe('')
+      expect(mockUpdate).toHaveBeenCalledWith('secret-sa', {
+        name: 'Renamed SA'
+      })
+    })
+
+    it('uses text input for a stored api_key secret even when the provider is a json_file provider', async () => {
+      const visible = ref(false)
+      const secret = createMockSecret({
+        id: 'secret-key',
+        provider: 'gemini',
+        credential_type: 'api_key'
+      })
+      mockUpdate.mockResolvedValue({})
+
+      const { form, selectedInputType, handleSubmit } = useSecretForm({
+        mode: 'edit',
+        secret: () => secret,
+        existingProviders: () => ['gemini'],
+        availableProviders: () => [{ id: 'gemini', input_type: 'json_file' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      visible.value = true
+      await nextTick()
+
+      expect(selectedInputType.value).toBe('text')
+
+      form.secretValue = 'plain-api-key'
+      await handleSubmit()
+
+      expect(mockUpdate).toHaveBeenCalledWith('secret-key', {
+        name: secret.name,
+        secret_value: 'plain-api-key'
+      })
+    })
+
+    it('falls back to provider input_type for a secret without a stored credential type', async () => {
+      const visible = ref(false)
+      const secret = createMockSecret({ provider: 'gemini' })
+
+      const { selectedInputType } = useSecretForm({
+        mode: 'edit',
+        secret: () => secret,
+        existingProviders: () => ['gemini'],
+        availableProviders: () => [{ id: 'gemini', input_type: 'json_file' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      visible.value = true
+      await nextTick()
+
+      expect(selectedInputType.value).toBe('json_file')
+    })
+  })
+
   describe('json_file credential input', () => {
     const vertexProviders: SecretProviderInfo[] = [
       { id: 'gemini', input_type: 'json_file' }

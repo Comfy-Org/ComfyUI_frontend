@@ -1165,6 +1165,11 @@
     "runsOnSelected": "{count} Runs On",
     "runsOnFilter": "Runs on",
     "resultsCount": "Showing {count} of {total} templates",
+    "paidTemplate": {
+      "badgeLabel": "Partner API",
+      "title": "Premium template",
+      "credits": "Runs with credits"
+    },
     "sort": {
       "relevance": "Relevance",
       "recommended": "Recommended",
