@@ -394,7 +394,11 @@ test.describe('Model library sidebar - asset mode with a legacy bare tag', () =>
 test.describe('Model library sidebar - asset mode with a mid-retag twin tag', () => {
   test.beforeEach(async ({ comfyPage, assetApi }) => {
     assetApi.configure(
-      withModels([MODEL_TYPE_CHECKPOINT_ROOT, MODEL_TYPE_CHECKPOINT_MID_RETAG])
+      withModels([
+        MODEL_TYPE_CHECKPOINT_ROOT,
+        MODEL_TYPE_CHECKPOINT_MID_RETAG,
+        MODEL_TYPE_LORA
+      ])
     )
     await assetApi.mock()
     await comfyPage.modelLibrary.mockModelFolders([
@@ -437,7 +441,12 @@ test.describe('Model library sidebar - asset mode with a mid-retag twin tag', ()
         .filter({ hasText: 'mid_retag_checkpoint' })
     ).toHaveCount(1)
 
+    // loras carries a real model_type:loras asset so the folder itself
+    // renders (asset mode hides folders that load with zero models) —
+    // otherwise an absent 'loras' row would be ambiguous between "correctly
+    // empty" and "never loaded".
     await tab.getFolderRowByLabel('loras').click()
+    await expect(tab.getLeafByLabel('detail_enhancer_v1.2')).toBeVisible()
     await expect(
       tab.modelTree
         .locator('.p-tree-node-leaf')
