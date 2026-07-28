@@ -20,10 +20,27 @@ import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
-  /** @deprecated Derived from the link store via a warning prototype getter; never written. */
-  declare readonly links: readonly LinkId[] | null
   _data?: unknown
   slot_index?: number
+
+  /**
+   * @deprecated Reads return a fresh store-derived array; writes fire telemetry
+   * and are ignored, since the store cannot be mutated through the mirror.
+   * First-party code uses the slotLinks helpers.
+   */
+  get links(): readonly LinkId[] | null {
+    warnDeprecated(
+      'output.links is deprecated. Read connectivity via node.isOutputConnected(slot) / node.getOutputNodes(slot); enumerate links via outputLinks(graph, node.id, slot); mutate via node.connect() / node.disconnectOutput().'
+    )
+    const ids = linkIdsOf(this)
+    return ids.length ? Object.freeze(ids) : null
+  }
+
+  set links(_value: readonly LinkId[] | null) {
+    warnDeprecated(
+      'Assignment to output.links is deprecated and has no effect; connectivity is derived from the link store. Mutate via node.connect() / node.disconnectOutput().'
+    )
+  }
 
   get isWidgetInputSlot(): false {
     return false
@@ -36,22 +53,12 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     ]
   }
 
-  get index(): number {
-    return this._node.outputs.indexOf(this)
-  }
-
-  get linkIds(): LinkId[] {
-    const { graph } = this._node
-    return graph ? outputLinkIds(graph, this._node.id, this.index) : []
-  }
-
   constructor(
     slot: OptionalProps<INodeOutputSlot, 'boundingRect'>,
     node: LGraphNode
   ) {
     // Serialized outputs carry a legacy links mirror; strip it so the base
-    // ctor's Object.assign cannot collide with the deprecated prototype
-    // getter (assigning a getter-only property throws in strict mode).
+    // ctor's Object.assign does not trip the deprecated setter above.
     const { links: _legacyLinks, ...rest } = slot
     super(rest, node)
     this._data = slot._data
@@ -75,7 +82,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   override get isConnected(): boolean {
     const { graph } = this._node
     if (!graph) return false
-    return outputHasLinks(graph, this._node.id, this.index)
+    return outputHasLinks(graph, this._node.id, indexOf(this))
   }
 
   override draw(
@@ -97,7 +104,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   }
 
   override toJSON(): INodeOutputSlot {
-    const ids = this.linkIds
+    const ids = linkIdsOf(this)
     return {
       ...super.toJSON(),
       links: ids.length ? ids : null,
@@ -107,24 +114,15 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
 }
 
 /**
- * Deprecation telemetry for extensions that still touch `output.links`.
- * Reads return a fresh store-derived array; writes fire telemetry and are
- * ignored, since the store cannot be mutated through the mirror.
- * First-party code uses the slotLinks helpers.
+ * Module-local, not accessors: a getter-only property on the prototype would
+ * collide with the base ctor's `Object.assign` for any serialized slot that
+ * happens to carry the same key.
  */
-Object.defineProperty(NodeOutputSlot.prototype, 'links', {
-  get(this: NodeOutputSlot): readonly LinkId[] | null {
-    warnDeprecated(
-      'output.links is deprecated. Read connectivity via node.isOutputConnected(slot) / node.getOutputNodes(slot); enumerate links via outputLinks(graph, node.id, slot); mutate via node.connect() / node.disconnectOutput().'
-    )
-    const ids = this.linkIds
-    return ids.length ? Object.freeze(ids) : null
-  },
-  set(this: NodeOutputSlot): void {
-    warnDeprecated(
-      'Assignment to output.links is deprecated and has no effect; connectivity is derived from the link store. Mutate via node.connect() / node.disconnectOutput().'
-    )
-  },
-  configurable: true,
-  enumerable: false
-})
+function indexOf(slot: NodeOutputSlot): number {
+  return slot.node.outputs.indexOf(slot)
+}
+
+function linkIdsOf(slot: NodeOutputSlot): LinkId[] {
+  const { graph } = slot.node
+  return graph ? outputLinkIds(graph, slot.node.id, indexOf(slot)) : []
+}

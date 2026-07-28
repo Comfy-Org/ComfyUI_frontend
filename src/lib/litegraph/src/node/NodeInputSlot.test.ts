@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -119,5 +120,19 @@ describe('NodeInputSlot.isConnected', () => {
     orphan.addInput('in', 'INT')
 
     expect(inputSlot(orphan, 0).isConnected).toBe(false)
+  })
+})
+
+describe('NodeInputSlot construction', () => {
+  it('tolerates serialized slots carrying unknown keys', () => {
+    const node = new LGraphNode('Host')
+
+    expect(
+      () =>
+        new NodeInputSlot(
+          fromAny({ name: 'in', type: 'INT', index: 7, linkId: 3 }),
+          node
+        )
+    ).not.toThrow()
   })
 })
