@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -120,15 +121,31 @@ describe('WorkspacePanelContent billing banner', () => {
     mockWorkspaceType.value = 'team'
   })
 
-  it('hosts a single banner slot above the tab content, so it shows on every tab', () => {
+  it('keeps the legacy tabs without Activity and shares one banner', async () => {
     renderComponent()
 
+    const planTab = screen.getByRole('tab', {
+      name: 'workspacePanel.tabs.planCredits'
+    })
+    const membersTab = screen.getByRole('tab', {
+      name: 'workspacePanel.members.header'
+    })
     const banner = screen.getByTestId('billing-banner')
-    const planPanel = screen.getByText('workspacePanel.tabs.planCredits')
+
+    expect(planTab).toBeTruthy()
+    expect(membersTab).toBeTruthy()
     expect(
-      planPanel.compareDocumentPosition(banner) &
-        Node.DOCUMENT_POSITION_FOLLOWING
+      screen.queryByRole('tab', {
+        name: 'workspacePanel.planCredits.tabs.activity'
+      })
+    ).toBeNull()
+    expect(
+      planTab.compareDocumentPosition(banner) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
+
+    await userEvent.click(membersTab)
+    expect(screen.getAllByTestId('billing-banner')).toHaveLength(1)
+    expect(screen.getByTestId('billing-banner')).toBe(banner)
   })
 })
 

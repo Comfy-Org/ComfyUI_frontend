@@ -1,8 +1,23 @@
 import { datadogRum } from '@datadog/browser-rum'
 
-import type { ExecutionOutcomeMetadata, TelemetryProvider } from '../../types'
+import type {
+  BillingTelemetryEvent,
+  ExecutionOutcomeMetadata,
+  TelemetryProvider
+} from '../../types'
+import {
+  getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload
+} from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
+  trackBillingEvent(event: BillingTelemetryEvent): void {
+    datadogRum.addAction(
+      getBillingTelemetryEventName(event),
+      getBillingTelemetryEventPayload(event)
+    )
+  }
+
   trackExecutionOutcome({
     startTime,
     outcome
