@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 
 // S15 output-regression tier: pixel-content hashes for curated run outputs.
 //
@@ -92,6 +94,23 @@ export function outputKey(ref: OutputImageRef, index: number): string {
 }
 
 export type CuratedOutputHashes = Record<string, Record<string, string>>
+
+// Read-merge-write: record mode deliberately fails each test, and Playwright
+// restarts the worker after a failure, so in-memory accumulation resets per
+// test - proven by record run 30316246562, whose artifact held only the last
+// test's entry. The file on disk is the accumulator.
+export function recordObservedHashes(
+  filePath: string,
+  workflowKey: string,
+  observed: Record<string, string>
+): void {
+  const existing: CuratedOutputHashes = existsSync(filePath)
+    ? JSON.parse(readFileSync(filePath, 'utf-8'))
+    : {}
+  existing[workflowKey] = observed
+  mkdirSync(dirname(filePath), { recursive: true })
+  writeFileSync(filePath, JSON.stringify(existing, null, 2))
+}
 
 export function compareOutputHashes(input: {
   workflowKey: string

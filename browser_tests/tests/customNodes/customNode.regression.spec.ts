@@ -1,5 +1,5 @@
 /* oxlint-disable playwright/no-skipped-test -- tiers conditionally skip when the target backend lacks the required packs (installed custom nodes or devtools); this is the framework's designed environment gating, not a disabled test */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 
 import type { CuratedOutputHashes } from '@e2e/fixtures/customNode/outputHashes'
@@ -7,7 +7,8 @@ import {
   compareOutputHashes,
   hashPngPixels,
   imageRefsFrom,
-  outputKey
+  outputKey,
+  recordObservedHashes
 } from '@e2e/fixtures/customNode/outputHashes'
 
 const curatedOutputHashes: CuratedOutputHashes = JSON.parse(
@@ -16,7 +17,6 @@ const curatedOutputHashes: CuratedOutputHashes = JSON.parse(
     'utf-8'
   )
 )
-const recordedOutputHashes: CuratedOutputHashes = {}
 
 import type { Page } from '@playwright/test'
 
@@ -268,11 +268,10 @@ for (const entry of loadManifest()) {
           }
           const workflowKey = `${entry.pack}/${basename(entry.workflow)}`
           if (process.env.RECORD_OUTPUT_HASHES) {
-            recordedOutputHashes[workflowKey] = observed
-            mkdirSync('test-results', { recursive: true })
-            writeFileSync(
+            recordObservedHashes(
               'test-results/curatedOutputHashes.recorded.json',
-              JSON.stringify(recordedOutputHashes, null, 2)
+              workflowKey,
+              observed
             )
             // A record run must never read as a green test run (the
             // CN_GEOMETRY record convention): fail after writing.
