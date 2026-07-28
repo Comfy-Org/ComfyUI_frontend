@@ -37,7 +37,7 @@ const glyphColor = computed(() =>
 </script>
 
 <template>
-  <div class="text-agent-fg flex items-center gap-2 px-3 py-1.5 text-sm">
+  <div class="text-agent-fg flex items-center gap-2 px-3 py-2 text-sm">
     <span :class="cn('size-4 shrink-0', glyph, glyphColor)" />
     <span class="truncate text-xs">{{ label }}</span>
     <span v-if="count > 1" class="text-agent-fg-subtle text-xs"
