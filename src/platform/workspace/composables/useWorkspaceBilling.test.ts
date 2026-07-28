@@ -78,6 +78,14 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
+const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackBillingEvent: mockTrackBillingEvent
+  })
+}))
+
 let scope: ReturnType<typeof effectScope> | undefined
 
 function setupBilling() {
@@ -746,6 +754,57 @@ describe('useWorkspaceBilling', () => {
       expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
+    it('fires billing telemetry directly when the initiating call fails before a billing_op_id exists', async () => {
+      mockWorkspaceApi.cancelSubscription.mockRejectedValue(
+        new mockWorkspaceApiError('Upstream failure', 502)
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow(
+        'Upstream failure'
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'failed',
+        outcome: 'failure',
+        operation_type: 'cancel',
+        failure_category: 'api_rejected'
+      })
+    })
+
+    it('categorizes a status-less initiating failure as network', async () => {
+      mockWorkspaceApi.cancelSubscription.mockRejectedValue(
+        new mockWorkspaceApiError('Failed to fetch')
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ failure_category: 'network' })
+      )
+    })
+
+    it('does not duplicate telemetry for a poller failure once a billing_op_id exists', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-fail',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      mockStartOperation.mockResolvedValue(
+        operation({ status: 'failed', errorMessage: 'processor rejected' })
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow(
+        'processor rejected'
+      )
+      // The billing-op poller (billingOperationStore) already fires failure
+      // telemetry for this case — the composable must not fire a duplicate.
+      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+    })
+
     it('falls back to a generic error message when cancel rejects with a non-Error', async () => {
       mockWorkspaceApi.cancelSubscription.mockRejectedValue('boom')
 
@@ -779,6 +838,8 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.tier).toBe('CREATOR')
       expect(mockStartOperation).not.toHaveBeenCalled()
       expect(billing.isLoading.value).toBe(false)
+      // Already being in the requested state is not a failure — no telemetry.
+      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('stays a success when the follow-up status read also fails', async () => {

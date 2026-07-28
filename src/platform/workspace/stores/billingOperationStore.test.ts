@@ -54,10 +54,12 @@ vi.mock('@/stores/dialogStore', () => ({
 }))
 
 const mockTrackBillingEvent = vi.fn()
+const mockTrackMonthlySubscriptionSucceeded = vi.fn()
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackBillingEvent: mockTrackBillingEvent
+    trackBillingEvent: mockTrackBillingEvent,
+    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
   })
 }))
 
@@ -263,6 +265,47 @@ describe('billingOperationStore', () => {
       })
     })
 
+    it('also fires the generic subscription-success event for non-canonical providers', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription', {
+        tier: 'creator',
+        cycle: 'yearly',
+        checkoutType: 'new'
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledWith({
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        payment_intent_source: undefined,
+        billing_op_id: 'op-1'
+      })
+    })
+
+    it('does not fire the generic subscription-success event for topup or cancel', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
+    })
+
     it('emits downgrade success only after the billing operation succeeds', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-downgrade',
@@ -387,8 +430,48 @@ describe('billingOperationStore', () => {
         cycle: undefined,
         checkout_type: undefined,
         payment_intent_source: undefined,
-        failure_category: 'unknown'
+        failure_category: 'provider_decline'
       })
+    })
+
+    it('categorizes a topup poll failure as a provider decline too', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation_type: 'topup',
+          failure_category: 'provider_decline'
+        })
+      )
+    })
+
+    it('categorizes a cancel poll failure as an api rejection, not a provider decline', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'cancel')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation_type: 'cancel',
+          failure_category: 'api_rejected'
+        })
+      )
     })
 
     it('uses default message when no error_message in response', async () => {

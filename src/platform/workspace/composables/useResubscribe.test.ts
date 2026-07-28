@@ -44,6 +44,13 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
+vi.mock('@/platform/telemetry/utils/billingFailureCategory', () => ({
+  categorizeBillingApiError: (err: unknown) =>
+    err instanceof Error && err.name === 'AuthStoreError'
+      ? 'api_rejected'
+      : 'unknown'
+}))
+
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: state.toastAdd })
 }))
@@ -72,7 +79,7 @@ describe('useResubscribe', () => {
     expect(isResubscribing.value).toBe(false)
   })
 
-  it('keeps legacy resubscribe behavior independent of workspace roles', async () => {
+  it('fires resubscribe success telemetry on the legacy rail too', async () => {
     state.shouldUseWorkspaceBilling = false
     state.canManageSubscriptionLifecycle = false
     const { handleResubscribe } = useResubscribe()
@@ -81,7 +88,12 @@ describe('useResubscribe', () => {
 
     expect(state.resubscribe).toHaveBeenCalledOnce()
     expect(state.trackResubscribeClicked).toHaveBeenCalledOnce()
-    expect(state.trackBillingEvent).not.toHaveBeenCalled()
+    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'succeeded',
+      outcome: 'success',
+      source: 'settings_billing_panel'
+    })
     expect(state.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
     )
@@ -110,5 +122,26 @@ describe('useResubscribe', () => {
       failure_category: 'unknown'
     })
     expect(isResubscribing.value).toBe(false)
+  })
+
+  it('fires resubscribe failure telemetry on the legacy rail too, categorizing the error', async () => {
+    state.shouldUseWorkspaceBilling = false
+    const authStoreError = new Error('checkout initiation rejected')
+    authStoreError.name = 'AuthStoreError'
+    state.resubscribe.mockRejectedValueOnce(authStoreError)
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.trackBillingEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ stage: 'succeeded' })
+    )
+    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'failed',
+      outcome: 'failure',
+      source: 'settings_billing_panel',
+      failure_category: 'api_rejected'
+    })
   })
 })

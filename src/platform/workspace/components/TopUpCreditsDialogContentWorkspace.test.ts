@@ -73,6 +73,13 @@ vi.mock('@/platform/telemetry/topupTracker', () => ({
   clearTopupTracking: vi.fn()
 }))
 
+vi.mock('@/platform/telemetry/utils/billingFailureCategory', () => ({
+  categorizeBillingApiError: (err: unknown) =>
+    err instanceof Error && err.name === 'WorkspaceApiError'
+      ? 'api_rejected'
+      : 'unknown'
+}))
+
 vi.mock('@/composables/useExternalLink', () => ({
   useExternalLink: () => ({
     buildDocsUrl: () => 'https://docs.comfy.org',
@@ -219,7 +226,23 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'failed',
       outcome: 'failure',
       billing_op_id: 'op-1',
-      failure_category: 'unknown'
+      failure_category: 'provider_decline'
+    })
+  })
+
+  it('categorizes a thrown topup error via the shared classifier', async () => {
+    const workspaceApiError = new Error('upstream rejected')
+    workspaceApiError.name = 'WorkspaceApiError'
+    mockTopup.mockRejectedValue(workspaceApiError)
+
+    renderDialog()
+    await clickAddCredits()
+
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: 'api_rejected'
     })
   })
 

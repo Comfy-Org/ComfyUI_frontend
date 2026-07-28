@@ -3,6 +3,8 @@ import { computed, ref, shallowRef } from 'vue'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useTelemetry } from '@/platform/telemetry'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse,
@@ -69,6 +71,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const billingPlans = useBillingPlans()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const telemetry = useTelemetry()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -301,10 +304,16 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function cancelSubscription(): Promise<void> {
     isLoading.value = true
     error.value = null
+    // Set once the initiating call returns a billing_op_id: the poller then
+    // owns failure telemetry for this operation (see billingOperationStore's
+    // handleFailure). While it is still undefined, nothing is polling this
+    // cancellation, so a thrown error here would otherwise go untelemetered.
+    let billingOpId: string | undefined
     try {
       const response = await workspaceApi.cancelSubscription()
+      billingOpId = response.billing_op_id
       const operation = await billingOperationStore.startOperation(
-        response.billing_op_id,
+        billingOpId,
         'cancel'
       )
 
@@ -320,6 +329,15 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         // holds, so the operation is not in error.
         error.value = null
         return
+      }
+      if (billingOpId === undefined) {
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'failed',
+          outcome: 'failure',
+          operation_type: 'cancel',
+          failure_category: categorizeBillingApiError(err)
+        })
       }
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'

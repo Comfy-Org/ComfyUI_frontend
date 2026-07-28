@@ -55,6 +55,13 @@ vi.mock('@/platform/telemetry/topupTracker', () => ({
   clearTopupTracking: vi.fn()
 }))
 
+vi.mock('@/platform/telemetry/utils/billingFailureCategory', () => ({
+  categorizeBillingApiError: (err: unknown) =>
+    err instanceof Error && err.name === 'AuthStoreError'
+      ? 'api_rejected'
+      : 'unknown'
+}))
+
 vi.mock('@/composables/useExternalLink', () => ({
   useExternalLink: () => ({
     buildDocsUrl: () => 'https://docs.comfy.org',
@@ -180,6 +187,22 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       })
     )
     expect(mockShowSettings).not.toHaveBeenCalled()
+  })
+
+  it('categorizes an auth-store rejection via the shared classifier', async () => {
+    const authStoreError = new Error('backend rejected the purchase')
+    authStoreError.name = 'AuthStoreError'
+    mockPurchaseCreditsDirect.mockRejectedValue(authStoreError)
+
+    renderDialog()
+    await clickBuyCredits()
+
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: 'api_rejected'
+    })
   })
 
   it('uses the same bounded category when the rejection is not an Error', async () => {

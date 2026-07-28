@@ -14,6 +14,7 @@ import type {
   PaymentIntentSource,
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   Plan,
   PreviewSubscribeResponse,
@@ -317,11 +318,14 @@ export function useSubscriptionCheckout(
         checkoutType
       })
     } catch (error) {
-      trackSubscriptionFailure({
-        tier: tierKey,
-        cycle: billingCycle,
-        checkoutType
-      })
+      trackSubscriptionFailure(
+        {
+          tier: tierKey,
+          cycle: billingCycle,
+          checkoutType
+        },
+        error
+      )
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
@@ -347,9 +351,17 @@ export function useSubscriptionCheckout(
 
   function trackSubscriptionFailure(
     context: SubscriptionOutcomeContext,
+    error?: unknown,
     errorCode?: 'missing_checkout_response'
   ) {
     if (!shouldUseWorkspaceBilling.value) return
+
+    // A response that resolved but omitted a checkout_url is a
+    // malformed-response shape, not something the caught error (there isn't
+    // one) can categorize — 'unknown' is the honest answer there.
+    const failureCategory = errorCode
+      ? 'unknown'
+      : categorizeBillingApiError(error)
 
     telemetry?.trackBillingEvent({
       operation: 'subscription_checkout',
@@ -359,7 +371,7 @@ export function useSubscriptionCheckout(
       cycle: context.cycle,
       checkout_type: context.checkoutType,
       payment_intent_source: paymentIntentSource,
-      failure_category: 'unknown',
+      failure_category: failureCategory,
       ...(errorCode && { error_code: errorCode })
     })
   }
@@ -370,7 +382,7 @@ export function useSubscriptionCheckout(
     shouldTrackSubscriptionSuccess = true
   ): Promise<void> {
     if (!response) {
-      trackSubscriptionFailure(context, 'missing_checkout_response')
+      trackSubscriptionFailure(context, undefined, 'missing_checkout_response')
       return
     }
 
@@ -380,6 +392,15 @@ export function useSubscriptionCheckout(
           operation: 'subscription_checkout',
           stage: 'succeeded',
           outcome: 'success',
+          tier: context.tier,
+          cycle: context.cycle,
+          checkout_type: context.checkoutType,
+          payment_intent_source: paymentIntentSource,
+          billing_op_id: response.billing_op_id
+        })
+        // Also fires the pre-existing generic event so providers that don't
+        // yet implement trackBillingEvent keep receiving a success signal.
+        telemetry?.trackMonthlySubscriptionSucceeded({
           tier: context.tier,
           cycle: context.cycle,
           checkout_type: context.checkoutType,
@@ -474,11 +495,14 @@ export function useSubscriptionCheckout(
         checkoutType
       })
     } catch (error) {
-      trackSubscriptionFailure({
-        tier: 'team',
-        cycle: billingCycle,
-        checkoutType
-      })
+      trackSubscriptionFailure(
+        {
+          tier: 'team',
+          cycle: billingCycle,
+          checkoutType
+        },
+        error
+      )
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
@@ -495,15 +519,13 @@ export function useSubscriptionCheckout(
     isResubscribing.value = true
     try {
       await resubscribe()
-      if (shouldUseWorkspaceBilling.value) {
-        telemetry?.trackBillingEvent({
-          operation: 'resubscribe',
-          stage: 'succeeded',
-          outcome: 'success',
-          source: 'pricing_dialog',
-          payment_intent_source: paymentIntentSource
-        })
-      }
+      telemetry?.trackBillingEvent({
+        operation: 'resubscribe',
+        stage: 'succeeded',
+        outcome: 'success',
+        source: 'pricing_dialog',
+        payment_intent_source: paymentIntentSource
+      })
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),
@@ -513,16 +535,14 @@ export function useSubscriptionCheckout(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to resubscribe'
-      if (shouldUseWorkspaceBilling.value) {
-        telemetry?.trackBillingEvent({
-          operation: 'resubscribe',
-          stage: 'failed',
-          outcome: 'failure',
-          source: 'pricing_dialog',
-          payment_intent_source: paymentIntentSource,
-          failure_category: 'unknown'
-        })
-      }
+      telemetry?.trackBillingEvent({
+        operation: 'resubscribe',
+        stage: 'failed',
+        outcome: 'failure',
+        source: 'pricing_dialog',
+        payment_intent_source: paymentIntentSource,
+        failure_category: categorizeBillingApiError(error)
+      })
       toast.add({
         severity: 'error',
         summary: 'Error',

@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 /**
@@ -34,14 +35,12 @@ export function useResubscribe() {
     isResubscribing.value = true
     try {
       await resubscribe()
-      if (shouldUseWorkspaceBilling.value) {
-        useTelemetry()?.trackBillingEvent({
-          operation: 'resubscribe',
-          stage: 'succeeded',
-          outcome: 'success',
-          source: 'settings_billing_panel'
-        })
-      }
+      useTelemetry()?.trackBillingEvent({
+        operation: 'resubscribe',
+        stage: 'succeeded',
+        outcome: 'success',
+        source: 'settings_billing_panel'
+      })
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),
@@ -52,15 +51,13 @@ export function useResubscribe() {
         error instanceof Error && error.message.trim()
           ? error.message
           : t('subscription.resubscribeFailed')
-      if (shouldUseWorkspaceBilling.value) {
-        useTelemetry()?.trackBillingEvent({
-          operation: 'resubscribe',
-          stage: 'failed',
-          outcome: 'failure',
-          source: 'settings_billing_panel',
-          failure_category: 'unknown'
-        })
-      }
+      useTelemetry()?.trackBillingEvent({
+        operation: 'resubscribe',
+        stage: 'failed',
+        outcome: 'failure',
+        source: 'settings_billing_panel',
+        failure_category: categorizeBillingApiError(error)
+      })
       toast.add({
         severity: 'error',
         summary: t('g.error'),

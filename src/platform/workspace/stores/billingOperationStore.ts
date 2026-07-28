@@ -9,6 +9,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
+  BillingFailure,
   PaymentIntentSource,
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
@@ -195,6 +196,16 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         payment_intent_source: operation.paymentIntentSource,
         billing_op_id: opId
       })
+      // Also fires the pre-existing generic event so the seven providers that
+      // don't yet implement trackBillingEvent (Mixpanel, GTM, Impact,
+      // ClickHouse, Syft, CustomerIo, Sentry) keep receiving a success signal.
+      telemetry?.trackMonthlySubscriptionSucceeded({
+        tier: operation.tier,
+        cycle: operation.cycle,
+        checkout_type: operation.checkoutType,
+        payment_intent_source: operation.paymentIntentSource,
+        billing_op_id: opId
+      })
       if (operation.downgradeToPersonal) {
         telemetry?.trackBillingEvent({
           operation: 'downgrade_to_personal',
@@ -272,6 +283,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
+    const failureCategory = categorizePollFailure(operation.type)
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'failed',
@@ -282,7 +294,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       cycle: operation.cycle,
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
-      failure_category: 'unknown'
+      failure_category: failureCategory
     })
     if (operation.downgradeToPersonal) {
       telemetry?.trackBillingEvent({
@@ -293,7 +305,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         member_removal_failures:
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
-        failure_category: 'unknown'
+        failure_category: failureCategory
       })
     }
 
@@ -351,6 +363,20 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     resolveTerminal(opId)
+  }
+
+  /**
+   * The poller only learns of a `failed` terminal status from the backend, so
+   * there's no caught error to inspect — categorize by what the operation
+   * type implies instead. `subscription`/`topup` reach this terminal state
+   * after a payment attempt, so a failure here is most plausibly the payment
+   * provider declining it. `cancel` involves no charge, so a failure there
+   * reflects the backend rejecting the cancellation itself.
+   */
+  function categorizePollFailure(
+    type: OperationType
+  ): BillingFailure['failure_category'] {
+    return type === 'cancel' ? 'api_rejected' : 'provider_decline'
   }
 
   function failureMessage(type: OperationType) {

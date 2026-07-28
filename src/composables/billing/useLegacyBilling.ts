@@ -35,6 +35,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     fetchStatus: legacyFetchStatus,
     manageSubscription: legacyManageSubscription,
     subscribe: legacySubscribe,
+    subscribeDirect: legacySubscribeDirect,
     showSubscriptionDialog: legacyShowSubscriptionDialog
   } = useSubscription()
 
@@ -174,7 +175,12 @@ export function useLegacyBilling(): BillingState & BillingActions {
 
   async function resubscribe(): Promise<void> {
     // Legacy has no resubscribe endpoint; resubscribing is a fresh checkout.
-    await legacySubscribe()
+    // Uses the unwrapped subscribeDirect (not the wrapWithErrorHandlingAsync-
+    // wrapped legacySubscribe) so a real failure propagates to the caller
+    // instead of being silently swallowed, letting resubscribe-specific
+    // outcome telemetry observe it — mirroring the workspace rail, which
+    // already throws on failure.
+    await legacySubscribeDirect()
   }
 
   async function topup(amountCents: number): Promise<void> {

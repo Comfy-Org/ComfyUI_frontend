@@ -419,6 +419,41 @@ describe('useSubscription', () => {
     })
   })
 
+  describe('subscribeDirect', () => {
+    it('performs the same checkout as subscribe on success', async () => {
+      const checkoutUrl = 'https://checkout.stripe.com/direct'
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ checkout_url: checkoutUrl })
+      } as Response)
+      const windowOpenSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => window as unknown as Window)
+
+      const { subscribeDirect } = useSubscriptionWithScope()
+
+      await expect(subscribeDirect()).resolves.toBeUndefined()
+      expect(windowOpenSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+
+      windowOpenSpy.mockRestore()
+    })
+
+    it('rejects on failure without going through the error-swallowing wrapper', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({})
+      } as Response)
+
+      const { subscribeDirect } = useSubscriptionWithScope()
+
+      await expect(subscribeDirect()).rejects.toThrow()
+      // subscribe() (wrapped) reports through reportError on failure;
+      // subscribeDirect bypasses that wrapper entirely, so a caller catching
+      // its own rejection is the only place the failure is observed.
+      expect(mockReportError).not.toHaveBeenCalled()
+    })
+  })
+
   describe('pending checkout recovery', () => {
     it('emits subscription_success when a pending new subscription becomes active', async () => {
       localStorage.setItem(

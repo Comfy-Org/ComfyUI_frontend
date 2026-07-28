@@ -206,7 +206,13 @@ function useSubscriptionInternal() {
     reportError
   )
 
-  const subscribe = wrapWithErrorHandlingAsync(async () => {
+  /**
+   * Raw (unwrapped) checkout initiation. Exposed separately from `subscribe`
+   * so callers that need to observe a rejection directly (e.g. to fire
+   * outcome telemetry) aren't routed through `wrapWithErrorHandlingAsync`,
+   * which resolves instead of re-throwing on failure.
+   */
+  const subscribeDirect = async (): Promise<void> => {
     const response = await initiateSubscriptionCheckout()
 
     if (!response.checkout_url) {
@@ -235,7 +241,9 @@ function useSubscriptionInternal() {
           ? { previous_cycle: 'monthly' as const }
           : {})
     })
-  }, reportError)
+  }
+
+  const subscribe = wrapWithErrorHandlingAsync(subscribeDirect, reportError)
 
   const showSubscriptionDialog = (options?: SubscriptionDialogOptions) => {
     void showSubscriptionRequiredDialog(options)
@@ -460,6 +468,7 @@ function useSubscriptionInternal() {
 
     // Actions
     subscribe,
+    subscribeDirect,
     fetchStatus,
     showSubscriptionDialog,
     manageSubscription,

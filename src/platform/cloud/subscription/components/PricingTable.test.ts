@@ -469,9 +469,30 @@ describe('PricingTable', () => {
         cycle: 'yearly',
         checkout_type: 'new',
         payment_intent_source: undefined,
-        failure_category: 'unknown'
+        failure_category: 'api_rejected'
       })
       expect(mockReportError).toHaveBeenCalled()
+    })
+
+    it('categorizes a connectivity failure as network, not api_rejected', async () => {
+      mockIsActiveSubscription.value = false
+      vi.mocked(global.fetch).mockRejectedValue(
+        new TypeError('Failed to fetch')
+      )
+
+      renderComponent()
+      await flushPromises()
+
+      const subscribeButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Subscribe'))
+
+      await userEvent.click(subscribeButton!)
+      await flushPromises()
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ failure_category: 'network' })
+      )
     })
 
     it('should pass correct tier for each subscription level', async () => {

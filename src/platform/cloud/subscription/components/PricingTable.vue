@@ -286,6 +286,7 @@ import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptio
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
@@ -543,7 +544,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
             cycle: currentBillingCycle.value,
             checkout_type: 'new',
             payment_intent_source: reason,
-            failure_category: 'unknown'
+            failure_category: categorizeBillingApiError(error)
           })
           throw error
         }

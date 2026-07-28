@@ -162,6 +162,7 @@ import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -287,12 +288,14 @@ async function handleBuy() {
     } else if (response.status === 'pending') {
       billingOperationStore.startOperation(response.billing_op_id, 'topup')
     } else {
+      // A synchronous 'failed' status from topup creation means the charge
+      // attempt itself was declined, not merely rejected before an attempt.
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: response.billing_op_id,
-        failure_category: 'unknown'
+        failure_category: 'provider_decline'
       })
       toast.add({
         severity: 'error',
@@ -309,7 +312,7 @@ async function handleBuy() {
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
-      failure_category: 'unknown'
+      failure_category: categorizeBillingApiError(error)
     })
     toast.add({
       severity: 'error',
