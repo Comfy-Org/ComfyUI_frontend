@@ -557,7 +557,7 @@ export interface WorkspaceInviteFailedMetadata extends Record<string, unknown> {
   failed_count: number
 }
 
-export type BillingFailureCategory =
+type BillingFailureCategory =
   | 'validation'
   | 'network'
   | 'api_rejected'
@@ -568,7 +568,7 @@ export type BillingFailureCategory =
   | 'rendering'
   | 'unknown'
 
-export type BillingErrorCode =
+type BillingErrorCode =
   | 'downgrade_not_allowed'
   | 'member_removal_failed'
   | 'missing_checkout_response'

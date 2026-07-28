@@ -290,7 +290,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       await workspaceApi.resubscribe()
-      await Promise.all([fetchStatus(), fetchBalance()])
+      await Promise.allSettled([fetchStatus(), fetchBalance()])
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to resubscribe'
       throw err
