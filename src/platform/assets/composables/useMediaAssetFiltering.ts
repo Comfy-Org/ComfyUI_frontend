@@ -1,9 +1,11 @@
 import { refDebounced } from '@vueuse/core'
 import { sortBy as sortByUtil } from 'es-toolkit'
 import Fuse from 'fuse.js'
+import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { useMediaAssetFilterStore } from '@/platform/assets/composables/useMediaAssetFilterStore'
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -55,8 +57,9 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
   const searchQuery = ref('')
   const debouncedSearchQuery = refDebounced(searchQuery, 50)
   const sortBy = ref<SortOption>('newest')
-  const mediaTypeFilters = ref<string[]>([])
-  const dateFilter = ref<MediaAssetDateFilter>('')
+  const { mediaTypeFilters, dateFilter } = storeToRefs(
+    useMediaAssetFilterStore()
+  )
 
   const fuseOptions = {
     keys: ['display_name', 'name'],
