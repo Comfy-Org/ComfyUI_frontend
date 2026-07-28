@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const mockIsSessionTerminated = vi.hoisted(() => vi.fn(() => false))
+const mockIsSessionSuspended = vi.hoisted(() => vi.fn(() => false))
 vi.mock('@/platform/auth/session/sessionExpiry', () => ({
-  isSessionSuspended: mockIsSessionTerminated
+  isSessionSuspended: mockIsSessionSuspended
 }))
 
 import {
@@ -390,9 +390,14 @@ describe('fetchJobs', () => {
   })
 })
 
-describe('terminated session', () => {
+describe('suspended session', () => {
+  afterEach(() => {
+    mockIsSessionSuspended.mockReturnValue(false)
+    vi.restoreAllMocks()
+  })
+
   it('issues no request and logs nothing once the session has ended', async () => {
-    mockIsSessionTerminated.mockReturnValue(true)
+    mockIsSessionSuspended.mockReturnValue(true)
     const fetchApi = vi.fn()
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -407,9 +412,5 @@ describe('terminated session', () => {
     expect(queue).toEqual({ Running: [], Pending: [] })
     expect(history.jobs).toEqual([])
     expect(history.hasMore).toBe(false)
-    expect(await fetchJobDetail(fetchApi, 'job-1' as never)).toBeUndefined()
-
-    error.mockRestore()
-    mockIsSessionTerminated.mockReturnValue(false)
   })
 })

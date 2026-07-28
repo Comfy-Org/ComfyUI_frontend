@@ -23,6 +23,33 @@ let voluntarySignOutDepth = 0
 let rememberedIdentity: RememberedIdentity | null = null
 
 /**
+ * The uid outlives the page because the drafts do. In-memory state is null on
+ * every load, so comparing against it would treat every cold start as a new
+ * user and delete work that belongs to the person about to sign in.
+ */
+const LAST_SIGNED_IN_UID_KEY = 'Comfy.Cloud.LastSignedInUid'
+
+/**
+ * Firebase propagates a sign-out to every tab through shared persistence, but a
+ * per-tab counter cannot: the sibling tab never called `beginVoluntarySignOut`,
+ * so it would read a deliberate sign-out as an expiry and suspend a healthy
+ * session. The marker travels the same way the sign-out does.
+ *
+ * It expires on a timestamp rather than being cleared, so a tab that closes
+ * mid-sign-out cannot mask a later genuine expiry indefinitely.
+ */
+const VOLUNTARY_SIGN_OUT_KEY = 'Comfy.Cloud.VoluntarySignOut'
+const VOLUNTARY_SIGN_OUT_WINDOW_MS = 10_000
+
+function readLastSignedInUid(): string | null {
+  try {
+    return localStorage.getItem(LAST_SIGNED_IN_UID_KEY)
+  } catch {
+    return null
+  }
+}
+
+/**
  * True while the cloud session is unusable and awaiting re-authentication.
  *
  * Request seams check this to stop generating traffic that can only 401. Unlike
@@ -55,6 +82,11 @@ export function lastKnownProviderId(): string | undefined {
  */
 export function rememberIdentity(uid: string, providerId?: string): void {
   rememberedIdentity = { uid, providerId }
+  try {
+    localStorage.setItem(LAST_SIGNED_IN_UID_KEY, uid)
+  } catch {
+    // Persisting is an optimisation for the next page load, not a requirement.
+  }
 }
 
 /**
@@ -64,7 +96,12 @@ export function rememberIdentity(uid: string, providerId?: string): void {
  * they must not survive into a different account on a shared machine.
  */
 export function isSameUserAsRemembered(uid: string): boolean {
-  return rememberedIdentity?.uid === uid
+  if (rememberedIdentity) return rememberedIdentity.uid === uid
+
+  // Nothing recorded yet means a cold start, not a stranger: with no evidence
+  // that the work belongs to someone else, keeping it is the safe default.
+  const lastUid = readLastSignedInUid()
+  return lastUid === null || lastUid === uid
 }
 
 /**
@@ -78,6 +115,11 @@ export function isSameUserAsRemembered(uid: string): boolean {
  */
 export function beginVoluntarySignOut(): void {
   voluntarySignOutDepth++
+  try {
+    localStorage.setItem(VOLUNTARY_SIGN_OUT_KEY, String(Date.now()))
+  } catch {
+    // Same-tab sign-outs still work; only the cross-tab hint is lost.
+  }
 }
 
 export function endVoluntarySignOut(): void {
@@ -85,7 +127,17 @@ export function endVoluntarySignOut(): void {
 }
 
 export function isVoluntarySignOutInProgress(): boolean {
-  return voluntarySignOutDepth > 0
+  if (voluntarySignOutDepth > 0) return true
+
+  try {
+    const startedAt = Number(localStorage.getItem(VOLUNTARY_SIGN_OUT_KEY))
+    return (
+      Number.isFinite(startedAt) &&
+      Date.now() - startedAt < VOLUNTARY_SIGN_OUT_WINDOW_MS
+    )
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -105,12 +157,14 @@ export function isVoluntarySignOutInProgress(): boolean {
  * This does not navigate. The user keeps their canvas and can export unsaved
  * work, and re-authenticating in place resumes the session.
  */
-export function suspendSession(reason: string): void {
+export function suspendSession(): void {
   if (!isCloud || suspended) return
   suspended = true
   suspendedRef.value = true
 
-  console.warn(`Cloud session suspended (${reason}); re-authentication needed.`)
+  console.warn(
+    'Cloud session suspended: the identity provider rejected the credential. Re-authentication needed.'
+  )
 }
 
 /** Clears the suspension once a user is signed in again. */

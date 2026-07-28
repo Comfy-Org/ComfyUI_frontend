@@ -23,9 +23,11 @@ useExtensionService().registerExtension({
       user.id,
       useAuthStore().currentUser?.providerData[0]?.providerId
     )
-    resumeSession()
     const { createSession } = useSessionCookie()
     await createSession()
+    // Only after the cookie is back: resuming first would clear the banner and
+    // hand the user a silently failing app if this throws.
+    resumeSession()
   },
 
   onAuthTokenRefreshed: async () => {
@@ -38,10 +40,10 @@ useExtensionService().registerExtension({
     // which happens while deleteSession is still in flight.
     const deliberate = isVoluntarySignOutInProgress()
     clearOAuthRequestId()
+    // Before the awaited teardown, so request seams stop immediately rather
+    // than after a network round trip.
+    if (!deliberate) suspendSession()
     const { deleteSession } = useSessionCookie()
     await deleteSession()
-    if (!deliberate) {
-      suspendSession('identity provider invalidated the credential')
-    }
   }
 })

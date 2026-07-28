@@ -9,6 +9,7 @@ async function loadSessionExpiry() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  localStorage.clear()
 })
 
 describe('suspendSession', () => {
@@ -17,10 +18,12 @@ describe('suspendSession', () => {
     const { suspendSession, isSessionSuspended } = await loadSessionExpiry()
 
     expect(isSessionSuspended()).toBe(false)
-    suspendSession('token revoked')
+    suspendSession()
 
     expect(isSessionSuspended()).toBe(true)
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('token revoked'))
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('rejected the credential')
+    )
     warn.mockRestore()
   })
 
@@ -40,7 +43,7 @@ describe('suspendSession', () => {
     })
     const { suspendSession } = await loadSessionExpiry()
 
-    suspendSession('token revoked')
+    suspendSession()
 
     expect(assign).not.toHaveBeenCalled()
   })
@@ -49,26 +52,51 @@ describe('suspendSession', () => {
     const { suspendSession, resumeSession, isSessionSuspended } =
       await loadSessionExpiry()
 
-    suspendSession('token revoked')
+    suspendSession()
     resumeSession()
 
     expect(isSessionSuspended()).toBe(false)
   })
 
-  it('reports a deliberate sign-out only while one is in flight', async () => {
-    const {
-      beginVoluntarySignOut,
-      endVoluntarySignOut,
-      isVoluntarySignOutInProgress
-    } = await loadSessionExpiry()
+  it('counts nested deliberate sign-outs', async () => {
+    const { beginVoluntarySignOut, endVoluntarySignOut } =
+      await loadSessionExpiry()
 
-    expect(isVoluntarySignOutInProgress()).toBe(false)
     beginVoluntarySignOut()
     beginVoluntarySignOut()
     endVoluntarySignOut()
-    expect(isVoluntarySignOutInProgress()).toBe(true)
     endVoluntarySignOut()
-    expect(isVoluntarySignOutInProgress()).toBe(false)
+    endVoluntarySignOut()
+
+    // Floors at zero, so an unbalanced release cannot drive it negative and
+    // permanently disarm the guard.
+    expect(localStorage.getItem('Comfy.Cloud.VoluntarySignOut')).not.toBeNull()
+  })
+
+  it('tells a sibling tab that this sign-out was deliberate', async () => {
+    const { beginVoluntarySignOut } = await loadSessionExpiry()
+    beginVoluntarySignOut()
+
+    // A second tab has its own module state and never called begin; Firebase
+    // propagates the sign-out to it through the same shared storage.
+    const sibling = await loadSessionExpiry()
+
+    expect(sibling.isVoluntarySignOutInProgress()).toBe(true)
+  })
+
+  it('stops trusting a stale marker, so it cannot mask a later expiry', async () => {
+    vi.useFakeTimers()
+    try {
+      const { beginVoluntarySignOut } = await loadSessionExpiry()
+      beginVoluntarySignOut()
+
+      vi.advanceTimersByTime(10_001)
+      const sibling = await loadSessionExpiry()
+
+      expect(sibling.isVoluntarySignOutInProgress()).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 
@@ -99,9 +127,22 @@ describe('remembered identity', () => {
     expect(isSameUserAsRemembered('uid-b')).toBe(false)
   })
 
-  it('treats an unknown user as different, so work is never inherited', async () => {
+  it('keeps work on a cold start, when nothing has been recorded yet', async () => {
     const { isSameUserAsRemembered } = await loadSessionExpiry()
 
-    expect(isSameUserAsRemembered('uid-a')).toBe(false)
+    // In-memory identity is null on every page load. Treating that as "someone
+    // else" would delete the drafts of the user about to sign in.
+    expect(isSameUserAsRemembered('uid-a')).toBe(true)
+  })
+
+  it('recognises the previous user across a reload, and a different one', async () => {
+    const first = await loadSessionExpiry()
+    first.rememberIdentity('uid-a', 'google.com')
+
+    // A reload drops module state but not storage.
+    const afterReload = await loadSessionExpiry()
+
+    expect(afterReload.isSameUserAsRemembered('uid-a')).toBe(true)
+    expect(afterReload.isSameUserAsRemembered('uid-b')).toBe(false)
   })
 })

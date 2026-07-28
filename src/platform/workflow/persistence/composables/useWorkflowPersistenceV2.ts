@@ -23,7 +23,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import {
   isSameUserAsRemembered,
-  isSessionSuspended
+  isVoluntarySignOutInProgress
 } from '@/platform/auth/session/sessionExpiry'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -64,8 +64,12 @@ export function useWorkflowPersistenceV2() {
   // A deliberate sign-out clears persisted work so it cannot leak to the next
   // person on a shared machine. An expired session must NOT: the user never
   // asked to leave, and re-authenticating is meant to restore what they had.
+  //
+  // The deliberate flag is the only one readable here. Suspension is set behind
+  // an awaited network call in the sign-out hook, and this watcher is created
+  // first, so it would always observe the pre-suspension value.
   onUserLogout(() => {
-    if (isCloud && !isSessionSuspended()) {
+    if (isCloud && isVoluntarySignOutInProgress()) {
       clearAllV2Storage()
     }
   })

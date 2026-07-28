@@ -11,9 +11,6 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 const mockGetIdToken = vi.fn()
 const mockNotifyTokenRefreshed = vi.fn()
 const mockToastAdd = vi.fn()
-const { mockEndExpiredSession } = vi.hoisted(() => ({
-  mockEndExpiredSession: vi.fn()
-}))
 const mockEnsureSessionCookie = vi.fn()
 const mockCurrentUser = vi.hoisted(
   (): {
@@ -67,14 +64,6 @@ vi.mock('@/i18n', () => ({
 
 const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: true }))
 const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
-
-vi.mock('@/platform/auth/session/sessionExpiry', () => ({
-  endExpiredSession: mockEndExpiredSession,
-  isSessionTerminated: () => false,
-  beginVoluntarySignOut: vi.fn(),
-  endVoluntarySignOut: vi.fn(),
-  isVoluntarySignOutInProgress: () => false
-}))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
@@ -2215,7 +2204,6 @@ describe('useWorkspaceAuthStore', () => {
       // noticed. Asking is not deciding: nothing here ends the session.
       await vi.advanceTimersByTimeAsync(0)
       expect(mockGetIdToken).toHaveBeenCalledWith(true)
-      expect(mockEndExpiredSession).not.toHaveBeenCalled()
     })
 
     it('remintUnifiedOnce reports a failed revalidation instead of swallowing it', async () => {
@@ -2249,7 +2237,6 @@ describe('useWorkspaceAuthStore', () => {
         'Identity revalidation failed:',
         expect.any(Error)
       )
-      expect(mockEndExpiredSession).not.toHaveBeenCalled()
       warn.mockRestore()
     })
 
@@ -2278,7 +2265,6 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockGetIdToken.mock.calls.some(([force]) => force === true)).toBe(
         false
       )
-      expect(mockEndExpiredSession).not.toHaveBeenCalled()
     })
 
     it('remintUnifiedOnce does not toast or clear the slot on a transient re-mint failure', async () => {
@@ -2611,7 +2597,6 @@ describe('useWorkspaceAuthStore', () => {
         // A rejected identity is re-checked with a forced refresh, and Firebase
         // signs the user out itself if the credential is really gone.
         await vi.advanceTimersByTimeAsync(0)
-        expect(mockEndExpiredSession).not.toHaveBeenCalled()
         expect(mockFetch).toHaveBeenCalledTimes(2)
         // A rejected identity is re-checked with the provider; a denied or
         // missing workspace is not, since the credential is not in question.

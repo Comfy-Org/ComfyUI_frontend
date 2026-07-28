@@ -1,6 +1,6 @@
 <template>
   <router-view />
-  <SessionExpiredBanner />
+  <SessionExpiredBanner v-if="isCloud" />
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
 </template>
@@ -13,7 +13,7 @@ import { computed, onMounted, watch } from 'vue'
 import SessionExpiredBanner from '@/components/auth/SessionExpiredBanner.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
-import { isDesktop } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
