@@ -52,11 +52,6 @@ function isPinned(id: string): id is SupportedTemplateId {
   return Object.hasOwn(TOUR_ROLE_PINS, id)
 }
 
-/**
- * A link test keeps its storage so the URL survives setup, which also keeps the
- * drafts a previous test left behind. Those drafts read as prior use, and the
- * tour is only ever offered to a new user.
- */
 async function clearWorkflowHistory(page: Page) {
   await page.evaluate(() => {
     for (const key of Object.keys(localStorage))
