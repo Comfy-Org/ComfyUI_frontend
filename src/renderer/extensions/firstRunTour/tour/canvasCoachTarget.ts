@@ -1,6 +1,8 @@
-import type { VirtualElement } from '@floating-ui/vue'
+import { watch } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { MovingTarget } from '@/platform/onboarding/coachmarkRegistry'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { app } from '@/scripts/app'
 import type { NodeId } from '@/types/nodeId'
 
@@ -20,10 +22,16 @@ function nodeClientRect(nodeId: NodeId): DOMRect | null {
   )
 }
 
-/** A canvas node as a coachmark target; zero-sized until it is measurable. */
-export function canvasNodeTarget(nodeId: NodeId): VirtualElement {
+/**
+ * A canvas node as a coachmark target; zero-sized until it is measurable.
+ * Moves with the camera, which `TransformPane` already mirrors per frame.
+ */
+export function canvasNodeTarget(nodeId: NodeId): MovingTarget {
+  const { camera } = useTransformState()
   return {
-    getBoundingClientRect: () => nodeClientRect(nodeId) ?? new DOMRect()
+    getBoundingClientRect: () => nodeClientRect(nodeId) ?? new DOMRect(),
+    onMove: (notify) =>
+      watch(() => [camera.x, camera.y, camera.z], notify, { flush: 'post' })
   }
 }
 

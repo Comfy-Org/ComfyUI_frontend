@@ -3,11 +3,20 @@ import { shallowReactive, watch } from 'vue'
 
 import type { CoachId } from './onboardingTours'
 
+/** A virtual target that announces its own motion, so nothing has to poll it. */
+export interface MovingTarget extends VirtualElement {
+  onMove: (notify: () => void) => () => void
+}
+
 /**
  * Coachmark target: HTMLElement (from v-coachmark) or VirtualElement.
  * Both expose getBoundingClientRect.
  */
 export type CoachTarget = HTMLElement | VirtualElement
+
+export function isMovingTarget(target: CoachTarget): target is MovingTarget {
+  return 'onMove' in target && typeof target.onMove === 'function'
+}
 
 const EMPTY: readonly CoachTarget[] = []
 
