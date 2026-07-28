@@ -32,7 +32,7 @@ export const tutorialCards: readonly TutorialCard[] = [
     id: 'interface-overview',
     titleKey: 'gettingStarted.tutorials.interfaceOverview',
     url: 'https://docs.comfy.org/interface/overview',
-    thumbnailTemplate: 'image_krea2_turbo_t2i'
+    thumbnailTemplate: 'image_z_image_turbo'
   },
   {
     id: 'text-to-image',
@@ -50,6 +50,6 @@ export const tutorialCards: readonly TutorialCard[] = [
     id: 'inpaint',
     titleKey: 'gettingStarted.tutorials.inpaint',
     url: 'https://docs.comfy.org/tutorials/basic/inpaint',
-    thumbnailTemplate: 'image_z_image_turbo'
+    thumbnailTemplate: 'image_krea2_turbo_t2i'
   }
 ]

@@ -207,9 +207,10 @@ function tutorialThumbnail(
   id: TutorialCard['thumbnailTemplate'],
   index: number
 ) {
+  const fallbacks = cards.value
   const template =
     templatesStore.getTemplateByName(id) ??
-    cards.value[index % cards.value.length]
+    (fallbacks.length ? fallbacks[index % fallbacks.length] : undefined)
   return template ? getTemplateThumbnailUrl(template, 'default') : ''
 }
 
