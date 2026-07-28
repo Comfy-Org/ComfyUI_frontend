@@ -1090,7 +1090,7 @@
     "onChangeTooltip": "The workflow will be queued once a change is made",
     "runWorkflow": "Run workflow (Shift to queue at front)",
     "runWorkflowFront": "Run workflow (Queue at front)",
-    "runWorkflowDisabled": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow.",
+    "runWorkflowMissingResources": "Workflow contains missing resources.",
     "run": "Run",
     "stopRunInstant": "Stop Run (Instant)",
     "stopRunInstantTooltip": "Stop running",
@@ -1560,6 +1560,7 @@
     "3DViewer": "3DViewer",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
+    "Members": "Members",
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
@@ -1793,6 +1794,7 @@
     "post-processors": "post-processors",
     "qwen image": "qwen image",
     "qwen": "qwen",
+    "mage": "mage",
     "joyimage": "joyimage",
     "boogu": "boogu",
     "chroma radiance": "chroma radiance",
@@ -2209,6 +2211,9 @@
   "palette": {
     "addColor": "Add a color",
     "swatchTitle": "Click edit · drag reorder · right-click remove"
+  },
+  "videoEdit": {
+    "adjustCrop": "Adjust crop region"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
@@ -2683,7 +2688,7 @@
     "refreshCredits": "Refresh credits",
     "benefits": {
       "benefit1": "Monthly credits for Partner Nodes — top up when needed",
-      "benefit1FreeTier": "More monthly credits, top up anytime",
+      "benefit1FreeTier": "Monthly credits, top up anytime",
       "benefit2": "Up to 1 hour runtime per job on Pro",
       "benefit3": "Bring your own models (Creator & Pro)"
     },
@@ -2782,14 +2787,15 @@
       "title": "You're on the Free plan",
       "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
       "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
+      "descriptionQuota": "Your free plan includes {runs} runs to get started with Comfy Cloud — no card needed.",
       "nextRefresh": "Your credits refresh on {date}.",
       "subscribeCta": "Subscribe for more",
       "outOfCredits": {
         "title": "You're out of free credits",
-        "subtitle": "Subscribe to unlock top-ups and more"
+        "subtitle": "Subscribe to add top-ups and more"
       },
       "topUpBlocked": {
-        "title": "Unlock top-ups and more"
+        "title": "Add top-ups and more"
       },
       "upgradeCta": "View plans"
     },
@@ -2895,6 +2901,22 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "Credits",
+        "date": "Date",
+        "eventDetails": "Event details",
+        "eventType": "Event type",
+        "user": "User"
+      },
+      "empty": "No activity yet.",
+      "fullActivity": "Full activity",
+      "hoverCard": {
+        "lastActivity": "Last activity",
+        "partnerNodeUsed": "Partner node used",
+        "totalCreditsUsed": "Total credits used"
+      }
+    },
     "billingStatus": {
       "warning": {
         "title": "Payment declined",
@@ -2924,6 +2946,12 @@
     "invite": "Invite",
     "inviteMember": "Invite member",
     "inviteLimitReached": "You've reached the maximum of {count} members",
+    "planCredits": {
+      "tabs": {
+        "activity": "Activity",
+        "overview": "Credits"
+      }
+    },
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
@@ -2933,6 +2961,12 @@
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
+      "activity": {
+        "daysAgo": "{count} day ago | {count} days ago",
+        "hoursAgo": "{n} hr ago",
+        "justNow": "just now",
+        "minutesAgo": "{n} min ago"
+      },
       "header": "Members",
       "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
@@ -2943,13 +2977,24 @@
       "columns": {
         "inviteDate": "Invite date",
         "expiryDate": "Expiry date",
-        "role": "Role"
+        "role": "Role",
+        "creditsUsed": "Monthly credits"
       },
       "actions": {
         "resendInvite": "Resend invite",
         "cancelInvite": "Cancel invite",
         "changeRole": "Change role",
+        "setCreditLimit": "Set credit limit",
         "removeMember": "Remove member"
+      },
+      "creditLimitDialog": {
+        "title": "Set a monthly credit limit for {name}",
+        "description": "Once they reach this limit, they’ll be unable to run workflows.",
+        "limitOption": "Limit monthly credit usage to:",
+        "noLimit": "No limit",
+        "warning": "This user has already spent {credits} credits. Setting the limit at or below their current usage will prevent further runs until next month.",
+        "invalidLimit": "Enter a credit limit greater than zero.",
+        "update": "Update limit"
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
       "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
@@ -3446,6 +3491,7 @@
     "processingModelDescription": "You can close this dialog. The download will continue in the background.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
+    "searchModels": "Search models",
     "selectFrameworks": "Select Frameworks",
     "selectModelType": "Select model type",
     "selectProjects": "Select Projects",
@@ -3668,7 +3714,7 @@
     "stepDescribe": "Describe your workflow",
     "stepExamples": "Add output examples",
     "stepFinish": "Finish publishing",
-    "workflowName": "Workflow name",
+    "workflowName": "Hub title",
     "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
     "workflowDescription": "Workflow description",
     "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people know what to expect.",
@@ -3710,8 +3756,6 @@
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
     "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
-    "renameFailedTitle": "Rename failed",
-    "renameFailedDescription": "Your workflow was published successfully, but renaming the local file failed. Rename it again to match.",
     "publishSuccessTitle": "Published successfully",
     "publishSuccessDescription": "Your workflow is now live on ComfyHub."
   },
@@ -3825,7 +3869,8 @@
       "outputExamples": "Examples: 'Save Image' or 'Save Video'",
       "switchToOutputsButton": "Switch to Outputs",
       "outputs": "Outputs",
-      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
+      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app",
+      "descriptionPlaceholder": "Double click to add a description"
     },
     "builder": {
       "title": "App builder mode",
@@ -4158,6 +4203,13 @@
         "itemLabel": "{nodeName}",
         "toastTitle": "Validation failed",
         "toastMessage": "{nodeName} returned an unrecognized validation error."
+      },
+      "PARTNER_NODE_DISABLED": {
+        "title": "Disabled node",
+        "message": "This node has been disabled by your workspace policy. Use a different node.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Partner nodes",
+        "toastMessage": "This node has been disabled by your workspace policy."
       },
       "exception_during_inner_validation": {
         "title": "Validation failed",
@@ -4597,5 +4649,37 @@
     "training": "Training…",
     "processingVideo": "Processing video…",
     "running": "Running…"
+  },
+  "onboardingCoachmarks": {
+    "stepLabel": "Step {current} of {total}",
+    "skip": "Skip",
+    "next": "Next",
+    "back": "Back",
+    "done": "Done",
+    "loadError": "Something went wrong showing this tour",
+    "appMode": {
+      "replay": "Take a tour of App Mode",
+      "landing": {
+        "title": "Welcome to Apps",
+        "body": "A quick tour of the essentials, in about a minute. We'll show you where to add inputs, run your app, and find your results.",
+        "primary": "Start tutorial"
+      },
+      "inputs": {
+        "title": "Add your inputs",
+        "body": "Add what you want to work with. Your inputs are what the app turns into results."
+      },
+      "run": {
+        "title": "Run your app",
+        "body": "Happy with your inputs? Hit Run and your result appears in the center the moment it's ready."
+      },
+      "outputs": {
+        "title": "Get your results",
+        "body": "Your finished results show up here in the center. Download them, or tweak an input and run again."
+      },
+      "assets": {
+        "title": "Find all your assets",
+        "body": "Every generation and import lives in Media Assets. Open it anytime to browse, download, or reuse past work."
+      }
+    }
   }
 }

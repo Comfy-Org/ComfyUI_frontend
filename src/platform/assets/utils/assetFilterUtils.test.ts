@@ -152,8 +152,14 @@ describe('filterByOwnership', () => {
   it.for([
     { ownership: 'all' as const, is_immutable: true, expected: true },
     { ownership: 'all' as const, is_immutable: false, expected: true },
+    { ownership: 'all' as const, is_immutable: undefined, expected: true },
     { ownership: 'my-models' as const, is_immutable: false, expected: true },
     { ownership: 'my-models' as const, is_immutable: true, expected: false },
+    {
+      ownership: 'my-models' as const,
+      is_immutable: undefined,
+      expected: true
+    },
     {
       ownership: 'public-models' as const,
       is_immutable: true,
@@ -162,6 +168,11 @@ describe('filterByOwnership', () => {
     {
       ownership: 'public-models' as const,
       is_immutable: false,
+      expected: false
+    },
+    {
+      ownership: 'public-models' as const,
+      is_immutable: undefined,
       expected: false
     }
   ])(
@@ -178,12 +189,13 @@ describe('filterItemByOwnership', () => {
   const items = [
     { id: '1', is_immutable: true },
     { id: '2', is_immutable: false },
-    { id: '3', is_immutable: true }
+    { id: '3', is_immutable: true },
+    { id: '4', is_immutable: undefined }
   ]
 
   it.for([
-    { ownership: 'all' as const, expectedIds: ['1', '2', '3'] },
-    { ownership: 'my-models' as const, expectedIds: ['2'] },
+    { ownership: 'all' as const, expectedIds: ['1', '2', '3', '4'] },
+    { ownership: 'my-models' as const, expectedIds: ['2', '4'] },
     { ownership: 'public-models' as const, expectedIds: ['1', '3'] }
   ])(
     'ownership=$ownership returns items with ids=$expectedIds',

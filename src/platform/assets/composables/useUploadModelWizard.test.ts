@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AsyncUploadResponse } from '@/platform/assets/schemas/assetSchema'
+import { api } from '@/scripts/api'
 
 import { useUploadModelWizard } from './useUploadModelWizard'
 
@@ -93,6 +94,7 @@ describe('useUploadModelWizard', () => {
   })
 
   afterEach(() => {
+    vi.mocked(api.getServerFeature).mockReset()
     for (const app of mountedApps.splice(0)) {
       app.unmount()
     }
@@ -138,7 +140,6 @@ describe('useUploadModelWizard', () => {
       status: 'completed' as const
     }
     const event = new CustomEvent('asset_download', { detail })
-    const { api } = await import('@/scripts/api')
     const handler = vi
       .mocked(api.addEventListener)
       .mock.calls.find((c) => c[0] === 'asset_download')?.[1] as
@@ -174,7 +175,6 @@ describe('useUploadModelWizard', () => {
     expect(wizard.uploadStatus.value).toBe('processing')
 
     // Simulate WebSocket: download fails
-    const { api } = await import('@/scripts/api')
     const handler = vi
       .mocked(api.addEventListener)
       .mock.calls.find((c) => c[0] === 'asset_download')?.[1] as
@@ -285,7 +285,6 @@ describe('useUploadModelWizard', () => {
   it('namespaces the tag but keeps user_metadata.model_type bare when the backend supports it', async () => {
     const { assetService } =
       await import('@/platform/assets/services/assetService')
-    const { api } = await import('@/scripts/api')
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
       type: 'sync',
       asset: {
@@ -298,25 +297,18 @@ describe('useUploadModelWizard', () => {
       name === 'supports_model_type_tags' ? true : defaultValue
     )
 
-    try {
-      const wizard = setupUploadModelWizard(modelTypes, {
-        requiredModelType: 'checkpoints'
-      })
-      wizard.wizardData.value.url = 'https://civitai.com/models/12345'
+    const wizard = setupUploadModelWizard(modelTypes, {
+      requiredModelType: 'checkpoints'
+    })
+    wizard.wizardData.value.url = 'https://civitai.com/models/12345'
 
-      await wizard.uploadModel()
+    await wizard.uploadModel()
 
-      const uploadArg = vi.mocked(assetService.uploadAssetAsync).mock
-        .calls[0][0]
-      expect(uploadArg.tags).toEqual(['models', 'model_type:checkpoints'])
-      expect(uploadArg.user_metadata?.model_type).toBe('checkpoints')
-      // The namespaced returned tag must not trip the required-type guard.
-      expect(wizard.uploadTypeMismatch.value).toBeNull()
-    } finally {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (_name, defaultValue) => defaultValue
-      )
-    }
+    const uploadArg = vi.mocked(assetService.uploadAssetAsync).mock.calls[0][0]
+    expect(uploadArg.tags).toEqual(['models', 'model_type:checkpoints'])
+    expect(uploadArg.user_metadata?.model_type).toBe('checkpoints')
+    // The namespaced returned tag must not trip the required-type guard.
+    expect(wizard.uploadTypeMismatch.value).toBeNull()
   })
 
   it('returns the synced asset filename for sync imports', async () => {
