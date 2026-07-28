@@ -23,7 +23,7 @@ const steps: FeatureStep[] = stepNumbers.map((n) => ({
   <FeatureGrid02
     :heading="t('mcp.howItWorks.heading', locale)"
     :steps="steps"
-    :primary-cta="ctas.runWorkflow"
+    :primary-cta="ctas.installMcp"
     :secondary-cta="ctas.docs"
   />
 </template>

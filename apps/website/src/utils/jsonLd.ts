@@ -32,11 +32,9 @@ const sameAs = [
   externalLinks.instagram,
   externalLinks.reddit,
   externalLinks.linkedin,
-  // Wikidata entity for the organization, so the Knowledge Graph can resolve it.
   externalLinks.wikidataComfyOrg
 ]
 
-// Authoritative encyclopedic and review-platform references for the ComfyUI software entity.
 const comfyUiSameAs = [
   externalLinks.wikidataComfyUi,
   externalLinks.wikipediaComfyUi,
@@ -146,6 +144,33 @@ export function itemListNode(
   }
 }
 
+interface ArticleInput {
+  siteUrl: string
+  pageUrl: string
+  title: string
+  description?: string
+  imageUrl?: string
+  locale: Locale
+}
+
+export function articleNode(input: ArticleInput): JsonLdNode {
+  const webPageRef = { '@id': jsonLdId(input.pageUrl, 'webpage') }
+  const orgRef = { '@id': organizationId(input.siteUrl) }
+  return {
+    '@type': 'Article',
+    '@id': jsonLdId(input.pageUrl, 'article'),
+    headline: input.title,
+    name: input.title,
+    description: input.description,
+    image: input.imageUrl,
+    inLanguage: input.locale,
+    isPartOf: webPageRef,
+    mainEntityOfPage: webPageRef,
+    author: orgRef,
+    publisher: orgRef
+  }
+}
+
 interface WebPageInput {
   siteUrl: string
   locale: Locale
@@ -194,6 +219,8 @@ export interface SoftwareAppInput {
   authorName?: string
   isFree?: boolean
   sameAs?: string[]
+  mainEntityOfPage?: string
+  isBasedOnId?: string
 }
 
 export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
@@ -219,6 +246,8 @@ export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
     author,
     publisher: input.firstParty ? orgRef : undefined,
     sameAs: input.sameAs,
+    mainEntityOfPage: input.mainEntityOfPage,
+    isBasedOn: input.isBasedOnId ? { '@id': input.isBasedOnId } : undefined,
     offers: input.isFree
       ? {
           '@type': 'Offer',
@@ -257,6 +286,10 @@ export function comfyUiSoftwareId(siteUrl: string): string {
   return `${siteUrl}/#software`
 }
 
+function comfyUiSourceCodeId(siteUrl: string): string {
+  return `${siteUrl}/#sourcecode`
+}
+
 export function comfyUiApplicationNode(siteUrl: string): JsonLdNode {
   return softwareApplicationNode({
     siteUrl,
@@ -267,14 +300,16 @@ export function comfyUiApplicationNode(siteUrl: string): JsonLdNode {
     applicationCategory: 'MultimediaApplication',
     operatingSystem: 'Windows, macOS, Linux',
     isFree: true,
-    sameAs: comfyUiSameAs
+    sameAs: comfyUiSameAs,
+    mainEntityOfPage: `${siteUrl}/`,
+    isBasedOnId: comfyUiSourceCodeId(siteUrl)
   })
 }
 
 export function comfyUiSourceCodeNode(siteUrl: string): JsonLdNode {
   return softwareSourceCodeNode({
     siteUrl,
-    id: `${siteUrl}/#sourcecode`,
+    id: comfyUiSourceCodeId(siteUrl),
     name: 'ComfyUI',
     codeRepository: externalLinks.github,
     programmingLanguage: 'Python',
@@ -317,6 +352,36 @@ export function productNode(input: ProductInput): JsonLdNode {
         unitText: 'MONTH'
       }
     }))
+  }
+}
+
+export interface VideoObjectInput {
+  siteUrl: string
+  /** Fragment @id, typically jsonLdId(pageUrl, 'video'). */
+  id: string
+  pageUrl: string
+  name: string
+  description: string
+  thumbnailUrl: string
+  contentUrl: string
+  uploadDate: string
+  locale: Locale
+  embedUrl?: string
+}
+
+export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
+  return {
+    '@type': 'VideoObject',
+    '@id': input.id,
+    name: input.name,
+    description: input.description,
+    thumbnailUrl: input.thumbnailUrl,
+    contentUrl: input.contentUrl,
+    embedUrl: input.embedUrl,
+    uploadDate: input.uploadDate,
+    inLanguage: input.locale,
+    publisher: { '@id': organizationId(input.siteUrl) },
+    isPartOf: { '@id': jsonLdId(input.pageUrl, 'webpage') }
   }
 }
 

@@ -49,3 +49,12 @@ export function captureDownloadClick(platform: Platform) {
     console.error('PostHog download click capture failed', error)
   }
 }
+
+export function captureMcpClientTabClick(client: string) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:mcp_client_tab_clicked', { client })
+  } catch (error) {
+    console.error('PostHog MCP client tab capture failed', error)
+  }
+}

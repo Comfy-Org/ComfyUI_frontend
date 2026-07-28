@@ -176,6 +176,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'
 import TransitionCollapse from '../layout/TransitionCollapse.vue'
 
@@ -217,6 +218,10 @@ function handleLocateNode() {
 }
 
 function handleCopyError(idx: number) {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'error_tab_copy_error_clicked',
+    element_group: 'errors_panel'
+  })
   const details = displayedDetailsMap.value[idx]
   const message = getCopyMessage(card.errors[idx])
   emit('copyToClipboard', [message, details].filter(Boolean).join('\n\n'))
