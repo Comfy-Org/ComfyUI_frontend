@@ -33,6 +33,8 @@ describe('agentRunModeStore', () => {
     expect(store.creditLimit).toBe(300)
     store.save('auto-limit', Number.NaN)
     expect(store.creditLimit).toBe(300)
+    store.save('auto-limit', 0.5)
+    expect(store.creditLimit).toBe(300)
     store.save('auto-limit', 2.9)
     expect(store.creditLimit).toBe(2)
   })

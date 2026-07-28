@@ -3,10 +3,14 @@ import {
   PopoverContent,
   PopoverPortal,
   PopoverRoot,
-  PopoverTrigger
+  PopoverTrigger,
+  RadioGroupItem,
+  RadioGroupRoot
 } from 'reka-ui'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import type { AgentRunMode } from '../../../stores/agent/agentRunModeStore'
 import { useAgentRunModeStore } from '../../../stores/agent/agentRunModeStore'
@@ -30,6 +34,11 @@ function onOpenChange(next: boolean): void {
 function saveChanges(): void {
   store.save(draftMode.value, draftLimit.value)
   open.value = false
+}
+
+function onDraftMode(value: string | undefined): void {
+  const match = options.find((option) => option.mode === value)
+  if (match) draftMode.value = match.mode
 }
 
 const options: {
@@ -62,7 +71,7 @@ const options: {
 <template>
   <PopoverRoot :open @update:open="onOpenChange">
     <PopoverTrigger
-      :aria-label="t('agent.runPermissions')"
+      v-tooltip.top="buildTooltipConfig(t('agent.runPermissions'))"
       class="text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors"
     >
       <span>{{ t('agent.modelAuto') }}</span>
@@ -82,10 +91,11 @@ const options: {
           {{ t('agent.runPermissionsDescription') }}
         </div>
 
-        <div
-          role="radiogroup"
+        <RadioGroupRoot
+          :model-value="draftMode"
           :aria-label="t('agent.runPermissions')"
           class="mt-3 flex flex-col gap-1"
+          @update:model-value="onDraftMode"
         >
           <div
             v-for="option in options"
@@ -97,12 +107,9 @@ const options: {
               )
             "
           >
-            <button
-              type="button"
-              role="radio"
-              :aria-checked="draftMode === option.mode"
+            <RadioGroupItem
+              :value="option.mode"
               class="hover:bg-agent-surface-hover rounded-agent flex w-full cursor-pointer items-start gap-2.5 p-2 text-left"
-              @click="draftMode = option.mode"
             >
               <span
                 :class="
@@ -121,7 +128,7 @@ const options: {
                 v-if="draftMode === option.mode"
                 class="text-agent-fg mt-0.5 icon-[lucide--check] size-4 shrink-0"
               />
-            </button>
+            </RadioGroupItem>
             <div
               v-if="option.mode === 'auto-limit' && draftMode === 'auto-limit'"
               class="flex items-center gap-2 px-2 pb-2 pl-8.5"
@@ -138,7 +145,7 @@ const options: {
               </span>
             </div>
           </div>
-        </div>
+        </RadioGroupRoot>
 
         <button
           type="button"
