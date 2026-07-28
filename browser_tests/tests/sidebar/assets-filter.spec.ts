@@ -229,6 +229,10 @@ test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
     await expect(pastWeek).toHaveAttribute('aria-checked', 'true')
     await expect(tab.filterButton).toHaveAttribute('aria-expanded', 'true')
     await expect(tab.assetCards).toHaveCount(2)
+
+    await page.keyboard.press('Escape')
+
+    await expect(tab.filterButton).toHaveAttribute('aria-expanded', 'false')
   })
 
   test('Date and media filters compose and applied controls can clear them', async ({

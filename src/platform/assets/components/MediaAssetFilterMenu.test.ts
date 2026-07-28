@@ -156,6 +156,10 @@ describe('MediaAssetFilterMenu', () => {
 
     expect(onDateUpdate).toHaveBeenCalledWith('week')
     expect(screen.getByRole('menu', { name: 'Filter by' })).toBeVisible()
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('menu', { name: 'Filter by' })).toBeNull()
   })
 
   it('shows an empty state when no filter options match', async () => {
