@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "음량. 0 = 보통, 100 = 2.0배, -50 = 0.5배."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: 20개 언어(영어, 중국어, 일본어, 한국어, 멕시코 및 카스티야 스페인어, 인도네시아어, 독일어, 브라질 포르투갈어, 프랑스어, 태국어, 베트남어, 말레이어, 필리핀어, 이탈리아어, 러시아어, 네덜란드어, 폴란드어, 터키어, 스웨덴어) 및 문장별 타이밍 제어(\"[5.5s:8.0s] ...\" 타임스탬프 사용) 지원. seed-audio-1.0: 영어와 중국어만 지원, 타이밍 제어 없음."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "피치(음높이) 반음 단위 이동(-12 ~ 12)."
@@ -19989,6 +19993,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Mage-Flow-Edit를 위한 편집 지시문을 하나 이상의 참조 이미지와 함께 인코딩합니다. 참조 latent들은 출력 해상도(너비/높이, 또는 0일 경우 첫 번째 이미지의 크기)로 리사이즈됩니다. 항상 크기가 일치하도록 latent 출력을 샘플링에 사용하세요.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "출력 높이. 0 = 첫 번째 참조 이미지의 크기 사용."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "편집할 참조 이미지(들). 모든 참조 이미지는 인코딩 전에 출력 해상도로 리사이즈됩니다."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "출력 너비. 0 = 첫 번째 참조 이미지의 크기 사용."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }

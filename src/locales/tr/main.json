@@ -2099,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "en az bir",
       "connectAtLeastOne": "Kullanıcıların çalıştırdıktan sonra sonuçları görebilmesi için {atLeastOne} çıktı düğümünü bağlayın.",
+      "descriptionPlaceholder": "Açıklama eklemek için çift tıklayın",
       "noOutputs": "Henüz çıktı eklenmedi",
       "outputExamples": "Örnekler: 'Görseli Kaydet' veya 'Videoyu Kaydet'",
       "outputs": "Çıktılar",
@@ -2892,6 +2893,7 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "maske",
     "merging": "birleştirme",
     "mochi": "mochi",
@@ -3512,6 +3514,7 @@
     "Load 3D": "3D Yükle",
     "Locale": "Yerel Ayar",
     "Mask Editor": "Maske Düzenleyici",
+    "Members": "Üyeler",
     "Menu": "Menü",
     "ModelLibrary": "Model Kütüphanesi",
     "Node": "Düğüm",
@@ -3874,6 +3877,7 @@
     "freeTier": {
       "description": "Ücretsiz planınız, Comfy Cloud'u denemek için her ay {credits} kredi içerir.",
       "descriptionGeneric": "Ücretsiz planınız, Comfy Cloud'u denemek için aylık kredi hakkı içerir.",
+      "descriptionQuota": "Ücretsiz planınız, Comfy Cloud ile başlamak için {runs} çalıştırma içerir — kart gerekmez.",
       "nextRefresh": "Kredileriniz {date} tarihinde yenilenecek.",
       "outOfCredits": {
         "subtitle": "Yeniden yükleme ve daha fazlasının kilidini açmak için abone olun",
@@ -4406,6 +4410,24 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "Kredi",
+        "date": "Tarih",
+        "eventDetails": "Etkinlik detayları",
+        "eventType": "Etkinlik türü",
+        "user": "Kullanıcı"
+      },
+      "empty": "Henüz bir etkinlik yok.",
+      "fullActivity": "Tüm etkinlikler",
+      "hoverCard": {
+        "lastActivity": "Son etkinlik",
+        "partnerNodeUsed": "Kullanılan partner node",
+        "totalCreditsUsed": "Toplam kullanılan kredi"
+      },
+      "perUserHint": "Kullanıcı başına toplam kullanım mı arıyorsunuz?",
+      "seeMembers": "Üyeleri Gör"
+    },
     "billingStatus": {
       "ending": {
         "body": "O zamana kadar üyeler tam erişime sahip olacak. Paylaşılan kredilerinizi ve koltuklarınızı korumak için yeniden etkinleştirin.",
@@ -4493,14 +4515,31 @@
         "cancelInvite": "Daveti iptal et",
         "changeRole": "Rolü değiştir",
         "removeMember": "Üyeyi kaldır",
-        "resendInvite": "Daveti yeniden gönder"
+        "resendInvite": "Daveti yeniden gönder",
+        "setCreditLimit": "Kredi limiti belirle"
+      },
+      "activity": {
+        "daysAgo": "{count} gün önce",
+        "hoursAgo": "{n} saat önce",
+        "justNow": "şimdi",
+        "minutesAgo": "{n} dakika önce"
       },
       "columns": {
+        "creditsUsed": "Aylık kredi",
         "expiryDate": "Son kullanma tarihi",
         "inviteDate": "Davet tarihi",
         "role": "Rol"
       },
       "contactUs": "Bize ulaşın",
+      "creditLimitDialog": {
+        "description": "Bu limite ulaştıklarında, iş akışlarını çalıştıramazlar.",
+        "invalidLimit": "Sıfırdan büyük bir kredi limiti girin.",
+        "limitOption": "Aylık kredi kullanımını sınırla:",
+        "noLimit": "Sınırsız",
+        "title": "{name} için aylık kredi limiti belirle",
+        "update": "Limiti güncelle",
+        "warning": "Bu kullanıcı zaten {credits} kredi harcadı. Limiti mevcut kullanımına eşit veya daha düşük ayarlamak, bir sonraki aya kadar daha fazla çalıştırmayı engeller."
+      },
       "header": "Üyeler",
       "membersCount": "{count}/50 Üye",
       "needMoreMembers": "Daha fazla üyeye mi ihtiyacınız var?",
@@ -4523,6 +4562,12 @@
       "deleteWorkspaceDisabledTooltip": "Önce çalışma alanınızın aktif aboneliğini iptal edin",
       "editWorkspace": "Çalışma alanı detaylarını düzenle",
       "leaveWorkspace": "Çalışma Alanından Ayrıl"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "Etkinlik",
+        "overview": "Krediler"
+      }
     },
     "removeMemberDialog": {
       "error": "Üye kaldırılamadı",
