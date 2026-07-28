@@ -111,10 +111,18 @@ jobs:
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
-    # Calibration: run 30312432225 proved the full manifest does NOT fit in
-    # 60 unsharded (timeout-killed at 61m with the suite mid-flight). Raised
-    # to get one COMPLETE run's timings; the A2.7 shard split then sizes
-    # from those timings, and this drops back down.
+    # CALIBRATED, and the answer is that this job cannot pass unsharded:
+    # run 30312432225 was timeout-killed at 60m, and run 30326101049 at 150m
+    # (122m of testing, 562 of the retried attempts over 359 tests, still
+    # inside allNodes). All three every-node tiers run against cloud at ~185
+    # attempts each (mount, save/reload, auto-run).
+    #
+    # Sharding is NOT a drop-in fix: the auto-run tier queues prompts and
+    # needs exclusive backend access, and every shard would drive the ONE
+    # shared Cloud instance concurrently. The viable split is by TIER (mount
+    # + save/reload shard in parallel - they queue nothing; auto-run stays
+    # serial), or per-run instances (open item 7) which make row sharding
+    # safe. Until one lands, this job cannot be a required check.
     timeout-minutes: 150
     permissions:
       contents: read
