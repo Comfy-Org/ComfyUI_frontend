@@ -87,9 +87,7 @@ describe('Composer', () => {
     it('opens from the Auto control with the ask mode selected by default', async () => {
       mount()
 
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Run permissions' })
-      )
+      await userEvent.click(screen.getByRole('button', { name: 'Auto' }))
 
       expect(
         await screen.findByText('Choose when the agent needs your consent')
@@ -103,9 +101,7 @@ describe('Composer', () => {
       mount()
       const store = useAgentRunModeStore()
 
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Run permissions' })
-      )
+      await userEvent.click(screen.getByRole('button', { name: 'Auto' }))
       await userEvent.click(
         await screen.findByRole('radio', { name: /Auto-run with limits/ })
       )
@@ -127,21 +123,98 @@ describe('Composer', () => {
       mount()
       const store = useAgentRunModeStore()
 
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Run permissions' })
-      )
+      await userEvent.click(screen.getByRole('button', { name: 'Auto' }))
       await userEvent.click(
         await screen.findByRole('radio', { name: /Auto-run without approval/ })
       )
       await userEvent.keyboard('{Escape}')
       expect(store.mode).toBe('ask')
 
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Run permissions' })
-      )
+      await userEvent.click(screen.getByRole('button', { name: 'Auto' }))
       expect(
         await screen.findByRole('radio', { name: /Ask before a workflow runs/ })
       ).toBeChecked()
+    })
+  })
+
+  describe('typed @ mention', () => {
+    const NODES = [
+      { id: '5', title: 'KSampler' },
+      { id: '7', title: 'KSampler' },
+      { id: '9', title: 'VAE Decode' }
+    ]
+
+    it('opens on @, filters with spaces, and stages the pick on Enter', async () => {
+      const { emitted } = mount({ getMentionNodes: () => NODES })
+      const box = screen.getByRole('textbox')
+
+      await userEvent.type(box, '@')
+      expect(screen.getByRole('listbox')).toBeInTheDocument()
+      expect(screen.getAllByRole('option')).toHaveLength(3)
+
+      await userEvent.type(box, 'vae de')
+      expect(screen.getAllByRole('option')).toHaveLength(1)
+
+      await userEvent.keyboard('{Enter}')
+      expect(emitted().mentionPick[0]).toEqual([NODES[2]])
+      expect(emitted().send).toBeUndefined()
+      expect((box as HTMLTextAreaElement).value).toBe('')
+    })
+
+    it('navigates with arrows and inserts with Tab', async () => {
+      const { emitted } = mount({ getMentionNodes: () => NODES })
+
+      await userEvent.type(screen.getByRole('textbox'), '@')
+      await userEvent.keyboard('{ArrowDown}{Tab}')
+
+      expect(emitted().mentionPick[0]).toEqual([NODES[1]])
+      expect(emitted().send).toBeUndefined()
+    })
+
+    it('closes on Escape so Enter sends normally', async () => {
+      const { emitted } = mount({ getMentionNodes: () => NODES })
+      const box = screen.getByRole('textbox')
+
+      await userEvent.type(box, 'hi @k')
+      expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+      await userEvent.keyboard('{Escape}')
+      expect(screen.queryByRole('listbox')).toBeNull()
+
+      await userEvent.keyboard('{Enter}')
+      expect(emitted().send[0]).toEqual(['hi @k', []])
+    })
+
+    it('ignores an @ inside a word', async () => {
+      mount({ getMentionNodes: () => NODES })
+
+      await userEvent.type(screen.getByRole('textbox'), 'email@k')
+      expect(screen.queryByRole('listbox')).toBeNull()
+    })
+
+    it('lets Shift+Enter insert a newline instead of picking', async () => {
+      const { emitted } = mount({ getMentionNodes: () => NODES })
+      const box = screen.getByRole('textbox')
+
+      await userEvent.type(box, '@k')
+      expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+      await userEvent.keyboard('{Shift>}{Enter}{/Shift}')
+      expect(emitted().mentionPick).toBeUndefined()
+      expect(emitted().send).toBeUndefined()
+      expect((box as HTMLTextAreaElement).value).toBe('@k\n')
+      expect(screen.queryByRole('listbox')).toBeNull()
+    })
+
+    it('closes when the caret moves out of the token', async () => {
+      mount({ getMentionNodes: () => NODES })
+      const box = screen.getByRole('textbox')
+
+      await userEvent.type(box, '@k')
+      expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+      await userEvent.keyboard('{Home}')
+      expect(screen.queryByRole('listbox')).toBeNull()
     })
   })
 

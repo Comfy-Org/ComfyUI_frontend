@@ -10,7 +10,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
@@ -52,6 +52,107 @@ const mentionNodes = ref<SelectedNode[]>([])
 function onAddNodesOpen(open: boolean): void {
   if (open) mentionNodes.value = getMentionNodes()
 }
+
+const mentionOpen = ref(false)
+const mentionQuery = ref('')
+const mentionStart = ref(-1)
+const mentionActive = ref(0)
+
+const mentionMatches = computed(() => {
+  if (!mentionOpen.value) return []
+  const query = mentionQuery.value.toLowerCase()
+  return mentionNodes.value.filter(
+    (node) =>
+      node.title.toLowerCase().includes(query) || node.id.includes(query)
+  )
+})
+
+const mentionVisible = computed(() => mentionMatches.value.length > 0)
+
+function closeMention(): void {
+  mentionOpen.value = false
+  mentionQuery.value = ''
+  mentionStart.value = -1
+  mentionActive.value = 0
+}
+
+function syncMention(event: Event): void {
+  const el = event.target as HTMLTextAreaElement
+  const caret = el.selectionStart ?? 0
+  const text = el.value
+  const at = text.lastIndexOf('@', caret - 1)
+  const atValid =
+    at !== -1 && at < caret && (at === 0 || /\s/.test(text[at - 1]))
+  if (!atValid) {
+    closeMention()
+    return
+  }
+  const query = text.slice(at + 1, caret)
+  if (query.includes('\n')) {
+    closeMention()
+    return
+  }
+  if (!mentionOpen.value) mentionNodes.value = getMentionNodes()
+  mentionOpen.value = true
+  mentionStart.value = at
+  mentionQuery.value = query
+  mentionActive.value = 0
+}
+
+function pickMention(node: SelectedNode): void {
+  emit('mentionPick', node)
+  const draft = composer.draft.value
+  const before = draft.slice(0, mentionStart.value)
+  const end = mentionStart.value + 1 + mentionQuery.value.length
+  let after = draft.slice(end)
+  if (after.startsWith(' ') && (before === '' || before.endsWith(' ')))
+    after = after.slice(1)
+  composer.draft.value = before + after
+  closeMention()
+  textareaRef.value?.focus()
+}
+
+function onComposerKeydown(event: KeyboardEvent): void {
+  if (mentionVisible.value && !event.isComposing && !event.shiftKey) {
+    const matches = mentionMatches.value
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      mentionActive.value = (mentionActive.value + 1) % matches.length
+      return
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      mentionActive.value =
+        (mentionActive.value - 1 + matches.length) % matches.length
+      return
+    }
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault()
+      pickMention(matches[mentionActive.value])
+      return
+    }
+    if (event.key === 'Escape') {
+      event.stopPropagation()
+      closeMention()
+      return
+    }
+  }
+  if (event.key === 'Enter') onEnter(event)
+}
+
+const CARET_KEYS = ['ArrowLeft', 'ArrowRight', 'Home', 'End']
+
+function onComposerKeyup(event: KeyboardEvent): void {
+  if (mentionOpen.value && CARET_KEYS.includes(event.key)) syncMention(event)
+}
+
+const mentionListRef = useTemplateRef<HTMLDivElement>('mentionListRef')
+watch(mentionActive, async () => {
+  await nextTick()
+  mentionListRef.value
+    ?.querySelector('[aria-selected="true"]')
+    ?.scrollIntoView?.({ block: 'nearest' })
+})
 
 const { t } = useI18n()
 
@@ -103,12 +204,43 @@ defineExpose({
   <div
     :class="
       cn(
-        'border-agent-border-strong bg-agent-surface-raised focus-within:border-agent-fg-muted flex flex-col rounded-2xl border transition-colors',
+        'border-agent-border-strong bg-agent-surface-raised focus-within:border-agent-fg-muted relative flex flex-col rounded-2xl border transition-colors',
         insertHighlight &&
           'border-agent-accent focus-within:border-agent-accent'
       )
     "
   >
+    <div
+      v-if="mentionVisible"
+      id="agent-mention-listbox"
+      ref="mentionListRef"
+      role="listbox"
+      :aria-label="t('agent.addNodesFromGraph')"
+      class="border-agent-border bg-agent-surface-raised rounded-agent absolute inset-x-0 bottom-full z-1100 mb-2 max-h-64 overflow-y-auto border p-1 shadow-lg"
+      @mousedown.prevent
+    >
+      <div
+        v-for="(node, index) in mentionMatches"
+        :id="`agent-mention-opt-${index}`"
+        :key="node.id"
+        role="option"
+        :aria-selected="index === mentionActive"
+        :class="
+          cn(
+            'text-agent-fg rounded-agent flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs',
+            index === mentionActive && 'bg-agent-surface-hover'
+          )
+        "
+        @mouseenter="mentionActive = index"
+        @click="pickMention(node)"
+      >
+        <span class="truncate">{{ node.title }}</span>
+        <span class="text-agent-fg-subtle ml-auto shrink-0">
+          #{{ node.id }}
+        </span>
+      </div>
+    </div>
+
     <div v-if="selectionTags.length" class="flex flex-wrap gap-1.5 px-4 pt-3">
       <span
         v-for="tag in selectionTags"
@@ -149,7 +281,16 @@ defineExpose({
       :placeholder="t('agent.placeholder')"
       rows="1"
       class="field-sizing-content max-h-48 min-h-20 resize-none overflow-y-auto rounded-xl bg-transparent px-4 py-3 focus-visible:ring-0"
-      @keydown.enter="onEnter"
+      :aria-expanded="mentionVisible"
+      aria-controls="agent-mention-listbox"
+      :aria-activedescendant="
+        mentionVisible ? `agent-mention-opt-${mentionActive}` : undefined
+      "
+      @keydown="onComposerKeydown"
+      @keyup="onComposerKeyup"
+      @input="syncMention"
+      @click="syncMention"
+      @blur="closeMention"
     />
 
     <div class="flex items-center justify-between px-3 py-2">
