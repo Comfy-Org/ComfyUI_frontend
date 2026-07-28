@@ -628,9 +628,8 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
 
     promotedModelTest(
       'Refreshing a resolved promoted missing model clears the combo invalid state',
-      { tag: ['@widget', '@subgraph'] },
+      { tag: ['@widget', '@subgraph', '@vue-nodes'] },
       async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         await loadWorkflowAndOpenErrorsTab(
           comfyPage,
           NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.workflowName

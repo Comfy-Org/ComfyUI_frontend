@@ -84,13 +84,23 @@ export function useMinimapGraph(
       void handleGraphChangedThrottled()
     }
 
+    // A reload of the same workflow leaves the node count and every geometry
+    // string identical, so change detection alone cannot tell that `bounds` was
+    // last derived mid-configure, from a partially built graph.
+    const onConfigured = () => {
+      clearCache()
+      void handleGraphChangedThrottled()
+    }
+
     g.events.addEventListener('node:added', onNodeAdded)
     g.events.addEventListener('node:removed', onNodeRemoved)
     g.events.addEventListener('node:property:changed', onPropertyChanged)
+    g.events.addEventListener('configured', onConfigured)
     entry.listeners = [
       ['node:added', onNodeAdded as EventListener],
       ['node:removed', onNodeRemoved as EventListener],
-      ['node:property:changed', onPropertyChanged as EventListener]
+      ['node:property:changed', onPropertyChanged as EventListener],
+      ['configured', onConfigured as EventListener]
     ]
 
     // No event for connection changes yet, so this one still chains.
@@ -131,15 +141,15 @@ export function useMinimapGraph(
     // Use unified data source for change detection
     const dataSource = MinimapDataSourceFactory.create(g)
 
-    const nodes = dataSource.getNodes()
-
     // Check for node count changes
-    if (nodes.length !== lastNodeCount.value) {
+    const currentNodeCount = dataSource.getNodeCount()
+    if (currentNodeCount !== lastNodeCount.value) {
       structureChanged = true
-      lastNodeCount.value = nodes.length
+      lastNodeCount.value = currentNodeCount
     }
 
     // Check for node position/size changes
+    const nodes = dataSource.getNodes()
     for (const node of nodes) {
       const nodeId = node.id
       const currentState = `${node.x},${node.y},${node.width},${node.height}`

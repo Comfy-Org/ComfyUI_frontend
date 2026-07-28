@@ -1,9 +1,11 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LinkId } from '@/lib/litegraph/src/LLink'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 
 function createConnectedGraph() {
   const graph = new LGraph()
@@ -83,5 +85,19 @@ describe('NodeOutputSlot deprecated links getter', () => {
 
     const links = source.outputs[0].links as LinkId[]
     expect(() => links.push(links[0])).toThrow(TypeError)
+  })
+})
+
+describe('NodeOutputSlot construction', () => {
+  it('tolerates serialized slots carrying unknown keys', () => {
+    const node = new LGraphNode('Host')
+
+    expect(
+      () =>
+        new NodeOutputSlot(
+          fromAny({ name: 'out', type: 'INT', index: 7, linkIds: [3] }),
+          node
+        )
+    ).not.toThrow()
   })
 })

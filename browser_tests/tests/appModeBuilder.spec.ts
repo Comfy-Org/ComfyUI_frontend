@@ -2,7 +2,10 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import {
+  dismissErrorOverlay,
+  enableErrorsOverlay
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
 test.describe('App mode builder selection', () => {
@@ -10,29 +13,32 @@ test.describe('App mode builder selection', () => {
     await comfyPage.appMode.enableLinearMode()
   })
 
-  test('Can independently select inputs of same name', async ({
-    comfyPage
-  }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    const items = comfyPage.appMode.select.inputItems
+  test(
+    'Can independently select inputs of same name',
+    {
+      tag: '@vue-nodes'
+    },
+    async ({ comfyPage }) => {
+      const items = comfyPage.appMode.select.inputItems
 
-    await comfyPage.vueNodes.selectNodes(['6', '7'])
-    await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
+      await comfyPage.vueNodes.selectNodes(['6', '7'])
+      await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
 
-    await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.steps.goToInputs()
-    await expect(items).toHaveCount(0)
+      await comfyPage.appMode.enterBuilder()
+      await comfyPage.appMode.steps.goToInputs()
+      await expect(items).toHaveCount(0)
 
-    const prompts = comfyPage.vueNodes
-      .getNodeByTitle('New Subgraph')
-      .locator('.lg-node-widget')
-    const count = await prompts.count()
-    for (let i = 0; i < count; i++) {
-      await expect(prompts.nth(i)).toBeVisible()
-      await prompts.nth(i).click()
-      await expect(items).toHaveCount(i + 1)
+      const prompts = comfyPage.vueNodes
+        .getNodeByTitle('New Subgraph')
+        .locator('.lg-node-widget')
+      const count = await prompts.count()
+      for (let i = 0; i < count; i++) {
+        await expect(prompts.nth(i)).toBeVisible()
+        await prompts.nth(i).click()
+        await expect(items).toHaveCount(i + 1)
+      }
     }
-  })
+  )
 
   test('Can select outputs', async ({ comfyPage }) => {
     await comfyPage.appMode.enterBuilder()
@@ -48,50 +54,75 @@ test.describe('App mode builder selection', () => {
     await expect(items).toHaveCount(1)
   })
 
-  test('Can not select nodes with errors or notes', async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+  test(
+    'Can not select a node with an error',
+    {
+      tag: '@vue-nodes'
+    },
+    async ({ comfyPage }) => {
+      // This test seeds a real error through a prompt round trip, on top of the
+      // errors-overlay setting and the builder navigation.
+      test.slow()
+      // Without the errors tab, a failed prompt raises a modal error dialog
+      // instead, and a modal makes the topbar inert (app.ts:1754).
+      await enableErrorsOverlay(comfyPage)
 
-    const [checkpointLoader] = await comfyPage.nodeOps.getNodeRefsByType(
-      'CheckpointLoaderSimple'
-    )
-    await new ExecutionHelper(comfyPage).mockValidationFailure({
-      [String(checkpointLoader.id)]: {
-        class_type: 'CheckpointLoaderSimple',
-        dependent_outputs: [],
-        errors: [
-          {
-            type: 'value_not_in_list',
-            message: 'Value not in list',
-            details: '',
-            extra_info: { input_name: 'ckpt_name' }
-          }
-        ]
-      }
-    })
-    await comfyPage.runButton.click()
-    await dismissErrorOverlay(comfyPage)
+      const [checkpointLoader] = await comfyPage.nodeOps.getNodeRefsByType(
+        'CheckpointLoaderSimple'
+      )
+      await new ExecutionHelper(comfyPage).mockValidationFailure({
+        [String(checkpointLoader.id)]: {
+          class_type: 'CheckpointLoaderSimple',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'value_not_in_list',
+              message: 'Value not in list',
+              details: '',
+              extra_info: { input_name: 'ckpt_name' }
+            }
+          ]
+        }
+      })
+      await comfyPage.runButton.click()
+      await dismissErrorOverlay(comfyPage)
 
-    const items = comfyPage.appMode.select.inputItems
-    await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.steps.goToInputs()
-    await expect(items).toHaveCount(0)
+      // The error ring is the user-visible signal that the store took the error;
+      // waiting on it keeps the builder assertions below from racing the response.
+      await expect(
+        comfyPage.vueNodes.getNodeInnerWrapper(String(checkpointLoader.id))
+      ).toHaveClass(/ring-destructive-background/)
 
-    await comfyPage.appMode.select.selectInputWidget(
-      'Load Checkpoint',
-      'ckpt_name'
-    )
-    await expect(items).toHaveCount(0)
+      const items = comfyPage.appMode.select.inputItems
+      await comfyPage.appMode.enterBuilder()
+      await comfyPage.appMode.steps.goToInputs()
 
-    await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
-    await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.steps.goToInputs()
-    await expect(items).toHaveCount(0)
+      await comfyPage.appMode.select.selectInputWidget(
+        'Load Checkpoint',
+        'ckpt_name'
+      )
+      await expect(items).toHaveCount(0)
+    }
+  )
 
-    await comfyPage.appMode.select.selectInputWidget('Note', 'text')
-    await comfyPage.appMode.select.selectInputWidget('Markdown Note', 'text')
+  test(
+    'Can not select note nodes',
+    {
+      tag: '@vue-nodes'
+    },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
 
-    await expect(items).toHaveCount(0)
-  })
+      const items = comfyPage.appMode.select.inputItems
+      await comfyPage.appMode.enterBuilder()
+      await comfyPage.appMode.steps.goToInputs()
+
+      await comfyPage.appMode.select.selectInputWidget('Note', 'text')
+      await comfyPage.appMode.select.selectInputWidget('Markdown Note', 'text')
+
+      await expect(items).toHaveCount(0)
+    }
+  )
 
   test('Marks canvas readOnly', async ({ comfyPage }) => {
     await comfyPage.searchBoxV2.openByDoubleClickCanvas()

@@ -57,9 +57,8 @@ function createNode(
   id: NodeId = toNodeId(1),
   type = 'TestNode'
 ): LGraphNode {
-  const node = new LGraphNode(type)
+  const node = new LGraphNode(type, type)
   node.id = id
-  node._state.type = type
   node.widgets = widgets
   return node
 }

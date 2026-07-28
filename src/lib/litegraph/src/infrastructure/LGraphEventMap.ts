@@ -88,3 +88,7 @@ export interface LGraphEventMap {
     slotType?: NodeSlotType
   }
 }
+
+export type NodeLifecycleEvent = CustomEvent<
+  LGraphEventMap['node:added' | 'node:removed']
+>

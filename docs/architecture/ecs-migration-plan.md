@@ -74,7 +74,7 @@ Five factual errors verified during code review (see
 ## Phase 1: Types and Dedicated Stores
 
 Introduces the ID type vocabulary and the dedicated stores. Phase 1 end-state is
-N dedicated Pinia stores, each keyed by a composite string ID, coexisting with
+N dedicated Pinia stores, each keyed by its own entity ID, coexisting with
 legacy class instances.
 
 ### 1a. Branded string ID types ✅ Shipped (PR 12617)
@@ -109,8 +109,10 @@ endpoints).
 ### 1c. Dedicated stores
 
 Phase 1 end-state is a set of dedicated Pinia stores, one per concern, each
-keyed by its own composite string ID. Each store owns its data and exposes a
-narrow accessor surface. There is no single container that fronts all entities.
+keyed by its own entity ID — a composite string where the key has to carry the
+graph relationship, a bare ID inside root-graph-scoped buckets where the bucket
+already supplies it. Each store owns its data and exposes a narrow accessor
+surface. There is no single container that fronts all entities.
 
 Shipped stores:
 
@@ -273,12 +275,11 @@ gate" below before assuming this is free.
 ### 2f. Slot arrays in nodeDataStore ✅ Shipped
 
 The renderer can ask what slots a node has without resolving the live
-`LGraphNode`. `nodeDataStore` gains a sibling map beside `graphNodeStates`,
-holding each node's `{ inputs, outputs }` **by reference** — the node's own
-arrays, not a copy — registered at the same `LGraph.add` / `LGraph.remove`
-chokepoint as `NodeState`. This is the shape `widgetValueStore` already uses for
-widget order: order data beside record data in one store, rather than a new store
-per concern.
+`LGraphNode`. `NodeState` carries the node's own `inputs` / `outputs` arrays
+**by reference** — not a copy — so they register at the same `LGraph.add` /
+`LGraph.remove` chokepoint as the rest of the shell state. This is the shape
+`widgetValueStore` already uses for widget order: order data beside record data
+in one store, rather than a new store per concern.
 
 Because the arrays are the node's, array order _is_ slot order and there is
 nothing to keep in step. `NodeSlots.vue` no longer calls `getNodeByLocatorId` or
@@ -771,7 +772,7 @@ The dedicated stores use per-concern keying strategies:
 | `subgraphNavigationStore` | subgraphId or `'root'`                                                               |
 | `linkStore`               | `` `${targetNodeId}:${targetSlot}` `` (target input slot), root-graph-scoped buckets |
 | `rerouteStore`            | `RerouteId`, root-graph-scoped buckets                                               |
-| `nodeDataStore`           | `NodeId`, root-graph-scoped buckets                                                  |
+| `nodeDataStore`           | `NodeState` identity (`Set`), root-graph-scoped buckets                              |
 
 ADR 0009 refines the promoted-widget target: promoted value widgets should use
 host boundary identity (`host node locator + SubgraphInput.name`), not interior

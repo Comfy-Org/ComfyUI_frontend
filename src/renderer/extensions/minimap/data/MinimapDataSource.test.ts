@@ -1,10 +1,16 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
-import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  createMockLGraph,
+  createMockLGraphNode,
+  createNodeState
+} from '@/utils/__tests__/litegraphTestUtils'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/MinimapDataSourceFactory'
 import { useLinkStore } from '@/stores/linkStore'
@@ -35,38 +41,21 @@ vi.mock('@/stores/executionStore', () => ({
 
 const GRAPH_ID: UUID = 'minimap-graph'
 
-function createMockLinks(): LGraph['links'] {
-  return new Map<number, LLink>() as unknown as LGraph['links']
-}
-
-function createMockGraph(
-  nodes: LGraphNode[] = [],
-  id: UUID = GRAPH_ID
-): LGraph {
-  const byId = new Map(nodes.map((n) => [String(n.id), n]))
-  return {
-    id,
-    _nodes: nodes,
-    _groups: [],
-    links: createMockLinks(),
-    rootGraph: { id: GRAPH_ID },
-    getNodeById: (nodeId: NodeId) => byId.get(String(nodeId)) ?? null
-  } as unknown as LGraph
+function createMockGraph(nodes: LGraphNode[] = []): LGraph {
+  return createMockLGraph({ id: GRAPH_ID, _nodes: nodes })
 }
 
 /** Adds a node to `nodeDataStore`, which is how the layout source scopes. */
 function registerNodeState(id: string, graphId: UUID = GRAPH_ID) {
-  useNodeDataStore().registerNode(GRAPH_ID, {
-    id: toNodeId(id),
-    graphId,
-    inputs: [],
-    outputs: [],
-    type: 'TestNode',
-    title: id,
-    mode: LGraphEventMode.ALWAYS,
-    flags: {},
-    bgcolor: '#123456'
-  })
+  useNodeDataStore().registerNode(
+    GRAPH_ID,
+    createNodeState({
+      id: toNodeId(id),
+      graphId,
+      title: id,
+      bgcolor: '#123456'
+    })
+  )
 }
 
 function setLayout(id: string, x: number, y: number, w = 100, h = 50) {
@@ -86,15 +75,16 @@ function graphNode(
   outputs = 0,
   size: [number, number] = [100, 50]
 ): LGraphNode {
-  return {
+  return createMockLGraphNode({
     id: toNodeId(id),
     pos,
     size,
     bgcolor: '#fff',
-    mode: LGraphEventMode.ALWAYS,
     has_errors: false,
-    outputs: Array.from({ length: outputs }, () => ({}) as INodeOutputSlot)
-  } as unknown as LGraphNode
+    outputs: Array.from({ length: outputs }, () =>
+      fromPartial<INodeOutputSlot>({})
+    )
+  })
 }
 
 describe('MinimapDataSource', () => {
@@ -188,6 +178,7 @@ describe('MinimapDataSource', () => {
       )
 
       expect(dataSource.getNodes()).toEqual([])
+      expect(dataSource.hasData()).toBe(false)
     })
   })
 

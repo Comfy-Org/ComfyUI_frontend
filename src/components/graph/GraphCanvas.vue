@@ -75,7 +75,7 @@
     <LGraphNode
       v-for="nodeData in allNodes"
       :key="nodeData.id"
-      :node-data="nodeData"
+      :node-data
       :data-node-id="nodeData.id"
     />
   </TransformPane>
@@ -288,7 +288,7 @@ watch(
 
 const nodeDataStore = useNodeDataStore()
 const allNodes = computed((): NodeState[] => {
-  const rootGraphId = canvasStore.rootGraphId
+  const { rootGraphId } = canvasStore
   const graphId = canvasStore.currentGraph?.id
   if (!rootGraphId || graphId === undefined) return []
   return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)

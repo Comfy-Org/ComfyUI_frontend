@@ -7,6 +7,7 @@
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -46,8 +47,6 @@ import {
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
 import { getParentExecutionIds } from '@/types/nodeIdentification'
-
-type NodeLifecycleEvent = CustomEvent<{ node: LGraphNode }>
 
 const hookedNodes = new WeakSet<LGraphNode>()
 

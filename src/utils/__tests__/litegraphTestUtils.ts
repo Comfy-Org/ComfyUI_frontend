@@ -15,11 +15,13 @@ import type {
   LLink
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
+import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { zeroUuid } from '@/utils/uuid'
@@ -27,14 +29,14 @@ import { zeroUuid } from '@/utils/uuid'
 /** Creates a node shell state with minimal required fields. */
 export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
   return {
-    id: toNodeId(1),
-    graphId: zeroUuid,
-    type: 'TestNode',
-    title: 'Test Node',
-    mode: LGraphEventMode.ALWAYS,
     flags: {},
+    graphId: zeroUuid,
+    id: toNodeId(1),
     inputs: [],
+    mode: LGraphEventMode.ALWAYS,
     outputs: [],
+    title: 'Test Node',
+    type: 'TestNode',
     ...overrides
   }
 }
@@ -45,15 +47,14 @@ export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
 export function createMockLGraphNode(
   overrides: Partial<LGraphNode> | Record<string, unknown> = {}
 ): LGraphNode {
-  const partial: Partial<LGraphNode> = {
+  return fromPartial<LGraphNode>({
     id: toNodeId(1),
     pos: [0, 0],
     size: [100, 100],
     title: 'Test Node',
     mode: LGraphEventMode.ALWAYS,
     ...(overrides as Partial<LGraphNode>)
-  }
-  return partial as Partial<LGraphNode> as LGraphNode
+  })
 }
 
 /**
@@ -120,12 +121,19 @@ export function createMockCanvas(
  * Creates a mock LGraph with trigger function
  */
 export function createMockLGraph(overrides: Partial<LGraph> = {}): LGraph {
-  return {
+  const nodes = overrides._nodes ?? []
+  const byId = new Map(nodes.map((node) => [String(node.id), node]))
+  const graph = fromPartial<LGraph>({
     trigger: vi.fn(),
     // A real dispatcher: node lifecycle subscribers listen on `graph.events`.
     events: new CustomEventTarget<LGraphEventMap>(),
+    _nodes: nodes,
+    _groups: [],
+    links: createMockLinks([]),
+    getNodeById: (id: NodeId) => byId.get(String(id)) ?? null,
     ...overrides
-  } as LGraph
+  })
+  return Object.assign(graph, { rootGraph: overrides.rootGraph ?? graph })
 }
 
 /**
@@ -306,10 +314,10 @@ export function createMockChangeTracker(
 export function createMockLoadedWorkflow(
   overrides: Partial<LoadedComfyWorkflow> | Record<string, unknown> = {}
 ): LoadedComfyWorkflow {
-  return {
+  return fromPartial<LoadedComfyWorkflow>({
     changeTracker: createMockChangeTracker(),
     ...overrides
-  } as unknown as LoadedComfyWorkflow
+  })
 }
 
 /**

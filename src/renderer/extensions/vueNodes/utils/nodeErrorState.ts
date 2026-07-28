@@ -7,14 +7,7 @@ import type { NodeState } from '@/types/nodeState'
 import { locatorIdFromState } from '@/utils/graphTraversalUtil'
 import type { UUID } from '@/utils/uuid'
 
-/**
- * Whether a node currently carries an error, derived from the error stores.
- *
- * `node.has_errors` is deliberately not consulted: it is a plain class field
- * written by a watcher, so Vue cannot track it and a caller would latch on
- * after the underlying error cleared. Every source that watcher folds in is
- * queried directly here instead.
- */
+/** Reads the error stores directly; `node.has_errors` is untracked and would latch. */
 export function nodeHasError(
   state: NodeState,
   rootGraphId: UUID | undefined,
