@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -8,96 +6,46 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const lines = t('hero.title', locale).split('\n')
 
-// All internal sizing is em-relative to the inherited font size, so the
-// lockup scales with whatever context renders it (canvas overlay or flow).
-const pill =
-  'font-formula-narrow inline-block rounded-[0.35em] px-[0.42em] py-[0.16em] leading-none font-semibold uppercase'
+// Sizing is em-relative to the inherited font size so the lockup scales with
+// whatever context renders it (canvas overlay or mobile flow).
+const cap = '-mx-px h-full w-auto self-stretch'
 
 // PP Formula Narrow sits high in its em box; nudge the glyphs down so they
-// read optically centered inside the highlighter block.
-const inner = 'relative top-[0.06em] inline-block'
-
-const lineGap = 'mt-[0.33em]'
+// read optically centred between the caps.
+const inner = 'inline-block translate-y-[0.11em] whitespace-nowrap'
 </script>
 
 <template>
-  <div class="flex flex-col items-center text-center">
-    <!-- Goo filter: blur + alpha contrast fuses the pills and the bridge into
-         a single liquid shape. -->
-    <svg class="absolute size-0" aria-hidden="true">
-      <defs>
-        <filter id="hero-goo">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b" />
-          <feColorMatrix
-            in="b"
-            mode="matrix"
-            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10"
-          />
-        </filter>
-      </defs>
-    </svg>
-
-    <div class="inline-grid">
-      <!-- Liquid yellow backing: text is transparent here, present only so
-           each pill sizes to its line. The bridge pill is static. The goo
-           blur is in device pixels, which turns small pills to mush, so
-           below md the text pills carry their own solid background instead. -->
-      <div
-        class="relative col-start-1 row-start-1 hidden flex-col items-center md:flex"
-        style="filter: url(#hero-goo)"
+  <h1
+    class="font-formula-narrow flex flex-col items-center font-semibold tracking-[-0.02em] uppercase"
+  >
+    <template v-for="(line, i) in lines" :key="line">
+      <img
+        v-if="i > 0"
+        src="/icons/node-union-vertical.svg"
+        alt=""
+        class="h-[0.265em] w-[0.423em]"
         aria-hidden="true"
-      >
-        <span
-          :class="
-            cn(pill, 'bg-primary-comfy-yellow skew-x-[-8deg] text-transparent')
-          "
-        >
-          {{ lines[0] }}
-        </span>
-        <span
-          :class="
-            cn(
-              pill,
-              'bg-primary-comfy-yellow skew-x-[-8deg] text-transparent',
-              lineGap
-            )
-          "
-        >
-          {{ lines[1] }}
-        </span>
-        <span
-          class="bg-primary-comfy-yellow pointer-events-none absolute top-1/2 left-1/2 h-[0.75em] w-[0.42em] -translate-1/2 scale-y-[1.03] rounded-full"
+      />
+      <span class="flex h-[1.667em] items-stretch">
+        <img
+          src="/icons/node-left.svg"
+          alt=""
+          :class="cap"
+          aria-hidden="true"
         />
-      </div>
-
-      <!-- Crisp dark text on top of the liquid backing -->
-      <h1 class="col-start-1 row-start-1 flex flex-col items-center">
         <span
-          :class="
-            cn(
-              pill,
-              'max-md:bg-primary-comfy-yellow text-primary-comfy-ink max-md:skew-x-[-8deg]'
-            )
-          "
+          class="bg-primary-comfy-yellow flex items-center leading-none text-primary-comfy-ink"
         >
-          <span :class="cn(inner, 'max-md:skew-x-[8deg]')">
-            {{ lines[0] }}
-          </span>
+          <span :class="inner">{{ line }}</span>
         </span>
-        <span
-          :class="
-            cn(
-              pill,
-              'max-md:bg-primary-comfy-yellow text-primary-comfy-ink max-md:skew-x-[-8deg]',
-              lineGap
-            )
-          "
-        >
-          <span :class="cn(inner, 'max-md:skew-x-[8deg]')">
-            {{ lines[1] }}
-          </span>
-        </span>
-      </h1>
-    </div>
-  </div>
+        <img
+          src="/icons/node-right.svg"
+          alt=""
+          :class="cap"
+          aria-hidden="true"
+        />
+      </span>
+    </template>
+  </h1>
 </template>

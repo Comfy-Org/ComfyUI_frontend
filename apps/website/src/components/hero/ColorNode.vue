@@ -22,7 +22,7 @@ const saturationTrack = computed(
       <span class="bg-primary-comfy-yellow size-[0.55em] rounded-full" />
       <span class="ml-auto flex items-center gap-[0.5em]">
         <span
-          class="font-formula text-[0.7em] font-semibold tracking-[0.14em] text-white"
+          class="font-formula text-[0.7em] leading-[1.1] font-bold tracking-[-0.01em] text-primary-comfy-canvas"
         >
           COLOR
         </span>

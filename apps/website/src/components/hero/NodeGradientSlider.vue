@@ -58,7 +58,7 @@ function onKeydown(event: KeyboardEvent) {
 <template>
   <div class="flex w-full flex-col gap-[0.45em]">
     <span
-      class="font-formula text-[0.65em] font-semibold tracking-[0.12em] text-white/70"
+      class="font-formula text-[0.65em] leading-[1.1] font-bold tracking-[-0.01em] text-primary-comfy-canvas"
     >
       {{ label }}
     </span>
@@ -78,7 +78,7 @@ function onKeydown(event: KeyboardEvent) {
       @keydown="onKeydown"
     >
       <span
-        class="pointer-events-none absolute top-1/2 size-[1em] -translate-1/2 rounded-full border-2 border-white bg-[#242428] shadow-sm"
+        class="pointer-events-none absolute top-1/2 size-[0.575em] -translate-1/2 rounded-full bg-primary-comfy-canvas"
         :style="{ left: `${fraction * 100}%` }"
       />
     </div>

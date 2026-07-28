@@ -1,14 +1,21 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import AngleNode from './AngleNode.vue'
 import ColorNode from './ColorNode.vue'
 import HeroImageCard from './HeroImageCard.vue'
 import { useHeroPipeline } from './useHeroPipeline'
+import { useIdleAutoplay } from './useIdleAutoplay'
+
+const flowEl = ref<HTMLElement>()
 
 const { pose, hue, saturation, output, outputFilter } = useHeroPipeline()
+
+useIdleAutoplay({ pose, hue, saturation }, flowEl)
 </script>
 
 <template>
-  <div class="flex w-full max-w-md flex-col items-stretch gap-4">
+  <div ref="flowEl" class="flex w-full max-w-md flex-col items-stretch gap-4">
     <div class="aspect-square w-full">
       <AngleNode
         v-model:azimuth="pose.azimuth"

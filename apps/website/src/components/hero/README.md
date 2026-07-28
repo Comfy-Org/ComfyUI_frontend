@@ -9,9 +9,22 @@ input image ──▶ 3D ANGLE node ──▶ OUTPUT image
 
 The **3D ANGLE** node is a real Three.js scene (a white orbit ring, a grey
 elevation handle, a yellow camera indicator and zoom handle) that the visitor
-drags directly. As the camera pose changes, the OUTPUT image cross-fades to the
+drags directly. As the camera pose changes, the OUTPUT image swaps to the
 matching pre-rendered result and the live prompt "words" below the graph update
 — no Run button, it just changes.
+
+## Idle self-demo
+
+After three seconds without input the graph drives itself, orbiting the camera
+and drifting the colour grade so the interaction is discoverable without a
+prompt to click. Any activity hands control straight back, and motion resumes
+from wherever the visitor left the pose rather than snapping to a cycle.
+
+`idleAutoplay.ts` holds the motion curve as a pure step function (tested
+directly); `useIdleAutoplay.ts` wires it to idle detection and a rAF loop. It
+runs only while the graph is actually on screen, which also keeps the desktop
+and mobile copies — both always mounted, one hidden by CSS — from animating at
+once. `prefers-reduced-motion: reduce` disables it entirely.
 
 ## The "no backend" illusion
 

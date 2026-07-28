@@ -12,12 +12,15 @@ import HeroImageCard from './HeroImageCard.vue'
 import type { ElementKey } from './graphLayout'
 import { DRAG_MARGIN, ELEMENT_KEYS, FLOW } from './graphLayout'
 import { useHeroPipeline } from './useHeroPipeline'
+import { useIdleAutoplay } from './useIdleAutoplay'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const canvasEl = ref<HTMLElement>()
 
 const { pose, hue, saturation, output, outputFilter } = useHeroPipeline()
+
+useIdleAutoplay({ pose, hue, saturation }, canvasEl)
 
 const positions = reactive(
   Object.fromEntries(

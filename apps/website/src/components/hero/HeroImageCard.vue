@@ -18,23 +18,16 @@ const {
   <div
     class="relative size-full overflow-hidden rounded-[1.25em] border border-white/12 bg-black/40"
   >
-    <Transition
-      enter-active-class="transition-opacity duration-500 ease-out"
-      leave-active-class="transition-opacity duration-500 ease-out absolute inset-0"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-      mode="default"
-    >
-      <img
-        :key="src"
-        :src
-        :alt
-        :style="{ filter }"
-        draggable="false"
-        class="absolute inset-0 size-full object-cover select-none"
-        decoding="async"
-      />
-    </Transition>
+    <!-- Unkeyed so a new src patches this element in place: the browser holds
+         the current frame until the next one decodes, swapping with no blank. -->
+    <img
+      :src
+      :alt
+      :style="{ filter }"
+      draggable="false"
+      class="absolute inset-0 size-full object-cover select-none"
+      decoding="async"
+    />
 
     <!-- Wire anchor; its centre must match PORTS.inputOut in graphLayout.ts -->
     <span
@@ -48,7 +41,7 @@ const {
     >
       <span class="bg-primary-comfy-yellow size-[0.5em] rounded-full" />
       <span
-        class="text-primary-comfy-yellow font-formula text-[0.75em] font-semibold tracking-[0.12em]"
+        class="text-primary-comfy-yellow font-formula text-[0.75em] leading-[1.1] font-bold tracking-[-0.01em]"
       >
         {{ label }}
       </span>

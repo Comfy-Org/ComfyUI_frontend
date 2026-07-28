@@ -150,7 +150,7 @@ export class CameraWidget {
       this.pal.background === null ? null : new Color(this.pal.background)
 
     this.camera = new PerspectiveCamera(45, width / height, 0.1, 1000)
-    this.camera.position.set(4, 3.5, 4)
+    this.camera.position.set(3.2, 2.86, 3.2)
     this.camera.lookAt(0, 0.3, 0)
 
     this.previewCamera = new PerspectiveCamera(50, width / height, 0.1, 100)
@@ -311,7 +311,7 @@ export class CameraWidget {
   }
 
   private createAzimuthRing(): void {
-    const azRingGeo = new TorusGeometry(this.AZIMUTH_RADIUS, 0.04, 16, 100)
+    const azRingGeo = new TorusGeometry(this.AZIMUTH_RADIUS, 0.028, 16, 100)
     const azRingMat = new MeshBasicMaterial({
       color: this.pal.azimuth,
       transparent: true,
@@ -357,7 +357,7 @@ export class CameraWidget {
       )
     }
     const arcCurve = new CatmullRomCurve3(arcPoints)
-    const elArcGeo = new TubeGeometry(arcCurve, 32, 0.04, 8, false)
+    const elArcGeo = new TubeGeometry(arcCurve, 32, 0.028, 8, false)
     const elArcMat = new MeshBasicMaterial({
       color: this.pal.elevation,
       transparent: true,
@@ -418,7 +418,7 @@ export class CameraWidget {
       ;(this.distanceTube.material as Material).dispose()
     }
     const path = new LineCurve3(start, end)
-    const tubeGeo = new TubeGeometry(path, 1, 0.025, 8, false)
+    const tubeGeo = new TubeGeometry(path, 1, 0.018, 8, false)
     const tubeMat = new MeshBasicMaterial({
       color: this.pal.distance,
       transparent: true,
