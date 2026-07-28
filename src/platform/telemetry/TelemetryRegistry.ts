@@ -5,6 +5,7 @@ import type {
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
+  BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -40,6 +41,7 @@ import type {
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
+  WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
 } from './types'
 
@@ -138,6 +140,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
     this.dispatch((provider) => provider.trackWorkspaceInviteSent?.(metadata))
+  }
+
+  trackWorkspaceInviteFailed(metadata: WorkspaceInviteFailedMetadata): void {
+    this.dispatch((provider) => provider.trackWorkspaceInviteFailed?.(metadata))
+  }
+
+  trackBillingEvent(event: BillingTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackBillingEvent?.(event))
   }
 
   trackRunButton(properties: RunButtonProperties): void {
