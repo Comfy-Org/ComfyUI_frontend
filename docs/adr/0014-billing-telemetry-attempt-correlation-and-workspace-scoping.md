@@ -1,4 +1,4 @@
-# 13. Billing Telemetry Attempt Correlation and Workspace Scoping
+# 14. Billing Telemetry Attempt Correlation and Workspace Scoping
 
 Date: 2026-07-28
 
