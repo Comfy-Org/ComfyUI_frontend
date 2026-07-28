@@ -29,6 +29,7 @@ const getAssetExecutionTime = (asset: AssetItem): number => {
 
 const compareAssetNames = (a: AssetItem, b: AssetItem): number =>
   getAssetDisplayName(a).localeCompare(getAssetDisplayName(b), undefined, {
+    numeric: true,
     sensitivity: 'base'
   })
 
