@@ -94,11 +94,13 @@ function createSession(
               (error) => settle(() => reject(toError(error)))
             )
           },
-          onError: (error, type) =>
-            settle(() => {
-              window.churnkey?.hide?.()
-              reject(churnkeyError(error, type))
-            })
+          onError: (error, type) => {
+            if (settled) return
+            settled = true
+            window.churnkey?.hide?.()
+            reject(churnkeyError(error, type))
+            queueMicrotask(() => window.churnkey?.clearState?.())
+          }
         }
 
         try {

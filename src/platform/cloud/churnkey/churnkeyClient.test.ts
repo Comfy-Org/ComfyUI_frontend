@@ -135,6 +135,19 @@ describe('churnkeyClient', () => {
     await expect(showPromise).rejects.toThrow(error)
   })
 
+  it('settles provider errors after the callback returns', async () => {
+    const session = await prepareChurnkey()
+    if (!session) throw new Error('Expected a Churnkey session')
+
+    const showPromise = session.show({ handleCancel: vi.fn() })
+    capturedConfig().onError('provider failed')
+
+    expect(mocks.hide).toHaveBeenCalledOnce()
+    expect(mocks.clearState).not.toHaveBeenCalled()
+    await expect(showPromise).rejects.toThrow('provider failed')
+    expect(mocks.clearState).toHaveBeenCalledOnce()
+  })
+
   it('cleans up when ChurnKey initialization throws synchronously', async () => {
     const session = await prepareChurnkey()
     if (!session) throw new Error('Expected a Churnkey session')
