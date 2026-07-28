@@ -236,6 +236,24 @@ describe('useMediaAssetFiltering', () => {
         expect(ids(filteredAssets.value)).toEqual(['case-first', 'case-second'])
       }
     )
+
+    it.for([
+      ['az', ['file-2', 'file-10']],
+      ['za', ['file-10', 'file-2']]
+    ] as const)(
+      'sorts numeric filenames naturally when sorting %s',
+      ([direction, expected]) => {
+        const assets = ref<AssetItem[]>([
+          makeAsset({ id: 'file-10', name: 'file_10.png' }),
+          makeAsset({ id: 'file-2', name: 'file_2.png' })
+        ])
+        const { sortBy, filteredAssets } = useMediaAssetFiltering(assets)
+
+        sortBy.value = direction
+
+        expect(ids(filteredAssets.value)).toEqual(expected)
+      }
+    )
   })
 
   describe('composition', () => {
