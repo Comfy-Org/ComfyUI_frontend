@@ -763,13 +763,20 @@ describe('useWorkspaceBilling', () => {
           'ALREADY_CANCELED'
         )
       )
-      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        subscription_status: 'canceled',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
 
       const billing = setupBilling()
 
       await expect(billing.cancelSubscription()).resolves.toBeUndefined()
       expect(billing.error.value).toBeNull()
-      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
+      // The scheduled cancellation the server already held is now what the UI
+      // shows — the point of resyncing rather than reporting a failure.
+      expect(billing.subscription.value?.endDate).toBe('2026-06-01T00:00:00Z')
+      expect(billing.subscription.value?.tier).toBe('CREATOR')
       expect(mockStartOperation).not.toHaveBeenCalled()
       expect(billing.isLoading.value).toBe(false)
     })
@@ -846,7 +853,10 @@ describe('useWorkspaceBilling', () => {
 
       await expect(billing.resubscribe()).resolves.toBeUndefined()
       expect(billing.error.value).toBeNull()
-      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
+      // No scheduled cancellation left on the resynced subscription.
+      expect(billing.subscription.value?.endDate).toBeNull()
+      expect(billing.subscription.value?.tier).toBe('CREATOR')
+      expect(billing.isActiveSubscription.value).toBe(true)
       expect(billing.isLoading.value).toBe(false)
     })
   })

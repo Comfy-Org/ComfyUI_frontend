@@ -360,7 +360,11 @@ function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
     const message = err.response?.data?.message ?? err.message
-    throw new WorkspaceApiError(message, status, err.response?.data?.code)
+    // Response data is untyped: keep a non-string code out of the string
+    // contract, so callers comparing against it cannot match on a surprise.
+    const rawCode: unknown = err.response?.data?.code
+    const code = typeof rawCode === 'string' ? rawCode : undefined
+    throw new WorkspaceApiError(message, status, code)
   }
   throw err
 }
