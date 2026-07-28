@@ -167,6 +167,22 @@ export const MODEL_TYPE_CHECKPOINT_PRE_CUTOVER: CoreModelAsset =
     updated_at: '2025-02-18T09:00:00Z'
   })
 
+/**
+ * A legacy bare-tagged asset (no `model_type:` prefix) that still carries a
+ * `loader_path`, mimicking a `model_type:`-capable backend that has not
+ * finished re-tagging every asset. `modelFolderFromTag` must fall back to
+ * bare-tag grouping for it instead of dropping it from the sidebar.
+ */
+export const MODEL_TYPE_CHECKPOINT_LEGACY_TAG: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-007',
+    name: 'legacy_tagged_checkpoint.safetensors',
+    tags: ['models', 'checkpoints'],
+    loader_path: 'legacy_tagged_checkpoint.safetensors',
+    created_at: '2025-02-22T09:00:00Z',
+    updated_at: '2025-02-22T09:00:00Z'
+  })
+
 export const MODEL_TYPE_LORA: CoreModelAsset = createCoreModelAsset({
   id: 'mt-lora-001',
   name: 'detail_enhancer_v1.2.safetensors',

@@ -539,6 +539,22 @@ describe(assetService.getAssetModels, () => {
     expect(fetchApiMock).toHaveBeenCalledTimes(2)
   })
 
+  it('falls back to legacy bare-tag grouping for a bare tag on a model_type-capable backend', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'legacy',
+          name: 'legacy.safetensors',
+          tags: ['models', 'checkpoints']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('checkpoints')
+
+    expect(models).toEqual([{ name: 'legacy.safetensors', pathIndex: 0 }])
+  })
+
   it('drops uncategorized model assets with a warning', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     fetchApiMock.mockResolvedValueOnce(

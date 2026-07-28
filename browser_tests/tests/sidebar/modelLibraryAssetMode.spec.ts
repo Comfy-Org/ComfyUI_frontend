@@ -5,6 +5,7 @@ import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   MODEL_TYPE_CHECKPOINT_GGUF,
+  MODEL_TYPE_CHECKPOINT_LEGACY_TAG,
   MODEL_TYPE_CHECKPOINT_NESTED,
   MODEL_TYPE_CHECKPOINT_ORPHAN,
   MODEL_TYPE_CHECKPOINT_PRE_CUTOVER,
@@ -347,6 +348,45 @@ test.describe('Model library sidebar - asset mode before the loader_path cutover
     // Degrades to empty, not broken: the panel stays interactive.
     await expect(tab.refreshButton).toBeEnabled()
     await expect(tab.searchInput).toBeEditable()
+  })
+})
+
+test.describe('Model library sidebar - asset mode with a legacy bare tag', () => {
+  test.beforeEach(async ({ comfyPage, assetApi }) => {
+    assetApi.configure(
+      withModels([MODEL_TYPE_CHECKPOINT_ROOT, MODEL_TYPE_CHECKPOINT_LEGACY_TAG])
+    )
+    await assetApi.mock()
+    await comfyPage.modelLibrary.mockModelFolders([
+      {
+        name: 'checkpoints',
+        folders: ['/models/checkpoints'],
+        extensions: ['.safetensors']
+      }
+    ])
+    await comfyPage.setup()
+    await comfyPage.featureFlags.setServerFlagsPersistent({
+      supports_model_type_tags: true
+    })
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.modelLibrary.clearMocks()
+  })
+
+  // Regression for the AC3 bug flagged in #13574's review: on a
+  // model_type-capable backend, modelFolderFromTag returned undefined for a
+  // bare (non-namespaced) tag and buildModelBuckets dropped the asset with a
+  // console.warn instead of falling back to legacy bare-tag grouping.
+  test('Falls back to legacy bare-tag grouping instead of dropping the asset', async ({
+    comfyPage
+  }) => {
+    await comfyPage.menu.modelLibraryTab.open()
+    const tab = comfyPage.menu.modelLibraryTab
+
+    await tab.getFolderRowByLabel('checkpoints').click()
+    await expect(tab.getLeafByLabel('v1-5-pruned-emaonly')).toBeVisible()
+    await expect(tab.getLeafByLabel('legacy_tagged_checkpoint')).toBeVisible()
   })
 })
 
