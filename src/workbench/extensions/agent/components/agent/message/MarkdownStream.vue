@@ -3,6 +3,7 @@ import { marked } from 'marked'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import { api } from '@/scripts/api'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import CodeBlock from './CodeBlock.vue'
@@ -25,7 +26,10 @@ const segments = computed<Segment[]>(() => {
   let prose = ''
   const flushProse = () => {
     if (!prose) return
-    out.push({ type: 'prose', html: renderMarkdownToHtml(prose) })
+    out.push({
+      type: 'prose',
+      html: renderMarkdownToHtml(prose, api.apiURL(''))
+    })
     prose = ''
   }
   for (const token of marked.lexer(text)) {
