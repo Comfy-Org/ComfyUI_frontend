@@ -150,6 +150,22 @@ describe('useMinimapGraph', () => {
     expect(graphManager.updateFlags.value.nodes).toBe(true)
   })
 
+  it('recomputes bounds after a reload that leaves node geometry identical', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    graphManager.setupEventListeners()
+
+    graphManager.checkForChanges()
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    // Reloading the same workflow leaves the node count and every geometry
+    // string unchanged, so only `configured` can say the bounds are stale.
+    mockGraph.events.dispatch('configured')
+
+    expect(graphManager.checkForChanges()).toBe(true)
+    expect(graphManager.updateFlags.value.bounds).toBe(true)
+  })
+
   it('should detect node count changes', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)

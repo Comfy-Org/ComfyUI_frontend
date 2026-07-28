@@ -62,8 +62,16 @@ export function useMinimapGraph(
       nodeStatesCache.delete(node.id)
       void handleGraphChangedThrottled()
     }
+    // A reload of the same workflow leaves the node count and every geometry
+    // string identical, so change detection alone cannot tell that `bounds` was
+    // last derived mid-configure, from a partially built graph.
+    const onConfigured = () => {
+      clearCache()
+      void handleGraphChangedThrottled()
+    }
     g.events.addEventListener('node:added', onNodeAdded)
     g.events.addEventListener('node:removed', onNodeRemoved)
+    g.events.addEventListener('configured', onConfigured)
 
     const originalCallbacks: GraphCallbacks = {
       onConnectionChange: g.onConnectionChange,
@@ -71,6 +79,7 @@ export function useMinimapGraph(
       disposeNodeListeners: () => {
         g.events.removeEventListener('node:added', onNodeAdded)
         g.events.removeEventListener('node:removed', onNodeRemoved)
+        g.events.removeEventListener('configured', onConfigured)
       }
     }
     originalCallbacksMap.set(g.id, originalCallbacks)
