@@ -9,6 +9,11 @@ async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
 
+const mockCaptureException = vi.hoisted(() => vi.fn())
+vi.mock('@sentry/vue', () => ({
+  captureException: mockCaptureException
+}))
+
 const mockIsInitialized = ref(false)
 const mockCurrentUser = ref<object | null>(null)
 
@@ -238,12 +243,18 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('keeps the app gated when remote config refresh fails', async () => {
-      mockRefreshRemoteConfig.mockRejectedValue(new Error('Network error'))
+      const error = new Error('Network error')
+      mockRefreshRemoteConfig.mockRejectedValue(error)
 
       mountComponent()
       await flushPromises()
 
       expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+      expect(mockCaptureException).toHaveBeenCalledWith(error, {
+        tags: {
+          error_type: 'workspace_auth_gate_initialization_failure'
+        }
+      })
     })
 
     it('keeps the app gated when remote config refresh times out', async () => {

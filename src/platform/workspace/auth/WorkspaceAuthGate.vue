@@ -18,6 +18,7 @@
  * The splash loader in index.html (z-9999) covers the screen during this
  * phase, so no separate loading indicator is needed here.
  */
+import { captureException } from '@sentry/vue'
 import { promiseTimeout, until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
@@ -110,6 +111,11 @@ async function initialize(): Promise<void> {
     isReady.value = true
   } catch (error) {
     console.error('[WorkspaceAuthGate] Initialization failed:', error)
+    captureException(error, {
+      tags: {
+        error_type: 'workspace_auth_gate_initialization_failure'
+      }
+    })
   }
 }
 
