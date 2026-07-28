@@ -2,6 +2,7 @@ import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
@@ -27,6 +28,7 @@ interface WorkspaceUIConfig {
   showPendingTab: boolean
   showSearch: boolean
   showRoleColumn: boolean
+  showCreditsColumn: boolean
   membersGridCols: string
   pendingGridCols: string
   headerGridCols: string
@@ -106,6 +108,7 @@ function getUIConfig(
       showPendingTab: false,
       showSearch: true,
       showRoleColumn: true,
+      showCreditsColumn: false,
       membersGridCols: 'grid-cols-[1fr_auto]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[1fr_auto]',
@@ -121,6 +124,7 @@ function getUIConfig(
       showPendingTab: false,
       showSearch: false,
       showRoleColumn: false,
+      showCreditsColumn: false,
       membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-1',
@@ -135,6 +139,7 @@ function getUIConfig(
     showPendingTab: true,
     showSearch: true,
     showRoleColumn: true,
+    showCreditsColumn: false,
     membersGridCols: 'grid-cols-[50%_40%_10%]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
     headerGridCols: 'grid-cols-[50%_40%_10%]',
@@ -151,6 +156,7 @@ function getUIConfig(
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
   const { isActiveSubscription, isTeamPlan, subscription } = useBillingContext()
+  const { flags } = useFeatureFlags()
 
   const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
   const isWorkspaceSubscribed = computed(() => store.isWorkspaceSubscribed)
@@ -184,9 +190,21 @@ function useWorkspaceUIInternal() {
     )
   )
 
-  const uiConfig = computed<WorkspaceUIConfig>(() =>
-    getUIConfig(workspaceType.value, workspaceRole.value)
-  )
+  const uiConfig = computed<WorkspaceUIConfig>(() => {
+    const base = getUIConfig(workspaceType.value, workspaceRole.value)
+    const showCreditsColumn =
+      flags.billingControlEnabled &&
+      workspaceType.value === 'team' &&
+      workspaceRole.value === 'owner'
+    if (!showCreditsColumn) return base
+
+    return {
+      ...base,
+      showCreditsColumn: true,
+      membersGridCols: 'grid-cols-[38%_18%_30%_14%]',
+      headerGridCols: 'grid-cols-[38%_18%_30%_14%]'
+    }
+  })
 
   const isOriginalOwner = computed(() => store.isCurrentUserOriginalOwner)
 
