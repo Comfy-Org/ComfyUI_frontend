@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
+import { useEventListener } from '@vueuse/core'
 import BlockUI from 'primevue/blockui'
 import { computed, onMounted, watch } from 'vue'
 
@@ -13,12 +14,17 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
 import { app } from '@/scripts/app'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { parsePreloadError } from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 const workspaceStore = useWorkspaceStore()
+const billingOperationStore = useBillingOperationStore()
+useEventListener(globalThis, 'pageshow', () => {
+  billingOperationStore.resumePendingOperations()
+})
 app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
