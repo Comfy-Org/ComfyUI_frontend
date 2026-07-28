@@ -128,7 +128,7 @@ jobs:
         run: |
           pnpm exec playwright test browser_tests/tests/customNodes/allNodes.spec.ts \
             --project=custom-nodes --reporter=list --workers=1 --retries=0 \
-            --grep "mounts in both renderers"
+            --grep "all nodes:"
 
       # S13 cloud profiles: same probes, same session; CUSTOM_NODES_ENV=cloud
       # routes writes into interactionProfiles/cloud/.

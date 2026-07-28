@@ -113,7 +113,7 @@ jobs:
         run: |
           pnpm exec playwright test browser_tests/tests/customNodes/allNodes.spec.ts \
             --project=custom-nodes --reporter=list --workers=1 --retries=0 \
-            --grep "mounts in both renderers"
+            --grep "all nodes:"
 
       # S15 output hashes ride the same backend boot: the T1 curated runs in
       # record mode write test-results/curatedOutputHashes.recorded.json and
