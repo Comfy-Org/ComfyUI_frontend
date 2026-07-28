@@ -18,13 +18,17 @@ export interface OutputImageRef {
   type: string
 }
 
+// The real ComfyUI output ref shape carries type and/or subfolder beside
+// filename; requiring one prevents a value payload that merely CONTAINS a
+// filename field from being collapsed (and its sibling keys dropped).
 function isFileRef(
   value: unknown
 ): value is { filename: string; subfolder?: string; type?: string } {
+  if (typeof value !== 'object' || value === null) return false
+  const ref = value as Record<string, unknown>
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as { filename?: unknown }).filename === 'string'
+    typeof ref.filename === 'string' &&
+    (typeof ref.type === 'string' || typeof ref.subfolder === 'string')
   )
 }
 
@@ -52,9 +56,18 @@ async function canonicalize(
       subfolder: value.subfolder ?? '',
       type: value.type ?? 'output'
     }
+    // Sibling keys (format, frame_rate, ...) are content - keep them; only
+    // the run-varying filename collapses to its extension.
+    const rest: Record<string, unknown> = {}
+    for (const key of Object.keys(value).sort())
+      if (key !== 'filename')
+        rest[key] = await canonicalize(
+          (value as Record<string, unknown>)[key],
+          fetchFile
+        )
     if (ext === '.png')
-      return { file: ext, pixels: hashPngPixels(await fetchFile(ref)) }
-    return { file: ext }
+      return { ...rest, file: ext, pixels: hashPngPixels(await fetchFile(ref)) }
+    return { ...rest, file: ext }
   }
   if (typeof value === 'object' && value !== null) {
     const out: Record<string, unknown> = {}
@@ -100,6 +113,10 @@ export function hashPngPixels(file: Buffer): string {
   while (offset + 8 <= file.length) {
     const length = file.readUInt32BE(offset)
     const chunkType = file.toString('latin1', offset + 4, offset + 8)
+    if (offset + 12 + length > file.length)
+      throw new Error(
+        `PNG chunk ${chunkType} overruns the buffer - truncated file?`
+      )
     if (chunkType === 'IDAT') {
       hash.update(file.subarray(offset + 8, offset + 8 + length))
       sawIdat = true
@@ -111,7 +128,14 @@ export function hashPngPixels(file: Buffer): string {
   return `sha256:${hash.digest('hex')}`
 }
 
-export type CuratedOutputHashes = Record<string, Record<string, string>>
+export interface CuratedOutputHashes {
+  // Hashes are only comparable against the environment that recorded them
+  // (the S14 geometry convention): pinned core + pack pins determine sink
+  // payloads, and a drift red must name where its baseline came from.
+  recordedAt: { core: string; run: string }
+  schema: 1
+  workflows: Record<string, Record<string, string>>
+}
 
 // Read-merge-write: record mode deliberately fails each test, and Playwright
 // restarts the worker after a failure, so in-memory accumulation resets per
@@ -124,8 +148,15 @@ export function recordObservedHashes(
 ): void {
   const existing: CuratedOutputHashes = existsSync(filePath)
     ? JSON.parse(readFileSync(filePath, 'utf-8'))
-    : {}
-  existing[workflowKey] = observed
+    : {
+        recordedAt: {
+          core: process.env.CN_OUTPUT_HASHES_CORE ?? 'unpinned-local',
+          run: process.env.GITHUB_RUN_ID ?? 'local'
+        },
+        schema: 1,
+        workflows: {}
+      }
+  existing.workflows[workflowKey] = observed
   mkdirSync(dirname(filePath), { recursive: true })
   writeFileSync(filePath, JSON.stringify(existing, null, 2))
 }
@@ -136,7 +167,8 @@ export function compareOutputHashes(input: {
   committed: CuratedOutputHashes
 }): string[] {
   const { workflowKey, observed, committed } = input
-  const expected = committed[workflowKey]
+  const provenance = `(baseline recorded at core ${committed.recordedAt.core}, run ${committed.recordedAt.run})`
+  const expected = committed.workflows[workflowKey]
   if (!expected)
     return [
       `S15: no committed hashes for '${workflowKey}' - a curated run workflow ` +
@@ -154,7 +186,8 @@ export function compareOutputHashes(input: {
     else if (actual !== digest)
       problems.push(
         `${workflowKey} ${key}: output hash changed - expected ${digest}, got ` +
-          `${actual}. A frontend change altered what this workflow produces`
+          `${actual}. A frontend change altered what this workflow produces ` +
+          provenance
       )
   }
   for (const key of Object.keys(observed))

@@ -9,13 +9,6 @@ import {
   recordObservedHashes
 } from '@e2e/fixtures/customNode/outputHashes'
 
-const curatedOutputHashes: CuratedOutputHashes = JSON.parse(
-  readFileSync(
-    resolve('browser_tests/fixtures/data/curatedOutputHashes.core.json'),
-    'utf-8'
-  )
-)
-
 import type { Page } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -49,6 +42,13 @@ import {
   expectNoVisibleErrors
 } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+
+const curatedOutputHashes: CuratedOutputHashes = JSON.parse(
+  readFileSync(
+    resolve('browser_tests/fixtures/data/curatedOutputHashes.core.json'),
+    'utf-8'
+  )
+)
 
 const target = new LocalDesktopTarget()
 const OBJECT_INFO_SANITY_FLOOR = 50
@@ -259,7 +259,12 @@ for (const entry of loadManifest()) {
             }
           )
           const workflowKey = `${entry.pack}/${basename(entry.workflow)}`
-          if (process.env.RECORD_OUTPUT_HASHES) {
+          const recordMode = process.env.RECORD_OUTPUT_HASHES
+          if (recordMode !== undefined && recordMode !== '1')
+            throw new Error(
+              `unrecognized RECORD_OUTPUT_HASHES value '${recordMode}' - the only mode is '1'`
+            )
+          if (recordMode === '1') {
             recordObservedHashes(
               'test-results/curatedOutputHashes.recorded.json',
               workflowKey,
@@ -271,7 +276,10 @@ for (const entry of loadManifest()) {
               null,
               `RECORD_OUTPUT_HASHES: wrote ${Object.keys(observed).length} hash(es) for ${workflowKey} - the artifact is the product, this is not a pass`
             ).not.toBeNull()
-          } else {
+          } else if (process.env.CI) {
+            // Compare on CI only, like the geometry tier: hashes encode the
+            // recording environment (pinned core + packs), and a local
+            // unpinned backend would red with a misattributed message.
             expect(
               compareOutputHashes({
                 workflowKey,
