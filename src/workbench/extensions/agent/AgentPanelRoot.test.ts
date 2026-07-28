@@ -3157,8 +3157,8 @@ describe('AgentPanelRoot workflow binding', () => {
       attachment_count: 0,
       node_tag_count: 1
     })
-    expect(screen.getByText('VAEDecode')).toBeInTheDocument()
-    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+    expect(screen.getByText('VAEDecode #7')).toBeInTheDocument()
+    expect(screen.queryByText(/KSampler/)).not.toBeInTheDocument()
   })
 
   it('overwrites a user-edited bound tab with the agent draft, no prompt', async () => {
@@ -3194,7 +3194,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       screen.queryByRole('button', { name: i18n.global.t('agent.remove') })
     ).not.toBeInTheDocument()
-    expect(screen.getByText('KSampler')).toBeInTheDocument()
+    expect(screen.getByText('KSampler #5')).toBeInTheDocument()
   })
   it('coalesces patches that stream faster than the canvas apply settles', async () => {
     const tab = makeTab('wf-42')
