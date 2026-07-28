@@ -181,7 +181,7 @@ describe('MultiSelect', () => {
     })
   })
 
-  it('keeps focus on the search input when nested in a trapped focus scope', async () => {
+  it('lets the user type in the search box when nested in a trapped focus scope', async () => {
     const user = userEvent.setup()
     const InTrap = {
       components: { FocusScope, MultiSelect },
@@ -200,13 +200,15 @@ describe('MultiSelect', () => {
     })
 
     await user.click(screen.getByRole('button'))
-    await new Promise((resolve) => setTimeout(resolve))
+    await nextTick()
 
-    const searchBox = findContentElement()?.querySelector('input')
-    searchBox?.focus()
-    await new Promise((resolve) => setTimeout(resolve))
+    const searchBox = screen.getByPlaceholderText('Search')
+    await user.click(searchBox)
+    await user.type(searchBox, 'query')
+    await nextTick()
 
     expect(document.activeElement).toBe(searchBox)
+    expect(searchBox).toHaveValue('query')
 
     unmount()
   })
