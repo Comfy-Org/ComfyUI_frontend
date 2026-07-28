@@ -73,7 +73,7 @@
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <LGraphNode
-      v-for="nodeData in allNodes"
+      v-for="nodeData in renderedNodes"
       :key="nodeData.id"
       :node-data="nodeData"
       :error="
@@ -82,6 +82,7 @@
           : null
       "
       :data-node-id="nodeData.id"
+      @node-mounted="onNodeMounted"
     />
   </TransformPane>
 
@@ -182,6 +183,8 @@ import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { useVueNodeLOD } from '@/renderer/extensions/vueNodes/composables/useVueNodeLOD'
+import { useViewportVirtualization } from '@/renderer/extensions/vueNodes/composables/useViewportVirtualization'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -293,6 +296,23 @@ watch(
 const allNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
+const viewportVirtualizationEnabled = computed(
+  () =>
+    shouldRenderVueNodes.value &&
+    (settingStore.get('Comfy.VueNodes.ViewportVirtualization') ?? false)
+)
+const { onNodeMounted, renderedNodes } = useViewportVirtualization({
+  allNodes,
+  canvas: () => canvasStore.canvas,
+  enabled: viewportVirtualizationEnabled,
+  nodeManager: () => vueNodeLifecycle.nodeManager.value
+})
+useVueNodeLOD({
+  canvas: () => canvasStore.canvas,
+  enabled: () => settingStore.get('Comfy.VueNodes.LowZoomLOD') ?? true,
+  fullDetailZoom: () => settingStore.get('Comfy.VueNodes.FullDetailZoom') ?? 95,
+  vueNodesEnabled: shouldRenderVueNodes
+})
 watch(
   () => linearMode.value,
   (isLinearMode) => {

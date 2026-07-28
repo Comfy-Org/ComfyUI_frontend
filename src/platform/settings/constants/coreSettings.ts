@@ -1210,6 +1210,47 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.27.1'
   },
   {
+    id: 'Comfy.VueNodes.ViewportVirtualization',
+    category: ['Comfy', 'Nodes 2.0', 'ViewportVirtualization'],
+    name: 'Viewport virtualization',
+    type: 'boolean',
+    tooltip:
+      'Mount all nodes once to establish layout, then render only nodes in the settled viewport. Workflow execution and serialization are unaffected.',
+    defaultValue: false,
+    sortOrder: 90,
+    experimental: true,
+    versionAdded: '1.49.0'
+  },
+  {
+    id: 'Comfy.VueNodes.LowZoomLOD',
+    category: ['Comfy', 'Nodes 2.0', 'LowZoomLOD'],
+    name: 'Low-zoom level of detail',
+    type: 'boolean',
+    tooltip:
+      'Hide expensive node details below the full-detail zoom threshold while preserving node shells, titles, sockets, links, and layout.',
+    defaultValue: true,
+    sortOrder: 75,
+    experimental: true,
+    versionAdded: '1.49.0'
+  },
+  {
+    id: 'Comfy.VueNodes.FullDetailZoom',
+    category: ['Comfy', 'Nodes 2.0', 'FullDetailZoom'],
+    name: 'Full-detail zoom',
+    type: 'slider',
+    tooltip:
+      'Nodes use full detail at and above this zoom percentage. Low detail is used only below it.',
+    attrs: {
+      min: 10,
+      max: 100,
+      step: 5
+    },
+    defaultValue: 95,
+    sortOrder: 70,
+    experimental: true,
+    versionAdded: '1.49.0'
+  },
+  {
     id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
     name: 'App Builder Vue Node switch dismissed',
     type: 'hidden',

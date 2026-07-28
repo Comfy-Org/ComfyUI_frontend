@@ -17,6 +17,10 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import {
+  clearTrackedNodeSlotLayouts,
+  deleteTrackedNodeSlotLayouts
+} from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -604,6 +608,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     const id = node.id
 
     // Remove node from layout store
+    deleteTrackedNodeSlotLayouts(id)
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
     dropNodeReferences(id)
@@ -631,6 +636,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       )
 
       // Clear all state maps
+      clearTrackedNodeSlotLayouts()
       nodeRefs.clear()
       vueNodeData.clear()
     }

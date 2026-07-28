@@ -4,6 +4,9 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { toNodeId } from '@/types/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -18,7 +21,10 @@ export class VueNodeHelpers {
    */
   public readonly selectedNodes: Locator
 
-  constructor(private page: Page) {
+  constructor(
+    private page: Page,
+    private settings: SettingsHelper
+  ) {
     this.nodes = page.locator('[data-node-id]')
     this.selectedNodes = page.locator(
       '[data-node-id].outline-node-component-outline'
@@ -82,6 +88,45 @@ export class VueNodeHelpers {
         .map((n) => n.getAttribute('data-node-id'))
         .filter((id): id is string => id !== null)
     )
+  }
+
+  async layoutNodesAndEnableVirtualization(
+    getPosition: (nodeId: string, index: number) => Point
+  ): Promise<string[]> {
+    const nodeIds = await this.page.evaluate(() =>
+      window.app!.graph.nodes.map((node) => String(node.id))
+    )
+    const entries = nodeIds.map(
+      (nodeId, index) => [nodeId, getPosition(nodeId, index)] as const
+    )
+
+    await this.page.evaluate((entries) => {
+      const graph = window.app!.graph
+      if (graph.nodes.length !== entries.length) {
+        throw new Error('Graph nodes changed while applying test layout')
+      }
+      const positionById = new Map(entries)
+      graph.nodes.forEach((node) => {
+        const position = positionById.get(String(node.id))
+        if (!position) throw new Error(`Missing position for node ${node.id}`)
+        node.setPos(...position)
+        node.updateArea()
+      })
+      graph.groups.forEach((group) => group.recomputeInsideNodes())
+
+      const canvas = window.app!.canvas
+      canvas.ds.offset[0] = 0
+      canvas.ds.offset[1] = 0
+      canvas.ds.scale = 1
+      canvas.setDirty(true, true)
+    }, entries)
+    await nextFrame(this.page)
+    await this.settings.setSetting(
+      'Comfy.VueNodes.ViewportVirtualization',
+      true
+    )
+
+    return nodeIds
   }
 
   /**

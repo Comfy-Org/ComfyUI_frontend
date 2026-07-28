@@ -1,5 +1,59 @@
 @import '@comfyorg/design-system/css/style.css';
 
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  .lg-node-widget {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  .lg-node-widget
+  > .opacity-100
+  .lg-slot:not(.invisible) {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  .lg-node-content,
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  .image-preview,
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  .video-preview,
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  [data-testid^='node-body-']
+  > img,
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  [data-testid^='node-body-']
+  > .text-center.text-xs,
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  [data-testid^='node-body-']
+  > .text-pure-white.text-center,
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  [data-testid^='node-body-']
+  > .mt-auto.h-5,
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  .lg-node-header
+  > div
+  > :not(:first-child),
+html.vue-nodes-low-detail .dom-widget,
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  > [data-corner] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* Use 0.001ms instead of 0s so transitionend/animationend events still fire
    and JS listeners aren't broken. */
 .disable-animations *,

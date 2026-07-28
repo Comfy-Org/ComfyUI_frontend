@@ -234,12 +234,12 @@ export class ComfyPage {
     this.templatesDialog = new TemplatesDialog(page)
     this.titleEditor = new TitleEditor(page)
     this.mediaLightbox = new MediaLightbox(page)
-    this.vueNodes = new VueNodeHelpers(page)
+    this.settings = new SettingsHelper(page)
+    this.vueNodes = new VueNodeHelpers(page, this.settings)
     this.appMode = new AppModeHelper(this)
     this.subgraph = new SubgraphHelper(this)
     this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
     this.nodeOps = new NodeOperationsHelper(this)
-    this.settings = new SettingsHelper(page)
     this.keyboard = new KeyboardHelper(page, this.canvas)
     this.clipboard = new ClipboardHelper(this.keyboard, page)
     this.workflow = new WorkflowHelper(this)
@@ -553,6 +553,7 @@ export const comfyPageFixture = base.extend<{
         // Disable errors tab to prevent missing model detection from
         // rendering error indicators on nodes during unrelated tests.
         'Comfy.RightSidePanel.ShowErrorsTab': false,
+        'Comfy.VueNodes.LowZoomLOD': false,
         ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
         ...initialSettings
       })
