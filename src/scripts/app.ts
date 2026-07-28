@@ -582,7 +582,7 @@ export class ComfyApp {
           const clip_image =
             ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
           const index = node.widgets.findIndex((obj) => obj.name === 'image')
-          if (index >= 0) {
+          if (index >= 0 && clip_image) {
             if (
               node.widgets[index].type != 'image' &&
               typeof node.widgets[index].value == 'string' &&

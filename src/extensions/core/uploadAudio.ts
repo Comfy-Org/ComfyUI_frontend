@@ -22,6 +22,7 @@ import { useAudioService } from '@/services/audioService'
 import { type NodeLocatorId } from '@/types'
 import { widgetId } from '@/types/widgetId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { isViewableResultItem } from '@/utils/resultItemUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
@@ -140,12 +141,11 @@ app.registerExtension({
           const onExecuted = node.onExecuted
           node.onExecuted = function (output: NodeExecutionOutput) {
             onExecuted?.call(this, output)
-            const audios = output.audio
-            if (!audios?.length) return
-            const audio = audios[0]
+            const audio = output.audio?.find(isViewableResultItem)
+            if (!audio) return
             const resourceUrl = getResourceURL(
               audio.subfolder ?? '',
-              audio.filename ?? '',
+              audio.filename,
               audio.type
             )
             updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
@@ -176,7 +176,8 @@ app.registerExtension({
     nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
   ) {
     for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
-      if (!output.audio?.length) continue
+      const audio = output.audio?.find(isViewableResultItem)
+      if (!audio) continue
 
       const node = getNodeByLocatorId(app.rootGraph, nodeLocatorId)
       if (!node) continue
@@ -184,10 +185,9 @@ app.registerExtension({
       const audioUIWidget = node.widgets?.find(
         (w) => w.name === 'audioUI'
       ) as unknown as DOMWidget<HTMLAudioElement, string>
-      const audio = output.audio[0]
       const resourceUrl = getResourceURL(
         audio.subfolder ?? '',
-        audio.filename ?? '',
+        audio.filename,
         audio.type
       )
       updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))

@@ -6,6 +6,8 @@ import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
+import type { ViewableResultItem } from '@/utils/resultItemUtil'
+import { isViewableResultItem } from '@/utils/resultItemUtil'
 
 export function extractWidgetStringValue(value: unknown): string | undefined {
   if (typeof value === 'string') return value
@@ -59,6 +61,15 @@ function toRef(filename: string, subfolder: string): ImageRef {
     subfolder,
     type: 'input'
   }
+}
+
+function buildViewUrl(image: ViewableResultItem): string {
+  const params = new URLSearchParams({
+    filename: image.filename,
+    type: image.type || 'output',
+    subfolder: image.subfolder || ''
+  })
+  return api.apiURL(`/view?${params.toString()}`)
 }
 
 function mkFileUrl(props: { ref: ImageRef; preview?: boolean }): string {
@@ -242,29 +253,13 @@ export function useMaskEditorLoader() {
   }
 
   function getNodeImageUrl(node: LGraphNode): string {
-    if (node.images?.[0]) {
-      const img = node.images[0]
-      const params = new URLSearchParams({
-        filename: img.filename,
-        type: img.type || 'output',
-        subfolder: img.subfolder || ''
-      })
-      return api.apiURL(`/view?${params.toString()}`)
-    }
+    const widgetImage = node.images?.find(isViewableResultItem)
+    if (widgetImage) return buildViewUrl(widgetImage)
 
-    const outputs = nodeOutputStore.getNodeOutputs(node)
-    if (outputs?.images?.[0]) {
-      const img = outputs.images[0]
-      if (!img.filename) {
-        throw new Error('nodeOutputStore image missing filename')
-      }
-
-      const params = new URLSearchParams()
-      params.set('filename', img.filename)
-      params.set('type', img.type || 'output')
-      params.set('subfolder', img.subfolder || '')
-      return api.apiURL(`/view?${params.toString()}`)
-    }
+    const outputImage = nodeOutputStore
+      .getNodeOutputs(node)
+      ?.images?.find(isViewableResultItem)
+    if (outputImage) return buildViewUrl(outputImage)
 
     if (node.imgs?.length) {
       const index = node.imageIndex ?? 0

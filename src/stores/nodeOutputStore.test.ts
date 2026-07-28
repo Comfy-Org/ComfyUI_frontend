@@ -25,6 +25,7 @@ const mockGetNodeById = vi.fn()
 vi.mock('@/scripts/app', () => ({
   app: {
     getPreviewFormatParam: vi.fn(() => '&format=test_webp'),
+    getRandParam: vi.fn(() => ''),
     rootGraph: {
       getNodeById: (...args: unknown[]) => mockGetNodeById(...args)
     },
@@ -261,7 +262,7 @@ describe('nodeOutputStore input preview preservation', () => {
     store.setNodeOutputsByExecutionId(executionId, emptyExecutionOutput)
 
     expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
-    expect(store.nodeOutputs[executionId]?.images?.[0].filename).toBe(
+    expect(store.nodeOutputs[executionId]?.images?.[0]?.filename).toBe(
       'example.png'
     )
   })
@@ -279,7 +280,7 @@ describe('nodeOutputStore input preview preservation', () => {
     store.setNodeOutputsByExecutionId(executionId, emptyImagesOutput)
 
     expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
-    expect(store.nodeOutputs[executionId]?.images?.[0].type).toBe('input')
+    expect(store.nodeOutputs[executionId]?.images?.[0]?.type).toBe('input')
   })
 
   it('should allow execution output with images to overwrite input preview', () => {
@@ -297,7 +298,7 @@ describe('nodeOutputStore input preview preservation', () => {
     store.setNodeOutputsByExecutionId(executionId, executionOutput)
 
     expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
-    expect(store.nodeOutputs[executionId]?.images?.[0].filename).toBe(
+    expect(store.nodeOutputs[executionId]?.images?.[0]?.filename).toBe(
       'output.png'
     )
   })
@@ -332,11 +333,11 @@ describe('nodeOutputStore input preview preservation', () => {
     store.setNodeOutputsByExecutionId(executionId, videoOutput)
 
     expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
-    expect(store.nodeOutputs[executionId]?.images?.[0].filename).toBe(
+    expect(store.nodeOutputs[executionId]?.images?.[0]?.filename).toBe(
       'example.png'
     )
     expect(store.nodeOutputs[executionId]?.video).toHaveLength(1)
-    expect(store.nodeOutputs[executionId]?.video?.[0].filename).toBe(
+    expect(store.nodeOutputs[executionId]?.video?.[0]?.filename).toBe(
       'output.mp4'
     )
   })
@@ -417,6 +418,37 @@ describe('nodeOutputStore getPreviewParam', () => {
     ])
     expect(store.getPreviewParam(node, outputs)).toBe('&format=test_webp')
     expect(vi.mocked(app).getPreviewFormatParam).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('nodeOutputStore getNodeImageUrlsByExecutionId', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
+    vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('builds no view request for null or filename-less entries', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode()
+    const executionId = createNodeExecutionId([toNodeId(1)])
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs(
+        fromAny([
+          null,
+          { status: 'unavailable', reason: 'upload_failed' },
+          { filename: 'good.png', subfolder: '', type: 'output' }
+        ])
+      )
+    )
+
+    const urls = store.getNodeImageUrlsByExecutionId(executionId, node)
+
+    expect(urls).toEqual([expect.stringContaining('filename=good.png')])
   })
 })
 
@@ -566,7 +598,7 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
     const snapshot = store.snapshotOutputs()
 
     // Mutate the snapshot
-    snapshot['1'].images![0].filename = 'mutated.png'
+    snapshot['1'].images![0]!.filename = 'mutated.png'
     snapshot['99'] = createMockOutputs([{ filename: 'new.png' }])
 
     // Store should be unchanged

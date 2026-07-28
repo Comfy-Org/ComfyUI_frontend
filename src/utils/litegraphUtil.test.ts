@@ -4,11 +4,17 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-import { createNode, getWidgetIdForNode, resolveNode } from './litegraphUtil'
+import {
+  createNode,
+  getWidgetIdForNode,
+  isVideoOutput,
+  resolveNode
+} from './litegraphUtil'
 
 const mockBringNodeToFront = vi.fn()
 
@@ -189,5 +195,29 @@ describe('getWidgetIdForNode', () => {
   it('returns undefined for placeholder node id (-1)', () => {
     const node = fakeNode(-1)
     expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()
+  })
+})
+
+describe('isVideoOutput', () => {
+  it('reads past degenerate entries to find the animated webp', () => {
+    const output = fromAny<ExecutedWsMessage['output'], unknown>({
+      animated: [null, true],
+      images: [
+        null,
+        { status: 'unavailable', reason: 'upload_failed' },
+        { filename: 'clip.webp', subfolder: '', type: 'output' }
+      ]
+    })
+
+    expect(isVideoOutput(output)).toBe(false)
+  })
+
+  it('reports video when no entry carries a usable filename', () => {
+    const output = fromAny<ExecutedWsMessage['output'], unknown>({
+      animated: [true],
+      images: [null, { status: 'unavailable', reason: 'upload_failed' }]
+    })
+
+    expect(isVideoOutput(output)).toBe(true)
   })
 })

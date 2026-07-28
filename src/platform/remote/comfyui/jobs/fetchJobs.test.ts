@@ -11,6 +11,7 @@ import type {
   RawJobListItem,
   zJobsListResponse
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { z } from 'zod'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
@@ -298,6 +299,63 @@ describe('fetchJobs', () => {
       expect(mockFetch).toHaveBeenCalledWith('/jobs/job1')
       expect(result?.id).toBe('job1')
       expect(result?.outputs).toBeDefined()
+    })
+
+    it('keeps valid outputs when the arrays contain degenerate entries', async () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        outputs: {
+          '1': {
+            images: [
+              null,
+              { status: 'unavailable', reason: 'upload_failed' },
+              { filename: 'good.png', subfolder: '', type: 'output' }
+            ],
+            animated: [null, true],
+            video: [null],
+            audio: [{ filename: 'sound.wav', subfolder: '', type: 'bogus' }]
+          }
+        }
+      }
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(jobDetail)
+      })
+
+      const result = await fetchJobDetail(mockFetch, 'job1')
+
+      expect(result?.id).toBe('job1')
+      const outputs = result?.outputs?.['1']
+      expect(outputs?.images).toHaveLength(3)
+      expect(outputs?.images?.[2]?.filename).toBe('good.png')
+      expect(outputs?.animated).toEqual([null, true])
+      // An out-of-enum `type` drops the single entry, not the whole detail.
+      expect(outputs?.audio).toEqual([null])
+    })
+
+    it('drops degenerate output entries when parsed for display', async () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        outputs: {
+          '1': {
+            images: [
+              null,
+              { status: 'unavailable', reason: 'upload_failed' },
+              { filename: 'good.png', subfolder: '', type: 'output' }
+            ]
+          }
+        }
+      }
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(jobDetail)
+      })
+
+      const result = await fetchJobDetail(mockFetch, 'job1')
+
+      const parsed = parseTaskOutput(result?.outputs ?? {})
+      expect(parsed).toHaveLength(1)
+      expect(parsed[0].filename).toBe('good.png')
     })
 
     it('returns undefined for non-ok response', async () => {

@@ -28,6 +28,7 @@ import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
 } from '@/utils/objectUrlUtil'
+import { isViewableResultItem } from '@/utils/resultItemUtil'
 
 const PREVIEW_REVOKE_DELAY_MS = 400
 
@@ -88,10 +89,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     if (!outputs?.images?.length) return false
 
-    const images = outputs.images.filter((image) => image != null)
+    const images = outputs.images.filter(isViewableResultItem)
     if (!images.length) return false
 
-    if (images.some((image) => image.filename?.toLowerCase().endsWith('.svg')))
+    if (images.some((image) => image.filename.toLowerCase().endsWith('.svg')))
       return false
 
     return true
@@ -113,12 +114,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
-    return outputs.images
-      .filter((image) => image != null)
-      .map((image) => {
-        const params = new URLSearchParams(image)
-        return api.apiURL(`/view?${params}${previewParam}${rand}`)
-      })
+    return outputs.images.filter(isViewableResultItem).map((image) => {
+      const params = new URLSearchParams(image)
+      return api.apiURL(`/view?${params}${previewParam}${rand}`)
+    })
   }
 
   function getNodeImageUrls(node: LGraphNode): string[] | undefined {

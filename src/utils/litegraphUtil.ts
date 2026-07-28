@@ -103,10 +103,10 @@ export function isVideoOutput(
   if (!isAnimatedOutput(output)) return false
 
   const isAnimatedWebp = output?.images?.some((img) =>
-    img.filename?.endsWith('.webp')
+    img?.filename?.endsWith('.webp')
   )
   const isAnimatedPng = output?.images?.some((img) =>
-    img.filename?.endsWith('.png')
+    img?.filename?.endsWith('.png')
   )
   return !isAnimatedWebp && !isAnimatedPng
 }
