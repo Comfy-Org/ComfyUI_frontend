@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "Aplicar Anima LLLite",
+    "inputs": {
+      "end_percent": {
+        "name": "percentual_final"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "percentual_inicial"
+      },
+      "strength": {
+        "name": "intensidade"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "Ajuste o volume do áudio por uma quantidade especificada em decibéis (dB).",
     "display_name": "Ajustar Volume do Áudio",
@@ -1177,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "Volume. 0 = normal, 100 = 2.0x, -50 = 0.5x."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: 20 idiomas (Inglês, Chinês, Japonês, Coreano, Espanhol Mexicano e Castelhano, Indonésio, Alemão, Português Brasileiro, Francês, Tailandês, Vietnamita, Malaio, Filipino, Italiano, Russo, Holandês, Polonês, Turco, Sueco) além de controle de tempo por frase via timestamps como \"[5.5s:8.0s] ...\". seed-audio-1.0: Apenas Inglês e Chinês, sem controle de tempo."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "Alteração de tom em semitons (-12 a 12)."
@@ -1324,6 +1354,10 @@
       "seed": {
         "name": "semente",
         "tooltip": "Semente utilizada para a geração."
+      },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Ativa o raciocínio de otimização de prompt do modelo ('thinking') para melhor aderência. Pode aumentar substancialmente o tempo de geração — especialmente no Seedream 5.0 Pro. Só pode ser desativado para texto-para-imagem (não quando imagens de referência são fornecidas)."
       },
       "watermark": {
         "name": "marca d'água",
@@ -2006,9 +2040,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "temperature"
       },
       "prompt": {
         "name": "prompt",
@@ -2831,6 +2862,10 @@
         "name": "fundo",
         "tooltip": "Imagem opcional usada como fundo na tela e na pré-visualização."
       },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Caixas delimitadoras, elementos ou uma string JSON para inicializar o canvas. Um novo valor upstream inicializa o canvas; edições feitas no canvas têm prioridade e são mantidas até que o valor upstream mude novamente."
+      },
       "editor_state": {
         "name": "estado_do_editor",
         "tooltip": "Desenhe caixas delimitadoras e defina o tipo de cada caixa, texto, descrição, paleta de cores. Comece pelo elemento de fundo e termine pelo primeiro plano."
@@ -2838,6 +2873,10 @@
       "height": {
         "name": "altura",
         "tooltip": "Altura da tela e da grade de pixels para as caixas delimitadoras."
+      },
+      "last_incoming": {
+        "name": "last_incoming",
+        "tooltip": "Estado interno gerenciado pelo canvas: o valor de bboxes upstream que o inicializou por último. Deixe vazio para reinicializar o canvas a partir da entrada bboxes na próxima execução."
       },
       "width": {
         "name": "largura",
@@ -5841,6 +5880,212 @@
       "watermark": {
         "name": "watermark",
         "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatarVideoNode": {
+    "description": "Gere um vídeo de apresentador falante a partir de um avatar HeyGen. Inclui os avatares públicos mais populares do HeyGen; qualquer ID de visual pode ser fornecido como substituição.",
+    "display_name": "Vídeo de Avatar HeyGen",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "proporção",
+        "tooltip": "Proporção do vídeo de saída. 'auto' segue o vídeo de origem do avatar."
+      },
+      "background_color": {
+        "name": "cor_de_fundo",
+        "tooltip": "Cor de fundo sólida opcional em código hexadecimal (ex: '#00ff00'). Deixe em branco para usar o fundo do próprio avatar."
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "custom_avatar_id": {
+        "name": "custom_avatar_id",
+        "tooltip": "ID de visual do avatar HeyGen opcional. Quando definido, substitui o avatar selecionado acima. Qualquer um dos mais de 3000 visuais públicos do HeyGen (ou seus avatares privados) pode ser usado."
+      },
+      "engine": {
+        "name": "engine",
+        "tooltip": "Motor de renderização; cada opção lista apenas os avatares que o suportam. 'auto' oferece todos os avatares e escolhe o melhor motor (Avatar IV preferido). Avatar V tem a maior fidelidade, Avatar III é o mais acessível."
+      },
+      "engine_avatar": {
+        "name": "avatar"
+      },
+      "resolution": {
+        "name": "resolução",
+        "tooltip": "Resolução do vídeo de saída."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Não enviado para o HeyGen; altere para forçar uma nova execução."
+      },
+      "speech": {
+        "name": "fala",
+        "tooltip": "Controle o avatar com um roteiro de texto (HeyGen texto-para-fala) ou com seu próprio áudio."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "texto"
+      },
+      "speech_voice": {
+        "name": "voz"
+      },
+      "speech_voice_speed": {
+        "name": "velocidade_da_voz"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "Crie seu próprio avatar HeyGen reutilizável a partir de uma foto de uma pessoa ou de um prompt de texto (um personagem gerado). Insira o avatar_id resultante no campo custom_avatar_id do Vídeo de Avatar HeyGen — e salve o ID para reutilizar o avatar em fluxos de trabalho futuros.",
+    "display_name": "Criar Avatar HeyGen",
+    "inputs": {
+      "source": {
+        "name": "origem",
+        "tooltip": "Gere um novo personagem a partir de um prompt de texto ou crie o avatar a partir de uma foto conectada de uma pessoa."
+      },
+      "source_prompt": {
+        "name": "prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "avatar_id",
+        "tooltip": "ID de visual do avatar. Passe para o campo custom_avatar_id do Vídeo de Avatar HeyGen; salve para reutilizar o avatar depois."
+      },
+      "1": {
+        "name": "prévia",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "Anime qualquer imagem de uma pessoa em um vídeo falante com sincronização labial (HeyGen Avatar IV). Controle com um roteiro de texto ou seu próprio áudio.",
+    "display_name": "HeyGen Talking Photo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "proporção",
+        "tooltip": "Proporção do vídeo de saída. 'auto' segue a imagem de entrada."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "expressiveness": {
+        "name": "expressividade",
+        "tooltip": "Quão expressivo será o rosto e os gestos animados."
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Imagem de uma pessoa para animar. Redimensionada automaticamente se maior que 2K."
+      },
+      "resolution": {
+        "name": "resolução",
+        "tooltip": "Resolução do vídeo de saída."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Não enviado para HeyGen; altere para forçar uma nova execução."
+      },
+      "speech": {
+        "name": "fala",
+        "tooltip": "Controle o avatar com um roteiro de texto (HeyGen texto-para-fala) ou seu próprio áudio."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "texto"
+      },
+      "speech_voice": {
+        "name": "voz"
+      },
+      "speech_voice_speed": {
+        "name": "velocidade_da_voz"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "Gere áudio de fala a partir de texto usando o mecanismo Starfish TTS da HeyGen. Inclui as vozes mais populares da HeyGen em 17 idiomas.",
+    "display_name": "HeyGen Texto para Fala",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "custom_voice_id": {
+        "name": "custom_voice_id",
+        "tooltip": "ID de voz HeyGen opcional. Quando definido, substitui a voz selecionada acima. A voz deve ser compatível com o mecanismo Starfish."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Não enviado para HeyGen; altere para forçar uma nova execução."
+      },
+      "speed": {
+        "name": "velocidade",
+        "tooltip": "Multiplicador de velocidade da fala."
+      },
+      "ssml": {
+        "name": "ssml",
+        "tooltip": "Tratar o texto como marcação SSML (para pausas, ênfase e controle de pronúncia)."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "Texto para sintetizar (até 5000 caracteres). O áudio gerado deve ter pelo menos 1 segundo de duração."
+      },
+      "voice": {
+        "name": "voz",
+        "tooltip": "Voz a ser usada (selecionada entre as vozes Starfish mais populares da HeyGen)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "Traduza um vídeo falado para outro idioma. Clona a voz original do locutor e reanima a boca para combinar com a fala traduzida.",
+    "display_name": "HeyGen Video Translate",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "'speed' é mais rápido; 'precision' produz sincronização labial de maior qualidade pelo dobro do preço."
+      },
+      "output_language": {
+        "name": "idioma de saída",
+        "tooltip": "Idioma de destino para o vídeo traduzido."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Não enviado para HeyGen; altere para forçar uma nova execução."
+      },
+      "speaker_count": {
+        "name": "número de locutores",
+        "tooltip": "Número de locutores no vídeo. 0 = detectar automaticamente."
+      },
+      "translate_audio_only": {
+        "name": "somente áudio traduzido",
+        "tooltip": "Apenas troca a faixa de áudio, mantendo os movimentos originais da boca (sem sincronização labial)."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo com fala para traduzir."
       }
     },
     "outputs": {
@@ -9484,6 +9729,42 @@
       }
     }
   },
+  "LoadVideoDataSetFromFolder": {
+    "description": "Carregue um conjunto de vídeos de uma pasta especificada e retorne uma lista de vídeos. Formatos suportados: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "Carregar Vídeo (da Pasta)",
+    "inputs": {
+      "folder": {
+        "name": "pasta",
+        "tooltip": "A pasta contendo os arquivos de vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vídeos",
+        "tooltip": "Referências de vídeo preguiçosas; quadros são decodificados apenas quando necessário a jusante."
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "Carregue um conjunto de pares de vídeos e legendas de texto de uma pasta especificada e retorne-os como uma lista. Formatos suportados: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "Carregar Vídeo-Texto (da Pasta)",
+    "inputs": {
+      "folder": {
+        "name": "pasta",
+        "tooltip": "A pasta contendo arquivos de vídeo e legendas .txt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vídeos",
+        "tooltip": "Referências de vídeo preguiçosas; quadros são decodificados apenas quando necessário a jusante."
+      },
+      "1": {
+        "name": "textos",
+        "tooltip": "Lista de legendas de texto."
+      }
+    }
+  },
   "LoraLoader": {
     "description": "LoRAs são usados para modificar modelos de difusão e CLIP, alterando a forma como os latents são denoizados, como na aplicação de estilos. Vários nós LoRA podem ser conectados juntos.",
     "display_name": "Carregar LoRA",
@@ -10564,6 +10845,12 @@
     "inputs": {
       "mask": {
         "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
       }
     }
   },
@@ -14573,6 +14860,7 @@
     }
   },
   "Preview3D": {
+    "description": "Visualize um arquivo de modelo 3D sem salvá-lo no diretório de saída do ComfyUI.",
     "display_name": "Pré-visualização 3D & Animação",
     "inputs": {
       "bg_image": {
@@ -14591,6 +14879,7 @@
     }
   },
   "Preview3DAdvanced": {
+    "description": "Visualize um arquivo de modelo 3D sem salvá-lo no diretório de saída do ComfyUI.",
     "display_name": "Visualizar 3D (Avançado)",
     "inputs": {
       "camera_info": {
@@ -14637,6 +14926,7 @@
     }
   },
   "PreviewAny": {
+    "description": "Visualize qualquer valor de entrada como texto.",
     "display_name": "Pré-visualizar como Texto",
     "inputs": {
       "preview_mode": "Modo de visualização",
@@ -14647,6 +14937,7 @@
     }
   },
   "PreviewAudio": {
+    "description": "Ouça o áudio sem salvá-lo no diretório de saída do ComfyUI.",
     "display_name": "Pré-visualizar Áudio",
     "inputs": {
       "audio": {
@@ -14664,6 +14955,7 @@
     }
   },
   "PreviewGaussianSplat": {
+    "description": "Visualize um arquivo 3D gaussian splat sem salvá-lo no diretório de saída do ComfyUI.",
     "display_name": "Pré-visualizar Splat",
     "inputs": {
       "camera_info": {
@@ -14724,6 +15016,7 @@
     }
   },
   "PreviewPointCloud": {
+    "description": "Visualize um arquivo de nuvem de pontos 3D sem salvá-lo no diretório de saída do ComfyUI.",
     "display_name": "Pré-visualizar Nuvem de Pontos",
     "inputs": {
       "camera_info": {
@@ -17501,6 +17794,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "Salvar 3D (Avançado)",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Arquivo de modelo 3D de um nó 3D upstream."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "Salvar PNG Animado",
     "inputs": {
@@ -17661,6 +18003,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "Salvar Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Um arquivo 3D de gaussian splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveImage": {
     "description": "Salva as imagens de entrada no diretório de saída do seu ComfyUI.",
     "display_name": "Salvar Imagem",
@@ -17799,6 +18190,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "Salvar Nuvem de Pontos",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Arquivo de nuvem de pontos (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "Salva arquivos SVG no disco.",
     "display_name": "Salvar Nó SVG",
@@ -17814,6 +18254,29 @@
     "outputs": {
       "0": {
         "name": "svg",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "description": "Salva o conteúdo de texto em um arquivo no diretório de saída.",
+    "display_name": "Salvar Texto",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {},
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
         "tooltip": null
       }
     }
@@ -17942,6 +18405,117 @@
       "0": {
         "name": "semente",
         "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "description": "Constrói o condicionamento positivo/negativo SeedVR2 a partir de um latent da VAE.",
+    "display_name": "Aplicar Condicionamento SeedVR2",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "O modelo SeedVR2."
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "O condicionamento positivo para amostragem."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "O condicionamento negativo para amostragem."
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "description": "Alinhe a imagem gerada com a imagem original redimensionada e aplique correção de cor.",
+    "display_name": "Pós-processar saída SeedVR2",
+    "inputs": {
+      "color_correction_method": {
+        "name": "color_correction_method",
+        "tooltip": "Método para igualar as cores da imagem gerada à imagem original. lab: transfere cor no espaço CIELAB, preservando detalhes (mais fiel). wavelet: transfere cor de baixa frequência, mantendo detalhes de alta frequência ampliados. adain: iguala média/desvio padrão por canal (mais rápido, tonalidade global). none: ignora transferência de cor (apenas alinhamento geométrico)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "A imagem gerada para processar."
+      },
+      "original_resized_images": {
+        "name": "original_resized_images",
+        "tooltip": "A imagem original redimensionada antes do pré-processamento, usada como referência."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "A imagem alinhada e com correção de cor."
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "description": "Adiciona bordas a uma imagem redimensionada para o modelo SeedVR2. O canal alfa é removido. O nó Pós-processar saída SeedVR2 reaplica o canal alfa da imagem original redimensionada.",
+    "display_name": "Pré-processar entrada SeedVR2",
+    "inputs": {
+      "resized_images": {
+        "name": "resized_images",
+        "tooltip": "A imagem redimensionada para processar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "A imagem com bordas para codificação VAE."
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "description": "Divide um latente de vídeo SeedVR2 em blocos temporais sobrepostos pequenos o suficiente para serem amostrados um de cada vez na VRAM, conectando as saídas dos latentes tanto ao nó Aplicar Condicionamento SeedVR2 quanto à entrada latente do sampler antes de recombinar com Unir Latentes SeedVR2.",
+    "display_name": "Dividir latente SeedVR2",
+    "inputs": {
+      "chunking_mode": {
+        "name": "chunking_mode",
+        "tooltip": "manual = usa exatamente frames_per_chunk; auto = prevê o maior bloco que cabe na VRAM livre."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "O latente SeedVR2 codificado pelo VAE para dividir."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Quadros latentes compartilhados entre blocos adjacentes e mesclados com crossfade; 0 = sem sobreposição."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "Os blocos temporais em ordem sequencial."
+      },
+      "1": {
+        "name": "temporal_overlap",
+        "tooltip": "A sobreposição efetiva de quadros latentes entre blocos adjacentes, para Unir Latentes SeedVR2."
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "description": "Recombina blocos temporais amostrados do latente SeedVR2 em um único latente, mesclando cada sobreposição com uma janela de Hann dimensionada pelo temporal_overlap conectado do Dividir latente SeedVR2.",
+    "display_name": "Unir latentes SeedVR2",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "Os blocos temporais amostrados em ordem sequencial."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "A saída temporal_overlap de Dividir latente SeedVR2. 0 = concatenação simples."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": "O latente recombinado de comprimento total."
       }
     }
   },
@@ -18133,6 +18707,60 @@
       "0": {
         "name": "imagens",
         "tooltip": "Imagens embaralhadas"
+      },
+      "1": {
+        "name": "textos",
+        "tooltip": "Textos embaralhados"
+      }
+    }
+  },
+  "ShuffleVideoDataset": {
+    "description": "Embaralha aleatoriamente a ordem dos vídeos em uma lista.",
+    "display_name": "Embaralhar Lista de Vídeos",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente aleatória."
+      },
+      "videos": {
+        "name": "vídeos",
+        "tooltip": "Lista de vídeos para embaralhar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vídeos",
+        "tooltip": "Vídeos embaralhados"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "Embaralha aleatoriamente a ordem dos pares de vídeo-texto em uma lista.",
+    "display_name": "Embaralhar Pares de Vídeo-Texto",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente aleatória."
+      },
+      "texts": {
+        "name": "textos",
+        "tooltip": "Lista de textos para embaralhar."
+      },
+      "videos": {
+        "name": "vídeos",
+        "tooltip": "Lista de vídeos para embaralhar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vídeos",
+        "tooltip": "Vídeos embaralhados"
       },
       "1": {
         "name": "textos",
@@ -18830,6 +19458,97 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "description": "Re-sincronize o movimento da boca em um vídeo com um novo áudio de fala usando sync.so. Lida automaticamente com closes, perfis e obstruções, preservando a expressão do orador. O custo aumenta conforme a duração do resultado.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Áudio de fala para sincronizar com a boca."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo de geração do sync.so."
+      },
+      "model_speaker_frame": {
+        "name": "quadro_orador"
+      },
+      "model_speaker_selection": {
+        "name": "seleção_orador"
+      },
+      "model_speaker_x": {
+        "name": "orador_x"
+      },
+      "model_speaker_y": {
+        "name": "orador_y"
+      },
+      "model_sync_mode": {
+        "name": "modo_sincronização"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Filmagem do orador para re-sincronizar. Até 4K (4096x2160); uma taxa de quadros constante de 24/25/30 fps funciona melhor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "Anime um retrato estático em um vídeo falante guiado por áudio de fala, usando o modelo sync-3 do sync.so. A duração do resultado corresponde ao áudio. O custo aumenta conforme a duração do resultado.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Áudio de fala que guia o vídeo falante; a duração do resultado corresponde a ele. Encadeie qualquer nó TTS aqui para animar a partir de texto."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Uma única imagem com um rosto claramente visível, até 4K (4096x2160)."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo de geração do sync.so. A entrada de imagem é exclusiva do sync-3."
+      },
+      "model_auto_downscale": {
+        "name": "redução_automática"
+      },
+      "model_speaker_selection": {
+        "name": "seleção_orador"
+      },
+      "model_speaker_x": {
+        "name": "orador_x"
+      },
+      "model_speaker_y": {
+        "name": "orador_y"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Orientação opcional de como o retrato deve ganhar vida, por exemplo: 'faça o sujeito sorrir e olhar para a câmera'. Deixe vazio para um movimento natural de fala."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
     "display_name": "Opções do T5Tokenizer",
     "inputs": {
@@ -19252,6 +19971,75 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Codifica uma instrução de edição com uma ou mais imagens de referência para Mage-Flow-Edit. Os latents de referência são redimensionados para a resolução de saída (largura/altura, ou o tamanho da primeira imagem quando 0). Use a saída latent para amostragem para que os tamanhos sempre correspondam.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Altura de saída. 0 = usar o tamanho da primeira imagem de referência."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Imagem(ns) de referência para editar. Todas as referências são redimensionadas para a resolução de saída antes da codificação."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Largura de saída. 0 = usar o tamanho da primeira imagem de referência."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -21248,6 +22036,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "Amostre um número fixo de quadros de um vídeo usando várias estratégias.",
+    "display_name": "Amostrar Quadro de Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "num_frames": {
+        "name": "número_de_quadros",
+        "tooltip": "Número de quadros a serem amostrados."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente aleatória (usada apenas com a estratégia 'random')."
+      },
+      "strategy": {
+        "name": "estratégia",
+        "tooltip": "uniform: espaçamento uniforme, head: primeiros N, tail: últimos N, random: aleatórios ordenados."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo de entrada."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vídeo",
+        "tooltip": "Vídeo amostrado."
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "VideoLinearCFGGuidance",
     "inputs": {
@@ -21256,6 +22075,57 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "Corte aleatoriamente um intervalo contínuo de quadros de um vídeo.",
+    "display_name": "Cortar Vídeo (Temporal Aleatório)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "length": {
+        "name": "comprimento",
+        "tooltip": "Número de quadros a serem mantidos."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente aleatória."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo de entrada."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vídeo",
+        "tooltip": "Vídeo cortado (lazy)."
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "Corte um intervalo contínuo de quadros de um vídeo.",
+    "display_name": "Cortar Vídeo (Temporal)",
+    "inputs": {
+      "length": {
+        "name": "comprimento",
+        "tooltip": "Número de quadros a serem mantidos."
+      },
+      "start_frame": {
+        "name": "quadro_inicial",
+        "tooltip": "Índice do quadro inicial."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo de entrada."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vídeo",
+        "tooltip": "Vídeo cortado (lazy)."
       }
     }
   },
@@ -23490,6 +24360,33 @@
       "2": {
         "name": "latente",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "Aplicar Wan Uni3C ControlNet",
+    "inputs": {
+      "end_percent": {
+        "name": "percentual_final"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "render_video": {
+        "name": "renderizar_vídeo",
+        "tooltip": "O vídeo de orientação renderizado a partir da trajetória da câmera, geralmente renderizações de nuvem de pontos distorcidas da imagem de entrada."
+      },
+      "start_percent": {
+        "name": "percentual_inicial"
+      },
+      "strength": {
+        "name": "força"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },

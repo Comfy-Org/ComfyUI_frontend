@@ -108,6 +108,7 @@ describe('MeshModelAdapter', () => {
       expect(adapter.capabilities.exportable).toBe(true)
       expect([...adapter.capabilities.materialModes]).toEqual([
         'original',
+        'clay',
         'normal',
         'wireframe'
       ])

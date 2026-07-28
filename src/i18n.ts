@@ -155,19 +155,35 @@ export const i18n = createI18n({
 
 /** Convenience shorthand: i18n.global */
 export const t: (typeof i18n.global)['t'] = i18n.global.t
-export const te: (typeof i18n.global)['te'] = i18n.global.te
+// vue-i18n 11's te() consults the fallback locale; default to the active
+// locale to preserve the v9 behavior our fallback paths rely on.
+export const te: (typeof i18n.global)['te'] = (key, locale) =>
+  i18n.global.te(key, locale ?? i18n.global.locale.value)
 export const d: (typeof i18n.global)['d'] = i18n.global.d
 const tm = i18n.global.tm
 
+function rawTranslationOrFallback(key: string, fallbackMessage: string) {
+  const message = tm(key)
+  return typeof message === 'string' ? message : fallbackMessage
+}
+
 /**
  * Safe translation function that returns the fallback message if the key is not found.
+ * Invalid message syntax falls back to the raw locale message instead of crashing.
  *
  * @param key - The key to translate.
  * @param fallbackMessage - The fallback message to use if the key is not found.
  */
 export function st(key: string, fallbackMessage: string) {
-  // The normal defaultMsg overload fails in some cases for custom nodes
-  return te(key) ? t(key) : fallbackMessage
+  if (!te(key)) return fallbackMessage
+
+  try {
+    // The normal defaultMsg overload fails in some cases for custom nodes
+    return t(key)
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error
+    return rawTranslationOrFallback(key, fallbackMessage)
+  }
 }
 
 /**
@@ -180,6 +196,5 @@ export function st(key: string, fallbackMessage: string) {
 export function stRaw(key: string, fallbackMessage: string) {
   if (!te(key)) return fallbackMessage
 
-  const message = tm(key)
-  return typeof message === 'string' ? message : fallbackMessage
+  return rawTranslationOrFallback(key, fallbackMessage)
 }

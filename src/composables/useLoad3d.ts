@@ -180,6 +180,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const canExport = ref(true)
   const materialModes = ref<readonly MaterialMode[]>([
     'original',
+    'clay',
     'normal',
     'wireframe'
   ])
@@ -243,7 +244,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         node.onDrawBackground,
         function (this: LGraphNode) {
           if (load3d) {
-            load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
+            load3d.domElement.hidden = this.flags.collapsed ?? false
           }
         }
       )
@@ -769,6 +770,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       : '3d'
 
     const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
+    if (!uploadedPath) return
+
+    sceneConfig.value.backgroundRenderMode = 'tiled'
     sceneConfig.value.backgroundImage = uploadedPath
     await load3d?.setBackgroundImage(uploadedPath)
   }

@@ -3,6 +3,9 @@
     "dockToTop": "چسباندن به بالا",
     "feedback": "بازخورد",
     "feedbackTooltip": "بازخورد",
+    "freeTierPartner": "نودهای Partner نیاز به پلن پولی دارند",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} اجرا باقی مانده",
+    "freeTierRunsExhausted": "اجرایی باقی نمانده است",
     "share": "اشتراک‌گذاری",
     "shareTooltip": "اشتراک‌گذاری گردش‌کار"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "واجد شرایط طرح رایگان",
       "freeTierDescription": "با ثبت‌نام از طریق Google هر ماه {credits} اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
       "freeTierDescriptionGeneric": "با ثبت‌نام از طریق Google هر ماه اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
+      "googleSsoInAppBrowserNotice": "اگر این صفحه را از طریق مرورگر داخلی برنامه (مانند اینستاگرام یا لینکدین) باز کرده‌اید، ورود با Google ممکن است کار نکند. لطفاً از GitHub یا ایمیل استفاده کنید یا این صفحه را در مرورگر پیش‌فرض دستگاه خود باز کنید.",
       "insecureContextWarning": "این اتصال ناامن است (HTTP) - در صورت ادامه ورود، اطلاعات شما ممکن است توسط مهاجمان رهگیری شود.",
       "loginButton": "ورود",
       "loginWithGithub": "ورود با Github",
@@ -359,12 +363,14 @@
     "colors": "پالت رنگ",
     "descLabel": "توضیحات",
     "descPlaceholder": "توضیحات این ناحیه",
+    "grid": "شبکه",
     "textLabel": "متن",
     "textPlaceholder": "متن برای نمایش (عیناً)",
     "typeObj": "obj",
     "typeText": "متن"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "حالت {mode}، عملیات گردش‌کار",
     "app": "برنامه",
     "blueprint": "نقشه راه",
     "clearWorkflow": "پاک‌سازی workflow",
@@ -783,6 +789,11 @@
       "gpuUsage": "استفاده از GPU"
     },
     "faqs": "سؤالات متداول",
+    "insufficient": {
+      "memberCta": "متوجه شدم",
+      "memberDescription": "تیم شما همه اعتبار خود را مصرف کرده است. مدیران ورک‌اسپیس باید اعتبار بیشتری اضافه کنند تا ورک‌فلوها اجرا شوند.",
+      "memberTitle": "اعتبار این ورک‌اسپیس به پایان رسیده است"
+    },
     "invoiceHistory": "تاریخچه فاکتورها",
     "lastUpdated": "آخرین به‌روزرسانی",
     "loadEventsError": "بارگذاری فعالیت ناموفق بود. لطفاً دوباره تلاش کنید.",
@@ -953,6 +964,16 @@
       "message": "شناسه گفت‌وگوی نامعتبری ارائه شده است.",
       "title": "گفت‌وگوی نامعتبر"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "برنامه دسکتاپ ComfyUI در انتظار ورود به حساب شما است. فقط در صورتی ادامه دهید که همین حالا ورود را از برنامه دسکتاپ ComfyUI آغاز کرده‌اید.",
+    "confirmSummary": "تأیید ورود دسکتاپ",
+    "expiredDetail": "درخواست ورود منقضی شده یا قبلاً استفاده شده است. ورود را دوباره از برنامه دسکتاپ ComfyUI آغاز کنید.",
+    "expiredSummary": "ورود دسکتاپ ناموفق بود",
+    "failedDetail": "در تکمیل ورود دسکتاپ مشکلی پیش آمد. ورود را دوباره از برنامه دسکتاپ ComfyUI آغاز کنید.",
+    "failedSummary": "ورود دسکتاپ ناموفق بود",
+    "successDetail": "می‌توانید به برنامه دسکتاپ ComfyUI بازگردید.",
+    "successSummary": "ورود انجام شد"
   },
   "desktopMenu": {
     "confirmQuit": "جریان‌های کاری ذخیره‌نشده باز هستند؛ هرگونه تغییر ذخیره‌نشده از بین خواهد رفت. آیا می‌خواهید بدون توجه به این موضوع خارج شوید؟",
@@ -1440,6 +1461,9 @@
     "noExportsInQueue": "هیچ خروجی {filter} در صف نیست",
     "preparingExport": "در حال آماده‌سازی خروجی...",
     "retryDownload": "تلاش مجدد برای دانلود"
+  },
+  "feedback": {
+    "title": "ارسال بازخورد"
   },
   "g": {
     "1x": "۱x",
@@ -2067,11 +2091,15 @@
       "appBuilder": "سازنده اپلیکیشن",
       "apps": "اپلیکیشن‌ها",
       "appsEmptyMessage": "اپلیکیشن‌های ذخیره‌شده اینجا نمایش داده می‌شوند.\nبرای ساخت اولین اپلیکیشن خود، روی دکمه زیر کلیک کنید.",
-      "appsEmptyMessageAction": "برای ساخت اولین اپلیکیشن خود، روی دکمه زیر کلیک کنید."
+      "appsEmptyMessageAction": "برای ساخت اولین اپلیکیشن خود، روی دکمه زیر کلیک کنید.",
+      "buildAnApp": "ساخت اپلیکیشن",
+      "create": "ایجاد",
+      "createApp": "ایجاد اپلیکیشن"
     },
     "arrange": {
       "atLeastOne": "یک",
       "connectAtLeastOne": "حداقل {atLeastOne} node خروجی را متصل کنید تا کاربران پس از اجرا نتایج را مشاهده کنند.",
+      "descriptionPlaceholder": "برای افزودن توضیح، دوبار کلیک کنید",
       "noOutputs": "هنوز هیچ خروجی اضافه نشده است",
       "outputExamples": "مثال‌ها: «ذخیره تصویر» یا «ذخیره ویدیو»",
       "outputs": "خروجی‌ها",
@@ -2080,8 +2108,6 @@
       "switchToOutputsButton": "رفتن به خروجی‌ها"
     },
     "backToWorkflow": "بازگشت به جریان کاری",
-    "beta": "حالت برنامه بتا - ارسال بازخورد",
-    "buildAnApp": "ساخت اپلیکیشن",
     "builder": {
       "exit": "خروج از حالت ساخت",
       "exitConfirmMessage": "تغییرات ذخیره‌نشده شما از بین خواهد رفت\nخروج بدون ذخیره؟",
@@ -2119,6 +2145,7 @@
       "requiresGraph": "در طول تولید مشکلی پیش آمد. ممکن است به دلیل ورودی‌های مخفی نامعتبر، منابع گمشده یا مشکلات پیکربندی workflow باشد.",
       "support": "تماس با پشتیبانی ما"
     },
+    "feedbackLoadError": "بارگذاری فرم بازخورد ناموفق بود. لطفاً بعداً دوباره تلاش کنید.",
     "giveFeedback": "ارسال بازخورد",
     "graphMode": "حالت گراف",
     "hasCreditCost": "نیازمند اعتبار اضافی",
@@ -2187,6 +2214,7 @@
     "loadingModel": "در حال بارگذاری مدل سه‌بعدی...",
     "materialMode": "حالت متریال",
     "materialModes": {
+      "clay": "خاک رس",
       "depth": "عمق",
       "lineart": "خطی",
       "normal": "عادی",
@@ -2194,7 +2222,29 @@
       "pointCloud": "ابر نقاط",
       "wireframe": "سیمی"
     },
+    "menuBar": {
+      "bgColor": "رنگ پس‌زمینه",
+      "bgImage": "تصویر پس‌زمینه",
+      "deleteRecording": "حذف ضبط‌شده",
+      "downloadRecording": "دانلود ضبط‌شده",
+      "fov": "زاویه دید (FOV)",
+      "intensity": "شدت",
+      "material": "متریال",
+      "originalMaterialOnly": "فقط متریال اصلی",
+      "panorama": "پانوراما",
+      "record": "ضبط",
+      "recording": "در حال ضبط",
+      "removeBackground": "حذف پس‌زمینه",
+      "showGrid": "نمایش شبکه",
+      "skeleton": "اسکلت",
+      "startNewRecording": "شروع ضبط جدید",
+      "stopRecording": "توقف ضبط",
+      "switchProjection": "تغییر پرسپکتیو",
+      "upDirection": "جهت بالا",
+      "videoRecordingTooltip": "ضبط ویدیویی صحنه [mp4]"
+    },
     "model": "مدل",
+    "model3d": "مدل سه‌بعدی",
     "openIn3DViewer": "باز کردن در نمایشگر سه‌بعدی",
     "panoramaMode": "حالت پانوراما",
     "previewOutput": "پیش‌نمایش خروجی",
@@ -2746,7 +2796,6 @@
     "accept": "بله، کمک می‌کنم!",
     "description": "شما از این قابلیت استفاده کرده‌اید. آیا مایل هستید بازخورد خود را با ما به اشتراک بگذارید؟",
     "dontAskAgain": "دیگر نمایش نده",
-    "loadError": "بارگذاری نظرسنجی ناموفق بود. لطفاً بعداً دوباره تلاش کنید.",
     "notNow": "فعلاً نه",
     "title": "به ما در بهبود کمک کنید"
   },
@@ -2761,6 +2810,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2790,6 +2840,7 @@
     "ace": "ace",
     "adjustments": "تنظیمات",
     "advanced": "پیشرفته",
+    "anima": "anima",
     "animate": "انیمیت",
     "attention_experiments": "آزمایش‌های توجه",
     "audio": "صدا",
@@ -2812,6 +2863,7 @@
     "create": "ایجاد",
     "custom": "سفارشی",
     "dancer": "رقصنده",
+    "dataset": "dataset",
     "debug": "اشکال‌زدایی",
     "detection": "شناسایی",
     "experimental": "آزمایشی",
@@ -2833,6 +2885,7 @@
     "image": "تصویر",
     "infinite talk": "گفتگوی بی‌نهایت",
     "instructpix2pix": "instructpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "لاتنت",
     "loaders": "بارگذارها",
@@ -2840,11 +2893,13 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "ماسک",
     "merging": "ادغام",
     "mochi": "mochi",
     "model": "مدل",
     "model specific": "مدل خاص",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "چند GPU",
     "noise": "نویز",
@@ -2854,6 +2909,8 @@
     "phantom subject": "موضوع فانتوم",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "پردازش‌گرهای پسین",
+    "pre-processors": "پردازش‌گرهای پیشین",
     "preprocessors": "پیش‌پردازنده‌ها",
     "primitive": "ابتدایی",
     "qwen": "qwen",
@@ -2875,6 +2932,7 @@
     "stable video 3d": "ویدیوی سه‌بعدی stable",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "متن",
     "training": "آموزش",
     "transform": "تبدیل",
@@ -2961,6 +3019,7 @@
       "appTypeNative": "برنامه بومی",
       "appTypeWeb": "برنامه وب",
       "deny": "لغو",
+      "detailsHeader": "جزئیات",
       "errorExpired": "این درخواست تأیید منقضی شده یا قبلاً استفاده شده است. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
       "errorScopeBroadening": "دسترسی‌های قبلاً تأییدشده این درخواست را پوشش نمی‌دهند. لازم است با دسترسی‌های جدید مجدداً تأیید کنید.",
       "errorUnavailable": "این قابلیت در حال حاضر در دسترس نیست. در صورت تداوم مشکل با پشتیبانی تماس بگیرید.",
@@ -2975,7 +3034,6 @@
       "sessionErrorToastSummary": "ورود با OAuth ادامه نیافت",
       "subtitle": "برای ادامه وارد {resource} شوید",
       "title": "{client} درخواست دسترسی دارد",
-      "workspaceHelp": "دسترسی‌ها فقط برای این ورک‌اسپیس اعمال می‌شوند.",
       "workspaceLabel": "ورک‌اسپیس"
     },
     "scopes": {
@@ -3225,11 +3283,17 @@
     "errors": {
       "duplicateName": "کلیدی با این نام قبلاً وجود دارد",
       "duplicateProvider": "کلیدی برای این ارائه‌دهنده قبلاً وجود دارد",
+      "fileReadFailed": "خواندن فایل انتخاب‌شده امکان‌پذیر نبود",
+      "fileTooLarge": "فایل بیش از حد بزرگ است. لطفاً یک اعتبارنامه JSON کمتر از ۱ مگابایت بارگذاری کنید",
+      "invalidJson": "فایل باید شامل یک شیء JSON معتبر باشد",
       "nameRequired": "وارد کردن نام الزامی است",
       "nameTooLong": "نام باید حداکثر ۲۵۵ کاراکتر باشد",
       "providerRequired": "وارد کردن ارائه‌دهنده الزامی است",
       "secretValueRequired": "وارد کردن مقدار کلید محرمانه الزامی است"
     },
+    "jsonFileHint": "JSON را جای‌گذاری یا فایل را بارگذاری کنید. این اطلاعات رمزگذاری می‌شود و دیگر قابل مشاهده نخواهد بود.",
+    "jsonFileHintEdit": "برای حفظ مقدار فعلی، خالی بگذارید یا برای جایگزینی، فایل JSON جدید بارگذاری کنید.",
+    "jsonFilePlaceholder": "فایل JSON اعتبارسنجی ارائه‌دهنده را بارگذاری یا جای‌گذاری کنید",
     "lastUsed": "آخرین استفاده {date}",
     "modelProviders": "ارائه‌دهندگان مدل",
     "name": "نام",
@@ -3246,7 +3310,8 @@
     "secretValueHintEdit": "برای حفظ مقدار فعلی، این قسمت را خالی بگذارید.",
     "secretValuePlaceholder": "کلید API خود را وارد کنید",
     "secretValuePlaceholderEdit": "برای تغییر مقدار جدید را وارد کنید",
-    "title": "کلیدها و اسرار API"
+    "title": "کلیدها و اسرار API",
+    "uploadJsonFile": "بارگذاری فایل JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "عبور از نودهای گروه",
@@ -3449,6 +3514,7 @@
     "Load 3D": "بارگذاری ۳بعدی و انیمیشن",
     "Locale": "زبان",
     "Mask Editor": "ویرایشگر Mask",
+    "Members": "اعضا",
     "Menu": "منو",
     "ModelLibrary": "کتابخانه مدل",
     "Node": "Node",
@@ -3823,6 +3889,7 @@
     "freeTier": {
       "description": "طرح رایگان شما شامل {credits} اعتبار در هر ماه برای استفاده از Comfy Cloud است.",
       "descriptionGeneric": "طرح رایگان شما شامل اعتبار ماهانه برای استفاده از Comfy Cloud است.",
+      "descriptionQuota": "طرح رایگان شما شامل {runs} اجرا برای شروع با Comfy Cloud است — بدون نیاز به کارت.",
       "nextRefresh": "اعتبار شما در تاریخ {date} به‌روزرسانی می‌شود.",
       "outOfCredits": {
         "subtitle": "با اشتراک، امکان شارژ مجدد و امکانات بیشتر را فعال کنید",
@@ -3963,6 +4030,7 @@
       "waitingForSubscription": "اشتراک خود را در تب جدید تکمیل کنید. ما به صورت خودکار اتمام را تشخیص می‌دهیم!"
     },
     "resubscribe": "تمدید اشتراک",
+    "resubscribeFailed": "فعال‌سازی مجدد اشتراک ناموفق بود",
     "resubscribeSuccess": "اشتراک با موفقیت فعال شد",
     "resubscribeTo": "تمدید اشتراک {plan}",
     "saveYearly": "٪۲۰ صرفه‌جویی",
@@ -4088,7 +4156,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "فیلترها:",
     "allTemplates": "همه قالب‌ها",
     "categories": "دسته‌بندی‌ها",
     "category": {
@@ -4113,9 +4180,12 @@
       "Video": "ویدیو",
       "Video API": "رابط برنامه‌نویسی ویدیو"
     },
+    "clearAllFilters": "حذف همه فیلترها",
     "error": {
       "templateNotFound": "قالب \"{templateName}\" یافت نشد"
     },
+    "filtersApplied": "{count} فیلتر اعمال شد | {count} فیلتر اعمال شدند",
+    "filtersButton": "فیلترها",
     "licenseFilter": "مجوز",
     "loading": "در حال بارگذاری قالب‌ها...",
     "loadingMore": "در حال بارگذاری قالب‌های بیشتر...",
@@ -4123,7 +4193,6 @@
     "modelsSelected": "{count} مدل",
     "noResults": "قالبی یافت نشد",
     "noResultsHint": "لطفاً جستجو یا فیلترهای خود را تغییر دهید",
-    "resetFilters": "پاک‌کردن فیلترها",
     "resultsCount": "نمایش {count} از {total} قالب",
     "runsOnFilter": "اجرا روی",
     "runsOnSelected": "{count} اجرا روی",
@@ -4135,6 +4204,7 @@
       "newest": "جدیدترین",
       "popular": "محبوب",
       "recommended": "پیشنهادی",
+      "relevance": "مرتبط‌ترین",
       "searchPlaceholder": "جستجو..."
     },
     "sorting": "مرتب‌سازی بر اساس",
@@ -4213,6 +4283,9 @@
     "updateRequested": "درخواست به‌روزرسانی ثبت شد",
     "useApiKeyTip": "نکته: به ورود عادی دسترسی ندارید؟ از گزینه Comfy API Key استفاده کنید.",
     "userNotAuthenticated": "کاربر احراز هویت نشده است"
+  },
+  "typeform": {
+    "loadError": "بارگذاری فرم ناموفق بود. لطفاً بعداً دوباره تلاش کنید."
   },
   "userSelect": {
     "enterUsername": "نام کاربری را وارد کنید",
@@ -4349,6 +4422,50 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "اعتبار مصرف‌شده",
+        "date": "تاریخ",
+        "eventDetails": "جزئیات رویداد",
+        "eventType": "نوع رویداد",
+        "user": "کاربر"
+      },
+      "empty": "هنوز فعالیتی وجود ندارد.",
+      "fullActivity": "تمام فعالیت‌ها",
+      "hoverCard": {
+        "lastActivity": "آخرین فعالیت",
+        "partnerNodeUsed": "گره شریک استفاده‌شده",
+        "totalCreditsUsed": "مجموع اعتبار مصرف‌شده"
+      },
+      "perUserHint": "دنبال مجموع مصرف هر کاربر هستید؟",
+      "seeMembers": "مشاهده اعضا"
+    },
+    "billingStatus": {
+      "ending": {
+        "body": "اعضا تا آن زمان دسترسی کامل خواهند داشت. برای حفظ اعتبار و ظرفیت اشتراکی، پلن را مجدداً فعال کنید.",
+        "reactivate": "فعال‌سازی مجدد پلن",
+        "title": "پلن تیم شما در تاریخ {date} به پایان می‌رسد"
+      },
+      "outOfCredits": {
+        "addCredits": "افزودن اعتبار",
+        "body": "تیم شما همه اعتبار خود را مصرف کرده است. برای ادامه تولید، اعتبار بیشتری اضافه کنید یا تا تاریخ {date} منتظر بمانید تا اعتبار شارژ شود.",
+        "bodyNoDate": "تیم شما همه اعتبار خود را مصرف کرده است. برای ادامه تولید، اعتبار بیشتری اضافه کنید.",
+        "dismiss": "بستن",
+        "memberBody": "تیم شما همه اعتبار خود را مصرف کرده است. مدیران ورک‌اسپیس باید اعتبار بیشتری اضافه کنند تا تولید ادامه یابد.",
+        "title": "اعتبار به پایان رسیده است"
+      },
+      "paused": {
+        "body": "اشتراک این ورک‌اسپیس متوقف شده است. برای ادامه، پرداخت را به‌روزرسانی کنید.",
+        "memberBody": "اشتراک این ورک‌اسپیس متوقف شده است. مدیران ورک‌اسپیس باید روش پرداخت را به‌روزرسانی کنند.",
+        "title": "اشتراک متوقف شده است"
+      },
+      "updatePayment": "به‌روزرسانی پرداخت",
+      "warning": {
+        "body": "آخرین پرداخت شما انجام نشد. اشتراک شما در تاریخ {date} متوقف می‌شود مگر اینکه پرداخت به‌روزرسانی شود.",
+        "bodyNoDate": "آخرین پرداخت شما انجام نشد. برای جلوگیری از توقف، پرداخت را به‌روزرسانی کنید.",
+        "title": "پرداخت ناموفق بود"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "تنزل به عضو",
       "demoteMessage": "دسترسی مدیریتی را از دست خواهد داد.",
@@ -4410,14 +4527,31 @@
         "cancelInvite": "لغو دعوت‌نامه",
         "changeRole": "تغییر نقش",
         "removeMember": "حذف عضو",
-        "resendInvite": "ارسال مجدد دعوت‌نامه"
+        "resendInvite": "ارسال مجدد دعوت‌نامه",
+        "setCreditLimit": "تنظیم سقف اعتبار"
+      },
+      "activity": {
+        "daysAgo": "{count} روز پیش",
+        "hoursAgo": "{n} ساعت پیش",
+        "justNow": "همین حالا",
+        "minutesAgo": "{n} دقیقه پیش"
       },
       "columns": {
+        "creditsUsed": "اعتبار ماهانه",
         "expiryDate": "تاریخ انقضا",
         "inviteDate": "تاریخ دعوت",
         "role": "نقش"
       },
       "contactUs": "با ما تماس بگیرید",
+      "creditLimitDialog": {
+        "description": "پس از رسیدن به این سقف، امکان اجرای workflow برای او وجود نخواهد داشت.",
+        "invalidLimit": "لطفاً سقف اعتباری بیشتر از صفر وارد کنید.",
+        "limitOption": "محدود کردن مصرف اعتبار ماهانه به:",
+        "noLimit": "بدون محدودیت",
+        "title": "تنظیم سقف اعتبار ماهانه برای {name}",
+        "update": "به‌روزرسانی سقف",
+        "warning": "این کاربر تاکنون {credits} اعتبار مصرف کرده است. تعیین سقف برابر یا کمتر از مصرف فعلی، اجرای بیشتر را تا ماه آینده غیرممکن می‌کند."
+      },
       "header": "اعضا",
       "membersCount": "{count}/۵۰ عضو",
       "needMoreMembers": "به اعضای بیشتری نیاز دارید؟",
@@ -4440,6 +4574,12 @@
       "deleteWorkspaceDisabledTooltip": "ابتدا اشتراک فعال محیط کاری خود را لغو کنید",
       "editWorkspace": "ویرایش جزئیات محیط کاری",
       "leaveWorkspace": "خروج از محیط کاری"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "فعالیت",
+        "overview": "اعتبارها"
+      }
     },
     "removeMemberDialog": {
       "error": "حذف عضو ناموفق بود",
