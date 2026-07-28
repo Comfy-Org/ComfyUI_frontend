@@ -179,6 +179,23 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockFetchStatus).not.toHaveBeenCalled()
   })
 
+  it('redirects to Checkout when the top-up needs customer payment', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => undefined)
+    mockTopup.mockResolvedValue({
+      ...topupResponse('needs_payment_method'),
+      payment_method_url: 'https://checkout.stripe.com/session'
+    })
+
+    renderDialog()
+    await clickAddCredits()
+
+    expect(assign).toHaveBeenCalledWith('https://checkout.stripe.com/session')
+    expect(mockStartOperation).not.toHaveBeenCalled()
+    expect(mockFetchBalance).not.toHaveBeenCalled()
+  })
+
   it('does not refresh balance or status for a failed top-up', async () => {
     mockTopup.mockResolvedValue(topupResponse('failed'))
 

@@ -269,7 +269,12 @@ async function handleBuy() {
     const response = await topup(amountCents)
     if (!response) return
 
-    if (response.status === 'completed') {
+    if (
+      response.status === 'needs_payment_method' &&
+      response.payment_method_url
+    ) {
+      window.location.assign(response.payment_method_url)
+    } else if (response.status === 'completed') {
       toast.add({
         severity: 'success',
         summary: t('credits.topUp.purchaseSuccess'),
