@@ -6,6 +6,56 @@
     class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm"
   >
     <div>
+      <div
+        v-if="isReactivating"
+        class="mb-6 flex gap-3 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
+      >
+        <div
+          class="flex size-8 shrink-0 items-center justify-center rounded-full text-warning-background"
+        >
+          <i class="pi pi-info-circle" />
+        </div>
+        <div class="flex flex-col gap-2">
+          <p class="m-0 text-sm font-bold text-text-primary">
+            {{ bannerTitle }}
+          </p>
+          <p class="m-0 text-sm text-text-secondary">
+            <i18n-t :keypath="bannerBodyKey" tag="span">
+              <template #plan>{{ currentTierName }}</template>
+              <template #date>{{ cancelDate }}</template>
+              <template #newPlan>{{ newTierName }}</template>
+              <template #nextDate>{{ nextPaymentDate }}</template>
+              <template #amount>
+                <span
+                  :class="
+                    cn(
+                      'font-bold text-base-foreground',
+                      exceedsMonthlyThreshold && 'text-base font-extrabold'
+                    )
+                  "
+                  >{{ chargeDisplay }}</span
+                >
+              </template>
+            </i18n-t>
+          </p>
+          <label
+            v-if="exceedsMonthlyThreshold"
+            class="flex items-center gap-2 pt-1 text-sm text-text-secondary"
+          >
+            <input
+              v-model="reactivationConfirmed"
+              type="checkbox"
+              class="size-4 rounded-sm border-border-default"
+            />
+            {{
+              $t('subscription.preview.reactivation.checkboxLabel', {
+                amount: chargeDisplay
+              })
+            }}
+          </label>
+        </div>
+      </div>
+
       <!-- Plan Header -->
       <div class="flex flex-col gap-2">
         <span class="text-sm font-semibold text-base-foreground">
@@ -127,6 +177,7 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
+        :disabled="confirmDisabled"
         @click="$emit('confirm')"
       >
         {{ confirmCta }}
@@ -144,10 +195,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
@@ -175,6 +229,7 @@ defineEmits<{
 }>()
 
 const { t, n } = useI18n()
+const { subscription } = useBillingContext()
 
 function formatTierName(tier: string): string {
   return t(`subscription.tiers.${tier.toLowerCase()}.name`)
@@ -230,6 +285,74 @@ const currentPlanLabel = computed(() =>
     ? t('subscription.tierNameYearly', { name: currentTierName.value })
     : currentTierName.value
 )
+
+const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+
+const reactivationVariant = computed<
+  'upgrade' | 'downgrade' | 'duration_change' | null
+>(() => {
+  if (!isCancelled.value) return null
+  switch (previewData.transition_type) {
+    case 'upgrade':
+      return 'upgrade'
+    case 'downgrade':
+      return 'downgrade'
+    case 'duration_change':
+      return 'duration_change'
+    default:
+      return null
+  }
+})
+const isReactivating = computed(
+  () => isCancelled.value && reactivationVariant.value !== null
+)
+
+const cancelDate = computed(() =>
+  subscription.value?.endDate ? formatDate(subscription.value.endDate) : ''
+)
+
+// PreviewPlanInfo.price_cents isn't duration-normalized; divide ANNUAL by 12 to
+// get a monthly-equivalent, matching PricingTableWorkspace's getPriceFromApi.
+const currentMonthlyPriceCents = computed(() => {
+  const plan = previewData.current_plan
+  if (!plan) return 0
+  return plan.duration === 'ANNUAL' ? plan.price_cents / 12 : plan.price_cents
+})
+const chargeCents = computed(() => previewData.cost_today_cents)
+const exceedsMonthlyThreshold = computed(
+  () =>
+    isReactivating.value && chargeCents.value > currentMonthlyPriceCents.value
+)
+const chargeDisplay = computed(
+  () =>
+    `$${formatUsdFromCents({
+      cents: chargeCents.value,
+      numberOptions: { maximumFractionDigits: 0 }
+    })}`
+)
+
+const reactivationConfirmed = ref(false)
+const confirmDisabled = computed(
+  () => exceedsMonthlyThreshold.value && !reactivationConfirmed.value
+)
+
+const bannerTitle = computed(() =>
+  reactivationVariant.value === 'duration_change'
+    ? t('subscription.preview.reactivation.titleAnnual')
+    : t('subscription.preview.reactivation.title')
+)
+const bannerBodyKey = computed<string>(() => {
+  switch (reactivationVariant.value) {
+    case 'upgrade':
+      return 'subscription.preview.reactivation.upgradeBody'
+    case 'downgrade':
+      return 'subscription.preview.reactivation.downgradeBody'
+    case 'duration_change':
+      return 'subscription.preview.reactivation.durationChangeBody'
+    default:
+      return ''
+  }
+})
 
 const newMonthlyUsd = computed(() => {
   const cents = previewData.new_plan.price_cents
@@ -293,11 +416,22 @@ const confirmTitle = computed(() =>
     ? t('subscription.preview.confirmUpgradeTitle')
     : t('subscription.preview.confirmChangeTitle')
 )
-const confirmCta = computed(() =>
-  isImmediate.value
+const confirmCta = computed(() => {
+  if (reactivationVariant.value === 'downgrade') {
+    return t('subscription.preview.reactivation.confirmButton')
+  }
+  if (
+    reactivationVariant.value === 'upgrade' ||
+    reactivationVariant.value === 'duration_change'
+  ) {
+    return t('subscription.preview.reactivation.confirmButtonWithCharge', {
+      amount: chargeDisplay.value
+    })
+  }
+  return isImmediate.value
     ? t('subscription.preview.confirmUpgradeCta')
     : t('subscription.preview.confirmChange')
-)
+})
 const totalNote = computed(() =>
   isImmediate.value
     ? t('subscription.preview.nextPaymentDue', { date: nextPaymentDate.value })

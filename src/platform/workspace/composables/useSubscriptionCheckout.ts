@@ -88,7 +88,8 @@ export function useSubscriptionCheckout(
     plans,
     fetchPlans,
     isTeamPlan,
-    resubscribe
+    resubscribe,
+    subscription
   } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
   const { permissions } = useWorkspaceUI()
@@ -299,7 +300,8 @@ export function useSubscriptionCheckout(
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
-        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
+        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
+        confirmReactivation: subscription.value?.isCancelled ?? false
       })
 
       if (response) {
@@ -456,7 +458,8 @@ export function useSubscriptionCheckout(
         teamCreditStopId: stop.id,
         billingCycle,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
-        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
+        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
+        confirmReactivation: subscription.value?.isCancelled ?? false
       })
 
       if (response) {

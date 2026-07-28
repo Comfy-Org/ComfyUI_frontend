@@ -2898,7 +2898,17 @@
       "confirm": "Confirm",
       "subscribeToPlan": "Subscribe to {plan}",
       "switchToPlan": "Switch to {plan}",
-      "backToAllPlans": "Back to all plans"
+      "backToAllPlans": "Back to all plans",
+      "reactivation": {
+        "title": "Reactivating your subscription",
+        "titleAnnual": "Reactivating your subscription — full year billed today",
+        "upgradeBody": "Your {plan} was set to end on {date}. Upgrading now reactivates it — you'll be charged {amount} today, and it will renew automatically on {nextDate} instead of ending.",
+        "downgradeBody": "Your {plan} was set to end on {date}. Switching to {newPlan} reactivates it — you won't be charged today, but it will now renew automatically on {nextDate} at the new price instead of ending.",
+        "durationChangeBody": "Your {plan} was set to end on {date}. Switching to annual billing reactivates it and charges the full year, {amount}, today. It will then renew annually on {nextDate} instead of ending.",
+        "confirmButton": "Confirm & reactivate",
+        "confirmButtonWithCharge": "Confirm & reactivate — {amount} today",
+        "checkboxLabel": "I understand I'll be charged {amount} today"
+      }
     },
     "success": {
       "allSet": "You're all set",

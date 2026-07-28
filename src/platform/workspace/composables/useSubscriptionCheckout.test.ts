@@ -84,7 +84,8 @@ const {
   mockUserId,
   mockIsTeamPlan,
   mockShouldUseWorkspaceBilling,
-  mockPermissions
+  mockPermissions,
+  mockSubscription
 } = vi.hoisted(() => ({
   mockSubscribe: vi.fn(),
   mockPreviewSubscribe: vi.fn(),
@@ -107,7 +108,8 @@ const {
       canManageSubscriptionLifecycle: true,
       canDowngradeToPersonal: true
     }
-  }
+  },
+  mockSubscription: { value: null as { isCancelled: boolean } | null }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -119,7 +121,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     fetchStatus: mockFetchStatus,
     fetchBalance: mockFetchBalance,
     isTeamPlan: computed(() => mockIsTeamPlan.value),
-    resubscribe: mockResubscribe
+    resubscribe: mockResubscribe,
+    subscription: computed(() => mockSubscription.value)
   })
 }))
 
@@ -220,6 +223,7 @@ describe('useSubscriptionCheckout', () => {
       canManageSubscriptionLifecycle: true,
       canDowngradeToPersonal: true
     }
+    mockSubscription.value = null
     emit = vi.fn()
   })
 
@@ -738,7 +742,8 @@ describe('useSubscriptionCheckout', () => {
         teamCreditStopId: 'team_700',
         billingCycle: 'monthly',
         returnUrl: 'https://platform.comfy.org/payment/success',
-        cancelUrl: 'https://platform.comfy.org/payment/failed'
+        cancelUrl: 'https://platform.comfy.org/payment/failed',
+        confirmReactivation: false
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
@@ -747,6 +752,33 @@ describe('useSubscriptionCheckout', () => {
           checkout_type: 'new',
           billing_op_id: 'op-team-1'
         })
+      )
+    })
+
+    it('forwards confirmReactivation true for a team change when the current subscription is cancelled', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly'
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-reactivate'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({ confirmReactivation: true })
       )
     })
 
@@ -930,7 +962,8 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockSubscribe).toHaveBeenCalledWith('standard-yearly', {
         returnUrl: 'https://platform.comfy.org/payment/success',
-        cancelUrl: 'https://platform.comfy.org/payment/failed'
+        cancelUrl: 'https://platform.comfy.org/payment/failed',
+        confirmReactivation: false
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
@@ -1211,6 +1244,26 @@ describe('useSubscriptionCheckout', () => {
           severity: 'error',
           detail: 'Transition error'
         })
+      )
+    })
+
+    it('forwards confirmReactivation true when the current subscription is cancelled', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-reactivate'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleConfirmTransition()
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.objectContaining({ confirmReactivation: true })
       )
     })
 
