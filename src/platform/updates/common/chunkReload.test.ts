@@ -27,10 +27,13 @@ describe('chunkReload', () => {
     executionState.runningJobIds = []
 
     // location.reload is not implemented/allowed under jsdom; replace it.
+    // A minimal stub is sufficient — chunkReload only ever calls
+    // window.location.reload(), and jsdom's Location props are prototype getters
+    // (not own-enumerable), so spreading the instance would copy nothing anyway.
     reloadSpy = vi.fn()
     Object.defineProperty(window, 'location', {
       configurable: true,
-      value: { ...window.location, reload: reloadSpy }
+      value: { reload: reloadSpy }
     })
   })
 
