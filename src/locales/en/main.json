@@ -3491,6 +3491,7 @@
     "processingModelDescription": "You can close this dialog. The download will continue in the background.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
+    "searchModels": "Search models",
     "selectFrameworks": "Select Frameworks",
     "selectModelType": "Select model type",
     "selectProjects": "Select Projects",

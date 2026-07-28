@@ -2,22 +2,31 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
+  MISSING_TAG,
+  MODELS_TAG
+} from '@/platform/assets/services/assetService'
+import {
   getAssetAdditionalTags,
   getAssetBaseModel,
   getAssetBaseModels,
   getAssetCardTitle,
+  getAssetCategories,
   getAssetDescription,
   getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename,
   getAssetMetadataDimensions,
   getAssetModelType,
+  getAssetNodeCategoryCandidates,
   getAssetSourceUrl,
+  getPrimaryCategoryTag,
   getAssetStoredFilename,
   getAssetTriggerPhrases,
+  getAssetTypeBadges,
   getAssetUserDescription,
   getSourceName,
-  resolveDisplayImageDimensions
+  resolveDisplayImageDimensions,
+  stripModelTypePrefix
 } from '@/platform/assets/utils/assetMetadataUtils'
 
 const { isCloudRef } = vi.hoisted(() => ({
@@ -274,7 +283,17 @@ describe('assetMetadataUtils', () => {
         tags: ['models'],
         expected: null
       },
-      { name: 'returns null when tags empty', tags: [], expected: null }
+      { name: 'returns null when tags empty', tags: [], expected: null },
+      {
+        name: 'never returns a raw model_type: literal (no round-trip into edit widgets)',
+        tags: ['models', 'model_type:checkpoints'],
+        expected: null
+      },
+      {
+        name: 'skips model_type: tags in favour of the bare twin',
+        tags: ['models', 'model_type:checkpoints', 'checkpoints'],
+        expected: 'checkpoints'
+      }
     ])('$name', ({ tags, expected }) => {
       const asset = { ...mockAsset, tags }
       expect(getAssetModelType(asset)).toBe(expected)
@@ -578,5 +597,259 @@ describe('assetMetadataUtils', () => {
         rendered
       )
     })
+  })
+})
+
+describe('getAssetCategories', () => {
+  const asset = (tags: string[]): AssetItem => ({
+    id: 'a',
+    name: 'model.safetensors',
+    tags
+  })
+
+  it('uses model_type:* values as the group and disregards other tags in model_type mode', () => {
+    expect(
+      getAssetCategories(
+        asset(['models', 'model_type:checkpoints', 'sdxl']),
+        true
+      )
+    ).toEqual(['checkpoints'])
+  })
+
+  it('preserves the model_type value casing', () => {
+    expect(
+      getAssetCategories(asset(['models', 'model_type:LLM']), true)
+    ).toEqual(['LLM'])
+  })
+
+  it('routes an uncovered asset by its bare tags in model_type mode', () => {
+    expect(getAssetCategories(asset(['models', 'checkpoints']), true)).toEqual([
+      'checkpoints'
+    ])
+  })
+
+  it('ignores model_type: and uses bare-tag grouping when mode is off', () => {
+    expect(
+      getAssetCategories(
+        asset(['models', 'model_type:checkpoints', 'sdxl']),
+        false
+      )
+    ).toEqual(['model_type:checkpoints', 'sdxl'])
+  })
+
+  it('never surfaces namespace residue as a category for uncovered assets in mode', () => {
+    expect(
+      getAssetCategories(asset(['models', 'model_type:', 'sdxl']), true)
+    ).toEqual(['sdxl'])
+  })
+})
+
+describe('getPrimaryCategoryTag', () => {
+  const asset = (tags: string[]): AssetItem => ({
+    id: 'a',
+    name: 'model.safetensors',
+    tags
+  })
+
+  it('uses the model_type value a covered asset groups under', () => {
+    expect(
+      getPrimaryCategoryTag(asset(['models', 'sdxl', 'model_type:vae']), true)
+    ).toBe('vae')
+  })
+
+  it('keeps the legacy verbatim tag for an uncovered hierarchical asset', () => {
+    expect(
+      getPrimaryCategoryTag(asset(['models', 'Chatterbox/sub/model']), true)
+    ).toBe('Chatterbox/sub/model')
+  })
+
+  it('skips namespace residue instead of titling off a raw model_type: tag', () => {
+    expect(
+      getPrimaryCategoryTag(asset(['models', 'model_type:']), true)
+    ).toBeUndefined()
+  })
+
+  it('returns the legacy first non-models tag when mode is off', () => {
+    expect(
+      getPrimaryCategoryTag(asset(['models', 'model_type:vae']), false)
+    ).toBe('model_type:vae')
+  })
+})
+
+describe('getAssetNodeCategoryCandidates', () => {
+  const asset = (tags: string[]): AssetItem => ({
+    id: 'a',
+    name: 'model.safetensors',
+    tags
+  })
+
+  it('orders the most specific (deepest) tag ahead of a flat model_type value', () => {
+    expect(
+      getAssetNodeCategoryCandidates(
+        asset(['models', 'model_type:LLM', 'LLM/Qwen-VL/Qwen3-0.6B']),
+        true
+      )
+    ).toEqual(['LLM/Qwen-VL/Qwen3-0.6B', 'LLM'])
+  })
+
+  it('strips the model_type: prefix when it is the only candidate', () => {
+    expect(
+      getAssetNodeCategoryCandidates(asset(['models', 'model_type:vae']), true)
+    ).toEqual(['vae'])
+  })
+
+  it('keeps a model_type value ahead of an equally-deep bare tag', () => {
+    expect(
+      getAssetNodeCategoryCandidates(
+        asset(['models', 'model_type:checkpoints', 'sdxl']),
+        true
+      )
+    ).toEqual(['checkpoints', 'sdxl'])
+  })
+
+  it('demotes an unrelated deeper bare tag below the model_type value', () => {
+    expect(
+      getAssetNodeCategoryCandidates(
+        asset(['models', 'model_type:vae', 'foo/bar']),
+        true
+      )
+    ).toEqual(['vae', 'foo/bar'])
+  })
+
+  it('keeps unrelated bare tags as trailing fallbacks rather than dropping them', () => {
+    expect(
+      getAssetNodeCategoryCandidates(
+        asset(['models', 'model_type:LLM', 'LLM/Qwen-VL', 'foo/bar/baz']),
+        true
+      )
+    ).toEqual(['LLM/Qwen-VL', 'LLM', 'foo/bar/baz'])
+  })
+
+  it('keeps a hierarchical tag intact', () => {
+    expect(
+      getAssetNodeCategoryCandidates(
+        asset(['models', 'chatterbox/chatterbox_vc']),
+        true
+      )
+    ).toEqual(['chatterbox/chatterbox_vc'])
+  })
+
+  it('does not repeat a bare tag that duplicates its model_type value', () => {
+    expect(
+      getAssetNodeCategoryCandidates(
+        asset(['models', 'model_type:LLM', 'LLM']),
+        true
+      )
+    ).toEqual(['LLM'])
+  })
+
+  it('returns no candidates when only reserved tags are present', () => {
+    expect(
+      getAssetNodeCategoryCandidates(asset(['models', 'missing']), true)
+    ).toEqual([])
+  })
+
+  it('uses the first non-reserved tag verbatim when mode is off', () => {
+    expect(
+      getAssetNodeCategoryCandidates(asset(['models', 'model_type:vae']), false)
+    ).toEqual(['model_type:vae'])
+    expect(
+      getAssetNodeCategoryCandidates(asset(['models', 'checkpoints']), false)
+    ).toEqual(['checkpoints'])
+  })
+})
+
+describe('getAssetTypeBadges', () => {
+  const asset = (tags: string[]): AssetItem => ({
+    id: 'a',
+    name: 'model.safetensors',
+    tags
+  })
+
+  it('strips the model_type: prefix in model_type mode (no raw leak)', () => {
+    expect(
+      getAssetTypeBadges(
+        asset(['models', 'model_type:checkpoints', 'sdxl']),
+        true
+      )
+    ).toEqual(['checkpoints'])
+  })
+
+  it('badges the model_type value even when a bare tag comes first, matching the grouping', () => {
+    expect(
+      getAssetTypeBadges(asset(['models', 'foo', 'model_type:bar']), true)
+    ).toEqual(['bar'])
+  })
+
+  it('badges every category a shared multi-type asset groups under', () => {
+    expect(
+      getAssetTypeBadges(
+        asset([
+          'models',
+          'model_type:checkpoints',
+          'model_type:diffusion_models'
+        ]),
+        true
+      )
+    ).toEqual(['checkpoints', 'diffusion_models'])
+  })
+
+  it('falls back to the bare tag for an uncovered asset in model_type mode', () => {
+    expect(getAssetTypeBadges(asset(['models', 'sdxl']), true)).toEqual([
+      'sdxl'
+    ])
+  })
+
+  it('returns no badge rather than a blank one for a malformed empty model_type: tag', () => {
+    expect(getAssetTypeBadges(asset(['models', 'model_type:']), true)).toEqual(
+      []
+    )
+  })
+
+  it('leaks the literal model_type: tag when mode is off', () => {
+    expect(
+      getAssetTypeBadges(asset(['models', 'model_type:checkpoints']), false)
+    ).toEqual(['model_type:checkpoints'])
+  })
+
+  it('shows the segment after the first slash for a bare hierarchical tag', () => {
+    expect(
+      getAssetTypeBadges(asset(['models', 'checkpoint/xl']), false)
+    ).toEqual(['xl'])
+  })
+
+  it('returns no badges when only the models tag is present', () => {
+    expect(getAssetTypeBadges(asset(['models']), true)).toEqual([])
+  })
+})
+
+describe('stripModelTypePrefix', () => {
+  it('removes the model_type: prefix when present', () => {
+    expect(stripModelTypePrefix('model_type:checkpoints')).toBe('checkpoints')
+  })
+
+  it('leaves a tag without the prefix unchanged', () => {
+    expect(stripModelTypePrefix('checkpoints')).toBe('checkpoints')
+    expect(stripModelTypePrefix('checkpoint/xl')).toBe('checkpoint/xl')
+  })
+})
+
+describe('reserved tag mirrors', () => {
+  const asset = (tags: string[]): AssetItem => ({
+    id: 'a',
+    name: 'model.safetensors',
+    tags
+  })
+
+  it("treats assetService's canonical reserved tags as reserved (locals must not drift)", () => {
+    expect(getAssetCategories(asset([MODELS_TAG, 'x']), false)).toEqual(['x'])
+    expect(
+      getAssetNodeCategoryCandidates(
+        asset([MODELS_TAG, MISSING_TAG, 'x']),
+        true
+      )
+    ).toEqual(['x'])
+    expect(getAssetTypeBadges(asset([MODELS_TAG, 'x']), false)).toEqual(['x'])
+    expect(getAssetModelType(asset([MODELS_TAG]))).toBeNull()
   })
 })
