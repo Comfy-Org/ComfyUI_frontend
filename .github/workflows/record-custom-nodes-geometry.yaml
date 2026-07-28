@@ -137,6 +137,25 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+      # S13 interaction profiles ride the same boot: record mode writes the
+      # per-pack fixture files and deliberately fails each test.
+      - name: Record interaction profiles (S13)
+        continue-on-error: true
+        env:
+          CN_INTERACTION: record
+          CN_INTERACTION_CORE: b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2
+        run: |
+          pnpm exec playwright test browser_tests/tests/customNodes/interactionProfiles.spec.ts \
+            --project=custom-nodes --reporter=list --workers=1 --retries=0
+
+      - name: Upload recorded interaction profiles
+        uses: actions/upload-artifact@v6
+        with:
+          name: custom-nodes-interaction-profiles
+          path: browser_tests/fixtures/customNode/interactionProfiles/
+          retention-days: 7
+          if-no-files-found: error
+
       - name: Upload recorded output hashes
         uses: actions/upload-artifact@v6
         with:
