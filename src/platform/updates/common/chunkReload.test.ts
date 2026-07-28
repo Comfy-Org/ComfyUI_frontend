@@ -1,3 +1,4 @@
+import { datadogRum } from '@datadog/browser-rum'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -18,24 +19,36 @@ vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: () => executionState
 }))
 
+vi.mock('@datadog/browser-rum', () => ({
+  datadogRum: { addAction: vi.fn() }
+}))
+
+const APP_CHUNK = 'https://app.test/assets/settingStore-CUtU9ycZ.js'
+const EXTENSION_CHUNK =
+  'https://app.test/extensions/RES4LYF/js/RES4LYF_dynamicWidgets.js'
+
+function preloadErrorEvent(url: string): Event {
+  const event = new Event('vite:preloadError') as Event & { payload: Error }
+  event.payload = new Error(`Failed to fetch dynamically imported module: ${url}`)
+  return event
+}
+
 describe('chunkReload', () => {
   let reloadSpy: ReturnType<typeof vi.fn>
+  const addAction = vi.mocked(datadogRum.addAction)
 
   beforeEach(() => {
     window.sessionStorage.clear()
     workflowState.modifiedWorkflows = []
     executionState.runningJobIds = []
-    // performReload() logs a recovery marker; silence it in tests.
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    addAction.mockClear()
 
-    // location.reload is not implemented/allowed under jsdom; replace it.
-    // A minimal stub is sufficient — chunkReload only ever calls
-    // window.location.reload(), and jsdom's Location props are prototype getters
-    // (not own-enumerable), so spreading the instance would copy nothing anyway.
+    // location.reload is not implemented under jsdom; stub it. A minimal stub is
+    // enough — chunkReload only ever calls window.location.reload().
     reloadSpy = vi.fn()
     Object.defineProperty(window, 'location', {
       configurable: true,
-      value: { reload: reloadSpy }
+      value: { origin: 'https://app.test', reload: reloadSpy }
     })
   })
 
@@ -44,31 +57,32 @@ describe('chunkReload', () => {
   })
 
   it('triggers exactly one reload on a chunk failure when safe', () => {
-    const triggered = attemptChunkReload()
+    const triggered = attemptChunkReload(undefined, APP_CHUNK)
 
     expect(triggered).toBe(true)
     expect(reloadSpy).toHaveBeenCalledTimes(1)
+    // A RUM action is emitted so the recovery is observable/aggregatable.
+    expect(addAction).toHaveBeenCalledWith('stale-chunk-reload', {
+      chunkUrl: APP_CHUNK
+    })
     // Guard is persisted so a subsequent failure will not reload again.
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).not.toBeNull()
   })
 
   it('does NOT reload a second time once the loop guard is set', () => {
-    // First failure reloads.
-    expect(attemptChunkReload()).toBe(true)
+    expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(true)
     expect(reloadSpy).toHaveBeenCalledTimes(1)
 
     // Second failure in the same session must be a no-op (asset is genuinely gone).
-    const second = attemptChunkReload()
-    expect(second).toBe(false)
+    expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
     expect(reloadSpy).toHaveBeenCalledTimes(1)
+    expect(addAction).toHaveBeenCalledTimes(1)
   })
 
   it('defers the reload when there are unsaved workflow changes', () => {
     workflowState.modifiedWorkflows = [{ path: 'wf.json' }]
 
-    const triggered = attemptChunkReload()
-
-    expect(triggered).toBe(false)
+    expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
     expect(reloadSpy).not.toHaveBeenCalled()
     // Guard is NOT set, so recovery can still happen once work is safe.
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).toBeNull()
@@ -77,9 +91,7 @@ describe('chunkReload', () => {
   it('defers the reload when a generation is running', () => {
     executionState.runningJobIds = ['job-1']
 
-    const triggered = attemptChunkReload()
-
-    expect(triggered).toBe(false)
+    expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
     expect(reloadSpy).not.toHaveBeenCalled()
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).toBeNull()
   })
@@ -93,9 +105,8 @@ describe('chunkReload', () => {
       }
     } as unknown as import('vue-router').Router
 
-    // Dirty at failure time -> defer and arm a router hook.
     workflowState.modifiedWorkflows = [{ path: 'wf.json' }]
-    expect(attemptChunkReload(router)).toBe(false)
+    expect(attemptChunkReload(router, APP_CHUNK)).toBe(false)
     expect(reloadSpy).not.toHaveBeenCalled()
     expect(afterEachCb).toBeDefined()
 
@@ -103,29 +114,39 @@ describe('chunkReload', () => {
     afterEachCb?.()
     expect(reloadSpy).not.toHaveBeenCalled()
 
-    // User saves / navigates away, now safe -> reload fires once.
+    // Now safe -> reload fires once.
     workflowState.modifiedWorkflows = []
     afterEachCb?.()
     expect(reloadSpy).toHaveBeenCalledTimes(1)
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).not.toBeNull()
   })
 
-  it('installChunkReload reloads on a vite:preloadError event', () => {
+  it('reloads on a vite:preloadError for an app /assets/ chunk', () => {
     installChunkReload()
-
-    const event = new Event('vite:preloadError') as Event & { payload: Error }
-    event.payload = new Error(
-      'Failed to fetch dynamically imported module: /assets/x.js'
-    )
-    window.dispatchEvent(event)
+    window.dispatchEvent(preloadErrorEvent(APP_CHUNK))
 
     expect(reloadSpy).toHaveBeenCalledTimes(1)
+    expect(addAction).toHaveBeenCalledWith('stale-chunk-reload', {
+      chunkUrl: APP_CHUNK
+    })
   })
 
-  it('installChunkReload reloads on an unhandledrejection ChunkLoadError', () => {
+  it('does NOT reload on a vite:preloadError for an /extensions/ asset', () => {
+    installChunkReload()
+    window.dispatchEvent(preloadErrorEvent(EXTENSION_CHUNK))
+
+    // Missing custom-node assets are not stale — a reload can't fix them, and
+    // they dominate preloadError volume, so recovery must not fire for them.
+    expect(reloadSpy).not.toHaveBeenCalled()
+    expect(addAction).not.toHaveBeenCalled()
+  })
+
+  it('reloads on an unhandledrejection ChunkLoadError for an app chunk', () => {
     installChunkReload()
 
-    const reason = new Error('boom')
+    const reason = new Error(
+      `Failed to fetch dynamically imported module: ${APP_CHUNK}`
+    )
     reason.name = 'ChunkLoadError'
     const event = new Event('unhandledrejection') as Event & { reason: unknown }
     event.reason = reason
@@ -134,7 +155,19 @@ describe('chunkReload', () => {
     expect(reloadSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('installChunkReload ignores unrelated unhandledrejections', () => {
+  it('ignores an unhandledrejection for an /extensions/ asset', () => {
+    installChunkReload()
+
+    const event = new Event('unhandledrejection') as Event & { reason: unknown }
+    event.reason = new Error(
+      `Failed to fetch dynamically imported module: ${EXTENSION_CHUNK}`
+    )
+    window.dispatchEvent(event)
+
+    expect(reloadSpy).not.toHaveBeenCalled()
+  })
+
+  it('ignores unrelated unhandledrejections', () => {
     installChunkReload()
 
     const event = new Event('unhandledrejection') as Event & { reason: unknown }
