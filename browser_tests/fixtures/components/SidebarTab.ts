@@ -300,6 +300,7 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly searchInput: Locator
   public readonly settingsButton: Locator
   public readonly filterButton: Locator
+  public readonly filterSearchInput: Locator
 
   // --- Filter menu (cloud-only) ---
   public readonly mediaTypeFilterMenuItem: Locator
@@ -356,6 +357,7 @@ export class AssetsSidebarTab extends SidebarTab {
     this.searchInput = page.getByPlaceholder('Search Assets...')
     this.settingsButton = page.getByRole('button', { name: 'View settings' })
     this.filterButton = page.getByRole('button', { name: 'Filter by' })
+    this.filterSearchInput = page.getByRole('textbox', { name: 'Filter by' })
     this.mediaTypeFilterMenuItem = page.getByRole('menuitem', {
       name: /Media type/
     })

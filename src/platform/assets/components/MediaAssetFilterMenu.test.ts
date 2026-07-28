@@ -129,6 +129,35 @@ describe('MediaAssetFilterMenu', () => {
     expect(screen.getByRole('menu', { name: 'Filter by' })).toBeVisible()
   })
 
+  it('navigates matching options and toggles the focused result', async () => {
+    const { onDateUpdate, user } = renderMenu()
+    await openMenu(user)
+
+    const searchInput = screen.getByRole('textbox', { name: 'Filter by' })
+    await user.type(searchInput, 'past')
+
+    const pastWeek = screen.getByRole('menuitemcheckbox', {
+      name: 'Past 7 days'
+    })
+    const pastMonth = screen.getByRole('menuitemcheckbox', {
+      name: 'Past 30 days'
+    })
+
+    await user.keyboard('{ArrowDown}')
+    expect(pastWeek).toHaveFocus()
+
+    await user.keyboard('{ArrowDown}')
+    expect(pastMonth).toHaveFocus()
+
+    await user.keyboard('{ArrowUp}')
+    expect(pastWeek).toHaveFocus()
+
+    await user.keyboard('{Enter}')
+
+    expect(onDateUpdate).toHaveBeenCalledWith('week')
+    expect(screen.getByRole('menu', { name: 'Filter by' })).toBeVisible()
+  })
+
   it('shows an empty state when no filter options match', async () => {
     const { user } = renderMenu()
     await openMenu(user)
