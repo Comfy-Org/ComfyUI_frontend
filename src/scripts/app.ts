@@ -29,8 +29,14 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
+import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
+import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
 import type {
+  ExecutionContext,
+  WorkflowExecutionContext,
+  WorkflowExecutionIntent,
   WorkflowOpenSource,
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
@@ -117,6 +123,7 @@ import {
   verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
 
+import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import {
   collectAllNodes,
@@ -1677,6 +1684,7 @@ export class ComfyApp {
     this.processingQueue = true
     const executionStore = useExecutionStore()
     const executionErrorStore = useExecutionErrorStore()
+    const telemetry = useTelemetry()
     executionErrorStore.clearAllErrors()
     let queueResultOverride: boolean | null = null
 
@@ -1686,15 +1694,37 @@ export class ComfyApp {
 
     try {
       while (this.queueItems.length) {
-        const { number, batchCount, queueNodeIds, requestId } =
-          this.queueItems.pop()!
+        const {
+          number,
+          batchCount,
+          queueNodeIds,
+          requestId,
+          workflowQueueIntent
+        } = this.queueItems.pop()!
         let queuedCount = 0
+        const workflowExecutionIntent: WorkflowExecutionIntent = {
+          trigger_source: normalizeExecutionTriggerSource(
+            workflowQueueIntent?.trigger_source
+          )
+        }
         const previewMethod = useSettingStore().get(
           'Comfy.Execution.PreviewMethod'
         )
 
         const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
+          let executionContext: ExecutionContext | undefined
+          if (telemetry) {
+            try {
+              executionContext = getExecutionContext()
+            } catch (error) {
+              console.error(
+                '[Telemetry] Workflow context collection failed',
+                error
+              )
+            }
+          }
+
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
@@ -1711,8 +1741,27 @@ export class ComfyApp {
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
           const startTime = performance.now()
-          const p = await this.graphToPrompt(this.rootGraph)
+          const p = await this.graphToPrompt(this.rootGraph).catch(
+            (error: unknown) => {
+              telemetry?.trackExecutionOutcome({
+                startTime,
+                endTime: performance.now(),
+                success: false,
+                failureReason: 'prompt_build_failed',
+                ...workflowExecutionIntent
+              })
+              throw error
+            }
+          )
           const queuedNodes = collectAllNodes(this.rootGraph)
+          let workflowContext: WorkflowExecutionContext | undefined
+          if (executionContext) {
+            workflowContext = toWorkflowExecutionContext(executionContext, {
+              executableNodeCount: Object.keys(p.output).length,
+              executionScope: isPartialExecution ? 'partial' : 'full',
+              viewMode: getWorkflowMode(queuedWorkflow)
+            })
+          }
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
@@ -1720,8 +1769,19 @@ export class ComfyApp {
               partialExecutionTargets: queueNodeIds,
               previewMethod
             })
+            const responseReceivedAt = performance.now()
             delete api.authToken
             delete api.apiKey
+            if (!res.prompt_id) {
+              telemetry?.trackExecutionOutcome({
+                startTime,
+                endTime: responseReceivedAt,
+                success: false,
+                failureReason: 'submission_rejected',
+                ...workflowExecutionIntent,
+                ...(workflowContext && { workflowContext })
+              })
+            }
             executionErrorStore.recordNodeErrors(res.node_errors ?? null)
             queueResultOverride = null
             try {
@@ -1731,7 +1791,10 @@ export class ComfyApp {
                   nodes: Object.keys(p.output),
                   promptOutput: p.output,
                   startTime,
-                  workflow: queuedWorkflow
+                  submissionAcceptedAt: responseReceivedAt,
+                  workflow: queuedWorkflow,
+                  workflowContext,
+                  workflowExecutionIntent
                 })
               }
             } catch (error) {
@@ -1747,6 +1810,17 @@ export class ComfyApp {
               this.canvas.draw(true, true)
             }
           } catch (error: unknown) {
+            telemetry?.trackExecutionOutcome({
+              startTime,
+              endTime: performance.now(),
+              success: false,
+              failureReason:
+                error instanceof PromptExecutionError
+                  ? 'submission_rejected'
+                  : 'submission_failed',
+              ...workflowExecutionIntent,
+              ...(workflowContext && { workflowContext })
+            })
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&
               Object.keys(error.response.node_errors ?? {}).length > 0
