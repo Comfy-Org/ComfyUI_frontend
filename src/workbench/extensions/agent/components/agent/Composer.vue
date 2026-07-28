@@ -13,6 +13,8 @@ import {
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import { useComposer } from '../../composables/agent/useComposer'
@@ -151,7 +153,7 @@ defineExpose({
     <div class="flex items-center justify-between px-3 py-2">
       <DropdownMenuRoot>
         <DropdownMenuTrigger
-          v-tooltip.top="{ value: t('agent.addToPrompt'), showDelay: 300 }"
+          v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
           :aria-label="t('agent.addToPrompt')"
           class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
         >
