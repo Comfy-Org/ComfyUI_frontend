@@ -152,7 +152,9 @@ vi.mock('@/components/common/TreeExplorer.vue', async () => {
 vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
   default: {
     name: 'SearchInput',
-    template: '<input data-testid="search-input" @input="onInput" />',
+    template:
+      '<input data-testid="search-input" @input="onInput" />' +
+      '<input data-testid="search-input-raw" @input="onRawInput" />',
     props: ['modelValue', 'placeholder'],
     emits: ['update:modelValue', 'search'],
     setup(
@@ -171,6 +173,12 @@ vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
           const value = (event.target as HTMLInputElement).value
           emit('update:modelValue', value)
           emit('search', value)
+        },
+        // A keystroke the real SearchInput has not yet debounced into a
+        // `search` emit: only the model value updates.
+        onRawInput: (event: Event) => {
+          const value = (event.target as HTMLInputElement).value
+          emit('update:modelValue', value)
         }
       }
     }
@@ -325,6 +333,30 @@ describe('ModelLibrarySidebarTab', () => {
 
       expect(leafLabels()).toEqual(['model', 'model-new'])
     })
+
+    it('leaves the tree untouched until the debounced search event fires', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+      await nextTick()
+
+      // Raw keystrokes update the input model only; a non-matching query
+      // would empty the tree if it drove the derivation directly.
+      await user.type(screen.getByTestId('search-input-raw'), 'zzz')
+      await nextTick()
+
+      const leafLabels = () => {
+        const { children: folders = [] } = getRoot()
+        return folders.flatMap(({ children: leaves = [] }) =>
+          leaves.map((leaf) => leaf.label)
+        )
+      }
+      expect(leafLabels()).toEqual(['model'])
+
+      await user.type(screen.getByTestId('search-input'), 'zzz')
+      await nextTick()
+
+      expect(leafLabels()).toEqual([])
+    })
   })
 
   describe('search scale limits', () => {
@@ -399,7 +431,10 @@ describe('ModelLibrarySidebarTab', () => {
       await nextTick()
 
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'sideToolbar.modelLibraryLoadFailed'
+        })
       )
       error.mockRestore()
     })

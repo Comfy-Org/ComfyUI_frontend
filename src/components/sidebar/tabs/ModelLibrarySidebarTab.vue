@@ -11,7 +11,7 @@
         <i class="icon-[lucide--refresh-cw] size-4" />
       </Button>
       <Button
-        v-if="!usesAssetAPI"
+        v-if="!usesAssetApi"
         v-tooltip.bottom="$t('g.loadAllFolders')"
         variant="muted-textonly"
         size="icon"
@@ -33,7 +33,11 @@
           "
           @search="handleSearch"
         />
-        <p v-if="searchResults.capped" class="mx-2 my-1 text-xs text-muted">
+        <p
+          v-if="searchResults.capped"
+          role="status"
+          class="mx-2 my-1 text-xs text-muted"
+        >
           {{
             $t('sideToolbar.searchResultsCapped', {
               limit: SEARCH_RESULT_LIMIT
@@ -49,6 +53,7 @@
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
         class="model-lib-tree-explorer"
+        :aria-label="$t('sideToolbar.modelLibrary')"
         :root="renderedRoot"
       >
         <template #node="{ node }">
@@ -89,12 +94,18 @@ const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
 const toastStore = useToastStore()
 const { t } = useI18n()
-const usesAssetAPI = computed(() =>
+const usesAssetApi = computed(() =>
   settingStore.get('Comfy.Assets.UseAssetAPI')
 )
 const assetDownloadStore = useAssetDownloadStore()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
+/**
+ * The committed query the tree derives from. SearchInput debounces its
+ * `search` emit, so the full recompute-and-mount cost of a query change runs
+ * once per typing pause instead of on every keystroke of `searchQuery`.
+ */
+const activeSearchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
@@ -106,7 +117,7 @@ const SEARCH_RESULT_LIMIT = 500
 
 const searchResults = computed<{ models: ComfyModelDef[]; capped: boolean }>(
   () => {
-    const search = searchQuery.value.toLocaleLowerCase()
+    const search = activeSearchQuery.value.toLocaleLowerCase()
     if (!search) return { models: [], capped: false }
     const matches: ComfyModelDef[] = []
     for (const model of modelStore.models) {
@@ -121,6 +132,7 @@ const searchResults = computed<{ models: ComfyModelDef[]; capped: boolean }>(
 )
 
 const handleSearch = async (query: string) => {
+  activeSearchQuery.value = query
   if (!query) {
     expandedKeys.value = {}
     return
@@ -133,7 +145,7 @@ const handleSearch = async (query: string) => {
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
 const root = computed<TreeNode>(() => {
-  const allNodes: ModelOrFolder[] = searchQuery.value
+  const allNodes: ModelOrFolder[] = activeSearchQuery.value
     ? searchResults.value.models
     : [...modelStore.visibleModelFolders, ...modelStore.models]
   return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
@@ -141,16 +153,15 @@ const root = computed<TreeNode>(() => {
   )
 })
 
+// Expansion runs from handleSearch when the QUERY commits, never on root
+// recomputes: a background reload during an active search must neither
+// re-expand folders the user collapsed nor pay a full expand-and-mount pass
+// per folder commit.
 async function expandSearchResults() {
-  if (!searchQuery.value) return
+  if (!activeSearchQuery.value) return
   await nextTick()
   expandNode(root.value)
 }
-
-// Expand results when the QUERY changes, not on every root recompute: a
-// background reload during an active search must neither re-expand folders
-// the user collapsed nor pay a full expand-and-mount pass per folder commit.
-watch(searchQuery, expandSearchResults)
 
 const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
@@ -251,7 +262,7 @@ onMounted(async () => {
   // loading is cheap and keeps search and folder badges complete from the
   // start; AutoLoadAll remains the opt-in for the request-per-folder legacy path.
   if (
-    usesAssetAPI.value ||
+    usesAssetApi.value ||
     settingStore.get('Comfy.ModelLibrary.AutoLoadAll')
   ) {
     await withLoadFailureToast(() => modelStore.loadModels())
