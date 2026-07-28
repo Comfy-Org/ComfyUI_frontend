@@ -590,6 +590,55 @@ describe('LGraphNode', () => {
     })
   })
 
+  describe('addCustomWidget', () => {
+    test('rejects registering the same widget instance twice', () => {
+      vi.stubEnv('DEV', true)
+      try {
+        const testNode = new LGraphNode('TestNode')
+        const widget = testNode.addWidget('number', 'value', 1, null)
+
+        expect(() => testNode.addCustomWidget(widget)).toThrow(
+          /already registered/
+        )
+        expect(testNode.widgets).toHaveLength(1)
+      } finally {
+        vi.unstubAllEnvs()
+      }
+    })
+  })
+
+  describe('removeInput', () => {
+    test('rejects an out-of-bounds slot', () => {
+      vi.stubEnv('DEV', true)
+      try {
+        const testNode = new LGraphNode('TestNode')
+        testNode.addInput('input1', 'number')
+
+        expect(() => testNode.removeInput(-1)).toThrow(/out of bounds/)
+        expect(() => testNode.removeInput(1)).toThrow(/out of bounds/)
+        expect(testNode.inputs).toHaveLength(1)
+      } finally {
+        vi.unstubAllEnvs()
+      }
+    })
+  })
+
+  describe('removeOutput', () => {
+    test('rejects an out-of-bounds slot', () => {
+      vi.stubEnv('DEV', true)
+      try {
+        const testNode = new LGraphNode('TestNode')
+        testNode.addOutput('output1', 'number')
+
+        expect(() => testNode.removeOutput(-1)).toThrow(/out of bounds/)
+        expect(() => testNode.removeOutput(1)).toThrow(/out of bounds/)
+        expect(testNode.outputs).toHaveLength(1)
+      } finally {
+        vi.unstubAllEnvs()
+      }
+    })
+  })
+
   describe('getInputSlotPos', () => {
     let inputSlot: INodeInputSlot
 

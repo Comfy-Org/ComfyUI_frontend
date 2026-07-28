@@ -1,5 +1,6 @@
 import { pull } from 'es-toolkit/compat'
 
+import { assert } from '@/base/assert'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
@@ -79,6 +80,11 @@ export class SubgraphOutput extends SubgraphSlot {
 
     // Add to graph links list
     subgraph._links.set(link.id, link)
+
+    assert(
+      this.linkIds.length <= 1,
+      `SubgraphOutput.connect: output "${this.name}" has ${this.linkIds.length} existing links before assigning a new one - a subgraph output must have at most one connection`
+    )
 
     // Set link ID in each slot
     this.linkIds[0] = link.id

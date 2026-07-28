@@ -65,6 +65,78 @@ describe('layoutStore CRDT operations', () => {
     expect(nodeRef.value).toEqual(layout)
   })
 
+  it('rejects creating a node that already exists', () => {
+    const nodeId = toNodeId('test-node-duplicate')
+    const layout = createTestNode(nodeId)
+    const createOperation: LayoutOperation = {
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    }
+
+    layoutStore.applyOperation(createOperation)
+
+    vi.stubEnv('DEV', true)
+    try {
+      expect(() => layoutStore.applyOperation(createOperation)).toThrow(
+        /already exists/
+      )
+    } finally {
+      vi.unstubAllEnvs()
+    }
+
+    // The existing layout must not have been overwritten
+    expect(layoutStore.getNodeLayoutRef(nodeId).value).toEqual(layout)
+  })
+
+  it('rejects moving a node that is not registered', () => {
+    const nodeId = toNodeId('test-node-unregistered-move')
+
+    vi.stubEnv('DEV', true)
+    try {
+      expect(() =>
+        layoutStore.applyOperation({
+          type: 'moveNode',
+          entity: 'node',
+          nodeId,
+          position: { x: 1, y: 2 },
+          previousPosition: { x: 0, y: 0 },
+          timestamp: Date.now(),
+          source: LayoutSource.External,
+          actor: 'test'
+        })
+      ).toThrow(/not registered/)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('rejects resizing a node that is not registered', () => {
+    const nodeId = toNodeId('test-node-unregistered-resize')
+
+    vi.stubEnv('DEV', true)
+    try {
+      expect(() =>
+        layoutStore.applyOperation({
+          type: 'resizeNode',
+          entity: 'node',
+          nodeId,
+          size: { width: 10, height: 10 },
+          previousSize: { width: 1, height: 1 },
+          timestamp: Date.now(),
+          source: LayoutSource.External,
+          actor: 'test'
+        })
+      ).toThrow(/not registered/)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('should move nodes', () => {
     const nodeId = toNodeId('test-node-2')
     const layout = createTestNode(nodeId)

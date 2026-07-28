@@ -1,5 +1,6 @@
 import { toValue } from 'vue'
 
+import { assert } from '@/base/assert'
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
   calculateInputSlotPosFromSlot,
@@ -1726,11 +1727,18 @@ export class LGraphNode
    * remove an existing output slot
    */
   removeOutput(slot: number): void {
+    const { outputs } = this
+    const isValidSlot = slot >= 0 && slot < outputs.length
+    assert(
+      isValidSlot,
+      `LGraphNode.removeOutput: slot ${slot} is out of bounds for node "${this.type}" (id: ${this.id}) with ${outputs.length} outputs`
+    )
+    if (!isValidSlot) return
+
     // Only disconnect if node is part of a graph
     if (this.graph) {
       this.disconnectOutput(slot)
     }
-    const { outputs } = this
     outputs.splice(slot, 1)
 
     for (let i = slot; i < outputs.length; ++i) {
@@ -1782,11 +1790,18 @@ export class LGraphNode
    * remove an existing input slot
    */
   removeInput(slot: number): void {
+    const { inputs } = this
+    const isValidSlot = slot >= 0 && slot < inputs.length
+    assert(
+      isValidSlot,
+      `LGraphNode.removeInput: slot ${slot} is out of bounds for node "${this.type}" (id: ${this.id}) with ${inputs.length} inputs`
+    )
+    if (!isValidSlot) return
+
     // Only disconnect if node is part of a graph
     if (this.graph) {
       this.disconnectInput(slot, true)
     }
-    const { inputs } = this
     const slot_info = inputs.splice(slot, 1)
 
     for (let i = slot; i < inputs.length; ++i) {
@@ -2064,6 +2079,14 @@ export class LGraphNode
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
+
+    const isDuplicateWidget = this.widgets.includes(widget)
+    assert(
+      !isDuplicateWidget,
+      `LGraphNode.addCustomWidget: widget "${widget.name}" is already registered on node "${this.type}" (id: ${this.id}) - refusing to add the same widget instance again`
+    )
+    if (isDuplicateWidget) return widget
+
     this.widgets.push(widget)
     this._widgetSlotsDirty = true
 

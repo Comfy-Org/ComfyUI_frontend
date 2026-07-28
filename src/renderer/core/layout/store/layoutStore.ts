@@ -9,6 +9,7 @@ import { computed, customRef, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
+import { assert } from '@/base/assert'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -1029,9 +1030,11 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     const { nodeId } = operation
     const ynode = this.ynodes.get(String(nodeId))
-    if (!ynode) {
-      return
-    }
+    assert(
+      !!ynode,
+      `LayoutStore.moveNode: node ${nodeId} is not registered in the layout store - cannot position an unregistered node`
+    )
+    if (!ynode) return
 
     const size = yNodeToLayout(ynode).size
     const newBounds = {
@@ -1058,6 +1061,10 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     const { nodeId } = operation
     const ynode = this.ynodes.get(String(nodeId))
+    assert(
+      !!ynode,
+      `LayoutStore.resizeNode: node ${nodeId} is not registered in the layout store - cannot resize an unregistered node`
+    )
     if (!ynode) return
 
     const position = yNodeToLayout(ynode).position
@@ -1096,8 +1103,16 @@ class LayoutStoreImpl implements LayoutStore {
     change: LayoutChange
   ): void {
     const { nodeId } = operation
+    const nodeKey = String(nodeId)
+    const isDuplicate = this.ynodes.has(nodeKey)
+    assert(
+      !isDuplicate,
+      `LayoutStore.createNode: node ${nodeId} already exists in the layout store - refusing to overwrite its existing layout`
+    )
+    if (isDuplicate) return
+
     const ynode = layoutToYNode(operation.layout)
-    this.ynodes.set(String(nodeId), ynode)
+    this.ynodes.set(nodeKey, ynode)
 
     // Add to spatial index
     this.spatialIndex.insert(nodeId, operation.layout.bounds)
