@@ -1,7 +1,7 @@
 <template>
   <div
     role="tablist"
-    :class="cn('flex w-full items-center gap-2', props.class)"
+    :class="cn('flex w-full items-center gap-2', customClass)"
   >
     <slot />
   </div>
@@ -14,7 +14,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { TAB_LIST_INJECTION_KEY } from './tabKeys'
 
-const props = defineProps<{ class?: string }>()
+const { class: customClass = '' } = defineProps<{ class?: string }>()
 
 const modelValue = defineModel<T>({ required: true })
 
