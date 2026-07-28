@@ -22,6 +22,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import {
+  forgetIdentity,
   isSameUserAsRemembered,
   isVoluntarySignOutInProgress
 } from '@/platform/auth/session/sessionExpiry'
@@ -71,6 +72,7 @@ export function useWorkflowPersistenceV2() {
   onUserLogout(() => {
     if (isCloud && isVoluntarySignOutInProgress()) {
       clearAllV2Storage()
+      forgetIdentity()
     }
   })
 

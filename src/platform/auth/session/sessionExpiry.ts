@@ -89,6 +89,16 @@ export function rememberIdentity(uid: string, providerId?: string): void {
   }
 }
 
+/** Drops the remembered identity, so nothing is inherited by the next user. */
+export function forgetIdentity(): void {
+  rememberedIdentity = null
+  try {
+    localStorage.removeItem(LAST_SIGNED_IN_UID_KEY)
+  } catch {
+    // Nothing to forget if storage is unavailable.
+  }
+}
+
 /**
  * Whether locally persisted work belongs to whoever just signed in.
  *
@@ -124,6 +134,15 @@ export function beginVoluntarySignOut(): void {
 
 export function endVoluntarySignOut(): void {
   voluntarySignOutDepth = Math.max(0, voluntarySignOutDepth - 1)
+  if (voluntarySignOutDepth > 0) return
+
+  try {
+    // Leaving it behind would make a genuine expiry in the next few seconds
+    // look deliberate: no banner, no short-circuit, and the drafts wiped.
+    localStorage.removeItem(VOLUNTARY_SIGN_OUT_KEY)
+  } catch {
+    // The timestamp window is the backstop when storage is unavailable.
+  }
 }
 
 export function isVoluntarySignOutInProgress(): boolean {

@@ -58,19 +58,50 @@ describe('suspendSession', () => {
     expect(isSessionSuspended()).toBe(false)
   })
 
-  it('counts nested deliberate sign-outs', async () => {
+  it('keeps the reactive mirror in step, since the banner binds to it', async () => {
+    const { suspendSession, resumeSession, sessionSuspended } =
+      await loadSessionExpiry()
+
+    expect(sessionSuspended.value).toBe(false)
+    suspendSession()
+    expect(sessionSuspended.value).toBe(true)
+    resumeSession()
+    expect(sessionSuspended.value).toBe(false)
+  })
+
+  it('stays armed until the outermost deliberate sign-out completes', async () => {
+    const {
+      beginVoluntarySignOut,
+      endVoluntarySignOut,
+      isVoluntarySignOutInProgress
+    } = await loadSessionExpiry()
+
+    beginVoluntarySignOut()
+    beginVoluntarySignOut()
+    endVoluntarySignOut()
+    expect(isVoluntarySignOutInProgress()).toBe(true)
+
+    endVoluntarySignOut()
+    expect(isVoluntarySignOutInProgress()).toBe(false)
+
+    // An unbalanced release must not drive the count negative and permanently
+    // disarm the guard.
+    endVoluntarySignOut()
+    beginVoluntarySignOut()
+    expect(isVoluntarySignOutInProgress()).toBe(true)
+  })
+
+  it('releases the guard so a genuine expiry moments later still suspends', async () => {
     const { beginVoluntarySignOut, endVoluntarySignOut } =
       await loadSessionExpiry()
 
     beginVoluntarySignOut()
-    beginVoluntarySignOut()
-    endVoluntarySignOut()
-    endVoluntarySignOut()
     endVoluntarySignOut()
 
-    // Floors at zero, so an unbalanced release cannot drive it negative and
-    // permanently disarm the guard.
-    expect(localStorage.getItem('Comfy.Cloud.VoluntarySignOut')).not.toBeNull()
+    // A sibling tab reads the same shared marker.
+    const sibling = await loadSessionExpiry()
+
+    expect(sibling.isVoluntarySignOutInProgress()).toBe(false)
   })
 
   it('tells a sibling tab that this sign-out was deliberate', async () => {

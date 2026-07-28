@@ -650,6 +650,11 @@ describe('persisted work across a session change', () => {
     authHooks.onResolved.length = 0
     localStorage.clear()
     vi.mocked(clearAllV2Storage).mockClear()
+    // The real sessionExpiry module is a singleton; without releasing the
+    // bracket, one test's deliberate sign-out makes the next test's expiry look
+    // deliberate — the exact defect these tests exist to catch.
+    sessionExpiry.endVoluntarySignOut()
+    sessionExpiry.forgetIdentity()
     setActivePinia(createTestingPinia({ stubActions: false }))
 
     // The composable calls useI18n, so it needs a real setup context.
@@ -701,7 +706,9 @@ describe('persisted work across a session change', () => {
   })
 
   it('keeps drafts on a cold start, when no previous identity is known', () => {
-    fireResolved('uid-a')
+    // Nothing remembered and nothing persisted: the reset in beforeEach is what
+    // makes this a real cold start rather than a leftover from an earlier test.
+    fireResolved('uid-z')
 
     expect(clearAllV2Storage).not.toHaveBeenCalled()
   })
