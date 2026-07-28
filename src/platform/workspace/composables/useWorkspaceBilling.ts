@@ -334,7 +334,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       await workspaceApi.resubscribe()
-      await Promise.all([fetchStatus(), fetchBalance()])
+      await Promise.allSettled([fetchStatus(), fetchBalance()])
     } catch (err) {
       if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
         // Mirrors the success path, which refreshes balance too. allSettled,
