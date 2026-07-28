@@ -194,7 +194,7 @@ describe('launchCancellationFlow', () => {
       showFallback
     })
 
-    expect(mocks.cancelSubscription).toHaveBeenCalledOnce()
+    expect(mocks.cancelSubscription).toHaveBeenCalledWith('workspace-1')
     expect(mocks.fetchStatus).toHaveBeenCalledOnce()
     expect(mocks.trackCancellation).toHaveBeenNthCalledWith(1, 'flow_opened', {
       source: 'cancel_plan_menu',

@@ -295,7 +295,7 @@ describe('CancelSubscriptionDialogContent', () => {
       mockSubscription.value = null
       mockCancelSubscription.mockResolvedValueOnce(undefined)
 
-      renderComponent()
+      renderComponent({ expectedWorkspaceId: 'workspace-1' })
       await userEvent.click(
         screen.getByRole('button', { name: /^cancel subscription$/i })
       )
@@ -305,6 +305,7 @@ describe('CancelSubscriptionDialogContent', () => {
           key: 'cancel-subscription'
         })
       )
+      expect(mockCancelSubscription).toHaveBeenCalledWith('workspace-1')
       expect(mockFetchStatus).toHaveBeenCalled()
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'success' })

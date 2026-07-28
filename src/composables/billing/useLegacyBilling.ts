@@ -168,7 +168,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
     await legacyManageSubscription()
   }
 
-  async function cancelSubscription(): Promise<void> {
+  async function cancelSubscription(
+    _expectedWorkspaceId?: string
+  ): Promise<void> {
     await legacyManageSubscription()
   }
 

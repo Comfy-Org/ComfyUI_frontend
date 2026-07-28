@@ -18,6 +18,7 @@ import {
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import type {
   BalanceInfo,
@@ -298,14 +299,29 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function cancelSubscription(): Promise<void> {
+  async function cancelSubscription(
+    expectedWorkspaceId?: string
+  ): Promise<void> {
     isLoading.value = true
     error.value = null
+    let operationWorkspaceId: string | null = null
     try {
-      const response = await workspaceApi.cancelSubscription()
+      const workspaceId =
+        expectedWorkspaceId ?? workspaceStore.activeWorkspaceId
+      if (!workspaceId || workspaceStore.activeWorkspaceId !== workspaceId) {
+        throw new Error('Active workspace changed during cancellation')
+      }
+      operationWorkspaceId = workspaceId
+      const authHeader = await useAuthStore().getAuthHeaderOrThrow()
+      const response = await workspaceApi.cancelSubscription(
+        undefined,
+        authHeader
+      )
       const operation = await billingOperationStore.startOperation(
         response.billing_op_id,
-        'cancel'
+        'cancel',
+        undefined,
+        { workspaceId, authHeader }
       )
 
       if (operation.status !== 'succeeded') {
@@ -315,7 +331,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       }
     } catch (err) {
       if (isAlreadyInRequestedState(err, 'ALREADY_CANCELED')) {
-        await resyncQuietly(fetchStatus)
+        if (operationWorkspaceId) {
+          workspaceStore.setWorkspaceSubscribed(operationWorkspaceId, false)
+        }
+        if (workspaceStore.activeWorkspaceId === operationWorkspaceId) {
+          await resyncQuietly(fetchStatus)
+        }
         // fetchStatus records its own read failure; the cancellation still
         // holds, so the operation is not in error.
         error.value = null

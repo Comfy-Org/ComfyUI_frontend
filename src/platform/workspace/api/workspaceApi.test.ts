@@ -518,15 +518,22 @@ describe('workspaceApi', () => {
 
     it('cancelSubscription() sends POST with idempotency_key', async () => {
       const data = { billing_op_id: 'op-2', cancel_at: '2026-05-01' }
+      const operationHeader = {
+        Authorization: 'Bearer workspace-token' as const
+      }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.cancelSubscription('key-1')
+      const result = await workspaceApi.cancelSubscription(
+        'key-1',
+        operationHeader
+      )
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/subscription/cancel',
         { idempotency_key: 'key-1' },
-        { headers: AUTH_HEADER }
+        { headers: operationHeader }
       )
+      expect(mockGetAuthHeaderOrThrow).not.toHaveBeenCalled()
       expect(result).toEqual(data)
     })
 
@@ -608,16 +615,23 @@ describe('workspaceApi', () => {
         status: 'succeeded',
         started_at: '2026-01-01'
       }
+      const operationHeader = {
+        Authorization: 'Bearer workspace-token' as const
+      }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingOpStatus('op-1')
+      const result = await workspaceApi.getBillingOpStatus(
+        'op-1',
+        operationHeader
+      )
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/ops/op-1',
         {
-          headers: AUTH_HEADER
+          headers: operationHeader
         }
       )
+      expect(mockGetAuthHeaderOrThrow).not.toHaveBeenCalled()
       expect(result).toEqual(data)
     })
   })

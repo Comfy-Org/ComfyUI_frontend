@@ -248,6 +248,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     updateWorkspace(activeWorkspaceId.value, updates)
   }
 
+  function setWorkspaceSubscribed(workspaceId: string, isSubscribed: boolean) {
+    updateWorkspace(workspaceId, { isSubscribed })
+  }
+
   function setWorkspaceBillingRail(
     workspaceId: string,
     billingRail: BillingRail
@@ -940,6 +944,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     // Subscription
     subscribeWorkspace,
     updateActiveWorkspace,
+    setWorkspaceSubscribed,
     setWorkspaceBillingRail
   }
 })

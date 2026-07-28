@@ -298,8 +298,8 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.manageSubscription()
   }
 
-  async function cancelSubscription() {
-    return activeContext.value.cancelSubscription()
+  async function cancelSubscription(expectedWorkspaceId?: string) {
+    return activeContext.value.cancelSubscription(expectedWorkspaceId)
   }
 
   async function resubscribe() {

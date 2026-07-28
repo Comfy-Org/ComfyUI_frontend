@@ -124,11 +124,13 @@ async function runCancellationFlow(
         telemetry?.trackSubscriptionCancellation('confirmed', metadata)
         try {
           await withTimeout(
-            () => billing.cancelSubscription(),
+            () => billing.cancelSubscription(launchWorkspaceId),
             CANCELLATION_TIMEOUT_MS
           )
           didCancelSucceed = true
-          void billing.fetchStatus().catch(() => undefined)
+          if (isLaunchWorkspaceCurrent()) {
+            void billing.fetchStatus().catch(() => undefined)
+          }
           return { message: t('subscription.cancelSuccess') }
         } catch (error) {
           cancelError = error

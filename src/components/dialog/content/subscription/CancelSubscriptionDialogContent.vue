@@ -136,7 +136,7 @@ async function onConfirmCancel() {
   telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
   isLoading.value = true
   try {
-    await cancelSubscription()
+    await cancelSubscription(props.expectedWorkspaceId)
   } catch (error) {
     const errorMessage = getErrorMessage(error)
     if (!shouldUseWorkspaceBilling.value) {
@@ -152,10 +152,15 @@ async function onConfirmCancel() {
   }
 
   didCancelSucceed.value = true
-  try {
-    await fetchStatus()
-  } catch {
-    // Cancellation already succeeded; stale local subscription status should not report failure.
+  if (
+    !props.expectedWorkspaceId ||
+    workspaceStore.activeWorkspaceId === props.expectedWorkspaceId
+  ) {
+    try {
+      await fetchStatus()
+    } catch {
+      // Cancellation already succeeded; stale local subscription status should not report failure.
+    }
   }
   dialogStore.closeDialog({ key: 'cancel-subscription' })
   toast.add({

@@ -10,7 +10,7 @@ import type {
 } from '@/platform/workspace/workspaceTypes'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
-import type { UserId } from '@/types/authTypes'
+import type { AuthHeader, UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
@@ -704,9 +704,10 @@ export const workspaceApi = {
    * POST /api/billing/subscription/cancel
    */
   async cancelSubscription(
-    idempotencyKey?: string
+    idempotencyKey?: string,
+    authHeader?: AuthHeader
   ): Promise<CancelSubscriptionResponse> {
-    const headers = await getAuthHeaderOrThrow()
+    const headers = authHeader ?? (await getAuthHeaderOrThrow())
     try {
       const response =
         await workspaceApiClient.post<CancelSubscriptionResponse>(
@@ -833,8 +834,11 @@ export const workspaceApi = {
    * Get billing operation status
    * GET /api/billing/ops/:id
    */
-  async getBillingOpStatus(opId: string): Promise<BillingOpStatusResponse> {
-    const headers = await getAuthHeaderOrThrow()
+  async getBillingOpStatus(
+    opId: string,
+    authHeader?: AuthHeader
+  ): Promise<BillingOpStatusResponse> {
+    const headers = authHeader ?? (await getAuthHeaderOrThrow())
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
         api.apiURL(`/billing/ops/${opId}`),
