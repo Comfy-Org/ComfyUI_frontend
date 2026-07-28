@@ -23,6 +23,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
   const staged = ref<SelectedNode[]>([])
   const consumedSig = ref<string | null>(null)
   const stagedSig = ref<string | null>(null)
+  const dismissedSig = ref<string | null>(null)
 
   watch(
     () => (toValue(options.isLive) ? toValue(options.selection) : []),
@@ -31,9 +32,11 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
         staged.value = []
         consumedSig.value = null
         stagedSig.value = null
+        dismissedSig.value = null
         return
       }
       const sig = signature(nodes)
+      if (sig !== dismissedSig.value) dismissedSig.value = null
       if (sig === consumedSig.value || sig === stagedSig.value) return
       consumedSig.value = null
       stagedSig.value = sig
@@ -49,8 +52,19 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     return tags
   }
 
+  // Removing the last chip is an explicit "not this selection" - the live
+  // selection must not sneak back into the turn until it changes.
+  function dismissed(): boolean {
+    return (
+      dismissedSig.value !== null &&
+      dismissedSig.value === signature(toValue(options.selection))
+    )
+  }
+
   function remove(id: string): void {
     staged.value = staged.value.filter((node) => node.id !== id)
+    if (staged.value.length === 0)
+      dismissedSig.value = signature(toValue(options.selection))
   }
 
   function add(node: SelectedNode): void {
@@ -58,5 +72,5 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     staged.value = [...staged.value, node]
   }
 
-  return { staged, consume, remove, add }
+  return { staged, consume, dismissed, remove, add }
 }
