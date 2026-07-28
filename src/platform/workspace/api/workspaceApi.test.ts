@@ -276,6 +276,25 @@ describe('workspaceApi', () => {
       )
     })
 
+    it('resendInvite() sends POST /workspace/invites/:id/resend', async () => {
+      const invite = {
+        id: 'inv-1',
+        email: 'a@b.com',
+        invited_at: '2024-02-01T00:00:00Z',
+        expires_at: '2024-02-08T00:00:00Z'
+      }
+      mockAxiosInstance.post.mockResolvedValue({ data: invite })
+
+      const result = await workspaceApi.resendInvite('inv-1')
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/workspace/invites/inv-1/resend',
+        null,
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(invite)
+    })
+
     it('acceptInvite() uses firebase auth and POST /invites/:token/accept', async () => {
       const data = { workspace_id: 'ws-1', workspace_name: 'Team' }
       mockAxiosInstance.post.mockResolvedValue({ data })

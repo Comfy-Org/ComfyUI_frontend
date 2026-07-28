@@ -131,7 +131,11 @@ test.describe('MCP page @smoke', () => {
     await triggers.first().scrollIntoViewIfNeeded()
     await expect(triggers).toHaveCount(9)
 
-    await page.getByRole('button', { name: "What's the server URL?" }).click()
+    const question = page.getByRole('button', {
+      name: "What's the server URL?"
+    })
+    await question.click()
+    await expect(question).toHaveAttribute('aria-expanded', 'true')
     await expect(
       page.getByRole('link', { name: MCP_ENDPOINT, exact: true })
     ).toHaveAttribute('href', MCP_ENDPOINT)
