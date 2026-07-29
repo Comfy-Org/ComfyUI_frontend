@@ -2698,7 +2698,7 @@
     },
     "freePerks": {
       "maxRuntime": "{duration} max runtime",
-      "monthlyRuns": "{count} free runs per month"
+      "freeRuns": "{count} free runs"
     },
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",

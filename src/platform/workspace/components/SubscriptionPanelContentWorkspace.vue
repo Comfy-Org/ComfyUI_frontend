@@ -477,9 +477,9 @@ const tierBenefits = computed((): TierBenefit[] => {
       ...(freeRunsAllowance.value > 0
         ? [
             {
-              key: 'monthlyRuns',
+              key: 'freeRuns',
               type: 'feature' as const,
-              label: t('subscription.freePerks.monthlyRuns', {
+              label: t('subscription.freePerks.freeRuns', {
                 count: freeRunsAllowance.value
               })
             }
