@@ -55,12 +55,48 @@ describe('errorResponseFromBody', () => {
     })
   })
 
+  it('trims surrounding whitespace off a raw body', () => {
+    expect(errorResponseFromBody('  upstream error  ', 'fallback')).toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'upstream error'
+    })
+  })
+
+  it('caps the raw body at the length limit', () => {
+    expect(errorResponseFromBody('a'.repeat(500), 'fallback').message).toBe(
+      'a'.repeat(500)
+    )
+    expect(errorResponseFromBody('a'.repeat(501), 'fallback').message).toBe(
+      'fallback'
+    )
+  })
+
   it('falls back for an oversized raw body instead of dumping it', () => {
     const htmlPage = `<!DOCTYPE html>${'<p>Bad Gateway</p>'.repeat(100)}`
     expect(errorResponseFromBody(htmlPage, 'Bad Gateway')).toEqual({
       code: 'UNKNOWN_ERROR',
       message: 'Bad Gateway'
     })
+  })
+
+  it('keeps prose that merely mentions a bracketed token', () => {
+    expect(
+      errorResponseFromBody('connection to <backend-01> refused', 'fallback')
+        .message
+    ).toBe('connection to <backend-01> refused')
+  })
+
+  it('falls back for a short markup body instead of rendering it raw', () => {
+    for (const page of [
+      '<html><body>Unauthorized</body></html>',
+      '<!DOCTYPE html><title>502</title>',
+      '  </div>'
+    ]) {
+      expect(errorResponseFromBody(page, 'Bad Gateway')).toEqual({
+        code: 'UNKNOWN_ERROR',
+        message: 'Bad Gateway'
+      })
+    }
   })
 
   it('falls back for a blank-string body', () => {
@@ -156,6 +192,20 @@ describe('parseErrorResponse', () => {
       code: 'UNKNOWN_ERROR',
       message: 'upstream connect error'
     })
+  })
+
+  it('falls back for a body that parses to a JSON primitive', async () => {
+    for (const raw of ['42', 'null', 'true', '"   "']) {
+      const response = makeResponse({
+        text: async () => raw,
+        statusText: 'Bad Gateway',
+        status: 502
+      })
+      await expect(parseErrorResponse(response)).resolves.toEqual({
+        code: 'UNKNOWN_ERROR',
+        message: 'Bad Gateway'
+      })
+    }
   })
 
   it('falls back to statusText when the body is empty', async () => {

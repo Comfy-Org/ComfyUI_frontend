@@ -3,7 +3,7 @@ import { isPlainObject } from 'es-toolkit'
 import type { ErrorResponse } from '@comfyorg/ingest-types'
 
 /** Code reported when an error payload carries no machine-readable code. */
-const UNKNOWN_ERROR_CODE = 'UNKNOWN_ERROR'
+export const UNKNOWN_ERROR_CODE = 'UNKNOWN_ERROR'
 
 /**
  * Upper bound on a raw non-JSON body surfaced as the user-facing message.
@@ -12,6 +12,14 @@ const UNKNOWN_ERROR_CODE = 'UNKNOWN_ERROR'
  * status-derived fallback instead of dumping markup into a toast.
  */
 const MAX_RAW_MESSAGE_LENGTH = 500
+
+/**
+ * A body opening with a tag is a markup document, never a usable message —
+ * however short the page happens to be. Anchored so prose that merely
+ * mentions a bracketed token (e.g. "connection to <backend-01> refused")
+ * still surfaces.
+ */
+const MARKUP_DOCUMENT = /^<[a-z!/]/i
 
 /**
  * Coerce an already-parsed error body into the canonical
@@ -32,10 +40,13 @@ export function errorResponseFromBody(
 ): ErrorResponse {
   if (typeof body === 'string') {
     const trimmed = body.trim()
-    const usable = trimmed !== '' && trimmed.length <= MAX_RAW_MESSAGE_LENGTH
+    const usable =
+      trimmed !== '' &&
+      trimmed.length <= MAX_RAW_MESSAGE_LENGTH &&
+      !MARKUP_DOCUMENT.test(trimmed)
     return {
       code: UNKNOWN_ERROR_CODE,
-      message: usable ? body : fallbackMessage
+      message: usable ? trimmed : fallbackMessage
     }
   }
   const record: Record<PropertyKey, unknown> = isPlainObject(body) ? body : {}

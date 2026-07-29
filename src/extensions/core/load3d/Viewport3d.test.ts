@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Viewport3dDeps } from '@/extensions/core/load3d/Viewport3d'
 import { Viewport3d } from '@/extensions/core/load3d/Viewport3d'
 
 type CameraStub = {
@@ -13,6 +14,7 @@ type CameraStub = {
   getCurrentCameraType: ReturnType<typeof vi.fn>
   handleResize: ReturnType<typeof vi.fn>
   updateAspectRatio: ReturnType<typeof vi.fn>
+  dispose: ReturnType<typeof vi.fn>
   activeCamera: THREE.Camera
 }
 
@@ -48,6 +50,7 @@ function makeViewportInstance() {
     getCurrentCameraType: vi.fn(() => 'perspective' as const),
     handleResize: vi.fn(),
     updateAspectRatio: vi.fn(),
+    dispose: vi.fn(),
     activeCamera: new THREE.PerspectiveCamera()
   }
   const sceneManager: SceneStub = {
@@ -386,6 +389,143 @@ describe('Viewport3d', () => {
     })
   })
 
+  describe('clientPointToNdc', () => {
+    function installCanvas(rect: {
+      left: number
+      top: number
+      width: number
+      height: number
+    }) {
+      const canvas = document.createElement('canvas')
+      vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+        ...rect,
+        right: rect.left + rect.width,
+        bottom: rect.top + rect.height,
+        x: rect.left,
+        y: rect.top,
+        toJSON: () => ({})
+      } as DOMRect)
+      Object.assign(ctx.viewport, { view: { canvas } })
+    }
+
+    beforeEach(() => {
+      Object.assign(ctx.viewport, {
+        targetWidth: 100,
+        targetHeight: 100,
+        targetAspectRatio: 1,
+        isViewerMode: false
+      })
+    })
+
+    it('normalizes client coordinates against the canvas rect before letterbox mapping', () => {
+      installCanvas({ left: 100, top: 50, width: 400, height: 200 })
+
+      expect(ctx.viewport.clientPointToNdc(300, 150)).toEqual({
+        x: expect.closeTo(0),
+        y: expect.closeTo(0),
+        inside: true
+      })
+      expect(ctx.viewport.clientPointToNdc(150, 150)).toEqual({
+        x: expect.closeTo(-1.5),
+        y: expect.closeTo(0),
+        inside: false
+      })
+    })
+
+    it('returns null when the canvas has no layout size', () => {
+      installCanvas({ left: 0, top: 0, width: 0, height: 0 })
+
+      expect(ctx.viewport.clientPointToNdc(10, 10)).toBeNull()
+    })
+
+    it('maps the full canvas when no aspect ratio is maintained', () => {
+      installCanvas({ left: 100, top: 50, width: 400, height: 200 })
+      Object.assign(ctx.viewport, { targetWidth: 0, targetHeight: 0 })
+
+      expect(ctx.viewport.clientPointToNdc(100, 50)).toEqual({
+        x: expect.closeTo(-1),
+        y: expect.closeTo(1),
+        inside: true
+      })
+    })
+  })
+
+  describe('letterbox dimmer lifecycle', () => {
+    type DimmerInternals = {
+      dimLetterboxBars(
+        bars: { x: number; y: number; width: number; height: number }[]
+      ): void
+      disposeManagers(): void
+      letterboxDimmer: {
+        scene: THREE.Scene
+        camera: THREE.OrthographicCamera
+        geometry: THREE.PlaneGeometry
+        material: THREE.MeshBasicMaterial
+      } | null
+    }
+
+    it('does not create the dim overlay when there are no letterbox bars', () => {
+      const render = vi.fn()
+      Object.assign(ctx.viewport, {
+        view: {
+          renderer: { setViewport: vi.fn(), setScissor: vi.fn(), render }
+        }
+      })
+      const internals = ctx.viewport as unknown as DimmerInternals
+
+      internals.dimLetterboxBars([])
+
+      expect(render).not.toHaveBeenCalled()
+      expect(internals.letterboxDimmer ?? null).toBeNull()
+    })
+
+    it('renders each bar with a lazily created dim overlay', () => {
+      const setViewport = vi.fn()
+      const setScissor = vi.fn()
+      const render = vi.fn()
+      Object.assign(ctx.viewport, {
+        view: { renderer: { setViewport, setScissor, render } }
+      })
+      const internals = ctx.viewport as unknown as DimmerInternals
+
+      internals.dimLetterboxBars([
+        { x: 0, y: 0, width: 100, height: 20 },
+        { x: 0, y: 80, width: 100, height: 20 }
+      ])
+
+      const dimmer = internals.letterboxDimmer
+      expect(dimmer).not.toBeNull()
+      expect(setViewport).toHaveBeenNthCalledWith(1, 0, 0, 100, 20)
+      expect(setViewport).toHaveBeenNthCalledWith(2, 0, 80, 100, 20)
+      expect(render).toHaveBeenCalledTimes(2)
+      expect(render).toHaveBeenCalledWith(dimmer!.scene, dimmer!.camera)
+    })
+
+    it('disposeManagers disposes the dim overlay resources', () => {
+      Object.assign(ctx.viewport, {
+        view: {
+          renderer: {
+            setViewport: vi.fn(),
+            setScissor: vi.fn(),
+            render: vi.fn()
+          }
+        }
+      })
+      const internals = ctx.viewport as unknown as DimmerInternals
+
+      internals.dimLetterboxBars([{ x: 0, y: 0, width: 100, height: 20 }])
+      const dimmer = internals.letterboxDimmer!
+      const geometryDispose = vi.spyOn(dimmer.geometry, 'dispose')
+      const materialDispose = vi.spyOn(dimmer.material, 'dispose')
+
+      internals.disposeManagers()
+
+      expect(geometryDispose).toHaveBeenCalledOnce()
+      expect(materialDispose).toHaveBeenCalledOnce()
+      expect(internals.letterboxDimmer).toBeNull()
+    })
+  })
+
   describe('start / remove lifecycle', () => {
     beforeEach(() => {
       vi.useFakeTimers()
@@ -424,6 +564,88 @@ describe('Viewport3d', () => {
       vi.advanceTimersByTime(100)
 
       expect(ctx.forceRender).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('frame timing (constructed instance)', () => {
+    function makeConstructedViewport() {
+      const renderer = {
+        setViewport: vi.fn(),
+        setScissor: vi.fn(),
+        setScissorTest: vi.fn(),
+        setClearColor: vi.fn(),
+        clear: vi.fn(),
+        render: vi.fn()
+      }
+      const view = {
+        canvas: document.createElement('canvas'),
+        renderer,
+        width: 800,
+        height: 600,
+        state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
+        observeResize: vi.fn(),
+        beginRender: vi.fn(),
+        blit: vi.fn(),
+        setSize: vi.fn(),
+        dispose: vi.fn()
+      }
+      const controlsManager = { init: vi.fn(), update: vi.fn() }
+      const viewHelperManager = {
+        createViewHelper: vi.fn(),
+        init: vi.fn(),
+        update: vi.fn<(delta: number) => void>(),
+        render: vi.fn()
+      }
+      const deps = {
+        view,
+        eventManager: {
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          emitEvent: vi.fn()
+        },
+        sceneManager: {
+          init: vi.fn(),
+          scene: new THREE.Scene(),
+          renderBackground: vi.fn()
+        },
+        cameraManager: {
+          init: vi.fn(),
+          activeCamera: new THREE.PerspectiveCamera()
+        },
+        controlsManager,
+        lightingManager: { init: vi.fn() },
+        viewHelperManager
+      } as unknown as Viewport3dDeps
+
+      const viewport = new Viewport3d(document.createElement('div'), deps)
+      return { viewport, view, renderer, controlsManager, viewHelperManager }
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['performance'] })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('forceRender feeds elapsed time between frames to per-frame updates and renders the view', () => {
+      const { viewport, view, renderer, controlsManager, viewHelperManager } =
+        makeConstructedViewport()
+
+      viewport.forceRender()
+      vi.advanceTimersByTime(100)
+      viewport.forceRender()
+
+      const deltas = viewHelperManager.update.mock.calls.map(([delta]) => delta)
+      expect(deltas).toHaveLength(2)
+      expect(deltas[1]).toBeCloseTo(0.1)
+
+      expect(controlsManager.update).toHaveBeenCalledTimes(2)
+      expect(view.beginRender).toHaveBeenCalledTimes(2)
+      expect(renderer.render).toHaveBeenCalledTimes(2)
+      expect(view.blit).toHaveBeenCalledTimes(2)
+      expect(viewport.INITIAL_RENDER_DONE).toBe(true)
     })
   })
 })

@@ -2,6 +2,10 @@ import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  UNKNOWN_ERROR_CODE,
+  errorResponseFromBody
+} from '@/platform/remote/comfyui/errors'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -9,10 +13,10 @@ import type {
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
-import { errorResponseFromBody } from '@/platform/remote/comfyui/errors'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
+export type BillingRail = 'legacy_stripe' | 'stripe'
 
 interface Workspace {
   id: WorkspaceId
@@ -34,10 +38,14 @@ export interface Member {
   joined_at: string
   role: WorkspaceRole
   // True when this member is the workspace's original owner/creator
-  // (member.id == workspace.created_by_user_id). Gates the creator-only
-  // billing lifecycle actions (cancel / reactivate / downgrade).
+  // (member.id == workspace.created_by_user_id). Used for personal creator
+  // protections and Team-to-personal downgrade eligibility.
   // Optional: the cloud OpenAPI does not carry this field yet.
   is_original_owner?: boolean
+  // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
+  // neither usage nor limit yet; persistence and real usage land in FE-1278.
+  credits_used_this_month?: number
+  monthly_credit_limit?: number | null
 }
 
 interface PaginationInfo {
@@ -59,7 +67,6 @@ export interface ListMembersParams {
 export interface PendingInvite {
   id: WorkspaceInviteId
   email: string
-  token: string
   invited_at: string
   expires_at: string
 }
@@ -251,6 +258,9 @@ export type BillingStatus =
   | 'pending_payment'
   | 'paid'
   | 'payment_failed'
+  // A Stripe-paused subscription stays `active` on the activity axis; the pause
+  // is a payment-lifecycle fact. Not emitted until cloud#5075 ships.
+  | 'paused'
   | 'inactive'
 
 export interface CurrentTeamCreditStop {
@@ -261,6 +271,7 @@ export interface CurrentTeamCreditStop {
 
 export interface BillingStatusResponse {
   is_active: boolean
+  billing_rail?: BillingRail
   subscription_status?: BillingSubscriptionStatus
   subscription_tier?: SubscriptionTier
   subscription_duration?: SubscriptionDuration
@@ -325,7 +336,7 @@ interface GetBillingEventsParams {
   limit?: number
 }
 
-class WorkspaceApiError extends Error {
+export class WorkspaceApiError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
@@ -352,8 +363,17 @@ async function getAuthHeaderOrThrow() {
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
-    const { message } = errorResponseFromBody(err.response?.data, err.message)
-    throw new WorkspaceApiError(message, status)
+    const { code, message } = errorResponseFromBody(
+      err.response?.data,
+      err.message
+    )
+    // Callers compare `code` against server-defined values, so the parser's
+    // "no code reported" sentinel must stay out of that contract.
+    throw new WorkspaceApiError(
+      message,
+      status,
+      code === UNKNOWN_ERROR_CODE ? undefined : code
+    )
   }
   throw err
 }
@@ -545,6 +565,20 @@ export const workspaceApi = {
         api.apiURL(`/workspace/invites/${inviteId}`),
         { headers }
       )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async resendInvite(inviteId: WorkspaceInviteId): Promise<PendingInvite> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<PendingInvite>(
+        api.apiURL(`/workspace/invites/${encodeURIComponent(inviteId)}/resend`),
+        null,
+        { headers }
+      )
+      return response.data
     } catch (err) {
       handleAxiosError(err)
     }
