@@ -313,7 +313,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(
         strip,
         'The strip count is scoped to the selection, diverging from the global reference badge'
-      ).toContainText('1 error')
+      ).toContainText('1 issue')
 
       await comfyPage.canvas.click()
       await expect(
@@ -421,7 +421,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         TestIds.propertiesPanel.selectionContextStrip
       )
       await expect(strip).toBeVisible()
-      await expect(strip).toContainText('1 error')
+      await expect(strip).toContainText('1 issue')
       await expect(mediaRows).toHaveCount(2)
 
       await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
@@ -463,7 +463,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(missingNodeCard).toBeHidden()
       await expect(mediaRow).toBeVisible()
       await expect(mediaRow).toHaveAttribute('aria-current', 'true')
-      await expect(strip).toContainText('1 error')
+      await expect(strip).toContainText('1 issue')
 
       await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
       // Emphasis ends: the collapsed group re-expands and the strip
