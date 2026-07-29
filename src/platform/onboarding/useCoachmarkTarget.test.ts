@@ -58,24 +58,4 @@ describe('useCoachmarkTarget', () => {
     expect(api.targetEl.value).toBe(el)
     scope.stop()
   })
-
-  it('reports motion only for a step that declares it', () => {
-    const el = laidOut()
-    registerCoachmark('outputs', el)
-    const scope = effectScope()
-    const api = scope.run(() =>
-      useCoachmarkTarget(
-        () =>
-          ({
-            name: 's',
-            coachId: 'outputs',
-            placement: 'right',
-            follow: true
-          }) as CoachStep,
-        ref(null)
-      )
-    )!
-    expect(api.targetMoves.value).toBe(true)
-    scope.stop()
-  })
 })

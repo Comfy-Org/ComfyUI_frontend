@@ -143,6 +143,8 @@
       "modelDescription": "Описание модели",
       "modelTagging": "Теги модели",
       "modelType": "Тип модели",
+      "modelTypeCoreReadonly": "Тип модели нельзя изменить на core, перемещение файла пока не поддерживается.",
+      "modelTypeImmutableReadonly": "Тип модели нельзя изменить для модели только для чтения.",
       "noAdditionalTags": "Нет дополнительных тегов",
       "selectModelPrompt": "Выберите модель, чтобы увидеть её информацию",
       "selectModelType": "Выберите тип модели...",
@@ -173,6 +175,7 @@
     "rename": {
       "failed": "Не удалось переименовать ассет."
     },
+    "searchModels": "Поиск моделей",
     "selectFrameworks": "Выберите фреймворки",
     "selectModelType": "Выберите тип модели",
     "selectProjects": "Выберите проекты",
@@ -611,14 +614,14 @@
     "chooseProfilePicture": "Выберите фото профиля",
     "createProfile": "Создать профиль",
     "createProfileButton": "Создать мой профиль",
-    "createProfileTitle": "Создайте профиль Comfy Hub",
+    "createProfileTitle": "Создайте профиль Comfy Workflows",
     "creatingProfile": "Создание профиля...",
     "descriptionLabel": "Ваше описание",
     "descriptionPlaceholder": "Расскажите сообществу о себе...",
     "introDescription": "Публикуйте свои workflow, создавайте портфолио и становитесь заметнее для миллионов пользователей",
-    "introSubtitle": "Чтобы поделиться своим workflow в ComfyHub, сначала создайте профиль.",
-    "introTitle": "Публикация в ComfyHub",
-    "modalTitle": "Создайте свой профиль в ComfyHub",
+    "introSubtitle": "Чтобы поделиться своим workflow в Comfy Workflows, сначала создайте профиль.",
+    "introTitle": "Публикация в Comfy Workflows",
+    "modalTitle": "Создайте свой профиль в Comfy Workflows",
     "nameLabel": "Ваше имя",
     "namePlaceholder": "Введите ваше имя",
     "profileCreationNav": "Создание профиля",
@@ -628,8 +631,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "Ваша страница профиля доступна по адресу",
     "successTitle": "Отлично, {'@'}{username}!",
-    "updateIntroDescription": "Отправьте ваши последние изменения в ComfyHub. Ваша ссылка для обмена и статистика останутся прежними.",
-    "updateIntroTitle": "Обновите ваш workflow в ComfyHub",
+    "updateIntroDescription": "Отправьте ваши последние изменения в Comfy Workflows. Ваша ссылка для обмена и статистика останутся прежними.",
+    "updateIntroTitle": "Обновите ваш workflow в Comfy Workflows",
     "uploadCover": "+ Загрузить обложку",
     "uploadProfilePicture": "+ Загрузить фото профиля",
     "uploadWorkflowButton": "Загрузить мой workflow",
@@ -641,20 +644,18 @@
     "additionalInfo": "Дополнительная информация",
     "back": "Назад",
     "createProfileCta": "Создать профиль",
-    "createProfileToPublish": "Создайте профиль для публикации в ComfyHub",
+    "createProfileToPublish": "Создайте профиль для публикации в Comfy Workflows",
     "exampleImage": "Пример изображения {index}",
     "exampleImagePosition": "Пример изображения {index} из {total}",
     "examplesDescription": "Добавьте до {total} дополнительных примеров изображений",
     "maxExamples": "Вы можете выбрать до {max} примеров",
     "next": "Далее",
-    "publishButton": "Опубликовать в ComfyHub",
+    "publishButton": "Опубликовать в Comfy Workflows",
     "publishFailedDescription": "Произошла ошибка при публикации вашего рабочего процесса. Пожалуйста, попробуйте еще раз.",
     "publishFailedTitle": "Ошибка публикации",
-    "publishSuccessDescription": "Ваш рабочий процесс теперь доступен на ComfyHub.",
+    "publishSuccessDescription": "Ваш рабочий процесс теперь доступен на Comfy Workflows.",
     "publishSuccessTitle": "Успешно опубликовано",
     "removeExampleImage": "Удалить пример изображения",
-    "renameFailedDescription": "Ваш workflow был успешно опубликован, но не удалось переименовать локальный файл. Переименуйте его снова, чтобы совпадало.",
-    "renameFailedTitle": "Не удалось переименовать",
     "selectAThumbnail": "Выберите миниатюру",
     "shareAs": "Поделиться как",
     "showLessTags": "Показать меньше...",
@@ -670,8 +671,8 @@
     "thumbnailImageComparison": "Сравнение изображений",
     "thumbnailPreview": "Превью миниатюры",
     "thumbnailVideo": "Видео",
-    "title": "Публикация в ComfyHub",
-    "unsavedDescription": "Вы должны сохранить свой рабочий процесс перед публикацией в ComfyHub. Сохраните его сейчас, чтобы продолжить.",
+    "title": "Публикация в Comfy Workflows",
+    "unsavedDescription": "Вы должны сохранить свой рабочий процесс перед публикацией в Comfy Workflows. Сохраните его сейчас, чтобы продолжить.",
     "updateButton": "Обновить workflow",
     "uploadAnImage": "Нажмите для выбора или перетащите изображение",
     "uploadComparison": "Загрузить до и после",
@@ -1268,6 +1269,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "Этот узел был отключён политикой вашего рабочего пространства. Используйте другой узел.",
+        "title": "Узел отключён",
+        "toastMessage": "Этот узел был отключён политикой вашего рабочего пространства.",
+        "toastTitle": "Партнёрские узлы"
+      },
       "bad_linked_input": {
         "details": "{nodeName} имеет недопустимое соединение для {inputName}.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2624,8 @@
     "resetView": "Сбросить вид холста",
     "run": "Запустить",
     "runWorkflow": "Запустить рабочий процесс (Shift для очереди в начале)",
-    "runWorkflowDisabled": "В рабочем процессе есть неподдерживаемые узлы (выделены красным). Удалите их, чтобы запустить рабочий процесс.",
     "runWorkflowFront": "Запустить рабочий процесс (Очередь в начале)",
+    "runWorkflowMissingResources": "В рабочем процессе отсутствуют необходимые ресурсы.",
     "settings": "Настройки",
     "showMenu": "Показать меню",
     "stopRunInstant": "Остановить выполнение (немедленно)",
@@ -3049,6 +3057,38 @@
       "owner": "Владелец",
       "personal": "Личное"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "Каждое поколение и импорт сохраняются в Медиа-ресурсах. Откройте их в любое время, чтобы просмотреть, скачать или использовать прошлые работы.",
+        "title": "Найдите все ваши ресурсы"
+      },
+      "inputs": {
+        "body": "Добавьте то, с чем хотите работать. Ваши входные данные — это то, что приложение преобразует в результат.",
+        "title": "Добавьте ваши входные данные"
+      },
+      "landing": {
+        "body": "Краткий тур по основам за минуту. Мы покажем, где добавить входные данные, запустить приложение и найти результаты.",
+        "primary": "Начать обучение",
+        "title": "Добро пожаловать в приложения"
+      },
+      "outputs": {
+        "body": "Готовые результаты появятся здесь, в центре. Скачайте их или измените входные данные и запустите снова.",
+        "title": "Получите ваши результаты"
+      },
+      "replay": "Пройти тур по режиму приложения",
+      "run": {
+        "body": "Довольны входными данными? Нажмите «Запустить», и результат появится в центре, как только будет готов.",
+        "title": "Запустите ваше приложение"
+      }
+    },
+    "back": "Назад",
+    "done": "Готово",
+    "loadError": "Что-то пошло не так при показе этого тура",
+    "next": "Далее",
+    "skip": "Пропустить",
+    "stepLabel": "Шаг {current} из {total}"
   },
   "openSharedWorkflow": {
     "author": "Автор:",
@@ -3487,6 +3527,7 @@
     "3DViewer": "3DViewer",
     "API Nodes": "API-узлы",
     "About": "О программе",
+    "Allowlist": "Список разрешённых",
     "Appearance": "Внешний вид",
     "BrushAdjustment": "Настройка кисти",
     "Camera": "Камера",
@@ -3565,9 +3606,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "Я понимаю, что эти медиафайлы будут опубликованы и станут общедоступными",
     "checkingAssets": "Проверка видимости медиафайлов…",
-    "comfyHubButton": "Загрузить в ComfyHub",
-    "comfyHubDescription": "ComfyHub — это официальный хаб сообщества ComfyUI.\nВаш рабочий процесс получит публичную страницу, доступную для всех.",
-    "comfyHubTitle": "Загрузить в ComfyHub",
+    "comfyHubButton": "Загрузить в Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows — это официальный хаб сообщества ComfyUI.\nВаш рабочий процесс получит публичную страницу, доступную для всех.",
+    "comfyHubTitle": "Загрузить в Comfy Workflows",
     "copyLink": "Копировать",
     "createLinkButton": "Создать ссылку",
     "createLinkDescription": "Когда вы создаёте ссылку на рабочий процесс, вы также делитесь этими медиафайлами",
@@ -3641,6 +3682,7 @@
     "logout": "Выйти",
     "mediaAssets": "Медиа-ассеты",
     "modelLibrary": "Библиотека моделей",
+    "modelLibraryLoadFailed": "Не удалось загрузить модели. Проверьте соединение с сервером и используйте «Обновить» для повторной попытки.",
     "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
     "noFilesFound": "Файлы не найдены",
     "noFilesFoundMessage": "Загрузите файлы или сгенерируйте контент, чтобы увидеть их здесь",
@@ -3746,6 +3788,7 @@
       "viewList": "Просмотр списком"
     },
     "searchAssets": "Поиск ассетов",
+    "searchResultsCapped": "Показаны первые {limit} совпадения. Уточните поиск, чтобы увидеть более конкретные результаты.",
     "sidebar": "Боковая панель",
     "templates": "Шаблоны",
     "themeToggle": "Переключить тему",
@@ -4181,6 +4224,11 @@
     "modelsSelected": "{count} моделей",
     "noResults": "Шаблоны не найдены",
     "noResultsHint": "Попробуйте изменить параметры поиска или фильтры",
+    "paidTemplate": {
+      "badgeLabel": "Партнёрский API",
+      "credits": "Запускается с использованием кредитов",
+      "title": "Премиум-шаблон"
+    },
     "resultsCount": "Показано {count} из {total} шаблонов",
     "runsOnFilter": "Запускается на",
     "runsOnSelected": "{count} запусков на",
@@ -4318,6 +4366,21 @@
     "title": "Предупреждение о несовместимости версий",
     "updateFrontend": "Обновить интерфейс"
   },
+  "videoEdit": {
+    "adjustCrop": "Изменить область обрезки",
+    "adjustEndFrame": "Изменить конечный кадр",
+    "adjustStartFrame": "Изменить начальный кадр",
+    "durationSeconds": "{count}с",
+    "durationZero": "0с",
+    "fileSizeBytes": "{count} Б",
+    "fileSizeKilobytes": "{count} КБ",
+    "fileSizeMegabytes": "{count} МБ",
+    "fileSizeUnknown": "—",
+    "loadingFilmstrip": "Загрузка ленты кадров…",
+    "pause": "Пауза",
+    "play": "Воспроизвести",
+    "seekVideo": "Перемотать видео"
+  },
   "vueNodesBanner": {
     "desc": "– Более гибкие рабочие процессы, новые мощные виджеты, расширяемость",
     "title": "Представляем Nodes 2.0",
@@ -4424,9 +4487,7 @@
         "lastActivity": "Последняя активность",
         "partnerNodeUsed": "Использован партнерский узел",
         "totalCreditsUsed": "Всего использовано кредитов"
-      },
-      "perUserHint": "Ищете общее использование по пользователю?",
-      "seeMembers": "Посмотреть участников"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4562,6 +4623,39 @@
       "deleteWorkspaceDisabledTooltip": "Сначала отмените активную подписку рабочего пространства",
       "editWorkspace": "Редактировать детали рабочего пространства",
       "leaveWorkspace": "Покинуть рабочее пространство"
+    },
+    "partnerNodes": {
+      "accessMode": "Режим доступа к партнёрским узлам",
+      "allowAllAccessHint": "Это может занять до 10 минут для применения по всему рабочему пространству.",
+      "allowAllAccessMessage": "Партнёрские узлы от всех провайдеров станут доступны каждому участнику рабочего пространства.",
+      "allowAllAccessTitle": "Разрешить доступ ко всем партнёрским узлам?",
+      "columns": {
+        "nodes": "Узлы",
+        "provider": "Провайдер"
+      },
+      "disableAll": "Отключить все",
+      "disableAllMessage": "Все провайдеры будут отключены. Партнёрские узлы будут недоступны при ограниченном доступе.",
+      "disableAllTitle": "Отключить всех провайдеров?",
+      "enableAll": "Включить все",
+      "loadError": "Не удалось загрузить доступ к партнёрским узлам.",
+      "loading": "Загрузка доступа к партнёрским узлам",
+      "noResults": "Провайдеры или партнёрские узлы не найдены",
+      "nodeCount": "{count} включено",
+      "ownerOnly": "Только владельцы рабочего пространства могут изменять доступ к партнёрским узлам.",
+      "restrictAccessHint": "Это может занять до 10 минут для применения по всему рабочему пространству.",
+      "restrictAccessMessage": "Участники рабочего пространства смогут использовать только партнёрские узлы от выбранных вами провайдеров.",
+      "restrictAccessTitle": "Ограничить доступ к партнёрским узлам?",
+      "restricted": "Ограничено",
+      "restrictedDescription": "Доступны только партнёрские узлы от включённых провайдеров. Изменения могут применяться до 10 минут.",
+      "retry": "Попробовать снова",
+      "saveError": "Не удалось обновить доступ к партнёрским узлам. Попробуйте ещё раз.",
+      "searchPlaceholder": "Поиск провайдеров и партнёрских узлов...",
+      "tableLabel": "Провайдеры партнёрских узлов",
+      "title": "Доступ к партнёрским узлам",
+      "toggleProvider": "Установить доступ для {provider}",
+      "unavailable": "Доступ к партнёрским узлам недоступен для этого рабочего пространства.",
+      "unrestricted": "Без ограничений",
+      "unrestrictedDescription": "Партнёрские узлы от всех провайдеров доступны всем. Отключение провайдеров установит режим «Ограничено»."
     },
     "planCredits": {
       "tabs": {

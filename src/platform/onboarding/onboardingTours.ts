@@ -41,7 +41,6 @@ export interface CoachStep {
   /** Renders the landing dialog instead of a spotlight. */
   landing?: boolean
   image?: string
-  follow?: boolean
   onEnter?: (signal: AbortSignal) => void | Promise<void>
   interactive?: boolean
   busy?: () => boolean
