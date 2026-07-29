@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 function buildMockApiNode(
@@ -271,13 +272,14 @@ testWithMockedObjectInfo.describe(
               .poll(async () => (await vueNode.boundingBox())?.width)
               .toBeLessThan(expandedBox.width)
           } else {
+            const scale = await comfyPage.canvasOps.getScale()
             await expect
               .poll(() =>
                 vueNode.evaluate((element) =>
                   Number.parseFloat(getComputedStyle(element).width)
                 )
               )
-              .toBeGreaterThanOrEqual(225)
+              .toBeGreaterThanOrEqual(MIN_NODE_WIDTH * scale)
           }
 
           await collapseButton.press('Enter')

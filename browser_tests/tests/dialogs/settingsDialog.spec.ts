@@ -86,6 +86,30 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       .toBeLessThan(countBeforeSearch)
   })
 
+  test('Search finds settings by their translated Nodes 2.0 group', async ({
+    comfyPage
+  }) => {
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
+
+    await dialog.searchBox.fill('Nodes 2.0')
+
+    await expect(
+      dialog.root.locator(
+        '[data-setting-id="Comfy.VueNodes.CompactCollapsedNodes"]'
+      )
+    ).toBeVisible()
+    await expect(
+      dialog.root.locator('[data-setting-id="Comfy.VueNodes.HideStatusBadges"]')
+    ).toBeVisible()
+    await expect(
+      dialog.contentArea.getByRole('heading', {
+        name: 'Comfy › Nodes 2.0',
+        exact: true
+      })
+    ).toBeVisible()
+  })
+
   test('Search can be cleared to restore all settings', async ({
     comfyPage
   }) => {
