@@ -14,7 +14,7 @@
           rx="12"
           fill="black"
           :class="
-            !isVirtualTarget &&
+            !targetMoves &&
             'motion-safe:transition-[x,y,width,height] motion-safe:duration-300'
           "
         />
@@ -50,7 +50,7 @@
       :class="
         cn(
           'pointer-events-none absolute rounded-xl outline-2 outline-coach-ring',
-          !isVirtualTarget &&
+          !targetMoves &&
             'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
           !useMaskScrim && 'shadow-[0_0_0_9999px_var(--color-coach-scrim)]'
         )
@@ -196,7 +196,7 @@ const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-const { targetRect, targetEl, isVirtualTarget, floatingStyles, isPositioned } =
+const { targetRect, targetEl, targetMoves, floatingStyles, isPositioned } =
   useCoachmarkTarget(() => step, cardRef)
 
 // Last step's "Done" already dismisses, so hide Skip there.

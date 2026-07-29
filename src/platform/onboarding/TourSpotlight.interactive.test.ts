@@ -99,9 +99,14 @@ describe('TourSpotlight interactive and masked steps', () => {
     )
   })
 
-  it('rides a virtual target instead of transitioning after it', () => {
+  it('rides a node the camera carries instead of transitioning after it', () => {
+    const node = document.createElement('div')
+    node.setAttribute('data-node-id', '7')
+    node.getBoundingClientRect = () => new DOMRect(10, 10, 80, 40)
+    document.body.append(node)
     registerCoachmark(COACH_IDS.inputsList, {
-      getBoundingClientRect: () => new DOMRect(10, 10, 80, 40)
+      selector: '[data-node-id="7"]',
+      onMove: () => () => {}
     })
 
     renderSpotlight({
