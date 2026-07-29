@@ -17,11 +17,13 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
+import { TitleMode } from './types/globalEnums'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
+  title_mode?: TitleMode
 }
 
 function getMockISerialisedNode(
@@ -687,6 +689,20 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
       expect(Array.from(node.size)).toEqual([150, 10])
     })
+
+    test.each([TitleMode.TRANSPARENT_TITLE, TitleMode.NO_TITLE])(
+      'Vue mode keeps collapsed height for title mode %s',
+      (titleMode) => {
+        LiteGraph.vueNodesMode = true
+        const nodeConstructor =
+          node.constructor as NodeConstructorWithSlotOffset
+        nodeConstructor.title_mode = titleMode
+        node.measure(out)
+
+        expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+        delete nodeConstructor.title_mode
+      }
+    )
 
     test('Vue mode expanded behaves identically to legacy expanded', () => {
       LiteGraph.vueNodesMode = true
