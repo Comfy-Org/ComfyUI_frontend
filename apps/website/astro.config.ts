@@ -21,7 +21,9 @@ const SITEMAP_EXCLUDED_PATHNAMES = new Set(
     ...NOINDEX_PAGES.map((page) => `${prefix}${page}`),
     ...NON_CANONICAL_MODEL_SLUGS.map(
       (slug) => `${prefix}/p/supported-models/${slug}`
-    )
+    ),
+    `${prefix}/individual-submission`,
+    `${prefix}/booking-confirmation`
   ])
 )
 

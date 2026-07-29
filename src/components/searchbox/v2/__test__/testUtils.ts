@@ -34,6 +34,7 @@ export function setupTestPinia() {
 export const testI18n = createI18n({
   legacy: false,
   locale: 'en',
+  escapeParameter: true,
   messages: { en: enMessages }
 })
 
