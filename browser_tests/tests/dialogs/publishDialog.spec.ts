@@ -341,7 +341,8 @@ const BREAKPOINTS = [
   { name: 'md', width: 768 },
   { name: 'lg', width: 1024 },
   { name: 'xl', width: 1280 },
-  { name: '2xl', width: 1536 }
+  { name: '2xl', width: 1536 },
+  { name: 'wide', width: 1920 }
 ] as const
 
 const VIEWPORT_HEIGHT = 800
