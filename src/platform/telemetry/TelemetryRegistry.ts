@@ -5,6 +5,7 @@ import type {
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
+  BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -40,9 +41,11 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
+  WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
 } from './types'
 
@@ -141,6 +144,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
     this.dispatch((provider) => provider.trackWorkspaceInviteSent?.(metadata))
+  }
+
+  trackWorkspaceInviteFailed(metadata: WorkspaceInviteFailedMetadata): void {
+    this.dispatch((provider) => provider.trackWorkspaceInviteFailed?.(metadata))
+  }
+
+  trackBillingEvent(event: BillingTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackBillingEvent?.(event))
   }
 
   trackRunButton(properties: RunButtonProperties): void {
@@ -300,6 +311,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.dispatch((provider) => provider.trackUiButtonClicked?.(metadata))
+  }
+
+  trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
+    this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

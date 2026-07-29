@@ -896,6 +896,7 @@ export const zSecretResponse = z.object({
   id: z.string().uuid(),
   name: z.string(),
   provider: z.string().optional(),
+  credential_type: z.enum(['api_key', 'gcp_service_account']).optional(),
   last_used_at: z.string().datetime().optional(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime()
