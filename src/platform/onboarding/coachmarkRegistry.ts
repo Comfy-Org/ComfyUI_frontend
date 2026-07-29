@@ -14,12 +14,6 @@ export function isLaidOut(el: HTMLElement): boolean {
 // the first laid-out one.
 const registry = shallowReactive(new Map<CoachId, readonly HTMLElement[]>())
 
-export const nodeCoachmarks = shallowReactive(new Map<string, CoachId>())
-
-export function coachIdForNode(nodeId: unknown): CoachId | null {
-  return nodeCoachmarks.get(String(nodeId)) ?? null
-}
-
 export function registerCoachmark(id: CoachId, el: HTMLElement) {
   registry.set(id, [...(registry.get(id) ?? EMPTY), el])
 }
