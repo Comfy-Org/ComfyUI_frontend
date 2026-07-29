@@ -229,7 +229,13 @@ describe('i18n', () => {
     it('resolves de directly and via BCP-47 fallback', async () => {
       expect(await setActiveLocale('de')).toBe('de')
       expect(i18n.global.locale.value).toBe('de')
+
+      // Reset to a different locale first so the next assertion proves
+      // 'de-DE' actually activates 'de', rather than observing state
+      // left over from the previous call.
+      await setActiveLocale('en')
       expect(await setActiveLocale('de-DE')).toBe('de')
+      expect(i18n.global.locale.value).toBe('de')
     })
 
     it('honors prioritized navigator.languages', async () => {
