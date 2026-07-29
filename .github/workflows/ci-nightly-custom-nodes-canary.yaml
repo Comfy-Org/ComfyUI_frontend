@@ -6,12 +6,17 @@
 # every job, gate and canary alike - a red that appears everywhere at once
 # right after a dependency release is environment, not drift.)
 #
-#   Job A (canary-core-drift): core at master, packs pinned
+# The three moving axes are named consistently everywhere: CORE HEAD
+# (ComfyUI master), PACK HEADs (each custom-node repo's default branch),
+# CLOUD HEAD (whatever testcloud is serving). The frontend is never an
+# axis - it is the thing under test, held at this repo's default branch.
+#
+#   Job A (canary-core-drift): core HEAD, packs pinned
 #     -> red = a core change broke the frontend contract or exposed a pack
 #        bug (e.g. the 2026-07-18 KJNodes editor crashes). Fix our code,
 #        ledger the pack bug, or bump the gate's core pin in its own PR.
-#   Job B (canary-pack-drift): core pinned (same SHA as the gate), packs at
-#     their default-branch HEAD -> red = the authors' latest diverges from
+#   Job B (canary-pack-drift): core pinned (same SHA as the gate), pack
+#     HEADs -> red = the authors' latest diverges from
 #     what we verified. The suite runs UNMODIFIED and fully strict on
 #     purpose: CI cannot classify an author's intent (an added node, a
 #     removed node, and a rename can each be healthy or breakage), so Job B
@@ -21,9 +26,10 @@
 #     fire alarm. The manifest's pin fields stay untouched and still
 #     validate; this job's install step simply does not use them.
 #   Job C (canary-cloud-drift): frontend, manifest, and baselines held at
-#     the default branch; the ONE moving variable is the Cloud deployment
-#     itself (testcloud serves whatever is deployed tonight - it cannot be
-#     pinned from this repo) -> red = Cloud drifted from what the committed
+#     the default branch; the ONE moving variable is CLOUD HEAD (testcloud
+#     serves whatever is deployed tonight - a running service cannot be
+#     pinned from this repo, so the committed cloud manifest pins the
+#     EXPECTATION instead) -> red = Cloud drifted from what the committed
 #     cloud manifest/baselines encode. Cloud drift also surfaces on per-PR
 #     cloud gate runs, but there it lands on an innocent PR and reads as
 #     the PR's fault; here nothing of ours moved overnight, so the red

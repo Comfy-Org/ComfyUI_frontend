@@ -53,18 +53,23 @@ on:
 
 concurrency:
   # One literal group SHARED with record-custom-nodes-geometry-cloud.yaml, NOT
-  # the core gate's per-ref group: every run in either workflow drives the ONE
-  # shared Cloud test instance (a dedicated per-run instance is open item 7 in
-  # the plan, still unanswered), so a gate run and a record run must never
-  # overlap on that backend's execution/websocket streams.
+  # the core gate's per-ref group. The reason is queue-scoped, not
+  # instance-topology (the earlier "ONE shared Cloud test instance" claim
+  # here was unsourced and is retracted): every run signs in as the ONE
+  # smoke account (smokeAuth.ts
+  # memoizes a single SMOKE_ACCOUNT_EMAIL identity) and the suite's drain
+  # interrupts/clears that account's queue UNSCOPED (drainBackendToIdle,
+  # customNodeSuite.ts), so two concurrent same-account runs cancel each
+  # other's prompts. Retire this group when the prompt-scoped drain and
+  # the smoke-account pool land.
   # cancel-in-progress:false protects the IN-PROGRESS run from being killed
   # mid backend interaction, but GitHub still cancels a PENDING run when a
   # newer one queues into the group - under 3+ concurrent triggers the middle
   # run is cancelled, not queued. Fine while this check is non-required and
   # no-ops in seconds (pre-calibration); NOT fine for a required check running
-  # for real. Do not mark this check required until open item 7 lands a
-  # per-run instance (then switch to the core gate's per-ref group) or an
-  # in-job lock replaces group serialization.
+  # for real. Do not mark this check required until the scoped drain and
+  # account pool retire this group (then switch to the core gate's per-ref
+  # group) or an in-job lock replaces group serialization.
   # workflow_dispatch runs get their own group: main-push runs share the
   # instance group and each new pending run EVICTS the older pending one
   # (GitHub keeps one pending slot per group) - calibration dispatches
@@ -112,7 +117,8 @@ jobs:
     #
     # Sharding is NOT a drop-in fix: the auto-run tier queues prompts and
     # needs exclusive backend access, and every shard would drive the ONE
-    # shared Cloud instance concurrently. The viable split is by TIER (mount
+    # smoke account's queue concurrently (the drain is unscoped - see the
+    # concurrency comment). The viable split is by TIER (mount
     # + save/reload shard in parallel - they queue nothing; auto-run stays
     # serial), or per-run instances (open item 7) which make row sharding
     # safe. Until one lands, this job cannot be a required check.
@@ -120,8 +126,8 @@ jobs:
     # Raised to the wall so ONE complete run can produce the timing map that
     # sizes the tier split; the ceiling also remains the fuse that stops a
     # hung pack (non-interruptible loops exist in the corpus) from squatting
-    # on the one shared instance all day. A multi-hour job is calibration
-    # only, never a required gate.
+    # on the one smoke account's queue all day. A multi-hour job is
+    # calibration only, never a required gate.
     timeout-minutes: 360
     permissions:
       contents: read
