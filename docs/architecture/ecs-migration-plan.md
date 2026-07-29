@@ -211,7 +211,14 @@ unnecessary — there is nothing to re-sync.
 
 Registration chokepoints are `LGraph.add` / `LGraph.remove`, with
 identity-checked vacate (`toRaw` compare) so only the registered state can free
-its key. Design record: [Node Data Store](node-data-store.md).
+its key. The coordination itself is app-owned: `createNodeShellState`,
+`setTrackedNodeState`, `registerNodeState` / `unregisterNodeState` /
+`unregisterAllNodeStates` live in `src/core/graph/nodeShell/nodeShellState.ts`,
+and `attachNodeToStores` / `releaseGraphStores` — the single calls `LGraph.add`
+and `LGraph.clear` make into the stores — in
+`src/core/graph/nodeShell/nodeShellLifecycle.ts`. The litegraph barrel does not
+re-export any of them, so the registration surface stays internal. Design
+record: [Node Data Store](node-data-store.md).
 
 **Risk:** taken. Shell-state fields moved from own enumerable data properties to
 prototype accessors, so `Object.keys(node)` / `{ ...node }` no longer carry them,

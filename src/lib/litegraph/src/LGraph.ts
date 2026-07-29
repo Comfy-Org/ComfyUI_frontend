@@ -5,7 +5,14 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import {
+  attachNodeToStores,
+  releaseGraphStores
+} from '@/core/graph/nodeShell/nodeShellLifecycle'
+import {
+  unregisterAllNodeStates,
+  unregisterNodeState
+} from '@/core/graph/nodeShell/nodeShellState'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -13,17 +20,12 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
-import { useLinkStore } from '@/stores/linkStore'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { useRerouteStore } from '@/stores/rerouteStore'
 import {
   inputHasLink,
   inputLinkId,
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
@@ -39,12 +41,7 @@ import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import type { GroupId } from './LGraphGroup'
-import {
-  LGraphNode,
-  registerNodeState,
-  unregisterAllNodeStates,
-  unregisterNodeState
-} from './LGraphNode'
+import { LGraphNode } from './LGraphNode'
 import {
   LLink,
   registerLinkTopology,
@@ -85,7 +82,6 @@ import {
   snapPoint
 } from './measure'
 import { warnDeprecated } from './utils/feedback'
-import { getWidgetIds } from './utils/widget'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
@@ -487,20 +483,7 @@ export class LGraph
     this.stop()
     this.status = LGraph.STATUS_STOPPED
 
-    const graphId = this.id
-    if (this.isRootGraph && graphId !== zeroUuid) {
-      usePreviewExposureStore().clearGraph(graphId)
-      useWidgetValueStore().clearGraph(graphId)
-      useLinkStore().clearGraph(graphId)
-      useRerouteStore().clearGraph(graphId)
-      useNodeDataStore().clearGraph(graphId)
-    } else {
-      // Subgraphs and unconfigured (zero-uuid) graphs share their store
-      // bucket with other graphs, so unregister each entity individually.
-      unregisterAllLinkTopologies(this)
-      unregisterAllRerouteChains(this)
-      unregisterAllNodeStates(this)
-    }
+    releaseGraphStores(this)
     this.id = zeroUuid
     this.revision = 0
 
@@ -1104,22 +1087,9 @@ export class LGraph
 
     node.graph = this
 
-    // Adopt the node-data store proxy now that the node has a valid id and graph.
-    registerNodeState(this, node)
-
-    // Register all widgets with the WidgetValueStore now that node has a
-    // valid ID and graph reference.
-    if (node.widgets) {
-      const widgetValueStore = useWidgetValueStore()
-      for (const widget of node.widgets) {
-        if (isNodeBindable(widget)) widget.setNodeId(node.id)
-      }
-      widgetValueStore.setNodeWidgetOrder(
-        this.rootGraph.id,
-        node.id,
-        getWidgetIds(node.widgets)
-      )
-    }
+    // Adopt the store-backed shell state and widget bindings now that the node
+    // has a valid id and graph.
+    attachNodeToStores(this, node)
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
