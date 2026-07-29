@@ -160,10 +160,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     finish('skipped')
   }
 
-  function complete() {
-    finish('completed')
-  }
-
   function finish(
     outcome: 'completed' | 'skipped',
     {
@@ -243,7 +239,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     replayTour,
     next,
     back,
-    skip,
-    complete
+    skip
   }
 })
