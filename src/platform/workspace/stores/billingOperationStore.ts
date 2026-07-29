@@ -165,6 +165,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+      if (hasTimedOut(operation)) {
+        handleTimeout(opId)
+        return
+      }
       scheduleNextPoll(opId)
       return
     }
@@ -174,6 +178,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       const currentOperation = operations.value.get(opId)
       if (currentOperation !== operation) return
       if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+        if (hasTimedOut(operation)) {
+          handleTimeout(opId)
+          return
+        }
         scheduleNextPoll(opId)
         return
       }
@@ -198,12 +206,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     } catch {
       const currentOperation = operations.value.get(opId)
       if (currentOperation !== operation) return
-      if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
-        scheduleNextPoll(opId)
-        return
-      }
       if (hasTimedOut(currentOperation)) {
         handleTimeout(opId)
+        return
+      }
+      if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+        scheduleNextPoll(opId)
         return
       }
       scheduleNextPoll(opId)
@@ -213,20 +221,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function scheduleNextPoll(opId: string) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
-    if (operation.authenticationRequiredSeen) {
-      intervals.set(opId, ACTION_REQUIRED_INTERVAL_MS)
-      const timeoutId = setTimeout(
-        () => void poll(opId),
-        ACTION_REQUIRED_INTERVAL_MS
-      )
-      timeouts.set(opId, timeoutId)
-      return
-    }
-    const currentInterval = intervals.get(opId) ?? INITIAL_INTERVAL_MS
-    const nextInterval = Math.min(
-      currentInterval * BACKOFF_MULTIPLIER,
-      MAX_INTERVAL_MS
-    )
+    const nextInterval = operation.authenticationRequiredSeen
+      ? ACTION_REQUIRED_INTERVAL_MS
+      : Math.min(
+          (intervals.get(opId) ?? INITIAL_INTERVAL_MS) * BACKOFF_MULTIPLIER,
+          MAX_INTERVAL_MS
+        )
     intervals.set(opId, nextInterval)
 
     const timeoutId = setTimeout(() => void poll(opId), nextInterval)

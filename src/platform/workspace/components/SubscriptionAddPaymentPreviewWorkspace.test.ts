@@ -160,7 +160,9 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(open).not.toHaveBeenCalled()
     expect(container.innerHTML).not.toContain(actionUrl)
     await userEvent.click(
-      screen.getByText('subscription.preview.completeVerification')
+      screen.getByRole('button', {
+        name: 'subscription.preview.completeVerification'
+      })
     )
     expect(open).toHaveBeenCalledWith(
       actionUrl,

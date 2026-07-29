@@ -418,6 +418,22 @@ describe('billingOperationStore', () => {
   })
 
   describe('polling timeout', () => {
+    it('times out a subscription while its workspace is inactive', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+      mockActiveWorkspaceId.value = 'workspace-2'
+
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 8001)
+
+      expect(store.getOperation('op-1')?.status).toBe('timeout')
+    })
+
     it('allows five minutes to discover a subscription action', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
@@ -517,6 +533,29 @@ describe('billingOperationStore', () => {
       expect(JSON.stringify([...store.operations.values()])).not.toContain(
         actionUrl
       )
+    })
+
+    it('accepts a terminal response received after the discovery deadline', async () => {
+      let resolveStatus!: (response: BillingOpStatusResponse) => void
+      vi.mocked(workspaceApi.getBillingOpStatus).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStatus = resolve
+          })
+      )
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
+
+      resolveStatus({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect((await terminal).status).toBe('succeeded')
     })
 
     it('ignores non-HTTPS action URLs', async () => {

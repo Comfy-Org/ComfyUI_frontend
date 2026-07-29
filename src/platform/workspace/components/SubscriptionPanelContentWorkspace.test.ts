@@ -15,6 +15,13 @@ import type {
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
 
+const { mockIsSettingUp, mockSubscriptionActionOperation } = vi.hoisted(() => ({
+  mockIsSettingUp: { value: false },
+  mockSubscriptionActionOperation: {
+    value: undefined as { actionUrl: string } | undefined
+  }
+}))
+
 const RENEWAL_DATE_ISO = '2026-06-20T12:00:00Z'
 const END_DATE_ISO = '2026-01-20T12:00:00Z'
 
@@ -177,9 +184,6 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
     )
   })
 }))
-
-const mockIsSettingUp = ref(false)
-const mockSubscriptionActionOperation = ref<{ actionUrl: string } | undefined>()
 
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
