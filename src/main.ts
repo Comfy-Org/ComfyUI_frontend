@@ -50,7 +50,7 @@ if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
   ;({ reportAssertionFailureToDatadog } =
-    await import('@/platform/telemetry/reportAssertionFailure'))
+    await import('@/platform/telemetry/initDatadogRum'))
 }
 
 if (hasHostTelemetryBridge) {
