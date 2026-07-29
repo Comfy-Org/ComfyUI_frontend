@@ -26,7 +26,8 @@ const { node } = defineProps<{
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
-const { focusedSection, searchQuery } = storeToRefs(rightSidePanelStore)
+const { focusedSection } = storeToRefs(rightSidePanelStore)
+const searchQuery = ref('')
 
 const advancedInputsCollapsed = ref(true)
 const firstSectionCollapsed = ref(false)
