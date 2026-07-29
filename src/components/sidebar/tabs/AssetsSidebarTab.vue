@@ -393,10 +393,6 @@ const visibleAssets = computed(() => {
 })
 
 const selectionAssets = computed(() => {
-  if (isListView.value) {
-    return visibleAssets.value
-  }
-
   if (isInFolderView.value) {
     const cachedFolderAssets = folderJobId.value
       ? (folderAssetsByJobId.value[folderJobId.value] ?? [])
