@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const {
   mockAxiosInstance,
   mockGetAuthHeaderOrThrow,
-  mockGetFirebaseAuthHeaderOrThrow
+  mockGetFirebaseAuthHeaderOrThrow,
+  mockWorkspaceStore
 } = vi.hoisted(() => ({
   mockAxiosInstance: {
     get: vi.fn(),
@@ -14,7 +15,8 @@ const {
     interceptors: { response: { use: vi.fn() } }
   },
   mockGetAuthHeaderOrThrow: vi.fn(),
-  mockGetFirebaseAuthHeaderOrThrow: vi.fn()
+  mockGetFirebaseAuthHeaderOrThrow: vi.fn(),
+  mockWorkspaceStore: { activeWorkspaceId: 'workspace-a' as string | null }
 }))
 
 vi.mock('axios', () => ({
@@ -48,6 +50,10 @@ vi.mock('@/stores/authStore', () => ({
   })
 }))
 
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => mockWorkspaceStore
+}))
+
 import { workspaceApi } from './workspaceApi'
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' }
@@ -55,6 +61,7 @@ const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 describe('workspaceApi', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockWorkspaceStore.activeWorkspaceId = 'workspace-a'
     mockGetAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
     mockGetFirebaseAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
   })
@@ -390,7 +397,7 @@ describe('workspaceApi', () => {
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/auto-reload',
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, timeout: 15_000 }
       )
       expect(result).toEqual(data)
     })
@@ -414,9 +421,27 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.put).toHaveBeenCalledWith(
         '/api/billing/auto-reload',
         payload,
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, timeout: 15_000 }
       )
       expect(result).toEqual(data)
+    })
+
+    it('aborts an update if the workspace changes while resolving auth', async () => {
+      mockWorkspaceStore.activeWorkspaceId = 'workspace-b'
+
+      await expect(
+        workspaceApi.updateAutoReload(
+          {
+            enabled: false,
+            threshold_credits: 1000,
+            reload_credits: 5000,
+            monthly_budget_cents: null
+          },
+          'workspace-a'
+        )
+      ).rejects.toThrow('Active workspace changed')
+
+      expect(mockAxiosInstance.put).not.toHaveBeenCalled()
     })
 
     it('getAutoReload() exposes auth and API failures', async () => {

@@ -259,12 +259,14 @@ import { storeToRefs } from 'pinia'
 const { t, n: fmtNumber, locale } = useI18n()
 const { workspaceId } = defineProps<{ workspaceId: string | null }>()
 const dialogStore = useDialogStore()
-const { config, error, isSaving, save, scopeToWorkspace } = useAutoReload()
+const { config, error, isSaving, save, scopeToWorkspace, clearError } =
+  useAutoReload()
 const { activeWorkspaceId } = storeToRefs(useTeamWorkspaceStore())
 const { canConfigure } = useAutoReloadAccess()
 const canConfigureWorkspace = computed(
   () => canConfigure.value && activeWorkspaceId.value === workspaceId
 )
+clearError()
 void scopeToWorkspace(activeWorkspaceId.value)
 
 type Unit = 'credits' | 'usd'
@@ -512,6 +514,7 @@ const canUpdate = computed(
 )
 
 function onClose() {
+  clearError()
   dialogStore.closeDialog({ key: 'auto-reload' })
 }
 

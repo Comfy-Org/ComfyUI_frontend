@@ -441,5 +441,17 @@ describe('AutoReloadDialogContent', () => {
     )
     expect(dialogStoreMocks.closeDialog).not.toHaveBeenCalled()
     expect(autoReload.config.configured).toBe(false)
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(autoReload.error.value).toBeNull()
+  })
+
+  it('does not show an error from an earlier section update', () => {
+    autoReload.error.value = 'toggle failed'
+
+    renderDialog()
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(autoReload.error.value).toBeNull()
   })
 })

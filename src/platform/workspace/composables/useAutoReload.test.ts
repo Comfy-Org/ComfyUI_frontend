@@ -289,12 +289,15 @@ describe('useAutoReload', () => {
       monthlyBudgetCents: null
     })
 
-    expect(workspaceApi.updateAutoReload).toHaveBeenCalledWith({
-      enabled: true,
-      threshold_credits: 2000,
-      reload_credits: 6000,
-      monthly_budget_cents: null
-    })
+    expect(workspaceApi.updateAutoReload).toHaveBeenCalledWith(
+      {
+        enabled: true,
+        threshold_credits: 2000,
+        reload_credits: 6000,
+        monthly_budget_cents: null
+      },
+      'workspace-a'
+    )
     expect(autoReload.config).toMatchObject({
       configured: true,
       enabled: true,
@@ -334,18 +337,26 @@ describe('useAutoReload', () => {
     await autoReload.setEnabled(false)
     await autoReload.setEnabled(true)
 
-    expect(workspaceApi.updateAutoReload).toHaveBeenNthCalledWith(1, {
-      enabled: false,
-      threshold_credits: 2200,
-      reload_credits: 6200,
-      monthly_budget_cents: 30_000
-    })
-    expect(workspaceApi.updateAutoReload).toHaveBeenNthCalledWith(2, {
-      enabled: true,
-      threshold_credits: 2200,
-      reload_credits: 6200,
-      monthly_budget_cents: 30_000
-    })
+    expect(workspaceApi.updateAutoReload).toHaveBeenNthCalledWith(
+      1,
+      {
+        enabled: false,
+        threshold_credits: 2200,
+        reload_credits: 6200,
+        monthly_budget_cents: 30_000
+      },
+      'workspace-a'
+    )
+    expect(workspaceApi.updateAutoReload).toHaveBeenNthCalledWith(
+      2,
+      {
+        enabled: true,
+        threshold_credits: 2200,
+        reload_credits: 6200,
+        monthly_budget_cents: 30_000
+      },
+      'workspace-a'
+    )
     expect(autoReload.isEnabled.value).toBe(true)
   })
 
@@ -374,5 +385,13 @@ describe('useAutoReload', () => {
 
     expect(autoReload.error.value).toBeNull()
     expect(autoReload.config.configured).toBe(true)
+  })
+
+  it('uses a visible fallback for errors with an empty message', async () => {
+    vi.mocked(workspaceApi.getAutoReload).mockRejectedValue(new Error(''))
+
+    await autoReload.scopeToWorkspace('workspace-b')
+
+    expect(autoReload.error.value).toBe('Failed to load auto-reload settings')
   })
 })

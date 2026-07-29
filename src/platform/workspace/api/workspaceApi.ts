@@ -6,6 +6,7 @@ import type {
   WorkspaceId,
   WorkspaceInviteId
 } from '@/platform/workspace/workspaceTypes'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
@@ -303,6 +304,8 @@ export interface UpdateAutoReloadRequest {
   reload_credits: number
   monthly_budget_cents: number | null
 }
+
+const AUTO_RELOAD_TIMEOUT_MS = 15_000
 
 interface CreateTopupRequest {
   amount_cents: number
@@ -649,7 +652,7 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<AutoReloadResponse>(
         api.apiURL('/billing/auto-reload'),
-        { headers }
+        { headers, timeout: AUTO_RELOAD_TIMEOUT_MS }
       )
       return response.data
     } catch (err) {
@@ -658,14 +661,21 @@ export const workspaceApi = {
   },
 
   async updateAutoReload(
-    payload: UpdateAutoReloadRequest
+    payload: UpdateAutoReloadRequest,
+    expectedWorkspaceId?: string
   ): Promise<AutoReloadResponse> {
     const headers = await getAuthHeaderOrThrow()
+    if (
+      expectedWorkspaceId &&
+      useTeamWorkspaceStore().activeWorkspaceId !== expectedWorkspaceId
+    ) {
+      throw new Error('Active workspace changed before auto-reload update')
+    }
     try {
       const response = await workspaceApiClient.put<AutoReloadResponse>(
         api.apiURL('/billing/auto-reload'),
         payload,
-        { headers }
+        { headers, timeout: AUTO_RELOAD_TIMEOUT_MS }
       )
       return response.data
     } catch (err) {

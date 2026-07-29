@@ -129,7 +129,7 @@ function mapResponse(response: AutoReloadResponse): AutoReloadConfig {
 }
 
 function errorMessage(err: unknown, fallback: string) {
-  return err instanceof Error ? err.message : fallback
+  return err instanceof Error && err.message ? err.message : fallback
 }
 
 async function load(workspaceId: string, generation: number, retry: boolean) {
@@ -187,6 +187,10 @@ function retry(): Promise<void> {
   return load(scopedWorkspaceId, requestGeneration, false)
 }
 
+function clearError() {
+  error.value = null
+}
+
 function toRequest(
   enabled: boolean,
   settings: AutoReloadSettings
@@ -208,7 +212,7 @@ async function update(payload: UpdateAutoReloadRequest): Promise<void> {
   error.value = null
 
   try {
-    const response = await workspaceApi.updateAutoReload(payload)
+    const response = await workspaceApi.updateAutoReload(payload, workspaceId)
     if (
       generation === requestGeneration &&
       workspaceId === scopedWorkspaceId &&
@@ -285,6 +289,7 @@ export function useAutoReload() {
     setEnabled,
     save,
     scopeToWorkspace,
-    retry
+    retry,
+    clearError
   }
 }
