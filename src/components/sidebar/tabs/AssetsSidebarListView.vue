@@ -25,9 +25,18 @@
                 type: getAssetMediaType(item.asset)
               })
             "
+            :aria-pressed="
+              isSelected(item.asset)
+                ? true
+                : isPartiallySelected(item.asset)
+                  ? 'mixed'
+                  : false
+            "
             :class="
               cn(
-                getAssetCardClass(isSelected(item.asset.id)),
+                getAssetCardClass(
+                  isSelected(item.asset) || isPartiallySelected(item.asset)
+                ),
                 item.isChild && 'pl-6'
               )
             "
@@ -38,6 +47,7 @@
             :primary-text="getAssetPrimaryText(item.asset)"
             :secondary-text="getAssetSecondaryText(item.asset)"
             :stack-count="getStackCount(item.asset)"
+            :selected-stack-count="getSelectedOutputCount(item.asset)"
             :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
             :stack-expanded="isStackExpanded(item.asset)"
             @mouseenter="onAssetEnter(item.asset.id)"
@@ -91,12 +101,16 @@ const {
   assetItems,
   selectableAssets,
   isSelected,
+  isPartiallySelected,
+  getSelectedOutputCount,
   isStackExpanded,
   toggleStack
 } = defineProps<{
   assetItems: OutputStackListItem[]
   selectableAssets: AssetItem[]
-  isSelected: (assetId: string) => boolean
+  isSelected: (asset: AssetItem) => boolean
+  isPartiallySelected: (asset: AssetItem) => boolean
+  getSelectedOutputCount: (asset: AssetItem) => number
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
 }>()
@@ -171,11 +185,11 @@ function getStackCount(asset: AssetItem): number | undefined {
   return undefined
 }
 
-function getAssetCardClass(selected: boolean): string {
+function getAssetCardClass(highlighted: boolean): string {
   return cn(
     'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
     'cursor-pointer',
-    selected &&
+    highlighted &&
       'bg-secondary-background-hover ring-1 ring-modal-card-border-highlighted ring-inset'
   )
 }

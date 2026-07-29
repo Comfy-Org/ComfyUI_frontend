@@ -108,8 +108,10 @@
         <AssetsSidebarListView
           v-if="isListView"
           :asset-items="listViewAssetItems"
-          :is-selected="isSelected"
+          :is-selected="isListAssetSelected"
+          :is-partially-selected="isAssetPartiallySelected"
           :selectable-assets="listViewSelectableAssets"
+          :get-selected-output-count
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
           @select-asset="handleAssetSelect"
@@ -121,7 +123,7 @@
           <AssetsSidebarGridView
             :assets="displayAssets"
             :is-selected="isGridAssetSelected"
-            :is-partially-selected="isGridAssetPartiallySelected"
+            :is-partially-selected="isAssetPartiallySelected"
             :show-output-count
             :get-output-count
             :get-selected-output-count
@@ -360,7 +362,7 @@ const {
   [] as AssetItem[],
   { immediate: false, resetOnExecute: true }
 )
-const folderAssetsByJobId = ref<Record<string, AssetItem[]>>({})
+const resolvedOutputAssetsByJobId = ref<Record<string, AssetItem[]>>({})
 
 // Base assets before search filtering
 const baseAssets = computed(() => {
@@ -384,7 +386,8 @@ const {
   isStackExpanded: isListViewStackExpanded,
   toggleStack: toggleListViewStack
 } = useOutputStacks({
-  assets: computed(() => displayAssets.value)
+  assets: computed(() => displayAssets.value),
+  childrenByJobId: resolvedOutputAssetsByJobId
 })
 
 const visibleAssets = computed(() => {
@@ -395,7 +398,7 @@ const visibleAssets = computed(() => {
 const selectionAssets = computed(() => {
   if (isInFolderView.value) {
     const cachedFolderAssets = folderJobId.value
-      ? (folderAssetsByJobId.value[folderJobId.value] ?? [])
+      ? (resolvedOutputAssetsByJobId.value[folderJobId.value] ?? [])
       : []
     return uniqueAssets([
       ...mediaAssets.value,
@@ -406,7 +409,7 @@ const selectionAssets = computed(() => {
 
   const cachedChildren = visibleAssets.value.flatMap((asset) => {
     const jobId = getAssetJobId(asset)
-    return jobId ? (folderAssetsByJobId.value[jobId] ?? []) : []
+    return jobId ? (resolvedOutputAssetsByJobId.value[jobId] ?? []) : []
   })
   return uniqueAssets([...visibleAssets.value, ...cachedChildren])
 })
@@ -419,13 +422,13 @@ function getAssetJobId(asset: AssetItem): string | undefined {
   return getOutputAssetMetadata(asset.user_metadata)?.jobId
 }
 
-function getCachedFolderAssets(asset: AssetItem): AssetItem[] {
+function getResolvedOutputAssets(asset: AssetItem): AssetItem[] {
   const jobId = getAssetJobId(asset)
-  return jobId ? (folderAssetsByJobId.value[jobId] ?? []) : []
+  return jobId ? (resolvedOutputAssetsByJobId.value[jobId] ?? []) : []
 }
 
 function getSelectedChildIds(asset: AssetItem): string[] {
-  return getCachedFolderAssets(asset)
+  return getResolvedOutputAssets(asset)
     .filter((child) => isSelected(child.id))
     .map(({ id }) => id)
 }
@@ -452,7 +455,28 @@ function isGridAssetSelected(assetId: string): boolean {
   )
 }
 
-function isGridAssetPartiallySelected(asset: AssetItem): boolean {
+function getListOutputGroupParent(asset: AssetItem): AssetItem | undefined {
+  if (isInFolderView.value || getOutputCount(asset) > 1) return
+
+  const jobId = getAssetJobId(asset)
+  if (!jobId) return
+
+  return displayAssets.value.find(
+    (candidate) =>
+      getAssetJobId(candidate) === jobId && getOutputCount(candidate) > 1
+  )
+}
+
+function isListAssetSelected(asset: AssetItem): boolean {
+  if (isSelected(asset.id)) return true
+
+  const parent = getListOutputGroupParent(asset)
+  if (parent) return isSelected(parent.id)
+
+  return isGridAssetSelected(asset.id)
+}
+
+function isAssetPartiallySelected(asset: AssetItem): boolean {
   if (isInFolderView.value || isSelected(asset.id)) return false
 
   const selectedOutputCount = getSelectedOutputCount(asset)
@@ -460,9 +484,9 @@ function isGridAssetPartiallySelected(asset: AssetItem): boolean {
 }
 
 function toggleGroupedSelection(asset: AssetItem): boolean {
-  if (isSelected(asset.id)) return false
+  if (isSelected(asset.id) || getOutputCount(asset) <= 1) return false
 
-  const cachedChildren = getCachedFolderAssets(asset)
+  const cachedChildren = getResolvedOutputAssets(asset)
   const selectedChildIds = getSelectedChildIds(asset)
   if (selectedChildIds.length === 0) return false
 
@@ -478,6 +502,25 @@ function toggleGroupedSelection(asset: AssetItem): boolean {
     isFullySelected ? remainingIds : [...remainingIds, asset.id],
     selectionAssets.value
   )
+  return true
+}
+
+function toggleInheritedListChildSelection(asset: AssetItem): boolean {
+  if (!isListView.value || !cmdOrCtrlKey.value) return false
+
+  const parent = getListOutputGroupParent(asset)
+  if (!parent || !isSelected(parent.id)) return false
+
+  const children = getResolvedOutputAssets(parent)
+  const groupedIds = new Set([parent.id, ...children.map((child) => child.id)])
+  const remainingIds = [...selectedIds.value].filter(
+    (id) => !groupedIds.has(id)
+  )
+  const selectedChildIds = children
+    .filter((child) => child.id !== asset.id)
+    .map((child) => child.id)
+
+  setSelectedIds([...remainingIds, ...selectedChildIds], selectionAssets.value)
   return true
 }
 
@@ -582,6 +625,11 @@ watch(
 )
 
 function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
+  if (toggleInheritedListChildSelection(asset)) {
+    emit('assetSelected', asset)
+    return
+  }
+
   if (
     !isInFolderView.value &&
     cmdOrCtrlKey.value &&
@@ -729,8 +777,8 @@ const enterFolderView = async (asset: AssetItem) => {
     return
   }
 
-  folderAssetsByJobId.value = {
-    ...folderAssetsByJobId.value,
+  resolvedOutputAssetsByJobId.value = {
+    ...resolvedOutputAssetsByJobId.value,
     [jobId]: folderAssets.value
   }
 

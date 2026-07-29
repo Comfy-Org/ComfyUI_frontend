@@ -117,7 +117,18 @@
         @click.stop="emit('stack-toggle')"
       >
         <i aria-hidden="true" class="icon-[lucide--layers] size-4" />
-        <span class="text-xs leading-none">{{ stackCount }}</span>
+        <span class="text-xs leading-none">
+          <template
+            v-if="
+              typeof selectedStackCount === 'number' &&
+              selectedStackCount > 0 &&
+              selectedStackCount < stackCount
+            "
+          >
+            {{ selectedStackCount }}/{{ stackCount }}
+          </template>
+          <template v-else>{{ stackCount }}</template>
+        </span>
         <i
           aria-hidden="true"
           :class="
@@ -157,6 +168,7 @@ const {
   primaryText,
   secondaryText,
   stackCount,
+  selectedStackCount,
   stackIndicatorLabel,
   stackExpanded = false,
   progressTotalPercent,
@@ -172,6 +184,7 @@ const {
   primaryText?: string
   secondaryText?: string
   stackCount?: number
+  selectedStackCount?: number
   stackIndicatorLabel?: string
   stackExpanded?: boolean
   progressTotalPercent?: number
