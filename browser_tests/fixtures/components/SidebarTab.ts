@@ -378,7 +378,9 @@ export class AssetsSidebarTab extends SidebarTab {
     this.deselectAllButton = page.getByTestId('assets-deselect-selected')
     this.deleteSelectedButton = page.getByTestId('assets-delete-selected')
     this.downloadSelectedButton = page.getByTestId('assets-download-selected')
-    this.backToAssetsButton = page.getByText('Back to all assets')
+    this.backToAssetsButton = page.getByRole('button', {
+      name: 'Back to all assets'
+    })
     this.panelHeader = page.locator('.comfy-vue-side-bar-header')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
