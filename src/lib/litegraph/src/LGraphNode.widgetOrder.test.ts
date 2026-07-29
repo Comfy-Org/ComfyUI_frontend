@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { sortWidgetValuesByInputOrder } from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('LGraphNode widget ordering', () => {
@@ -121,6 +122,46 @@ describe('LGraphNode widget ordering', () => {
       expect(roundTripNode.widgets![0].value).toBe(20) // steps
       expect(roundTripNode.widgets![1].value).toBe('Click') // button unchanged
       expect(roundTripNode.widgets![2].value).toBe(12345) // seed
+    })
+
+    it('should shift values when loading a legacy null-padded array, which this change stops emitting but does not repair', () => {
+      node.addWidget('number', 'steps', 0, null, {})
+      node.addWidget('button', 'action', 'Click', null, {})
+      node.widgets![1].serialize = false
+      node.addWidget('number', 'seed', 0, null, {})
+
+      // What the pre-fix serialize() produced: a hole at the skipped index,
+      // which JSON renders as null on disk.
+      const sparseWidgetsValues: TWidgetValue[] = [30]
+      sparseWidgetsValues[2] = 12345
+
+      const legacyInfo: ISerialisedNode = {
+        id: 1,
+        type: 'TestNode',
+        pos: [0, 0],
+        size: [200, 100],
+        flags: {},
+        order: 0,
+        mode: 0,
+        widgets_values: JSON.parse(JSON.stringify(sparseWidgetsValues))
+      }
+
+      expect(legacyInfo.widgets_values).toEqual([30, null, 12345])
+
+      node.configure(legacyInfo)
+
+      expect(node.widgets![0].value).toBe(30) // steps
+      expect(node.widgets![1].value).toBe('Click') // button unchanged
+      expect(node.widgets![2].value).toBeNull() // seed reads the padding, not 12345
+    })
+
+    it('should skip nullish widget entries instead of throwing, matching configure()', () => {
+      node.serialize_widgets = true
+      node.addWidget('number', 'steps', 20, null, {})
+      node.addWidget('number', 'seed', 12345, null, {})
+      delete node.widgets![0]
+
+      expect(node.serialize().widgets_values).toEqual([12345])
     })
   })
 })
