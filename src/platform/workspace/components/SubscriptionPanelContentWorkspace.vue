@@ -181,7 +181,9 @@
                       })
                     }}
                   </template>
-                  <template v-else-if="!isSubscriptionCancelled">
+                  <template
+                    v-else-if="!isSubscriptionCancelled && formattedRenewalDate"
+                  >
                     {{
                       $t('subscription.renewsOnDate', {
                         date: formattedRenewalDate

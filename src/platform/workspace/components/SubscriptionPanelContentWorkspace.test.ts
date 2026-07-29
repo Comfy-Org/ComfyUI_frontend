@@ -49,6 +49,7 @@ const teamCreditStops: TeamCreditStops = {
 
 const mockSubscriptionStatus = ref<BillingSubscriptionStatus>('active')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
+const mockRenewalDate = ref<string | null>(RENEWAL_DATE_ISO)
 const mockEndDate = ref<string | null>(END_DATE_ISO)
 const mockHasSubscription = ref(true)
 const mockIsActiveSubscription = ref(true)
@@ -107,7 +108,7 @@ const mockSubscription = computed<SubscriptionInfo | null>(() =>
         tier: mockSubscriptionTier.value,
         duration: mockSubscriptionDuration.value,
         planSlug: mockPlanSlug.value,
-        renewalDate: RENEWAL_DATE_ISO,
+        renewalDate: mockRenewalDate.value,
         endDate: mockEndDate.value,
         isCancelled: mockSubscriptionStatus.value === 'canceled',
         hasFunds: true
@@ -260,6 +261,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSubscriptionStatus.value = 'active'
+    mockRenewalDate.value = RENEWAL_DATE_ISO
     mockEndDate.value = END_DATE_ISO
     mockHasSubscription.value = true
     mockIsActiveSubscription.value = true
@@ -300,6 +302,17 @@ describe('SubscriptionPanelContentWorkspace', () => {
       'true'
     )
   })
+
+  it.for([null, 'not-a-date'])(
+    'omits renewal copy when the active renewal date is %s',
+    (renewalDate) => {
+      mockRenewalDate.value = renewalDate
+      renderComponent()
+
+      expect(screen.queryByText(/^Renews on/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/i)).not.toBeInTheDocument()
+    }
+  )
 
   it('uses the yearly stop price for an annual subscription, still shown per month', () => {
     mockSubscriptionDuration.value = 'ANNUAL'
