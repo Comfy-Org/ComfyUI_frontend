@@ -156,11 +156,15 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       'the Run step must offer no way forward except running'
     ).toBeHidden()
 
-    return { spotlight, card }
+    return { spotlight, card, totalSteps }
   }
 
   /** Clicks Run and waits for the Result step to admit the run is in flight. */
-  async function runFromTourStep(page: Page, card: Locator) {
+  async function runFromTourStep(
+    page: Page,
+    card: Locator,
+    totalSteps: number
+  ) {
     await page.getByTestId('queue-button').click()
 
     await expect(
@@ -182,8 +186,8 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       const { page } = comfyPage
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-      const { card } = await tourToRunStep(page)
-      await runFromTourStep(page, card)
+      const { card, totalSteps } = await tourToRunStep(page)
+      await runFromTourStep(page, card, totalSteps)
 
       execution.executionStart(TOUR_JOB_ID)
       execution.executionSuccess(TOUR_JOB_ID)
@@ -206,8 +210,8 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       const { page } = comfyPage
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-      const { card } = await tourToRunStep(page)
-      await runFromTourStep(page, card)
+      const { card, totalSteps } = await tourToRunStep(page)
+      await runFromTourStep(page, card, totalSteps)
 
       execution.executionStart(TOUR_JOB_ID)
       execution.executionError(TOUR_JOB_ID, '1', 'the run blew up')
