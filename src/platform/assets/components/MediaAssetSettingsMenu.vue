@@ -72,6 +72,22 @@
         />
       </Button>
 
+      <Button variant="textonly" class="w-full" @click="handleSortChange('az')">
+        <span>{{ $t('sideToolbar.mediaAssets.sortAToZ') }}</span>
+        <i
+          class="ml-auto icon-[lucide--check] size-4"
+          :class="sortBy !== 'az' && 'opacity-0'"
+        />
+      </Button>
+
+      <Button variant="textonly" class="w-full" @click="handleSortChange('za')">
+        <span>{{ $t('sideToolbar.mediaAssets.sortZToA') }}</span>
+        <i
+          class="ml-auto icon-[lucide--check] size-4"
+          :class="sortBy !== 'za' && 'opacity-0'"
+        />
+      </Button>
+
       <template v-if="showGenerationTimeSort">
         <Button
           variant="textonly"
@@ -106,7 +122,7 @@ import Button from '@/components/ui/button/Button.vue'
 
 import type { MediaAssetViewMode } from './mediaAssetViewOptions'
 
-export type SortBy = 'newest' | 'oldest' | 'longest' | 'fastest'
+export type SortBy = 'newest' | 'oldest' | 'az' | 'za' | 'longest' | 'fastest'
 
 const { showSortOptions = false, showGenerationTimeSort = false } =
   defineProps<{
