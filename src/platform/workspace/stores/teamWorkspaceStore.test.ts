@@ -143,6 +143,20 @@ const mockMemberWorkspace = {
   joined_at: '2026-03-01T00:00:00Z'
 }
 
+function expectCleanupBeforeContextAndReload(): void {
+  expect(mockClearWorkflowRestoreState).toHaveBeenCalledExactlyOnceWith({
+    blockWrites: true
+  })
+  expect(
+    mockClearWorkflowRestoreState.mock.invocationCallOrder[0]
+  ).toBeLessThan(
+    mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+  )
+  expect(
+    mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+  ).toBeLessThan(mockReload.mock.invocationCallOrder[0])
+}
+
 describe('useTeamWorkspaceStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -526,7 +540,16 @@ describe('useTeamWorkspaceStore', () => {
         store.forgetRevokedActiveWorkspace(workspace.id)
 
         expect(mockLocalStorage.removeItem).toHaveBeenCalledTimes(reloads)
+        expect(mockClearWorkflowRestoreState).toHaveBeenCalledTimes(reloads)
         expect(mockReload).toHaveBeenCalledTimes(reloads)
+        if (reloads === 1) {
+          expect(mockClearWorkflowRestoreState).toHaveBeenCalledWith({
+            blockWrites: true
+          })
+          expect(
+            mockClearWorkflowRestoreState.mock.invocationCallOrder[0]
+          ).toBeLessThan(mockReload.mock.invocationCallOrder[0])
+        }
       }
     )
 
@@ -567,6 +590,7 @@ describe('useTeamWorkspaceStore', () => {
       )
       expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalled()
       expect(mockReload).toHaveBeenCalled()
+      expectCleanupBeforeContextAndReload()
     })
 
     it('sets isCreating flag during operation', async () => {
@@ -638,6 +662,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockWorkspaceApi.delete).toHaveBeenCalledWith(mockTeamWorkspace.id)
       expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalled()
       expect(mockReload).toHaveBeenCalled()
+      expectCleanupBeforeContextAndReload()
     })
 
     it('throws when trying to delete personal workspace', async () => {
@@ -704,6 +729,7 @@ describe('useTeamWorkspaceStore', () => {
         mockPersonalWorkspace.id
       )
       expect(mockReload).toHaveBeenCalled()
+      expectCleanupBeforeContextAndReload()
     })
 
     it('forwards personal workspace leave and clears its persisted ID', async () => {

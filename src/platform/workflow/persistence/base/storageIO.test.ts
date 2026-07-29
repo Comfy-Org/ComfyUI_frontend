@@ -413,6 +413,13 @@ describe('storageIO', () => {
       expect(localStorage.getItem('Comfy.OpenWorkflowsPaths')).toBeNull()
       expect(localStorage.getItem('Comfy.ActiveWorkflowIndex')).toBeNull()
       expect(localStorage.getItem('workflow')).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.ActivePath:client-1')
+      ).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.OpenPaths:client-1')
+      ).toBeNull()
+      expect(sessionStorage.getItem('workflow:client-1')).toBeNull()
       expect(sessionStorage).toHaveLength(1)
       expect(sessionStorage.getItem('unrelated')).toBe('keep')
       expect(localStorage.getItem('Comfy.Workflow.DraftIndex.v2:ws-1')).toBe(
