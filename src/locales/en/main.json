@@ -2697,7 +2697,8 @@
       "rolePermissions": "Role-based permissions"
     },
     "freePerks": {
-      "maxRuntime": "{duration} max runtime"
+      "maxRuntime": "{duration} max runtime",
+      "freeRuns": "{count} free run | {count} free runs"
     },
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
@@ -2807,22 +2808,6 @@
     "pricingBlurbQuestions": "questions",
     "pricingBlurbEnterprise": "enterprise discussions",
     "pricingBlurbClickHere": "click here",
-    "freeTier": {
-      "title": "You're on the Free plan",
-      "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
-      "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
-      "descriptionQuota": "Your free plan includes {runs} runs to get started with Comfy Cloud — no card needed.",
-      "nextRefresh": "Your credits refresh on {date}.",
-      "subscribeCta": "Subscribe for more",
-      "outOfCredits": {
-        "title": "You're out of free credits",
-        "subtitle": "Subscribe to add top-ups and more"
-      },
-      "topUpBlocked": {
-        "title": "Add top-ups and more"
-      },
-      "upgradeCta": "View plans"
-    },
     "partnerNodesCredits": "Partner nodes pricing",
     "partnerNodesPricingTable": "Partner Nodes pricing table",
     "plansAndPricing": "Plans & pricing",
@@ -3706,7 +3691,6 @@
     "feedback": "Feedback",
     "feedbackTooltip": "Feedback",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
-    "freeTierRunsExhausted": "No runs left",
     "freeTierPartner": "Partner nodes need a paid plan",
     "share": "Share",
     "shareTooltip": "Share workflow"
