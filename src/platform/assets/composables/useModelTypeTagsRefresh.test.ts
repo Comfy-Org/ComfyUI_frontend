@@ -36,7 +36,8 @@ describe('refreshSupportsModelTypeTags', () => {
     await refreshSupportsModelTypeTags()
 
     expect(fetchApiSpy).toHaveBeenCalledWith('/features', {
-      cache: 'no-store'
+      cache: 'no-store',
+      signal: expect.any(AbortSignal)
     })
     expect(httpSupportsModelTypeTags.value).toBe(true)
   })
@@ -89,25 +90,63 @@ describe('refreshSupportsModelTypeTags', () => {
     expect(httpSupportsModelTypeTags.value).toBe(false)
   })
 
-  it('discards a superseded response that resolves after a newer one', async () => {
-    let resolveSlow: (response: Response) => void
+  it('coalesces overlapping refreshes into a single request', async () => {
+    let resolveFetch: (response: Response) => void
     fetchApiSpy.mockReturnValueOnce(
       new Promise<Response>((resolve) => {
-        resolveSlow = resolve
+        resolveFetch = resolve
       })
     )
-    const slowRefresh = refreshSupportsModelTypeTags()
+    const first = refreshSupportsModelTypeTags()
+    const second = refreshSupportsModelTypeTags()
+    expect(fetchApiSpy).toHaveBeenCalledTimes(1)
+
+    resolveFetch!(buildResponse({ supports_model_type_tags: true }))
+    await Promise.all([first, second])
+
+    expect(fetchApiSpy).toHaveBeenCalledTimes(1)
+    expect(httpSupportsModelTypeTags.value).toBe(true)
+  })
+
+  it('fetches again once the previous refresh has settled', async () => {
+    fetchApiSpy.mockResolvedValue(
+      buildResponse({ supports_model_type_tags: true })
+    )
+
+    await refreshSupportsModelTypeTags()
+    await refreshSupportsModelTypeTags()
+
+    expect(fetchApiSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('aborts a stalled request on timeout so the next trigger can fetch', async () => {
+    const timeoutController = new AbortController()
+    const timeoutSpy = vi
+      .spyOn(AbortSignal, 'timeout')
+      .mockReturnValueOnce(timeoutController.signal)
+    fetchApiSpy.mockImplementationOnce(
+      (_route, options) =>
+        new Promise<Response>((_resolve, reject) => {
+          options?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('The operation timed out.', 'TimeoutError'))
+          )
+        })
+    )
+    const stalled = refreshSupportsModelTypeTags()
+    expect(timeoutSpy).toHaveBeenCalledWith(10_000)
+
+    timeoutController.abort()
+    await stalled
+    expect(httpSupportsModelTypeTags.value).toBeUndefined()
 
     fetchApiSpy.mockResolvedValueOnce(
-      buildResponse({ supports_model_type_tags: false })
+      buildResponse({ supports_model_type_tags: true })
     )
     await refreshSupportsModelTypeTags()
-    expect(httpSupportsModelTypeTags.value).toBe(false)
 
-    resolveSlow!(buildResponse({ supports_model_type_tags: true }))
-    await slowRefresh
-
-    expect(httpSupportsModelTypeTags.value).toBe(false)
+    expect(fetchApiSpy).toHaveBeenCalledTimes(2)
+    expect(httpSupportsModelTypeTags.value).toBe(true)
+    timeoutSpy.mockRestore()
   })
 })
 
@@ -129,16 +168,17 @@ describe('useSupportsModelTypeTagsRefresh', () => {
   it('fetches immediately and again on websocket reconnect', async () => {
     scope.run(() => useSupportsModelTypeTagsRefresh())
     expect(fetchApiSpy).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(httpSupportsModelTypeTags.value).toBe(true))
 
     api.dispatchCustomEvent('reconnected')
 
     expect(fetchApiSpy).toHaveBeenCalledTimes(2)
-    await vi.waitFor(() => expect(httpSupportsModelTypeTags.value).toBe(true))
   })
 
-  it('re-fetches when the tab becomes visible again', () => {
+  it('re-fetches when the tab becomes visible again', async () => {
     scope.run(() => useSupportsModelTypeTagsRefresh())
     expect(fetchApiSpy).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(httpSupportsModelTypeTags.value).toBe(true))
 
     document.dispatchEvent(new Event('visibilitychange'))
 

@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { api } from '@/scripts/api'
 
 const REFRESH_INTERVAL_MS = 120_000
+const REFRESH_TIMEOUT_MS = 10_000
 
 const featuresResponseSchema = z.object({
   supports_model_type_tags: z.boolean().optional()
@@ -23,26 +24,35 @@ const featuresResponseSchema = z.object({
  */
 export const httpSupportsModelTypeTags = ref<boolean | undefined>(undefined)
 
-let refreshSequence = 0
+let inFlightRefresh: Promise<void> | null = null
 
 export async function refreshSupportsModelTypeTags(): Promise<void> {
-  const sequence = ++refreshSequence
-  try {
-    const response = await api.fetchApi('/features', { cache: 'no-store' })
-    if (!response.ok) return
-    const features: unknown = await response.json()
-    // The refresh triggers can overlap (reconnect, visibility, interval); a
-    // superseded fetch must not commit, or a slow pre-flip response could
-    // revert a newer value.
-    if (sequence !== refreshSequence) return
-    const parsed = featuresResponseSchema.safeParse(features)
-    httpSupportsModelTypeTags.value = parsed.success
-      ? parsed.data.supports_model_type_tags
-      : undefined
-  } catch {
-    // A failed fetch keeps the last known value; a backend that never serves
-    // the key stays undefined and the websocket flag remains authoritative.
-  }
+  // The refresh triggers can overlap (reconnect, visibility, interval);
+  // single-flight them so responses cannot commit out of order and a stalled
+  // endpoint cannot accumulate hung requests. The timeout keeps a wedged
+  // request from blocking the next trigger indefinitely.
+  if (inFlightRefresh) return inFlightRefresh
+  inFlightRefresh = (async () => {
+    try {
+      const response = await api.fetchApi('/features', {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(REFRESH_TIMEOUT_MS)
+      })
+      if (!response.ok) return
+      const features: unknown = await response.json()
+      const parsed = featuresResponseSchema.safeParse(features)
+      httpSupportsModelTypeTags.value = parsed.success
+        ? parsed.data.supports_model_type_tags
+        : undefined
+    } catch {
+      // A failed/timed-out fetch keeps the last known value; a backend that
+      // never serves the key stays undefined and the websocket flag remains
+      // authoritative.
+    } finally {
+      inFlightRefresh = null
+    }
+  })()
+  return inFlightRefresh
 }
 
 /**

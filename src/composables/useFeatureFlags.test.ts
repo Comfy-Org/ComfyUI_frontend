@@ -387,6 +387,7 @@ describe('useFeatureFlags', () => {
   describe('supportsModelTypeTags', () => {
     afterEach(() => {
       httpSupportsModelTypeTags.value = undefined
+      localStorage.clear()
     })
 
     it('prefers the HTTP /features value over the websocket flag', () => {
@@ -397,6 +398,19 @@ describe('useFeatureFlags', () => {
 
       expect(flags.supportsModelTypeTags).toBe(false)
       expect(api.getServerFeature).not.toHaveBeenCalled()
+    })
+
+    it('lets a dev override beat the HTTP /features value', () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      httpSupportsModelTypeTags.value = false
+      localStorage.setItem(
+        `ff:${ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS}`,
+        'true'
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(true)
     })
 
     it('uses an HTTP-served true value', () => {

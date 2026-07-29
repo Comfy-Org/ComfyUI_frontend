@@ -249,6 +249,10 @@ export function useFeatureFlags() {
      * connection and covers backends without the HTTP key.
      */
     get supportsModelTypeTags() {
+      const override = getDevOverride<boolean>(
+        ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS
+      )
+      if (override !== undefined) return override
       return (
         httpSupportsModelTypeTags.value ??
         api.getServerFeature(ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS, false)
