@@ -45,7 +45,7 @@
     <template v-else>
       <!-- Cancelled subscription info card -->
       <div
-        v-if="isSubscriptionCancelled"
+        v-if="showSubscriptionStateCard"
         class="mb-6 flex gap-1 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
       >
         <div
@@ -55,14 +55,10 @@
         </div>
         <div class="flex flex-col gap-2">
           <h2 class="m-0 pt-1.5 text-sm font-bold text-text-primary">
-            {{ $t('subscription.canceledCard.title') }}
+            {{ subscriptionStateCardTitle }}
           </h2>
           <p class="m-0 text-sm text-text-secondary">
-            {{
-              $t('subscription.canceledCard.description', {
-                date: formattedEndDate
-              })
-            }}
+            {{ subscriptionStateCardDescription }}
           </p>
         </div>
       </div>
@@ -160,24 +156,8 @@
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
                   <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
-                <div
-                  v-if="isActiveSubscription"
-                  class="text-sm text-text-secondary"
-                >
-                  <template v-if="isSubscriptionCancelled">
-                    {{
-                      $t('subscription.endsOnDate', {
-                        date: formattedEndDate
-                      })
-                    }}
-                  </template>
-                  <template v-else>
-                    {{
-                      $t('subscription.renewsOnDate', {
-                        date: formattedRenewalDate
-                      })
-                    }}
-                  </template>
+                <div v-if="planDateDisplay" class="text-sm text-text-secondary">
+                  {{ planDateDisplay }}
                 </div>
               </div>
 
@@ -359,6 +339,7 @@ const {
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
   subscription,
+  subscriptionStatus,
   isLoading,
   error,
   showSubscriptionDialog,
@@ -372,10 +353,17 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
+const isSubscriptionEnded = computed(
+  () =>
+    subscriptionStatus.value === 'ended' ||
+    (isSubscriptionCancelled.value && !isActiveSubscription.value)
+)
+
 // Show subscribe prompt to owners without active subscription. A cancelled plan
 // stays active until its end date, so it keeps the subscribed treatment.
 const showSubscribePrompt = computed(() => {
   if (!permissions.value.canManageSubscription) return false
+  if (isSubscriptionEnded.value && !isActiveSubscription.value) return true
   if (isSubscriptionCancelled.value) return false
   if (
     subscription.value &&
@@ -441,6 +429,40 @@ const formattedRenewalDate = computed(() =>
 const formattedEndDate = computed(() =>
   formatSubscriptionDate(subscription.value?.endDate, locale.value)
 )
+
+const showSubscriptionStateCard = computed(
+  () => isSubscriptionCancelled.value || isSubscriptionEnded.value
+)
+
+const subscriptionStateCardTitle = computed(() =>
+  isSubscriptionEnded.value
+    ? t('subscription.canceledCard.endedTitle')
+    : t('subscription.canceledCard.title')
+)
+
+const subscriptionStateCardDescription = computed(() => {
+  if (isSubscriptionEnded.value) {
+    return t('subscription.canceledCard.endedDescription')
+  }
+  if (!formattedEndDate.value) {
+    return t('subscription.canceledCard.descriptionWithoutDate')
+  }
+  return t('subscription.canceledCard.description', {
+    date: formattedEndDate.value
+  })
+})
+
+const planDateDisplay = computed(() => {
+  if (!isActiveSubscription.value || isSubscriptionEnded.value) return ''
+  if (isSubscriptionCancelled.value) {
+    return formattedEndDate.value
+      ? t('subscription.endsOnDate', { date: formattedEndDate.value })
+      : ''
+  }
+  return formattedRenewalDate.value
+    ? t('subscription.renewsOnDate', { date: formattedRenewalDate.value })
+    : ''
+})
 
 const subscriptionTierName = computed(() => {
   const tier = subscription.value?.tier
