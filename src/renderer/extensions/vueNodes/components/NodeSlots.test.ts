@@ -10,7 +10,7 @@ import { defineComponent, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -22,6 +22,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { NodeId as VueNodeId } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import {
@@ -33,13 +34,13 @@ import NodeSlots from './NodeSlots.vue'
 
 const toVueNodeId = (id: string | number): VueNodeId => toNodeId(id)
 
-const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
+const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
   id: toNodeId('123'),
+  // Empty = root graph: derives a null subgraphId in the node's locator.
+  graphId: '',
   title: 'Test Node',
   type: 'TestType',
   mode: 0,
-  selected: false,
-  executing: false,
   inputs: [],
   outputs: [],
   flags: { collapsed: false },
@@ -134,7 +135,7 @@ function createTrackingStub(
 }
 
 function renderSlots(
-  nodeData: VueNodeData,
+  nodeData: NodeState,
   stubs: SlotComponentStubs = defaultSlotStubs,
   pinia = createTestingPinia({ stubActions: false })
 ) {
@@ -170,7 +171,7 @@ function createConnectedGraph() {
 }
 
 function renderSlotsWithTracking(
-  nodeData: VueNodeData,
+  nodeData: NodeState,
   mountCounts: Map<string, number>,
   trackingTarget: 'InputSlot' | 'OutputSlot'
 ) {
@@ -226,6 +227,37 @@ function expectSlotError(
 }
 
 describe('NodeSlots.vue', () => {
+  it('renders slots from nodeDataStore without resolving the live node', async () => {
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+
+    const graph = new LGraph()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
+    canvasStore.currentGraph = graph
+    const node = new LGraphNode('Target')
+    node.id = toNodeId(7)
+    node.addInput('model', 'MODEL')
+    node.addOutput('latent', 'LATENT')
+    graph.add(node)
+
+    const [registered] = useNodeDataStore().getGraphNodesFor(
+      graph.rootGraph.id,
+      graph.id
+    )
+
+    // No app.rootGraph spy: the component must not need a graph traversal.
+    const { container } = renderSlots(registered, defaultSlotStubs, pinia)
+
+    expect(getRenderedSlotElement(container, 'model')).toBeTruthy()
+    expect(getRenderedSlotElement(container, 'latent')).toBeTruthy()
+
+    node.addInput('clip', 'CLIP')
+    await nextTick()
+
+    expect(getRenderedSlotIndex(container, 'clip')).toBe(1)
+  })
+
   it('filters out inputs with widget property and maps indexes correctly', () => {
     const inputs = [
       createMockNodeInputSlot({ name: 'objNoWidget', type: 'number' }),
@@ -382,12 +414,16 @@ describe('NodeSlots.vue', () => {
     graph.add(subgraphNode)
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    useCanvasStore().currentGraph = subgraph
+
     const nodeData = makeNodeData({
       id: toVueNodeId(interiorNode.id),
-      subgraphId: subgraph.id,
+      graphId: subgraph.id,
       inputs: interiorNode.inputs
     })
-    const { container } = renderSlots(nodeData)
+    const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
       createNodeExecutionId([toNodeId(65), toNodeId(70)]),
@@ -419,12 +455,16 @@ describe('NodeSlots.vue', () => {
     graph.add(outerSubgraphNode)
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    useCanvasStore().currentGraph = innerSubgraph
+
     const nodeData = makeNodeData({
       id: toVueNodeId(innerNode.id),
-      subgraphId: innerSubgraph.id,
+      graphId: innerSubgraph.id,
       inputs: innerNode.inputs
     })
-    const { container } = renderSlots(nodeData)
+    const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
       createNodeExecutionId([toNodeId(65), toNodeId(70), toNodeId(63)]),
@@ -502,7 +542,7 @@ describe('NodeSlots.vue', () => {
 
   describe('unified mode', () => {
     function renderUnified(
-      nodeData: VueNodeData,
+      nodeData: NodeState,
       pinia = createTestingPinia({ stubActions: false })
     ) {
       setActivePinia(pinia)

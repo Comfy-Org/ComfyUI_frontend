@@ -23,8 +23,7 @@ class TestNode extends LGraphNode {
   static override type = TEST_NODE_TYPE
 
   constructor(title?: string) {
-    super(title ?? TEST_NODE_TYPE)
-    this.type = TEST_NODE_TYPE
+    super(title ?? TEST_NODE_TYPE, TEST_NODE_TYPE)
   }
 }
 

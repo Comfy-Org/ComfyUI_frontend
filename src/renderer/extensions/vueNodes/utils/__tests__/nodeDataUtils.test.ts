@@ -33,10 +33,6 @@ function makeFakeInputSlot(
   }
 }
 
-function makeFakeNodeData(inputs: INodeInputSlot[]) {
-  return { id: NODE_ID, inputs }
-}
-
 function connectInputSlot(slot: number, linkId = slot + 1) {
   useLinkStore().registerLink(GRAPH_ID, {
     id: toLinkId(linkId),
@@ -52,9 +48,7 @@ describe('nodeDataUtils', () => {
   describe('nonWidgetedInputs', () => {
     it('should handle an empty inputs list', () => {
       const inputs: INodeInputSlot[] = []
-      const nodeData = makeFakeNodeData(inputs)
-
-      const actual = nonWidgetedInputs(nodeData)
+      const actual = nonWidgetedInputs(inputs)
 
       expect(actual.length).toBe(0)
     })
@@ -64,9 +58,7 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('first', true),
         makeFakeInputSlot('second', true)
       ]
-      const nodeData = makeFakeNodeData(inputs)
-
-      const actual = nonWidgetedInputs(nodeData)
+      const actual = nonWidgetedInputs(inputs)
 
       expect(actual.length).toBe(0)
     })
@@ -76,9 +68,7 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('first'),
         makeFakeInputSlot('second')
       ]
-      const nodeData = makeFakeNodeData(inputs)
-
-      const actual = nonWidgetedInputs(nodeData)
+      const actual = nonWidgetedInputs(inputs)
 
       expect(actual.length).toBe(2)
     })
@@ -90,9 +80,7 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('third', true),
         makeFakeInputSlot('fourth', true)
       ]
-      const nodeData = makeFakeNodeData(inputs)
-
-      const actual = nonWidgetedInputs(nodeData)
+      const actual = nonWidgetedInputs(inputs)
 
       expect(actual.length).toBe(2)
     })
@@ -110,9 +98,7 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('third', true),
         makeFakeInputSlot('fourth', true)
       ]
-      const nodeData = makeFakeNodeData(inputs)
-
-      const actual = linkedWidgetedInputs(nodeData, GRAPH_ID)
+      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_ID)
 
       expect(actual.length).toBe(0)
     })
@@ -125,11 +111,10 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('fourth', true),
         makeFakeInputSlot('fifth', true)
       ]
-      const nodeData = makeFakeNodeData(inputs)
       connectInputSlot(3)
       connectInputSlot(4)
 
-      const actual = linkedWidgetedInputs(nodeData, GRAPH_ID)
+      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_ID)
 
       expect(actual.map((slot) => slot.name)).toEqual(['fourth', 'fifth'])
     })
@@ -139,10 +124,9 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('first'),
         makeFakeInputSlot('second', true)
       ]
-      const nodeData = makeFakeNodeData(inputs)
       connectInputSlot(0)
 
-      const actual = linkedWidgetedInputs(nodeData, GRAPH_ID)
+      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_ID)
 
       expect(actual.length).toBe(0)
     })
@@ -152,10 +136,9 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('first', true, toLinkId(1)),
         makeFakeInputSlot('second', true)
       ]
-      const nodeData = makeFakeNodeData(inputs)
       connectInputSlot(1)
 
-      const actual = linkedWidgetedInputs(nodeData, GRAPH_ID)
+      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_ID)
 
       expect(actual.map((slot) => slot.name)).toEqual(['second'])
     })

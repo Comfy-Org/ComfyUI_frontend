@@ -3,12 +3,16 @@ import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { fromAny } from '@total-typescript/shoehorn'
+
+import type { NodeError } from '@/schemas/apiSchema'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@/types/nodeId'
 import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
@@ -25,7 +29,6 @@ vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>
   return {
     ...actual,
-    getLocatorIdFromNodeData: vi.fn(() => 'test-node-123'),
     getNodeByLocatorId: vi.fn(
       () => mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
     )
@@ -153,19 +156,18 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
     }
   })
 }
-const mockNodeData: VueNodeData = {
+const mockNodeData: NodeState = {
   id: toNodeId('test-node-123'),
+  graphId: 'test-graph',
   title: 'Test Node',
   type: 'TestNode',
   mode: 0,
   flags: {},
   inputs: [],
-  outputs: [],
-  selected: false,
-  executing: false
+  outputs: []
 }
 
-const mockRerouteNodeData: VueNodeData = {
+const mockRerouteNodeData: NodeState = {
   ...mockNodeData,
   id: toNodeId('reroute-node-1'),
   title: '',
@@ -299,11 +301,15 @@ describe('LGraphNode', () => {
         { name: 'advancedWidget', type: 'number', options: { advanced: true } }
       ]
     }
+    // Seed the store, not `node.has_errors`: the ring is derived from the error
+    // stores so it can react when the error clears.
+    vi.mocked(useExecutionErrorStore().getNodeErrors).mockReturnValue(
+      fromAny<NodeError, unknown>({ errors: [], class_type: 'TestNode' })
+    )
     renderLGraphNode({
       nodeData: {
         ...mockNodeData,
-        flags: { collapsed: true },
-        hasErrors: true
+        flags: { collapsed: true }
       }
     })
 

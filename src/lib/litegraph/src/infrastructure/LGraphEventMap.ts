@@ -53,9 +53,27 @@ export interface LGraphEventMap {
   }
 
   /**
+   * Fires on the owning graph once a node is attached and registered. Prefer
+   * this to wrapping {@link LGraph.onNodeAdded}, which has a single slot that
+   * concurrent subscribers clobber on restore.
+   */
+  'node:added': {
+    node: LGraphNode
+  }
+
+  /**
    * Fires on the owning graph before per-node teardown begins
    */
   'node:before-removed': {
+    node: LGraphNode
+  }
+
+  /**
+   * Fires on the owning graph once a node is detached. `node.graph` is already
+   * null; derive execution ids from the dispatching graph plus `node.id`.
+   * @see {@link 'node:added'} on why to prefer this to `onNodeRemoved`.
+   */
+  'node:removed': {
     node: LGraphNode
   }
 
@@ -70,3 +88,7 @@ export interface LGraphEventMap {
     slotType?: NodeSlotType
   }
 }
+
+export type NodeLifecycleEvent = CustomEvent<
+  LGraphEventMap['node:added' | 'node:removed']
+>

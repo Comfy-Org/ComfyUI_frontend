@@ -71,12 +71,7 @@
     <LGraphNode
       v-for="nodeData in allNodes"
       :key="nodeData.id"
-      :node-data="nodeData"
-      :error="
-        executionErrorStore.lastExecutionErrorNodeId === nodeData.id
-          ? 'Execution error'
-          : null
-      "
+      :node-data
       :data-node-id="nodeData.id"
     />
   </TransformPane>
@@ -149,7 +144,7 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -167,6 +162,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -263,9 +259,9 @@ watch(
 
 const handleVueNodeLifecycleReset = async () => {
   if (shouldRenderVueNodes.value) {
-    vueNodeLifecycle.disposeNodeManagerAndSyncs()
+    vueNodeLifecycle.disposeVueNodeLayout()
     await nextTick()
-    vueNodeLifecycle.initializeNodeManager()
+    vueNodeLifecycle.initializeVueNodeLayout()
   }
 }
 
@@ -281,9 +277,13 @@ watch(
   }
 )
 
-const allNodes = computed((): VueNodeData[] =>
-  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
-)
+const nodeDataStore = useNodeDataStore()
+const allNodes = computed((): NodeState[] => {
+  const { rootGraphId } = canvasStore
+  const graphId = canvasStore.currentGraph?.id
+  if (!rootGraphId || graphId === undefined) return []
+  return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
+})
 watch(
   () => linearMode.value,
   (isLinearMode) => {
@@ -578,7 +578,7 @@ onMounted(async () => {
 onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
-  vueNodeLifecycle.cleanup()
+  vueNodeLifecycle.disposeVueNodeLayout()
 })
 function forwardPointerDownPanEvent(e: PointerEvent) {
   forwardPanEvent(e, isMiddlePointerInput)

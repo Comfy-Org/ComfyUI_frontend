@@ -85,7 +85,7 @@ export interface InputLayoutSnapshot {
   links: ReadonlyMap<INodeInputSlot, LLink>
 }
 
-export interface InputReplacement {
+interface InputReplacement {
   input: INodeInputSlot
   link: LLink
   slot: number

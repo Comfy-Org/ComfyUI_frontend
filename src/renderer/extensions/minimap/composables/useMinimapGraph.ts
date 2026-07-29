@@ -16,10 +16,9 @@ import { MinimapDataSourceFactory } from '../data/MinimapDataSourceFactory'
 import type { UpdateFlags } from '../types'
 
 interface GraphCallbacks {
-  onNodeAdded?: (node: LGraphNode) => void
-  onNodeRemoved?: (node: LGraphNode) => void
   onConnectionChange?: (node: LGraphNode) => void
   onTrigger?: (event: LGraphTriggerEvent) => void
+  disposeNodeListeners?: () => void
 }
 
 export function useMinimapGraph(
@@ -56,24 +55,34 @@ export function useMinimapGraph(
     }
 
     // Store the original callbacks for this graph
-    const originalCallbacks: GraphCallbacks = {
-      onNodeAdded: g.onNodeAdded,
-      onNodeRemoved: g.onNodeRemoved,
-      onConnectionChange: g.onConnectionChange,
-      onTrigger: g.onTrigger
-    }
-    originalCallbacksMap.set(g.id, originalCallbacks)
-
-    g.onNodeAdded = function (node: LGraphNode) {
-      originalCallbacks.onNodeAdded?.call(this, node)
-      void handleGraphChangedThrottled()
-    }
-
-    g.onNodeRemoved = function (node: LGraphNode) {
-      originalCallbacks.onNodeRemoved?.call(this, node)
+    const onNodeAdded = () => void handleGraphChangedThrottled()
+    const onNodeRemoved = ({
+      detail: { node }
+    }: CustomEvent<{ node: LGraphNode }>) => {
       nodeStatesCache.delete(node.id)
       void handleGraphChangedThrottled()
     }
+    // A reload of the same workflow leaves the node count and every geometry
+    // string identical, so change detection alone cannot tell that `bounds` was
+    // last derived mid-configure, from a partially built graph.
+    const onConfigured = () => {
+      clearCache()
+      void handleGraphChangedThrottled()
+    }
+    g.events.addEventListener('node:added', onNodeAdded)
+    g.events.addEventListener('node:removed', onNodeRemoved)
+    g.events.addEventListener('configured', onConfigured)
+
+    const originalCallbacks: GraphCallbacks = {
+      onConnectionChange: g.onConnectionChange,
+      onTrigger: g.onTrigger,
+      disposeNodeListeners: () => {
+        g.events.removeEventListener('node:added', onNodeAdded)
+        g.events.removeEventListener('node:removed', onNodeRemoved)
+        g.events.removeEventListener('configured', onConfigured)
+      }
+    }
+    originalCallbacksMap.set(g.id, originalCallbacks)
 
     g.onConnectionChange = function (node: LGraphNode) {
       originalCallbacks.onConnectionChange?.call(this, node)
@@ -107,8 +116,7 @@ export function useMinimapGraph(
       return
     }
 
-    g.onNodeAdded = originalCallbacks.onNodeAdded
-    g.onNodeRemoved = originalCallbacks.onNodeRemoved
+    originalCallbacks.disposeNodeListeners?.()
     g.onConnectionChange = originalCallbacks.onConnectionChange
     g.onTrigger = originalCallbacks.onTrigger
 

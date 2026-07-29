@@ -33,12 +33,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import { RenderShape } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
@@ -48,7 +47,9 @@ import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/wi
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
+import { zeroUuid } from '@/utils/uuid'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -63,8 +64,8 @@ const {
 
 const widgetStore = useWidgetStore()
 
-const nodeData = computed<VueNodeData>(() => {
-  const inputs: INodeInputSlot[] = Object.entries(nodeDef.inputs || {})
+const previewInputs = computed<INodeInputSlot[]>(() =>
+  Object.entries(nodeDef.inputs || {})
     .filter(([, input]) => !widgetStore.inputIsWidget(input))
     .map(([name, input]) => ({
       name,
@@ -73,8 +74,10 @@ const nodeData = computed<VueNodeData>(() => {
       boundingRect: [0, 0, 0, 0],
       link: null
     }))
+)
 
-  const outputs: INodeOutputSlot[] = (nodeDef.outputs || []).map((output) => {
+const previewOutputs = computed<INodeOutputSlot[]>(() =>
+  (nodeDef.outputs || []).map((output) => {
     if (typeof output === 'string') {
       return {
         name: output,
@@ -89,21 +92,20 @@ const nodeData = computed<VueNodeData>(() => {
       links: []
     }
   })
+)
 
-  return {
-    id: toNodeId(`preview-${nodeDef.name}`),
-    title: nodeDef.display_name || nodeDef.name,
-    type: nodeDef.name,
-    mode: 0,
-    selected: false,
-    executing: false,
-    inputs,
-    outputs,
-    flags: {
-      collapsed: false
-    }
-  }
-})
+const nodeData = computed<NodeState>(() => ({
+  id: toNodeId(`preview-${nodeDef.name}`),
+  graphId: zeroUuid,
+  title: nodeDef.display_name || nodeDef.name,
+  type: nodeDef.name,
+  mode: LGraphEventMode.ALWAYS,
+  flags: {
+    collapsed: false
+  },
+  inputs: previewInputs.value,
+  outputs: previewOutputs.value
+}))
 
 const previewWidgets = computed<WidgetGridItem[]>(() =>
   Object.entries(nodeDef.inputs || {})

@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
+import { computed, nextTick, watch } from 'vue'
 
 import type {
   INodeInputSlot,
@@ -20,7 +21,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { NodeSlotType, TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
@@ -786,5 +787,113 @@ describe('LGraphNode', () => {
       expect(out[2]).toBe(200)
       expect(out[3]).toBe(120 + LiteGraph.NODE_TITLE_HEIGHT)
     })
+  })
+})
+
+describe('_setConcreteSlots', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('per-frame calls do not invalidate slot-array subscribers', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('a', 'INT')
+    node.addInput('b', 'INT')
+    graph.add(node)
+
+    const names = computed(() => node.inputs.map((i) => i.name).join(','))
+    const onChange = vi.fn()
+    watch(names, onChange)
+    expect(names.value).toBe('a,b')
+
+    // The canvas draw loop calls this once per visible node per frame. It
+    // re-assigns each slot in place, so it must not look like a change.
+    for (let frame = 0; frame < 100; frame++) node._setConcreteSlots()
+    await nextTick()
+
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  test('a real slot change still notifies', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('a', 'INT')
+    graph.add(node)
+
+    const names = computed(() => node.inputs.map((i) => i.name).join(','))
+    const onChange = vi.fn()
+    watch(names, onChange)
+    expect(names.value).toBe('a')
+
+    node.addInput('b', 'INT')
+    await nextTick()
+
+    expect(onChange).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('widgets array reactivity', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('notifies readers when a widget is removed in place', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'a', 1, () => undefined, {})
+    node.addWidget('number', 'b', 2, () => undefined, {})
+    node.addWidget('number', 'c', 3, () => undefined, {})
+    graph.add(node)
+
+    const names = computed(() => node.widgets?.map((w) => w.name).join(','))
+    const onChange = vi.fn()
+    watch(names, onChange)
+    expect(names.value).toBe('a,b,c')
+
+    // Extensions mutate this array directly, with no store call to notice.
+    node.widgets!.pop()
+    await nextTick()
+    expect(names.value).toBe('a,b')
+
+    node.widgets!.splice(0, 1)
+    await nextTick()
+    expect(names.value).toBe('b')
+
+    node.widgets!.length = 0
+    await nextTick()
+    expect(names.value).toBe('')
+
+    expect(onChange).toHaveBeenCalledTimes(3)
+  })
+
+  test('leaves widgets undefined for a node with none', () => {
+    const node = new LGraphNode('test')
+
+    expect(node.widgets).toBeUndefined()
+    expect(node.serialize().widgets_values).toBeUndefined()
+  })
+})
+
+describe('titleMode in node state', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('carries a NO_TITLE class into the store-held shell state', () => {
+    class TitlelessNode extends LGraphNode {
+      static title_mode = TitleMode.NO_TITLE
+    }
+    const node = new TitlelessNode('titleless')
+
+    // The renderer decides whether to draw a header from this; reroutes and
+    // other NO_TITLE classes draw a title bar without it.
+    expect(node._state.titleMode).toBe(TitleMode.NO_TITLE)
+  })
+
+  test('defaults to a normal title', () => {
+    expect(new LGraphNode('plain')._state.titleMode).toBe(
+      TitleMode.NORMAL_TITLE
+    )
   })
 })

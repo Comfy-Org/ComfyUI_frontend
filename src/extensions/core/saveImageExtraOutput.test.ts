@@ -2,8 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -66,10 +65,10 @@ describe('Comfy.SaveImageExtraOutput', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
 
     const graph = new LGraph()
-    graph.add({
-      properties: { 'Node name for S&R': 'Sampler' },
-      widgets: [{ name: 'seed', value: 12345 }]
-    } as unknown as LGraphNode)
+    const sampler = new LGraphNode('Sampler')
+    sampler.properties['Node name for S&R'] = 'Sampler'
+    sampler.addWidget('number', 'seed', 12345, () => undefined, {})
+    graph.add(sampler)
     app.graph = graph
   })
 

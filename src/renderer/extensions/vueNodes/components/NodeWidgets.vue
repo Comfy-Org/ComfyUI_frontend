@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { onErrorCaptured, ref } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
@@ -34,7 +34,7 @@ import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 
 interface NodeWidgetsProps {
-  nodeData?: VueNodeData
+  nodeData?: NodeState
   widgetIds?: readonly WidgetId[]
 }
 

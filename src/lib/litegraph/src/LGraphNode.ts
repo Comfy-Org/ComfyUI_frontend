@@ -1,6 +1,5 @@
-import { toValue } from 'vue'
+import { reactive, shallowReactive, toValue } from 'vue'
 
-import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
   calculateInputSlotPosFromSlot,
   getSlotPosition
@@ -9,11 +8,15 @@ import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotC
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
+import { zeroUuid } from '@/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 import {
   commonType,
   isNodeBindable,
@@ -234,6 +237,15 @@ export interface LGraphNode {
 
 // #endregion Types
 
+/** Shape aliases used by the canvas "Shapes" context menu (`LiteGraph.VALID_SHAPES`). */
+const NAMED_SHAPES = {
+  default: undefined,
+  box: RenderShape.BOX,
+  round: RenderShape.ROUND,
+  circle: RenderShape.CIRCLE,
+  card: RenderShape.CARD
+} as const
+
 /**
  * Base class for all nodes
  * @param title a name for the node
@@ -266,8 +278,31 @@ export class LGraphNode
   /** Default setting for {@link LGraphNode.connectInputToOutput}. @see {@link INodeFlags.keepAllLinksOnBypass} */
   static keepAllLinksOnBypass: boolean = false
 
+  /** Writes a shell-state field, emitting `node:property:changed` on change. */
+  private setTrackedState<K extends keyof NodeState>(
+    property: K,
+    value: NodeState[K]
+  ): void {
+    const oldValue = this._state[property]
+    if (oldValue === value) return
+
+    this._state[property] = value
+    this.graph?.trigger('node:property:changed', {
+      nodeId: this.id,
+      property,
+      oldValue,
+      newValue: value
+    })
+  }
+
   /** The title text of the node. */
-  title: string
+  get title(): string {
+    return this._state.title
+  }
+
+  set title(value: string) {
+    this.setTrackedState('title', value)
+  }
   /**
    * The font style used to render the node's title text.
    */
@@ -284,21 +319,61 @@ export class LGraphNode
   }
 
   graph: LGraph | Subgraph | null = null
-  id: NodeId
-  type: string = ''
-  inputs: INodeInputSlot[] = []
-  outputs: INodeOutputSlot[] = []
+
+  /** Shell state for the fields the renderer draws; the {@link useNodeDataStore} proxy once registered. */
+  _state: NodeState
+
+  /** The root graph this node is registered with in {@link useNodeDataStore}, if any. */
+  _graphId?: UUID
+
+  get id(): NodeId {
+    return this._state.id
+  }
+
+  set id(value: NodeId) {
+    this._state.id = value
+  }
+
+  get type(): string {
+    return this._state.type
+  }
+
+  /** Assignment splices in place: the `shallowReactive` array identity is what the renderer tracks. */
+  get inputs(): INodeInputSlot[] {
+    return this._state.inputs
+  }
+
+  set inputs(value: INodeInputSlot[] | null | undefined) {
+    const { inputs } = this._state
+    inputs.splice(0, inputs.length, ...(value ?? []))
+  }
+
+  /** @see {@link inputs} */
+  get outputs(): INodeOutputSlot[] {
+    return this._state.outputs
+  }
+
+  set outputs(value: INodeOutputSlot[] | null | undefined) {
+    const { outputs } = this._state
+    outputs.splice(0, outputs.length, ...(value ?? []))
+  }
 
   private _concreteInputs: NodeInputSlot[] = []
   private _concreteOutputs: NodeOutputSlot[] = []
 
   properties: Dictionary<NodeProperty | undefined> = {}
   properties_info: INodePropertyInfo[] = []
-  flags: INodeFlags = {}
-  widgets?: IBaseWidget[]
 
-  /** Property manager for this node */
-  changeTracker: LGraphNodeProperties
+  get flags(): INodeFlags {
+    return this._state.flags
+  }
+
+  set flags(value: INodeFlags) {
+    this._state.flags = value
+  }
+
+  /** Mutate in place; assigning a new array drops the renderer's tracking. */
+  widgets?: IBaseWidget[]
 
   /**
    * The amount of space available for widgets to grow into.
@@ -316,19 +391,37 @@ export class LGraphNode
 
   /** Execution order, automatically computed during run @see {@link LGraph.computeExecutionOrder} */
   order: number = 0
-  mode: LGraphEventMode = LGraphEventMode.ALWAYS
+  get mode(): LGraphEventMode {
+    return this._state.mode
+  }
+
+  set mode(value: LGraphEventMode) {
+    this.setTrackedState('mode', value)
+  }
   last_serialization?: ISerialisedNode
   serialize_widgets?: boolean
   /**
    * The overridden fg color used to render the node.
    * @see {@link renderingColor}
    */
-  color?: string
+  get color(): string | undefined {
+    return this._state.color
+  }
+
+  set color(value: string | undefined) {
+    this.setTrackedState('color', value)
+  }
   /**
    * The overridden bg color used to render the node.
    * @see {@link renderingBgColor}
    */
-  bgcolor?: string
+  get bgcolor(): string | undefined {
+    return this._state.bgcolor
+  }
+
+  set bgcolor(value: string | undefined) {
+    this.setTrackedState('bgcolor', value)
+  }
   /**
    * The overridden box color used to render the node.
    * @see {@link renderingBoxColor}
@@ -457,10 +550,15 @@ export class LGraphNode
   onBounding?(this: LGraphNode, out: Rect): void
   console?: string[]
   _level?: number
-  _shape?: RenderShape
   mouseOver?: IMouseOverData
   redraw_on_mouse?: boolean
-  resizable?: boolean
+  get resizable(): boolean | undefined {
+    return this._state.resizable
+  }
+
+  set resizable(value: boolean | undefined) {
+    this._state.resizable = value
+  }
   clonable?: boolean
   _relative_id?: number
   clip_area?: boolean
@@ -469,7 +567,13 @@ export class LGraphNode
   removable?: boolean
   block_delete?: boolean
   selected?: boolean
-  showAdvanced?: boolean
+  get showAdvanced(): boolean | undefined {
+    return this._state.showAdvanced
+  }
+
+  set showAdvanced(value: boolean | undefined) {
+    this.setTrackedState('showAdvanced', value)
+  }
 
   declare comfyDynamic?: Record<string, object>
   declare comfyClass?: string
@@ -566,45 +670,22 @@ export class LGraphNode
   }
 
   get shape(): RenderShape | undefined {
-    return this._shape
+    return this._state.shape
   }
 
-  set shape(v: RenderShape | 'default' | 'box' | 'round' | 'circle' | 'card') {
-    const oldValue = this._shape
-    switch (v) {
-      case 'default':
-        this._shape = undefined
-        break
-      case 'box':
-        this._shape = RenderShape.BOX
-        break
-      case 'round':
-        this._shape = RenderShape.ROUND
-        break
-      case 'circle':
-        this._shape = RenderShape.CIRCLE
-        break
-      case 'card':
-        this._shape = RenderShape.CARD
-        break
-      default:
-        this._shape = v
-    }
-    if (oldValue !== this._shape) {
-      this.graph?.trigger('node:property:changed', {
-        nodeId: this.id,
-        property: 'shape',
-        oldValue,
-        newValue: this._shape
-      })
-    }
+  set shape(v: RenderShape | keyof typeof NAMED_SHAPES) {
+    this.setTrackedState('shape', typeof v === 'string' ? NAMED_SHAPES[v] : v)
   }
 
   /**
    * The shape of the node used for rendering. @see {@link RenderShape}
    */
   get renderingShape(): RenderShape {
-    return this._shape || this.constructor.shape || LiteGraph.NODE_DEFAULT_SHAPE
+    return (
+      this._state.shape ||
+      this.constructor.shape ||
+      LiteGraph.NODE_DEFAULT_SHAPE
+    )
   }
 
   public get is_selected(): boolean | undefined {
@@ -839,17 +920,23 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
-    this.id = UNASSIGNED_NODE_ID
-    this.title = title || 'Unnamed'
-    this.type = type ?? ''
+    this._state = {
+      flags: {},
+      graphId: zeroUuid,
+      id: UNASSIGNED_NODE_ID,
+      inputs: shallowReactive<INodeInputSlot[]>([]),
+      mode: LGraphEventMode.ALWAYS,
+      outputs: shallowReactive<INodeOutputSlot[]>([]),
+      title: title || 'Unnamed',
+      type: type ?? '',
+      titleMode: this.title_mode
+    }
     this.size = [LiteGraph.NODE_WIDTH, 60]
     this.pos = [10, 10]
     this.strokeStyles = {
       error: this._getErrorStrokeStyle,
       selected: this._getSelectedStrokeStyle
     }
-    // Initialize property manager with tracked properties
-    this.changeTracker = new LGraphNodeProperties(this)
   }
 
   /** Internal callback for subgraph nodes. Do not implement externally. */
@@ -872,7 +959,16 @@ export class LGraphNode
         continue
       }
 
+      if (j === 'type') {
+        if (info.type != null) this._state.type = String(info.type)
+        continue
+      }
+
       if (j === 'id') {
+        // Once registered, the owning graph owns the id — it may have
+        // renumbered this node to resolve a collision that the serialised id
+        // would reinstate.
+        if (this._graphId) continue
         const id = toNodeId(info.id)
         if (id !== UNASSIGNED_NODE_ID) this.id = id
         continue
@@ -902,7 +998,6 @@ export class LGraphNode
       this.title = this.constructor.title
     }
 
-    this.inputs ??= []
     this.inputs = this.inputs.map((input) =>
       toClass(NodeInputSlot, input, this)
     )
@@ -916,7 +1011,6 @@ export class LGraphNode
       this.onInputAdded?.(input)
     }
 
-    this.outputs ??= []
     this.outputs = this.outputs.map((output) =>
       toClass(NodeOutputSlot, output, this)
     )
@@ -1969,7 +2063,7 @@ export class LGraphNode
     callback: IBaseWidget['callback'] | string | null,
     options?: IWidgetOptions | string
   ): WidgetTypeMap[Type] | IBaseWidget {
-    this.widgets ||= []
+    this.widgets ||= shallowReactive([])
 
     if (!options && callback && typeof callback === 'object') {
       options = callback
@@ -2017,7 +2111,7 @@ export class LGraphNode
   addCustomWidget<TPlainWidget extends IBaseWidget>(
     custom_widget: TPlainWidget
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
-    this.widgets ||= []
+    this.widgets ||= shallowReactive([])
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
     this._widgetSlotsDirty = true
@@ -4217,5 +4311,47 @@ export class LGraphNode
     ctx.fillStyle = 'green'
     ctx.fillRect(0, 0, this.width * this.progress, 6)
     ctx.fillStyle = originalFillStyle
+  }
+}
+
+/**
+ * Registers a node's shell state into {@link useNodeDataStore} and adopts the
+ * store's proxy as {@link LGraphNode._state}. Call wherever a node joins a graph.
+ */
+export function registerNodeState(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  node: LGraphNode
+): void {
+  const rootGraphId = graph.rootGraph.id
+  node._state.graphId = graph.id
+  node._state = reactive(node._state)
+  useNodeDataStore().registerNode(rootGraphId, node._state)
+  node._graphId = rootGraphId
+}
+
+/**
+ * Removes a node's shell state from {@link useNodeDataStore} and detaches the
+ * node. No-op for nodes that were never registered.
+ * @param node The node to unregister
+ */
+export function unregisterNodeState(node: LGraphNode): void {
+  if (!node._graphId) return
+  useNodeDataStore().deleteNode(node._graphId, node._state)
+  node._graphId = undefined
+}
+
+/**
+ * Unregisters every node a graph owns, including those inside the subgraph
+ * definitions it holds. Used when a graph's nodes leave the store without a
+ * whole-bucket wipe: subgraph-definition removal, and clearing a graph that
+ * shares its bucket with other graphs.
+ * @param graph The graph whose nodes should be unregistered
+ */
+export function unregisterAllNodeStates(
+  graph: Pick<LGraph, '_nodes' | '_subgraphs'>
+): void {
+  for (const node of graph._nodes) unregisterNodeState(node)
+  for (const subgraph of graph._subgraphs.values()) {
+    unregisterAllNodeStates(subgraph)
   }
 }

@@ -214,8 +214,7 @@ describe('pruneDisconnected', () => {
   it('does not prune preview exposures for PreviewImage nodes', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const interiorNode = new LGraphNode('PreviewImage')
-    interiorNode.type = 'PreviewImage'
+    const interiorNode = new LGraphNode('PreviewImage', 'PreviewImage')
     subgraphNode.subgraph.add(interiorNode)
 
     const hostLocator = String(subgraphNode.id)
@@ -247,8 +246,7 @@ describe('pruneDisconnected', () => {
 
 describe('getPromotableWidgets', () => {
   it('adds virtual canvas preview widget for PreviewImage nodes', () => {
-    const node = new LGraphNode('PreviewImage')
-    node.type = 'PreviewImage'
+    const node = new LGraphNode('PreviewImage', 'PreviewImage')
 
     const widgets = getPromotableWidgets(node)
 
@@ -258,8 +256,7 @@ describe('getPromotableWidgets', () => {
   })
 
   it('adds virtual canvas preview widget for SaveImage nodes', () => {
-    const node = new LGraphNode('SaveImage')
-    node.type = 'SaveImage'
+    const node = new LGraphNode('SaveImage', 'SaveImage')
 
     const widgets = getPromotableWidgets(node)
 
@@ -269,8 +266,7 @@ describe('getPromotableWidgets', () => {
   })
 
   it('adds virtual canvas preview widget for GLSLShader nodes', () => {
-    const node = new LGraphNode('GLSLShader')
-    node.type = 'GLSLShader'
+    const node = new LGraphNode('GLSLShader', 'GLSLShader')
 
     const widgets = getPromotableWidgets(node)
 
@@ -291,8 +287,7 @@ describe('getPromotableWidgets', () => {
   })
 
   it('does not add virtual canvas preview widget for ImageInvert nodes', () => {
-    const node = new LGraphNode('ImageInvert')
-    node.type = 'ImageInvert'
+    const node = new LGraphNode('ImageInvert', 'ImageInvert')
 
     const widgets = getPromotableWidgets(node)
 
@@ -348,8 +343,7 @@ describe('promoteRecommendedWidgets', () => {
   it('promotes virtual previews through preview exposures', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const glslNode = new LGraphNode('GLSLShader')
-    glslNode.type = 'GLSLShader'
+    const glslNode = new LGraphNode('GLSLShader', 'GLSLShader')
     subgraph.add(glslNode)
 
     promoteRecommendedWidgets(subgraphNode)
@@ -394,8 +388,7 @@ describe('promoteRecommendedWidgets', () => {
   it('eagerly exposes virtual preview widget for CANVAS_IMAGE_PREVIEW nodes', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const glslNode = new LGraphNode('GLSLShader')
-    glslNode.type = 'GLSLShader'
+    const glslNode = new LGraphNode('GLSLShader', 'GLSLShader')
     subgraph.add(glslNode)
 
     promoteRecommendedWidgets(subgraphNode)
@@ -424,8 +417,7 @@ describe('autoExposeKnownPreviewNodes', () => {
   it('auto-exposes previews when host has no persisted previewExposures property', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const glslNode = new LGraphNode('GLSLShader')
-    glslNode.type = 'GLSLShader'
+    const glslNode = new LGraphNode('GLSLShader', 'GLSLShader')
     subgraph.add(glslNode)
 
     autoExposeKnownPreviewNodes(subgraphNode)
@@ -442,8 +434,7 @@ describe('autoExposeKnownPreviewNodes', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     subgraphNode.properties.previewExposures = []
-    const glslNode = new LGraphNode('GLSLShader')
-    glslNode.type = 'GLSLShader'
+    const glslNode = new LGraphNode('GLSLShader', 'GLSLShader')
     subgraph.add(glslNode)
 
     autoExposeKnownPreviewNodes(subgraphNode)
@@ -459,11 +450,9 @@ describe('autoExposeKnownPreviewNodes', () => {
   it('does not auto-expose when host has non-empty persisted previewExposures', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const glslNode = new LGraphNode('GLSLShader')
-    glslNode.type = 'GLSLShader'
+    const glslNode = new LGraphNode('GLSLShader', 'GLSLShader')
     subgraph.add(glslNode)
-    const otherNode = new LGraphNode('OtherShader')
-    otherNode.type = 'GLSLShader'
+    const otherNode = new LGraphNode('OtherShader', 'GLSLShader')
     subgraph.add(otherNode)
     subgraphNode.properties.previewExposures = [
       {

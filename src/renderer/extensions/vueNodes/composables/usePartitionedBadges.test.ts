@@ -3,7 +3,7 @@ import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import { LGraphBadge, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -51,9 +51,8 @@ function makeNode(
   class TestNode extends LGraphNode {
     static override nodeData = { name: type, api_node: apiNode }
   }
-  const node = new TestNode(type)
+  const node = new TestNode(type, type)
   node.id = NODE_ID
-  node.type = type
   seedGraph(node)
   return node
 }
@@ -72,8 +71,8 @@ function addNodeDef(name: string, python_module: string): void {
   )
 }
 
-function nodeData(type: string): VueNodeData {
-  return fromPartial<VueNodeData>({ id: NODE_ID, type })
+function nodeData(type: string): NodeState {
+  return fromPartial<NodeState>({ id: NODE_ID, type })
 }
 
 describe('usePartitionedBadges', () => {

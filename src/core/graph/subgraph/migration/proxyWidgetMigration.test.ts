@@ -80,8 +80,7 @@ function addPrimitiveWithTargets(
 ): { primitive: LGraphNode; targets: LGraphNode[] } {
   const outputType = args.outputType ?? 'INT'
   const targetSlotType = args.targetSlotType ?? outputType
-  const primitive = new LGraphNode('PrimitiveNode')
-  primitive.type = 'PrimitiveNode'
+  const primitive = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
   primitive.addOutput('value', outputType)
   primitive.addWidget('number', 'value', args.primitiveValue ?? 42, () => {})
   host.subgraph.add(primitive)
@@ -354,8 +353,7 @@ describe('flushProxyWidgetMigration', () => {
 
     it('quarantines an unlinked primitive node with no fan-out', () => {
       const host = buildHost()
-      const primitive = new LGraphNode('Primitive')
-      primitive.type = 'PrimitiveNode'
+      const primitive = new LGraphNode('Primitive', 'PrimitiveNode')
       primitive.addOutput('value', '*')
       host.subgraph.add(primitive)
 
@@ -423,8 +421,7 @@ describe('flushProxyWidgetMigration', () => {
       hostA.graph!.add(hostA)
       hostB.graph!.add(hostB)
 
-      const primitive = new LGraphNode('PrimitiveNode')
-      primitive.type = 'PrimitiveNode'
+      const primitive = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
       primitive.addOutput('value', 'INT')
       primitive.addWidget('number', 'value', 0, () => {})
       subgraph.add(primitive)

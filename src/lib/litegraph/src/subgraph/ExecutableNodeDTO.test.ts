@@ -670,30 +670,24 @@ describe('ExecutableNodeDTO Integration', () => {
 describe('ExecutableNodeDTO Scale Testing', () => {
   it('should create DTOs at scale', () => {
     const graph = new LGraph()
-    const startTime = performance.now()
     const dtos: ExecutableNodeDTO[] = []
 
-    // Create DTOs to test performance
     for (let i = 0; i < 1000; i++) {
       const node = new LGraphNode(`Node ${i}`)
       node.id = toNodeId(i)
       node.addInput('in', 'number')
-      graph.add(node)
+      // Bulk add, as LGraph.configure does: recomputing execution order per
+      // node is O(n^2) and unrelated to the id generation under test.
+      graph.add(node, { skipComputeOrder: true })
 
       const dto = new ExecutableNodeDTO(node, ['parent'], new Map(), undefined)
       dtos.push(dto)
     }
 
-    const endTime = performance.now()
-    const duration = endTime - startTime
-
     expect(dtos).toHaveLength(1000)
-    // Test deterministic properties instead of flaky timing
     expect(dtos[0].id).toBe('parent:0')
     expect(dtos[999].id).toBe('parent:999')
     expect(dtos.every((dto, i) => dto.id === `parent:${i}`)).toBe(true)
-
-    console.log(`Created 1000 DTOs in ${duration.toFixed(2)}ms`)
   })
 
   it('should handle complex path generation correctly', () => {

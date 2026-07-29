@@ -20,7 +20,7 @@ import {
   getNodeByLocatorId,
   getRootGraph,
   getSubgraphPathFromExecutionId,
-  getExecutionIdFromNodeData,
+  executionIdFromState,
   mapAllNodes,
   mapSubgraphNodes,
   mapUniqueNodes,
@@ -63,8 +63,11 @@ function createMockNode(
 }
 
 // Mock graph factory
+const ROOT_GRAPH_ID = '00000000-0000-4000-8000-0000000000ff'
+
 function createMockGraph(nodes: LGraphNode[]): LGraph {
   return {
+    id: ROOT_GRAPH_ID,
     _nodes: nodes,
     nodes: nodes,
     isRootGraph: true,
@@ -97,7 +100,12 @@ describe('graphTraversalUtil', () => {
 
       expect(findNodeInHierarchy(graph, '')).toBeNull()
       expect(getExecutionIdForNodeInGraph(graph, graph, '')).toBeNull()
-      expect(getExecutionIdFromNodeData(graph, { id: '' })).toBeNull()
+      expect(
+        executionIdFromState(graph, {
+          id: toNodeId(''),
+          graphId: ROOT_GRAPH_ID
+        })
+      ).toBeNull()
     })
   })
 
@@ -965,22 +973,24 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('getExecutionIdFromNodeData', () => {
+    describe('executionIdFromState', () => {
       it('should return the correct execution ID for a normal node', () => {
         const node = createMockNode('123')
         const graph = createMockGraph([node])
         node.graph = graph
-        const nodeData = { id: 123 }
-
-        const execId = getExecutionIdFromNodeData(graph, nodeData)
+        const execId = executionIdFromState(graph, {
+          id: toNodeId(123),
+          graphId: ROOT_GRAPH_ID
+        })
         expect(execId).toBe('123')
       })
 
       it('should fallback to stringified nodeData id if node cannot be resolved', () => {
         const graph = createMockGraph([])
-        const nodeData = { id: 777 }
-
-        const execId = getExecutionIdFromNodeData(graph, nodeData)
+        const execId = executionIdFromState(graph, {
+          id: toNodeId(777),
+          graphId: ROOT_GRAPH_ID
+        })
         expect(execId).toBe('777')
       })
 
@@ -998,8 +1008,10 @@ describe('graphTraversalUtil', () => {
         targetNode.graph = subgraph
         topNode.graph = rootGraph
 
-        const nodeData = { id: 999, subgraphId: subgraphUuid }
-        const execId = getExecutionIdFromNodeData(rootGraph, nodeData)
+        const execId = executionIdFromState(rootGraph, {
+          id: toNodeId(999),
+          graphId: subgraphUuid
+        })
 
         expect(execId).toBe('123:999')
       })

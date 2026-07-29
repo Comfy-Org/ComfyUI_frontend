@@ -2,8 +2,14 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LiteGraph,
+  registerNodeState,
+  unregisterNodeState
+} from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { toLinkId } from '@/types/linkId'
@@ -15,7 +21,9 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
   LiteGraph: {
     createNode: vi.fn(),
     registered_node_types: {}
-  }
+  },
+  registerNodeState: vi.fn(),
+  unregisterNodeState: vi.fn()
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -102,6 +110,7 @@ function createMockGraph(
     links: linksMap,
     getLink: (id: number) => linksMap.get(id),
     rootGraph: { id: GRAPH_ID },
+    events: new CustomEventTarget<LGraphEventMap>(),
     updateExecutionOrder: vi.fn(),
     setDirtyCanvas: vi.fn()
   })
@@ -430,8 +439,6 @@ describe('useNodeReplacement', () => {
         [],
         []
       )
-      // sanitizeNodeName strips & from type names (HTML entity chars)
-      placeholder2.type = 'ConditioningAverage'
 
       const graph = createMockGraph([placeholder1, placeholder2])
       placeholder1.graph = graph
@@ -509,6 +516,12 @@ describe('useNodeReplacement', () => {
       expect(newNode.pos).toEqual([300, 400])
       expect(newNode.size).toEqual([250, 150])
       expect(graph._nodes[0]).toBe(newNode)
+
+      expect(unregisterNodeState).toHaveBeenCalledWith(placeholder)
+      expect(registerNodeState).toHaveBeenCalledWith(graph, newNode)
+      expect(
+        vi.mocked(unregisterNodeState).mock.invocationCallOrder[0]
+      ).toBeLessThan(vi.mocked(registerNodeState).mock.invocationCallOrder[0])
     })
 
     it('should transfer all widget values for ImageScaleBy with real workflow data', () => {
@@ -813,7 +826,6 @@ describe('useNodeReplacement', () => {
     it('should fall back to node.type when last_serialization.type is undefined', () => {
       const node = createPlaceholderNode(1, 'FallbackType')
       node.last_serialization!.type = fromAny<string, unknown>(undefined)
-      node.type = 'FallbackType'
       const graph = createMockGraph([node])
       Object.assign(app, { rootGraph: graph })
 
@@ -842,8 +854,6 @@ describe('useNodeReplacement', () => {
       // so the predicate must fall back to checking sanitizeNodeName(originalType).
       const node = createPlaceholderNode(1, 'OldNodeSpecial')
       node.last_serialization!.type = fromAny<string, unknown>(undefined)
-      // Simulate what sanitizeNodeName does to '&' in the live type
-      node.type = 'OldNodeSpecial' // '&' already stripped by sanitizeNodeName
       const graph = createMockGraph([node])
       Object.assign(app, { rootGraph: graph })
 

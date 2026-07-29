@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
@@ -544,6 +545,55 @@ describe('node:before-removed event', () => {
       'onRemoved(graph=set)',
       'onNodeRemoved(graph=null)'
     ])
+  })
+
+  it('fires node:added once the node is attached and registered', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+
+    const added = vi.fn((e: NodeLifecycleEvent) => ({
+      graph: e.detail.node.graph,
+      byId: graph.getNodeById(e.detail.node.id)
+    }))
+    graph.events.addEventListener('node:added', added)
+
+    graph.add(node)
+
+    expect(added).toHaveBeenCalledOnce()
+    expect(added).toHaveReturnedWith({ graph, byId: node })
+  })
+
+  it('fires node:removed after the node is detached', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    const removed = vi.fn((e: NodeLifecycleEvent) => ({
+      graph: e.detail.node.graph,
+      byId: graph.getNodeById(node.id) ?? null
+    }))
+    graph.events.addEventListener('node:removed', removed)
+
+    graph.remove(node)
+
+    expect(removed).toHaveBeenCalledOnce()
+    expect(removed).toHaveReturnedWith({ graph: null, byId: null })
+  })
+
+  it('fires node:before-removed for every node cleared by clear()', () => {
+    const graph = new LGraph()
+    graph.add(new LGraphNode('a'))
+    graph.add(new LGraphNode('b'))
+
+    const fired = vi.fn()
+    graph.events.addEventListener('node:before-removed', fired)
+
+    graph.clear()
+
+    expect(
+      fired,
+      'clear() must dispatch node:before-removed so subscribers can drop refs before nodes detach'
+    ).toHaveBeenCalledTimes(2)
   })
 })
 

@@ -1,5 +1,9 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LiteGraph,
+  registerNodeState,
+  unregisterNodeState
+} from '@/lib/litegraph/src/litegraph'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
@@ -166,6 +170,11 @@ function replaceWithMapping(
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
   nodeGraph._nodes_by_id[newNode.id] = newNode
+
+  // Bypasses graph.add(), so move the node-data registration by hand.
+  unregisterNodeState(node)
+  registerNodeState(nodeGraph, newNode)
+
   for (const widget of newNode.widgets ?? []) {
     if (isNodeBindable(widget)) widget.setNodeId(newNode.id)
   }
@@ -219,6 +228,10 @@ function replaceWithMapping(
   }
 
   newNode.has_errors = false
+
+  // Announce the add that graph.add() would have.
+  nodeGraph.onNodeAdded?.(newNode)
+  nodeGraph.events.dispatch('node:added', { node: newNode })
 }
 
 export function useNodeReplacement() {
@@ -285,10 +298,6 @@ export function useNodeReplacement() {
               )
             }
         replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
-
-        // Refresh Vue node data — replaceWithMapping bypasses graph.add()
-        // so onNodeAdded must be called explicitly to update VueNodeData.
-        nodeGraph.onNodeAdded?.(newNode)
 
         if (!replacedTypes.includes(match.type)) {
           replacedTypes.push(match.type)

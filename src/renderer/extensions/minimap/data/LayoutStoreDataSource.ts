@@ -1,52 +1,57 @@
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeState } from '@/types/nodeState'
 
 import type { MinimapNodeData } from '../types'
 import { AbstractMinimapDataSource } from './AbstractMinimapDataSource'
 
-let executionStore: ReturnType<typeof useExecutionStore> | null = null
-
 /**
- * Layout Store data source implementation
+ * Reads node geometry from `layoutStore`, which owns it while the Vue renderer
+ * is mounted.
+ *
+ * Membership comes from `nodeDataStore`, scoped to the graph being viewed, so
+ * layout entries belonging to another graph cannot reach the bounds calculation
+ * however they came to be in the store.
  */
 export class LayoutStoreDataSource extends AbstractMinimapDataSource {
+  private viewedNodes(): NodeState[] {
+    const graph = this.graph
+    if (!graph) return []
+    return useNodeDataStore().getGraphNodesFor(graph.rootGraph.id, graph.id)
+  }
+
   getNodes(): MinimapNodeData[] {
-    const allNodes = layoutStore.getAllNodes().value
-    if (allNodes.size === 0) return []
+    const states = this.viewedNodes()
+    if (states.length === 0) return []
 
-    if (!executionStore) {
-      executionStore = useExecutionStore()
-    }
-    const nodeProgressStates = executionStore.nodeLocationProgressStates
+    const nodeProgressStates = useExecutionStore().nodeLocationProgressStates
 
-    const nodes: MinimapNodeData[] = []
+    return states.flatMap((state): MinimapNodeData[] => {
+      const layout = layoutStore.getNodeLayoutRef(state.id).value
+      if (!layout) return []
 
-    for (const [nodeId, layout] of allNodes) {
-      // Find corresponding LiteGraph node for additional properties
-      const graphNode = this.graph?._nodes?.find((n) => n.id === nodeId)
-
-      const executionState =
-        nodeProgressStates[createNodeLocatorId(null, nodeId)]?.state ?? null
-
-      nodes.push({
-        id: nodeId,
-        x: layout.position.x,
-        y: layout.position.y,
-        width: layout.size.width,
-        height: layout.size.height,
-        bgcolor: graphNode?.bgcolor,
-        mode: graphNode?.mode,
-        hasErrors: graphNode?.has_errors,
-        executionState
-      })
-    }
-
-    return nodes
+      return [
+        {
+          id: state.id,
+          x: layout.position.x,
+          y: layout.position.y,
+          width: layout.size.width,
+          height: layout.size.height,
+          bgcolor: state.bgcolor,
+          mode: state.mode,
+          hasErrors: this.graph?.getNodeById(state.id)?.has_errors,
+          executionState:
+            nodeProgressStates[createNodeLocatorId(null, state.id)]?.state ??
+            null
+        }
+      ]
+    })
   }
 
   getNodeCount(): number {
-    return layoutStore.getAllNodes().value.size
+    return this.getNodes().length
   }
 
   hasData(): boolean {
