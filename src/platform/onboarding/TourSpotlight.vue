@@ -7,6 +7,7 @@
           !targetRect && 'bg-coach-scrim'
         )
       "
+      :style="blockerStyle"
     />
     <div
       aria-hidden="true"
@@ -23,7 +24,7 @@
       <div
         ref="cardRef"
         role="dialog"
-        aria-modal="true"
+        :aria-modal="!allowsTargetInteraction"
         :aria-labelledby="titleId"
         :aria-describedby="`${subtitleId} ${bodyId}`"
         class="pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
@@ -105,6 +106,7 @@ import {
   CARD_WIDTH,
   SPOTLIGHT_PAD,
   VIEWPORT_MARGIN,
+  blockerClipPath,
   clampSpotlight,
   noTargetCardLeft
 } from './coachmarkLayout'
@@ -154,6 +156,8 @@ const { width: windowWidth, height: windowHeight } = useWindowSize()
 
 const { targetRect, targetEl, floatingStyles, isPositioned } =
   useCoachmarkTarget(() => step, cardRef)
+
+const allowsTargetInteraction = computed(() => countedStepIdx % 2 === 0)
 
 // Last step's "Done" already dismisses, so hide Skip there.
 const showSkip = computed(() => !isLast)
@@ -215,6 +219,13 @@ const spotlightStyle = computed(() => {
   const r = targetRect.value
   if (!r) return { opacity: '0' }
   return { ...clampSpotlight(r, SPOTLIGHT_PAD, viewport()), opacity: '1' }
+})
+
+const blockerStyle = computed(() => {
+  const r = targetRect.value
+  if (r && allowsTargetInteraction.value)
+    return { clipPath: blockerClipPath(r) }
+  return {}
 })
 
 const cardStyle = computed(() => {

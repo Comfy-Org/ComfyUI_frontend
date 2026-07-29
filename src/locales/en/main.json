@@ -4737,6 +4737,20 @@
         "title": "Find all your assets",
         "body": "Every generation and import lives in Media Assets. Open it anytime to browse, download, or reuse past work."
       }
+    },
+    "graph": {
+      "nodeReference": {
+        "title": "Start with an image",
+        "body": "This picture will be used as reference. Swap in your own whenever you like."
+      },
+      "nodePrompt": {
+        "title": "Describe what you want",
+        "body": "Your image gets built from this description. Try anything you like."
+      },
+      "run": {
+        "title": "Run your workflow",
+        "body": "Press Run to start generating your result."
+      }
     }
   }
 }

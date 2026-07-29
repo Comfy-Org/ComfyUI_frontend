@@ -14,6 +14,8 @@ import type {
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isCoachKey, COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import type { CoachId } from '@/platform/onboarding/onboardingTours'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -124,6 +126,7 @@ export interface VueNodeData {
   showAdvanced?: boolean
   subgraphId?: string | null
   titleMode?: TitleMode
+  tourStep?: CoachId
   widgets?: SafeWidgetData[]
 }
 
@@ -451,7 +454,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
 
   const apiNode = node.constructor?.nodeData?.api_node ?? false
   const badges = node.badges
-
+  const tourStep = node.properties.tourStep
   return {
     id: node.id,
     title: typeof node.title === 'string' ? node.title : '',
@@ -472,7 +475,8 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     bgcolor: node.bgcolor || undefined,
     resizable: node.resizable,
     shape: node.shape,
-    showAdvanced: node.showAdvanced
+    showAdvanced: node.showAdvanced,
+    tourStep: isCoachKey(tourStep) ? COACH_IDS[tourStep] : undefined
   }
 }
 

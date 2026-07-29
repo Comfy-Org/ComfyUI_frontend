@@ -5,6 +5,7 @@
   <div
     v-else
     ref="nodeContainerRef"
+    v-coachmark="nodeData.tourStep"
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
@@ -268,6 +269,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

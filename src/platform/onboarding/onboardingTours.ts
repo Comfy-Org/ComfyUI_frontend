@@ -1,4 +1,7 @@
-export type EntryPath = 'appMode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { app } from '@/scripts/app'
+
+export type EntryPath = 'appMode' | 'graph'
 
 /** Setting holding the tours the user has completed or dismissed. */
 export const TOUR_SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
@@ -18,10 +21,15 @@ export const COACH_IDS = {
   appRunButton: 'app-run-button',
   inputsList: 'inputs-list',
   outputs: 'outputs',
-  assetsPanel: 'assets-panel'
+  assetsPanel: 'assets-panel',
+
+  nodeReference: 'node-reference',
+  nodePrompt: 'node-prompt',
+  graphRunButton: 'graph-run-button'
 } as const
 
-export type CoachId = (typeof COACH_IDS)[keyof typeof COACH_IDS]
+type CoachKey = keyof typeof COACH_IDS
+export type CoachId = (typeof COACH_IDS)[CoachKey]
 
 export interface CoachStep {
   /**
@@ -40,6 +48,10 @@ export interface CoachStep {
   /** Renders the landing dialog instead of a spotlight. */
   landing?: boolean
   image?: string
+}
+
+export function isCoachKey(val: unknown): val is CoachKey {
+  return typeof val === 'string' && val in COACH_IDS
 }
 
 /**
@@ -88,5 +100,41 @@ export const TOURS: Record<EntryPath, CoachStep[]> = {
       deferTarget: true,
       openSidebarTab: 'assets'
     }
-  ]
+  ],
+  get graph(): CoachStep[] {
+    const nodeKeys: CoachKey[] = ['nodeReference', 'nodePrompt']
+    const { nodes } = app.graph
+    const nodeSteps: [CoachKey, LGraphNode][] = nodeKeys.flatMap((key) => {
+      const node = nodes.find((n) => n.properties.tourStep === key)
+      return node ? [[key, node]] : []
+    })
+
+    const visible = new Set(app.canvas.visible_nodes.map((node) => node.id))
+    if (!nodeSteps.map(([, node]) => node.id).every((id) => visible.has(id))) {
+      app.canvas.selectItems(nodeSteps.map(([, node]) => node))
+      app.canvas.fitViewToSelectionAnimated()
+      app.canvas.selectItems([])
+    }
+    return [
+      ...nodeSteps.map(([key]) => ({
+        name: key,
+        coachId: COACH_IDS[key],
+        placement: 'auto' as const,
+        deferTarget: true
+      })),
+      {
+        name: 'run',
+        coachId: COACH_IDS.graphRunButton,
+        placement: 'auto' as const,
+        deferTarget: true
+      },
+      {
+        name: 'assets',
+        coachId: COACH_IDS.assetsPanel,
+        placement: 'auto' as const,
+        deferTarget: true,
+        openSidebarTab: 'assets'
+      }
+    ]
+  }
 }
