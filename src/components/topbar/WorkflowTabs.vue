@@ -119,6 +119,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
+import { usePreventFocusLoss } from '@/composables/usePreventFocusLoss'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -161,6 +162,8 @@ function openFeedback() {
 }
 
 const containerRef = ref<HTMLElement | null>(null)
+usePreventFocusLoss(containerRef, '.workflow-tab')
+
 const showOverflowArrows = ref(false)
 const leftArrowEnabled = ref(false)
 const rightArrowEnabled = ref(false)
