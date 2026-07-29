@@ -67,6 +67,12 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
           step_number: countedStepIdx.value + 1,
           coach_id: step.value?.coachId
         }),
+      // The landing carries no number, so without this a bail there is only
+      // visible as a missing step_number — indistinguishable from a dropped
+      // property. Most abandonment happens here, so it gets a positive marker.
+      ...(stage !== 'started' && step.value?.landing === true
+        ? { is_landing: true }
+        : {}),
       ...(skipReason && { skip_reason: skipReason })
     })
   }

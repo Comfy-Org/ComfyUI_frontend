@@ -111,15 +111,18 @@ export type OnboardingTourSkipReason =
 /**
  * `step_number` is 1-based and matches the "Step N of M" indicator the user
  * sees, with `step_count` as M. Both `step_number` and `coach_id` are absent
- * for steps with no numbered spotlight (e.g. the landing). `skip_reason` is
- * present only on the `skipped` stage, and `step_count` only on the stages that
- * happen inside the step sequence — the nudge stages follow the tour's end.
+ * for steps with no numbered spotlight (e.g. the landing); `is_landing` marks
+ * those instead, so a bail on the landing is a value analytics can group on
+ * rather than an absent field it has to infer from. `skip_reason` is present
+ * only on the `skipped` stage, and `step_count` only on the stages that happen
+ * inside the step sequence — the nudge stages follow the tour's end.
  */
 export interface OnboardingTourMetadata {
   tour: string
   step_count?: number
   step_number?: number
   coach_id?: string
+  is_landing?: boolean
   skip_reason?: OnboardingTourSkipReason
 }
 
