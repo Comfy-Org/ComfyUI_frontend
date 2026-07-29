@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import { creditsToCents, usdToCredits } from '@/base/credits/comfyCredits'
 import enMessages from '@/locales/en/main.json'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import AutoReloadDialogContent from '@/platform/workspace/components/dialogs/AutoReloadDialogContent.vue'
 import { useAutoReload } from '@/platform/workspace/composables/useAutoReload'
 import type { AutoReloadConfig } from '@/platform/workspace/composables/useAutoReload'
@@ -27,6 +28,13 @@ vi.mock('@/platform/workspace/composables/useAutoReloadAccess', () => ({
 
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => dialogStoreMocks
+}))
+
+vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+  workspaceApi: {
+    getAutoReload: vi.fn(),
+    updateAutoReload: vi.fn()
+  }
 }))
 
 const autoReload = useAutoReload()
@@ -64,11 +72,28 @@ function setConfig(overrides: Partial<AutoReloadConfig> = {}) {
 }
 
 describe('AutoReloadDialogContent', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetAllMocks()
     dialogStoreMocks.closeDialog.mockReset()
     mockCanAccess.value = true
     mockAccessFrozen.value = false
-    autoReload.scopeToWorkspace('workspace-a')
+    vi.mocked(workspaceApi.getAutoReload).mockResolvedValue({
+      configured: false,
+      enabled: false,
+      threshold_credits: null,
+      reload_credits: null,
+      monthly_budget_cents: null,
+      spent_this_cycle_cents: 0
+    })
+    vi.mocked(workspaceApi.updateAutoReload).mockImplementation(
+      async (payload) => ({
+        configured: true,
+        ...payload,
+        spent_this_cycle_cents: 0
+      })
+    )
+    await autoReload.scopeToWorkspace(null)
+    await autoReload.scopeToWorkspace('workspace-a')
     setConfig()
   })
 
@@ -398,6 +423,23 @@ describe('AutoReloadDialogContent', () => {
       key: 'auto-reload'
     })
     await user.click(screen.getByRole('button', { name: 'Update' }))
+    expect(autoReload.config.configured).toBe(false)
+  })
+
+  it('keeps the dialog open and reports a failed save for retry', async () => {
+    const user = userEvent.setup()
+    vi.mocked(workspaceApi.updateAutoReload).mockRejectedValueOnce(
+      new Error('save failed')
+    )
+    renderDialog()
+    dialogStoreMocks.closeDialog.mockClear()
+
+    await user.click(screen.getByRole('button', { name: 'Update' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Couldn’t save auto-reload settings. Try again.'
+    )
+    expect(dialogStoreMocks.closeDialog).not.toHaveBeenCalled()
     expect(autoReload.config.configured).toBe(false)
   })
 })

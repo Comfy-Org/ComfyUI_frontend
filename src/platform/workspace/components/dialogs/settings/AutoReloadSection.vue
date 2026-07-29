@@ -21,13 +21,16 @@
           {{ $t('workspacePanel.autoReload.subtitle') }}
         </span>
       </div>
-      <div v-if="isConfigured" class="flex shrink-0 items-center gap-3">
+      <div
+        v-if="isInitialized && isConfigured"
+        class="flex shrink-0 items-center gap-3"
+      >
         <span class="flex items-center gap-2 text-sm text-muted-foreground">
           {{ enabledLabel }}
           <Switch
             :model-value="displayEnabled"
             class="disabled:opacity-100"
-            :disabled="frozen"
+            :disabled="frozen || isSaving"
             :aria-label="$t('workspacePanel.autoReload.toggleLabel')"
             @update:model-value="handleEnabledChange"
           />
@@ -36,7 +39,7 @@
           variant="secondary"
           size="lg"
           class="disabled:opacity-100"
-          :disabled="frozen"
+          :disabled="frozen || isSaving"
           @click="openConfig"
         >
           {{ $t('workspacePanel.autoReload.edit') }}
@@ -44,7 +47,23 @@
       </div>
     </div>
 
-    <div v-if="!isConfigured" class="grid grid-cols-1 gap-4 @4xl:grid-cols-2">
+    <div v-if="isLoading" class="text-sm text-muted-foreground" role="status">
+      {{ $t('workspacePanel.autoReload.loading') }}
+    </div>
+
+    <div v-else-if="error && !isInitialized" class="flex items-center gap-3">
+      <span class="text-danger text-sm" role="alert">
+        {{ $t('workspacePanel.autoReload.loadError') }}
+      </span>
+      <Button variant="secondary" size="lg" @click="retry">
+        {{ $t('workspacePanel.autoReload.retry') }}
+      </Button>
+    </div>
+
+    <div
+      v-else-if="!isConfigured"
+      class="grid grid-cols-1 gap-4 @4xl:grid-cols-2"
+    >
       <div
         class="flex flex-col gap-3 rounded-xl bg-modal-panel-background px-6 py-5"
       >
@@ -126,6 +145,14 @@
         </template>
       </div>
     </div>
+
+    <p
+      v-if="error && isInitialized"
+      class="text-danger m-0 text-sm"
+      role="alert"
+    >
+      {{ $t('workspacePanel.autoReload.saveError') }}
+    </p>
   </div>
 </template>
 
@@ -160,14 +187,19 @@ const {
   budgetUsedFraction,
   isPaused,
   isWarning,
+  isLoading,
+  isSaving,
+  isInitialized,
+  error,
   setEnabled,
-  scopeToWorkspace
+  scopeToWorkspace,
+  retry
 } = useAutoReload()
 const { activeWorkspaceId } = storeToRefs(useTeamWorkspaceStore())
 const { canConfigureNow } = useAutoReloadAccess()
 
-scopeToWorkspace(activeWorkspaceId.value)
-watch(activeWorkspaceId, scopeToWorkspace)
+void scopeToWorkspace(activeWorkspaceId.value)
+watch(activeWorkspaceId, (workspaceId) => void scopeToWorkspace(workspaceId))
 
 const displayEnabled = computed(() => !frozen && isEnabled.value)
 let isAlive = true
@@ -178,7 +210,7 @@ onScopeDispose(() => {
 const { showAutoReloadDialog } = useDialogService()
 
 function openConfig() {
-  if (frozen || !canConfigureNow()) return
+  if (frozen || isSaving.value || !canConfigureNow()) return
   const workspaceId = activeWorkspaceId.value
   void showAutoReloadDialog({
     workspaceId,
@@ -186,13 +218,14 @@ function openConfig() {
       isAlive &&
       activeWorkspaceId.value === workspaceId &&
       canConfigureNow() &&
+      !isSaving.value &&
       !frozen
   })
 }
 
 function handleEnabledChange(value: boolean) {
-  if (frozen || !canConfigureNow()) return
-  setEnabled(value)
+  if (frozen || isSaving.value || !canConfigureNow()) return
+  void setEnabled(value).catch(() => {})
 }
 
 function fmtCredits(value: number) {

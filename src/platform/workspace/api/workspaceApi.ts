@@ -288,6 +288,22 @@ export interface BillingBalanceResponse {
   currency: string
 }
 
+export interface AutoReloadResponse {
+  configured: boolean
+  enabled: boolean
+  threshold_credits: number | null
+  reload_credits: number | null
+  monthly_budget_cents: number | null
+  spent_this_cycle_cents: number
+}
+
+export interface UpdateAutoReloadRequest {
+  enabled: boolean
+  threshold_credits: number
+  reload_credits: number
+  monthly_budget_cents: number | null
+}
+
 interface CreateTopupRequest {
   amount_cents: number
   idempotency_key?: string
@@ -620,6 +636,35 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<BillingBalanceResponse>(
         api.apiURL('/billing/balance'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async getAutoReload(): Promise<AutoReloadResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<AutoReloadResponse>(
+        api.apiURL('/billing/auto-reload'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async updateAutoReload(
+    payload: UpdateAutoReloadRequest
+  ): Promise<AutoReloadResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.put<AutoReloadResponse>(
+        api.apiURL('/billing/auto-reload'),
+        payload,
         { headers }
       )
       return response.data

@@ -8,6 +8,7 @@ const {
   mockAxiosInstance: {
     get: vi.fn(),
     post: vi.fn(),
+    put: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
     interceptors: { response: { use: vi.fn() } }
@@ -372,6 +373,75 @@ describe('workspaceApi', () => {
         }
       )
       expect(result).toEqual(data)
+    })
+
+    it('getAutoReload() sends authenticated GET /billing/auto-reload', async () => {
+      const data = {
+        configured: false,
+        enabled: false,
+        threshold_credits: null,
+        reload_credits: null,
+        monthly_budget_cents: null,
+        spent_this_cycle_cents: 0
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getAutoReload()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/auto-reload',
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('updateAutoReload() sends the exact authenticated PUT payload', async () => {
+      const payload = {
+        enabled: true,
+        threshold_credits: 2000,
+        reload_credits: 6000,
+        monthly_budget_cents: null
+      }
+      const data = {
+        configured: true,
+        ...payload,
+        spent_this_cycle_cents: 0
+      }
+      mockAxiosInstance.put.mockResolvedValue({ data })
+
+      const result = await workspaceApi.updateAutoReload(payload)
+
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/billing/auto-reload',
+        payload,
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getAutoReload() exposes auth and API failures', async () => {
+      const authError = new Error('not authenticated')
+      mockGetAuthHeaderOrThrow.mockRejectedValueOnce(authError)
+      await expect(workspaceApi.getAutoReload()).rejects.toBe(authError)
+
+      const axiosError = {
+        isAxiosError: true,
+        response: { status: 503, data: { message: 'Unavailable' } },
+        message: 'Request failed'
+      }
+      mockAxiosInstance.put.mockRejectedValueOnce(axiosError)
+      await expect(
+        workspaceApi.updateAutoReload({
+          enabled: false,
+          threshold_credits: 1000,
+          reload_credits: 5000,
+          monthly_budget_cents: 10_000
+        })
+      ).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 503,
+        message: 'Unavailable'
+      })
     })
 
     it('getBillingPlans() sends GET /billing/plans', async () => {

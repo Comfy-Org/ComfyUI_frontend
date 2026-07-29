@@ -191,6 +191,10 @@
       </p>
     </div>
 
+    <p v-if="error" class="text-danger m-0 px-4 text-sm" role="alert">
+      {{ $t('workspacePanel.autoReload.saveError') }}
+    </p>
+
     <div
       class="flex items-center justify-between border-t border-border-default p-4"
     >
@@ -255,13 +259,13 @@ import { storeToRefs } from 'pinia'
 const { t, n: fmtNumber, locale } = useI18n()
 const { workspaceId } = defineProps<{ workspaceId: string | null }>()
 const dialogStore = useDialogStore()
-const { config, save, scopeToWorkspace } = useAutoReload()
+const { config, error, isSaving, save, scopeToWorkspace } = useAutoReload()
 const { activeWorkspaceId } = storeToRefs(useTeamWorkspaceStore())
 const { canConfigure } = useAutoReloadAccess()
 const canConfigureWorkspace = computed(
   () => canConfigure.value && activeWorkspaceId.value === workspaceId
 )
-scopeToWorkspace(activeWorkspaceId.value)
+void scopeToWorkspace(activeWorkspaceId.value)
 
 type Unit = 'credits' | 'usd'
 const unitOptions: Unit[] = ['credits', 'usd']
@@ -500,7 +504,11 @@ const budgetWarning = computed(() => {
 })
 
 const canUpdate = computed(
-  () => !thresholdError.value && !reloadError.value && !budgetError.value
+  () =>
+    !isSaving.value &&
+    !thresholdError.value &&
+    !reloadError.value &&
+    !budgetError.value
 )
 
 function onClose() {
@@ -508,7 +516,7 @@ function onClose() {
 }
 
 watch(activeWorkspaceId, (workspaceId) => {
-  scopeToWorkspace(workspaceId)
+  void scopeToWorkspace(workspaceId)
   onClose()
 })
 
@@ -520,18 +528,22 @@ watch(
   { immediate: true }
 )
 
-function onUpdate() {
+async function onUpdate() {
   if (!canConfigureWorkspace.value) {
     onClose()
     return
   }
   if (!canUpdate.value) return
-  save({
-    thresholdCredits: thresholdCredits.value,
-    reloadCredits: reloadCredits.value,
-    monthlyBudgetCents:
-      budgetEnabled.value && budgetCents.value > 0 ? budgetCents.value : null
-  })
-  onClose()
+  try {
+    await save({
+      thresholdCredits: thresholdCredits.value,
+      reloadCredits: reloadCredits.value,
+      monthlyBudgetCents:
+        budgetEnabled.value && budgetCents.value > 0 ? budgetCents.value : null
+    })
+    onClose()
+  } catch {
+    return
+  }
 }
 </script>

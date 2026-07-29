@@ -2992,11 +2992,15 @@
       },
       "disabled": "Disabled",
       "edit": "Edit",
+      "loadError": "Couldn’t load auto-reload settings.",
+      "loading": "Loading auto-reload settings…",
       "empty": {
         "body": "Keep your workflows running with auto-reloaded credits. Set a monthly budget so charges don't surprise you.",
         "cta": "Set up auto-reload"
       },
       "enabled": "Enabled",
+      "retry": "Try again",
+      "saveError": "Couldn’t save auto-reload settings. Try again.",
       "subtitle": "Automatically add credits when your balance runs low, within an optional monthly budget.",
       "tile": {
         "label": "Auto-reload",

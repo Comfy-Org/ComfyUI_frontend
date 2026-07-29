@@ -6,6 +6,7 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import AutoReloadSection from '@/platform/workspace/components/dialogs/settings/AutoReloadSection.vue'
 import { useAutoReload } from '@/platform/workspace/composables/useAutoReload'
 import type { AutoReloadConfig } from '@/platform/workspace/composables/useAutoReload'
@@ -25,6 +26,13 @@ vi.mock('@/platform/workspace/composables/useAutoReloadAccess', () => ({
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => dialogMocks
+}))
+
+vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+  workspaceApi: {
+    getAutoReload: vi.fn(),
+    updateAutoReload: vi.fn()
+  }
 }))
 
 const i18n = createI18n({
@@ -62,11 +70,28 @@ function setConfig(overrides: Partial<AutoReloadConfig> = {}) {
 }
 
 describe('AutoReloadSection', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetAllMocks()
     dialogMocks.showAutoReloadDialog.mockReset()
     mockCanAccess.value = true
     mockAccessFrozen.value = false
-    autoReload.scopeToWorkspace('workspace-a')
+    vi.mocked(workspaceApi.getAutoReload).mockResolvedValue({
+      configured: false,
+      enabled: false,
+      threshold_credits: null,
+      reload_credits: null,
+      monthly_budget_cents: null,
+      spent_this_cycle_cents: 0
+    })
+    vi.mocked(workspaceApi.updateAutoReload).mockImplementation(
+      async (payload) => ({
+        configured: true,
+        ...payload,
+        spent_this_cycle_cents: 0
+      })
+    )
+    await autoReload.scopeToWorkspace(null)
+    await autoReload.scopeToWorkspace('workspace-a')
     setConfig({ configured: false, enabled: false, monthlyBudgetCents: null })
   })
 
@@ -177,6 +202,7 @@ describe('AutoReloadSection', () => {
     await user.click(
       screen.getByRole('switch', { name: 'Enable credit auto-reload' })
     )
+    await nextTick()
     expect(autoReload.isEnabled.value).toBe(true)
   })
 
@@ -191,6 +217,44 @@ describe('AutoReloadSection', () => {
     )
 
     expect(autoReload.isEnabled.value).toBe(true)
+  })
+
+  it('keeps the canonical enabled state and reports a failed update', async () => {
+    const user = userEvent.setup()
+    setConfig({ enabled: true })
+    vi.mocked(workspaceApi.updateAutoReload).mockRejectedValueOnce(
+      new Error('save failed')
+    )
+    renderSection()
+
+    await user.click(
+      screen.getByRole('switch', { name: 'Enable credit auto-reload' })
+    )
+
+    expect(autoReload.isEnabled.value).toBe(true)
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Couldn’t save auto-reload settings. Try again.'
+    )
+  })
+
+  it('blocks configuration changes while an update is pending', async () => {
+    const user = userEvent.setup()
+    setConfig({ enabled: true })
+    vi.mocked(workspaceApi.updateAutoReload).mockImplementationOnce(
+      () => new Promise(() => {})
+    )
+    renderSection()
+
+    await user.click(
+      screen.getByRole('switch', { name: 'Enable credit auto-reload' })
+    )
+
+    expect(
+      screen.getByRole('switch', { name: 'Enable credit auto-reload' })
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    expect(dialogMocks.showAutoReloadDialog).not.toHaveBeenCalled()
   })
 
   it('freezes all controls for a plan that cannot spend', async () => {
@@ -220,6 +284,20 @@ describe('AutoReloadSection', () => {
     await nextTick()
 
     expect(autoReload.config.configured).toBe(false)
-    expect(screen.getByText('Set up auto-reload')).toBeInTheDocument()
+    expect(await screen.findByText('Set up auto-reload')).toBeInTheDocument()
+  })
+
+  it('shows a retry action after the initial read fails twice', async () => {
+    vi.mocked(workspaceApi.getAutoReload).mockRejectedValue(
+      new Error('unavailable')
+    )
+    await autoReload.scopeToWorkspace('workspace-b')
+
+    renderSection(false, 'workspace-b')
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Couldn’t load auto-reload settings.'
+    )
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled()
   })
 })
