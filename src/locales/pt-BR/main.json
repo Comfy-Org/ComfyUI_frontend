@@ -611,14 +611,14 @@
     "chooseProfilePicture": "Escolha uma foto de perfil",
     "createProfile": "Criar perfil",
     "createProfileButton": "Criar meu perfil",
-    "createProfileTitle": "Crie seu perfil no Comfy Hub",
+    "createProfileTitle": "Crie seu perfil no Comfy Workflows",
     "creatingProfile": "Criando perfil...",
     "descriptionLabel": "Sua descrição",
     "descriptionPlaceholder": "Conte para a comunidade sobre você...",
     "introDescription": "Publique seus fluxos de trabalho, construa seu portfólio e seja descoberto por milhões de usuários",
-    "introSubtitle": "Para compartilhar seu fluxo de trabalho no ComfyHub, vamos primeiro criar seu perfil.",
-    "introTitle": "Publique no ComfyHub",
-    "modalTitle": "Crie seu perfil no ComfyHub",
+    "introSubtitle": "Para compartilhar seu fluxo de trabalho no Comfy Workflows, vamos primeiro criar seu perfil.",
+    "introTitle": "Publique no Comfy Workflows",
+    "modalTitle": "Crie seu perfil no Comfy Workflows",
     "nameLabel": "Seu nome",
     "namePlaceholder": "Digite seu nome aqui",
     "profileCreationNav": "Criação de perfil",
@@ -628,8 +628,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "Sua página de perfil está ativa em",
     "successTitle": "Muito bom, {'@'}{username}!",
-    "updateIntroDescription": "Envie suas últimas alterações para o ComfyHub. Seu link de compartilhamento e estatísticas permanecem os mesmos.",
-    "updateIntroTitle": "Atualize seu workflow do ComfyHub",
+    "updateIntroDescription": "Envie suas últimas alterações para o Comfy Workflows. Seu link de compartilhamento e estatísticas permanecem os mesmos.",
+    "updateIntroTitle": "Atualize seu workflow no Comfy Workflows",
     "uploadCover": "+ Enviar uma capa",
     "uploadProfilePicture": "+ Enviar uma foto de perfil",
     "uploadWorkflowButton": "Enviar meu fluxo de trabalho",
@@ -641,16 +641,16 @@
     "additionalInfo": "Informações adicionais",
     "back": "Voltar",
     "createProfileCta": "Criar um perfil",
-    "createProfileToPublish": "Crie um perfil para publicar no ComfyHub",
+    "createProfileToPublish": "Crie um perfil para publicar no Comfy Workflows",
     "exampleImage": "Imagem de exemplo {index}",
     "exampleImagePosition": "Imagem de exemplo {index} de {total}",
     "examplesDescription": "Adicione até {total} imagens de exemplo adicionais",
     "maxExamples": "Você pode selecionar até {max} exemplos",
     "next": "Avançar",
-    "publishButton": "Publicar no ComfyHub",
+    "publishButton": "Publicar no Comfy Workflows",
     "publishFailedDescription": "Algo deu errado ao publicar seu fluxo de trabalho. Por favor, tente novamente.",
     "publishFailedTitle": "Falha ao publicar",
-    "publishSuccessDescription": "Seu fluxo de trabalho está agora disponível no ComfyHub.",
+    "publishSuccessDescription": "Seu fluxo de trabalho está agora disponível no Comfy Workflows.",
     "publishSuccessTitle": "Publicado com sucesso",
     "removeExampleImage": "Remover imagem de exemplo",
     "renameFailedDescription": "Seu workflow foi publicado com sucesso, mas a renomeação do arquivo local falhou. Renomeie novamente para corresponder.",
@@ -670,8 +670,8 @@
     "thumbnailImageComparison": "Comparação de imagens",
     "thumbnailPreview": "Prévia da miniatura",
     "thumbnailVideo": "Vídeo",
-    "title": "Publicar no ComfyHub",
-    "unsavedDescription": "Você precisa salvar seu fluxo de trabalho antes de publicar no ComfyHub. Salve agora para continuar.",
+    "title": "Publicar no Comfy Workflows",
+    "unsavedDescription": "Você precisa salvar seu fluxo de trabalho antes de publicar no Comfy Workflows. Salve agora para continuar.",
     "updateButton": "Atualizar workflow",
     "uploadAnImage": "Clique para procurar ou arraste uma imagem",
     "uploadComparison": "Enviar antes e depois",
@@ -2099,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "pelo menos um",
       "connectAtLeastOne": "Conecte {atLeastOne} nó de saída para que os usuários possam ver os resultados após a execução.",
+      "descriptionPlaceholder": "Clique duas vezes para adicionar uma descrição",
       "noOutputs": "Nenhuma saída adicionada ainda",
       "outputExamples": "Exemplos: 'Salvar imagem' ou 'Salvar vídeo'",
       "outputs": "Saídas",
@@ -2892,6 +2893,7 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "máscara",
     "merging": "mesclagem",
     "mochi": "mochi",
@@ -3512,6 +3514,7 @@
     "Load 3D": "Carregar 3D & Animação",
     "Locale": "Idioma",
     "Mask Editor": "Editor de Máscara",
+    "Members": "Membros",
     "Menu": "Menu",
     "ModelLibrary": "Biblioteca de Modelos",
     "Node": "Nó",
@@ -3562,9 +3565,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "Entendo que estes arquivos de mídia serão publicados e tornados públicos",
     "checkingAssets": "Verificando visibilidade da mídia…",
-    "comfyHubButton": "Enviar para o ComfyHub",
-    "comfyHubDescription": "ComfyHub é o hub oficial da comunidade do ComfyUI.\nSeu fluxo de trabalho terá uma página pública visível para todos.",
-    "comfyHubTitle": "Enviar para o ComfyHub",
+    "comfyHubButton": "Enviar para o Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows é o hub oficial da comunidade do ComfyUI.\nSeu fluxo de trabalho terá uma página pública visível para todos.",
+    "comfyHubTitle": "Enviar para o Comfy Workflows",
     "copyLink": "Copiar",
     "createLinkButton": "Criar link",
     "createLinkDescription": "Ao criar um link para seu fluxo de trabalho, você compartilhará estes arquivos de mídia junto com seu fluxo de trabalho",
@@ -3886,6 +3889,7 @@
     "freeTier": {
       "description": "Seu plano gratuito inclui {credits} créditos por mês para testar o Comfy Cloud.",
       "descriptionGeneric": "Seu plano gratuito inclui uma cota mensal de créditos para testar o Comfy Cloud.",
+      "descriptionQuota": "Seu plano gratuito inclui {runs} execuções para começar a usar o Comfy Cloud — não é necessário cartão.",
       "nextRefresh": "Seus créditos serão renovados em {date}.",
       "outOfCredits": {
         "subtitle": "Assine para liberar recargas e mais benefícios",
@@ -4418,6 +4422,24 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "Créditos",
+        "date": "Data",
+        "eventDetails": "Detalhes do evento",
+        "eventType": "Tipo de evento",
+        "user": "Usuário"
+      },
+      "empty": "Nenhuma atividade ainda.",
+      "fullActivity": "Atividade completa",
+      "hoverCard": {
+        "lastActivity": "Última atividade",
+        "partnerNodeUsed": "Nó parceiro utilizado",
+        "totalCreditsUsed": "Total de créditos usados"
+      },
+      "perUserHint": "Procurando o uso total por usuário?",
+      "seeMembers": "Ver membros"
+    },
     "billingStatus": {
       "ending": {
         "body": "Os membros mantêm acesso total até lá. Reative para manter seus créditos e vagas compartilhados.",
@@ -4505,14 +4527,31 @@
         "cancelInvite": "Cancelar convite",
         "changeRole": "Alterar função",
         "removeMember": "Remover membro",
-        "resendInvite": "Reenviar convite"
+        "resendInvite": "Reenviar convite",
+        "setCreditLimit": "Definir limite de crédito"
+      },
+      "activity": {
+        "daysAgo": "há {count} dia | há {count} dias",
+        "hoursAgo": "há {n} h",
+        "justNow": "agora mesmo",
+        "minutesAgo": "há {n} min"
       },
       "columns": {
+        "creditsUsed": "Créditos mensais",
         "expiryDate": "Data de expiração",
         "inviteDate": "Data do convite",
         "role": "Função"
       },
       "contactUs": "Fale conosco",
+      "creditLimitDialog": {
+        "description": "Quando atingir esse limite, não será possível executar workflows.",
+        "invalidLimit": "Insira um limite de crédito maior que zero.",
+        "limitOption": "Limitar uso mensal de créditos para:",
+        "noLimit": "Sem limite",
+        "title": "Definir um limite mensal de créditos para {name}",
+        "update": "Atualizar limite",
+        "warning": "Este usuário já gastou {credits} créditos. Definir o limite igual ou abaixo do uso atual impedirá novas execuções até o próximo mês."
+      },
       "header": "Membros",
       "membersCount": "{count}/50 Membros",
       "needMoreMembers": "Precisa de mais membros?",
@@ -4535,6 +4574,12 @@
       "deleteWorkspaceDisabledTooltip": "Cancele a assinatura ativa do seu espaço de trabalho primeiro",
       "editWorkspace": "Editar detalhes do espaço de trabalho",
       "leaveWorkspace": "Sair do espaço de trabalho"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "Atividade",
+        "overview": "Créditos"
+      }
     },
     "removeMemberDialog": {
       "error": "Falha ao remover membro",

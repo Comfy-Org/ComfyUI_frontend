@@ -53,11 +53,11 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
-const mockTrackMonthlySubscriptionSucceeded = vi.fn()
+const mockTrackBillingEvent = vi.fn()
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
+    trackBillingEvent: mockTrackBillingEvent
   })
 }))
 
@@ -251,10 +251,51 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'subscription_checkout',
+        stage: 'succeeded',
+        outcome: 'success',
+        tier: undefined,
+        cycle: undefined,
+        checkout_type: undefined,
+        payment_intent_source: undefined,
+        billing_op_id: 'op-1'
+      })
     })
 
-    it('does not fire purchase telemetry on topup success', async () => {
+    it('emits downgrade success only after the billing operation succeeds', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-downgrade',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-downgrade', 'subscription', {
+        tier: 'creator',
+        cycle: 'monthly',
+        checkoutType: 'change',
+        downgradeToPersonal: {
+          memberRemovalCount: 2,
+          memberRemovalFailures: 0,
+          targetTier: 'creator'
+        }
+      })
+
+      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'succeeded',
+        outcome: 'success',
+        member_removal_count: 2,
+        member_removal_failures: 0,
+        target_tier: 'creator'
+      })
+    })
+
+    it('fires canonical topup success telemetry', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
@@ -266,7 +307,12 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'topup',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op-1'
+      })
     })
 
     it('shows topup success message for topup operations', async () => {
@@ -308,7 +354,7 @@ describe('billingOperationStore', () => {
 
   describe('polling failure', () => {
     it('updates status and shows error toast on failure', async () => {
-      const errorMessage = 'Payment declined'
+      const errorMessage = 'Payment declined for person@example.com'
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'failed',
@@ -330,6 +376,18 @@ describe('billingOperationStore', () => {
         severity: 'error',
         summary: 'billingOperation.subscriptionFailed',
         detail: errorMessage
+      })
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: 'op-1',
+        operation_type: 'subscription',
+        tier: undefined,
+        cycle: undefined,
+        checkout_type: undefined,
+        payment_intent_source: undefined,
+        failure_category: 'unknown'
       })
     })
 
@@ -431,6 +489,13 @@ describe('billingOperationStore', () => {
       expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
         isSubscribed: false
       })
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op-1',
+        operation_type: 'cancel'
+      })
     })
 
     it('resolves the terminal outcome even when the post-success refresh fails', async () => {
@@ -484,6 +549,14 @@ describe('billingOperationStore', () => {
       expect(operation.errorMessage).toBe('billingOperation.cancelFailed')
       expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'operation',
+          stage: 'failed',
+          billing_op_id: 'op-1',
+          operation_type: 'cancel'
+        })
+      )
     })
 
     it('resolves with a timeout operation after 2 minutes, no toast', async () => {
@@ -504,6 +577,14 @@ describe('billingOperationStore', () => {
       expect(operation.errorMessage).toBe('billingOperation.cancelTimeout')
       expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'operation',
+          stage: 'timeout',
+          billing_op_id: 'op-1',
+          operation_type: 'cancel'
+        })
+      )
     })
   })
 

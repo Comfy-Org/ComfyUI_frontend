@@ -447,6 +447,31 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       ).toBe(true)
     })
 
+    test(
+      'Legacy -1 proxyWidgets entries restore correct widget value',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-legacy-reordered-links'
+        )
+        const width = comfyPage.vueNodes.getWidgetByName(
+          'New Subgraph',
+          'width'
+        )
+        await expect(width).toBeVisible()
+        const widthInput =
+          comfyPage.vueNodes.getInputNumberControls(width).input
+        await expect(widthInput).toHaveValue('512')
+        const batch = comfyPage.vueNodes.getWidgetByName(
+          'New Subgraph',
+          'batch_size'
+        )
+        const batchInput =
+          comfyPage.vueNodes.getInputNumberControls(batch).input
+        await expect(batchInput).toHaveValue('1')
+      }
+    )
+
     test('Promoted widgets survive serialize -> loadGraphData round-trip', async ({
       comfyPage
     }) => {

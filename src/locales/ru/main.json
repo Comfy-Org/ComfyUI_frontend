@@ -611,14 +611,14 @@
     "chooseProfilePicture": "Выберите фото профиля",
     "createProfile": "Создать профиль",
     "createProfileButton": "Создать мой профиль",
-    "createProfileTitle": "Создайте профиль Comfy Hub",
+    "createProfileTitle": "Создайте профиль Comfy Workflows",
     "creatingProfile": "Создание профиля...",
     "descriptionLabel": "Ваше описание",
     "descriptionPlaceholder": "Расскажите сообществу о себе...",
     "introDescription": "Публикуйте свои workflow, создавайте портфолио и становитесь заметнее для миллионов пользователей",
-    "introSubtitle": "Чтобы поделиться своим workflow в ComfyHub, сначала создайте профиль.",
-    "introTitle": "Публикация в ComfyHub",
-    "modalTitle": "Создайте свой профиль в ComfyHub",
+    "introSubtitle": "Чтобы поделиться своим workflow в Comfy Workflows, сначала создайте профиль.",
+    "introTitle": "Публикация в Comfy Workflows",
+    "modalTitle": "Создайте свой профиль в Comfy Workflows",
     "nameLabel": "Ваше имя",
     "namePlaceholder": "Введите ваше имя",
     "profileCreationNav": "Создание профиля",
@@ -628,8 +628,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "Ваша страница профиля доступна по адресу",
     "successTitle": "Отлично, {'@'}{username}!",
-    "updateIntroDescription": "Отправьте ваши последние изменения в ComfyHub. Ваша ссылка для обмена и статистика останутся прежними.",
-    "updateIntroTitle": "Обновите ваш workflow в ComfyHub",
+    "updateIntroDescription": "Отправьте ваши последние изменения в Comfy Workflows. Ваша ссылка для обмена и статистика останутся прежними.",
+    "updateIntroTitle": "Обновите ваш workflow в Comfy Workflows",
     "uploadCover": "+ Загрузить обложку",
     "uploadProfilePicture": "+ Загрузить фото профиля",
     "uploadWorkflowButton": "Загрузить мой workflow",
@@ -641,16 +641,16 @@
     "additionalInfo": "Дополнительная информация",
     "back": "Назад",
     "createProfileCta": "Создать профиль",
-    "createProfileToPublish": "Создайте профиль для публикации в ComfyHub",
+    "createProfileToPublish": "Создайте профиль для публикации в Comfy Workflows",
     "exampleImage": "Пример изображения {index}",
     "exampleImagePosition": "Пример изображения {index} из {total}",
     "examplesDescription": "Добавьте до {total} дополнительных примеров изображений",
     "maxExamples": "Вы можете выбрать до {max} примеров",
     "next": "Далее",
-    "publishButton": "Опубликовать в ComfyHub",
+    "publishButton": "Опубликовать в Comfy Workflows",
     "publishFailedDescription": "Произошла ошибка при публикации вашего рабочего процесса. Пожалуйста, попробуйте еще раз.",
     "publishFailedTitle": "Ошибка публикации",
-    "publishSuccessDescription": "Ваш рабочий процесс теперь доступен на ComfyHub.",
+    "publishSuccessDescription": "Ваш рабочий процесс теперь доступен на Comfy Workflows.",
     "publishSuccessTitle": "Успешно опубликовано",
     "removeExampleImage": "Удалить пример изображения",
     "renameFailedDescription": "Ваш workflow был успешно опубликован, но не удалось переименовать локальный файл. Переименуйте его снова, чтобы совпадало.",
@@ -670,8 +670,8 @@
     "thumbnailImageComparison": "Сравнение изображений",
     "thumbnailPreview": "Превью миниатюры",
     "thumbnailVideo": "Видео",
-    "title": "Публикация в ComfyHub",
-    "unsavedDescription": "Вы должны сохранить свой рабочий процесс перед публикацией в ComfyHub. Сохраните его сейчас, чтобы продолжить.",
+    "title": "Публикация в Comfy Workflows",
+    "unsavedDescription": "Вы должны сохранить свой рабочий процесс перед публикацией в Comfy Workflows. Сохраните его сейчас, чтобы продолжить.",
     "updateButton": "Обновить workflow",
     "uploadAnImage": "Нажмите для выбора или перетащите изображение",
     "uploadComparison": "Загрузить до и после",
@@ -2099,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "хотя бы один",
       "connectAtLeastOne": "Подключите {atLeastOne} выходной узел, чтобы пользователи могли видеть результаты после запуска.",
+      "descriptionPlaceholder": "Дважды кликните, чтобы добавить описание",
       "noOutputs": "Выходы ещё не добавлены",
       "outputExamples": "Примеры: «Сохранить изображение» или «Сохранить видео»",
       "outputs": "Выходы",
@@ -2892,6 +2893,7 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "маска",
     "merging": "слияние",
     "mochi": "mochi",
@@ -3512,6 +3514,7 @@
     "Load 3D": "Загрузить 3D",
     "Locale": "Локализация",
     "Mask Editor": "Редактор масок",
+    "Members": "Участники",
     "Menu": "Меню",
     "ModelLibrary": "Библиотека моделей",
     "Node": "Нода",
@@ -3562,9 +3565,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "Я понимаю, что эти медиафайлы будут опубликованы и станут общедоступными",
     "checkingAssets": "Проверка видимости медиафайлов…",
-    "comfyHubButton": "Загрузить в ComfyHub",
-    "comfyHubDescription": "ComfyHub — это официальный хаб сообщества ComfyUI.\nВаш рабочий процесс получит публичную страницу, доступную для всех.",
-    "comfyHubTitle": "Загрузить в ComfyHub",
+    "comfyHubButton": "Загрузить в Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows — это официальный хаб сообщества ComfyUI.\nВаш рабочий процесс получит публичную страницу, доступную для всех.",
+    "comfyHubTitle": "Загрузить в Comfy Workflows",
     "copyLink": "Копировать",
     "createLinkButton": "Создать ссылку",
     "createLinkDescription": "Когда вы создаёте ссылку на рабочий процесс, вы также делитесь этими медиафайлами",
@@ -3874,6 +3877,7 @@
     "freeTier": {
       "description": "Ваш бесплатный тариф включает {credits} кредитов каждый месяц для использования Comfy Cloud.",
       "descriptionGeneric": "Ваш бесплатный тариф включает ежемесячный лимит кредитов для использования Comfy Cloud.",
+      "descriptionQuota": "Ваш бесплатный план включает {runs} запусков для начала работы с Comfy Cloud — без необходимости указывать карту.",
       "nextRefresh": "Кредиты обновятся {date}.",
       "outOfCredits": {
         "subtitle": "Оформите подписку для пополнения и других возможностей",
@@ -4406,6 +4410,24 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "Кредиты",
+        "date": "Дата",
+        "eventDetails": "Детали события",
+        "eventType": "Тип события",
+        "user": "Пользователь"
+      },
+      "empty": "Активность отсутствует.",
+      "fullActivity": "Вся активность",
+      "hoverCard": {
+        "lastActivity": "Последняя активность",
+        "partnerNodeUsed": "Использован партнерский узел",
+        "totalCreditsUsed": "Всего использовано кредитов"
+      },
+      "perUserHint": "Ищете общее использование по пользователю?",
+      "seeMembers": "Посмотреть участников"
+    },
     "billingStatus": {
       "ending": {
         "body": "Участники сохраняют полный доступ до этого времени. Активируйте снова, чтобы сохранить общие кредиты и места.",
@@ -4493,14 +4515,31 @@
         "cancelInvite": "Отменить приглашение",
         "changeRole": "Изменить роль",
         "removeMember": "Удалить участника",
-        "resendInvite": "Повторно отправить приглашение"
+        "resendInvite": "Повторно отправить приглашение",
+        "setCreditLimit": "Установить лимит кредитов"
+      },
+      "activity": {
+        "daysAgo": "{count} день назад | {count} дней назад",
+        "hoursAgo": "{n} ч назад",
+        "justNow": "только что",
+        "minutesAgo": "{n} мин назад"
       },
       "columns": {
+        "creditsUsed": "Кредиты за месяц",
         "expiryDate": "Дата истечения",
         "inviteDate": "Дата приглашения",
         "role": "Роль"
       },
       "contactUs": "Связаться с нами",
+      "creditLimitDialog": {
+        "description": "После достижения этого лимита пользователь не сможет запускать workflows.",
+        "invalidLimit": "Введите лимит кредитов больше нуля.",
+        "limitOption": "Ограничить месячное использование кредитов до:",
+        "noLimit": "Без лимита",
+        "title": "Установить месячный лимит кредитов для {name}",
+        "update": "Обновить лимит",
+        "warning": "Этот пользователь уже потратил {credits} кредитов. Установка лимита на уровне или ниже текущего использования заблокирует дальнейшие запуски до следующего месяца."
+      },
       "header": "Участники",
       "membersCount": "{count}/50 участников",
       "needMoreMembers": "Нужно больше участников?",
@@ -4523,6 +4562,12 @@
       "deleteWorkspaceDisabledTooltip": "Сначала отмените активную подписку рабочего пространства",
       "editWorkspace": "Редактировать детали рабочего пространства",
       "leaveWorkspace": "Покинуть рабочее пространство"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "Активность",
+        "overview": "Кредиты"
+      }
     },
     "removeMemberDialog": {
       "error": "Не удалось удалить участника",

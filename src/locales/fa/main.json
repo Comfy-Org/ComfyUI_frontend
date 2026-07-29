@@ -611,14 +611,14 @@
     "chooseProfilePicture": "انتخاب تصویر پروفایل",
     "createProfile": "ساخت پروفایل",
     "createProfileButton": "ساخت پروفایل من",
-    "createProfileTitle": "ساخت پروفایل Comfy Hub",
+    "createProfileTitle": "ساخت پروفایل Comfy Workflows",
     "creatingProfile": "در حال ساخت پروفایل...",
     "descriptionLabel": "توضیحات شما",
     "descriptionPlaceholder": "درباره خودتان به جامعه توضیح دهید...",
     "introDescription": "جریان‌کارهای خود را منتشر کنید، نمونه‌کار بسازید و توسط میلیون‌ها کاربر دیده شوید",
-    "introSubtitle": "برای اشتراک‌گذاری جریان‌کار خود در ComfyHub، ابتدا پروفایل خود را بسازید.",
-    "introTitle": "انتشار در ComfyHub",
-    "modalTitle": "ساخت پروفایل در ComfyHub",
+    "introSubtitle": "برای اشتراک‌گذاری جریان‌کار خود در Comfy Workflows، ابتدا پروفایل خود را بسازید.",
+    "introTitle": "انتشار در Comfy Workflows",
+    "modalTitle": "ساخت پروفایل در Comfy Workflows",
     "nameLabel": "نام شما",
     "namePlaceholder": "نام خود را اینجا وارد کنید",
     "profileCreationNav": "ساخت پروفایل",
@@ -628,8 +628,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "صفحه پروفایل شما فعال است در",
     "successTitle": "عالی به نظر می‌رسد، {'@'}{username}!",
-    "updateIntroDescription": "آخرین تغییرات خود را به ComfyHub ارسال کنید. لینک اشتراک‌گذاری و آمار شما بدون تغییر باقی می‌ماند.",
-    "updateIntroTitle": "به‌روزرسانی workflow شما در ComfyHub",
+    "updateIntroDescription": "آخرین تغییرات خود را به Comfy Workflows ارسال کنید. لینک اشتراک‌گذاری و آمار شما بدون تغییر باقی می‌ماند.",
+    "updateIntroTitle": "به‌روزرسانی workflow شما در Comfy Workflows",
     "uploadCover": "+ بارگذاری کاور",
     "uploadProfilePicture": "+ بارگذاری تصویر پروفایل",
     "uploadWorkflowButton": "بارگذاری جریان‌کار من",
@@ -641,16 +641,16 @@
     "additionalInfo": "اطلاعات تکمیلی",
     "back": "بازگشت",
     "createProfileCta": "ساخت پروفایل",
-    "createProfileToPublish": "برای انتشار در ComfyHub یک پروفایل بسازید",
+    "createProfileToPublish": "برای انتشار در Comfy Workflows یک پروفایل بسازید",
     "exampleImage": "تصویر نمونه {index}",
     "exampleImagePosition": "تصویر نمونه {index} از {total}",
     "examplesDescription": "تا {total} تصویر نمونه اضافی اضافه کنید",
     "maxExamples": "شما می‌توانید تا {max} نمونه انتخاب کنید",
     "next": "بعدی",
-    "publishButton": "انتشار در ComfyHub",
+    "publishButton": "انتشار در Comfy Workflows",
     "publishFailedDescription": "در هنگام انتشار گردش‌کار شما مشکلی پیش آمد. لطفاً دوباره تلاش کنید.",
     "publishFailedTitle": "انتشار ناموفق بود",
-    "publishSuccessDescription": "گردش‌کار شما اکنون در ComfyHub فعال است.",
+    "publishSuccessDescription": "گردش‌کار شما اکنون در Comfy Workflows فعال است.",
     "publishSuccessTitle": "با موفقیت منتشر شد",
     "removeExampleImage": "حذف تصویر نمونه",
     "renameFailedDescription": "workflow شما با موفقیت منتشر شد، اما تغییر نام فایل محلی انجام نشد. لطفاً دوباره نام آن را مطابق‌سازی کنید.",
@@ -670,8 +670,8 @@
     "thumbnailImageComparison": "مقایسه تصویر",
     "thumbnailPreview": "پیش‌نمایش بندانگشتی",
     "thumbnailVideo": "ویدیو",
-    "title": "انتشار در ComfyHub",
-    "unsavedDescription": "شما باید گردش‌کار خود را قبل از انتشار در ComfyHub ذخیره کنید. اکنون ذخیره کنید تا ادامه دهید.",
+    "title": "انتشار در Comfy Workflows",
+    "unsavedDescription": "شما باید گردش‌کار خود را قبل از انتشار در Comfy Workflows ذخیره کنید. اکنون ذخیره کنید تا ادامه دهید.",
     "updateButton": "به‌روزرسانی workflow",
     "uploadAnImage": "برای انتخاب کلیک کنید یا تصویر را بکشید",
     "uploadComparison": "بارگذاری قبل و بعد",
@@ -2099,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "یک",
       "connectAtLeastOne": "حداقل {atLeastOne} node خروجی را متصل کنید تا کاربران پس از اجرا نتایج را مشاهده کنند.",
+      "descriptionPlaceholder": "برای افزودن توضیح، دوبار کلیک کنید",
       "noOutputs": "هنوز هیچ خروجی اضافه نشده است",
       "outputExamples": "مثال‌ها: «ذخیره تصویر» یا «ذخیره ویدیو»",
       "outputs": "خروجی‌ها",
@@ -2892,6 +2893,7 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "ماسک",
     "merging": "ادغام",
     "mochi": "mochi",
@@ -3512,6 +3514,7 @@
     "Load 3D": "بارگذاری ۳بعدی و انیمیشن",
     "Locale": "زبان",
     "Mask Editor": "ویرایشگر Mask",
+    "Members": "اعضا",
     "Menu": "منو",
     "ModelLibrary": "کتابخانه مدل",
     "Node": "Node",
@@ -3562,9 +3565,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "متوجه شدم که این رسانه‌ها منتشر و عمومی خواهند شد",
     "checkingAssets": "در حال بررسی وضعیت رسانه‌ها…",
-    "comfyHubButton": "بارگذاری در ComfyHub",
-    "comfyHubDescription": "ComfyHub مرکز رسمی جامعه ComfyUI است.\nگردش‌کار شما یک صفحه عمومی خواهد داشت که برای همه قابل مشاهده است.",
-    "comfyHubTitle": "بارگذاری در ComfyHub",
+    "comfyHubButton": "بارگذاری در Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows مرکز رسمی جامعه ComfyUI است.\nگردش‌کار شما یک صفحه عمومی خواهد داشت که برای همه قابل مشاهده است.",
+    "comfyHubTitle": "بارگذاری در Comfy Workflows",
     "copyLink": "کپی",
     "createLinkButton": "ایجاد لینک",
     "createLinkDescription": "هنگام ایجاد لینک برای گردش‌کار، این رسانه‌ها نیز همراه با گردش‌کار شما به اشتراک گذاشته می‌شوند",
@@ -3886,6 +3889,7 @@
     "freeTier": {
       "description": "طرح رایگان شما شامل {credits} اعتبار در هر ماه برای استفاده از Comfy Cloud است.",
       "descriptionGeneric": "طرح رایگان شما شامل اعتبار ماهانه برای استفاده از Comfy Cloud است.",
+      "descriptionQuota": "طرح رایگان شما شامل {runs} اجرا برای شروع با Comfy Cloud است — بدون نیاز به کارت.",
       "nextRefresh": "اعتبار شما در تاریخ {date} به‌روزرسانی می‌شود.",
       "outOfCredits": {
         "subtitle": "با اشتراک، امکان شارژ مجدد و امکانات بیشتر را فعال کنید",
@@ -4418,6 +4422,24 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "اعتبار مصرف‌شده",
+        "date": "تاریخ",
+        "eventDetails": "جزئیات رویداد",
+        "eventType": "نوع رویداد",
+        "user": "کاربر"
+      },
+      "empty": "هنوز فعالیتی وجود ندارد.",
+      "fullActivity": "تمام فعالیت‌ها",
+      "hoverCard": {
+        "lastActivity": "آخرین فعالیت",
+        "partnerNodeUsed": "گره شریک استفاده‌شده",
+        "totalCreditsUsed": "مجموع اعتبار مصرف‌شده"
+      },
+      "perUserHint": "دنبال مجموع مصرف هر کاربر هستید؟",
+      "seeMembers": "مشاهده اعضا"
+    },
     "billingStatus": {
       "ending": {
         "body": "اعضا تا آن زمان دسترسی کامل خواهند داشت. برای حفظ اعتبار و ظرفیت اشتراکی، پلن را مجدداً فعال کنید.",
@@ -4505,14 +4527,31 @@
         "cancelInvite": "لغو دعوت‌نامه",
         "changeRole": "تغییر نقش",
         "removeMember": "حذف عضو",
-        "resendInvite": "ارسال مجدد دعوت‌نامه"
+        "resendInvite": "ارسال مجدد دعوت‌نامه",
+        "setCreditLimit": "تنظیم سقف اعتبار"
+      },
+      "activity": {
+        "daysAgo": "{count} روز پیش",
+        "hoursAgo": "{n} ساعت پیش",
+        "justNow": "همین حالا",
+        "minutesAgo": "{n} دقیقه پیش"
       },
       "columns": {
+        "creditsUsed": "اعتبار ماهانه",
         "expiryDate": "تاریخ انقضا",
         "inviteDate": "تاریخ دعوت",
         "role": "نقش"
       },
       "contactUs": "با ما تماس بگیرید",
+      "creditLimitDialog": {
+        "description": "پس از رسیدن به این سقف، امکان اجرای workflow برای او وجود نخواهد داشت.",
+        "invalidLimit": "لطفاً سقف اعتباری بیشتر از صفر وارد کنید.",
+        "limitOption": "محدود کردن مصرف اعتبار ماهانه به:",
+        "noLimit": "بدون محدودیت",
+        "title": "تنظیم سقف اعتبار ماهانه برای {name}",
+        "update": "به‌روزرسانی سقف",
+        "warning": "این کاربر تاکنون {credits} اعتبار مصرف کرده است. تعیین سقف برابر یا کمتر از مصرف فعلی، اجرای بیشتر را تا ماه آینده غیرممکن می‌کند."
+      },
       "header": "اعضا",
       "membersCount": "{count}/۵۰ عضو",
       "needMoreMembers": "به اعضای بیشتری نیاز دارید؟",
@@ -4535,6 +4574,12 @@
       "deleteWorkspaceDisabledTooltip": "ابتدا اشتراک فعال محیط کاری خود را لغو کنید",
       "editWorkspace": "ویرایش جزئیات محیط کاری",
       "leaveWorkspace": "خروج از محیط کاری"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "فعالیت",
+        "overview": "اعتبارها"
+      }
     },
     "removeMemberDialog": {
       "error": "حذف عضو ناموفق بود",
