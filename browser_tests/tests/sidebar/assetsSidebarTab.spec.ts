@@ -301,7 +301,9 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await tab.backToAssetsButton.click()
 
     await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
-    await expect(groupedCard).toHaveAttribute('data-selected', 'false')
+    await expect(
+      groupedCard.getByRole('button', { name: /multi-output-a.*asset/ })
+    ).toHaveAttribute('aria-pressed', 'false')
     await expect(
       groupedCard.getByRole('button', { name: 'See more outputs' })
     ).toHaveText('1/2')
@@ -309,14 +311,16 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await groupedCard.getByRole('button', { name: 'See more outputs' }).click()
 
     await expect(tab.selectedCards).toHaveCount(1)
-    await expect(tab.getAssetCardByName('multi-output-a')).toHaveAttribute(
-      'data-selected',
-      'true'
-    )
-    await expect(tab.getAssetCardByName('multi-output-b')).toHaveAttribute(
-      'data-selected',
-      'false'
-    )
+    await expect(
+      tab
+        .getAssetCardByName('multi-output-a')
+        .getByRole('button', { name: /multi-output-a.*asset/ })
+    ).toHaveAttribute('aria-pressed', 'true')
+    await expect(
+      tab
+        .getAssetCardByName('multi-output-b')
+        .getByRole('button', { name: /multi-output-b.*asset/ })
+    ).toHaveAttribute('aria-pressed', 'false')
   })
 
   test('deletes a generated output asset through explicit history refresh', async ({

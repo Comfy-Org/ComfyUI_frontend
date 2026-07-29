@@ -133,7 +133,7 @@ const assetsGridStub = {
     <div v-for="asset in assets" :key="asset.id">
       <button
         :aria-label="'Select ' + asset.name"
-        :data-selected="isSelected(asset.id)"
+        :aria-pressed="isSelected(asset.id)"
         @click.stop="$emit('select-asset', asset)"
       />
       <button
@@ -237,10 +237,10 @@ describe('AssetsSidebarTab folder navigation', () => {
 
     expect(
       screen.getByRole('button', { name: 'Select multi-output-a.png' })
-    ).toHaveAttribute('data-selected', 'true')
+    ).toHaveAttribute('aria-pressed', 'true')
     expect(
       screen.getByRole('button', { name: 'Select multi-output-b.png' })
-    ).toHaveAttribute('data-selected', 'true')
+    ).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByTestId('selection-count')).toHaveTextContent(
       '2 selected'
     )
@@ -276,9 +276,9 @@ describe('AssetsSidebarTab folder navigation', () => {
 
     expect(
       screen.getByRole('button', { name: 'Select multi-output-a.png' })
-    ).toHaveAttribute('data-selected', 'true')
+    ).toHaveAttribute('aria-pressed', 'true')
     expect(
       screen.getByRole('button', { name: 'Select multi-output-b.png' })
-    ).toHaveAttribute('data-selected', 'false')
+    ).toHaveAttribute('aria-pressed', 'false')
   })
 })
