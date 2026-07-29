@@ -110,6 +110,24 @@ jobs:
           fi
           echo '✅ No PostHog references found'
 
+      - name: Scan dist for Datadog RUM references
+        run: |
+          set -euo pipefail
+          echo '🔍 Scanning for Datadog RUM references...'
+          if rg --no-ignore -n \
+            -g '*.html' \
+            -g '*.js' \
+            -e '@datadog/browser-rum' \
+            -e '041a9897-5516-4b1f-a245-1a9aa6895488' \
+            -e 'pub7704486e5b64eb4ff6f62891cda45559' \
+            -e 'comfy-cloud-frontend' \
+            dist; then
+            echo '❌ ERROR: Datadog RUM references found in dist assets!'
+            echo 'Datadog RUM must be properly tree-shaken from OSS builds.'
+            exit 1
+          fi
+          echo '✅ No Datadog RUM references found'
+
       - name: Scan dist for Customer.io telemetry references
         run: |
           set -euo pipefail

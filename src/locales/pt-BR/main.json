@@ -3,6 +3,9 @@
     "dockToTop": "Fixar no topo",
     "feedback": "Feedback",
     "feedbackTooltip": "Feedback",
+    "freeTierPartner": "Nodes parceiros precisam de um plano pago",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} execuções restantes",
+    "freeTierRunsExhausted": "Sem execuções restantes",
     "share": "Compartilhar",
     "shareTooltip": "Compartilhar fluxo de trabalho"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "Elegível para o Plano Gratuito",
       "freeTierDescription": "Cadastre-se com Google para ganhar {credits} créditos gratuitos todo mês. Não precisa de cartão.",
       "freeTierDescriptionGeneric": "Cadastre-se com Google para ganhar créditos gratuitos todo mês. Não precisa de cartão.",
+      "googleSsoInAppBrowserNotice": "Se você abriu isso de um navegador dentro do app (ex: Instagram, LinkedIn), o login com Google pode não funcionar. Use GitHub ou e-mail, ou abra esta página no navegador padrão do seu dispositivo.",
       "insecureContextWarning": "Esta conexão é insegura (HTTP) - suas credenciais podem ser interceptadas por invasores se você continuar.",
       "loginButton": "Entrar",
       "loginWithGithub": "Entrar com Github",
@@ -607,14 +611,14 @@
     "chooseProfilePicture": "Escolha uma foto de perfil",
     "createProfile": "Criar perfil",
     "createProfileButton": "Criar meu perfil",
-    "createProfileTitle": "Crie seu perfil no Comfy Hub",
+    "createProfileTitle": "Crie seu perfil no Comfy Workflows",
     "creatingProfile": "Criando perfil...",
     "descriptionLabel": "Sua descrição",
     "descriptionPlaceholder": "Conte para a comunidade sobre você...",
     "introDescription": "Publique seus fluxos de trabalho, construa seu portfólio e seja descoberto por milhões de usuários",
-    "introSubtitle": "Para compartilhar seu fluxo de trabalho no ComfyHub, vamos primeiro criar seu perfil.",
-    "introTitle": "Publique no ComfyHub",
-    "modalTitle": "Crie seu perfil no ComfyHub",
+    "introSubtitle": "Para compartilhar seu fluxo de trabalho no Comfy Workflows, vamos primeiro criar seu perfil.",
+    "introTitle": "Publique no Comfy Workflows",
+    "modalTitle": "Crie seu perfil no Comfy Workflows",
     "nameLabel": "Seu nome",
     "namePlaceholder": "Digite seu nome aqui",
     "profileCreationNav": "Criação de perfil",
@@ -624,8 +628,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "Sua página de perfil está ativa em",
     "successTitle": "Muito bom, {'@'}{username}!",
-    "updateIntroDescription": "Envie suas últimas alterações para o ComfyHub. Seu link de compartilhamento e estatísticas permanecem os mesmos.",
-    "updateIntroTitle": "Atualize seu workflow do ComfyHub",
+    "updateIntroDescription": "Envie suas últimas alterações para o Comfy Workflows. Seu link de compartilhamento e estatísticas permanecem os mesmos.",
+    "updateIntroTitle": "Atualize seu workflow no Comfy Workflows",
     "uploadCover": "+ Enviar uma capa",
     "uploadProfilePicture": "+ Enviar uma foto de perfil",
     "uploadWorkflowButton": "Enviar meu fluxo de trabalho",
@@ -637,16 +641,16 @@
     "additionalInfo": "Informações adicionais",
     "back": "Voltar",
     "createProfileCta": "Criar um perfil",
-    "createProfileToPublish": "Crie um perfil para publicar no ComfyHub",
+    "createProfileToPublish": "Crie um perfil para publicar no Comfy Workflows",
     "exampleImage": "Imagem de exemplo {index}",
     "exampleImagePosition": "Imagem de exemplo {index} de {total}",
     "examplesDescription": "Adicione até {total} imagens de exemplo adicionais",
     "maxExamples": "Você pode selecionar até {max} exemplos",
     "next": "Avançar",
-    "publishButton": "Publicar no ComfyHub",
+    "publishButton": "Publicar no Comfy Workflows",
     "publishFailedDescription": "Algo deu errado ao publicar seu fluxo de trabalho. Por favor, tente novamente.",
     "publishFailedTitle": "Falha ao publicar",
-    "publishSuccessDescription": "Seu fluxo de trabalho está agora disponível no ComfyHub.",
+    "publishSuccessDescription": "Seu fluxo de trabalho está agora disponível no Comfy Workflows.",
     "publishSuccessTitle": "Publicado com sucesso",
     "removeExampleImage": "Remover imagem de exemplo",
     "renameFailedDescription": "Seu workflow foi publicado com sucesso, mas a renomeação do arquivo local falhou. Renomeie novamente para corresponder.",
@@ -666,8 +670,8 @@
     "thumbnailImageComparison": "Comparação de imagens",
     "thumbnailPreview": "Prévia da miniatura",
     "thumbnailVideo": "Vídeo",
-    "title": "Publicar no ComfyHub",
-    "unsavedDescription": "Você precisa salvar seu fluxo de trabalho antes de publicar no ComfyHub. Salve agora para continuar.",
+    "title": "Publicar no Comfy Workflows",
+    "unsavedDescription": "Você precisa salvar seu fluxo de trabalho antes de publicar no Comfy Workflows. Salve agora para continuar.",
     "updateButton": "Atualizar workflow",
     "uploadAnImage": "Clique para procurar ou arraste uma imagem",
     "uploadComparison": "Enviar antes e depois",
@@ -785,6 +789,11 @@
       "gpuUsage": "Uso de GPU"
     },
     "faqs": "Perguntas frequentes",
+    "insufficient": {
+      "memberCta": "Ok, entendi",
+      "memberDescription": "Sua equipe usou todos os créditos. Os administradores do workspace precisam adicionar mais créditos para executar workflows.",
+      "memberTitle": "Este workspace está sem créditos"
+    },
     "invoiceHistory": "Histórico de faturas",
     "lastUpdated": "Última atualização",
     "loadEventsError": "Falha ao carregar a atividade. Por favor, tente novamente.",
@@ -1453,6 +1462,9 @@
     "preparingExport": "Preparando exportação...",
     "retryDownload": "Tentar baixar novamente"
   },
+  "feedback": {
+    "title": "Enviar feedback"
+  },
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -2087,6 +2099,7 @@
     "arrange": {
       "atLeastOne": "pelo menos um",
       "connectAtLeastOne": "Conecte {atLeastOne} nó de saída para que os usuários possam ver os resultados após a execução.",
+      "descriptionPlaceholder": "Clique duas vezes para adicionar uma descrição",
       "noOutputs": "Nenhuma saída adicionada ainda",
       "outputExamples": "Exemplos: 'Salvar imagem' ou 'Salvar vídeo'",
       "outputs": "Saídas",
@@ -2783,7 +2796,6 @@
     "accept": "Claro, vou ajudar!",
     "description": "Você tem usado este recurso. Pode dedicar um momento para compartilhar seu feedback?",
     "dontAskAgain": "Não perguntar novamente",
-    "loadError": "Falha ao carregar a pesquisa. Por favor, tente novamente mais tarde.",
     "notNow": "Agora não",
     "title": "Ajude-nos a melhorar"
   },
@@ -2798,6 +2810,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2827,6 +2840,7 @@
     "ace": "ace",
     "adjustments": "ajustes",
     "advanced": "avançado",
+    "anima": "anima",
     "animate": "animar",
     "attention_experiments": "experimentos_de_atenção",
     "audio": "áudio",
@@ -2849,6 +2863,7 @@
     "create": "criar",
     "custom": "personalizado",
     "dancer": "dançarino",
+    "dataset": "dataset",
     "debug": "depuração",
     "detection": "detecção",
     "experimental": "experimental",
@@ -2870,6 +2885,7 @@
     "image": "imagem",
     "infinite talk": "infinite talk",
     "instructpix2pix": "instructpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "latente",
     "loaders": "carregadores",
@@ -2877,11 +2893,13 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "máscara",
     "merging": "mesclagem",
     "mochi": "mochi",
     "model": "modelo",
     "model specific": "modelo específico",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "multigpu",
     "noise": "ruído",
@@ -3001,6 +3019,7 @@
       "appTypeNative": "Aplicativo nativo",
       "appTypeWeb": "Aplicativo web",
       "deny": "Cancelar",
+      "detailsHeader": "Detalhes",
       "errorExpired": "Esta solicitação de consentimento expirou ou já foi utilizada. Por favor, reinicie a partir do aplicativo cliente.",
       "errorScopeBroadening": "As permissões previamente aprovadas não cobrem esta solicitação. Você precisará autorizar novamente com as novas permissões.",
       "errorUnavailable": "Este recurso não está disponível no momento. Por favor, entre em contato com o suporte se o problema persistir.",
@@ -3015,7 +3034,6 @@
       "sessionErrorToastSummary": "Não foi possível continuar o login OAuth",
       "subtitle": "Faça login em {resource} para continuar",
       "title": "{client} deseja acesso",
-      "workspaceHelp": "As permissões se aplicam somente a este workspace.",
       "workspaceLabel": "Workspace"
     },
     "scopes": {
@@ -3496,6 +3514,7 @@
     "Load 3D": "Carregar 3D & Animação",
     "Locale": "Idioma",
     "Mask Editor": "Editor de Máscara",
+    "Members": "Membros",
     "Menu": "Menu",
     "ModelLibrary": "Biblioteca de Modelos",
     "Node": "Nó",
@@ -3546,9 +3565,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "Entendo que estes arquivos de mídia serão publicados e tornados públicos",
     "checkingAssets": "Verificando visibilidade da mídia…",
-    "comfyHubButton": "Enviar para o ComfyHub",
-    "comfyHubDescription": "ComfyHub é o hub oficial da comunidade do ComfyUI.\nSeu fluxo de trabalho terá uma página pública visível para todos.",
-    "comfyHubTitle": "Enviar para o ComfyHub",
+    "comfyHubButton": "Enviar para o Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows é o hub oficial da comunidade do ComfyUI.\nSeu fluxo de trabalho terá uma página pública visível para todos.",
+    "comfyHubTitle": "Enviar para o Comfy Workflows",
     "copyLink": "Copiar",
     "createLinkButton": "Criar link",
     "createLinkDescription": "Ao criar um link para seu fluxo de trabalho, você compartilhará estes arquivos de mídia junto com seu fluxo de trabalho",
@@ -3870,6 +3889,7 @@
     "freeTier": {
       "description": "Seu plano gratuito inclui {credits} créditos por mês para testar o Comfy Cloud.",
       "descriptionGeneric": "Seu plano gratuito inclui uma cota mensal de créditos para testar o Comfy Cloud.",
+      "descriptionQuota": "Seu plano gratuito inclui {runs} execuções para começar a usar o Comfy Cloud — não é necessário cartão.",
       "nextRefresh": "Seus créditos serão renovados em {date}.",
       "outOfCredits": {
         "subtitle": "Assine para liberar recargas e mais benefícios",
@@ -4010,6 +4030,7 @@
       "waitingForSubscription": "Conclua sua assinatura na nova aba. Detectaremos automaticamente quando você terminar!"
     },
     "resubscribe": "Reassinar",
+    "resubscribeFailed": "Falha ao reativar a assinatura",
     "resubscribeSuccess": "Assinatura reativada com sucesso",
     "resubscribeTo": "Reassinar {plan}",
     "saveYearly": "Economize 20%",
@@ -4135,7 +4156,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "Filtros:",
     "allTemplates": "Todos os Modelos",
     "categories": "Categorias",
     "category": {
@@ -4160,9 +4180,12 @@
       "Video": "Vídeo",
       "Video API": "API de Vídeo"
     },
+    "clearAllFilters": "Limpar todos os filtros",
     "error": {
       "templateNotFound": "Modelo \"{templateName}\" não encontrado"
     },
+    "filtersApplied": "{count} filtro aplicado | {count} filtros aplicados",
+    "filtersButton": "Filtros",
     "licenseFilter": "Licença",
     "loading": "Carregando modelos...",
     "loadingMore": "Carregando mais modelos...",
@@ -4170,7 +4193,6 @@
     "modelsSelected": "{count} Modelos",
     "noResults": "Nenhum modelo encontrado",
     "noResultsHint": "Tente ajustar sua busca ou filtros",
-    "resetFilters": "Limpar Filtros",
     "resultsCount": "Mostrando {count} de {total} modelos",
     "runsOnFilter": "Executa em",
     "runsOnSelected": "{count} Execuções em",
@@ -4261,6 +4283,9 @@
     "updateRequested": "Atualização solicitada",
     "useApiKeyTip": "Dica: Não consegue acessar o login normal? Use a opção Comfy API Key.",
     "userNotAuthenticated": "Usuário não autenticado"
+  },
+  "typeform": {
+    "loadError": "Falha ao carregar o formulário. Por favor, tente novamente mais tarde."
   },
   "userSelect": {
     "enterUsername": "Digite um nome de usuário",
@@ -4397,6 +4422,50 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "Créditos",
+        "date": "Data",
+        "eventDetails": "Detalhes do evento",
+        "eventType": "Tipo de evento",
+        "user": "Usuário"
+      },
+      "empty": "Nenhuma atividade ainda.",
+      "fullActivity": "Atividade completa",
+      "hoverCard": {
+        "lastActivity": "Última atividade",
+        "partnerNodeUsed": "Nó parceiro utilizado",
+        "totalCreditsUsed": "Total de créditos usados"
+      },
+      "perUserHint": "Procurando o uso total por usuário?",
+      "seeMembers": "Ver membros"
+    },
+    "billingStatus": {
+      "ending": {
+        "body": "Os membros mantêm acesso total até lá. Reative para manter seus créditos e vagas compartilhados.",
+        "reactivate": "Reativar plano",
+        "title": "O plano da sua equipe termina em {date}"
+      },
+      "outOfCredits": {
+        "addCredits": "Adicionar créditos",
+        "body": "Sua equipe usou todos os créditos. Adicione mais créditos para continuar gerando ou aguarde até que os créditos sejam renovados em {date}.",
+        "bodyNoDate": "Sua equipe usou todos os créditos. Adicione mais créditos para continuar gerando.",
+        "dismiss": "Dispensar",
+        "memberBody": "Sua equipe usou todos os créditos. Os administradores do workspace precisam adicionar mais créditos para continuar gerando.",
+        "title": "Sem créditos"
+      },
+      "paused": {
+        "body": "A assinatura deste workspace está pausada. Atualize o pagamento para retomar.",
+        "memberBody": "A assinatura deste workspace está pausada. Os administradores do workspace precisam atualizar o método de pagamento.",
+        "title": "Assinatura pausada"
+      },
+      "updatePayment": "Atualizar pagamento",
+      "warning": {
+        "body": "Seu último pagamento não foi processado. Sua assinatura será pausada em {date} caso o pagamento não seja atualizado.",
+        "bodyNoDate": "Seu último pagamento não foi processado. Atualize o pagamento para evitar a pausa.",
+        "title": "Pagamento recusado"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "Rebaixar para membro",
       "demoteMessage": "Ele(a) perderá acesso de administrador.",
@@ -4458,14 +4527,31 @@
         "cancelInvite": "Cancelar convite",
         "changeRole": "Alterar função",
         "removeMember": "Remover membro",
-        "resendInvite": "Reenviar convite"
+        "resendInvite": "Reenviar convite",
+        "setCreditLimit": "Definir limite de crédito"
+      },
+      "activity": {
+        "daysAgo": "há {count} dia | há {count} dias",
+        "hoursAgo": "há {n} h",
+        "justNow": "agora mesmo",
+        "minutesAgo": "há {n} min"
       },
       "columns": {
+        "creditsUsed": "Créditos mensais",
         "expiryDate": "Data de expiração",
         "inviteDate": "Data do convite",
         "role": "Função"
       },
       "contactUs": "Fale conosco",
+      "creditLimitDialog": {
+        "description": "Quando atingir esse limite, não será possível executar workflows.",
+        "invalidLimit": "Insira um limite de crédito maior que zero.",
+        "limitOption": "Limitar uso mensal de créditos para:",
+        "noLimit": "Sem limite",
+        "title": "Definir um limite mensal de créditos para {name}",
+        "update": "Atualizar limite",
+        "warning": "Este usuário já gastou {credits} créditos. Definir o limite igual ou abaixo do uso atual impedirá novas execuções até o próximo mês."
+      },
       "header": "Membros",
       "membersCount": "{count}/50 Membros",
       "needMoreMembers": "Precisa de mais membros?",
@@ -4488,6 +4574,12 @@
       "deleteWorkspaceDisabledTooltip": "Cancele a assinatura ativa do seu espaço de trabalho primeiro",
       "editWorkspace": "Editar detalhes do espaço de trabalho",
       "leaveWorkspace": "Sair do espaço de trabalho"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "Atividade",
+        "overview": "Créditos"
+      }
     },
     "removeMemberDialog": {
       "error": "Falha ao remover membro",

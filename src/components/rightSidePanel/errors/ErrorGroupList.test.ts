@@ -63,10 +63,7 @@ const LOADER_NODE = { id: '2', title: 'LoaderNode' }
 
 function seedTwoErrorGroups(pinia: TestingPinia) {
   const executionErrorStore = useExecutionErrorStore(pinia)
-  executionErrorStore.lastNodeErrors = fromAny<
-    typeof executionErrorStore.lastNodeErrors,
-    unknown
-  >({
+  executionErrorStore.recordNodeErrors({
     '1': {
       class_type: 'KSampler',
       dependent_outputs: [],
@@ -83,7 +80,11 @@ function seedTwoErrorGroups(pinia: TestingPinia) {
       class_type: 'CLIPLoader',
       dependent_outputs: [],
       errors: [
-        { type: 'weird_error', message: 'Something odd happened', details: '' }
+        {
+          type: 'weird_error',
+          message: 'Something odd happened',
+          details: ''
+        }
       ]
     }
   })
