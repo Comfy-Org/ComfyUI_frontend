@@ -23,7 +23,7 @@ function buildResponse(
 const fetchApiSpy = vi.spyOn(api, 'fetchApi')
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  vi.resetAllMocks()
   httpSupportsModelTypeTags.value = undefined
 })
 
@@ -145,18 +145,18 @@ describe('useSupportsModelTypeTagsRefresh', () => {
     expect(fetchApiSpy).toHaveBeenCalledTimes(2)
   })
 
-  it('re-fetches on the polling interval', () => {
+  it('re-fetches on the polling interval', async () => {
     vi.useFakeTimers()
     scope.run(() => useSupportsModelTypeTagsRefresh())
     expect(fetchApiSpy).toHaveBeenCalledTimes(1)
 
-    vi.advanceTimersByTime(120_000)
+    await vi.advanceTimersByTimeAsync(120_000)
     expect(fetchApiSpy).toHaveBeenCalledTimes(2)
-    vi.advanceTimersByTime(120_000)
+    await vi.advanceTimersByTimeAsync(120_000)
     expect(fetchApiSpy).toHaveBeenCalledTimes(3)
   })
 
-  it('does not fetch on visibility events or interval ticks while hidden', () => {
+  it('does not fetch on visibility events or interval ticks while hidden', async () => {
     vi.useFakeTimers()
     const hiddenSpy = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
     scope.run(() => useSupportsModelTypeTagsRefresh())
@@ -164,7 +164,7 @@ describe('useSupportsModelTypeTagsRefresh', () => {
 
     hiddenSpy.mockReturnValue(true)
     document.dispatchEvent(new Event('visibilitychange'))
-    vi.advanceTimersByTime(120_000)
+    await vi.advanceTimersByTimeAsync(120_000)
     expect(fetchApiSpy).toHaveBeenCalledTimes(1)
 
     hiddenSpy.mockReturnValue(false)
@@ -173,7 +173,7 @@ describe('useSupportsModelTypeTagsRefresh', () => {
     hiddenSpy.mockRestore()
   })
 
-  it('stops all refresh triggers when the scope is disposed', () => {
+  it('stops all refresh triggers when the scope is disposed', async () => {
     vi.useFakeTimers()
     scope.run(() => useSupportsModelTypeTagsRefresh())
     expect(fetchApiSpy).toHaveBeenCalledTimes(1)
@@ -181,7 +181,7 @@ describe('useSupportsModelTypeTagsRefresh', () => {
     scope.stop()
     api.dispatchCustomEvent('reconnected')
     document.dispatchEvent(new Event('visibilitychange'))
-    vi.advanceTimersByTime(120_000)
+    await vi.advanceTimersByTimeAsync(120_000)
 
     expect(fetchApiSpy).toHaveBeenCalledTimes(1)
   })

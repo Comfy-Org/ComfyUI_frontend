@@ -1,9 +1,14 @@
 import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { ref } from 'vue'
+import { z } from 'zod'
 
 import { api } from '@/scripts/api'
 
 const REFRESH_INTERVAL_MS = 120_000
+
+const featuresResponseSchema = z.object({
+  supports_model_type_tags: z.boolean().optional()
+})
 
 /**
  * `supports_model_type_tags` as served by HTTP `GET /features`, or undefined
@@ -30,12 +35,10 @@ export async function refreshSupportsModelTypeTags(): Promise<void> {
     // superseded fetch must not commit, or a slow pre-flip response could
     // revert a newer value.
     if (sequence !== refreshSequence) return
-    const value =
-      typeof features === 'object' && features !== null
-        ? (features as Record<string, unknown>)['supports_model_type_tags']
-        : undefined
-    httpSupportsModelTypeTags.value =
-      typeof value === 'boolean' ? value : undefined
+    const parsed = featuresResponseSchema.safeParse(features)
+    httpSupportsModelTypeTags.value = parsed.success
+      ? parsed.data.supports_model_type_tags
+      : undefined
   } catch {
     // A failed fetch keeps the last known value; a backend that never serves
     // the key stays undefined and the websocket flag remains authoritative.
