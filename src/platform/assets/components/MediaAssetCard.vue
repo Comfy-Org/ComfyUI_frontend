@@ -146,7 +146,15 @@
             @click.stop="handleOutputCountClick"
           >
             <i class="icon-[lucide--layers] size-4" />
-            <span>{{ outputCount }}</span>
+            <span
+              v-if="
+                selectedOutputCount > 0 &&
+                selectedOutputCount < (outputCount ?? 0)
+              "
+            >
+              {{ selectedOutputCount }}/{{ outputCount }}
+            </span>
+            <span v-else>{{ outputCount }}</span>
           </Button>
         </div>
       </div>
@@ -201,12 +209,20 @@ function getTopComponent(kind: PreviewKind) {
   return mediaComponents.top[kind] || mediaComponents.top.other
 }
 
-const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
+const {
+  asset,
+  loading,
+  selected,
+  showOutputCount,
+  outputCount,
+  selectedOutputCount = 0
+} = defineProps<{
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
   showOutputCount?: boolean
   outputCount?: number
+  selectedOutputCount?: number
 }>()
 
 const assetsStore = useAssetsStore()

@@ -13,6 +13,7 @@
           :selected="isSelected(item.asset.id)"
           :show-output-count="showOutputCount(item.asset)"
           :output-count="getOutputCount(item.asset)"
+          :selected-output-count="getSelectedOutputCount(item.asset)"
           @select="emit('select-asset', item.asset)"
           @toggle-selection="emit('toggle-asset-selection', item.asset)"
           @context-menu="emit('context-menu', $event, item.asset)"
@@ -33,14 +34,21 @@ import { getMediaAssetGridColumns } from '@/platform/assets/components/mediaAsse
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-const { assets, isSelected, showOutputCount, getOutputCount, gridMode } =
-  defineProps<{
-    assets: AssetItem[]
-    isSelected: (assetId: string) => boolean
-    showOutputCount: (asset: AssetItem) => boolean
-    getOutputCount: (asset: AssetItem) => number
-    gridMode: MediaAssetGridMode
-  }>()
+const {
+  assets,
+  isSelected,
+  showOutputCount,
+  getOutputCount,
+  getSelectedOutputCount,
+  gridMode
+} = defineProps<{
+  assets: AssetItem[]
+  isSelected: (assetId: string) => boolean
+  showOutputCount: (asset: AssetItem) => boolean
+  getOutputCount: (asset: AssetItem) => number
+  getSelectedOutputCount: (asset: AssetItem) => number
+  gridMode: MediaAssetGridMode
+}>()
 
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem): void
