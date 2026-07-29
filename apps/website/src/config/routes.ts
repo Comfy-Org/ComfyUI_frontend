@@ -80,7 +80,7 @@ export const externalLinks = {
   cloud: 'https://cloud.comfy.org',
   /** Cloud CTA link with campaign attribution; content names the CTA site. */
   cloudCta: (content: string) =>
-    `https://cloud.comfy.org/?utm_source=comfy_org&utm_medium=website&utm_campaign=free_tier&utm_content=${content}`,
+    `https://cloud.comfy.org/?utm_source=comfy_org&utm_medium=website&utm_campaign=free_tier&utm_content=${encodeURIComponent(content)}`,
   cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
