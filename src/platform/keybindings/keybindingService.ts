@@ -12,9 +12,9 @@ const OPEN_REKA_CONTENT_SELECTOR = '[role="dialog"][data-state="open"]'
 const POPPER_WRAPPER_SELECTOR = '[data-reka-popper-content-wrapper]'
 
 /**
- * Reka marks open dialog content with `role="dialog"`, but reuses that role for
- * `PopoverContent`, which is non-modal and must keep global keybindings
- * working. Only popover content is positioned inside a popper wrapper.
+ * Reka reuses `role="dialog"` for `PopoverContent`, so the role alone cannot
+ * tell dialog content from a popover. Only popover content is positioned
+ * inside a popper wrapper.
  */
 function isDialogContent(content: Element): boolean {
   return content.closest(POPPER_WRAPPER_SELECTOR) === null
