@@ -31,9 +31,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const telemetry = useTelemetry()
 
   const steps = shallowRef<CoachStep[]>([])
-  const stepIdx = ref(0)
+  const stepIdx = ref(-1)
   const waitingForTarget = ref(false)
-  const opening = ref(false)
   const activeTour = ref<EntryPath | null>(null)
   let stepController: AbortController | null = null
 
@@ -104,14 +103,16 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const { signal } = controller
     waitingForTarget.value = false
     if (nextStep.openSidebarTab) openSidebarTab(nextStep.openSidebarTab)
-    if (
+    const targetStillComing =
       nextStep.deferTarget &&
       nextStep.coachId &&
       !targetMounted(nextStep.coachId)
-    ) {
+        ? nextStep.coachId
+        : null
+    if (targetStillComing) {
       waitingForTarget.value = true
       const found = await waitForTarget(
-        nextStep.coachId,
+        targetStillComing,
         signal,
         DEFER_TIMEOUT_MS
       )
@@ -133,7 +134,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
         return
       }
     }
-    stepIdx.value = idx
+    const stepAlreadyOnScreen = stepIdx.value >= 0
+    if (stepAlreadyOnScreen) stepIdx.value = idx
     if (nextStep.onEnter) {
       try {
         await nextStep.onEnter(signal)
@@ -142,7 +144,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       }
       if (signal.aborted) return
     }
-    opening.value = false
+    stepIdx.value = idx
     trackTour('step_shown')
   }
 
@@ -191,9 +193,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     trackTour(outcome, outcome === 'skipped' ? skipReason : undefined)
     stepController?.abort()
     waitingForTarget.value = false
-    opening.value = false
     steps.value = []
-    stepIdx.value = 0
+    stepIdx.value = -1
     if (markSeen && activeTour.value) markTourSeen(activeTour.value)
     activeTour.value = null
   }
@@ -233,7 +234,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     if (!resolved.length) return false
     steps.value = resolved
     activeTour.value = entryPath
-    opening.value = true
     trackTour('started')
     void showStep(0)
     return true
@@ -251,7 +251,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
 
   return {
     activeTour: readonly(activeTour),
-    opening: readonly(opening),
     step,
     isLast,
     canGoBack,

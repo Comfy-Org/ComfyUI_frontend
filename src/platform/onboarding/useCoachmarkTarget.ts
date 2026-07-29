@@ -2,7 +2,7 @@ import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware, Placement, Rect } from '@floating-ui/vue'
 import { useEventListener, useMutationObserver } from '@vueuse/core'
 import { computed, ref, toValue, watch, watchEffect } from 'vue'
-import type { MaybeRefOrGetter, Ref } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 
 import {
   CARD_GAP,
@@ -45,7 +45,10 @@ const captureReference: Middleware = {
   fn: (state) => ({ data: { rect: state.rects.reference } })
 }
 
-function middleware(step: CoachStep | null, topInset: number): Middleware[] {
+function floatingMiddleware(
+  step: CoachStep | null,
+  topInset: number
+): Middleware[] {
   const list: Middleware[] = [offset(step?.cursor ? CURSOR_GAP : CARD_GAP)]
   if (!step?.placement || step.placement === 'auto') list.push(flip())
   // shift only guards the main axis by default; crossAxis keeps vertically-
@@ -66,6 +69,34 @@ function middleware(step: CoachStep | null, topInset: number): Middleware[] {
 }
 
 /**
+ * The candidate the card anchors to: the first one rendered with a size. Only a
+ * DOM mutation can invalidate it, since nothing reports an element's removal.
+ */
+function useAnchor(candidateEls: ComputedRef<readonly CoachTarget[]>) {
+  const domRevision = ref(0)
+
+  const anchor = computed(() => {
+    void domRevision.value
+    for (const candidate of candidateEls.value) {
+      const el = laidOutElement(candidate)
+      if (el) return { candidate, el }
+    }
+    return null
+  })
+
+  useMutationObserver(
+    () => (candidateEls.value.some(isMovingTarget) ? document.body : null),
+    () => {
+      if (anchor.value?.el.isConnected) return
+      domRevision.value++
+    },
+    { childList: true, subtree: true }
+  )
+
+  return anchor
+}
+
+/**
  * Locates a step's target in the registry and positions the card beside it with
  * Floating UI, following the target until its rect settles.
  */
@@ -78,16 +109,7 @@ export function useCoachmarkTarget(
     return id ? coachmarkElements(id) : []
   })
 
-  const domRevision = ref(0)
-
-  const anchor = computed(() => {
-    void domRevision.value
-    for (const candidate of candidateEls.value) {
-      const el = laidOutElement(candidate)
-      if (el) return { candidate, el }
-    }
-    return null
-  })
+  const anchor = useAnchor(candidateEls)
 
   const targetEl = computed(() => anchor.value?.el ?? null)
 
@@ -98,15 +120,6 @@ export function useCoachmarkTarget(
   )
 
   const targetMoves = computed(() => !!movingAnchor.value)
-
-  useMutationObserver(
-    () => (candidateEls.value.some(isMovingTarget) ? document.body : null),
-    () => {
-      if (targetEl.value?.isConnected) return
-      domRevision.value++
-    },
-    { childList: true, subtree: true }
-  )
 
   // The top bar's height only changes on resize, so read it once and refresh
   // then — Floating UI re-runs the middleware every frame while tracking motion.
@@ -120,7 +133,7 @@ export function useCoachmarkTarget(
       strategy: 'fixed',
       transform: false,
       placement: () => floatingPlacement(toValue(step)),
-      middleware: () => middleware(toValue(step), topInset.value)
+      middleware: () => floatingMiddleware(toValue(step), topInset.value)
     })
 
   watchEffect((onCleanup) => {

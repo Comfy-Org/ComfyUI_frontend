@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="shown"
+    v-if="onScreen"
     role="status"
     data-testid="first-run-nudge"
     class="fixed right-0 bottom-0 z-1000 flex w-80 animate-in flex-col overflow-hidden rounded-tl-xl border-t border-l border-border-default/50 bg-base-background shadow-lg duration-500 fade-in-0"
@@ -53,7 +53,7 @@
 
 <script setup lang="ts">
 import { useTimeoutFn } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -73,35 +73,26 @@ const { nudgeArmed, dismissNudge } = useFirstRunTourController()
 const dialogStore = useDialogStore()
 const telemetry = useTelemetry()
 
-/**
- * The nudge sits below the modal stack, so it waits for a clear screen rather
- * than reporting itself shown from underneath a dialog.
- */
-const due = computed(
-  () => nudgeArmed.value && dialogStore.dialogStack.length === 0
-)
-
-const shown = ref(false)
-const { start, stop } = useTimeoutFn(
+const onScreen = ref(false)
+const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
   () => {
-    shown.value = true
+    onScreen.value = true
     telemetry?.trackOnboardingTour('nudge_shown', { tour: 'firstRun' })
   },
   APPEAR_DELAY_MS,
   { immediate: false }
 )
 
-// Reconciles rather than waits for an edge, so a remount while the nudge is
-// already due still shows it.
+/** The nudge sits below the modal stack, so it waits for a clear screen. */
 watch(
-  due,
-  (ready) => {
-    stop()
-    if (!ready) {
-      shown.value = false
+  () => nudgeArmed.value && dialogStore.dialogStack.length === 0,
+  (screenIsClear) => {
+    cancelAppearance()
+    if (!screenIsClear) {
+      onScreen.value = false
       return
     }
-    start()
+    scheduleAppearance()
   },
   { immediate: true }
 )
