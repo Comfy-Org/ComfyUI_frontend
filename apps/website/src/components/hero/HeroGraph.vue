@@ -127,7 +127,7 @@ function wrapperStyle(key: ElementKey) {
         </div>
         <Button
           as="a"
-          :href="externalLinks.cloud"
+          :href="externalLinks.cloudCta('hero_get_started_free')"
           size="lg"
           class="pointer-events-auto mt-[1.6em]"
         >

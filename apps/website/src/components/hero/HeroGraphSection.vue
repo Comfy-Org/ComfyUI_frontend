@@ -21,7 +21,11 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <div class="flex w-full flex-col items-center gap-8 md:hidden">
       <div class="flex flex-col items-center gap-6">
         <HeroHeadline :locale class="text-3xl" />
-        <Button as="a" :href="externalLinks.cloud" size="lg">
+        <Button
+          as="a"
+          :href="externalLinks.cloudCta('hero_get_started_free')"
+          size="lg"
+        >
           {{ t('hero.getStartedFree', locale) }}
         </Button>
       </div>
