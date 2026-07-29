@@ -182,4 +182,57 @@ describe('group layout in layoutStore', () => {
     expect(group.size).toBe(size)
     expect([...pos]).toEqual([1, 2])
   })
+
+  test('legacy geometry buffers write through to the store', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 806)
+
+    group.pos[0] = 25
+    group.size[1] = 450
+    group._bounding.set([30, 40, 500, 600])
+
+    expect(layoutStore.getGroupLayout(group.id)).toEqual({
+      id: group.id,
+      position: { x: 30, y: 40 },
+      size: { width: 500, height: 600 }
+    })
+  })
+
+  test('reads geometry from the store', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 807)
+    const pos = group.pos
+    const size = group.size
+
+    layoutStore.applyOperation({
+      id: 'set-group-bounds',
+      type: 'setGroupBounds',
+      actor: 'test',
+      timestamp: 1,
+      source: layoutStore.getCurrentSource(),
+      entity: 'group',
+      groupId: group.id,
+      position: { x: 11, y: 12 },
+      size: { width: 410, height: 310 }
+    })
+
+    expect(group.pos).toBe(pos)
+    expect(group.size).toBe(size)
+    expect([...group.boundingRect]).toEqual([11, 12, 410, 310])
+    expect([...pos]).toEqual([11, 12])
+    expect([...size]).toEqual([410, 310])
+    expect(group.serialize().bounding).toEqual([11, 12, 410, 310])
+  })
+
+  test('group collections react to nested bounds updates', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 808)
+    const groups = layoutStore.getAllGroups()
+
+    expect(groups.value.get(group.id)?.position.x).toBe(100)
+
+    group.pos = [75, 80]
+
+    expect(groups.value.get(group.id)?.position).toEqual({ x: 75, y: 80 })
+  })
 })

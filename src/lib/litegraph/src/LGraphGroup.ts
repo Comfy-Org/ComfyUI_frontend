@@ -1,5 +1,6 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { LGraph } from './LGraph'
@@ -47,16 +48,22 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   title: string
   font?: string
   font_size: number = LiteGraph.GROUP_TEXT_SIZE
-  _bounding = new Rectangle(10, 10, LGraphGroup.minWidth, LGraphGroup.minHeight)
-
-  _pos: Point = this._bounding.pos
-  _size: Size = this._bounding.size
+  private readonly bounds = new Rectangle(
+    10,
+    10,
+    LGraphGroup.minWidth,
+    LGraphGroup.minHeight
+  )
   /** @deprecated See {@link _children} */
   _nodes: LGraphNode[] = []
   _children: Set<Positionable> = new Set()
   graph?: LGraph
   flags: IGraphGroupFlags = {}
   selected?: boolean
+
+  readonly _bounding = this.createGeometryView(this.bounds)
+  readonly _pos: Point = this.createGeometryView(this.bounds.pos)
+  readonly _size: Size = this.createGeometryView(this.bounds.size)
 
   constructor(title?: string, id?: GroupId) {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
@@ -112,23 +119,65 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     )
   }
 
-  /**
-   * The one writer for group geometry; commits the whole rectangle as one
-   * operation. Unclamped — the public setters clamp before delegating here.
-   */
-  private setBounds(x: number, y: number, width: number, height: number) {
-    this._bounding.set([x, y, width, height])
+  private createGeometryView<T extends object>(target: T): T {
+    return new Proxy(target, {
+      get: (target, property, receiver) => {
+        this.syncBoundsFromStore()
+        const value = Reflect.get(target, property, target)
+        if (typeof value !== 'function') return value
+
+        return (...args: unknown[]) => {
+          const previousBounds = [...this.bounds]
+          const result = Reflect.apply(value, target, args)
+          if (
+            this.bounds.some((entry, index) => entry !== previousBounds[index])
+          )
+            this.commitBounds()
+          return result === target ? receiver : result
+        }
+      },
+      set: (target, property, value) => {
+        this.syncBoundsFromStore()
+        const updated = Reflect.set(target, property, value, target)
+        this.commitBounds()
+        return updated
+      }
+    })
+  }
+
+  private syncBoundsFromStore(): void {
     if (!this.graph || this.id === -1) return
+
+    const layout = layoutStore.getGroupLayout(this.id)
+    if (!layout) return
+
+    const { position, size } = layout
+    this.bounds.set([position.x, position.y, size.width, size.height])
+  }
+
+  private commitBounds(): void {
+    const [x, y, width, height] = this.bounds
+    this.setBounds(x, y, width, height)
+  }
+
+  private setBounds(x: number, y: number, width: number, height: number): void {
+    if (!this.graph || this.id === -1) {
+      this.bounds.set([x, y, width, height])
+      return
+    }
 
     layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.setGroupBounds(this.id, { x, y }, { width, height })
+    this.syncBoundsFromStore()
   }
 
   get boundingRect() {
+    this.syncBoundsFromStore()
     return this._bounding
   }
 
   getBounding() {
+    this.syncBoundsFromStore()
     return this._bounding
   }
 

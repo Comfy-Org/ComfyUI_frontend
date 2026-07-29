@@ -104,7 +104,7 @@ class LayoutStoreImpl implements LayoutStore {
   private yoperations: Y.Array<LayoutOperation> // Operation log
 
   // Vue reactivity layer
-  private version = 0
+  private version = ref(0)
   private currentSource: LayoutSource =
     ACTOR_CONFIG.DEFAULT_SOURCE as LayoutSource
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
@@ -174,7 +174,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Listen for Yjs changes and trigger Vue reactivity
     this.ynodes.observe((event: Y.YMapEvent<NodeLayoutMap>) => {
-      this.version++
+      this.version.value++
 
       // Trigger all affected node refs
       event.changes.keys.forEach((_change: YEventChange, key: string) => {
@@ -185,15 +185,13 @@ class LayoutStoreImpl implements LayoutStore {
       })
     })
 
-    // Groups have no per-group refs or spatial index; bumping the version is
-    // the whole reactivity contract for them.
-    this.ygroups.observe(() => {
-      this.version++
+    this.ygroups.observeDeep(() => {
+      this.version.value++
     })
 
     // Listen for reroute changes and update spatial indexes
     this.yreroutes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
-      this.version++
+      this.version.value++
       event.changes.keys.forEach((change, rerouteIdStr) => {
         this.handleRerouteChange(change, rerouteIdStr)
       })
@@ -307,7 +305,7 @@ class LayoutStoreImpl implements LayoutStore {
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]> {
     return computed(() => {
       // Touch version for reactivity
-      void this.version
+      void this.version.value
 
       const result: NodeId[] = []
       for (const [rawNodeId, ynode] of this.ynodes) {
@@ -327,7 +325,7 @@ class LayoutStoreImpl implements LayoutStore {
   getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>> {
     return computed(() => {
       // Touch version for reactivity
-      void this.version
+      void this.version.value
 
       const result = new Map<NodeId, NodeLayout>()
       for (const [rawNodeId, ynode] of this.ynodes) {
@@ -345,7 +343,7 @@ class LayoutStoreImpl implements LayoutStore {
   getAllGroups(): ComputedRef<ReadonlyMap<GroupId, GroupLayout>> {
     return computed(() => {
       // Touch version for reactivity
-      void this.version
+      void this.version.value
 
       const result = new Map<GroupId, GroupLayout>()
       for (const [rawGroupId, ygroup] of this.ygroups) {
@@ -365,7 +363,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Get current version for change detection
    */
   getVersion(): ComputedRef<number> {
-    return computed(() => this.version)
+    return computed(() => this.version.value)
   }
 
   /**
@@ -868,7 +866,7 @@ class LayoutStoreImpl implements LayoutStore {
    */
   private finalizeOperation(change: LayoutChange): void {
     // Update version
-    this.version++
+    this.version.value++
 
     // Manually trigger affected node refs after transaction
     // This is needed because Yjs observers don't fire for property changes
