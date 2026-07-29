@@ -3,8 +3,6 @@ import { nextTick } from 'vue'
 
 import {
   clearCoachmarks,
-  coachIdForNode,
-  nodeCoachmarks,
   coachmarkElements,
   registerCoachmark,
   targetMounted,
@@ -36,16 +34,6 @@ describe('coachmarkRegistry', () => {
     registerCoachmark('app-run-button', b)
     unregisterCoachmark('app-run-button', a)
     expect(coachmarkElements('app-run-button')).toEqual([b])
-  })
-})
-
-describe('coachIdForNode', () => {
-  afterEach(() => nodeCoachmarks.clear())
-
-  it('maps a node id the tour marked, and nothing else', () => {
-    nodeCoachmarks.set('7', 'inputs-list')
-    expect(coachIdForNode(7)).toBe('inputs-list')
-    expect(coachIdForNode('8')).toBeNull()
   })
 })
 
