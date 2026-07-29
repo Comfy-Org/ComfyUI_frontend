@@ -5,7 +5,11 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { attachNodeToStores } from '@/core/graph/nodeShell/nodeShellLifecycle'
+import {
+  unregisterAllNodeStates,
+  unregisterNodeState
+} from '@/core/graph/nodeShell/nodeShellState'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import {
@@ -34,17 +38,12 @@ import {
   observeRerouteId
 } from './idAllocation'
 import type { LGraphState } from './idAllocation'
-import { useLinkStore } from '@/stores/linkStore'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { useRerouteStore } from '@/stores/rerouteStore'
 import {
   inputHasLink,
   inputLink,
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
@@ -62,12 +61,7 @@ import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { Rectangle } from './infrastructure/Rectangle'
 import { LGraphGroup } from './LGraphGroup'
-import {
-  LGraphNode,
-  registerNodeState,
-  unregisterAllNodeStates,
-  unregisterNodeState
-} from './LGraphNode'
+import { LGraphNode } from './LGraphNode'
 import {
   LLink,
   registerLinkTopology,
@@ -110,7 +104,6 @@ import {
   snapPoint
 } from './measure'
 import { warnDeprecated } from './utils/feedback'
-import { getWidgetIds } from './utils/widget'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
@@ -1166,21 +1159,9 @@ export class LGraph
 
     node.graph = this
 
-    while (!registerNodeState(this, node)) node.id = mintNodeId(state)
-
-    // Register all widgets with the WidgetValueStore now that node has a
-    // valid ID and graph reference.
-    if (node.widgets) {
-      const widgetValueStore = useWidgetValueStore()
-      for (const widget of node.widgets) {
-        if (isNodeBindable(widget)) widget.setNodeId(node.id)
-      }
-      widgetValueStore.setNodeWidgetOrder(
-        this.rootGraph.id,
-        node.id,
-        getWidgetIds(node.widgets)
-      )
-    }
+    // Adopt the store-backed shell state and widget bindings now that the node
+    // has a valid id and graph. Retries with a freshly minted id on collision.
+    attachNodeToStores(this, node, () => mintNodeId(state))
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node

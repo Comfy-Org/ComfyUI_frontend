@@ -1,29 +1,28 @@
 import { shallowReactive, toValue } from 'vue'
 
 import {
+  createNodeShellState,
+  setTrackedNodeState
+} from '@/core/graph/nodeShell/nodeShellState'
+import {
   calculateInputSlotPosFromSlot,
   getSlotPosition
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
-  canTransferLayoutAttachment,
   moveNodeLayout,
-  resizeNodeLayout,
-  transferLayoutAttachment
+  resizeNodeLayout
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toLinkId } from '@/types/linkId'
-import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { mintLinkId } from './idAllocation'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
-import { zeroUuid } from '@/utils/uuid'
 import {
   commonType,
   isNodeBindable,
@@ -294,30 +293,13 @@ export class LGraphNode
   /** Default setting for {@link LGraphNode.connectInputToOutput}. @see {@link INodeFlags.keepAllLinksOnBypass} */
   static keepAllLinksOnBypass: boolean = false
 
-  /** Writes a shell-state field, emitting `node:property:changed` on change. */
-  private setTrackedState<K extends keyof NodeState>(
-    property: K,
-    value: NodeState[K]
-  ): void {
-    const oldValue = this._state[property]
-    if (oldValue === value) return
-
-    this._state[property] = value
-    this.graph?.trigger('node:property:changed', {
-      nodeId: this.id,
-      property,
-      oldValue,
-      newValue: value
-    })
-  }
-
   /** The title text of the node. */
   get title(): string {
     return this._state.title
   }
 
   set title(value: string) {
-    this.setTrackedState('title', value)
+    setTrackedNodeState(this, 'title', value)
   }
   /**
    * The font style used to render the node's title text.
@@ -336,10 +318,10 @@ export class LGraphNode
 
   graph: LGraph | Subgraph | null = null
 
-  /** Shell state for the fields the renderer draws; the {@link useNodeDataStore} proxy once registered. */
+  /** Shell state for the fields the renderer draws; the `nodeDataStore` proxy once registered. */
   _state: NodeState
 
-  /** The root graph this node is registered with in {@link useNodeDataStore}, if any. */
+  /** The graph scope this node is registered with in `nodeDataStore`, if any. */
   _graphScope?: GraphScope
 
   get id(): NodeId {
@@ -425,7 +407,7 @@ export class LGraphNode
   }
 
   set mode(value: LGraphEventMode) {
-    this.setTrackedState('mode', value)
+    setTrackedNodeState(this, 'mode', value)
   }
   last_serialization?: ISerialisedNode
   serialize_widgets?: boolean
@@ -438,7 +420,7 @@ export class LGraphNode
   }
 
   set color(value: string | undefined) {
-    this.setTrackedState('color', value)
+    setTrackedNodeState(this, 'color', value)
   }
   /**
    * The overridden bg color used to render the node.
@@ -449,7 +431,7 @@ export class LGraphNode
   }
 
   set bgcolor(value: string | undefined) {
-    this.setTrackedState('bgcolor', value)
+    setTrackedNodeState(this, 'bgcolor', value)
   }
   /**
    * The overridden box color used to render the node.
@@ -601,7 +583,7 @@ export class LGraphNode
   }
 
   set showAdvanced(value: boolean | undefined) {
-    this.setTrackedState('showAdvanced', value)
+    setTrackedNodeState(this, 'showAdvanced', value)
   }
 
   declare comfyDynamic?: Record<string, object>
@@ -755,7 +737,11 @@ export class LGraphNode
   }
 
   set shape(v: RenderShape | keyof typeof NAMED_SHAPES) {
-    this.setTrackedState('shape', typeof v === 'string' ? NAMED_SHAPES[v] : v)
+    setTrackedNodeState(
+      this,
+      'shape',
+      typeof v === 'string' ? NAMED_SHAPES[v] : v
+    )
   }
 
   /**
@@ -1001,17 +987,7 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
-    this._state = {
-      flags: {},
-      graphId: zeroUuid,
-      id: UNASSIGNED_NODE_ID,
-      inputs: shallowReactive<INodeInputSlot[]>([]),
-      mode: LGraphEventMode.ALWAYS,
-      outputs: shallowReactive<INodeOutputSlot[]>([]),
-      title: title || 'Unnamed',
-      type: type ?? '',
-      titleMode: this.title_mode
-    }
+    this._state = createNodeShellState(title, type, this.title_mode)
     this.size = [LiteGraph.NODE_WIDTH, 60]
     this.pos = [10, 10]
     this.strokeStyles = {
@@ -4445,104 +4421,5 @@ export class LGraphNode
     ctx.fillStyle = 'green'
     ctx.fillRect(0, 0, this.width * this.progress, 6)
     ctx.fillStyle = originalFillStyle
-  }
-}
-
-/**
- * Registers a node's shell state into {@link useNodeDataStore} and adopts the
- * store's proxy as {@link LGraphNode._state}. Call wherever a node joins a graph.
- */
-export function registerNodeState(
-  graph: Pick<LGraph, 'rootGraph' | 'id'>,
-  node: LGraphNode
-): boolean {
-  const graphScope = graphScopeOf(graph)
-  node._state.graphId = graph.id
-  const registered = useNodeDataStore().registerNode(graphScope, node._state)
-  if (!registered) return false
-  node._state = registered
-  node._graphScope = graphScope
-  return true
-}
-
-/**
- * Removes a node's shell state from {@link useNodeDataStore} and detaches the
- * node. No-op for nodes that were never registered.
- * @param node The node to unregister
- */
-export function unregisterNodeState(node: LGraphNode): void {
-  if (!node._graphScope) return
-  useNodeDataStore().deleteNode(node._graphScope, node._state)
-  node._graphScope = undefined
-}
-
-function canTransferNodeState(
-  node: LGraphNode,
-  replacement: LGraphNode
-): boolean {
-  return (
-    node.id === replacement.id &&
-    replacement._graphScope === undefined &&
-    node._graphScope !== undefined &&
-    useNodeDataStore().ownsNode(node._graphScope, node._state)
-  )
-}
-
-function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
-  const registeredState = node._state
-  const detachedState = { ...registeredState }
-  const { graphId: _graphId, id: _id, ...replacementState } = replacement._state
-  Object.assign(registeredState, {
-    bgcolor: undefined,
-    color: undefined,
-    resizable: undefined,
-    shape: undefined,
-    showAdvanced: undefined,
-    titleMode: undefined,
-    ...replacementState
-  } satisfies {
-    [K in Exclude<keyof NodeState, 'graphId' | 'id'>]-?:
-      | NodeState[K]
-      | undefined
-  })
-  replacement._state = registeredState
-  replacement._graphScope = node._graphScope
-  node._state = detachedState
-  node._graphScope = undefined
-}
-
-export function canTransferReplacementOwnership(
-  node: LGraphNode,
-  replacement: LGraphNode
-): boolean {
-  return (
-    canTransferNodeState(node, replacement) &&
-    canTransferLayoutAttachment(node, replacement)
-  )
-}
-
-export function transferReplacementOwnership(
-  node: LGraphNode,
-  replacement: LGraphNode
-): boolean {
-  if (!canTransferReplacementOwnership(node, replacement)) return false
-  if (!transferLayoutAttachment(node, replacement)) return false
-  transferNodeState(node, replacement)
-  return true
-}
-
-/**
- * Unregisters every node a graph owns, including those inside the subgraph
- * definitions it holds. Used when a graph's nodes leave the store without a
- * whole-bucket wipe: subgraph-definition removal, and clearing a graph that
- * shares its bucket with other graphs.
- * @param graph The graph whose nodes should be unregistered
- */
-export function unregisterAllNodeStates(
-  graph: Pick<LGraph, '_nodes' | '_subgraphs'>
-): void {
-  for (const node of graph._nodes) unregisterNodeState(node)
-  for (const subgraph of graph._subgraphs.values()) {
-    unregisterAllNodeStates(subgraph)
   }
 }
