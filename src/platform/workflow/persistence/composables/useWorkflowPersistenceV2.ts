@@ -29,7 +29,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
-import { clearAllV2Storage } from '../base/storageIO'
+import { clearAllWorkflowStorage } from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
@@ -60,7 +60,7 @@ export function useWorkflowPersistenceV2() {
   // Clear workflow persistence storage when user signs out (cloud only)
   onUserLogout(() => {
     if (isCloud) {
-      clearAllV2Storage()
+      clearAllWorkflowStorage()
     }
   })
 
