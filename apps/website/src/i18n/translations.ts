@@ -208,8 +208,8 @@ const translations = {
     'zh-CN': '下载桌面版'
   },
   'getStarted.step1.launchCloud': {
-    en: 'Launch Cloud',
-    'zh-CN': '启动云端'
+    en: 'Try Cloud for free',
+    'zh-CN': '免费试用云端'
   },
   'getStarted.step1.or': {
     en: ' or ',
@@ -2434,11 +2434,9 @@ const translations = {
   'nav.launches': { en: 'Launches', 'zh-CN': '发布' },
   'nav.events': { en: 'Events', 'zh-CN': '活动' },
   'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
-  'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
-  'nav.ctaDesktopPrefix': { en: 'DOWNLOAD', 'zh-CN': '下载' },
+  'nav.launchCloud': { en: 'TRY CLOUD FOR FREE', 'zh-CN': '免费试用云端' },
   'nav.ctaDesktopCore': { en: 'DESKTOP', 'zh-CN': '桌面版' },
-  'nav.ctaCloudPrefix': { en: 'LAUNCH', 'zh-CN': '启动' },
-  'nav.ctaCloudCore': { en: 'CLOUD', 'zh-CN': '云端' },
+  'nav.ctaCloudCore': { en: 'TRY FREE', 'zh-CN': '免费试用' },
   'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
   'breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
   'breadcrumb.about': { en: 'About Us', 'zh-CN': '关于我们' },
@@ -4608,9 +4606,9 @@ const translations = {
     en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
     'zh-CN': '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。'
   },
-  'affiliate.assets.downloadLabel': {
-    en: 'Download zip',
-    'zh-CN': '下载压缩包'
+  'affiliate.assets.ctaLabel': {
+    en: 'Go to brand portal',
+    'zh-CN': '前往品牌门户'
   },
 
   // AffiliateFAQSection
@@ -4667,8 +4665,8 @@ const translations = {
     'zh-CN': '下载桌面版'
   },
   'launches.hero.secondary': {
-    en: 'Launch Cloud',
-    'zh-CN': '启动云端'
+    en: 'Try Cloud for free',
+    'zh-CN': '免费试用云端'
   },
   'launches.hero.visualAlt': {
     en: 'Comfy',
