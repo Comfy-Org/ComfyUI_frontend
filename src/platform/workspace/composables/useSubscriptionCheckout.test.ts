@@ -243,7 +243,10 @@ describe('useSubscriptionCheckout', () => {
     mockSubscriptionActionOperation.value = undefined
     mockPlans.value = allPlans()
     mockFetchPlans.mockResolvedValue(undefined)
-    mockStartOperation.mockResolvedValue({ status: 'succeeded' })
+    mockStartOperation.mockResolvedValue({
+      status: 'succeeded',
+      workspaceId: 'workspace-1'
+    })
     mockGetOperation.mockReturnValue(undefined)
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
     mockUserId.value = 'user-1'
@@ -994,7 +997,7 @@ describe('useSubscriptionCheckout', () => {
       await payment
     })
 
-    it('hides the checkout operation after switching workspaces', async () => {
+    it('does not apply an operation result after switching workspaces', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       mockSubscribe.mockResolvedValueOnce({
@@ -1006,7 +1009,10 @@ describe('useSubscriptionCheckout', () => {
         workspaceId: 'workspace-1',
         actionUrl: 'https://verify.example/sensitive-token'
       })
-      let resolveOperation!: (operation: { status: 'failed' }) => void
+      let resolveOperation!: (operation: {
+        status: 'succeeded'
+        workspaceId: string
+      }) => void
       mockStartOperation.mockImplementationOnce(
         () =>
           new Promise((resolve) => {
@@ -1024,8 +1030,13 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.activeCheckoutActionUrl.value).toBeNull()
       expect(checkout.isPolling.value).toBe(false)
 
-      resolveOperation({ status: 'failed' })
+      resolveOperation({
+        status: 'succeeded',
+        workspaceId: 'workspace-1'
+      })
       await payment
+
+      expect(checkout.checkoutStep.value).not.toBe('success')
     })
   })
 
@@ -1150,7 +1161,10 @@ describe('useSubscriptionCheckout', () => {
         status: 'needs_payment_method',
         billing_op_id: 'op-no-url'
       })
-      mockStartOperation.mockResolvedValueOnce({ status: 'succeeded' })
+      mockStartOperation.mockResolvedValueOnce({
+        status: 'succeeded',
+        workspaceId: 'workspace-1'
+      })
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
       await checkout.handleAddCreditCard()
@@ -1179,7 +1193,10 @@ describe('useSubscriptionCheckout', () => {
         billing_op_id: 'op-async-1',
         payment_method_url: 'https://stripe.com/pay'
       })
-      mockStartOperation.mockResolvedValueOnce({ status: 'succeeded' })
+      mockStartOperation.mockResolvedValueOnce({
+        status: 'succeeded',
+        workspaceId: 'workspace-1'
+      })
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
       await checkout.handleAddCreditCard()

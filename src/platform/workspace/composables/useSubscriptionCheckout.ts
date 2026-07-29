@@ -454,7 +454,8 @@ export function useSubscriptionCheckout(
     )
     if (
       operation.status === 'succeeded' &&
-      activeCheckoutOperationId.value === opId
+      activeCheckoutOperationId.value === opId &&
+      operation.workspaceId === workspaceStore.activeWorkspaceId
     ) {
       checkoutStep.value = 'success'
     }
