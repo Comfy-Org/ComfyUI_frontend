@@ -171,10 +171,9 @@ describe('useSlotElementTracking', () => {
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
+      graphId: ROOT_GRAPH_ID,
       nodeId: NODE_ID,
       position: { x: 50, y: 75 },
-      previousPosition: { x: 0, y: 0 },
       timestamp: Date.now(),
       source: LayoutSource.Canvas,
       actor: 'test'
@@ -200,10 +199,9 @@ describe('useSlotElementTracking', () => {
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
+      graphId: ROOT_GRAPH_ID,
       nodeId: NODE_ID,
       position: { x: 50, y: 75 },
-      previousPosition: { x: 0, y: 0 },
       timestamp: Date.now(),
       source: LayoutSource.Canvas,
       actor: 'test'
@@ -385,10 +383,9 @@ describe('useSlotElementTracking', () => {
 
       layoutStore.applyOperation({
         type: 'moveNode',
-        entity: 'node',
+        graphId: ROOT_GRAPH_ID,
         nodeId: NODE_ID,
         position: { x: 50, y: 75 },
-        previousPosition: { x: 0, y: 0 },
         timestamp: Date.now(),
         source: LayoutSource.Vue,
         actor: 'test'

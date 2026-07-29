@@ -29,6 +29,7 @@ import { toNodeId } from '@/types/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
+  title_mode?: TitleMode
 }
 
 function getMockISerialisedNode(
@@ -782,6 +783,20 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
       expect(node.serialize().size).toEqual([150, 10])
     })
+
+    test.each([TitleMode.TRANSPARENT_TITLE, TitleMode.NO_TITLE])(
+      'Vue mode keeps collapsed height for title mode %s',
+      (titleMode) => {
+        LiteGraph.vueNodesMode = true
+        const nodeConstructor =
+          node.constructor as NodeConstructorWithSlotOffset
+        nodeConstructor.title_mode = titleMode
+        node.measure(out)
+
+        expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+        delete nodeConstructor.title_mode
+      }
+    )
 
     test('Vue mode expanded behaves identically to legacy expanded', () => {
       LiteGraph.vueNodesMode = true

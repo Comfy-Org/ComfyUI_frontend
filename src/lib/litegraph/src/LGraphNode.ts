@@ -2340,10 +2340,13 @@ export class LGraphNode
 
     out[0] = this.pos[0]
     out[1] = this.pos[1] + -titleHeight
-    if (!this.flags?.collapsed || LiteGraph.vueNodesMode) {
+    if (!this.flags?.collapsed) {
       const size = this.renderingSize
       out[2] = size[0]
       out[3] = size[1] + titleHeight
+    } else if (LiteGraph.vueNodesMode) {
+      out[2] = this.renderingSize[0]
+      out[3] = Math.max(titleHeight, LiteGraph.NODE_TITLE_HEIGHT)
     } else {
       if (ctx) ctx.font = this.innerFontStyle
       this._collapsed_width = Math.min(
