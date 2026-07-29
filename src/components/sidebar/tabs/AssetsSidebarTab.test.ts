@@ -171,6 +171,21 @@ const selectionBarStub = {
   template: '<div data-testid="selection-count">{{ count }} selected</div>'
 }
 
+const filterBarStub = {
+  props: ['viewMode'],
+  emits: ['update:viewMode'],
+  template: `
+    <button
+      aria-label="Show list view"
+      @click="$emit('update:viewMode', 'list')"
+    />
+    <button
+      aria-label="Show grid view"
+      @click="$emit('update:viewMode', 'grid')"
+    />
+  `
+}
+
 function renderTab() {
   return render(AssetsSidebarTab, {
     global: {
@@ -183,7 +198,7 @@ function renderTab() {
         AssetsSidebarGridView: assetsGridStub,
         AssetsSidebarListView: true,
         Button: buttonStub,
-        MediaAssetFilterBar: true,
+        MediaAssetFilterBar: filterBarStub,
         MediaAssetSelectionBar: selectionBarStub,
         MediaLightbox: true,
         MediaAssetContextMenu: true,
@@ -276,6 +291,20 @@ describe('AssetsSidebarTab folder navigation', () => {
     expect(
       screen.getByRole('button', { name: 'Enter output folder' })
     ).toHaveTextContent('1/2')
+    expect(
+      screen.getByRole('button', { name: 'Select multi-output.png' })
+    ).toHaveAttribute('aria-pressed', 'mixed')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show list view' })
+    )
+    expect(screen.getByTestId('selection-count')).toHaveTextContent(
+      '1 selected'
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show grid view' })
+    )
     expect(
       screen.getByRole('button', { name: 'Select multi-output.png' })
     ).toHaveAttribute('aria-pressed', 'mixed')

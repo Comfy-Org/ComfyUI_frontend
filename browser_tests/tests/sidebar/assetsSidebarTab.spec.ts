@@ -308,6 +308,15 @@ test.describe('FE-130 assets sidebar route mocks', () => {
       groupedCard.getByRole('button', { name: 'See more outputs' })
     ).toHaveText('1/2')
 
+    await tab.openSettingsMenu()
+    await tab.listViewOption.click()
+    await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
+
+    await tab.gridLargeOption.click()
+    await expect(
+      groupedCard.getByRole('button', { name: /multi-output-a.*asset/ })
+    ).toHaveAttribute('aria-pressed', 'mixed')
+
     await groupedCard.getByRole('button', { name: 'See more outputs' }).click()
 
     await expect(tab.selectedCards).toHaveCount(1)
