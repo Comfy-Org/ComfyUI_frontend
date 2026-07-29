@@ -9,6 +9,8 @@ import {
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { useTelemetry } from '@/platform/telemetry'
+import type { FeatureFlagValue } from '@/platform/telemetry/types'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
@@ -41,12 +43,23 @@ export enum ServerFeatureFlag {
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags'
 }
 
-interface FeatureFlagDefinition<T> {
+function reportFeatureFlagEvaluation<T extends FeatureFlagValue>(
+  flagKey: string,
+  value: T
+): T {
+  useTelemetry()?.trackFeatureFlagExposure(flagKey, value)
+  return value
+}
+
+interface FeatureFlagDefinition<T extends FeatureFlagValue> {
   key: string
   resolve: (key: string) => T
 }
 
-type FeatureFlagDefinitions = Record<string, FeatureFlagDefinition<unknown>>
+type FeatureFlagDefinitions = Record<
+  string,
+  FeatureFlagDefinition<FeatureFlagValue>
+>
 
 type ResolvedFeatureFlags<T extends FeatureFlagDefinitions> = {
   readonly [K in keyof T]: T[K] extends FeatureFlagDefinition<infer V>
@@ -54,7 +67,7 @@ type ResolvedFeatureFlags<T extends FeatureFlagDefinitions> = {
     : never
 }
 
-function defineFeatureFlag<T>(
+function defineFeatureFlag<T extends FeatureFlagValue>(
   key: string,
   resolve: (key: string) => T
 ): FeatureFlagDefinition<T> {
@@ -69,7 +82,7 @@ function createFeatureFlags<const T extends FeatureFlagDefinitions>(
   for (const [property, { key, resolve }] of Object.entries(definitions)) {
     Object.defineProperty(flags, property, {
       enumerable: true,
-      get: () => resolve(key)
+      get: () => reportFeatureFlagEvaluation(key, resolve(key))
     })
   }
 
@@ -269,8 +282,16 @@ export function useFeatureFlags() {
     })
   )
 
-  const featureFlag = <T = unknown>(featurePath: string, defaultValue?: T) =>
-    computed(() => api.getServerFeature(featurePath, defaultValue))
+  const featureFlag = <T extends FeatureFlagValue = FeatureFlagValue>(
+    featurePath: string,
+    defaultValue?: T
+  ) =>
+    computed(() =>
+      reportFeatureFlagEvaluation(
+        featurePath,
+        api.getServerFeature(featurePath, defaultValue)
+      )
+    )
 
   return {
     flags: readonly(flags),

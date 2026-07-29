@@ -33,7 +33,8 @@ const {
   mockTelemetry: {
     trackSubscription: vi.fn(),
     trackMonthlySubscriptionSucceeded: vi.fn(),
-    trackMonthlySubscriptionCancelled: vi.fn()
+    trackMonthlySubscriptionCancelled: vi.fn(),
+    trackFeatureFlagExposure: vi.fn()
   },
   mockUserId: { value: 'user-123' },
   mockLocalStorage: (() => {

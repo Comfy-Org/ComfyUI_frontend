@@ -124,7 +124,8 @@ vi.mock('@/stores/authStore', () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackBeginCheckout: mockTrackBeginCheckout,
-    trackBillingEvent: mockTrackBillingEvent
+    trackBillingEvent: mockTrackBillingEvent,
+    trackFeatureFlagExposure: vi.fn()
   })
 }))
 

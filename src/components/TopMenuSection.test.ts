@@ -87,6 +87,7 @@ const mockTrackUiButtonClicked = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
+    trackFeatureFlagExposure: vi.fn(),
     trackUiButtonClicked: mockTrackUiButtonClicked
   })
 }))

@@ -13,7 +13,8 @@ const {
   mockLocalStorage
 } = vi.hoisted(() => ({
   mockTelemetry: {
-    trackBeginCheckout: vi.fn()
+    trackBeginCheckout: vi.fn(),
+    trackFeatureFlagExposure: vi.fn()
   },
   mockGetAuthHeader: vi.fn(() =>
     Promise.resolve({ Authorization: 'Bearer test-token' })
