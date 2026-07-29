@@ -20,7 +20,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
 </script>
 
 <template>
-  <div class="group mb-8 flex flex-col items-end gap-1.5 not-first:mt-5">
+  <div class="group flex flex-col items-end gap-1.5">
     <div v-if="tags.length" class="flex flex-wrap justify-end gap-1">
       <span
         v-for="(tag, index) in tags"
