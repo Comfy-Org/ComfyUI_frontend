@@ -26,10 +26,12 @@
       <div
         v-if="widget.visible"
         data-testid="node-widget"
+        data-node-lod="hide"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch pr-3"
       >
         <!-- Widget Input Slot Dot -->
         <div
+          :data-node-lod="widget.slotMetadata?.linked ? 'show' : undefined"
           :class="
             cn(
               'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',

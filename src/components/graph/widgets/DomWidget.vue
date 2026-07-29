@@ -2,6 +2,7 @@
   <div
     v-show="widgetState.visible"
     ref="widgetElement"
+    data-node-lod="hide"
     class="dom-widget size-full"
     :title="tooltip"
     :style="style"

@@ -11,6 +11,7 @@ defineProps<{
 <template>
   <div
     v-if="hasComfyBadge || core.length || extension.length"
+    data-node-lod="hide"
     class="flex h-5 w-full gap-2 px-2 text-muted-foreground"
   >
     <div

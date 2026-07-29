@@ -4,6 +4,7 @@
   </div>
   <div
     v-else
+    data-node-lod="hide"
     class="lg-node-content flex flex-auto grow flex-col [content-visibility:auto]"
   >
     <!-- Default slot for custom content -->

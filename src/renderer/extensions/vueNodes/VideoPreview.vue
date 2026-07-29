@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
+    data-node-lod="hide"
     class="video-preview flex size-full min-h-55 min-w-16 flex-col px-2"
     @keydown="handleKeyDown"
   >

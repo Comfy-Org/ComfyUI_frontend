@@ -2,6 +2,7 @@
   <template v-if="imageUrl">
     <div
       v-if="imageError"
+      data-node-lod="hide"
       class="text-pure-white flex size-full flex-col items-center justify-center text-center"
     >
       <i-lucide:image-off class="mb-1 size-8 text-smoke-500" />
@@ -9,13 +10,17 @@
     </div>
     <img
       v-else
+      data-node-lod="hide"
       :src="imageUrl"
       :alt="$t('g.liveSamplingPreview')"
       class="pointer-events-none min-h-55 w-full flex-1 object-contain contain-size"
       @load="handleImageLoad"
       @error="handleImageError"
     />
-    <div class="text-node-component-header-text mt-1 text-center text-xs">
+    <div
+      data-node-lod="hide"
+      class="text-node-component-header-text mt-1 text-center text-xs"
+    >
       {{
         imageError
           ? $t('g.errorLoadingImage')

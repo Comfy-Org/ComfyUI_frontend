@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="text"
+    data-node-lod="hide"
     class="flex min-w-max items-center gap-1 rounded-sm bg-node-component-surface px-1 py-0.5 text-xs"
     :style="{
       color: fgColor,
