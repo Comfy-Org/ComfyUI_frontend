@@ -1,5 +1,6 @@
 import { datadogRum } from '@datadog/browser-rum'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Router } from 'vue-router'
 
 import {
   CHUNK_RELOAD_GUARD_KEY,
@@ -88,6 +89,18 @@ describe('chunkReload', () => {
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).toBeNull()
   })
 
+  it('does not reload if the loop guard cannot be persisted', () => {
+    // Storage is readable (getItem -> null) but writes fail (e.g. quota). Without
+    // a stored guard a reload could loop, so we must not reload.
+    vi.spyOn(window.sessionStorage, 'setItem').mockImplementation(() => {
+      throw new Error('quota exceeded')
+    })
+
+    expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
+    expect(reloadSpy).not.toHaveBeenCalled()
+    expect(addAction).not.toHaveBeenCalled()
+  })
+
   it('defers the reload when a generation is running', () => {
     executionState.runningJobIds = ['job-1']
 
@@ -103,7 +116,7 @@ describe('chunkReload', () => {
         afterEachCb = cb
         return vi.fn() // stop handle
       }
-    } as unknown as import('vue-router').Router
+    } as unknown as Router
 
     workflowState.modifiedWorkflows = [{ path: 'wf.json' }]
     expect(attemptChunkReload(router, APP_CHUNK)).toBe(false)

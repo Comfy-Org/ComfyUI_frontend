@@ -41,11 +41,15 @@ function guardAlreadySet(storage: Storage): boolean {
   }
 }
 
-function setGuard(storage: Storage): void {
+function setGuard(storage: Storage): boolean {
   try {
     storage.setItem(CHUNK_RELOAD_GUARD_KEY, String(Date.now()))
+    return true
   } catch {
-    // Best-effort: proceed with the reload even if we cannot persist the guard.
+    // Could not persist the guard (e.g. storage quota). Do NOT reload — without
+    // a stored guard a still-broken page would reload endlessly. Favor a visible
+    // error over a reload loop.
+    return false
   }
 }
 
@@ -127,7 +131,7 @@ export function attemptChunkReload(router?: Router, chunkUrl?: string): boolean 
     return false
   }
 
-  setGuard(storage)
+  if (!setGuard(storage)) return false
   performReload(chunkUrl)
   return true
 }
@@ -148,8 +152,7 @@ function armDeferredReload(router?: Router, chunkUrl?: string): void {
     }
     if (isReloadSafe()) {
       stop()
-      setGuard(storage)
-      performReload(chunkUrl)
+      if (setGuard(storage)) performReload(chunkUrl)
     }
   })
 }
