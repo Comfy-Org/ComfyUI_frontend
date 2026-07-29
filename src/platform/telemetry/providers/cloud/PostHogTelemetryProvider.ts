@@ -8,6 +8,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
 import type {
   AddCreditsClickMetadata,
@@ -17,6 +18,9 @@ import type {
   BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
+  ExecutionErrorMetadata,
+  ExecutionSuccessMetadata,
+  ExecutionTriggerSource,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
   HelpCenterClosedMetadata,
@@ -63,6 +67,8 @@ import {
   TelemetryEvents
 } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
+
+const EXECUTION_EVENT_SOURCE = 'web-sdk'
 
 const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_OPENED,
@@ -114,6 +120,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private eventQueue: QueuedEvent[] = []
   private pendingFirstAuthAt = new Map<string, string>()
   private isInitialized = false
+  private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
   private desktopEntryProps: DesktopEntryProps | null = null
   private stopSubscriptionTierWatch: WatchStopHandle | null = null
@@ -440,6 +447,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackRunButton(properties: RunButtonProperties): void {
+    this.lastTriggerSource = properties.trigger_source
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
   }
 
@@ -588,6 +596,29 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {
     this.trackEvent(TelemetryEvents.SHARED_WORKFLOW_RUN, metadata)
+  }
+
+  trackWorkflowExecution(): void {
+    this.captureRaw(TelemetryEvents.EXECUTION_START, {
+      ...getExecutionContext(),
+      trigger_source: this.lastTriggerSource ?? 'unknown',
+      event_source: EXECUTION_EVENT_SOURCE
+    })
+    this.lastTriggerSource = undefined
+  }
+
+  trackExecutionError(metadata: ExecutionErrorMetadata): void {
+    this.captureRaw(TelemetryEvents.EXECUTION_ERROR, {
+      ...metadata,
+      event_source: EXECUTION_EVENT_SOURCE
+    })
+  }
+
+  trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
+    this.captureRaw(TelemetryEvents.EXECUTION_SUCCESS, {
+      ...metadata,
+      event_source: EXECUTION_EVENT_SOURCE
+    })
   }
 
   trackSettingChanged(metadata: SettingChangedMetadata): void {
