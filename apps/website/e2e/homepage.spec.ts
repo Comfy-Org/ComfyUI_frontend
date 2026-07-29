@@ -225,6 +225,8 @@ test.describe('Get started section links @smoke', () => {
     expect(cloudUrl.searchParams.get('utm_source')).toBe('comfy_org')
     expect(cloudUrl.searchParams.get('utm_medium')).toBe('website')
     expect(cloudUrl.searchParams.get('utm_campaign')).toBe('free_tier')
-    expect(cloudUrl.searchParams.get('utm_content')).toBe('getstarted_try_cloud')
+    expect(cloudUrl.searchParams.get('utm_content')).toBe(
+      'getstarted_try_cloud'
+    )
   })
 })
