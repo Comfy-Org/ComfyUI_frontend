@@ -393,10 +393,9 @@
     {
       "entityId": "e_011",
       "@type": "ProprietaryTerm",
-      "name": "ComfyHub",
-      "alternateName": "Comfy Hub",
+      "name": "Comfy Workflows",
       "canonicalLabel": "community workflow marketplace",
-      "description": "ComfyHub is Comfy's community marketplace for discovering, browsing, and remixing workflows and templates shared by top creators, organized by model and category tags.",
+      "description": "Comfy Workflows is Comfy's community marketplace for discovering, browsing, and remixing workflows and templates shared by top creators, organized by model and category tags.",
       "hasChunks": [
         {
           "chunkId": "c_023",

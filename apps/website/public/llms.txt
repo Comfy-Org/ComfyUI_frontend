@@ -203,10 +203,10 @@ Enterprise plans include direct access to the engineering team that builds the e
 
 ---
 
-# ComfyHub — Community Workflow Library
+# Comfy Workflows — Community Workflow Library
 Source: https://comfy.org/workflows/
 
-ComfyHub is the library of ready-to-run ComfyUI workflows: official templates and community-published workflows across image, video, 3D, and audio. Every workflow opens directly in Comfy Cloud (one click, no setup) or downloads for ComfyUI Desktop. Many ship as App Mode apps — a simple form interface over the workflow, so anyone can run them without touching the node graph.
+Comfy Workflows is the library of ready-to-run ComfyUI workflows: official templates and community-published workflows across image, video, 3D, and audio. Every workflow opens directly in Comfy Cloud (one click, no setup) or downloads for ComfyUI Desktop. Many ship as App Mode apps — a simple form interface over the workflow, so anyone can run them without touching the node graph.
 
 Browse by category: [Image](https://comfy.org/workflows/category/image/) · [Video](https://comfy.org/workflows/category/video/) · [3D](https://comfy.org/workflows/category/3d/) · [Audio](https://comfy.org/workflows/category/audio/)
 Browse by task tag, for example: [image-edit](https://comfy.org/workflows/tag/image-edit/) · [image-to-video](https://comfy.org/workflows/tag/image-to-video/) · [video-upscale](https://comfy.org/workflows/tag/video-upscale/) · [game](https://comfy.org/workflows/tag/game/) · [partner-nodes](https://comfy.org/workflows/tag/partner-nodes/)
