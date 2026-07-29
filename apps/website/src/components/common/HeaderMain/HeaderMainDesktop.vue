@@ -7,8 +7,6 @@ import NavigationMenuList from '@/components/ui/navigation-menu/NavigationMenuLi
 import NavigationMenuTrigger from '@/components/ui/navigation-menu/NavigationMenuTrigger.vue'
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
 
-import NewBadge from './NewBadge.vue'
-
 import {
   isHrefActive,
   useCurrentPath
@@ -18,6 +16,7 @@ import type { NavItem } from '../../../data/mainNavigation'
 import type { Locale } from '../../../i18n/translations'
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
+import NewBadge from './NewBadge.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const mainNavigation = getMainNavigation(locale)
