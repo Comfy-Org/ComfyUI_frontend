@@ -73,7 +73,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           )
         "
         :aria-label="t('agent.switchWorkflow')"
-        class="rounded-agent bg-agent-pill text-agent-fg hover:bg-agent-surface-hover inline-flex min-w-0 cursor-pointer items-center gap-1.5 px-2 py-1 text-xs transition-colors"
+        class="rounded-agent bg-agent-pill text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-1.5 px-2 text-xs transition-colors"
       >
         <span
           class="text-agent-fg-subtle icon-[lucide--panels-top-left] size-3.5 shrink-0"

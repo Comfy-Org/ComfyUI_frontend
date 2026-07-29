@@ -271,13 +271,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     <template v-if="!showHistory">
       <footer class="shrink-0 px-4 pt-4 pb-3">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4">
-          <WorkflowSelectorChip
-            :active-tab="activeTab"
-            :tabs="workflowTabs"
-            :detached="workflowDetached"
-            @select-tab="emit('selectTab', $event)"
-            @clear="emit('clearWorkflow')"
-          />
           <RunNoticeBanner />
           <Composer
             ref="composerRef"
@@ -293,7 +286,17 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @open-assets="emit('openAssets')"
             @remove-tag="emit('removeTag', $event)"
             @mention-pick="emit('mentionPick', $event)"
-          />
+          >
+            <template #header>
+              <WorkflowSelectorChip
+                :active-tab="activeTab"
+                :tabs="workflowTabs"
+                :detached="workflowDetached"
+                @select-tab="emit('selectTab', $event)"
+                @clear="emit('clearWorkflow')"
+              />
+            </template>
+          </Composer>
           <p class="text-agent-fg-muted -mt-1 mb-0 text-center text-xs">
             {{ t('agent.caption') }}
           </p>
