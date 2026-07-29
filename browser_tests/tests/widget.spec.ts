@@ -423,4 +423,48 @@ test.describe('Unserialized widgets', { tag: '@widget' }, () => {
       .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
       .toBe(false)
   })
+
+  test('Node round-trips its own widgets_values when a serialize:false widget precedes serialized ones', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+
+    const result = await comfyPage.page.evaluate(() => {
+      const node = window.app!.graph!.nodes.find(
+        (n) => (n.widgets?.length ?? 0) >= 2
+      )
+      if (!node) throw new Error('No node with >= 2 widgets found')
+
+      node.serialize_widgets = true
+      node.addWidget('button', 'probe', 'X', null)
+      const probe = node.widgets!.at(-1)!
+      probe.serialize = false
+      // Move the non-serializing widget into the middle of the widget list.
+      node.widgets!.splice(1, 0, node.widgets!.pop()!)
+
+      const before = node.widgets!.map((w) => w.value)
+      const serializableWidgetCount = node.widgets!.filter(
+        (w) => w.serialize !== false
+      ).length
+      const serialized = node.serialize()
+      const roundTripped = JSON.parse(
+        JSON.stringify(serialized)
+      ) as typeof serialized
+      node.configure(roundTripped)
+      const after = node.widgets!.map((w) => w.value)
+
+      return {
+        widgetsValuesLength: serialized.widgets_values?.length,
+        serializableWidgetCount,
+        before,
+        after
+      }
+    })
+
+    // The written array must be compacted to the serializable widget count,
+    // not the total widget count - a sparse array is what shifts every
+    // value after the `serialize: false` widget on the read side.
+    expect(result.widgetsValuesLength).toBe(result.serializableWidgetCount)
+    expect(result.after).toEqual(result.before)
+  })
 })

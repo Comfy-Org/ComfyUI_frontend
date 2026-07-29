@@ -588,6 +588,168 @@ describe('LGraphNode', () => {
       expect(node.widgets![0].value).toBe(1)
       expect(node.widgets![1].value).toBe(100)
     })
+
+    test('configure recovers legacy sparse widgets_values written by pre-compact serialize()', () => {
+      const node = new LGraphNode('TestNode')
+      node.serialize_widgets = true
+      node.addWidget('button', 'preview', '', undefined)
+      node.addWidget('text', 'model', '', undefined)
+      node.addWidget('text', 'vae', '', undefined)
+      node.addWidget('text', 'clip', '', undefined)
+      node.widgets![0].serialize = false
+
+      const legacySparsePayload = JSON.parse(
+        '{"id":1,"type":"TestNode","pos":[100,100],"size":[100,100],"properties":{},"flags":{},"order":0,"mode":0,"widgets_values":[null,"model.safetensors","vae.safetensors","clip.safetensors"]}'
+      )
+      node.configure(legacySparsePayload)
+
+      expect(node.widgets![1].value).toBe('model.safetensors')
+      expect(node.widgets![2].value).toBe('vae.safetensors')
+      expect(node.widgets![3].value).toBe('clip.safetensors')
+    })
+
+    test('serialize/configure round-trip preserves values when a non-serializable widget precedes serializable ones', () => {
+      const source = new LGraphNode('TestNode')
+      source.serialize_widgets = true
+      source.addWidget('button', 'preview', '', undefined)
+      source.addWidget('text', 'model', '', undefined)
+      source.addWidget('text', 'vae', '', undefined)
+      source.addWidget('text', 'clip', '', undefined)
+      source.widgets![0].serialize = false
+      source.widgets![1].value = 'model.safetensors'
+      source.widgets![2].value = 'vae.safetensors'
+      source.widgets![3].value = 'clip.safetensors'
+
+      const serialized = source.serialize()
+      expect(serialized.widgets_values).toEqual([
+        'model.safetensors',
+        'vae.safetensors',
+        'clip.safetensors'
+      ])
+
+      const roundTripped = JSON.parse(JSON.stringify(serialized))
+
+      const target = new LGraphNode('TestNode')
+      target.serialize_widgets = true
+      target.addWidget('button', 'preview', '', undefined)
+      target.addWidget('text', 'model', '', undefined)
+      target.addWidget('text', 'vae', '', undefined)
+      target.addWidget('text', 'clip', '', undefined)
+      target.widgets![0].serialize = false
+
+      target.configure(roundTripped)
+
+      expect(target.widgets![1].value).toBe('model.safetensors')
+      expect(target.widgets![2].value).toBe('vae.safetensors')
+      expect(target.widgets![3].value).toBe('clip.safetensors')
+    })
+
+    test('serialize() emits an empty widgets_values array when every widget is serialize:false', () => {
+      const node = new LGraphNode('TestNode')
+      node.serialize_widgets = true
+      node.addWidget('button', 'preview-a', '', undefined)
+      node.addWidget('button', 'preview-b', '', undefined)
+      node.widgets![0].serialize = false
+      node.widgets![1].serialize = false
+
+      const serialized = node.serialize()
+
+      expect(serialized.widgets_values).toEqual([])
+    })
+
+    test('configure throws in DEV when widgets_values is longer than the node has widgets', () => {
+      vi.stubEnv('DEV', true)
+      try {
+        const node = new LGraphNode('TestNode')
+        node.serialize_widgets = true
+        node.addWidget('text', 'a', '', undefined)
+        node.addWidget('text', 'b', '', undefined)
+
+        expect(() =>
+          node.configure(
+            getMockISerialisedNode({
+              id: 1,
+              type: 'TestNode',
+              pos: [100, 100],
+              size: [100, 100],
+              properties: {},
+              widgets_values: ['one', 'two', 'three', 'four']
+            })
+          )
+        ).toThrow(/does not match this node's widget layout/)
+      } finally {
+        vi.unstubAllEnvs()
+      }
+    })
+
+    test('configure does not throw outside DEV when widgets_values is longer than the node has widgets, and still applies values positionally', () => {
+      vi.stubEnv('DEV', false)
+      try {
+        const node = new LGraphNode('TestNode')
+        node.serialize_widgets = true
+        node.addWidget('text', 'a', '', undefined)
+        node.addWidget('text', 'b', '', undefined)
+
+        expect(() =>
+          node.configure(
+            getMockISerialisedNode({
+              id: 1,
+              type: 'TestNode',
+              pos: [100, 100],
+              size: [100, 100],
+              properties: {},
+              widgets_values: ['one', 'two', 'three', 'four']
+            })
+          )
+        ).not.toThrow()
+
+        expect(node.widgets![0].value).toBe('one')
+        expect(node.widgets![1].value).toBe('two')
+      } finally {
+        vi.unstubAllEnvs()
+      }
+    })
+
+    test('round-trips every primitive widget type across a serialize:false widget', () => {
+      const node = new LGraphNode('TestNode')
+      node.serialize_widgets = true
+      node.addWidget('number', 'steps', 20, null, {})
+      node.addWidget('button', 'action', 'Click', null, {})
+      node.widgets![1].serialize = false
+      node.addWidget('text', 'prompt', '', null, {})
+      node.addWidget('toggle', 'enabled', false, null, {})
+      node.addWidget('combo', 'sampler', 'euler', null, {
+        values: ['euler', 'ddim', 'dpm']
+      })
+
+      node.widgets![0].value = 42
+      node.widgets![2].value = 'a prompt'
+      node.widgets![3].value = true
+      node.widgets![4].value = 'ddim'
+
+      const serialized = node.serialize()
+      const roundTripped = JSON.parse(JSON.stringify(serialized))
+
+      const restored = new LGraphNode('TestNode')
+      restored.serialize_widgets = true
+      restored.addWidget('number', 'steps', 20, null, {})
+      restored.addWidget('button', 'action', 'Click', null, {})
+      restored.widgets![1].serialize = false
+      restored.addWidget('text', 'prompt', '', null, {})
+      restored.addWidget('toggle', 'enabled', false, null, {})
+      restored.addWidget('combo', 'sampler', 'euler', null, {
+        values: ['euler', 'ddim', 'dpm']
+      })
+      restored.configure(roundTripped)
+
+      expect(restored.widgets!.map((w) => w.value)).toEqual([
+        42,
+        'Click',
+        'a prompt',
+        true,
+        'ddim'
+      ])
+    })
   })
 
   describe('getInputSlotPos', () => {

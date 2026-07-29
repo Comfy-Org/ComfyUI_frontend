@@ -507,6 +507,45 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       expect(afterSnapshot).toEqual(beforeSnapshot)
     })
 
+    test('Promoted widget values survive serialize -> reload without shifting', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-multiple-promoted-widgets'
+      )
+
+      const widgetNamesBefore = await getPromotedWidgetNames(comfyPage, '11')
+      expect(widgetNamesBefore.length).toBeGreaterThanOrEqual(2)
+
+      const expectedValues = widgetNamesBefore.map(
+        (_, index) => `value-${index}`
+      )
+      const hostId = toNodeId('11')
+
+      await comfyPage.page.evaluate(
+        ([hostId, values]) => {
+          const node = window.app!.graph!.getNodeById(hostId)
+          const widgets = node?.widgets ?? []
+          widgets.forEach((widget, index) => {
+            if (index < values.length) widget.value = values[index]
+          })
+        },
+        [hostId, expectedValues] as const
+      )
+
+      await comfyPage.subgraph.serializeAndReload()
+
+      await expect
+        .poll(async () =>
+          comfyPage.page.evaluate((hostId) => {
+            const node = window.app!.graph!.getNodeById(hostId)
+            const widgets = node?.widgets ?? []
+            return widgets.map((widget) => widget.value)
+          }, hostId)
+        )
+        .toEqual(expectedValues)
+    })
+
     test('Cloning a subgraph node keeps promoted widget entries on original and clone', async ({
       comfyPage
     }) => {
