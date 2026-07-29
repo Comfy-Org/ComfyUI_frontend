@@ -377,8 +377,6 @@ function writeStorage(storage: Storage, key: string, value: string): void {
  * Used during signout to prevent data leakage.
  */
 export function clearAllV2Storage(): void {
-  if (!storageAvailable) return
-
   const prefixes = [
     StorageKeys.prefixes.draftIndex,
     StorageKeys.prefixes.draftPayload,

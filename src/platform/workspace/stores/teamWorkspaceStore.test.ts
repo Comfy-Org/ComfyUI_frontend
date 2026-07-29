@@ -344,16 +344,27 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.initState).toBe('error')
     })
 
-    it('continues initialization even if token exchange fails', async () => {
+    it('does not activate a workspace when token exchange fails', async () => {
+      vi.useFakeTimers()
       mockWorkspaceAuthStore.switchWorkspace.mockRejectedValue(
         new Error('Token exchange failed')
       )
 
       const store = useTeamWorkspaceStore()
-      await store.initialize()
+      const initialization = store.initialize()
+      const rejection = expect(initialization).rejects.toThrow(
+        'Token exchange failed'
+      )
 
-      expect(store.initState).toBe('ready')
-      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(2000)
+      await vi.advanceTimersByTimeAsync(4000)
+      await rejection
+
+      expect(store.initState).toBe('error')
+      expect(store.activeWorkspaceId).toBeNull()
+      expect(store.error).toEqual(new Error('Token exchange failed'))
+      vi.useRealTimers()
     })
   })
 

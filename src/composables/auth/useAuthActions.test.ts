@@ -34,6 +34,7 @@ const mockDialogService = vi.hoisted(() => ({
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockTrackAuthFailed = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+const mockClearAllV2Storage = vi.hoisted(() => vi.fn())
 
 const knownAuthErrorCodes = new Set([
   'auth/invalid-credential',
@@ -64,6 +65,10 @@ vi.mock('@/platform/telemetry', () => ({
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn(() => mockToastStore)
+}))
+
+vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
+  clearAllV2Storage: mockClearAllV2Storage
 }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
@@ -135,6 +140,7 @@ describe('useAuthActions.logout', () => {
     expect(mockDialogService.confirm).not.toHaveBeenCalled()
     expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
+    expect(mockClearAllV2Storage).not.toHaveBeenCalled()
   })
 
   it('logs out without prompting when no workflows are modified', async () => {
@@ -145,6 +151,26 @@ describe('useAuthActions.logout', () => {
     expect(mockDialogService.confirm).not.toHaveBeenCalled()
     expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
+  })
+
+  it('clears persisted workflows after cloud logout and before navigation', async () => {
+    const { logout } = useAuthActions()
+
+    await logout()
+
+    expect(mockClearAllV2Storage).toHaveBeenCalledOnce()
+    expect(mockAuthStore.logout.mock.invocationCallOrder[0]).toBeLessThan(
+      mockClearAllV2Storage.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('does not clear cloud workflows when logout fails', async () => {
+    mockAuthStore.logout.mockRejectedValueOnce(new Error('network failed'))
+    const { logout } = useAuthActions()
+
+    await logout()
+
+    expect(mockClearAllV2Storage).not.toHaveBeenCalled()
   })
 
   it('cancels sign-out when the dialog is dismissed (null)', async () => {

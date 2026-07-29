@@ -7,6 +7,7 @@ import {
   deletePayload,
   deletePayloads,
   getPayloadKeys,
+  markStorageUnavailable,
   readActivePath,
   readIndex,
   readOpenPaths,
@@ -316,6 +317,21 @@ describe('storageIO', () => {
         sessionStorage.getItem('Comfy.Workflow.OpenPaths:client-2')
       ).toBeNull()
       expect(sessionStorage.getItem('unrelated')).toBe('keep')
+    })
+
+    it('clears persisted workflows after storage writes are disabled', () => {
+      localStorage.setItem('Comfy.Workflow.LastActivePath:personal', '{}')
+      sessionStorage.setItem('Comfy.Workflow.ActivePath:client-1', '{}')
+      markStorageUnavailable()
+
+      clearAllV2Storage()
+
+      expect(
+        localStorage.getItem('Comfy.Workflow.LastActivePath:personal')
+      ).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.ActivePath:client-1')
+      ).toBeNull()
     })
   })
 })
