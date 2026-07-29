@@ -5,11 +5,11 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 
-import { canvasTransformValid } from './canvasCoachTarget'
 import {
   firstRunTourSteps,
   releaseFirstRunTargets
@@ -27,6 +27,7 @@ function useFirstRunTourControllerInternal() {
   const billing = useBillingContext()
   const executionStore = useExecutionStore()
   const workflowStore = useWorkflowStore()
+  const settingStore = useSettingStore()
 
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const runState = ref<RunState>('idle')
@@ -88,7 +89,8 @@ function useFirstRunTourControllerInternal() {
 
   /** False when this template has no tour to give; the caller keeps the loaded graph. */
   async function beginTour(templateId: string): Promise<boolean> {
-    if (!canvasTransformValid()) return false
+    if (!settingStore.get('Comfy.VueNodes.Enabled'))
+      await settingStore.set('Comfy.VueNodes.Enabled', true)
 
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'

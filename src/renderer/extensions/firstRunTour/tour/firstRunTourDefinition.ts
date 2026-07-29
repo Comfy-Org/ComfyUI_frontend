@@ -1,4 +1,4 @@
-import type { VirtualElement } from '@floating-ui/vue'
+import type { MovingTarget } from '@/platform/onboarding/coachmarkRegistry'
 import type { Ref } from 'vue'
 
 import {
@@ -32,7 +32,7 @@ const COACH_ID: Record<TourStep['kind'], CoachId> = {
   result: FIRST_RUN_COACH_IDS.sink
 }
 
-const registered: [CoachId, VirtualElement][] = []
+const registered: [CoachId, MovingTarget][] = []
 
 /** Drops the canvas targets a finished tour registered. */
 export function releaseFirstRunTargets() {

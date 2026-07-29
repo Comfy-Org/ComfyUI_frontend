@@ -14,7 +14,7 @@
           rx="12"
           fill="black"
           :class="
-            !isVirtualTarget &&
+            !targetMoves &&
             'motion-safe:transition-[x,y,width,height] motion-safe:duration-300'
           "
         />
@@ -50,7 +50,7 @@
       :class="
         cn(
           'pointer-events-none absolute rounded-xl outline-2 outline-coach-ring',
-          !isVirtualTarget &&
+          !targetMoves &&
             'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
           !useMaskScrim && 'shadow-[0_0_0_9999px_var(--color-coach-scrim)]'
         )
@@ -230,7 +230,7 @@ const { width: windowWidth, height: windowHeight } = useWindowSize()
 const {
   targetRect,
   targetEl,
-  isVirtualTarget,
+  targetMoves,
   floatingStyles,
   isPositioned,
   placement
@@ -331,15 +331,15 @@ const glides = ref(true)
 watch(
   () => step,
   (_step, _previous, onCleanup) => {
-    if (!isVirtualTarget.value) return
+    if (!targetMoves.value) return
     glides.value = true
     const timer = setTimeout(() => (glides.value = false), CARD_GLIDE_MS)
     onCleanup(() => clearTimeout(timer))
   },
   { immediate: true }
 )
-watch(isVirtualTarget, (virtual) => {
-  if (!virtual) glides.value = true
+watch(targetMoves, (moves) => {
+  if (!moves) glides.value = true
 })
 
 /** Hidden until Floating UI has placed it; only the opening card has to fade in. */

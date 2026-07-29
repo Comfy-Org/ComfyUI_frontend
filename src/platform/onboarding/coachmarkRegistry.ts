@@ -1,41 +1,44 @@
-import type { VirtualElement } from '@floating-ui/vue'
 import { shallowReactive, watch } from 'vue'
 
 import type { CoachId } from './onboardingTours'
 
-/** A virtual target that announces its own motion, so nothing has to poll it. */
-export interface MovingTarget extends VirtualElement {
+/** An element the camera carries: it remounts, and it moves without events. */
+export interface MovingTarget {
+  selector: string
   onMove: (notify: () => void) => () => void
 }
 
-/**
- * Coachmark target: HTMLElement (from v-coachmark) or VirtualElement.
- * Both expose getBoundingClientRect.
- */
-export type CoachTarget = HTMLElement | VirtualElement
+export type CoachTarget = HTMLElement | MovingTarget
 
 export function isMovingTarget(target: CoachTarget): target is MovingTarget {
-  return 'onMove' in target && typeof target.onMove === 'function'
+  return !(target instanceof HTMLElement)
+}
+
+function resolveTarget(target: CoachTarget): HTMLElement | null {
+  if (!isMovingTarget(target)) return target
+  return document.querySelector<HTMLElement>(target.selector)
 }
 
 const EMPTY: readonly CoachTarget[] = []
 
-/** Laid out — a registered target that is currently visible and has a size. */
-export function isLaidOut(el: CoachTarget): boolean {
-  const r = el.getBoundingClientRect()
-  return r.width > 0 && r.height > 0
+/** The element a target names, once it is rendered with a size. */
+export function laidOutElement(target: CoachTarget): HTMLElement | null {
+  const element = resolveTarget(target)
+  if (!element) return null
+  const { width, height } = element.getBoundingClientRect()
+  return width > 0 && height > 0 ? element : null
 }
 
 // An id can map to several elements (e.g. responsive variants); consumers pick
 // the first laid-out one.
 const registry = shallowReactive(new Map<CoachId, readonly CoachTarget[]>())
 
-export function registerCoachmark(id: CoachId, el: CoachTarget) {
-  registry.set(id, [...(registry.get(id) ?? EMPTY), el])
+export function registerCoachmark(id: CoachId, target: CoachTarget) {
+  registry.set(id, [...(registry.get(id) ?? EMPTY), target])
 }
 
-export function unregisterCoachmark(id: CoachId, el: CoachTarget) {
-  const next = (registry.get(id) ?? EMPTY).filter((entry) => entry !== el)
+export function unregisterCoachmark(id: CoachId, target: CoachTarget) {
+  const next = (registry.get(id) ?? EMPTY).filter((entry) => entry !== target)
   if (next.length) registry.set(id, next)
   else registry.delete(id)
 }
@@ -45,7 +48,7 @@ export function coachmarkElements(id: CoachId): readonly CoachTarget[] {
 }
 
 export function targetMounted(id: CoachId): boolean {
-  return coachmarkElements(id).some(isLaidOut)
+  return coachmarkElements(id).some((target) => !!laidOutElement(target))
 }
 
 /** Resolves once a laid-out element for the id exists; false on timeout or abort. */
