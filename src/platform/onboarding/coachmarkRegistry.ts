@@ -2,20 +2,22 @@ import { shallowReactive, watch } from 'vue'
 
 import type { CoachId } from './onboardingTours'
 
-/** An element the camera carries: it remounts, and it moves without events. */
-export interface MovingTarget {
+/** Names an element that remounts and moves without events; the engine
+ *  re-resolves it and follows it frame by frame. */
+export interface SelectorTarget {
   selector: string
-  onMove: (notify: () => void) => () => void
 }
 
-export type CoachTarget = HTMLElement | MovingTarget
+export type CoachTarget = HTMLElement | SelectorTarget
 
-export function isMovingTarget(target: CoachTarget): target is MovingTarget {
+export function isSelectorTarget(
+  target: CoachTarget
+): target is SelectorTarget {
   return !(target instanceof HTMLElement)
 }
 
 function resolveTarget(target: CoachTarget): HTMLElement | null {
-  if (!isMovingTarget(target)) return target
+  if (!isSelectorTarget(target)) return target
   return document.querySelector<HTMLElement>(target.selector)
 }
 

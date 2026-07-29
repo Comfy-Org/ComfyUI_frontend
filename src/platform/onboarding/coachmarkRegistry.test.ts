@@ -18,8 +18,8 @@ function laidOut(): HTMLElement {
   return el
 }
 
-function movingTarget(): CoachTarget {
-  return { selector: '[data-node-id="7"]', onMove: () => () => {} }
+function selectorTarget(): CoachTarget {
+  return { selector: '[data-node-id="7"]' }
 }
 
 function mountNode(): HTMLElement {
@@ -66,8 +66,8 @@ describe('targetMounted', () => {
     expect(targetMounted('outputs')).toBe(false)
   })
 
-  it('resolves a moving target through the node it names', () => {
-    registerCoachmark('outputs', movingTarget())
+  it('resolves a selector target through the node it names', () => {
+    registerCoachmark('outputs', selectorTarget())
     expect(targetMounted('outputs')).toBe(false)
 
     mountNode()
@@ -140,8 +140,8 @@ describe('waitForTarget', () => {
     expect(resolved).toBe(true)
   })
 
-  it('keeps polling a moving target until the node it names mounts', async () => {
-    registerCoachmark('outputs', movingTarget())
+  it('keeps polling a selector target until the node it names mounts', async () => {
+    registerCoachmark('outputs', selectorTarget())
     const signal = new AbortController().signal
     let resolved: boolean | undefined
     void waitForTarget('outputs', signal, 1000).then((v) => (resolved = v))

@@ -7,7 +7,7 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
 import {
   coachmarkElements,
-  isMovingTarget,
+  isSelectorTarget,
   laidOutElement
 } from './coachmarkRegistry'
 import type { CoachTarget } from './coachmarkRegistry'
@@ -86,16 +86,14 @@ export function useCoachmarkTarget(
 
   const targetEl = computed(() => anchor.value?.el ?? null)
 
-  const movingAnchor = computed(() =>
-    anchor.value && isMovingTarget(anchor.value.candidate)
-      ? anchor.value.candidate
-      : null
+  // A selector target moves with the camera, which fires no DOM event, so the
+  // engine follows it frame by frame instead of being told when it moved.
+  const targetMoves = computed(
+    () => !!anchor.value && isSelectorTarget(anchor.value.candidate)
   )
 
-  const targetMoves = computed(() => !!movingAnchor.value)
-
   useMutationObserver(
-    () => (candidateEls.value.some(isMovingTarget) ? document.body : null),
+    () => (candidateEls.value.some(isSelectorTarget) ? document.body : null),
     () => {
       if (targetEl.value?.isConnected) return
       domRevision.value++
@@ -120,12 +118,6 @@ export function useCoachmarkTarget(
       middleware: () => middleware(toValue(step), topInset.value)
     }
   )
-
-  watchEffect((onCleanup) => {
-    const candidate = movingAnchor.value
-    if (!candidate) return
-    onCleanup(candidate.onMove(() => void update()))
-  })
 
   const targetRect = computed<DOMRect | null>(() => {
     const data = middlewareData.value.captureReference as
@@ -164,7 +156,7 @@ export function useCoachmarkTarget(
     if (!reference || !floating) return
     onCleanup(
       autoUpdate(reference, floating, update, {
-        animationFrame: trackMotion.value
+        animationFrame: trackMotion.value || targetMoves.value
       })
     )
   })

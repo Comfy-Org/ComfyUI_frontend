@@ -28,17 +28,8 @@ function mountNode(): HTMLElement {
   return node
 }
 
-function movingTarget(nodeId = '7') {
-  const listeners = new Set<() => void>()
-  return {
-    selector: `[data-node-id="${nodeId}"]`,
-    onMove: (notify: () => void) => {
-      listeners.add(notify)
-      return () => listeners.delete(notify)
-    },
-    move: () => listeners.forEach((notify) => notify()),
-    listenerCount: () => listeners.size
-  }
+function selectorTarget(nodeId = '7') {
+  return { selector: `[data-node-id="${nodeId}"]` }
 }
 
 describe('useCoachmarkTarget', () => {
@@ -103,7 +94,7 @@ describe('useCoachmarkTarget', () => {
   describe('a target the camera carries', () => {
     it('anchors to the node its selector names', () => {
       const node = mountNode()
-      registerCoachmark('outputs', movingTarget())
+      registerCoachmark('outputs', selectorTarget())
       const { scope, api } = setup('outputs')
 
       expect(
@@ -113,24 +104,20 @@ describe('useCoachmarkTarget', () => {
       scope.stop()
     })
 
-    it('subscribes to its motion, which fires no DOM event', async () => {
+    it('reports motion while anchored through a selector', () => {
       mountNode()
-      const target = movingTarget()
-      registerCoachmark('outputs', target)
-      const { scope } = setup('outputs')
-      await nextTick()
+      registerCoachmark('outputs', selectorTarget())
+      const { scope, api } = setup('outputs')
 
-      expect(target.listenerCount()).toBe(1)
-
-      scope.stop()
       expect(
-        target.listenerCount(),
-        'a subscription outliving its tour follows the node forever'
-      ).toBe(0)
+        api.targetMoves.value,
+        'the camera carries the node without firing an event, so the engine must follow it frame by frame'
+      ).toBe(true)
+      scope.stop()
     })
 
     it('has nothing to anchor to while its node is unmounted', () => {
-      registerCoachmark('outputs', movingTarget())
+      registerCoachmark('outputs', selectorTarget())
       const { scope, api } = setup('outputs')
 
       expect(
@@ -146,7 +133,7 @@ describe('useCoachmarkTarget', () => {
 
     it('follows the node through a remount the camera never announces', async () => {
       const first = mountNode()
-      registerCoachmark('outputs', movingTarget())
+      registerCoachmark('outputs', selectorTarget())
       const { scope, api } = setup('outputs')
       expect(api.targetEl.value).toBe(first)
 
@@ -161,45 +148,11 @@ describe('useCoachmarkTarget', () => {
       scope.stop()
     })
 
-    it('leaves the DOM alone while the camera moves', () => {
-      mountNode()
-      const target = movingTarget()
-      registerCoachmark('outputs', target)
-      const { scope, api } = setup('outputs')
-      expect(api.targetEl.value).not.toBeNull()
-
-      const querySelector = vi.spyOn(document, 'querySelector')
-      target.move()
-
-      expect(
-        querySelector,
-        're-resolving the selector every camera frame forces a layout flush per frame'
-      ).not.toHaveBeenCalled()
-      scope.stop()
-    })
-
-    it('follows only the candidate it anchored to', () => {
-      mountNode()
-      const anchored = movingTarget()
-      const elsewhere = movingTarget('8')
-      registerCoachmark('outputs', anchored)
-      registerCoachmark('outputs', elsewhere)
-      const { scope, api } = setup('outputs')
-
-      expect(api.targetEl.value).not.toBeNull()
-      expect(anchored.listenerCount()).toBe(1)
-      expect(
-        elsewhere.listenerCount(),
-        'a candidate the card is not anchored to must not reposition it'
-      ).toBe(0)
-      scope.stop()
-    })
-
     it('reports the motion of the candidate it anchored to', () => {
       const el = laidOut()
       registerCoachmark('outputs', el)
       mountNode()
-      registerCoachmark('outputs', movingTarget())
+      registerCoachmark('outputs', selectorTarget())
       const { scope, api } = setup('outputs')
 
       expect(api.targetEl.value).toBe(el)
