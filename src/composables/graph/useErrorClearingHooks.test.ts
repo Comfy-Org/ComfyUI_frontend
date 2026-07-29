@@ -522,6 +522,34 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(modelStore.missingModelCandidates).toBeNull()
   })
 
+  it('removes missing model errors when the graph is cleared', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(node)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    installErrorClearingHooks(graph)
+
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([
+      fromAny<
+        Parameters<typeof modelStore.setMissingModels>[0][number],
+        unknown
+      >({
+        nodeId: String(node.id),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'model.safetensors',
+        isMissing: true
+      })
+    ])
+
+    graph.clear()
+
+    expect(modelStore.missingModelCandidates).toBeNull()
+  })
+
   it('removes subgraph interior node missing model error using parentId:nodeId', () => {
     // Regression: node.graph is nulled before onNodeRemoved fires, so
     // getExecutionIdByNode returned null and removal fell back to the
