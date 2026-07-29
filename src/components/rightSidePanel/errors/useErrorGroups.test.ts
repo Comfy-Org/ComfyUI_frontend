@@ -138,6 +138,7 @@ import {
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useErrorGroups } from './useErrorGroups'
+import { useHasBlockingError } from './useHasBlockingError'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
 function makeMissingNodeType(
@@ -324,6 +325,68 @@ describe('useErrorGroups', () => {
   })
 
   describe('allErrorGroups', () => {
+    it('keeps blocking severity aligned with rendered groups', async () => {
+      const { store, groups } = createErrorGroups()
+      const hasBlockingError = useHasBlockingError()
+
+      function expectSeveritySignalsToMatch() {
+        expect(hasBlockingError.value).toBe(
+          groups.allErrorGroups.value.some(
+            (group) => group.severity === 'error'
+          )
+        )
+      }
+
+      expectSeveritySignalsToMatch()
+
+      store.recordPromptError({
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      })
+      await nextTick()
+      expectSeveritySignalsToMatch()
+
+      store.clearAllErrors()
+      store.recordExecutionError({
+        prompt_id: 'test-prompt',
+        timestamp: 0,
+        node_id: 1,
+        node_type: 'KSampler',
+        executed: [],
+        exception_type: 'RuntimeError',
+        exception_message: 'Execution failed',
+        traceback: []
+      })
+      await nextTick()
+      expectSeveritySignalsToMatch()
+
+      store.clearAllErrors()
+      store.surfaceMissingModels([
+        makeModel('model.safetensors', {
+          nodeId: '1',
+          widgetName: 'ckpt_name'
+        })
+      ])
+      store.recordNodeErrors({
+        '1': nodeError(
+          [validationError('value_not_in_list', 'ckpt_name')],
+          'CheckpointLoaderSimple'
+        )
+      })
+      await nextTick()
+      expectSeveritySignalsToMatch()
+
+      store.recordNodeErrors({
+        '1': nodeError(
+          [validationError('value_not_in_list', 'other_widget')],
+          'CheckpointLoaderSimple'
+        )
+      })
+      await nextTick()
+      expectSeveritySignalsToMatch()
+    })
+
     it('returns empty array when no errors', () => {
       const { groups } = createErrorGroups()
       expect(groups.allErrorGroups.value).toEqual([])
@@ -424,6 +487,41 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'missing_node'
       )
       expect(swapIdx).toBeLessThan(missingIdx)
+    })
+
+    it('places every error-severity group before missing-severity groups', async () => {
+      const { store, groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      store.recordPromptError({
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      })
+      store.recordNodeErrors({
+        '1': nodeError([validationError('required_input_missing', 'model')])
+      })
+      store.surfaceMissingModels([
+        makeModel('model.safetensors', { nodeId: '2' })
+      ])
+      store.surfaceMissingMedia([makeMedia('portrait.png', { nodeId: '3' })])
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('MissingNode', {
+          nodeId: '4',
+          cnrId: 'missing-pack'
+        })
+      ])
+      await nextTick()
+
+      const errorIndices = groups.allErrorGroups.value.flatMap(
+        (group, index) => (group.severity === 'error' ? [index] : [])
+      )
+      const missingIndices = groups.allErrorGroups.value.flatMap(
+        (group, index) => (group.severity === 'missing' ? [index] : [])
+      )
+
+      expect(Math.max(...errorIndices)).toBeLessThan(
+        Math.min(...missingIndices)
+      )
     })
 
     it('uses fallback catalog grouping for unknown node validation errors', async () => {
@@ -1085,6 +1183,128 @@ describe('useErrorGroups', () => {
         (group) => group.type === 'missing_media'
       )
       expect(missingMediaGroup?.displayTitle).toBe('Missing Inputs')
+    })
+  })
+
+  describe('missing resource absorption', () => {
+    it('absorbs a tracked missing model error into its missing group', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model.safetensors', {
+          nodeId: '1',
+          widgetName: 'ckpt_name',
+          directory: 'checkpoints'
+        })
+      ])
+      store.recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError('value_not_in_list', 'ckpt_name', {
+              received_value: 'model.safetensors'
+            })
+          ],
+          'CheckpointLoaderSimple'
+        )
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.filter(
+          (group) => group.type === 'execution'
+        )
+      ).toHaveLength(0)
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.type === 'missing_model'
+        )
+      ).toMatchObject({
+        severity: 'missing',
+        blockedLastRun: true
+      })
+    })
+
+    it('keeps unrelated validation errors on the same node', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model.safetensors', {
+          nodeId: '1',
+          widgetName: 'ckpt_name'
+        })
+      ])
+      store.recordNodeErrors({
+        '1': nodeError(
+          [validationError('value_bigger_than_max', 'ckpt_name')],
+          'CheckpointLoaderSimple'
+        )
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.filter(
+          (group) => group.type === 'execution'
+        )
+      ).toHaveLength(1)
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.type === 'missing_model'
+        )
+      ).toMatchObject({ blockedLastRun: false })
+    })
+
+    it('keeps untracked resource-shaped validation errors', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError('value_not_in_list', 'ckpt_name', {
+              received_value: 'untracked.safetensors'
+            })
+          ],
+          'CheckpointLoaderSimple'
+        )
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.filter(
+          (group) => group.type === 'execution'
+        )
+      ).toHaveLength(1)
+    })
+
+    it('marks a missing media group when its run error is absorbed', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingMedia([
+        makeMedia('portrait.png', {
+          nodeId: '1',
+          widgetName: 'image'
+        })
+      ])
+      store.recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'custom_validation_failed',
+              'image',
+              { received_value: 'portrait.png' },
+              'Invalid image file'
+            )
+          ],
+          'LoadImage'
+        )
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.filter(
+          (group) => group.type === 'execution'
+        )
+      ).toHaveLength(0)
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.type === 'missing_media'
+        )
+      ).toMatchObject({ blockedLastRun: true })
     })
   })
 

@@ -19,6 +19,8 @@ export interface ErrorCardData {
   errors: ErrorItem[]
 }
 
+export type ErrorGroupSeverity = 'error' | 'missing'
+
 interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
   /** Stable structural key used for rendering, collapse state, and cache identity. */
   groupKey: string
@@ -26,6 +28,7 @@ interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
   displayTitle: string
   count: number
   priority: number
+  severity: ErrorGroupSeverity
 }
 
 export type ErrorGroup =
@@ -41,7 +44,9 @@ export type ErrorGroup =
     })
   | (ErrorGroupBase & {
       type: 'missing_model'
+      blockedLastRun?: boolean
     })
   | (ErrorGroupBase & {
       type: 'missing_media'
+      blockedLastRun?: boolean
     })

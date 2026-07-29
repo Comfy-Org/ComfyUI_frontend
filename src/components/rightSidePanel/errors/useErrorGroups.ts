@@ -44,6 +44,8 @@ import {
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 
+import { getMissingResourceValidationErrorAbsorption } from './missingResourceAbsorption'
+
 const PROMPT_CARD_ID = '__prompt__'
 
 /** Sentinel: distinguishes "fetch in-flight" from "fetch done, pack not found (null)". */
@@ -153,6 +155,7 @@ function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
       const cards = Array.from(groupData.cards.values()).sort(compareNodeId)
       return {
         type: 'execution' as const,
+        severity: 'error' as const,
         groupKey: `execution:${rawGroupKey}`,
         displayTitle: groupData.displayTitle,
         displayMessage: groupData.displayMessage,
@@ -381,8 +384,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   function processNodeErrors(
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
-  ) {
-    if (!executionErrorStore.surfacedNodeErrors) return
+  ): Set<'missing_model' | 'missing_media'> {
+    const blockedMissingGroups = new Set<'missing_model' | 'missing_media'>()
+    if (!executionErrorStore.surfacedNodeErrors) return blockedMissingGroups
 
     for (const [rawNodeId, nodeError] of Object.entries(
       executionErrorStore.surfacedNodeErrors
@@ -392,6 +396,17 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       const nodeDisplayName =
         resolveNodeInfo(nodeId).title || nodeError.class_type
       for (const e of nodeError.errors) {
+        const absorbedGroup = getMissingResourceValidationErrorAbsorption(
+          missingModelStore.missingModelCandidates,
+          missingMediaStore.missingMediaCandidates,
+          e,
+          nodeId
+        )
+        if (absorbedGroup) {
+          blockedMissingGroups.add(absorbedGroup)
+          continue
+        }
+
         addNodeErrorToGroup(
           groupsMap,
           nodeId,
@@ -410,6 +425,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         )
       }
     }
+
+    return blockedMissingGroups
   }
 
   function processExecutionError(
@@ -617,6 +634,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (swapCount > 0) {
       groups.push({
         type: 'swap_nodes' as const,
+        severity: 'missing' as const,
         groupKey: 'swap_nodes',
         count: swapCount,
         priority: 0,
@@ -632,6 +650,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (packCount > 0) {
       groups.push({
         type: 'missing_node' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_node',
         count: packCount,
         priority: 1,
@@ -654,15 +673,17 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     )
   })
 
-  function buildMissingModelGroups(): ErrorGroup[] {
+  function buildMissingModelGroups(blockedLastRun: boolean): ErrorGroup[] {
     if (!missingModelGroups.value.length) return []
     const count = countMissingModels(missingModelGroups.value)
     return [
       {
         type: 'missing_model' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_model',
         count,
         priority: 2,
+        blockedLastRun,
         ...resolveMissingErrorMessage({
           kind: 'missing_model',
           groups: missingModelGroups.value,
@@ -679,15 +700,17 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return groupCandidatesByMediaType(candidates)
   })
 
-  function buildMissingMediaGroups(): ErrorGroup[] {
+  function buildMissingMediaGroups(blockedLastRun: boolean): ErrorGroup[] {
     if (!missingMediaGroups.value.length) return []
     const totalRows = countMissingMediaReferences(missingMediaGroups.value)
     return [
       {
         type: 'missing_media' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_media',
         count: totalRows,
         priority: 3,
+        blockedLastRun,
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
           groups: missingMediaGroups.value,
@@ -755,6 +778,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return [
       {
         type: 'missing_model' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_model',
         count,
         priority: 2,
@@ -776,6 +800,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return [
       {
         type: 'missing_media' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_media',
         count: totalRows,
         priority: 3,
@@ -793,14 +818,14 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const groupsMap = new Map<string, GroupEntry>()
 
     processPromptError(groupsMap)
-    processNodeErrors(groupsMap)
+    const blockedMissingGroups = processNodeErrors(groupsMap)
     processExecutionError(groupsMap)
 
     return [
+      ...toSortedGroups(groupsMap),
       ...buildMissingNodeGroups(),
-      ...buildMissingModelGroups(),
-      ...buildMissingMediaGroups(),
-      ...toSortedGroups(groupsMap)
+      ...buildMissingModelGroups(blockedMissingGroups.has('missing_model')),
+      ...buildMissingMediaGroups(blockedMissingGroups.has('missing_media'))
     ]
   })
 
@@ -815,16 +840,16 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
     const groupsMap = new Map<string, GroupEntry>()
     processPromptError(groupsMap, true)
-    processNodeErrors(groupsMap, true)
+    void processNodeErrors(groupsMap, true)
     processExecutionError(groupsMap, true)
 
     return [
+      ...toSortedGroups(groupsMap),
       ...buildMissingNodeGroups((nodeTypes) =>
         someNodeTypeInSelection(nodeTypes, selectionMatchedAssetNodeIds.value)
       ),
       ...buildMissingModelGroupsForSelection(),
-      ...buildMissingMediaGroupsForSelection(),
-      ...toSortedGroups(groupsMap)
+      ...buildMissingMediaGroupsForSelection()
     ]
   })
 
