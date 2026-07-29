@@ -27,8 +27,11 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
 
 const { updateSubgraphCredits, getCreditsBadge } = usePriceBadge()
 
-const mockNode = new LGraphNode('mock node')
-mockNode.badges = [getCreditsBadge('$0.05/Run')]
+function createPricedNode(title: string): LGraphNode {
+  const node = new LGraphNode(title)
+  node.badges = [getCreditsBadge('$0.05/Run')]
+  return node
+}
 
 function getBadgeText(node: LGraphNode): string {
   const badge = node.badges[0]
@@ -48,7 +51,7 @@ describe('subgraph pricing', () => {
     'should return the price of a single contained API node',
     ({ subgraphWithNode }) => {
       const { subgraphNode, subgraph } = subgraphWithNode
-      subgraph.add(mockNode)
+      subgraph.add(createPricedNode('mock node'))
       updateSubgraphCredits(subgraphNode)
       expect(subgraphNode.badges.length).toBe(1)
       expect(getBadgeText(subgraphNode)).toBe('$0.05/Run')
@@ -58,7 +61,8 @@ describe('subgraph pricing', () => {
     'should return the number of api nodes if more than one exists',
     ({ subgraphWithNode }) => {
       const { subgraphNode, subgraph } = subgraphWithNode
-      for (let i = 0; i < 5; i++) subgraph.add(mockNode)
+      for (let i = 0; i < 5; i++)
+        subgraph.add(createPricedNode(`api node ${i}`))
       updateSubgraphCredits(subgraphNode)
       expect(subgraphNode.badges.length).toBe(1)
       expect(getBadgeText(subgraphNode)).toBe('Partner Nodes x 5')

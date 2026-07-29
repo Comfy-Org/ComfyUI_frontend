@@ -978,11 +978,15 @@ export class LGraph
 
     node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
 
-    if (node.id !== UNASSIGNED_NODE_ID && this._nodes_by_id[node.id] != null) {
-      assert(
-        this._nodes_by_id[node.id] !== node,
-        'LGraph.add: re-adding the same node instance (id collision with itself)'
-      )
+    const nodeWithSameId = this._nodes_by_id[node.id]
+    if (node.id !== UNASSIGNED_NODE_ID && nodeWithSameId != null) {
+      if (nodeWithSameId === node) {
+        assert(
+          false,
+          'LGraph.add: re-adding the same node instance (id collision with itself)'
+        )
+        return nodeWithSameId
+      }
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'
       )
@@ -1076,10 +1080,10 @@ export class LGraph
       return
     }
 
-    assert(
-      node.graph === this,
-      'LGraph.remove: node does not belong to this graph'
-    )
+    if (node.graph !== this) {
+      assert(false, 'LGraph.remove: node does not belong to this graph')
+      return
+    }
 
     // sure? - almost sure is wrong
     this.beforeChange()
