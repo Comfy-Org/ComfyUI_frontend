@@ -154,14 +154,22 @@ describe('useAuthActions.logout', () => {
   })
 
   it('clears persisted workflows after cloud logout and before navigation', async () => {
+    const navigationSpy = vi
+      .spyOn(window.location, 'href', 'set')
+      .mockImplementation(() => {})
     const { logout } = useAuthActions()
 
     await logout()
 
-    expect(mockClearAllWorkflowStorage).toHaveBeenCalledOnce()
+    expect(mockClearAllWorkflowStorage).toHaveBeenCalledExactlyOnceWith({
+      blockWrites: true
+    })
     expect(mockAuthStore.logout.mock.invocationCallOrder[0]).toBeLessThan(
       mockClearAllWorkflowStorage.mock.invocationCallOrder[0]
     )
+    expect(
+      mockClearAllWorkflowStorage.mock.invocationCallOrder[0]
+    ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
   })
 
   it('does not clear cloud workflows when logout fails', async () => {

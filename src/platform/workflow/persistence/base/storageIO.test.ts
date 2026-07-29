@@ -295,6 +295,7 @@ describe('storageIO', () => {
       localStorage.setItem('Comfy.Workflow.DraftOrder', '[]')
       localStorage.setItem('Comfy.OpenWorkflowsPaths', '[]')
       localStorage.setItem('Comfy.ActiveWorkflowIndex', '0')
+      localStorage.setItem('Comfy.PreviousWorkflow', 'workflows/old.json')
       localStorage.setItem('workflow', '{}')
       localStorage.setItem('unrelated', 'keep')
 
@@ -311,6 +312,13 @@ describe('storageIO', () => {
     it('clears all restorable workflow keys from sessionStorage', () => {
       sessionStorage.setItem('Comfy.Workflow.ActivePath:client-1', '{}')
       sessionStorage.setItem('Comfy.Workflow.OpenPaths:client-2', '{}')
+      sessionStorage.setItem('Comfy.PreviousWorkflow', 'workflows/old.json')
+      sessionStorage.setItem(
+        'Comfy.PreviousWorkflow:client-1',
+        'workflows/old.json'
+      )
+      sessionStorage.setItem('Comfy.OpenWorkflowsPaths:client-1', '[]')
+      sessionStorage.setItem('Comfy.ActiveWorkflowIndex:client-1', '0')
       sessionStorage.setItem('workflow:client-1', '{}')
       sessionStorage.setItem('unrelated', 'keep')
 
@@ -324,6 +332,34 @@ describe('storageIO', () => {
       ).toBeNull()
       expect(sessionStorage.getItem('workflow:client-1')).toBeNull()
       expect(sessionStorage.getItem('unrelated')).toBe('keep')
+    })
+
+    it('blocks workflow writes after cleanup starts', () => {
+      clearAllWorkflowStorage({ blockWrites: true })
+
+      expect(
+        writeIndex('ws-1', {
+          v: 2,
+          updatedAt: 1,
+          order: [],
+          entries: {}
+        })
+      ).toBe(false)
+      expect(
+        writePayload('ws-1', 'draft-1', { data: '{}', updatedAt: 1 })
+      ).toBe(false)
+      writeActivePath('client-1', {
+        workspaceId: 'ws-1',
+        path: 'workflows/a.json'
+      })
+      writeOpenPaths('client-1', {
+        workspaceId: 'ws-1',
+        paths: ['workflows/a.json'],
+        activeIndex: 0
+      })
+
+      expect(localStorage).toHaveLength(0)
+      expect(sessionStorage).toHaveLength(0)
     })
 
     it('clears persisted workflows after storage writes are disabled', () => {

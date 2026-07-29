@@ -113,7 +113,7 @@ export const useAuthActions = () => {
     }
 
     await authStore.logout()
-    if (isCloud) clearAllWorkflowStorage()
+    if (isCloud) clearAllWorkflowStorage({ blockWrites: true })
 
     toastStore.add({
       severity: 'success',
