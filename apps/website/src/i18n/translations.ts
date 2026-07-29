@@ -4413,6 +4413,68 @@ const translations = {
     en: 'Read the full tutorial →',
     'zh-CN': '阅读完整教程 →'
   },
+  'models.whatIs.answer': {
+    en: "{name} is {dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect it with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are {count} community workflow templates using it on Comfy Workflows, ready to load and customize.",
+    'zh-CN':
+      '{name} 是{dirDesc}。您可以在 ComfyUI 中本地运行它，完全掌控每一个参数，也可以通过 Comfy Cloud 访问它。ComfyUI 基于节点的工作流编辑器可以让您将它与 ControlNet、LoRA、放大模型和自定义节点连接起来，构建您需要的任何工作流程。Comfy Workflows 上有 {count} 个使用它的社区工作流模板，可随时加载和自定义。'
+  },
+  'models.dirDescription.diffusion_models': {
+    en: 'a diffusion model that generates images or video from text and image prompts',
+    'zh-CN': '一个根据文本和图像提示生成图像或视频的扩散模型'
+  },
+  'models.dirDescription.checkpoints': {
+    en: 'an all-in-one checkpoint model that bundles a diffusion model, text encoder, and VAE',
+    'zh-CN': '一个集扩散模型、文本编码器和 VAE 于一体的全能 checkpoint 模型'
+  },
+  'models.dirDescription.loras': {
+    en: 'a LoRA (Low-Rank Adaptation) that fine-tunes an existing model for a specific style or subject',
+    'zh-CN': '一个用于针对特定风格或主题微调现有模型的 LoRA（低秩适应）'
+  },
+  'models.dirDescription.controlnet': {
+    en: 'a ControlNet that steers image generation using structural guides like depth maps, edges, or poses',
+    'zh-CN': '一个通过深度图、边缘或姿态等结构化引导来控制图像生成的 ControlNet'
+  },
+  'models.dirDescription.clip_vision': {
+    en: 'a CLIP Vision encoder that converts images into embeddings for conditioning or style transfer',
+    'zh-CN':
+      '一个将图像转换为嵌入向量、用于条件控制或风格迁移的 CLIP Vision 编码器'
+  },
+  'models.dirDescription.vae': {
+    en: 'a VAE (Variational Autoencoder) that encodes and decodes latent representations',
+    'zh-CN': '一个用于编码和解码潜在表示的 VAE（变分自编码器）'
+  },
+  'models.dirDescription.text_encoders': {
+    en: 'a text encoder that converts prompts into embeddings used to guide generation',
+    'zh-CN': '一个将提示词转换为嵌入向量、用于指导生成的文本编码器'
+  },
+  'models.dirDescription.audio_encoders': {
+    en: 'an audio encoder that converts audio into embeddings for audio-conditioned generation',
+    'zh-CN': '一个将音频转换为嵌入向量、用于音频条件生成的音频编码器'
+  },
+  'models.dirDescription.upscale_models': {
+    en: 'an upscale model that increases image resolution while preserving or enhancing detail',
+    'zh-CN': '一个在提升图像分辨率的同时保留或增强细节的放大模型'
+  },
+  'models.dirDescription.latent_upscale_models': {
+    en: 'a latent upscale model that refines latents at higher resolution before decoding',
+    'zh-CN': '一个在解码前以更高分辨率优化潜在特征的潜空间放大模型'
+  },
+  'models.dirDescription.style_models': {
+    en: 'a style model that transfers artistic style onto generated images',
+    'zh-CN': '一个将艺术风格迁移到生成图像上的风格模型'
+  },
+  'models.dirDescription.model_patches': {
+    en: 'a model patch that modifies or extends the behavior of an existing base model',
+    'zh-CN': '一个修改或扩展现有基础模型行为的模型补丁'
+  },
+  'models.dirDescription.partner_nodes': {
+    en: 'a cloud API model accessible through ComfyUI partner nodes without local hardware requirements',
+    'zh-CN': '一个无需本地硬件、可通过 ComfyUI 合作伙伴节点访问的云端 API 模型'
+  },
+  'models.dirDescription.default': {
+    en: 'an AI model',
+    'zh-CN': '一个 AI 模型'
+  },
   'models.faq.heading': {
     en: 'Frequently Asked Questions',
     'zh-CN': '常见问题'
@@ -4426,10 +4488,20 @@ const translations = {
     'zh-CN':
       '按照 {url} 上的分步教程操作。您也可以从 {count} 个使用 {name} 的社区工作流模板中加载任意一个，直接在 ComfyUI 中使用。'
   },
+  'models.faq.howToUse.answerWithDocsSingular': {
+    en: 'Follow the step-by-step tutorial at {url}. You can also load the community workflow template that uses {name} directly in ComfyUI.',
+    'zh-CN':
+      '按照 {url} 上的分步教程操作。您也可以直接在 ComfyUI 中加载使用 {name} 的社区工作流模板。'
+  },
   'models.faq.howToUse.answerNoDocs': {
     en: 'Open ComfyUI and browse the {count} community workflow templates that use {name}. Load one as a starting point, then customize the nodes and parameters to fit your use case.',
     'zh-CN':
       '打开 ComfyUI，浏览 {count} 个使用 {name} 的社区工作流模板。加载其中一个作为起点，然后自定义节点和参数以满足您的需求。'
+  },
+  'models.faq.howToUse.answerNoDocsSingular': {
+    en: 'Open ComfyUI and browse the community workflow template that uses {name}. Load it as a starting point, then customize the nodes and parameters to fit your use case.',
+    'zh-CN':
+      '打开 ComfyUI，浏览使用 {name} 的社区工作流模板。将其作为起点加载，然后自定义节点和参数以满足您的需求。'
   },
   'models.faq.workflowCount.question': {
     en: 'How many ComfyUI workflows use {name}?',
@@ -4439,6 +4511,11 @@ const translations = {
     en: 'There are {count} community workflow templates that use {name} on Comfy Workflows. Each template is ready to run in ComfyUI and can be customized to suit your project.',
     'zh-CN':
       'Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板。每个模板都可以在 ComfyUI 中直接运行，并可根据您的项目进行自定义。'
+  },
+  'models.faq.workflowCount.answerSingular': {
+    en: 'There is {count} community workflow template that uses {name} on Comfy Workflows. It is ready to run in ComfyUI and can be customized to suit your project.',
+    'zh-CN':
+      'Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板。该模板可以在 ComfyUI 中直接运行，并可根据您的项目进行自定义。'
   },
   'models.faq.isFree.question': {
     en: 'Is {name} free to use in ComfyUI?',
@@ -4456,6 +4533,11 @@ const translations = {
     en: 'ComfyUI is free and open source. {weightsNote} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.',
     'zh-CN':
       'ComfyUI 是免费且开源的。{weightsNote} 仅在 Comfy Cloud 上运行时才需要为算力付费；在您自己的硬件上进行本地推理始终是免费的。'
+  },
+  'models.faq.isFree.answerCloudOnly': {
+    en: 'ComfyUI is free and open source. {weightsNote} You only pay for compute when running on Comfy Cloud.',
+    'zh-CN':
+      'ComfyUI 是免费且开源的。{weightsNote} 仅在 Comfy Cloud 上运行时才需要为算力付费。'
   },
   'models.index.title': {
     en: 'Supported Models',

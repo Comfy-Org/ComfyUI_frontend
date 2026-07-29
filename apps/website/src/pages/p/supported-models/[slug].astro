@@ -5,6 +5,7 @@ import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
 import ModelHeroSection from '../../../components/models/ModelHeroSection.vue'
 import { models, getModelBySlug } from '../../../config/models'
 import { t } from '../../../i18n/translations'
+import type { TranslationKey } from '../../../i18n/translations'
 import type { JsonLdNode } from '../../../utils/jsonLd'
 import {
   absoluteUrl,
@@ -28,33 +29,43 @@ if (model.canonicalSlug) {
 
 const { displayName } = model
 
-const dirDescriptions: Record<string, string> = {
-  diffusion_models: 'a diffusion model that generates images or video from text and image prompts',
-  checkpoints: 'an all-in-one checkpoint model that bundles a diffusion model, text encoder, and VAE',
-  loras: 'a LoRA (Low-Rank Adaptation) that fine-tunes an existing model for a specific style or subject',
-  controlnet: 'a ControlNet that steers image generation using structural guides like depth maps, edges, or poses',
-  clip_vision: 'a CLIP Vision encoder that converts images into embeddings for conditioning or style transfer',
-  vae: 'a VAE (Variational Autoencoder) that encodes and decodes latent representations',
-  text_encoders: 'a text encoder that converts prompts into embeddings used to guide generation',
-  audio_encoders: 'an audio encoder that converts audio into embeddings for audio-conditioned generation',
-  upscale_models: 'an upscale model that increases image resolution while preserving or enhancing detail',
-  latent_upscale_models: 'a latent upscale model that refines latents at higher resolution before decoding',
-  style_models: 'a style model that transfers artistic style onto generated images',
-  model_patches: 'a model patch that modifies or extends the behavior of an existing base model',
-  partner_nodes: 'a cloud API model accessible through ComfyUI partner nodes without local hardware requirements'
-}
-
-const dirDesc = dirDescriptions[model.directory] ?? 'an AI model'
-const whatIsDescription = `${displayName} is ${dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect ${displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${displayName} on Comfy Workflows, ready to load and customize.`
-
-const pageTitle = `${displayName} in ComfyUI`
-const pageDescription = `Run ${displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
-
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 )
+
+const dirDescriptionKeys: Record<string, TranslationKey> = {
+  diffusion_models: 'models.dirDescription.diffusion_models',
+  checkpoints: 'models.dirDescription.checkpoints',
+  loras: 'models.dirDescription.loras',
+  controlnet: 'models.dirDescription.controlnet',
+  clip_vision: 'models.dirDescription.clip_vision',
+  vae: 'models.dirDescription.vae',
+  text_encoders: 'models.dirDescription.text_encoders',
+  audio_encoders: 'models.dirDescription.audio_encoders',
+  upscale_models: 'models.dirDescription.upscale_models',
+  latent_upscale_models: 'models.dirDescription.latent_upscale_models',
+  style_models: 'models.dirDescription.style_models',
+  model_patches: 'models.dirDescription.model_patches',
+  partner_nodes: 'models.dirDescription.partner_nodes',
+}
+
+const workflowCount = String(model.workflowCount)
+const isSingularWorkflowCount = model.workflowCount === 1
+
+const dirDesc = t(
+  dirDescriptionKeys[model.directory] ?? 'models.dirDescription.default',
+  locale,
+)
+const whatIsDescription = t('models.whatIs.answer', locale)
+  .replace('{name}', displayName)
+  .replace('{dirDesc}', dirDesc)
+  .replace('{count}', workflowCount)
+
+const pageTitle = `${displayName} in ComfyUI`
+const pageDescription = `Run ${displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
+
 const softwareId = jsonLdId(url, 'software')
 const software = softwareApplicationNode({
   siteUrl,
@@ -64,22 +75,47 @@ const software = softwareApplicationNode({
   applicationCategory: 'MultimediaApplication',
   operatingSystem: 'Any',
 })
-const workflowCount = String(model.workflowCount)
 
 const howToUseAnswer = model.docsUrl
-  ? t('models.faq.howToUse.answerWithDocs', locale)
+  ? t(
+      isSingularWorkflowCount
+        ? 'models.faq.howToUse.answerWithDocsSingular'
+        : 'models.faq.howToUse.answerWithDocs',
+      locale,
+    )
       .replace('{url}', model.docsUrl)
       .replace('{count}', workflowCount)
       .replace('{name}', displayName)
-  : t('models.faq.howToUse.answerNoDocs', locale)
+  : t(
+      isSingularWorkflowCount
+        ? 'models.faq.howToUse.answerNoDocsSingular'
+        : 'models.faq.howToUse.answerNoDocs',
+      locale,
+    )
       .replace('{count}', workflowCount)
       .replace('{name}', displayName)
+
+const workflowCountAnswer = t(
+  isSingularWorkflowCount
+    ? 'models.faq.workflowCount.answerSingular'
+    : 'models.faq.workflowCount.answer',
+  locale,
+)
+  .replace('{count}', workflowCount)
+  .replace('{name}', displayName)
 
 const weightsNote = model.huggingFaceUrl
   ? t('models.faq.isFree.answerHuggingFace', locale)
       .replace('{name}', displayName)
   : t('models.faq.isFree.answerCloud', locale)
       .replace('{name}', displayName)
+
+const isFreeAnswer = t(
+  model.huggingFaceUrl
+    ? 'models.faq.isFree.answer'
+    : 'models.faq.isFree.answerCloudOnly',
+  locale,
+).replace('{weightsNote}', weightsNote)
 
 const faqs = [
   {
@@ -98,16 +134,13 @@ const faqs = [
     id: 'workflow-count',
     question: t('models.faq.workflowCount.question', locale)
       .replace('{name}', displayName),
-    answer: t('models.faq.workflowCount.answer', locale)
-      .replace('{count}', workflowCount)
-      .replace('{name}', displayName),
+    answer: workflowCountAnswer,
   },
   {
     id: 'is-free',
     question: t('models.faq.isFree.question', locale)
       .replace('{name}', displayName),
-    answer: t('models.faq.isFree.answer', locale)
-      .replace('{weightsNote}', weightsNote),
+    answer: isFreeAnswer,
   },
 ]
 const faqPage: JsonLdNode = {
