@@ -416,7 +416,7 @@ describe('PostHogTelemetryProvider', () => {
         has_toolkit_nodes: true,
         toolkit_node_names: ['LoadImage'],
         trigger_source: 'keybinding',
-        view_mode: 'normal',
+        view_mode: 'graph',
         is_app_mode: false,
         dock_state: 'docked'
       })
