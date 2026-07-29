@@ -76,8 +76,8 @@ const ctaButtons = [
         :aria-label="cta.ariaLabel"
       >
         <span>
-          <span class="hidden xl:inline-block">{{ cta.full }}</span>
-          <span class="xl:hidden">{{ cta.short }}</span>
+          <span class="hidden 2xl:inline-block">{{ cta.full }}</span>
+          <span class="2xl:hidden">{{ cta.short }}</span>
         </span>
       </Button>
     </div>
