@@ -10,6 +10,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import TourSpotlight from './TourSpotlight.vue'
 import { CARD_GLIDE_MS } from './coachmarkLayout'
 import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
+import type { CoachTarget } from './coachmarkRegistry'
 import { COACH_IDS, FIRST_RUN_COACH_IDS } from './onboardingTours'
 import type { CoachStep } from './onboardingTours'
 
@@ -22,6 +23,15 @@ const i18n = createI18n({
   locale: 'en',
   messages: { en: enMessages }
 })
+
+/** Mounts a canvas node and returns the target that names it. */
+function canvasNode(): CoachTarget {
+  const node = document.createElement('div')
+  node.setAttribute('data-node-id', '7')
+  node.getBoundingClientRect = () => new DOMRect(10, 10, 80, 40)
+  document.body.append(node)
+  return { selector: '[data-node-id="7"]', onMove: () => () => {} }
+}
 
 function spotlightStep(overrides: Partial<CoachStep> = {}): CoachStep {
   return { name: 'step', placement: 'right', ...overrides }
@@ -102,10 +112,8 @@ describe('TourSpotlight interactive and masked steps', () => {
     )
   })
 
-  it('rides a virtual target instead of transitioning after it', () => {
-    registerCoachmark(COACH_IDS.inputsList, {
-      getBoundingClientRect: () => new DOMRect(10, 10, 80, 40)
-    })
+  it('rides a node the camera carries instead of transitioning after it', () => {
+    registerCoachmark(COACH_IDS.inputsList, canvasNode())
 
     renderSpotlight({
       step: spotlightStep({ coachId: COACH_IDS.inputsList })
@@ -148,9 +156,7 @@ describe('TourSpotlight interactive and masked steps', () => {
 
   it('glides to a new canvas target, then rides it', async () => {
     vi.useFakeTimers()
-    registerCoachmark(FIRST_RUN_COACH_IDS.prompt, {
-      getBoundingClientRect: () => new DOMRect(10, 10, 80, 40)
-    })
+    registerCoachmark(FIRST_RUN_COACH_IDS.prompt, canvasNode())
 
     renderSpotlight({
       step: spotlightStep({ coachId: FIRST_RUN_COACH_IDS.prompt })
@@ -167,6 +173,29 @@ describe('TourSpotlight interactive and masked steps', () => {
     expect(
       card(),
       'transitioning after a camera that moves every frame leaves the card lagging it'
+    ).not.toContain('transition-[left,top,opacity]')
+  })
+
+  it('rides a canvas target that arrives after its step opened', async () => {
+    vi.useFakeTimers()
+    renderSpotlight({
+      step: spotlightStep({ coachId: FIRST_RUN_COACH_IDS.prompt })
+    })
+    const card = () => screen.getByRole('dialog', { hidden: true }).className
+
+    registerCoachmark(FIRST_RUN_COACH_IDS.prompt, canvasNode())
+    await nextTick()
+
+    expect(
+      card(),
+      'the card has to travel to the node that just arrived, not jump to it'
+    ).toContain('transition-[left,top,opacity]')
+
+    vi.advanceTimersByTime(CARD_GLIDE_MS)
+    await nextTick()
+    expect(
+      card(),
+      'a card that never stops transitioning trails the node it is riding'
     ).not.toContain('transition-[left,top,opacity]')
   })
 
@@ -187,9 +216,7 @@ describe('TourSpotlight interactive and masked steps', () => {
   })
 
   it('points a cursor back at the target from the card edge facing it', async () => {
-    registerCoachmark(FIRST_RUN_COACH_IDS.prompt, {
-      getBoundingClientRect: () => new DOMRect(10, 10, 80, 40)
-    })
+    registerCoachmark(FIRST_RUN_COACH_IDS.prompt, canvasNode())
 
     const { rerender } = renderSpotlight({
       step: spotlightStep({ coachId: FIRST_RUN_COACH_IDS.prompt, cursor: true })

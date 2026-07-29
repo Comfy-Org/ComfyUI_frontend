@@ -5,12 +5,12 @@ import { computed, readonly, ref, shallowRef, watch } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 
-import { canvasTransformValid } from './canvasCoachTarget'
 import {
   firstRunTourSteps,
   releaseFirstRunTargets
@@ -29,6 +29,7 @@ function useFirstRunTourControllerInternal() {
   const executionStore = useExecutionStore()
   const executionErrorStore = useExecutionErrorStore()
   const workflowStore = useWorkflowStore()
+  const settingStore = useSettingStore()
 
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const runState = ref<RunState>('idle')
@@ -108,7 +109,10 @@ function useFirstRunTourControllerInternal() {
 
   /** False when this graph has no tour to give; the caller keeps it loaded. */
   async function beginTour(templateId?: string): Promise<boolean> {
-    if (!canvasTransformValid()) return false
+    // A new user has no Comfy.InstalledVersion, so the versioned default never
+    // applies and Nodes 2.0 reads off — the tour's own audience.
+    if (!settingStore.get('Comfy.VueNodes.Enabled'))
+      await settingStore.set('Comfy.VueNodes.Enabled', true)
 
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
