@@ -97,7 +97,7 @@ test.describe('Publish dialog - Describe step', () => {
     await saveAndOpenPublishDialog(comfyPage, publishDialog, 'test-describe-wf')
   })
 
-  test('allows editing the workflow name', async ({ publishDialog }) => {
+  test('allows editing the Hub title', async ({ publishDialog }) => {
     await publishDialog.nameInput.clear()
     await publishDialog.nameInput.fill('My Custom Workflow')
     await expect(publishDialog.nameInput).toHaveValue('My Custom Workflow')
@@ -255,6 +255,34 @@ test.describe('Publish dialog - unsaved workflow', () => {
     ).toBeVisible()
     // Nav should be hidden when save is required
     await expect(publishDialog.nav).toBeHidden()
+  })
+})
+
+test.describe('Publish dialog - workflow identity', () => {
+  test.beforeEach(async ({ comfyPage, publishApi, publishDialog }) => {
+    await comfyPage.featureFlags.setFlags(PUBLISH_FEATURE_FLAGS)
+    await publishApi.setupDefaultMocks({ hasProfile: true })
+    await saveAndOpenPublishDialog(
+      comfyPage,
+      publishDialog,
+      'test-independent-title-wf'
+    )
+  })
+
+  test('keeps the saved workflow path when the Hub title differs', async ({
+    comfyPage,
+    publishDialog
+  }) => {
+    await publishDialog.nameInput.clear()
+    await publishDialog.nameInput.fill('Different Hub title')
+    await publishDialog.goToStep('Finish publishing')
+    await expect(publishDialog.finishStep).toBeVisible()
+
+    await publishDialog.publishButton.click()
+    await expect(publishDialog.root).toBeHidden({ timeout: 10_000 })
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toBe('workflows/test-independent-title-wf.json')
   })
 })
 

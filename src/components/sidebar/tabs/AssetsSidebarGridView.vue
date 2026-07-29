@@ -28,14 +28,18 @@ import { computed } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import { getMediaAssetGridColumns } from '@/platform/assets/components/mediaAssetViewOptions'
+import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-const { assets, isSelected, showOutputCount, getOutputCount } = defineProps<{
-  assets: AssetItem[]
-  isSelected: (assetId: string) => boolean
-  showOutputCount: (asset: AssetItem) => boolean
-  getOutputCount: (asset: AssetItem) => number
-}>()
+const { assets, isSelected, showOutputCount, getOutputCount, gridMode } =
+  defineProps<{
+    assets: AssetItem[]
+    isSelected: (assetId: string) => boolean
+    showOutputCount: (asset: AssetItem) => boolean
+    getOutputCount: (asset: AssetItem) => number
+    gridMode: MediaAssetGridMode
+  }>()
 
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem): void
@@ -54,10 +58,10 @@ const assetItems = computed<AssetGridItem[]>(() =>
   }))
 )
 
-const gridStyle = {
+const gridStyle = computed(() => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 30vw), 1fr))',
+  gridTemplateColumns: getMediaAssetGridColumns(gridMode),
   padding: '0 0.5rem',
   gap: '0.5rem'
-}
+}))
 </script>

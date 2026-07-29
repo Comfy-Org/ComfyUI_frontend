@@ -131,6 +131,25 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('resolves partner policy denials to actionable node-level copy', () => {
+    const result = resolveRunErrorMessage({
+      kind: 'node_validation',
+      error: nodeValidationError('PARTNER_NODE_DISABLED'),
+      nodeDisplayName: 'Kling Image to Video'
+    })
+
+    expect(result).toEqual({
+      catalogId: 'PARTNER_NODE_DISABLED',
+      displayTitle: 'Disabled node',
+      displayMessage:
+        'This node has been disabled by your workspace policy. Use a different node.',
+      displayDetails: undefined,
+      displayItemLabel: 'Kling Image to Video',
+      toastTitle: 'Partner nodes',
+      toastMessage: 'This node has been disabled by your workspace policy.'
+    })
+  })
+
   it('preserves special characters in catalog copy for node names', () => {
     const nodeDisplayName = 'A & B <C>'
     const result = resolveRunErrorMessage({

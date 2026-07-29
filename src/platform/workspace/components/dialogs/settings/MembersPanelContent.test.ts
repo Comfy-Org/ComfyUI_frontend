@@ -119,10 +119,12 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
             member.id,
             member.email.toLowerCase() === 'owner@example.com' ||
             member.id === mockOriginalOwnerId.value
-              ? [{ label: 'setCreditLimit' }]
+              ? []
               : [
                   { label: 'changeRole' },
-                  { label: 'setCreditLimit' },
+                  ...(member.role === 'member'
+                    ? [{ label: 'setCreditLimit' }]
+                    : []),
                   { label: 'removeMember' }
                 ]
           ])
@@ -334,17 +336,17 @@ describe('MembersPanelContent', () => {
       ).toHaveLength(1)
     })
 
-    it('shows a self-cap menu for the current user', () => {
+    it('hides the menu for the current user', () => {
       mockFilteredMembers.value = [
         createMember({ name: 'Owner User', email: 'owner@example.com' })
       ]
       renderComponent()
       expect(
         screen.queryAllByRole('button', { name: 'g.moreOptions' })
-      ).toHaveLength(1)
+      ).toHaveLength(0)
     })
 
-    it('shows a menu on both the creator and other rows', () => {
+    it('hides the creator menu and shows the member menu', () => {
       mockOriginalOwnerId.value = 'creator-1'
       mockFilteredMembers.value = [
         createMember({
@@ -360,8 +362,8 @@ describe('MembersPanelContent', () => {
       const creatorRow = screen.getByTestId('member-row-creator-1')
       const otherRow = screen.getByTestId('member-row-2')
       expect(
-        within(creatorRow).getByRole('button', { name: 'g.moreOptions' })
-      ).toBeInTheDocument()
+        within(creatorRow).queryByRole('button', { name: 'g.moreOptions' })
+      ).not.toBeInTheDocument()
       expect(
         within(otherRow).getByRole('button', { name: 'g.moreOptions' })
       ).toBeInTheDocument()

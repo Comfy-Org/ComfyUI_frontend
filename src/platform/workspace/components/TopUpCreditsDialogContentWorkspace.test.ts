@@ -15,6 +15,7 @@ const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 const mockCloseDialog = vi.fn()
 const mockTrackTopUpPurchase = vi.fn()
+const mockTrackBillingEvent = vi.fn()
 const mockCanTopUp = vi.hoisted(() => ({ value: true }))
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: true }))
 
@@ -63,7 +64,8 @@ vi.mock('@/stores/dialogStore', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase
+    trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
+    trackBillingEvent: mockTrackBillingEvent
   })
 }))
 
@@ -166,6 +168,30 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockFetchBalance).toHaveBeenCalledOnce()
     expect(mockFetchStatus).toHaveBeenCalledOnce()
     expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'succeeded',
+      outcome: 'success',
+      billing_op_id: 'op-1'
+    })
+  })
+
+  it('keeps completed top-up telemetry successful when refresh fails', async () => {
+    mockTopup.mockResolvedValue(topupResponse('completed'))
+    mockFetchBalance.mockRejectedValueOnce(new Error('balance unavailable'))
+    mockFetchStatus.mockRejectedValueOnce(new Error('status unavailable'))
+
+    renderDialog()
+    await clickAddCredits()
+
+    expect(mockTrackBillingEvent).toHaveBeenCalledTimes(1)
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'succeeded',
+      outcome: 'success',
+      billing_op_id: 'op-1'
+    })
+    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
   })
 
   it('does not refresh balance or status for a pending top-up', async () => {
@@ -177,6 +203,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup')
     expect(mockFetchBalance).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
+    expect(mockTrackBillingEvent).not.toHaveBeenCalled()
   })
 
   it('does not refresh balance or status for a failed top-up', async () => {
@@ -187,6 +214,13 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(mockFetchBalance).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      billing_op_id: 'op-1',
+      failure_category: 'unknown'
+    })
   })
 
   it('does not top up after the workspace role loses permission', async () => {

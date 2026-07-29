@@ -902,6 +902,8 @@
       "filterAudio": "Audio",
       "filter3D": "3D",
       "filterText": "Text",
+      "viewGridSmall": "Grid (small)",
+      "viewGridLarge": "Grid (large)",
       "viewSettings": "View settings"
     },
     "backToAssets": "Back to all assets",
@@ -977,6 +979,8 @@
       "noBookmarkedNodes": "No bookmarks yet"
     },
     "modelLibrary": "Model Library",
+    "modelLibraryLoadFailed": "Failed to load models. Check the server connection and use Refresh to retry.",
+    "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
     "downloads": "Downloads",
     "queueProgressOverlay": {
       "title": "Queue Progress",
@@ -1092,7 +1096,7 @@
     "onChangeTooltip": "The workflow will be queued once a change is made",
     "runWorkflow": "Run workflow (Shift to queue at front)",
     "runWorkflowFront": "Run workflow (Queue at front)",
-    "runWorkflowDisabled": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow.",
+    "runWorkflowMissingResources": "Workflow contains missing resources.",
     "run": "Run",
     "stopRunInstant": "Stop Run (Instant)",
     "stopRunInstantTooltip": "Stop running",
@@ -1165,6 +1169,11 @@
     "runsOnSelected": "{count} Runs On",
     "runsOnFilter": "Runs on",
     "resultsCount": "Showing {count} of {total} templates",
+    "paidTemplate": {
+      "badgeLabel": "Partner API",
+      "title": "Premium template",
+      "credits": "Runs with credits"
+    },
     "sort": {
       "relevance": "Relevance",
       "recommended": "Recommended",
@@ -1563,6 +1572,7 @@
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
     "Members": "Members",
+    "Allowlist": "Allowlist",
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
@@ -2215,7 +2225,19 @@
     "swatchTitle": "Click edit · drag reorder · right-click remove"
   },
   "videoEdit": {
-    "adjustCrop": "Adjust crop region"
+    "play": "Play",
+    "pause": "Pause",
+    "loadingFilmstrip": "Loading filmstrip…",
+    "seekVideo": "Seek video",
+    "adjustStartFrame": "Adjust start frame",
+    "adjustEndFrame": "Adjust end frame",
+    "adjustCrop": "Adjust crop region",
+    "durationZero": "0s",
+    "durationSeconds": "{count}s",
+    "fileSizeUnknown": "—",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
@@ -3008,6 +3030,39 @@
       "noMembers": "No members",
       "searchPlaceholder": "Search..."
     },
+    "partnerNodes": {
+      "title": "Partner node access",
+      "unrestricted": "Unrestricted",
+      "restricted": "Restricted",
+      "accessMode": "Partner node access mode",
+      "unrestrictedDescription": "Partner nodes from every provider are available to everyone. Disabling providers will set this to Restricted.",
+      "restrictedDescription": "Only partner nodes from enabled providers are available. Changes can take up to 10 minutes to apply.",
+      "searchPlaceholder": "Search providers and partner nodes...",
+      "tableLabel": "Partner node providers",
+      "columns": {
+        "provider": "Provider",
+        "nodes": "Nodes"
+      },
+      "nodeCount": "{count} enabled",
+      "enableAll": "Enable all",
+      "disableAll": "Disable all",
+      "toggleProvider": "Set access for {provider}",
+      "disableAllTitle": "Disable all providers?",
+      "disableAllMessage": "All providers will be turned off. Partner nodes will be unavailable while access is restricted.",
+      "restrictAccessTitle": "Restrict access to partner nodes?",
+      "restrictAccessMessage": "Workspace members will only be able to use partner nodes from providers that you enable.",
+      "restrictAccessHint": "This can take up to 10 minutes to apply across your workspace.",
+      "allowAllAccessTitle": "Allow access to all partner nodes?",
+      "allowAllAccessMessage": "Partner nodes from every provider will become available to every workspace member.",
+      "allowAllAccessHint": "This can take up to 10 minutes to apply across your workspace.",
+      "saveError": "Partner node access couldn't be updated. Try again.",
+      "loading": "Loading partner node access",
+      "loadError": "Partner node access couldn't be loaded.",
+      "unavailable": "Partner node access is unavailable for this workspace.",
+      "retry": "Try again",
+      "ownerOnly": "Only workspace owners can update partner node access.",
+      "noResults": "No providers or partner nodes found"
+    },
     "menu": {
       "editWorkspace": "Edit workspace details",
       "leaveWorkspace": "Leave Workspace",
@@ -3493,6 +3548,7 @@
     "processingModelDescription": "You can close this dialog. The download will continue in the background.",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
+    "searchModels": "Search models",
     "selectFrameworks": "Select Frameworks",
     "selectModelType": "Select model type",
     "selectProjects": "Select Projects",
@@ -3547,6 +3603,8 @@
       "modelTagging": "Model Tagging",
       "modelType": "Model Type",
       "selectModelType": "Select model type...",
+      "modelTypeCoreReadonly": "Model type cannot be changed on core, moving the file is not yet supported.",
+      "modelTypeImmutableReadonly": "Model type cannot be changed for a read-only model.",
       "compatibleBaseModels": "Compatible Base Models",
       "addBaseModel": "Add base model...",
       "baseModelUnknown": "Base model unknown",
@@ -3713,7 +3771,7 @@
     "stepDescribe": "Describe your workflow",
     "stepExamples": "Add output examples",
     "stepFinish": "Finish publishing",
-    "workflowName": "Workflow name",
+    "workflowName": "Hub title",
     "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
     "workflowDescription": "Workflow description",
     "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people know what to expect.",
@@ -3755,8 +3813,6 @@
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
     "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
-    "renameFailedTitle": "Rename failed",
-    "renameFailedDescription": "Your workflow was published successfully, but renaming the local file failed. Rename it again to match.",
     "publishSuccessTitle": "Published successfully",
     "publishSuccessDescription": "Your workflow is now live on ComfyHub."
   },
@@ -4204,6 +4260,13 @@
         "itemLabel": "{nodeName}",
         "toastTitle": "Validation failed",
         "toastMessage": "{nodeName} returned an unrecognized validation error."
+      },
+      "PARTNER_NODE_DISABLED": {
+        "title": "Disabled node",
+        "message": "This node has been disabled by your workspace policy. Use a different node.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Partner nodes",
+        "toastMessage": "This node has been disabled by your workspace policy."
       },
       "exception_during_inner_validation": {
         "title": "Validation failed",
