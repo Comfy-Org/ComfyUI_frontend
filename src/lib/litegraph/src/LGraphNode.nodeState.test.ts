@@ -4,10 +4,11 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { computed, toRaw } from 'vue'
 
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { toNodeId } from '@/types/nodeId'
 
 import type { NodeState } from '@/types/nodeState'
 
-import { LGraphNode } from './litegraph'
+import { LGraphNode, registerNodeState, unregisterNodeState } from './litegraph'
 import type { Subgraph } from './litegraph'
 import { createTestSubgraph } from './subgraph/__fixtures__/subgraphHelpers'
 
@@ -64,6 +65,39 @@ describe('LGraphNode node-data adoption', () => {
 
     expect(statesIn(subgraph)).toEqual([])
     expect(node._graphId).toBeUndefined()
+  })
+
+  it('refuses to re-register a node under a second root graph', () => {
+    const { node } = addNodeToSubgraph()
+    const other = createTestSubgraph()
+
+    expect(() => registerNodeState(other, node)).toThrow(
+      /already registered under a different root graph/
+    )
+  })
+
+  it('tolerates re-registration under the same root graph', () => {
+    const { subgraph, node } = addNodeToSubgraph()
+
+    expect(() => registerNodeState(subgraph, node)).not.toThrow()
+    expect(statesIn(subgraph)).toHaveLength(1)
+  })
+
+  it('reports a state swapped out from under the registration', () => {
+    const { node } = addNodeToSubgraph()
+
+    node._state = { ...toRaw(node._state) }
+
+    expect(() => unregisterNodeState(node)).toThrow(/identity drift/)
+  })
+
+  it('vacates its store entry after the node is renumbered', () => {
+    const { subgraph, node } = addNodeToSubgraph()
+
+    node.id = toNodeId(4242)
+    unregisterNodeState(node)
+
+    expect(statesIn(subgraph)).toEqual([])
   })
 
   it('keeps the registration when configure carries a stale id', () => {
