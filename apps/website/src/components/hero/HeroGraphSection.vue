@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+import { externalLinks } from '../../config/routes'
+import Button from '../ui/button/Button.vue'
 import HeroHeadline from './HeroHeadline.vue'
 import HeroGraph from './HeroGraph.vue'
 import HeroMobileFlow from './HeroMobileFlow.vue'
@@ -16,7 +19,12 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     </div>
 
     <div class="flex w-full flex-col items-center gap-8 md:hidden">
-      <HeroHeadline :locale class="text-3xl" />
+      <div class="flex flex-col items-center gap-6">
+        <HeroHeadline :locale class="text-3xl" />
+        <Button as="a" :href="externalLinks.cloud" size="lg">
+          {{ t('hero.getStartedFree', locale) }}
+        </Button>
+      </div>
       <HeroMobileFlow />
     </div>
   </section>

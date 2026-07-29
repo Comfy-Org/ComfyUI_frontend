@@ -4,6 +4,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { reactive, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+import { externalLinks } from '../../config/routes'
+import Button from '../ui/button/Button.vue'
 import AngleNode from './AngleNode.vue'
 import ColorNode from './ColorNode.vue'
 import GraphLinks from './GraphLinks.vue'
@@ -117,9 +120,19 @@ function wrapperStyle(key: ElementKey) {
       <GraphLinks :positions />
 
       <div
-        class="pointer-events-none absolute top-[1.5em] left-1/2 z-20 -translate-x-1/2 text-[3em]"
+        class="pointer-events-none absolute top-[1.5em] left-1/2 z-20 flex -translate-x-1/2 flex-col items-center"
       >
-        <HeroHeadline :locale />
+        <div class="text-[3em]">
+          <HeroHeadline :locale />
+        </div>
+        <Button
+          as="a"
+          :href="externalLinks.cloud"
+          size="lg"
+          class="pointer-events-auto mt-[1.6em]"
+        >
+          {{ t('hero.getStartedFree', locale) }}
+        </Button>
       </div>
 
       <div
