@@ -14,12 +14,12 @@ export const UNKNOWN_ERROR_CODE = 'UNKNOWN_ERROR'
 const MAX_RAW_MESSAGE_LENGTH = 500
 
 /**
- * A body opening with a tag is a markup document, never a usable message —
- * however short the page happens to be. Anchored so prose that merely
- * mentions a bracketed token (e.g. "connection to <backend-01> refused")
- * still surfaces.
+ * A body opening with a tag or an XML declaration (`<?xml`, as S3/GCS error
+ * documents do) is a markup document, never a usable message — however short
+ * the page happens to be. Anchored so prose that merely mentions a bracketed
+ * token (e.g. "connection to <backend-01> refused") still surfaces.
  */
-const MARKUP_DOCUMENT = /^<[a-z!/]/i
+const MARKUP_DOCUMENT = /^<[a-z!/?]/i
 
 /**
  * Coerce an already-parsed error body into the canonical
