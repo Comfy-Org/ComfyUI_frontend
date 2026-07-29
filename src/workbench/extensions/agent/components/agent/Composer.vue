@@ -280,7 +280,7 @@ defineExpose({
       v-model="composer.draft.value"
       :placeholder="t('agent.placeholder')"
       rows="1"
-      class="field-sizing-content max-h-48 min-h-20 resize-none overflow-y-auto rounded-xl bg-transparent px-4 py-3 focus-visible:ring-0"
+      class="field-sizing-content max-h-48 min-h-20 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-xl bg-transparent px-4 py-3 wrap-break-word focus-visible:ring-0"
       :aria-expanded="mentionVisible"
       aria-controls="agent-mention-listbox"
       :aria-activedescendant="
