@@ -69,7 +69,7 @@ watch(
       "
     >
       <div ref="top" />
-      <div class="mx-auto max-w-[640px] px-4 pt-8 pb-4">
+      <div class="mx-auto max-w-[640px] p-4">
         <div class="flex flex-col gap-4">
           <template v-for="entry in entries" :key="`${entry.role}-${entry.id}`">
             <UserMessage
