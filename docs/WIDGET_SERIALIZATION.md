@@ -46,6 +46,78 @@ But `control_after_generate` is a **secondary** widget created by `addValueContr
 
 See [ADR-0006](adr/0006-primitive-node-copy-paste-lifecycle.md) for proposed fixes and design tradeoffs.
 
+## Write/read asymmetry: sparse `widgets_values` on round-trip
+
+`serialize()` and `configure()` disagreed about how a `serialize: false` widget
+affects the positions of the widgets around it:
+
+- **`serialize()`** wrote `widgets_values` at each widget's **absolute**
+  position in `this.widgets`, skipping `serialize: false` entries without
+  reusing their slot. `JSON.stringify` renders the resulting array holes as
+  `null`.
+- **`configure()`** read `widgets_values` with a **compacted** counter that
+  only advances for serializable widgets.
+
+A node with a `serialize: false` widget ahead of a serializable one could not
+round-trip its own `serialize()` output back through `configure()` — every
+value after the gap landed one slot early.
+
+```mermaid
+flowchart TD
+    subgraph write["serialize() — wrote by absolute widget index"]
+        w0["for (i, widget) of widgets.entries()"] --> w1{"widget.serialize === false?"}
+        w1 -- yes --> w2["continue — slot i is left empty"]
+        w1 -- no --> w3["widgets_values[i] = widget.value"]
+    end
+
+    w3 --> hole["JSON.stringify renders the hole as null:\n[value, null, value, value]"]
+
+    subgraph read["configure() — read by compacted counter"]
+        r0["let i = 0; for widget of widgets"] --> r1{"widget.serialize === false?"}
+        r1 -- yes --> r2["continue — i is NOT incremented"]
+        r1 -- no --> r3["widget.value = widgets_values[i++]"]
+    end
+
+    hole -->|"fed back into the same node"| r0
+    r3 -->|"index no longer lines up past the hole"| shift["Every value after the gap\nshifts onto the wrong widget"]
+```
+
+### Where a `serialize: false` widget ends up ahead of another widget
+
+Click-only usage on stock nodes rarely triggers this — `serialize: false`
+widgets (image/audio previews, upload buttons) are normally the last widget
+added. The gap becomes reachable through:
+
+- **Subgraph promoted widgets** — `promotionUtils.ts` creates promoted
+  preview widgets with `serialize: false`, and promotion order is
+  user-controlled, so the hole can land mid-list through ordinary use.
+- **Any external/programmatic graph builder** that constructs
+  `node.widgets` or `widgets_values` positionally without replicating the
+  exact skip-then-compact rule above — for example a converter that talks to
+  this codebase's `serialize()`/`configure()` pair from outside the UI
+  (agent/automation tooling that edits a graph and resubmits it). Because
+  the write and read conventions disagreed, there was no single "correct"
+  positional convention such a caller could implement.
+
+### History
+
+- [#12162](https://github.com/Comfy-Org/ComfyUI_frontend/pull/12162) first
+  proposed compacting the write side to match the read side, but went stale
+  before merging.
+- A parallel `feature/ecs-migration` refactor chain
+  (`#13963 → #14108 → #14110 → #14128 → #14133`) landed in the same period.
+  It restructures node **geometry** (position/size) into dedicated stores
+  under [ADR 0008](adr/0008-entity-component-system.md) and does not touch
+  `widgets_values`, `serialize()`, or `configure()` — this bug and that
+  refactor are in unrelated parts of the file.
+- [#14239](https://github.com/Comfy-Org/ComfyUI_frontend/issues/14239)
+  independently re-discovered and documented the same asymmetry.
+- The fix: `serialize()` now writes a compacted array (matching
+  `configure()`'s existing read), and `configure()` additionally recognizes
+  the previous, longer, absolute-index shape (by comparing
+  `widgets_values.length` against the number of serializable widgets) so
+  workflows already saved with holes still load correctly.
+
 ## Code references
 
 - `widget.serialize` checked: `src/lib/litegraph/src/LGraphNode.ts` serialize() and configure()

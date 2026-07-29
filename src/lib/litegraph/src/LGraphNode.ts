@@ -1,5 +1,6 @@
 import { toValue } from 'vue'
 
+import { assert } from '@/base/assert'
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
   calculateInputSlotPosFromSlot,
@@ -984,11 +985,44 @@ export class LGraphNode
       }
 
       if (info.widgets_values) {
-        let i = 0
-        for (const widget of this.widgets ?? []) {
-          if (widget.serialize === false) continue
-          if (i >= info.widgets_values.length) break
-          widget.value = info.widgets_values[i++]
+        const allWidgets = this.widgets ?? []
+        const serializableWidgetCount = allWidgets.filter(
+          (widget) => widget.serialize !== false
+        ).length
+
+        // Legacy payloads written by the pre-compaction serialize() bug
+        // index by absolute widget position, leaving a JSON `null` hole at
+        // every `serialize: false` widget that precedes a serializable one -
+        // so the array runs longer than the serializable widget count.
+        // Detect that shape and read by absolute index to undo the shift;
+        // a compact array (the current write format) is read sequentially.
+        const isLegacySparseLayout =
+          info.widgets_values.length > serializableWidgetCount
+
+        // A node with no widgets (e.g. SubgraphNode, which keeps
+        // widgets_values as a dead field for legacy promoted-widget
+        // migration - see docs/WIDGET_SERIALIZATION.md) has nothing for an
+        // oversized array to misapply values onto, so only assert the bound
+        // when there are live widgets to shift.
+        assert(
+          allWidgets.length === 0 ||
+            info.widgets_values.length <= allWidgets.length,
+          `LGraphNode.configure: widgets_values has ${info.widgets_values.length} entries for node "${this.type}" (id: ${this.id}), which has only ${allWidgets.length} widgets - the payload does not match this node's widget layout`
+        )
+
+        if (isLegacySparseLayout) {
+          for (const [widgetIndex, widget] of allWidgets.entries()) {
+            if (widget.serialize === false) continue
+            if (widgetIndex >= info.widgets_values.length) break
+            widget.value = info.widgets_values[widgetIndex]
+          }
+        } else {
+          let i = 0
+          for (const widget of allWidgets) {
+            if (widget.serialize === false) continue
+            if (i >= info.widgets_values.length) break
+            widget.value = info.widgets_values[i++]
+          }
         }
       }
     }
@@ -1040,15 +1074,24 @@ export class LGraphNode
     const { widgets } = this
     if (widgets && this.serialize_widgets) {
       o.widgets_values = []
-      for (const [i, widget] of widgets.entries()) {
+      for (const widget of widgets) {
         if (widget.serialize === false) continue
         const val = widget?.value
         // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
-        o.widgets_values[i] =
+        o.widgets_values.push(
           val != null && typeof val === 'object'
             ? JSON.parse(JSON.stringify(val))
             : (val ?? null)
+        )
       }
+
+      const serializableWidgetCount = widgets.filter(
+        (widget) => widget.serialize !== false
+      ).length
+      assert(
+        o.widgets_values.length === serializableWidgetCount,
+        `LGraphNode.serialize: wrote ${o.widgets_values.length} widgets_values for node "${this.type}" (id: ${this.id}) but it has ${serializableWidgetCount} serializable widgets - configure() compacts on read, so a mismatched write will shift every value after the gap`
+      )
     }
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type
