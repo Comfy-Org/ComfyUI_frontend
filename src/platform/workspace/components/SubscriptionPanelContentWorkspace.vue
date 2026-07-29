@@ -473,7 +473,7 @@ const tierBenefits = computed((): TierBenefit[] => {
       label: t(`subscription.teamPerks.${key}`)
     }))
   }
-  if (isPersonalFree.value) {
+  if (isPersonalFree.value || tierKey.value === 'free') {
     return [
       ...(freeRunsQuotaEnabled.value
         ? [
@@ -487,13 +487,9 @@ const tierBenefits = computed((): TierBenefit[] => {
             }
           ]
         : []),
-      {
-        key: 'maxRuntime',
-        type: 'feature',
-        label: t('subscription.freePerks.maxRuntime', {
-          duration: t('subscription.maxDuration.free')
-        })
-      }
+      ...getCommonTierBenefits('free', t, n).filter(
+        (benefit) => benefit.key !== 'monthlyCredits'
+      )
     ]
   }
   return getCommonTierBenefits(tierKey.value, t, n)
