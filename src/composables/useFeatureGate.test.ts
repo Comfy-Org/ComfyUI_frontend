@@ -122,4 +122,26 @@ describe('useFeatureGate', () => {
       false
     )
   })
+
+  it('deduplicates in memory when session storage reads are unavailable', () => {
+    const trackFeatureFlagExposure = vi.fn()
+    const registry = new TelemetryRegistry()
+    registry.registerProvider({ trackFeatureFlagExposure })
+    setTelemetryRegistry(registry)
+    remoteConfigState.value = 'authenticated'
+    vi.spyOn(sessionStorage, 'getItem').mockImplementation(() => {
+      throw new Error('Storage unavailable')
+    })
+
+    const { recordExposure } = useFeatureGate('storage_read_unavailable_flag')
+
+    expect(() => {
+      recordExposure()
+      recordExposure()
+    }).not.toThrow()
+    expect(trackFeatureFlagExposure).toHaveBeenCalledExactlyOnceWith(
+      'storage_read_unavailable_flag',
+      false
+    )
+  })
 })

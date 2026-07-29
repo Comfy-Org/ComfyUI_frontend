@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 
 import { refreshRemoteConfig } from './refreshRemoteConfig'
-import { remoteConfig } from './remoteConfig'
+import { remoteConfig, remoteConfigState } from './remoteConfig'
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -42,6 +42,7 @@ describe('refreshRemoteConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     remoteConfig.value = {}
+    remoteConfigState.value = 'unloaded'
     window.__CONFIG__ = {}
     sessionId = 'user-a'
   })
@@ -97,7 +98,7 @@ describe('refreshRemoteConfig', () => {
       expect(global.fetch).not.toHaveBeenCalled()
     })
 
-    it('does not pass an abort signal on the authed branch (so it is never aborted)', async () => {
+    it('passes an AbortSignal on the authenticated branch', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
 
       await refreshRemoteConfig({
@@ -106,7 +107,34 @@ describe('refreshRemoteConfig', () => {
       })
 
       const init = vi.mocked(api.fetchApi).mock.calls[0][1]
-      expect(init?.signal).toBeUndefined()
+      expect(init?.signal).toBeInstanceOf(AbortSignal)
+    })
+
+    it('clears a shared authenticated refresh after timeout', async () => {
+      vi.useFakeTimers()
+      try {
+        vi.mocked(api.fetchApi).mockImplementation((_route, init) => {
+          return new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('Aborted', 'AbortError'))
+            })
+          })
+        })
+
+        const firstRefresh = refreshAuthenticated()
+        const secondRefresh = refreshAuthenticated()
+
+        expect(secondRefresh).toBe(firstRefresh)
+        await vi.advanceTimersByTimeAsync(5_000)
+        await Promise.all([firstRefresh, secondRefresh])
+
+        vi.mocked(api.fetchApi).mockResolvedValueOnce(mockSuccessResponse())
+        await refreshAuthenticated()
+
+        expect(api.fetchApi).toHaveBeenCalledTimes(2)
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('keeps the new session refresh deduplicated when the old one settles', async () => {
@@ -254,6 +282,7 @@ describe('refreshRemoteConfig', () => {
       const safeConfig = { subscription_required: true }
       expect(remoteConfig.value).toEqual(safeConfig)
       expect(window.__CONFIG__).toEqual(safeConfig)
+      expect(remoteConfigState.value).toBe('error')
     })
   })
 })

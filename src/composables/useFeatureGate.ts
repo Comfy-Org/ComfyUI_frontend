@@ -8,32 +8,24 @@ import { useTelemetry } from '@/platform/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 const fallbackRecordedExposures = new Set<string>()
-let useFallbackExposureStorage = false
 
 function hasRecordedExposure(key: string): boolean {
-  if (useFallbackExposureStorage) {
-    return fallbackRecordedExposures.has(key)
-  }
-
   try {
-    return sessionStorage.getItem(key) !== null
+    return (
+      sessionStorage.getItem(key) !== null || fallbackRecordedExposures.has(key)
+    )
   } catch {
-    useFallbackExposureStorage = true
     return fallbackRecordedExposures.has(key)
   }
 }
 
 function markExposureRecorded(key: string): void {
-  if (useFallbackExposureStorage) {
-    fallbackRecordedExposures.add(key)
-    return
-  }
+  fallbackRecordedExposures.add(key)
 
   try {
     sessionStorage.setItem(key, '1')
   } catch {
-    useFallbackExposureStorage = true
-    fallbackRecordedExposures.add(key)
+    return
   }
 }
 

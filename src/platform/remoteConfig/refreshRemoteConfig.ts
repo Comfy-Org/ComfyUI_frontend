@@ -6,9 +6,6 @@ import {
   remoteConfigState
 } from './remoteConfig'
 
-// Cap the bootstrap fetch so a wedged /features endpoint can never block app.mount indefinitely.
-// A same-origin GET against the local comfyui server should resolve in well under a second;
-// on timeout the catch below clears remoteConfig and consumers fall back to build-time defaults.
 const FEATURES_FETCH_TIMEOUT_MS = 5_000
 
 type RefreshRemoteConfigOptions =
@@ -28,7 +25,7 @@ async function fetchRemoteConfig(
   if (!useAuth) {
     return fetch(api.apiURL('/features'), { cache: 'no-store', signal })
   }
-  return api.fetchApi('/features', { cache: 'no-store' })
+  return api.fetchApi('/features', { cache: 'no-store', signal })
 }
 
 /**
@@ -45,14 +42,15 @@ async function performRefreshRemoteConfig(
   sessionId?: string | null,
   getSessionId?: () => string | null
 ): Promise<void> {
-  const controller = useAuth ? null : new AbortController()
-  const timeoutId = controller
-    ? setTimeout(() => controller.abort(), FEATURES_FETCH_TIMEOUT_MS)
-    : null
+  const controller = new AbortController()
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    FEATURES_FETCH_TIMEOUT_MS
+  )
   const sessionIsCurrent = () => !useAuth || getSessionId?.() === sessionId
 
   try {
-    const response = await fetchRemoteConfig(useAuth, controller?.signal)
+    const response = await fetchRemoteConfig(useAuth, controller.signal)
     if (!sessionIsCurrent()) return
 
     if (response.ok) {
@@ -97,7 +95,7 @@ async function performRefreshRemoteConfig(
     remoteConfig.value = {}
     remoteConfigState.value = 'error'
   } finally {
-    if (timeoutId !== null) clearTimeout(timeoutId)
+    clearTimeout(timeoutId)
   }
 }
 

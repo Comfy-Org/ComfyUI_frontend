@@ -1,7 +1,9 @@
 import { watchDebounced } from '@vueuse/core'
+import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useExtensionService } from '@/services/extensionService'
 
@@ -19,6 +21,16 @@ useExtensionService().registerExtension({
       refreshRemoteConfig({
         getSessionId: () => resolvedUserInfo.value?.id ?? null
       })
+
+    watch(
+      resolvedUserInfo,
+      (user, previousUser) => {
+        if (user?.id !== previousUser?.id) {
+          remoteConfigState.value = 'anonymous'
+        }
+      },
+      { flush: 'sync' }
+    )
 
     // Refresh config when auth or subscription status changes
     // Primary auth refresh is handled by WorkspaceAuthGate on mount
