@@ -11,7 +11,6 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const DIALOG_KEY = 'subscription-required'
-const FREE_TIER_DIALOG_KEY = 'free-tier-info'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
 export interface SubscriptionDialogOptions {
@@ -47,7 +46,6 @@ export const useSubscriptionDialog = () => {
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
-    dialogStore.closeDialog({ key: FREE_TIER_DIALOG_KEY })
   }
 
   // Fired here — the choke point every paywall/pricing dialog variant passes
@@ -189,39 +187,6 @@ export const useSubscriptionDialog = () => {
 
   function show(options?: SubscriptionDialogOptions) {
     if (isCloud && showInactiveMemberDialog()) return
-
-    // Free-tier state comes from the unified facade so it works on both the
-    // legacy (/customers) and workspace (/api/billing) paths. Resolved lazily
-    // (not at composable setup) to avoid the useBillingContext import cycle.
-    const { isFreeTier } = useBillingContext()
-    if (isFreeTier.value && workspaceStore.isInPersonalWorkspace) {
-      trackModalOpened(options?.reason)
-
-      const component = defineAsyncComponent(
-        () =>
-          import('@/platform/cloud/subscription/components/FreeTierDialogContent.vue')
-      )
-
-      dialogService.showLayoutDialog({
-        key: FREE_TIER_DIALOG_KEY,
-        component,
-        props: {
-          reason: options?.reason,
-          onClose: hide,
-          onUpgrade: () => {
-            hide()
-            showPricingTable(options)
-          }
-        },
-        dialogComponentProps: {
-          renderer: 'reka',
-          size: 'full',
-          contentClass:
-            'w-[min(640px,95vw)] max-w-[min(640px,95vw)] sm:max-w-[min(640px,95vw)] overflow-hidden rounded-2xl border-border-default bg-base-background/60 shadow-[0_25px_80px_rgba(5,6,12,0.45)] backdrop-blur-md'
-        }
-      })
-      return
-    }
 
     showPricingTable(options)
   }

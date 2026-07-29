@@ -43,7 +43,7 @@ const { loaded: logoLoaded } = useHeroLogo(logoContainer)
       </p>
 
       <BrandButton
-        :href="externalLinks.workflows"
+        :href="externalLinks.cloudCta('hero_run_first_workflow')"
         variant="outline"
         size="lg"
         class="mt-8 w-full p-4 uppercase lg:w-auto lg:min-w-60"

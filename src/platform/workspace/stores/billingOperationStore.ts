@@ -278,8 +278,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (!operation) return
 
     const defaultMessage = failureMessage(operation.type)
+    const detail =
+      operation.type === 'subscription'
+        ? t('billingOperation.subscriptionFailedDetail')
+        : errorMessage
 
-    updateOperationStatus(opId, 'failed', errorMessage ?? defaultMessage)
+    updateOperationStatus(opId, 'failed', detail ?? defaultMessage)
     cleanup(opId)
 
     const telemetry = useTelemetry()
@@ -313,7 +317,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       useToastStore().add({
         severity: 'error',
         summary: defaultMessage,
-        detail: errorMessage ?? undefined
+        detail: detail ?? undefined
       })
     }
 
