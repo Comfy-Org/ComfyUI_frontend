@@ -372,22 +372,31 @@ function writeStorage(storage: Storage, key: string, value: string): void {
   }
 }
 
-/**
- * Clears all V2 workflow persistence data from storage.
- * Used during signout to prevent data leakage.
- */
-export function clearAllV2Storage(): void {
-  const prefixes = [
+export function clearAllWorkflowStorage(): void {
+  const localPrefixes = [
     StorageKeys.prefixes.draftIndex,
     StorageKeys.prefixes.draftPayload,
     StorageKeys.prefixes.lastActivePath,
-    StorageKeys.prefixes.lastOpenPaths
+    StorageKeys.prefixes.lastOpenPaths,
+    'Comfy.Workflow.Drafts:',
+    'Comfy.Workflow.DraftOrder:'
+  ]
+  const localKeys = [
+    'Comfy.Workflow.Drafts',
+    'Comfy.Workflow.DraftOrder',
+    'Comfy.OpenWorkflowsPaths',
+    'Comfy.ActiveWorkflowIndex',
+    'workflow'
   ]
 
   try {
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i)
-      if (key && prefixes.some((prefix) => key.startsWith(prefix))) {
+      if (
+        key &&
+        (localKeys.includes(key) ||
+          localPrefixes.some((prefix) => key.startsWith(prefix)))
+      ) {
         try {
           localStorage.removeItem(key)
         } catch {
@@ -401,7 +410,8 @@ export function clearAllV2Storage(): void {
 
   const sessionPrefixes = [
     StorageKeys.prefixes.activePath,
-    StorageKeys.prefixes.openPaths
+    StorageKeys.prefixes.openPaths,
+    'workflow:'
   ]
 
   try {

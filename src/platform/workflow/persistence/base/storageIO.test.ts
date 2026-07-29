@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
 import {
-  clearAllV2Storage,
+  clearAllWorkflowStorage,
   deleteOrphanPayloads,
   deletePayload,
   deletePayloads,
@@ -282,33 +282,39 @@ describe('storageIO', () => {
     })
   })
 
-  describe('clearAllV2Storage', () => {
-    it('clears all V2 keys from localStorage', () => {
+  describe('clearAllWorkflowStorage', () => {
+    it('clears all restorable workflow keys from localStorage', () => {
       localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-2:def', '{}')
+      localStorage.setItem('Comfy.Workflow.LastActivePath:ws-1', '{}')
+      localStorage.setItem('Comfy.Workflow.LastOpenPaths:ws-1', '{}')
+      localStorage.setItem('Comfy.Workflow.Drafts:ws-1', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder:ws-1', '[]')
+      localStorage.setItem('Comfy.Workflow.Drafts', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder', '[]')
+      localStorage.setItem('Comfy.OpenWorkflowsPaths', '[]')
+      localStorage.setItem('Comfy.ActiveWorkflowIndex', '0')
+      localStorage.setItem('workflow', '{}')
       localStorage.setItem('unrelated', 'keep')
 
-      clearAllV2Storage()
+      clearAllWorkflowStorage()
 
       expect(
-        localStorage.getItem('Comfy.Workflow.DraftIndex.v2:ws-1')
-      ).toBeNull()
-      expect(
-        localStorage.getItem('Comfy.Workflow.Draft.v2:ws-1:abc')
-      ).toBeNull()
-      expect(
-        localStorage.getItem('Comfy.Workflow.Draft.v2:ws-2:def')
-      ).toBeNull()
+        [...Array(localStorage.length)].map((_, index) =>
+          localStorage.key(index)
+        )
+      ).toEqual(['unrelated'])
       expect(localStorage.getItem('unrelated')).toBe('keep')
     })
 
-    it('clears all V2 keys from sessionStorage', () => {
+    it('clears all restorable workflow keys from sessionStorage', () => {
       sessionStorage.setItem('Comfy.Workflow.ActivePath:client-1', '{}')
       sessionStorage.setItem('Comfy.Workflow.OpenPaths:client-2', '{}')
+      sessionStorage.setItem('workflow:client-1', '{}')
       sessionStorage.setItem('unrelated', 'keep')
 
-      clearAllV2Storage()
+      clearAllWorkflowStorage()
 
       expect(
         sessionStorage.getItem('Comfy.Workflow.ActivePath:client-1')
@@ -316,6 +322,7 @@ describe('storageIO', () => {
       expect(
         sessionStorage.getItem('Comfy.Workflow.OpenPaths:client-2')
       ).toBeNull()
+      expect(sessionStorage.getItem('workflow:client-1')).toBeNull()
       expect(sessionStorage.getItem('unrelated')).toBe('keep')
     })
 
@@ -324,7 +331,7 @@ describe('storageIO', () => {
       sessionStorage.setItem('Comfy.Workflow.ActivePath:client-1', '{}')
       markStorageUnavailable()
 
-      clearAllV2Storage()
+      clearAllWorkflowStorage()
 
       expect(
         localStorage.getItem('Comfy.Workflow.LastActivePath:personal')

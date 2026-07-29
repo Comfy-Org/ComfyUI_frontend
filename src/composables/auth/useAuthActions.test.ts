@@ -34,7 +34,7 @@ const mockDialogService = vi.hoisted(() => ({
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockTrackAuthFailed = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockClearAllV2Storage = vi.hoisted(() => vi.fn())
+const mockClearAllWorkflowStorage = vi.hoisted(() => vi.fn())
 
 const knownAuthErrorCodes = new Set([
   'auth/invalid-credential',
@@ -68,7 +68,7 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 
 vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
-  clearAllV2Storage: mockClearAllV2Storage
+  clearAllWorkflowStorage: mockClearAllWorkflowStorage
 }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
@@ -140,7 +140,7 @@ describe('useAuthActions.logout', () => {
     expect(mockDialogService.confirm).not.toHaveBeenCalled()
     expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
-    expect(mockClearAllV2Storage).not.toHaveBeenCalled()
+    expect(mockClearAllWorkflowStorage).not.toHaveBeenCalled()
   })
 
   it('logs out without prompting when no workflows are modified', async () => {
@@ -158,9 +158,9 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockClearAllV2Storage).toHaveBeenCalledOnce()
+    expect(mockClearAllWorkflowStorage).toHaveBeenCalledOnce()
     expect(mockAuthStore.logout.mock.invocationCallOrder[0]).toBeLessThan(
-      mockClearAllV2Storage.mock.invocationCallOrder[0]
+      mockClearAllWorkflowStorage.mock.invocationCallOrder[0]
     )
   })
 
@@ -170,7 +170,7 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockClearAllV2Storage).not.toHaveBeenCalled()
+    expect(mockClearAllWorkflowStorage).not.toHaveBeenCalled()
   })
 
   it('cancels sign-out when the dialog is dismissed (null)', async () => {
