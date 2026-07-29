@@ -13,6 +13,8 @@ const KEYS = {
   grid: 'sideToolbar.mediaAssets.viewGridLarge',
   newest: 'sideToolbar.mediaAssets.sortNewestFirst',
   oldest: 'sideToolbar.mediaAssets.sortOldestFirst',
+  az: 'sideToolbar.mediaAssets.sortAToZ',
+  za: 'sideToolbar.mediaAssets.sortZToA',
   longest: 'sideToolbar.mediaAssets.sortLongestFirst',
   fastest: 'sideToolbar.mediaAssets.sortFastestFirst'
 } as const
@@ -91,10 +93,12 @@ describe('MediaAssetSettingsMenu', () => {
       expect(screen.queryByRole('button', { name: KEYS.oldest })).toBeNull()
     })
 
-    it('shows newest and oldest options when showSortOptions is true', () => {
+    it('shows date and name sort options when showSortOptions is true', () => {
       mountWithModels({ showSortOptions: true })
       expect(getButton(KEYS.newest)).toBeTruthy()
       expect(getButton(KEYS.oldest)).toBeTruthy()
+      expect(getButton(KEYS.az)).toBeTruthy()
+      expect(getButton(KEYS.za)).toBeTruthy()
     })
 
     it('hides longest/fastest options unless showGenerationTimeSort is also true', () => {
@@ -120,6 +124,8 @@ describe('MediaAssetSettingsMenu', () => {
     const cases: Array<{ key: keyof typeof KEYS; expected: SortBy }> = [
       { key: 'newest', expected: 'newest' },
       { key: 'oldest', expected: 'oldest' },
+      { key: 'az', expected: 'az' },
+      { key: 'za', expected: 'za' },
       { key: 'longest', expected: 'longest' },
       { key: 'fastest', expected: 'fastest' }
     ]

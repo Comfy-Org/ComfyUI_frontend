@@ -14,6 +14,7 @@
       variant="muted-textonly"
       class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
       :aria-label="$t('g.back')"
+      :disabled="isPolling"
       @click="handleBackToPricing"
     >
       <i class="pi pi-arrow-left text-xl" />
@@ -64,6 +65,7 @@
         :preview-data="previewData!"
         :team-plan="selectedTeamStop!"
         :is-loading="isSubscribing || isPolling"
+        :action-url="activeCheckoutActionUrl"
         @confirm="handleTeamSubscribe"
         @back="handleBackToPricing"
       />
@@ -73,6 +75,7 @@
         :team-plan="selectedTeamStop!"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
+        :action-url="activeCheckoutActionUrl"
         @add-credit-card="handleTeamSubscribe"
         @back="handleBackToPricing"
       />
@@ -83,6 +86,7 @@
         :tier-key="selectedTierKey!"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
+        :action-url="activeCheckoutActionUrl"
         @add-credit-card="handleAddCreditCard"
         @back="handleBackToPricing"
       />
@@ -91,6 +95,7 @@
         v-else-if="previewVariant === 'personal-change'"
         :preview-data="previewData!"
         :is-loading="isSubscribing || isPolling"
+        :action-url="activeCheckoutActionUrl"
         @confirm="handleConfirmTransition"
         @back="handleBackToPricing"
       />
@@ -144,6 +149,7 @@ const {
   selectedTierKey,
   selectedTeamStop,
   selectedBillingCycle,
+  activeCheckoutActionUrl,
   isPolling,
   isTeamCheckout,
   previewVariant,
@@ -169,7 +175,12 @@ onMounted(() => {
 // Backspace mirrors the back arrow on the confirm step, but never while an
 // editable element is focused (let it delete text there).
 useEventListener(window, 'keydown', (event: KeyboardEvent) => {
-  if (event.key !== 'Backspace' || checkoutStep.value !== 'preview') return
+  if (
+    event.key !== 'Backspace' ||
+    checkoutStep.value !== 'preview' ||
+    isPolling.value
+  )
+    return
   const target = event.target
   if (
     target instanceof HTMLInputElement ||
