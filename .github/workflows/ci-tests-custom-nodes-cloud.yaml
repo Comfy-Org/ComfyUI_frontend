@@ -57,11 +57,14 @@ concurrency:
   # instance-topology (the earlier "ONE shared Cloud test instance" claim
   # here was unsourced and is retracted): every run signs in as the ONE
   # smoke account (smokeAuth.ts
-  # memoizes a single SMOKE_ACCOUNT_EMAIL identity) and the suite's drain
-  # interrupts/clears that account's queue UNSCOPED (drainBackendToIdle,
-  # customNodeSuite.ts), so two concurrent same-account runs cancel each
-  # other's prompts. Retire this group when the prompt-scoped drain and
-  # the smoke-account pool land.
+  # memoizes a single SMOKE_ACCOUNT_EMAIL identity), so concurrent runs
+  # share one ComfyUI queue. Per-test cleanup no longer clobbers a
+  # co-tenant - drainBackendToIdle cancels only the prompt ids the page
+  # itself submitted - but the sharing still bites: waitForQueueQuiet
+  # (customNodeSuite.ts) legitimately waits on the WHOLE queue before the
+  # auto-run tier, and a queue read cannot tell a prior pack's leftover
+  # from another run's work. Retire this group when the smoke-account pool
+  # lands and each run owns its own queue.
   # cancel-in-progress:false protects the IN-PROGRESS run from being killed
   # mid backend interaction, but GitHub still cancels a PENDING run when a
   # newer one queues into the group - under 3+ concurrent triggers the middle

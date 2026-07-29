@@ -1,4 +1,4 @@
-import type { Page, Response } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import type { PromptResponse } from '@/schemas/apiSchema'
 
@@ -9,6 +9,7 @@ import type {
   RunResult
 } from '@e2e/fixtures/customNode/runResult'
 import { classifyRun } from '@e2e/fixtures/customNode/runResult'
+import { onPromptIdResponse } from '@e2e/fixtures/utils/customNodeSuite'
 
 interface RawEvent {
   type: string
@@ -149,24 +150,13 @@ export class LocalDesktopTarget {
     // names nothing. Snapshot the failing node/input so the outcome is
     // actionable instead of an empty object.
     let capturedValidationError: string | undefined
-    const onPromptResponse = (response: Response) => {
-      if (response.request().method() !== 'POST') return
-      if (!new URL(response.url()).pathname.endsWith('/prompt')) return
-      response
-        .json()
-        .then((body: unknown) => {
-          const id = (body as { prompt_id?: unknown } | null)?.prompt_id
-          if (typeof id === 'string') capturedPromptId = id
-          if (response.status() >= 400)
-            capturedValidationError = summarizePromptError(body)
-        })
-        .catch(() => {
-          // a refused submission answers with a non-JSON or error body;
-          // the refusal path below already handles it
-        })
-    }
-    page.on('response', onPromptResponse)
-    const stopCapture = () => page.off('response', onPromptResponse)
+    const { detach: stopCapture } = onPromptIdResponse(
+      page,
+      (promptId, body, status) => {
+        if (promptId !== undefined) capturedPromptId = promptId
+        if (status >= 400) capturedValidationError = summarizePromptError(body)
+      }
+    )
 
     // app.queuePrompt (NOT api.queuePrompt: that submits an empty prompt).
     // false = validation reject (emits no events), but pack JS hooking the

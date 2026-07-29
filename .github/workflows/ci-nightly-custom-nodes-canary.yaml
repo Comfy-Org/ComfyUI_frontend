@@ -337,12 +337,13 @@ jobs:
     # TEMPORARY serialization against the cloud gate + cloud record runs,
     # for a queue-scoped reason, not an instance-topology one: every cloud
     # run signs in as the ONE smoke account (smokeAuth.ts memoizes a single
-    # SMOKE_ACCOUNT_EMAIL identity at module scope) and the suite's drain
-    # interrupts/clears that account's queue UNSCOPED (drainBackendToIdle
-    # in customNodeSuite.ts), so two concurrent same-account runs cancel
-    # each other's prompts. Remove this block when the prompt-scoped drain
-    # and the smoke-account pool land; the group's name predates that
-    # analysis and is being retired with it.
+    # SMOKE_ACCOUNT_EMAIL identity at module scope), so concurrent runs
+    # share one ComfyUI queue. Per-test cleanup is now scoped to the page's
+    # own prompt ids, but waitForQueueQuiet (customNodeSuite.ts) still
+    # waits on the WHOLE queue before the auto-run tier and cannot tell a
+    # prior pack's leftover from another run's work. Remove this block when
+    # the smoke-account pool gives each run its own queue; the group's name
+    # predates that analysis and is being retired with it.
     # Known gap while this block exists: if this job is still PENDING in
     # the group when a newer gate/record run queues, GitHub evicts it (the
     # gate's concurrency comment documents observed evictions by run ID)
