@@ -893,6 +893,8 @@
       "title": "Media Assets",
       "sortNewestFirst": "Newest first",
       "sortOldestFirst": "Oldest first",
+      "sortAToZ": "Name (A → Z)",
+      "sortZToA": "Name (Z → A)",
       "sortLongestFirst": "Generation time (longest first)",
       "sortFastestFirst": "Generation time (fastest first)",
       "filterImage": "Image",
@@ -900,6 +902,8 @@
       "filterAudio": "Audio",
       "filter3D": "3D",
       "filterText": "Text",
+      "viewGridSmall": "Grid (small)",
+      "viewGridLarge": "Grid (large)",
       "viewSettings": "View settings"
     },
     "backToAssets": "Back to all assets",
@@ -1165,6 +1169,11 @@
     "runsOnSelected": "{count} Runs On",
     "runsOnFilter": "Runs on",
     "resultsCount": "Showing {count} of {total} templates",
+    "paidTemplate": {
+      "badgeLabel": "Partner API",
+      "title": "Premium template",
+      "credits": "Runs with credits"
+    },
     "sort": {
       "relevance": "Relevance",
       "recommended": "Recommended",
@@ -1563,6 +1572,7 @@
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
     "Members": "Members",
+    "Allowlist": "Allowlist",
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
@@ -2215,7 +2225,19 @@
     "swatchTitle": "Click edit · drag reorder · right-click remove"
   },
   "videoEdit": {
-    "adjustCrop": "Adjust crop region"
+    "play": "Play",
+    "pause": "Pause",
+    "loadingFilmstrip": "Loading filmstrip…",
+    "seekVideo": "Seek video",
+    "adjustStartFrame": "Adjust start frame",
+    "adjustEndFrame": "Adjust end frame",
+    "adjustCrop": "Adjust crop region",
+    "durationZero": "0s",
+    "durationSeconds": "{count}s",
+    "fileSizeUnknown": "—",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
@@ -2675,7 +2697,8 @@
       "rolePermissions": "Role-based permissions"
     },
     "freePerks": {
-      "maxRuntime": "{duration} max runtime"
+      "maxRuntime": "{duration} max runtime",
+      "freeRuns": "{count} free run | {count} free runs"
     },
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
@@ -2785,22 +2808,6 @@
     "pricingBlurbQuestions": "questions",
     "pricingBlurbEnterprise": "enterprise discussions",
     "pricingBlurbClickHere": "click here",
-    "freeTier": {
-      "title": "You're on the Free plan",
-      "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
-      "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
-      "descriptionQuota": "Your free plan includes {runs} runs to get started with Comfy Cloud — no card needed.",
-      "nextRefresh": "Your credits refresh on {date}.",
-      "subscribeCta": "Subscribe for more",
-      "outOfCredits": {
-        "title": "You're out of free credits",
-        "subtitle": "Subscribe to add top-ups and more"
-      },
-      "topUpBlocked": {
-        "title": "Add top-ups and more"
-      },
-      "upgradeCta": "View plans"
-    },
     "partnerNodesCredits": "Partner nodes pricing",
     "partnerNodesPricingTable": "Partner Nodes pricing table",
     "plansAndPricing": "Plans & pricing",
@@ -3007,6 +3014,39 @@
       "noInvites": "No pending invites",
       "noMembers": "No members",
       "searchPlaceholder": "Search..."
+    },
+    "partnerNodes": {
+      "title": "Partner node access",
+      "unrestricted": "Unrestricted",
+      "restricted": "Restricted",
+      "accessMode": "Partner node access mode",
+      "unrestrictedDescription": "Partner nodes from every provider are available to everyone. Disabling providers will set this to Restricted.",
+      "restrictedDescription": "Only partner nodes from enabled providers are available. Changes can take up to 10 minutes to apply.",
+      "searchPlaceholder": "Search providers and partner nodes...",
+      "tableLabel": "Partner node providers",
+      "columns": {
+        "provider": "Provider",
+        "nodes": "Nodes"
+      },
+      "nodeCount": "{count} enabled",
+      "enableAll": "Enable all",
+      "disableAll": "Disable all",
+      "toggleProvider": "Set access for {provider}",
+      "disableAllTitle": "Disable all providers?",
+      "disableAllMessage": "All providers will be turned off. Partner nodes will be unavailable while access is restricted.",
+      "restrictAccessTitle": "Restrict access to partner nodes?",
+      "restrictAccessMessage": "Workspace members will only be able to use partner nodes from providers that you enable.",
+      "restrictAccessHint": "This can take up to 10 minutes to apply across your workspace.",
+      "allowAllAccessTitle": "Allow access to all partner nodes?",
+      "allowAllAccessMessage": "Partner nodes from every provider will become available to every workspace member.",
+      "allowAllAccessHint": "This can take up to 10 minutes to apply across your workspace.",
+      "saveError": "Partner node access couldn't be updated. Try again.",
+      "loading": "Loading partner node access",
+      "loadError": "Partner node access couldn't be loaded.",
+      "unavailable": "Partner node access is unavailable for this workspace.",
+      "retry": "Try again",
+      "ownerOnly": "Only workspace owners can update partner node access.",
+      "noResults": "No providers or partner nodes found"
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
@@ -3651,7 +3691,6 @@
     "feedback": "Feedback",
     "feedbackTooltip": "Feedback",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
-    "freeTierRunsExhausted": "No runs left",
     "freeTierPartner": "Partner nodes need a paid plan",
     "share": "Share",
     "shareTooltip": "Share workflow"
@@ -3693,9 +3732,9 @@
     "checkingAssets": "Checking media visibility…",
     "acknowledgeCheckbox": "I understand anyone with the link can view these files",
     "inLibrary": "In library",
-    "comfyHubTitle": "Upload to ComfyHub",
-    "comfyHubDescription": "ComfyHub is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
-    "comfyHubButton": "Upload to ComfyHub"
+    "comfyHubTitle": "Upload to Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
+    "comfyHubButton": "Upload to Comfy Workflows"
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",
@@ -3711,12 +3750,12 @@
     "loadError": "Could not load this shared workflow. Please try again later."
   },
   "comfyHubPublish": {
-    "title": "Publish to ComfyHub",
-    "unsavedDescription": "You must save your workflow before publishing to ComfyHub. Save it now to continue.",
+    "title": "Publish to Comfy Workflows",
+    "unsavedDescription": "You must save your workflow before publishing to Comfy Workflows. Save it now to continue.",
     "stepDescribe": "Describe your workflow",
     "stepExamples": "Add output examples",
     "stepFinish": "Finish publishing",
-    "workflowName": "Hub title",
+    "workflowName": "Title",
     "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
     "workflowDescription": "Workflow description",
     "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people know what to expect.",
@@ -3742,7 +3781,7 @@
     "uploadThumbnailHint": "1:1 preferred, 1080p max",
     "back": "Back",
     "next": "Next",
-    "publishButton": "Publish to ComfyHub",
+    "publishButton": "Publish to Comfy Workflows",
     "updateButton": "Update workflow",
     "examplesDescription": "Add up to {total} additional sample images",
     "uploadAnImage": "Click to browse or drag an image",
@@ -3754,26 +3793,26 @@
     "maxExamples": "You can select up to {max} examples",
     "shareAs": "Share as",
     "additionalInfo": "Additional information",
-    "createProfileToPublish": "Create a profile to publish to ComfyHub",
+    "createProfileToPublish": "Create a profile to publish to Comfy Workflows",
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
     "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
     "publishSuccessTitle": "Published successfully",
-    "publishSuccessDescription": "Your workflow is now live on ComfyHub."
+    "publishSuccessDescription": "Your workflow is now live on Comfy Workflows."
   },
   "comfyHubProfile": {
     "checkingAccess": "Checking your publishing access...",
     "profileCreationNav": "Profile creation",
-    "introTitle": "Publish to the ComfyHub",
+    "introTitle": "Publish to Comfy Workflows",
     "introDescription": "Publish your workflows, build your portfolio and get discovered by millions of users",
-    "updateIntroTitle": "Update your ComfyHub workflow",
-    "updateIntroDescription": "Push your latest changes to ComfyHub. Your share link and stats stay the same.",
-    "introSubtitle": "To share your workflow on ComfyHub, let's first create your profile.",
+    "updateIntroTitle": "Update your workflow on Comfy Workflows",
+    "updateIntroDescription": "Push your latest changes to Comfy Workflows. Your share link and stats stay the same.",
+    "introSubtitle": "To share your workflow on Comfy Workflows, let's first create your profile.",
     "createProfileButton": "Create my profile",
     "startPublishingButton": "Start publishing",
     "startUpdatingButton": "Update workflow",
-    "modalTitle": "Create your profile on ComfyHub",
-    "createProfileTitle": "Create your Comfy Hub profile",
+    "modalTitle": "Create your profile on Comfy Workflows",
+    "createProfileTitle": "Create your Comfy Workflows profile",
     "uploadCover": "+ Upload a cover",
     "uploadProfilePicture": "+ Upload a profile picture",
     "chooseProfilePicture": "Choose a profile picture",

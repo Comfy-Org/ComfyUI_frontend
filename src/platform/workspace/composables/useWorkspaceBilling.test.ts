@@ -847,6 +847,23 @@ describe('useWorkspaceBilling', () => {
       expect(billing.isLoading.value).toBe(false)
     })
 
+    it('keeps the mutation successful when reconciliation fails', async () => {
+      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.getBillingStatus.mockRejectedValue(
+        new Error('status unavailable')
+      )
+      mockWorkspaceApi.getBillingBalance.mockRejectedValue(
+        new Error('balance unavailable')
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.resubscribe()).resolves.toBeUndefined()
+      expect(mockWorkspaceApi.resubscribe).toHaveBeenCalledOnce()
+      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledOnce()
+      expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledOnce()
+    })
+
     it('sets error, rethrows, and skips the refresh when the API call fails', async () => {
       mockWorkspaceApi.resubscribe.mockRejectedValue(
         new Error('reactivation failed')

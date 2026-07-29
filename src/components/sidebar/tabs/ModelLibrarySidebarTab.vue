@@ -67,7 +67,7 @@
 
 <script setup lang="ts">
 import { Divider } from 'primevue'
-import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
+import { computed, onMounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
@@ -107,7 +107,7 @@ const searchQuery = ref<string>('')
  */
 const activeSearchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
-const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
+const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 // Search results render expanded and un-virtualized, and the tree's cost is
 // O(n^2) in mounted rows, so an unbounded result set hangs the tab on large
@@ -132,6 +132,7 @@ const searchResults = computed<{ models: ComfyModelDef[]; capped: boolean }>(
 )
 
 const handleSearch = async (query: string) => {
+  autoExpandedSearchKeys.clear()
   activeSearchQuery.value = query
   if (!query) {
     expandedKeys.value = {}
@@ -139,7 +140,6 @@ const handleSearch = async (query: string) => {
   }
   // Load all models to ensure results cover folders not yet opened
   await modelStore.loadModels()
-  await expandSearchResults()
 }
 
 type ModelOrFolder = ComfyModelDef | ModelFolder
@@ -153,15 +153,30 @@ const root = computed<TreeNode>(() => {
   )
 })
 
-// Expansion runs from handleSearch when the QUERY commits, never on root
-// recomputes: a background reload during an active search must neither
-// re-expand folders the user collapsed nor pay a full expand-and-mount pass
-// per folder commit.
-async function expandSearchResults() {
-  if (!activeSearchQuery.value) return
-  await nextTick()
-  expandNode(root.value)
+/**
+ * Folder keys already auto-expanded for the current query. Expansion runs
+ * once per key: the query's initial result set opens on commit, and a
+ * background reload (e.g. a scan completing mid-search) opens only folders
+ * newly appearing in the results. A folder the user collapsed keeps its key
+ * here and stays collapsed, and an unchanged tree costs no expand pass.
+ */
+const autoExpandedSearchKeys = new Set<string>()
+
+function expandNewSearchFolders(node: TreeNode) {
+  if (node.leaf || typeof node.key !== 'string') return
+  if (!autoExpandedSearchKeys.has(node.key)) {
+    autoExpandedSearchKeys.add(node.key)
+    expandedKeys.value[node.key] = true
+  }
+  for (const child of node.children ?? []) {
+    expandNewSearchFolders(child)
+  }
 }
+
+watch(root, (newRoot) => {
+  if (!activeSearchQuery.value) return
+  expandNewSearchFolders(newRoot)
+})
 
 const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
