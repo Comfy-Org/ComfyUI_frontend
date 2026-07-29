@@ -79,6 +79,7 @@ describe('initDatadogRum', () => {
     hoisted.init.mockImplementation(() => {
       expect(hoisted.context).toEqual({
         bucket: 'canary',
+        comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
         version: __COMFYUI_FRONTEND_COMMIT__
       })
     })
@@ -98,6 +99,7 @@ describe('initDatadogRum', () => {
 
     expect(hoisted.context).toEqual({
       bucket: 'canary',
+      comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
       version: __COMFYUI_FRONTEND_COMMIT__
     })
     expect(hoisted.init).toHaveBeenCalledOnce()
@@ -128,6 +130,7 @@ describe('initDatadogRum', () => {
     expect(hoisted.init).toHaveBeenCalledOnce()
     expect(hoisted.context).toEqual({
       bucket: 'canary',
+      comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
       version: __COMFYUI_FRONTEND_COMMIT__
     })
   })
@@ -143,6 +146,7 @@ describe('initDatadogRum', () => {
 
     expect(hoisted.context).toEqual({
       bucket: 'stable',
+      comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
       version: __COMFYUI_FRONTEND_COMMIT__
     })
   })
@@ -156,7 +160,9 @@ describe('initDatadogRum', () => {
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(hoisted.context).toEqual({})
+    expect(hoisted.context).toEqual({
+      comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
+    })
   })
 
   it('leaves traffic unclassified when the probe reaches another version', async () => {
@@ -171,7 +177,9 @@ describe('initDatadogRum', () => {
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(hoisted.context).toEqual({})
+    expect(hoisted.context).toEqual({
+      comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
+    })
   })
 
   it('leaves traffic unclassified when the header probe fails', async () => {
@@ -179,7 +187,9 @@ describe('initDatadogRum', () => {
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(hoisted.context).toEqual({})
+    expect(hoisted.context).toEqual({
+      comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
+    })
     expect(hoisted.init).toHaveBeenCalledOnce()
   })
 
@@ -188,7 +198,9 @@ describe('initDatadogRum', () => {
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(hoisted.context).toEqual({})
+    expect(hoisted.context).toEqual({
+      comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
+    })
     expect(hoisted.init).toHaveBeenCalledOnce()
   })
 
@@ -208,7 +220,9 @@ describe('initDatadogRum', () => {
     abortController.abort()
     await initialization
 
-    expect(hoisted.context).toEqual({})
+    expect(hoisted.context).toEqual({
+      comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
+    })
     expect(hoisted.init).toHaveBeenCalledOnce()
   })
 
