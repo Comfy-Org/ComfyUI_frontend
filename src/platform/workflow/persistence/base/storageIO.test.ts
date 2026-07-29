@@ -330,15 +330,26 @@ describe('storageIO', () => {
       expect(
         sessionStorage.getItem('Comfy.Workflow.OpenPaths:client-2')
       ).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.PreviousWorkflow:client-1')
+      ).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.OpenWorkflowsPaths:client-1')
+      ).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.ActiveWorkflowIndex:client-1')
+      ).toBeNull()
       expect(sessionStorage.getItem('workflow:client-1')).toBeNull()
       expect(sessionStorage.getItem('unrelated')).toBe('keep')
     })
 
-    it('blocks workflow writes after cleanup starts', () => {
-      clearAllWorkflowStorage({ blockWrites: true })
+    it('blocks workflow writes after cleanup starts', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      isolatedStorageIO.clearAllWorkflowStorage({ blockWrites: true })
 
       expect(
-        writeIndex('ws-1', {
+        isolatedStorageIO.writeIndex('ws-1', {
           v: 2,
           updatedAt: 1,
           order: [],
@@ -346,13 +357,16 @@ describe('storageIO', () => {
         })
       ).toBe(false)
       expect(
-        writePayload('ws-1', 'draft-1', { data: '{}', updatedAt: 1 })
+        isolatedStorageIO.writePayload('ws-1', 'draft-1', {
+          data: '{}',
+          updatedAt: 1
+        })
       ).toBe(false)
-      writeActivePath('client-1', {
+      isolatedStorageIO.writeActivePath('client-1', {
         workspaceId: 'ws-1',
         path: 'workflows/a.json'
       })
-      writeOpenPaths('client-1', {
+      isolatedStorageIO.writeOpenPaths('client-1', {
         workspaceId: 'ws-1',
         paths: ['workflows/a.json'],
         activeIndex: 0
