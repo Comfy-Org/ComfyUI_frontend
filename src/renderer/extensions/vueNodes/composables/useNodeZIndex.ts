@@ -5,6 +5,7 @@
  * Integrates with the layout system to ensure proper visual ordering.
  */
 import type { NodeId } from '@/types/nodeId'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -19,6 +20,7 @@ interface NodeZIndexOptions {
 export function useNodeZIndex(options: NodeZIndexOptions = {}) {
   const { layoutSource = LayoutSource.Vue } = options
   const layoutMutations = useLayoutMutations()
+  const canvasStore = useCanvasStore()
 
   /**
    * Bring node to front (highest z-index)
@@ -26,8 +28,11 @@ export function useNodeZIndex(options: NodeZIndexOptions = {}) {
    * @param source - Optional source override
    */
   function bringNodeToFront(nodeId: NodeId, source?: LayoutSource) {
+    const { rootGraphId } = canvasStore
+    if (!rootGraphId) return
+
     layoutMutations.setSource(source ?? layoutSource)
-    layoutMutations.bringNodeToFront(nodeId)
+    layoutMutations.bringNodeToFront(rootGraphId, nodeId)
   }
 
   return {

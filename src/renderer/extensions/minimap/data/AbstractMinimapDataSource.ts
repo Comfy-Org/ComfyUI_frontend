@@ -1,6 +1,7 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { calculateNodeBounds } from '@/renderer/core/spatial/boundsCalculator'
 import type { PositionedNode } from '@/renderer/core/spatial/boundsCalculator'
+import { useLinkStore } from '@/stores/linkStore'
 
 import type {
   IMinimapDataSource,
@@ -64,6 +65,8 @@ export abstract class AbstractMinimapDataSource implements IMinimapDataSource {
   }
 
   protected extractLinksFromGraph(graph: LGraph): MinimapLinkData[] {
+    const linkStore = useLinkStore()
+    const rootGraphId = graph.rootGraph.id
     const links: MinimapLinkData[] = []
     const nodeMap = new Map(this.getNodes().map((n) => [n.id, n]))
 
@@ -73,21 +76,20 @@ export abstract class AbstractMinimapDataSource implements IMinimapDataSource {
       const sourceNodeData = nodeMap.get(node.id)
       if (!sourceNodeData) continue
 
-      for (const output of node.outputs) {
-        if (!output.links) continue
-
-        for (const linkId of output.links) {
-          const link = graph.links[linkId]
-          if (!link) continue
-
-          const targetNodeData = nodeMap.get(link.target_id)
+      for (const [slot] of node.outputs.entries()) {
+        for (const topology of linkStore.getOutputSlotLinks(
+          rootGraphId,
+          node.id,
+          slot
+        )) {
+          const targetNodeData = nodeMap.get(topology.targetNodeId)
           if (!targetNodeData) continue
 
           links.push({
             sourceNode: sourceNodeData,
             targetNode: targetNodeData,
-            sourceSlot: link.origin_slot,
-            targetSlot: link.target_slot
+            sourceSlot: topology.originSlot,
+            targetSlot: topology.targetSlot
           })
         }
       }

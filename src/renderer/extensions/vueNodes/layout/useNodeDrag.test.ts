@@ -6,9 +6,12 @@ import type { Ref } from 'vue'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
 // of manually mocking every dependency. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/10765
+const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
+
 const testState = vi.hoisted(() => {
   // Imports are unavailable inside vi.hoisted() so shoehorn's fromAny cannot
   // be used here. This local identity function serves the same purpose
@@ -62,6 +65,7 @@ vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
+    rootGraphId: ROOT_GRAPH_ID,
     selectedNodeIds: testState.selectedNodeIds,
     selectedItems: testState.selectedItems,
     canvas: {
@@ -85,7 +89,7 @@ vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getNodeLayoutRef: (nodeId: string) =>
+    getNodeLayoutRef: (_rootGraphId: string, nodeId: string) =>
       ref(testState.nodeLayouts.get(nodeId) ?? null),
     batchUpdateNodeBounds: testState.batchUpdateNodeBounds
   }
@@ -111,7 +115,7 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
 }))
 
 vi.mock('@/utils/litegraphUtil', () => ({
-  isLGraphGroup: () => false
+  isLGraphNode: () => false
 }))
 
 vi.mock('@vueuse/core', () => ({
@@ -130,28 +134,28 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
   return fromPartial<PointerEvent>({ clientX, clientY, target, pointerId: 1 })
 }
 
-describe('useNodeDrag', () => {
-  beforeEach(() => {
-    testState.selectedNodeIds = ref(new Set<NodeId>())
-    testState.selectedItems = ref<unknown[]>([])
-    testState.nodeLayouts.clear()
-    testState.nodeSnap.shouldSnap.mockReturnValue(false)
-    testState.nodeSnap.applySnapToPosition.mockImplementation(
-      (pos: { x: number; y: number }) => pos
-    )
-    testState.requestAnimationFrameCallback = null
-    testState.capturedOnPan.current = null
-    testState.capturedAutoPanInstance.current = null
-    testState.mockDs.offset = [0, 0]
-    testState.mockDs.scale = 1
+beforeEach(() => {
+  testState.selectedNodeIds = ref(new Set<NodeId>())
+  testState.selectedItems = ref<unknown[]>([])
+  testState.nodeLayouts.clear()
+  testState.nodeSnap.shouldSnap.mockReturnValue(false)
+  testState.nodeSnap.applySnapToPosition.mockImplementation(
+    (pos: { x: number; y: number }) => pos
+  )
+  testState.requestAnimationFrameCallback = null
+  testState.capturedOnPan.current = null
+  testState.capturedAutoPanInstance.current = null
+  testState.mockDs.offset = [0, 0]
+  testState.mockDs.scale = 1
 
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      testState.requestAnimationFrameCallback = cb
-      return 1
-    })
-    vi.stubGlobal('cancelAnimationFrame', testState.cancelAnimationFrame)
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+    testState.requestAnimationFrameCallback = cb
+    return 1
   })
+  vi.stubGlobal('cancelAnimationFrame', testState.cancelAnimationFrame)
+})
 
+describe('useNodeDrag', () => {
   it('batches multi-node drag updates into one mutation call per frame', () => {
     testState.selectedNodeIds.value = new Set([node1, toNodeId('2')])
     testState.nodeLayouts.set('1', {
@@ -170,10 +174,13 @@ describe('useNodeDrag', () => {
     testState.requestAnimationFrameCallback?.(0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
-    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
-      { nodeId: '1', position: { x: 120, y: 120 } },
-      { nodeId: '2', position: { x: 220, y: 200 } }
-    ])
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      [
+        { nodeId: '1', position: { x: 120, y: 120 } },
+        { nodeId: '2', position: { x: 220, y: 200 } }
+      ]
+    )
     expect(testState.mutationFns.moveNode).not.toHaveBeenCalled()
   })
 
@@ -191,9 +198,10 @@ describe('useNodeDrag', () => {
     testState.requestAnimationFrameCallback?.(0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
-    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
-      { nodeId: '1', position: { x: 70, y: 100 } }
-    ])
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      [{ nodeId: '1', position: { x: 70, y: 100 } }]
+    )
     expect(testState.mutationFns.moveNode).not.toHaveBeenCalled()
   })
 
@@ -218,17 +226,20 @@ describe('useNodeDrag', () => {
     expect(testState.cancelAnimationFrame).toHaveBeenCalledTimes(1)
     expect(testState.cancelAnimationFrame).toHaveBeenCalledWith(1)
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
-      {
-        nodeId: '1',
-        bounds: {
-          x: 55,
-          y: 87,
-          width: 180,
-          height: 110
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      [
+        {
+          nodeId: '1',
+          bounds: {
+            x: 55,
+            y: 87,
+            width: 180,
+            height: 110
+          }
         }
-      }
-    ])
+      ]
+    )
   })
 })
 
@@ -269,18 +280,20 @@ describe('useNodeDrag auto-pan', () => {
     drag.handleDrag(pointerEvent(760, 300), node1)
     testState.requestAnimationFrameCallback?.(0)
 
-    expect(testState.mutationFns.batchMoveNodes).toHaveBeenLastCalledWith([
-      { nodeId: '1', position: { x: 110, y: 200 } }
-    ])
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenLastCalledWith(
+      ROOT_GRAPH_ID,
+      [{ nodeId: '1', position: { x: 110, y: 200 } }]
+    )
 
     testState.mutationFns.batchMoveNodes.mockClear()
 
     testState.mockDs.offset[0] -= 5
     testState.capturedOnPan.current!(5, 0)
 
-    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
-      { nodeId: '1', position: { x: 115, y: 200 } }
-    ])
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      [{ nodeId: '1', position: { x: 115, y: 200 } }]
+    )
   })
 
   it('moves all selected nodes when auto-pan fires', () => {
@@ -295,7 +308,7 @@ describe('useNodeDrag auto-pan', () => {
     testState.capturedOnPan.current!(5, 0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
-    const calls = testState.mutationFns.batchMoveNodes.mock.calls[0][0]
+    const calls = testState.mutationFns.batchMoveNodes.mock.calls[0][1]
     const nodeIds = calls.map((u: { nodeId: string }) => u.nodeId)
     expect(nodeIds).toContain('1')
     expect(nodeIds).toContain('2')
@@ -360,5 +373,66 @@ describe('useNodeDrag auto-pan', () => {
     onPan(5, 0)
 
     expect(testState.mutationFns.batchMoveNodes).not.toHaveBeenCalled()
+  })
+})
+
+describe('useNodeDrag non-node positionables', () => {
+  /**
+   * Models just the Positionable contract the drag path uses. Real LGraphGroup
+   * would be preferable; see the harness TODO at the top of this file.
+   */
+  function selectedGroupAt(x: number, y: number) {
+    const pos: [number, number] = [x, y]
+    const group = {
+      pos,
+      pinned: false,
+      move(deltaX: number, deltaY: number) {
+        if (group.pinned) return
+        pos[0] += deltaX
+        pos[1] += deltaY
+      }
+    }
+    testState.selectedItems.value = [group]
+    return group
+  }
+
+  function dragNodeBy(delta: number) {
+    testState.selectedNodeIds.value = new Set([node1])
+    testState.nodeLayouts.set('1', {
+      position: { x: 0, y: 0 },
+      size: { width: 100, height: 50 }
+    })
+
+    const { startDrag, handleDrag } = useNodeDrag()
+    startDrag(pointerEvent(0, 0), node1)
+    handleDrag(pointerEvent(delta, delta), node1)
+    testState.requestAnimationFrameCallback?.(0)
+  }
+
+  it('moves a selected group to the same absolute offset as the nodes', () => {
+    const group = selectedGroupAt(300, 400)
+
+    dragNodeBy(25)
+
+    expect([...group.pos]).toEqual([325, 425])
+  })
+
+  it('leaves a pinned group where it is', () => {
+    const group = selectedGroupAt(300, 400)
+    group.pinned = true
+
+    dragNodeBy(25)
+
+    expect([...group.pos]).toEqual([300, 400])
+  })
+
+  it('carries non-node items along when auto-pan shifts the canvas', () => {
+    const group = selectedGroupAt(300, 400)
+
+    dragNodeBy(25)
+    testState.capturedOnPan.current?.(10, 5)
+    testState.requestAnimationFrameCallback?.(0)
+
+    expect([...group.pos]).toEqual([335, 430])
   })
 })

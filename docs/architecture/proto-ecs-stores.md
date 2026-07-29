@@ -6,20 +6,44 @@ For the full problem analysis, see [Entity Problems](entity-problems.md). For th
 
 ## 1. What's Already Extracted
 
-Six dedicated stores extract entity state out of class instances into focused,
+Nine dedicated stores extract entity state out of class instances into focused,
 queryable registries, each owning one concern. Promoted value-widget topology is
 no longer a store; ADR 0009 represents it as ordinary linked `SubgraphInput`
 state, and promoted value data lives in `WidgetValueStore` keyed by the input's
 `WidgetId`.
 
-| Store                   | Extracts From       | Scoping           | Key Format                         | Data Shape                    |
-| ----------------------- | ------------------- | ----------------- | ---------------------------------- | ----------------------------- |
-| WidgetValueStore        | `BaseWidget`        | `graphId`         | `WidgetId` (`graphId:nodeId:name`) | Plain `WidgetState` object    |
-| DomWidgetStore          | `BaseDOMWidget`     | Global            | `widgetId` (UUID)                  | Position, visibility, z-index |
-| LayoutStore             | Node, Link, Reroute | Workflow-level    | `nodeId`, `linkId`, `rerouteId`    | Y.js CRDT maps (pos, size)    |
-| NodeOutputStore         | Execution results   | `nodeLocatorId`   | `"${subgraphId}:${nodeId}"`        | Output data, preview URLs     |
-| SubgraphNavigationStore | Canvas viewport     | `subgraphId`      | `subgraphId` or `'root'`           | LRU viewport cache            |
-| PreviewExposureStore    | Subgraph host node  | host node locator | host locator + exposure name       | Display-only preview state    |
+| Store                   | Extracts From                       | Scoping                        | Key Format                                                         | Data Shape                    |
+| ----------------------- | ----------------------------------- | ------------------------------ | ------------------------------------------------------------------ | ----------------------------- |
+| WidgetValueStore        | `BaseWidget`                        | `graphId`                      | `WidgetId` (`graphId:nodeId:name`)                                 | Plain `WidgetState` object    |
+| DomWidgetStore          | `BaseDOMWidget`                     | Global                         | `widgetId` (UUID)                                                  | Position, visibility, z-index |
+| LayoutStore             | Node, Link, Group, Reroute geometry | Root graph for groups/reroutes | Raw node/link IDs; `${rootGraphId}:${localId}` for groups/reroutes | Y.js CRDT maps (pos, size)    |
+| NodeOutputStore         | Execution results                   | `nodeLocatorId`                | `"${subgraphId}:${nodeId}"`                                        | Output data, preview URLs     |
+| SubgraphNavigationStore | Canvas viewport                     | `subgraphId`                   | `subgraphId` or `'root'`                                           | LRU viewport cache            |
+| PreviewExposureStore    | Subgraph host node                  | host node locator              | host locator + exposure name                                       | Display-only preview state    |
+| LinkStore               | `LLink`                             | Root graph                     | `` `${targetNodeId}:${targetSlot}` `` (target input slot)          | Plain `LinkTopology` object   |
+| RerouteStore            | `Reroute`                           | Root graph                     | `RerouteId`                                                        | Plain `RerouteChain` object   |
+| NodeDataStore           | `LGraphNode` shell state            | Root graph                     | `NodeId`                                                           | Plain `NodeState` object      |
+
+**Update (2026-07-05):** `LinkStore` (`src/stores/linkStore.ts`, PR #13436) and
+`RerouteStore` (`src/stores/rerouteStore.ts`, PR #13449) hold plain-data records
+in reactive `Map` buckets — not Y.js — scoped by root graph (subgraphs share
+their root's bucket). Floating links and links targeting subgraph outputs live
+in a per-graph unkeyed side set. Design records:
+[Link Topology Store](link-topology-store.md),
+[Reroute Chain Store](reroute-chain-store.md).
+
+**Update (2026-07-22):** `NodeDataStore` (`src/stores/nodeDataStore.ts`) holds
+one plain `NodeState` per node in root-graph-scoped buckets keyed by `NodeId`.
+`LGraphNode` adopts the store's reactive proxy as its `_state` and its shell
+fields become accessors over it, so there is no copy. This deleted the
+`VueNodeData` mirror and all of `useGraphNodeManager`. Design record:
+[Node Data Store](node-data-store.md).
+
+**Update (2026-07-14, reversed):** `NodeBadgeStore` shipped in PR #13458 and was
+then deleted — badge rows are cheaper to derive on read than to store, so
+`src/systems/badgeSystem.ts` computes them from the stores that already own the
+inputs. There is no `src/stores/nodeBadgeStore.ts`. See
+[Node Badge Store](node-badge-store.md) for the reversal.
 
 ADR 0009 refines promoted-widget identity: promoted value widgets are keyed by
 the host boundary (`host node locator + SubgraphInput.name`), while interior
@@ -148,42 +172,57 @@ The most architecturally advanced extraction — uses Y.js CRDTs for collaborati
 ### State Shape
 
 ```
-ynodes:    Y.Map<NodeLayoutMap>     // nodeId → { pos, size, zIndex, bounds }
-ylinks:    Y.Map<Y.Map<...>>       // linkId → link layout data
-yreroutes: Y.Map<Y.Map<...>>       // rerouteId → reroute layout data
+ynodes:    Y.Map<NodeLayoutMap>     // nodeId → { rect, zIndex }
+ygroups:   Y.Map<GroupLayoutMap>    // rootGraphId:groupId → geometry
+
+yreroutes: Y.Map<Y.Map<...>>       // rootGraphId:rerouteId → { id, position }
 ```
+
+**Update (2026-07-05):** The link-connectivity mirror (`ylinks`, `LinkData`,
+`createLink`/`removeLink` mutations, `findLinksConnectedToNode`) was deleted
+when link topology moved to `LinkStore` (PR #13436). LayoutStore now owns only
+link/segment _geometry_ caches, and `RerouteData` carries `{ id, position }`
+only — the write-only `parentId`/`linkIds` fields were removed.
 
 ### Write API
 
 `useLayoutMutations()` (`src/renderer/core/layout/operations/layoutMutations.ts`) provides the mutation API:
 
-- `moveNode(graphId, nodeId, pos)`
-- `resizeNode(graphId, nodeId, size)`
-- `setNodeZIndex(graphId, nodeId, zIndex)`
-- `createLink(graphId, linkId, ...)`
-- `removeLink(graphId, linkId)`
-- `moveReroute(graphId, rerouteId, pos)`
+- `moveNode(nodeId, pos)` / `batchMoveNodes(...)`
+- `resizeNode(nodeId, size)`
+- `setNodeZIndex(nodeId, zIndex)` / `bringNodeToFront(nodeId)`
+- `createNode(nodeId, layout)` / `deleteNode(nodeId)`
+- `createReroute(rootGraphId, rerouteId, pos)` /
+  `deleteReroute(rootGraphId, rerouteId)` /
+  `moveReroute(rootGraphId, rerouteId, pos)`
+- `createGroup(rootGraphId, groupId, layout)` /
+  `setGroupBounds(rootGraphId, groupId, pos, size)` /
+  `deleteGroup(rootGraphId, groupId)`
+
+(`createLink`/`removeLink` are gone — link topology is `LinkStore`'s concern.)
 
 ### The Scattered Access Problem
 
 This composable is called at **module scope** in domain objects:
 
-- `LLink.ts:24` — `const layoutMutations = useLayoutMutations()`
-- `Reroute.ts` — same pattern
+- `Reroute.ts:31` — `const layoutMutations = useLayoutMutations()`
 - `LGraphNode.ts` — imported and called in methods
+- `LLink.ts` no longer uses `useLayoutMutations` (its layout writes went away
+  with the `ylinks` mirror), but it still imports `layoutStore` and
+  `useLinkStore` at module scope
 
 These module-scope calls create implicit dependencies on the Vue runtime and make the domain objects untestable without a full app context.
 
 ### ECS Alignment
 
-| Aspect                       | ECS-like  | Why                                                     |
-| ---------------------------- | --------- | ------------------------------------------------------- |
-| Position data extracted      | Yes       | Closest to the ECS `Position` component                 |
-| CRDT-ready                   | Yes       | Enables collaboration (ADR 0003)                        |
-| Covers multiple entity kinds | Yes       | Nodes, links, reroutes in one store                     |
-| Mutation API (composable)    | Partially | System-like, but called from entities, not a system     |
-| Module-scope access          | **No**    | Domain objects import store at module level             |
-| Per-store keying             | Yes       | Owns `nodeId`/`linkId`/`rerouteId` keys for its concern |
+| Aspect                       | ECS-like  | Why                                                       |
+| ---------------------------- | --------- | --------------------------------------------------------- |
+| Position data extracted      | Yes       | Closest to the ECS `Position` component                   |
+| CRDT-ready                   | Yes       | Enables collaboration (ADR 0003)                          |
+| Covers multiple entity kinds | Yes       | Nodes, links, groups, reroutes in one store               |
+| Mutation API (composable)    | Partially | System-like, but called from entities, not a system       |
+| Module-scope access          | **No**    | Domain objects import store at module level               |
+| Per-store keying             | Yes       | Uses raw node/link IDs and root-scoped group/reroute keys |
 
 ## 5. Pattern Analysis
 
@@ -234,12 +273,14 @@ graph TD
 
 Each store owns the identity scheme that fits its concern:
 
-| Store            | Key Format                         | Key Type           | Type-Safe?       |
-| ---------------- | ---------------------------------- | ------------------ | ---------------- |
-| WidgetValueStore | `WidgetId` (`graphId:nodeId:name`) | branded string     | Yes (`WidgetId`) |
-| DomWidgetStore   | Widget UUID                        | UUID (string)      | No               |
-| LayoutStore      | Raw nodeId/linkId/rerouteId        | Mixed number types | No               |
-| NodeOutputStore  | `"${subgraphId}:${nodeId}"`        | Composite string   | No               |
+| Store            | Key Format                                                         | Key Type         | Type-Safe?        |
+| ---------------- | ------------------------------------------------------------------ | ---------------- | ----------------- |
+| WidgetValueStore | `WidgetId` (`graphId:nodeId:name`)                                 | branded string   | Yes (`WidgetId`)  |
+| DomWidgetStore   | Widget UUID                                                        | UUID (string)    | No                |
+| LayoutStore      | Raw node/link IDs; `${rootGraphId}:${localId}` for groups/reroutes | Mixed/composite  | Partially         |
+| NodeOutputStore  | `"${subgraphId}:${nodeId}"`                                        | Composite string | No                |
+| LinkStore        | `` `${targetNodeId}:${targetSlot}` `` (root-scoped buckets)        | Composite string | No                |
+| RerouteStore     | `RerouteId` (root-scoped buckets)                                  | branded number   | Yes (`RerouteId`) |
 
 `WidgetValueStore` already keys on a branded `WidgetId` string (`src/types/widgetId.ts`),
 which carries its scope and survives renames at the store layer. The remaining
@@ -286,30 +327,31 @@ graph TD
 
     subgraph Link["LLink"]
         L_ext["Extracted:
-- layout data → LayoutStore"]
+- id, endpoints, type, parentId → LinkStore
+  (LLink._state IS the store entry;
+  fields are accessors over it)
+- segment geometry → LayoutStore"]
         L_rem["Remains on class:
-- origin_id, target_id
-- origin_slot, target_slot
-- type, color, path
+- color, path, _pos, _centreAngle
 - data, _dragging
 - disconnect(), resolve()"]
     end
 
     subgraph Reroute["Reroute"]
         R_ext["Extracted:
-- pos → LayoutStore"]
+- pos → LayoutStore (sole truth)
+- parentId, floating → RerouteStore
+- linkIds, floatingLinkIds → derived
+  from links' parentId chains"]
         R_rem["Remains on class:
-- parentId, linkIds
-- floatingLinkIds
-- color, draw()
+- colour, draw()
 - findSourceOutput()"]
     end
 
     subgraph Group["LGraphGroup"]
         G_ext["Extracted:
-(nothing)"]
+- pos, size, bounding → LayoutStore"]
         G_rem["Remains on class:
-- pos, size, bounding
 - title, font, color
 - _children, _nodes
 - draw(), move()
@@ -331,7 +373,7 @@ graph TD
     style W_ext fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
     style L_ext fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
     style R_ext fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
-    style G_ext fill:#4a1a1a,stroke:#6a2a2a,color:#e0e0e0
+    style G_ext fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
     style S_ext fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
 
     style N_rem fill:#4a1a1a,stroke:#6a2a2a,color:#e0e0e0
@@ -346,15 +388,19 @@ graph TD
 
 What each entity needs to reach the ECS target from [ADR 0008](../adr/0008-entity-component-system.md):
 
-| Entity       | Already Extracted                                                                | Still on Class                                                                       | ECS Target Components                                                                | Gap                                                                                        |
-| ------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| **Node**     | pos, size (LayoutStore)                                                          | type, visual, connectivity, execution, properties, widgets, rendering, serialization | Position, NodeVisual, NodeType, Connectivity, Execution, Properties, WidgetContainer | Large — 6 components unextracted, all behavior on class                                    |
-| **Link**     | layout (LayoutStore)                                                             | endpoints, visual, state, connectivity methods                                       | LinkEndpoints, LinkVisual, LinkState                                                 | Medium — 3 components unextracted                                                          |
-| **Widget**   | value, label, disabled (WidgetValueStore); DOM state (DomWidgetStore)            | node back-ref, rendering, events, layout                                             | WidgetIdentity, WidgetValue, WidgetLayout                                            | Small — value extraction done; rendering and layout remain                                 |
-| **Slot**     | (nothing)                                                                        | name, type, direction, link refs, visual, position                                   | SlotIdentity, SlotConnection, SlotVisual                                             | Full — no extraction started                                                               |
-| **Reroute**  | pos (LayoutStore)                                                                | links, visual, chain traversal                                                       | Position, RerouteLinks, RerouteVisual                                                | Medium — position done, rest unextracted                                                   |
-| **Group**    | (nothing)                                                                        | pos, size, meta, visual, children                                                    | Position, GroupMeta, GroupVisual, GroupChildren                                      | Full — no extraction started                                                               |
-| **Subgraph** | promoted value exposure (linked inputs); preview exposure (PreviewExposureStore) | structure, meta, I/O, all LGraph state                                               | SubgraphStructure, SubgraphMeta (as node components)                                 | Large — mostly unextracted; subgraph is a node with components, not a separate entity kind |
+| Entity       | Already Extracted                                                                         | Still on Class                                                                       | ECS Target Components                                                                | Gap                                                                                        |
+| ------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| **Node**     | pos, size (LayoutStore)                                                                   | type, visual, connectivity, execution, properties, widgets, rendering, serialization | Position, NodeVisual, NodeType, Connectivity, Execution, Properties, WidgetContainer | Large — 6 components unextracted, all behavior on class                                    |
+| **Link**     | endpoints, type, parentId (LinkStore, via `_state` proxy); segment geometry (LayoutStore) | visual (color, path), drag state, connectivity methods                               | LinkEndpoints ✅, LinkVisual, LinkState                                              | Small — topology shipped (PR #13436); visual state and slot mirrors remain                 |
+| **Widget**   | value, label, disabled (WidgetValueStore); DOM state (DomWidgetStore)                     | node back-ref, rendering, events, layout                                             | WidgetIdentity, WidgetValue, WidgetLayout                                            | Small — value extraction done; rendering and layout remain                                 |
+| **Slot**     | (nothing)                                                                                 | name, type, direction, link refs, visual, position                                   | SlotIdentity, SlotConnection, SlotVisual                                             | Full — no extraction started                                                               |
+| **Reroute**  | parentId, floating (RerouteStore); pos (LayoutStore, sole truth)                          | visual, chain traversal                                                              | Position ✅, RerouteChain ✅, RerouteVisual                                          | Small — chain shipped (PR #13449); visual remains                                          |
+| **Group**    | pos, size, bounding (LayoutStore)                                                         | meta, visual, children                                                               | Position ✅, GroupMeta, GroupVisual, GroupChildren                                   | Medium — geometry shipped; meta, visual and children remain                                |
+| **Subgraph** | promoted value exposure (linked inputs); preview exposure (PreviewExposureStore)          | structure, meta, I/O, all LGraph state                                               | SubgraphStructure, SubgraphMeta (as node components)                                 | Large — mostly unextracted; subgraph is a node with components, not a separate entity kind |
+
+`RerouteChain` supersedes the earlier `RerouteLinks` component (ADR 0008
+amendment, 2026-07-04): link membership is never stored — it is derived from
+the links' `parentId` chains over `LinkStore`.
 
 ### Priority Order for Extraction
 
@@ -362,8 +408,12 @@ Based on existing progress and problem severity:
 
 1. **Widget** — closest to done (value extraction complete, needs rendering/layout extraction)
 2. **Node Position** — already in LayoutStore, needs branded ID and formal component type
-3. **Link** — small component set, high coupling pain
+3. **Link** — ✅ topology shipped (LinkStore, PR #13436); slot mirrors
+   (`input.link`/`output.links`) and visual state remain
 4. **Slot** — no extraction yet, but small and self-contained
-5. **Reroute** — partially extracted, moderate complexity
-6. **Group** — no extraction, but least coupled to other entities
+   (`SlotConnection` input side now answerable via LinkStore)
+5. **Reroute** — ✅ chain and position shipped (RerouteStore, PR #13449;
+   LayoutStore, PR #14110); visual remains
+6. **Group** — ✅ geometry shipped (LayoutStore, PR #14110); meta, visual and
+   children remain
 7. **Subgraph** — not a separate entity kind; SubgraphStructure and SubgraphMeta become node components. Depends on Node and Link extraction first. See [Subgraph Boundaries](subgraph-boundaries-and-promotion.md)

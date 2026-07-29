@@ -1,22 +1,19 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type { IMinimapDataSource } from '../types'
 import { LayoutStoreDataSource } from './LayoutStoreDataSource'
 import { LiteGraphDataSource } from './LiteGraphDataSource'
 
 /**
- * Factory for creating the appropriate data source
+ * Node geometry has two homes: `layoutStore` under the Vue renderer,
+ * `node.pos` / `node.size` under the legacy canvas. Collapses to one source once
+ * geometry is unified (ADR 0008 phase 4a).
  */
 export class MinimapDataSourceFactory {
   static create(graph: LGraph | null): IMinimapDataSource {
-    // Check if LayoutStore has data
-    const layoutStoreHasData = layoutStore.getAllNodes().value.size > 0
-
-    if (layoutStoreHasData) {
-      return new LayoutStoreDataSource(graph)
-    }
-
-    return new LiteGraphDataSource(graph)
+    return LiteGraph.vueNodesMode
+      ? new LayoutStoreDataSource(graph)
+      : new LiteGraphDataSource(graph)
   }
 }

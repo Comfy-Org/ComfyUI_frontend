@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import { toNodeId } from '@/types/nodeId'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -50,18 +52,20 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
 
   test('Old workflow with converted input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/old_workflow_converted_input')
-    const node = await comfyPage.nodeOps.getNodeRefById('1')
-    const inputs = (await node.getProperty('inputs')) as {
-      name: string
-      link?: number | null
-    }[]
-    const vaeInput = inputs.find((w) => w.name === 'vae')
-    const convertedInput = inputs.find((w) => w.name === 'strength')
 
-    expect(vaeInput).toBeDefined()
-    expect(convertedInput).toBeDefined()
-    expect(vaeInput!.link).toBeNull()
-    expect(convertedInput!.link).not.toBeNull()
+    const linkState = await comfyPage.page.evaluate((nodeId) => {
+      const node = window.app!.graph!.getNodeById(nodeId)
+      if (!node) return null
+      const linkIdOf = (name: string) => {
+        const slot = node.inputs.findIndex((input) => input.name === name)
+        return slot === -1 ? 'missing' : (node.getInputLink(slot)?.id ?? null)
+      }
+      return { vae: linkIdOf('vae'), strength: linkIdOf('strength') }
+    }, toNodeId(1))
+
+    expect(linkState).not.toBeNull()
+    expect(linkState!.vae).toBeNull()
+    expect(linkState!.strength).toEqual(expect.any(Number))
   })
 
   test('Renamed converted input', async ({ comfyPage }) => {
