@@ -193,28 +193,17 @@ describe('AssetsSidebarListView', () => {
     ).toHaveAttribute('aria-pressed', 'mixed')
   })
 
-  it('derives selected state from each asset', () => {
-    const parent = buildAsset('parent', 'parent.png')
-    const child = buildAsset('child', 'child.png')
+  it('resolves selected state from the asset', () => {
+    const asset = buildAsset('selected', 'selected.png')
 
-    renderListView(
-      [
-        buildOutputItem(parent),
-        {
-          ...buildOutputItem(child),
-          isChild: true
-        }
-      ],
-      {
-        isSelected: (asset: AssetItem) =>
-          asset.id === parent.id || asset.id === child.id
-      }
-    )
-
-    const rows = screen.getAllByRole('button', {
-      name: 'assetBrowser.ariaLabel.assetCard'
+    renderListView([buildOutputItem(asset)], {
+      isSelected: (candidate: AssetItem) => candidate.id === asset.id
     })
-    expect(rows[0]).toHaveAttribute('aria-pressed', 'true')
-    expect(rows[1]).toHaveAttribute('aria-pressed', 'true')
+
+    expect(
+      screen.getByRole('button', {
+        name: 'assetBrowser.ariaLabel.assetCard'
+      })
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 })

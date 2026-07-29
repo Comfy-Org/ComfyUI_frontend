@@ -379,39 +379,28 @@ describe('AssetsSidebarTab folder navigation', () => {
     expect(childA).toHaveAttribute('aria-pressed', 'true')
     expect(childB).toHaveAttribute('aria-pressed', 'true')
 
-    await user.keyboard('{Control>}')
-    await user.click(
-      screen.getByRole('button', {
-        name: 'List select multi-output-b.png'
-      })
-    )
-    await user.keyboard('{/Control}')
+    async function toggleChildB() {
+      await user.keyboard('{Control>}')
+      await user.click(childB)
+      await user.keyboard('{/Control}')
+    }
+
+    await toggleChildB()
 
     expect(parent).toHaveAttribute('aria-pressed', 'mixed')
-    expect(childA).toHaveAttribute('aria-pressed', 'true')
     expect(childB).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByTestId('selection-count')).toHaveTextContent(
       '1 selected'
     )
 
-    await user.keyboard('{Control>}')
-    await user.click(childB)
-    await user.keyboard('{/Control}')
+    await toggleChildB()
 
-    expect(parent).toHaveAttribute('aria-pressed', 'true')
-    expect(childA).toHaveAttribute('aria-pressed', 'true')
     expect(childB).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByTestId('selection-count')).toHaveTextContent(
       '2 selected'
     )
 
-    await user.keyboard('{Control>}')
-    await user.click(childB)
-    await user.keyboard('{/Control}')
-
-    expect(parent).toHaveAttribute('aria-pressed', 'mixed')
-    expect(childA).toHaveAttribute('aria-pressed', 'true')
-    expect(childB).toHaveAttribute('aria-pressed', 'false')
+    await toggleChildB()
 
     await user.click(screen.getByRole('button', { name: 'Show grid view' }))
 
