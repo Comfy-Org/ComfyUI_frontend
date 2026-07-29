@@ -416,7 +416,7 @@ describe('useSubscriptionDialog', () => {
   })
 
   describe('show', () => {
-    it('opens the free-tier dialog for a free-tier personal user', () => {
+    it('sends a free-tier personal user straight to the pricing table', () => {
       mockIsFreeTier.value = true
       mockIsInPersonalWorkspace.value = true
       const { show } = useSubscriptionDialog()
@@ -424,7 +424,7 @@ describe('useSubscriptionDialog', () => {
       show()
 
       expect(mockShowLayoutDialog).toHaveBeenCalledWith(
-        expect.objectContaining({ key: 'free-tier-info' })
+        expect.objectContaining({ key: 'subscription-required' })
       )
     })
 
@@ -439,9 +439,6 @@ describe('useSubscriptionDialog', () => {
 
       expect(mockShowLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({ key: 'subscription-required' })
-      )
-      expect(mockShowLayoutDialog).not.toHaveBeenCalledWith(
-        expect.objectContaining({ key: 'free-tier-info' })
       )
       expect(mockTrackSubscription).not.toHaveBeenCalled()
     })
@@ -493,9 +490,6 @@ describe('useSubscriptionDialog', () => {
 
       expect(mockCloseDialog).toHaveBeenCalledWith({
         key: 'subscription-required'
-      })
-      expect(mockCloseDialog).toHaveBeenCalledWith({
-        key: 'free-tier-info'
       })
       expect(mockShowTeamWorkspacesDialog).toHaveBeenCalledWith(
         expect.any(Function)
