@@ -29,8 +29,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 /** sessionStorage key marking that we have already attempted a recovery reload. */
 export const CHUNK_RELOAD_GUARD_KEY = 'comfy:chunk-reload-attempted'
 
-let deferredReloadArmed = false
-
 function guardAlreadySet(storage: Storage): boolean {
   try {
     return storage.getItem(CHUNK_RELOAD_GUARD_KEY) !== null
@@ -95,11 +93,11 @@ function extractModuleUrl(reason: unknown): string | undefined {
 function isRecoverableChunkUrl(url: string | undefined): boolean {
   if (!url) return false
   try {
-    const parsed = new URL(url, window.location.origin)
-    return (
-      parsed.origin === window.location.origin &&
-      parsed.pathname.startsWith('/assets/')
-    )
+    // We only care about the path — app chunks live under /assets/. A throwaway
+    // base lets a relative URL parse; for an absolute URL the base is ignored.
+    // (App chunks are same-origin by nature, and reloading the current page is
+    // benign regardless, so a strict origin check would add nothing here.)
+    return new URL(url, 'http://localhost').pathname.startsWith('/assets/')
   } catch {
     return false
   }
@@ -144,9 +142,11 @@ export function attemptChunkReload(
  * during navigation (navigation implies the user moved on from the broken view).
  */
 function armDeferredReload(router?: Router, chunkUrl?: string): void {
-  if (!router || deferredReloadArmed) return
-  deferredReloadArmed = true
+  if (!router) return
 
+  // The sessionStorage guard already caps recovery at one reload per session, so
+  // if multiple deferred errors register a hook each, only the first to reach a
+  // safe navigation reloads; the rest see the guard set and remove themselves.
   const stop = router.afterEach(() => {
     const storage = window.sessionStorage
     if (guardAlreadySet(storage)) {
