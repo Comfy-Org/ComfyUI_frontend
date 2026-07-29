@@ -6,7 +6,7 @@ import { reactive, ref } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { externalLinks } from '../../config/routes'
-import Button from '../ui/button/Button.vue'
+import BrandButton from '../common/BrandButton.vue'
 import AngleNode from './AngleNode.vue'
 import ColorNode from './ColorNode.vue'
 import GraphLinks from './GraphLinks.vue'
@@ -130,15 +130,13 @@ function wrapperStyle(key: ElementKey) {
       <div
         class="pointer-events-none absolute bottom-[2em] left-1/2 z-20 flex -translate-x-1/2"
       >
-        <Button
-          as="a"
+        <BrandButton
           :href="externalLinks.cloudCta('hero_get_started_free')"
           variant="outline"
-          size="lg"
-          class="pointer-events-auto"
+          class="pointer-events-auto uppercase"
         >
           {{ t('hero.getStartedFree', locale) }}
-        </Button>
+        </BrandButton>
       </div>
 
       <div
