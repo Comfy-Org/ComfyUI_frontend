@@ -7,6 +7,7 @@ import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/rol
 
 import type { PromptResponse } from '@comfyorg/ingest-types'
 
+import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
 import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
@@ -45,6 +46,12 @@ const ACTIVE_SUBSCRIPTION: CloudSubscriptionStatusResponse = {
   is_active: true,
   subscription_id: 'sub_first_run_tour',
   renewal_date: '2099-01-01'
+}
+
+const NO_ASSETS: AssetResponse = {
+  assets: [],
+  total: 0,
+  has_more: false
 }
 
 function isPinned(id: string): id is SupportedTemplateId {
@@ -99,10 +106,11 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
     await page.route('**/api/features', (route) =>
       route.fulfill(jsonRoute(TOUR_FEATURE_FLAGS))
     )
-    // Without this the toolbar offers Subscribe to Run, and the tour's paywall
-    // guard consumes that click instead of running anything.
     await page.route('**/customers/cloud-subscription-status', (route) =>
       route.fulfill(jsonRoute(ACTIVE_SUBSCRIPTION))
+    )
+    await page.route('**/api/assets**', (route) =>
+      route.fulfill(jsonRoute(NO_ASSETS))
     )
   })
 
@@ -133,14 +141,16 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
     ).toBeVisible()
 
     const next = card.getByRole('button', { name: 'Next' })
+    const runTitle = card.getByText(RUN_STEP_TITLE)
     const totalSteps = await tourLength(card)
 
     for (let step = 1; step < totalSteps; step++) {
       await expect(card).toContainText(`Step ${step} of ${totalSteps}`)
+      if (await runTitle.isVisible()) break
       await next.click()
     }
 
-    await expect(card.getByText(RUN_STEP_TITLE)).toBeVisible()
+    await expect(runTitle).toBeVisible()
     await expect(
       next,
       'the Run step must offer no way forward except running'
@@ -157,6 +167,10 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       card.getByText(GENERATING_TITLE),
       'the run outlives its step, so the click moves the tour on and Result reports it'
     ).toBeVisible({ timeout: 15_000 })
+    await expect(
+      card,
+      'Run hands over to the last step, the one spotlighting where output lands'
+    ).toContainText(`Step ${totalSteps} of ${totalSteps}`)
     await expect(page.getByTestId('coach-busy')).toBeVisible()
   }
 
