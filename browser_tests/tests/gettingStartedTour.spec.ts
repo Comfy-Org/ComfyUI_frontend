@@ -51,6 +51,13 @@ function isPinned(id: string): id is SupportedTemplateId {
   return Object.hasOwn(TOUR_ROLE_PINS, id)
 }
 
+/** How many steps the card says the tour has, once it says anything. */
+async function tourLength(card: Locator): Promise<number> {
+  await expect(card).toContainText(/Step \d+ of \d+/)
+  const label = await card.textContent()
+  return Number(/Step \d+ of (\d+)/.exec(label ?? '')?.[1])
+}
+
 /**
  * The grid backfills whichever curated templates a backend does not serve, so
  * the walk tours a card that is actually on screen rather than a fixed id.
@@ -97,13 +104,6 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
     await page.route('**/customers/cloud-subscription-status', (route) =>
       route.fulfill(jsonRoute(ACTIVE_SUBSCRIPTION))
     )
-    await page.addInitScript(() => {
-      const style = document.createElement('style')
-      style.textContent = '.p-toast { pointer-events: none !important; }'
-      document.addEventListener('DOMContentLoaded', () =>
-        document.head.append(style)
-      )
-    })
   })
 
   /**
@@ -131,15 +131,16 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       spotlight,
       'picking a template must spotlight the graph it loaded'
     ).toBeVisible()
-    await expect(card).toContainText('Step 1 of')
 
     const next = card.getByRole('button', { name: 'Next' })
-    const runTitle = card.getByText(RUN_STEP_TITLE)
-    await expect(async () => {
-      await next.click()
-      await expect(runTitle).toBeVisible({ timeout: 2_000 })
-    }).toPass({ timeout: 30_000 })
+    const totalSteps = await tourLength(card)
 
+    for (let step = 1; step < totalSteps; step++) {
+      await expect(card).toContainText(`Step ${step} of ${totalSteps}`)
+      await next.click()
+    }
+
+    await expect(card.getByText(RUN_STEP_TITLE)).toBeVisible()
     await expect(
       next,
       'the Run step must offer no way forward except running'

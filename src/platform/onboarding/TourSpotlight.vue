@@ -59,7 +59,7 @@
     />
     <FocusScope
       as-child
-      :trapped="!waitingForTarget && !opening && !step.interactive"
+      :trapped="!waitingForTarget && !step.interactive"
       loop
       @mount-auto-focus.prevent
     >
@@ -194,8 +194,7 @@ const {
   backLabel,
   countedStepIdx,
   countedStepsTotal,
-  waitingForTarget,
-  opening = false
+  waitingForTarget
 } = defineProps<{
   step: CoachStep
   title: string
@@ -208,8 +207,6 @@ const {
   countedStepIdx: number
   countedStepsTotal: number
   waitingForTarget: boolean
-  /** The tour's first step is still framing itself; its card has yet to appear. */
-  opening?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -277,9 +274,9 @@ watch(
 )
 
 watch(
-  [() => step, () => waitingForTarget, () => opening],
+  [() => step, () => waitingForTarget],
   () => {
-    if (!waitingForTarget && !opening) void focusPrimary()
+    if (!waitingForTarget) void focusPrimary()
   },
   { immediate: true }
 )
@@ -324,25 +321,19 @@ const hitRegionPath = computed(() => {
 })
 
 /**
- * The card travels to a new target under a transition, then drops it: a target
- * that keeps moving has to be ridden, or the card lags a frame behind it.
+ * The card travels to a new target, then rides it — a transition lags a target
+ * that moves every frame. Only a change arms travel; the first card makes none.
  */
-const glides = ref(true)
-watch(
-  [() => step, targetMoves],
-  ([, moves], _previous, onCleanup) => {
-    glides.value = true
-    if (!moves) return
-    const timer = setTimeout(() => (glides.value = false), CARD_GLIDE_MS)
-    onCleanup(() => clearTimeout(timer))
-  },
-  { immediate: true }
-)
+const glides = ref(false)
+watch([() => step, targetMoves], ([, moves], _previous, onCleanup) => {
+  glides.value = true
+  if (!moves) return
+  const timer = setTimeout(() => (glides.value = false), CARD_GLIDE_MS)
+  onCleanup(() => clearTimeout(timer))
+})
 
-/** Hidden until Floating UI has placed it; only the opening card has to fade in. */
-const cardVisible = computed(
-  () => !opening && (!targetEl.value || isPositioned.value)
-)
+/** Hidden until Floating UI has placed it, so it fades in already sited. */
+const cardVisible = computed(() => !targetEl.value || isPositioned.value)
 
 const cardStyle = computed(() => {
   const width = `${CARD_WIDTH}px`

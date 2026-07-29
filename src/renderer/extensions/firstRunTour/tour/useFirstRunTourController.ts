@@ -32,17 +32,30 @@ function useFirstRunTourControllerInternal() {
   const settingStore = useSettingStore()
 
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
-  const runState = ref<RunState>('idle')
   const nudgeArmed = ref(false)
   const onRunStep = computed(
     () => engine.activeTour === 'firstRun' && engine.step?.name === 'run'
   )
 
+  /** Recorded, not derived: the queue clears a status as soon as it turns terminal. */
+  const runState = ref<RunState>('idle')
+  watch(
+    () => [
+      executionStore.getWorkflowStatus(tourWorkflow.value),
+      executionErrorStore.hasNodeError || executionErrorStore.hasPromptError
+    ],
+    ([status, refused]) => {
+      if (status === 'running') runState.value = 'generating'
+      else if (status === 'completed') runState.value = 'succeeded'
+      else if (status === 'failed') runState.value = 'failed'
+      else if (refused && runState.value === 'generating')
+        runState.value = 'failed'
+    }
+  )
+
   /**
-   * A run outlives the step that starts it, so the click moves the tour on and
-   * the Result step reports how it goes. A run the paywall will refuse never
-   * queues at all, so that click is consumed and the tour postponed — whoever
-   * subscribes off the back of it still has their first run ahead of them.
+   * A run outlives the step that starts it, so the click moves the tour on. One
+   * the paywall will refuse never queues, so it is consumed and the tour parked.
    */
   useEventListener(
     document,
@@ -65,31 +78,6 @@ function useFirstRunTourControllerInternal() {
       else engine.next()
     },
     { capture: true }
-  )
-
-  /**
-   * The queue maps each job to the workflow that submitted it, so a job from
-   * anywhere else cannot speak for this tour.
-   */
-  watch(
-    () => executionStore.getWorkflowStatus(tourWorkflow.value),
-    (status) => {
-      if (!status || engine.activeTour !== 'firstRun') return
-      if (status === 'running') runState.value = 'generating'
-      else runState.value = status === 'failed' ? 'failed' : 'succeeded'
-    }
-  )
-
-  /**
-   * A prompt the queue refuses is never executed, so no status ever reports it
-   * and the error it raises instead is the only word the Result step gets.
-   */
-  watch(
-    () =>
-      executionErrorStore.hasNodeError || executionErrorStore.hasPromptError,
-    (refused) => {
-      if (refused && runState.value === 'generating') runState.value = 'failed'
-    }
   )
 
   watch(
