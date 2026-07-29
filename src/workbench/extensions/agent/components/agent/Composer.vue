@@ -241,7 +241,10 @@ defineExpose({
       </div>
     </div>
 
-    <div v-if="$slots.header" class="flex h-11 shrink-0 items-center px-2">
+    <div
+      v-if="$slots.header"
+      class="border-agent-border bg-agent-surface flex h-11 shrink-0 items-center rounded-t-2xl border-b px-2"
+    >
       <slot name="header" />
     </div>
 

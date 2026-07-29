@@ -39,13 +39,13 @@ const glyphColor = computed(() =>
 <template>
   <div class="text-agent-fg flex items-center gap-2 px-3 py-2 text-sm">
     <span :class="cn('size-4 shrink-0', glyph, glyphColor)" />
-    <span class="truncate text-xs">{{ label }}</span>
+    <span class="truncate text-sm">{{ label }}</span>
     <span v-if="count > 1" class="text-agent-fg-subtle text-xs"
       >×{{ count }}</span
     >
     <span
       v-if="durationMs !== undefined"
-      class="text-agent-fg-subtle ml-auto shrink-0 font-mono text-xs"
+      class="text-agent-fg-subtle ml-auto shrink-0 text-xs"
       >{{ (durationMs / 1000).toFixed(1) }}s</span
     >
   </div>
