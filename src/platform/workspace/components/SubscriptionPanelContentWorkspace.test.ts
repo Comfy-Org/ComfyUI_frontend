@@ -535,9 +535,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.getByText("What's included:")).toBeInTheDocument()
     expect(screen.getByText('Max run duration')).toBeInTheDocument()
     expect(screen.getByText('10 min')).toBeInTheDocument()
-    expect(
-      screen.queryByText('RTX 6000 Pro (96GB VRAM)')
-    ).not.toBeInTheDocument()
+    expect(screen.getByText('RTX 6000 Pro (96GB VRAM)')).toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
       'false'
