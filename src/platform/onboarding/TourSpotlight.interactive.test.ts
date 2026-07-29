@@ -176,6 +176,29 @@ describe('TourSpotlight interactive and masked steps', () => {
     ).not.toContain('transition-[left,top,opacity]')
   })
 
+  it('rides a canvas target that arrives after its step opened', async () => {
+    vi.useFakeTimers()
+    renderSpotlight({
+      step: spotlightStep({ coachId: FIRST_RUN_COACH_IDS.prompt })
+    })
+    const card = () => screen.getByRole('dialog', { hidden: true }).className
+
+    registerCoachmark(FIRST_RUN_COACH_IDS.prompt, canvasNode())
+    await nextTick()
+
+    expect(
+      card(),
+      'the card has to travel to the node that just arrived, not jump to it'
+    ).toContain('transition-[left,top,opacity]')
+
+    vi.advanceTimersByTime(CARD_GLIDE_MS)
+    await nextTick()
+    expect(
+      card(),
+      'a card that never stops transitioning trails the node it is riding'
+    ).not.toContain('transition-[left,top,opacity]')
+  })
+
   it('spins while the app is still working on what the step asked for', async () => {
     let working = true
     const { rerender } = renderSpotlight({

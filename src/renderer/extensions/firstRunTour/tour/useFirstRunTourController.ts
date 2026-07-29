@@ -89,6 +89,8 @@ function useFirstRunTourControllerInternal() {
 
   /** False when this template has no tour to give; the caller keeps the loaded graph. */
   async function beginTour(templateId: string): Promise<boolean> {
+    // A new user has no Comfy.InstalledVersion, so the versioned default never
+    // applies and Nodes 2.0 reads off — the tour's own audience.
     if (!settingStore.get('Comfy.VueNodes.Enabled'))
       await settingStore.set('Comfy.VueNodes.Enabled', true)
 

@@ -174,7 +174,7 @@ describe('useFirstRunTourController', () => {
 
       expect(
         mocks.vueNodesEnabled,
-        'the tour points at nodes only Nodes 2.0 renders'
+        'a new user has no installed version, so Nodes 2.0 reads off and every step is blind'
       ).toBe(true)
     })
 

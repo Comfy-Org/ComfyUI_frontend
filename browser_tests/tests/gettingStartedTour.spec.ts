@@ -81,7 +81,8 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   test.use({
     initialSettings: {
       'Comfy.TutorialCompleted': false,
-      'Comfy.OnboardingCoachmarks.Seen': ['appMode']
+      'Comfy.OnboardingCoachmarks.Seen': ['appMode'],
+      'Comfy.VueNodes.Enabled': true
     },
     initialFeatureFlags: { onboarding_tour_enabled: true }
   })

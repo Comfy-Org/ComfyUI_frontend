@@ -329,18 +329,15 @@ const hitRegionPath = computed(() => {
  */
 const glides = ref(true)
 watch(
-  () => step,
-  (_step, _previous, onCleanup) => {
-    if (!targetMoves.value) return
+  [() => step, targetMoves],
+  ([, moves], _previous, onCleanup) => {
     glides.value = true
+    if (!moves) return
     const timer = setTimeout(() => (glides.value = false), CARD_GLIDE_MS)
     onCleanup(() => clearTimeout(timer))
   },
   { immediate: true }
 )
-watch(targetMoves, (moves) => {
-  if (!moves) glides.value = true
-})
 
 /** Hidden until Floating UI has placed it; only the opening card has to fade in. */
 const cardVisible = computed(
