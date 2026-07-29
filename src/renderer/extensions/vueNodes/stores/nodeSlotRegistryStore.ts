@@ -14,7 +14,7 @@ type SlotEntry = {
 type NodeEntry = {
   nodeId: NodeId
   slots: Map<SlotId, SlotEntry>
-  stopWatch?: () => void
+  stopLayoutSubscription?: () => void
 }
 
 export const useNodeSlotRegistryStore = defineStore('nodeSlotRegistry', () => {

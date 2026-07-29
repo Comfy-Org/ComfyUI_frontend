@@ -87,7 +87,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       ).not.toBeNull()
       expect(Math.abs(positions!.link.x - positions!.slot.x)).toBeLessThan(2)
       expect(Math.abs(positions!.link.y - positions!.slot.y)).toBeLessThan(2)
-    }).toPass()
+    }).toPass({ timeout: 5000 })
   }
 
   const dragFromTabButton = async (comfyPage: ComfyPage, button: Locator) => {
@@ -435,13 +435,48 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await expect
       .poll(() => comfyPage.canvasOps.getGroupPosition('Linked nodes'))
       .toBeTruthy()
-    await comfyPage.canvasOps.dragGroup({
-      name: 'Linked nodes',
-      deltaX: 120,
-      deltaY: 80
-    })
+    await comfyPage.vueNodes.clearSelection()
+    const rawSamplerId = await sampler.root.getAttribute('data-node-id')
+    if (!rawSamplerId) throw new Error('KSampler node ID not found')
+    const samplerId = toNodeId(rawSamplerId)
+    const initialOffset = await comfyPage.canvasOps.getOffset()
 
-    await expectSlotPositionTracksDom(comfyPage, checkpointId, 0, false)
+    await comfyPage.settings.setSetting(
+      'Comfy.VueNodes.ViewportVirtualization',
+      true
+    )
+    try {
+      await comfyPage.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        canvas.ds.offset[0] -= 3000
+        canvas.setDirty(true, true)
+      })
+      await expect(checkpoint.root).toHaveCount(0)
+      await expect(sampler.root).toHaveCount(0)
+
+      await comfyPage.page.evaluate(([x, y]) => {
+        const canvas = window.app!.canvas
+        canvas.ds.offset[0] = x
+        canvas.ds.offset[1] = y
+        canvas.setDirty(true, true)
+      }, initialOffset)
+      await expect(checkpoint.root).toBeVisible()
+      await expect(sampler.root).toBeVisible()
+
+      await comfyPage.canvasOps.dragGroup({
+        name: 'Linked nodes',
+        deltaX: 120,
+        deltaY: 80
+      })
+
+      await expectSlotPositionTracksDom(comfyPage, checkpointId, 0, false)
+      await expectSlotPositionTracksDom(comfyPage, samplerId, 0, true)
+    } finally {
+      await comfyPage.settings.setSetting(
+        'Comfy.VueNodes.ViewportVirtualization',
+        false
+      )
+    }
   })
 
   test('pointerCancel stops autopan', async ({ comfyPage }) => {

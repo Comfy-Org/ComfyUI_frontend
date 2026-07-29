@@ -11,6 +11,7 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { SlotLayout } from '@/renderer/core/layout/types'
+import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 import {
@@ -54,6 +55,7 @@ function createTestSetup(type: 'input' | 'output') {
   const el = ref<HTMLElement | null>(null)
   const TestComponent = defineComponent({
     setup() {
+      useNodeLayout(NODE_ID)
       useSlotElementTracking({
         nodeId: NODE_ID,
         index: SLOT_INDEX,
@@ -202,6 +204,48 @@ describe('useSlotElementTracking', () => {
     })
   })
 
+  it.for([
+    { state: 'expanded', collapsed: false },
+    { state: 'collapsed', collapsed: true }
+  ])(
+    'translates $state slot geometry after repeated viewport remounts',
+    async ({ collapsed }) => {
+      let mounted = await mountAndRegisterSlot('input', collapsed)
+      const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+
+      for (let cycle = 1; cycle <= 2; cycle++) {
+        replaceViewportVirtualizedNodeIds([NODE_ID])
+        mounted.unmount()
+        replaceViewportVirtualizedNodeIds([])
+
+        mounted = await mountAndRegisterSlot('input', collapsed)
+        const remountedLayout = layoutStore.getSlotLayout(slotKey)!
+        const previousPosition =
+          layoutStore.getNodeLayoutRef(NODE_ID).value!.position
+        const nextPosition = { x: cycle * 50, y: cycle * 75 }
+
+        layoutStore.batchUpdateNodeBounds([
+          {
+            nodeId: NODE_ID,
+            bounds: {
+              ...nextPosition,
+              width: 200,
+              height: 100
+            }
+          }
+        ])
+        await nextTick()
+
+        expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+          x: remountedLayout.position.x + nextPosition.x - previousPosition.x,
+          y: remountedLayout.position.y + nextPosition.y - previousPosition.y
+        })
+      }
+
+      mounted.unmount()
+    }
+  )
+
   it('translates measured slot geometry while a mounted node moves', async () => {
     const { unmount } = await mountAndRegisterSlot('input')
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
@@ -253,7 +297,7 @@ describe('useSlotElementTracking', () => {
     unmount()
   })
 
-  it('keeps cached geometry invalid after a virtualized node resizes and moves', async () => {
+  it('remeasures invalidated geometry after a virtualized node resizes', async () => {
     const { unmount } = await mountAndRegisterSlot('input')
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
     const registryStore = useNodeSlotRegistryStore()
@@ -290,6 +334,18 @@ describe('useSlotElementTracking', () => {
     await nextTick()
 
     expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+
+    replaceViewportVirtualizedNodeIds([])
+    const remounted = await mountAndRegisterSlot('input')
+    const remountedLayout = layoutStore.getSlotLayout(slotKey)
+
+    expect(remountedLayout).not.toBeNull()
+    expect(layoutStore.getNodeLayoutRef(NODE_ID).value?.size).toEqual({
+      width: 300,
+      height: 200
+    })
+
+    remounted.unmount()
   })
 
   it('prunes cached geometry when virtualization clears before remount', async () => {

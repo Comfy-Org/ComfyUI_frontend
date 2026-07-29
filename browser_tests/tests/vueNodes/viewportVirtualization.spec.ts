@@ -263,9 +263,33 @@ test.describe(
     test('switches paint detail strictly below the configured zoom', async ({
       comfyPage
     }) => {
+      await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.settings.setSetting('Comfy.VueNodes.LowZoomLOD', true)
       await comfyPage.settings.setSetting('Comfy.VueNodes.FullDetailZoom', 95)
-      const widget = comfyPage.vueNodes.nodes.locator('.lg-node-widget').first()
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+      const nodeId = await node.root.getAttribute('data-node-id')
+      if (!nodeId) throw new Error('Load Checkpoint node ID not found')
+      const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
+      await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
+        (id, index) => (id === nodeId ? [100, 100] : [4000 + index * 1000, 100])
+      )
+      await expect(node.root).toBeVisible()
+
+      async function getNodeDomSize() {
+        return await node.root.evaluate((element) => {
+          if (!(element instanceof HTMLElement)) {
+            throw new Error('Vue node root is not an HTML element')
+          }
+          return {
+            width: element.offsetWidth,
+            height: element.offsetHeight
+          }
+        })
+      }
+
+      const widget = node.root.locator('.lg-node-widget').first()
+      const initialDomSize = await getNodeDomSize()
+      const initialNodeSize = await nodeRef.getSize()
 
       await comfyPage.page.evaluate(() => {
         window.app!.canvas.ds.scale = 0.949
@@ -277,6 +301,23 @@ test.describe(
       await expect
         .poll(() => widget.evaluate((el) => getComputedStyle(el).visibility))
         .toBe('hidden')
+      expect(await getNodeDomSize()).toEqual(initialDomSize)
+      expect(await nodeRef.getSize()).toEqual(initialNodeSize)
+
+      await comfyPage.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        canvas.ds.offset[0] = -2000
+        canvas.setDirty(true, true)
+      })
+      await expect(node.root).toHaveCount(0)
+      await comfyPage.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        canvas.ds.offset[0] = 0
+        canvas.setDirty(true, true)
+      })
+      await expect(node.root).toBeVisible()
+      expect(await getNodeDomSize()).toEqual(initialDomSize)
+      expect(await nodeRef.getSize()).toEqual(initialNodeSize)
 
       await comfyPage.page.evaluate(() => {
         window.app!.canvas.ds.scale = 0.95

@@ -288,9 +288,41 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
 
   if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
   if (node.slots.size === 0) {
-    node.stopWatch?.()
+    node.stopLayoutSubscription?.()
     nodeSlotRegistryStore.deleteNode(nodeId)
   }
+}
+
+function subscribeToNodeLayoutChanges(nodeId: NodeId): () => void {
+  let previousLayout = layoutStore.getNodeLayoutRef(nodeId).value
+
+  return layoutStore.onNodeChange(nodeId, () => {
+    const node = useNodeSlotRegistryStore().getNode(nodeId)
+    if (!node) return
+
+    const currentLayout = layoutStore.getNodeLayoutRef(nodeId).value
+    if (!currentLayout) return
+
+    const sizeChanged =
+      !previousLayout || !isSizeEqual(currentLayout.size, previousLayout.size)
+    const positionChanged =
+      !previousLayout ||
+      !isPointEqual(currentLayout.position, previousLayout.position)
+    previousLayout = currentLayout
+
+    if (sizeChanged) {
+      for (const [slotKey, entry] of node.slots) {
+        entry.cachedOffset = undefined
+        layoutStore.deleteSlotLayout(slotKey)
+      }
+      if (!isNodeViewportVirtualized(nodeId)) {
+        scheduleSlotLayoutSync(nodeId)
+      }
+      return
+    }
+
+    if (positionChanged) updateNodeSlotsFromCache(nodeId)
+  })
 }
 
 export function useSlotElementTracking(options: {
@@ -311,40 +343,8 @@ export function useSlotElementTracking(options: {
 
         const node = nodeSlotRegistryStore.ensureNode(nodeId)
 
-        if (!node.stopWatch) {
-          const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
-
-          const stopPositionWatch = watch(
-            () => layoutRef.value?.position,
-            (newPosition, oldPosition) => {
-              if (!newPosition) return
-              if (!oldPosition || !isPointEqual(newPosition, oldPosition)) {
-                updateNodeSlotsFromCache(nodeId)
-              }
-            }
-          )
-
-          const stopSizeWatch = watch(
-            () => layoutRef.value?.size,
-            (newSize, oldSize) => {
-              if (!newSize) return
-              if (!oldSize || !isSizeEqual(newSize, oldSize)) {
-                if (isNodeViewportVirtualized(nodeId)) {
-                  for (const [slotKey, entry] of node.slots) {
-                    entry.cachedOffset = undefined
-                    layoutStore.deleteSlotLayout(slotKey)
-                  }
-                  return
-                }
-                scheduleSlotLayoutSync(nodeId)
-              }
-            }
-          )
-
-          node.stopWatch = () => {
-            stopPositionWatch()
-            stopSizeWatch()
-          }
+        if (!node.stopLayoutSubscription) {
+          node.stopLayoutSubscription = subscribeToNodeLayoutChanges(nodeId)
         }
 
         // Register slot
@@ -394,7 +394,7 @@ export function useSlotElementTracking(options: {
 
     // If node has no more slots, clean up
     if (node.slots.size === 0) {
-      if (node.stopWatch) node.stopWatch()
+      node.stopLayoutSubscription?.()
       nodeSlotRegistryStore.deleteNode(nodeId)
     }
   })
@@ -416,7 +416,7 @@ export function deleteTrackedNodeSlotLayouts(nodeId: NodeId): void {
     if (entry.el) delete entry.el.dataset.slotKey
     layoutStore.deleteSlotLayout(slotKey)
   }
-  node.stopWatch?.()
+  node.stopLayoutSubscription?.()
   nodeSlotRegistryStore.deleteNode(nodeId)
 }
 
