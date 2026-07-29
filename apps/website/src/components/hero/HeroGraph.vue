@@ -125,11 +125,16 @@ function wrapperStyle(key: ElementKey) {
         <div class="text-[3em]">
           <HeroHeadline :locale />
         </div>
+      </div>
+
+      <div
+        class="pointer-events-none absolute bottom-[2em] left-1/2 z-20 flex -translate-x-1/2"
+      >
         <Button
           as="a"
           :href="externalLinks.cloudCta('hero_get_started_free')"
           size="lg"
-          class="pointer-events-auto mt-[1.6em]"
+          class="pointer-events-auto"
         >
           {{ t('hero.getStartedFree', locale) }}
         </Button>

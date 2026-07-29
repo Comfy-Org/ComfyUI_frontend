@@ -17,8 +17,8 @@ export const FLOW: {
   canvas: { width: 95, height: 44 },
   elements: {
     input: { left: 0, top: 5.3, width: 19, height: 10.3 },
-    angle: { left: 24, top: 21, width: 20, height: 20 },
-    color: { left: 48, top: 26, width: 14, height: 9 },
+    angle: { left: 24, top: 13, width: 20, height: 20 },
+    color: { left: 48, top: 18, width: 14, height: 9 },
     output: { left: 67, top: 4, width: 49, height: 26.5 }
   }
 }
