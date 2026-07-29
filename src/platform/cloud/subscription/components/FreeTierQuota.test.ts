@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -38,6 +38,12 @@ const i18n = createI18n({
 })
 
 describe('FreeTierQuota', () => {
+  beforeEach(() => {
+    mockIsFreeTier.value = true
+    mockAvailable.value = 3
+    mockShowSubscriptionDialog.mockClear()
+  })
+
   it('hides the displayed quota when the user leaves the free tier', async () => {
     render(FreeTierQuota, { global: { plugins: [i18n] } })
 
@@ -50,11 +56,9 @@ describe('FreeTierQuota', () => {
   })
 
   it('shows an explicit zero count when the quota is exhausted', async () => {
-    mockIsFreeTier.value = true
     mockAvailable.value = 0
     render(FreeTierQuota, { global: { plugins: [i18n] } })
 
     expect(await screen.findByText('0 / 5 runs left')).toBeInTheDocument()
-    mockAvailable.value = 3
   })
 })

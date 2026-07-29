@@ -347,7 +347,8 @@ const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
 const { permissions, isSubscriptionCancelled } = useWorkspaceUI()
-const { maxAvailable: freeRunsAllowance } = useFreeTierQuota()
+const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
+  useFreeTierQuota()
 const { t, n, locale } = useI18n()
 
 const billingOperationStore = useBillingOperationStore()
@@ -474,14 +475,15 @@ const tierBenefits = computed((): TierBenefit[] => {
   }
   if (isPersonalFree.value) {
     return [
-      ...(freeRunsAllowance.value > 0
+      ...(freeRunsQuotaEnabled.value
         ? [
             {
               key: 'freeRuns',
               type: 'feature' as const,
-              label: t('subscription.freePerks.freeRuns', {
-                count: freeRunsAllowance.value
-              })
+              label: t(
+                'subscription.freePerks.freeRuns',
+                freeRunsAllowance.value
+              )
             }
           ]
         : []),

@@ -2698,7 +2698,7 @@
     },
     "freePerks": {
       "maxRuntime": "{duration} max runtime",
-      "freeRuns": "{count} free runs"
+      "freeRuns": "{count} free run | {count} free runs"
     },
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
