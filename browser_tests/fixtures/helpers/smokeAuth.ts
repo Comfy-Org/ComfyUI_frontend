@@ -153,24 +153,6 @@ export async function seedSmokeAuth(page: Page, appUrl: string): Promise<void> {
   await bypassOnboardingSurvey(page)
 }
 
-// Cloud runs an onboarding gate BEFORE the graph view mounts: the router asks
-// getSurveyCompletedStatus(), which GETs /settings/onboarding_survey and reads
-// a 404 - the key was never stored - as "not completed", then redirects to
-// /cloud/survey (src/router.ts, src/platform/cloud/onboarding/auth.ts).
-// CloudSurveyView never creates `window.app.extensionManager`, so a test
-// account that has not answered the survey's four required questions hangs
-// every app-ready wait forever behind a perfectly healthy sign-in - a run
-// reports only "timeout" and nothing about the cause.
-//
-// This suite tests custom nodes, not onboarding, so the check is answered at
-// the network edge rather than by writing a survey record to the shared smoke
-// account: nothing persists, no shared state is mutated, and the bypass cannot
-// outlive the page. The same endpoint is mocked this way in
-// browser_tests/tests/cloudSurveyGate.spec.ts, which is where the gate's own
-// behavior is actually under test.
-//
-// Contract, from the 200 branch of getSurveyCompletedStatus: completed means
-// `!isEmpty(data.value)`, so `value` must be present and non-empty.
 async function bypassOnboardingSurvey(page: Page): Promise<void> {
   await page.route('**/settings/onboarding_survey', async (route) => {
     if (route.request().method() !== 'GET') {
