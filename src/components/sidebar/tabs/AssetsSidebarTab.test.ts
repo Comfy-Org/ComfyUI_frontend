@@ -124,6 +124,7 @@ const assetsGridStub = {
   props: [
     'assets',
     'isSelected',
+    'isPartiallySelected',
     'showOutputCount',
     'getOutputCount',
     'getSelectedOutputCount'
@@ -133,7 +134,13 @@ const assetsGridStub = {
     <div v-for="asset in assets" :key="asset.id">
       <button
         :aria-label="'Select ' + asset.name"
-        :aria-pressed="isSelected(asset.id)"
+        :aria-pressed="
+          isSelected(asset.id)
+            ? 'true'
+            : isPartiallySelected?.(asset)
+              ? 'mixed'
+              : 'false'
+        "
         @click.stop="$emit('select-asset', asset)"
       />
       <button
@@ -269,6 +276,9 @@ describe('AssetsSidebarTab folder navigation', () => {
     expect(
       screen.getByRole('button', { name: 'Enter output folder' })
     ).toHaveTextContent('1/2')
+    expect(
+      screen.getByRole('button', { name: 'Select multi-output.png' })
+    ).toHaveAttribute('aria-pressed', 'mixed')
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Enter output folder' })

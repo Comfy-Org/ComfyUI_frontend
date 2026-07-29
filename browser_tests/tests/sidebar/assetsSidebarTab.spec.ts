@@ -303,7 +303,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
     await expect(
       groupedCard.getByRole('button', { name: /multi-output-a.*asset/ })
-    ).toHaveAttribute('aria-pressed', 'false')
+    ).toHaveAttribute('aria-pressed', 'mixed')
     await expect(
       groupedCard.getByRole('button', { name: 'See more outputs' })
     ).toHaveText('1/2')
