@@ -40,12 +40,14 @@ export default defineConfig({
       grepInvert: /@mobile|@perf|@audit|@cloud|@custom-nodes/
     },
 
-    // The custom-node suite needs the manifest packs installed and exclusive
-    // backend-queue access (its afterEach drains the queue), so it runs in
-    // its own gating job (ci-tests-custom-nodes.yaml) with --workers=1, not
-    // alongside the parallel main e2e shards. Excluded from `chromium` above
-    // so the main job never collects it and its unscoped drain cannot
-    // interrupt a sibling worker's in-flight prompt.
+    // The custom-node suite needs the manifest packs installed and a quiet
+    // backend queue, so it runs in its own gating job
+    // (ci-tests-custom-nodes.yaml) with --workers=1, not alongside the
+    // parallel main e2e shards. Excluded from `chromium` above so the main
+    // job never collects it: per-test cleanup is prompt-scoped now, but the
+    // auto-run tier still waits on the WHOLE queue to go quiet before it
+    // measures (waitForQueueQuiet, customNodeSuite.ts), which a parallel
+    // shard cannot provide.
     {
       name: 'custom-nodes',
       // retain-on-failure (not the repo's on-first-retry): this job is ~40

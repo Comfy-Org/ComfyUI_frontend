@@ -40,11 +40,12 @@ concurrency:
   # is queue-scoped, not instance-topology (the earlier "one shared Cloud
   # instance" wording here was unsourced and is retracted): both workflows
   # sign in as the ONE smoke account (smokeAuth.ts memoizes a single
-  # SMOKE_ACCOUNT_EMAIL identity) and the suite's drain interrupts/clears
-  # that account's queue UNSCOPED (drainBackendToIdle, customNodeSuite.ts),
-  # so a record run and a gate run on the same account must not overlap.
-  # Retire this group when the prompt-scoped drain + smoke-account pool
-  # land (see the gate's concurrency comment for the full semantics).
+  # SMOKE_ACCOUNT_EMAIL identity), so they share one ComfyUI queue. Per-test
+  # cleanup is now scoped to each page's own prompt ids, but the shared
+  # queue still makes a record run and a gate run interfere: waitForQueueQuiet
+  # (customNodeSuite.ts) waits on the whole queue and cannot tell whose work
+  # it is. Retire this group when the smoke-account pool lands (see the
+  # gate's concurrency comment for the full semantics).
   # EXCEPTION since the gate's dispatch-group split: gate workflow_dispatch
   # calibration runs use their own group and CAN overlap this record - do not
   # dispatch both at once (manual exclusion until the in-job lock lands).

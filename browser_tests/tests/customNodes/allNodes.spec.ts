@@ -48,7 +48,9 @@ import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   customNodeSuiteSettings,
   dismissTemplatesDialog,
-  drainBackendToIdle
+  drainBackendToIdle,
+  trackSubmittedPrompts,
+  waitForQueueQuiet
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 
@@ -251,6 +253,7 @@ const MOUNT_WIDGET_ALLOWLIST: Record<string, Record<string, string>> = {
 test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
+  trackSubmittedPrompts(comfyPage.page)
   await dismissTemplatesDialog(comfyPage)
 })
 
@@ -1130,15 +1133,15 @@ for (const entry of loadManifest()) {
         // A prior pack's slow CPU execution can still be draining when this tier
         // starts (all packs share one backend, locally and on CI alike; CI's
         // unloaded runner keeps executions fast, a busy local machine may not).
-        // Wait it out rather than hard-fail: interrupt,
-        // clear the pending queue, and poll until the backend is idle. Slow-but-
-        // finite executions drain within the budget; only a truly wedged backend
-        // (which the exclusions already prevent) stays busy past it. The wait is
-        // free when the queue is already idle, so it costs nothing on CI.
-        const queueBusy = await drainBackendToIdle(comfyPage.page, 150_000)
+        // That work belongs to an earlier test's page, so it is invisible to
+        // drainBackendToIdle and must not be cancelled by us: wait it out
+        // instead. Slow-but-finite executions drain within the budget; only a
+        // truly wedged backend (which the exclusions already prevent) stays busy
+        // past it. The wait is free when the queue is already idle.
+        const queueBusy = await waitForQueueQuiet(comfyPage.page, 150_000)
         expect(
           queueBusy,
-          'backend still has a running prompt after a 150s drain - a genuinely wedged (non-interruptible) execution; restart the test backend'
+          'the backend still has a running prompt after a 150s wait - a genuinely wedged (non-interruptible) execution; restart the test backend'
         ).toBe(0)
 
         expect(

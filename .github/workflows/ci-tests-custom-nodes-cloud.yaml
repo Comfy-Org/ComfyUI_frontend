@@ -57,11 +57,14 @@ concurrency:
   # instance-topology (the earlier "ONE shared Cloud test instance" claim
   # here was unsourced and is retracted): every run signs in as the ONE
   # smoke account (smokeAuth.ts
-  # memoizes a single SMOKE_ACCOUNT_EMAIL identity) and the suite's drain
-  # interrupts/clears that account's queue UNSCOPED (drainBackendToIdle,
-  # customNodeSuite.ts), so two concurrent same-account runs cancel each
-  # other's prompts. Retire this group when the prompt-scoped drain and
-  # the smoke-account pool land.
+  # memoizes a single SMOKE_ACCOUNT_EMAIL identity), so concurrent runs
+  # share one ComfyUI queue. Per-test cleanup no longer clobbers a
+  # co-tenant - drainBackendToIdle cancels only the prompt ids the page
+  # itself submitted - but the sharing still bites: waitForQueueQuiet
+  # (customNodeSuite.ts) legitimately waits on the WHOLE queue before the
+  # auto-run tier, and a queue read cannot tell a prior pack's leftover
+  # from another run's work. Retire this group when the smoke-account pool
+  # lands and each run owns its own queue.
   # cancel-in-progress:false protects the IN-PROGRESS run from being killed
   # mid backend interaction, but GitHub still cancels a PENDING run when a
   # newer one queues into the group - under 3+ concurrent triggers the middle
@@ -77,8 +80,9 @@ concurrency:
   # (GitHub keeps one pending slot per group) - calibration dispatches
   # 30316897509/30317780440/30318407927 died queued or displaced under main
   # churn (30312432225 is the separate timeout kill, cited above). Pre-merge
-  # the dispatch overlap is safe: main runs no-op in seconds at the manifest
-  # gate. Re-unify via the in-job lock (open item 7) before required.
+  # this overlap is safe: main runs no-op green in seconds (the manifest
+  # gate). Re-unify the groups once the smoke-account pool gives each run
+  # its own queue, before this check is marked required.
   group: ${{ github.head_ref == 'nathaniel/detection-proof' && 'custom-nodes-cloud-dp-noop' || github.event_name == 'workflow_dispatch' && 'custom-nodes-cloud-dispatch' || 'custom-nodes-cloud-instance' }}
   cancel-in-progress: false
 
@@ -122,16 +126,22 @@ jobs:
     # inside allNodes). All three every-node tiers run against cloud at ~185
     # attempts each (mount, save/reload, auto-run).
     #
-    # Sharding is NOT a drop-in fix: the auto-run tier queues prompts and
-    # needs exclusive backend access, and every shard would drive the ONE
-    # smoke account's queue concurrently (the drain is unscoped - see the
-    # concurrency comment). The viable split is by TIER (mount
-    # + save/reload shard in parallel - they queue nothing; auto-run stays
-    # serial), or per-run instances (open item 7) which make row sharding
-    # safe. Until one lands, this job cannot be a required check.
+    # SHARDING IS THE REMEDY, and it is blocked on this repo, not on Cloud.
+    # Divide that run out: 122m over 359 tests is ~20s per test, against an
+    # app-load budget this suite sets itself at 45-60s (CLOUD_APP_BOOT_TIMEOUT,
+    # and the cloud branch of playwright.config.ts). The dominant cost is
+    # per-test app load in the browser ON THE RUNNER - a multi-MB /object_info
+    # fetch plus auth seeding, paid once per test - not backend contention.
+    # Runner-bound cost is exactly what sharding fixes, near-linearly.
+    # What blocks it: every shard would sign in as the SAME smoke account and
+    # the drain is unscoped, so shards would cancel each other's prompts (see
+    # the concurrency comment). Land the prompt-scoped drain and the
+    # smoke-account pool, then shard rows and drop the shared group. A tier
+    # split (mount + save/reload parallel, auto-run serial) is a weaker
+    # fallback that needs neither, if the pool is delayed.
     # 360 is GitHub's hosted-runner hard maximum - there is no knob past it.
     # Raised to the wall so ONE complete run can produce the timing map that
-    # sizes the tier split; the ceiling also remains the fuse that stops a
+    # sizes the shards; the ceiling also remains the fuse that stops a
     # hung pack (non-interruptible loops exist in the corpus) from squatting
     # on the one smoke account's queue all day. A multi-hour job is
     # calibration only, never a required gate.

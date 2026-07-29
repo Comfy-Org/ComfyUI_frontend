@@ -10,7 +10,8 @@ import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLe
 import {
   customNodeSuiteSettings,
   dismissTemplatesDialog,
-  drainBackendToIdle
+  drainBackendToIdle,
+  trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
@@ -26,15 +27,14 @@ const smokeWorkflow = JSON.parse(
 test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
+  trackSubmittedPrompts(comfyPage.page)
   await dismissTemplatesDialog(comfyPage)
 })
 
-// Leave the shared backend idle so the next test starts clean (drainBackendToIdle).
+// This spec queues no prompt of its own, so the drain returns without a
+// round-trip; it stays as the guard for pack JS that queues one behind our
+// back, which would otherwise run on into the next test.
 test.afterEach(async ({ comfyPage }) => {
-  // The drain is a no-op when the queue is already idle, so it costs
-  // ~nothing in the common path; the 10s ceiling only bounds a genuinely
-  // busy backend. A backend still busy past it is wedged, and the auto-run
-  // tier's 150s guard surfaces that with the restart diagnostic.
   await drainBackendToIdle(comfyPage.page, 10_000)
 })
 

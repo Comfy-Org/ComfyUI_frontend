@@ -17,7 +17,10 @@ import {
   isTypeCompatible,
   normalizeNodeDefs
 } from '@e2e/fixtures/customNode/typePairing'
-import { drainBackendToIdle } from '@e2e/fixtures/utils/customNodeSuite'
+import {
+  drainBackendToIdle,
+  trackSubmittedPrompts
+} from '@e2e/fixtures/utils/customNodeSuite'
 
 // S13: lock every registered node's interaction-triggered shape deltas.
 // Probes are pure browser-side graph interactions (no prompt is ever
@@ -66,6 +69,10 @@ function planProbes(
     })
     .sort((a, b) => a.type.localeCompare(b.type))
 }
+
+test.beforeEach(({ comfyPage }) => {
+  trackSubmittedPrompts(comfyPage.page)
+})
 
 for (const entry of loadManifest()) {
   test(`interaction profiles: ${entry.pack} @custom-nodes`, async ({
@@ -192,6 +199,8 @@ for (const entry of loadManifest()) {
       }, chunk)
       Object.assign(observed, chunkResults)
     }
+    // The probes queue nothing, so this returns without a round-trip; it stays
+    // as the guard for pack JS that queues behind our back while being probed.
     await drainBackendToIdle(comfyPage.page, 10_000)
 
     for (const node of Object.keys(

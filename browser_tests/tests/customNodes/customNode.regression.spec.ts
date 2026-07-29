@@ -19,7 +19,8 @@ import {
 import {
   customNodeSuiteSettings,
   dismissTemplatesDialog,
-  drainBackendToIdle
+  drainBackendToIdle,
+  trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
 import {
   referencedRunMedia,
@@ -63,6 +64,7 @@ const CURATED_SINK_TYPES = ['PreviewAny', 'DisplayAny', 'ShowText|pysssss']
 test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
+  trackSubmittedPrompts(comfyPage.page)
   await dismissTemplatesDialog(comfyPage)
 })
 
