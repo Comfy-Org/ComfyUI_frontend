@@ -24,6 +24,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         <Button
           as="a"
           :href="externalLinks.cloudCta('hero_get_started_free')"
+          variant="outline"
           size="lg"
         >
           {{ t('hero.getStartedFree', locale) }}

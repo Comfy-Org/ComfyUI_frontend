@@ -133,6 +133,7 @@ function wrapperStyle(key: ElementKey) {
         <Button
           as="a"
           :href="externalLinks.cloudCta('hero_get_started_free')"
+          variant="outline"
           size="lg"
           class="pointer-events-auto"
         >
