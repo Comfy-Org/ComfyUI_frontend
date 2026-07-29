@@ -21,9 +21,9 @@ const promptIcons = [
 </script>
 
 <template>
-  <div class="flex h-full flex-col p-4">
+  <div class="flex h-full flex-col overflow-y-auto p-4">
     <div
-      class="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
+      class="my-auto flex shrink-0 flex-col items-center gap-4 p-6 text-center"
     >
       <div
         class="flex size-12 items-center justify-center rounded-xl border border-plum-600 bg-ink-700"
