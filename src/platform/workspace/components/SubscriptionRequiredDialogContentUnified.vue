@@ -64,6 +64,7 @@
         :preview-data="previewData!"
         :team-plan="selectedTeamStop!"
         :is-loading="isSubscribing || isPolling"
+        :action-url="activeCheckoutActionUrl"
         @confirm="handleTeamSubscribe"
         @back="handleBackToPricing"
       />
@@ -93,6 +94,7 @@
         v-else-if="previewVariant === 'personal-change'"
         :preview-data="previewData!"
         :is-loading="isSubscribing || isPolling"
+        :action-url="activeCheckoutActionUrl"
         @confirm="handleConfirmTransition"
         @back="handleBackToPricing"
       />

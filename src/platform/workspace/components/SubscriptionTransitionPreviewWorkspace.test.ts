@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -120,6 +121,31 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     ).toBeTruthy()
     expect(screen.getByText('21,100')).toBeTruthy()
     expect(screen.getByText('$82.50')).toBeTruthy()
+  })
+
+  it('opens verification only from its button without exposing the URL', async () => {
+    const actionUrl = 'https://verify.example/sensitive-token'
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    const { container } = render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({}),
+        actionUrl
+      },
+      global: globalOptions
+    })
+
+    expect(open).not.toHaveBeenCalled()
+    expect(container.innerHTML).not.toContain(actionUrl)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'subscription.preview.completeVerification'
+      })
+    )
+    expect(open).toHaveBeenCalledWith(
+      actionUrl,
+      '_blank',
+      'noopener,noreferrer'
+    )
   })
 
   it('renders a scheduled downgrade with the after-that block and no charge', () => {
