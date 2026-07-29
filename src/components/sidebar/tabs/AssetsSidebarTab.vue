@@ -121,6 +121,7 @@
           <AssetsSidebarGridView
             :assets="displayAssets"
             :is-selected="isGridAssetSelected"
+            :is-partially-selected="isGridAssetPartiallySelected"
             :show-output-count
             :get-output-count
             :get-selected-output-count
@@ -453,6 +454,13 @@ function isGridAssetSelected(assetId: string): boolean {
   return (
     selectedOutputCount > 0 && selectedOutputCount === getOutputCount(asset)
   )
+}
+
+function isGridAssetPartiallySelected(asset: AssetItem): boolean {
+  if (isInFolderView.value || isSelected(asset.id)) return false
+
+  const selectedOutputCount = getSelectedOutputCount(asset)
+  return selectedOutputCount > 0 && selectedOutputCount < getOutputCount(asset)
 }
 
 function toggleGroupedSelection(asset: AssetItem): boolean {

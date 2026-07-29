@@ -9,7 +9,7 @@
       cn(
         'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
         'group gap-2 select-none',
-        selected
+        selected || partiallySelected
           ? 'ring-3 ring-modal-card-border-highlighted ring-inset'
           : 'hover:bg-modal-card-background-hovered/20'
       )
@@ -69,7 +69,7 @@
             type: fileKind
           })
         "
-        :aria-pressed="selected ?? false"
+        :aria-pressed="selected ? true : partiallySelected ? 'mixed' : false"
         @click.stop="emit('toggle-selection')"
       >
         <i
@@ -213,6 +213,7 @@ const {
   asset,
   loading,
   selected,
+  partiallySelected,
   showOutputCount,
   outputCount,
   selectedOutputCount = 0
@@ -220,6 +221,7 @@ const {
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
+  partiallySelected?: boolean
   showOutputCount?: boolean
   outputCount?: number
   selectedOutputCount?: number

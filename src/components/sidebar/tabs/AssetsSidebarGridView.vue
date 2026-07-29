@@ -11,6 +11,7 @@
         <MediaAssetCard
           :asset="item.asset"
           :selected="isSelected(item.asset.id)"
+          :partially-selected="isPartiallySelected(item.asset)"
           :show-output-count="showOutputCount(item.asset)"
           :output-count="getOutputCount(item.asset)"
           :selected-output-count="getSelectedOutputCount(item.asset)"
@@ -37,6 +38,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 const {
   assets,
   isSelected,
+  isPartiallySelected,
   showOutputCount,
   getOutputCount,
   getSelectedOutputCount,
@@ -44,6 +46,7 @@ const {
 } = defineProps<{
   assets: AssetItem[]
   isSelected: (assetId: string) => boolean
+  isPartiallySelected: (asset: AssetItem) => boolean
   showOutputCount: (asset: AssetItem) => boolean
   getOutputCount: (asset: AssetItem) => number
   getSelectedOutputCount: (asset: AssetItem) => number
