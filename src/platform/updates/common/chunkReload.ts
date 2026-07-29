@@ -119,7 +119,10 @@ function performReload(chunkUrl?: string): void {
  * @returns `true` if a reload was triggered, `false` if skipped (guard set) or
  *   deferred (unsafe state).
  */
-export function attemptChunkReload(router?: Router, chunkUrl?: string): boolean {
+export function attemptChunkReload(
+  router?: Router,
+  chunkUrl?: string
+): boolean {
   const storage = window.sessionStorage
 
   // Loop guard: only ever reload once per session.

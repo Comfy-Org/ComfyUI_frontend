@@ -30,7 +30,9 @@ const EXTENSION_CHUNK =
 
 function preloadErrorEvent(url: string): Event {
   const event = new Event('vite:preloadError') as Event & { payload: Error }
-  event.payload = new Error(`Failed to fetch dynamically imported module: ${url}`)
+  event.payload = new Error(
+    `Failed to fetch dynamically imported module: ${url}`
+  )
   return event
 }
 
