@@ -20,10 +20,25 @@
 #     it is a stale-pins pressure gauge driving deliberate pin bumps, not a
 #     fire alarm. The manifest's pin fields stay untouched and still
 #     validate; this job's install step simply does not use them.
+#   Job C (canary-cloud-drift): frontend, manifest, and baselines held at
+#     the default branch; the ONE moving variable is the Cloud deployment
+#     itself (testcloud serves whatever is deployed tonight - it cannot be
+#     pinned from this repo) -> red = Cloud drifted from what the committed
+#     cloud manifest/baselines encode. Cloud drift also surfaces on per-PR
+#     cloud gate runs, but there it lands on an innocent PR and reads as
+#     the PR's fault; here nothing of ours moved overnight, so the red
+#     names the true culprit (once the cloud gate verifies each merge;
+#     until that gate is required, check the day's merges before blaming
+#     Cloud), and it covers the quiet stretches between PRs. Non-gating
+#     like its siblings. The SHIP-blocking cloud surface is the planned
+#     release-pipeline stage (Pillar 1 decision 2026-07-21, Miles's recap:
+#     https://comfy-organization.slack.com/archives/C0BFF57K8F2/p1784684178843059);
+#     nothing in this repo implements that stage yet.
 #
-# A canary red blocks nothing; it is a signal to triage. Both jobs mirror
-# the gate's steps minus the path filter (drift checks always run the full
-# suite); each job moves exactly ONE git-level variable.
+# A canary red blocks nothing; it is a signal to triage. All three jobs
+# mirror their gate's steps minus the path filter (drift checks always run
+# the full suite); each job moves exactly ONE variable (git-level for
+# Jobs A/B, the Cloud deployment for Job C).
 name: 'CI: Custom Nodes Canary'
 
 on:
@@ -157,8 +172,9 @@ jobs:
       # issue, deduped on the label, so nightly reds never rot unseen in the
       # Actions tab and never spam a new issue per night. cancelled() is
       # included so an infra-cancelled red still pages instead of vanishing.
-      # gh issue create fails on a missing label: both canary labels exist
-      # in this repo (create them once if porting this workflow elsewhere).
+      # gh issue create fails on a missing label: all three canary labels
+      # exist in this repo (create them once if porting this workflow
+      # elsewhere).
       - name: File drift issue on failure
         if: failure() || cancelled()
         env:
@@ -170,13 +186,13 @@ jobs:
           body="Nightly custom-nodes canary (core at master, packs pinned) went red or was cancelled mid-run: $run_url
           Triage: core drift broke the frontend contract, or exposed a pack bug. A geometry delta under the mount test title means core moved node layout - drift signal, not a mount break. Playbook in ci-nightly-custom-nodes-canary.yaml; ledger/pin/count mechanics in docs/custom-node-regression-suite.md. Failure detail: download the playwright-report-custom-nodes-canary artifact from the run."
           existing=$(gh issue list --repo "${{ github.repository }}" \
-            --label custom-nodes-canary --state open --json number --jq '.[0].number // empty')
+            --label custom-nodes-canary-core --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --repo "${{ github.repository }}" --body "$body"
           else
             gh issue create --repo "${{ github.repository }}" \
               --title "Custom-nodes canary: core drift" \
-              --label custom-nodes-canary \
+              --label custom-nodes-canary-core \
               --body "$body"
           fi
 
@@ -305,5 +321,175 @@ jobs:
             gh issue create --repo "${{ github.repository }}" \
               --title "Custom-nodes canary: pack drift" \
               --label custom-nodes-canary-packs \
+              --body "$body"
+          fi
+
+  canary-cloud-drift:
+    # Job C. Don't run the cron on forks.
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    # TEMPORARY serialization against the cloud gate + cloud record runs,
+    # for a queue-scoped reason, not an instance-topology one: every cloud
+    # run signs in as the ONE smoke account (smokeAuth.ts memoizes a single
+    # SMOKE_ACCOUNT_EMAIL identity at module scope) and the suite's drain
+    # interrupts/clears that account's queue UNSCOPED (drainBackendToIdle
+    # in customNodeSuite.ts), so two concurrent same-account runs cancel
+    # each other's prompts. Remove this block when the prompt-scoped drain
+    # and the smoke-account pool land; the group's name predates that
+    # analysis and is being retired with it.
+    # Known gap while this block exists: if this job is still PENDING in
+    # the group when a newer gate/record run queues, GitHub evicts it (the
+    # gate's concurrency comment documents observed evictions by run ID)
+    # and the night is silently lost - no step runs, so nothing files.
+    # Structural exits: an in-job lock, or leaving the group once the
+    # scoped drain + account pool land.
+    concurrency:
+      group: custom-nodes-cloud-instance
+      cancel-in-progress: false
+    # Step timeout below the job ceiling, same reason as Jobs A/B: an
+    # overrun must fail the STEP (failure() stays true, the report uploads,
+    # the issue files); a job-level cancel would skip both. 330/350 sized
+    # from the only completed post-merge measurement: gate run 30411202735's
+    # suite step ran ~287 minutes (a FAILING run, retry-multiplied - the
+    # regime drift nights live in) under GitHub's 360 hard wall. A red
+    # night may still truncate at 330; the partial report uploads and the
+    # issue files by design. Re-size from the instrumented timing map when
+    # it lands.
+    timeout-minutes: 350
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Defense-in-depth mirror of the cloud gate's activation gate: no-op
+      # green with a loud notice when the smoke credentials are unset (an
+      # unconfigured repo or a port of this workflow) or the generated
+      # cloud manifest is absent from the checkout. Never a silent fake
+      # pass.
+      - name: Gate on cloud secrets and manifest
+        id: gate
+        env:
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          [ -n "${SMOKE_ACCOUNT_EMAIL:-}" ] || missing+=(SMOKE_ACCOUNT_EMAIL)
+          [ -n "${SMOKE_ACCOUNT_PASSWORD:-}" ] || missing+=(SMOKE_ACCOUNT_PASSWORD)
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::notice::canary-cloud-drift did not run: smoke user credentials unconfigured (missing: ${missing[*]})."
+            echo "run-cloud=false" >> "$GITHUB_OUTPUT"
+          elif [ ! -f browser_tests/fixtures/data/customNodeManifest.cloud.json ]; then
+            echo "::notice::canary-cloud-drift did not run: browser_tests/fixtures/data/customNodeManifest.cloud.json is not in this checkout."
+            echo "run-cloud=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run-cloud=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup frontend
+        if: steps.gate.outputs.run-cloud == 'true'
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+
+      # DISTRIBUTION is a build-time constant: a plain build would bake
+      # 'localhost' and compile out the isCloud paths this leg exercises
+      # (same as the cloud gate).
+      - name: Build cloud dist
+        if: steps.gate.outputs.run-cloud == 'true'
+        shell: bash
+        run: pnpm build:cloud-e2e
+
+      - name: Setup Playwright
+        if: steps.gate.outputs.run-cloud == 'true'
+        uses: ./.github/actions/setup-playwright
+
+      - name: Start cloud preview server
+        if: steps.gate.outputs.run-cloud == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm preview:cloud-e2e --port 4173 &
+          for _ in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:4173/; then
+              echo "cloud preview server ready on :4173"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::cloud preview server did not become ready on :4173"
+          exit 1
+
+      - name: Run custom-node cloud suite
+        id: suite
+        if: steps.gate.outputs.run-cloud == 'true'
+        timeout-minutes: 330
+        env:
+          CUSTOM_NODES_ENV: cloud
+          PLAYWRIGHT_TEST_URL: http://localhost:4173
+          PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-cloud-results.json
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+        run: |
+          pnpm exec playwright test browser_tests/tests/customNodes/ \
+            --project=custom-nodes --reporter=list,json,html --workers=1
+
+      - name: Forbid skipped tests
+        if: always() && steps.gate.outputs.run-cloud == 'true'
+        shell: bash
+        env:
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
+        run: |
+          set -euo pipefail
+          if [ ! -f custom-nodes-cloud-results.json ]; then
+            if [ "${SUITE_OUTCOME:-}" = "success" ]; then
+              echo "::error::suite succeeded but wrote no results json - the skip gate could not run"
+              exit 1
+            fi
+            echo "no results json - the suite step already failed (${SUITE_OUTCOME:-unknown})"
+            exit 0
+          fi
+          skipped=$(jq '.stats.skipped' custom-nodes-cloud-results.json)
+          echo "skipped tests: $skipped"
+          if [ "$skipped" != "0" ]; then
+            echo "::error::$skipped test(s) skipped - a cloud pack, devtools, or an under-enrolled cloud manifest failed to surface a tier"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "skipped"))
+                     | .title' custom-nodes-cloud-results.json | sort -u | head -40
+            exit 1
+          fi
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-custom-nodes-canary-cloud
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: warn
+
+      # cancelled() included for the same reason as Jobs A/B.
+      - name: File drift issue on failure
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          body="Nightly custom-nodes canary (cloud drift: frontend, manifest, and baselines at the default branch; Cloud serving tonight's deployment) went red or was cancelled mid-run: $run_url
+          A red here means the Cloud deployment drifted from what the committed cloud manifest and baselines encode - a deploy changed the pack set, node definitions, or behavior. While the cloud gate is not yet a required check, first check the day's merges: a red can be an unverified frontend merge rather than Cloud drift. Then triage: regenerate the cloud manifest from a fresh probe snapshot ('pnpm gen:cloud-manifest') and diff its inputs, or re-record the cloud baselines, per docs/custom-node-regression-suite.md. Failure detail: download the playwright-report-custom-nodes-canary-cloud artifact from the run."
+          existing=$(gh issue list --repo "${{ github.repository }}" \
+            --label custom-nodes-canary-cloud --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "${{ github.repository }}" --body "$body"
+          else
+            gh issue create --repo "${{ github.repository }}" \
+              --title "Custom-nodes canary: cloud drift" \
+              --label custom-nodes-canary-cloud \
               --body "$body"
           fi
