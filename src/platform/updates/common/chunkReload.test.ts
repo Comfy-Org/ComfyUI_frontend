@@ -24,9 +24,19 @@ vi.mock('@datadog/browser-rum', () => ({
   datadogRum: { addAction: vi.fn() }
 }))
 
-const APP_CHUNK = 'https://app.test/assets/settingStore-CUtU9ycZ.js'
+// jsdom doesn't implement location.reload; stub it ONCE at module scope with
+// writable:true (the pattern used elsewhere in this repo). Redefining
+// window.location per-test is unreliable — the stub doesn't take effect for calls
+// made from nested callbacks/listeners.
+const mockReload = vi.fn()
+Object.defineProperty(window, 'location', {
+  value: { reload: mockReload, origin: 'http://localhost' },
+  writable: true
+})
+
+const APP_CHUNK = 'http://localhost/assets/settingStore-CUtU9ycZ.js'
 const EXTENSION_CHUNK =
-  'https://app.test/extensions/RES4LYF/js/RES4LYF_dynamicWidgets.js'
+  'http://localhost/extensions/RES4LYF/js/RES4LYF_dynamicWidgets.js'
 
 function preloadErrorEvent(url: string): Event {
   const event = new Event('vite:preloadError') as Event & { payload: Error }
@@ -37,22 +47,14 @@ function preloadErrorEvent(url: string): Event {
 }
 
 describe('chunkReload', () => {
-  let reloadSpy: ReturnType<typeof vi.fn>
   const addAction = vi.mocked(datadogRum.addAction)
 
   beforeEach(() => {
     window.sessionStorage.clear()
     workflowState.modifiedWorkflows = []
     executionState.runningJobIds = []
+    mockReload.mockClear()
     addAction.mockClear()
-
-    // location.reload is not implemented under jsdom; stub it. A minimal stub is
-    // enough — chunkReload only ever calls window.location.reload().
-    reloadSpy = vi.fn()
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { origin: 'https://app.test', reload: reloadSpy }
-    })
   })
 
   afterEach(() => {
@@ -63,7 +65,7 @@ describe('chunkReload', () => {
     const triggered = attemptChunkReload(undefined, APP_CHUNK)
 
     expect(triggered).toBe(true)
-    expect(reloadSpy).toHaveBeenCalledTimes(1)
+    expect(mockReload).toHaveBeenCalledTimes(1)
     // A RUM action is emitted so the recovery is observable/aggregatable.
     expect(addAction).toHaveBeenCalledWith('stale-chunk-reload', {
       chunkUrl: APP_CHUNK
@@ -74,11 +76,11 @@ describe('chunkReload', () => {
 
   it('does NOT reload a second time once the loop guard is set', () => {
     expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(true)
-    expect(reloadSpy).toHaveBeenCalledTimes(1)
+    expect(mockReload).toHaveBeenCalledTimes(1)
 
     // Second failure in the same session must be a no-op (asset is genuinely gone).
     expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
-    expect(reloadSpy).toHaveBeenCalledTimes(1)
+    expect(mockReload).toHaveBeenCalledTimes(1)
     expect(addAction).toHaveBeenCalledTimes(1)
   })
 
@@ -86,7 +88,7 @@ describe('chunkReload', () => {
     workflowState.modifiedWorkflows = [{ path: 'wf.json' }]
 
     expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
-    expect(reloadSpy).not.toHaveBeenCalled()
+    expect(mockReload).not.toHaveBeenCalled()
     // Guard is NOT set, so recovery can still happen once work is safe.
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).toBeNull()
   })
@@ -99,7 +101,7 @@ describe('chunkReload', () => {
     })
 
     expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
-    expect(reloadSpy).not.toHaveBeenCalled()
+    expect(mockReload).not.toHaveBeenCalled()
     expect(addAction).not.toHaveBeenCalled()
   })
 
@@ -107,7 +109,7 @@ describe('chunkReload', () => {
     executionState.runningJobIds = ['job-1']
 
     expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
-    expect(reloadSpy).not.toHaveBeenCalled()
+    expect(mockReload).not.toHaveBeenCalled()
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).toBeNull()
   })
 
@@ -122,17 +124,17 @@ describe('chunkReload', () => {
 
     workflowState.modifiedWorkflows = [{ path: 'wf.json' }]
     expect(attemptChunkReload(router, APP_CHUNK)).toBe(false)
-    expect(reloadSpy).not.toHaveBeenCalled()
+    expect(mockReload).not.toHaveBeenCalled()
     expect(afterEachCb).toBeDefined()
 
     // Navigation happens but still dirty -> no reload yet.
     afterEachCb?.()
-    expect(reloadSpy).not.toHaveBeenCalled()
+    expect(mockReload).not.toHaveBeenCalled()
 
     // Now safe -> reload fires once.
     workflowState.modifiedWorkflows = []
     afterEachCb?.()
-    expect(reloadSpy).toHaveBeenCalledTimes(1)
+    expect(mockReload).toHaveBeenCalledTimes(1)
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).not.toBeNull()
   })
 
@@ -140,7 +142,7 @@ describe('chunkReload', () => {
     installChunkReload()
     window.dispatchEvent(preloadErrorEvent(APP_CHUNK))
 
-    expect(reloadSpy).toHaveBeenCalledTimes(1)
+    expect(mockReload).toHaveBeenCalledTimes(1)
     expect(addAction).toHaveBeenCalledWith('stale-chunk-reload', {
       chunkUrl: APP_CHUNK
     })
@@ -152,7 +154,7 @@ describe('chunkReload', () => {
 
     // Missing custom-node assets are not stale — a reload can't fix them, and
     // they dominate preloadError volume, so recovery must not fire for them.
-    expect(reloadSpy).not.toHaveBeenCalled()
+    expect(mockReload).not.toHaveBeenCalled()
     expect(addAction).not.toHaveBeenCalled()
   })
 
@@ -167,7 +169,7 @@ describe('chunkReload', () => {
     event.reason = reason
     window.dispatchEvent(event)
 
-    expect(reloadSpy).toHaveBeenCalledTimes(1)
+    expect(mockReload).toHaveBeenCalledTimes(1)
   })
 
   it('ignores an unhandledrejection for an /extensions/ asset', () => {
@@ -179,7 +181,7 @@ describe('chunkReload', () => {
     )
     window.dispatchEvent(event)
 
-    expect(reloadSpy).not.toHaveBeenCalled()
+    expect(mockReload).not.toHaveBeenCalled()
   })
 
   it('ignores unrelated unhandledrejections', () => {
@@ -189,6 +191,6 @@ describe('chunkReload', () => {
     event.reason = new Error('some unrelated error')
     window.dispatchEvent(event)
 
-    expect(reloadSpy).not.toHaveBeenCalled()
+    expect(mockReload).not.toHaveBeenCalled()
   })
 })
