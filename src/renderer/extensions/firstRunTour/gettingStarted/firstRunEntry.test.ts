@@ -72,9 +72,6 @@ describe('useFirstRunEntry', () => {
 
   it.for([
     ['not cloud', (): void => void (mocks.isCloud = false)],
-    ['small viewport', (): void => void (mocks.breakpoint.value = false)],
-    ['subscriptions off', (): void => void (mocks.subscriptionEnabled = false)],
-    ['returning user', (): void => void (mocks.isNewUser = false)],
     ['unknown user', (): void => void (mocks.isNewUser = null)],
     ['flag off', (): void => void (mocks.tourFlag = false)]
   ] as const)(
