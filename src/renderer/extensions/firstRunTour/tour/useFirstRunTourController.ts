@@ -85,7 +85,7 @@ function useFirstRunTourControllerInternal() {
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
     registerTour('firstRun', () => firstRunTourSteps(templateId, runState))
-    const started = await engine.startTour('firstRun')
+    const started = engine.startTour('firstRun')
     if (!started) {
       releaseFirstRunTargets()
       tourWorkflow.value = null

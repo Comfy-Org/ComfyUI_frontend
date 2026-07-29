@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   engine: {
     activeTour: null as string | null,
     step: null as { name: string } | null,
-    startTour: vi.fn(() => Promise.resolve(true)),
+    startTour: vi.fn(() => true),
     next: vi.fn(),
     postpone: vi.fn()
   },
@@ -112,7 +112,7 @@ describe('useFirstRunTourController', () => {
   })
 
   it('releases targets when the tour never starts', async () => {
-    mocks.engine.startTour.mockResolvedValueOnce(false)
+    mocks.engine.startTour.mockReturnValueOnce(false)
     const controller = await freshController()
     expect(await controller.beginTour('image_z_image_turbo')).toBe(false)
     expect(mocks.release).toHaveBeenCalled()

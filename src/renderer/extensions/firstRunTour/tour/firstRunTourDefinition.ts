@@ -34,21 +34,17 @@ function nextFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()))
 }
 
-async function registerNodeTarget(
-  coachId: CoachId,
-  nodeId: NodeId
-): Promise<boolean> {
+async function registerWhenMounted(coachId: CoachId, nodeId: NodeId) {
   const selector = `[data-node-id="${CSS.escape(String(nodeId))}"]`
   for (let attempt = 0; attempt < MOUNT_ATTEMPTS; attempt++) {
     const element = document.querySelector<HTMLElement>(selector)
     if (element) {
       registered.set(coachId, element)
       registerCoachmark(coachId, element)
-      return true
+      return
     }
     await nextFrame()
   }
-  return false
 }
 
 function nodeStep(name: string, coachId: CoachId, nodeId: NodeId): CoachStep {
@@ -61,30 +57,28 @@ function nodeStep(name: string, coachId: CoachId, nodeId: NodeId): CoachStep {
   }
 }
 
-export async function firstRunTourSteps(
+export function firstRunTourSteps(
   templateId: string,
   runState: Readonly<Ref<RunState>>
-): Promise<CoachStep[]> {
+): CoachStep[] {
   releaseFirstRunTargets()
   const graph = app.rootGraph
   const roles = graph ? resolveTourRoles(graph, templateId) : null
   if (!roles?.sink) return []
-  if (!(await registerNodeTarget(NODE_COACH_IDS.sink, roles.sink))) return []
+  void registerWhenMounted(NODE_COACH_IDS.sink, roles.sink)
 
   const steps: CoachStep[] = []
-  if (
-    roles.source &&
-    (await registerNodeTarget(NODE_COACH_IDS.source, roles.source))
-  )
+  if (roles.source) {
+    void registerWhenMounted(NODE_COACH_IDS.source, roles.source)
     steps.push(nodeStep('upload', NODE_COACH_IDS.source, roles.source))
-  if (
-    roles.promptHost &&
-    (await registerNodeTarget(NODE_COACH_IDS.prompt, roles.promptHost))
-  )
+  }
+  if (roles.promptHost) {
+    void registerWhenMounted(NODE_COACH_IDS.prompt, roles.promptHost)
     steps.push({
       ...nodeStep('prompt', NODE_COACH_IDS.prompt, roles.promptHost),
       interactive: true
     })
+  }
   steps.push({
     name: 'run',
     coachId: COACH_IDS.graphRunButton,
