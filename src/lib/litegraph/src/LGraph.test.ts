@@ -103,6 +103,62 @@ describe('LGraph', () => {
     expect(graph.last_node_id).toBe(7)
   })
 
+  describe('duplicate node-instance invariants', () => {
+    beforeEach(() => {
+      vi.stubEnv('DEV', true)
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      vi.unstubAllEnvs()
+      vi.restoreAllMocks()
+    })
+
+    it('rejects re-adding a node instance already in the graph', () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('re-added')
+      graph.add(node)
+
+      expect(() => graph.add(node)).toThrow(
+        'LGraph.add: re-adding the same node instance (id collision with itself)'
+      )
+      expect(graph.nodes).toHaveLength(1)
+    })
+
+    it('renumbers a distinct node instance that collides on id', () => {
+      const graph = new LGraph()
+      const first = new LGraphNode('first')
+      Reflect.set(first, 'id', 3)
+      graph.add(first)
+
+      const collidingDuplicate = new LGraphNode('second')
+      Reflect.set(collidingDuplicate, 'id', 3)
+
+      expect(() => graph.add(collidingDuplicate)).not.toThrow()
+      expect(collidingDuplicate.id).not.toBe(first.id)
+      expect(graph.getNodeById(toNodeId(3))).toBe(first)
+      expect(graph.getNodeById(collidingDuplicate.id)).toBe(collidingDuplicate)
+    })
+
+    it('rejects removing a node that belongs to another graph', () => {
+      const ownerGraph = new LGraph()
+      const node = new LGraphNode('owned')
+      Reflect.set(node, 'id', 1)
+      ownerGraph.add(node)
+
+      const otherGraph = new LGraph()
+      const impostor = new LGraphNode('impostor')
+      Reflect.set(impostor, 'id', 1)
+      otherGraph.add(impostor)
+
+      expect(() => otherGraph.remove(node)).toThrow(
+        'LGraph.remove: node does not belong to this graph'
+      )
+      expect(otherGraph.nodes).toEqual([impostor])
+      expect(ownerGraph.nodes).toEqual([node])
+    })
+  })
+
   test('can be instantiated', ({ expect }) => {
     // @ts-expect-error Intentional - extra holds any / all consumer data that should be serialised
     const graph = new LGraph({ extra: 'TestGraph' })

@@ -1,5 +1,6 @@
 import { toString } from 'es-toolkit/compat'
 
+import { assert } from '@/base/assert'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -978,6 +979,10 @@ export class LGraph
     node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
 
     if (node.id !== UNASSIGNED_NODE_ID && this._nodes_by_id[node.id] != null) {
+      assert(
+        this._nodes_by_id[node.id] !== node,
+        'LGraph.add: re-adding the same node instance (id collision with itself)'
+      )
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'
       )
@@ -1070,6 +1075,11 @@ export class LGraph
       console.warn('LiteGraph: node cannot be removed', node)
       return
     }
+
+    assert(
+      node.graph === this,
+      'LGraph.remove: node does not belong to this graph'
+    )
 
     // sure? - almost sure is wrong
     this.beforeChange()
