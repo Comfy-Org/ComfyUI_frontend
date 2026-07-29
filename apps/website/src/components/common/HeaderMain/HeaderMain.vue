@@ -33,7 +33,7 @@ const ctaButtons = [
 
 <template>
   <nav
-    class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
+    class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-2 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8 xl:gap-4"
     aria-label="Main navigation"
   >
     <a
@@ -66,7 +66,9 @@ const ctaButtons = [
       data-testid="desktop-nav-cta"
       class="hidden shrink-0 items-center gap-2 lg:flex"
     >
-      <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
+      <div v-if="githubStars" class="hidden xl:block">
+        <GitHubStarBadge :stars="githubStars" />
+      </div>
       <Button
         v-for="cta in ctaButtons"
         :key="cta.href"
@@ -74,7 +76,6 @@ const ctaButtons = [
         :href="cta.href"
         :variant="cta.primary ? 'default' : 'outline'"
         :aria-label="cta.ariaLabel"
-        :class="{ 'max-xl:hidden': !cta.primary }"
       >
         <span>
           <span class="hidden 2xl:inline-block">{{ cta.full }}</span>

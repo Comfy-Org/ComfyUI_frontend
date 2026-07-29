@@ -217,16 +217,8 @@ test.describe('Get started section links @smoke', () => {
     await expect(downloadLink).toBeVisible()
     await expect(downloadLink).toHaveAttribute('href', '/download')
 
-    const cloudLink = section.getByRole('link', { name: 'Try Cloud for free' })
+    const cloudLink = section.getByRole('link', { name: 'Launch Cloud' })
     await expect(cloudLink).toBeVisible()
-    const href = await cloudLink.getAttribute('href')
-    const cloudUrl = new URL(href ?? '')
-    expect(cloudUrl.origin).toBe('https://cloud.comfy.org')
-    expect(cloudUrl.searchParams.get('utm_source')).toBe('comfy_org')
-    expect(cloudUrl.searchParams.get('utm_medium')).toBe('website')
-    expect(cloudUrl.searchParams.get('utm_campaign')).toBe('free_tier')
-    expect(cloudUrl.searchParams.get('utm_content')).toBe(
-      'getstarted_try_cloud'
-    )
+    await expect(cloudLink).toHaveAttribute('href', 'https://cloud.comfy.org')
   })
 })
