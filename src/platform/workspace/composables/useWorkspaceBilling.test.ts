@@ -28,7 +28,9 @@ const mockBillingPlans = vi.hoisted(() => ({
 
 const mockShow = vi.hoisted(() => vi.fn())
 const mockStartOperation = vi.hoisted(() => vi.fn())
+const mockGetOperation = vi.hoisted(() => vi.fn())
 const mockSetWorkspaceBillingRail = vi.hoisted(() => vi.fn())
+const mockActiveWorkspaceId = vi.hoisted(() => ({ value: 'workspace-1' }))
 
 // Hoisted so the vi.mock factory below can reference it: a plain top-level
 // const is in its temporal dead zone when the hoisted factory runs under
@@ -67,13 +69,16 @@ vi.mock(
 
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
+    getOperation: mockGetOperation,
     startOperation: mockStartOperation
   })
 }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    activeWorkspace: { id: 'workspace-1' },
+    get activeWorkspace() {
+      return { id: mockActiveWorkspaceId.value }
+    },
     setWorkspaceBillingRail: mockSetWorkspaceBillingRail
   })
 }))
@@ -149,6 +154,7 @@ const subscribeResponses = [
 describe('useWorkspaceBilling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockActiveWorkspaceId.value = 'workspace-1'
     mockBillingPlans.plans.value = []
     mockBillingPlans.currentPlanSlug.value = null
     mockBillingPlans.error.value = null
@@ -253,6 +259,68 @@ describe('useWorkspaceBilling', () => {
         'workspace-1',
         'stripe'
       )
+    })
+
+    it('recovers a pending subscription operation from billing status', async () => {
+      const actionUrl = 'https://invoice.stripe.com/sensitive-token'
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        billing_status: 'pending_payment',
+        pending_billing_op_id: 'op-recovered',
+        action_url: actionUrl
+      } satisfies BillingStatusResponse)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-recovered',
+        'subscription',
+        undefined,
+        actionUrl
+      )
+    })
+
+    it('does not restart an operation recovered by an earlier status read', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        billing_status: 'pending_payment',
+        pending_billing_op_id: 'op-recovered'
+      } satisfies BillingStatusResponse)
+      mockGetOperation
+        .mockReturnValueOnce(undefined)
+        .mockReturnValue({ status: 'pending' })
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+      await billing.fetchStatus()
+
+      expect(mockStartOperation).toHaveBeenCalledOnce()
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-recovered',
+        'subscription',
+        undefined,
+        undefined
+      )
+    })
+
+    it('does not recover an operation from a stale workspace response', async () => {
+      const status = createDeferred<BillingStatusResponse>()
+      mockWorkspaceApi.getBillingStatus.mockReturnValue(status.promise)
+      const billing = setupBilling()
+
+      const fetch = billing.fetchStatus()
+      mockActiveWorkspaceId.value = 'workspace-2'
+      status.resolve({
+        ...activeStatus,
+        billing_status: 'pending_payment',
+        pending_billing_op_id: 'op-workspace-1',
+        action_url: 'https://invoice.stripe.com/sensitive-token'
+      })
+      await fetch
+
+      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(billing.subscription.value).toBeNull()
     })
 
     it("keeps a 'scheduled' subscription on the active treatment", async () => {
