@@ -45,8 +45,18 @@ const dirty = computed(
   () => draftMode.value !== store.mode || draftLimit.value !== store.creditLimit
 )
 
+const limitValid = computed(
+  () =>
+    draftMode.value !== 'auto-limit' ||
+    (Number.isFinite(draftLimit.value) && Math.floor(draftLimit.value) > 0)
+)
+
+const saveable = computed(() => dirty.value && limitValid.value)
+
 const triggerLabel = computed(() =>
-  store.mode === 'ask' ? t('agent.runModeTriggerAsk') : t('agent.modelAuto')
+  store.mode === 'ask'
+    ? t('agent.runModeTriggerAsk')
+    : t('agent.runModeTriggerAuto')
 )
 
 const options: {
@@ -163,7 +173,7 @@ const options: {
 
         <button
           type="button"
-          :disabled="!dirty"
+          :disabled="!saveable"
           class="bg-agent-fg text-agent-surface hover:bg-agent-fg/90 mt-3 w-full cursor-pointer rounded-md py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           @click="saveChanges"
         >
