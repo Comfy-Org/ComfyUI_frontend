@@ -63,11 +63,17 @@ export default defineConfig({
         trace:
           process.env.CUSTOM_NODES_ENV === 'cloud' ? 'off' : 'retain-on-failure'
       },
-      // Cloud app boots are network-bound (multi-MB /object_info + auth
-      // seeding) and can exceed 15s INSIDE fixture setup, before any test
-      // body's setTimeout can extend the budget - record run 30408428601
-      // lost all 87 tests at exactly 15.1s this way.
-      timeout: process.env.CUSTOM_NODES_ENV === 'cloud' ? 60_000 : 15000,
+      // NO per-test cap on cloud. Cloud app boots are network-bound (multi-MB
+      // /object_info + auth seeding) and every cap picked so far has only
+      // moved the cliff: 15s lost all 87 tests of record run 30408428601 at
+      // 15.1s, and 60s lost 125 of 128 in gate run 30456554768 at 1.0m - a
+      // run whose 3 passes prove the app does boot, just not on a schedule a
+      // fixed number can predict. A cap converts slow-but-working into
+      // failed; the step and job ceilings already bound a genuine hang, and
+      // the fixture logs sign-in and boot durations so slowness stays
+      // visible instead of fatal. Do not reintroduce a number here: size the
+      // ceilings from the logged distribution instead.
+      timeout: process.env.CUSTOM_NODES_ENV === 'cloud' ? 0 : 15000,
       // No retries on cloud. Every cloud failure so far has been in the
       // beforeEach hook - sign-in plus app boot - which fails identically
       // every attempt, so retries only multiply the wall clock by four
