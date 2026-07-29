@@ -2,7 +2,12 @@ import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type {
+  AutoReloadResponse,
+  BillingStatusResponse,
+  UpdateAutoReloadRequest,
+  WorkspaceWithRole
+} from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
@@ -152,6 +157,82 @@ async function mockCloudBoot(page: Page, billingControlEnabled = true) {
   )
 }
 
+async function mockAutoReloadContract(page: Page) {
+  const workspaces: WorkspaceWithRole[] = [
+    workspace('personal', 'owner'),
+    workspace('team', 'owner')
+  ]
+  const savedByWorkspace = new Map<string, AutoReloadResponse>()
+  const putRequests: UpdateAutoReloadRequest[] = []
+
+  await page.unroute('**/api/features')
+  await page.route('**/api/features', (route) =>
+    route.fulfill(
+      jsonRoute({
+        team_workspaces_enabled: true,
+        billing_control_enabled: true
+      } satisfies RemoteConfig)
+    )
+  )
+  await page.unroute('**/api/workspaces')
+  await page.route('**/api/workspaces', (route) =>
+    route.fulfill(jsonRoute({ workspaces }))
+  )
+  await page.unroute('**/api/auth/token')
+  await page.route('**/api/auth/token', async (route) => {
+    const body = route.request().postDataJSON() as { workspace_id?: string }
+    const selected =
+      workspaces.find((candidate) => candidate.id === body.workspace_id) ??
+      workspaces[0]
+    await route.fulfill(
+      jsonRoute({
+        token: `token-${selected.id}`,
+        expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        workspace: {
+          id: selected.id,
+          name: selected.name,
+          type: selected.type
+        },
+        role: selected.role,
+        permissions: []
+      })
+    )
+  })
+  await page.route('**/api/billing/auto-reload', async (route) => {
+    const authorization = await route.request().headerValue('authorization')
+    expect(authorization).toMatch(/^Bearer token-ws-(personal|team)$/)
+    const workspaceId = authorization!.replace('Bearer token-', '')
+    const current =
+      savedByWorkspace.get(workspaceId) ??
+      ({
+        configured: false,
+        enabled: false,
+        threshold_credits: null,
+        reload_credits: null,
+        monthly_budget_cents: null,
+        spent_this_cycle_cents: 0
+      } satisfies AutoReloadResponse)
+
+    if (route.request().method() === 'GET') {
+      await route.fulfill(jsonRoute(current))
+      return
+    }
+
+    expect(route.request().method()).toBe('PUT')
+    const payload = route.request().postDataJSON() as UpdateAutoReloadRequest
+    putRequests.push(payload)
+    const updated: AutoReloadResponse = {
+      configured: true,
+      ...payload,
+      spent_this_cycle_cents: 0
+    }
+    savedByWorkspace.set(workspaceId, updated)
+    await route.fulfill(jsonRoute(updated))
+  })
+
+  return { putRequests }
+}
+
 async function mockBalance(
   page: Page,
   balance: { amount: number; monthly: number; prepaid: number }
@@ -231,6 +312,56 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await expect(content.getByRole('button', { name: 'Activity' })).toHaveCount(
       0
     )
+  })
+
+  test('persists auto-reload with the authenticated workspace contract', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    await mockCloudBoot(page)
+    const { putRequests } = await mockAutoReloadContract(page)
+
+    let content = await openPlanAndCredits(page)
+    await content.getByRole('button', { name: 'Set up auto-reload' }).click()
+    await page.getByRole('button', { name: 'Update' }).click()
+
+    expect(putRequests).toEqual([
+      {
+        enabled: true,
+        threshold_credits: 1000,
+        reload_credits: 5000,
+        monthly_budget_cents: null
+      }
+    ])
+    await expect(
+      content.getByRole('button', { name: 'Edit', exact: true })
+    ).toBeVisible()
+
+    await page.reload()
+    content = await openPlanAndCredits(page)
+    await expect(
+      content.getByRole('button', { name: 'Edit', exact: true })
+    ).toBeVisible()
+
+    await page.getByTestId('settings-dialog').getByLabel('Close').click()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('workspace-switcher-trigger').click()
+    await page.getByText('My Team', { exact: true }).click()
+
+    content = await openPlanAndCredits(page)
+    await expect(
+      content.getByRole('button', { name: 'Set up auto-reload' })
+    ).toBeVisible()
+
+    await page.getByTestId('settings-dialog').getByLabel('Close').click()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('workspace-switcher-trigger').click()
+    await page.getByText('Personal Workspace', { exact: true }).click()
+
+    content = await openPlanAndCredits(page)
+    await expect(
+      content.getByRole('button', { name: 'Edit', exact: true })
+    ).toBeVisible()
   })
 
   test('renders the unified tile with breakdown and add-credits', async ({
