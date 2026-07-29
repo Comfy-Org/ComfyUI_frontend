@@ -22,6 +22,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
@@ -103,6 +104,7 @@ export function useSubscriptionCheckout(
   const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
+  const workspaceStore = useTeamWorkspaceStore()
 
   const checkoutStep = ref<CheckoutStep>('pricing')
   const isLoadingPreview = ref(false)
@@ -113,7 +115,24 @@ export function useSubscriptionCheckout(
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
-  const isPolling = computed(() => billingOperationStore.hasPendingOperations)
+  const activeCheckoutOperationId = ref<string | null>(null)
+  const activeCheckoutOperation = computed(() => {
+    if (!activeCheckoutOperationId.value) {
+      return billingOperationStore.subscriptionActionOperation
+    }
+    const operation = billingOperationStore.getOperation(
+      activeCheckoutOperationId.value
+    )
+    return operation?.workspaceId === workspaceStore.activeWorkspaceId
+      ? operation
+      : undefined
+  })
+  const activeCheckoutActionUrl = computed(
+    () => activeCheckoutOperation.value?.actionUrl ?? null
+  )
+  const isPolling = computed(
+    () => activeCheckoutOperation.value?.status === 'pending'
+  )
   const selectedTeamStop = computed(
     () => selectedTeamCheckout.value?.stop ?? null
   )
@@ -393,9 +412,11 @@ export function useSubscriptionCheckout(
   }
 
   function handleBackToPricing() {
+    if (isPolling.value) return
     checkoutStep.value = 'pricing'
     previewData.value = null
     selectedTeamCheckout.value = null
+    activeCheckoutOperationId.value = null
   }
 
   function handleSuccessClose() {
@@ -552,6 +573,7 @@ export function useSubscriptionCheckout(
     opId: string,
     context: SubscriptionOutcomeContext
   ) {
+    activeCheckoutOperationId.value = opId
     const operation = await billingOperationStore.startOperation(
       opId,
       'subscription',
@@ -562,7 +584,13 @@ export function useSubscriptionCheckout(
         paymentIntentSource
       }
     )
-    if (operation.status === 'succeeded') checkoutStep.value = 'success'
+    if (
+      operation.status === 'succeeded' &&
+      activeCheckoutOperationId.value === opId &&
+      operation.workspaceId === workspaceStore.activeWorkspaceId
+    ) {
+      checkoutStep.value = 'success'
+    }
   }
 
   async function handleTeamSubscription(confirmReactivation = false) {
@@ -690,6 +718,7 @@ export function useSubscriptionCheckout(
     selectedTierKey,
     selectedTeamStop,
     selectedBillingCycle,
+    activeCheckoutActionUrl,
     isPolling,
     isTeamCheckout,
     previewVariant,
