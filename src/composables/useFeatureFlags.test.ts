@@ -70,7 +70,13 @@ describe('useFeatureFlags', () => {
           undefined
         ],
         ['maxUploadSize', ServerFeatureFlag.MAX_UPLOAD_SIZE, undefined],
+        ['assetsEnabled', ServerFeatureFlag.ASSETS, false],
         ['supportsManagerV4', ServerFeatureFlag.MANAGER_SUPPORTS_V4, undefined],
+        [
+          'managerSupportsCsrfPost',
+          ServerFeatureFlag.MANAGER_SUPPORTS_CSRF_POST,
+          undefined
+        ],
         [
           'modelUploadButtonEnabled',
           ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
