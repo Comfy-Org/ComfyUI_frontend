@@ -44,16 +44,6 @@ export function attachNodeToStores(
  */
 type WidgetDetachMode = 'keep-values' | 'discard-values'
 
-function releaseNodeWidgets(node: LGraphNode, mode: WidgetDetachMode): void {
-  if (!node.widgets) return
-
-  const widgetValueStore = useWidgetValueStore()
-  for (const widgetId of getWidgetIds(node.widgets)) {
-    if (mode === 'discard-values') widgetValueStore.deleteWidget(widgetId)
-    else widgetValueStore.removeNodeWidgetOrder(widgetId)
-  }
-}
-
 function releaseNodePreviewExposures(
   rootGraphId: UUID,
   node: LGraphNode
@@ -68,17 +58,19 @@ function releaseNodePreviewExposures(
 
 /**
  * The inverse of {@link attachNodeToStores}: drops the node's shell state, the
- * widget order it registered, and the preview exposures it hosts. Call while
- * the node still holds its graph reference — widget ids are derived from it.
+ * widget order it registered, and the preview exposures it hosts.
  */
 export function detachNodeFromStores(
   graph: Pick<LGraph, 'rootGraph'>,
   node: LGraphNode,
   mode: WidgetDetachMode = 'keep-values'
 ): void {
+  const rootGraphId = graph.rootGraph.id
   unregisterNodeState(node)
-  releaseNodeWidgets(node, mode)
-  releaseNodePreviewExposures(graph.rootGraph.id, node)
+  useWidgetValueStore().releaseNodeWidgets(rootGraphId, node.id, {
+    discardValues: mode === 'discard-values'
+  })
+  releaseNodePreviewExposures(rootGraphId, node)
 }
 
 /**

@@ -86,4 +86,17 @@ describe('node shell teardown', () => {
     expect(widgetValueStore.getWidget(widgetId)).toBeUndefined()
     expect(previewExposureStore.getExposures(zeroUuid, hostLocator)).toEqual([])
   })
+
+  it('releases entries of a widget the node dropped without unregistering', () => {
+    const graph = new LGraph()
+    const node = addWidgetedNode(graph)
+    const [widgetId] = widgetIdsOf(node)
+    const widgetValueStore = useWidgetValueStore()
+    node.widgets = []
+
+    graph.clear()
+
+    expect(widgetValueStore.getNodeWidgetIds(zeroUuid, node.id)).toEqual([])
+    expect(widgetValueStore.getWidget(widgetId)).toBeUndefined()
+  })
 })
