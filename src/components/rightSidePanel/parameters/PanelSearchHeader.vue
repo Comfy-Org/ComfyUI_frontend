@@ -10,7 +10,13 @@ const { searcher, updateKey } = defineProps<{
   updateKey?: AsyncSearchInputProps['updateKey']
 }>()
 
+const emit = defineEmits<{
+  enter: [event: KeyboardEvent]
+}>()
+
 const query = defineModel<string>({ default: '' })
+
+defineOptions({ inheritAttrs: false })
 </script>
 
 <template>
@@ -22,6 +28,7 @@ const query = defineModel<string>({ default: '' })
       :searcher
       :update-key="updateKey"
       class="flex-1"
+      @enter="emit('enter', $event)"
     />
     <slot />
   </div>

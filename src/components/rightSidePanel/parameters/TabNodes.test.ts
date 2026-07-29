@@ -42,7 +42,7 @@ describe('TabNodes', () => {
   it('composes the shared search header with the collapse toggle in its slot', () => {
     renderTab()
 
-    expect(screen.getByRole('textbox')).toBeTruthy()
-    expect(screen.getByTestId('collapse-toggle')).toBeTruthy()
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
+    expect(screen.getByTestId('collapse-toggle')).toBeInTheDocument()
   })
 })

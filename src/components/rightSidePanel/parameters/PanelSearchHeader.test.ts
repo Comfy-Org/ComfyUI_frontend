@@ -11,7 +11,12 @@ const i18n = createI18n({
   messages: { en: { g: { searchPlaceholder: 'Search', clear: 'Clear' } } }
 })
 
-function renderHeader(searcher: (query: string) => Promise<void>) {
+function renderHeader(
+  searcher: (
+    query: string,
+    onCleanup: (fn: () => void) => void
+  ) => Promise<void>
+) {
   return render(PanelSearchHeader, {
     props: { searcher, updateKey: [], modelValue: '' },
     slots: { default: () => h('button', { 'data-testid': 'slot' }, 'toggle') },
@@ -36,8 +41,8 @@ describe('PanelSearchHeader', () => {
   it('renders default slot content alongside the search input', () => {
     renderHeader(vi.fn().mockResolvedValue(undefined))
 
-    expect(screen.getByTestId('slot')).toBeTruthy()
-    expect(screen.getByRole('textbox')).toBeTruthy()
+    expect(screen.getByTestId('slot')).toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
   })
 
   it('emits query updates from the search input through v-model', async () => {
@@ -46,5 +51,16 @@ describe('PanelSearchHeader', () => {
     await fireEvent.update(screen.getByRole('textbox'), 'seed')
 
     expect(emitted()['update:modelValue']).toContainEqual(['seed'])
+  })
+
+  it('re-fires the searcher when updateKey changes', async () => {
+    const searcher = vi.fn().mockResolvedValue(undefined)
+    const { rerender } = renderHeader(searcher)
+
+    await waitFor(() => expect(searcher).toHaveBeenCalledTimes(1))
+
+    await rerender({ updateKey: ['changed'] })
+
+    await waitFor(() => expect(searcher).toHaveBeenCalledTimes(2))
   })
 })

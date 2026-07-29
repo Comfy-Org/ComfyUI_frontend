@@ -34,6 +34,6 @@ describe('TabGlobalParameters', () => {
   it('renders the shared search header', () => {
     renderTab()
 
-    expect(screen.getByRole('textbox')).toBeTruthy()
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
   })
 })

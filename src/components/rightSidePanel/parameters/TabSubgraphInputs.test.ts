@@ -69,7 +69,7 @@ function renderPanel(node: SubgraphNode) {
       plugins: [i18n],
       stubs: {
         SectionWidgets: SectionWidgetsStub,
-        AsyncSearchInput: true,
+        PanelSearchHeader: true,
         CollapseToggleButton: true
       }
     }
