@@ -14,6 +14,7 @@ import type {
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
+  BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -24,6 +25,8 @@ import type {
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OnboardingTourMetadata,
+  OnboardingTourStage,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -45,12 +48,20 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
+  WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
 } from '../../types'
-import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
+import {
+  CANCELLATION_STAGE_EVENTS,
+  getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload,
+  OnboardingTourEvents,
+  TelemetryEvents
+} from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -417,8 +428,26 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
   }
 
+  trackWorkspaceInviteFailed(metadata: WorkspaceInviteFailedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_FAILED, metadata)
+  }
+
+  trackBillingEvent(event: BillingTelemetryEvent): void {
+    this.trackEvent(
+      getBillingTelemetryEventName(event),
+      getBillingTelemetryEventPayload(event)
+    )
+  }
+
   trackRunButton(properties: RunButtonProperties): void {
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
+  }
+
+  trackOnboardingTour(
+    stage: OnboardingTourStage,
+    metadata: OnboardingTourMetadata
+  ): void {
+    this.trackEvent(OnboardingTourEvents[stage], metadata)
   }
 
   trackSurvey(
@@ -567,6 +596,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
+    this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
