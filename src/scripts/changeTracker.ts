@@ -29,15 +29,14 @@ const reportedInactiveCalls = new Set<string>()
 /**
  * Report a ChangeTracker method being called on an inactive tracker.
  * Deduplicates per method+workflow per session to avoid signal noise on hot paths.
+ * The workflow path stays in the local dedup key: assert messages are shipped to
+ * external telemetry on cloud builds, so they must not carry user data.
  */
 function reportInactiveTrackerCall(method: string, workflowPath: string) {
   const key = `${method}:${workflowPath}`
   if (reportedInactiveCalls.has(key)) return
   reportedInactiveCalls.add(key)
-  assert(
-    false,
-    `ChangeTracker.${method}() called on inactive tracker for: ${workflowPath}`
-  )
+  assert(false, `ChangeTracker.${method}() called on inactive tracker`)
 }
 
 export class ChangeTracker {

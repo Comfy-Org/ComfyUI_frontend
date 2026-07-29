@@ -21,10 +21,15 @@ export function reportAssertFailureToRum(message: string): void {
   // Built here, before awaiting the SDK, so the stack holds the assert call site.
   const error = new Error(message)
 
-  rumModule ??= import('@datadog/browser-rum')
-  void rumModule
+  const pending = (rumModule ??= import('@datadog/browser-rum'))
+  void pending
     .then(({ datadogRum }) => {
       datadogRum.addError(error, { source: 'invariant-assert' })
     })
-    .catch(() => {})
+    .catch(() => {
+      // Release the message and the cached import so a transient failure
+      // doesn't silently disable reporting for the rest of the session.
+      if (rumModule === pending) rumModule = undefined
+      reportedMessages.delete(message)
+    })
 }

@@ -1,12 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { reportedErrors } = vi.hoisted(() => ({
-  reportedErrors: [] as { error: Error; context: unknown }[]
+const { reportedErrors, rumState } = vi.hoisted(() => ({
+  reportedErrors: [] as { error: Error; context: unknown }[],
+  rumState: { failuresRemaining: 0 }
 }))
 
 vi.mock('@datadog/browser-rum', () => ({
   datadogRum: {
     addError: (error: Error, context: unknown) => {
+      if (rumState.failuresRemaining > 0) {
+        rumState.failuresRemaining--
+        throw new Error('RUM unavailable')
+      }
       reportedErrors.push({ error, context })
     }
   }
@@ -20,6 +25,7 @@ async function loadReporter() {
 describe('reportAssertFailureToRum', () => {
   beforeEach(() => {
     reportedErrors.length = 0
+    rumState.failuresRemaining = 0
   })
 
   it('reports each distinct message to RUM exactly once', async () => {
@@ -48,6 +54,20 @@ describe('reportAssertFailureToRum', () => {
     expect(reportedErrors.at(-1)?.error.message).toBe(
       '[Assertion failed]: failure 19'
     )
+  })
+
+  it('retries a message whose send failed instead of consuming its cap slot', async () => {
+    const { reportAssertFailureToRum } = await loadReporter()
+    const message = '[Assertion failed]: transient send failure'
+    rumState.failuresRemaining = 1
+
+    reportAssertFailureToRum(message)
+
+    await vi.waitFor(() => {
+      reportAssertFailureToRum(message)
+      expect(reportedErrors).toHaveLength(1)
+    })
+    expect(reportedErrors[0].error.message).toBe(message)
   })
 
   it('builds the error synchronously so the stack holds the call site', async () => {
