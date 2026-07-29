@@ -121,6 +121,11 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             { label: t('nav.comfyHub', locale), href: externalLinks.workflows },
             { label: t('nav.gallery', locale), href: routes.gallery },
             {
+              label: t('nav.events', locale),
+              href: routes.events,
+              badge: 'new'
+            },
+            {
               label: t('nav.affiliates', locale),
               href: routes.affiliates,
               badge: 'new'

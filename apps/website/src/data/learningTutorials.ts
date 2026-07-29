@@ -243,6 +243,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/animation1-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=d8414beacf91',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/animation1_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageGenerationTag, characterDesignTag]
   },
   {
@@ -260,6 +268,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/animation2-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=78a07a3ce040',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/animation2_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageGenerationTag, keyframingTag]
   },
   {
@@ -277,6 +293,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/animation3-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=1d905d914f11',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/animation3_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [
       partnerNodesTag,
       imageGenerationTag,
@@ -299,6 +323,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/animation4-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=098f35ab854f',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/animation4_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageGenerationTag, imageToVideoTag, threeDTag]
   },
   {
@@ -316,6 +348,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/animation5-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=7e6419542193',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/animation5_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [imageToVideoTag, keyframingTag, inBetweeningTag]
   },
   {
@@ -333,6 +373,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/animation6-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=ea6c80d417cf',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/animation6_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageToVideoTag, styleTransferTag, compositingTag]
   },
   {
@@ -350,6 +398,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/advertising1-thumb.png',
     href: 'https://cloud.comfy.org/?share=62f892c540e3',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/advertising1_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageGenerationTag, styleTransferTag, moodboardsTag]
   },
   {
@@ -367,6 +423,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/advertising2-thumb.png',
     href: 'https://cloud.comfy.org/?share=a598339548b3',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/advertising2_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [
       partnerNodesTag,
       imageGenerationTag,
@@ -389,6 +453,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/advertising3-thumb.png',
     href: 'https://cloud.comfy.org/?share=2d5b0cdf915a',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/advertising3_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [
       partnerNodesTag,
       imageGenerationTag,
@@ -411,6 +483,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/advertising4-thumb.png',
     href: 'https://cloud.comfy.org/?share=1233f85f1c96',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/advertising4_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [
       partnerNodesTag,
       imageGenerationTag,
@@ -433,6 +513,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/advertising5-thumb.png',
     href: 'https://cloud.comfy.org/?share=dd1946bdd7c8',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/advertising5_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageToVideoTag, bRollTag]
   },
   {
@@ -450,6 +538,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/advertising6-thumb.png',
     href: 'https://cloud.comfy.org/?share=9e36b66e188b',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/advertising6_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageGenerationTag, outOfHomeTag]
   }
 ] as const

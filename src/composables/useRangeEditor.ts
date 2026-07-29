@@ -15,6 +15,7 @@ interface UseRangeEditorOptions {
   valueMax: Ref<number>
   showMidpoint: Ref<boolean>
   contentInsetX?: Ref<number>
+  handleCenterOffsetX?: Ref<number>
 }
 
 export function useRangeEditor({
@@ -23,12 +24,24 @@ export function useRangeEditor({
   valueMin,
   valueMax,
   showMidpoint,
-  contentInsetX
+  contentInsetX,
+  handleCenterOffsetX
 }: UseRangeEditorOptions) {
   const activeHandle = ref<HandleType | null>(null)
   let cleanupDrag: (() => void) | null = null
 
-  function pointerToValue(e: PointerEvent): number {
+  function grabShiftFor(handle: HandleType | null): number {
+    const offset = handleCenterOffsetX?.value ?? 0
+    if (!Number.isFinite(offset)) return 0
+    if (handle === 'min') return offset
+    if (handle === 'max') return -offset
+    return 0
+  }
+
+  function pointerToValue(
+    e: PointerEvent,
+    handle: HandleType | null = null
+  ): number {
     const el = trackRef.value
     if (!el) return valueMin.value
     const rect = el.getBoundingClientRect()
@@ -38,7 +51,7 @@ export function useRangeEditor({
       : 0
     const contentWidth = Math.max(rect.width - 2 * inset, 1)
     const normalized = clamp(
-      (e.clientX - rect.left - inset) / contentWidth,
+      (e.clientX + grabShiftFor(handle) - rect.left - inset) / contentWidth,
       0,
       1
     )
@@ -94,7 +107,7 @@ export function useRangeEditor({
 
     const onMove = (ev: PointerEvent) => {
       if (!activeHandle.value) return
-      updateValue(activeHandle.value, pointerToValue(ev))
+      updateValue(activeHandle.value, pointerToValue(ev, activeHandle.value))
     }
 
     const endDrag = () => {

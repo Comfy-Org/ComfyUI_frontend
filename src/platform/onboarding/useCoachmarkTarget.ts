@@ -72,8 +72,6 @@ export function useCoachmarkTarget(
     () => candidateEls.value.find(isLaidOut) ?? null
   )
 
-  const targetMoves = computed(() => !!toValue(step)?.follow)
-
   // The top bar's height only changes on resize, so read it once and refresh
   // then — Floating UI re-runs the middleware every frame while tracking motion.
   const topInset = ref(topSafeInset())
@@ -129,10 +127,10 @@ export function useCoachmarkTarget(
     if (!reference || !floating) return
     onCleanup(
       autoUpdate(reference, floating, update, {
-        animationFrame: trackMotion.value || targetMoves.value
+        animationFrame: trackMotion.value
       })
     )
   })
 
-  return { targetEl, targetRect, targetMoves, floatingStyles, isPositioned }
+  return { targetEl, targetRect, floatingStyles, isPositioned }
 }

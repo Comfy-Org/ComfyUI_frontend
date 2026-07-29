@@ -143,6 +143,8 @@
       "modelDescription": "模型描述",
       "modelTagging": "模型标签",
       "modelType": "模型类型",
+      "modelTypeCoreReadonly": "核心上的模型类型无法更改，暂不支持移动文件。",
+      "modelTypeImmutableReadonly": "只读模型的模型类型无法更改。",
       "noAdditionalTags": "无附加标签",
       "selectModelPrompt": "选择一个模型以查看其信息",
       "selectModelType": "选择模型类型...",
@@ -173,6 +175,7 @@
     "rename": {
       "failed": "无法重命名资产。"
     },
+    "searchModels": "搜索模型",
     "selectFrameworks": "选择框架",
     "selectModelType": "选择模型类型",
     "selectProjects": "选择项目",
@@ -611,14 +614,14 @@
     "chooseProfilePicture": "选择头像",
     "createProfile": "创建个人资料",
     "createProfileButton": "创建我的个人资料",
-    "createProfileTitle": "创建你的 Comfy Hub 个人资料",
+    "createProfileTitle": "创建你的 Comfy Workflows 个人资料",
     "creatingProfile": "正在创建个人资料...",
     "descriptionLabel": "你的简介",
     "descriptionPlaceholder": "向社区介绍一下你自己...",
     "introDescription": "发布你的工作流，打造你的作品集，被数百万用户发现",
-    "introSubtitle": "要在 ComfyHub 分享你的工作流，首先请创建你的个人资料。",
-    "introTitle": "发布到 ComfyHub",
-    "modalTitle": "在 ComfyHub 创建你的个人资料",
+    "introSubtitle": "要在 Comfy Workflows 分享你的工作流，首先请创建你的个人资料。",
+    "introTitle": "发布到 Comfy Workflows",
+    "modalTitle": "在 Comfy Workflows 创建你的个人资料",
     "nameLabel": "你的姓名",
     "namePlaceholder": "请输入你的姓名",
     "profileCreationNav": "个人资料创建",
@@ -628,8 +631,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "你的个人主页已上线：",
     "successTitle": "看起来不错，{'@'}{username}！",
-    "updateIntroDescription": "将您的最新更改推送到 ComfyHub。分享链接和统计数据保持不变。",
-    "updateIntroTitle": "更新您的 ComfyHub 工作流",
+    "updateIntroDescription": "将您的最新更改推送到 Comfy Workflows。分享链接和统计数据保持不变。",
+    "updateIntroTitle": "更新您的 Comfy Workflows 工作流",
     "uploadCover": "+ 上传封面",
     "uploadProfilePicture": "+ 上传头像",
     "uploadWorkflowButton": "上传我的工作流",
@@ -641,20 +644,18 @@
     "additionalInfo": "附加信息",
     "back": "返回",
     "createProfileCta": "创建个人资料",
-    "createProfileToPublish": "创建个人资料以发布到 ComfyHub",
+    "createProfileToPublish": "创建个人资料以发布到 Comfy Workflows",
     "exampleImage": "示例图片 {index}",
     "exampleImagePosition": "示例图像 {index} / {total}",
     "examplesDescription": "最多可添加 {total} 个额外示例图片",
     "maxExamples": "最多可选择 {max} 个示例",
     "next": "下一步",
-    "publishButton": "发布到 ComfyHub",
+    "publishButton": "发布到 Comfy Workflows",
     "publishFailedDescription": "发布您的工作流时出现问题。请重试。",
     "publishFailedTitle": "发布失败",
-    "publishSuccessDescription": "您的工作流已在 ComfyHub 上上线。",
+    "publishSuccessDescription": "您的工作流已在 Comfy Workflows 上上线。",
     "publishSuccessTitle": "发布成功",
     "removeExampleImage": "移除示例图像",
-    "renameFailedDescription": "您的工作流已成功发布，但本地文件重命名失败。请再次重命名以保持一致。",
-    "renameFailedTitle": "重命名失败",
     "selectAThumbnail": "选择缩略图",
     "shareAs": "分享为",
     "showLessTags": "显示更少...",
@@ -670,8 +671,8 @@
     "thumbnailImageComparison": "图片对比",
     "thumbnailPreview": "缩略图预览",
     "thumbnailVideo": "视频",
-    "title": "发布到 ComfyHub",
-    "unsavedDescription": "在发布到 ComfyHub 之前，您必须先保存您的工作流。请先保存以继续。",
+    "title": "发布到 Comfy Workflows",
+    "unsavedDescription": "在发布到 Comfy Workflows 之前，您必须先保存您的工作流。请先保存以继续。",
     "updateButton": "更新工作流",
     "uploadAnImage": "点击浏览或拖拽图片",
     "uploadComparison": "上传前后对比",
@@ -1268,6 +1269,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "此节点已被你的工作区策略禁用。请使用其他节点。",
+        "title": "节点已禁用",
+        "toastMessage": "此节点已被你的工作区策略禁用。",
+        "toastTitle": "合作伙伴节点"
+      },
       "bad_linked_input": {
         "details": "{nodeName} 的 {inputName} 连接无效。",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2624,8 @@
     "resetView": "重置视图",
     "run": "运行",
     "runWorkflow": "运行工作流（Shift排在前面）",
-    "runWorkflowDisabled": "工作流包含不支持的节点（已用红色突出显示）。删除这些节点以运行工作流。",
     "runWorkflowFront": "运行工作流（排在前面）",
+    "runWorkflowMissingResources": "工作流包含缺失的资源。",
     "settings": "设定",
     "showMenu": "显示菜单",
     "stopRunInstant": "立即停止运行",
@@ -3049,6 +3057,38 @@
       "owner": "所有者",
       "personal": "个人"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "每次生成和导入的内容都保存在媒体资源中。随时打开浏览、下载或复用以往作品。",
+        "title": "查找所有资源"
+      },
+      "inputs": {
+        "body": "添加你想处理的内容。你的输入将由应用转化为结果。",
+        "title": "添加你的输入"
+      },
+      "landing": {
+        "body": "一分钟快速了解核心功能。我们将向你展示如何添加输入、运行应用以及查找结果。",
+        "primary": "开始教程",
+        "title": "欢迎使用应用"
+      },
+      "outputs": {
+        "body": "最终结果会显示在中央。你可以下载，或调整输入后再次运行。",
+        "title": "获取你的结果"
+      },
+      "replay": "体验应用模式导览",
+      "run": {
+        "body": "对输入满意了吗？点击运行，结果准备好后会显示在中央。",
+        "title": "运行你的应用"
+      }
+    },
+    "back": "上一步",
+    "done": "完成",
+    "loadError": "显示本次引导时出现问题",
+    "next": "下一步",
+    "skip": "跳过",
+    "stepLabel": "第 {current} 步，共 {total} 步"
   },
   "openSharedWorkflow": {
     "author": "作者：",
@@ -3487,6 +3527,7 @@
     "3DViewer": "3D查看器",
     "API Nodes": "API 节点",
     "About": "关于",
+    "Allowlist": "允许列表",
     "Appearance": "外观",
     "BrushAdjustment": "画笔调整",
     "Camera": "相机",
@@ -3565,9 +3606,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "我了解这些媒体文件将被发布并公开",
     "checkingAssets": "正在检查媒体可见性…",
-    "comfyHubButton": "上传到 ComfyHub",
-    "comfyHubDescription": "ComfyHub 是 ComfyUI 的官方社区中心。\n你的工作流将拥有一个所有人可见的公开页面。",
-    "comfyHubTitle": "上传到 ComfyHub",
+    "comfyHubButton": "上传到 Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows 是 ComfyUI 的官方社区中心。\n你的工作流将拥有一个所有人可见的公开页面。",
+    "comfyHubTitle": "上传到 Comfy Workflows",
     "copyLink": "复制",
     "createLinkButton": "创建链接",
     "createLinkDescription": "当你为工作流创建链接时，这些媒体文件将与工作流一起分享",
@@ -3650,9 +3691,12 @@
       "sortNewestFirst": "最新",
       "sortOldestFirst": "最旧",
       "title": "媒体资产",
+      "viewGridLarge": "网格（大）",
+      "viewGridSmall": "网格（小）",
       "viewSettings": "查看设置"
     },
     "modelLibrary": "模型库",
+    "modelLibraryLoadFailed": "模型加载失败。请检查服务器连接，并使用刷新重试。",
     "newBlankWorkflow": "创建空白工作流",
     "noFilesFound": "未找到文件",
     "noFilesFoundMessage": "上传文件或生成内容以在此处查看",
@@ -3758,6 +3802,7 @@
       "viewList": "列表视图"
     },
     "searchAssets": "搜索资产",
+    "searchResultsCapped": "显示前 {limit} 个匹配项。请优化搜索以查看更多结果。",
     "sidebar": "侧边栏",
     "templates": "模板",
     "themeToggle": "切换主题",
@@ -4193,6 +4238,11 @@
     "modelsSelected": "已选 {count} 个模型",
     "noResults": "未找到模板",
     "noResultsHint": "请尝试调整搜索或筛选条件",
+    "paidTemplate": {
+      "badgeLabel": "合作伙伴 API",
+      "credits": "使用积分运行",
+      "title": "高级模板"
+    },
     "resultsCount": "显示 {count} / 共 {total} 个模板",
     "runsOnFilter": "运行于",
     "runsOnSelected": "{count} 次运行",
@@ -4330,6 +4380,21 @@
     "title": "版本相容性警告",
     "updateFrontend": "更新前端"
   },
+  "videoEdit": {
+    "adjustCrop": "调整裁剪区域",
+    "adjustEndFrame": "调整结束帧",
+    "adjustStartFrame": "调整起始帧",
+    "durationSeconds": "{count}秒",
+    "durationZero": "0秒",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB",
+    "fileSizeUnknown": "—",
+    "loadingFilmstrip": "正在加载胶片条…",
+    "pause": "暂停",
+    "play": "播放",
+    "seekVideo": "定位视频"
+  },
   "vueNodesBanner": {
     "desc": "– 更灵活的工作流，强力的新组件，为拓展性而生",
     "title": "介绍 Nodes 2.0",
@@ -4436,9 +4501,7 @@
         "lastActivity": "最近活动",
         "partnerNodeUsed": "已使用合作节点",
         "totalCreditsUsed": "已用总积分"
-      },
-      "perUserHint": "想查看每位用户的总使用量？",
-      "seeMembers": "查看成员"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4574,6 +4637,39 @@
       "deleteWorkspaceDisabledTooltip": "请先取消工作区的有效订阅",
       "editWorkspace": "编辑工作区详情",
       "leaveWorkspace": "离开工作区"
+    },
+    "partnerNodes": {
+      "accessMode": "合作伙伴节点访问模式",
+      "allowAllAccessHint": "此更改在整个工作区生效可能需要最多 10 分钟。",
+      "allowAllAccessMessage": "所有提供商的合作伙伴节点将对每个工作区成员开放。",
+      "allowAllAccessTitle": "允许访问所有合作伙伴节点吗？",
+      "columns": {
+        "nodes": "节点",
+        "provider": "提供商"
+      },
+      "disableAll": "全部禁用",
+      "disableAllMessage": "所有提供商都将被关闭。在访问受限时，合作伙伴节点将不可用。",
+      "disableAllTitle": "要禁用所有提供商吗？",
+      "enableAll": "全部启用",
+      "loadError": "无法加载合作伙伴节点访问权限。",
+      "loading": "正在加载合作伙伴节点访问权限",
+      "noResults": "未找到提供商或合作伙伴节点",
+      "nodeCount": "已启用 {count} 个",
+      "ownerOnly": "只有工作区所有者可以更新合作伙伴节点访问权限。",
+      "restrictAccessHint": "此更改在整个工作区生效可能需要最多 10 分钟。",
+      "restrictAccessMessage": "工作区成员只能使用你启用的提供商的合作伙伴节点。",
+      "restrictAccessTitle": "要限制合作伙伴节点的访问吗？",
+      "restricted": "受限",
+      "restrictedDescription": "只有已启用提供商的合作伙伴节点可用。更改可能需要最多 10 分钟生效。",
+      "retry": "重试",
+      "saveError": "无法更新合作伙伴节点访问权限。请重试。",
+      "searchPlaceholder": "搜索提供商和合作伙伴节点...",
+      "tableLabel": "合作伙伴节点提供商",
+      "title": "合作伙伴节点访问",
+      "toggleProvider": "设置 {provider} 的访问权限",
+      "unavailable": "此工作区无法使用合作伙伴节点访问权限。",
+      "unrestricted": "无限制",
+      "unrestrictedDescription": "所有提供商的合作伙伴节点对所有人开放。禁用提供商后将设置为受限。"
     },
     "planCredits": {
       "tabs": {

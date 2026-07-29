@@ -316,14 +316,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           const personal = workspaces.value.find((w) => w.type === 'personal')
           const fallbackWorkspaceId = personal?.id ?? workspaces.value[0].id
 
-          try {
-            await workspaceAuthStore.switchWorkspace(fallbackWorkspaceId)
-          } catch {
-            if (isStaleIdentity(generation)) return
-            console.error(
-              '[teamWorkspaceStore] Token exchange failed during fallback'
-            )
-          }
+          await workspaceAuthStore.switchWorkspace(fallbackWorkspaceId)
 
           if (isStaleIdentity(generation)) return
 
@@ -359,15 +352,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         }
 
         // 4. Exchange Firebase token for workspace token
-        try {
-          await workspaceAuthStore.switchWorkspace(targetWorkspaceId)
-        } catch {
-          if (isStaleIdentity(generation)) return
-          // Log but don't fail initialization - API calls will fall back to Firebase token
-          console.error(
-            '[teamWorkspaceStore] Token exchange failed during init'
-          )
-        }
+        await workspaceAuthStore.switchWorkspace(targetWorkspaceId)
 
         if (isStaleIdentity(generation)) return
 
