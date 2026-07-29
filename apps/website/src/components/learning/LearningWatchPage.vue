@@ -17,7 +17,7 @@ import WatchAuthorCard from '../blocks/WatchAuthorCard.vue'
 import WatchChapterStrip from '../blocks/WatchChapterStrip.vue'
 import WatchPageLayout from '../blocks/WatchPageLayout.vue'
 import WatchRecommendedCard from '../blocks/WatchRecommendedCard.vue'
-import BrandButton from '../common/BrandButton.vue'
+import Button from '../ui/button/Button.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import Badge from '../ui/badge/Badge.vue'
 
@@ -90,16 +90,15 @@ const recommended = recommendedFor(tutorial).map((item) => ({
           </Badge>
         </li>
       </ul>
-      <BrandButton
+      <Button
         v-if="tutorial.href"
         variant="outline"
         size="sm"
         :href="tutorial.href"
         :target="tutorial.newTab ? '_blank' : undefined"
-        class="uppercase"
       >
         {{ t('cta.tryWorkflow', locale) }}
-      </BrandButton>
+      </Button>
     </template>
 
     <template v-if="chapters.length" #chapters>
