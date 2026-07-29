@@ -392,7 +392,9 @@ const showTeamSubscribePrompt = computed(
 )
 
 const isPersonalFree = computed(
-  () => showSubscribePrompt.value && isInPersonalWorkspace.value
+  () =>
+    isInPersonalWorkspace.value &&
+    (showSubscribePrompt.value || isFreeTierPlan.value)
 )
 
 const isTeamActive = computed(
@@ -473,7 +475,7 @@ const tierBenefits = computed((): TierBenefit[] => {
       label: t(`subscription.teamPerks.${key}`)
     }))
   }
-  if (isPersonalFree.value || tierKey.value === 'free') {
+  if (isPersonalFree.value) {
     return [
       ...(freeRunsQuotaEnabled.value
         ? [
@@ -487,9 +489,13 @@ const tierBenefits = computed((): TierBenefit[] => {
             }
           ]
         : []),
-      ...getCommonTierBenefits('free', t, n).filter(
-        (benefit) => benefit.key !== 'monthlyCredits'
-      )
+      {
+        key: 'maxRuntime',
+        type: 'feature',
+        label: t('subscription.freePerks.maxRuntime', {
+          duration: t('subscription.maxDuration.free')
+        })
+      }
     ]
   }
   return getCommonTierBenefits(tierKey.value, t, n)
