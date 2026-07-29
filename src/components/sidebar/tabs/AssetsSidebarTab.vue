@@ -111,6 +111,7 @@
             :get-output-count
             :grid-mode
             @select-asset="handleAssetSelect"
+            @toggle-asset-selection="handleAssetSelectionToggle"
             @context-menu="handleAssetContextMenu"
             @approach-end="handleApproachEnd"
             @zoom="handleZoomClick"
@@ -287,6 +288,7 @@ const {
   isSelected,
   selectedIds,
   handleAssetClick,
+  toggleAssetSelection,
   selectAll,
   setSelectedIds,
   hasSelection,
@@ -476,6 +478,12 @@ function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   const index = assetList.findIndex((a) => a.id === asset.id)
   emit('assetSelected', asset)
   handleAssetClick(asset, index, assetList)
+}
+
+function handleAssetSelectionToggle(asset: AssetItem) {
+  const index = visibleAssets.value.findIndex((item) => item.id === asset.id)
+  emit('assetSelected', asset)
+  toggleAssetSelection(asset, index, visibleAssets.value)
 }
 
 const { start: scheduleCleanup, stop: cancelCleanup } = useTimeoutFn(

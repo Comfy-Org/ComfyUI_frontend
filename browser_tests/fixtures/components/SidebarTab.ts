@@ -376,10 +376,12 @@ export class AssetsSidebarTab extends SidebarTab {
     this.sortOldestFirst = page.getByText('Oldest first')
     this.sortLongestFirst = page.getByText('Generation time (longest first)')
     this.sortFastestFirst = page.getByText('Generation time (fastest first)')
-    this.assetCards = page
-      .getByRole('button')
-      .and(page.locator('[data-selected]'))
-    this.selectedCards = page.locator('[data-selected="true"]')
+    this.assetCards = page.locator(
+      '.sidebar-content-container [data-asset-id][data-selected]'
+    )
+    this.selectedCards = page.locator(
+      '.sidebar-content-container [data-asset-id][data-selected="true"]'
+    )
     this.listViewItems = page.locator(
       '.sidebar-content-container [role="button"][tabindex="0"]'
     )
