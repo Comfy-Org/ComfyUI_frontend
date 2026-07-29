@@ -542,6 +542,14 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         screen.queryByText('Reactivating your subscription')
       ).not.toBeInTheDocument()
       expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+      // The button label must not claim reactivation when the banner (and
+      // the consent it collects) never rendered.
+      expect(
+        screen.getByRole('button', { name: 'Confirm upgrade' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /Confirm & reactivate/ })
+      ).not.toBeInTheDocument()
     })
 
     it('hides the banner when the preview carries no current_plan', () => {
@@ -555,6 +563,12 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
 
       expect(
         screen.queryByText('Reactivating your subscription')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Confirm upgrade' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /Confirm & reactivate/ })
       ).not.toBeInTheDocument()
     })
   })

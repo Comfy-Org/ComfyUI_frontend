@@ -451,20 +451,20 @@ const confirmTitle = computed(() =>
     : t('subscription.preview.confirmChangeTitle')
 )
 const confirmCta = computed(() => {
+  // Gated on isReactivating, not reactivationVariant: the banner and the
+  // emitted confirmReactivation use the same stricter gate, so the label
+  // must never promise a reactivation the click won't actually confirm.
+  if (!isReactivating.value) {
+    return isImmediate.value
+      ? t('subscription.preview.confirmUpgradeCta')
+      : t('subscription.preview.confirmChange')
+  }
   if (reactivationVariant.value === 'downgrade') {
     return t('subscription.preview.reactivation.confirmButton')
   }
-  if (
-    reactivationVariant.value === 'upgrade' ||
-    reactivationVariant.value === 'duration_change'
-  ) {
-    return t('subscription.preview.reactivation.confirmButtonWithCharge', {
-      amount: chargeDisplay.value
-    })
-  }
-  return isImmediate.value
-    ? t('subscription.preview.confirmUpgradeCta')
-    : t('subscription.preview.confirmChange')
+  return t('subscription.preview.reactivation.confirmButtonWithCharge', {
+    amount: chargeDisplay.value
+  })
 })
 const totalNote = computed(() =>
   isImmediate.value

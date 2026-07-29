@@ -808,6 +808,43 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('refuses to bill a team reactivation when a fresh preview no longer matches the confirmed charge', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000
+      })
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 120_000
+      })
+
+      await checkout.handleTeamSubscribe(true)
+
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'subscription.preview.reactivation.amountChanged'
+        })
+      )
+    })
+
     it('uses the annual plan slug for the yearly cycle', async () => {
       const checkout = await setup()
       await checkout.handleSubscribeTeamClick({
@@ -1310,6 +1347,72 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
+    })
+
+    it('refuses to bill when a fresh preview no longer matches the confirmed charge', async () => {
+      // The user saw and consented to $15.00; proration moved the price to
+      // $20.00 before this confirm click — billing on the new figure would
+      // charge an amount never actually shown to the user.
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        cost_today_cents: 1500
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        cost_today_cents: 2000
+      })
+
+      await checkout.handleConfirmTransition(true)
+
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'subscription.preview.reactivation.amountChanged'
+        })
+      )
+    })
+
+    it('re-previews and bills once the confirmed charge still matches', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        cost_today_cents: 1500
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        cost_today_cents: 1500
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-reactivate-checked'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleConfirmTransition(true)
+
+      expect(mockPreviewSubscribe).toHaveBeenCalledTimes(2)
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.objectContaining({ confirmReactivation: true })
+      )
+      expect(checkout.checkoutStep.value).toBe('success')
     })
 
     it('does not submit a previewed plan after permission is revoked', async () => {

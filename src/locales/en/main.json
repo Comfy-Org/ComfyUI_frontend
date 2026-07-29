@@ -2913,7 +2913,8 @@
         "confirmButton": "Confirm & reactivate",
         "confirmButtonWithCharge": "Confirm & reactivate — {amount} today",
         "checkboxLabel": "I understand I'll be charged {amount} today",
-        "confirmationRequired": "Your subscription is cancelled — please confirm the reactivation charge before continuing"
+        "confirmationRequired": "Your subscription is cancelled — please confirm the reactivation charge before continuing",
+        "amountChanged": "The charge amount changed since you confirmed it — please review and try again"
       }
     },
     "success": {

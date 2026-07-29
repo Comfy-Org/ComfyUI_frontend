@@ -16,6 +16,7 @@ import type {
 } from '@/platform/telemetry/types'
 import type {
   Plan,
+  PreviewSubscribeOptions,
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
@@ -59,6 +60,12 @@ type PreviewVariant =
   | 'personal-change'
   | 'personal-new'
   | null
+
+/** Thrown by `assertReactivationAmountUnchanged` when a fresh preview's
+ *  `cost_today_cents` no longer matches what the reactivation banner showed
+ *  and the user consented to. Caught by the surrounding try/catch and
+ *  surfaced through the same toast as any other subscribe failure. */
+class ReactivationAmountChangedError extends Error {}
 
 export function findPlanSlug(
   plans: Plan[],
@@ -124,6 +131,29 @@ export function useSubscriptionCheckout(
       summary: t('g.error'),
       detail: t('subscription.preview.reactivation.confirmationRequired')
     })
+  }
+
+  // subscribe() recomputes the transaction independently of the preview the
+  // banner showed, so proration or team-seat state can drift while the
+  // screen is open. Re-preview right before billing and refuse if the
+  // amount moved — mirrors the guard useDowngradeToPersonal applies before
+  // a team-to-personal downgrade.
+  async function assertReactivationAmountUnchanged(
+    planSlug: string,
+    options?: PreviewSubscribeOptions
+  ): Promise<void> {
+    const freshPreview = await previewSubscribe(planSlug, options)
+    if (!freshPreview?.allowed) {
+      throw new Error(freshPreview?.reason || t('subscription.subscribeFailed'))
+    }
+    if (
+      freshPreview.cost_today_cents !==
+      (previewData.value?.cost_today_cents ?? 0)
+    ) {
+      throw new ReactivationAmountChangedError(
+        t('subscription.preview.reactivation.amountChanged')
+      )
+    }
   }
 
   function canSelectTierPlan(): boolean {
@@ -317,6 +347,9 @@ export function useSubscriptionCheckout(
         notifyReactivationConfirmationRequired()
         return
       }
+      if (confirmReactivation && isCancelled.value) {
+        await assertReactivationAmountUnchanged(planSlug)
+      }
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
@@ -478,6 +511,12 @@ export function useSubscriptionCheckout(
     isSubscribing.value = true
     try {
       const planSlug = getTeamPlanSlug(billingCycle)
+      if (confirmReactivation && isCancelled.value) {
+        await assertReactivationAmountUnchanged(planSlug, {
+          teamCreditStopId: stop.id,
+          billingCycle
+        })
+      }
       const response = await subscribe(planSlug, {
         teamCreditStopId: stop.id,
         billingCycle,
