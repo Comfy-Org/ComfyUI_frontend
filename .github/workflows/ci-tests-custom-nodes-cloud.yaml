@@ -245,16 +245,7 @@ jobs:
           SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
           SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
         run: |
-          # *.pure.spec.ts test pure functions - no browser, no backend - but
-          # they use comfyPageFixture, so on cloud they pay a full sign-in and
-          # app boot and fail on auth they do not need. The core gate runs the
-          # same files, so excluding them here loses no coverage.
-          mapfile -t specs < <(
-            ls browser_tests/tests/customNodes/*.spec.ts |
-              grep -v '\.pure\.spec\.ts$'
-          )
-          echo "cloud suite files: ${#specs[@]}"
-          pnpm exec playwright test "${specs[@]}" \
+          pnpm exec playwright test browser_tests/tests/customNodes/ \
             --project=custom-nodes --reporter=list,json,html --workers=1
 
       # A skip means a cloud pack, devtools, or an under-enrolled cloud manifest

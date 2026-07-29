@@ -366,7 +366,13 @@ export class ComfyPage {
       })
     }
 
-    if (clearStorage) {
+    // Skipped on cloud: a Playwright context starts with empty storage, so
+    // this only resets a REUSED context - but on cloud the smoke user has
+    // already signed in by now, and both the navigation and the wipe destroy
+    // that session. The app then boots signed out, so teamWorkspaceStore
+    // cannot init ("User not authenticated") and Cloud answers every
+    // workspace-scoped call with 403.
+    if (clearStorage && customNodesEnv() !== 'cloud') {
       // Navigate to a lightweight same-origin endpoint to obtain a page
       // context for clearing storage without loading the full frontend app.
       await this.page.goto(`${this.url}/api/users`)
@@ -680,37 +686,20 @@ export const comfyPageFixture = base.extend<{
       await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
     }
 
-    if (isCloudEnv) {
-      // Cloud has no node-side settings endpoint (401), and writing them after
-      // boot lands them one boot late: the menu mode, tour-seen flags and
-      // tutorial flag are read AT boot, so every test's first boot would run
-      // with the wrong ones and an auto-opened tour's blocker would break it.
-      // Merge them into the app's own fetch instead, which also stops every
-      // test mutating the one shared smoke account.
-      await page.route('**/api/settings', async (route) => {
-        if (route.request().method() !== 'GET') {
-          await route.continue()
-          return
-        }
-        const response = await route.fetch()
-        const live = (await response.json().catch(() => ({}))) as Record<
-          string,
-          unknown
-        >
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ ...live, ...startupSettings })
-        })
-      })
-    }
-
     const setupStartedAt = Date.now()
-    // Cloud signed in above; clearing storage would drop that session and the
-    // app would boot signed out. A fresh context starts empty anyway.
-    await comfyPage.setup({ clearStorage: !isCloudEnv })
+    await comfyPage.setup()
     if (isCloudEnv)
       console.warn(`[cloud] app boot took ${Date.now() - setupStartedAt}ms`)
+
+    if (isCloudEnv) {
+      // The devtools settings endpoint is unreachable node-side on cloud
+      // (401, see above), so apply the same startup settings through the
+      // booted app's own authenticated session. Boot-time-read settings
+      // land one boot late on a freshly reset smoke account only.
+      for (const [key, value] of Object.entries(startupSettings))
+        await comfyPage.settings.setSetting(key, value)
+      await comfyPage.nextFrame()
+    }
 
     if (isVueNodes) {
       await comfyPage.vueNodes.waitForNodes()
