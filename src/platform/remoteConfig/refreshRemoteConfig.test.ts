@@ -136,6 +136,9 @@ describe('refreshRemoteConfig', () => {
       )
       await oldRefresh
 
+      expect(remoteConfig.value).toEqual({})
+      expect(window.__CONFIG__).toEqual({})
+
       const repeatedNewRefresh = refreshAuthenticated()
       expect(repeatedNewRefresh).toBe(newRefresh)
       expect(api.fetchApi).toHaveBeenCalledTimes(2)

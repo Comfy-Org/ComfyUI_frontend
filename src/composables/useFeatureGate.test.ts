@@ -79,31 +79,6 @@ describe('useFeatureGate', () => {
     expect(() => recordExposure()).not.toThrow()
   })
 
-  it('deduplicates in memory when session storage is unavailable', () => {
-    const trackFeatureFlagExposure = vi.fn()
-    const registry = new TelemetryRegistry()
-    registry.registerProvider({ trackFeatureFlagExposure })
-    setTelemetryRegistry(registry)
-    remoteConfigState.value = 'authenticated'
-    vi.spyOn(sessionStorage, 'getItem').mockImplementation(() => {
-      throw new Error('Storage unavailable')
-    })
-    vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
-      throw new Error('Storage unavailable')
-    })
-
-    const { recordExposure } = useFeatureGate('storage_unavailable_flag')
-
-    expect(() => {
-      recordExposure()
-      recordExposure()
-    }).not.toThrow()
-    expect(trackFeatureFlagExposure).toHaveBeenCalledExactlyOnceWith(
-      'storage_unavailable_flag',
-      false
-    )
-  })
-
   it('records each resolved key and value once per session', () => {
     const trackFeatureFlagExposure = vi.fn()
     const provider: TelemetryProvider = { trackFeatureFlagExposure }
@@ -123,6 +98,28 @@ describe('useFeatureGate', () => {
     expect(trackFeatureFlagExposure).toHaveBeenCalledExactlyOnceWith(
       'might_be_risky_feature_foo',
       true
+    )
+  })
+
+  it('deduplicates in memory when session storage writes are unavailable', () => {
+    const trackFeatureFlagExposure = vi.fn()
+    const registry = new TelemetryRegistry()
+    registry.registerProvider({ trackFeatureFlagExposure })
+    setTelemetryRegistry(registry)
+    remoteConfigState.value = 'authenticated'
+    vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
+      throw new Error('Storage unavailable')
+    })
+
+    const { recordExposure } = useFeatureGate('storage_unavailable_flag')
+
+    expect(() => {
+      recordExposure()
+      recordExposure()
+    }).not.toThrow()
+    expect(trackFeatureFlagExposure).toHaveBeenCalledExactlyOnceWith(
+      'storage_unavailable_flag',
+      false
     )
   })
 })
