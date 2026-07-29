@@ -103,8 +103,8 @@ describe('cloud auth guard', () => {
   /**
    * The design's central promise is that an expired session suspends in place
    * and never navigates. The guard sees no credential either way, so without
-   * this branch an ordinary canvas gesture — entering a subgraph pushes a route
-   * — unmounts the canvas and destroys the unsaved work the banner just told
+   * this branch an ordinary canvas gesture (entering a subgraph pushes a route)
+   * unmounts the canvas and destroys the unsaved work the banner just told
    * the user to export.
    */
   it('leaves a suspended session where it is, so unsaved work survives', async () => {

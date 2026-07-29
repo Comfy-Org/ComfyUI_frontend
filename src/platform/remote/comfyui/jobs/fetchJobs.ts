@@ -46,7 +46,6 @@ async function fetchJobsRaw(
   offset: number = 0
 ): Promise<FetchJobsRawResult> {
   const empty = { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
-  // The one place every list fetcher passes through.
   if (isSessionSuspended()) return empty
 
   const statusParam = statuses.join(',')
@@ -67,7 +66,7 @@ async function fetchJobsRaw(
     }
   } catch (error) {
     console.error('[Jobs API] Error fetching jobs:', error)
-    return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
+    return empty
   }
 }
 

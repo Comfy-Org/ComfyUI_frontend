@@ -114,6 +114,8 @@ function clearLastWorkspaceId(): void {
 
 const MAX_OWNED_WORKSPACES = 10
 export const MAX_WORKSPACE_MEMBERS = 30
+// Raising either of these raises what initialize() can spend before it settles,
+// which WORKSPACE_SCOPE_TIMEOUT_MS in restoreCloudSession.ts must stay above.
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 

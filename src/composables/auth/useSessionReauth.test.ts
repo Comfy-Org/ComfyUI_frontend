@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   signInWithGithub: vi.fn(),
   showSignInDialog: vi.fn(),
   restoreCloudSession: vi.fn(),
+  currentUser: null as { uid: string } | null,
   lastKnownProviderId: vi.fn<() => string | undefined>()
 }))
 
@@ -19,6 +20,14 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 
 vi.mock('@/platform/auth/session/restoreCloudSession', () => ({
   restoreCloudSession: mocks.restoreCloudSession
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
+    get currentUser() {
+      return mocks.currentUser
+    }
+  })
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -35,6 +44,7 @@ beforeEach(() => {
   mocks.signInWithGithub.mockResolvedValue(undefined)
   mocks.showSignInDialog.mockResolvedValue(true)
   mocks.restoreCloudSession.mockResolvedValue(undefined)
+  mocks.currentUser = { uid: 'uid-a' }
 })
 
 describe('useSessionReauth', () => {
@@ -86,13 +96,16 @@ describe('useSessionReauth', () => {
 
   it('leaves failure reporting to the shared sign-in action', async () => {
     mocks.lastKnownProviderId.mockReturnValue('google.com')
-    // The shared action already toasts and records auth telemetry. Swallowing a
-    // failure here instead would silence it and then run the restore anyway.
-    mocks.signInWithGoogle.mockRejectedValue(new Error('popup blocked'))
+    // Production contract: the shared action reports its own failure and
+    // resolves undefined either way. It cannot reject.
+    mocks.signInWithGoogle.mockResolvedValue(undefined)
+    mocks.currentUser = null
     const { reauthenticate, isReauthenticating } = useSessionReauth()
 
-    await expect(reauthenticate()).rejects.toThrow('popup blocked')
+    await reauthenticate()
 
+    // No user means the sign-in did not complete. Restoring anyway would toast
+    // "we couldn't restore your session" for a cancel the user chose.
     expect(mocks.restoreCloudSession).not.toHaveBeenCalled()
     expect(isReauthenticating.value).toBe(false)
   })

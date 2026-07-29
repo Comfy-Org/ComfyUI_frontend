@@ -23,43 +23,38 @@ import { useAuthStore } from '@/stores/authStore'
  */
 
 /**
- * Throws away whatever is still open, for an account that must not receive it.
+ * Clears every unsaved mark so the unload confirmation cannot veto the reload
+ * that follows.
  *
- * Marked unmodified first so the unload confirmation cannot veto the reload
- * below: that prompt fires exactly when there are unsaved changes, which is
- * precisely this situation, and a cancelled reload would leave the previous
- * user's document on screen for the new one.
+ * Spans the whole lookup rather than the open documents, because that is what
+ * the prompt reads and `unload()` leaves the flag set. Nothing is closed here:
+ * the reload discards the canvas anyway, and closing through the service
+ * re-activates other documents, which re-arms the persistence writers against
+ * the storage just cleared.
  */
-async function discardOpenWorkflows(): Promise<boolean> {
-  const workflowStore = useWorkflowStore()
-  const open = [...workflowStore.openWorkflows]
-  if (open.length === 0) return false
-
-  for (const workflow of open) {
+function clearUnsavedMarks(): void {
+  for (const workflow of [...useWorkflowStore().modifiedWorkflows]) {
     workflow.isModified = false
-    await workflowStore.closeWorkflow(workflow)
   }
-  return true
 }
 
 useExtensionService().registerExtension({
   name: 'Comfy.Cloud.SessionCookie',
 
   onAuthUserResolved: async (user) => {
-    // Captured while the session is healthy: Firebase clears currentUser before
-    // an expiry can be observed, taking the provider with it.
     const providerId = useAuthStore().currentUser?.providerData[0]?.providerId
 
     // Drafts survive an expiry so re-authenticating restores the user's work,
     // but they must not survive into a different account on a shared machine.
     if (!adoptIdentity(user.id, providerId)) {
       clearAllV2Storage()
+      clearUnsavedMarks()
 
       // Storage alone is not enough while the previous user's workflow is still
       // open, because the persistence watcher writes it straight back under the
       // new account. Reloading is what guarantees a clean canvas; a page with
       // nothing open has nothing to inherit and must not be bounced.
-      if (await discardOpenWorkflows()) {
+      if (useWorkflowStore().openWorkflows.length > 0) {
         window.location.reload()
       }
     }

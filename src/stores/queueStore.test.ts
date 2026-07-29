@@ -53,6 +53,11 @@ const createTaskOutput = (
 type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
 type QueueResolver = (value: QueueResponse) => void
 
+const mockIsSessionSuspended = vi.hoisted(() => vi.fn(() => false))
+vi.mock('@/platform/auth/session/sessionExpiry', () => ({
+  isSessionSuspended: mockIsSessionSuspended
+}))
+
 // Mock API
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -1134,6 +1139,33 @@ describe('useQueueStore', () => {
       expect(store.runningTasks[0].jobId).toBe('run-1')
       expect(store.historyTasks).toHaveLength(1)
       expect(store.historyTasks[0].jobId).toBe('hist-1')
+      expect(store.isLoading).toBe(false)
+    })
+
+    it('keeps both lists and fetches nothing while the session is suspended', async () => {
+      mockGetQueue.mockResolvedValue({
+        Running: [createRunningJob(0, 'run-1')],
+        Pending: []
+      })
+      mockGetHistory.mockResolvedValue([createHistoryJob(0, 'hist-1')])
+      await store.update()
+      mockGetQueue.mockClear()
+      mockGetHistory.mockClear()
+
+      mockIsSessionSuspended.mockReturnValue(true)
+      try {
+        await store.update()
+      } finally {
+        mockIsSessionSuspended.mockReturnValue(false)
+      }
+
+      expect(mockGetQueue).not.toHaveBeenCalled()
+      expect(mockGetHistory).not.toHaveBeenCalled()
+      // The history half is the regression: a failed fetch resolves to `[]`,
+      // which is indistinguishable from "this user has no completed jobs".
+      expect(store.runningTasks).toHaveLength(1)
+      expect(store.historyTasks).toHaveLength(1)
+      // Untouched, so the poller's reschedule chain has no false edge to ride.
       expect(store.isLoading).toBe(false)
     })
   })

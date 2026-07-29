@@ -5,22 +5,24 @@ import { resolveAuthProvider } from '@/platform/auth/authProvider'
 import { restoreCloudSession } from '@/platform/auth/session/restoreCloudSession'
 import { lastKnownProviderId } from '@/platform/auth/session/sessionExpiry'
 import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
 
 /**
  * Re-authenticates an expired session in place, without leaving the page.
  *
  * The OAuth providers already sign in through a popup window that hands the
  * result back to its opener, so reusing the login surface's own actions keeps
- * the canvas — and any unsaved work on it — alive throughout, and inherits the
+ * the canvas (and any unsaved work on it) alive throughout, and inherits the
  * error toasts and auth telemetry those actions already carry. Email has no
  * popup, so it falls back to the in-app sign-in dialog, which is also the right
  * surface when the provider was never captured and guessing would be worse than
  * asking.
  *
- * The restore is driven from here rather than left to the auth-resolved hook,
- * because that hook rides Firebase's auth-state observer, which only reports a
- * uid CHANGE. Signing in again as the same user after a failed mint is not a
- * change, so the hook would never fire and the banner could never be cleared.
+ * The restore is driven from here as well as from the auth-resolved hook. That
+ * hook fires on a transition in the resolved user, so it does cover the usual
+ * expiry, where the sign-out cleared it first. It does not cover a retry that
+ * never cleared it, and then this is the only thing left that can lift the
+ * banner. `restoreCloudSession` is single-flight, so both firing is harmless.
  */
 export function useSessionReauth() {
   const isReauthenticating = ref(false)
@@ -30,6 +32,7 @@ export function useSessionReauth() {
     isReauthenticating.value = true
 
     const { signInWithGoogle, signInWithGithub } = useAuthActions()
+    const authStore = useAuthStore()
 
     try {
       switch (resolveAuthProvider(lastKnownProviderId())) {
@@ -42,6 +45,13 @@ export function useSessionReauth() {
         default:
           await useDialogService().showSignInDialog()
       }
+
+      // The shared sign-in actions report their own failures and resolve either
+      // way, so a closed popup arrives here looking like success. Restoring on
+      // that would report a failure the user never triggered, on top of the
+      // message they already saw, and they may have closed it deliberately, to
+      // export their work first as the banner asked.
+      if (!authStore.currentUser) return
 
       await restoreCloudSession()
     } finally {

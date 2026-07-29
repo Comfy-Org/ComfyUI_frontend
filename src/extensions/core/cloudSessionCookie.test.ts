@@ -8,7 +8,11 @@ const mocks = vi.hoisted(() => ({
   clearAllV2Storage: vi.fn(),
   closeWorkflow: vi.fn(),
   openWorkflows: [] as { isModified: boolean }[],
+  modifiedWorkflows: [] as { isModified: boolean }[],
   addToast: vi.fn(),
+  mintAtLogin: vi.fn(),
+  reconnectSocket: vi.fn(),
+  getAuthHeader: vi.fn(),
   registerExtension: vi.fn(),
   currentUser: null as { providerData: { providerId: string }[] } | null
 }))
@@ -19,7 +23,14 @@ vi.mock('@/platform/distribution/types', async (importOriginal) => ({
 }))
 
 vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({ currentUser: mocks.currentUser })
+  useAuthStore: () => ({
+    currentUser: mocks.currentUser,
+    getAuthHeader: mocks.getAuthHeader
+  })
+}))
+
+vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
+  useWorkspaceAuthStore: () => ({ mintAtLogin: mocks.mintAtLogin })
 }))
 
 vi.mock('@/platform/auth/session/useSessionCookie', () => ({
@@ -34,10 +45,24 @@ vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
   clearAllV2Storage: mocks.clearAllV2Storage
 }))
 
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: { teamWorkspacesEnabled: false } })
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    initState: 'ready',
+    initialize: vi.fn()
+  })
+}))
+
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({
     get openWorkflows() {
       return mocks.openWorkflows
+    },
+    get modifiedWorkflows() {
+      return mocks.modifiedWorkflows
     },
     closeWorkflow: mocks.closeWorkflow
   })
@@ -52,6 +77,11 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
+
+// Keep the real singleton out of unit tests: it opens a live WebSocket.
+vi.mock('@/scripts/api', () => ({
+  api: { reconnectSocket: mocks.reconnectSocket }
+}))
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: () => ({ registerExtension: mocks.registerExtension })
@@ -77,8 +107,11 @@ beforeEach(() => {
   localStorage.clear()
   mocks.currentUser = null
   mocks.openWorkflows = []
+  mocks.modifiedWorkflows = []
   mocks.deleteSession.mockResolvedValue(undefined)
   mocks.createSessionOrThrow.mockResolvedValue(undefined)
+  mocks.mintAtLogin.mockResolvedValue(true)
+  mocks.getAuthHeader.mockResolvedValue({ Authorization: 'Bearer live' })
 })
 
 describe('cloud session cookie logout hook', () => {
@@ -265,15 +298,126 @@ describe('draft ownership', () => {
       await onAuthUserResolved({ id: 'uid-a' })
       const openDocument = { isModified: true }
       mocks.openWorkflows = [openDocument]
+      mocks.modifiedWorkflows = [openDocument]
 
       await onAuthUserResolved({ id: 'uid-b' })
 
       expect(mocks.clearAllV2Storage).toHaveBeenCalledTimes(1)
-      expect(mocks.closeWorkflow).toHaveBeenCalledTimes(1)
-      // Cleared first, or the unload confirmation would veto the reload and
-      // leave uid-a's document on screen for uid-b.
+      // Cleared, or the unload confirmation vetoes the reload and leaves
+      // uid-a's document on screen for uid-b.
       expect(openDocument.isModified).toBe(false)
       expect(reload).toHaveBeenCalledTimes(1)
+    } finally {
+      if (original) Object.defineProperty(window, 'location', original)
+    }
+  })
+
+  it('disarms a closed-but-dirty document without bouncing an empty page', async () => {
+    const original = Object.getOwnPropertyDescriptor(window, 'location')
+    const reload = vi.fn()
+    Object.defineProperty(window, 'location', {
+      value: { reload },
+      writable: true,
+      configurable: true
+    })
+
+    try {
+      const closedButDirty = { isModified: true }
+      const { onAuthUserResolved } = await loadHook()
+      await onAuthUserResolved({ id: 'uid-a' })
+      mocks.openWorkflows = []
+      mocks.modifiedWorkflows = [closedButDirty]
+
+      await onAuthUserResolved({ id: 'uid-b' })
+
+      // Nothing is on screen to inherit, so no bounce; but the stale mark would
+      // arm the unload prompt against the new user for a document that is not
+      // theirs and is already gone from storage.
+      expect(reload).not.toHaveBeenCalled()
+      expect(closedButDirty.isModified).toBe(false)
+    } finally {
+      if (original) Object.defineProperty(window, 'location', original)
+    }
+  })
+
+  it('bounces even when the open document has no unsaved changes', async () => {
+    const original = Object.getOwnPropertyDescriptor(window, 'location')
+    const reload = vi.fn()
+    Object.defineProperty(window, 'location', {
+      value: { reload },
+      writable: true,
+      configurable: true
+    })
+
+    try {
+      const { onAuthUserResolved } = await loadHook()
+      await onAuthUserResolved({ id: 'uid-a' })
+      // Saved, so it is open but absent from `modifiedWorkflows`. Deciding the
+      // reload off that collection leaves uid-a's canvas mounted for uid-b.
+      mocks.openWorkflows = [{ isModified: false }]
+      mocks.modifiedWorkflows = []
+
+      await onAuthUserResolved({ id: 'uid-b' })
+
+      expect(reload).toHaveBeenCalledTimes(1)
+    } finally {
+      if (original) Object.defineProperty(window, 'location', original)
+    }
+  })
+
+  it('clears every modified workflow, including ones already closed', async () => {
+    const original = Object.getOwnPropertyDescriptor(window, 'location')
+    const reload = vi.fn()
+    Object.defineProperty(window, 'location', {
+      value: { reload },
+      writable: true,
+      configurable: true
+    })
+
+    try {
+      const openA = { isModified: true }
+      const openB = { isModified: true }
+      // Closed earlier with "close anyway", so unload() left it modified. The
+      // unload prompt reads this collection, so it alone can veto the reload.
+      const closedButDirty = { isModified: true }
+
+      const { onAuthUserResolved } = await loadHook()
+      await onAuthUserResolved({ id: 'uid-a' })
+      mocks.openWorkflows = [openA, openB]
+      mocks.modifiedWorkflows = [openA, openB, closedButDirty]
+
+      await onAuthUserResolved({ id: 'uid-b' })
+
+      expect(openA.isModified).toBe(false)
+      expect(openB.isModified).toBe(false)
+      expect(closedButDirty.isModified).toBe(false)
+      expect(reload).toHaveBeenCalledTimes(1)
+    } finally {
+      if (original) Object.defineProperty(window, 'location', original)
+    }
+  })
+
+  it('does not close anything, so the persistence writers stay quiet', async () => {
+    const original = Object.getOwnPropertyDescriptor(window, 'location')
+    Object.defineProperty(window, 'location', {
+      value: { reload: vi.fn() },
+      writable: true,
+      configurable: true
+    })
+
+    try {
+      const open = { isModified: true }
+      const { onAuthUserResolved } = await loadHook()
+      await onAuthUserResolved({ id: 'uid-a' })
+      mocks.openWorkflows = [open]
+      mocks.modifiedWorkflows = [open]
+
+      await onAuthUserResolved({ id: 'uid-b' })
+
+      // Closing re-activates other documents, which re-arms the persistence
+      // watchers against the storage cleared one line earlier. The reload
+      // discards the canvas anyway.
+      expect(mocks.closeWorkflow).not.toHaveBeenCalled()
     } finally {
       if (original) Object.defineProperty(window, 'location', original)
     }

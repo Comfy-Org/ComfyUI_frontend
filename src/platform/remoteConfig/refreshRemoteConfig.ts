@@ -1,3 +1,5 @@
+import { isSessionSuspended } from '@/platform/auth/session/sessionExpiry'
+
 import {
   cachedBillingControlEnabled,
   cachedConsolidatedBillingEnabled,
@@ -43,6 +45,12 @@ export async function refreshRemoteConfig(
   options: RefreshRemoteConfigOptions = {}
 ): Promise<void> {
   const { useAuth = true } = options
+
+  // A suspended session answers this with a synthetic 401, and the handler
+  // below reads a 401 as "the server disowned these flags" and wipes them. The
+  // 10-minute poller would then strip the export affordances out from under a
+  // banner telling the user to go export their work.
+  if (useAuth && isSessionSuspended()) return
 
   const controller = useAuth ? null : new AbortController()
   const timeoutId = controller

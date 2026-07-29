@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
+import { isSessionSuspended } from '@/platform/auth/session/sessionExpiry'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
   APITaskType,
@@ -522,6 +523,10 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const update = async () => {
+    // Both fetchers can only fail while suspended, and a failed history fetch
+    // resolves to an empty list, which reads here as "your jobs are gone".
+    // Returning before `isLoading` also lets the poller's reschedule chain end.
+    if (isSessionSuspended()) return
     if (inFlight) {
       dirty = true
       return

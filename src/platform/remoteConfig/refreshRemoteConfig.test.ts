@@ -12,6 +12,11 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+const mockIsSessionSuspended = vi.hoisted(() => vi.fn(() => false))
+vi.mock('@/platform/auth/session/sessionExpiry', () => ({
+  isSessionSuspended: mockIsSessionSuspended
+}))
+
 vi.stubGlobal('fetch', vi.fn())
 
 describe('refreshRemoteConfig', () => {
@@ -112,6 +117,39 @@ describe('refreshRemoteConfig', () => {
   })
 
   describe('error handling', () => {
+    it('keeps the flags a suspended session cannot re-fetch', async () => {
+      remoteConfig.value = { gtm_container_id: 'GTM-KEEP' }
+      window.__CONFIG__ = { gtm_container_id: 'GTM-KEEP' }
+      mockIsSessionSuspended.mockReturnValue(true)
+
+      try {
+        await refreshRemoteConfig()
+      } finally {
+        mockIsSessionSuspended.mockReturnValue(false)
+      }
+
+      // A suspended session answers with a synthetic 401, which the handler
+      // below reads as "the server disowned these flags" and wipes. The
+      // 10-minute poller would strip the export affordances out from under a
+      // banner telling the user to go export their work.
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(remoteConfig.value).toEqual({ gtm_container_id: 'GTM-KEEP' })
+      expect(window.__CONFIG__).toEqual({ gtm_container_id: 'GTM-KEEP' })
+    })
+
+    it('still refreshes without auth while suspended, since that path has no credential to reject', async () => {
+      mockIsSessionSuspended.mockReturnValue(true)
+      vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
+
+      try {
+        await refreshRemoteConfig({ useAuth: false })
+      } finally {
+        mockIsSessionSuspended.mockReturnValue(false)
+      }
+
+      expect(remoteConfig.value).toEqual(mockConfig)
+    })
+
     it('clears config on 401 response', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(
         mockErrorResponse(401, 'Unauthorized')

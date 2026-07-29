@@ -12,6 +12,11 @@ import type {
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { assetService } from '@/platform/assets/services/assetService'
 
+const mockIsSessionSuspended = vi.hoisted(() => vi.fn(() => false))
+vi.mock('@/platform/auth/session/sessionExpiry', () => ({
+  isSessionSuspended: mockIsSessionSuspended
+}))
+
 // Mock the api module
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -455,6 +460,28 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(store.historyAssets).toHaveLength(200)
       expect(store.historyError).toBe(error)
       expect(store.isLoadingMore).toBe(false)
+    })
+
+    it('keeps the gallery and fetches nothing while the session is suspended', async () => {
+      const firstBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+      await store.updateHistory()
+      vi.mocked(api.getHistory).mockClear()
+
+      mockIsSessionSuspended.mockReturnValue(true)
+      try {
+        await store.updateHistory()
+      } finally {
+        mockIsSessionSuspended.mockReturnValue(false)
+      }
+
+      // An initial load blanks the list before fetching, and a suspended fetch
+      // answers `[]`, so without the guard the user's outputs disappear behind
+      // a banner telling them to export their work.
+      expect(api.getHistory).not.toHaveBeenCalled()
+      expect(store.historyAssets).toHaveLength(200)
     })
 
     it('should clear error state on successful retry', async () => {

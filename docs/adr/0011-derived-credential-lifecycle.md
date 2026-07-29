@@ -84,9 +84,24 @@ when the identity provider rejects the credential outright, Firebase's own
 sign-out now drives the app into a suspended session that stops derived-credential
 traffic and prompts re-authentication in place. Invalidation for that case is
 identity-driven rather than polled or timed, and it deliberately does not infer
-session death from a `401` — a `401` is per-endpoint and overloaded, so treating
-one as terminal would disrupt a working user. The bounded re-mint-and-retry half
-of invariant 5 remains open under FE-963.
+session death from a `401`. A `401` is per-endpoint and overloaded, so treating
+one as terminal would disrupt a working user. Recovery also re-scopes: it
+restores the workspace context the same sign-out reset, and a revalidation
+re-checks that its captured scope is still current before minting. The realtime
+socket is reconnected only once that scope has settled, because its handshake
+token fixes its scope at connect time and nothing re-handshakes on a workspace
+change; everywhere else the app changes workspace by reloading, and only a
+dropped connection re-handshakes at all. Re-scoping
+is bounded, so a stalled workspace list costs the scope rather than realtime as
+well. Invariant 4 is not absolute here: recovery lifts the suspension as soon as
+it holds a usable credential, so HTTP has a brief personal-scoped window before
+the workspace context returns. A re-scope that throws degrades to personal, as
+the workspace gate does at cold boot; a re-scope that outlives the bound is
+worse, because a late success re-mints and leaves HTTP team-scoped against a
+socket that already handshook personal. The bound is therefore set above what
+the workspace initializer can spend on its own retries. Invariant 4
+therefore holds in the steady state rather than continuously, and closing that
+window is part of the invariant-5 work still open under FE-963.
 
 Alternatives considered:
 
@@ -127,4 +142,4 @@ Alternatives considered:
 - Related: [ADR-0003](0003-crdt-based-layout-system.md) is unrelated in domain but
   shares the philosophy of designing invariants that make illegal states
   unrepresentable rather than guarding against them per call site.
-- Tickets: FE-613, FE-950, FE-963, FE-1072, FE-1390. PRs: #13511.
+- Tickets: FE-613, FE-950, FE-963, FE-1072, FE-1390. PRs: #13511, #14207.

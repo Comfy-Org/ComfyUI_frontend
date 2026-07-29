@@ -403,14 +403,14 @@ describe('suspended session', () => {
 
     const queue = await fetchQueue(fetchApi)
     const history = await fetchHistoryPage(fetchApi)
-
     const detail = await fetchJobDetail(fetchApi, 'job-1')
+
+    expect(queue).toEqual({ Running: [], Pending: [] })
+    expect(history.jobs).toEqual([])
 
     expect(fetchApi).not.toHaveBeenCalled()
     expect(error).not.toHaveBeenCalled()
     expect(detail).toBeUndefined()
-    expect(queue).toEqual({ Running: [], Pending: [] })
-    expect(history.jobs).toEqual([])
-    expect(history.hasMore).toBe(false)
+    error.mockRestore()
   })
 })

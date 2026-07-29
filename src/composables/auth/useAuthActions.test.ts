@@ -114,8 +114,14 @@ vi.mock('@/composables/useErrorHandling', () => ({
         } catch (error) {
           const recovery = recoveries?.find((r) => r.shouldHandle(error))
           if (recovery) {
-            await recovery.recover(error, action, args)
-            return undefined
+            // Swallowed, as the real wrapper does: a failing recovery falls
+            // through to the error handler rather than escaping to the caller.
+            try {
+              await recovery.recover(error, action, args)
+              return undefined
+            } catch (recoveryError) {
+              console.error('Recovery strategy failed:', recoveryError)
+            }
           }
           ;(errorHandler ?? mockToastErrorHandler)(error)
           return undefined
@@ -167,6 +173,21 @@ describe('useAuthActions.logout', () => {
     // The guard must outlive the sign-out itself: the hook that observes it
     // only runs after an awaited network round-trip.
     expect(heldDuringSignOut).toBe(true)
+    expect(isVoluntarySignOutInProgress()).toBe(false)
+  })
+
+  it('releases the deliberate-sign-out guard when the sign-out itself fails', async () => {
+    const { isVoluntarySignOutInProgress } =
+      await import('@/platform/auth/session/sessionExpiry')
+    mockAuthStore.logout.mockRejectedValueOnce(new Error('network down'))
+
+    const { logout } = useAuthActions()
+    await logout()
+
+    // A guard left armed outlives the tab, because the depth floors at zero and
+    // nothing brings it back down. Every later sign-out then reads as
+    // deliberate, so a real expiry never suspends the session or raises the
+    // banner, and the drafts are wiped instead of kept for the user's return.
     expect(isVoluntarySignOutInProgress()).toBe(false)
   })
 
@@ -437,6 +458,12 @@ describe('useAuthActions.reportError', () => {
 })
 
 describe('reauthentication recovery', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    mockDistributionState.isCloud = true
+  })
+
   async function triggerReauth() {
     const { FirebaseError } = await import('firebase/app')
     mockAuthStore.updatePassword.mockRejectedValueOnce(
@@ -471,6 +498,19 @@ describe('reauthentication recovery', () => {
     expect(heldDuringSignOut).toBe(true)
     expect(isVoluntarySignOutInProgress()).toBe(false)
     expect(mockDialogService.showSignInDialog).toHaveBeenCalledTimes(1)
+  })
+
+  it('releases the bracket when the re-prompt sign-out fails', async () => {
+    const { isVoluntarySignOutInProgress } =
+      await import('@/platform/auth/session/sessionExpiry')
+    mockDialogService.confirm.mockResolvedValue(true)
+    mockAuthStore.logout.mockRejectedValueOnce(new Error('network down'))
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await triggerReauth()
+
+    expect(isVoluntarySignOutInProgress()).toBe(false)
+    error.mockRestore()
   })
 
   it('retries the original operation once the user signs back in', async () => {

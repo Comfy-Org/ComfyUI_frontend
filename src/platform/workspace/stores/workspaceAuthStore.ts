@@ -83,7 +83,7 @@ function isPermanentAuthError(err: unknown): err is WorkspaceAuthError {
  * The subset of permanent failures that mean the IDENTITY was rejected, rather
  * than that this workspace is gone or off-limits. `/api/auth/token` answers 401
  * for a bad Firebase token but 403 for a denied workspace and 404 for a missing
- * one — the latter two leave the user's credential perfectly valid, so they must
+ * one. The latter two leave the user's credential perfectly valid, so they must
  * never end the session.
  */
 function isIdentityRevoked(err: unknown): boolean {
@@ -845,14 +845,31 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
    * A 401 from our own backend is not a verdict on the credential: `requestToken`
    * collapses every 401 into `INVALID_FIREBASE_TOKEN` regardless of why, which is
    * exactly the overloaded-401 inference this design removes. So this never ends
-   * the session itself. It only forces a refresh: if the credential is genuinely
-   * revoked, Firebase signs the user out and the sign-out hook terminates the
-   * session; if the provider issues a token, the identity is alive and the
-   * disagreement was our backend's, so nothing happens.
+   * the session itself. If the credential is genuinely revoked, Firebase signs
+   * the user out and the sign-out hook suspends the session.
+   *
+   * If the provider does issue a token the identity is alive and the
+   * disagreement was our backend's, but the caller has already cleared the
+   * unified context, so the app is left with no request credential and nothing
+   * that would mint one. Re-minting here is what makes that branch recoverable.
    */
-  async function askProviderToRevalidate(): Promise<void> {
+  async function askProviderToRevalidate(
+    target: UnifiedMintBody
+  ): Promise<void> {
+    // Both callers clear the context, which bumps this, immediately before
+    // dispatching, so a later bump means someone else took over.
+    const capturedRequestId = unifiedRefreshRequestId
     try {
-      await useAuthStore().currentUser?.getIdToken(true)
+      const token = await useAuthStore().currentUser?.getIdToken(true)
+      if (!token) return
+      // Not `currentUnifiedTarget()`: a switch nulls the target for its whole
+      // duration, so a stale mint landing mid-switch would start last and win.
+      if (capturedRequestId !== unifiedRefreshRequestId) return
+      // Re-mint against the caller's own target: defaulting to personal would
+      // silently re-scope a team session while the UI still shows the team.
+      // Not mintAtLogin either, since its catch surfaces the permanent error
+      // the caller already deduped against a live token.
+      await mintUnified(target)
     } catch (err) {
       // Firebase signs out itself when the credential is dead. Anything else
       // leaves the session unverified with nothing left to re-check it, so it
@@ -885,7 +902,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         if (getUnifiedToken()) surfacePermanentAuthError(err)
         clearUnifiedContext()
         if (isIdentityRevoked(err)) {
-          void askProviderToRevalidate()
+          void askProviderToRevalidate(target)
         }
       } else {
         console.warn('Unified token refresh failed:', err)
@@ -947,7 +964,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         // `getAuthHeader` returns null, so `getIdToken` is never called again and
         // Firebase never gets to notice a revoked credential. Ask it directly.
         if (isIdentityRevoked(err)) {
-          void askProviderToRevalidate()
+          void askProviderToRevalidate(target)
         }
       } else {
         console.warn('Unified reactive re-mint failed:', err)

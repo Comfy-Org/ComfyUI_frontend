@@ -5,9 +5,9 @@ import {
   createWebHashHistory,
   createWebHistory
 } from 'vue-router'
-import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isPublicRoute } from '@/platform/auth/session/publicRoutes'
 import { isSessionSuspended } from '@/platform/auth/session/sessionExpiry'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -140,27 +140,6 @@ router.afterEach(() => {
 
 if (isCloud) {
   const { flags } = useFeatureFlags()
-  const PUBLIC_ROUTE_NAMES = new Set([
-    'cloud-login',
-    'cloud-signup',
-    'cloud-forgot-password',
-    'cloud-oauth-consent',
-    'cloud-sorry-contact-support'
-  ])
-  const PUBLIC_ROUTE_PATHS = new Set([
-    '/cloud/login',
-    '/cloud/signup',
-    '/cloud/forgot-password',
-    '/oauth/consent',
-    '/cloud/sorry-contact-support'
-  ])
-
-  function isPublicRoute(to: RouteLocationNormalized) {
-    const name = String(to.name)
-    if (PUBLIC_ROUTE_NAMES.has(name)) return true
-    const path = to.path
-    return PUBLIC_ROUTE_PATHS.has(path)
-  }
   // Global authentication guard
   router.beforeEach(async (to, _from, next) => {
     const authStore = useAuthStore()
@@ -182,16 +161,15 @@ if (isCloud) {
     const isLoggedIn = !!authHeader
     preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
-    // A suspended session has no credential but still has the user's unsaved
-    // work on screen. Redirecting to login unmounts the canvas and destroys it,
-    // which is the outcome the in-place banner exists to prevent; the banner
-    // owns recovery and cloud traffic is already short-circuited.
-    if (isSessionSuspended()) {
+    // Allow public routes
+    if (isPublicRoute(to)) {
       return next()
     }
 
-    // Allow public routes
-    if (isPublicRoute(to)) {
+    // A suspended session has no credential but still has the user's unsaved
+    // work on screen, and redirecting to login unmounts the canvas. The banner
+    // owns recovery, and cloud traffic is already short-circuited.
+    if (isSessionSuspended()) {
       return next()
     }
 

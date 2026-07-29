@@ -17,6 +17,7 @@ import {
   assetService
 } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
+import { isSessionSuspended } from '@/platform/auth/session/sessionExpiry'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
@@ -152,6 +153,11 @@ export const useAssetsStore = defineStore('assets', () => {
    * @param loadMore - true for pagination (append), false for initial load (replace)
    */
   const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
+    // The initial-load branch below blanks the gallery before fetching, and
+    // while suspended nothing can refill it. Emptying the user's outputs under
+    // a banner telling them to export their work is the one thing to avoid.
+    if (isSessionSuspended()) return allHistoryItems.value
+
     // Reset state for initial load
     if (!loadMore) {
       historyOffset.value = 0

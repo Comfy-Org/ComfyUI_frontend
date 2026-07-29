@@ -7,7 +7,6 @@ import { createI18n } from 'vue-i18n'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
-import type * as StorageIO from '../base/storageIO'
 
 const settingMocks = vi.hoisted(() => ({
   persistRef: null as { value: boolean } | null
@@ -93,11 +92,6 @@ vi.mock('vue-router', () => ({
   })
 }))
 
-vi.mock('../base/storageIO', async () => {
-  const actual = await vi.importActual<typeof StorageIO>('../base/storageIO')
-  return { ...actual, clearAllV2Storage: vi.fn() }
-})
-
 const preservedQueryMocks = vi.hoisted(() => ({
   payloads: {} as Record<string, Record<string, string> | undefined>
 }))
@@ -125,7 +119,7 @@ vi.mock('@/platform/navigation/preservedQueryNamespaces', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
+  isCloud: false
 }))
 
 vi.mock('../migration/migrateV1toV2', () => ({

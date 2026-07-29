@@ -37,9 +37,15 @@ describe('suspendSession', () => {
   })
 
   it('never navigates, so unsaved work on the canvas survives', async () => {
+    const original = Object.getOwnPropertyDescriptor(window, 'location')
     const assign = vi.fn()
+    const replace = vi.fn()
+    const reload = vi.fn()
     Object.defineProperty(window, 'location', {
       value: {
+        assign,
+        replace,
+        reload,
         get href() {
           return ''
         },
@@ -50,11 +56,20 @@ describe('suspendSession', () => {
       writable: true,
       configurable: true
     })
-    const { suspendSession } = await loadSessionExpiry()
 
-    suspendSession()
+    try {
+      const { suspendSession } = await loadSessionExpiry()
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    expect(assign).not.toHaveBeenCalled()
+      suspendSession()
+
+      expect(assign).not.toHaveBeenCalled()
+      expect(replace).not.toHaveBeenCalled()
+      expect(reload).not.toHaveBeenCalled()
+      warn.mockRestore()
+    } finally {
+      if (original) Object.defineProperty(window, 'location', original)
+    }
   })
 
   it('resumes once a user signs back in, so traffic recovers without a reload', async () => {
@@ -134,6 +149,27 @@ describe('remembered identity', () => {
     // In-memory identity is null on every page load. Treating that as "someone
     // else" would delete the drafts of the user about to sign in.
     expect(adoptIdentity('uid-a')).toBe(true)
+  })
+
+  it('trusts the identity it already holds over an unreadable store', async () => {
+    const { adoptIdentity } = await loadSessionExpiry()
+    adoptIdentity('uid-a')
+
+    const original = Object.getOwnPropertyDescriptor(window, 'localStorage')
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('private mode')
+      }
+    })
+
+    try {
+      // Falling back to storage here would read as a cold start and hand
+      // uid-b everything uid-a left behind.
+      expect(adoptIdentity('uid-b')).toBe(false)
+    } finally {
+      if (original) Object.defineProperty(window, 'localStorage', original)
+    }
   })
 
   it('keeps the work when storage is unreadable, rather than guessing', async () => {

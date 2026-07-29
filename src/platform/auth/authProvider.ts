@@ -5,7 +5,7 @@
  * varies them by platform, so callers match on a substring rather than an exact
  * value. Doing that in one place keeps adding a provider to a single edit.
  */
-export type AuthProvider = 'google' | 'github'
+type AuthProvider = 'google' | 'github'
 
 export function resolveAuthProvider(
   providerId: string | undefined
