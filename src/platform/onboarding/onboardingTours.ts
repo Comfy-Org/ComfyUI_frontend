@@ -1,4 +1,5 @@
-export type EntryPath = 'appMode'
+export const ENTRY_PATHS = ['appMode', 'firstRun'] as const
+export type EntryPath = (typeof ENTRY_PATHS)[number]
 
 /** Setting holding the tours the user has completed or dismissed. */
 export const TOUR_SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
@@ -42,6 +43,9 @@ export interface CoachStep {
   image?: string
   follow?: boolean
   onEnter?: (signal: AbortSignal) => void | Promise<void>
+  interactive?: boolean
+  busy?: () => boolean
+  selfAdvancing?: boolean
 }
 
 export type TourDefinition = CoachStep[] | (() => Promise<CoachStep[]>)
@@ -59,7 +63,7 @@ export function resolveSteps(
   )
 }
 
-export const TOURS: Record<EntryPath, TourDefinition> = {
+const TOURS: Partial<Record<EntryPath, TourDefinition>> = {
   appMode: [
     {
       name: 'landing',
@@ -93,4 +97,12 @@ export const TOURS: Record<EntryPath, TourDefinition> = {
       openSidebarTab: 'assets'
     }
   ]
+}
+
+export function registerTour(entry: EntryPath, definition: TourDefinition) {
+  TOURS[entry] = definition
+}
+
+export function tourDefinition(entry: EntryPath): TourDefinition | undefined {
+  return TOURS[entry]
 }
