@@ -143,6 +143,8 @@
       "modelDescription": "Model Açıklaması",
       "modelTagging": "Model Etiketleme",
       "modelType": "Model Türü",
+      "modelTypeCoreReadonly": "Çekirdekte model türü değiştirilemez, dosya taşıma henüz desteklenmiyor.",
+      "modelTypeImmutableReadonly": "Salt okunur bir model için model türü değiştirilemez.",
       "noAdditionalTags": "Ek etiket yok",
       "selectModelPrompt": "Bilgilerini görmek için bir model seçin",
       "selectModelType": "Model türü seç...",
@@ -173,6 +175,7 @@
     "rename": {
       "failed": "Varlık yeniden adlandırılamadı."
     },
+    "searchModels": "Modelleri ara",
     "selectFrameworks": "Framework'leri Seçin",
     "selectModelType": "Model türünü seçin",
     "selectProjects": "Projeleri Seçin",
@@ -611,14 +614,14 @@
     "chooseProfilePicture": "Profil fotoğrafı seçin",
     "createProfile": "Profil oluştur",
     "createProfileButton": "Profilimi oluştur",
-    "createProfileTitle": "Comfy Hub profilinizi oluşturun",
+    "createProfileTitle": "Comfy Workflows profilinizi oluşturun",
     "creatingProfile": "Profil oluşturuluyor...",
     "descriptionLabel": "Açıklamanız",
     "descriptionPlaceholder": "Topluluğa kendinizden bahsedin...",
     "introDescription": "Çalışma akışlarınızı yayınlayın, portföyünüzü oluşturun ve milyonlarca kullanıcı tarafından keşfedilin",
-    "introSubtitle": "Çalışma akışınızı ComfyHub'da paylaşmak için önce profilinizi oluşturalım.",
-    "introTitle": "ComfyHub'da yayınla",
-    "modalTitle": "ComfyHub'da profilinizi oluşturun",
+    "introSubtitle": "Çalışma akışınızı Comfy Workflows'ta paylaşmak için önce profilinizi oluşturalım.",
+    "introTitle": "Comfy Workflows'ta yayınla",
+    "modalTitle": "Comfy Workflows'ta profilinizi oluşturun",
     "nameLabel": "Adınız",
     "namePlaceholder": "Adınızı buraya girin",
     "profileCreationNav": "Profil oluşturma",
@@ -628,8 +631,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "Profil sayfanız şu adreste yayında:",
     "successTitle": "Harika görünüyor, {'@'}{username}!",
-    "updateIntroDescription": "Son değişikliklerinizi ComfyHub'a gönderin. Paylaşım linkiniz ve istatistikleriniz aynı kalır.",
-    "updateIntroTitle": "ComfyHub workflow'unuzu güncelleyin",
+    "updateIntroDescription": "Son değişikliklerinizi Comfy Workflows'a gönderin. Paylaşım linkiniz ve istatistikleriniz aynı kalır.",
+    "updateIntroTitle": "Comfy Workflows workflow'unuzu güncelleyin",
     "uploadCover": "+ Kapak yükle",
     "uploadProfilePicture": "+ Profil fotoğrafı yükle",
     "uploadWorkflowButton": "Çalışma akışımı yükle",
@@ -641,20 +644,18 @@
     "additionalInfo": "Ek bilgi",
     "back": "Geri",
     "createProfileCta": "Profil oluştur",
-    "createProfileToPublish": "ComfyHub'da yayınlamak için bir profil oluşturun",
+    "createProfileToPublish": "Comfy Workflows'ta yayınlamak için bir profil oluşturun",
     "exampleImage": "Örnek görsel {index}",
     "exampleImagePosition": "Örnek görsel {index} / {total}",
     "examplesDescription": "En fazla {total} ek örnek görsel ekleyin",
     "maxExamples": "En fazla {max} örnek seçebilirsiniz",
     "next": "İleri",
-    "publishButton": "ComfyHub'da Yayınla",
+    "publishButton": "Comfy Workflows'ta Yayınla",
     "publishFailedDescription": "Çalışma akışınızı yayınlarken bir hata oluştu. Lütfen tekrar deneyin.",
     "publishFailedTitle": "Yayınlama başarısız",
-    "publishSuccessDescription": "Çalışma akışınız artık ComfyHub'da yayında.",
+    "publishSuccessDescription": "Çalışma akışınız artık Comfy Workflows'ta yayında.",
     "publishSuccessTitle": "Başarıyla yayınlandı",
     "removeExampleImage": "Örnek görseli kaldır",
-    "renameFailedDescription": "Workflow'unuz başarıyla yayınlandı, ancak yerel dosyanın adı değiştirilemedi. Eşleşmesi için tekrar adlandırın.",
-    "renameFailedTitle": "Yeniden adlandırma başarısız",
     "selectAThumbnail": "Bir küçük resim seçin",
     "shareAs": "Olarak paylaş",
     "showLessTags": "Daha az göster...",
@@ -670,8 +671,8 @@
     "thumbnailImageComparison": "Görsel karşılaştırma",
     "thumbnailPreview": "Küçük resim önizlemesi",
     "thumbnailVideo": "Video",
-    "title": "ComfyHub'da Yayınla",
-    "unsavedDescription": "Çalışma akışınızı ComfyHub'da yayınlamadan önce kaydetmelisiniz. Devam etmek için şimdi kaydedin.",
+    "title": "Comfy Workflows'ta Yayınla",
+    "unsavedDescription": "Çalışma akışınızı Comfy Workflows'ta yayınlamadan önce kaydetmelisiniz. Devam etmek için şimdi kaydedin.",
     "updateButton": "Workflow'u güncelle",
     "uploadAnImage": "Göz atmak için tıklayın veya bir görsel sürükleyin",
     "uploadComparison": "Öncesi ve sonrası yükle",
@@ -1268,6 +1269,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu düğüm, çalışma alanı politikanız tarafından devre dışı bırakıldı. Farklı bir düğüm kullanın.",
+        "title": "Düğüm devre dışı",
+        "toastMessage": "Bu düğüm, çalışma alanı politikanız tarafından devre dışı bırakıldı.",
+        "toastTitle": "Partner düğümler"
+      },
       "bad_linked_input": {
         "details": "{nodeName} için {inputName} bağlantısı geçersiz.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2624,8 @@
     "resetView": "Tuval görünümünü sıfırla",
     "run": "Çalıştır",
     "runWorkflow": "İş akışını çalıştır (Öne kuyruklamak için Shift)",
-    "runWorkflowDisabled": "İş akışında desteklenmeyen düğümler var (kırmızı ile vurgulanmış). İş akışını çalıştırmak için bunları kaldırın.",
     "runWorkflowFront": "İş akışını çalıştır (Öne kuyrukla)",
+    "runWorkflowMissingResources": "Çalışma akışında eksik kaynaklar var.",
     "settings": "Ayarlar",
     "showMenu": "Menüyü Göster",
     "stopRunInstant": "Çalışmayı Durdur (Anında)",
@@ -3049,6 +3057,38 @@
       "owner": "Sahip",
       "personal": "Kişisel"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "Her oluşturulan ve içe aktarılan içerik Medya Varlıkları'nda saklanır. Geçmiş çalışmalarınızı gözden geçirmek, indirmek veya yeniden kullanmak için istediğiniz zaman açabilirsiniz.",
+        "title": "Tüm varlıklarınızı bulun"
+      },
+      "inputs": {
+        "body": "Çalışmak istediğiniz şeyleri ekleyin. Girişleriniz, uygulamanın sonuçlara dönüştürdüğü şeylerdir.",
+        "title": "Girişlerinizi ekleyin"
+      },
+      "landing": {
+        "body": "Yaklaşık bir dakikada temel bilgilerin hızlı bir turu. Size girişleri nasıl ekleyeceğinizi, uygulamanızı nasıl çalıştıracağınızı ve sonuçlarınızı nerede bulacağınızı göstereceğiz.",
+        "primary": "Eğitimi başlat",
+        "title": "Uygulamalara Hoş Geldiniz"
+      },
+      "outputs": {
+        "body": "Tamamlanan sonuçlarınız burada, ortada gösterilir. İndirebilir veya bir girişi değiştirip tekrar çalıştırabilirsiniz.",
+        "title": "Sonuçlarınızı alın"
+      },
+      "replay": "Uygulama Modu turuna katıl",
+      "run": {
+        "body": "Girişlerinizden memnun musunuz? Çalıştır'a tıklayın ve sonuç hazır olduğunda ortada görünecek.",
+        "title": "Uygulamanızı çalıştırın"
+      }
+    },
+    "back": "Geri",
+    "done": "Bitti",
+    "loadError": "Bu tur gösterilirken bir hata oluştu",
+    "next": "İleri",
+    "skip": "Atla",
+    "stepLabel": "Adım {current} / {total}"
   },
   "openSharedWorkflow": {
     "author": "Yazar:",
@@ -3487,6 +3527,7 @@
     "3DViewer": "3D Görüntüleyici",
     "API Nodes": "API Düğümleri",
     "About": "Hakkında",
+    "Allowlist": "İzinli Liste",
     "Appearance": "Görünüm",
     "BrushAdjustment": "Fırça Ayarı",
     "Camera": "Kamera",
@@ -3565,9 +3606,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "Bu medya öğelerinin yayınlanıp herkese açık olacağını anlıyorum",
     "checkingAssets": "Medya görünürlüğü kontrol ediliyor…",
-    "comfyHubButton": "ComfyHub'a yükle",
-    "comfyHubDescription": "ComfyHub, ComfyUI'nin resmi topluluk merkezidir.\nİş akışınız herkesin görebileceği herkese açık bir sayfada olacak.",
-    "comfyHubTitle": "ComfyHub'a yükle",
+    "comfyHubButton": "Comfy Workflows'a yükle",
+    "comfyHubDescription": "Comfy Workflows, ComfyUI'nin resmi topluluk merkezidir.\nİş akışınız herkesin görebileceği herkese açık bir sayfada olacak.",
+    "comfyHubTitle": "Comfy Workflows'a yükle",
     "copyLink": "Kopyala",
     "createLinkButton": "Bağlantı oluştur",
     "createLinkDescription": "İş akışınız için bir bağlantı oluşturduğunuzda, bu medya öğelerini iş akışınızla birlikte paylaşacaksınız",
@@ -3641,6 +3682,7 @@
     "logout": "Çıkış Yap",
     "mediaAssets": "Medya Varlıkları",
     "modelLibrary": "Model Kütüphanesi",
+    "modelLibraryLoadFailed": "Modeller yüklenemedi. Sunucu bağlantısını kontrol edin ve tekrar denemek için Yenile'yi kullanın.",
     "newBlankWorkflow": "Yeni bir boş iş akışı oluştur",
     "noFilesFound": "Dosya bulunamadı",
     "noFilesFoundMessage": "Dosya yükleyin veya içerik oluşturun, burada görüntülensin",
@@ -3746,6 +3788,7 @@
       "viewList": "Liste görünümü"
     },
     "searchAssets": "Varlıkları Ara",
+    "searchResultsCapped": "İlk {limit} eşleşme gösteriliyor. Daha spesifik sonuçlar görmek için aramanızı daraltın.",
     "sidebar": "Kenar Çubuğu",
     "templates": "Şablonlar",
     "themeToggle": "Temayı Değiştir",
@@ -4181,6 +4224,11 @@
     "modelsSelected": "{count} Model",
     "noResults": "Şablon bulunamadı",
     "noResultsHint": "Aramanızı veya filtrelerinizi ayarlamayı deneyin",
+    "paidTemplate": {
+      "badgeLabel": "Partner API",
+      "credits": "Kredilerle çalışır",
+      "title": "Premium şablon"
+    },
     "resultsCount": "{total} şablondan {count} tanesi gösteriliyor",
     "runsOnFilter": "Üzerinde çalışır",
     "runsOnSelected": "{count} Üzerinde Çalışır",
@@ -4318,6 +4366,21 @@
     "title": "Sürüm Uyumluluk Uyarısı",
     "updateFrontend": "Ön Ucu Güncelle"
   },
+  "videoEdit": {
+    "adjustCrop": "Kırpma bölgesini ayarla",
+    "adjustEndFrame": "Bitiş karesini ayarla",
+    "adjustStartFrame": "Başlangıç karesini ayarla",
+    "durationSeconds": "{count} sn",
+    "durationZero": "0 sn",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB",
+    "fileSizeUnknown": "—",
+    "loadingFilmstrip": "Film şeridi yükleniyor…",
+    "pause": "Duraklat",
+    "play": "Oynat",
+    "seekVideo": "Videoda gez"
+  },
   "vueNodesBanner": {
     "desc": "– Daha esnek iş akışları, güçlü yeni bileşenler, genişletilebilirlik için tasarlandı",
     "title": "Nodes 2.0 Tanıtıldı",
@@ -4424,9 +4487,7 @@
         "lastActivity": "Son etkinlik",
         "partnerNodeUsed": "Kullanılan partner node",
         "totalCreditsUsed": "Toplam kullanılan kredi"
-      },
-      "perUserHint": "Kullanıcı başına toplam kullanım mı arıyorsunuz?",
-      "seeMembers": "Üyeleri Gör"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4562,6 +4623,39 @@
       "deleteWorkspaceDisabledTooltip": "Önce çalışma alanınızın aktif aboneliğini iptal edin",
       "editWorkspace": "Çalışma alanı detaylarını düzenle",
       "leaveWorkspace": "Çalışma Alanından Ayrıl"
+    },
+    "partnerNodes": {
+      "accessMode": "Partner düğüm erişim modu",
+      "allowAllAccessHint": "Bu değişikliğin çalışma alanınızda uygulanması 10 dakikaya kadar sürebilir.",
+      "allowAllAccessMessage": "Tüm sağlayıcılardan partner düğümler, tüm çalışma alanı üyeleri için kullanılabilir olacak.",
+      "allowAllAccessTitle": "Tüm partner düğümlere erişime izin verilsin mi?",
+      "columns": {
+        "nodes": "Düğümler",
+        "provider": "Sağlayıcı"
+      },
+      "disableAll": "Tümünü devre dışı bırak",
+      "disableAllMessage": "Tüm sağlayıcılar kapatılacak. Partner düğümler erişim kısıtlıyken kullanılamayacak.",
+      "disableAllTitle": "Tüm sağlayıcılar devre dışı bırakılsın mı?",
+      "enableAll": "Tümünü etkinleştir",
+      "loadError": "Partner düğüm erişimi yüklenemedi.",
+      "loading": "Partner düğüm erişimi yükleniyor",
+      "noResults": "Sağlayıcı veya partner düğüm bulunamadı",
+      "nodeCount": "{count} etkin",
+      "ownerOnly": "Yalnızca çalışma alanı sahipleri partner düğüm erişimini güncelleyebilir.",
+      "restrictAccessHint": "Bu değişikliğin çalışma alanınızda uygulanması 10 dakikaya kadar sürebilir.",
+      "restrictAccessMessage": "Çalışma alanı üyeleri yalnızca etkinleştirdiğiniz sağlayıcılardan partner düğümleri kullanabilecek.",
+      "restrictAccessTitle": "Partner düğümlere erişim kısıtlansın mı?",
+      "restricted": "Kısıtlı",
+      "restrictedDescription": "Yalnızca etkin sağlayıcılardan partner düğümler kullanılabilir. Değişikliklerin uygulanması 10 dakikaya kadar sürebilir.",
+      "retry": "Tekrar dene",
+      "saveError": "Partner düğüm erişimi güncellenemedi. Tekrar deneyin.",
+      "searchPlaceholder": "Sağlayıcılar ve partner düğümlerini ara...",
+      "tableLabel": "Partner düğüm sağlayıcıları",
+      "title": "Partner düğüm erişimi",
+      "toggleProvider": "{provider} için erişimi ayarla",
+      "unavailable": "Bu çalışma alanı için partner düğüm erişimi mevcut değil.",
+      "unrestricted": "Kısıtlamasız",
+      "unrestrictedDescription": "Tüm sağlayıcılardan partner düğümler herkes için kullanılabilir. Sağlayıcıları devre dışı bırakmak bunu Kısıtlı'ya ayarlayacaktır."
     },
     "planCredits": {
       "tabs": {

@@ -168,6 +168,8 @@ interface SubscribeRequest {
   /** Required for the per-credit Team plan; selects the slider stop. */
   team_credit_stop_id?: string
   billing_cycle?: SubscribeBillingCycle
+  /** Required to change plans while the current subscription is cancelled; server rejects the change without it. */
+  confirm_reactivation?: boolean
 }
 
 export interface SubscribeOptions {
@@ -175,6 +177,7 @@ export interface SubscribeOptions {
   cancelUrl?: string
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
+  confirmReactivation?: boolean
 }
 
 export interface PreviewSubscribeOptions {
@@ -273,6 +276,8 @@ export interface BillingStatusResponse {
   subscription_duration?: SubscriptionDuration
   plan_slug?: string
   billing_status?: BillingStatus
+  pending_billing_op_id?: string
+  action_url?: string
   has_funds: boolean
   cancel_at?: string
   renewal_date?: string
@@ -310,6 +315,7 @@ export interface BillingOpStatusResponse {
   error_message?: string
   started_at: string
   completed_at?: string
+  action_url?: string
 }
 
 interface BillingEvent {
@@ -687,7 +693,8 @@ export const workspaceApi = {
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
-          billing_cycle: options.billingCycle
+          billing_cycle: options.billingCycle,
+          confirm_reactivation: options.confirmReactivation
         } satisfies SubscribeRequest,
         { headers }
       )
@@ -810,7 +817,7 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
         api.apiURL(`/billing/ops/${opId}`),
-        { headers }
+        { headers, timeout: 30_000 }
       )
       return response.data
     } catch (err) {

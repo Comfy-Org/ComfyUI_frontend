@@ -879,6 +879,10 @@ export type BillingOpStatusResponse = {
    * When the operation completed (success or failure)
    */
   completed_at?: string
+  /**
+   * HTTPS URL for completing required customer authentication
+   */
+  action_url?: string
 }
 
 /**
@@ -1506,6 +1510,14 @@ export type BillingStatusResponse = {
    */
   plan_slug?: string
   billing_status?: BillingStatus
+  /**
+   * The workspace's in-flight billing operation, when one exists.
+   */
+  pending_billing_op_id?: string
+  /**
+   * The customer action URL for the pending operation, when action is required.
+   */
+  action_url?: string
   /**
    * Whether the workspace has available credits
    */
