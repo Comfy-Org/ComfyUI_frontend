@@ -17,7 +17,7 @@ let storageAvailable = true
 let workflowWritesBlocked = false
 
 export function isStorageAvailable(): boolean {
-  return storageAvailable
+  return storageAvailable && !workflowWritesBlocked
 }
 
 export function markStorageUnavailable(): void {

@@ -349,6 +349,7 @@ describe('storageIO', () => {
 
       isolatedStorageIO.clearAllWorkflowStorage({ blockWrites: true })
 
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(
         isolatedStorageIO.writeIndex('ws-1', {
           v: 2,
@@ -405,13 +406,15 @@ describe('storageIO', () => {
       sessionStorage.setItem('Comfy.Workflow.ActivePath:client-1', '{}')
       sessionStorage.setItem('Comfy.Workflow.OpenPaths:client-1', '{}')
       sessionStorage.setItem('workflow:client-1', '{}')
+      sessionStorage.setItem('unrelated', 'keep')
 
       clearWorkflowRestoreState()
 
       expect(localStorage.getItem('Comfy.OpenWorkflowsPaths')).toBeNull()
       expect(localStorage.getItem('Comfy.ActiveWorkflowIndex')).toBeNull()
       expect(localStorage.getItem('workflow')).toBeNull()
-      expect(sessionStorage).toHaveLength(0)
+      expect(sessionStorage).toHaveLength(1)
+      expect(sessionStorage.getItem('unrelated')).toBe('keep')
       expect(localStorage.getItem('Comfy.Workflow.DraftIndex.v2:ws-1')).toBe(
         '{}'
       )

@@ -226,6 +226,27 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockWorkspaceAuthStore.switchWorkspace).not.toHaveBeenCalled()
     })
 
+    it('clears transient restore state before falling back from a missing session workspace', async () => {
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = {
+        ...mockTeamWorkspace,
+        id: 'missing-workspace'
+      }
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(mockClearWorkflowRestoreState).toHaveBeenCalledExactlyOnceWith()
+      expect(
+        mockClearWorkflowRestoreState.mock.invocationCallOrder[0]
+      ).toBeLessThan(
+        mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+      )
+      expect(mockWorkspaceAuthStore.switchWorkspace).toHaveBeenCalledWith(
+        mockPersonalWorkspace.id
+      )
+    })
+
     it('falls back to localStorage if no session', async () => {
       mockLocalStorage.getItem.mockReturnValue(mockTeamWorkspace.id)
 

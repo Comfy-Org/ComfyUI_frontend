@@ -312,6 +312,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           }
 
           // Session workspace not found (deleted/access revoked) - fallback to default
+          clearWorkflowRestoreState()
           workspaceAuthStore.clearWorkspaceContext()
 
           const personal = workspaces.value.find((w) => w.type === 'personal')
