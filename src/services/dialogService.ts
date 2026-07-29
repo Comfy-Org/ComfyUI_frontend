@@ -676,8 +676,11 @@ export const useDialogService = () => {
     planName: string
     planSlug: string
   }): Promise<DowngradeToPersonalResult | null> {
-    const { useDowngradeToPersonal } =
-      await import('@/platform/workspace/composables/useDowngradeToPersonal')
+    const {
+      useDowngradeToPersonal,
+      ReactivationConfirmationRequiredError,
+      ReactivationAmountChangedError
+    } = await import('@/platform/workspace/composables/useDowngradeToPersonal')
     const {
       hasOtherMembers,
       refreshMembers,
@@ -731,12 +734,33 @@ export const useDialogService = () => {
           requiresReactivation,
           chargeCents,
           onConfirm: async (planSlug: string, confirmReactivation: boolean) => {
-            const result = await downgradeToPersonal(
-              planSlug,
-              confirmReactivation,
-              chargeCents
-            )
-            resolveResult(result)
+            try {
+              const result = await downgradeToPersonal(
+                planSlug,
+                confirmReactivation,
+                chargeCents
+              )
+              resolveResult(result)
+            } catch (error) {
+              // A fresh preview inside downgradeToPersonal() found the
+              // dialog's captured state (open-time cancellation/charge) is
+              // stale and refused to bill it. Push the corrected values into
+              // the still-open dialog so a retry sends what these errors'
+              // own preview says is actually true, instead of repeating the
+              // same rejected request forever.
+              if (
+                error instanceof ReactivationConfirmationRequiredError ||
+                error instanceof ReactivationAmountChangedError
+              ) {
+                requiresReactivation = true
+                chargeCents = error.preview.cost_today_cents
+                dialogStore.updateDialog({
+                  key: dialogKey,
+                  contentProps: { requiresReactivation, chargeCents }
+                })
+              }
+              throw error
+            }
           }
         },
         dialogComponentProps: {

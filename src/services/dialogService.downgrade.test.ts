@@ -9,6 +9,7 @@ import { ref } from 'vue'
 const showDialog = vi.hoisted(() => vi.fn())
 const closeDialog = vi.hoisted(() => vi.fn())
 const isDialogOpen = vi.hoisted(() => vi.fn())
+const updateDialog = vi.hoisted(() => vi.fn())
 const toastAdd = vi.hoisted(() => vi.fn())
 const refreshMembers = vi.hoisted(() => vi.fn())
 const previewDowngrade = vi.hoisted(() => vi.fn())
@@ -16,8 +17,33 @@ const downgradeToPersonal = vi.hoisted(() => vi.fn())
 const hasOtherMembers = vi.hoisted(() => ({ value: false }))
 const openDialogKeys = ref<string[]>([])
 
+const {
+  ReactivationConfirmationRequiredError,
+  ReactivationAmountChangedError
+} = vi.hoisted(() => {
+  class ReactivationConfirmationRequiredError extends Error {
+    constructor(public preview: { cost_today_cents: number }) {
+      super('reactivation confirmation required')
+    }
+  }
+  class ReactivationAmountChangedError extends Error {
+    constructor(public preview: { cost_today_cents: number }) {
+      super('reactivation amount changed')
+    }
+  }
+  return {
+    ReactivationConfirmationRequiredError,
+    ReactivationAmountChangedError
+  }
+})
+
 vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ showDialog, closeDialog, isDialogOpen })
+  useDialogStore: () => ({
+    showDialog,
+    closeDialog,
+    isDialogOpen,
+    updateDialog
+  })
 }))
 
 vi.mock('@/i18n', () => ({
@@ -50,7 +76,9 @@ vi.mock('@/platform/workspace/composables/useDowngradeToPersonal', () => ({
     refreshMembers,
     previewDowngrade,
     downgradeToPersonal
-  })
+  }),
+  ReactivationConfirmationRequiredError,
+  ReactivationAmountChangedError
 }))
 
 vi.mock(
@@ -214,6 +242,113 @@ describe('showDowngradeToPersonalDialog', () => {
       1500
     )
     await resultPromise
+  })
+
+  it('updates the open dialog with fresh values and lets a retry succeed after status drift', async () => {
+    // Open-time state: not cancelled, so the dialog was never told to send
+    // confirmReactivation. The subscription gets cancelled before the user
+    // clicks confirm; downgradeToPersonal's own fresh preview catches it.
+    hasOtherMembers.value = true
+    previewDowngrade.mockResolvedValue({
+      preview: {
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 0
+      },
+      requiresReactivationConfirmation: false
+    })
+    downgradeToPersonal.mockRejectedValueOnce(
+      new ReactivationConfirmationRequiredError({ cost_today_cents: 1500 })
+    )
+    const result = {
+      preview: { allowed: true, transition_type: 'downgrade' },
+      response: { billing_op_id: 'op-retry', status: 'subscribed' }
+    }
+    downgradeToPersonal.mockResolvedValueOnce(result)
+
+    const resultPromise =
+      useDialogService().showDowngradeToPersonalDialog(options)
+    await vi.waitFor(() => expect(showDialog).toHaveBeenCalledOnce())
+    const [args] = showDialog.mock.calls[0]
+    expect(args.props.requiresReactivation).toBe(false)
+    expect(args.props.chargeCents).toBe(0)
+
+    await expect(
+      args.props.onConfirm('standard-monthly', false)
+    ).rejects.toThrow(ReactivationConfirmationRequiredError)
+
+    expect(updateDialog).toHaveBeenCalledWith({
+      key: 'downgrade-remove-members',
+      contentProps: { requiresReactivation: true, chargeCents: 1500 }
+    })
+    expect(downgradeToPersonal).toHaveBeenNthCalledWith(
+      1,
+      'standard-monthly',
+      false,
+      0
+    )
+
+    // Retry: the dialog's onConfirm closure now carries the corrected values.
+    await args.props.onConfirm('standard-monthly', true)
+
+    expect(downgradeToPersonal).toHaveBeenNthCalledWith(
+      2,
+      'standard-monthly',
+      true,
+      1500
+    )
+    await expect(resultPromise).resolves.toStrictEqual(result)
+  })
+
+  it('updates the open dialog with fresh values and lets a retry succeed after amount drift', async () => {
+    hasOtherMembers.value = true
+    previewDowngrade.mockResolvedValue({
+      preview: {
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 1500
+      },
+      requiresReactivationConfirmation: true
+    })
+    downgradeToPersonal.mockRejectedValueOnce(
+      new ReactivationAmountChangedError({ cost_today_cents: 2000 })
+    )
+    const result = {
+      preview: { allowed: true, transition_type: 'downgrade' },
+      response: { billing_op_id: 'op-retry-amount', status: 'subscribed' }
+    }
+    downgradeToPersonal.mockResolvedValueOnce(result)
+
+    const resultPromise =
+      useDialogService().showDowngradeToPersonalDialog(options)
+    await vi.waitFor(() => expect(showDialog).toHaveBeenCalledOnce())
+    const [args] = showDialog.mock.calls[0]
+    expect(args.props.chargeCents).toBe(1500)
+
+    await expect(
+      args.props.onConfirm('standard-monthly', true)
+    ).rejects.toThrow(ReactivationAmountChangedError)
+
+    expect(updateDialog).toHaveBeenCalledWith({
+      key: 'downgrade-remove-members',
+      contentProps: { requiresReactivation: true, chargeCents: 2000 }
+    })
+    expect(downgradeToPersonal).toHaveBeenNthCalledWith(
+      1,
+      'standard-monthly',
+      true,
+      1500
+    )
+
+    await args.props.onConfirm('standard-monthly', true)
+
+    expect(downgradeToPersonal).toHaveBeenNthCalledWith(
+      2,
+      'standard-monthly',
+      true,
+      2000
+    )
+    await expect(resultPromise).resolves.toStrictEqual(result)
   })
 
   it('returns null when the confirmation is removed without closing', async () => {
