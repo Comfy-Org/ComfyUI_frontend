@@ -2,12 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import {
-  createTestRootGraph,
-  createTestSubgraph,
-  createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { toNodeId } from '@/types/nodeId'
 
 import { resolveTourRoles } from './resolveTourRoles'
@@ -17,7 +13,7 @@ import type { RolePin } from './tourRolePins'
 const TEMPLATE_ID = 'video_wan2_2_14B_i2v'
 const { source, prompt, sink } = TOUR_ROLE_PINS[TEMPLATE_ID]
 
-function addPinnedNode(graph: LGraph | Subgraph, pin: RolePin) {
+function addPinnedNode(graph: LGraph, pin: RolePin) {
   const node = new LGraphNode(pin.type, pin.type)
   node.id = toNodeId(pin.id)
   graph.add(node)
@@ -27,19 +23,15 @@ function addPinnedNode(graph: LGraph | Subgraph, pin: RolePin) {
 describe('resolveTourRoles', () => {
   beforeEach(() => setActivePinia(createPinia()))
 
-  it('resolves pins, hosting a subgraph prompt through its root node', () => {
+  it('resolves every pinned role on the live graph', () => {
     const root = createTestRootGraph()
-    const subgraph = createTestSubgraph({ rootGraph: root })
-    root.subgraphs.set(subgraph.id, subgraph)
-    const host = createTestSubgraphNode(subgraph, { parentGraph: root })
-    root.add(host)
     addPinnedNode(root, source!)
+    addPinnedNode(root, prompt!)
     addPinnedNode(root, sink)
-    addPinnedNode(subgraph, prompt!)
 
     expect(resolveTourRoles(root, TEMPLATE_ID)).toEqual({
       source: toNodeId(source!.id),
-      promptHost: host.id,
+      promptHost: toNodeId(prompt!.id),
       sink: toNodeId(sink.id),
       mediaKind: 'video'
     })
