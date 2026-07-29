@@ -28,6 +28,7 @@ import {
   getEditableModelType,
   getSourceName,
   resolveDisplayImageDimensions,
+  resolveModelTypeTagUpdate,
   stripModelTypePrefix,
   toModelTypeTag
 } from '@/platform/assets/utils/assetMetadataUtils'
@@ -1015,5 +1016,42 @@ describe('buildModelTypeTagUpdate', () => {
         true
       )
     ).toEqual(['models', 'sdxl', 'model_type:loras'])
+  })
+})
+
+describe('resolveModelTypeTagUpdate', () => {
+  const asset = (tags: string[]): AssetItem => ({
+    id: 'a',
+    name: 'model.safetensors',
+    tags
+  })
+
+  it('returns null when the model type is not editable', () => {
+    expect(
+      resolveModelTypeTagUpdate(
+        asset(['models', 'checkpoints']),
+        'loras',
+        false,
+        true
+      )
+    ).toBeNull()
+  })
+
+  it('returns null when the selected type is unchanged', () => {
+    expect(
+      resolveModelTypeTagUpdate(
+        asset(['models', 'checkpoints']),
+        'checkpoints',
+        true,
+        false
+      )
+    ).toBeNull()
+  })
+
+  it('delegates to buildModelTypeTagUpdate for an editable change', () => {
+    const tags = ['models', 'checkpoints']
+    expect(
+      resolveModelTypeTagUpdate(asset(tags), 'loras', true, false)
+    ).toEqual(buildModelTypeTagUpdate(asset(tags), 'loras', false))
   })
 })

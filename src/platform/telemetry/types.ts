@@ -182,10 +182,51 @@ export interface ExecutionErrorMetadata {
   error?: string
 }
 
-export interface ExecutionOutcomeMetadata {
-  startTime: number
-  outcome: 'success' | 'failure'
+export interface WorkflowExecutionContext {
+  workflow_type: 'template' | 'custom'
+  view_mode: AppMode
+  execution_scope: 'full' | 'partial'
+  total_node_count: number
+  executable_node_count: number
+  custom_node_count: number
+  api_node_count: number
+  subgraph_count: number
 }
+
+export interface WorkflowQueueIntent {
+  trigger_source?: ExecutionTriggerSource
+}
+
+export interface WorkflowExecutionIntent {
+  trigger_source: ExecutionTriggerSource
+}
+
+export type WorkflowExecutionFailureReason =
+  | 'prompt_build_failed'
+  | 'submission_rejected'
+  | 'submission_failed'
+  | 'execution_failed'
+  | 'execution_interrupted'
+
+interface ExecutionOutcomeBaseMetadata extends WorkflowExecutionIntent {
+  startTime: number
+  submissionAcceptedAt?: number
+  executionStartedAt?: number
+  endTime: number
+  workflowContext?: WorkflowExecutionContext
+}
+
+export type ExecutionOutcomeMetadata = ExecutionOutcomeBaseMetadata &
+  (
+    | {
+        success: true
+        failureReason: ''
+      }
+    | {
+        success: false
+        failureReason: WorkflowExecutionFailureReason
+      }
+  )
 
 /**
  * Execution success metadata
@@ -570,20 +611,168 @@ interface EcommerceMetadata {
 
 export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   user_id?: string
-  checkout_attempt_id: string
-  tier: TierKey
-  cycle: BillingCycle
-  checkout_type: SubscriptionCheckoutType
+  checkout_attempt_id?: string
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+  checkout_type?: SubscriptionCheckoutType
   previous_tier?: TierKey
   payment_intent_source?: PaymentIntentSource
-  value: number
-  currency: string
-  ecommerce: EcommerceMetadata
+  /** Present when the success is reported off the workspace billing-op poller. */
+  billing_op_id?: string
+  value?: number
+  currency?: string
+  ecommerce?: EcommerceMetadata
 }
 
 export interface WorkspaceInviteMetadata extends Record<string, unknown> {
   source: 'post_upgrade_success' | 'settings_members'
   count: number
+}
+
+export interface WorkspaceInviteFailedMetadata extends Record<string, unknown> {
+  source: WorkspaceInviteMetadata['source']
+  attempted_count: number
+  failed_count: number
+}
+
+type BillingFailureCategory =
+  | 'validation'
+  | 'network'
+  | 'api_rejected'
+  | 'provider_decline'
+  | 'redirect'
+  | 'poll_timeout'
+  | 'stale_operation'
+  | 'rendering'
+  | 'unknown'
+
+type BillingErrorCode =
+  | 'downgrade_not_allowed'
+  | 'member_removal_failed'
+  | 'missing_checkout_response'
+  | 'missing_payment_method_url'
+  | 'payment_popup_blocked'
+
+export interface BillingFailure {
+  failure_category: BillingFailureCategory
+  error_code?: BillingErrorCode
+}
+
+type BillingStarted = {
+  stage: 'started'
+  outcome: 'pending'
+}
+
+type BillingSucceeded = {
+  stage: 'succeeded'
+  outcome: 'success'
+}
+
+type BillingFailed = BillingFailure & {
+  stage: 'failed'
+  outcome: 'failure'
+}
+
+type BillingTimedOut = {
+  stage: 'timeout'
+  outcome: 'failure'
+  failure_category: 'poll_timeout'
+}
+
+type SubscriptionCheckoutBillingEvent = {
+  operation: 'subscription_checkout'
+  billing_op_id?: string
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+  checkout_type?: SubscriptionCheckoutType
+  payment_intent_source?: PaymentIntentSource
+} & (BillingSucceeded | BillingFailed)
+
+type BillingOperationBillingEvent = {
+  operation: 'operation'
+  billing_op_id: string
+  operation_type: 'subscription' | 'topup' | 'cancel'
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+  checkout_type?: SubscriptionCheckoutType
+  payment_intent_source?: PaymentIntentSource
+} & (BillingSucceeded | BillingFailed | BillingTimedOut)
+
+type ResubscribeBillingEvent = {
+  operation: 'resubscribe'
+  source: ResubscribeClickMetadata['source']
+  payment_intent_source?: PaymentIntentSource
+} & (BillingSucceeded | BillingFailed)
+
+type TopupBillingEvent = {
+  operation: 'topup'
+  billing_op_id?: string
+} & (BillingSucceeded | BillingFailed)
+
+type DowngradeToPersonalBillingEvent = {
+  operation: 'downgrade_to_personal'
+  member_removal_count: number
+  member_removal_failures: number
+  target_tier?: TierKey
+} & (BillingStarted | BillingSucceeded | BillingFailed)
+
+export type BillingTelemetryEvent =
+  | SubscriptionCheckoutBillingEvent
+  | BillingOperationBillingEvent
+  | ResubscribeBillingEvent
+  | TopupBillingEvent
+  | DowngradeToPersonalBillingEvent
+
+type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
+  T extends BillingTelemetryEvent
+    ? `billing.${T['operation']}.${T['stage']}`
+    : never
+
+export type BillingTelemetryEventName =
+  BillingTelemetryEventNameFor<BillingTelemetryEvent>
+
+export function getBillingTelemetryEventName(
+  event: BillingTelemetryEvent
+): BillingTelemetryEventName {
+  return `billing.${event.operation}.${event.stage}` as BillingTelemetryEventName
+}
+
+export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
+  return {
+    operation: event.operation,
+    stage: event.stage,
+    outcome: event.outcome,
+    ...('billing_op_id' in event &&
+      event.billing_op_id !== undefined && {
+        billing_op_id: event.billing_op_id
+      }),
+    ...('operation_type' in event && {
+      operation_type: event.operation_type
+    }),
+    ...('tier' in event && event.tier !== undefined && { tier: event.tier }),
+    ...('cycle' in event &&
+      event.cycle !== undefined && { cycle: event.cycle }),
+    ...('checkout_type' in event &&
+      event.checkout_type !== undefined && {
+        checkout_type: event.checkout_type
+      }),
+    ...('payment_intent_source' in event &&
+      event.payment_intent_source !== undefined && {
+        payment_intent_source: event.payment_intent_source
+      }),
+    ...('source' in event && { source: event.source }),
+    ...('failure_category' in event && {
+      failure_category: event.failure_category
+    }),
+    ...('error_code' in event &&
+      event.error_code !== undefined && { error_code: event.error_code }),
+    ...('member_removal_count' in event && {
+      member_removal_count: event.member_removal_count,
+      member_removal_failures: event.member_removal_failures
+    }),
+    ...('target_tier' in event &&
+      event.target_tier !== undefined && { target_tier: event.target_tier })
+  }
 }
 
 /**
@@ -616,7 +805,10 @@ export interface TelemetryProvider {
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
   trackWorkspaceInviteSent?(metadata: WorkspaceInviteMetadata): void
+  trackWorkspaceInviteFailed?(metadata: WorkspaceInviteFailedMetadata): void
   trackRunButton?(properties: RunButtonProperties): void
+
+  trackBillingEvent?(event: BillingTelemetryEvent): void
 
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking?(): void
@@ -736,7 +928,25 @@ export const TelemetryEvents = {
     'app:api_credit_topup_button_purchase_clicked',
   API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
   WORKSPACE_INVITE_SENT: 'app:workspace_invite_sent',
+  WORKSPACE_INVITE_FAILED: 'app:workspace_invite_failed',
   BEGIN_CHECKOUT: 'begin_checkout',
+
+  // Canonical Billing Lifecycle
+  BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
+    'billing.subscription_checkout.succeeded',
+  BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
+  BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
+  BILLING_OPERATION_FAILED: 'billing.operation.failed',
+  BILLING_OPERATION_TIMEOUT: 'billing.operation.timeout',
+  BILLING_RESUBSCRIBE_SUCCEEDED: 'billing.resubscribe.succeeded',
+  BILLING_RESUBSCRIBE_FAILED: 'billing.resubscribe.failed',
+  BILLING_TOPUP_SUCCEEDED: 'billing.topup.succeeded',
+  BILLING_TOPUP_FAILED: 'billing.topup.failed',
+  BILLING_DOWNGRADE_TO_PERSONAL_STARTED:
+    'billing.downgrade_to_personal.started',
+  BILLING_DOWNGRADE_TO_PERSONAL_SUCCEEDED:
+    'billing.downgrade_to_personal.succeeded',
+  BILLING_DOWNGRADE_TO_PERSONAL_FAILED: 'billing.downgrade_to_personal.failed',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
@@ -831,12 +1041,25 @@ export const CANCELLATION_STAGE_EVENTS = {
   failed: TelemetryEvents.SUBSCRIPTION_CANCEL_FAILED
 } as const
 
-export type ExecutionTriggerSource =
-  | 'button'
-  | 'keybinding'
-  | 'legacy_ui'
-  | 'unknown'
-  | 'linear'
+const executionTriggerSources = [
+  'button',
+  'keybinding',
+  'legacy_ui',
+  'unknown',
+  'linear',
+  'auto_queue'
+] as const
+
+export type ExecutionTriggerSource = (typeof executionTriggerSources)[number]
+
+export function normalizeExecutionTriggerSource(
+  value: unknown
+): ExecutionTriggerSource {
+  return (
+    executionTriggerSources.find((triggerSource) => triggerSource === value) ??
+    'unknown'
+  )
+}
 
 /**
  * Union type for all possible telemetry event properties
@@ -877,3 +1100,5 @@ export type TelemetryEventProperties =
   | DefaultViewSetMetadata
   | SubscriptionMetadata
   | SubscriptionSuccessMetadata
+  | WorkspaceInviteFailedMetadata
+  | BillingTelemetryEvent
