@@ -159,6 +159,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
 
+    if (operation.type !== 'subscription' && hasTimedOut(operation)) {
+      handleTimeout(opId)
+      return
+    }
+
     if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
       scheduleNextPoll(opId)
       return
@@ -166,6 +171,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     try {
       const response = await workspaceApi.getBillingOpStatus(opId)
+      const currentOperation = operations.value.get(opId)
+      if (currentOperation !== operation) return
+      if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+        scheduleNextPoll(opId)
+        return
+      }
 
       if (response.status === 'succeeded') {
         await handleSuccess(opId)
@@ -177,16 +188,21 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         return
       }
 
-      updateOperationActionUrl(opId, validateActionUrl(response.action_url))
-      const currentOperation = operations.value.get(opId)
-      if (currentOperation && hasTimedOut(currentOperation)) {
+      if (hasTimedOut(operation)) {
         handleTimeout(opId)
         return
       }
 
+      updateOperationActionUrl(opId, validateActionUrl(response.action_url))
       scheduleNextPoll(opId)
     } catch {
-      if (hasTimedOut(operation)) {
+      const currentOperation = operations.value.get(opId)
+      if (currentOperation !== operation) return
+      if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+        scheduleNextPoll(opId)
+        return
+      }
+      if (hasTimedOut(currentOperation)) {
         handleTimeout(opId)
         return
       }

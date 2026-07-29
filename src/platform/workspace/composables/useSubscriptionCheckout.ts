@@ -21,6 +21,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
@@ -94,6 +95,7 @@ export function useSubscriptionCheckout(
   const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
+  const workspaceStore = useTeamWorkspaceStore()
 
   const checkoutStep = ref<CheckoutStep>('pricing')
   const isLoadingPreview = ref(false)
@@ -105,11 +107,15 @@ export function useSubscriptionCheckout(
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const activeCheckoutOperationId = ref<string | null>(null)
-  const activeCheckoutOperation = computed(() =>
-    activeCheckoutOperationId.value
-      ? billingOperationStore.getOperation(activeCheckoutOperationId.value)
+  const activeCheckoutOperation = computed(() => {
+    if (!activeCheckoutOperationId.value) return
+    const operation = billingOperationStore.getOperation(
+      activeCheckoutOperationId.value
+    )
+    return operation?.workspaceId === workspaceStore.activeWorkspaceId
+      ? operation
       : undefined
-  )
+  })
   const activeCheckoutActionUrl = computed(
     () => activeCheckoutOperation.value?.actionUrl ?? null
   )

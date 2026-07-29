@@ -490,6 +490,35 @@ describe('billingOperationStore', () => {
       )
     })
 
+    it('rejects an action URL received after the discovery deadline', async () => {
+      const actionUrl = 'https://verify.example/sensitive-token'
+      let resolveStatus!: (response: BillingOpStatusResponse) => void
+      vi.mocked(workspaceApi.getBillingOpStatus).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStatus = resolve
+          })
+      )
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
+
+      resolveStatus({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString(),
+        action_url: actionUrl
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect((await terminal).status).toBe('timeout')
+      expect(store.getOperation('op-1')?.actionUrl).toBeNull()
+      expect(JSON.stringify([...store.operations.values()])).not.toContain(
+        actionUrl
+      )
+    })
+
     it('ignores non-HTTPS action URLs', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
@@ -527,12 +556,47 @@ describe('billingOperationStore', () => {
       expect(store.isSettingUp).toBe(false)
     })
 
-    it('shows topup timeout message for topup operations', async () => {
-      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+    it('ignores a response that completes after switching workspaces', async () => {
+      const actionUrl = 'https://verify.example/sensitive-token'
+      let resolveStatus!: (response: BillingOpStatusResponse) => void
+      vi.mocked(workspaceApi.getBillingOpStatus).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStatus = resolve
+          })
+      )
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+      mockActiveWorkspaceId.value = 'workspace-2'
+
+      resolveStatus({
         id: 'op-1',
         status: 'pending',
-        started_at: new Date().toISOString()
+        started_at: new Date().toISOString(),
+        action_url: actionUrl
       })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')).toMatchObject({
+        status: 'pending',
+        actionUrl: null
+      })
+      expect(store.subscriptionActionOperation).toBeUndefined()
+    })
+
+    it('shows topup timeout message for topup operations', async () => {
+      const startedAt = Date.now()
+      vi.mocked(workspaceApi.getBillingOpStatus).mockImplementation(
+        async () => ({
+          id: 'op-1',
+          status:
+            Date.now() - startedAt > 120_000
+              ? ('succeeded' as const)
+              : ('pending' as const),
+          started_at: new Date().toISOString()
+        })
+      )
 
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'topup')
@@ -650,11 +714,17 @@ describe('billingOperationStore', () => {
     })
 
     it('resolves with a timeout operation after 2 minutes, no toast', async () => {
-      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
-        id: 'op-1',
-        status: 'pending',
-        started_at: new Date().toISOString()
-      })
+      const startedAt = Date.now()
+      vi.mocked(workspaceApi.getBillingOpStatus).mockImplementation(
+        async () => ({
+          id: 'op-1',
+          status:
+            Date.now() - startedAt > 120_000
+              ? ('succeeded' as const)
+              : ('pending' as const),
+          started_at: new Date().toISOString()
+        })
+      )
 
       const store = useBillingOperationStore()
       const terminal = store.startOperation('op-1', 'cancel')

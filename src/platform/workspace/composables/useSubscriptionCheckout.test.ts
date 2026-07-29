@@ -85,6 +85,7 @@ const {
   mockUserId,
   mockIsTeamPlan,
   mockShouldUseWorkspaceBilling,
+  mockSetActiveWorkspaceId,
   mockPermissions
 } = vi.hoisted(() => ({
   mockSubscribe: vi.fn(),
@@ -103,6 +104,7 @@ const {
   mockUserId: { value: 'user-1' as string | null },
   mockIsTeamPlan: { value: false },
   mockShouldUseWorkspaceBilling: { value: true },
+  mockSetActiveWorkspaceId: vi.fn<(workspaceId: string) => void>(),
   mockPermissions: {
     value: {
       canManageSubscription: true,
@@ -161,6 +163,21 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   })
 }))
 
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
+  const { ref } = await import('vue')
+  const activeWorkspaceId = ref('workspace-1')
+  mockSetActiveWorkspaceId.mockImplementation((workspaceId) => {
+    activeWorkspaceId.value = workspaceId
+  })
+  return {
+    useTeamWorkspaceStore: () => ({
+      get activeWorkspaceId() {
+        return activeWorkspaceId.value
+      }
+    })
+  }
+})
+
 vi.mock('@/config/comfyApi', () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
@@ -218,6 +235,7 @@ describe('useSubscriptionCheckout', () => {
     mockUserId.value = 'user-1'
     mockIsTeamPlan.value = false
     mockShouldUseWorkspaceBilling.value = true
+    mockSetActiveWorkspaceId('workspace-1')
     mockPermissions.value = {
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
@@ -925,7 +943,9 @@ describe('useSubscriptionCheckout', () => {
         billing_op_id: 'op-pending'
       })
       mockGetOperation.mockImplementation((opId) =>
-        opId === 'op-pending' ? { status: 'pending' } : undefined
+        opId === 'op-pending'
+          ? { status: 'pending', workspaceId: 'workspace-1' }
+          : undefined
       )
       let resolveOperation!: (operation: { status: 'failed' }) => void
       mockStartOperation.mockImplementationOnce(
@@ -940,6 +960,41 @@ describe('useSubscriptionCheckout', () => {
       checkout.handleBackToPricing()
 
       expect(checkout.checkoutStep.value).toBe('preview')
+
+      resolveOperation({ status: 'failed' })
+      await payment
+    })
+
+    it('hides the checkout operation after switching workspaces', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-pending'
+      })
+      mockGetOperation.mockReturnValue({
+        status: 'pending',
+        workspaceId: 'workspace-1',
+        actionUrl: 'https://verify.example/sensitive-token'
+      })
+      let resolveOperation!: (operation: { status: 'failed' }) => void
+      mockStartOperation.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveOperation = resolve
+          })
+      )
+
+      const payment = checkout.handleAddCreditCard()
+      await vi.waitFor(() =>
+        expect(checkout.activeCheckoutActionUrl.value).not.toBeNull()
+      )
+
+      mockSetActiveWorkspaceId('workspace-2')
+
+      expect(checkout.activeCheckoutOperation.value).toBeUndefined()
+      expect(checkout.activeCheckoutActionUrl.value).toBeNull()
+      expect(checkout.isPolling.value).toBe(false)
 
       resolveOperation({ status: 'failed' })
       await payment
