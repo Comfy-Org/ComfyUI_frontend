@@ -335,10 +335,6 @@ test.describe('Publish dialog - submission', () => {
   })
 })
 
-/**
- * Tailwind 4 defaults, plus a phone width. Below `sm` the `sm:max-w-[1400px]`
- * cap drops out and `w-[90vw]` alone sizes the dialog.
- */
 const BREAKPOINTS = [
   { name: 'mobile', width: 390 },
   { name: 'sm', width: 640 },
@@ -405,8 +401,6 @@ test.describe('Publish dialog - layout', () => {
         await expect(publishDialog.describeStep).toBeVisible()
         await expect(publishDialog.nameInput).toHaveValue(/test-layout-wf/)
         await comfyPage.toast.closeToasts()
-        // Hidden, not masked: the canvas fills the viewport, so masking it
-        // would paint over the dialog too.
         await comfyPage.canvas.evaluate((el) => {
           el.style.visibility = 'hidden'
         })
