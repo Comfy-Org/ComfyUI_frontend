@@ -1161,4 +1161,75 @@ describe('useNodeReplacement', () => {
       expect(onNodeAdded).toHaveBeenCalledWith(newNode)
     })
   })
+
+  describe('widget value provenance', () => {
+    it('indexes a null-padded widgets_values by full widget position', () => {
+      const placeholder = createPlaceholderNode(1, 'PaddedNode')
+      // Legacy workflow JSON: position 1 held a non-serializing widget.
+      placeholder.last_serialization!.widgets_values = ['lanczos', null, 2.0]
+
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode([], [], [{ name: 'scale_by', value: 0 }])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('PaddedNode', {
+          new_node_id: 'ImageScaleBy',
+          old_node_id: 'PaddedNode',
+          old_widget_ids: ['upscale_method', 'preview', 'scale_by'],
+          input_mapping: [{ new_id: 'scale_by', old_id: 'scale_by' }],
+          output_mapping: null
+        })
+      ])
+
+      expect(newNode.widgets![0].value).toBe(2.0)
+    })
+
+    it('reads the old node live widget rather than indexing widgets_values', () => {
+      const placeholder = createPlaceholderNode(1, 'LiveWidgetNode')
+      // Compacted widgets_values: the serialize:false entry is absent, so
+      // position-based indexing would miss scale_by entirely.
+      placeholder.last_serialization!.widgets_values = ['lanczos', 3.5]
+      Object.assign(placeholder, {
+        widgets: [
+          { name: 'upscale_method', value: 'lanczos', type: 'combo' },
+          {
+            name: 'preview',
+            value: 'unsaved',
+            type: 'string',
+            serialize: false
+          },
+          { name: 'scale_by', value: 3.5, type: 'number' }
+        ]
+      })
+
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode([], [], [{ name: 'scale_by', value: 0 }])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('LiveWidgetNode', {
+          new_node_id: 'ImageScaleBy',
+          old_node_id: 'LiveWidgetNode',
+          old_widget_ids: ['upscale_method', 'preview', 'scale_by'],
+          input_mapping: [{ new_id: 'scale_by', old_id: 'scale_by' }],
+          output_mapping: null
+        })
+      ])
+
+      expect(newNode.widgets![0].value).toBe(3.5)
+    })
+  })
 })

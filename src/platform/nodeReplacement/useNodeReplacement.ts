@@ -75,20 +75,42 @@ function transferOutputConnections(
   oldNode.outputs[oldOutputIdx].links = []
 }
 
-/** Uses old_widget_ids as name→index lookup into widgets_values. */
+/**
+ * Reads the old node's value for `oldInputName`, preferring its live widget so
+ * the read does not depend on how `widgets_values` was indexed. Missing-node
+ * placeholders only carry the `UNKNOWN…` widgets synthesised by
+ * `errorNodeWidgets`, so they never match by name and fall through.
+ *
+ * The positional fallback deliberately reads `last_serialization` only: that
+ * array comes straight from the workflow JSON, where index N is widget position
+ * N — the basis `old_widget_ids` indexes on. `serialize()` compacts
+ * `widgets_values` to serializable widgets, so it must not be indexed this way.
+ */
+function readOldWidgetValue(
+  oldNode: LGraphNode,
+  oldWidgetIds: string[] | null,
+  oldInputName: string
+): TWidgetValue | undefined {
+  const liveValue = oldNode.widgets?.find((w) => w.name === oldInputName)?.value
+  if (liveValue !== undefined) return liveValue
+
+  const widgetsValues = oldNode.last_serialization?.widgets_values
+  if (!oldWidgetIds || !widgetsValues) return undefined
+
+  const oldWidgetIdx = oldWidgetIds.indexOf(oldInputName)
+  if (oldWidgetIdx === -1) return undefined
+
+  return widgetsValues[oldWidgetIdx]
+}
+
 function transferWidgetValue(
-  serialized: ISerialisedNode,
+  oldNode: LGraphNode,
   oldWidgetIds: string[] | null,
   oldInputName: string,
   newNode: LGraphNode,
   newInputName: string
 ): void {
-  if (!oldWidgetIds || !serialized.widgets_values) return
-
-  const oldWidgetIdx = oldWidgetIds.indexOf(oldInputName)
-  if (oldWidgetIdx === -1) return
-
-  const oldValue = serialized.widgets_values[oldWidgetIdx]
+  const oldValue = readOldWidgetValue(oldNode, oldWidgetIds, oldInputName)
   if (oldValue === undefined) return
 
   const newWidget = newNode.widgets?.find((w) => w.name === newInputName)
@@ -131,6 +153,8 @@ function generateDefaultMapping(
     }
   }
 
+  // Positions into the legacy widgets_values array, so every widget counts —
+  // filtering out `serialize === false` widgets here would shift the indices.
   const oldWidgetIds = (newNode.widgets ?? []).map((w) => w.name)
   for (const widget of newNode.widgets ?? []) {
     if (!oldInputNames.has(widget.name)) {
@@ -197,7 +221,7 @@ function replaceWithMapping(
           nodeGraph
         )
         transferWidgetValue(
-          serialized,
+          node,
           replacement.old_widget_ids,
           inputMap.old_id,
           newNode,
