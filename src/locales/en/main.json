@@ -2585,6 +2585,7 @@
     "subscriptionProcessing": "Processing payment — setting up your workspace...",
     "subscriptionSuccess": "Subscription updated successfully",
     "subscriptionFailed": "Subscription update failed",
+    "subscriptionFailedDetail": "We couldn't update your subscription. Please try again.",
     "subscriptionTimeout": "Subscription verification timed out",
     "topupProcessing": "Processing payment — adding credits...",
     "topupSuccess": "Credits added successfully",
