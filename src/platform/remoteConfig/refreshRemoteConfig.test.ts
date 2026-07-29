@@ -56,6 +56,11 @@ describe('refreshRemoteConfig', () => {
       await Promise.all([firstRefresh, secondRefresh])
 
       expect(api.fetchApi).toHaveBeenCalledOnce()
+
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(mockSuccessResponse())
+      await refreshRemoteConfig()
+
+      expect(api.fetchApi).toHaveBeenCalledTimes(2)
     })
 
     it('uses api.fetchApi when useAuth is true', async () => {
