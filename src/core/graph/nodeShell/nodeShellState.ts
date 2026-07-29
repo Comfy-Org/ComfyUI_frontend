@@ -79,19 +79,3 @@ export function unregisterNodeState(node: LGraphNode): void {
   useNodeDataStore().deleteNode(node._graphId, node._state)
   node._graphId = undefined
 }
-
-/**
- * Unregisters every node a graph owns, including those inside the subgraph
- * definitions it holds. Used when a graph's nodes leave the store without a
- * whole-bucket wipe: subgraph-definition removal, and clearing a graph that
- * shares its bucket with other graphs.
- * @param graph The graph whose nodes should be unregistered
- */
-export function unregisterAllNodeStates(
-  graph: Pick<LGraph, '_nodes' | '_subgraphs'>
-): void {
-  for (const node of graph._nodes) unregisterNodeState(node)
-  for (const subgraph of graph._subgraphs.values()) {
-    unregisterAllNodeStates(subgraph)
-  }
-}

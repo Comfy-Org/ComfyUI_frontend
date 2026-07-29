@@ -9,11 +9,12 @@ import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { zeroUuid } from '@/utils/uuid'
 
-import { registerNodeState, unregisterAllNodeStates } from './nodeShellState'
+import { registerNodeState, unregisterNodeState } from './nodeShellState'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { UUID } from '@/utils/uuid'
 
 /**
  * Registers a node's shell state and its widget bindings with the app stores.
@@ -37,6 +38,60 @@ export function attachNodeToStores(
 }
 
 /**
+ * Whether a detached node's widget values leave the store with it. A node that
+ * may come back — undo of a deletion — keeps its values and drops only its
+ * ordering; a node whose whole graph is going away takes its values along.
+ */
+type WidgetDetachMode = 'keep-values' | 'discard-values'
+
+function releaseNodePreviewExposures(
+  rootGraphId: UUID,
+  node: LGraphNode
+): void {
+  const previewExposureStore = usePreviewExposureStore()
+  const hostNodeLocator = String(node.id)
+  if (!previewExposureStore.getExposures(rootGraphId, hostNodeLocator).length) {
+    return
+  }
+  previewExposureStore.setExposures(rootGraphId, hostNodeLocator, [])
+}
+
+/**
+ * The inverse of {@link attachNodeToStores}: drops the node's shell state, the
+ * widget order it registered, and the preview exposures it hosts.
+ */
+export function detachNodeFromStores(
+  graph: Pick<LGraph, 'rootGraph'>,
+  node: LGraphNode,
+  mode: WidgetDetachMode = 'keep-values'
+): void {
+  const rootGraphId = graph.rootGraph.id
+  unregisterNodeState(node)
+  useWidgetValueStore().releaseNodeWidgets(rootGraphId, node.id, {
+    discardValues: mode === 'discard-values'
+  })
+  releaseNodePreviewExposures(rootGraphId, node)
+}
+
+/**
+ * Detaches every node a graph owns, including those inside the subgraph
+ * definitions it holds. Used when a graph's nodes leave the stores without a
+ * whole-bucket wipe: subgraph-definition removal, and clearing a graph that
+ * shares its bucket with other graphs. The graph is going away, so its nodes'
+ * widget values go with it — the same reach as the wipe a root graph performs.
+ */
+export function detachAllNodesFromStores(
+  graph: Pick<LGraph, '_nodes' | '_subgraphs' | 'rootGraph'>
+): void {
+  for (const node of graph._nodes) {
+    detachNodeFromStores(graph, node, 'discard-values')
+  }
+  for (const subgraph of graph._subgraphs.values()) {
+    detachAllNodesFromStores(subgraph)
+  }
+}
+
+/**
  * Releases everything a graph owns in the app stores. A root graph owns its
  * whole bucket and can wipe it; subgraphs and unconfigured (zero-uuid) graphs
  * share their bucket with other graphs, so they unregister each entity
@@ -53,6 +108,6 @@ export function releaseGraphStores(graph: LGraph | Subgraph): void {
   } else {
     unregisterAllLinkTopologies(graph)
     unregisterAllRerouteChains(graph)
-    unregisterAllNodeStates(graph)
+    detachAllNodesFromStores(graph)
   }
 }
