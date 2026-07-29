@@ -413,6 +413,20 @@ describe('useFeatureFlags', () => {
       expect(flags.supportsModelTypeTags).toBe(true)
     })
 
+    it('ignores a non-boolean dev override and falls through to HTTP resolution', () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      httpSupportsModelTypeTags.value = false
+      localStorage.setItem(
+        `ff:${ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS}`,
+        '"false"'
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(false)
+      expect(api.getServerFeature).not.toHaveBeenCalled()
+    })
+
     it('uses an HTTP-served true value', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)
       httpSupportsModelTypeTags.value = true
