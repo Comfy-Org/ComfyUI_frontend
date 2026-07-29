@@ -4606,9 +4606,9 @@ const translations = {
     en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
     'zh-CN': '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。'
   },
-  'affiliate.assets.downloadLabel': {
-    en: 'Download zip',
-    'zh-CN': '下载压缩包'
+  'affiliate.assets.ctaLabel': {
+    en: 'Go to brand portal',
+    'zh-CN': '前往品牌门户'
   },
 
   // AffiliateFAQSection
