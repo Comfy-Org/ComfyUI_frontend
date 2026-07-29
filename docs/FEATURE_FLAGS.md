@@ -16,7 +16,7 @@ default to `false` until an authenticated response resolves the flag:
 
 ```typescript
 const { value: isEnabled, recordExposure } = useFeatureGate(
-  'might_be_risky_feature_foo'
+  'fastlane_feature_flag_foo'
 )
 ```
 

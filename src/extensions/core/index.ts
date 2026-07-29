@@ -36,6 +36,7 @@ import './widgetInputs'
 // Cloud-only extensions - tree-shaken in OSS builds
 if (isCloud) {
   await import('./cloudRemoteConfig')
+  await import('./fastLaneFeatureFlagDemo')
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
 }
