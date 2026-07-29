@@ -333,11 +333,15 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
         monthly_budget_cents: null
       }
     ])
-    await expect(content.getByRole('button', { name: 'Edit' })).toBeVisible()
+    await expect(
+      content.getByRole('button', { name: 'Edit', exact: true })
+    ).toBeVisible()
 
     await page.reload()
     content = await openPlanAndCredits(page)
-    await expect(content.getByRole('button', { name: 'Edit' })).toBeVisible()
+    await expect(
+      content.getByRole('button', { name: 'Edit', exact: true })
+    ).toBeVisible()
 
     await page.getByTestId('settings-dialog').getByLabel('Close').click()
     await page.getByRole('button', { name: 'Current user' }).click()
@@ -355,7 +359,9 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await page.getByText('Personal Workspace', { exact: true }).click()
 
     content = await openPlanAndCredits(page)
-    await expect(content.getByRole('button', { name: 'Edit' })).toBeVisible()
+    await expect(
+      content.getByRole('button', { name: 'Edit', exact: true })
+    ).toBeVisible()
   })
 
   test('renders the unified tile with breakdown and add-credits', async ({
