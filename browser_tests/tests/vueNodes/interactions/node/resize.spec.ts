@@ -173,11 +173,11 @@ test.describe(
         const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
         const expandedSize = await resizeExpandedNode(node, nodeRef)
 
-        await node.collapseButton.dispatchEvent('click')
+        await node.toggleCollapse()
         await expect(node.root).toHaveAttribute('data-collapsed', 'true')
         await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
 
-        await node.collapseButton.dispatchEvent('click')
+        await node.toggleCollapse()
         await expect(node.root).not.toHaveAttribute('data-collapsed', 'true')
         await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
       })
@@ -192,7 +192,7 @@ test.describe(
       const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
       const expandedSize = await resizeExpandedNode(node, nodeRef)
 
-      await node.collapseButton.dispatchEvent('click')
+      await node.toggleCollapse()
       await expect(node.root).toHaveAttribute('data-collapsed', 'true')
       await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
 
@@ -204,7 +204,7 @@ test.describe(
         await comfyPage.vueNodes.getFixtureByTitle('KSampler')
       await expect(reloadedNode.root).toHaveAttribute('data-collapsed', 'true')
 
-      await reloadedNode.collapseButton.dispatchEvent('click')
+      await reloadedNode.toggleCollapse()
       await expect(reloadedNode.root).not.toHaveAttribute(
         'data-collapsed',
         'true'
