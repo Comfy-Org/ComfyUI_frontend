@@ -7,6 +7,8 @@ import NavigationMenuList from '@/components/ui/navigation-menu/NavigationMenuLi
 import NavigationMenuTrigger from '@/components/ui/navigation-menu/NavigationMenuTrigger.vue'
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
 
+import NewBadge from './NewBadge.vue'
+
 import {
   isHrefActive,
   useCurrentPath
@@ -42,7 +44,12 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           <NavigationMenuTrigger
             :active="isNavItemActive(navItem, currentPath)"
           >
-            <span class="ppformula-text-center">{{ navItem.label }}</span>
+            <span class="inline-flex items-center gap-1">
+              <span class="ppformula-text-center">{{ navItem.label }}</span>
+              <span v-if="navItem.badge" class="hidden xl:inline-flex">
+                <NewBadge :locale="locale" size="xxs" />
+              </span>
+            </span>
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
             <ul class="flex w-max gap-16">
