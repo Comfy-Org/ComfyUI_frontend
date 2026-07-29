@@ -28,6 +28,8 @@ useExtensionService().registerExtension({
       { debounce: 256, immediate: true }
     )
 
-    setInterval(() => void refreshRemoteConfig(), 60_000)
+    setInterval(() => {
+      if (isLoggedIn.value) void refreshRemoteConfig()
+    }, 60_000)
   }
 })

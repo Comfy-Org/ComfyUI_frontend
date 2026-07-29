@@ -354,6 +354,25 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('flushes a feature flag exposure recorded before initialization', async () => {
+      const provider = createProvider()
+
+      provider.trackFeatureFlagExposure('might_be_risky_feature_foo', false)
+
+      expect(hoisted.mockCapture).not.toHaveBeenCalled()
+
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+        '$feature_flag_called',
+        {
+          $feature_flag: 'might_be_risky_feature_foo',
+          $feature_flag_response: false,
+          feature_flag_value: false
+        }
+      )
+    })
+
     it('captures events after initialization', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

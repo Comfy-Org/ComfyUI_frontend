@@ -39,6 +39,25 @@ describe('refreshRemoteConfig', () => {
   })
 
   describe('with auth (default)', () => {
+    it('deduplicates concurrent authenticated refreshes', async () => {
+      let resolveResponse: (response: Response) => void
+      const pendingResponse = new Promise<Response>((resolve) => {
+        resolveResponse = resolve
+      })
+      vi.mocked(api.fetchApi).mockReturnValue(pendingResponse)
+
+      const firstRefresh = refreshRemoteConfig()
+      const secondRefresh = refreshRemoteConfig()
+
+      expect(secondRefresh).toBe(firstRefresh)
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
+
+      resolveResponse!(mockSuccessResponse())
+      await Promise.all([firstRefresh, secondRefresh])
+
+      expect(api.fetchApi).toHaveBeenCalledOnce()
+    })
+
     it('uses api.fetchApi when useAuth is true', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
 

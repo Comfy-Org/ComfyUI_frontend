@@ -39,11 +39,7 @@ async function fetchRemoteConfig(
  * - 'authenticated' when loaded with auth
  * - 'error' when load fails
  */
-export async function refreshRemoteConfig(
-  options: RefreshRemoteConfigOptions = {}
-): Promise<void> {
-  const { useAuth = true } = options
-
+async function performRefreshRemoteConfig(useAuth: boolean): Promise<void> {
   const controller = useAuth ? null : new AbortController()
   const timeoutId = controller
     ? setTimeout(() => controller.abort(), FEATURES_FETCH_TIMEOUT_MS)
@@ -92,4 +88,19 @@ export async function refreshRemoteConfig(
   } finally {
     if (timeoutId !== null) clearTimeout(timeoutId)
   }
+}
+
+let authenticatedRefreshPromise: Promise<void> | null = null
+
+export function refreshRemoteConfig(
+  options: RefreshRemoteConfigOptions = {}
+): Promise<void> {
+  const { useAuth = true } = options
+  if (!useAuth) return performRefreshRemoteConfig(false)
+  if (authenticatedRefreshPromise) return authenticatedRefreshPromise
+
+  authenticatedRefreshPromise = performRefreshRemoteConfig(true).finally(() => {
+    authenticatedRefreshPromise = null
+  })
+  return authenticatedRefreshPromise
 }
