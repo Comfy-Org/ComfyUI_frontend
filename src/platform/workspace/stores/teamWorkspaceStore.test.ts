@@ -31,6 +31,12 @@ vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
   useWorkspaceAuthStore: () => mockWorkspaceAuthStore
 }))
 
+const mockClearWorkflowRestoreState = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
+  clearWorkflowRestoreState: mockClearWorkflowRestoreState
+}))
+
 const mockEnsureSessionCookie = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/auth/session/useSessionCookie', () => ({
@@ -379,14 +385,25 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockReload).not.toHaveBeenCalled()
     })
 
-    it('clears context and reloads for valid workspace', async () => {
+    it('clears workflow restore state before switching workspaces', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()
 
       await store.switchWorkspace(mockTeamWorkspace.id)
 
+      expect(mockClearWorkflowRestoreState).toHaveBeenCalledExactlyOnceWith({
+        blockWrites: true
+      })
       expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalled()
       expect(mockReload).toHaveBeenCalled()
+      expect(
+        mockClearWorkflowRestoreState.mock.invocationCallOrder[0]
+      ).toBeLessThan(
+        mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+      )
+      expect(
+        mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+      ).toBeLessThan(mockReload.mock.invocationCallOrder[0])
     })
 
     it('sets isSwitching flag during operation', async () => {

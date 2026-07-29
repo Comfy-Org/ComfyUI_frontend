@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
 import {
   clearAllWorkflowStorage,
+  clearWorkflowRestoreState,
   deleteOrphanPayloads,
   deletePayload,
   deletePayloads,
@@ -389,6 +390,38 @@ describe('storageIO', () => {
       expect(
         sessionStorage.getItem('Comfy.Workflow.ActivePath:client-1')
       ).toBeNull()
+    })
+  })
+
+  describe('clearWorkflowRestoreState', () => {
+    it('clears cross-workspace restore state without deleting scoped drafts', () => {
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.LastOpenPaths:ws-1', '{}')
+      localStorage.setItem('Comfy.Workflow.Drafts:ws-1', '{}')
+      localStorage.setItem('Comfy.OpenWorkflowsPaths', '["a.json"]')
+      localStorage.setItem('Comfy.ActiveWorkflowIndex', '0')
+      localStorage.setItem('workflow', '{}')
+      sessionStorage.setItem('Comfy.Workflow.ActivePath:client-1', '{}')
+      sessionStorage.setItem('Comfy.Workflow.OpenPaths:client-1', '{}')
+      sessionStorage.setItem('workflow:client-1', '{}')
+
+      clearWorkflowRestoreState()
+
+      expect(localStorage.getItem('Comfy.OpenWorkflowsPaths')).toBeNull()
+      expect(localStorage.getItem('Comfy.ActiveWorkflowIndex')).toBeNull()
+      expect(localStorage.getItem('workflow')).toBeNull()
+      expect(sessionStorage).toHaveLength(0)
+      expect(localStorage.getItem('Comfy.Workflow.DraftIndex.v2:ws-1')).toBe(
+        '{}'
+      )
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:ws-1:abc')).toBe(
+        '{}'
+      )
+      expect(localStorage.getItem('Comfy.Workflow.LastOpenPaths:ws-1')).toBe(
+        '{}'
+      )
+      expect(localStorage.getItem('Comfy.Workflow.Drafts:ws-1')).toBe('{}')
     })
   })
 })

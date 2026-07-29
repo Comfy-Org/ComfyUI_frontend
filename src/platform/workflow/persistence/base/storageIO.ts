@@ -375,6 +375,64 @@ function writeStorage(storage: Storage, key: string, value: string): void {
   }
 }
 
+const legacyLocalRestoreKeys = [
+  'Comfy.Workflow.Drafts',
+  'Comfy.Workflow.DraftOrder',
+  'Comfy.OpenWorkflowsPaths',
+  'Comfy.ActiveWorkflowIndex',
+  'Comfy.PreviousWorkflow',
+  'workflow'
+]
+
+const sessionRestorePrefixes = [
+  StorageKeys.prefixes.activePath,
+  StorageKeys.prefixes.openPaths,
+  'Comfy.PreviousWorkflow:',
+  'Comfy.OpenWorkflowsPaths:',
+  'Comfy.ActiveWorkflowIndex:',
+  'workflow:'
+]
+
+const sessionRestoreKeys = [
+  'Comfy.PreviousWorkflow',
+  'Comfy.OpenWorkflowsPaths',
+  'Comfy.ActiveWorkflowIndex'
+]
+
+function removeStorageKeys(
+  storage: Storage,
+  keys: string[],
+  prefixes: string[] = []
+): void {
+  try {
+    for (let i = storage.length - 1; i >= 0; i--) {
+      const key = storage.key(i)
+      if (
+        key &&
+        (keys.includes(key) ||
+          prefixes.some((prefix) => key.startsWith(prefix)))
+      ) {
+        try {
+          storage.removeItem(key)
+        } catch {
+          continue
+        }
+      }
+    }
+  } catch {
+    return
+  }
+}
+
+export function clearWorkflowRestoreState(
+  options: { blockWrites?: boolean } = {}
+): void {
+  if (options.blockWrites) workflowWritesBlocked = true
+
+  removeStorageKeys(localStorage, legacyLocalRestoreKeys)
+  removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
+}
+
 export function clearAllWorkflowStorage(
   options: { blockWrites?: boolean } = {}
 ): void {
@@ -388,64 +446,7 @@ export function clearAllWorkflowStorage(
     'Comfy.Workflow.Drafts:',
     'Comfy.Workflow.DraftOrder:'
   ]
-  const localKeys = [
-    'Comfy.Workflow.Drafts',
-    'Comfy.Workflow.DraftOrder',
-    'Comfy.OpenWorkflowsPaths',
-    'Comfy.ActiveWorkflowIndex',
-    'Comfy.PreviousWorkflow',
-    'workflow'
-  ]
 
-  try {
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const key = localStorage.key(i)
-      if (
-        key &&
-        (localKeys.includes(key) ||
-          localPrefixes.some((prefix) => key.startsWith(prefix)))
-      ) {
-        try {
-          localStorage.removeItem(key)
-        } catch {
-          // Ignore
-        }
-      }
-    }
-  } catch {
-    // Ignore
-  }
-
-  const sessionPrefixes = [
-    StorageKeys.prefixes.activePath,
-    StorageKeys.prefixes.openPaths,
-    'Comfy.PreviousWorkflow:',
-    'Comfy.OpenWorkflowsPaths:',
-    'Comfy.ActiveWorkflowIndex:',
-    'workflow:'
-  ]
-  const sessionKeys = [
-    'Comfy.PreviousWorkflow',
-    'Comfy.OpenWorkflowsPaths',
-    'Comfy.ActiveWorkflowIndex'
-  ]
-
-  try {
-    for (let i = sessionStorage.length - 1; i >= 0; i--) {
-      const key = sessionStorage.key(i)
-      if (
-        key &&
-        (sessionKeys.includes(key) ||
-          sessionPrefixes.some((prefix) => key.startsWith(prefix)))
-      ) {
-        try {
-          sessionStorage.removeItem(key)
-        } catch {
-          // Ignore
-        }
-      }
-    }
-  } catch {
-    // Ignore
-  }
+  removeStorageKeys(localStorage, legacyLocalRestoreKeys, localPrefixes)
+  removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
 }
