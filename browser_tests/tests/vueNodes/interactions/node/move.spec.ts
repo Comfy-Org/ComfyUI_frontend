@@ -7,6 +7,11 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+
+const CREATE_GROUP_HOTKEY = 'Control+g'
 
 test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
   const getHeaderPos = async (
@@ -40,6 +45,49 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
   const expectSameDelta = (a: Position, b: Position, tol = 2) => {
     expect(Math.abs(a.x - b.x)).toBeLessThanOrEqual(tol)
     expect(Math.abs(a.y - b.y)).toBeLessThanOrEqual(tol)
+  }
+
+  const expectSlotPositionTracksDom = async (
+    comfyPage: ComfyPage,
+    nodeId: NodeId,
+    slotIndex: number,
+    isInput: boolean
+  ) => {
+    const slotKey = getSlotKey(nodeId, slotIndex, isInput)
+
+    await expect(async () => {
+      const positions = await comfyPage.page.evaluate(
+        ({ nodeId, slotIndex, isInput, slotKey }) => {
+          const app = window.app!
+          const node = app.graph.getNodeById(nodeId)
+          const slot = document.querySelector<HTMLElement>(
+            `[data-slot-key="${slotKey}"]`
+          )
+          if (!node || !slot) return null
+
+          const graphPosition = isInput
+            ? node.getInputPos(slotIndex)
+            : node.getOutputPos(slotIndex)
+          const [linkX, linkY] = app.canvasPosToClientPos(graphPosition)
+          const slotBounds = slot.getBoundingClientRect()
+
+          return {
+            link: { x: linkX, y: linkY },
+            slot: {
+              x: slotBounds.x + slotBounds.width / 2,
+              y: slotBounds.y + slotBounds.height / 2
+            }
+          }
+        },
+        { nodeId, slotIndex, isInput, slotKey }
+      )
+      expect(
+        positions,
+        'Link and DOM slot positions should resolve'
+      ).not.toBeNull()
+      expect(Math.abs(positions!.link.x - positions!.slot.x)).toBeLessThan(2)
+      expect(Math.abs(positions!.link.y - positions!.slot.y)).toBeLessThan(2)
+    }).toPass()
   }
 
   const dragFromTabButton = async (comfyPage: ComfyPage, button: Locator) => {
@@ -330,6 +378,70 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     expectSameDelta(checkpointDelta, latentDelta)
 
     await comfyPage.canvasOps.moveMouseToEmptyArea()
+  })
+
+  test('keeps link geometry attached while dragging a collapsed node', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+    const rawNodeId = await node.root.getAttribute('data-node-id')
+    if (!rawNodeId) throw new Error('Load Checkpoint node ID not found')
+    const nodeId = toNodeId(rawNodeId)
+
+    await node.select()
+    await comfyPage.command.executeCommand(
+      'Comfy.Canvas.ToggleSelectedNodes.Collapse'
+    )
+    await expect(node.root).toHaveAttribute('data-collapsed', 'true')
+    const nodeBounds = await node.boundingBox()
+    if (!nodeBounds) throw new Error('Collapsed node bounds not found')
+
+    const start = {
+      x: nodeBounds.x + nodeBounds.width / 2,
+      y: nodeBounds.y + nodeBounds.height / 2
+    }
+    await comfyPage.page.mouse.move(start.x, start.y)
+    await comfyPage.page.mouse.down()
+    try {
+      await comfyPage.page.mouse.move(start.x + 120, start.y + 80, {
+        steps: 10
+      })
+      await comfyPage.nextFrame()
+      await expectSlotPositionTracksDom(comfyPage, nodeId, 0, false)
+    } finally {
+      await comfyPage.page.mouse.up()
+    }
+  })
+
+  test('keeps link geometry attached while dragging a group', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+    const checkpoint =
+      await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+    const rawCheckpointId = await checkpoint.root.getAttribute('data-node-id')
+    if (!rawCheckpointId) throw new Error('Load Checkpoint node ID not found')
+    const checkpointId = toNodeId(rawCheckpointId)
+
+    await checkpoint.header.click()
+    const sampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await sampler.header.click({ modifiers: ['Control'] })
+    await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
+    const titleInput = comfyPage.page.getByTestId('node-title-input')
+    await titleInput.fill('Linked nodes')
+    await titleInput.press('Enter')
+
+    await expect
+      .poll(() => comfyPage.canvasOps.getGroupPosition('Linked nodes'))
+      .toBeTruthy()
+    await comfyPage.canvasOps.dragGroup({
+      name: 'Linked nodes',
+      deltaX: 120,
+      deltaY: 80
+    })
+
+    await expectSlotPositionTracksDom(comfyPage, checkpointId, 0, false)
   })
 
   test('pointerCancel stops autopan', async ({ comfyPage }) => {
