@@ -422,6 +422,21 @@ function getAssetJobId(asset: AssetItem): string | undefined {
   return getOutputAssetMetadata(asset.user_metadata)?.jobId
 }
 
+const visibleAssetById = computed(
+  () => new Map(visibleAssets.value.map((asset) => [asset.id, asset]))
+)
+
+const outputGroupParentByJobId = computed(() => {
+  const parents = new Map<string, AssetItem>()
+  for (const asset of displayAssets.value) {
+    const jobId = getAssetJobId(asset)
+    if (jobId && getOutputCount(asset) > 1 && !parents.has(jobId)) {
+      parents.set(jobId, asset)
+    }
+  }
+  return parents
+})
+
 function getResolvedOutputAssets(asset: AssetItem): AssetItem[] {
   const jobId = getAssetJobId(asset)
   return jobId ? (resolvedOutputAssetsByJobId.value[jobId] ?? []) : []
@@ -446,7 +461,7 @@ function isGridAssetSelected(assetId: string): boolean {
   }
   if (isInFolderView.value) return false
 
-  const asset = visibleAssets.value.find((item) => item.id === assetId)
+  const asset = visibleAssetById.value.get(assetId)
   if (!asset) return false
 
   const selectedOutputCount = getSelectedOutputCount(asset)
@@ -461,10 +476,7 @@ function getListOutputGroupParent(asset: AssetItem): AssetItem | undefined {
   const jobId = getAssetJobId(asset)
   if (!jobId) return
 
-  return displayAssets.value.find(
-    (candidate) =>
-      getAssetJobId(candidate) === jobId && getOutputCount(candidate) > 1
-  )
+  return outputGroupParentByJobId.value.get(jobId)
 }
 
 function isListAssetSelected(asset: AssetItem): boolean {
