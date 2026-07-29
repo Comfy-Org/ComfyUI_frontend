@@ -240,10 +240,13 @@ export function useFeatureFlags() {
       )
     },
     /**
-     * Server capability, deliberately not resolved through remoteConfig so a
-     * dynamic-config entry cannot shadow it. The HTTP `/features` value is
-     * preferred because it can refresh mid-session; the websocket copy only
-     * arrives once per connection and covers backends without the HTTP key.
+     * Server capability, deliberately not resolved through remoteConfig:
+     * refreshRemoteConfig clears to {} on any fetch error (would flap this
+     * flag and trigger spurious model reloads), lacks reconnect/visibility
+     * triggers, and has no response-ordering guard (FE-1439 tracks
+     * consolidation). The HTTP `/features` value is preferred because it can
+     * refresh mid-session; the websocket copy only arrives once per
+     * connection and covers backends without the HTTP key.
      */
     get supportsModelTypeTags() {
       return (

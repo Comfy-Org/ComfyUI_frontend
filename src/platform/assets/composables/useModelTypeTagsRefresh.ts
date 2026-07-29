@@ -10,9 +10,11 @@ const REFRESH_INTERVAL_MS = 120_000
  * until a fetch has seen the key. The websocket copy of the flag is sent only
  * once per connection, so an open session never observes a server-side flip
  * (a rollback leaves stale tabs on the wrong tagging scheme); this HTTP
- * source exists so the flag can refresh mid-session. It is read from the raw
- * response rather than the remoteConfig store so a dynamic-config entry of
- * the same name can never shadow the server's own capability.
+ * source exists so the flag can refresh mid-session. Deliberately not
+ * sourced from remoteConfig: refreshRemoteConfig clears to {} on any fetch
+ * error (would flap this flag and trigger spurious model reloads), lacks
+ * reconnect/visibility triggers, and has no response-ordering guard.
+ * Consolidation tracked in FE-1439.
  */
 export const httpSupportsModelTypeTags = ref<boolean | undefined>(undefined)
 
