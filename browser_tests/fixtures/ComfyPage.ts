@@ -357,13 +357,54 @@ export class ComfyPage {
    * `WorkflowHelper.reloadAndWaitForApp()`.
    */
   async waitForAppReady() {
-    await this.page.waitForFunction(
-      // window.app => GraphCanvas ready
-      // window.app.extensionManager => GraphView ready
-      () => window.app?.extensionManager
-    )
-    await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
+    try {
+      await this.page.waitForFunction(
+        // window.app => GraphCanvas ready
+        // window.app.extensionManager => GraphView ready
+        () => window.app?.extensionManager
+      )
+      await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
+    } catch (error) {
+      throw new Error(
+        `app never became ready: ${await this.describeUnreadyApp()}`,
+        { cause: error }
+      )
+    }
     await this.nextFrame()
+  }
+
+  /**
+   * Why the app is not ready, in one line, for the failure message. A bare
+   * "timeout exceeded" cannot tell a stalled sign-in from a crashed boot from
+   * a backend that never answered, which is the difference between a
+   * five-minute fix and a day of guessing - so every unready-app failure
+   * carries this. Best-effort by construction: it runs on an already-failing
+   * page, so it reports what it could not read rather than throwing over it.
+   */
+  private async describeUnreadyApp(): Promise<string> {
+    try {
+      const state = await this.page.evaluate(() => ({
+        url: location.href,
+        title: document.title,
+        hasApp: !!window.app,
+        hasExtensionManager: !!window.app?.extensionManager,
+        blockUiVisible: !!document.querySelector('.p-blockui-mask'),
+        // A cloud session that failed to seed lands on a sign-in view, which
+        // looks identical to a slow boot from the outside.
+        signInVisible: !!document.querySelector(
+          '[data-testid*="sign-in"], [class*="SignIn"], form[action*="signin"]'
+        ),
+        bodyText: document.body?.innerText?.slice(0, 300) ?? ''
+      }))
+      return (
+        `url=${state.url} title=${JSON.stringify(state.title)} ` +
+        `window.app=${state.hasApp} extensionManager=${state.hasExtensionManager} ` +
+        `blockUiMask=${state.blockUiVisible} signInView=${state.signInVisible} ` +
+        `body=${JSON.stringify(state.bodyText)}`
+      )
+    } catch (probeError) {
+      return `page state unreadable (${probeError instanceof Error ? probeError.message : String(probeError)})`
+    }
   }
 
   /** @deprecated Use standalone `assetPath` from `browser_tests/fixtures/utils/assetPath` directly. */
