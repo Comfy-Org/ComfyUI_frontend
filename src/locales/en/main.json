@@ -2585,6 +2585,7 @@
     "subscriptionProcessing": "Processing payment — setting up your workspace...",
     "subscriptionSuccess": "Subscription updated successfully",
     "subscriptionFailed": "Subscription update failed",
+    "subscriptionFailedDetail": "We couldn't update your subscription. Please try again.",
     "subscriptionTimeout": "Subscription verification timed out",
     "topupProcessing": "Processing payment — adding credits...",
     "topupSuccess": "Credits added successfully",
@@ -2641,6 +2642,8 @@
     "downgrade": {
       "title": "Change to {plan} plan?",
       "body": "All other members of this workspace will be immediately removed.",
+      "bodyReactivation": "Your subscription is cancelled. Changing your plan will resume it, and you'll be charged {amount} today.",
+      "bodyRemovalAndReactivation": "All other members of this workspace will be immediately removed. Your subscription is cancelled, so changing your plan will also resume it, and you'll be charged {amount} today.",
       "confirmationPhrase": "I understand",
       "confirmationPrompt": "Type \"{phrase}\" to confirm.",
       "confirm": "Change plan",
@@ -2649,7 +2652,9 @@
       "paymentMethodRequired": "A payment method is required to change plans",
       "paymentPageBlocked": "Couldn't open the payment page — please try again",
       "memberRemovalFailed": "Couldn't remove {email} from the team — some members may already be removed and your plan was not changed",
-      "failedAfterMemberRemoval": "Team members were removed, but the plan change didn't complete — please try again or contact support"
+      "failedAfterMemberRemoval": "Team members were removed, but the plan change didn't complete — please try again or contact support",
+      "reactivationConfirmationRequired": "Please confirm the reactivation charge before continuing",
+      "reactivationAmountChanged": "The charge amount changed since you confirmed it — please review and try again"
     },
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
     "partnerNodesDescription": "For running commercial/proprietary models",
@@ -2888,7 +2893,21 @@
       "confirm": "Confirm",
       "subscribeToPlan": "Subscribe to {plan}",
       "switchToPlan": "Switch to {plan}",
-      "backToAllPlans": "Back to all plans"
+      "backToAllPlans": "Back to all plans",
+      "reactivation": {
+        "title": "Reactivating your subscription",
+        "titleAnnual": "Reactivating your subscription — full year billed today",
+        "upgradeBody": "Your {plan} was set to end on {date}. Upgrading now reactivates it — you'll be charged {amount} today, and it will renew automatically on {nextDate} instead of ending.",
+        "downgradeBody": "Your {plan} was set to end on {date}. Switching to {newPlan} reactivates it — you won't be charged today, but it will now renew automatically on {nextDate} at the new price instead of ending.",
+        "durationChangeBody": "Your {plan} was set to end on {date}. Switching to annual billing reactivates it and charges the full year, {amount}, today. It will then renew annually on {nextDate} instead of ending.",
+        "durationChangeBodyMonthly": "Your {plan} was set to end on {date}. Switching to monthly billing reactivates it — you'll be charged {amount} today, and it will renew automatically on {nextDate} instead of ending.",
+        "confirmButton": "Confirm & reactivate",
+        "confirmButtonWithCharge": "Confirm & reactivate — {amount} today",
+        "checkboxLabel": "I understand I'll be charged {amount} today",
+        "confirmationRequired": "Your subscription is cancelled — please confirm the reactivation charge before continuing",
+        "amountChanged": "The charge amount changed since you confirmed it — please review and try again",
+        "unavailable": "We can't confirm this reactivation right now — please choose your plan again"
+      }
     },
     "success": {
       "allSet": "You're all set",

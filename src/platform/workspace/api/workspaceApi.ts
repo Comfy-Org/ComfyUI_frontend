@@ -168,6 +168,8 @@ interface SubscribeRequest {
   /** Required for the per-credit Team plan; selects the slider stop. */
   team_credit_stop_id?: string
   billing_cycle?: SubscribeBillingCycle
+  /** Required to change plans while the current subscription is cancelled; server rejects the change without it. */
+  confirm_reactivation?: boolean
 }
 
 export interface SubscribeOptions {
@@ -175,6 +177,7 @@ export interface SubscribeOptions {
   cancelUrl?: string
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
+  confirmReactivation?: boolean
 }
 
 export interface PreviewSubscribeOptions {
@@ -690,7 +693,8 @@ export const workspaceApi = {
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
-          billing_cycle: options.billingCycle
+          billing_cycle: options.billingCycle,
+          confirm_reactivation: options.confirmReactivation
         } satisfies SubscribeRequest,
         { headers }
       )
