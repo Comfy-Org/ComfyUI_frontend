@@ -66,7 +66,7 @@ const ctaButtons = [
       data-testid="desktop-nav-cta"
       class="hidden shrink-0 items-center gap-2 lg:flex"
     >
-      <GitHubStarBadge v-if="githubStars" :stars="githubStars" class="hidden xl:flex" />
+      <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
       <Button
         v-for="cta in ctaButtons"
         :key="cta.href"
@@ -74,6 +74,7 @@ const ctaButtons = [
         :href="cta.href"
         :variant="cta.primary ? 'default' : 'outline'"
         :aria-label="cta.ariaLabel"
+        :class="{ 'max-xl:hidden': !cta.primary }"
       >
         <span>
           <span class="hidden 2xl:inline-block">{{ cta.full }}</span>
