@@ -108,10 +108,11 @@ describe('Composer', () => {
       await userEvent.click(
         await screen.findByRole('radio', { name: /Auto-run with limits/ })
       )
+      const save = screen.getByRole('button', { name: 'Save changes' })
+      expect(save).toBeEnabled()
       const input = screen.getByRole('spinbutton', { name: 'credits' })
       await userEvent.clear(input)
       await userEvent.type(input, '500')
-      const save = screen.getByRole('button', { name: 'Save changes' })
       expect(save).toBeEnabled()
       await userEvent.click(save)
 
@@ -121,6 +122,20 @@ describe('Composer', () => {
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
       expect(screen.getByRole('button', { name: 'Auto' })).toBeInTheDocument()
+    })
+
+    it('keeps Save disabled while the limit draft is invalid', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+      store.save('auto-limit', 450)
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Auto' }))
+      const input = await screen.findByRole('spinbutton', { name: 'credits' })
+      await userEvent.clear(input)
+
+      expect(
+        screen.getByRole('button', { name: 'Save changes' })
+      ).toBeDisabled()
     })
 
     it('enables Save when only the credit limit changes', async () => {
