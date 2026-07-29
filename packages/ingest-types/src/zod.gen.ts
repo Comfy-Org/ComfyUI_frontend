@@ -506,7 +506,8 @@ export const zBillingOpStatusResponse = z.object({
   status: z.enum(['pending', 'succeeded', 'failed']),
   error_message: z.string().optional(),
   started_at: z.string().datetime(),
-  completed_at: z.string().datetime().optional()
+  completed_at: z.string().datetime().optional(),
+  action_url: z.string().optional()
 })
 
 /**
@@ -980,6 +981,8 @@ export const zBillingStatusResponse = z.object({
   subscription_duration: zSubscriptionDuration.optional(),
   plan_slug: z.string().optional(),
   billing_status: zBillingStatus.optional(),
+  pending_billing_op_id: z.string().optional(),
+  action_url: z.string().optional(),
   has_funds: z.boolean(),
   cancel_at: z.string().datetime().optional(),
   renewal_date: z.string().datetime().optional(),

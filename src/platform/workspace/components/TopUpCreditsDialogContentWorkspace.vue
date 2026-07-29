@@ -183,7 +183,7 @@ const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { permissions } = useWorkspaceUI()
 
 const billingOperationStore = useBillingOperationStore()
-const isPolling = computed(() => billingOperationStore.hasPendingOperations)
+const isPolling = computed(() => billingOperationStore.isAddingCredits)
 
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]

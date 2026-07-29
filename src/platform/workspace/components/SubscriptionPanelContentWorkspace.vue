@@ -9,6 +9,15 @@
         <i class="pi pi-spin pi-spinner" />
         <span>{{ $t('billingOperation.subscriptionProcessing') }}</span>
       </div>
+      <Button
+        v-if="subscriptionActionUrl && permissions.canManageSubscription"
+        variant="primary"
+        size="lg"
+        class="rounded-lg px-4 text-sm font-normal"
+        @click="openSubscriptionVerification"
+      >
+        {{ $t('subscription.preview.completeVerification') }}
+      </Button>
     </div>
 
     <!-- Billing data still loading: avoid rendering a false Free/$0 plan -->
@@ -333,6 +342,14 @@ const { t, n, locale } = useI18n()
 
 const billingOperationStore = useBillingOperationStore()
 const isSettingUp = computed(() => billingOperationStore.isSettingUp)
+const subscriptionActionUrl = computed(
+  () => billingOperationStore.subscriptionActionOperation?.actionUrl ?? null
+)
+
+function openSubscriptionVerification() {
+  if (!subscriptionActionUrl.value) return
+  window.open(subscriptionActionUrl.value, '_blank', 'noopener,noreferrer')
+}
 
 const {
   isActiveSubscription,
