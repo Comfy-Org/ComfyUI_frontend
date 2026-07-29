@@ -65,6 +65,21 @@ describe('getCanvasContextMenuTarget', () => {
     expect(target.reroute).toEqual({ id: 9 })
   })
 
+  it('falls back when a layout hit names a reroute in another graph', () => {
+    mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
+    graph.getReroute.mockReturnValue(undefined)
+    graph.getRerouteOnPos.mockReturnValue({ id: 7 })
+
+    const target = resolve()
+
+    expect(graph.getRerouteOnPos).toHaveBeenCalledWith(
+      10,
+      20,
+      canvas._visibleReroutes
+    )
+    expect(target.reroute).toEqual({ id: 7 })
+  })
+
   it('falls back to the visible-scoped positional hit-test when the layout store misses', () => {
     graph.getRerouteOnPos.mockReturnValue({ id: 7 })
 

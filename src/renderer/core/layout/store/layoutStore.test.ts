@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -672,6 +673,52 @@ describe('layoutStore CRDT operations', () => {
       expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
     }
   )
+})
+
+describe('reroute layouts outlive an active-graph reseed', () => {
+  const REROUTE = toRerouteId(4242)
+  const POSITION = { x: 372, y: 415 }
+
+  function createReroute() {
+    layoutStore.setSource(LayoutSource.Canvas)
+    layoutStore.applyOperation({
+      type: 'createReroute',
+      entity: 'reroute',
+      rerouteId: REROUTE,
+      position: POSITION,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+  }
+
+  it('survives the reseed that follows subgraph navigation', () => {
+    createReroute()
+
+    layoutStore.initializeFromLiteGraph([
+      { id: toNodeId('node-1'), pos: [0, 0], size: [100, 50] }
+    ])
+
+    expect(layoutStore.getRerouteLayout(REROUTE)?.position).toEqual(POSITION)
+    expect(layoutStore.queryRerouteAtPoint(POSITION)?.id).toBe(REROUTE)
+  })
+
+  it('drops layout and spatial index together on delete', () => {
+    createReroute()
+
+    layoutStore.setSource(LayoutSource.Canvas)
+    layoutStore.applyOperation({
+      type: 'deleteReroute',
+      entity: 'reroute',
+      rerouteId: REROUTE,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    expect(layoutStore.getRerouteLayout(REROUTE)).toBeNull()
+    expect(layoutStore.queryRerouteAtPoint(POSITION)).toBeNull()
+  })
 })
 
 describe('layoutStore getNodeLayoutRef setter', () => {

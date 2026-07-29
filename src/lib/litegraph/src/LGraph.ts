@@ -503,12 +503,13 @@ export class LGraph
       unregisterAllNodeStates(this)
     }
 
-    // Group ids are root-scoped, so entries are dropped one by one whether this
-    // is a root graph or a subgraph sharing the root's bucket.
-    if (this._groups.length) {
+    if (this._groups.length || this.reroutes.size) {
       const layoutMutations = useLayoutMutations()
       layoutMutations.setSource(LayoutSource.Canvas)
       for (const group of this._groups) layoutMutations.deleteGroup(group.id)
+      for (const rerouteId of this.reroutes.keys()) {
+        layoutMutations.deleteReroute(rerouteId)
+      }
     }
 
     this.id = zeroUuid

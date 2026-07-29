@@ -2374,16 +2374,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             y: e.canvasY
           })
 
-          let reroute: Reroute | undefined
-          if (rerouteLayout) {
-            reroute = graph.getReroute(rerouteLayout.id)
-          } else {
-            reroute = graph.getRerouteOnPos(
-              e.canvasX,
-              e.canvasY,
-              this._visibleReroutes
-            )
-          }
+          let reroute = rerouteLayout
+            ? graph.getReroute(rerouteLayout.id)
+            : undefined
+          reroute ??= graph.getRerouteOnPos(
+            e.canvasX,
+            e.canvasY,
+            this._visibleReroutes
+          )
           if (reroute) {
             if (e.altKey) {
               pointer.onClick = (upEvent) => {

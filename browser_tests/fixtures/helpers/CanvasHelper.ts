@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
@@ -193,6 +194,29 @@ export class CanvasHelper {
       const [clientX, clientY] = app.canvasPosToClientPos([centerX, centerY])
       return { x: clientX, y: clientY }
     }, title)
+  }
+
+  async expectRootReroutePositions(
+    expectedReroutes: Array<Position & { id: number }>
+  ): Promise<void> {
+    await expect(async () => {
+      const reroutes = await this.page.evaluate(() => {
+        const graph = window.app!.canvas.graph?.rootGraph
+        if (!graph) throw new Error('Graph not available')
+        return [...graph.reroutes.values()].map((reroute) => ({
+          id: reroute.id,
+          x: reroute.pos[0],
+          y: reroute.pos[1]
+        }))
+      })
+
+      expect(reroutes).toHaveLength(expectedReroutes.length)
+      for (const expected of expectedReroutes) {
+        const reroute = reroutes.find(({ id }) => id === expected.id)
+        expect(reroute?.x).toBeCloseTo(expected.x, 1)
+        expect(reroute?.y).toBeCloseTo(expected.y, 1)
+      }
+    }).toPass({ timeout: 5000 })
   }
 
   async getGroupPosition(title: string): Promise<Position> {

@@ -317,7 +317,6 @@ export interface LayoutStore {
   deleteLinkLayout(linkId: LinkId): void
   deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void
   deleteSlotLayout(key: SlotId): void
-  deleteRerouteLayout(rerouteId: RerouteId): void
   clearAllSlotLayouts(): void
 
   // Get layout data

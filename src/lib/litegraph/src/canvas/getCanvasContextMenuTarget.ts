@@ -22,14 +22,14 @@ export function getCanvasContextMenuTarget(
   let reroute: Reroute | undefined
   if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
     const layoutHit = layoutStore.queryRerouteAtPoint({ x, y })
-    reroute = layoutHit
-      ? graph.getReroute(layoutHit.id)
-      : graph.getRerouteOnPos(
-          x,
-          y,
-          (canvas as unknown as { _visibleReroutes: Iterable<Reroute> })
-            ._visibleReroutes
-        )
+    reroute =
+      (layoutHit ? graph.getReroute(layoutHit.id) : undefined) ??
+      graph.getRerouteOnPos(
+        x,
+        y,
+        (canvas as unknown as { _visibleReroutes: Iterable<Reroute> })
+          ._visibleReroutes
+      )
   }
 
   return { reroute, group: graph.getGroupOnPos(x, y) }

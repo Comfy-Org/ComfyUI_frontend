@@ -546,18 +546,6 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Delete reroute layout data
-   */
-  deleteRerouteLayout(rerouteId: RerouteId): void {
-    const deleted = this.rerouteLayouts.delete(rerouteId)
-    if (deleted) {
-      // Remove from spatial index
-      const rerouteKey = String(rerouteId)
-      this.rerouteSpatialIndex.remove(rerouteKey)
-    }
-  }
-
-  /**
    * Get link layout data
    */
   getLinkLayout(linkId: LinkId): LinkLayout | null {
@@ -1002,11 +990,10 @@ class LayoutStoreImpl implements LayoutStore {
       this.spatialIndex.clear()
       this.linkSegmentSpatialIndex.clear()
       this.slotSpatialIndex.clear()
-      this.rerouteSpatialIndex.clear()
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
       this.slotLayouts.clear()
-      this.rerouteLayouts.clear()
+      // Reroute layouts outlive active-graph switches.
       this.pendingGlobalChanges = []
       this.isGlobalDispatchQueued = false
 
