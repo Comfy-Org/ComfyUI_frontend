@@ -431,9 +431,9 @@ systems. This is the highest-risk phase.
 
 ### 4a. Position writes through layoutStore ✅ Shipped
 
-The draft below expected the phase to be about adding a shim. It was mostly
-about deleting them. Every entity now has exactly one write path, and the
-workarounds that existed because writes bypassed it are gone.
+Planned as adding a compatibility shim; was mostly about deleting them. Every
+entity now has exactly one write path, and the workarounds that existed because
+writes bypassed it are gone.
 
 **One write path per entity.** Whole-value assignment through `pos` / `size` is
 the only way geometry is written; the setters commit. Element-wise writes reach
@@ -462,8 +462,8 @@ geometry in its constructor, which removed two seeding sites.
 **The store -> legacy direction is unchanged and still needed.** `useLayoutSync`
 stays, because `LGraphNode.serialize()` reads `this.pos` / `this.size` and the
 canvas renders from `_posSize`. Removing it means the class getters read from
-the store, but they return `Point` / `Size` views onto one buffer and ~231
-element-indexed reads across ~39 files depend on that. Yjs cannot hold a
+the store, but they return `Point` / `Size` views onto one buffer and hundreds
+of element-indexed reads across the renderer depend on that. Yjs cannot hold a
 `Float64Array` by reference, so this needs a store-backed geometry view type,
 not a refactor. The re-entrancy the draft worried about did not materialise: the
 writeback compares before writing, so an equal write-back is a no-op.
@@ -482,19 +482,6 @@ writeback compares before writing, so an equal write-back is a no-op.
 3. Two hit-testing systems: litegraph against class geometry, `layoutStore`
    against a spatial index. Node bounds are duplicated between `_boundingRect`
    and `NodeLayout.bounds`.
-
-**Original draft, for the record:**
-
-New code writes position via `useLayoutMutations()` against `layoutStore`. A
-compatibility shim propagates changes back to `LGraphNode.pos` for legacy
-readers.
-
-**This inverts the data flow:** Phase 2 had legacy -> store (read path). Phase 4
-has store -> legacy (write path). Both must work during the transition.
-
-**Risk:** High. Two-way sync between `layoutStore` and legacy state. Must handle
-re-entrant updates (store write triggers the shim, which writes to legacy, which
-must NOT trigger another store write).
 
 ### 4b. ConnectivitySystem mutations
 

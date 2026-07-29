@@ -300,10 +300,12 @@ describe('Reroute position lives only in layoutStore', () => {
       y: 17
     })
 
+    // y snaps about an offset of NODE_SLOT_HEIGHT * 0.7, so it lands on 14.
     reroute.snapToGrid(10)
-    expect([...reroute.pos]).toEqual([
-      layoutStore.getRerouteLayout(reroute.id)!.position.x,
-      layoutStore.getRerouteLayout(reroute.id)!.position.y
-    ])
+    expect(layoutStore.getRerouteLayout(reroute.id)?.position).toEqual({
+      x: 20,
+      y: 14
+    })
+    expect([...reroute.pos]).toEqual([20, 14])
   })
 })

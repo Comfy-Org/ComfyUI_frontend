@@ -1246,10 +1246,6 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Update node bounds helper
-   */
-
-  /**
    * Clean up all segment layouts for a link
    */
   private cleanupLinkSegments(linkId: LinkId): void {

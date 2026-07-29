@@ -199,12 +199,12 @@ describe('MinimapDataSource', () => {
   describe('group geometry', () => {
     /** Deliberately disagrees with the store so the read source is provable. */
     function staleGroup(id: number): LGraphGroup {
-      return {
+      return fromPartial<LGraphGroup>({
         id,
         pos: [-1, -1],
         size: [1, 1],
         color: '#abcdef'
-      } as unknown as LGraphGroup
+      })
     }
 
     it('reads group geometry from the store, not the group', () => {

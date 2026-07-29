@@ -118,8 +118,6 @@ describe('group layout in layoutStore', () => {
   })
 
   describe('every geometry mutation keeps the store in step', () => {
-    // Each of these wrote _pos / _size directly before groups were stored, so
-    // the invariant under test is that none of them can drift again.
     const mutations: Array<[name: string, mutate: (g: LGraphGroup) => void]> = [
       ['pos setter', (g) => void (g.pos = [7, 9])],
       ['size setter', (g) => void (g.size = [400, 300])],
@@ -149,7 +147,6 @@ describe('group layout in layoutStore', () => {
         position: { x: group.pos[0], y: group.pos[1] },
         size: { width: group.size[0], height: group.size[1] }
       })
-      graph.remove(group)
     })
   })
 

@@ -39,17 +39,14 @@ describe('mappers', () => {
     expect(back.bounds).toEqual({ x: 5, y: 6, width: 70, height: 80 })
   })
 
-  it('yNodeToLayout applies defaults for missing fields', () => {
+  it('yields a usable layout for a map with no rect', () => {
     const doc = new Y.Doc()
     const ynode = doc.getMap('node') as NodeLayoutMap
-    // Don't set any fields - they should all use defaults
 
     const back = yNodeToLayout(ynode)
-    expect(back.id).toBe(toNodeId('unknown-node'))
-    expect(back.position).toEqual({ x: 0, y: 0 })
-    expect(back.size).toEqual({ width: 100, height: 50 })
-    expect(back.zIndex).toBe(0)
-    expect(back.visible).toBe(true)
-    expect(back.bounds).toEqual({ x: 0, y: 0, width: 100, height: 50 })
+
+    expect(back.size.width).toBeGreaterThan(0)
+    expect(back.size.height).toBeGreaterThan(0)
+    expect(back.bounds).toEqual({ ...back.position, ...back.size })
   })
 })

@@ -113,12 +113,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   }
 
   /**
-   * The one writer for group geometry. `pos` and `size` are views onto a single
-   * {@link Rectangle}, so every mutation writes the whole rectangle and commits
-   * it as one operation — position and size can never be stored apart.
-   *
-   * Callers that must not clamp (deserialisation, fit-to-contents) use this
-   * directly; the public setters clamp first and then delegate here.
+   * The one writer for group geometry; commits the whole rectangle as one
+   * operation. Unclamped — the public setters clamp before delegating here.
    */
   private setBounds(x: number, y: number, width: number, height: number) {
     this._bounding.set([x, y, width, height])

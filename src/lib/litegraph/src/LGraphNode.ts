@@ -3545,9 +3545,6 @@ export class LGraphNode
   snapToGrid(snapTo: number): boolean {
     if (this.pinned || !snapTo) return false
 
-    // Snap a copy and assign it: snapPoint mutates in place, and `pos` hands
-    // out the backing array, so snapping it directly would never reach the
-    // layout store.
     const snapped: Point = [this._pos[0], this._pos[1]]
     snapPoint(snapped, snapTo)
     this.pos = snapped

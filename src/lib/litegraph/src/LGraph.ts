@@ -1910,8 +1910,6 @@ export class LGraph
     // Position the subgraph input nodes
     subgraph.inputNode.arrange()
     subgraph.outputNode.arrange()
-    // Both helpers write only the position components, so align a copy and
-    // assign it through `pos` rather than mutating the node's own rectangle.
     for (const [ioNode, alignment] of [
       [subgraph.inputNode, Alignment.MidLeft],
       [subgraph.outputNode, Alignment.MidRight]
@@ -2148,7 +2146,6 @@ export class LGraph
       const group = new LGraphGroup(g_info.title, g_info.id)
       this.add(group, true)
       group.configure(g_info)
-      // Whole-value assignment: element writes reach _pos but not the store.
       group.pos = [group.pos[0] + offsetX, group.pos[1] + offsetY]
       toSelect.push(group)
     }

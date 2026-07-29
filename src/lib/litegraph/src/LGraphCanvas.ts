@@ -8926,7 +8926,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.ds.animateToBounds(bounds, setDirty, options)
   }
 
-  /** Moves each node to its given position. Used by align, distribute and clone. */
+  /** Moves each node to its given position. */
   applyNodePositions(positions: NewNodePosition[]): void {
     for (const { node, newPos } of positions) {
       node.setPos(newPos.x, newPos.y)
