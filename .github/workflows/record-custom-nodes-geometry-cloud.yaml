@@ -56,7 +56,16 @@ jobs:
   record-geometry-cloud:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 60 was inherited from the core record job and is far too small for
+    # cloud: run 30445909728 was killed at exactly 60.25 minutes, mid
+    # geometry record, and a job-level timeout CANCELS - which reads as a
+    # queue eviction and sent four attempts chasing the wrong cause. Cloud
+    # pays per-test app load over the network (the cloud gate needs 287+
+    # minutes for the same corpus), so this sits just under GitHub's 360
+    # hard wall. The two record steps carry their own lower ceilings so an
+    # overrun FAILS the step - keeping the upload steps reachable - instead
+    # of cancelling the job and losing the partial artifact.
+    timeout-minutes: 350
     permissions:
       contents: read
     steps:
@@ -126,6 +135,7 @@ jobs:
       # is recorded as the pin.
       - name: Record cloud geometry baselines
         continue-on-error: true
+        timeout-minutes: 160
         env:
           CUSTOM_NODES_ENV: cloud
           CN_GEOMETRY: record
@@ -141,6 +151,7 @@ jobs:
       # routes writes into interactionProfiles/cloud/.
       - name: Record cloud interaction profiles (S13)
         continue-on-error: true
+        timeout-minutes: 160
         env:
           CUSTOM_NODES_ENV: cloud
           CN_INTERACTION: record
