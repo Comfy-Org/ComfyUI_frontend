@@ -390,13 +390,6 @@ export class ComfyPage {
    * `WorkflowHelper.reloadAndWaitForApp()`.
    */
   async waitForAppReady() {
-    // A fuse, not a cap. The per-test cap is off on cloud because every
-    // number picked there only moved the cliff, but an UNBOUNDED wait is
-    // worse: a hung boot then burns the whole step ceiling in silence and
-    // the diagnostic below never runs, which is exactly what record run
-    // 30468334258 did. Five minutes is far past any healthy boot (cloud
-    // sign-in lands in well under a second and the app follows), so this
-    // fires only on a genuine hang - and when it fires it explains itself.
     const readyFuseMs = 300_000
     try {
       await this.page.waitForFunction(
@@ -670,25 +663,14 @@ export const comfyPageFixture = base.extend<{
     if (testInfo.tags.includes('@cloud')) {
       await comfyPage.cloudAuth.mockAuth()
     } else if (isCloudEnv) {
-      // A real smoke-user session (no route mocks), seeded before the app
-      // boots so the Firebase SDK restores it. Mutually exclusive with the
-      // @cloud mock above: its interceptions would corrupt a real session.
-      // Refuse to seed while tracing: the record rides page.evaluate
-      // arguments, which a trace records verbatim. Read the resolved option
-      // rather than the project's, so a --trace flag or a spec-level
-      // test.use({ trace }) cannot turn tracing on behind the guard.
       const traceMode =
         typeof trace === 'string' ? trace : (trace?.mode ?? 'off')
       if (traceMode !== 'off')
         throw new Error(
-          `cloud seeds a real refresh token via page.evaluate, but project ` +
-            `'${testInfo.project.name}' traces '${traceMode}' - run with ` +
-            `--project=custom-nodes and without --trace`
+          `cloud types the smoke password into the login form, which a trace ` +
+            `records verbatim, but project '${testInfo.project.name}' traces ` +
+            `'${traceMode}' - run with --project=custom-nodes and no --trace`
         )
-      // Timed because a cloud beforeEach that overruns reports only "Test
-      // timeout exceeded while running beforeEach hook", which cannot tell
-      // sign-in apart from app boot - the whole reason cloud failures have
-      // been undiagnosable. These two lines name which half spent the budget.
       const authStartedAt = Date.now()
       await signInSmokeUser(page, comfyPage.url)
       console.warn(`[cloud] smoke sign-in took ${Date.now() - authStartedAt}ms`)
