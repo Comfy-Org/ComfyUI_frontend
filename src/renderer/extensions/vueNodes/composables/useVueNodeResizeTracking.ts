@@ -185,14 +185,15 @@ const resizeObserver = new ResizeObserver((entries) => {
       previousMeasurement.nodeId === nodeId &&
       nodeLayout != null &&
       isBoundsEqual(previousMeasurement.bounds, nodeLayout.bounds)
+    const cachedSize = isCollapsedNode ? nodeLayout?.bounds : nodeLayout?.size
 
     // ResizeObserver emits entries where nothing changed (e.g. initial observe).
     // Skip expensive DOM reads when this exact element/node already measured at
     // the same normalized bounds and size.
     if (
-      nodeLayout &&
+      cachedSize &&
       !hasFreshMeasurementPending &&
-      isSizeEqual(nodeLayout.size, {
+      isSizeEqual(cachedSize, {
         width,
         height: normalizedHeight
       }) &&

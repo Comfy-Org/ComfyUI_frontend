@@ -319,6 +319,38 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 
+  it('skips repeated collapsed measurements matching visual bounds', () => {
+    const nodeId = toNodeId('test-node')
+    const collapsedWidth = 200
+    const collapsedHeight = 40
+    const { entry, rectSpy } = createResizeEntry({
+      nodeId,
+      width: collapsedWidth,
+      height: collapsedHeight,
+      left: 100,
+      top: 200,
+      collapsed: true
+    })
+    const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+    const layout = testState.nodeLayouts.get(nodeId)
+    if (!layout) throw new Error('Expected seeded node layout')
+    layout.bounds = {
+      ...layout.bounds,
+      width: collapsedWidth,
+      height: collapsedHeight - titleHeight
+    }
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(rectSpy).not.toHaveBeenCalled()
+    expect(testState.setSource).not.toHaveBeenCalled()
+    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+  })
+
   it('updates bounds with expanded dimensions on collapse-to-expand transition', () => {
     const nodeId = toNodeId('test-node')
 
