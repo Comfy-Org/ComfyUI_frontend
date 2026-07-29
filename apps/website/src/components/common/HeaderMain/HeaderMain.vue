@@ -66,7 +66,11 @@ const ctaButtons = [
       data-testid="desktop-nav-cta"
       class="hidden shrink-0 items-center gap-2 lg:flex"
     >
-      <GitHubStarBadge v-if="githubStars" :stars="githubStars" class="hidden xl:flex" />
+      <GitHubStarBadge
+        v-if="githubStars"
+        :stars="githubStars"
+        class="hidden xl:flex"
+      />
       <Button
         v-for="cta in ctaButtons"
         :key="cta.href"
