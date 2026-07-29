@@ -245,4 +245,30 @@ describe('parseErrorResponse', () => {
       message: 'HTTP 402'
     })
   })
+
+  it('prefers a caller-supplied fallback over the status text', async () => {
+    const response = makeResponse({
+      text: async () => '',
+      statusText: 'Bad Gateway',
+      status: 502
+    })
+    await expect(
+      parseErrorResponse(response, 'Failed to publish workflow')
+    ).resolves.toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'Failed to publish workflow'
+    })
+  })
+
+  it('still prefers the server message over a caller-supplied fallback', async () => {
+    const response = makeResponse({
+      text: async () => JSON.stringify({ message: 'Username already taken' })
+    })
+    await expect(
+      parseErrorResponse(response, 'Failed to create ComfyHub profile')
+    ).resolves.toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'Username already taken'
+    })
+  })
 })

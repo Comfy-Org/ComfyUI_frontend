@@ -84,11 +84,16 @@ function parseJsonOrText(text: string): unknown {
  * plain-text error bodies (e.g. from a proxy) survive as the message. Empty
  * or unreadable bodies degrade to a status-derived message and the
  * `UNKNOWN_ERROR` code.
+ *
+ * @param response - The failed response
+ * @param fallbackMessage - Used when the body carries no usable message.
+ * Defaults to a status-derived string; pass an operation-specific message
+ * when the call site has more useful context than `502 Bad Gateway`.
  */
 export async function parseErrorResponse(
-  response: Response
+  response: Response,
+  fallbackMessage: string = response.statusText || `HTTP ${response.status}`
 ): Promise<ErrorResponse> {
-  const fallbackMessage = response.statusText || `HTTP ${response.status}`
   const text = await response.text().catch((err: unknown) => {
     console.warn('parseErrorResponse: failed to read response body', err)
     return ''
