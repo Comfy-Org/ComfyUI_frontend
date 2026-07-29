@@ -39,8 +39,7 @@ export class SettingDialog extends BaseDialog {
    * @param id - The id of the setting
    */
   async toggleBooleanSetting(id: string) {
-    const settingInputDiv = this.root.locator(`div[id="${id}"]`)
-    await settingInputDiv.locator('input').click()
+    await this.root.locator(`button[role="switch"][id="${id}"]`).click()
   }
 
   category(name: string) {

@@ -10,6 +10,7 @@ import {
   whenever
 } from '@vueuse/core'
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
+import type { HTMLAttributes } from 'vue'
 
 import { t } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
@@ -28,18 +29,28 @@ const {
   poster,
   tracks = [],
   autoplay = false,
+  autoplayUnmuted = false,
   loop = false,
   minimal = false,
-  hideControls = false
+  hideControls = false,
+  fit = 'cover',
+  ariaLabel,
+  class: className
 } = defineProps<{
   locale?: Locale
   src?: string
   poster?: string
   tracks?: readonly VideoTrack[]
   autoplay?: boolean
+  /** Attempt autoplay with sound; browsers without engagement-based
+   * permission reject it, and playback falls back to muted. */
+  autoplayUnmuted?: boolean
   loop?: boolean
   minimal?: boolean
   hideControls?: boolean
+  fit?: 'cover' | 'contain'
+  ariaLabel?: string
+  class?: HTMLAttributes['class']
 }>()
 
 const playerEl = useTemplateRef<HTMLDivElement>('playerEl')
@@ -87,6 +98,40 @@ function syncNativeDuration() {
 watch(videoEl, syncNativeDuration)
 useEventListener(videoEl, 'loadedmetadata', syncNativeDuration)
 useEventListener(videoEl, 'durationchange', syncNativeDuration)
+
+// The muted attribute only sets defaultMuted, so SSR-rendered autoplay
+// videos count as unmuted and get blocked; force the property and kick
+// playback. With autoplayUnmuted, sound is attempted first — play()
+// rejects with NotAllowedError when the browser lacks engagement-based
+// autoplay permission, and playback retries muted. flush: 'post'
+// guarantees this runs after useMediaControls' internal muted watcher
+// on the same source.
+watch(
+  [videoEl, () => src],
+  async ([el]) => {
+    if (!el || !autoplay) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.pause()
+      return
+    }
+    if (autoplayUnmuted) {
+      el.pause()
+      el.muted = false
+      try {
+        await el.play()
+        return
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return
+      }
+    }
+    el.muted = true
+    el.play().catch((error: unknown) => {
+      if (error instanceof Error && error.name === 'AbortError') return
+      console.warn('VideoPlayer autoplay failed', error)
+    })
+  },
+  { flush: 'post' }
+)
 
 const effectiveDuration = computed(() => duration.value || nativeDuration.value)
 
@@ -189,7 +234,12 @@ function toggleFullscreen() {
 <template>
   <div
     ref="playerEl"
-    class="relative aspect-video overflow-hidden rounded-4xl border border-white/10 bg-black"
+    :class="
+      cn(
+        'relative aspect-video overflow-hidden rounded-4xl border border-white/10 bg-black',
+        className
+      )
+    "
     @pointermove="showControls"
     @pointerdown="showControls"
     @focusin="showControls"
@@ -197,7 +247,10 @@ function toggleFullscreen() {
     <video
       v-if="src"
       ref="videoEl"
-      class="size-full object-cover"
+      :aria-label="ariaLabel"
+      :class="
+        cn('size-full', fit === 'contain' ? 'object-contain' : 'object-cover')
+      "
       :src
       :poster
       :preload="autoplay ? 'auto' : 'metadata'"
