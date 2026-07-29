@@ -1628,11 +1628,6 @@ const translations = {
     'zh-CN':
       '实战 ComfyUI 广告创意教程——情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
   },
-  'learning.tutorials.titlePrefix': {
-    en: 'Learn how to:',
-    'zh-CN': '学习如何：'
-  },
-
   // LearningWatchPage
   'learning.watch.nowWatching': { en: 'Now watching', 'zh-CN': '正在观看' },
   'learning.watch.episode': { en: 'Episode {count}', 'zh-CN': '第 {count} 集' },

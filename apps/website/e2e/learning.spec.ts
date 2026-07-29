@@ -93,10 +93,7 @@ test.describe('Learning page @smoke', () => {
       page.getByText(t('learning.featuredBadge', 'en')).first()
     ).toBeVisible()
     await expect(
-      page.getByRole('heading', {
-        name: `${t('learning.tutorials.titlePrefix', 'en')} ${featured.title.en}`,
-        level: 2
-      })
+      page.getByRole('heading', { name: featured.title.en, level: 2 })
     ).toBeVisible()
   })
 
