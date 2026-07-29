@@ -101,6 +101,57 @@ describe('useFeatureGate', () => {
     )
   })
 
+  it.for([
+    {
+      name: 'registered OFF',
+      key: 'registered_off',
+      state: 'authenticated' as const,
+      releaseFlags: { registered_off: false } as Record<string, boolean>,
+      expected: false
+    },
+    {
+      name: 'registered ON',
+      key: 'registered_on',
+      state: 'authenticated' as const,
+      releaseFlags: { registered_on: true } as Record<string, boolean>,
+      expected: true
+    },
+    {
+      name: 'unregistered',
+      key: 'unregistered',
+      state: 'authenticated' as const,
+      releaseFlags: {} as Record<string, boolean>,
+      expected: false
+    },
+    {
+      name: 'evaluation failed',
+      key: 'evaluation_failed',
+      state: 'error' as const,
+      releaseFlags: {} as Record<string, boolean>,
+      expected: false
+    }
+  ])(
+    'fails closed and records the resolved decision for $name',
+    ({ key, state, releaseFlags, expected }) => {
+      const trackFeatureFlagExposure = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackFeatureFlagExposure })
+      setTelemetryRegistry(registry)
+      remoteConfig.value = { release_flags: releaseFlags }
+      remoteConfigState.value = state
+
+      const { value, recordExposure } = useFeatureGate(key)
+      recordExposure()
+      recordExposure()
+
+      expect(value.value).toBe(expected)
+      expect(trackFeatureFlagExposure).toHaveBeenCalledExactlyOnceWith(
+        key,
+        expected
+      )
+    }
+  )
+
   it('deduplicates in memory when session storage writes are unavailable', () => {
     const trackFeatureFlagExposure = vi.fn()
     const registry = new TelemetryRegistry()

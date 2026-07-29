@@ -16,7 +16,7 @@ useExtensionService().registerExtension({
     watch(
       [remoteConfigState, enabled],
       ([state, isEnabled]) => {
-        if (state !== 'authenticated') return
+        if (state !== 'authenticated' && state !== 'error') return
 
         recordExposure()
         if (!isEnabled) return

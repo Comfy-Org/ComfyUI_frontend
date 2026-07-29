@@ -40,7 +40,12 @@ export function useFeatureGate(key: string) {
   })
 
   function recordExposure(): void {
-    if (remoteConfigState.value !== 'authenticated') return
+    if (
+      remoteConfigState.value !== 'authenticated' &&
+      remoteConfigState.value !== 'error'
+    ) {
+      return
+    }
 
     const exposureKey = `feature-flag-exposure:${key}:${value.value}`
     if (hasRecordedExposure(exposureKey)) return
