@@ -217,8 +217,12 @@ test.describe('Get started section links @smoke', () => {
     await expect(downloadLink).toBeVisible()
     await expect(downloadLink).toHaveAttribute('href', '/download')
 
-    const cloudLink = section.getByRole('link', { name: 'Launch Cloud' })
+    const cloudLink = section.getByRole('link', { name: 'Try Cloud for free' })
     await expect(cloudLink).toBeVisible()
-    await expect(cloudLink).toHaveAttribute('href', 'https://cloud.comfy.org')
+    // Attribution params ride every cloud CTA; pin the campaign, not the full query.
+    await expect(cloudLink).toHaveAttribute(
+      'href',
+      /^https:\/\/cloud\.comfy\.org\/\?.*utm_content=getstarted_try_cloud/
+    )
   })
 })
