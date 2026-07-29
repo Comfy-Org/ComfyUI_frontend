@@ -58,7 +58,8 @@
     <template #body>
       <div
         v-if="showLoadingState"
-        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 p-2"
+        class="grid gap-2 p-2"
+        :style="skeletonGridStyle"
       >
         <div
           v-for="n in skeletonCount"
@@ -108,6 +109,7 @@
             :is-selected
             :show-output-count
             :get-output-count
+            :grid-mode
             @select-asset="handleAssetSelect"
             @context-menu="handleAssetContextMenu"
             @approach-end="handleApproachEnd"
@@ -192,6 +194,11 @@ import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
+import { getMediaAssetGridColumns } from '@/platform/assets/components/mediaAssetViewOptions'
+import type {
+  MediaAssetGridMode,
+  MediaAssetViewMode
+} from '@/platform/assets/components/mediaAssetViewOptions'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
@@ -228,11 +235,17 @@ const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const expectedFolderCount = ref(0)
 const isInFolderView = computed(() => folderJobId.value !== null)
-const viewMode = useStorage<'list' | 'grid'>(
+const viewMode = useStorage<MediaAssetViewMode>(
   'Comfy.Assets.Sidebar.ViewMode',
   'grid'
 )
 const isListView = computed(() => viewMode.value === 'list')
+const gridMode = computed<MediaAssetGridMode>(() =>
+  viewMode.value === 'grid-small' ? 'grid-small' : 'grid'
+)
+const skeletonGridStyle = computed(() => ({
+  gridTemplateColumns: getMediaAssetGridColumns(gridMode.value)
+}))
 
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)

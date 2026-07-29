@@ -254,6 +254,18 @@ export class ModelLibrarySidebarTab extends SidebarTab {
       .filter({ hasText: label })
       .first()
   }
+
+  /**
+   * A folder's own row (not the whole subtree). Required for nested folders:
+   * an ancestor `.p-tree-node`'s text contains its descendants' labels, so
+   * `getFolderByLabel` would match — and click — the ancestor instead.
+   */
+  getFolderRowByLabel(label: string) {
+    return this.modelTree
+      .locator('.p-tree-node:not(.p-tree-node-leaf) > .p-tree-node-content')
+      .filter({ hasText: label })
+      .first()
+  }
 }
 
 type MediaFilterKind = 'image' | 'video' | 'audio' | '3d'
@@ -299,7 +311,9 @@ export class AssetsSidebarTab extends SidebarTab {
 
   // --- View mode ---
   public readonly listViewOption: Locator
-  public readonly gridViewOption: Locator
+  public readonly gridSmallOption: Locator
+  public readonly gridLargeOption: Locator
+  public readonly gridItems: Locator
 
   // --- Sort options (cloud-only, shown inside settings popover) ---
   public readonly sortNewestFirst: Locator
@@ -355,7 +369,9 @@ export class AssetsSidebarTab extends SidebarTab {
     })
     this.filter3DCheckbox = page.getByRole('menuitemcheckbox', { name: '3D' })
     this.listViewOption = page.getByText('List view')
-    this.gridViewOption = page.getByText('Grid view')
+    this.gridSmallOption = page.getByText('Grid (small)')
+    this.gridLargeOption = page.getByText('Grid (large)')
+    this.gridItems = page.locator('[data-virtual-grid-item]')
     this.sortNewestFirst = page.getByText('Newest first')
     this.sortOldestFirst = page.getByText('Oldest first')
     this.sortLongestFirst = page.getByText('Generation time (longest first)')
@@ -403,6 +419,12 @@ export class AssetsSidebarTab extends SidebarTab {
     return this.assetCards.filter({ hasText: name })
   }
 
+  async getFirstGridItemWidth() {
+    return await this.gridItems.first().evaluate((element) => {
+      return element.getBoundingClientRect().width
+    })
+  }
+
   contextMenuItem(label: string) {
     return this.page.locator('.p-contextmenu').getByText(label)
   }
@@ -446,7 +468,8 @@ export class AssetsSidebarTab extends SidebarTab {
     await this.settingsButton.click()
     // Wait for popover content to render
     await this.listViewOption
-      .or(this.gridViewOption)
+      .or(this.gridSmallOption)
+      .or(this.gridLargeOption)
       .first()
       .waitFor({ state: 'visible', timeout: 3000 })
   }

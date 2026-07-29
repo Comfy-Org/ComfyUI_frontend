@@ -96,6 +96,7 @@ import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
 import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'
 import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
 import type { SortBy } from './MediaAssetSettingsMenu.vue'
+import type { MediaAssetViewMode } from './mediaAssetViewOptions'
 
 const { showGenerationTimeSort = false, bottomDivider = false } = defineProps<{
   showGenerationTimeSort?: boolean
@@ -104,7 +105,7 @@ const { showGenerationTimeSort = false, bottomDivider = false } = defineProps<{
 
 const searchQuery = defineModel<string>('searchQuery', { required: true })
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
-const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
+const viewMode = defineModel<MediaAssetViewMode>('viewMode', { required: true })
 const dateFilter = defineModel<MediaAssetDateFilter>('dateFilter', {
   required: true
 })

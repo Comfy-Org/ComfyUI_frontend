@@ -142,7 +142,13 @@ export const useAuthActions = () => {
     reportAuthFlowError('password_reset')
   )
 
-  const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
+  /**
+   * Raw (unwrapped) credit purchase. Exposed separately from `purchaseCredits`
+   * so callers that need to observe a rejection directly (e.g. to fire failure
+   * telemetry) aren't routed through `wrapWithErrorHandlingAsync`, which
+   * resolves instead of re-throwing on failure.
+   */
+  const purchaseCreditsDirect = async (amount: number): Promise<void> => {
     const { isActiveSubscription } = useBillingContext()
     if (!isActiveSubscription.value) return
 
@@ -161,7 +167,12 @@ export const useAuthActions = () => {
 
     useTelemetry()?.startTopupTracking()
     window.open(response.checkout_url, '_blank')
-  }, reportError)
+  }
+
+  const purchaseCredits = wrapWithErrorHandlingAsync(
+    purchaseCreditsDirect,
+    reportError
+  )
 
   const accessBillingPortal = wrapWithErrorHandlingAsync<
     [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
@@ -279,6 +290,7 @@ export const useAuthActions = () => {
     logout,
     sendPasswordReset,
     purchaseCredits,
+    purchaseCreditsDirect,
     accessBillingPortal,
     fetchBalance,
     signInWithGoogle,

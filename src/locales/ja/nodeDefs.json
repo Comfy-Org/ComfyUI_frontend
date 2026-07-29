@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "音量。0 = 通常、100 = 2.0倍、-50 = 0.5倍。"
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual：20言語対応（英語、中国語、日本語、韓国語、メキシコ・カスティーリャスペイン語、インドネシア語、ドイツ語、ブラジルポルトガル語、フランス語、タイ語、ベトナム語、マレー語、フィリピン語、イタリア語、ロシア語、オランダ語、ポーランド語、トルコ語、スウェーデン語）および「[5.5s:8.0s] ...」のタイムスタンプによる文ごとのタイミング制御。seed-audio-1.0：英語と中国語のみ対応、タイミング制御なし。"
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "ピッチのシフト（半音単位、-12～12）。"
@@ -19989,6 +19993,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Mage-Flow-Edit用の編集指示を、1枚以上の参照画像とともにエンコードします。参照latentは出力解像度（幅・高さ、または0の場合は最初の画像サイズ）にリサイズされます。sampling時はlatent出力を使用することで、常にサイズが一致します。",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "出力高さ。0の場合は最初の参照画像のサイズを使用します。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "編集用の参照画像。すべての参照画像はエンコード前に出力解像度へリサイズされます。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "出力幅。0の場合は最初の参照画像のサイズを使用します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
