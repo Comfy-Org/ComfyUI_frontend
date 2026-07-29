@@ -106,7 +106,7 @@ test.describe('diffGeometry', () => {
 
   test('a measured node with no baseline reds toward recording', () => {
     expect(diffGeometry({}, { A: node() })).toEqual([
-      'A: no geometry baseline - re-record via the record workflow (ADDING_CUSTOM_NODES.md Step 5b) with the change that added it'
+      'A: no geometry baseline - re-record via the record workflow (docs/custom-node-regression-suite.md Step 5b) with the change that added it'
     ])
   })
 

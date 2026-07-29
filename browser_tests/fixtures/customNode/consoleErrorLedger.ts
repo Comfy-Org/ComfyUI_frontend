@@ -3,7 +3,7 @@
 // surface a pack's script can emit on. Filter-guarded: a pattern suppresses
 // matching errors for its pack only; stale entries are caught by review,
 // not observation (several patterns are environment-conditional, so
-// observed-firing guards would false-fail - see ARCHITECTURE.md section 10).
+// observed-firing guards would false-fail - see docs/custom-node-regression-suite.md section 10 (evidence model)).
 export const CONSOLE_ERROR_ALLOWLIST: Record<
   string,
   Array<{ pattern: RegExp; reason: string }>

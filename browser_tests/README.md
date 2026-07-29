@@ -175,7 +175,7 @@ custom-node packs load, render in both renderers (LiteGraph canvas and Vue
 Nodes 2.0), and execute real workflows. It has its own prerequisites, pnpm
 scripts (`pnpm test:custom-nodes` and variants), and a one-JSON-row process
 for adding packs - see
-[tests/customNodes/README.md](tests/customNodes/README.md).
+[docs/custom-node-regression-suite.md](../docs/custom-node-regression-suite.md).
 
 ## Writing Tests
 
