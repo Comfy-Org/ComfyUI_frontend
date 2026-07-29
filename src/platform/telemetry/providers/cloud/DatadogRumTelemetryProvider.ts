@@ -3,6 +3,7 @@ import { datadogRum } from '@datadog/browser-rum'
 import type {
   BillingTelemetryEvent,
   ExecutionOutcomeMetadata,
+  FeatureFlagValue,
   TelemetryProvider
 } from '../../types'
 import {
@@ -11,6 +12,13 @@ import {
 } from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
+  trackFeatureFlagExposure(key: string, value: FeatureFlagValue): void {
+    datadogRum.addFeatureFlagEvaluation(
+      key.replace(/[.:+\-=&|><!{}[\]^"~*?\\\s]/g, '_'),
+      value
+    )
+  }
+
   trackBillingEvent(event: BillingTelemetryEvent): void {
     datadogRum.addAction(
       getBillingTelemetryEventName(event),

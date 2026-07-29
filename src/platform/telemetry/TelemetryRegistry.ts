@@ -11,6 +11,7 @@ import type {
   ExecutionErrorMetadata,
   ExecutionOutcomeMetadata,
   ExecutionSuccessMetadata,
+  FeatureFlagValue,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -72,6 +73,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
         console.error('[Telemetry] Provider dispatch failed', error)
       }
     })
+  }
+
+  trackFeatureFlagExposure(key: string, value: FeatureFlagValue): void {
+    this.dispatch((provider) => provider.trackFeatureFlagExposure?.(key, value))
   }
 
   trackSignupOpened(): void {
