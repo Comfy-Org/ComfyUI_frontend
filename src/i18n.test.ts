@@ -34,12 +34,12 @@ vi.mock('./locales/en/settings.json', () => ({
 }))
 
 // Mock lazy-loaded locales
-vi.mock('./locales/zh/main.json', () => ({ default: { welcome: '欢迎' } }))
+vi.mock('./locales/zh/main.json', () => ({ default: { welcome: 'æ¬¢è¿Ž' } }))
 vi.mock('./locales/zh/nodeDefs.json', () => ({
-  default: { testNode: '测试节点' }
+  default: { testNode: 'æµ‹è¯•èŠ‚ç‚¹' }
 }))
-vi.mock('./locales/zh/commands.json', () => ({ default: { save: '保存' } }))
-vi.mock('./locales/zh/settings.json', () => ({ default: { theme: '主题' } }))
+vi.mock('./locales/zh/commands.json', () => ({ default: { save: 'ä¿å­˜' } }))
+vi.mock('./locales/zh/settings.json', () => ({ default: { theme: 'ä¸»é¢˜' } }))
 
 describe('i18n', () => {
   beforeEach(async () => {
@@ -71,7 +71,7 @@ describe('i18n', () => {
       mergeCustomNodesI18n({
         zh: {
           customNode: {
-            title: '自定义节点标题'
+            title: 'è‡ªå®šä¹‰èŠ‚ç‚¹æ ‡é¢˜'
           }
         }
       })
@@ -92,7 +92,7 @@ describe('i18n', () => {
       mergeCustomNodesI18n({
         zh: {
           customNode: {
-            title: '自定义节点标题'
+            title: 'è‡ªå®šä¹‰èŠ‚ç‚¹æ ‡é¢˜'
           }
         }
       })
@@ -104,8 +104,8 @@ describe('i18n', () => {
         string,
         unknown
       >
-      expect(zhMessages.welcome).toBe('欢迎')
-      expect(zhMessages.customNode).toEqual({ title: '自定义节点标题' })
+      expect(zhMessages.welcome).toBe('æ¬¢è¿Ž')
+      expect(zhMessages.customNode).toEqual({ title: 'è‡ªå®šä¹‰èŠ‚ç‚¹æ ‡é¢˜' })
     })
 
     it('should preserve custom node data when locale is loaded after merge', async () => {
@@ -114,10 +114,10 @@ describe('i18n', () => {
       mergeCustomNodesI18n({
         zh: {
           customNode: {
-            title: '自定义节点标题'
+            title: 'è‡ªå®šä¹‰èŠ‚ç‚¹æ ‡é¢˜'
           },
           settingsCategories: {
-            Hotkeys: '快捷键'
+            Hotkeys: 'å¿«æ·é”®'
           }
         }
       })
@@ -130,12 +130,12 @@ describe('i18n', () => {
         string,
         unknown
       >
-      expect(zhMessages.customNode).toEqual({ title: '自定义节点标题' })
-      expect(zhMessages.settingsCategories).toEqual({ Hotkeys: '快捷键' })
+      expect(zhMessages.customNode).toEqual({ title: 'è‡ªå®šä¹‰èŠ‚ç‚¹æ ‡é¢˜' })
+      expect(zhMessages.settingsCategories).toEqual({ Hotkeys: 'å¿«æ·é”®' })
 
       // 4. Also verify base locale data is present
-      expect(zhMessages.welcome).toBe('欢迎')
-      expect(zhMessages.nodeDefs).toEqual({ testNode: '测试节点' })
+      expect(zhMessages.welcome).toBe('æ¬¢è¿Ž')
+      expect(zhMessages.nodeDefs).toEqual({ testNode: 'æµ‹è¯•èŠ‚ç‚¹' })
     })
 
     it('should handle multiple locales in custom nodes i18n data', async () => {
@@ -145,7 +145,7 @@ describe('i18n', () => {
           customPlugin: { name: 'Easy Use' }
         },
         zh: {
-          customPlugin: { name: '简单使用' }
+          customPlugin: { name: 'ç®€å•ä½¿ç”¨' }
         }
       })
 
@@ -161,7 +161,7 @@ describe('i18n', () => {
         string,
         unknown
       >
-      expect(zhMessages.customPlugin).toEqual({ name: '简单使用' })
+      expect(zhMessages.customPlugin).toEqual({ name: 'ç®€å•ä½¿ç”¨' })
     })
 
     it('should handle calling mergeCustomNodesI18n multiple times', async () => {
@@ -170,11 +170,11 @@ describe('i18n', () => {
       await importI18nModule()
 
       mergeCustomNodesI18n({
-        zh: { plugin1: { name: '插件1' } }
+        zh: { plugin1: { name: 'æ’ä»¶1' } }
       })
 
       mergeCustomNodesI18n({
-        zh: { plugin2: { name: '插件2' } }
+        zh: { plugin2: { name: 'æ’ä»¶2' } }
       })
 
       await loadLocale('zh')
@@ -184,7 +184,7 @@ describe('i18n', () => {
         unknown
       >
       // Only the second call's data should be present
-      expect(zhMessages.plugin2).toEqual({ name: '插件2' })
+      expect(zhMessages.plugin2).toEqual({ name: 'æ’ä»¶2' })
       // First call's data is overwritten
       expect(zhMessages.plugin1).toBeUndefined()
     })
@@ -215,7 +215,7 @@ describe('i18n', () => {
 
   describe('setActiveLocale', () => {
     it('clamps unsupported input to en', async () => {
-      expect(await setActiveLocale('de')).toBe('en')
+      expect(await setActiveLocale('it')).toBe('en')
       expect(i18n.global.locale.value).toBe('en')
     })
 
@@ -226,9 +226,15 @@ describe('i18n', () => {
       expect(await setActiveLocale('pt')).toBe('en')
     })
 
+    it('resolves de directly and via BCP-47 fallback', async () => {
+      expect(await setActiveLocale('de')).toBe('de')
+      expect(i18n.global.locale.value).toBe('de')
+      expect(await setActiveLocale('de-DE')).toBe('de')
+    })
+
     it('honors prioritized navigator.languages', async () => {
-      // First preference unsupported, second shipped — should land on French.
-      expect(await setActiveLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
+      // First preference unshipped, second shipped — should land on French.
+      expect(await setActiveLocale(['it-IT', 'fr-CA', 'en'])).toBe('fr')
     })
   })
 
@@ -248,6 +254,7 @@ describe('i18n', () => {
       expect(resolveSupportedLocale('ja')).toBe('ja')
       expect(resolveSupportedLocale('zh-TW')).toBe('zh-TW')
       expect(resolveSupportedLocale('pt-BR')).toBe('pt-BR')
+      expect(resolveSupportedLocale('de')).toBe('de')
     })
 
     it('matches case-insensitively per BCP-47 and returns canonical casing', () => {
@@ -257,21 +264,23 @@ describe('i18n', () => {
       expect(resolveSupportedLocale('zh-tw')).toBe('zh-TW')
       expect(resolveSupportedLocale('ZH-TW')).toBe('zh-TW')
       expect(resolveSupportedLocale('EN')).toBe('en')
+      expect(resolveSupportedLocale('DE')).toBe('de')
     })
 
     it('falls back to the base tag when the full tag is unshipped', () => {
-      // de-DE → de (unshipped) → en
-      expect(resolveSupportedLocale('de-DE')).toBe('en')
+      // it-IT → it (unshipped) → en
+      expect(resolveSupportedLocale('it-IT')).toBe('en')
       // fr-CA → fr (shipped) → fr
       expect(resolveSupportedLocale('fr-CA')).toBe('fr')
       // ko-KR → ko (shipped) → ko
       expect(resolveSupportedLocale('ko-KR')).toBe('ko')
       // zh-CN → zh (shipped) → zh (Simplified is the base)
       expect(resolveSupportedLocale('zh-CN')).toBe('zh')
+      // de-DE → de (shipped) → de
+      expect(resolveSupportedLocale('de-DE')).toBe('de')
     })
 
     it('falls back to en for unsupported and missing inputs', () => {
-      expect(resolveSupportedLocale('de')).toBe('en')
       expect(resolveSupportedLocale('it')).toBe('en')
       expect(resolveSupportedLocale('nl')).toBe('en')
       expect(resolveSupportedLocale('xx-YY')).toBe('en')
@@ -281,11 +290,13 @@ describe('i18n', () => {
     })
 
     it('walks a prioritized array per RFC 4647 lookup order', () => {
-      // First shipped match wins (de unshipped → fr shipped → fr).
-      expect(resolveSupportedLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
+      // First shipped match wins (it unshipped → fr shipped → fr).
+      expect(resolveSupportedLocale(['it-IT', 'fr-CA', 'en'])).toBe('fr')
       // Empty / all-unshipped arrays fall back to en.
       expect(resolveSupportedLocale([])).toBe('en')
-      expect(resolveSupportedLocale(['de', 'it'])).toBe('en')
+      expect(resolveSupportedLocale(['it', 'nl'])).toBe('en')
+      // German present in the array resolves immediately.
+      expect(resolveSupportedLocale(['de-DE', 'it'])).toBe('de')
     })
   })
 })
