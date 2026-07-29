@@ -1,4 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -8,8 +10,10 @@ import { defineComponent, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeState } from '@/types/nodeState'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -18,6 +22,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { NodeId as VueNodeId } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import {
@@ -29,16 +34,15 @@ import NodeSlots from './NodeSlots.vue'
 
 const toVueNodeId = (id: string | number): VueNodeId => toNodeId(id)
 
-const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
+const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
   id: toNodeId('123'),
+  // Empty = root graph: derives a null subgraphId in the node's locator.
+  graphId: '',
   title: 'Test Node',
   type: 'TestType',
   mode: 0,
-  selected: false,
-  executing: false,
   inputs: [],
   outputs: [],
-  widgets: [],
   flags: { collapsed: false },
   ...overrides
 })
@@ -55,7 +59,8 @@ const STUB_SLOT_PROPS = {
   nodeId: { type: String, required: false, default: '' },
   hasError: { type: Boolean, required: false, default: false },
   index: { type: Number, required: true },
-  readonly: { type: Boolean, required: false, default: false }
+  readonly: { type: Boolean, required: false, default: false },
+  connected: { type: Boolean, required: false, default: false }
 } as const
 
 const InputSlotStub = defineComponent({
@@ -70,6 +75,7 @@ const InputSlotStub = defineComponent({
       :data-node-id="nodeId"
       :data-has-error="hasError ? 'true' : 'false'"
       :data-readonly="readonly ? 'true' : 'false'"
+      :data-connected="connected ? 'true' : 'false'"
     />
   `
 })
@@ -85,6 +91,7 @@ const OutputSlotStub = defineComponent({
       :data-type="slotData && slotData.type ? slotData.type : ''"
       :data-node-id="nodeId"
       :data-readonly="readonly ? 'true' : 'false'"
+      :data-connected="connected ? 'true' : 'false'"
     />
   `
 })
@@ -128,20 +135,43 @@ function createTrackingStub(
 }
 
 function renderSlots(
-  nodeData: VueNodeData,
-  stubs: SlotComponentStubs = defaultSlotStubs
+  nodeData: NodeState,
+  stubs: SlotComponentStubs = defaultSlotStubs,
+  pinia = createTestingPinia({ stubActions: false })
 ) {
   return render(NodeSlots, {
     global: {
-      plugins: [i18n, createTestingPinia({ stubActions: false })],
+      plugins: [i18n, pinia],
       stubs
     },
     props: { nodeData }
   })
 }
 
+function createConnectedGraph() {
+  const pinia = createTestingPinia({ stubActions: false })
+  setActivePinia(pinia)
+
+  const graph = new LGraph()
+  useCanvasStore().canvas = fromPartial<LGraphCanvas>({ graph })
+
+  const upstream = new LGraphNode('Upstream')
+  upstream.id = toNodeId(1)
+  upstream.addOutput('out', 'FAKE')
+  graph.add(upstream)
+
+  const node = new LGraphNode('Target')
+  node.id = toNodeId(2)
+  node.addInput('plain', 'FAKE')
+  node.addInput('w', 'FAKE')
+  node.inputs[1].widget = { name: 'w' }
+  graph.add(node)
+
+  return { pinia, upstream, node }
+}
+
 function renderSlotsWithTracking(
-  nodeData: VueNodeData,
+  nodeData: NodeState,
   mountCounts: Map<string, number>,
   trackingTarget: 'InputSlot' | 'OutputSlot'
 ) {
@@ -197,6 +227,37 @@ function expectSlotError(
 }
 
 describe('NodeSlots.vue', () => {
+  it('renders slots from nodeDataStore without resolving the live node', async () => {
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+
+    const graph = new LGraph()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
+    canvasStore.currentGraph = graph
+    const node = new LGraphNode('Target')
+    node.id = toNodeId(7)
+    node.addInput('model', 'MODEL')
+    node.addOutput('latent', 'LATENT')
+    graph.add(node)
+
+    const [registered] = useNodeDataStore().getGraphNodesFor(
+      graph.rootGraph.id,
+      graph.id
+    )
+
+    // No app.rootGraph spy: the component must not need a graph traversal.
+    const { container } = renderSlots(registered, defaultSlotStubs, pinia)
+
+    expect(getRenderedSlotElement(container, 'model')).toBeTruthy()
+    expect(getRenderedSlotElement(container, 'latent')).toBeTruthy()
+
+    node.addInput('clip', 'CLIP')
+    await nextTick()
+
+    expect(getRenderedSlotIndex(container, 'clip')).toBe(1)
+  })
+
   it('filters out inputs with widget property and maps indexes correctly', () => {
     const inputs = [
       createMockNodeInputSlot({ name: 'objNoWidget', type: 'number' }),
@@ -276,6 +337,52 @@ describe('NodeSlots.vue', () => {
     ])
   })
 
+  it('marks an output connected only while a link leaves it', async () => {
+    const { pinia, upstream, node } = createConnectedGraph()
+    upstream.addOutput('spare', 'FAKE')
+    upstream.connect(0, node, 0)
+
+    const nodeData = makeNodeData({
+      id: toVueNodeId(upstream.id),
+      outputs: upstream.outputs
+    })
+    const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
+    await nextTick()
+
+    expect(getRenderedSlotElement(container, 'out')).toHaveAttribute(
+      'data-connected',
+      'true'
+    )
+    expect(getRenderedSlotElement(container, 'spare')).toHaveAttribute(
+      'data-connected',
+      'false'
+    )
+
+    node.disconnectInput(0)
+    await nextTick()
+    expect(getRenderedSlotElement(container, 'out')).toHaveAttribute(
+      'data-connected',
+      'false'
+    )
+  })
+
+  it('marks an input connected from the link store', async () => {
+    const { pinia, upstream, node } = createConnectedGraph()
+    upstream.connect(0, node, 0)
+
+    const nodeData = makeNodeData({
+      id: toVueNodeId(node.id),
+      inputs: node.inputs
+    })
+    const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
+    await nextTick()
+
+    expect(getRenderedSlotElement(container, 'plain')).toHaveAttribute(
+      'data-connected',
+      'true'
+    )
+  })
+
   it('passes validation error state to matching input slots', async () => {
     const inputs = [
       createMockNodeInputSlot({ name: 'model', type: 'MODEL' }),
@@ -307,12 +414,16 @@ describe('NodeSlots.vue', () => {
     graph.add(subgraphNode)
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    useCanvasStore().currentGraph = subgraph
+
     const nodeData = makeNodeData({
       id: toVueNodeId(interiorNode.id),
-      subgraphId: subgraph.id,
+      graphId: subgraph.id,
       inputs: interiorNode.inputs
     })
-    const { container } = renderSlots(nodeData)
+    const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
       createNodeExecutionId([toNodeId(65), toNodeId(70)]),
@@ -344,12 +455,16 @@ describe('NodeSlots.vue', () => {
     graph.add(outerSubgraphNode)
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    useCanvasStore().currentGraph = innerSubgraph
+
     const nodeData = makeNodeData({
       id: toVueNodeId(innerNode.id),
-      subgraphId: innerSubgraph.id,
+      graphId: innerSubgraph.id,
       inputs: innerNode.inputs
     })
-    const { container } = renderSlots(nodeData)
+    const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
       createNodeExecutionId([toNodeId(65), toNodeId(70), toNodeId(63)]),
@@ -423,6 +538,43 @@ describe('NodeSlots.vue', () => {
       { index: 3, name: 'ref_videos.vid0' },
       { index: 4, name: 'ref_videos.vid1' }
     ])
+  })
+
+  describe('unified mode', () => {
+    function renderUnified(
+      nodeData: NodeState,
+      pinia = createTestingPinia({ stubActions: false })
+    ) {
+      setActivePinia(pinia)
+      return render(NodeSlots, {
+        global: {
+          plugins: [i18n, pinia],
+          stubs: defaultSlotStubs
+        },
+        props: { nodeData, unified: true }
+      })
+    }
+
+    it('reacts to connect and disconnect without a reprojection event', async () => {
+      const { pinia, upstream, node } = createConnectedGraph()
+      const nodeData = makeNodeData({
+        id: toVueNodeId(node.id),
+        inputs: node.inputs
+      })
+      const { container } = renderUnified(nodeData, pinia)
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('[data-name="w"]')).toBeNull()
+
+      upstream.connect(0, node, 1)
+      await nextTick()
+      expect(getRenderedSlotIndex(container, 'w')).toBe(1)
+
+      node.disconnectInput(1)
+      await nextTick()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('[data-name="w"]')).toBeNull()
+    })
   })
 
   it('remounts InputSlot when index shifts due to autogrow insertion', async () => {

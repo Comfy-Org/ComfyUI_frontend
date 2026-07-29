@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
@@ -12,11 +13,18 @@ import {
   Reroute,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  SerialisableGraph,
+  SerialisableLLink,
+  SerialisableReroute
+} from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
+import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
@@ -38,6 +46,8 @@ import { nestedSubgraphProxyWidgets } from './__fixtures__/nestedSubgraphProxyWi
 import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 function swapNodes(nodes: LGraphNode[]) {
   const firstNode = nodes[0]
@@ -235,6 +245,25 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.reroutes.size).toBe(4)
   })
 
+  test('slot floating links are derived from link endpoints', ({
+    expect,
+    linkedNodesGraph
+  }) => {
+    const graph = new LGraph(linkedNodesGraph)
+    graph.createReroute([0, 0], graph.links.values().next().value!)
+    const [origin, target] = graph.nodes
+
+    origin.disconnectOutput(0)
+
+    expect(slotFloatingLinks(graph, 'input', target.id, 0)).toHaveLength(1)
+    expect(slotFloatingLinks(graph, 'output', origin.id, 0)).toHaveLength(0)
+
+    const [floatingLink] = slotFloatingLinks(graph, 'input', target.id, 0)
+    graph.removeFloatingLink(floatingLink)
+
+    expect(slotFloatingLinks(graph, 'input', target.id, 0)).toHaveLength(0)
+  })
+
   test('Floating reroutes should be removed when neither input nor output is connected', ({
     expect,
     floatingBranchGraph: graph
@@ -256,6 +285,91 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.links.size).toBe(0)
     expect(graph.floatingLinks.size).toBe(0)
     expect(graph.reroutes.size).toBe(0)
+  })
+})
+
+describe('Link serialization goldens (ADR-0008 topology-store migration)', () => {
+  const LINK_KEYS = [
+    'id',
+    'origin_id',
+    'origin_slot',
+    'target_id',
+    'target_slot',
+    'type'
+  ]
+
+  function expectContractKeyOrder(link: SerialisableLLink) {
+    const expectedKeys =
+      link.parentId === undefined ? LINK_KEYS : [...LINK_KEYS, 'parentId']
+    expect(Object.keys(link)).toEqual(expectedKeys)
+  }
+
+  test('plain links keep contract key order and round-trip byte-identically', ({
+    expect,
+    linkedNodesGraph
+  }) => {
+    const first = new LGraph(linkedNodesGraph).asSerialisable()
+    const second = new LGraph(first).asSerialisable()
+
+    expect(first.links?.length).toBeGreaterThan(0)
+    for (const link of first.links ?? []) expectContractKeyOrder(link)
+    expect(JSON.stringify(second.links)).toBe(JSON.stringify(first.links))
+  })
+
+  test('reroute-chain links keep contract key order and round-trip byte-identically', ({
+    expect,
+    reroutesComplexGraph
+  }) => {
+    const first = reroutesComplexGraph.asSerialisable()
+    const second = new LGraph(first).asSerialisable()
+
+    const chainedLinks = (first.links ?? []).filter(
+      (link) => link.parentId !== undefined
+    )
+    expect(chainedLinks.length).toBeGreaterThan(0)
+    for (const link of first.links ?? []) expectContractKeyOrder(link)
+    expect(JSON.stringify(second.links)).toBe(JSON.stringify(first.links))
+  })
+
+  test('floating links keep contract key order and round-trip byte-identically', ({
+    expect,
+    floatingLinkGraph
+  }) => {
+    const first = new LGraph(floatingLinkGraph).asSerialisable()
+    const second = new LGraph(first).asSerialisable()
+
+    expect(first.floatingLinks?.length).toBeGreaterThan(0)
+    for (const link of first.floatingLinks ?? []) expectContractKeyOrder(link)
+    expect(JSON.stringify(second.floatingLinks)).toBe(
+      JSON.stringify(first.floatingLinks)
+    )
+  })
+
+  const REROUTE_KEYS = ['id', 'parentId', 'pos', 'linkIds', 'floating'] as const
+
+  function expectRerouteContractKeyOrder(reroute: SerialisableReroute) {
+    const serialized: Record<string, unknown> = JSON.parse(
+      JSON.stringify(reroute)
+    )
+    const expectedKeys = REROUTE_KEYS.filter(
+      (key) => reroute[key] !== undefined
+    )
+    expect(Object.keys(serialized)).toEqual(expectedKeys)
+  }
+
+  test('reroutes keep contract key order and round-trip byte-identically', ({
+    expect,
+    reroutesComplexGraph
+  }) => {
+    const first = reroutesComplexGraph.asSerialisable()
+    const second = new LGraph(first).asSerialisable()
+
+    const reroutes = first.reroutes ?? []
+    expect(reroutes.length).toBeGreaterThan(0)
+    expect(reroutes.some((r) => r.floating !== undefined)).toBe(true)
+    expect(reroutes.some((r) => r.parentId === undefined)).toBe(true)
+    for (const reroute of reroutes) expectRerouteContractKeyOrder(reroute)
+    expect(JSON.stringify(second.reroutes)).toBe(JSON.stringify(first.reroutes))
   })
 })
 
@@ -307,8 +421,6 @@ describe('Graph Clearing and Callbacks', () => {
   })
 
   test('clear() removes graph-scoped preview and widget-value state', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const graph = new LGraph()
     const graphId = 'graph-clear-cleanup' as UUID
     graph.id = graphId
@@ -434,13 +546,58 @@ describe('node:before-removed event', () => {
       'onNodeRemoved(graph=null)'
     ])
   })
+
+  it('fires node:added once the node is attached and registered', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+
+    const added = vi.fn((e: NodeLifecycleEvent) => ({
+      graph: e.detail.node.graph,
+      byId: graph.getNodeById(e.detail.node.id)
+    }))
+    graph.events.addEventListener('node:added', added)
+
+    graph.add(node)
+
+    expect(added).toHaveBeenCalledOnce()
+    expect(added).toHaveReturnedWith({ graph, byId: node })
+  })
+
+  it('fires node:removed after the node is detached', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    const removed = vi.fn((e: NodeLifecycleEvent) => ({
+      graph: e.detail.node.graph,
+      byId: graph.getNodeById(node.id) ?? null
+    }))
+    graph.events.addEventListener('node:removed', removed)
+
+    graph.remove(node)
+
+    expect(removed).toHaveBeenCalledOnce()
+    expect(removed).toHaveReturnedWith({ graph: null, byId: null })
+  })
+
+  it('fires node:before-removed for every node cleared by clear()', () => {
+    const graph = new LGraph()
+    graph.add(new LGraphNode('a'))
+    graph.add(new LGraphNode('b'))
+
+    const fired = vi.fn()
+    graph.events.addEventListener('node:before-removed', fired)
+
+    graph.clear()
+
+    expect(
+      fired,
+      'clear() must dispatch node:before-removed so subscribers can drop refs before nodes detach'
+    ).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('Subgraph Definition Garbage Collection', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function createSubgraphWithNodes(rootGraph: LGraph, nodeCount: number) {
     const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
 
@@ -548,6 +705,80 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(subgraphNode)
 
     expect(rootGraph.subgraphs.has(subgraphId)).toBe(false)
+  })
+
+  function createNestedDefinitionFixture() {
+    const rootGraph = new LGraph()
+
+    const nestedDef = rootGraph.createSubgraph(createTestSubgraphData())
+    const producer = new LGraphNode('producer')
+    producer.addOutput('out', '*')
+    const consumer = new LGraphNode('consumer')
+    consumer.addInput('in', '*')
+    nestedDef.add(producer)
+    nestedDef.add(consumer)
+    const innerLink = producer.connect(0, consumer, 0)!
+    const innerReroute = nestedDef.createReroute([10, 10], innerLink)!
+
+    const parentDef = rootGraph.createSubgraph(createTestSubgraphData())
+    parentDef.add(
+      createTestSubgraphNode(nestedDef, { parentGraph: parentDef, id: 30 })
+    )
+
+    const parentInstance = createTestSubgraphNode(parentDef, { id: 10 })
+    rootGraph.add(parentInstance)
+
+    return {
+      rootGraph,
+      nestedDef,
+      parentDef,
+      producer,
+      consumer,
+      innerReroute,
+      parentInstance
+    }
+  }
+
+  it('keeps a nested definition intact when it is still instanced outside the removed parent', () => {
+    const {
+      rootGraph,
+      nestedDef,
+      producer,
+      consumer,
+      innerReroute,
+      parentInstance
+    } = createNestedDefinitionFixture()
+    const rootNestedInstance = createTestSubgraphNode(nestedDef, { id: 20 })
+    rootGraph.add(rootNestedInstance)
+    const removalSpies = [producer, consumer].map(
+      (node) => (node.onRemoved = vi.fn())
+    )
+
+    rootGraph.remove(parentInstance)
+
+    expect(
+      useLinkStore().isInputSlotConnected(rootGraph.id, consumer.id, 0)
+    ).toBe(true)
+    expect(
+      useRerouteStore().getReroute(rootGraph.id, innerReroute.id)?.id
+    ).toBe(innerReroute.id)
+    expect(rootGraph.subgraphs.has(nestedDef.id)).toBe(true)
+    for (const spy of removalSpies) expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('releases a nested definition instanced only inside the removed parent', () => {
+    const { rootGraph, nestedDef, consumer, innerReroute, parentInstance } =
+      createNestedDefinitionFixture()
+
+    rootGraph.remove(parentInstance)
+
+    expect(
+      useLinkStore().isInputSlotConnected(rootGraph.id, consumer.id, 0)
+    ).toBe(false)
+    expect(
+      useRerouteStore().getReroute(rootGraph.id, innerReroute.id)
+    ).toBeUndefined()
+    expect(rootGraph.subgraphs.has(nestedDef.id)).toBe(false)
   })
 })
 
@@ -830,43 +1061,67 @@ describe('_removeDuplicateLinks', () => {
     const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
     graph.state.lastLinkId = linkId
     const dup = new LLink(linkId, 'number', source.id, 0, target.id, 0)
-    graph._links.set(dup.id, dup)
-    source.outputs[0].links!.push(dup.id)
+    graph._addLink(dup)
     return dup
   }
 
   it('removes orphaned duplicate links from _links and output.links', () => {
     const { graph, source, target } = createConnectedGraph()
+    const store = useLinkStore()
 
     for (let i = 0; i < 3; i++) injectDuplicateLink(graph, source, target)
 
     expect(graph._links.size).toBe(4)
-    expect(source.outputs[0].links).toHaveLength(4)
+    // The derived output.links view never contained the contested duplicates.
+    expect(source.outputs[0].links).toHaveLength(1)
 
     graph._removeDuplicateLinks()
 
     expect(graph._links.size).toBe(1)
     expect(source.outputs[0].links).toHaveLength(1)
-    expect(target.inputs[0].link).toBe(source.outputs[0].links![0])
+    expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 0)?.id).toBe(
+      source.outputs[0].links![0]
+    )
   })
 
-  it('keeps the link referenced by input.link', () => {
+  it('keeps the link registered to the target input', () => {
     const { graph, source, target } = createConnectedGraph()
-    const keptLinkId = target.inputs[0].link!
+    const store = useLinkStore()
+    const graphId = graph.rootGraph.id
+    const keptLinkId = store.getInputSlotLink(graphId, target.id, 0)!.id
 
     const dupLink = injectDuplicateLink(graph, source, target)
 
     graph._removeDuplicateLinks()
 
     expect(graph._links.size).toBe(1)
-    expect(target.inputs[0].link).toBe(keptLinkId)
+    expect(store.getInputSlotLink(graphId, target.id, 0)?.id).toBe(keptLinkId)
     expect(graph._links.has(keptLinkId)).toBe(true)
     expect(graph._links.has(dupLink.id)).toBe(false)
   })
 
-  it('keeps the valid link when input.link is at a shifted slot index', () => {
+  it('drops purged duplicates from the link store and keeps the survivor indexed', () => {
     const { graph, source, target } = createConnectedGraph()
-    const validLinkId = target.inputs[0].link!
+    const store = useLinkStore()
+    const graphId = graph.rootGraph.id
+    const keptLinkId = store.getInputSlotLink(graphId, target.id, 0)!.id
+
+    const dup = injectDuplicateLink(graph, source, target)
+
+    graph._removeDuplicateLinks()
+
+    expect(dup._graphId).toBeUndefined()
+    expect(store.getInputSlotLink(graphId, target.id, 0)?.id).toBe(keptLinkId)
+  })
+
+  it('keeps the valid link when the input is at a shifted slot index', () => {
+    const { graph, source, target } = createConnectedGraph()
+    const store = useLinkStore()
+    const validLinkId = store.getInputSlotLink(
+      graph.rootGraph.id,
+      target.id,
+      0
+    )!.id
 
     // Simulate widget-to-input conversion shifting the slot: insert a new
     // input BEFORE the connected one, moving it from index 0 to index 1.
@@ -884,22 +1139,29 @@ describe('_removeDuplicateLinks', () => {
     expect(graph._links.size).toBe(1)
     expect(graph._links.has(validLinkId)).toBe(true)
     expect(graph._links.has(dupLink.id)).toBe(false)
-    expect(target.inputs[1].link).toBe(validLinkId)
+    expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 0)?.id).toBe(
+      validLinkId
+    )
   })
 
-  it('repairs input.link when it points to a removed duplicate', () => {
+  it('keeps the surviving link registered after dedup', () => {
     const { graph, source, target } = createConnectedGraph()
 
+    const store = useLinkStore()
     const dupLink = injectDuplicateLink(graph, source, target)
-    // Point input.link to the duplicate (simulating corrupted state)
-    target.inputs[0].link = dupLink.id
 
     graph._removeDuplicateLinks()
 
     expect(graph._links.size).toBe(1)
+    expect(graph._links.has(dupLink.id)).toBe(false)
     const survivingId = graph._links.keys().next().value!
-    expect(target.inputs[0].link).toBe(survivingId)
-    expect(graph._links.has(target.inputs[0].link!)).toBe(true)
+    const registeredLink = store.getInputSlotLink(
+      graph.rootGraph.id,
+      target.id,
+      0
+    )
+    expect(registeredLink?.id).toBe(survivingId)
+    expect(graph._links.has(registeredLink!.id)).toBe(true)
   })
 
   it('is a no-op when no duplicates exist', () => {
@@ -1003,7 +1265,7 @@ describe('Subgraph Unpacking', () => {
     return rootGraph.createSubgraph(createTestSubgraphData())
   }
 
-  function duplicateExistingLink(graph: LGraph, source: LGraphNode) {
+  function duplicateExistingLink(graph: LGraph) {
     const existingLink = graph._links.values().next().value!
     const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
     graph.state.lastLinkId = linkId
@@ -1016,7 +1278,6 @@ describe('Subgraph Unpacking', () => {
       existingLink.target_slot
     )
     graph._links.set(dup.id, dup)
-    source.outputs[0].links!.push(dup.id)
     return dup
   }
 
@@ -1032,7 +1293,7 @@ describe('Subgraph Unpacking', () => {
 
     sourceNode.connect(0, targetNode, 0)
 
-    for (let i = 0; i < 3; i++) duplicateExistingLink(subgraph, sourceNode)
+    for (let i = 0; i < 3; i++) duplicateExistingLink(subgraph)
     expect(subgraph._links.size).toBe(4)
 
     const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
@@ -1055,7 +1316,7 @@ describe('Subgraph Unpacking', () => {
     subgraph.add(targetNode)
 
     sourceNode.connect(0, targetNode, 0)
-    duplicateExistingLink(subgraph, sourceNode)
+    duplicateExistingLink(subgraph)
 
     const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
     rootGraph.add(subgraphNode)
@@ -1099,7 +1360,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
   const SHARED_NODE_IDS = [3, 8, 37]
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('dummy', DummyNode)
   })
 
@@ -1261,7 +1521,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 
 describe('Zero UUID handling in configure', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('rejects zeroUuid for root graphs and assigns a new ID', () => {

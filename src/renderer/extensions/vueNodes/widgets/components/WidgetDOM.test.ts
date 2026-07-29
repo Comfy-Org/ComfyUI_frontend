@@ -50,7 +50,7 @@ describe('WidgetDOM', () => {
     }
     return render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'
@@ -77,7 +77,7 @@ describe('WidgetDOM', () => {
 
     const { container } = render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'
@@ -106,7 +106,7 @@ describe('WidgetDOM', () => {
 
     const { container } = render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'

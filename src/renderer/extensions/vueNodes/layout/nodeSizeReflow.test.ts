@@ -2,7 +2,6 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
@@ -18,7 +17,13 @@ function setup() {
   graph.add(node)
 
   // Registers the node in layoutStore with its current size.
-  useGraphNodeManager(graph)
+  layoutStore.initializeFromLiteGraph([
+    {
+      id: node.id,
+      pos: [node.pos[0], node.pos[1]],
+      size: [node.size[0], node.size[1]]
+    }
+  ])
 
   const applySpy = vi.spyOn(layoutStore, 'applyOperation')
   const resizeCommits = (): ResizeNodeOperation[] =>

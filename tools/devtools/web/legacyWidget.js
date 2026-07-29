@@ -4,7 +4,7 @@ import { app } from '../../scripts/app.js'
 
 function legacyWidget(node, inputName, inputData) {
   if (!node.widgets) node.widgets = []
-  node.widgets.push({
+  const widget = {
     draw: function (ctx, node, widget_width, y, H) {
       ctx.save()
       ctx.fillStyle = '#7F7'
@@ -24,7 +24,9 @@ function legacyWidget(node, inputName, inputData) {
     type: 'DEVTOOLS.LEGACYWIDGET',
     value: 0,
     y: 0
-  })
+  }
+  node.widgets.push(widget)
+  return { widget }
 }
 
 app.registerExtension({

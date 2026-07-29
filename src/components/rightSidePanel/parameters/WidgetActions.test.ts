@@ -8,8 +8,12 @@ import { h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 import WidgetActions from './WidgetActions.vue'
 
 const {
@@ -25,9 +29,7 @@ const {
 }))
 
 vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
-  demoteWidget: vi.fn(),
-  promoteWidget: vi.fn(),
-  isLinkedPromotion: vi.fn(() => false)
+  promoteWidget: vi.fn()
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
@@ -76,7 +78,6 @@ const i18n = createI18n({
         enterNewName: 'Enter new name'
       },
       rightSidePanel: {
-        hideInput: 'Hide input',
         showInput: 'Show input',
         addFavorite: 'Favorite',
         removeFavorite: 'Unfavorite',
@@ -90,11 +91,11 @@ describe('WidgetActions', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.resetAllMocks()
+    mockIsFavorited.mockReturnValue(false)
     mockGetInputSpecForWidget.mockReturnValue({
       type: 'INT',
       default: 42
     })
-    mockIsFavorited.mockReturnValue(false)
   })
 
   function createMockWidget(
@@ -173,6 +174,21 @@ describe('WidgetActions', () => {
     renderWidgetActions(widget, node)
 
     expect(screen.getByRole('button', { name: /Reset/ })).toBeDisabled()
+  })
+
+  it('keeps reset enabled when the store value is null and differs from the default', () => {
+    const node = createMockNode()
+    const id = widgetId('graph-test', node.id, 'test_widget')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: null,
+      options: {}
+    })
+    const widget = { ...createMockWidget(42), widgetId: id } as IBaseWidget
+
+    renderWidgetActions(widget, node)
+
+    expect(screen.getByRole('button', { name: /Reset/ })).toBeEnabled()
   })
 
   it('does not show reset button when no default value exists', () => {
@@ -261,5 +277,58 @@ describe('WidgetActions', () => {
       is_favorited: false,
       source: 'right_side_panel'
     })
+  })
+
+  it('promotes the widget into the host when "Show input" is clicked', async () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    const { user } = renderWidgetActions(widget, node, { host })
+
+    await user.click(screen.getByRole('button', { name: /Show input/ }))
+
+    expect(promoteWidget).toHaveBeenCalledWith(node, widget, [host])
+  })
+
+  it('does not offer "Show input" without a host', () => {
+    renderWidgetActions(createMockWidget(), createMockNode())
+
+    expect(
+      screen.queryByRole('button', { name: /Show input/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not offer "Show input" when the host input is already linked', () => {
+    const widget = createMockWidget()
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'TestNode',
+      rootGraph: { id: 'graph-test' },
+      isSubgraphNode: () => true,
+      getSlotFromWidget: (candidate: IBaseWidget) =>
+        candidate.name === 'test_widget'
+          ? { widgetId: 'graph-test:1:test_widget' }
+          : undefined
+    })
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    renderWidgetActions(widget, node, { host })
+
+    expect(
+      screen.queryByRole('button', { name: /Show input/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it("toggles the favorite for the row's node", async () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    const { user } = renderWidgetActions(widget, node, { host })
+
+    await user.click(screen.getByRole('button', { name: /Favorite/ }))
+
+    expect(mockToggleFavorite).toHaveBeenCalledWith(node, 'test_widget')
   })
 })

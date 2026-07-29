@@ -10,14 +10,37 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
+import {
+  outputHasLinks,
+  outputLinkIds
+} from '@/lib/litegraph/src/node/slotLinks'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
-  links: LinkId[] | null
   _data?: unknown
   slot_index?: number
+
+  /**
+   * @deprecated Reads return a fresh store-derived array; writes fire telemetry
+   * and are ignored, since the store cannot be mutated through the mirror.
+   * First-party code uses the slotLinks helpers.
+   */
+  get links(): readonly LinkId[] | null {
+    warnDeprecated(
+      'output.links is deprecated. Read connectivity via node.isOutputConnected(slot) / node.getOutputNodes(slot); enumerate links via outputLinks(graph, node.id, slot); mutate via node.connect() / node.disconnectOutput().'
+    )
+    const ids = linkIdsOf(this)
+    return ids.length ? Object.freeze(ids) : null
+  }
+
+  set links(_value: readonly LinkId[] | null) {
+    warnDeprecated(
+      'Assignment to output.links is deprecated and has no effect; connectivity is derived from the link store. Mutate via node.connect() / node.disconnectOutput().'
+    )
+  }
 
   get isWidgetInputSlot(): false {
     return false
@@ -34,8 +57,10 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     slot: OptionalProps<INodeOutputSlot, 'boundingRect'>,
     node: LGraphNode
   ) {
-    super(slot, node)
-    this.links = slot.links
+    // Serialized outputs carry a legacy links mirror; strip it so the base
+    // ctor's Object.assign does not trip the deprecated setter above.
+    const { links: _legacyLinks, ...rest } = slot
+    super(rest, node)
     this._data = slot._data
     this.slot_index = slot.slot_index
   }
@@ -55,7 +80,9 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   }
 
   override get isConnected(): boolean {
-    return this.links != null && this.links.length > 0
+    const { graph } = this._node
+    if (!graph) return false
+    return outputHasLinks(graph, this._node.id, indexOf(this))
   }
 
   override draw(
@@ -77,10 +104,25 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   }
 
   override toJSON(): INodeOutputSlot {
+    const ids = linkIdsOf(this)
     return {
       ...super.toJSON(),
-      links: this.links,
+      links: ids.length ? ids : null,
       slot_index: this.slot_index
     }
   }
+}
+
+/**
+ * Module-local, not accessors: a getter-only property on the prototype would
+ * collide with the base ctor's `Object.assign` for any serialized slot that
+ * happens to carry the same key.
+ */
+function indexOf(slot: NodeOutputSlot): number {
+  return slot.node.outputs.indexOf(slot)
+}
+
+function linkIdsOf(slot: NodeOutputSlot): LinkId[] {
+  const { graph } = slot.node
+  return graph ? outputLinkIds(graph, slot.node.id, indexOf(slot)) : []
 }

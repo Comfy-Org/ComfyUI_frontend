@@ -12,8 +12,6 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
@@ -46,12 +44,12 @@ const {
   isDraggable = false,
   hiddenFavoriteIndicator = false,
   showNodeName = false,
-  parents = [],
+  host,
   enableEmptyState = false,
   tooltip
 } = defineProps<{
   label?: string
-  parents?: SubgraphNode[]
+  host?: SubgraphNode
   node?: LGraphNode
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
   showLocateButton?: boolean
@@ -146,31 +144,6 @@ const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
 
-function isWidgetShownOnParents(
-  widgetNode: LGraphNode,
-  widget: IBaseWidget
-): boolean {
-  const source = widgetPromotedSource(widgetNode, widget)
-  return parents.some((parent) => {
-    if (source) {
-      const widgetNodeId = widgetNode.id
-      const interiorNodeId =
-        String(widgetNode.id) === String(parent.id)
-          ? source.nodeId
-          : widgetNodeId
-
-      return isWidgetPromotedOnSubgraphNode(parent, {
-        sourceNodeId: interiorNodeId,
-        sourceWidgetName: source.widgetName
-      })
-    }
-    return isWidgetPromotedOnSubgraphNode(parent, {
-      sourceNodeId: widgetNode.id,
-      sourceWidgetName: widget.name
-    })
-  })
-}
-
 const isEmpty = computed(() => widgets.value.length === 0)
 
 const displayLabel = computed(
@@ -262,7 +235,10 @@ function clearWidgetErrors(
       source.sourceWidgetName,
       source.sourceWidgetName,
       value,
-      options
+      {
+        min: source.sourceWidget.options?.min,
+        max: source.sourceWidget.options?.max
+      }
     )
   }
 
@@ -407,13 +383,12 @@ defineExpose({
         <WidgetItem
           v-for="{ widget, node } in widgets"
           :key="getStableWidgetRenderKey(widget)"
-          :widget="widget"
-          :node="node"
-          :is-draggable="isDraggable"
-          :hidden-favorite-indicator="hiddenFavoriteIndicator"
-          :show-node-name="showNodeName"
-          :parents="parents"
-          :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
+          :widget
+          :node
+          :is-draggable
+          :hidden-favorite-indicator
+          :show-node-name
+          :host
           @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
           @reset-to-default="handleWidgetReset(node, widget, $event)"
         />

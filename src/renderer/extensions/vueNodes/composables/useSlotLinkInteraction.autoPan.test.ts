@@ -1,5 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 
@@ -63,10 +65,11 @@ vi.mock('@/scripts/app', () => ({
     canvas: {
       ds: mockDs,
       graph: {
+        rootGraph: { id: 'autopan-graph' },
         getNodeById: (id: string) => ({
           id,
           inputs: [],
-          outputs: [{ name: 'out', type: '*', links: [], _floatingLinks: null }]
+          outputs: [{ name: 'out', type: '*', links: [] }]
         }),
         getLink: () => null,
         getReroute: () => null
@@ -190,7 +193,8 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 vi.mock('@/lib/litegraph/src/LLink', () => ({
-  LLink: { getReroutes: () => [] }
+  LLink: { getReroutes: () => [] },
+  slotFloatingLinks: () => []
 }))
 
 vi.mock('@/lib/litegraph/src/types/globalEnums', () => ({
@@ -238,6 +242,7 @@ function startDrag() {
 
 describe('useSlotLinkInteraction auto-pan', () => {
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     capturedOnPan.current = null
     capturedAutoPan.current = null
     for (const k of Object.keys(capturedHandlers)) {

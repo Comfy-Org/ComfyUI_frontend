@@ -32,6 +32,7 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
@@ -54,9 +55,18 @@ workflowSvg.src =
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
-  declare inputs: (INodeInputSlot & Partial<ISubgraphInput>)[]
+  override get inputs(): (INodeInputSlot & Partial<ISubgraphInput>)[] {
+    return super.inputs
+  }
 
-  override readonly type: SubgraphId
+  override set inputs(value: (INodeInputSlot & Partial<ISubgraphInput>)[]) {
+    super.inputs = value
+  }
+
+  override get type(): SubgraphId {
+    return super.type as SubgraphId
+  }
+
   override readonly isVirtualNode = true as const
   override graph: GraphOrSubgraph | null
 
@@ -225,7 +235,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       { signal }
     )
 
-    this.type = subgraph.id
     this.configure(instanceData)
 
     this.addTitleButton({
@@ -282,8 +291,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         return store.getWidget(id)?.options ?? {}
       },
       get value() {
-        const value = store.getWidget(id)?.value
-        return isWidgetValue(value) ? value : undefined
+        return store.getWidget(id)?.value
       },
       set value(next) {
         store.setValue(id, next)
@@ -486,9 +494,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     let valueIndex = 0
     for (const input of this.inputs) {
       if (!input.widgetId) continue
-      const value =
-        quarantineValuesByInputName.get(input.name) ??
-        widgetValues?.[valueIndex]
+      const value = quarantineValuesByInputName.has(input.name)
+        ? quarantineValuesByInputName.get(input.name)
+        : widgetValues?.[valueIndex]
       if (value !== undefined) {
         useWidgetValueStore().setValue(input.widgetId, value)
       }
@@ -503,9 +511,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
         .toReversed()
         .flatMap(({ originalEntry: [sourceNodeId, name], hostValue }) =>
-          sourceNodeId === '-1' &&
-          hostValue !== undefined &&
-          isWidgetValue(hostValue)
+          sourceNodeId === '-1' && hostValue !== undefined
             ? [[name, hostValue] as const]
             : []
         )
@@ -588,13 +594,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         continue
       }
 
-      const { inputNode } = link.resolve(this.subgraph)
+      const { inputNode, input: targetInput } = link.resolve(this.subgraph)
       if (!inputNode) {
         console.warn('Failed to resolve inputNode', link, this)
         continue
       }
 
-      const targetInput = inputNode.inputs.find((inp) => inp.link === linkId)
       if (!targetInput) {
         console.warn('Failed to find corresponding input', link, inputNode)
         continue
@@ -649,20 +654,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
+    const store = useWidgetValueStore()
     input.widgetId = id
-    useWidgetValueStore().registerWidget(id, {
-      type: interiorWidget.type,
-      value: interiorWidget.value,
-      options: cloneDeep(interiorWidget.options ?? {}),
-      label: input.label ?? subgraphInput.name,
-      serialize: interiorWidget.serialize,
-      disabled: interiorWidget.disabled,
-      isDOMWidget:
-        'isDOMWidget' in interiorWidget &&
-        typeof interiorWidget.isDOMWidget === 'boolean'
-          ? interiorWidget.isDOMWidget
-          : undefined
-    })
+    store.registerWidget(
+      id,
+      {
+        type: interiorWidget.type,
+        value: interiorWidget.value,
+        options: cloneDeep(interiorWidget.options ?? {}),
+        label: input.label ?? subgraphInput.name,
+        serialize: interiorWidget.serialize,
+        disabled: interiorWidget.disabled
+      },
+      deriveWidgetRenderState(interiorWidget)
+    )
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)

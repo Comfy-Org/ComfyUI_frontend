@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
+import { computed, nextTick, watch } from 'vue'
 
 import type {
   INodeInputSlot,
@@ -8,6 +9,9 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphNode,
   LiteGraph,
@@ -17,6 +21,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
+import { NodeSlotType, TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
@@ -71,6 +76,34 @@ describe('LGraphNode', () => {
     Object.assign(LiteGraph, origLiteGraph)
   })
 
+  test('preserves null property values', () => {
+    const widget = node.addWidget('number', 'value', 1, 'value')
+    const onPropertyChanged = vi.fn(() => true)
+    node.onPropertyChanged = onPropertyChanged
+
+    node.setProperty('value', null)
+
+    expect(node.properties.value).toBeNull()
+    expect(widget.value).toBeNull()
+    expect(onPropertyChanged).toHaveBeenCalledWith('value', null, undefined)
+    expect(node.serialize().properties?.value).toBeNull()
+  })
+
+  test('syncs null widget values to the bound property', () => {
+    const widget = node.addWidget('text', 'value', 'initial', 'value')
+    if (!(widget instanceof BaseWidget)) throw new Error('expected BaseWidget')
+    const nullableWidget: BaseWidget = widget
+    node.setProperty('value', 'initial')
+    const canvas = {
+      graph_mouse: [0, 0]
+    } as Partial<LGraphCanvas> as LGraphCanvas
+
+    nullableWidget.setValue(null, { e: {} as CanvasPointerEvent, node, canvas })
+
+    expect(node.properties.value).toBeNull()
+    expect(widget.value).toBeNull()
+  })
+
   test('should serialize position/size correctly', () => {
     const node = new LGraphNode('TestNode')
     node.pos = [10, 20]
@@ -95,7 +128,7 @@ describe('LGraphNode', () => {
       outputs: node.outputs?.map((o) => ({
         name: o.name,
         type: o.type,
-        links: o.links,
+        links: o.links ? [...o.links] : o.links,
         slot_index: o.slot_index
       }))
     }
@@ -134,7 +167,7 @@ describe('LGraphNode', () => {
     expect(node.outputs.length).toEqual(1)
     expect(node.outputs[0].name).toEqual('TestOutput')
     expect(node.outputs[0].type).toEqual('number')
-    expect(node.outputs[0].links).toEqual([])
+    expect(node.outputs[0].links).toBeNull()
     expect(node.outputs[0]).instanceOf(NodeOutputSlot)
 
     // Should not override existing outputs
@@ -184,7 +217,7 @@ describe('LGraphNode', () => {
       const disconnected = node2.disconnectInput(0)
       expect(disconnected).toBe(true)
       expect(node2.inputs[0].link).toBeNull()
-      expect(node1.outputs[0].links?.length).toBe(0)
+      expect(node1.outputs[0].links).toBeNull()
       expect(graph._links.has(link!.id)).toBe(false)
 
       // Test disconnecting by slot name
@@ -260,7 +293,7 @@ describe('LGraphNode', () => {
       )
       expect(disconnectedByName).toBe(true)
       expect(targetNode1.inputs[0].link).toBeNull()
-      expect(sourceNode.outputs[1].links?.length).toBe(0)
+      expect(sourceNode.outputs[1].links).toBeNull()
 
       // Test disconnecting all connections from an output
       const link4 = sourceNode.connect(0, targetNode1, 0)
@@ -281,6 +314,63 @@ describe('LGraphNode', () => {
       // Test disconnecting already disconnected output
       const alreadyDisconnected = sourceNode.disconnectOutput(0)
       expect(alreadyDisconnected).toBe(false)
+    })
+
+    function createConnectedPair() {
+      const sourceNode = new LGraphNode('SourceNode')
+      const targetNode = new LGraphNode('TargetNode')
+      sourceNode.configure(
+        getMockISerialisedNode({
+          id: 1,
+          outputs: [{ name: 'Output1', type: 'number', links: [] }]
+        })
+      )
+      targetNode.configure(
+        getMockISerialisedNode({
+          id: 2,
+          inputs: [{ name: 'Input1', type: 'number', link: null }]
+        })
+      )
+      const graph = new LGraph()
+      graph.add(sourceNode)
+      graph.add(targetNode)
+      expect(sourceNode.connect(0, targetNode, 0)).not.toBeNull()
+      return { graph, sourceNode, targetNode }
+    }
+
+    function expectDisconnectedStateOnConnectionChange(targetNode: LGraphNode) {
+      expect(targetNode.onConnectionsChange).toBeUndefined()
+
+      const onConnectionsChange = vi.fn<
+        NonNullable<LGraphNode['onConnectionsChange']>
+      >(function (type, slot, isConnected) {
+        expect(type).toBe(NodeSlotType.INPUT)
+        expect(isConnected).toBe(false)
+        expect(this.isInputConnected(slot)).toBe(false)
+        expect(this.getInputLink(slot)).toBeNull()
+      })
+      targetNode.onConnectionsChange = onConnectionsChange
+      return onConnectionsChange
+    }
+
+    test('target sees disconnected state inside onConnectionsChange when all output links are removed', () => {
+      const { sourceNode, targetNode } = createConnectedPair()
+      const onConnectionsChange =
+        expectDisconnectedStateOnConnectionChange(targetNode)
+
+      expect(sourceNode.disconnectOutput(0)).toBe(true)
+
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
+    })
+
+    test('target sees disconnected state inside onConnectionsChange when the source node is removed', () => {
+      const { graph, sourceNode, targetNode } = createConnectedPair()
+      const onConnectionsChange =
+        expectDisconnectedStateOnConnectionChange(targetNode)
+
+      graph.remove(sourceNode)
+
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
     })
   })
 
@@ -697,5 +787,113 @@ describe('LGraphNode', () => {
       expect(out[2]).toBe(200)
       expect(out[3]).toBe(120 + LiteGraph.NODE_TITLE_HEIGHT)
     })
+  })
+})
+
+describe('_setConcreteSlots', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('per-frame calls do not invalidate slot-array subscribers', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('a', 'INT')
+    node.addInput('b', 'INT')
+    graph.add(node)
+
+    const names = computed(() => node.inputs.map((i) => i.name).join(','))
+    const onChange = vi.fn()
+    watch(names, onChange)
+    expect(names.value).toBe('a,b')
+
+    // The canvas draw loop calls this once per visible node per frame. It
+    // re-assigns each slot in place, so it must not look like a change.
+    for (let frame = 0; frame < 100; frame++) node._setConcreteSlots()
+    await nextTick()
+
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  test('a real slot change still notifies', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('a', 'INT')
+    graph.add(node)
+
+    const names = computed(() => node.inputs.map((i) => i.name).join(','))
+    const onChange = vi.fn()
+    watch(names, onChange)
+    expect(names.value).toBe('a')
+
+    node.addInput('b', 'INT')
+    await nextTick()
+
+    expect(onChange).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('widgets array reactivity', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('notifies readers when a widget is removed in place', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'a', 1, () => undefined, {})
+    node.addWidget('number', 'b', 2, () => undefined, {})
+    node.addWidget('number', 'c', 3, () => undefined, {})
+    graph.add(node)
+
+    const names = computed(() => node.widgets?.map((w) => w.name).join(','))
+    const onChange = vi.fn()
+    watch(names, onChange)
+    expect(names.value).toBe('a,b,c')
+
+    // Extensions mutate this array directly, with no store call to notice.
+    node.widgets!.pop()
+    await nextTick()
+    expect(names.value).toBe('a,b')
+
+    node.widgets!.splice(0, 1)
+    await nextTick()
+    expect(names.value).toBe('b')
+
+    node.widgets!.length = 0
+    await nextTick()
+    expect(names.value).toBe('')
+
+    expect(onChange).toHaveBeenCalledTimes(3)
+  })
+
+  test('leaves widgets undefined for a node with none', () => {
+    const node = new LGraphNode('test')
+
+    expect(node.widgets).toBeUndefined()
+    expect(node.serialize().widgets_values).toBeUndefined()
+  })
+})
+
+describe('titleMode in node state', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('carries a NO_TITLE class into the store-held shell state', () => {
+    class TitlelessNode extends LGraphNode {
+      static title_mode = TitleMode.NO_TITLE
+    }
+    const node = new TitlelessNode('titleless')
+
+    // The renderer decides whether to draw a header from this; reroutes and
+    // other NO_TITLE classes draw a title bar without it.
+    expect(node._state.titleMode).toBe(TitleMode.NO_TITLE)
+  })
+
+  test('defaults to a normal title', () => {
+    expect(new LGraphNode('plain')._state.titleMode).toBe(
+      TitleMode.NORMAL_TITLE
+    )
   })
 })

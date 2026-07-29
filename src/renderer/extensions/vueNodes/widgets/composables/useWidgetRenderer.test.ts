@@ -8,7 +8,6 @@ import {
   shouldRenderAsVue,
   FOR_TESTING
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 
 const {
   WidgetButton,
@@ -134,7 +133,7 @@ describe('widgetRegistry', () => {
     })
 
     it('should respect options while checking type', () => {
-      const widget: Partial<SafeWidgetData> = {
+      const widget: { type: string; options: { canvasOnly: boolean } } = {
         type: 'text',
         options: { canvasOnly: false }
       }

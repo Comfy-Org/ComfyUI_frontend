@@ -2,7 +2,6 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { i18n, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
@@ -19,9 +18,8 @@ const positiveCoordsTooltipKey =
 
 const outputTooltipKey = 'nodeDefs.SAM3_Detect.outputs.0.tooltip'
 
-const positiveCoordsWidget: SafeWidgetData = {
-  name: 'positive_coords',
-  type: 'STRING'
+const positiveCoordsWidget: { name: string; tooltip?: string } = {
+  name: 'positive_coords'
 }
 
 function mergeOutputTooltipMessage(tooltip: string | null) {

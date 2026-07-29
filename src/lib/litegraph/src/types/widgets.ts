@@ -2,6 +2,7 @@ import type { Bounds } from '@/renderer/core/layout/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
 
 import type {
@@ -393,14 +394,14 @@ export interface IRangeWidget extends IBaseWidget<
  * Values not in this list will not result in litegraph errors, however they will be treated the same as "custom".
  */
 export type TWidgetType = IWidget['type']
-export type TWidgetValue = IWidget['value']
+export type TWidgetValue = WidgetValue
 
 export function isWidgetValue(value: unknown): value is TWidgetValue {
-  if (value === undefined) return true
+  if (value == null) return true
   if (typeof value === 'string') return true
   if (typeof value === 'number') return true
   if (typeof value === 'boolean') return true
-  return value !== null && typeof value === 'object'
+  return typeof value === 'object'
 }
 
 /**
@@ -411,7 +412,7 @@ export function isWidgetValue(value: unknown): value is TWidgetValue {
  * @see IWidget
  */
 export interface IBaseWidget<
-  TValue = boolean | number | string | object | undefined,
+  TValue = WidgetValue,
   TType extends string = string,
   TOptions extends IWidgetOptions = IWidgetOptions
 > {
@@ -483,7 +484,7 @@ export interface IBaseWidget<
 
   // TODO: Confirm this format
   callback?(
-    value: unknown,
+    value: WidgetValue,
     canvas?: LGraphCanvas,
     node?: LGraphNode,
     pos?: Point,

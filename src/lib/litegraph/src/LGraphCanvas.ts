@@ -26,7 +26,14 @@ import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
 import { parseNodeId, serializeNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
-import { LLink } from './LLink'
+import { LLink, slotFloatingLinks } from './LLink'
+import {
+  inputHasLink,
+  inputLink,
+  inputLinkId,
+  outputLinkIds,
+  outputLinks
+} from './node/slotLinks'
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -62,7 +69,6 @@ import type {
   INodeSlot,
   INodeSlotContextItem,
   ISlotType,
-  LinkNetwork,
   LinkSegment,
   NewNodePosition,
   NullableProperties,
@@ -90,7 +96,11 @@ import {
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
-import { topologicalSortSubgraphs } from './subgraph/subgraphDeduplication'
+import {
+  collectReservedRerouteIds,
+  deduplicateSubgraphRerouteIds,
+  topologicalSortSubgraphs
+} from './subgraph/subgraphDeduplication'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphNode } from './subgraph/SubgraphNode'
@@ -2794,28 +2804,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else if (!node.flags.collapsed) {
       const { inputs, outputs } = node
 
-      function hasRelevantOutputLinks(
-        output: INodeOutputSlot,
-        network: LinkNetwork
-      ): boolean {
-        const outputLinks = [
-          ...(output.links ?? []),
-          ...[...(output._floatingLinks ?? new Set())]
-        ]
-        return outputLinks.some(
-          (linkId) =>
-            typeof linkId === 'number' && network.getLink(linkId) !== undefined
-        )
-      }
-
       // Outputs
       if (outputs) {
         for (const [i, output] of outputs.entries()) {
           const link_pos = node.getOutputPos(i)
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             // Drag multiple output links
-            if (e.shiftKey && hasRelevantOutputLinks(output, graph)) {
-              linkConnector.moveOutputLink(graph, output)
+            if (e.shiftKey && outputLinks(graph, node.id, i).length > 0) {
+              linkConnector.moveOutputLink(graph, node, output)
               this._linkConnectorDrop()
               return
             }
@@ -2861,12 +2857,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               ctrlOrMeta &&
               e.altKey &&
               !e.shiftKey
-            if (input.link !== null || input._floatingLinks?.size) {
+            if (
+              inputHasLink(graph, node.id, i) ||
+              slotFloatingLinks(graph, 'input', node.id, i).length > 0
+            ) {
               // Existing link
               if (shouldBreakLink || LiteGraph.click_do_break_link_to) {
                 node.disconnectInput(i, true)
               } else if (e.shiftKey || this.allow_reconnect_links) {
-                linkConnector.moveInputLink(graph, input)
+                linkConnector.moveInputLink(graph, node, input)
               }
             }
 
@@ -4108,8 +4107,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           subgraphs.add(node.subgraph)
         }
       }
-      const cloned = subgraph.clone(true).asSerialisable()
-      serialisable.subgraphs.push(cloned)
+      serialisable.subgraphs.push(structuredClone(subgraph.asSerialisable()))
     }
     return serialisable
   }
@@ -4228,6 +4226,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (nodeInfo.type in subgraphIdMap)
         nodeInfo.type = subgraphIdMap[nodeInfo.type]
     remapClipboardSubgraphNodeIds(parsed, graph.rootGraph)
+    deduplicateSubgraphRerouteIds(
+      parsed.subgraphs,
+      collectReservedRerouteIds(graph.rootGraph),
+      graph.rootGraph.state
+    )
 
     // Subgraphs
     for (const info of parsed.subgraphs) {
@@ -4326,14 +4329,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    // Remap linkIds
-    for (const reroute of reroutes.values()) {
-      const ids = [...reroute.linkIds].map((x) => links.get(x)?.id ?? x)
-      reroute.update(reroute.parentId, undefined, ids, reroute.floating)
-
-      // Remove any invalid items
-      if (!reroute.validateLinks(graph.links, graph.floatingLinks)) {
+    // Remove reroutes that no pasted link passes through
+    for (const [sourceId, reroute] of reroutes) {
+      if (reroute.totalLinks === 0) {
         graph.removeReroute(reroute.id)
+        reroutes.delete(sourceId)
+
+        const index = created.indexOf(reroute)
+        if (index !== -1) created.splice(index, 1)
       }
     }
 
@@ -4640,15 +4643,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.onNodeSelected?.(item)
 
     // Highlight links
-    if (item.inputs) {
-      for (const input of item.inputs) {
-        if (input.link == null) continue
-        this.highlighted_links[input.link] = true
+    const { graph: highlightGraph } = this
+    if (item.inputs && highlightGraph) {
+      for (const [i] of item.inputs.entries()) {
+        const linkId = inputLinkId(highlightGraph, item.id, i)
+        if (linkId == null) continue
+        this.highlighted_links[linkId] = true
       }
     }
-    if (item.outputs) {
-      for (const id of item.outputs.flatMap((x) => x.links)) {
-        if (id == null) continue
+    if (item.outputs && highlightGraph) {
+      for (const id of item.outputs.flatMap((_, i) =>
+        outputLinkIds(highlightGraph, item.id, i)
+      )) {
         this.highlighted_links[id] = true
       }
     }
@@ -4696,19 +4702,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Clear link highlight
     if (item.inputs) {
-      for (const input of item.inputs) {
-        if (input.link == null) continue
+      for (const [i] of item.inputs.entries()) {
+        const linkId = inputLinkId(graph, item.id, i)
+        if (linkId == null) continue
 
-        const node = LLink.getOriginNode(graph, input.link)
+        const node = LLink.getOriginNode(graph, linkId)
         if (node && this.selectedItems.has(node)) continue
 
-        delete this.highlighted_links[input.link]
+        delete this.highlighted_links[linkId]
       }
     }
     if (item.outputs) {
-      for (const id of item.outputs.flatMap((x) => x.links)) {
-        if (id == null) continue
-
+      for (const id of item.outputs.flatMap((_, i) =>
+        outputLinkIds(graph, item.id, i)
+      )) {
         const node = LLink.getTargetNode(graph, id)
         if (node && this.selectedItems.has(node)) continue
 
@@ -4834,15 +4841,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (oldNode) this.selected_nodes[oldNode.id] = oldNode
 
       // Highlight links
-      if (keepSelected.inputs) {
-        for (const input of keepSelected.inputs) {
-          if (input.link == null) continue
-          this.highlighted_links[input.link] = true
+      const { graph: rehighlightGraph } = this
+      if (keepSelected.inputs && rehighlightGraph) {
+        for (const [i] of keepSelected.inputs.entries()) {
+          const linkId = inputLinkId(rehighlightGraph, keepSelected.id, i)
+          if (linkId == null) continue
+          this.highlighted_links[linkId] = true
         }
       }
-      if (keepSelected.outputs) {
-        for (const id of keepSelected.outputs.flatMap((x) => x.links)) {
-          if (id == null) continue
+      if (keepSelected.outputs && rehighlightGraph) {
+        for (const id of keepSelected.outputs.flatMap((_, i) =>
+          outputLinkIds(rehighlightGraph, keepSelected.id, i)
+        )) {
           this.highlighted_links[id] = true
         }
       }
@@ -5693,7 +5703,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
 
     // clip if required (mask)
-    const shape = node._shape || RenderShape.BOX
+    const shape = node.shape || RenderShape.BOX
     const size = temp_vec2
     size[0] = node.renderingSize[0]
     size[1] = node.renderingSize[1]
@@ -6075,20 +6085,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     for (const node of nodes) {
-      // for every input (we render just inputs because it is easier as every slot can only have one input)
-      const { inputs } = node
-      if (!inputs?.length) continue
-
-      for (const [i, input] of inputs.entries()) {
-        if (!input || input.link == null) continue
-
-        const link_id = input.link
-        const link = graph._links.get(link_id)
+      for (const [inputSlot, input] of node.inputs.entries()) {
+        const link = inputLink(graph, node.id, inputSlot)
         if (!link) continue
 
         const endPos: Point = LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
-          ? getSlotPosition(node, i, true)
-          : node.getInputPos(i)
+          ? getSlotPosition(node, inputSlot, true)
+          : node.getInputPos(inputSlot)
 
         // find link info
         const start_node = graph.getNodeById(link.origin_id)
@@ -8723,7 +8726,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (node.getSlotMenuOptions) {
           menu_info = node.getSlotMenuOptions(slot)
         } else {
-          if (slot.output?.links?.length || slot.input?.link != null) {
+          const slotConnected = slot.output
+            ? node.isOutputConnected(slot.slot)
+            : node.isInputConnected(slot.slot)
+          if (slotConnected) {
             menu_info.push({ content: 'Disconnect Links', slot })
           }
 
@@ -8733,7 +8739,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               'Both in put and output slots were null when processing context menu.'
             )
 
-          if (!_slot.nameLocked && !('link' in _slot && _slot.widget)) {
+          if (!_slot.nameLocked && !slot.input?.widget) {
             menu_info.push({ content: 'Rename Slot', slot })
           }
 

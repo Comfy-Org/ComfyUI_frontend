@@ -1,11 +1,19 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
 
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import { useLinkStore } from '@/stores/linkStore'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 import {
   createMockCanvas2DContext,
   createMockMinimapCanvas
 } from '@/utils/__tests__/litegraphTestUtils'
+import type { UUID } from '@/utils/uuid'
 
 interface MockNode {
   id: string
@@ -18,16 +26,27 @@ interface MockNode {
 
 interface MockGraph {
   _nodes: MockNode[]
+  events: CustomEventTarget<LGraphEventMap>
+  rootGraph: { id: UUID }
   links: Record<string, { id: string; target_id: string }>
   getNodeById: Mock
   setDirtyCanvas: Mock
   onNodeAdded: ((node: MockNode) => void) | null
   onNodeRemoved: ((node: MockNode) => void) | null
   onConnectionChange: ((node: MockNode) => void) | null
-  events: {
-    addEventListener: Mock
-    removeEventListener: Mock
-  }
+}
+
+const GRAPH_ID: UUID = 'minimap-graph'
+
+function registerMockLink(id: number, targetNodeId: string) {
+  useLinkStore().registerLink(GRAPH_ID, {
+    id: toLinkId(id),
+    originNodeId: toNodeId('node1'),
+    originSlot: 0,
+    targetNodeId: toNodeId(targetNodeId),
+    targetSlot: 0,
+    type: '*'
+  })
 }
 
 interface MockCanvas {
@@ -122,6 +141,7 @@ const setupMocks = () => {
 
   moduleMockGraph = {
     _nodes: mockNodes,
+    rootGraph: { id: GRAPH_ID },
     links: {
       link1: {
         id: 'link1',
@@ -130,13 +150,10 @@ const setupMocks = () => {
     },
     getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
     setDirtyCanvas: vi.fn(),
+    events: new CustomEventTarget<LGraphEventMap>(),
     onNodeAdded: null,
     onNodeRemoved: null,
-    onConnectionChange: null,
-    events: {
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn()
-    }
+    onConnectionChange: null
   }
 
   moduleMockCanvas = {
@@ -237,6 +254,8 @@ describe('useMinimap', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    registerMockLink(1, 'node2')
 
     mockPause.mockClear()
     mockResume.mockClear()
@@ -290,6 +309,7 @@ describe('useMinimap', () => {
 
     moduleMockGraph = {
       _nodes: mockNodes,
+      rootGraph: { id: GRAPH_ID },
       links: {
         link1: {
           id: 'link1',
@@ -298,13 +318,10 @@ describe('useMinimap', () => {
       },
       getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
       setDirtyCanvas: vi.fn(),
+      events: new CustomEventTarget<LGraphEventMap>(),
       onNodeAdded: null,
       onNodeRemoved: null,
-      onConnectionChange: null,
-      events: {
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn()
-      }
+      onConnectionChange: null
     }
 
     moduleMockCanvas = {
@@ -949,7 +966,7 @@ describe('useMinimap', () => {
     })
 
     it('should handle invalid link references', async () => {
-      moduleMockGraph.links.link1.target_id = 'invalid-node'
+      registerMockLink(2, 'invalid-node')
       moduleMockGraph.getNodeById.mockReturnValue(null)
 
       const minimap = await createAndInitializeMinimap()
