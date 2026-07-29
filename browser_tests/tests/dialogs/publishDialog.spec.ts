@@ -218,7 +218,7 @@ test.describe('Publish dialog - no profile', () => {
   }) => {
     await expect(publishDialog.profilePrompt).toBeVisible()
     await expect(
-      publishDialog.root.getByText('Create a profile to publish to ComfyHub')
+      publishDialog.root.getByText('Create a profile to publish to Comfy Workflows')
     ).toBeVisible()
   })
 

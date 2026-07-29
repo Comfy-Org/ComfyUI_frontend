@@ -650,7 +650,7 @@
     "publishButton": "發佈到 Comfy Workflows",
     "publishFailedDescription": "發佈您的工作流程時發生錯誤。請再試一次。",
     "publishFailedTitle": "發佈失敗",
-    "publishSuccessDescription": "您的工作流程已在 Comfy Workflows 上上線。",
+    "publishSuccessDescription": "您的工作流程已在 Comfy Workflows 上線。",
     "publishSuccessTitle": "發佈成功",
     "removeExampleImage": "移除範例圖片",
     "renameFailedDescription": "您的工作流程已成功發佈，但本機檔案重新命名失敗。請再次重新命名以保持一致。",
