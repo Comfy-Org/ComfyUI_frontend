@@ -241,6 +241,10 @@ defineExpose({
       </div>
     </div>
 
+    <div v-if="$slots.header" class="flex h-11 shrink-0 items-center px-2">
+      <slot name="header" />
+    </div>
+
     <div v-if="selectionTags.length" class="flex flex-wrap gap-1.5 px-4 pt-3">
       <span
         v-for="tag in selectionTags"
