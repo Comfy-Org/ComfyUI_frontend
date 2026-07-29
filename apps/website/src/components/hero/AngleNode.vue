@@ -4,8 +4,6 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import type { CameraWidget } from './camera/CameraWidget'
 import { azimuthLabel, distanceLabel, elevationLabel } from './cameraVocabulary'
 
-const INPUT_IMAGE_URL = '/hero/input.webp'
-
 const SCENE_PALETTE = {
   azimuth: 0xe6e6e6,
   elevation: 0x9a9a9a,
@@ -13,9 +11,10 @@ const SCENE_PALETTE = {
   camera: 0xf2ff59,
   fill: 0xffffff,
   frame: 0xb8b8b8,
+  cardFront: 0x808080,
   background: null,
   showGrid: false,
-  showGlowRing: false,
+  showGlowRing: true,
   showGlows: false
 } as const
 
@@ -55,8 +54,7 @@ async function initScene(container: HTMLElement) {
     initialState: {
       azimuth: azimuth.value,
       elevation: elevation.value,
-      distance: zoom.value,
-      imageUrl: INPUT_IMAGE_URL
+      distance: zoom.value
     },
     onStateChange: (state) => {
       syncingFromWidget = true
