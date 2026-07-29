@@ -98,7 +98,7 @@ describe('TabErrors.vue', () => {
             getHelpAction: 'Get Help'
           },
           rightSidePanel: {
-            noErrors: 'No errors',
+            noErrors: 'No issues',
             noneSearchDesc: 'No results found',
             errorsDetected: 'Error detected | Errors detected',
             resolveBeforeRun: 'Resolve before running the workflow',
@@ -196,9 +196,9 @@ describe('TabErrors.vue', () => {
     })
   }
 
-  it('renders "no errors" state when store is empty', () => {
+  it('renders "no issues" state when store is empty', () => {
     renderComponent()
-    expect(screen.getByText('No errors')).toBeInTheDocument()
+    expect(screen.getByText('No issues')).toBeInTheDocument()
   })
 
   it('renders prompt-level errors with resolved display message', async () => {
