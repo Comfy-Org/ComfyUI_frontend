@@ -1,51 +1,75 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
 import Switch from './Switch.vue'
 
-function renderSwitch(options: { checked?: boolean; disabled?: boolean } = {}) {
-  const Wrapper = defineComponent({
-    components: { Switch },
-    setup() {
-      const checked = ref(options.checked ?? false)
-      return { checked, disabled: options.disabled ?? false }
-    },
-    template: `
-      <Switch
-        v-model="checked"
-        :disabled="disabled"
-        aria-label="Test switch"
-      />
-    `
-  })
-
-  return render(Wrapper)
-}
-
 describe('Switch', () => {
-  it('updates its checked state', async () => {
+  it('exposes its state and requests the opposite value when clicked', async () => {
     const user = userEvent.setup()
-    renderSwitch()
+    const onUpdate = vi.fn()
 
-    const control = screen.getByRole('switch', { name: 'Test switch' })
+    render(Switch, {
+      props: {
+        modelValue: false,
+        'onUpdate:modelValue': onUpdate
+      },
+      attrs: { 'aria-label': 'Notifications' }
+    })
+
+    const control = screen.getByRole('switch', { name: 'Notifications' })
     expect(control).not.toBeChecked()
 
     await user.click(control)
 
-    expect(control).toBeChecked()
+    expect(onUpdate).toHaveBeenCalledWith(true)
   })
 
-  it('does not update while disabled', async () => {
+  it('prevents interaction while disabled', async () => {
     const user = userEvent.setup()
-    renderSwitch({ checked: true, disabled: true })
+    const onUpdate = vi.fn()
 
-    const control = screen.getByRole('switch', { name: 'Test switch' })
+    render(Switch, {
+      props: {
+        disabled: true,
+        modelValue: true,
+        'onUpdate:modelValue': onUpdate
+      },
+      attrs: { 'aria-label': 'Notifications' }
+    })
+
+    const control = screen.getByRole('switch', { name: 'Notifications' })
     expect(control).toBeDisabled()
 
     await user.click(control)
 
-    expect(control).toBeChecked()
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it('keeps readonly switches focusable without changing their value', async () => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn()
+
+    render(Switch, {
+      props: {
+        modelValue: false,
+        readonly: true,
+        'onUpdate:modelValue': onUpdate
+      },
+      attrs: { 'aria-label': 'Notifications' }
+    })
+
+    const control = screen.getByRole('switch', { name: 'Notifications' })
+    expect(control).toHaveAttribute('aria-readonly', 'true')
+
+    await user.tab()
+    expect(control).toHaveFocus()
+
+    await user.keyboard('[Space]')
+    await user.keyboard('[Enter]')
+    await user.click(control)
+
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(control).not.toBeChecked()
   })
 })

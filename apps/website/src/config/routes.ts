@@ -9,6 +9,7 @@ const baseRoutes = {
   api: '/api',
   gallery: '/gallery',
   launches: '/launches',
+  events: '/events',
   about: '/about',
   careers: '/careers',
   customers: '/customers',

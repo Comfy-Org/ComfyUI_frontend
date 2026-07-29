@@ -38,6 +38,10 @@ export interface Member {
   // protections and Team-to-personal downgrade eligibility.
   // Optional: the cloud OpenAPI does not carry this field yet.
   is_original_owner?: boolean
+  // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
+  // neither usage nor limit yet; persistence and real usage land in FE-1278.
+  credits_used_this_month?: number
+  monthly_credit_limit?: number | null
 }
 
 interface PaginationInfo {
@@ -59,7 +63,6 @@ export interface ListMembersParams {
 export interface PendingInvite {
   id: WorkspaceInviteId
   email: string
-  token: string
   invited_at: string
   expires_at: string
 }
@@ -329,7 +332,7 @@ interface GetBillingEventsParams {
   limit?: number
 }
 
-class WorkspaceApiError extends Error {
+export class WorkspaceApiError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
@@ -357,7 +360,11 @@ function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
     const message = err.response?.data?.message ?? err.message
-    throw new WorkspaceApiError(message, status)
+    // Response data is untyped: keep a non-string code out of the string
+    // contract, so callers comparing against it cannot match on a surprise.
+    const rawCode: unknown = err.response?.data?.code
+    const code = typeof rawCode === 'string' ? rawCode : undefined
+    throw new WorkspaceApiError(message, status, code)
   }
   throw err
 }
@@ -549,6 +556,20 @@ export const workspaceApi = {
         api.apiURL(`/workspace/invites/${inviteId}`),
         { headers }
       )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async resendInvite(inviteId: WorkspaceInviteId): Promise<PendingInvite> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<PendingInvite>(
+        api.apiURL(`/workspace/invites/${encodeURIComponent(inviteId)}/resend`),
+        null,
+        { headers }
+      )
+      return response.data
     } catch (err) {
       handleAxiosError(err)
     }

@@ -1,35 +1,46 @@
-<template>
-  <SwitchRoot
-    v-model="checked"
-    :disabled
-    :class="
-      cn(
-        'inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border border-transparent px-0.5 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
-        checked ? 'bg-primary' : 'bg-interface-stroke',
-        customClass
-      )
-    "
-  >
-    <SwitchThumb
-      :class="
-        cn(
-          'pointer-events-none block size-4 rounded-full bg-white shadow-sm transition-transform',
-          checked ? 'translate-x-3.5' : 'translate-x-0'
-        )
-      "
-    />
-  </SwitchRoot>
-</template>
-
 <script setup lang="ts">
 import { SwitchRoot, SwitchThumb } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { disabled = false, class: customClass = '' } = defineProps<{
-  disabled?: boolean
+const {
+  class: customClass = '',
+  disabled = false,
+  readonly = false
+} = defineProps<{
   class?: HTMLAttributes['class']
+  disabled?: boolean
+  readonly?: boolean
 }>()
-const checked = defineModel<boolean>({ default: false })
+
+const modelValue = defineModel<boolean>({ default: false })
+
+function updateModelValue(value: boolean) {
+  if (readonly) return
+  modelValue.value = value
+}
 </script>
+
+<template>
+  <SwitchRoot
+    :model-value
+    :disabled
+    :aria-readonly="readonly || undefined"
+    :class="
+      cn(
+        'group inline-flex h-6 w-10 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full border-0 bg-transparent p-0 transition-shadow outline-none focus-visible:ring-1 focus-visible:ring-border-default disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-readonly:cursor-default',
+        customClass
+      )
+    "
+    @update:model-value="updateModelValue"
+  >
+    <span
+      class="pointer-events-none inline-flex h-5 w-9 items-center rounded-full border border-transparent bg-interface-stroke px-0.5 transition-colors group-data-[state=checked]:bg-primary-background"
+    >
+      <SwitchThumb
+        class="pointer-events-none block size-4 rounded-full bg-base-background shadow-sm transition-transform data-[state=checked]:translate-x-3.5 data-[state=unchecked]:translate-x-0"
+      />
+    </span>
+  </SwitchRoot>
+</template>

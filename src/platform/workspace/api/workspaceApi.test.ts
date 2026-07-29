@@ -104,6 +104,37 @@ describe('workspaceApi', () => {
       })
     })
 
+    it('carries the typed error code through', async () => {
+      const axiosErr = {
+        isAxiosError: true,
+        response: {
+          status: 400,
+          data: { message: 'Already cancelled', code: 'ALREADY_CANCELED' }
+        },
+        message: 'Request failed'
+      }
+      mockAxiosInstance.get.mockRejectedValue(axiosErr)
+
+      await expect(workspaceApi.list()).rejects.toMatchObject({
+        code: 'ALREADY_CANCELED',
+        status: 400
+      })
+    })
+
+    it('drops a non-string code so callers cannot match on a surprise', async () => {
+      const axiosErr = {
+        isAxiosError: true,
+        response: { status: 400, data: { message: 'Bad', code: { a: 1 } } },
+        message: 'Request failed'
+      }
+      mockAxiosInstance.get.mockRejectedValue(axiosErr)
+
+      await expect(workspaceApi.list()).rejects.toMatchObject({
+        code: undefined,
+        message: 'Bad'
+      })
+    })
+
     it('rethrows non-axios errors as-is', async () => {
       const err = new TypeError('unexpected')
       mockAxiosInstance.get.mockRejectedValue(err)
@@ -274,6 +305,25 @@ describe('workspaceApi', () => {
         '/api/workspace/invites/inv-1',
         { headers: AUTH_HEADER }
       )
+    })
+
+    it('resendInvite() sends POST /workspace/invites/:id/resend', async () => {
+      const invite = {
+        id: 'inv-1',
+        email: 'a@b.com',
+        invited_at: '2024-02-01T00:00:00Z',
+        expires_at: '2024-02-08T00:00:00Z'
+      }
+      mockAxiosInstance.post.mockResolvedValue({ data: invite })
+
+      const result = await workspaceApi.resendInvite('inv-1')
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/workspace/invites/inv-1/resend',
+        null,
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(invite)
     })
 
     it('acceptInvite() uses firebase auth and POST /invites/:token/accept', async () => {
