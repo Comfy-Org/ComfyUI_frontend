@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
@@ -82,14 +86,8 @@ describe('workflowToClipboardItems', () => {
   })
 
   it('flattens nested subgraph definitions once', () => {
-    const child = {
-      id: createUuidv4(),
-      definitions: undefined
-    } as ExportedSubgraph
-    const parent = {
-      id: createUuidv4(),
-      definitions: { subgraphs: [child] }
-    } as ExportedSubgraph
+    const child: ExportedSubgraph = subgraph()
+    const parent: ExportedSubgraph = subgraph([child])
     const workflow = {
       ...workflowV1(),
       definitions: { subgraphs: [parent, child] }
@@ -101,3 +99,29 @@ describe('workflowToClipboardItems', () => {
     expect(items.subgraphs?.every(({ definitions }) => !definitions)).toBe(true)
   })
 })
+
+function subgraph(definitions?: ExportedSubgraph[]): ExportedSubgraph {
+  return {
+    id: createUuidv4(),
+    revision: 0,
+    version: 1,
+    state: {
+      lastGroupId: 0,
+      lastNodeId: 0,
+      lastLinkId: 0,
+      lastRerouteId: 0
+    },
+    name: 'Test subgraph',
+    inputNode: {
+      id: SUBGRAPH_INPUT_ID,
+      bounding: [0, 0, 75, 100]
+    },
+    outputNode: {
+      id: SUBGRAPH_OUTPUT_ID,
+      bounding: [0, 0, 75, 100]
+    },
+    nodes: [],
+    groups: [],
+    definitions: definitions ? { subgraphs: definitions } : undefined
+  }
+}
