@@ -16,7 +16,6 @@ import type { NavItem } from '../../../data/mainNavigation'
 import type { Locale } from '../../../i18n/translations'
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
-import NewBadge from './NewBadge.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const mainNavigation = getMainNavigation(locale)
@@ -43,10 +42,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           <NavigationMenuTrigger
             :active="isNavItemActive(navItem, currentPath)"
           >
-            <span class="inline-flex items-center gap-1">
-              <span class="ppformula-text-center">{{ navItem.label }}</span>
-              <NewBadge v-if="navItem.badge" :locale="locale" size="xxs" />
-            </span>
+            <span class="ppformula-text-center">{{ navItem.label }}</span>
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
             <ul class="flex w-max gap-16">
