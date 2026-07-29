@@ -42,6 +42,14 @@ export async function seedFirebaseAuthUser(
   await page.goto(`${appUrl}/api/users`)
 
   await page.evaluate(
+    ({ user }) => {
+      const key = `firebase:authUser:${user.apiKey}:${user.appName}`
+      localStorage.setItem(key, JSON.stringify(user))
+    },
+    { user: record }
+  )
+
+  await page.evaluate(
     ({ dbName, storeName, user }) => {
       const key = `firebase:authUser:${user.apiKey}:${user.appName}`
 
