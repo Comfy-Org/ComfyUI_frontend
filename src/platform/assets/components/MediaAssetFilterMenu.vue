@@ -19,7 +19,7 @@
     <DropdownMenuPortal>
       <DropdownMenuSubContent
         :side-offset="8"
-        :align-offset="-5"
+        :align-offset="-9"
         :collision-padding="10"
         :prioritize-position="false"
         :class="submenuClass"
