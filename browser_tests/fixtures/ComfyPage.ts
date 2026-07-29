@@ -1,4 +1,9 @@
-import type { APIRequestContext, Locator, Page } from '@playwright/test'
+import type {
+  APIRequestContext,
+  Locator,
+  Page,
+  Response
+} from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
@@ -397,21 +402,56 @@ export class ComfyPage {
    */
   async waitForAppReady() {
     const readyFuseMs = 300_000
+    // Fail fast on the first auth failure. A signed-out app answers every
+    // /api call 401/403 and never becomes ready, so without this the run
+    // burns the whole fuse before reporting. Only same-origin xhr/fetch
+    // counts - a bare document GET to /api/users legitimately 401s. Local
+    // ComfyUI has no auth, so on core these calls are 200 and this never
+    // fires; it needs no cloud guard.
+    let onAuthFail: ((response: Response) => void) | undefined
+    const authFailed = new Promise<never>((_, reject) => {
+      onAuthFail = (response) => {
+        const status = response.status()
+        if (status !== 401 && status !== 403) return
+        const type = response.request().resourceType()
+        if (type !== 'xhr' && type !== 'fetch') return
+        const url = response.url()
+        if (!url.includes('localhost') || !url.includes('/api/')) return
+        reject(
+          new Error(
+            `cloud auth failed: HTTP ${status} ${response.request().method()} ${url}`
+          )
+        )
+      }
+      this.page.on('response', onAuthFail)
+    })
+    authFailed.catch(() => {})
     try {
-      await this.page.waitForFunction(
-        // window.app => GraphCanvas ready
-        // window.app.extensionManager => GraphView ready
-        () => window.app?.extensionManager,
-        null,
-        { timeout: readyFuseMs }
-      )
-      await this.page
-        .locator('.p-blockui-mask')
-        .waitFor({ state: 'hidden', timeout: readyFuseMs })
+      const ready = (async () => {
+        await this.page.waitForFunction(
+          // window.app => GraphCanvas ready
+          // window.app.extensionManager => GraphView ready
+          () => window.app?.extensionManager,
+          null,
+          { timeout: readyFuseMs }
+        )
+        await this.page
+          .locator('.p-blockui-mask')
+          .waitFor({ state: 'hidden', timeout: readyFuseMs })
+      })()
+      await Promise.race([ready, authFailed])
     } catch (error) {
+      if (error instanceof Error && error.message.startsWith('cloud auth')) {
+        console.warn(
+          `[cloud] ${error.message} - aborting, session not authorized`
+        )
+        throw error
+      }
       const state = await this.describeUnreadyApp()
       console.warn(`[cloud] app never became ready: ${state}`)
       throw new Error(`app never became ready: ${state}`, { cause: error })
+    } finally {
+      if (onAuthFail) this.page.off('response', onAuthFail)
     }
     await this.nextFrame()
   }
