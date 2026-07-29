@@ -30,6 +30,10 @@ async function setFrontendContext(): Promise<void> {
 }
 
 async function initializeDatadogRum(env: string): Promise<void> {
+  datadogRum.setGlobalContextProperty(
+    'comfyui_frontend_version',
+    __COMFYUI_FRONTEND_VERSION__
+  )
   await setFrontendContext().catch(() => {})
   if (datadogRum.getInitConfiguration()) return
 
