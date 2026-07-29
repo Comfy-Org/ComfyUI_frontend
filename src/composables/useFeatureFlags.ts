@@ -20,7 +20,9 @@ import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 export enum ServerFeatureFlag {
   SUPPORTS_PREVIEW_METADATA = 'supports_preview_metadata',
   MAX_UPLOAD_SIZE = 'max_upload_size',
+  ASSETS = 'assets',
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
+  MANAGER_SUPPORTS_CSRF_POST = 'extension.manager.supports_csrf_post',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
   ASSET_RENAME_ENABLED = 'asset_rename_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
@@ -136,8 +138,15 @@ export function useFeatureFlags() {
         ServerFeatureFlag.MAX_UPLOAD_SIZE,
         (key) => api.getServerFeature(key)
       ),
+      assetsEnabled: defineFeatureFlag(ServerFeatureFlag.ASSETS, (key) =>
+        api.getServerFeature(key, false)
+      ),
       supportsManagerV4: defineFeatureFlag(
         ServerFeatureFlag.MANAGER_SUPPORTS_V4,
+        (key) => api.getServerFeature(key)
+      ),
+      managerSupportsCsrfPost: defineFeatureFlag(
+        ServerFeatureFlag.MANAGER_SUPPORTS_CSRF_POST,
         (key) => api.getServerFeature(key)
       ),
       modelUploadButtonEnabled: defineFeatureFlag(

@@ -1,6 +1,7 @@
 import { storeToRefs } from 'pinia'
 import { computed, readonly, watch } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -38,6 +39,7 @@ const showIncompatibleToast = (): void => {
 
 export function useManagerState() {
   const systemStatsStore = useSystemStatsStore()
+  const { flags } = useFeatureFlags()
   const { systemStats, isInitialized: systemInitialized } =
     storeToRefs(systemStatsStore)
   const managerDialog = useManagerDialog()
@@ -59,13 +61,8 @@ export function useManagerState() {
       const clientSupportsV4 =
         api.getClientFeatureFlags().supports_manager_v4_ui ?? false
 
-      const serverSupportsV4 = api.getServerFeature(
-        'extension.manager.supports_v4'
-      )
-
-      const supportsCsrfPost = api.getServerFeature(
-        'extension.manager.supports_csrf_post'
-      )
+      const serverSupportsV4 = flags.supportsManagerV4
+      const supportsCsrfPost = flags.managerSupportsCsrfPost
 
       // Check command line args first (highest priority)
       // --enable-manager flag enables the manager (opposite of old --disable-manager)
