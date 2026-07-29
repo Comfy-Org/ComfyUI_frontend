@@ -43,42 +43,40 @@ describe('registered tours', () => {
   })
 
   it('runs resolver-produced steps', async () => {
-    registerTour('firstRun', () => Promise.resolve([step('upload')]))
+    registerTour('firstRun', () => [step('upload')])
     const store = useOnboardingTourStore()
-    expect(await store.startTour('firstRun')).toBe(true)
+    expect(store.startTour('firstRun')).toBe(true)
     expect(store.step?.name).toBe('upload')
     expect(store.countedStepsTotal).toBe(1)
   })
 
   it('does not start on an empty resolver', async () => {
-    registerTour('firstRun', () => Promise.resolve([]))
+    registerTour('firstRun', () => [])
     const store = useOnboardingTourStore()
-    expect(await store.startTour('firstRun')).toBe(false)
+    expect(store.startTour('firstRun')).toBe(false)
     expect(mocks.track).not.toHaveBeenCalledWith('started', expect.anything())
   })
 
   it('postpone skips without marking seen, so the tour re-offers', async () => {
-    registerTour('firstRun', () => Promise.resolve([step('run')]))
+    registerTour('firstRun', () => [step('run')])
     const store = useOnboardingTourStore()
-    await store.startTour('firstRun')
+    store.startTour('firstRun')
     store.postpone()
     expect(mocks.track).toHaveBeenCalledWith(
       'skipped',
       expect.objectContaining({ skip_reason: 'postponed' })
     )
-    expect(await store.startTour('firstRun')).toBe(true)
+    expect(store.startTour('firstRun')).toBe(true)
   })
 
   it('blocks going back across a self-advancing step', async () => {
-    registerTour('firstRun', () =>
-      Promise.resolve([
-        step('prompt'),
-        step('run', { selfAdvancing: true }),
-        step('result')
-      ])
-    )
+    registerTour('firstRun', () => [
+      step('prompt'),
+      step('run', { selfAdvancing: true }),
+      step('result')
+    ])
     const store = useOnboardingTourStore()
-    await store.startTour('firstRun')
+    store.startTour('firstRun')
     store.next()
     expect(store.canGoBack).toBe(true)
     store.next()
