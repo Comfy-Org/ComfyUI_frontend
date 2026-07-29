@@ -8,6 +8,7 @@
       variant="muted-textonly"
       class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
       :aria-label="$t('g.back')"
+      :disabled="isPolling"
       @click="handleBackToPricing"
     >
       <i class="pi pi-arrow-left text-xl" />
@@ -99,6 +100,7 @@
       "
       :preview-data="previewData"
       :is-loading="isSubscribing || isPolling"
+      :action-url="activeCheckoutActionUrl"
       @confirm="handleConfirmTransition"
       @back="handleBackToPricing"
     />

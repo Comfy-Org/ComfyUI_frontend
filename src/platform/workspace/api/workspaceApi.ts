@@ -273,6 +273,8 @@ export interface BillingStatusResponse {
   subscription_duration?: SubscriptionDuration
   plan_slug?: string
   billing_status?: BillingStatus
+  pending_billing_op_id?: string
+  action_url?: string
   has_funds: boolean
   cancel_at?: string
   renewal_date?: string
@@ -811,7 +813,7 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
         api.apiURL(`/billing/ops/${opId}`),
-        { headers }
+        { headers, timeout: 30_000 }
       )
       return response.data
     } catch (err) {

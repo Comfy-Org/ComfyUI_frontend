@@ -145,6 +145,7 @@
       <Button
         variant="textonly"
         class="cursor-pointer text-center text-xs text-muted-foreground transition-colors hover:bg-none hover:text-base-foreground"
+        :disabled="isLoading"
         @click="$emit('back')"
       >
         {{ $t('subscription.preview.backToAllPlans') }}

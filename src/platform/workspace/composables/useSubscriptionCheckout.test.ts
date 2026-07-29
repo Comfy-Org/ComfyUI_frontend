@@ -79,6 +79,7 @@ const {
   mockToastAdd,
   mockStartOperation,
   mockGetOperation,
+  mockSubscriptionActionOperation,
   mockTrackBeginCheckout,
   mockTrackBillingEvent,
   mockShowDowngradeToPersonalDialog,
@@ -98,6 +99,15 @@ const {
   mockToastAdd: vi.fn(),
   mockStartOperation: vi.fn(),
   mockGetOperation: vi.fn(),
+  mockSubscriptionActionOperation: {
+    value: undefined as
+      | {
+          status: 'pending'
+          workspaceId: string
+          actionUrl: string
+        }
+      | undefined
+  },
   mockTrackBeginCheckout: vi.fn(),
   mockTrackBillingEvent: vi.fn(),
   mockShowDowngradeToPersonalDialog: vi.fn(),
@@ -159,7 +169,10 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
     startOperation: mockStartOperation,
-    getOperation: mockGetOperation
+    getOperation: mockGetOperation,
+    get subscriptionActionOperation() {
+      return mockSubscriptionActionOperation.value
+    }
   })
 }))
 
@@ -227,6 +240,7 @@ describe('useSubscriptionCheckout', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    mockSubscriptionActionOperation.value = undefined
     mockPlans.value = allPlans()
     mockFetchPlans.mockResolvedValue(undefined)
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
@@ -910,6 +924,21 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleBackToPricing', () => {
+    it('surfaces a subscription operation recovered from billing status', async () => {
+      mockSubscriptionActionOperation.value = {
+        status: 'pending',
+        workspaceId: 'workspace-1',
+        actionUrl: 'https://verify.example/sensitive-token'
+      }
+
+      const checkout = await setup()
+
+      expect(checkout.activeCheckoutActionUrl.value).toBe(
+        'https://verify.example/sensitive-token'
+      )
+      expect(checkout.isPolling.value).toBe(true)
+    })
+
     it('resets to pricing step and clears preview data', async () => {
       const checkout = await setup()
       checkout.checkoutStep.value = 'preview'
@@ -992,7 +1021,6 @@ describe('useSubscriptionCheckout', () => {
 
       mockSetActiveWorkspaceId('workspace-2')
 
-      expect(checkout.activeCheckoutOperation.value).toBeUndefined()
       expect(checkout.activeCheckoutActionUrl.value).toBeNull()
       expect(checkout.isPolling.value).toBe(false)
 

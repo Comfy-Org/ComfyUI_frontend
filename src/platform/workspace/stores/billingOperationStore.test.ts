@@ -109,6 +109,46 @@ describe('billingOperationStore', () => {
       expect(store.hasPendingOperations).toBe(true)
     })
 
+    it('exposes a validated recovered action before the first poll completes', () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockReturnValue(
+        new Promise(() => {})
+      )
+
+      const store = useBillingOperationStore()
+      void store.startOperation(
+        'op-recovered',
+        'subscription',
+        undefined,
+        'https://invoice.stripe.com/sensitive-token'
+      )
+
+      expect(store.subscriptionActionOperation).toMatchObject({
+        opId: 'op-recovered',
+        actionUrl: 'https://invoice.stripe.com/sensitive-token',
+        authenticationRequiredSeen: true
+      })
+    })
+
+    it('rejects an insecure recovered action URL', () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockReturnValue(
+        new Promise(() => {})
+      )
+
+      const store = useBillingOperationStore()
+      void store.startOperation(
+        'op-recovered',
+        'subscription',
+        undefined,
+        'http://invoice.stripe.com/sensitive-token'
+      )
+
+      expect(store.getOperation('op-recovered')).toMatchObject({
+        actionUrl: null,
+        authenticationRequiredSeen: false
+      })
+      expect(store.subscriptionActionOperation).toBeUndefined()
+    })
+
     it('does not create duplicate operations', () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',

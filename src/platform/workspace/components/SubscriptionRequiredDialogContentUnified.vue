@@ -14,6 +14,7 @@
       variant="muted-textonly"
       class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
       :aria-label="$t('g.back')"
+      :disabled="isPolling"
       @click="handleBackToPricing"
     >
       <i class="pi pi-arrow-left text-xl" />
@@ -174,7 +175,12 @@ onMounted(() => {
 // Backspace mirrors the back arrow on the confirm step, but never while an
 // editable element is focused (let it delete text there).
 useEventListener(window, 'keydown', (event: KeyboardEvent) => {
-  if (event.key !== 'Backspace' || checkoutStep.value !== 'preview') return
+  if (
+    event.key !== 'Backspace' ||
+    checkoutStep.value !== 'preview' ||
+    isPolling.value
+  )
+    return
   const target = event.target
   if (
     target instanceof HTMLInputElement ||

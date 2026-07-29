@@ -108,7 +108,9 @@ export function useSubscriptionCheckout(
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const activeCheckoutOperationId = ref<string | null>(null)
   const activeCheckoutOperation = computed(() => {
-    if (!activeCheckoutOperationId.value) return
+    if (!activeCheckoutOperationId.value) {
+      return billingOperationStore.subscriptionActionOperation
+    }
     const operation = billingOperationStore.getOperation(
       activeCheckoutOperationId.value
     )
@@ -568,7 +570,6 @@ export function useSubscriptionCheckout(
     selectedTierKey,
     selectedTeamStop,
     selectedBillingCycle,
-    activeCheckoutOperation,
     activeCheckoutActionUrl,
     isPolling,
     isTeamCheckout,
