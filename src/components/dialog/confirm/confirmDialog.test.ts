@@ -35,8 +35,10 @@ describe('showConfirmDialog Reka renderer opt-in', () => {
   })
 
   it('forwards the confirm section components and caller props', () => {
+    const onClose = vi.fn()
     showConfirmDialog({
       key: 'confirm-test',
+      onClose,
       headerProps: { title: 'Title' },
       props: { promptText: 'Prompt' },
       footerProps: { confirmText: 'Delete' }
@@ -50,5 +52,6 @@ describe('showConfirmDialog Reka renderer opt-in', () => {
     expect(args.headerProps).toEqual({ title: 'Title' })
     expect(args.props).toEqual({ promptText: 'Prompt' })
     expect(args.footerProps).toEqual({ confirmText: 'Delete' })
+    expect(args.dialogComponentProps.onClose).toBe(onClose)
   })
 })

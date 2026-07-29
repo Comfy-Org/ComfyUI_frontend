@@ -242,6 +242,91 @@ describe('PartnerNodeAccessPanel', () => {
     expect(mockTrackUiButtonClicked).not.toHaveBeenCalled()
   })
 
+  it('tracks provider and bulk policy actions in order', async () => {
+    const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
+    renderComponent()
+
+    await user.click(
+      screen.getByRole('switch', {
+        name: 'Set access for OpenAI (inc. Sora)'
+      })
+    )
+    await user.click(screen.getByRole('button', { name: 'Enable all' }))
+    await user.click(screen.getByRole('button', { name: 'Disable all' }))
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    options.onClose()
+
+    expect(mockTrackUiButtonClicked.mock.calls.map(([event]) => event)).toEqual(
+      [
+        {
+          button_id: 'workspace_allowlist_opened',
+          element_group: 'workspace_allowlist'
+        },
+        {
+          button_id: 'workspace_allowlist_provider_disable_clicked',
+          element_group: 'workspace_allowlist'
+        },
+        {
+          button_id: 'workspace_allowlist_enable_all_clicked',
+          element_group: 'workspace_allowlist'
+        },
+        {
+          button_id: 'workspace_allowlist_disable_all_clicked',
+          element_group: 'workspace_allowlist'
+        },
+        {
+          button_id: 'workspace_allowlist_disable_all_cancelled',
+          element_group: 'workspace_allowlist'
+        }
+      ]
+    )
+  })
+
+  it('tracks access mode selection and confirmation in order', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(screen.getByRole('radio', { name: 'Restricted' }))
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    await options.footerProps.onConfirm()
+    options.onClose()
+
+    expect(mockTrackUiButtonClicked.mock.calls.map(([event]) => event)).toEqual(
+      [
+        {
+          button_id: 'workspace_allowlist_opened',
+          element_group: 'workspace_allowlist'
+        },
+        {
+          button_id: 'workspace_allowlist_access_restricted_selected',
+          element_group: 'workspace_allowlist'
+        },
+        {
+          button_id: 'workspace_allowlist_access_restricted_confirmed',
+          element_group: 'workspace_allowlist'
+        }
+      ]
+    )
+  })
+
+  it('tracks access dialog dismissal as cancellation', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(screen.getByRole('radio', { name: 'Restricted' }))
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    options.onClose()
+
+    expect(mockTrackUiButtonClicked).toHaveBeenLastCalledWith({
+      button_id: 'workspace_allowlist_access_restricted_cancelled',
+      element_group: 'workspace_allowlist'
+    })
+  })
+
   it('sorts providers from the Provider column header', async () => {
     const user = userEvent.setup()
     mockPolicy.value = {

@@ -477,10 +477,14 @@ async function performSave(action: () => Promise<void>) {
 }
 
 function saveProviderChange(providerId: string, enabled: boolean) {
+  trackAllowlistAction(
+    `workspace_allowlist_provider_${enabled ? 'enable' : 'disable'}_clicked`
+  )
   void performSave(() => setProviderEnabled(providerId, enabled))
 }
 
 async function handleEnableAll() {
+  trackAllowlistAction('workspace_allowlist_enable_all_clicked')
   await performSave(() => setAllProvidersEnabled(true))
 }
 
@@ -504,7 +508,14 @@ function confirmDisableAll() {
   const canConfirm = createPolicyConfirmationGuard()
   if (!canConfirm) return
 
+  trackAllowlistAction('workspace_allowlist_disable_all_clicked')
+  let confirmationSubmitted = false
   const dialog = showConfirmDialog({
+    onClose: () => {
+      if (!confirmationSubmitted) {
+        trackAllowlistAction('workspace_allowlist_disable_all_cancelled')
+      }
+    },
     headerProps: { title: t('workspacePanel.partnerNodes.disableAllTitle') },
     props: { promptText: t('workspacePanel.partnerNodes.disableAllMessage') },
     footerProps: {
@@ -513,10 +524,12 @@ function confirmDisableAll() {
       optionsDisabled: isSaving,
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {
+        confirmationSubmitted = true
         if (!canConfirm()) {
           dialogStore.closeDialog(dialog)
           return
         }
+        trackAllowlistAction('workspace_allowlist_disable_all_confirmed')
         await performSave(() => setAllProvidersEnabled(false))
         dialogStore.closeDialog(dialog)
       }
@@ -537,8 +550,16 @@ function confirmAccessModeChange(
   const canConfirm = createPolicyConfirmationGuard()
   if (!canConfirm) return
 
+  const mode = enabled ? 'restricted' : 'unrestricted'
+  trackAllowlistAction(`workspace_allowlist_access_${mode}_selected`)
   const key = enabled ? 'restrictAccess' : 'allowAllAccess'
+  let confirmationSubmitted = false
   const dialog = showConfirmDialog({
+    onClose: () => {
+      if (!confirmationSubmitted) {
+        trackAllowlistAction(`workspace_allowlist_access_${mode}_cancelled`)
+      }
+    },
     headerProps: {
       title: t(`workspacePanel.partnerNodes.${key}Title`)
     },
@@ -553,10 +574,12 @@ function confirmAccessModeChange(
       optionsDisabled: isSaving,
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {
+        confirmationSubmitted = true
         if (!canConfirm()) {
           dialogStore.closeDialog(dialog)
           return
         }
+        trackAllowlistAction(`workspace_allowlist_access_${mode}_confirmed`)
         await performSave(action)
         dialogStore.closeDialog(dialog)
       }
