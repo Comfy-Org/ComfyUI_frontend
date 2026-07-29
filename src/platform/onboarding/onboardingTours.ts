@@ -48,7 +48,7 @@ export interface CoachStep {
   selfAdvancing?: boolean
 }
 
-export type TourDefinition = CoachStep[] | (() => Promise<CoachStep[]>)
+export type TourDefinition = CoachStep[] | (() => CoachStep[])
 
 /**
  * Fixes the running step set (and so the step count) at tour start: drops steps
