@@ -69,7 +69,7 @@ jobs:
     timeout-minutes: 90
     permissions:
       contents: read
-    # DETECTION PROOF (demo branch only): one leg per DETECTION_PROOF.md row,
+    # DETECTION PROOF (demo branch only): one leg per row of the Detection-proof section (docs/custom-node-regression-suite.md),
     # each with exactly ONE break live. Stacking breaks in a single tree makes
     # a red unattributable - two of them silently cannibalised each other, and
     # the fix was distorting the breaks to coexist rather than isolating them.
@@ -300,7 +300,7 @@ jobs:
           fi
 
       # The leg's verdict. Each row's break must produce ITS OWN red - the
-      # class-stable message its DETECTION_PROOF.md row promises - in the
+      # class-stable message its Detection-proof row promises (docs/custom-node-regression-suite.md) - in the
       # results json. Patterns are class-stable (the assert text), never
       # offender-stable (a node name), because in isolation the first
       # offender can differ from the stacked capture.
