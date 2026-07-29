@@ -39,7 +39,7 @@ function useNodeDragIndividual() {
   // Drag state
   let activeDragNodeId: NodeId | null = null
   let activePointerId: number | null = null
-  let capturedPointerTarget: HTMLElement | null = null
+  let dragPointerTarget: HTMLElement | null = null
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
   let otherSelectedNodesStartPositions: Map<NodeId, Point> | null = null
@@ -63,6 +63,8 @@ function useNodeDragIndividual() {
     resetDragState()
     activeDragNodeId = nodeId
     activePointerId = event.pointerId
+    dragPointerTarget =
+      event.currentTarget instanceof HTMLElement ? event.currentTarget : null
 
     // Track shift key state and sync to canvas for snap preview
     stopShiftSync = trackShiftKey(event)
@@ -239,26 +241,22 @@ function useNodeDragIndividual() {
   }
 
   function capturePointer(event: PointerEvent) {
-    const { target, pointerId } = event
-    if (!(target instanceof HTMLElement)) return
+    const target = dragPointerTarget
+    const { pointerId } = event
+    if (!target || target.hasPointerCapture(pointerId)) return
 
-    if (!target.hasPointerCapture(pointerId)) {
-      releasePointerCapture()
-      try {
-        // Delay capture to drag to allow for Node cloning.
-        target.setPointerCapture(pointerId)
-      } catch {
-        return
-      }
+    try {
+      // Delay capture to drag to allow for Node cloning.
+      target.setPointerCapture(pointerId)
+    } catch {
+      return
     }
-
-    capturedPointerTarget = target
   }
 
   function releasePointerCapture() {
-    const target = capturedPointerTarget
+    const target = dragPointerTarget
     const pointerId = activePointerId
-    capturedPointerTarget = null
+    dragPointerTarget = null
     if (!target || pointerId === null || !target.hasPointerCapture(pointerId)) {
       return
     }

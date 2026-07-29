@@ -148,8 +148,20 @@ function pointerEvent(
   clientX: number,
   clientY: number,
   buttons = 1,
-  pointerId = 1
+  pointerId = 1,
+  target = pointerTarget()
 ): PointerEvent {
+  return fromPartial<PointerEvent>({
+    buttons,
+    clientX,
+    clientY,
+    currentTarget: target,
+    target,
+    pointerId
+  })
+}
+
+function pointerTarget(): HTMLElement {
   const target = document.createElement('div')
   let hasCapture = false
   target.hasPointerCapture = vi.fn(() => hasCapture)
@@ -159,13 +171,7 @@ function pointerEvent(
   target.releasePointerCapture = vi.fn(() => {
     hasCapture = false
   })
-  return fromPartial<PointerEvent>({
-    buttons,
-    clientX,
-    clientY,
-    target,
-    pointerId
-  })
+  return target
 }
 
 function getWindowListener(
@@ -264,25 +270,22 @@ describe('useNodeDrag', () => {
       size: { width: 200, height: 120 }
     })
     const { startDrag } = useNodeDrag()
-    const firstMove = pointerEvent(15, 20)
-    const canvasMove = pointerEvent(45, 60)
+    const dragOrigin = pointerTarget()
+    const firstMoveTarget = pointerTarget()
+    const canvasMoveTarget = pointerTarget()
+    const firstMove = pointerEvent(15, 20, 1, 1, firstMoveTarget)
+    const canvasMove = pointerEvent(45, 60, 1, 1, canvasMoveTarget)
 
-    startDrag(pointerEvent(5, 10), node1)
+    startDrag(pointerEvent(5, 10, 1, 1, dragOrigin), node1)
     testState.isDraggingVueNodes.value = true
     getWindowListener('pointermove')(firstMove)
+    dragOrigin.releasePointerCapture(1)
     getWindowListener('pointermove')(canvasMove)
     testState.requestAnimationFrameCallback?.(0)
 
-    expect(firstMove.target).toBeInstanceOf(HTMLElement)
-    expect(canvasMove.target).toBeInstanceOf(HTMLElement)
-    if (
-      !(firstMove.target instanceof HTMLElement) ||
-      !(canvasMove.target instanceof HTMLElement)
-    ) {
-      throw new Error('Pointer targets should be HTML elements')
-    }
-    expect(firstMove.target.releasePointerCapture).toHaveBeenCalledTimes(1)
-    expect(canvasMove.target.setPointerCapture).toHaveBeenCalledTimes(1)
+    expect(dragOrigin.setPointerCapture).toHaveBeenCalledTimes(2)
+    expect(firstMoveTarget.setPointerCapture).not.toHaveBeenCalled()
+    expect(canvasMoveTarget.setPointerCapture).not.toHaveBeenCalled()
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledOnce()
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
       { nodeId: '1', position: { x: 90, y: 130 } }
@@ -400,17 +403,14 @@ describe('useNodeDrag', () => {
       size: { width: 180, height: 110 }
     })
     const { startDrag, handleDrag } = useNodeDrag()
+    const dragOrigin = pointerTarget()
     const dragEvent = pointerEvent(25, 30)
 
-    startDrag(pointerEvent(5, 10), node1)
+    startDrag(pointerEvent(5, 10, 1, 1, dragOrigin), node1)
     testState.isDraggingVueNodes.value = true
     handleDrag(dragEvent, node1)
     const autoPan = testState.capturedAutoPanInstance.current
     if (!autoPan) throw new Error('Auto-pan controller was not created')
-    if (!(dragEvent.target instanceof HTMLElement)) {
-      throw new Error('Pointer target was not an HTML element')
-    }
-
     testState.isDraggingVueNodes.value = false
     testState.resetDragState.current?.()
     testState.resetDragState.current?.()
@@ -418,7 +418,7 @@ describe('useNodeDrag', () => {
     expect(autoPan.stop).toHaveBeenCalledTimes(1)
     expect(testState.stopShiftSync).toHaveBeenCalledTimes(1)
     expect(testState.cancelAnimationFrame).toHaveBeenCalledTimes(1)
-    expect(dragEvent.target.releasePointerCapture).toHaveBeenCalledTimes(1)
+    expect(dragOrigin.releasePointerCapture).toHaveBeenCalledTimes(1)
   })
 
   it('recovers when pointer movement reports that the left button is up', () => {
