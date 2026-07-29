@@ -315,7 +315,7 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 
-  it('skips repeated collapsed measurements matching visual bounds', () => {
+  it('skips repeated collapsed measurements using cached visual bounds', () => {
     const nodeId = toNodeId('test-node')
     const collapsedWidth = 200
     const collapsedHeight = 40
@@ -332,13 +332,19 @@ describe('useVueNodeResizeTracking', () => {
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
     const layout = testState.nodeLayouts.get(nodeId)
     if (!layout) throw new Error('Expected seeded node layout')
+    resizeObserverState.callback?.([entry], createObserverMock())
+
     layout.bounds = {
-      ...layout.bounds,
+      x: 100,
+      y: 200 + titleHeight,
       width: collapsedWidth,
       height: collapsedHeight - titleHeight
     }
+    layout.position = { x: 150, y: 200 + titleHeight }
+    testState.setSource.mockReset()
+    testState.batchUpdateNodeBounds.mockReset()
+    testState.syncNodeSlotLayoutsFromDOM.mockReset()
 
-    resizeObserverState.callback?.([entry], createObserverMock())
     resizeObserverState.callback?.([entry], createObserverMock())
 
     expect(rectSpy).not.toHaveBeenCalled()
