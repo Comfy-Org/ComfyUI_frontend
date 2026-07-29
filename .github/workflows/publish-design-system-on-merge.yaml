@@ -95,8 +95,7 @@ jobs:
         continue-on-error: true
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          # TODO: replace with the real #product-design channel ID before merging.
-          SLACK_CHANNEL_ID: 'TODO_PRODUCT_DESIGN_CHANNEL_ID'
+          SLACK_CHANNEL_ID: 'C09A24D4692' # #product-design
           VERSION: ${{ needs.resolve.outputs.version }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
