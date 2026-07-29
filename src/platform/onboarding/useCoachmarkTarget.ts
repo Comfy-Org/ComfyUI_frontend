@@ -4,8 +4,18 @@ import { useEventListener } from '@vueuse/core'
 import { computed, ref, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
-import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
-import { coachmarkElements, isLaidOut } from './coachmarkRegistry'
+import {
+  CARD_GAP,
+  CURSOR_GAP,
+  VIEWPORT_MARGIN,
+  topSafeInset
+} from './coachmarkLayout'
+import {
+  coachmarkElements,
+  isLaidOut,
+  isMovingTarget
+} from './coachmarkRegistry'
+import type { CoachTarget } from './coachmarkRegistry'
 import type { CoachPlacement, CoachStep } from './onboardingTours'
 
 // A target animating in via CSS transform reports through neither scroll nor
@@ -36,7 +46,7 @@ const captureReference: Middleware = {
 }
 
 function middleware(step: CoachStep | null, topInset: number): Middleware[] {
-  const list: Middleware[] = [offset(CARD_GAP)]
+  const list: Middleware[] = [offset(step?.cursor ? CURSOR_GAP : CARD_GAP)]
   if (!step?.placement || step.placement === 'auto') list.push(flip())
   // shift only guards the main axis by default; crossAxis keeps vertically-
   // centred placements (leftCenter) on-screen too.
@@ -63,13 +73,17 @@ export function useCoachmarkTarget(
   step: MaybeRefOrGetter<CoachStep | null>,
   cardRef: Ref<HTMLElement | null>
 ) {
-  const candidateEls = computed<readonly HTMLElement[]>(() => {
+  const candidateEls = computed<readonly CoachTarget[]>(() => {
     const id = toValue(step)?.coachId
     return id ? coachmarkElements(id) : []
   })
 
-  const targetEl = computed<HTMLElement | null>(
+  const targetEl = computed<CoachTarget | null>(
     () => candidateEls.value.find(isLaidOut) ?? null
+  )
+
+  const isVirtualTarget = computed(
+    () => !!targetEl.value && !(targetEl.value instanceof Element)
   )
 
   // The top bar's height only changes on resize, so read it once and refresh
@@ -79,16 +93,20 @@ export function useCoachmarkTarget(
     topInset.value = topSafeInset()
   })
 
-  const { floatingStyles, middlewareData, isPositioned, update } = useFloating(
-    targetEl,
-    cardRef,
-    {
+  const { floatingStyles, middlewareData, isPositioned, placement, update } =
+    useFloating(targetEl, cardRef, {
       strategy: 'fixed',
       transform: false,
       placement: () => floatingPlacement(toValue(step)),
       middleware: () => middleware(toValue(step), topInset.value)
-    }
-  )
+    })
+
+  watchEffect((onCleanup) => {
+    const el = targetEl.value
+    if (!el || !isMovingTarget(el)) return
+    void update()
+    onCleanup(el.onMove(() => void update()))
+  })
 
   const targetRect = computed<DOMRect | null>(() => {
     const data = middlewareData.value.captureReference as
@@ -122,15 +140,22 @@ export function useCoachmarkTarget(
   })
 
   watchEffect((onCleanup) => {
-    const reference = targetEl.value
+    const anchor = targetEl.value
     const floating = cardRef.value
-    if (!reference || !floating) return
+    if (!anchor || !floating) return
     onCleanup(
-      autoUpdate(reference, floating, update, {
+      autoUpdate(anchor, floating, update, {
         animationFrame: trackMotion.value
       })
     )
   })
 
-  return { targetEl, targetRect, floatingStyles, isPositioned }
+  return {
+    targetEl,
+    targetRect,
+    isVirtualTarget,
+    floatingStyles,
+    isPositioned,
+    placement
+  }
 }

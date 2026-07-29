@@ -30,6 +30,7 @@
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
+  <FirstRunTour />
 </template>
 
 <script setup lang="ts">
@@ -51,6 +52,7 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
+import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'

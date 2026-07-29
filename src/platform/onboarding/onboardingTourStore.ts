@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, readonly, ref, shallowRef, watch } from 'vue'
 
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -12,7 +12,11 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { targetMounted, waitForTarget } from './coachmarkRegistry'
-import { TOURS, TOUR_SEEN_SETTING, resolveSteps } from './onboardingTours'
+import {
+  TOUR_SEEN_SETTING,
+  resolveSteps,
+  tourDefinition
+} from './onboardingTours'
 import type { CoachStep, EntryPath } from './onboardingTours'
 import { useTourTriggers } from './useTourTriggers'
 
@@ -29,6 +33,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const steps = shallowRef<CoachStep[]>([])
   const stepIdx = ref(0)
   const waitingForTarget = ref(false)
+  const opening = ref(false)
   const activeTour = ref<EntryPath | null>(null)
   let stepController: AbortController | null = null
 
@@ -43,8 +48,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const s = step.value
     return s ? countedSteps.value.indexOf(s) : 0
   })
-  // Back navigates the numbered steps only — never into the landing.
-  const canGoBack = computed(() => countedStepIdx.value > 0)
+  const canGoBack = computed(
+    () =>
+      countedStepIdx.value > 0 && !steps.value[stepIdx.value - 1]?.selfAdvancing
+  )
 
   function trackTour(
     stage: OnboardingTourStage,
@@ -60,6 +67,12 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
           step_number: countedStepIdx.value + 1,
           coach_id: step.value?.coachId
         }),
+      // The landing carries no number, so without this a bail there is only
+      // visible as a missing step_number — indistinguishable from a dropped
+      // property. Most abandonment happens here, so it gets a positive marker.
+      ...(stage !== 'started' && step.value?.landing === true
+        ? { is_landing: true }
+        : {}),
       ...(skipReason && { skip_reason: skipReason })
     })
   }
@@ -127,6 +140,15 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       }
     }
     stepIdx.value = idx
+    if (nextStep.onEnter) {
+      try {
+        await nextStep.onEnter(signal)
+      } catch (error) {
+        if (!signal.aborted) console.error('coachmark onEnter failed', error)
+      }
+      if (signal.aborted) return
+    }
+    opening.value = false
     trackTour('step_shown')
   }
 
@@ -152,6 +174,19 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     finish('skipped')
   }
 
+  /** Ends the tour as completed, for consumers whose last step self-completes. */
+  function complete() {
+    finish('completed')
+  }
+
+  /**
+   * Ends the tour without marking it seen: something outside it barred the way,
+   * so the user has not had their tour yet and is offered it again.
+   */
+  function postpone() {
+    finish('skipped', { markSeen: false, skipReason: 'postponed' })
+  }
+
   function finish(
     outcome: 'completed' | 'skipped',
     {
@@ -162,6 +197,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     trackTour(outcome, outcome === 'skipped' ? skipReason : undefined)
     stepController?.abort()
     waitingForTarget.value = false
+    opening.value = false
     steps.value = []
     stepIdx.value = 0
     if (markSeen && activeTour.value) markTourSeen(activeTour.value)
@@ -172,7 +208,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     watch(
       trigger.autoOpen,
       (visible) => {
-        if (visible) startTour(entryPath)
+        if (visible) void startTour(entryPath)
       },
       { immediate: true }
     )
@@ -192,22 +228,36 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     void settingStore.set(TOUR_SEEN_SETTING, [...seen, entryPath])
   }
 
-  function startTour(entryPath: EntryPath, force = false) {
-    if (steps.value.length) return
-    if (!force && hasSeenTour(entryPath)) return
-    const resolved = resolveSteps(TOURS[entryPath], targetMounted)
-    if (!resolved.length) return
+  async function begin(entryPath: EntryPath): Promise<boolean> {
+    if (steps.value.length) return false
+    const definition = tourDefinition(entryPath)
+    if (!definition) return false
+    const built = Array.isArray(definition) ? definition : await definition()
+    // A resolver settling late may have let a concurrent start fill steps first.
+    if (steps.value.length) return false
+    const resolved = resolveSteps(built, targetMounted)
+    if (!resolved.length) return false
     steps.value = resolved
     activeTour.value = entryPath
+    opening.value = true
     trackTour('started')
     void showStep(0)
+    return true
+  }
+
+  /** Starts an unseen tour; false when nothing started. */
+  async function startTour(entryPath: EntryPath): Promise<boolean> {
+    if (hasSeenTour(entryPath)) return false
+    return begin(entryPath)
   }
 
   function replayTour(entryPath: EntryPath) {
-    startTour(entryPath, true)
+    void begin(entryPath)
   }
 
   return {
+    activeTour: readonly(activeTour),
+    opening: readonly(opening),
     step,
     isLast,
     canGoBack,
@@ -219,9 +269,12 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     countedStepIdx,
     countedStepsTotal,
     waitingForTarget,
+    startTour,
     replayTour,
     next,
     back,
-    skip
+    skip,
+    complete,
+    postpone
   }
 })

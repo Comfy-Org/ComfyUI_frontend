@@ -467,7 +467,7 @@ describe('onboardingTourStore', () => {
     expect(store.primaryLabel).toBe('Done')
   })
 
-  it('reports the user-visible step numbering, omitting it for the landing', async () => {
+  it('reports the user-visible step numbering, marking the landing instead', async () => {
     registerAppModeTargets()
     const store = mountStore()
     store.replayTour('appMode')
@@ -479,10 +479,16 @@ describe('onboardingTourStore', () => {
     )
     expect(started?.[1]).toEqual({ tour: 'appMode', step_count: 4 })
 
+    // Unnumbered, but flagged — so a bail here is a value to group on rather
+    // than an absent step_number analytics has to infer from.
     const landingShown = telemetry.track.mock.calls.find(
       ([stage]) => stage === 'step_shown'
     )
-    expect(landingShown?.[1]).toEqual({ tour: 'appMode', step_count: 4 })
+    expect(landingShown?.[1]).toEqual({
+      tour: 'appMode',
+      step_count: 4,
+      is_landing: true
+    })
 
     store.next()
     await nextTick()
@@ -495,6 +501,26 @@ describe('onboardingTourStore', () => {
       step_number: 1,
       coach_id: 'inputs-list'
     })
+  })
+
+  it('marks a skip taken on the landing', async () => {
+    registerAppModeTargets()
+    const store = mountStore()
+    store.replayTour('appMode')
+    await nextTick()
+
+    store.skip()
+    await nextTick()
+
+    // Most abandonment happens on the landing, so the skip has to say so.
+    const skipped = telemetry.track.mock.calls.find(
+      ([stage]) => stage === 'skipped'
+    )
+    expect(skipped?.[1]).toMatchObject({
+      tour: 'appMode',
+      is_landing: true
+    })
+    expect(skipped?.[1]).not.toHaveProperty('step_number')
   })
 
   it('advancing off the landing does not mark the tour skipped', async () => {
