@@ -696,11 +696,21 @@ describe('LGraphNode', () => {
         LiteGraph.vueNodesMode = true
         const nodeConstructor =
           node.constructor as NodeConstructorWithSlotOffset
-        nodeConstructor.title_mode = titleMode
-        node.measure(out)
+        const hadOwnTitleMode = Object.hasOwn(nodeConstructor, 'title_mode')
+        const previousTitleMode = nodeConstructor.title_mode
 
-        expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
-        delete nodeConstructor.title_mode
+        try {
+          nodeConstructor.title_mode = titleMode
+          node.measure(out)
+
+          expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+        } finally {
+          if (hadOwnTitleMode) {
+            nodeConstructor.title_mode = previousTitleMode
+          } else {
+            delete nodeConstructor.title_mode
+          }
+        }
       }
     )
 
