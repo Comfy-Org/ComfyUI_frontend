@@ -3,6 +3,7 @@ import { computed, watch } from 'vue'
 
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { resolveAuthProvider } from '@/platform/auth/authProvider'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthUserInfo } from '@/types/authTypes'
 
@@ -61,13 +62,14 @@ export const useCurrentUser = () => {
     }
 
     const providerId = firebaseUser.value?.providerData[0]?.providerId
-    if (providerId?.includes('google')) {
-      return 'Google'
+    switch (resolveAuthProvider(providerId)) {
+      case 'google':
+        return 'Google'
+      case 'github':
+        return 'GitHub'
+      default:
+        return providerId
     }
-    if (providerId?.includes('github')) {
-      return 'GitHub'
-    }
-    return providerId
   })
 
   const providerIcon = computed(() => {
@@ -76,13 +78,14 @@ export const useCurrentUser = () => {
     }
 
     const providerId = firebaseUser.value?.providerData[0]?.providerId
-    if (providerId?.includes('google')) {
-      return 'pi pi-google'
+    switch (resolveAuthProvider(providerId)) {
+      case 'google':
+        return 'pi pi-google'
+      case 'github':
+        return 'pi pi-github'
+      default:
+        return 'pi pi-user'
     }
-    if (providerId?.includes('github')) {
-      return 'pi pi-github'
-    }
-    return 'pi pi-user'
   })
 
   const isEmailProvider = computed(() => {

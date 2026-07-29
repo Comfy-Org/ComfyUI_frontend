@@ -23,6 +23,10 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
+import {
+  beginVoluntarySignOut,
+  endVoluntarySignOut
+} from '@/platform/auth/session/sessionExpiry'
 import { isCloud } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
@@ -492,12 +496,16 @@ export const useAuthStore = defineStore('auth', () => {
         // Best-effort rollback of the user created in THIS call; never let a
         // cleanup failure mask the original error.
         try {
+          // delete() signs the user out; that is a rollback, not an expiry.
+          beginVoluntarySignOut()
           await credential.user.delete()
         } catch (deleteError) {
           console.warn(
             'Failed to roll back orphaned Firebase user after customer creation failed',
             deleteError
           )
+        } finally {
+          endVoluntarySignOut()
         }
         throw error
       }

@@ -1,5 +1,6 @@
 import { FirebaseError } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
+import { isVoluntarySignOutInProgress } from '@/platform/auth/session/sessionExpiry'
 import * as firebaseAuth from 'firebase/auth'
 import { setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
@@ -492,12 +493,54 @@ describe('useAuthStore', () => {
           : Promise.reject(new Error('Unexpected API call'))
       )
 
+      // delete() signs the user out through the same hook a real expiry uses,
+      // so without the bracket the rollback pops "your session expired" at
+      // someone who never had a session.
+      let bracketedDuringDelete: boolean | undefined
+      vi.mocked(mockUser.delete).mockImplementation(() => {
+        bracketedDuringDelete = isVoluntarySignOutInProgress()
+        return Promise.resolve()
+      })
+
       await expect(
         store.register('new@example.com', 'password', 'turnstile-bad')
       ).rejects.toThrow()
 
+      expect(bracketedDuringDelete).toBe(true)
+
+      // A bracket that is never released outlives the tab: the depth floors at
+      // zero and nothing brings it back down, so every later sign-out reads as
+      // deliberate and a real expiry wipes the drafts instead of suspending.
+      expect(isVoluntarySignOutInProgress()).toBe(false)
+
       // The just-created user is deleted so the email is freed for retry.
       expect(mockUser.delete).toHaveBeenCalledTimes(1)
+    })
+
+    it('releases the rollback bracket even when the rollback itself fails', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers')
+          ? Promise.resolve({
+              ok: false,
+              statusText: 'Forbidden',
+              json: () => Promise.resolve({})
+            })
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+      // The rollback is best-effort and its failure is swallowed, so releasing
+      // the bracket only on the success path leaks it silently and forever.
+      vi.mocked(mockUser.delete).mockRejectedValue(new Error('delete failed'))
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      await expect(
+        store.register('new@example.com', 'password', 'turnstile-bad')
+      ).rejects.toThrow()
+
+      expect(isVoluntarySignOutInProgress()).toBe(false)
+      warn.mockRestore()
     })
 
     it('does not delete the user on a successful registration', async () => {

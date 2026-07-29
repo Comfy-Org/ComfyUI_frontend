@@ -6,6 +6,8 @@ import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import { t } from '@/i18n'
+import { isSessionSuspended } from '@/platform/auth/session/sessionExpiry'
 import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
@@ -461,6 +463,25 @@ export class ComfyApi extends EventTarget {
     let unifiedRetryOn401 = false
 
     if (isCloud) {
+      if (isSessionSuspended()) {
+        // Shaped for the prompt-error pipeline: a body-less or `{}` response
+        // normalizes to null, so Run would record nothing, render nothing, and
+        // still report success to its caller.
+        return new Response(
+          JSON.stringify({
+            error: {
+              type: 'session_expired',
+              message: t('auth.sessionExpired.title'),
+              details: t('auth.sessionExpired.detail')
+            }
+          }),
+          {
+            status: 401,
+            statusText: 'Unauthorized',
+            headers: { 'Content-Type': 'application/json' }
+          }
+        )
+      }
       await this.waitForAuthInitialization()
 
       // Get Firebase JWT token if user is logged in
@@ -652,6 +673,10 @@ export class ComfyApi extends EventTarget {
    * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
    */
   private async createSocket(isReconnect?: boolean) {
+    // Refused before the token lookup below, so a dead session stops asking the
+    // provider to mint a credential it cannot use. The post-await check is what
+    // actually keeps the socket shut.
+    if (isCloud && isSessionSuspended()) return
     if (this.socket) {
       return
     }
@@ -694,6 +719,9 @@ export class ComfyApi extends EventTarget {
     // while this one awaited its token. Abandon this attempt so only the latest
     // generation owns this.socket and no superseded socket is opened.
     if (generation !== this.socketGeneration) return
+    // Suspension normally lands during that same await: authStore calls
+    // resetSocket() before it assigns currentUser, which is what suspends.
+    if (isCloud && isSessionSuspended()) return
 
     const socket = new WebSocket(wsUrl)
     this.socket = socket
@@ -904,6 +932,17 @@ export class ComfyApi extends EventTarget {
    */
   init() {
     this.createSocket()
+  }
+
+  /**
+   * Re-opens a socket that {@link createSocket} refused while the session was
+   * suspended. Unlike {@link resetSocket} it neither tears down a live socket
+   * nor re-derives the tab identity, and it connects as a reconnect, so the
+   * "Reconnecting" notice raised by the close handler is cleared.
+   */
+  async reconnectSocket(): Promise<void> {
+    if (this.socket) return
+    await this.createSocket(true)
   }
 
   /**

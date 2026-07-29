@@ -92,12 +92,6 @@ vi.mock('vue-router', () => ({
   })
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    onUserLogout: vi.fn()
-  })
-}))
-
 const preservedQueryMocks = vi.hoisted(() => ({
   payloads: {} as Record<string, Record<string, string> | undefined>
 }))

@@ -6,6 +6,7 @@
  * All distributions use the /jobs endpoint.
  */
 
+import { isSessionSuspended } from '@/platform/auth/session/sessionExpiry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { JobId } from '@/schemas/apiSchema'
@@ -44,19 +45,16 @@ async function fetchJobsRaw(
   maxItems: number = 200,
   offset: number = 0
 ): Promise<FetchJobsRawResult> {
+  const empty = { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
+  if (isSessionSuspended()) return empty
+
   const statusParam = statuses.join(',')
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
   try {
     const res = await fetchApi(url)
     if (!res.ok) {
       console.error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
-      return {
-        jobs: [],
-        total: 0,
-        offset,
-        limit: maxItems,
-        hasMore: false
-      }
+      return empty
     }
     const data = zJobsListResponse.parse(await res.json())
     return {
@@ -68,7 +66,7 @@ async function fetchJobsRaw(
     }
   } catch (error) {
     console.error('[Jobs API] Error fetching jobs:', error)
-    return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
+    return empty
   }
 }
 
@@ -162,6 +160,8 @@ export async function fetchJobDetail(
   fetchApi: (url: string) => Promise<Response>,
   jobId: JobId
 ): Promise<JobDetail | undefined> {
+  if (isSessionSuspended()) return undefined
+
   try {
     const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`)
 

@@ -6,6 +6,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
+import {
+  beginVoluntarySignOut,
+  endVoluntarySignOut
+} from '@/platform/auth/session/sessionExpiry'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
@@ -111,7 +115,12 @@ export const useAuthActions = () => {
       }
     }
 
-    await authStore.logout()
+    beginVoluntarySignOut()
+    try {
+      await authStore.logout()
+    } finally {
+      endVoluntarySignOut()
+    }
     toastStore.add({
       severity: 'success',
       summary: t('auth.signOut.success'),
@@ -260,7 +269,12 @@ export const useAuthActions = () => {
           return
         }
 
-        await authStore.logout()
+        beginVoluntarySignOut()
+        try {
+          await authStore.logout()
+        } finally {
+          endVoluntarySignOut()
+        }
 
         const signedIn = await dialogService.showSignInDialog()
 

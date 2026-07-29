@@ -1,4 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+const mockIsSessionSuspended = vi.hoisted(() => vi.fn(() => false))
+vi.mock('@/platform/auth/session/sessionExpiry', () => ({
+  isSessionSuspended: mockIsSessionSuspended
+}))
 
 import {
   extractWorkflow,
@@ -382,5 +387,30 @@ describe('fetchJobs', () => {
       )
       consoleSpy.mockRestore()
     })
+  })
+})
+
+describe('suspended session', () => {
+  afterEach(() => {
+    mockIsSessionSuspended.mockReturnValue(false)
+    vi.restoreAllMocks()
+  })
+
+  it('issues no request and logs nothing once the session has ended', async () => {
+    mockIsSessionSuspended.mockReturnValue(true)
+    const fetchApi = vi.fn()
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const queue = await fetchQueue(fetchApi)
+    const history = await fetchHistoryPage(fetchApi)
+    const detail = await fetchJobDetail(fetchApi, 'job-1')
+
+    expect(queue).toEqual({ Running: [], Pending: [] })
+    expect(history.jobs).toEqual([])
+
+    expect(fetchApi).not.toHaveBeenCalled()
+    expect(error).not.toHaveBeenCalled()
+    expect(detail).toBeUndefined()
+    error.mockRestore()
   })
 })
