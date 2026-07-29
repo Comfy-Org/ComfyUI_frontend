@@ -353,12 +353,11 @@ describe('billingOperationStore', () => {
   })
 
   describe('polling failure', () => {
-    it('updates status and shows error toast on failure', async () => {
-      const errorMessage = 'Payment declined for person@example.com'
+    it('does not expose backend details on subscription failure', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'failed',
-        error_message: errorMessage,
+        error_message: 'workflow failed',
         started_at: new Date().toISOString()
       })
 
@@ -369,13 +368,15 @@ describe('billingOperationStore', () => {
 
       const operation = store.getOperation('op-1')
       expect(operation?.status).toBe('failed')
-      expect(operation?.errorMessage).toBe(errorMessage)
+      expect(operation?.errorMessage).toBe(
+        'billingOperation.subscriptionFailedDetail'
+      )
       expect(store.hasPendingOperations).toBe(false)
 
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'billingOperation.subscriptionFailed',
-        detail: errorMessage
+        detail: 'billingOperation.subscriptionFailedDetail'
       })
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
@@ -407,6 +408,28 @@ describe('billingOperationStore', () => {
         severity: 'error',
         summary: 'billingOperation.topupFailed',
         detail: undefined
+      })
+    })
+
+    it('preserves backend details on top-up failure', async () => {
+      const errorMessage = 'Payment method declined'
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: errorMessage,
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')?.errorMessage).toBe(errorMessage)
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'billingOperation.topupFailed',
+        detail: errorMessage
       })
     })
   })
