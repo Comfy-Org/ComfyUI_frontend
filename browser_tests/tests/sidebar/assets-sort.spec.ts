@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import type {
   Asset,
@@ -16,28 +17,47 @@ import { createJobsWithExecutionTimes } from '@e2e/fixtures/helpers/AssetsHelper
 // auto fixtures before the `comfyPage` fixture's internal `setup()`, so the
 // page first-loads with mocks already in place.
 
-// Three jobs whose `(create_time, duration)` axes are intentionally
-// misaligned so newest/oldest and longest/fastest sorts produce *different*
-// orderings — preventing false-pass tests where one ordering accidentally
-// satisfies another.
+// Three jobs whose name, create_time, and duration axes are intentionally
+// misaligned so all six sorts produce different orderings.
 //
-//   spec      create_time    duration (ms)
-//   ----------------------------------------
-//   job-001       1000             5000      (oldest, mid duration)
-//   job-002       2000            10000      (mid age, longest)
-//   job-003       3000             3000      (newest, shortest)
+//   spec      name      create_time    duration (ms)
+//   ------------------------------------------------
+//   job-001   apple          1000             5000
+//   job-002   Zebra          2000            10000
+//   job-003   Banana         3000             3000
 const SORT_JOBS = createJobsWithExecutionTimes([
-  { createTime: 1000, durationMs: 5000 },
-  { createTime: 2000, durationMs: 10000 },
-  { createTime: 3000, durationMs: 3000 }
+  {
+    filename: 'apple.png',
+    createTime: 1000,
+    durationMs: 5000,
+    outputsCount: 2
+  },
+  {
+    filename: 'Zebra.png',
+    createTime: 2000,
+    durationMs: 10000,
+    outputsCount: 2
+  },
+  {
+    filename: 'Banana.png',
+    createTime: 3000,
+    durationMs: 3000,
+    outputsCount: 2
+  }
 ])
 
 // MediaAssetCard renders the filename *without* extension via
 // getFilenameDetails(...).filename, so card-text matching uses the basename.
 const NAME_BY_ID: Record<string, string> = {
-  'job-001': 'output_job-001',
-  'job-002': 'output_job-002',
-  'job-003': 'output_job-003'
+  'job-001': 'apple',
+  'job-002': 'Zebra',
+  'job-003': 'Banana'
+}
+
+async function expectAssetOrder(items: Locator, jobIds: string[]) {
+  for (const [index, jobId] of jobIds.entries()) {
+    await expect(items.nth(index)).toContainText(NAME_BY_ID[jobId])
+  }
 }
 
 function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
@@ -112,7 +132,7 @@ const test = comfyPageFixture.extend<{
 })
 
 test.describe('Assets sidebar - sort options', { tag: '@cloud' }, () => {
-  test('Settings menu exposes all four sort options in cloud mode', async ({
+  test('Settings menu exposes all six sort options in cloud mode', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
@@ -123,6 +143,8 @@ test.describe('Assets sidebar - sort options', { tag: '@cloud' }, () => {
 
     await expect(tab.sortNewestFirst).toBeVisible()
     await expect(tab.sortOldestFirst).toBeVisible()
+    await expect(tab.sortAToZ).toBeVisible()
+    await expect(tab.sortZToA).toBeVisible()
     await expect(tab.sortLongestFirst).toBeVisible()
     await expect(tab.sortFastestFirst).toBeVisible()
   })
@@ -151,6 +173,31 @@ test.describe('Assets sidebar - sort options', { tag: '@cloud' }, () => {
     await expect(tab.assetCards.nth(0)).toContainText(NAME_BY_ID['job-001'])
     await expect(tab.assetCards.nth(1)).toContainText(NAME_BY_ID['job-002'])
     await expect(tab.assetCards.nth(2)).toContainText(NAME_BY_ID['job-003'])
+  })
+
+  test('Name sorting orders output stacks in both grid and list views', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets(SORT_JOBS.length)
+    await expect(
+      comfyPage.page.getByRole('button', { name: 'See more outputs' })
+    ).toHaveCount(SORT_JOBS.length)
+
+    await tab.openSettingsMenu()
+    await tab.sortAToZ.click()
+    await expectAssetOrder(tab.assetCards, ['job-001', 'job-003', 'job-002'])
+
+    await tab.listViewOption.click()
+    await expect(tab.listViewItems).toHaveCount(SORT_JOBS.length)
+    await expectAssetOrder(tab.listViewItems, ['job-001', 'job-003', 'job-002'])
+
+    await tab.sortZToA.click()
+    await expectAssetOrder(tab.listViewItems, ['job-002', 'job-003', 'job-001'])
+
+    await tab.gridLargeOption.click()
+    await expectAssetOrder(tab.assetCards, ['job-002', 'job-003', 'job-001'])
   })
 
   test('"Longest first" puts the slowest job at the top', async ({
@@ -197,7 +244,7 @@ test.describe('Assets sidebar - sort options', { tag: '@cloud' }, () => {
 
     // Type a query that matches all three jobs, then clear it; sort order
     // must remain "oldest first".
-    await tab.searchInput.fill('output_job')
+    await tab.searchInput.fill('png')
     await tab.searchInput.fill('')
 
     await expect(tab.assetCards.nth(0)).toContainText(NAME_BY_ID['job-001'])
