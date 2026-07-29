@@ -7,7 +7,9 @@ import {
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { isSizeEqual } from '@/renderer/core/layout/utils/geometry'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -105,6 +107,18 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 // #region Types
 
 export type NodeProperty = string | number | boolean | object
+
+/** TypedArray methods that mutate in place, so must trigger a layout commit. */
+const MUTATING_SIZE_METHODS = new Set([
+  'set',
+  'fill',
+  'copyWithin',
+  'reverse',
+  'sort'
+])
+
+/** Captures only the {@link layoutStore} singleton, so shared across nodes. */
+const layoutMutations = useLayoutMutations()
 
 interface INodePropertyInfo {
   name?: string
@@ -504,9 +518,8 @@ export class LGraphNode
     this._pos[1] = value[1]
     if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Canvas)
-    mutations.moveNode(this.id, { x: value[0], y: value[1] })
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.moveNode(this.id, { x: value[0], y: value[1] })
   }
 
   /**
@@ -516,8 +529,48 @@ export class LGraphNode
     this.pos = [x, y]
   }
 
-  public get size() {
-    return this._size
+  private _sizeProxy?: Size
+
+  /**
+   * A Proxy over {@link _size} so that element mutations (`node.size[1] = h`) —
+   * the idiom many custom nodes use to grow a node at runtime — commit to the
+   * layout store, exactly like assigning `node.size = [w, h]`. Without this a
+   * bare element write bypasses the setter and a Vue node keeps its stale
+   * height until a manual resize.
+   *
+   * The Proxy is created once and reused; index writes pass straight through to
+   * the backing `Float64Array`, and function/length access is forwarded to the
+   * real typed array so spread, iteration and `.length` keep working. In-place
+   * mutating methods ({@link MUTATING_SIZE_METHODS}) also commit, so growing the
+   * node via `node.size.set(...)` reflows just like a bare element write.
+   *
+   * TODO(litegraph-stable-resize-api): interim shim — remove once a stable resize
+   * API replaces direct typed-array size access.
+   */
+  public get size(): Size {
+    return (this._sizeProxy ??= new Proxy(this._size, {
+      get: (target, prop, receiver) => {
+        const value = Reflect.get(target, prop, target)
+        if (typeof value !== 'function') return value
+        if (typeof prop !== 'string' || !MUTATING_SIZE_METHODS.has(prop))
+          return value.bind(target)
+
+        // `set`/`fill`/etc. mutate the backing array without hitting the set
+        // trap, so commit through the same path a bare element write would.
+        // `fill`/`copyWithin`/`reverse`/`sort` return the backing array; hand
+        // back the Proxy so a chained index write still routes through the trap.
+        return (...args: unknown[]) => {
+          const result = Reflect.apply(value, target, args)
+          this._sizeUpdated()
+          return result === target ? receiver : result
+        }
+      },
+      set: (target, prop, value) => {
+        const result = Reflect.set(target, prop, value)
+        if (prop === '0' || prop === '1') this._sizeUpdated()
+        return result
+      }
+    }))
   }
 
   public set size(value) {
@@ -525,14 +578,19 @@ export class LGraphNode
 
     this._size[0] = value[0]
     this._size[1] = value[1]
+    this._sizeUpdated()
+  }
+
+  /** Mirror the current {@link _size} into the layout store for Vue nodes. */
+  private _sizeUpdated(): void {
     if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Canvas)
-    mutations.resizeNode(this.id, {
-      width: value[0],
-      height: value[1]
-    })
+    const size = { width: this._size[0], height: this._size[1] }
+    const layout = layoutStore.getNodeLayoutRef(this.id).value
+    if (layout && isSizeEqual(layout.size, size)) return
+
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.resizeNode(this.id, size)
   }
 
   /**

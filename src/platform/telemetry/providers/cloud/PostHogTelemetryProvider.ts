@@ -11,8 +11,10 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
   AddCreditsClickMetadata,
+  AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
+  BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -23,13 +25,17 @@ import type {
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OnboardingTourMetadata,
+  OnboardingTourStage,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  ResubscribeClickMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
+  SubscriptionCancellationMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -42,12 +48,20 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
+  WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
 } from '../../types'
-import { TelemetryEvents } from '../../types'
+import {
+  CANCELLATION_STAGE_EVENTS,
+  getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload,
+  OnboardingTourEvents,
+  TelemetryEvents
+} from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -141,6 +155,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               before_send: createPostHogBeforeSend()
             })
             this.isInitialized = true
+            // Before flushEventQueue so pre-init events also carry the
+            // platform super properties.
+            this.registerPlatformProps()
             this.flushEventQueue()
             this.registerDesktopEntryProps()
 
@@ -283,6 +300,18 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  private registerPlatformProps(): void {
+    if (!this.posthog) return
+    try {
+      this.posthog.register({
+        client: window.__comfyDesktop2 ? 'desktop' : 'web',
+        deployment: 'cloud'
+      })
+    } catch (error) {
+      console.error('Failed to register platform props:', error)
+    }
+  }
+
   private registerDesktopEntryProps(): void {
     if (!this.posthog) return
     const props = readDesktopEntryProps()
@@ -336,6 +365,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
   }
 
+  trackAuthFailed(metadata: AuthErrorMetadata): void {
+    this.trackEvent(TelemetryEvents.USER_AUTH_FAILED, metadata)
+  }
+
   trackUserLoggedIn(): void {
     this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
   }
@@ -370,6 +403,17 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_CANCELLED)
   }
 
+  trackSubscriptionCancellation(
+    event: 'flow_opened' | 'confirmed' | 'abandoned' | 'failed',
+    metadata?: SubscriptionCancellationMetadata
+  ): void {
+    this.trackEvent(CANCELLATION_STAGE_EVENTS[event], metadata)
+  }
+
+  trackResubscribeClicked(metadata: ResubscribeClickMetadata): void {
+    this.trackEvent(TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED, metadata)
+  }
+
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED, {
       credit_amount: amount
@@ -384,8 +428,26 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
   }
 
+  trackWorkspaceInviteFailed(metadata: WorkspaceInviteFailedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_FAILED, metadata)
+  }
+
+  trackBillingEvent(event: BillingTelemetryEvent): void {
+    this.trackEvent(
+      getBillingTelemetryEventName(event),
+      getBillingTelemetryEventPayload(event)
+    )
+  }
+
   trackRunButton(properties: RunButtonProperties): void {
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
+  }
+
+  trackOnboardingTour(
+    stage: OnboardingTourStage,
+    metadata: OnboardingTourMetadata
+  ): void {
+    this.trackEvent(OnboardingTourEvents[stage], metadata)
   }
 
   trackSurvey(
@@ -534,6 +596,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
+    this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
@@ -18,15 +19,32 @@ import type {
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
-type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+
+export type SubscriptionCheckoutSelection =
+  | {
+      planMode: 'personal'
+      tierKey: CheckoutTierKey
+      billingCycle: BillingCycle
+    }
+  | {
+      planMode: 'team'
+      stop: TeamPlanSelection
+      billingCycle: BillingCycle
+    }
 
 interface SelectedTeamCheckout {
   stop: TeamPlanSelection
   checkoutType: SubscriptionCheckoutType
+}
+
+interface SubscriptionCheckoutOptions {
+  tierPlanType?: 'personal' | 'team'
 }
 
 /**
@@ -59,7 +77,8 @@ export function useSubscriptionCheckout(
   emit: {
     (e: 'close', subscribed: boolean): void
   },
-  paymentIntentSource?: PaymentIntentSource
+  paymentIntentSource?: PaymentIntentSource,
+  { tierPlanType = 'personal' }: SubscriptionCheckoutOptions = {}
 ) {
   const { t } = useI18n()
   const toast = useToast()
@@ -67,10 +86,12 @@ export function useSubscriptionCheckout(
     subscribe,
     previewSubscribe,
     plans,
-    fetchStatus,
-    fetchBalance,
+    fetchPlans,
+    isTeamPlan,
     resubscribe
   } = useBillingContext()
+  const { shouldUseWorkspaceBilling } = useBillingRouting()
+  const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
 
@@ -88,6 +109,47 @@ export function useSubscriptionCheckout(
     () => selectedTeamCheckout.value?.stop ?? null
   )
   const isTeamCheckout = computed(() => selectedTeamCheckout.value !== null)
+
+  function canSelectTierPlan(): boolean {
+    return (
+      tierPlanType === 'team' ||
+      !isTeamPlan.value ||
+      permissions.value.canDowngradeToPersonal
+    )
+  }
+
+  async function showTeamToPersonalDowngrade(
+    planSlug: string,
+    tierKey: CheckoutTierKey
+  ): Promise<boolean> {
+    if (tierPlanType === 'team' || !isTeamPlan.value) return false
+
+    const { useDialogService } = await import('@/services/dialogService')
+    const result = await useDialogService().showDowngradeToPersonalDialog({
+      planName: t(`subscription.tiers.${tierKey}.name`),
+      planSlug
+    })
+    if (!result) return true
+
+    previewData.value = result.preview
+    trackWorkspaceCheckoutStarted({
+      tier: tierKey,
+      cycle: selectedBillingCycle.value,
+      checkoutType: 'change',
+      billingOpId: result.response.billing_op_id,
+      paymentIntentSource
+    })
+    await handleSubscribeResponse(
+      result.response,
+      {
+        tier: tierKey,
+        cycle: selectedBillingCycle.value,
+        checkoutType: 'change'
+      },
+      result.preview.is_immediate
+    )
+    return true
+  }
 
   const previewVariant = computed<PreviewVariant>(() => {
     if (selectedTeamCheckout.value) {
@@ -112,6 +174,8 @@ export function useSubscriptionCheckout(
     tierKey: CheckoutTierKey
     billingCycle: BillingCycle
   }) {
+    if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
+
     const { tierKey, billingCycle } = payload
 
     isLoadingPreview.value = true
@@ -120,7 +184,11 @@ export function useSubscriptionCheckout(
     selectedBillingCycle.value = billingCycle
 
     try {
-      const planSlug = getApiPlanSlug(tierKey, billingCycle)
+      let planSlug = getApiPlanSlug(tierKey, billingCycle)
+      if (!planSlug) {
+        await fetchPlans()
+        planSlug = getApiPlanSlug(tierKey, billingCycle)
+      }
       if (!planSlug) {
         toast.add({
           severity: 'error',
@@ -129,6 +197,7 @@ export function useSubscriptionCheckout(
         })
         return
       }
+      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       const response = await previewSubscribe(planSlug)
 
       if (!response || !response.allowed) {
@@ -170,6 +239,8 @@ export function useSubscriptionCheckout(
     billingCycle: BillingCycle
     isChange?: boolean
   }) {
+    if (!permissions.value.canManageSubscription) return
+
     selectedTeamCheckout.value = {
       stop: payload.stop,
       checkoutType: payload.isChange ? 'change' : 'new'
@@ -209,6 +280,8 @@ export function useSubscriptionCheckout(
   }
 
   async function handleSubscription() {
+    if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
+
     const tierKey = selectedTierKey.value
     if (!tierKey) return
 
@@ -223,6 +296,7 @@ export function useSubscriptionCheckout(
     try {
       const planSlug = getApiPlanSlug(tierKey, billingCycle)
       if (!planSlug) return
+      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
@@ -237,8 +311,17 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response)
+      await handleSubscribeResponse(response, {
+        tier: tierKey,
+        cycle: billingCycle,
+        checkoutType
+      })
     } catch (error) {
+      trackSubscriptionFailure({
+        tier: tierKey,
+        cycle: billingCycle,
+        checkoutType
+      })
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
@@ -256,14 +339,54 @@ export function useSubscriptionCheckout(
     })
   }
 
+  interface SubscriptionOutcomeContext {
+    tier: CheckoutTierKey | 'team'
+    cycle: BillingCycle
+    checkoutType: SubscriptionCheckoutType
+  }
+
+  function trackSubscriptionFailure(
+    context: SubscriptionOutcomeContext,
+    errorCode?: 'missing_checkout_response'
+  ) {
+    if (!shouldUseWorkspaceBilling.value) return
+
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      tier: context.tier,
+      cycle: context.cycle,
+      checkout_type: context.checkoutType,
+      payment_intent_source: paymentIntentSource,
+      failure_category: 'unknown',
+      ...(errorCode && { error_code: errorCode })
+    })
+  }
+
   async function handleSubscribeResponse(
-    response: SubscribeResponse | void
+    response: SubscribeResponse | void,
+    context: SubscriptionOutcomeContext,
+    shouldTrackSubscriptionSuccess = true
   ): Promise<void> {
-    if (!response) return
+    if (!response) {
+      trackSubscriptionFailure(context, 'missing_checkout_response')
+      return
+    }
 
     if (response.status === 'subscribed') {
-      telemetry?.trackMonthlySubscriptionSucceeded()
-      await Promise.all([fetchStatus(), fetchBalance()])
+      if (shouldTrackSubscriptionSuccess) {
+        telemetry?.trackBillingEvent({
+          operation: 'subscription_checkout',
+          stage: 'succeeded',
+          outcome: 'success',
+          tier: context.tier,
+          cycle: context.cycle,
+          checkout_type: context.checkoutType,
+          payment_intent_source: paymentIntentSource,
+          billing_op_id: response.billing_op_id
+        })
+      }
       checkoutStep.value = 'success'
       return
     }
@@ -287,21 +410,32 @@ export function useSubscriptionCheckout(
         })
       }
     }
-    await advanceToSuccessOnOperation(response.billing_op_id)
+    await advanceToSuccessOnOperation(response.billing_op_id, context)
   }
 
   // A Stripe-backed subscribe finishes asynchronously: await the billing op and
   // advance to the success step ourselves. The store refreshes status/balance
   // before resolving and surfaces any failure via toast.
-  async function advanceToSuccessOnOperation(opId: string) {
+  async function advanceToSuccessOnOperation(
+    opId: string,
+    context: SubscriptionOutcomeContext
+  ) {
     const operation = await billingOperationStore.startOperation(
       opId,
-      'subscription'
+      'subscription',
+      {
+        tier: context.tier,
+        cycle: context.cycle,
+        checkoutType: context.checkoutType,
+        paymentIntentSource
+      }
     )
     if (operation.status === 'succeeded') checkoutStep.value = 'success'
   }
 
   async function handleTeamSubscription() {
+    if (!permissions.value.canManageSubscription) return
+
     const teamCheckout = selectedTeamCheckout.value
     if (!teamCheckout?.stop.id) {
       toast.add({
@@ -334,8 +468,17 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response)
+      await handleSubscribeResponse(response, {
+        tier: 'team',
+        cycle: billingCycle,
+        checkoutType
+      })
     } catch (error) {
+      trackSubscriptionFailure({
+        tier: 'team',
+        cycle: billingCycle,
+        checkoutType
+      })
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
@@ -343,9 +486,24 @@ export function useSubscriptionCheckout(
   }
 
   async function handleResubscribe() {
+    if (!permissions.value.canManageSubscriptionLifecycle) return
+
+    telemetry?.trackResubscribeClicked({
+      source: 'pricing_dialog',
+      payment_intent_source: paymentIntentSource
+    })
     isResubscribing.value = true
     try {
       await resubscribe()
+      if (shouldUseWorkspaceBilling.value) {
+        telemetry?.trackBillingEvent({
+          operation: 'resubscribe',
+          stage: 'succeeded',
+          outcome: 'success',
+          source: 'pricing_dialog',
+          payment_intent_source: paymentIntentSource
+        })
+      }
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),
@@ -355,6 +513,16 @@ export function useSubscriptionCheckout(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to resubscribe'
+      if (shouldUseWorkspaceBilling.value) {
+        telemetry?.trackBillingEvent({
+          operation: 'resubscribe',
+          stage: 'failed',
+          outcome: 'failure',
+          source: 'pricing_dialog',
+          payment_intent_source: paymentIntentSource,
+          failure_category: 'unknown'
+        })
+      }
       toast.add({
         severity: 'error',
         summary: 'Error',

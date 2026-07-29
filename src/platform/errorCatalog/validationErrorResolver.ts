@@ -11,6 +11,12 @@ import {
   translateOptionalCatalogMessage
 } from './catalogI18n'
 import type { CatalogParams, ErrorResolveContext } from './catalogI18n'
+import {
+  INPUT_LEVEL_VALIDATION_ERROR_TYPES,
+  NODE_LEVEL_VALIDATION_ERROR_TYPES,
+  getInputConfigBounds,
+  isImageNotLoadedValidationError
+} from '@/utils/executionErrorUtil'
 
 const REQUIRED_INPUT_MISSING_TYPE = 'required_input_missing'
 
@@ -62,51 +68,31 @@ const VALUE_SPECIFIC_COPY_RULES: Record<
   }
 }
 
+const NODE_LEVEL_VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> =
+  Object.fromEntries(
+    Array.from(NODE_LEVEL_VALIDATION_ERROR_TYPES, (type) => [
+      type,
+      { catalogId: type, itemLabel: 'node' } satisfies ValidationCatalogRule
+    ])
+  )
+
+const INPUT_LEVEL_VALIDATION_ERROR_RULES: Record<
+  string,
+  ValidationCatalogRule
+> = Object.fromEntries(
+  Array.from(INPUT_LEVEL_VALIDATION_ERROR_TYPES, (type) => [
+    type,
+    { catalogId: type, itemLabel: 'nodeInput' } satisfies ValidationCatalogRule
+  ])
+)
+
 const VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> = {
+  ...INPUT_LEVEL_VALIDATION_ERROR_RULES,
   [REQUIRED_INPUT_MISSING_TYPE]: {
     catalogId: MISSING_CONNECTION_CATALOG_ID,
     itemLabel: 'nodeInput'
   },
-  bad_linked_input: {
-    catalogId: 'bad_linked_input',
-    itemLabel: 'nodeInput'
-  },
-  return_type_mismatch: {
-    catalogId: 'return_type_mismatch',
-    itemLabel: 'nodeInput'
-  },
-  invalid_input_type: {
-    catalogId: 'invalid_input_type',
-    itemLabel: 'nodeInput'
-  },
-  value_smaller_than_min: {
-    catalogId: 'value_smaller_than_min',
-    itemLabel: 'nodeInput'
-  },
-  value_bigger_than_max: {
-    catalogId: 'value_bigger_than_max',
-    itemLabel: 'nodeInput'
-  },
-  value_not_in_list: {
-    catalogId: 'value_not_in_list',
-    itemLabel: 'nodeInput'
-  },
-  custom_validation_failed: {
-    catalogId: 'custom_validation_failed',
-    itemLabel: 'nodeInput'
-  },
-  exception_during_inner_validation: {
-    catalogId: 'exception_during_inner_validation',
-    itemLabel: 'nodeInput'
-  },
-  exception_during_validation: {
-    catalogId: 'exception_during_validation',
-    itemLabel: 'node'
-  },
-  dependency_cycle: {
-    catalogId: 'dependency_cycle',
-    itemLabel: 'node'
-  }
+  ...NODE_LEVEL_VALIDATION_ERROR_RULES
 }
 
 // Image-not-loaded shares the custom_validation_failed type, so type-keyed
@@ -128,26 +114,6 @@ function getInputName(error: NodeValidationError): string {
   return (
     inputName?.trim() ||
     translateCatalogMessage('errorCatalog.fallbacks.inputName', 'unknown input')
-  )
-}
-
-function getErrorText(error: NodeValidationError) {
-  return [
-    'message' in error ? error.message : undefined,
-    'details' in error ? error.details : undefined
-  ]
-    .filter(Boolean)
-    .join('\n')
-}
-
-function isImageNotLoadedText(text: string): boolean {
-  return /invalid image file|\[errno 21\].*is a directory/i.test(text)
-}
-
-function isImageNotLoadedValidationError(error: NodeValidationError): boolean {
-  return (
-    error.type === 'custom_validation_failed' &&
-    isImageNotLoadedText(getErrorText(error))
   )
 }
 
@@ -179,13 +145,7 @@ function getInputConfigValue(
   error: NodeValidationError,
   key: 'min' | 'max'
 ): string | undefined {
-  const inputConfig = error.extra_info?.input_config
-  if (!Array.isArray(inputConfig)) return undefined
-
-  const config = inputConfig[1]
-  if (!config || typeof config !== 'object') return undefined
-
-  return formatCatalogValue((config as Record<string, unknown>)[key])
+  return formatCatalogValue(getInputConfigBounds(error)[key])
 }
 
 function getInputConfigType(error: NodeValidationError): string | undefined {

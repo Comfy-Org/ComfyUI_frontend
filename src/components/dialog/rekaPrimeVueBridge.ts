@@ -1,10 +1,13 @@
 // PrimeVue overlays (Select, ColorPicker, Popover, Autocomplete, stacked
-// PrimeVue Dialogs) teleport to body. Reka treats clicks on body-portaled
-// elements as outside its dialog and would auto-dismiss on the first
-// interaction, tearing the overlay down mid-interaction. Treat any
-// PrimeVue overlay click as inside.
+// PrimeVue Dialogs, Toasts) teleport to body. Reka treats clicks on
+// body-portaled elements as outside its dialog and would auto-dismiss on the
+// first interaction, tearing the overlay down mid-interaction. Treat any
+// PrimeVue overlay click as inside. Toasts matter for focus-outside: when a
+// button disables itself mid-action (e.g. a confirm entering its loading
+// state), the browser drops focus and recovery can land on the toast's close
+// button, which must not dismiss the dialog underneath.
 const PRIMEVUE_OVERLAY_SELECTORS =
-  '.p-select-overlay, .p-colorpicker-panel, .p-popover, .p-autocomplete-overlay, .p-overlay, .p-overlay-mask, .p-dialog'
+  '.p-select-overlay, .p-colorpicker-panel, .p-popover, .p-autocomplete-overlay, .p-overlay, .p-overlay-mask, .p-dialog, .p-toast'
 
 // Reka portals its own dialogs / popovers / menus into the body too. When a
 // nested Reka layer opens on top of a non-modal parent, the parent's
@@ -53,7 +56,22 @@ export function onRekaPointerDownOutside(
 // nested Reka or PrimeVue dialog teleported to body). Without this guard a
 // non-modal Reka dialog would dismiss itself the moment a nested dialog
 // receives focus.
-export function onRekaFocusOutside(event: OutsideEvent) {
+//
+// A container dialog (e.g. Settings) that hosts nested confirm/edit dialogs can
+// also lose focus to an ordinary app element — not just a portal — when a
+// nested dialog closes and the element it focused was removed (deleting the
+// selected row). That programmatic focus shift is not a dismiss intent, so such
+// a dialog opts out of focus-outside dismissal entirely via
+// `dismissOnFocusOutside: false`; it still dismisses on escape or an outside
+// pointer.
+export function onRekaFocusOutside(
+  event: OutsideEvent,
+  options: { dismissOnFocusOutside?: boolean } = {}
+) {
+  if (options.dismissOnFocusOutside === false) {
+    event.preventDefault()
+    return
+  }
   if (isInsideOverlay(event.detail.originalEvent.target)) {
     event.preventDefault()
   }

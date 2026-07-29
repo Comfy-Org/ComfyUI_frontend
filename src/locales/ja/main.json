@@ -3,6 +3,9 @@
     "dockToTop": "上部にドッキング",
     "feedback": "フィードバック",
     "feedbackTooltip": "フィードバック",
+    "freeTierPartner": "パートナーノードは有料プランが必要です",
+    "freeTierRuns": "残り {available} / {MAX_AVAILABLE} 回",
+    "freeTierRunsExhausted": "残り回数なし",
     "share": "共有",
     "shareTooltip": "ワークフローを共有"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "無料プラン対象",
       "freeTierDescription": "Googleでサインアップすると、毎月{credits}の無料クレジットがもらえます。クレジットカード不要。",
       "freeTierDescriptionGeneric": "Googleでサインアップすると、毎月無料クレジットがもらえます。クレジットカード不要。",
+      "googleSsoInAppBrowserNotice": "アプリ内ブラウザ（例：Instagram、LinkedIn）から開いた場合、Googleでのサインインができないことがあります。GitHubまたはメールをご利用いただくか、デバイスの標準ブラウザでこのページを開いてください。",
       "insecureContextWarning": "この接続は安全ではありません（HTTP）- このままログインを続けると、認証情報が攻撃者に傍受される可能性があります。",
       "loginButton": "ログイン",
       "loginWithGithub": "Githubでログイン",
@@ -359,12 +363,14 @@
     "colors": "カラーパレット",
     "descLabel": "説明",
     "descPlaceholder": "この領域の説明",
+    "grid": "グリッド",
     "textLabel": "テキスト",
     "textPlaceholder": "表示するテキスト（そのまま）",
     "typeObj": "obj",
     "typeText": "テキスト"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode}モード、ワークフローアクション",
     "app": "アプリ",
     "blueprint": "ブループリント",
     "clearWorkflow": "ワークフローをクリア",
@@ -515,57 +521,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "回答は{max}文字以内で入力してください。",
         "chooseAnOption": "オプションを選択してください。",
         "describeAnswer": "回答を記述してください。",
         "selectAtLeastOne": "少なくとも1つ選択してください。"
       },
       "intro": "ComfyUIの体験をより最適化するためにご協力ください。",
       "options": {
-        "familiarity": {
-          "advanced": "上級ユーザー（カスタムワークフロー）",
-          "basics": "基本操作に慣れている",
-          "expert": "エキスパート（他者を支援）",
-          "new": "ComfyUI初心者（使用経験なし）",
-          "starting": "使い始め（チュートリアルをフォロー中）"
+        "experience": {
+          "new": "ComfyUIは初めて",
+          "pro": "上級ユーザー",
+          "some": "ある程度使い方が分かる"
+        },
+        "focus": {
+          "custom_nodes": "カスタムノード",
+          "pipelines": "自動パイプライン",
+          "products": "他者向けプロダクト"
         },
         "intent": {
-          "3d_game": "3Dアセット／ゲームアセット",
-          "api": "ワークフロー実行用APIエンドポイント",
-          "apps": "ワークフローから簡易アプリ作成",
-          "audio": "音声／音楽",
-          "custom_nodes": "カスタムノード",
+          "apps_api": "アプリ・API",
+          "exploring": "探索中",
           "images": "画像",
-          "not_sure": "まだ分からない",
-          "videos": "動画",
+          "other": "その他",
+          "otherPlaceholder": "何を作りたいですか？",
+          "video": "動画",
           "workflows": "カスタムワークフローやパイプライン"
         },
         "source": {
-          "conference": "カンファレンスやイベント",
-          "discord": "Discord／コミュニティ",
+          "community": "コミュニティ・フォーラム",
           "friend": "友人または同僚",
-          "github": "GitHub",
+          "other": "その他",
+          "otherPlaceholder": "どこで私たちを知りましたか？",
+          "search": "Google／検索",
+          "social": "ソーシャルメディア"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "ニュースレターやブログ",
-          "other": "その他",
           "reddit": "Reddit",
-          "search": "Google／検索",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X（Twitter）",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "教育（学生または教育者）",
-          "personal": "個人利用",
-          "work": "仕事"
         }
       },
+      "otherPlaceholder": "詳細をお聞かせください",
       "placeholder": "アンケート質問のプレースホルダー",
-      "steps": {
-        "familiarity": "ComfyUIの使用経験はどの程度ですか？",
-        "intent": "ComfyUIで何を作成したいですか？",
-        "source": "ComfyUIをどこで知りましたか？",
-        "usage": "ComfyUIをどのように利用する予定ですか？"
-      },
       "title": "クラウドアンケート"
     }
   },
@@ -578,10 +579,11 @@
   "cloudStart_learnAboutButton": "クラウドについて学ぶ",
   "cloudStart_title": "数秒で作成を開始",
   "cloudStart_wantToRun": "代わりにローカルでComfyUIを実行したいですか？",
-  "cloudSurvey_steps_familiarity": "ComfyUIにどの程度精通していますか？",
+  "cloudSurvey_steps_experience": "ComfyUIの知識レベルは？",
+  "cloudSurvey_steps_focus": "何を作成していますか？",
   "cloudSurvey_steps_intent": "ComfyUIで何を作成したいですか？",
   "cloudSurvey_steps_source": "ComfyUIをどこで知りましたか？",
-  "cloudSurvey_steps_usage": "ComfyUIをどのように利用する予定ですか？",
+  "cloudSurvey_steps_source_social": "どのプラットフォームですか？",
   "cloudWaitlist_contactLink": "こちら",
   "cloudWaitlist_questionsText": "質問がありますか？お問い合わせください",
   "color": {
@@ -609,22 +611,25 @@
     "chooseProfilePicture": "プロフィール画像を選択",
     "createProfile": "プロフィールを作成",
     "createProfileButton": "プロフィールを作成する",
-    "createProfileTitle": "Comfy Hubプロフィールを作成",
+    "createProfileTitle": "Comfy Workflowsプロフィールを作成",
     "creatingProfile": "プロフィール作成中...",
     "descriptionLabel": "自己紹介",
     "descriptionPlaceholder": "コミュニティに自己紹介しましょう...",
     "introDescription": "ワークフローを公開してポートフォリオを作成し、数百万人のユーザーに見つけてもらいましょう",
-    "introSubtitle": "ComfyHubでワークフローを共有するには、まずプロフィールを作成しましょう。",
-    "introTitle": "ComfyHub へ公開",
-    "modalTitle": "ComfyHubのプロフィールを作成",
+    "introSubtitle": "Comfy Workflowsでワークフローを共有するには、まずプロフィールを作成しましょう。",
+    "introTitle": "Comfy Workflows へ公開",
+    "modalTitle": "Comfy Workflowsのプロフィールを作成",
     "nameLabel": "お名前",
     "namePlaceholder": "ここにお名前を入力してください",
     "profileCreationNav": "プロフィール作成",
     "startPublishingButton": "公開を開始",
+    "startUpdatingButton": "ワークフローを更新",
     "successDescription": "これでクリエイターページにワークフローをアップロードできます",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "あなたのプロフィールページ：",
     "successTitle": "素敵です、{'@'}{username}！",
+    "updateIntroDescription": "最新の変更をComfy Workflowsにプッシュします。共有リンクや統計情報はそのまま維持されます。",
+    "updateIntroTitle": "Comfy Workflowsワークフローを更新",
     "uploadCover": "+ カバー画像をアップロード",
     "uploadProfilePicture": "+ プロフィール画像をアップロード",
     "uploadWorkflowButton": "ワークフローをアップロード",
@@ -636,18 +641,20 @@
     "additionalInfo": "追加情報",
     "back": "戻る",
     "createProfileCta": "プロフィールを作成",
-    "createProfileToPublish": "ComfyHubに公開するにはプロフィールを作成してください",
+    "createProfileToPublish": "Comfy Workflowsに公開するにはプロフィールを作成してください",
     "exampleImage": "サンプル画像 {index}",
     "exampleImagePosition": "サンプル画像 {index} / {total}",
     "examplesDescription": "追加サンプル画像は最大{total}枚まで",
     "maxExamples": "最大{max}件まで選択できます",
     "next": "次へ",
-    "publishButton": "ComfyHub へ公開",
+    "publishButton": "Comfy Workflows へ公開",
     "publishFailedDescription": "ワークフローの公開中に問題が発生しました。もう一度お試しください。",
     "publishFailedTitle": "公開に失敗しました",
-    "publishSuccessDescription": "あなたのワークフローがComfyHubで公開されました。",
+    "publishSuccessDescription": "あなたのワークフローがComfy Workflowsで公開されました。",
     "publishSuccessTitle": "公開に成功しました",
     "removeExampleImage": "サンプル画像を削除",
+    "renameFailedDescription": "ワークフローは正常に公開されましたが、ローカルファイルの名前変更に失敗しました。再度名前を変更してください。",
+    "renameFailedTitle": "名前の変更に失敗しました",
     "selectAThumbnail": "サムネイルを選択",
     "shareAs": "次の形式で共有",
     "showLessTags": "表示を減らす...",
@@ -663,8 +670,9 @@
     "thumbnailImageComparison": "画像比較",
     "thumbnailPreview": "サムネイルプレビュー",
     "thumbnailVideo": "動画",
-    "title": "ComfyHub へ公開",
-    "unsavedDescription": "ComfyHub に公開する前にワークフローを保存する必要があります。続行するには今すぐ保存してください。",
+    "title": "Comfy Workflows へ公開",
+    "unsavedDescription": "Comfy Workflows に公開する前にワークフローを保存する必要があります。続行するには今すぐ保存してください。",
+    "updateButton": "ワークフローを更新",
     "uploadAnImage": "クリックして選択 または画像をドラッグ",
     "uploadComparison": "ビフォーアフターをアップロード",
     "uploadComparisonAfterPrompt": "アフター",
@@ -781,8 +789,15 @@
       "gpuUsage": "GPU利用"
     },
     "faqs": "よくある質問",
+    "insufficient": {
+      "memberCta": "了解しました",
+      "memberDescription": "チームのクレジットがすべて使用されました。ワークスペース管理者がクレジットを追加する必要があります。",
+      "memberTitle": "このワークスペースのクレジットが不足しています"
+    },
     "invoiceHistory": "請求履歴",
     "lastUpdated": "最終更新",
+    "loadEventsError": "アクティビティの読み込みに失敗しました。もう一度お試しください。",
+    "loadEventsUnknownError": "アクティビティの読み込み中に問題が発生しました。ページを更新して再度お試しください。",
     "messageSupport": "サポートにメッセージ",
     "model": "モデル",
     "purchaseCredits": "クレジットを購入",
@@ -949,6 +964,16 @@
       "message": "無効なダイアログIDが指定されました。",
       "title": "無効なダイアログ"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUIデスクトップアプリがあなたのアカウントでサインインを待機しています。ComfyUIデスクトップアプリからサインインを開始した場合のみ続行してください。",
+    "confirmSummary": "デスクトップサインインを承認しますか？",
+    "expiredDetail": "サインインリクエストの有効期限が切れたか、すでに使用されています。ComfyUIデスクトップアプリから再度サインインを開始してください。",
+    "expiredSummary": "デスクトップサインインに失敗しました",
+    "failedDetail": "デスクトップサインインの完了中に問題が発生しました。ComfyUIデスクトップアプリから再度サインインを開始してください。",
+    "failedSummary": "デスクトップサインインに失敗しました",
+    "successDetail": "ComfyUIデスクトップアプリに戻ることができます。",
+    "successSummary": "サインインしました"
   },
   "desktopMenu": {
     "confirmQuit": "保存されていないワークフローを終了しようとしています。保存されていない変更はすべて失われます。これを無視して終了しますか？",
@@ -1437,6 +1462,9 @@
     "preparingExport": "エクスポートを準備中...",
     "retryDownload": "ダウンロードを再試行"
   },
+  "feedback": {
+    "title": "フィードバックを共有"
+  },
   "g": {
     "1x": "1倍速",
     "2x": "2倍速",
@@ -1564,6 +1592,7 @@
     "extensions": "拡張機能",
     "failed": "失敗",
     "failedToCopyJobId": "ジョブIDのコピーに失敗しました",
+    "failedToDownloadFile": "ファイルのダウンロードに失敗しました",
     "failedToDownloadImage": "画像のダウンロードに失敗しました",
     "failedToDownloadVideo": "ビデオのダウンロードに失敗しました",
     "favorites": "お気に入り",
@@ -1808,6 +1837,7 @@
     "systemStatsRAMTotal": "総RAM",
     "systemStatsTemplatesVersion": "テンプレートバージョン",
     "terminal": "ターミナル",
+    "textFailedToLoad": "テキストの読み込みに失敗しました",
     "title": "タイトル",
     "triggerPhrase": "トリガーフレーズ",
     "unknownError": "不明なエラー",
@@ -2061,11 +2091,15 @@
       "appBuilder": "アプリビルダー",
       "apps": "アプリ",
       "appsEmptyMessage": "保存されたアプリはここに表示されます。\n下をクリックして最初のアプリを作成しましょう。",
-      "appsEmptyMessageAction": "下のボタンをクリックして最初のアプリを作成しましょう。"
+      "appsEmptyMessageAction": "下のボタンをクリックして最初のアプリを作成しましょう。",
+      "buildAnApp": "アプリを作成",
+      "create": "作成",
+      "createApp": "アプリを作成"
     },
     "arrange": {
       "atLeastOne": "少なくとも1つ",
       "connectAtLeastOne": "ユーザーが実行後に結果を確認できるよう、{atLeastOne} 出力ノードを接続してください。",
+      "descriptionPlaceholder": "ダブルクリックして説明を追加",
       "noOutputs": "まだ出力が追加されていません",
       "outputExamples": "例：「画像を保存」や「動画を保存」",
       "outputs": "出力",
@@ -2074,8 +2108,6 @@
       "switchToOutputsButton": "出力に切り替え"
     },
     "backToWorkflow": "ワークフローに戻る",
-    "beta": "アプリモード ベータ版 - フィードバックを送る",
-    "buildAnApp": "アプリを作成",
     "builder": {
       "exit": "ビルダーを終了",
       "exitConfirmMessage": "保存されていない変更は失われます。\n保存せずに終了しますか？",
@@ -2113,6 +2145,7 @@
       "requiresGraph": "生成中に問題が発生しました。無効な非表示入力、リソースの不足、またはワークフロー設定の問題が原因の可能性があります。",
       "support": "サポートに連絡"
     },
+    "feedbackLoadError": "フィードバックフォームの読み込みに失敗しました。後でもう一度お試しください。",
     "giveFeedback": "フィードバックを送る",
     "graphMode": "グラフモード",
     "hasCreditCost": "追加クレジットが必要です",
@@ -2181,6 +2214,7 @@
     "loadingModel": "3Dモデルを読み込んでいます...",
     "materialMode": "マテリアルモード",
     "materialModes": {
+      "clay": "クレイ",
       "depth": "深度",
       "lineart": "線画",
       "normal": "ノーマル",
@@ -2188,7 +2222,29 @@
       "pointCloud": "ポイントクラウド",
       "wireframe": "ワイヤーフレーム"
     },
+    "menuBar": {
+      "bgColor": "背景色",
+      "bgImage": "背景画像",
+      "deleteRecording": "録画を削除",
+      "downloadRecording": "録画をダウンロード",
+      "fov": "視野角 (FOV)",
+      "intensity": "強度",
+      "material": "マテリアル",
+      "originalMaterialOnly": "オリジナルマテリアルのみ",
+      "panorama": "パノラマ",
+      "record": "録画",
+      "recording": "録画中",
+      "removeBackground": "背景を削除",
+      "showGrid": "グリッドを表示",
+      "skeleton": "スケルトン",
+      "startNewRecording": "新しい録画を開始",
+      "stopRecording": "録画を停止",
+      "switchProjection": "投影を切り替え",
+      "upDirection": "上方向",
+      "videoRecordingTooltip": "シーンのビデオ録画 [mp4]"
+    },
     "model": "モデル",
+    "model3d": "3Dモデル",
     "openIn3DViewer": "3Dビューアで開く",
     "panoramaMode": "パノラマ",
     "previewOutput": "出力のプレビュー",
@@ -2400,6 +2456,11 @@
       "importFailed": "インストールエラー",
       "pending": "保留中",
       "unknown": "不明"
+    },
+    "survey": {
+      "error": "アンケートの読み込みに失敗しました。後でもう一度お試しください。",
+      "intro": "Comfy Cloudでカスタムノードのインストール機能が近日公開予定です。ウェイトリストに参加し、この機能の開発にご協力いただくため、いくつかの簡単な質問にお答えください。",
+      "title": "ウェイトリストに参加する"
     },
     "title": "カスタムノードマネージャ",
     "toFinishSetup": "してセットアップを完了",
@@ -2735,7 +2796,6 @@
     "accept": "はい、協力します！",
     "description": "この機能をご利用いただきありがとうございます。ご意見をお聞かせいただけますか？",
     "dontAskAgain": "今後表示しない",
-    "loadError": "アンケートの読み込みに失敗しました。後でもう一度お試しください。",
     "notNow": "今はしない",
     "title": "改善にご協力ください"
   },
@@ -2750,6 +2810,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2769,7 +2830,6 @@
     "Runway": "Runway",
     "Sonilo": "Sonilo",
     "Sora": "Sora",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -2780,6 +2840,7 @@
     "ace": "ace",
     "adjustments": "調整",
     "advanced": "高度な機能",
+    "anima": "anima",
     "animate": "アニメート",
     "attention_experiments": "アテンション実験",
     "audio": "オーディオ",
@@ -2801,8 +2862,8 @@
     "cosmos": "cosmos",
     "create": "作成",
     "custom": "カスタム",
-    "custom_sampling": "カスタムサンプリング",
     "dancer": "ダンサー",
+    "dataset": "dataset",
     "debug": "デバッグ",
     "detection": "検出",
     "experimental": "実験的",
@@ -2824,6 +2885,7 @@
     "image": "画像",
     "infinite talk": "インフィニットトーク",
     "instructpix2pix": "インストラクションピクス2ピクス",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "潜在",
     "loaders": "ローダー",
@@ -2831,11 +2893,13 @@
     "lotus": "lotus",
     "ltxv": "LTXV",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "マスク",
     "merging": "マージ",
     "mochi": "mochi",
     "model": "モデル",
     "model specific": "モデル固有",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "マルチGPU",
     "noise": "ノイズ",
@@ -2845,6 +2909,8 @@
     "phantom subject": "ファントムサブジェクト",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "ポストプロセッサー",
+    "pre-processors": "プリプロセッサー",
     "preprocessors": "前処理",
     "primitive": "プリミティブ",
     "qwen": "qwen",
@@ -2865,8 +2931,8 @@
     "stable video": "stable video",
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
-    "stable_cascade": "安定したカスケード",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "テキスト",
     "training": "トレーニング",
     "transform": "変換",
@@ -2953,6 +3019,7 @@
       "appTypeNative": "ネイティブアプリ",
       "appTypeWeb": "ウェブアプリ",
       "deny": "キャンセル",
+      "detailsHeader": "詳細",
       "errorExpired": "この同意リクエストは期限切れ、またはすでに使用されています。クライアントアプリから再起動してください。",
       "errorScopeBroadening": "以前に承認された権限ではこのリクエストをカバーできません。新しい権限で再認可が必要です。",
       "errorUnavailable": "現在この機能は利用できません。問題が続く場合はサポートにお問い合わせください。",
@@ -2967,7 +3034,6 @@
       "sessionErrorToastSummary": "OAuthサインインを続行できませんでした",
       "subtitle": "続行するには{resource}にサインインしてください",
       "title": "{client} がアクセスを要求しています",
-      "workspaceHelp": "権限はこのワークスペースのみに適用されます。",
       "workspaceLabel": "ワークスペース"
     },
     "scopes": {
@@ -3102,8 +3168,11 @@
     "errorHelpGithub": "GitHub イシューを提出",
     "errorHelpSupport": "サポートに連絡",
     "errorLog": "エラーログ",
+    "errorNodeSummary": "{nodes}ノード — {count}件のエラー",
+    "errorNodesSummary": "{nodes}ノード — {count}件のエラー",
     "errors": "エラー",
     "errorsDetected": "エラーが検出されました | 複数のエラーが検出されました",
+    "errorsSummary": "{count}件のエラー",
     "executionErrorOccurred": "実行中にエラーが発生しました。詳細はエラータブをご確認ください。",
     "expand": "展開",
     "fallbackGroupTitle": "グループ",
@@ -3193,6 +3262,8 @@
     "resetToDefault": "デフォルトにリセット",
     "resolveBeforeRun": "ワークフローを実行する前に解決してください",
     "seeError": "エラーを見る",
+    "selectedNodeErrors": "{node} — {count}件のエラー",
+    "selectedNodesErrors": "{nodes}ノード選択中 — {count}件のエラー",
     "settings": "設定",
     "showAdvancedInputsButton": "詳細入力を表示",
     "showAdvancedShort": "詳細を表示",
@@ -3212,24 +3283,35 @@
     "errors": {
       "duplicateName": "この名前のシークレットはすでに存在します",
       "duplicateProvider": "このプロバイダーのシークレットはすでに存在します",
+      "fileReadFailed": "選択したファイルを読み取れませんでした",
+      "fileTooLarge": "ファイルが大きすぎます。1MB未満のJSON認証情報をアップロードしてください",
+      "invalidJson": "ファイルは有効なJSONオブジェクトを含む必要があります",
       "nameRequired": "名前は必須です",
       "nameTooLong": "名前は255文字以内で入力してください",
       "providerRequired": "プロバイダーは必須です",
       "secretValueRequired": "シークレット値は必須です"
     },
+    "jsonFileHint": "JSONを貼り付けるか、ファイルをアップロードしてください。暗号化され、再度表示することはできません。",
+    "jsonFileHintEdit": "現在の値を保持する場合は空欄のままにしてください。新しいJSONファイルをアップロードすると置き換えられます。",
+    "jsonFilePlaceholder": "プロバイダーのJSON認証情報をアップロードまたは貼り付けてください",
     "lastUsed": "最終使用日：{date}",
     "modelProviders": "モデルプロバイダー",
     "name": "名前",
     "namePlaceholder": "例：My API Key",
     "noSecrets": "シークレットが保存されていません。最初のAPIキーを追加して始めましょう。",
     "provider": "プロバイダー",
+    "providerHelp": {
+      "gemini": "Google Gemini APIキーを入力してください。Google AI Studioで生成できます。",
+      "runway": "Runway APIキーを入力してください。APIキーはRunwayアカウント設定の「API keys」で確認できます。"
+    },
     "providerHint": "任意。プロバイダーを選択するとトークンの自動利用が有効になります。",
     "secretValue": "シークレット値",
     "secretValueHint": "この値は暗号化され、再度表示することはできません。",
     "secretValueHintEdit": "現在の値を保持する場合は空欄のままにしてください。",
     "secretValuePlaceholder": "APIキーを入力してください",
     "secretValuePlaceholderEdit": "変更する場合は新しい値を入力",
-    "title": "APIキーとシークレット"
+    "title": "APIキーとシークレット",
+    "uploadJsonFile": "JSONファイルをアップロード"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "グループノードをバイパス",
@@ -3432,6 +3514,7 @@
     "Load 3D": "3Dを読み込む",
     "Locale": "ロケール",
     "Mask Editor": "マスクエディタ",
+    "Members": "メンバー",
     "Menu": "メニュー",
     "ModelLibrary": "モデルライブラリ",
     "Node": "ノード",
@@ -3482,9 +3565,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "これらのメディアアイテムが公開されることを理解しました",
     "checkingAssets": "メディアの公開状況を確認中…",
-    "comfyHubButton": "ComfyHubにアップロード",
-    "comfyHubDescription": "ComfyHubはComfyUI公式のコミュニティハブです。\nあなたのワークフローは全員が閲覧できる公開ページになります。",
-    "comfyHubTitle": "ComfyHubにアップロード",
+    "comfyHubButton": "Comfy Workflowsにアップロード",
+    "comfyHubDescription": "Comfy WorkflowsはComfyUI公式のコミュニティハブです。\nあなたのワークフローは全員が閲覧できる公開ページになります。",
+    "comfyHubTitle": "Comfy Workflowsにアップロード",
     "copyLink": "コピー",
     "createLinkButton": "リンクを作成",
     "createLinkDescription": "ワークフローのリンクを作成すると、これらのメディアアイテムもワークフローと一緒に共有されます",
@@ -3794,6 +3877,7 @@
     "freeTier": {
       "description": "無料プランには、Comfy Cloudをお試しいただける毎月{credits}クレジットが含まれています。",
       "descriptionGeneric": "無料プランには、Comfy Cloudをお試しいただける毎月のクレジット枠が含まれています。",
+      "descriptionQuota": "無料プランには Comfy Cloud を始めるための {runs} 回の実行が含まれています（クレジットカード不要）。",
       "nextRefresh": "クレジットは{date}にリフレッシュされます。",
       "outOfCredits": {
         "subtitle": "サブスクリプションでチャージや追加機能を利用しましょう",
@@ -3934,6 +4018,7 @@
       "waitingForSubscription": "新しいタブで購読を完了してください。完了を自動的に検知します！"
     },
     "resubscribe": "再購読する",
+    "resubscribeFailed": "サブスクリプションの再有効化に失敗しました",
     "resubscribeSuccess": "サブスクリプションが再開されました",
     "resubscribeTo": "{plan}を再購読する",
     "saveYearly": "20%お得",
@@ -4059,7 +4144,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "フィルター:",
     "allTemplates": "すべてのテンプレート",
     "categories": "カテゴリ",
     "category": {
@@ -4084,9 +4168,12 @@
       "Video": "ビデオ",
       "Video API": "動画API"
     },
+    "clearAllFilters": "すべてのフィルターをクリア",
     "error": {
       "templateNotFound": "テンプレート「{templateName}」が見つかりません"
     },
+    "filtersApplied": "{count} 件のフィルターが適用されました",
+    "filtersButton": "フィルター",
     "licenseFilter": "ライセンス",
     "loading": "テンプレートを読み込み中...",
     "loadingMore": "さらにテンプレートを読み込み中...",
@@ -4094,7 +4181,6 @@
     "modelsSelected": "{count}件のモデル",
     "noResults": "テンプレートが見つかりません",
     "noResultsHint": "検索条件やフィルターを調整してみてください",
-    "resetFilters": "フィルターをクリア",
     "resultsCount": "{total}件中{count}件のテンプレートを表示中",
     "runsOnFilter": "実行環境",
     "runsOnSelected": "{count} 回実行",
@@ -4106,6 +4192,7 @@
       "newest": "新着順",
       "popular": "人気",
       "recommended": "おすすめ",
+      "relevance": "関連性",
       "searchPlaceholder": "検索..."
     },
     "sorting": "並び替え",
@@ -4184,6 +4271,9 @@
     "updateRequested": "更新が要求されました",
     "useApiKeyTip": "ヒント：通常のログインにアクセスできませんか？Comfy APIキーオプションを使用してください。",
     "userNotAuthenticated": "ユーザーが認証されていません"
+  },
+  "typeform": {
+    "loadError": "フォームの読み込みに失敗しました。後でもう一度お試しください。"
   },
   "userSelect": {
     "enterUsername": "ユーザー名を入力してください",
@@ -4320,6 +4410,50 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "クレジット",
+        "date": "日付",
+        "eventDetails": "イベント詳細",
+        "eventType": "イベントタイプ",
+        "user": "ユーザー"
+      },
+      "empty": "まだアクティビティがありません。",
+      "fullActivity": "すべてのアクティビティ",
+      "hoverCard": {
+        "lastActivity": "最終アクティビティ",
+        "partnerNodeUsed": "パートナーノード使用",
+        "totalCreditsUsed": "合計クレジット使用量"
+      },
+      "perUserHint": "ユーザーごとの合計使用量をお探しですか？",
+      "seeMembers": "メンバーを見る"
+    },
+    "billingStatus": {
+      "ending": {
+        "body": "それまではメンバーはすべての機能にアクセスできます。共有クレジットとシートを維持するには再アクティベートしてください。",
+        "reactivate": "プランを再アクティベート",
+        "title": "チームプランは{date}に終了します"
+      },
+      "outOfCredits": {
+        "addCredits": "クレジットを追加",
+        "body": "チームのクレジットがすべて使用されました。クレジットを追加して生成を続けるか、{date}にクレジットが補充されるまでお待ちください。",
+        "bodyNoDate": "チームのクレジットがすべて使用されました。クレジットを追加して生成を続けてください。",
+        "dismiss": "閉じる",
+        "memberBody": "チームのクレジットがすべて使用されました。ワークスペース管理者がクレジットを追加する必要があります。",
+        "title": "クレジットが不足しています"
+      },
+      "paused": {
+        "body": "このワークスペースのサブスクリプションは一時停止されています。お支払い方法を更新して再開してください。",
+        "memberBody": "このワークスペースのサブスクリプションは一時停止されています。ワークスペース管理者がお支払い方法を更新する必要があります。",
+        "title": "サブスクリプションが一時停止中"
+      },
+      "updatePayment": "お支払い方法を更新",
+      "warning": {
+        "body": "前回のお支払いが完了しませんでした。{date}までにお支払い方法を更新しない場合、サブスクリプションが一時停止されます。",
+        "bodyNoDate": "前回のお支払いが完了しませんでした。サブスクリプションの一時停止を避けるためにお支払い方法を更新してください。",
+        "title": "支払いが拒否されました"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "メンバーに降格",
       "demoteMessage": "管理者権限が失われます。",
@@ -4381,14 +4515,31 @@
         "cancelInvite": "招待をキャンセル",
         "changeRole": "役割を変更",
         "removeMember": "メンバーを削除",
-        "resendInvite": "招待を再送信"
+        "resendInvite": "招待を再送信",
+        "setCreditLimit": "クレジット上限を設定"
+      },
+      "activity": {
+        "daysAgo": "{count}日前",
+        "hoursAgo": "{n}時間前",
+        "justNow": "たった今",
+        "minutesAgo": "{n}分前"
       },
       "columns": {
+        "creditsUsed": "月間クレジット",
         "expiryDate": "有効期限",
         "inviteDate": "招待日",
         "role": "役割"
       },
       "contactUs": "お問い合わせ",
+      "creditLimitDialog": {
+        "description": "この上限に達すると、ワークフローの実行ができなくなります。",
+        "invalidLimit": "1以上のクレジット上限を入力してください。",
+        "limitOption": "月間クレジット使用量を制限：",
+        "noLimit": "制限なし",
+        "title": "{name} の月間クレジット上限を設定",
+        "update": "上限を更新",
+        "warning": "このユーザーはすでに {credits} クレジットを使用しています。現在の使用量以下に上限を設定すると、来月まで実行できなくなります。"
+      },
       "header": "メンバー",
       "membersCount": "{count}/50人のメンバー",
       "needMoreMembers": "さらにメンバーが必要ですか？",
@@ -4411,6 +4562,12 @@
       "deleteWorkspaceDisabledTooltip": "まずワークスペースの有効なサブスクリプションをキャンセルしてください",
       "editWorkspace": "ワークスペースの詳細を編集",
       "leaveWorkspace": "ワークスペースを退出"
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "アクティビティ",
+        "overview": "クレジット"
+      }
     },
     "removeMemberDialog": {
       "error": "メンバーの削除に失敗しました",
