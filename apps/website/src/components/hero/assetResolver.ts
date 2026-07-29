@@ -56,7 +56,17 @@ export const ANGLE_ASSETS: AngleAsset[] = [
   angleAsset('right side view', 'high-angle shot', 'wide shot'),
   angleAsset('left side view', 'low-angle shot', 'close-up'),
   angleAsset('left side view', 'low-angle shot', 'medium shot'),
-  angleAsset('left side view', 'low-angle shot', 'wide shot')
+  angleAsset('left side view', 'low-angle shot', 'wide shot'),
+  angleAsset('back-right quarter view', 'eye-level shot', 'medium shot'),
+  angleAsset('left side view', 'eye-level shot', 'medium shot'),
+  angleAsset('front view', 'elevated shot', 'medium shot'),
+  angleAsset('front-right quarter view', 'elevated shot', 'medium shot'),
+  angleAsset('right side view', 'elevated shot', 'medium shot'),
+  angleAsset('back-right quarter view', 'elevated shot', 'medium shot'),
+  angleAsset('back view', 'elevated shot', 'medium shot'),
+  angleAsset('back-left quarter view', 'elevated shot', 'medium shot'),
+  angleAsset('left side view', 'elevated shot', 'medium shot'),
+  angleAsset('front-left quarter view', 'elevated shot', 'medium shot')
 ]
 
 function circularIndexDistance(a: number, b: number, size: number): number {
