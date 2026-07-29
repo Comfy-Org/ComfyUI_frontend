@@ -177,7 +177,7 @@ describe('TourSpotlight interactive and masked steps', () => {
     expect(
       card(),
       'a card that jumps to the next node leaves the user hunting for it'
-    ).toContain('transition-[left,top,opacity]')
+    ).toContain('motion-safe:transition-[left,top,opacity]')
 
     vi.advanceTimersByTime(CARD_GLIDE_MS)
     await nextTick()
@@ -200,7 +200,7 @@ describe('TourSpotlight interactive and masked steps', () => {
     expect(
       card(),
       'the card has to travel to the node that just arrived, not jump to it'
-    ).toContain('transition-[left,top,opacity]')
+    ).toContain('motion-safe:transition-[left,top,opacity]')
 
     vi.advanceTimersByTime(CARD_GLIDE_MS)
     await nextTick()
