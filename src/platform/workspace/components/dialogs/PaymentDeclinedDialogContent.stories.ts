@@ -44,3 +44,11 @@ export const TopUp: Story = {
     }
   }
 }
+
+export const LongReason: Story = {
+  args: {
+    origin: 'topup',
+    reason:
+      'Your payment was declined because the issuing bank could not authorize this transaction. Please update your payment method or contact your bank for more information.'
+  }
+}

@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'relative flex w-lg flex-col overflow-hidden rounded-2xl bg-base-background ring-1 ring-border-default ring-inset',
+        'relative flex w-lg flex-col overflow-hidden rounded-2xl bg-secondary-background ring-1 ring-border-default ring-inset',
         origin === 'subscription' ? 'h-[786px]' : 'h-[460px]'
       )
     "
@@ -38,12 +38,14 @@
         {{ $t('paymentDeclined.body') }}
       </p>
       <div
-        class="mt-[45px] flex h-[94px] w-full shrink-0 flex-col gap-2 rounded-lg bg-tertiary-background p-6"
+        class="mt-[45px] flex min-h-[94px] w-full shrink-0 flex-col gap-2 rounded-lg bg-tertiary-background p-6"
       >
         <span class="text-base/4 text-muted-foreground">
           {{ $t('paymentDeclined.reasonLabel') }}
         </span>
-        <span class="text-base/4 text-base-foreground">
+        <span
+          class="max-h-12 overflow-y-auto text-base/4 wrap-break-word text-base-foreground"
+        >
           {{ reason }}
         </span>
       </div>
