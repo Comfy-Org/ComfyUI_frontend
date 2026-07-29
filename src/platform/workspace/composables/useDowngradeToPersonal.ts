@@ -57,13 +57,8 @@ export class ReactivationAmountChangedError extends Error {
 export function useDowngradeToPersonal() {
   const workspaceStore = useTeamWorkspaceStore()
   const { members } = storeToRefs(workspaceStore)
-  const {
-    subscribe,
-    previewSubscribe,
-    subscription,
-    isInitialized,
-    fetchStatus
-  } = useBillingContext()
+  const { subscribe, previewSubscribe, subscription, fetchStatus } =
+    useBillingContext()
   const billingOperationStore = useBillingOperationStore()
   const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
@@ -98,10 +93,15 @@ export function useDowngradeToPersonal() {
     preview: PreviewSubscribeResponse
   ): boolean {
     if (preview.transition_type === 'new_subscription') return false
-    // Billing context not yet loaded means "cancelled or not" is unknown, not
-    // "not cancelled" — fail closed so an unloaded subscription can't skip
-    // the reactivation disclosure.
-    return !isInitialized.value || (subscription.value?.isCancelled ?? false)
+    // subscription is null exactly until status has loaded at least once, so
+    // a null read means "cancelled or not" is unknown, not "not cancelled" —
+    // fail closed. Gate on status readiness rather than aggregate
+    // isInitialized (status + balance + plans): a balance/plans failure must
+    // not permanently force reactivation onto an otherwise-valid, active
+    // subscription. Mirrors the same fix in the transition preview component.
+    return (
+      subscription.value === null || (subscription.value?.isCancelled ?? false)
+    )
   }
 
   /** Read-only preview so a caller can decide whether to collect reactivation

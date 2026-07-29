@@ -113,7 +113,11 @@ describe('useDowngradeToPersonal', () => {
     vi.resetAllMocks()
     mockMembers.value = []
     mockUserEmail.value = null
-    mockSubscription.value = null
+    // Once loaded (isInitialized true), subscription is never null in
+    // production — it's at least a FREE-tier record. Default to that
+    // loaded-and-active shape; tests that need "not loaded yet" set
+    // subscription back to null explicitly alongside isInitialized: false.
+    mockSubscription.value = { isCancelled: false }
     mockIsInitialized.value = true
     mockPreviewSubscribe.mockResolvedValue({ allowed: true })
     mockFetchStatus.mockResolvedValue(undefined)
@@ -352,6 +356,29 @@ describe('useDowngradeToPersonal', () => {
       mockPreviewSubscribe.mockResolvedValue({
         allowed: true,
         transition_type: 'new_subscription'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(mockRemoveMember).toHaveBeenCalledWith('m1')
+      expect(mockSubscribe).toHaveBeenCalledWith('founder-monthly', {
+        returnUrl: 'https://platform.test/payment/success',
+        cancelUrl: 'https://platform.test/payment/failed',
+        confirmReactivation: false
+      })
+    })
+
+    // Regression guard: isInitialized is aggregate (status + balance +
+    // plans). A balance/plans failure must not force reactivation onto an
+    // otherwise-valid, already-loaded, active subscription.
+    it('removes members and subscribes without requiring reactivation when isInitialized is false but subscription status is loaded and active', async () => {
+      mockIsInitialized.value = false
+      mockSubscription.value = { isCancelled: false }
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
       })
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
@@ -666,6 +693,24 @@ describe('useDowngradeToPersonal', () => {
     it('reports no reactivation requirement when the subscription is known and not cancelled', async () => {
       mockSubscription.value = { isCancelled: false }
       mockIsInitialized.value = true
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      const result = await previewDowngrade('founder-monthly')
+
+      expect(result.requiresReactivationConfirmation).toBe(false)
+    })
+
+    // Regression guard: isInitialized only becomes true once status, balance,
+    // AND plans have all loaded — a balance/plans failure must not force
+    // reactivation onto an otherwise-valid, already-loaded, active
+    // subscription. Gate on status readiness (subscription !== null) instead.
+    it('reports no reactivation requirement when isInitialized is false but subscription status is loaded and active', async () => {
+      mockSubscription.value = { isCancelled: false }
+      mockIsInitialized.value = false
       mockPreviewSubscribe.mockResolvedValue({
         allowed: true,
         transition_type: 'downgrade'

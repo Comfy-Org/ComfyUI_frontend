@@ -57,7 +57,7 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatUsdFromCents } from '@/base/credits/comfyCredits'
@@ -92,6 +92,14 @@ const phrase = t('subscription.downgrade.confirmationPhrase')
 
 const typedValue = ref('')
 const isLoading = ref(false)
+
+// A drift-recovered dialog (see dialogService's onConfirm handler) updates
+// these props in place with corrected values; the typed acknowledgment was
+// for the PRIOR amount/status and must not silently carry forward to a
+// charge the user never actually saw.
+watch([() => requiresReactivation, () => chargeCents], () => {
+  typedValue.value = ''
+})
 
 const isConfirmed = computed(() => typedValue.value === phrase)
 

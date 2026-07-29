@@ -931,6 +931,116 @@ describe('useSubscriptionCheckout', () => {
           detail: 'subscription.preview.reactivation.amountChanged'
         })
       )
+      // Regression guard: the rejected drift preview must still be installed
+      // so the confirm screen shows the new amount and a retry compares
+      // against what's on screen, instead of repeating this same rejection
+      // forever against the stale original amount.
+      expect(checkout.previewData.value?.cost_today_cents).toBe(120_000)
+
+      // Retry now that the updated amount is showing and re-consented to.
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 120_000
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-retry-amount-changed'
+      })
+
+      await checkout.handleTeamSubscribe(true)
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({ confirmReactivation: true })
+      )
+      expect(checkout.checkoutStep.value).toBe('success')
+    })
+
+    // Regression guard: fetchStatus() and the reactivation guard must run
+    // inside the same protected/loading section as the rest of the submit,
+    // so a refresh failure surfaces the normal error toast/telemetry and
+    // clears loading, instead of escaping uncaught while the CTA stays
+    // enabled for a concurrent submit.
+    it('surfaces an error and clears loading when the pre-submit status refresh rejects', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly'
+      })
+      mockFetchStatus.mockRejectedValueOnce(new Error('status unavailable'))
+
+      const submitPromise = checkout.handleTeamSubscribe()
+      expect(checkout.isSubscribing.value).toBe(true)
+      await submitPromise
+
+      expect(checkout.isSubscribing.value).toBe(false)
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'status unavailable'
+        })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure'
+        })
+      )
+    })
+
+    // Regression guard: drift recovery must reuse the same reactivation-
+    // capable predicate as the initial cancelled-Team preview. A refreshed
+    // preview that comes back as a fresh subscribe can't feed the banner or
+    // emit confirm_reactivation, so installing it as a team-change would
+    // strand every retry; this must bounce back to pricing instead.
+    it('bounces to pricing when a status-drift refresh returns a preview that cannot collect reactivation consent', async () => {
+      mockSubscription.value = { isCancelled: false }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000
+      })
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      expect(checkout.previewVariant.value).toBe('team-change')
+
+      mockFetchStatus.mockImplementationOnce(() => {
+        mockSubscription.value = { isCancelled: true }
+        return Promise.resolve()
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true
+      })
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(checkout.previewData.value).toBeNull()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
     })
 
     it('uses the annual plan slug for the yearly cycle', async () => {
@@ -1530,6 +1640,30 @@ describe('useSubscriptionCheckout', () => {
           detail: 'subscription.preview.reactivation.amountChanged'
         })
       )
+      // Regression guard: the rejected drift preview must still be installed
+      // so the confirm screen shows the new amount and a retry compares
+      // against what's on screen, instead of repeating this same rejection
+      // forever against the stale original amount.
+      expect(checkout.previewData.value?.cost_today_cents).toBe(2000)
+
+      // Retry now that the updated amount is showing and re-consented to.
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        cost_today_cents: 2000
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-retry-amount-changed'
+      })
+
+      await checkout.handleConfirmTransition(true)
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.objectContaining({ confirmReactivation: true })
+      )
+      expect(checkout.checkoutStep.value).toBe('success')
     })
 
     it('re-previews and bills once the confirmed charge still matches', async () => {
@@ -1611,6 +1745,7 @@ describe('useSubscriptionCheckout', () => {
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
         transition_type: 'upgrade',
+        is_immediate: true,
         cost_today_cents: 1600
       })
 
@@ -1620,6 +1755,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
+      expect(checkout.checkoutStep.value).toBe('preview')
       // The blocked confirm screen's preview is refreshed to the real,
       // current transaction rather than the stale pre-cancellation one.
       expect(checkout.previewData.value?.cost_today_cents).toBe(1600)
@@ -1629,6 +1765,7 @@ describe('useSubscriptionCheckout', () => {
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
         transition_type: 'upgrade',
+        is_immediate: true,
         cost_today_cents: 1600
       })
       mockSubscribe.mockResolvedValueOnce({

@@ -134,6 +134,21 @@ export function useSubscriptionCheckout(
     })
   }
 
+  // Shared by the initial cancelled-Team preview (handleSubscribeTeamClick)
+  // and drift recovery (refreshPreviewOnReactivationBlock): a preview can
+  // only feed the reactivation banner if it's allowed, immediate, and an
+  // existing-plan change — new_subscription and scheduled changes route to
+  // screens that can't render the disclosure or emit confirm_reactivation.
+  function isReactivationCapablePreview(
+    preview: PreviewSubscribeResponse | null | undefined
+  ): boolean {
+    return (
+      !!preview?.allowed &&
+      preview.is_immediate &&
+      preview.transition_type !== 'new_subscription'
+    )
+  }
+
   // subscribe() recomputes the transaction independently of the preview the
   // banner showed, so proration or team-seat state can drift while the
   // screen is open. Re-preview right before billing and refuse if the
@@ -147,10 +162,15 @@ export function useSubscriptionCheckout(
     if (!freshPreview?.allowed) {
       throw new Error(freshPreview?.reason || t('subscription.subscribeFailed'))
     }
-    if (
+    const amountChanged =
       freshPreview.cost_today_cents !==
       (previewData.value?.cost_today_cents ?? 0)
-    ) {
+    // Install regardless of outcome: on drift this is what makes the confirm
+    // screen show the new amount and resets prior consent (via the
+    // component's own chargeCents watcher), so the next attempt compares
+    // against what's on screen instead of repeating this same failure.
+    previewData.value = freshPreview
+    if (amountChanged) {
       throw new ReactivationAmountChangedError(
         t('subscription.preview.reactivation.amountChanged')
       )
@@ -160,21 +180,34 @@ export function useSubscriptionCheckout(
   // The reactivation guard below reads cached `subscription.isCancelled`. If
   // the subscription was cancelled in another tab after this preview loaded,
   // that cache is stale and the guard blocks a request the banner never
-  // actually disclosed as a reactivation — re-fetching here, right before the
-  // guard, keeps a retry from repeating the identical stale request forever.
-  // Mirrors the fetchStatus() call useDowngradeToPersonal makes before its
-  // own reactivation guard.
+  // actually disclosed as a reactivation. Refresh here, right before the
+  // guard, so a retry sees the real current transaction — but only install
+  // the refresh if it can actually feed the banner; one that can't (e.g. it
+  // comes back as a fresh subscribe) would leave every retry blocked on a
+  // screen that can never collect consent, so send the user back to pricing
+  // instead. Mirrors the fetchStatus() call useDowngradeToPersonal makes
+  // before its own reactivation guard.
   async function refreshPreviewOnReactivationBlock(
     planSlug: string,
     options?: PreviewSubscribeOptions
   ): Promise<void> {
+    let freshPreview: PreviewSubscribeResponse | null = null
     try {
-      const freshPreview = await previewSubscribe(planSlug, options)
-      if (freshPreview?.allowed) previewData.value = freshPreview
+      freshPreview = await previewSubscribe(planSlug, options)
     } catch {
-      // Best-effort: the confirm screen keeps its prior preview and the
-      // guard above still blocks on the freshly-fetched status.
+      // Treated the same as an incapable preview below.
     }
+    if (isReactivationCapablePreview(freshPreview)) {
+      previewData.value = freshPreview
+      notifyReactivationConfirmationRequired()
+      return
+    }
+    handleBackToPricing()
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('subscription.preview.reactivation.unavailable')
+    })
   }
 
   function canSelectTierPlan(): boolean {
@@ -337,11 +370,7 @@ export function useSubscriptionCheckout(
       previewError = error
     }
 
-    const isReactivationCapable =
-      response?.allowed &&
-      response.is_immediate &&
-      response.transition_type !== 'new_subscription'
-    if (isReactivationCapable) {
+    if (isReactivationCapablePreview(response)) {
       previewData.value = response
       return
     }
@@ -394,7 +423,6 @@ export function useSubscriptionCheckout(
       await fetchStatus()
       if (!confirmReactivation && isCancelled.value) {
         await refreshPreviewOnReactivationBlock(planSlug)
-        notifyReactivationConfirmationRequired()
         return
       }
       if (confirmReactivation && isCancelled.value) {
@@ -554,18 +582,16 @@ export function useSubscriptionCheckout(
     const billingCycle = selectedBillingCycle.value
     const planSlug = getTeamPlanSlug(billingCycle)
 
-    await fetchStatus()
-    if (!confirmReactivation && isCancelled.value) {
-      await refreshPreviewOnReactivationBlock(planSlug, {
-        teamCreditStopId: stop.id,
-        billingCycle
-      })
-      notifyReactivationConfirmationRequired()
-      return
-    }
-
     isSubscribing.value = true
     try {
+      await fetchStatus()
+      if (!confirmReactivation && isCancelled.value) {
+        await refreshPreviewOnReactivationBlock(planSlug, {
+          teamCreditStopId: stop.id,
+          billingCycle
+        })
+        return
+      }
       if (confirmReactivation && isCancelled.value) {
         await assertReactivationAmountUnchanged(planSlug, {
           teamCreditStopId: stop.id,
