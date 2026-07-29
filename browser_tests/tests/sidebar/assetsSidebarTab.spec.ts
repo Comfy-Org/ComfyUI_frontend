@@ -369,6 +369,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
       ).toHaveAttribute('aria-pressed', 'false')
       await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
 
+      await tab.openSettingsMenu()
       await tab.gridLargeOption.click()
 
       const groupedCard = tab.getAssetCardByName('multi-output-a')
