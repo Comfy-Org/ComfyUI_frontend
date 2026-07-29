@@ -30,6 +30,7 @@
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
+  <GettingStartedScreen v-if="gettingStartedVisible" />
 </template>
 
 <script setup lang="ts">
@@ -51,6 +52,8 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
+import GettingStartedScreen from '@/renderer/extensions/firstRunTour/gettingStarted/GettingStartedScreen.vue'
+import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
@@ -106,6 +109,7 @@ setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
 
+const { gettingStartedVisible } = useFirstRunEntry()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()

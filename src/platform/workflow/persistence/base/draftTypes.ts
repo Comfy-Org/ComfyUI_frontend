@@ -85,3 +85,5 @@ export interface OpenPathsPointer {
 export const MAX_DRAFTS = 32
 
 export const PERSIST_DEBOUNCE_MS = 512
+
+export type StartupOutcome = 'restored' | 'fresh' | 'url-intent'

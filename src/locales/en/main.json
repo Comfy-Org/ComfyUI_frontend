@@ -4673,5 +4673,11 @@
         "body": "Every generation and import lives in Media Assets. Open it anytime to browse, download, or reuse past work."
       }
     }
+  },
+  "gettingStarted": {
+    "title": "Let's make something",
+    "subtitle": "Pick a starting point. You can swap in your own images and prompts.",
+    "startBlank": "Start with a blank canvas",
+    "templateFailed": "That template failed to load. Try another one."
   }
 }
