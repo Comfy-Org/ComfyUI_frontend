@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "音量。0 = 正常，100 = 2.0 倍，-50 = 0.5 倍。"
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual：支援 20 種語言（英語、中文、日語、韓語、墨西哥西班牙語、卡斯提利亞西班牙語、印尼語、德語、巴西葡萄牙語、法語、泰語、越南語、馬來語、菲律賓語、義大利語、俄語、荷蘭語、波蘭語、土耳其語、瑞典語），並可透過「[5.5s:8.0s] ...」時間戳進行逐句時間控制。seed-audio-1.0：僅支援英語與中文，不支援時間控制。"
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "音高變化（半音，-12 至 12）。"
@@ -19989,6 +19993,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "為 Mage-Flow-Edit 編碼一個包含一張或多張參考圖像的編輯指令。參考 latent 會被調整為輸出解析度（寬度/高度，若為 0 則使用第一張圖像的尺寸）。請使用 latent 輸出進行取樣，以確保尺寸始終一致。",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "輸出高度。0 = 使用第一張參考圖像的尺寸。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "要編輯的參考圖像。所有參考圖像在編碼前都會被調整為輸出解析度。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "輸出寬度。0 = 使用第一張參考圖像的尺寸。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }

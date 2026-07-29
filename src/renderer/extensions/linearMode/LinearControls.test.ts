@@ -1,9 +1,15 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen, within } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
@@ -75,12 +81,34 @@ const nodeErrors: Record<string, NodeError> = {
   }
 }
 
+const missingModelCandidate: MissingModelCandidate = {
+  nodeId: '1',
+  nodeType: 'CheckpointLoaderSimple',
+  widgetName: 'ckpt_name',
+  isAssetSupported: false,
+  name: 'missing.safetensors',
+  isMissing: true
+}
+
+const missingMediaCandidate: MissingMediaCandidate = {
+  nodeId: '2',
+  nodeType: 'LoadImage',
+  widgetName: 'image',
+  mediaType: 'image',
+  name: 'missing.png',
+  isMissing: true
+}
+
+type MissingResource = 'nodes' | 'models' | 'media'
+
 function renderControls({
   hasError = false,
+  missingResource,
   canRunWorkflows = true,
   mobile = false
 }: {
   hasError?: boolean
+  missingResource?: MissingResource
   canRunWorkflows?: boolean
   mobile?: boolean
 } = {}) {
@@ -95,6 +123,13 @@ function renderControls({
   useAppModeStore().selectedOutputs = [toNodeId(1)]
   if (hasError) {
     useExecutionErrorStore().recordNodeErrors(nodeErrors)
+  }
+  if (missingResource === 'nodes') {
+    useMissingNodesErrorStore().setMissingNodeTypes(['MissingNode'])
+  } else if (missingResource === 'models') {
+    useMissingModelStore().setMissingModels([missingModelCandidate])
+  } else if (missingResource === 'media') {
+    useMissingMediaStore().setMissingMedia([missingMediaCandidate])
   }
 
   const toastTarget = document.createElement('div')
@@ -115,6 +150,20 @@ function renderControls({
       }
     }
   })
+}
+
+function getRunButtonIcon() {
+  return screen.getByTestId('linear-run-button-icon')
+}
+
+function clearMissingResource(resource: MissingResource) {
+  if (resource === 'nodes') {
+    useMissingNodesErrorStore().setMissingNodeTypes([])
+  } else if (resource === 'models') {
+    useMissingModelStore().setMissingModels([])
+  } else {
+    useMissingMediaStore().setMissingMedia([])
+  }
 }
 
 describe('LinearControls', () => {
@@ -159,7 +208,26 @@ describe('LinearControls', () => {
       'KSampler is missing a required input: model'
     )
     expect(description).not.toHaveTextContent('Show errors in graph')
+    expect(getRunButtonIcon()).toHaveClass('icon-[lucide--play]')
   })
+
+  it.for([
+    { label: 'nodes in desktop', missingResource: 'nodes', mobile: false },
+    { label: 'models in mobile', missingResource: 'models', mobile: true },
+    { label: 'media in desktop', missingResource: 'media', mobile: false }
+  ] as const)(
+    'clears the warning icon when missing $label are resolved',
+    async ({ missingResource, mobile }) => {
+      renderControls({ missingResource, mobile })
+
+      expect(getRunButtonIcon()).toHaveClass('icon-[lucide--triangle-alert]')
+
+      clearMissingResource(missingResource)
+      await nextTick()
+
+      expect(getRunButtonIcon()).toHaveClass('icon-[lucide--play]')
+    }
+  )
 
   it.for([
     { label: 'desktop', mobile: false },

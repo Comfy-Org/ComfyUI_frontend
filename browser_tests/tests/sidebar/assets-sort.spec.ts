@@ -196,7 +196,7 @@ test.describe('Assets sidebar - sort options', { tag: '@cloud' }, () => {
     await tab.sortZToA.click()
     await expectAssetOrder(tab.listViewItems, ['job-002', 'job-003', 'job-001'])
 
-    await tab.gridViewOption.click()
+    await tab.gridLargeOption.click()
     await expectAssetOrder(tab.assetCards, ['job-002', 'job-003', 'job-001'])
   })
 

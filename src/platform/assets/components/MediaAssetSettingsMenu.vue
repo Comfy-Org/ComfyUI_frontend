@@ -18,11 +18,26 @@
     <Button
       variant="textonly"
       class="w-full"
+      @click="handleViewModeChange('grid-small')"
+    >
+      <span class="flex items-center gap-2">
+        <i class="icon-[lucide--grid-3x3] size-4" />
+        <span>{{ $t('sideToolbar.mediaAssets.viewGridSmall') }}</span>
+      </span>
+      <i
+        class="ml-auto icon-[lucide--check] size-4"
+        :class="viewMode !== 'grid-small' && 'opacity-0'"
+      />
+    </Button>
+
+    <Button
+      variant="textonly"
+      class="w-full"
       @click="handleViewModeChange('grid')"
     >
       <span class="flex items-center gap-2">
         <i class="icon-[lucide--layout-grid] size-4" />
-        <span>{{ $t('sideToolbar.queueProgressOverlay.viewGrid') }}</span>
+        <span>{{ $t('sideToolbar.mediaAssets.viewGridLarge') }}</span>
       </span>
       <i
         class="ml-auto icon-[lucide--check] size-4"
@@ -105,6 +120,8 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 
+import type { MediaAssetViewMode } from './mediaAssetViewOptions'
+
 export type SortBy = 'newest' | 'oldest' | 'az' | 'za' | 'longest' | 'fastest'
 
 const { showSortOptions = false, showGenerationTimeSort = false } =
@@ -113,10 +130,10 @@ const { showSortOptions = false, showGenerationTimeSort = false } =
     showGenerationTimeSort?: boolean
   }>()
 
-const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
+const viewMode = defineModel<MediaAssetViewMode>('viewMode', { required: true })
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 
-function handleViewModeChange(value: 'list' | 'grid') {
+function handleViewModeChange(value: MediaAssetViewMode) {
   viewMode.value = value
 }
 

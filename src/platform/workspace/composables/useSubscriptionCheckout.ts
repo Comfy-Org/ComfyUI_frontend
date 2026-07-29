@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
@@ -89,6 +90,7 @@ export function useSubscriptionCheckout(
     isTeamPlan,
     resubscribe
   } = useBillingContext()
+  const { shouldUseWorkspaceBilling } = useBillingRouting()
   const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
@@ -137,7 +139,15 @@ export function useSubscriptionCheckout(
       billingOpId: result.response.billing_op_id,
       paymentIntentSource
     })
-    await handleSubscribeResponse(result.response, result.preview.is_immediate)
+    await handleSubscribeResponse(
+      result.response,
+      {
+        tier: tierKey,
+        cycle: selectedBillingCycle.value,
+        checkoutType: 'change'
+      },
+      result.preview.is_immediate
+    )
     return true
   }
 
@@ -301,8 +311,17 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response)
+      await handleSubscribeResponse(response, {
+        tier: tierKey,
+        cycle: billingCycle,
+        checkoutType
+      })
     } catch (error) {
+      trackSubscriptionFailure({
+        tier: tierKey,
+        cycle: billingCycle,
+        checkoutType
+      })
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
@@ -320,15 +339,53 @@ export function useSubscriptionCheckout(
     })
   }
 
+  interface SubscriptionOutcomeContext {
+    tier: CheckoutTierKey | 'team'
+    cycle: BillingCycle
+    checkoutType: SubscriptionCheckoutType
+  }
+
+  function trackSubscriptionFailure(
+    context: SubscriptionOutcomeContext,
+    errorCode?: 'missing_checkout_response'
+  ) {
+    if (!shouldUseWorkspaceBilling.value) return
+
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      tier: context.tier,
+      cycle: context.cycle,
+      checkout_type: context.checkoutType,
+      payment_intent_source: paymentIntentSource,
+      failure_category: 'unknown',
+      ...(errorCode && { error_code: errorCode })
+    })
+  }
+
   async function handleSubscribeResponse(
     response: SubscribeResponse | void,
+    context: SubscriptionOutcomeContext,
     shouldTrackSubscriptionSuccess = true
   ): Promise<void> {
-    if (!response) return
+    if (!response) {
+      trackSubscriptionFailure(context, 'missing_checkout_response')
+      return
+    }
 
     if (response.status === 'subscribed') {
       if (shouldTrackSubscriptionSuccess) {
-        telemetry?.trackMonthlySubscriptionSucceeded()
+        telemetry?.trackBillingEvent({
+          operation: 'subscription_checkout',
+          stage: 'succeeded',
+          outcome: 'success',
+          tier: context.tier,
+          cycle: context.cycle,
+          checkout_type: context.checkoutType,
+          payment_intent_source: paymentIntentSource,
+          billing_op_id: response.billing_op_id
+        })
       }
       checkoutStep.value = 'success'
       return
@@ -353,16 +410,25 @@ export function useSubscriptionCheckout(
         })
       }
     }
-    await advanceToSuccessOnOperation(response.billing_op_id)
+    await advanceToSuccessOnOperation(response.billing_op_id, context)
   }
 
   // A Stripe-backed subscribe finishes asynchronously: await the billing op and
   // advance to the success step ourselves. The store refreshes status/balance
   // before resolving and surfaces any failure via toast.
-  async function advanceToSuccessOnOperation(opId: string) {
+  async function advanceToSuccessOnOperation(
+    opId: string,
+    context: SubscriptionOutcomeContext
+  ) {
     const operation = await billingOperationStore.startOperation(
       opId,
-      'subscription'
+      'subscription',
+      {
+        tier: context.tier,
+        cycle: context.cycle,
+        checkoutType: context.checkoutType,
+        paymentIntentSource
+      }
     )
     if (operation.status === 'succeeded') checkoutStep.value = 'success'
   }
@@ -402,8 +468,17 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response)
+      await handleSubscribeResponse(response, {
+        tier: 'team',
+        cycle: billingCycle,
+        checkoutType
+      })
     } catch (error) {
+      trackSubscriptionFailure({
+        tier: 'team',
+        cycle: billingCycle,
+        checkoutType
+      })
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
@@ -420,6 +495,15 @@ export function useSubscriptionCheckout(
     isResubscribing.value = true
     try {
       await resubscribe()
+      if (shouldUseWorkspaceBilling.value) {
+        telemetry?.trackBillingEvent({
+          operation: 'resubscribe',
+          stage: 'succeeded',
+          outcome: 'success',
+          source: 'pricing_dialog',
+          payment_intent_source: paymentIntentSource
+        })
+      }
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),
@@ -429,6 +513,16 @@ export function useSubscriptionCheckout(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to resubscribe'
+      if (shouldUseWorkspaceBilling.value) {
+        telemetry?.trackBillingEvent({
+          operation: 'resubscribe',
+          stage: 'failed',
+          outcome: 'failure',
+          source: 'pricing_dialog',
+          payment_intent_source: paymentIntentSource,
+          failure_category: 'unknown'
+        })
+      }
       toast.add({
         severity: 'error',
         summary: 'Error',
