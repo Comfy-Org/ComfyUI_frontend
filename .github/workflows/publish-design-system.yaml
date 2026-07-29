@@ -33,7 +33,7 @@ on:
         required: true
 
 concurrency:
-  group: publish-design-system-${{ github.workflow }}-${{ inputs.version }}-${{ inputs.dist_tag }}
+  group: publish-design-system-${{ inputs.version }}
   cancel-in-progress: false
 
 jobs:
@@ -43,7 +43,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Validate inputs
+      - name: Validate version input
         env:
           VERSION: ${{ inputs.version }}
         shell: bash
@@ -94,6 +94,21 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
+      - name: Validate dist-tag
+        env:
+          DIST_TAG: ${{ inputs.dist_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$DIST_TAG" ]; then
+            echo "::error title=Invalid dist-tag::dist_tag must not be empty" >&2
+            exit 1
+          fi
+          if ! node -e "process.exit(require('semver').validRange(process.argv[1]) ? 1 : 0)" "$DIST_TAG"; then
+            echo "::error title=Invalid dist-tag::Tag '$DIST_TAG' must not parse as a valid SemVer version or range (npm rejects such tags)" >&2
+            exit 1
+          fi
+
       - name: Verify package
         id: pkg
         env:
@@ -104,6 +119,10 @@ jobs:
           PACKAGE_JSON=packages/design-system/package.json
           NAME=$(node -p "require('./${PACKAGE_JSON}').name")
           VERSION=$(node -p "require('./${PACKAGE_JSON}').version")
+          if [ "$NAME" != "@comfyorg/design-system" ]; then
+            echo "::error title=Package name mismatch::${PACKAGE_JSON} name '$NAME' is not '@comfyorg/design-system'" >&2
+            exit 1
+          fi
           if [ "$VERSION" != "$INPUT_VERSION" ]; then
             echo "::error title=Version mismatch::${PACKAGE_JSON} version $VERSION does not match input $INPUT_VERSION" >&2
             exit 1
