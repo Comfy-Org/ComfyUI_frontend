@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { findEmptyCanvasPoint } from '@e2e/fixtures/utils/findEmptyCanvasPoint'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { toNodeId } from '@/types/nodeId'
 
@@ -25,13 +26,21 @@ test.describe('Collapsed Vue node stacking', { tag: '@vue-nodes' }, () => {
     if (!collapsedBox || !expandedBox) throw new Error('Nodes are not visible')
 
     const overlap = {
-      x: Math.max(collapsedBox.x, expandedBox.x) + 20,
+      x: Math.max(collapsedBox.x, expandedBox.x) + 100,
       y: Math.max(collapsedBox.y, expandedBox.y) + 12
     }
     const exposedCollapsed = {
-      x: collapsedBox.x + 10,
-      y: collapsedBox.y + 12
+      x: collapsedBox.x + 35,
+      y: collapsedBox.y + collapsedBox.height - 2
     }
+    expect(
+      collapsedBox.x + collapsedBox.width - overlap.x,
+      'Collapsed node must extend beyond the overlap point horizontally'
+    ).toBeGreaterThanOrEqual(1)
+    expect(
+      collapsedBox.y + collapsedBox.height - overlap.y,
+      'Collapsed node must extend beyond the overlap point vertically'
+    ).toBeGreaterThanOrEqual(1)
     await comfyPage.page.mouse.click(overlap.x, overlap.y)
     await expect
       .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
@@ -51,6 +60,15 @@ test.describe('Collapsed Vue node stacking', { tag: '@vue-nodes' }, () => {
 
     await collapsed.header.click({ modifiers: ['Control'] })
     await expect.poll(() => comfyPage.nodeOps.getSelectedNodeIds()).toEqual([])
+    await expect
+      .poll(async () => {
+        const [collapsedOrder, expandedOrder] = await Promise.all([
+          comfyPage.vueNodes.getNodePaintOrder('CLIP Text Encode'),
+          comfyPage.vueNodes.getNodePaintOrder('VAE Decode')
+        ])
+        return collapsedOrder < expandedOrder
+      })
+      .toBe(true)
     await comfyPage.page.mouse.click(overlap.x, overlap.y)
     await expect
       .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
@@ -77,6 +95,15 @@ test.describe('Collapsed Vue node stacking', { tag: '@vue-nodes' }, () => {
     await expect(collapsed.root).toHaveAttribute('data-collapsed', 'true')
     await collapsed.header.click({ modifiers: ['Control'] })
     await expect.poll(() => comfyPage.nodeOps.getSelectedNodeIds()).toEqual([])
+    await expect
+      .poll(async () => {
+        const [collapsedOrder, expandedOrder] = await Promise.all([
+          comfyPage.vueNodes.getNodePaintOrder('CLIP Text Encode'),
+          comfyPage.vueNodes.getNodePaintOrder('VAE Decode')
+        ])
+        return collapsedOrder < expandedOrder
+      })
+      .toBe(true)
     await comfyPage.page.mouse.click(overlap.x, overlap.y)
     await expect
       .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
@@ -102,17 +129,10 @@ test.describe('Collapsed Vue node stacking', { tag: '@vue-nodes' }, () => {
       x: collapsedBox.x + 10,
       y: collapsedBox.y + collapsedBox.height / 2
     }
-    const emptyCanvasPoint = await comfyPage.canvas.evaluate((canvas) => {
-      const bounds = canvas.getBoundingClientRect()
-      for (let y = bounds.bottom - 100; y > bounds.top + 100; y -= 50) {
-        for (let x = bounds.right - 100; x > bounds.left + 100; x -= 50) {
-          if (!document.elementFromPoint(x, y)?.closest('[data-node-id]')) {
-            return { x, y }
-          }
-        }
-      }
-      throw new Error('No empty canvas point found')
-    })
+    const emptyCanvasPoint = await findEmptyCanvasPoint(
+      comfyPage.canvas,
+      'bottom-right'
+    )
 
     await comfyPage.page.mouse.move(start.x, start.y)
     await comfyPage.page.mouse.down()

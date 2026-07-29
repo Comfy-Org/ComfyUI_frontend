@@ -67,16 +67,18 @@ export class VueNodeHelpers {
   }
 
   async getNodeCenter(title: string): Promise<{ x: number; y: number }> {
-    const box = await this.getNodeByTitle(title).boundingBox()
+    const box = await this.getNodeByTitle(title).first().boundingBox()
     if (!box) throw new Error(`Node "${title}" not found`)
     return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
   }
 
   async getNodePaintOrder(title: string): Promise<number> {
-    return await this.getNodeByTitle(title).evaluate((node) => {
-      const paintOrder = Number.parseInt(getComputedStyle(node).zIndex, 10)
-      return Number.isNaN(paintOrder) ? -1 : paintOrder
-    })
+    return await this.getNodeByTitle(title)
+      .first()
+      .evaluate((node) => {
+        const paintOrder = Number.parseInt(getComputedStyle(node).zIndex, 10)
+        return Number.isNaN(paintOrder) ? -1 : paintOrder
+      })
   }
 
   /**

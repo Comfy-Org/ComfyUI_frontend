@@ -6,6 +6,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
+import { findEmptyCanvasPoint } from '@e2e/fixtures/utils/findEmptyCanvasPoint'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { toNodeId } from '@/types/nodeId'
@@ -92,7 +93,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       ).not.toBeNull()
       expect(Math.abs(positions!.link.x - positions!.slot.x)).toBeLessThan(2)
       expect(Math.abs(positions!.link.y - positions!.slot.y)).toBeLessThan(2)
-    }).toPass()
+    }).toPass({ timeout: 5000 })
   }
 
   const dragFromTabButton = async (comfyPage: ComfyPage, button: Locator) => {
@@ -206,20 +207,6 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     }, source)
   }
 
-  const getEmptyCanvasPoint = async (comfyPage: ComfyPage) => {
-    return await comfyPage.canvas.evaluate((canvas) => {
-      const bounds = canvas.getBoundingClientRect()
-      for (let y = bounds.top + 100; y < bounds.bottom - 100; y += 50) {
-        for (let x = bounds.left + 100; x < bounds.right - 100; x += 50) {
-          if (!document.elementFromPoint(x, y)?.closest('[data-node-id]')) {
-            return { x, y }
-          }
-        }
-      }
-      throw new Error('No empty canvas point found')
-    })
-  }
-
   const moveAdvancedButtonRightEdgePastCanvas = async (
     comfyPage: ComfyPage,
     button: Locator,
@@ -324,7 +311,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       await comfyPage.nextFrame()
       await releaseActivePointerCapture(comfyPage)
 
-      const releasePoint = await getEmptyCanvasPoint(comfyPage)
+      const releasePoint = await findEmptyCanvasPoint(comfyPage.canvas)
       await comfyPage.page.mouse.move(releasePoint.x, releasePoint.y)
     } finally {
       await comfyPage.page.mouse.up()
