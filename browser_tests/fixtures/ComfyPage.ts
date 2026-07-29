@@ -598,14 +598,23 @@ export const comfyPageFixture = base.extend<{
             `'${testInfo.project.name}' traces '${traceMode}' - run with ` +
             `--project=custom-nodes and without --trace`
         )
+      // Timed because a cloud beforeEach that overruns reports only "Test
+      // timeout exceeded while running beforeEach hook", which cannot tell
+      // sign-in apart from app boot - the whole reason cloud failures have
+      // been undiagnosable. These two lines name which half spent the budget.
+      const authStartedAt = Date.now()
       await seedSmokeAuth(page, comfyPage.url)
+      console.warn(`[cloud] smoke sign-in took ${Date.now() - authStartedAt}ms`)
     }
 
     if (Object.keys(initialFeatureFlags).length > 0) {
       await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
     }
 
+    const setupStartedAt = Date.now()
     await comfyPage.setup()
+    if (isCloudEnv)
+      console.warn(`[cloud] app boot took ${Date.now() - setupStartedAt}ms`)
 
     if (isCloudEnv) {
       // The devtools settings endpoint is unreachable node-side on cloud

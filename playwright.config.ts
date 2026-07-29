@@ -68,6 +68,12 @@ export default defineConfig({
       // body's setTimeout can extend the budget - record run 30408428601
       // lost all 87 tests at exactly 15.1s this way.
       timeout: process.env.CUSTOM_NODES_ENV === 'cloud' ? 60_000 : 15000,
+      // No retries on cloud. Every cloud failure so far has been in the
+      // beforeEach hook - sign-in plus app boot - which fails identically
+      // every attempt, so retries only multiply the wall clock by four
+      // (run 30456554768: 272 tests x 4 attempts x 60s). A flake worth a
+      // retry is a per-test one; a hook that cannot complete is not.
+      retries: process.env.CUSTOM_NODES_ENV === 'cloud' ? 0 : undefined,
       grep: /@custom-nodes/,
       fullyParallel: false
     },
