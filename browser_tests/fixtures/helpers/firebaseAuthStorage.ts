@@ -41,13 +41,20 @@ export async function seedFirebaseAuthUser(
 ): Promise<void> {
   await page.goto(`${appUrl}/api/users`)
 
-  await page.evaluate(
+  const seeded = await page.evaluate(
     ({ user }) => {
       const key = `firebase:authUser:${user.apiKey}:${user.appName}`
       localStorage.setItem(key, JSON.stringify(user))
+      return localStorage.getItem(key) !== null
     },
     { user: record }
   )
+  if (!seeded)
+    throw new Error(
+      `firebase session did not persist to localStorage for ${record.email} - ` +
+        `the app restores auth from browserLocalPersistence, so it would boot ` +
+        `signed out and every workspace call would fail as "User not authenticated"`
+    )
 
   await page.evaluate(
     ({ dbName, storeName, user }) => {
