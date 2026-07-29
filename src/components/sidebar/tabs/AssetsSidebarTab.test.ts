@@ -179,6 +179,6 @@ describe('AssetsSidebarTab folder navigation', () => {
     expect(
       screen.queryByRole('button', { name: 'Back to all assets' })
     ).not.toBeInTheDocument()
-    expect(screen.queryByText('Job ID')).not.toBeInTheDocument()
+    expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
   })
 })
