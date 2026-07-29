@@ -209,6 +209,32 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     order.splice(0, order.length, ...nextOrder)
   }
 
+  /**
+   * Releases the widget ids tracked for a node, from the store's own record
+   * rather than the node's live widget list — the two diverge once a node drops
+   * widgets without unregistering them. `discardValues` also drops the widget
+   * states; retaining them lets a node that comes back keep what the user set.
+   */
+  function releaseNodeWidgets(
+    graphId: UUID,
+    localNodeId: NodeId,
+    { discardValues }: { discardValues: boolean }
+  ): void {
+    const graphOrders = graphNodeWidgetOrders.value.get(graphId)
+    if (!graphOrders) return
+
+    const order = graphOrders.get(localNodeId)
+    if (!order) return
+
+    if (discardValues) {
+      for (const widgetId of order) {
+        graphWidgetStates.value.get(graphId)?.delete(widgetId)
+        graphWidgetRenderStates.value.get(graphId)?.delete(widgetId)
+      }
+    }
+    graphOrders.delete(localNodeId)
+  }
+
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
@@ -225,6 +251,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getNodeWidgetIds,
     setNodeWidgetOrder,
     removeNodeWidgetOrder,
+    releaseNodeWidgets,
     clearGraph
   }
 })
