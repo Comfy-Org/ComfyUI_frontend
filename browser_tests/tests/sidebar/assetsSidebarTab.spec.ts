@@ -258,6 +258,67 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     ).toHaveJSProperty('naturalWidth', 1)
   })
 
+  test('preserves a grouped selection when opening its outputs', async ({
+    comfyPage,
+    jobsRoutes
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await jobsRoutes.mockJobsHistory([multiOutputJob])
+    await jobsRoutes.mockJobDetail('multi-output', multiOutputJobDetail)
+
+    await comfyPage.setup()
+    await tab.open()
+
+    const groupedCard = tab.getAssetCardByName('multi-output-a')
+    await groupedCard.click()
+    await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
+
+    await groupedCard.getByRole('button', { name: 'See more outputs' }).click()
+
+    await expect(tab.selectedCards).toHaveCount(2)
+    await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
+  })
+
+  test('preserves partial output selection when leaving and reopening a folder', async ({
+    comfyPage,
+    jobsRoutes
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await jobsRoutes.mockJobsHistory([multiOutputJob])
+    await jobsRoutes.mockJobDetail('multi-output', multiOutputJobDetail)
+
+    await comfyPage.setup()
+    await tab.open()
+
+    const groupedCard = tab.getAssetCardByName('multi-output-a')
+    await groupedCard.getByRole('button', { name: 'See more outputs' }).click()
+
+    await tab.getAssetCardByName('multi-output-a').click()
+    await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
+
+    await tab.backToAssetsButton.click()
+
+    await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
+    await expect(groupedCard).toHaveAttribute('data-selected', 'false')
+    await expect(
+      groupedCard.getByRole('button', { name: 'See more outputs' })
+    ).toHaveText('1/2')
+
+    await groupedCard.getByRole('button', { name: 'See more outputs' }).click()
+
+    await expect(tab.selectedCards).toHaveCount(1)
+    await expect(tab.getAssetCardByName('multi-output-a')).toHaveAttribute(
+      'data-selected',
+      'true'
+    )
+    await expect(tab.getAssetCardByName('multi-output-b')).toHaveAttribute(
+      'data-selected',
+      'false'
+    )
+  })
+
   test('deletes a generated output asset through explicit history refresh', async ({
     comfyPage,
     jobsRoutes
