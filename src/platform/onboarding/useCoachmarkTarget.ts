@@ -1,16 +1,11 @@
 import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware, Placement, Rect } from '@floating-ui/vue'
-import { useEventListener, useMutationObserver } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { computed, ref, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
-import {
-  coachmarkElements,
-  isSelectorTarget,
-  laidOutElement
-} from './coachmarkRegistry'
-import type { CoachTarget } from './coachmarkRegistry'
+import { coachmarkElements, isLaidOut } from './coachmarkRegistry'
 import type { CoachPlacement, CoachStep } from './onboardingTours'
 
 // A target animating in via CSS transform reports through neither scroll nor
@@ -68,38 +63,16 @@ export function useCoachmarkTarget(
   step: MaybeRefOrGetter<CoachStep | null>,
   cardRef: Ref<HTMLElement | null>
 ) {
-  const candidateEls = computed<readonly CoachTarget[]>(() => {
+  const candidateEls = computed<readonly HTMLElement[]>(() => {
     const id = toValue(step)?.coachId
     return id ? coachmarkElements(id) : []
   })
 
-  const domRevision = ref(0)
-
-  const anchor = computed(() => {
-    void domRevision.value
-    for (const candidate of candidateEls.value) {
-      const el = laidOutElement(candidate)
-      if (el) return { candidate, el }
-    }
-    return null
-  })
-
-  const targetEl = computed(() => anchor.value?.el ?? null)
-
-  // A selector target moves with the camera, which fires no DOM event, so the
-  // engine follows it frame by frame instead of being told when it moved.
-  const targetMoves = computed(
-    () => !!anchor.value && isSelectorTarget(anchor.value.candidate)
+  const targetEl = computed<HTMLElement | null>(
+    () => candidateEls.value.find(isLaidOut) ?? null
   )
 
-  useMutationObserver(
-    () => (candidateEls.value.some(isSelectorTarget) ? document.body : null),
-    () => {
-      if (targetEl.value?.isConnected) return
-      domRevision.value++
-    },
-    { childList: true, subtree: true }
-  )
+  const targetMoves = computed(() => !!toValue(step)?.follow)
 
   // The top bar's height only changes on resize, so read it once and refresh
   // then — Floating UI re-runs the middleware every frame while tracking motion.

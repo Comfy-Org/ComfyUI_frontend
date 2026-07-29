@@ -2,55 +2,42 @@ import { shallowReactive, watch } from 'vue'
 
 import type { CoachId } from './onboardingTours'
 
-/** Names an element that remounts and moves without events; the engine
- *  re-resolves it and follows it frame by frame. */
-export interface SelectorTarget {
-  selector: string
-}
+const EMPTY: readonly HTMLElement[] = []
 
-export type CoachTarget = HTMLElement | SelectorTarget
-
-export function isSelectorTarget(
-  target: CoachTarget
-): target is SelectorTarget {
-  return !(target instanceof HTMLElement)
-}
-
-function resolveTarget(target: CoachTarget): HTMLElement | null {
-  if (!isSelectorTarget(target)) return target
-  return document.querySelector<HTMLElement>(target.selector)
-}
-
-const EMPTY: readonly CoachTarget[] = []
-
-/** The element a target names, once it is rendered with a size. */
-export function laidOutElement(target: CoachTarget): HTMLElement | null {
-  const element = resolveTarget(target)
-  if (!element) return null
-  const { width, height } = element.getBoundingClientRect()
-  return width > 0 && height > 0 ? element : null
+/** Laid out — a registered target that is currently visible and has a size. */
+export function isLaidOut(el: HTMLElement): boolean {
+  const r = el.getBoundingClientRect()
+  return r.width > 0 && r.height > 0
 }
 
 // An id can map to several elements (e.g. responsive variants); consumers pick
 // the first laid-out one.
-const registry = shallowReactive(new Map<CoachId, readonly CoachTarget[]>())
+const registry = shallowReactive(new Map<CoachId, readonly HTMLElement[]>())
 
-export function registerCoachmark(id: CoachId, target: CoachTarget) {
-  registry.set(id, [...(registry.get(id) ?? EMPTY), target])
+// A tour points at a canvas node by id; the node's element binds the mapped
+// coach id through vCoachmark, so registration rides the component lifecycle.
+export const nodeCoachmarks = shallowReactive(new Map<string, CoachId>())
+
+export function coachIdForNode(nodeId: unknown): CoachId | null {
+  return nodeCoachmarks.get(String(nodeId)) ?? null
 }
 
-export function unregisterCoachmark(id: CoachId, target: CoachTarget) {
-  const next = (registry.get(id) ?? EMPTY).filter((entry) => entry !== target)
+export function registerCoachmark(id: CoachId, el: HTMLElement) {
+  registry.set(id, [...(registry.get(id) ?? EMPTY), el])
+}
+
+export function unregisterCoachmark(id: CoachId, el: HTMLElement) {
+  const next = (registry.get(id) ?? EMPTY).filter((entry) => entry !== el)
   if (next.length) registry.set(id, next)
   else registry.delete(id)
 }
 
-export function coachmarkElements(id: CoachId): readonly CoachTarget[] {
+export function coachmarkElements(id: CoachId): readonly HTMLElement[] {
   return registry.get(id) ?? EMPTY
 }
 
 export function targetMounted(id: CoachId): boolean {
-  return coachmarkElements(id).some((target) => !!laidOutElement(target))
+  return coachmarkElements(id).some(isLaidOut)
 }
 
 /** Resolves once a laid-out element for the id exists; false on timeout or abort. */

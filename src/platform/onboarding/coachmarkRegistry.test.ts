@@ -3,30 +3,20 @@ import { nextTick } from 'vue'
 
 import {
   clearCoachmarks,
+  coachIdForNode,
+  nodeCoachmarks,
   coachmarkElements,
   registerCoachmark,
   targetMounted,
   unregisterCoachmark,
   waitForTarget
 } from './coachmarkRegistry'
-import type { CoachTarget } from './coachmarkRegistry'
 
 /** An element with a non-zero measured rect, so it counts as laid out. */
 function laidOut(): HTMLElement {
   const el = document.createElement('div')
   el.getBoundingClientRect = () => new DOMRect(0, 0, 80, 30)
   return el
-}
-
-function selectorTarget(): CoachTarget {
-  return { selector: '[data-node-id="7"]' }
-}
-
-function mountNode(): HTMLElement {
-  const node = laidOut()
-  node.setAttribute('data-node-id', '7')
-  document.body.append(node)
-  return node
 }
 
 describe('coachmarkRegistry', () => {
@@ -49,11 +39,18 @@ describe('coachmarkRegistry', () => {
   })
 })
 
-describe('targetMounted', () => {
-  afterEach(() => {
-    clearCoachmarks()
-    document.body.replaceChildren()
+describe('coachIdForNode', () => {
+  afterEach(() => nodeCoachmarks.clear())
+
+  it('maps a node id the tour marked, and nothing else', () => {
+    nodeCoachmarks.set('7', 'inputs-list')
+    expect(coachIdForNode(7)).toBe('inputs-list')
+    expect(coachIdForNode('8')).toBeNull()
   })
+})
+
+describe('targetMounted', () => {
+  afterEach(clearCoachmarks)
 
   it('is true once a laid-out element is registered', () => {
     expect(targetMounted('app-run-button')).toBe(false)
@@ -64,17 +61,6 @@ describe('targetMounted', () => {
   it('ignores a registered target that is not laid out (e.g. hidden)', () => {
     registerCoachmark('outputs', document.createElement('div'))
     expect(targetMounted('outputs')).toBe(false)
-  })
-
-  it('resolves a selector target through the node it names', () => {
-    registerCoachmark('outputs', selectorTarget())
-    expect(targetMounted('outputs')).toBe(false)
-
-    mountNode()
-    expect(
-      targetMounted('outputs'),
-      'the node mounts after the tour registers its target'
-    ).toBe(true)
   })
 })
 
@@ -92,7 +78,6 @@ describe('waitForTarget', () => {
 
   afterEach(() => {
     clearCoachmarks()
-    document.body.replaceChildren()
     vi.useRealTimers()
     vi.unstubAllGlobals()
   })
@@ -138,25 +123,6 @@ describe('waitForTarget', () => {
     runFrames()
     await Promise.resolve()
     expect(resolved).toBe(true)
-  })
-
-  it('keeps polling a selector target until the node it names mounts', async () => {
-    registerCoachmark('outputs', selectorTarget())
-    const signal = new AbortController().signal
-    let resolved: boolean | undefined
-    void waitForTarget('outputs', signal, 1000).then((v) => (resolved = v))
-
-    runFrames()
-    await Promise.resolve()
-    expect(resolved).toBeUndefined()
-
-    mountNode()
-    runFrames()
-    await Promise.resolve()
-    expect(
-      resolved,
-      'the tour registers its canvas target before the node renders'
-    ).toBe(true)
   })
 
   it('does not schedule rAF polling while no candidate is registered', () => {

@@ -101,15 +101,12 @@ describe('TourSpotlight interactive and masked steps', () => {
 
   it('rides a node the camera carries instead of transitioning after it', () => {
     const node = document.createElement('div')
-    node.setAttribute('data-node-id', '7')
     node.getBoundingClientRect = () => new DOMRect(10, 10, 80, 40)
     document.body.append(node)
-    registerCoachmark(COACH_IDS.inputsList, {
-      selector: '[data-node-id="7"]'
-    })
+    registerCoachmark(COACH_IDS.inputsList, node)
 
     renderSpotlight({
-      step: spotlightStep({ coachId: COACH_IDS.inputsList })
+      step: spotlightStep({ coachId: COACH_IDS.inputsList, follow: true })
     })
 
     expect(

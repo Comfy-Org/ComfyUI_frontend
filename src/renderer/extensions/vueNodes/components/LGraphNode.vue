@@ -5,6 +5,7 @@
   <div
     v-else
     ref="nodeContainerRef"
+    v-coachmark="coachIdForNode(nodeData.id)"
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
@@ -259,6 +260,8 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
+import { coachIdForNode } from '@/platform/onboarding/coachmarkRegistry'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import {
   LGraphCanvas,
