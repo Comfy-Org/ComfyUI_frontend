@@ -22,6 +22,7 @@ import {
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
@@ -69,10 +70,13 @@ const {
     invokeExtensionsAsync: vi.fn()
   },
   mockNodeOutputStore: {
-    refreshNodeOutputs: vi.fn()
+    refreshNodeOutputs: vi.fn(),
+    resetAllOutputsAndPreviews: vi.fn()
   },
   mockWorkspaceWorkflow: {
-    activeWorkflow: null as ComfyWorkflow | null
+    activeWorkflow: null as ComfyWorkflow | null,
+    createNewTemporary: vi.fn(),
+    openWorkflow: vi.fn()
   },
   mockRefreshMissingModelPipeline: vi.fn()
 }))
@@ -127,6 +131,13 @@ vi.mock('@/services/extensionService', () => ({
 
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: vi.fn(() => mockNodeOutputStore)
+}))
+
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: vi.fn(() => ({
+    saveCurrentViewport: vi.fn(),
+    updateHash: vi.fn()
+  }))
 }))
 
 vi.mock('@/stores/workspaceStore', () => ({
@@ -192,6 +203,13 @@ describe('ComfyApp', () => {
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
     mockWorkspaceWorkflow.activeWorkflow = null
+    const temporaryWorkflow = new ComfyWorkflow({
+      path: 'workflows/temporary.json',
+      modified: 0,
+      size: 0
+    })
+    mockWorkspaceWorkflow.createNewTemporary.mockReturnValue(temporaryWorkflow)
+    mockWorkspaceWorkflow.openWorkflow.mockResolvedValue(temporaryWorkflow)
     mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
     mockAuthStore.getAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
@@ -218,6 +236,22 @@ describe('ComfyApp', () => {
       })
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
     }
+
+    it('preserves missing node packs when submitting a prompt', async () => {
+      prepareEmptyPromptQueue()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes(['MissingGroupNode'])
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      await app.queuePrompt(0)
+
+      expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+        'MissingGroupNode'
+      ])
+    })
 
     it('shows the error overlay for successful prompt responses with node errors', async () => {
       const graph = new LGraph()
@@ -692,6 +726,36 @@ describe('ComfyApp', () => {
 
       await expect(firstQueue).resolves.toBe(true)
       expect(useExecutionErrorStore().lastNodeErrors).toBeNull()
+    })
+  })
+
+  describe('workflow lifecycle', () => {
+    it('clears missing node packs when loading another workflow', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      app.canvasElRef.value = document.createElement('canvas')
+      mockCanvas.setDirty = vi.fn()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes(['MissingGroupNode'])
+
+      await app.loadGraphData(createWorkflowGraphData(), false, false, null, {
+        deferWarnings: true,
+        skipAssetScans: true
+      })
+
+      expect(missingNodesStore.missingNodesError).toBeNull()
+    })
+
+    it('clears missing node packs when clearing the workflow', () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes(['MissingGroupNode'])
+
+      app.clean()
+
+      expect(missingNodesStore.missingNodesError).toBeNull()
     })
   })
 

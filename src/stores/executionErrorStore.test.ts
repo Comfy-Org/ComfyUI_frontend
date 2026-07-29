@@ -849,7 +849,7 @@ describe('clearAllErrors', () => {
     missingNodesStore = useMissingNodesErrorStore()
   })
 
-  it('resets all error categories and closes error overlay', () => {
+  it('resets run errors while preserving missing setup state', () => {
     executionErrorStore.recordExecutionError({
       prompt_id: 'test',
       timestamp: 0,
@@ -889,8 +889,10 @@ describe('clearAllErrors', () => {
     expect(executionErrorStore.lastExecutionError).toBeNull()
     expect(executionErrorStore.lastPromptError).toBeNull()
     expect(executionErrorStore.lastNodeErrors).toBeNull()
-    expect(missingNodesStore.missingNodesError).toBeNull()
+    expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+      { type: 'MissingNode', hint: '' }
+    ])
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
-    expect(executionErrorStore.hasAnyError).toBe(false)
+    expect(executionErrorStore.hasAnyError).toBe(true)
   })
 })

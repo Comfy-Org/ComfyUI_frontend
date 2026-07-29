@@ -1222,6 +1222,7 @@ export class ComfyApp {
       silentAssetErrors = false
     } = options
     useWorkflowService().beforeLoadNewGraph()
+    useMissingNodesErrorStore().setMissingNodeTypes([])
 
     if (skipAssetScans) {
       // Only reset candidates; preserve UI state (fileSizes, etc.)
@@ -2409,6 +2410,7 @@ export class ComfyApp {
     nodeOutputStore.resetAllOutputsAndPreviews()
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.clearAllErrors()
+    useMissingNodesErrorStore().setMissingNodeTypes([])
 
     useDomWidgetStore().clear()
 

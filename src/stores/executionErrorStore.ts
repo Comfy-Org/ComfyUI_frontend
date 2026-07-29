@@ -83,15 +83,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /** Clear all error state.
-   *  Missing model state is intentionally preserved here to avoid wiping
-   *  in-progress model repairs (importTaskIds, URL inputs, etc.).
-   *  Missing models are cleared separately during workflow load/clean paths. */
+  /** Clear errors tied to the previous run.
+   *  Missing node, model, and media state is preserved because submission does
+   *  not resolve setup issues. Workflow load clears all three; explicit
+   *  workflow clean also clears missing nodes. */
   function clearAllErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
     lastNodeErrors.value = null
-    missingNodesStore.setMissingNodeTypes([])
     isErrorOverlayOpen.value = false
   }
 
