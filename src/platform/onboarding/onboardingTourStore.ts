@@ -180,7 +180,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     watch(
       trigger.autoOpen,
       (visible) => {
-        if (visible) void startTour(entryPath)
+        if (visible) startTour(entryPath)
       },
       { immediate: true }
     )
@@ -200,11 +200,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     void settingStore.set(TOUR_SEEN_SETTING, [...seen, entryPath])
   }
 
-  async function begin(entryPath: EntryPath): Promise<boolean> {
+  function begin(entryPath: EntryPath): boolean {
     if (steps.value.length) return false
     const definition = TOURS[entryPath]
-    const built = Array.isArray(definition) ? definition : await definition()
-    if (steps.value.length) return false
+    const built = Array.isArray(definition) ? definition : definition()
     const resolved = resolveSteps(built, targetMounted)
     if (!resolved.length) return false
     steps.value = resolved
@@ -214,13 +213,13 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     return true
   }
 
-  async function startTour(entryPath: EntryPath): Promise<boolean> {
+  function startTour(entryPath: EntryPath): boolean {
     if (hasSeenTour(entryPath)) return false
     return begin(entryPath)
   }
 
   function replayTour(entryPath: EntryPath) {
-    void begin(entryPath)
+    begin(entryPath)
   }
 
   return {
