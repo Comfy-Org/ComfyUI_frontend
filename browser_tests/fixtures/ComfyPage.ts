@@ -157,36 +157,52 @@ class ComfyMenu {
   }
 }
 
+// Only DEFINITIVELY third-party analytics hosts. A failure to one of these is
+// external and never ours to fix. Everything ambiguous - a Three.js
+// double-instance, a double-registered extension, a bare ERR_FAILED, a CORS
+// error to any other host - is kept, because it can be a real bundling bug.
+const TRACE_TELEMETRY =
+  /mp\.comfy\.org|customer\.io|gist\.build|sy-d\.io|sentry/
+
+// Dedupe over filter. The app boots against real Cloud, so the same error (a
+// per-node widget warning, a repeated failed poll) fires thousands of times
+// and buries the distinct problems. Every unique line still shows once; exact
+// repeats are collapsed and a count is emitted at teardown, so a
+// high-frequency error stays visible as such without the churn.
 function traceCloudPage(page: Page): void {
+  const counts = new Map<string, number>()
+  const once = (line: string) => {
+    if (TRACE_TELEMETRY.test(line)) return
+    const seen = counts.get(line) ?? 0
+    counts.set(line, seen + 1)
+    if (seen === 0) console.warn(line)
+  }
   page.on('framenavigated', (frame) => {
     if (frame === page.mainFrame())
       console.warn(`[trace] navigated -> ${frame.url()}`)
   })
-  page.on('pageerror', (error) => {
-    console.warn(`[trace] page error: ${error.message}`)
-  })
+  page.on('pageerror', (error) => once(`[trace] page error: ${error.message}`))
   page.on('console', (message) => {
-    if (message.type() === 'error' || message.type() === 'warning')
-      console.warn(
-        `[trace] console.${message.type()}: ${message.text().slice(0, 300)}`
-      )
+    if (message.type() !== 'error' && message.type() !== 'warning') return
+    once(`[trace] console.${message.type()}: ${message.text().slice(0, 200)}`)
   })
   page.on('requestfailed', (request) => {
-    console.warn(
-      `[trace] request FAILED ${request.method()} ${request.url()} - ${request.failure()?.errorText ?? 'unknown'}`
-    )
+    const err = request.failure()?.errorText ?? 'unknown'
+    // net::ERR_ABORTED is the page navigating away mid-request - benign.
+    if (err.includes('ERR_ABORTED')) return
+    once(`[trace] request FAILED ${request.method()} ${request.url()} - ${err}`)
   })
   page.on('response', (response) => {
     const url = response.url()
     const status = response.status()
     if (status >= 400)
-      console.warn(
-        `[trace] HTTP ${status} ${response.request().method()} ${url}`
-      )
-    else if (
-      /\/(api\/)?(features|users|settings|object_info|userdata)/.test(url)
-    )
-      console.warn(`[trace] HTTP ${status} ${url}`)
+      once(`[trace] HTTP ${status} ${response.request().method()} ${url}`)
+    else if (/\/api\/(features|users|object_info)/.test(url))
+      once(`[trace] HTTP ${status} ${url}`)
+  })
+  page.on('close', () => {
+    for (const [line, n] of counts)
+      if (n > 1) console.warn(`[trace] (x${n}) ${line}`)
   })
 }
 
