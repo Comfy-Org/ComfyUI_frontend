@@ -2677,7 +2677,8 @@
       "rolePermissions": "Role-based permissions"
     },
     "freePerks": {
-      "maxRuntime": "{duration} max runtime"
+      "maxRuntime": "{duration} max runtime",
+      "freeRuns": "{count} free run | {count} free runs"
     },
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
@@ -2787,22 +2788,6 @@
     "pricingBlurbQuestions": "questions",
     "pricingBlurbEnterprise": "enterprise discussions",
     "pricingBlurbClickHere": "click here",
-    "freeTier": {
-      "title": "You're on the Free plan",
-      "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
-      "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
-      "descriptionQuota": "Your free plan includes {runs} runs to get started with Comfy Cloud — no card needed.",
-      "nextRefresh": "Your credits refresh on {date}.",
-      "subscribeCta": "Subscribe for more",
-      "outOfCredits": {
-        "title": "You're out of free credits",
-        "subtitle": "Subscribe to add top-ups and more"
-      },
-      "topUpBlocked": {
-        "title": "Add top-ups and more"
-      },
-      "upgradeCta": "View plans"
-    },
     "partnerNodesCredits": "Partner nodes pricing",
     "partnerNodesPricingTable": "Partner Nodes pricing table",
     "plansAndPricing": "Plans & pricing",
@@ -3650,7 +3635,6 @@
     "feedback": "Feedback",
     "feedbackTooltip": "Feedback",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
-    "freeTierRunsExhausted": "No runs left",
     "freeTierPartner": "Partner nodes need a paid plan",
     "share": "Share",
     "shareTooltip": "Share workflow"
@@ -3692,9 +3676,9 @@
     "checkingAssets": "Checking media visibility…",
     "acknowledgeCheckbox": "I understand anyone with the link can view these files",
     "inLibrary": "In library",
-    "comfyHubTitle": "Upload to ComfyHub",
-    "comfyHubDescription": "ComfyHub is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
-    "comfyHubButton": "Upload to ComfyHub"
+    "comfyHubTitle": "Upload to Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
+    "comfyHubButton": "Upload to Comfy Workflows"
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",
@@ -3710,12 +3694,12 @@
     "loadError": "Could not load this shared workflow. Please try again later."
   },
   "comfyHubPublish": {
-    "title": "Publish to ComfyHub",
-    "unsavedDescription": "You must save your workflow before publishing to ComfyHub. Save it now to continue.",
+    "title": "Publish to Comfy Workflows",
+    "unsavedDescription": "You must save your workflow before publishing to Comfy Workflows. Save it now to continue.",
     "stepDescribe": "Describe your workflow",
     "stepExamples": "Add output examples",
     "stepFinish": "Finish publishing",
-    "workflowName": "Workflow name",
+    "workflowName": "Title",
     "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
     "workflowDescription": "Workflow description",
     "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people know what to expect.",
@@ -3741,7 +3725,7 @@
     "uploadThumbnailHint": "1:1 preferred, 1080p max",
     "back": "Back",
     "next": "Next",
-    "publishButton": "Publish to ComfyHub",
+    "publishButton": "Publish to Comfy Workflows",
     "updateButton": "Update workflow",
     "examplesDescription": "Add up to {total} additional sample images",
     "uploadAnImage": "Click to browse or drag an image",
@@ -3753,28 +3737,28 @@
     "maxExamples": "You can select up to {max} examples",
     "shareAs": "Share as",
     "additionalInfo": "Additional information",
-    "createProfileToPublish": "Create a profile to publish to ComfyHub",
+    "createProfileToPublish": "Create a profile to publish to Comfy Workflows",
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
     "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
     "renameFailedTitle": "Rename failed",
     "renameFailedDescription": "Your workflow was published successfully, but renaming the local file failed. Rename it again to match.",
     "publishSuccessTitle": "Published successfully",
-    "publishSuccessDescription": "Your workflow is now live on ComfyHub."
+    "publishSuccessDescription": "Your workflow is now live on Comfy Workflows."
   },
   "comfyHubProfile": {
     "checkingAccess": "Checking your publishing access...",
     "profileCreationNav": "Profile creation",
-    "introTitle": "Publish to the ComfyHub",
+    "introTitle": "Publish to Comfy Workflows",
     "introDescription": "Publish your workflows, build your portfolio and get discovered by millions of users",
-    "updateIntroTitle": "Update your ComfyHub workflow",
-    "updateIntroDescription": "Push your latest changes to ComfyHub. Your share link and stats stay the same.",
-    "introSubtitle": "To share your workflow on ComfyHub, let's first create your profile.",
+    "updateIntroTitle": "Update your workflow on Comfy Workflows",
+    "updateIntroDescription": "Push your latest changes to Comfy Workflows. Your share link and stats stay the same.",
+    "introSubtitle": "To share your workflow on Comfy Workflows, let's first create your profile.",
     "createProfileButton": "Create my profile",
     "startPublishingButton": "Start publishing",
     "startUpdatingButton": "Update workflow",
-    "modalTitle": "Create your profile on ComfyHub",
-    "createProfileTitle": "Create your Comfy Hub profile",
+    "modalTitle": "Create your profile on Comfy Workflows",
+    "createProfileTitle": "Create your Comfy Workflows profile",
     "uploadCover": "+ Upload a cover",
     "uploadProfilePicture": "+ Upload a profile picture",
     "chooseProfilePicture": "Choose a profile picture",
