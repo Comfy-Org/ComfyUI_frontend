@@ -63,7 +63,7 @@ function tourShape({
 
 interface StepContext {
   shape: TourShape
-  runState: Ref<RunState>
+  runState: Readonly<Ref<RunState>>
 }
 
 /**
@@ -115,7 +115,7 @@ function toCoachStep(
  */
 export async function firstRunTourSteps(
   templateId: string,
-  runState: Ref<RunState>
+  runState: Readonly<Ref<RunState>>
 ): Promise<CoachStep[]> {
   releaseFirstRunTargets()
   const graph = app.rootGraph

@@ -130,7 +130,7 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
     expect(stages()).toContain('step_shown')
   })
 
-  it('opens only until the first step has framed itself', async () => {
+  it('shows no step until the first one has framed itself', async () => {
     let release = () => {}
     const framed = new Promise<void>((resolve) => {
       release = resolve
@@ -138,26 +138,29 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
     registerTour('firstRun', () =>
       Promise.resolve([
         step('upload', { onEnter: () => framed }),
-        step('prompt', { onEnter: () => Promise.resolve() })
+        step('prompt', { onEnter: () => framed })
       ])
     )
     const store = mountStore()
 
     await store.startTour('firstRun')
     await nextTick()
-    expect(store.opening).toBe(true)
+    expect(
+      store.step,
+      'a card placed against a view still flying reads as a glitch'
+    ).toBeNull()
 
     release()
     await framed
     await nextTick()
-    expect(store.opening).toBe(false)
+    expect(store.step?.name).toBe('upload')
 
     store.next()
     await nextTick()
     expect(
-      store.opening,
-      'a card that hides itself on every step reads as a restart, not a next step'
-    ).toBe(false)
+      store.step?.name,
+      'a card that blanks out on every step reads as a restart, not a next step'
+    ).toBe('prompt')
   })
 
   it('offers no way back into a step that only its own action leaves', async () => {

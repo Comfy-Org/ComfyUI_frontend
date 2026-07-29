@@ -265,6 +265,20 @@ describe('useFirstRunTourController', () => {
       expect(mocks.runState.value).toBe('generating')
     })
 
+    it('remembers a run that landed after the queue drops its status', async () => {
+      await tourOnRunStep()
+      await finishRun(TOUR_WORKFLOW, 'running')
+      await finishRun(TOUR_WORKFLOW, 'completed')
+
+      mocks.workflowStatus.value = new Map()
+      await nextTick()
+
+      expect(
+        mocks.runState.value,
+        'the tab clears a terminal status, and the Result step still has to report it'
+      ).toBe('succeeded')
+    })
+
     it('tells a run that landed apart from one that never started', async () => {
       await tourOnRunStep()
       await finishRun(TOUR_WORKFLOW, 'running')

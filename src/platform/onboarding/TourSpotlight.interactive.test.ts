@@ -125,43 +125,54 @@ describe('TourSpotlight interactive and masked steps', () => {
     ).not.toContain('transition-[left,top,width,height,opacity]')
   })
 
-  it('holds the opening card back until its tour has framed itself', () => {
-    renderSpotlight({ opening: true })
+  it('holds a card back until Floating UI has sited it against its target', () => {
+    registerCoachmark(COACH_IDS.inputsList, canvasNode())
+    renderSpotlight({ step: spotlightStep({ coachId: COACH_IDS.inputsList }) })
     const card = screen.getByRole('dialog', { hidden: true })
 
     expect(
       card.style.opacity,
-      'the first card has nowhere to travel from, so it fades in once the view is still'
+      'a card shown before it is placed appears in the wrong spot, then jumps'
     ).toBe('0')
     expect(
       card.className,
       'a hidden card must not swallow clicks meant for the app'
     ).toContain('pointer-events-none')
-    expect(
-      card.className,
-      'a card that pops in reads as a glitch rather than an arrival'
-    ).toContain('transition')
   })
 
-  it('keeps the card on screen once the tour is under way', async () => {
-    const { rerender } = renderSpotlight({ opening: true })
+  it('shows a targetless card straight away, having nowhere to be placed', () => {
+    renderSpotlight()
 
-    await rerender({ opening: false, step: spotlightStep({ name: 'later' }) })
-
-    expect(
-      screen.getByRole('dialog').style.opacity,
-      'a card that fades out on every step reads as a restart, not a next step'
-    ).toBe('1')
+    expect(screen.getByRole('dialog').style.opacity).toBe('1')
   })
 
-  it('glides to a new canvas target, then rides it', async () => {
-    vi.useFakeTimers()
+  it('sites the first card rather than travelling to it', () => {
     registerCoachmark(FIRST_RUN_COACH_IDS.prompt, canvasNode())
 
     renderSpotlight({
       step: spotlightStep({ coachId: FIRST_RUN_COACH_IDS.prompt })
     })
+
+    expect(
+      screen.getByRole('dialog', { hidden: true }).className,
+      'Floating UI sites a card from the viewport origin, so travelling to the first one slides it in from the corner'
+    ).not.toContain('transition-[left,top,opacity]')
+  })
+
+  it('glides to the next step’s target, then rides it', async () => {
+    vi.useFakeTimers()
+    registerCoachmark(FIRST_RUN_COACH_IDS.prompt, canvasNode())
+    const { rerender } = renderSpotlight({
+      step: spotlightStep({ coachId: FIRST_RUN_COACH_IDS.prompt })
+    })
     const card = () => screen.getByRole('dialog', { hidden: true }).className
+
+    await rerender({
+      step: spotlightStep({
+        name: 'later',
+        coachId: FIRST_RUN_COACH_IDS.prompt
+      })
+    })
 
     expect(
       card(),
