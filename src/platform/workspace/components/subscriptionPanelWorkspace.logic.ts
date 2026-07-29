@@ -16,6 +16,20 @@ export function formatSubscriptionDate(
   locale: string
 ): string {
   if (!isoDate) return ''
+  const calendarDate = /^(\d{4})-(\d{2})-(\d{2})T/.exec(isoDate)
+  if (!calendarDate) return ''
+
+  const [, year, month, day] = calendarDate
+  const calendarCheck = new Date(
+    Date.UTC(Number(year), Number(month) - 1, Number(day))
+  )
+  if (
+    calendarCheck.getUTCFullYear() !== Number(year) ||
+    calendarCheck.getUTCMonth() + 1 !== Number(month) ||
+    calendarCheck.getUTCDate() !== Number(day)
+  )
+    return ''
+
   const date = new Date(isoDate)
   if (Number.isNaN(date.getTime())) return ''
 

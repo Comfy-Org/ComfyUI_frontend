@@ -303,7 +303,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
   })
 
-  it.for([null, 'not-a-date'])(
+  it.for([null, 'not-a-date', '2026-02-31T12:00:00Z'])(
     'omits renewal copy when the active renewal date is %s',
     (renewalDate) => {
       mockRenewalDate.value = renewalDate
@@ -464,6 +464,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('shows ended copy for an inactive ended subscription without a date', () => {
     mockSubscriptionStatus.value = 'ended'
     mockIsActiveSubscription.value = false
+    mockIsInPersonalWorkspace.value = true
     mockEndDate.value = null
     renderComponent()
 
@@ -475,9 +476,36 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.queryByText(/features remain active/i)
     ).not.toBeInTheDocument()
     expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
   })
 
-  it.for([null, 'not-a-date'])(
+  it('shows ended copy and subscribe CTA after a canceled Team plan becomes inactive', () => {
+    mockSubscriptionStatus.value = 'canceled'
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    renderComponent()
+
+    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.getByText('Your subscription is no longer active.')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe Now' })
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
+  })
+
+  it('does not show stale renewal copy for an explicitly ended active state', () => {
+    mockSubscriptionStatus.value = 'ended'
+    renderComponent()
+
+    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(screen.queryByText(/^Renews on/i)).not.toBeInTheDocument()
+  })
+
+  it.for([null, 'not-a-date', '2026-02-31T12:00:00Z'])(
     'uses safe cancellation copy when the active end date is %s',
     (endDate) => {
       mockSubscriptionStatus.value = 'canceled'
