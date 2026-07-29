@@ -45,7 +45,7 @@
     <template v-else>
       <!-- Cancelled subscription info card -->
       <div
-        v-if="isSubscriptionCancelled"
+        v-if="showSubscriptionStateCard"
         class="mb-6 flex gap-1 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
       >
         <div
@@ -55,13 +55,23 @@
         </div>
         <div class="flex flex-col gap-2">
           <h2 class="m-0 pt-1.5 text-sm font-bold text-text-primary">
-            {{ $t('subscription.canceledCard.title') }}
+            {{
+              $t(
+                isSubscriptionEnded
+                  ? 'subscription.canceledCard.endedTitle'
+                  : 'subscription.canceledCard.title'
+              )
+            }}
           </h2>
           <p class="m-0 text-sm text-text-secondary">
             {{
-              $t('subscription.canceledCard.description', {
-                date: formattedEndDate
-              })
+              isSubscriptionEnded
+                ? $t('subscription.canceledCard.endedDescription')
+                : formattedEndDate
+                  ? $t('subscription.canceledCard.description', {
+                      date: formattedEndDate
+                    })
+                  : $t('subscription.canceledCard.descriptionWithoutDate')
             }}
           </p>
         </div>
@@ -164,14 +174,14 @@
                   v-if="isActiveSubscription"
                   class="text-sm text-text-secondary"
                 >
-                  <template v-if="isSubscriptionCancelled">
+                  <template v-if="isSubscriptionCancelled && formattedEndDate">
                     {{
                       $t('subscription.endsOnDate', {
                         date: formattedEndDate
                       })
                     }}
                   </template>
-                  <template v-else>
+                  <template v-else-if="!isSubscriptionCancelled">
                     {{
                       $t('subscription.renewsOnDate', {
                         date: formattedRenewalDate
@@ -356,6 +366,7 @@ const {
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
   subscription,
+  subscriptionStatus,
   isLoading,
   error,
   showSubscriptionDialog,
@@ -435,6 +446,16 @@ const formattedRenewalDate = computed(() =>
 
 const formattedEndDate = computed(() =>
   formatSubscriptionDate(subscription.value?.endDate, locale.value)
+)
+
+const isSubscriptionEnded = computed(
+  () =>
+    subscriptionStatus.value === 'ended' ||
+    (isSubscriptionCancelled.value && !isActiveSubscription.value)
+)
+
+const showSubscriptionStateCard = computed(
+  () => isSubscriptionCancelled.value || isSubscriptionEnded.value
 )
 
 const subscriptionTierName = computed(() => {

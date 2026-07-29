@@ -16,7 +16,10 @@ export function formatSubscriptionDate(
   locale: string
 ): string {
   if (!isoDate) return ''
-  return new Date(isoDate).toLocaleDateString(locale, {
+  const date = new Date(isoDate)
+  if (Number.isNaN(date.getTime())) return ''
+
+  return date.toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric'

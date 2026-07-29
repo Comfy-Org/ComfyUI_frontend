@@ -9,6 +9,7 @@ import type { SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
 import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
+  BillingSubscriptionStatus,
   CurrentTeamCreditStop,
   TeamCreditStops
 } from '@/platform/workspace/api/workspaceApi'
@@ -46,8 +47,9 @@ const teamCreditStops: TeamCreditStops = {
   ]
 }
 
-const mockSubscriptionStatus = ref<'active' | 'canceled'>('active')
+const mockSubscriptionStatus = ref<BillingSubscriptionStatus>('active')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
+const mockEndDate = ref<string | null>(END_DATE_ISO)
 const mockHasSubscription = ref(true)
 const mockIsActiveSubscription = ref(true)
 const mockIsInPersonalWorkspace = ref(false)
@@ -106,7 +108,7 @@ const mockSubscription = computed<SubscriptionInfo | null>(() =>
         duration: mockSubscriptionDuration.value,
         planSlug: mockPlanSlug.value,
         renewalDate: RENEWAL_DATE_ISO,
-        endDate: END_DATE_ISO,
+        endDate: mockEndDate.value,
         isCancelled: mockSubscriptionStatus.value === 'canceled',
         hasFunds: true
       }
@@ -126,6 +128,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isFreeTier: computed(() => false),
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
+    subscriptionStatus: mockSubscriptionStatus,
     teamCreditStops: mockTeamCreditStops,
     currentTeamCreditStop: mockCurrentTeamCreditStop,
     isLoading: mockIsLoading,
@@ -257,6 +260,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSubscriptionStatus.value = 'active'
+    mockEndDate.value = END_DATE_ISO
     mockHasSubscription.value = true
     mockIsActiveSubscription.value = true
     mockIsInPersonalWorkspace.value = false
@@ -416,12 +420,17 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('reactivates a cancelled plan for an owner, keeping Manage billing', async () => {
+  it('shows dated cancellation copy while a cancelled plan remains active', async () => {
     const user = userEvent.setup()
     mockSubscriptionStatus.value = 'canceled'
     mockCanLeaveWorkspace.value = false
     renderComponent()
 
+    expect(
+      screen.getByText(
+        `You won't be charged again. Your features remain active until ${formatPanelDate(END_DATE_ISO)}.`
+      )
+    ).toBeInTheDocument()
     expect(
       screen.getByText(`Ends on ${formatPanelDate(END_DATE_ISO)}`)
     ).toBeInTheDocument()
@@ -438,6 +447,39 @@ describe('SubscriptionPanelContentWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Reactivate plan' }))
     expect(mockResubscribe).toHaveBeenCalledOnce()
   })
+
+  it('shows ended copy for an inactive ended subscription without a date', () => {
+    mockSubscriptionStatus.value = 'ended'
+    mockIsActiveSubscription.value = false
+    mockEndDate.value = null
+    renderComponent()
+
+    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.getByText('Your subscription is no longer active.')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/features remain active/i)
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
+  })
+
+  it.for([null, 'not-a-date'])(
+    'uses safe cancellation copy when the active end date is %s',
+    (endDate) => {
+      mockSubscriptionStatus.value = 'canceled'
+      mockEndDate.value = endDate
+      renderComponent()
+
+      expect(
+        screen.getByText(
+          "You won't be charged again. Your features remain active until the end of your billing period."
+        )
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/i)).not.toBeInTheDocument()
+    }
+  )
 
   it('keeps a cancelled Personal plan in a Team workspace reactivatable', () => {
     mockSubscriptionStatus.value = 'canceled'

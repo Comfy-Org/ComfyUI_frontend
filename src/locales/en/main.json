@@ -2625,7 +2625,10 @@
     "subscribeFailed": "Failed to subscribe",
     "canceledCard": {
       "title": "Your subscription has been canceled",
-      "description": "You won't be charged again. Your features remain active until {date}."
+      "description": "You won't be charged again. Your features remain active until {date}.",
+      "descriptionWithoutDate": "You won't be charged again. Your features remain active until the end of your billing period.",
+      "endedTitle": "Your subscription has ended",
+      "endedDescription": "Your subscription is no longer active."
     },
     "cancelSuccess": "Subscription cancelled successfully",
     "cancelDialog": {
