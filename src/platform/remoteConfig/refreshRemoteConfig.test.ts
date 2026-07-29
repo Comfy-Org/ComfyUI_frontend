@@ -109,23 +109,45 @@ describe('refreshRemoteConfig', () => {
       expect(init?.signal).toBeUndefined()
     })
 
-    it('discards a response from a previous authenticated session', async () => {
-      let resolveResponse: (response: Response) => void
-      vi.mocked(api.fetchApi).mockReturnValue(
-        new Promise((resolve) => {
-          resolveResponse = resolve
-        })
-      )
+    it('keeps the new session refresh deduplicated when the old one settles', async () => {
+      let resolveOldResponse: (response: Response) => void
+      let resolveNewResponse: (response: Response) => void
+      vi.mocked(api.fetchApi)
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveOldResponse = resolve
+          })
+        )
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveNewResponse = resolve
+          })
+        )
 
-      const staleRefresh = refreshAuthenticated()
+      const oldRefresh = refreshAuthenticated()
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
+
       sessionId = 'user-b'
-      resolveResponse!(
+      const newRefresh = refreshAuthenticated()
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
+
+      resolveOldResponse!(
         mockSuccessResponse({ feature1: true, feature2: 'stale' })
       )
-      await staleRefresh
+      await oldRefresh
 
-      expect(remoteConfig.value).toEqual({})
-      expect(window.__CONFIG__).toEqual({})
+      const repeatedNewRefresh = refreshAuthenticated()
+      expect(repeatedNewRefresh).toBe(newRefresh)
+      expect(api.fetchApi).toHaveBeenCalledTimes(2)
+
+      resolveNewResponse!(
+        mockSuccessResponse({ feature1: true, feature2: 'current' })
+      )
+      await Promise.all([newRefresh, repeatedNewRefresh])
+
+      const currentConfig = { feature1: true, feature2: 'current' }
+      expect(remoteConfig.value).toEqual(currentConfig)
+      expect(window.__CONFIG__).toEqual(currentConfig)
     })
 
     it('starts a new request after a failed authenticated refresh', async () => {

@@ -10,22 +10,18 @@ import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 const fallbackRecordedExposures = new Set<string>()
 
 function hasRecordedExposure(key: string): boolean {
-  if (fallbackRecordedExposures.has(key)) return true
-
   try {
     return sessionStorage.getItem(key) !== null
   } catch {
-    return false
+    return fallbackRecordedExposures.has(key)
   }
 }
 
 function markExposureRecorded(key: string): void {
-  fallbackRecordedExposures.add(key)
-
   try {
     sessionStorage.setItem(key, '1')
   } catch {
-    return
+    fallbackRecordedExposures.add(key)
   }
 }
 
