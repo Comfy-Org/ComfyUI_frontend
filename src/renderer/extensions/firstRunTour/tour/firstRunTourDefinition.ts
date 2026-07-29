@@ -57,7 +57,6 @@ function nodeStep(name: string, coachId: CoachId, nodeId: NodeId): CoachStep {
     coachId,
     placement: 'auto',
     deferTarget: true,
-    follow: true,
     onEnter: (signal) => frameNode(nodeId, signal)
   }
 }
