@@ -75,10 +75,7 @@ describe('useCoachmarkTarget', () => {
         ref(null)
       )
     )!
-    expect(
-      api.targetMoves.value,
-      'the camera carries the node without firing an event, so the engine follows it frame by frame'
-    ).toBe(true)
+    expect(api.targetMoves.value).toBe(true)
     scope.stop()
   })
 })

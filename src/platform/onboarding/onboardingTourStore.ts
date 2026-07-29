@@ -160,7 +160,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     finish('skipped')
   }
 
-  /** Ends the tour as completed, for consumers whose last step self-completes. */
   function complete() {
     finish('completed')
   }
@@ -209,7 +208,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     if (steps.value.length) return false
     const definition = TOURS[entryPath]
     const built = Array.isArray(definition) ? definition : await definition()
-    // A resolver settling late may have let a concurrent start fill steps first.
     if (steps.value.length) return false
     const resolved = resolveSteps(built, targetMounted)
     if (!resolved.length) return false
@@ -220,7 +218,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     return true
   }
 
-  /** Starts an unseen tour; false when nothing started. */
   async function startTour(entryPath: EntryPath): Promise<boolean> {
     if (hasSeenTour(entryPath)) return false
     return begin(entryPath)

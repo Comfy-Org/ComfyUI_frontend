@@ -1,46 +1,10 @@
 <template>
   <div ref="overlayRef" class="pointer-events-none fixed inset-0">
-    <svg
-      v-if="useMaskScrim"
-      aria-hidden="true"
-      class="pointer-events-none absolute inset-0 size-full"
-    >
-      <mask :id="maskId">
-        <rect width="100%" height="100%" fill="white" />
-        <rect
-          v-if="scrimHole"
-          data-testid="coach-mask-hole"
-          v-bind="scrimHole"
-          rx="12"
-          fill="black"
-          :class="
-            !targetMoves &&
-            'motion-safe:transition-[x,y,width,height] motion-safe:duration-300'
-          "
-        />
-      </mask>
-      <rect
-        width="100%"
-        height="100%"
-        class="fill-coach-scrim"
-        :mask="`url(#${maskId})`"
-      />
-      <path
-        v-if="step.interactive"
-        data-testid="coach-hit-region"
-        :d="hitRegionPath"
-        fill="transparent"
-        fill-rule="evenodd"
-        class="pointer-events-auto"
-      />
-    </svg>
     <div
-      v-if="!step.interactive"
-      data-testid="coach-blocker"
       :class="
         cn(
           'pointer-events-auto absolute inset-0',
-          !useMaskScrim && !targetRect && 'bg-coach-scrim'
+          !targetRect && 'bg-coach-scrim'
         )
       "
     />
@@ -49,17 +13,16 @@
       data-testid="coach-spotlight"
       :class="
         cn(
-          'pointer-events-none absolute rounded-xl outline-2 outline-coach-ring',
+          'pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring',
           !targetMoves &&
-            'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
-          !useMaskScrim && 'shadow-[0_0_0_9999px_var(--color-coach-scrim)]'
+            'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300'
         )
       "
       :style="spotlightStyle"
     />
     <FocusScope
       as-child
-      :trapped="!waitingForTarget && !step.interactive"
+      :trapped="!waitingForTarget"
       loop
       @mount-auto-focus.prevent
     >
@@ -149,7 +112,6 @@ import {
   SPOTLIGHT_PAD,
   VIEWPORT_MARGIN,
   clampSpotlight,
-  clampSpotlightRect,
   noTargetCardLeft
 } from './coachmarkLayout'
 import type { CoachStep } from './onboardingTours'
@@ -259,25 +221,6 @@ const spotlightStyle = computed(() => {
   const r = targetRect.value
   if (!r) return { opacity: '0' }
   return { ...clampSpotlight(r, SPOTLIGHT_PAD, viewport()), opacity: '1' }
-})
-
-const maskId = useId()
-
-const useMaskScrim = computed(() => !!step.interactive)
-
-const scrimHole = computed(() =>
-  targetRect.value
-    ? clampSpotlightRect(targetRect.value, SPOTLIGHT_PAD, viewport())
-    : null
-)
-
-// Evenodd viewport path whose hole lets pointer events through to the page.
-const hitRegionPath = computed(() => {
-  const { width, height } = viewport()
-  const hole = scrimHole.value
-  const viewportPath = `M0 0H${width}V${height}H0Z`
-  if (!hole) return viewportPath
-  return `${viewportPath}M${hole.x} ${hole.y}h${hole.width}v${hole.height}h${-hole.width}Z`
 })
 
 const cardStyle = computed(() => {

@@ -40,15 +40,10 @@ export interface CoachStep {
   /** Renders the landing dialog instead of a spotlight. */
   landing?: boolean
   image?: string
-  /** Lets pointer input through the scrim's holes and releases the focus trap. */
-  interactive?: boolean
-  /** The camera carries the target without DOM events: follow it every frame. */
   follow?: boolean
-  /** Runs when the step is shown; the signal aborts on leaving the step. */
   onEnter?: (signal: AbortSignal) => void | Promise<void>
 }
 
-/** A tour's steps: a fixed list, or a resolver that builds them at start. */
 export type TourDefinition = CoachStep[] | (() => Promise<CoachStep[]>)
 
 /**

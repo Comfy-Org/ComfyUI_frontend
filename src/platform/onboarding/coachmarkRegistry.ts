@@ -14,8 +14,6 @@ export function isLaidOut(el: HTMLElement): boolean {
 // the first laid-out one.
 const registry = shallowReactive(new Map<CoachId, readonly HTMLElement[]>())
 
-// A tour points at a canvas node by id; the node's element binds the mapped
-// coach id through vCoachmark, so registration rides the component lifecycle.
 export const nodeCoachmarks = shallowReactive(new Map<string, CoachId>())
 
 export function coachIdForNode(nodeId: unknown): CoachId | null {
