@@ -185,46 +185,52 @@ test.describe(
       if (!nodeId) throw new Error('Node ID not found')
       const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
 
-      await comfyPage.vueNodes.layoutNodesAndEnableVirtualization((id, index) =>
-        id === nodeId ? [100, 100] : [4000 + index * 1000, 100]
-      )
-      await expect(node.root).toBeVisible()
+      const { restore } =
+        await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
+          (id, index) =>
+            id === nodeId ? [100, 250] : [4000 + index * 1000, 100]
+        )
+      try {
+        await expect(node.root).toBeVisible()
 
-      const expandedSize = await resizeExpandedNode(node, nodeRef)
-      const expandedBox = await node.boundingBox()
-      if (!expandedBox) throw new Error('Expanded node is not visible')
+        const expandedSize = await resizeExpandedNode(node, nodeRef)
+        const expandedBox = await node.boundingBox()
+        if (!expandedBox) throw new Error('Expanded node is not visible')
 
-      await node.collapseButton.dispatchEvent('click')
-      await expect(node.root).toHaveAttribute('data-collapsed', 'true')
-      await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
-      await comfyPage.vueNodes.clearSelection()
+        await node.toggleCollapse()
+        await expect(node.root).toHaveAttribute('data-collapsed', 'true')
+        await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
+        await comfyPage.page.mouse.click(900, 650)
 
-      await comfyPage.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        canvas.ds.offset[0] = -2000
-        canvas.setDirty(true, true)
-      })
-      await comfyPage.nextFrame()
-      await expect(node.root).toHaveCount(0)
+        await comfyPage.page.evaluate(() => {
+          const canvas = window.app!.canvas
+          canvas.ds.offset[0] = -2000
+          canvas.setDirty(true, true)
+        })
+        await comfyPage.nextFrame()
+        await expect(node.root).toHaveCount(0)
 
-      await comfyPage.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        canvas.ds.offset[0] = 0
-        canvas.setDirty(true, true)
-      })
-      await comfyPage.nextFrame()
-      await expect(node.root).toBeVisible()
-      await expect(node.root).toHaveAttribute('data-collapsed', 'true')
+        await comfyPage.page.evaluate(() => {
+          const canvas = window.app!.canvas
+          canvas.ds.offset[0] = 0
+          canvas.setDirty(true, true)
+        })
+        await comfyPage.nextFrame()
+        await expect(node.root).toBeVisible()
+        await expect(node.root).toHaveAttribute('data-collapsed', 'true')
 
-      await node.collapseButton.dispatchEvent('click')
-      await expect(node.root).not.toHaveAttribute('data-collapsed', 'true')
-      await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
-      await expect
-        .poll(async () => (await node.boundingBox())?.width)
-        .toBeCloseTo(expandedBox.width, 1)
-      await expect
-        .poll(async () => (await node.boundingBox())?.height)
-        .toBeCloseTo(expandedBox.height, 1)
+        await node.toggleCollapse()
+        await expect(node.root).not.toHaveAttribute('data-collapsed', 'true')
+        await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
+        await expect
+          .poll(async () => (await node.boundingBox())?.width)
+          .toBeCloseTo(expandedBox.width, 1)
+        await expect
+          .poll(async () => (await node.boundingBox())?.height)
+          .toBeCloseTo(expandedBox.height, 1)
+      } finally {
+        await restore()
+      }
     })
 
     test('preserves expanded size when a collapsed workflow is reloaded', async ({

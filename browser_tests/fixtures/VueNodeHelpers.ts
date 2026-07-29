@@ -92,7 +92,10 @@ export class VueNodeHelpers {
 
   async layoutNodesAndEnableVirtualization(
     getPosition: (nodeId: string, index: number) => Point
-  ): Promise<string[]> {
+  ): Promise<{ nodeIds: string[]; restore: () => Promise<void> }> {
+    const previousVirtualization = await this.settings.getSetting<boolean>(
+      'Comfy.VueNodes.ViewportVirtualization'
+    )
     const nodeIds = await this.page.evaluate(() =>
       window.app!.graph.nodes.map((node) => String(node.id))
     )
@@ -126,7 +129,14 @@ export class VueNodeHelpers {
       true
     )
 
-    return nodeIds
+    return {
+      nodeIds,
+      restore: () =>
+        this.settings.setSetting(
+          'Comfy.VueNodes.ViewportVirtualization',
+          previousVirtualization
+        )
+    }
   }
 
   /**

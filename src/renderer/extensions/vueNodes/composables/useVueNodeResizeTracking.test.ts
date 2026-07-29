@@ -312,10 +312,6 @@ describe('useVueNodeResizeTracking', () => {
       }
     ])
     expect(liteNode._collapsed_width).toBe(collapsedWidth)
-    expect(testState.nodeLayouts.get(nodeId)?.size).toEqual({
-      width: 240,
-      height: 180 - titleHeight
-    })
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 

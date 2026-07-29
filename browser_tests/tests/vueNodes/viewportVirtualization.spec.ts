@@ -21,7 +21,7 @@ test.describe(
     test('hydrates all nodes, then swaps to the settled viewport', async ({
       comfyPage
     }) => {
-      const graphNodeIds =
+      const { nodeIds: graphNodeIds, restore } =
         await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
           (_nodeId, index) => [
             index < 2 ? 100 + index * 500 : 1800 + (index - 2) * 1800,
@@ -29,30 +29,34 @@ test.describe(
           ]
         )
 
-      const firstViewportIds = graphNodeIds.slice(0, 2)
-      await expect
-        .poll(() => comfyPage.vueNodes.getNodeIds())
-        .toEqual(firstViewportIds)
+      try {
+        const firstViewportIds = graphNodeIds.slice(0, 2)
+        await expect
+          .poll(() => comfyPage.vueNodes.getNodeIds())
+          .toEqual(firstViewportIds)
 
-      await comfyPage.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        canvas.ds.offset[0] = -1800
-        canvas.setDirty(true, true)
-      })
-      await comfyPage.nextFrame()
+        await comfyPage.page.evaluate(() => {
+          const canvas = window.app!.canvas
+          canvas.ds.offset[0] = -1800
+          canvas.setDirty(true, true)
+        })
+        await comfyPage.nextFrame()
 
-      await expect
-        .poll(() => comfyPage.vueNodes.getNodeIds())
-        .toEqual([graphNodeIds[2]])
-      expect(
-        await comfyPage.page.evaluate(() => window.app!.graph.nodes.length)
-      ).toBe(graphNodeIds.length)
+        await expect
+          .poll(() => comfyPage.vueNodes.getNodeIds())
+          .toEqual([graphNodeIds[2]])
+        expect(
+          await comfyPage.page.evaluate(() => window.app!.graph.nodes.length)
+        ).toBe(graphNodeIds.length)
+      } finally {
+        await restore()
+      }
     })
 
     test('keeps a multi-node drag mount set frozen during edge auto-pan', async ({
       comfyPage
     }) => {
-      const graphNodeIds =
+      const { nodeIds: graphNodeIds, restore } =
         await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
           (_nodeId, index) => [
             index < 2 ? 100 + index * 500 : 1800 + (index - 2) * 1800,
@@ -60,36 +64,42 @@ test.describe(
           ]
         )
 
-      const initialIds = graphNodeIds.slice(0, 2)
-      await expect
-        .poll(() => comfyPage.vueNodes.getNodeIds())
-        .toEqual(initialIds)
-      await comfyPage.vueNodes.selectNodes(initialIds)
-
-      const dragNode = comfyPage.vueNodes.getNodeLocator(initialIds[0])
-      const header = dragNode.locator('.lg-node-header')
-      const headerBox = await header.boundingBox()
-      const canvasBox = await comfyPage.canvas.boundingBox()
-      if (!headerBox || !canvasBox) throw new Error('Drag geometry unavailable')
-
-      const initialOffset = await comfyPage.canvasOps.getOffset()
-      await comfyPage.page.mouse.move(
-        headerBox.x + headerBox.width / 2,
-        headerBox.y + headerBox.height / 2
-      )
-      await comfyPage.page.mouse.down()
       try {
-        await comfyPage.page.mouse.move(
-          canvasBox.x + canvasBox.width - 2,
-          canvasBox.y + canvasBox.height / 2,
-          { steps: 10 }
-        )
+        const initialIds = graphNodeIds.slice(0, 2)
         await expect
-          .poll(() => comfyPage.canvasOps.getOffset())
-          .not.toEqual(initialOffset)
-        expect(await comfyPage.vueNodes.getNodeIds()).toEqual(initialIds)
+          .poll(() => comfyPage.vueNodes.getNodeIds())
+          .toEqual(initialIds)
+        await comfyPage.vueNodes.selectNodes(initialIds)
+
+        const dragNode = comfyPage.vueNodes.getNodeLocator(initialIds[0])
+        const header = dragNode.locator('.lg-node-header')
+        const headerBox = await header.boundingBox()
+        const canvasBox = await comfyPage.canvas.boundingBox()
+        if (!headerBox || !canvasBox) {
+          throw new Error('Drag geometry unavailable')
+        }
+
+        const initialOffset = await comfyPage.canvasOps.getOffset()
+        await comfyPage.page.mouse.move(
+          headerBox.x + headerBox.width / 2,
+          headerBox.y + headerBox.height / 2
+        )
+        await comfyPage.page.mouse.down()
+        try {
+          await comfyPage.page.mouse.move(
+            canvasBox.x + canvasBox.width - 2,
+            canvasBox.y + canvasBox.height / 2,
+            { steps: 10 }
+          )
+          await expect
+            .poll(() => comfyPage.canvasOps.getOffset())
+            .not.toEqual(initialOffset)
+          expect(await comfyPage.vueNodes.getNodeIds()).toEqual(initialIds)
+        } finally {
+          await comfyPage.page.mouse.up()
+        }
       } finally {
-        await comfyPage.page.mouse.up()
+        await restore()
       }
     })
 
@@ -102,83 +112,101 @@ test.describe(
         group.pos = [50, 50]
         group.size = [900, 825]
       })
-      const [nodeId] =
+      const { nodeIds, restore } =
         await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(() => [
           100, 100
         ])
-      if (!nodeId) throw new Error('Expected a node in the group workflow')
-      await expect.poll(() => comfyPage.vueNodes.getNodeIds()).toEqual([nodeId])
+      try {
+        const [nodeId] = nodeIds
+        if (!nodeId) throw new Error('Expected a node in the group workflow')
+        await expect
+          .poll(() => comfyPage.vueNodes.getNodeIds())
+          .toEqual([nodeId])
 
-      await comfyPage.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        const node = window.app!.graph.nodes[0]
-        canvas.isDragging = true
-        canvas.ds.offset[0] -= 1
-        node.setPos(3100, 100)
-        node.updateArea()
-        canvas.setDirty(true, true)
-      })
-      const settleDeadline = Date.now() + 200
-      await expect
-        .poll(async () => {
-          if (Date.now() < settleDeadline) return []
-          return await comfyPage.vueNodes.getNodeIds()
+        await comfyPage.page.evaluate(() => {
+          const canvas = window.app!.canvas
+          const node = window.app!.graph.nodes[0]
+          canvas.isDragging = true
+          canvas.ds.offset[0] -= 1
+          node.setPos(3100, 100)
+          node.updateArea()
+          canvas.setDirty(true, true)
         })
-        .toEqual([nodeId])
+        let consecutiveMountedSamples = 0
+        await expect
+          .poll(
+            async () => {
+              const mountedIds = await comfyPage.vueNodes.getNodeIds()
+              consecutiveMountedSamples =
+                mountedIds.length === 1 && mountedIds[0] === nodeId
+                  ? consecutiveMountedSamples + 1
+                  : 0
+              return consecutiveMountedSamples
+            },
+            { intervals: [50], timeout: 1000 }
+          )
+          .toBeGreaterThanOrEqual(4)
 
-      await comfyPage.page.evaluate(() => {
-        window.app!.canvas.isDragging = false
-        window.dispatchEvent(new PointerEvent('pointerup'))
-      })
-      await expect.poll(() => comfyPage.vueNodes.getNodeIds()).toEqual([])
+        await comfyPage.page.evaluate(() => {
+          window.app!.canvas.isDragging = false
+          window.dispatchEvent(new PointerEvent('pointerup'))
+        })
+        await expect.poll(() => comfyPage.vueNodes.getNodeIds()).toEqual([])
+      } finally {
+        await restore()
+      }
     })
 
     test('hydrates a node pasted into a distant settled viewport', async ({
       comfyPage
     }) => {
-      const [sourceId] =
+      const { nodeIds, restore } =
         await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
           (_nodeId, index) => [
             index === 0 ? 100 : 4000 + (index - 1) * 1800,
             100
           ]
         )
-      if (!sourceId) throw new Error('Expected a source node')
+      try {
+        const [sourceId] = nodeIds
+        if (!sourceId) throw new Error('Expected a source node')
+        await expect
+          .poll(() => comfyPage.vueNodes.getNodeIds())
+          .toEqual([sourceId])
+        await comfyPage.vueNodes.getNodeLocator(sourceId).click()
+        await comfyPage.clipboard.copy()
+        await comfyPage.page.evaluate(() => {
+          if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur()
+          }
+        })
 
-      await expect
-        .poll(() => comfyPage.vueNodes.getNodeIds())
-        .toEqual([sourceId])
-      await comfyPage.vueNodes.getNodeLocator(sourceId).click()
-      await comfyPage.clipboard.copy()
-      await comfyPage.page.evaluate(() => {
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur()
-        }
-      })
-
-      await comfyPage.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        canvas.ds.offset[0] = -1800
-        canvas.setDirty(true, true)
-      })
-      const canvasBox = await comfyPage.canvas.boundingBox()
-      if (!canvasBox) throw new Error('Canvas geometry unavailable')
-      await comfyPage.page.mouse.move(
-        canvasBox.x + canvasBox.width / 2,
-        canvasBox.y + canvasBox.height / 2
-      )
-      await expect.poll(() => comfyPage.vueNodes.getNodeIds()).toEqual([])
-
-      const graphNodeCount = await comfyPage.page.evaluate(
-        () => window.app!.graph.nodes.length
-      )
-      await comfyPage.clipboard.paste()
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() => window.app!.graph.nodes.length)
+        await comfyPage.page.evaluate(() => {
+          const canvas = window.app!.canvas
+          canvas.ds.offset[0] = -1800
+          canvas.setDirty(true, true)
+        })
+        const canvasBox = await comfyPage.canvas.boundingBox()
+        if (!canvasBox) throw new Error('Canvas geometry unavailable')
+        await comfyPage.page.mouse.move(
+          canvasBox.x + canvasBox.width / 2,
+          canvasBox.y + canvasBox.height / 2
         )
-        .toBe(graphNodeCount + 1)
-      await expect.poll(() => comfyPage.vueNodes.getNodeIds()).toHaveLength(1)
+        await expect.poll(() => comfyPage.vueNodes.getNodeIds()).toEqual([])
+
+        const graphNodeCount = await comfyPage.page.evaluate(
+          () => window.app!.graph.nodes.length
+        )
+        await comfyPage.clipboard.paste()
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => window.app!.graph.nodes.length)
+          )
+          .toBe(graphNodeCount + 1)
+        await expect.poll(() => comfyPage.vueNodes.getNodeIds()).toHaveLength(1)
+      } finally {
+        await restore()
+      }
     })
 
     test('mounts a distant link target after auto-pan pauses', async ({
@@ -196,68 +224,78 @@ test.describe(
         if (targetSlot >= 0) target.disconnectInput(targetSlot)
         return { source: String(source.id), target: String(target.id) }
       })
-      await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
-        (nodeId, index) => {
-          if (nodeId === ids.source) return [100, 100]
-          if (nodeId === ids.target) return [1800, 100]
-          return [4000 + index * 1800, 100]
-        }
-      )
-
-      await expect(comfyPage.vueNodes.getNodeLocator(ids.source)).toBeVisible()
-      await expect(comfyPage.vueNodes.getNodeLocator(ids.target)).toHaveCount(0)
-
-      const source = await comfyPage.vueNodes.getFixtureByTitle(
-        'Load Diffusion Model'
-      )
-      const sourceSlot = source.getSlot('MODEL')
-      const sourceBox = await sourceSlot.boundingBox()
-      const canvasBox = await comfyPage.canvas.boundingBox()
-      if (!sourceBox || !canvasBox) throw new Error('Link geometry unavailable')
-
-      await comfyPage.page.mouse.move(
-        sourceBox.x + sourceBox.width / 2,
-        sourceBox.y + sourceBox.height / 2
-      )
-      await comfyPage.page.mouse.down()
+      const { restore } =
+        await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
+          (nodeId, index) => {
+            if (nodeId === ids.source) return [100, 100]
+            if (nodeId === ids.target) return [1800, 100]
+            return [4000 + index * 1800, 100]
+          }
+        )
       try {
-        await comfyPage.page.mouse.move(
-          canvasBox.x + canvasBox.width - 2,
-          canvasBox.y + canvasBox.height / 2
-        )
-        await expect
-          .poll(async () => (await comfyPage.canvasOps.getOffset())[0])
-          .toBeLessThan(-1000)
-
-        await comfyPage.page.mouse.move(
-          canvasBox.x + canvasBox.width / 2,
-          canvasBox.y + canvasBox.height / 2
-        )
         await expect(
-          comfyPage.vueNodes.getNodeLocator(ids.target)
+          comfyPage.vueNodes.getNodeLocator(ids.source)
         ).toBeVisible()
+        await expect(comfyPage.vueNodes.getNodeLocator(ids.target)).toHaveCount(
+          0
+        )
 
-        const target = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-        const targetSlot = target.getSlot('model')
-        const targetBox = await targetSlot.boundingBox()
-        if (!targetBox) throw new Error('Target slot geometry unavailable')
+        const source = await comfyPage.vueNodes.getFixtureByTitle(
+          'Load Diffusion Model'
+        )
+        const sourceSlot = source.getSlot('MODEL')
+        const sourceBox = await sourceSlot.boundingBox()
+        const canvasBox = await comfyPage.canvas.boundingBox()
+        if (!sourceBox || !canvasBox) {
+          throw new Error('Link geometry unavailable')
+        }
+
         await comfyPage.page.mouse.move(
-          targetBox.x + targetBox.width / 2,
-          targetBox.y + targetBox.height / 2
+          sourceBox.x + sourceBox.width / 2,
+          sourceBox.y + sourceBox.height / 2
         )
-      } finally {
-        await comfyPage.page.mouse.up()
-      }
+        await comfyPage.page.mouse.down()
+        try {
+          await comfyPage.page.mouse.move(
+            canvasBox.x + canvasBox.width - 2,
+            canvasBox.y + canvasBox.height / 2
+          )
+          await expect
+            .poll(async () => (await comfyPage.canvasOps.getOffset())[0])
+            .toBeLessThan(-1000)
 
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate((targetId) => {
-            const target = window.app!.graph.getNodeById(targetId)
-            const slot = target?.findInputSlot('model') ?? -1
-            return slot >= 0 ? target?.inputs[slot].link : null
-          }, toNodeId(ids.target))
-        )
-        .not.toBeNull()
+          await comfyPage.page.mouse.move(
+            canvasBox.x + canvasBox.width / 2,
+            canvasBox.y + canvasBox.height / 2
+          )
+          await expect(
+            comfyPage.vueNodes.getNodeLocator(ids.target)
+          ).toBeVisible()
+
+          const target = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+          const targetSlot = target.getSlot('model')
+          const targetBox = await targetSlot.boundingBox()
+          if (!targetBox) throw new Error('Target slot geometry unavailable')
+          await comfyPage.page.mouse.move(
+            targetBox.x + targetBox.width / 2,
+            targetBox.y + targetBox.height / 2
+          )
+        } finally {
+          await comfyPage.page.mouse.up()
+        }
+
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate((targetId) => {
+              const target = window.app!.graph.getNodeById(targetId)
+              const slot = target?.findInputSlot('model') ?? -1
+              return slot >= 0 ? target?.inputs[slot].link : null
+            }, toNodeId(ids.target))
+          )
+          .not.toBeNull()
+      } finally {
+        await restore()
+      }
     })
 
     test('switches paint detail strictly below the configured zoom', async ({
@@ -270,65 +308,71 @@ test.describe(
       const nodeId = await node.root.getAttribute('data-node-id')
       if (!nodeId) throw new Error('Load Checkpoint node ID not found')
       const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
-      await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
-        (id, index) => (id === nodeId ? [100, 100] : [4000 + index * 1000, 100])
-      )
-      await expect(node.root).toBeVisible()
+      const { restore } =
+        await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
+          (id, index) =>
+            id === nodeId ? [100, 100] : [4000 + index * 1000, 100]
+        )
+      try {
+        await expect(node.root).toBeVisible()
 
-      async function getNodeDomSize() {
-        return await node.root.evaluate((element) => {
-          if (!(element instanceof HTMLElement)) {
-            throw new Error('Vue node root is not an HTML element')
-          }
-          return {
-            width: element.offsetWidth,
-            height: element.offsetHeight
-          }
+        async function getNodeDomSize() {
+          return await node.root.evaluate((element) => {
+            if (!(element instanceof HTMLElement)) {
+              throw new Error('Vue node root is not an HTML element')
+            }
+            return {
+              width: element.offsetWidth,
+              height: element.offsetHeight
+            }
+          })
+        }
+
+        const widget = node.root.locator('.lg-node-widget').first()
+        const initialDomSize = await getNodeDomSize()
+        const initialNodeSize = await nodeRef.getSize()
+
+        await comfyPage.page.evaluate(() => {
+          window.app!.canvas.ds.scale = 0.949
+          window.app!.canvas.setDirty(true, true)
         })
+        await expect
+          .poll(() => comfyPage.page.locator('html').getAttribute('class'))
+          .toContain('vue-nodes-low-detail')
+        await expect
+          .poll(() => widget.evaluate((el) => getComputedStyle(el).visibility))
+          .toBe('hidden')
+        expect(await getNodeDomSize()).toEqual(initialDomSize)
+        expect(await nodeRef.getSize()).toEqual(initialNodeSize)
+
+        await comfyPage.page.evaluate(() => {
+          const canvas = window.app!.canvas
+          canvas.ds.offset[0] = -2000
+          canvas.setDirty(true, true)
+        })
+        await expect(node.root).toHaveCount(0)
+        await comfyPage.page.evaluate(() => {
+          const canvas = window.app!.canvas
+          canvas.ds.offset[0] = 0
+          canvas.setDirty(true, true)
+        })
+        await expect(node.root).toBeVisible()
+        expect(await getNodeDomSize()).toEqual(initialDomSize)
+        expect(await nodeRef.getSize()).toEqual(initialNodeSize)
+
+        await comfyPage.page.evaluate(() => {
+          window.app!.canvas.ds.scale = 0.95
+          window.app!.canvas.setDirty(true, true)
+        })
+        await expect
+          .poll(() => comfyPage.page.locator('html').getAttribute('class'))
+          .not.toContain('vue-nodes-low-detail')
+        await expect
+          .poll(() => widget.evaluate((el) => getComputedStyle(el).visibility))
+          .toBe('visible')
+      } finally {
+        await restore()
       }
-
-      const widget = node.root.locator('.lg-node-widget').first()
-      const initialDomSize = await getNodeDomSize()
-      const initialNodeSize = await nodeRef.getSize()
-
-      await comfyPage.page.evaluate(() => {
-        window.app!.canvas.ds.scale = 0.949
-        window.app!.canvas.setDirty(true, true)
-      })
-      await expect
-        .poll(() => comfyPage.page.locator('html').getAttribute('class'))
-        .toContain('vue-nodes-low-detail')
-      await expect
-        .poll(() => widget.evaluate((el) => getComputedStyle(el).visibility))
-        .toBe('hidden')
-      expect(await getNodeDomSize()).toEqual(initialDomSize)
-      expect(await nodeRef.getSize()).toEqual(initialNodeSize)
-
-      await comfyPage.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        canvas.ds.offset[0] = -2000
-        canvas.setDirty(true, true)
-      })
-      await expect(node.root).toHaveCount(0)
-      await comfyPage.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        canvas.ds.offset[0] = 0
-        canvas.setDirty(true, true)
-      })
-      await expect(node.root).toBeVisible()
-      expect(await getNodeDomSize()).toEqual(initialDomSize)
-      expect(await nodeRef.getSize()).toEqual(initialNodeSize)
-
-      await comfyPage.page.evaluate(() => {
-        window.app!.canvas.ds.scale = 0.95
-        window.app!.canvas.setDirty(true, true)
-      })
-      await expect
-        .poll(() => comfyPage.page.locator('html').getAttribute('class'))
-        .not.toContain('vue-nodes-low-detail')
-      await expect
-        .poll(() => widget.evaluate((el) => getComputedStyle(el).visibility))
-        .toBe('visible')
     })
   }
 )
