@@ -80,7 +80,7 @@ function useFirstRunTourControllerInternal() {
     }
   )
 
-  async function beginTour(templateId: string): Promise<boolean> {
+  async function beginTour(templateId?: string): Promise<boolean> {
     if (!settingStore.get('Comfy.VueNodes.Enabled'))
       await settingStore.set('Comfy.VueNodes.Enabled', true)
     tourWorkflow.value = workflowStore.activeWorkflow ?? null

@@ -7,6 +7,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 
+import { heuristicRoles } from './heuristicRoles'
 import { TOUR_ROLE_PINS } from './tourRolePins'
 import type {
   RolePin,
@@ -21,7 +22,8 @@ export interface ResolvedRoles {
   mediaKind: TourMediaKind
 }
 
-function rootHost(node: LGraphNode, root: LGraph): LGraphNode | null {
+function rootHost(node: LGraphNode | null, root: LGraph): LGraphNode | null {
+  if (!node) return null
   if (node.graph === root) return node
   const executionId = getExecutionIdByNode(root, node)
   return executionId ? getRootParentNode(root, executionId) : null
@@ -35,9 +37,18 @@ function resolvePin(pin: RolePin | undefined, root: LGraph): NodeId | null {
 
 export function resolveTourRoles(
   graph: LGraph,
-  templateId: string
+  templateId?: string
 ): ResolvedRoles | null {
-  if (!Object.hasOwn(TOUR_ROLE_PINS, templateId)) return null
+  if (templateId === undefined || !Object.hasOwn(TOUR_ROLE_PINS, templateId)) {
+    const roles = heuristicRoles(graph)
+    if (!roles) return null
+    return {
+      source: null,
+      promptHost: rootHost(roles.prompt, graph)?.id ?? null,
+      sink: rootHost(roles.sink, graph)?.id ?? null,
+      mediaKind: roles.mediaKind
+    }
+  }
   const pins = TOUR_ROLE_PINS[templateId as SupportedTemplateId]
   return {
     source: resolvePin(pins.source, graph),

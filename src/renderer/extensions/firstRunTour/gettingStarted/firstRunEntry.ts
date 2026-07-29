@@ -10,6 +10,7 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
+import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -32,6 +33,20 @@ export const useFirstRunEntry = createSharedComposable(() => {
     await useCommandStore().execute('Comfy.BrowseTemplates')
   }
 
+  async function handleUrlWorkflow(
+    outcome: StartupOutcome | undefined,
+    sharedStatus: SharedWorkflowUrlLoadStatus
+  ) {
+    if (outcome !== 'url-intent' || !isCandidate()) return
+    const template = new URLSearchParams(window.location.search).get('template')
+    const shareLoaded =
+      sharedStatus === 'loaded' || sharedStatus === 'loaded-without-assets'
+    if (!template && !shareLoaded) return
+    const { useFirstRunTourController } =
+      await import('../tour/useFirstRunTourController')
+    await useFirstRunTourController().beginTour(template ?? undefined)
+  }
+
   async function dismissGettingStarted() {
     gettingStartedVisible.value = false
     await useSettingStore().set('Comfy.TutorialCompleted', true)
@@ -40,6 +55,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
   return {
     gettingStartedVisible: readonly(gettingStartedVisible),
     handleStartupOutcome,
+    handleUrlWorkflow,
     dismissGettingStarted
   }
 })

@@ -63,7 +63,7 @@ function nodeStep(name: string, coachId: CoachId, nodeId: NodeId): CoachStep {
 }
 
 export async function firstRunTourSteps(
-  templateId: string,
+  templateId: string | undefined,
   runState: Readonly<Ref<RunState>>
 ): Promise<CoachStep[]> {
   releaseFirstRunTargets()
