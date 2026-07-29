@@ -366,31 +366,19 @@ export class ComfyPage {
       })
     }
 
-    if (clearStorage) {
+    // Skipped on cloud: a Playwright context starts with empty storage, so
+    // this only resets a REUSED context - but on cloud the smoke user has
+    // already signed in by now, and both the navigation and the wipe destroy
+    // that session. The app then boots signed out, so teamWorkspaceStore
+    // cannot init ("User not authenticated") and Cloud answers every
+    // workspace-scoped call with 403.
+    if (clearStorage && customNodesEnv() !== 'cloud') {
       // Navigate to a lightweight same-origin endpoint to obtain a page
       // context for clearing storage without loading the full frontend app.
       await this.page.goto(`${this.url}/api/users`)
       await this.page.evaluate((id) => {
-        // The smoke user signs in before setup() runs. Firebase keeps the
-        // session under firebase:* (localStorage, because the app calls
-        // setPersistence(browserLocalPersistence)) and the workspace token
-        // under Comfy.Workspace.* (sessionStorage). Clearing either one logs
-        // the cloud suite out: no session redirects to /cloud/login, and no
-        // workspace token falls back to the Firebase token, which Cloud
-        // refuses with 403 on every workspace-scoped endpoint.
-        const keep = (key: string) =>
-          key.startsWith('firebase:') || key.startsWith('Comfy.Workspace.')
-        const save = (store: Storage) =>
-          Object.keys(store)
-            .filter(keep)
-            .map((key): [string, string] => [key, store.getItem(key) ?? ''])
-        const keptLocal = save(localStorage)
-        const keptSession = save(sessionStorage)
         localStorage.clear()
         sessionStorage.clear()
-        for (const [key, value] of keptLocal) localStorage.setItem(key, value)
-        for (const [key, value] of keptSession)
-          sessionStorage.setItem(key, value)
         localStorage.setItem('Comfy.userId', id)
       }, this.id)
     }
