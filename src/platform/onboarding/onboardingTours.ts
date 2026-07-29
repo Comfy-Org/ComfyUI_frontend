@@ -43,7 +43,7 @@ export interface CoachStep {
   onEnter?: (signal: AbortSignal) => void | Promise<void>
 }
 
-export type TourDefinition = CoachStep[] | (() => Promise<CoachStep[]>)
+export type TourDefinition = CoachStep[] | (() => CoachStep[])
 
 /**
  * Fixes the running step set (and so the step count) at tour start: drops steps
