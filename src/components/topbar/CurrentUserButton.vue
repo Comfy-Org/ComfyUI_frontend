@@ -6,6 +6,7 @@
       class="p-1 hover:bg-transparent"
       variant="muted-textonly"
       :aria-label="$t('g.currentUser')"
+      data-testid="current-user-button"
       @click="popover?.toggle($event)"
     >
       <div

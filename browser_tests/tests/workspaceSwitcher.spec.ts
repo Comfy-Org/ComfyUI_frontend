@@ -77,6 +77,10 @@ const test = comfyPageFixture.extend({
       })
     )
 
+    await page.route('**/api/auth/session', (route) =>
+      route.fulfill({ status: 204 })
+    )
+
     await use(page)
   }
 })

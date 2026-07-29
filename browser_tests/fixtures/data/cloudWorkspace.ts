@@ -9,7 +9,8 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 // `/api/features` is the remote-config source: production builds resolve the
 // workspaces flag from it (the `ff:` localStorage override is dev-only).
 export const WORKSPACE_FEATURE_FLAG: RemoteConfig = {
-  team_workspaces_enabled: true
+  team_workspaces_enabled: true,
+  consolidated_billing_enabled: true
 }
 
 export const TEAM_WORKSPACE: WorkspaceWithRole = {
@@ -67,21 +68,21 @@ export const DEFAULT_TEAM_MEMBERS: Member[] = [
   MEMBER_JOHN
 ]
 
+const TEAM_PLAN_SLUG = 'team-pro-monthly'
+
 export const TEAM_BILLING_STATUS: BillingStatusResponse = {
   is_active: true,
   subscription_status: 'active',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
-  plan_slug: 'pro-monthly',
+  plan_slug: TEAM_PLAN_SLUG,
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z'
 }
 
-// `max_seats > 1` on the current plan is what flips `isOnTeamPlan`, which gates
-// the whole role-management UI.
 export const TEAM_PRO_PLAN: Plan = {
-  slug: 'pro-monthly',
+  slug: TEAM_PLAN_SLUG,
   tier: 'PRO',
   duration: 'MONTHLY',
   price_cents: 10000,

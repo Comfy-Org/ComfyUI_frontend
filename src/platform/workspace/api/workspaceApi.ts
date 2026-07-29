@@ -12,6 +12,7 @@ import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
+export type BillingRail = 'legacy_stripe' | 'stripe'
 
 interface Workspace {
   id: WorkspaceId
@@ -33,10 +34,14 @@ export interface Member {
   joined_at: string
   role: WorkspaceRole
   // True when this member is the workspace's original owner/creator
-  // (member.id == workspace.created_by_user_id). Gates the creator-only
-  // billing lifecycle actions (cancel / reactivate / downgrade).
+  // (member.id == workspace.created_by_user_id). Used for personal creator
+  // protections and Team-to-personal downgrade eligibility.
   // Optional: the cloud OpenAPI does not carry this field yet.
   is_original_owner?: boolean
+  // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
+  // neither usage nor limit yet; persistence and real usage land in FE-1278.
+  credits_used_this_month?: number
+  monthly_credit_limit?: number | null
 }
 
 interface PaginationInfo {
@@ -58,7 +63,6 @@ export interface ListMembersParams {
 export interface PendingInvite {
   id: WorkspaceInviteId
   email: string
-  token: string
   invited_at: string
   expires_at: string
 }
@@ -164,6 +168,8 @@ interface SubscribeRequest {
   /** Required for the per-credit Team plan; selects the slider stop. */
   team_credit_stop_id?: string
   billing_cycle?: SubscribeBillingCycle
+  /** Required to change plans while the current subscription is cancelled; server rejects the change without it. */
+  confirm_reactivation?: boolean
 }
 
 export interface SubscribeOptions {
@@ -171,6 +177,7 @@ export interface SubscribeOptions {
   cancelUrl?: string
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
+  confirmReactivation?: boolean
 }
 
 export interface PreviewSubscribeOptions {
@@ -250,6 +257,9 @@ export type BillingStatus =
   | 'pending_payment'
   | 'paid'
   | 'payment_failed'
+  // A Stripe-paused subscription stays `active` on the activity axis; the pause
+  // is a payment-lifecycle fact. Not emitted until cloud#5075 ships.
+  | 'paused'
   | 'inactive'
 
 export interface CurrentTeamCreditStop {
@@ -260,6 +270,7 @@ export interface CurrentTeamCreditStop {
 
 export interface BillingStatusResponse {
   is_active: boolean
+  billing_rail?: BillingRail
   subscription_status?: BillingSubscriptionStatus
   subscription_tier?: SubscriptionTier
   subscription_duration?: SubscriptionDuration
@@ -324,7 +335,7 @@ interface GetBillingEventsParams {
   limit?: number
 }
 
-class WorkspaceApiError extends Error {
+export class WorkspaceApiError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
@@ -352,7 +363,11 @@ function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
     const message = err.response?.data?.message ?? err.message
-    throw new WorkspaceApiError(message, status)
+    // Response data is untyped: keep a non-string code out of the string
+    // contract, so callers comparing against it cannot match on a surprise.
+    const rawCode: unknown = err.response?.data?.code
+    const code = typeof rawCode === 'string' ? rawCode : undefined
+    throw new WorkspaceApiError(message, status, code)
   }
   throw err
 }
@@ -549,6 +564,20 @@ export const workspaceApi = {
     }
   },
 
+  async resendInvite(inviteId: WorkspaceInviteId): Promise<PendingInvite> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<PendingInvite>(
+        api.apiURL(`/workspace/invites/${encodeURIComponent(inviteId)}/resend`),
+        null,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
   /**
    * Accept a workspace invite.
    * POST /api/invites/:token/accept
@@ -661,7 +690,8 @@ export const workspaceApi = {
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
-          billing_cycle: options.billingCycle
+          billing_cycle: options.billingCycle,
+          confirm_reactivation: options.confirmReactivation
         } satisfies SubscribeRequest,
         { headers }
       )
