@@ -136,10 +136,9 @@ async function onConfirmCancel() {
     await cancelSubscription()
   } catch (error) {
     const errorMessage = getErrorMessage(error)
-    telemetry?.trackSubscriptionCancellation('failed', {
-      ...cancellationMetadata(),
-      error_message: errorMessage ?? String(error)
-    })
+    if (!shouldUseWorkspaceBilling.value) {
+      telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
+    }
     toast.add({
       severity: 'error',
       summary: t('subscription.cancelDialog.failed'),
