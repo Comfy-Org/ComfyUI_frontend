@@ -104,9 +104,9 @@ jobs:
           set -euo pipefail
           TEXT=":package: *@comfyorg/design-system@${VERSION}* published to npm — <${PR_URL}|#${PR_NUMBER}> by ${PR_AUTHOR}. <https://www.npmjs.com/package/@comfyorg/design-system/v/${VERSION}|View on npm>"
           BODY=$(jq -n --arg ch "$SLACK_CHANNEL_ID" --arg text "$TEXT" '{channel: $ch, text: $text}')
-          curl -sf -X POST \
+          RESPONSE=$(curl -sS -X POST \
             -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$BODY" \
-            -o /dev/null \
-            https://slack.com/api/chat.postMessage
+            https://slack.com/api/chat.postMessage)
+          echo "$RESPONSE" | jq -e '.ok == true' >/dev/null
