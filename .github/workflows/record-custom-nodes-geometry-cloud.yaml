@@ -162,6 +162,31 @@ jobs:
           pnpm exec playwright test browser_tests/tests/customNodes/interactionProfiles.spec.ts \
             --project=custom-nodes --reporter=list --workers=1 --retries=0
 
+      # S15 cloud hashes: the download now runs in-page so it carries the
+      # signed-in session, which is what kept this tier core-only. Writes
+      # test-results/curatedOutputHashes.recorded.json; commit it as
+      # browser_tests/fixtures/data/curatedOutputHashes.cloud.json.
+      - name: Record cloud output hashes (S15)
+        continue-on-error: true
+        timeout-minutes: 60
+        env:
+          CUSTOM_NODES_ENV: cloud
+          RECORD_OUTPUT_HASHES: '1'
+          PLAYWRIGHT_TEST_URL: http://localhost:4173
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+        run: |
+          pnpm exec playwright test browser_tests/tests/customNodes/customNode.regression.spec.ts \
+            --project=custom-nodes --reporter=list --workers=1 --retries=0
+
+      - name: Upload recorded cloud output hashes
+        uses: actions/upload-artifact@v6
+        with:
+          name: custom-nodes-output-hashes-cloud
+          path: test-results/curatedOutputHashes.recorded.json
+          retention-days: 7
+          if-no-files-found: warn
+
       - name: Upload recorded cloud interaction profiles
         uses: actions/upload-artifact@v6
         with:

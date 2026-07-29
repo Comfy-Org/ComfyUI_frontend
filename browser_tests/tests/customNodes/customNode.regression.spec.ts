@@ -44,12 +44,18 @@ import {
 } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
-const curatedOutputHashes: CuratedOutputHashes = JSON.parse(
-  readFileSync(
-    resolve('browser_tests/fixtures/data/curatedOutputHashes.core.json'),
-    'utf-8'
-  )
+// Hashes are environment-scoped for the same reason geometry baselines are:
+// a cloud deployment's sinks are not the pinned local backend's. Comparing
+// cloud outputs against the core file would red every run for the wrong
+// reason, so a missing cloud file stays null and the compare says so.
+const outputHashesPath = resolve(
+  `browser_tests/fixtures/data/curatedOutputHashes.${customNodesEnv() === 'cloud' ? 'cloud' : 'core'}.json`
 )
+const curatedOutputHashes: CuratedOutputHashes | null = existsSync(
+  outputHashesPath
+)
+  ? (JSON.parse(readFileSync(outputHashesPath, 'utf-8')) as CuratedOutputHashes)
+  : null
 
 const target = new LocalDesktopTarget()
 const OBJECT_INFO_SANITY_FLOOR = 50
@@ -245,19 +251,29 @@ for (const entry of loadManifest()) {
           ).toBeTruthy()
 
         // S15 output regression: the sinks proved data ARRIVED; the hashes
-        // prove it is the SAME data. Core only: the fetch is node-side, which
-        // on cloud carries no session (the run-30309274120 lesson) - cloud
-        // enrolls when an in-app fetch path lands.
-        if (customNodesEnv() !== 'cloud') {
+        // prove it is the SAME data. The download runs IN THE PAGE so it
+        // carries the signed-in session - a node-side fetch reaches cloud
+        // with no credentials (the run-30309274120 lesson), which is what
+        // kept this tier core-only.
+        {
           const observed = await hashSinkPayloads(
             result.outputsByNode as Record<string, unknown>,
             async (ref) => {
-              const res = await comfyPage.request.get(
-                `${comfyPage.apiUrl}/api/view?filename=${encodeURIComponent(ref.filename)}` +
-                  `&subfolder=${encodeURIComponent(ref.subfolder)}&type=${encodeURIComponent(ref.type)}`
-              )
-              expect(res.status(), `S15: /api/view ${ref.filename}`).toBe(200)
-              return Buffer.from(await res.body())
+              const encoded = await comfyPage.page.evaluate(async (file) => {
+                const query = new URLSearchParams({
+                  filename: file.filename,
+                  subfolder: file.subfolder,
+                  type: file.type
+                })
+                const res = await window.app!.api.fetchApi(`/view?${query}`)
+                if (!res.ok) return { status: res.status, body: '' }
+                const bytes = new Uint8Array(await res.arrayBuffer())
+                let binary = ''
+                for (const byte of bytes) binary += String.fromCharCode(byte)
+                return { status: res.status, body: btoa(binary) }
+              }, ref)
+              expect(encoded.status, `S15: /api/view ${ref.filename}`).toBe(200)
+              return Buffer.from(encoded.body, 'base64')
             }
           )
           const workflowKey = `${entry.pack}/${basename(entry.workflow)}`
@@ -283,10 +299,14 @@ for (const entry of loadManifest()) {
             // recording environment (pinned core + packs), and a local
             // unpinned backend would red with a misattributed message.
             expect(
+              curatedOutputHashes,
+              `S15: no committed hashes for this environment (${outputHashesPath}) - record them with RECORD_OUTPUT_HASHES=1`
+            ).not.toBeNull()
+            expect(
               compareOutputHashes({
                 workflowKey,
                 observed,
-                committed: curatedOutputHashes
+                committed: curatedOutputHashes!
               }),
               'S15 output regression'
             ).toEqual([])
