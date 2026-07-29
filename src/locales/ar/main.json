@@ -143,6 +143,8 @@
       "modelDescription": "وصف النموذج",
       "modelTagging": "تصنيف النموذج",
       "modelType": "نوع النموذج",
+      "modelTypeCoreReadonly": "لا يمكن تغيير نوع النموذج على core، نقل الملف غير مدعوم بعد.",
+      "modelTypeImmutableReadonly": "لا يمكن تغيير نوع النموذج لنموذج للقراءة فقط.",
       "noAdditionalTags": "لا توجد وسوم إضافية",
       "selectModelPrompt": "اختر نموذجًا لعرض معلوماته",
       "selectModelType": "اختر نوع النموذج...",
@@ -173,6 +175,7 @@
     "rename": {
       "failed": "تعذر إعادة تسمية الأصل."
     },
+    "searchModels": "بحث عن النماذج",
     "selectFrameworks": "اختر الأطر",
     "selectModelType": "اختر نوع النموذج",
     "selectProjects": "اختر المشاريع",
@@ -653,8 +656,6 @@
     "publishSuccessDescription": "تم نشر سير العمل الخاص بك على ComfyHub.",
     "publishSuccessTitle": "تم النشر بنجاح",
     "removeExampleImage": "إزالة الصورة النموذجية",
-    "renameFailedDescription": "تم نشر سير العمل بنجاح، لكن فشلت إعادة تسمية الملف المحلي. يرجى إعادة تسميته مرة أخرى ليتطابق.",
-    "renameFailedTitle": "فشل إعادة التسمية",
     "selectAThumbnail": "اختر صورة مصغرة",
     "shareAs": "مشاركة كـ",
     "showLessTags": "عرض أقل...",
@@ -1268,6 +1269,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "تم تعطيل هذه العقدة بواسطة سياسة مساحة العمل الخاصة بك. استخدم عقدة أخرى.",
+        "title": "عقدة معطلة",
+        "toastMessage": "تم تعطيل هذه العقدة بواسطة سياسة مساحة العمل الخاصة بك.",
+        "toastTitle": "عقد الشركاء"
+      },
       "bad_linked_input": {
         "details": "{nodeName} لديه اتصال غير صالح لـ {inputName}.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2624,8 @@
     "resetView": "إعادة تعيين عرض اللوحة",
     "run": "تشغيل",
     "runWorkflow": "تشغيل سير العمل (Shift للانتظار في البداية)",
-    "runWorkflowDisabled": "يحتوي سير العمل على عقد غير مدعومة (مظللة باللون الأحمر). يرجى إزالتها لتشغيل سير العمل.",
     "runWorkflowFront": "تشغيل سير العمل (انتظار في البداية)",
+    "runWorkflowMissingResources": "يتضمن سير العمل موارد مفقودة.",
     "settings": "الإعدادات",
     "showMenu": "عرض القائمة",
     "stopRunInstant": "إيقاف التشغيل (فوري)",
@@ -3049,6 +3057,38 @@
       "owner": "المالك",
       "personal": "شخصي"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "كل عملية إنشاء أو استيراد محفوظة في الوسائط. يمكنك فتحها في أي وقت لتصفحها أو تنزيلها أو إعادة استخدام أعمالك السابقة.",
+        "title": "اعثر على جميع ملفاتك"
+      },
+      "inputs": {
+        "body": "أضف ما تريد العمل عليه. المدخلات هي ما يحوله التطبيق إلى نتائج.",
+        "title": "أضف مدخلاتك"
+      },
+      "landing": {
+        "body": "جولة سريعة حول الأساسيات في دقيقة تقريبًا. سنوضح لك أين تضيف المدخلات، وكيف تشغل تطبيقك، وأين تجد النتائج.",
+        "primary": "بدء الدليل",
+        "title": "مرحبًا بك في التطبيقات"
+      },
+      "outputs": {
+        "body": "تظهر النتائج النهائية هنا في المنتصف. يمكنك تنزيلها أو تعديل أحد المدخلات وتشغيلها مرة أخرى.",
+        "title": "احصل على نتائجك"
+      },
+      "replay": "جولة في وضع التطبيقات",
+      "run": {
+        "body": "هل أنت راضٍ عن مدخلاتك؟ اضغط على تشغيل وستظهر النتيجة في المنتصف فور جاهزيتها.",
+        "title": "شغّل تطبيقك"
+      }
+    },
+    "back": "السابق",
+    "done": "تم",
+    "loadError": "حدث خطأ أثناء عرض هذه الجولة",
+    "next": "التالي",
+    "skip": "تخطي",
+    "stepLabel": "الخطوة {current} من {total}"
   },
   "openSharedWorkflow": {
     "author": "المؤلف:",
@@ -3487,6 +3527,7 @@
     "3DViewer": "عارض ثلاثي الأبعاد",
     "API Nodes": "عقد API",
     "About": "حول",
+    "Allowlist": "قائمة السماح",
     "Appearance": "المظهر",
     "BrushAdjustment": "تعديل الفرشاة",
     "Camera": "الكاميرا",
@@ -3641,6 +3682,7 @@
     "logout": "تسجيل الخروج",
     "mediaAssets": "الأصول الوسائطية",
     "modelLibrary": "مكتبة النماذج",
+    "modelLibraryLoadFailed": "فشل تحميل النماذج. تحقق من اتصال الخادم واستخدم التحديث لإعادة المحاولة.",
     "newBlankWorkflow": "إنشاء سير عمل جديد فارغ",
     "noFilesFound": "لم يتم العثور على ملفات",
     "noFilesFoundMessage": "قم برفع الملفات أو إنشاء محتوى لرؤيتها هنا",
@@ -3746,6 +3788,7 @@
       "viewList": "عرض القائمة"
     },
     "searchAssets": "بحث في الأصول",
+    "searchResultsCapped": "يتم عرض أول {limit} نتيجة. قم بتضييق البحث لرؤية نتائج أكثر تحديدًا.",
     "sidebar": "الشريط الجانبي",
     "templates": "القوالب",
     "themeToggle": "تبديل المظهر",
@@ -4181,6 +4224,11 @@
     "modelsSelected": "{count} نماذج",
     "noResults": "لم يتم العثور على قوالب",
     "noResultsHint": "حاول تعديل البحث أو المرشحات",
+    "paidTemplate": {
+      "badgeLabel": "شريك API",
+      "credits": "يعمل باستخدام الاعتمادات",
+      "title": "قالب مميز"
+    },
     "resultsCount": "عرض {count} من {total} قالب",
     "runsOnFilter": "يعمل على",
     "runsOnSelected": "{count} يعمل على",
@@ -4318,6 +4366,21 @@
     "title": "تحذير توافق الإصدار",
     "updateFrontend": "تحديث الواجهة الأمامية"
   },
+  "videoEdit": {
+    "adjustCrop": "تعديل منطقة الاقتصاص",
+    "adjustEndFrame": "تعديل إطار النهاية",
+    "adjustStartFrame": "تعديل إطار البداية",
+    "durationSeconds": "{count}ث",
+    "durationZero": "٠ث",
+    "fileSizeBytes": "{count} بايت",
+    "fileSizeKilobytes": "{count} ك.ب",
+    "fileSizeMegabytes": "{count} م.ب",
+    "fileSizeUnknown": "—",
+    "loadingFilmstrip": "جارٍ تحميل شريط الفيلم…",
+    "pause": "إيقاف مؤقت",
+    "play": "تشغيل",
+    "seekVideo": "تقديم الفيديو"
+  },
   "vueNodesBanner": {
     "desc": "– سير عمل أكثر مرونة، أدوات جديدة قوية، مصمم للتوسعة",
     "title": "تقديم Nodes 2.0",
@@ -4424,9 +4487,7 @@
         "lastActivity": "آخر نشاط",
         "partnerNodeUsed": "تم استخدام عقدة الشريك",
         "totalCreditsUsed": "إجمالي الرصيد المستخدم"
-      },
-      "perUserHint": "تبحث عن إجمالي الاستخدام لكل مستخدم؟",
-      "seeMembers": "عرض الأعضاء"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4562,6 +4623,39 @@
       "deleteWorkspaceDisabledTooltip": "يرجى إلغاء الاشتراك النشط لمساحة العمل أولاً",
       "editWorkspace": "تعديل تفاصيل مساحة العمل",
       "leaveWorkspace": "مغادرة مساحة العمل"
+    },
+    "partnerNodes": {
+      "accessMode": "وضع وصول عقد الشركاء",
+      "allowAllAccessHint": "قد يستغرق تطبيق ذلك حتى ١٠ دقائق عبر مساحة العمل.",
+      "allowAllAccessMessage": "ستصبح عقد الشركاء من جميع المزودين متاحة لكل عضو في مساحة العمل.",
+      "allowAllAccessTitle": "السماح بالوصول إلى جميع عقد الشركاء؟",
+      "columns": {
+        "nodes": "العقد",
+        "provider": "المزود"
+      },
+      "disableAll": "تعطيل الكل",
+      "disableAllMessage": "سيتم إيقاف جميع المزودين. لن تتوفر عقد الشركاء أثناء تقييد الوصول.",
+      "disableAllTitle": "تعطيل جميع المزودين؟",
+      "enableAll": "تفعيل الكل",
+      "loadError": "تعذر تحميل وصول عقد الشركاء.",
+      "loading": "جارٍ تحميل وصول عقد الشركاء",
+      "noResults": "لم يتم العثور على مزودين أو عقد شركاء",
+      "nodeCount": "{count} مفعّلة",
+      "ownerOnly": "فقط مالكو مساحة العمل يمكنهم تحديث وصول عقد الشركاء.",
+      "restrictAccessHint": "قد يستغرق تطبيق ذلك حتى ١٠ دقائق عبر مساحة العمل.",
+      "restrictAccessMessage": "سيتمكن أعضاء مساحة العمل فقط من استخدام عقد الشركاء من المزودين الذين تقوم بتفعيلهم.",
+      "restrictAccessTitle": "تقييد الوصول إلى عقد الشركاء؟",
+      "restricted": "مقيد",
+      "restrictedDescription": "فقط عقد الشركاء من المزودين المفعّلين ستكون متاحة. قد يستغرق تطبيق التغييرات حتى ١٠ دقائق.",
+      "retry": "حاول مرة أخرى",
+      "saveError": "تعذر تحديث وصول عقد الشركاء. حاول مرة أخرى.",
+      "searchPlaceholder": "ابحث عن المزودين وعقد الشركاء...",
+      "tableLabel": "مزودو عقد الشركاء",
+      "title": "وصول عقد الشركاء",
+      "toggleProvider": "تعيين الوصول لـ {provider}",
+      "unavailable": "وصول عقد الشركاء غير متاح لهذه المساحة.",
+      "unrestricted": "غير مقيد",
+      "unrestrictedDescription": "عقد الشركاء من جميع المزودين متاحة للجميع. تعطيل المزودين سيجعل الوضع مقيدًا."
     },
     "planCredits": {
       "tabs": {

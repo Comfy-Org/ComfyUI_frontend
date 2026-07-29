@@ -143,6 +143,8 @@
       "modelDescription": "Descripción del modelo",
       "modelTagging": "Etiquetado del modelo",
       "modelType": "Tipo de modelo",
+      "modelTypeCoreReadonly": "El tipo de modelo no se puede cambiar en core, mover el archivo aún no es compatible.",
+      "modelTypeImmutableReadonly": "El tipo de modelo no se puede cambiar para un modelo de solo lectura.",
       "noAdditionalTags": "Sin etiquetas adicionales",
       "selectModelPrompt": "Selecciona un modelo para ver su información",
       "selectModelType": "Selecciona el tipo de modelo...",
@@ -173,6 +175,7 @@
     "rename": {
       "failed": "No se pudo renombrar el activo."
     },
+    "searchModels": "Buscar modelos",
     "selectFrameworks": "Seleccionar frameworks",
     "selectModelType": "Seleccionar tipo de modelo",
     "selectProjects": "Seleccionar proyectos",
@@ -653,8 +656,6 @@
     "publishSuccessDescription": "Tu flujo de trabajo ya está disponible en ComfyHub.",
     "publishSuccessTitle": "Publicado con éxito",
     "removeExampleImage": "Eliminar imagen de ejemplo",
-    "renameFailedDescription": "Tu flujo de trabajo se publicó correctamente, pero no se pudo renombrar el archivo local. Vuelve a renombrarlo para que coincida.",
-    "renameFailedTitle": "Error al renombrar",
     "selectAThumbnail": "Selecciona una miniatura",
     "shareAs": "Compartir como",
     "showLessTags": "Mostrar menos...",
@@ -1268,6 +1269,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "Este nodo ha sido deshabilitado por la política de tu espacio de trabajo. Usa un nodo diferente.",
+        "title": "Nodo deshabilitado",
+        "toastMessage": "Este nodo ha sido deshabilitado por la política de tu espacio de trabajo.",
+        "toastTitle": "Nodos de socios"
+      },
       "bad_linked_input": {
         "details": "{nodeName} tiene una conexión inválida para {inputName}.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2624,8 @@
     "resetView": "Restablecer vista del lienzo",
     "run": "Ejecutar",
     "runWorkflow": "Ejecutar flujo de trabajo (Shift para encolar al frente)",
-    "runWorkflowDisabled": "El flujo de trabajo contiene nodos no compatibles (resaltados en rojo). Elimínelos para ejecutar el flujo de trabajo.",
     "runWorkflowFront": "Ejecutar flujo de trabajo (Encolar al frente)",
+    "runWorkflowMissingResources": "El flujo de trabajo contiene recursos faltantes.",
     "settings": "Configuración",
     "showMenu": "Mostrar menú",
     "stopRunInstant": "Detener ejecución (instantáneo)",
@@ -3049,6 +3057,38 @@
       "owner": "Propietario",
       "personal": "Personal"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "Cada generación e importación se guarda en Recursos Multimedia. Ábrelo en cualquier momento para explorar, descargar o reutilizar trabajos anteriores.",
+        "title": "Encuentra todos tus recursos"
+      },
+      "inputs": {
+        "body": "Agrega con qué quieres trabajar. Tus entradas son lo que la app convierte en resultados.",
+        "title": "Agrega tus entradas"
+      },
+      "landing": {
+        "body": "Un recorrido rápido por lo esencial, en aproximadamente un minuto. Te mostraremos dónde agregar entradas, ejecutar tu app y encontrar tus resultados.",
+        "primary": "Iniciar tutorial",
+        "title": "Bienvenido a Apps"
+      },
+      "outputs": {
+        "body": "Tus resultados finales aparecerán aquí en el centro. Descárgalos, o ajusta una entrada y ejecuta de nuevo.",
+        "title": "Obtén tus resultados"
+      },
+      "replay": "Haz un recorrido por el Modo App",
+      "run": {
+        "body": "¿Contento con tus entradas? Pulsa Ejecutar y tu resultado aparecerá en el centro en cuanto esté listo.",
+        "title": "Ejecuta tu app"
+      }
+    },
+    "back": "Atrás",
+    "done": "Listo",
+    "loadError": "Algo salió mal al mostrar este recorrido",
+    "next": "Siguiente",
+    "skip": "Omitir",
+    "stepLabel": "Paso {current} de {total}"
   },
   "openSharedWorkflow": {
     "author": "Autor:",
@@ -3487,6 +3527,7 @@
     "3DViewer": "3DViewer",
     "API Nodes": "Nodos API",
     "About": "Acerca de",
+    "Allowlist": "Lista permitida",
     "Appearance": "Apariencia",
     "BrushAdjustment": "Ajuste de Pincel",
     "Camera": "Cámara",
@@ -3641,6 +3682,7 @@
     "logout": "Cerrar sesión",
     "mediaAssets": "Recursos multimedia",
     "modelLibrary": "Biblioteca de modelos",
+    "modelLibraryLoadFailed": "No se pudieron cargar los modelos. Verifica la conexión con el servidor y usa Actualizar para volver a intentarlo.",
     "newBlankWorkflow": "Crear un nuevo flujo de trabajo en blanco",
     "noFilesFound": "No se encontraron archivos",
     "noFilesFoundMessage": "Sube archivos o genera contenido para verlos aquí",
@@ -3746,6 +3788,7 @@
       "viewList": "Vista de lista"
     },
     "searchAssets": "Buscar recursos",
+    "searchResultsCapped": "Mostrando los primeros {limit} resultados. Refina tu búsqueda para ver resultados más específicos.",
     "sidebar": "Barra lateral",
     "templates": "Plantillas",
     "themeToggle": "Cambiar tema",
@@ -4181,6 +4224,11 @@
     "modelsSelected": "{count} modelos",
     "noResults": "No se encontraron plantillas",
     "noResultsHint": "Intenta ajustar tu búsqueda o filtros",
+    "paidTemplate": {
+      "badgeLabel": "API de socios",
+      "credits": "Se ejecuta con créditos",
+      "title": "Plantilla premium"
+    },
     "resultsCount": "Mostrando {count} de {total} plantillas",
     "runsOnFilter": "Ejecuta en",
     "runsOnSelected": "{count} ejecuciones en",
@@ -4318,6 +4366,21 @@
     "title": "Advertencia de compatibilidad de versión",
     "updateFrontend": "Actualizar frontend"
   },
+  "videoEdit": {
+    "adjustCrop": "Ajustar región de recorte",
+    "adjustEndFrame": "Ajustar fotograma final",
+    "adjustStartFrame": "Ajustar fotograma inicial",
+    "durationSeconds": "{count}s",
+    "durationZero": "0s",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB",
+    "fileSizeUnknown": "—",
+    "loadingFilmstrip": "Cargando tira de película…",
+    "pause": "Pausar",
+    "play": "Reproducir",
+    "seekVideo": "Buscar en el video"
+  },
   "vueNodesBanner": {
     "desc": "– Flujos de trabajo más flexibles, nuevos widgets potentes, diseñado para la extensibilidad",
     "title": "Presentamos Nodes 2.0",
@@ -4424,9 +4487,7 @@
         "lastActivity": "Última actividad",
         "partnerNodeUsed": "Nodo de socio usado",
         "totalCreditsUsed": "Total de créditos usados"
-      },
-      "perUserHint": "¿Buscas el uso total por usuario?",
-      "seeMembers": "Ver miembros"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4562,6 +4623,39 @@
       "deleteWorkspaceDisabledTooltip": "Primero cancela la suscripción activa de tu espacio de trabajo",
       "editWorkspace": "Editar detalles del espacio de trabajo",
       "leaveWorkspace": "Abandonar espacio de trabajo"
+    },
+    "partnerNodes": {
+      "accessMode": "Modo de acceso a nodos de socios",
+      "allowAllAccessHint": "Esto puede tardar hasta 10 minutos en aplicarse en todo tu espacio de trabajo.",
+      "allowAllAccessMessage": "Los nodos de socios de todos los proveedores estarán disponibles para todos los miembros del espacio de trabajo.",
+      "allowAllAccessTitle": "¿Permitir acceso a todos los nodos de socios?",
+      "columns": {
+        "nodes": "Nodos",
+        "provider": "Proveedor"
+      },
+      "disableAll": "Deshabilitar todos",
+      "disableAllMessage": "Todos los proveedores serán desactivados. Los nodos de socios no estarán disponibles mientras el acceso esté restringido.",
+      "disableAllTitle": "¿Deshabilitar todos los proveedores?",
+      "enableAll": "Habilitar todos",
+      "loadError": "No se pudo cargar el acceso a los nodos de socios.",
+      "loading": "Cargando acceso a nodos de socios",
+      "noResults": "No se encontraron proveedores ni nodos de socios",
+      "nodeCount": "{count} habilitados",
+      "ownerOnly": "Solo los propietarios del espacio de trabajo pueden actualizar el acceso a los nodos de socios.",
+      "restrictAccessHint": "Esto puede tardar hasta 10 minutos en aplicarse en todo tu espacio de trabajo.",
+      "restrictAccessMessage": "Los miembros del espacio de trabajo solo podrán usar nodos de socios de los proveedores que habilites.",
+      "restrictAccessTitle": "¿Restringir acceso a los nodos de socios?",
+      "restricted": "Restringido",
+      "restrictedDescription": "Solo los nodos de socios de los proveedores habilitados están disponibles. Los cambios pueden tardar hasta 10 minutos en aplicarse.",
+      "retry": "Intentar de nuevo",
+      "saveError": "No se pudo actualizar el acceso a los nodos de socios. Inténtalo de nuevo.",
+      "searchPlaceholder": "Buscar proveedores y nodos de socios...",
+      "tableLabel": "Proveedores de nodos de socios",
+      "title": "Acceso a nodos de socios",
+      "toggleProvider": "Configurar acceso para {provider}",
+      "unavailable": "El acceso a nodos de socios no está disponible para este espacio de trabajo.",
+      "unrestricted": "Sin restricciones",
+      "unrestrictedDescription": "Los nodos de socios de todos los proveedores están disponibles para todos. Si desactivas proveedores, esto se establecerá como Restringido."
     },
     "planCredits": {
       "tabs": {
