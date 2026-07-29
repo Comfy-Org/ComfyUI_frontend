@@ -619,6 +619,94 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewData.value).toBeNull()
     })
 
+    // Regression guard: a cancelled personal subscriber picking Team has no
+    // existing team plan to "change", so isChange is false — but this is a
+    // reactivation, not a fresh subscribe, and the consent-less add-payment
+    // screen that isChange:false would otherwise route to can never collect
+    // confirm_reactivation.
+    it('previews a cancelled personal subscriber choosing Team, even though nothing existing is changing', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 70_000
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: false
+      })
+
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        {
+          teamCreditStopId: 'team_700',
+          billingCycle: 'monthly'
+        }
+      )
+      expect(checkout.previewData.value).not.toBeNull()
+      expect(checkout.previewVariant.value).toBe('team-change')
+    })
+
+    it('bounces a cancelled subscriber back to pricing when the preview does not qualify', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: false
+      })
+
+      expect(checkout.previewData.value).toBeNull()
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(checkout.selectedTeamStop.value).toBeNull()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+
+    it('bounces a cancelled subscriber back to pricing when the preview request fails', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockRejectedValueOnce(new Error('not supported'))
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: false
+      })
+
+      expect(checkout.previewData.value).toBeNull()
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error', detail: 'not supported' })
+      )
+    })
+
     it('does not prepare a team checkout for a member', async () => {
       mockPermissions.value.canManageSubscription = false
       const checkout = await setup()
@@ -981,6 +1069,66 @@ describe('useSubscriptionCheckout', () => {
         })
       )
     })
+
+    it('refreshes stale cancellation state before a team submit and lets a retry succeed after the subscription is cancelled elsewhere', async () => {
+      mockSubscription.value = { isCancelled: false }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000
+      })
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      expect(checkout.previewVariant.value).toBe('team-change')
+
+      mockFetchStatus.mockImplementationOnce(() => {
+        mockSubscription.value = { isCancelled: true }
+        return Promise.resolve()
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 110_000
+      })
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(checkout.previewData.value?.cost_today_cents).toBe(110_000)
+
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 110_000
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-retry-active-to-cancelled'
+      })
+
+      await checkout.handleTeamSubscribe(true)
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({ confirmReactivation: true })
+      )
+      expect(checkout.checkoutStep.value).toBe('success')
+    })
   })
 
   describe('handleBackToPricing', () => {
@@ -1010,7 +1158,7 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleAddCreditCard', () => {
-    it('shows existing success immediately without owning reconciliation', async () => {
+    it('shows existing success immediately without owning post-response reconciliation', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -1018,7 +1166,7 @@ describe('useSubscriptionCheckout', () => {
         status: 'subscribed',
         billing_op_id: 'op-1'
       })
-      mockFetchStatus.mockReturnValueOnce(new Promise(() => {}))
+      mockFetchStatus.mockResolvedValueOnce(undefined)
       mockFetchBalance.mockReturnValueOnce(new Promise(() => {}))
 
       await checkout.handleAddCreditCard()
@@ -1039,7 +1187,10 @@ describe('useSubscriptionCheckout', () => {
         payment_intent_source: undefined,
         billing_op_id: 'op-1'
       })
-      expect(mockFetchStatus).not.toHaveBeenCalled()
+      // Refreshed once, pre-submit, to keep the reactivation guard honest —
+      // but balance reconciliation after a successful response is still not
+      // this composable's job.
+      expect(mockFetchStatus).toHaveBeenCalledTimes(1)
       expect(mockFetchBalance).not.toHaveBeenCalled()
     })
 
@@ -1434,6 +1585,64 @@ describe('useSubscriptionCheckout', () => {
       expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
       expect(emit).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('refreshes stale cancellation state before submit and lets a retry succeed after the subscription is cancelled elsewhere', async () => {
+      mockSubscription.value = { isCancelled: false }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        cost_today_cents: 1500
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      expect(checkout.checkoutStep.value).toBe('preview')
+
+      // Cancelled in another tab while this confirm screen stays open; the
+      // banner never showed here because it wasn't cancelled when the
+      // preview loaded, so this submit still carries confirmReactivation=false.
+      mockFetchStatus.mockImplementationOnce(() => {
+        mockSubscription.value = { isCancelled: true }
+        return Promise.resolve()
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        cost_today_cents: 1600
+      })
+
+      await checkout.handleConfirmTransition()
+
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      // The blocked confirm screen's preview is refreshed to the real,
+      // current transaction rather than the stale pre-cancellation one.
+      expect(checkout.previewData.value?.cost_today_cents).toBe(1600)
+
+      // Retry, now that the reactivation banner (driven by the refreshed
+      // previewData) is showing and the charge has been consented to.
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        cost_today_cents: 1600
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-retry-active-to-cancelled'
+      })
+
+      await checkout.handleConfirmTransition(true)
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.objectContaining({ confirmReactivation: true })
+      )
+      expect(checkout.checkoutStep.value).toBe('success')
     })
   })
 
