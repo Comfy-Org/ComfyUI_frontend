@@ -5,7 +5,10 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { clearWorkflowRestoreState } from '@/platform/workflow/persistence/base/storageIO'
+import {
+  clearWorkflowRestoreState,
+  prepareWorkflowWorkspaceTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import type {
@@ -422,7 +425,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const revoked = workspaces.value.find((w) => w.id === workspaceId)
     if (revoked?.type === 'personal') return
 
-    clearWorkflowRestoreState({ blockWrites: true })
+    prepareWorkflowWorkspaceTransition()
     clearLastWorkspaceId()
     window.location.reload()
   }
@@ -457,7 +460,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       if (isStaleIdentity(generation)) return
 
       // Clear current workspace context and persist new workspace ID
-      clearWorkflowRestoreState({ blockWrites: true })
+      prepareWorkflowWorkspaceTransition()
       workspaceAuthStore.clearWorkspaceContext()
       setLastWorkspaceId(workspaceId)
 
@@ -490,7 +493,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       workspaces.value = [...workspaces.value, workspaceState]
 
       // Clear context and switch to new workspace
-      clearWorkflowRestoreState({ blockWrites: true })
+      prepareWorkflowWorkspaceTransition()
       workspaceAuthStore.clearWorkspaceContext()
       // Clear any preserved invite query to prevent stale invites from being
       // processed after the reload (prevents owner adding themselves as member)
@@ -534,7 +537,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       if (targetId === activeWorkspaceId.value) {
         // Deleted active workspace - go to personal
         const personal = personalWorkspace.value
-        clearWorkflowRestoreState({ blockWrites: true })
+        prepareWorkflowWorkspaceTransition()
         workspaceAuthStore.clearWorkspaceContext()
         if (personal) {
           setLastWorkspaceId(personal.id)
@@ -591,7 +594,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       (workspace) =>
         workspace.type === 'personal' && workspace.id !== current.id
     )
-    clearWorkflowRestoreState({ blockWrites: true })
+    prepareWorkflowWorkspaceTransition()
     workspaceAuthStore.clearWorkspaceContext()
     if (personal) {
       setLastWorkspaceId(personal.id)

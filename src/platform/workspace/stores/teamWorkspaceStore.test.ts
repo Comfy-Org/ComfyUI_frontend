@@ -32,9 +32,11 @@ vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
 }))
 
 const mockClearWorkflowRestoreState = vi.hoisted(() => vi.fn())
+const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
-  clearWorkflowRestoreState: mockClearWorkflowRestoreState
+  clearWorkflowRestoreState: mockClearWorkflowRestoreState,
+  prepareWorkflowWorkspaceTransition: mockPrepareWorkflowWorkspaceTransition
 }))
 
 const mockEnsureSessionCookie = vi.hoisted(() => vi.fn())
@@ -144,11 +146,9 @@ const mockMemberWorkspace = {
 }
 
 function expectCleanupBeforeContextAndReload(): void {
-  expect(mockClearWorkflowRestoreState).toHaveBeenCalledExactlyOnceWith({
-    blockWrites: true
-  })
+  expect(mockPrepareWorkflowWorkspaceTransition).toHaveBeenCalledOnce()
   expect(
-    mockClearWorkflowRestoreState.mock.invocationCallOrder[0]
+    mockPrepareWorkflowWorkspaceTransition.mock.invocationCallOrder[0]
   ).toBeLessThan(
     mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
   )
@@ -426,13 +426,11 @@ describe('useTeamWorkspaceStore', () => {
 
       await store.switchWorkspace(mockTeamWorkspace.id)
 
-      expect(mockClearWorkflowRestoreState).toHaveBeenCalledExactlyOnceWith({
-        blockWrites: true
-      })
+      expect(mockPrepareWorkflowWorkspaceTransition).toHaveBeenCalledOnce()
       expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalled()
       expect(mockReload).toHaveBeenCalled()
       expect(
-        mockClearWorkflowRestoreState.mock.invocationCallOrder[0]
+        mockPrepareWorkflowWorkspaceTransition.mock.invocationCallOrder[0]
       ).toBeLessThan(
         mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
       )
@@ -540,14 +538,13 @@ describe('useTeamWorkspaceStore', () => {
         store.forgetRevokedActiveWorkspace(workspace.id)
 
         expect(mockLocalStorage.removeItem).toHaveBeenCalledTimes(reloads)
-        expect(mockClearWorkflowRestoreState).toHaveBeenCalledTimes(reloads)
+        expect(mockPrepareWorkflowWorkspaceTransition).toHaveBeenCalledTimes(
+          reloads
+        )
         expect(mockReload).toHaveBeenCalledTimes(reloads)
         if (reloads === 1) {
-          expect(mockClearWorkflowRestoreState).toHaveBeenCalledWith({
-            blockWrites: true
-          })
           expect(
-            mockClearWorkflowRestoreState.mock.invocationCallOrder[0]
+            mockPrepareWorkflowWorkspaceTransition.mock.invocationCallOrder[0]
           ).toBeLessThan(mockReload.mock.invocationCallOrder[0])
         }
       }

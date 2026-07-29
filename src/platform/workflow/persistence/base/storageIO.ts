@@ -15,6 +15,18 @@ import { StorageKeys } from './storageKeys'
 /** Flag indicating if storage is available */
 let storageAvailable = true
 let workflowWritesBlocked = false
+const pendingPersistenceFlushes = new Set<() => void>()
+
+export function registerWorkflowPersistenceFlush(
+  flush: () => void
+): () => void {
+  pendingPersistenceFlushes.add(flush)
+  return () => pendingPersistenceFlushes.delete(flush)
+}
+
+function flushPendingWorkflowPersistence(): void {
+  for (const flush of pendingPersistenceFlushes) flush()
+}
 
 export function isStorageAvailable(): boolean {
   return storageAvailable && !workflowWritesBlocked
@@ -427,10 +439,19 @@ function removeStorageKeys(
 export function clearWorkflowRestoreState(
   options: { blockWrites?: boolean } = {}
 ): void {
-  if (options.blockWrites) workflowWritesBlocked = true
+  if (options.blockWrites) {
+    prepareWorkflowWorkspaceTransition()
+    return
+  }
 
   removeStorageKeys(localStorage, legacyLocalRestoreKeys)
   removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
+}
+
+export function prepareWorkflowWorkspaceTransition(): void {
+  flushPendingWorkflowPersistence()
+  workflowWritesBlocked = true
+  clearWorkflowRestoreState()
 }
 
 export function clearAllWorkflowStorage(
