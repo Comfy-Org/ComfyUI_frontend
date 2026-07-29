@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { StorageKeys } from '../base/storageKeys'
+import { clearWorkflowRestoreState } from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
@@ -617,5 +620,62 @@ describe('useWorkflowPersistenceV2', () => {
         'Comfy.BrowseTemplates'
       )
     })
+  })
+
+  it('flushes the final source-workspace edit before blocking transition writes', async () => {
+    const sourceWorkspaceId = 'workspace-a'
+    const destinationWorkspaceId = 'workspace-b'
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: sourceWorkspaceId, type: 'team' })
+    )
+
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('WorkspaceA.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = {
+      nodes: [],
+      extra: { marker: 'workspace-a-final-edit' }
+    }
+    mocks.state.graphChangedHandler?.()
+
+    const sourcePayloadKey = StorageKeys.draftPayload(
+      workflow.path,
+      sourceWorkspaceId
+    )
+    const destinationPayloadKey = StorageKeys.draftPayload(
+      workflow.path,
+      destinationWorkspaceId
+    )
+    expect(localStorage.getItem(sourcePayloadKey)).toBeNull()
+
+    clearWorkflowRestoreState({ blockWrites: true })
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: destinationWorkspaceId, type: 'team' })
+    )
+    mocks.state.currentGraph = {
+      nodes: [],
+      extra: { marker: 'late-source-write' }
+    }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const sourcePayload = JSON.parse(localStorage.getItem(sourcePayloadKey)!)
+    expect(JSON.parse(sourcePayload.data)).toEqual({
+      nodes: [],
+      extra: { marker: 'workspace-a-final-edit' }
+    })
+    expect(localStorage.getItem(destinationPayloadKey)).toBeNull()
+    expect(
+      sessionStorage.getItem(StorageKeys.activePath('test-client'))
+    ).toBeNull()
+    expect(
+      sessionStorage.getItem(StorageKeys.openPaths('test-client'))
+    ).toBeNull()
   })
 })
