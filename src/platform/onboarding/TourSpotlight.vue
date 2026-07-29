@@ -11,13 +11,7 @@
     <div
       aria-hidden="true"
       data-testid="coach-spotlight"
-      :class="
-        cn(
-          'pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring',
-          !targetMoves &&
-            'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300'
-        )
-      "
+      class="pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300"
       :style="spotlightStyle"
     />
     <FocusScope
@@ -158,7 +152,7 @@ const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-const { targetRect, targetEl, targetMoves, floatingStyles, isPositioned } =
+const { targetRect, targetEl, floatingStyles, isPositioned } =
   useCoachmarkTarget(() => step, cardRef)
 
 // Last step's "Done" already dismisses, so hide Skip there.
