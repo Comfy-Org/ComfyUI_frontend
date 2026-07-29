@@ -506,7 +506,8 @@ export const zBillingOpStatusResponse = z.object({
   status: z.enum(['pending', 'succeeded', 'failed']),
   error_message: z.string().optional(),
   started_at: z.string().datetime(),
-  completed_at: z.string().datetime().optional()
+  completed_at: z.string().datetime().optional(),
+  action_url: z.string().optional()
 })
 
 /**

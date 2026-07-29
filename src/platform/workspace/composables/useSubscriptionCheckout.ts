@@ -104,7 +104,18 @@ export function useSubscriptionCheckout(
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
-  const isPolling = computed(() => billingOperationStore.hasPendingOperations)
+  const activeCheckoutOperationId = ref<string | null>(null)
+  const activeCheckoutOperation = computed(() =>
+    activeCheckoutOperationId.value
+      ? billingOperationStore.getOperation(activeCheckoutOperationId.value)
+      : undefined
+  )
+  const activeCheckoutActionUrl = computed(
+    () => activeCheckoutOperation.value?.actionUrl ?? null
+  )
+  const isPolling = computed(
+    () => activeCheckoutOperation.value?.status === 'pending'
+  )
   const selectedTeamStop = computed(
     () => selectedTeamCheckout.value?.stop ?? null
   )
@@ -270,9 +281,11 @@ export function useSubscriptionCheckout(
   }
 
   function handleBackToPricing() {
+    if (isPolling.value) return
     checkoutStep.value = 'pricing'
     previewData.value = null
     selectedTeamCheckout.value = null
+    activeCheckoutOperationId.value = null
   }
 
   function handleSuccessClose() {
@@ -420,6 +433,7 @@ export function useSubscriptionCheckout(
     opId: string,
     context: SubscriptionOutcomeContext
   ) {
+    activeCheckoutOperationId.value = opId
     const operation = await billingOperationStore.startOperation(
       opId,
       'subscription',
@@ -430,7 +444,12 @@ export function useSubscriptionCheckout(
         paymentIntentSource
       }
     )
-    if (operation.status === 'succeeded') checkoutStep.value = 'success'
+    if (
+      operation.status === 'succeeded' &&
+      activeCheckoutOperationId.value === opId
+    ) {
+      checkoutStep.value = 'success'
+    }
   }
 
   async function handleTeamSubscription() {
@@ -543,6 +562,8 @@ export function useSubscriptionCheckout(
     selectedTierKey,
     selectedTeamStop,
     selectedBillingCycle,
+    activeCheckoutOperation,
+    activeCheckoutActionUrl,
     isPolling,
     isTeamCheckout,
     previewVariant,

@@ -73,6 +73,7 @@
         :team-plan="selectedTeamStop!"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
+        :action-url="activeCheckoutActionUrl"
         @add-credit-card="handleTeamSubscribe"
         @back="handleBackToPricing"
       />
@@ -83,6 +84,7 @@
         :tier-key="selectedTierKey!"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
+        :action-url="activeCheckoutActionUrl"
         @add-credit-card="handleAddCreditCard"
         @back="handleBackToPricing"
       />
@@ -144,6 +146,7 @@ const {
   selectedTierKey,
   selectedTeamStop,
   selectedBillingCycle,
+  activeCheckoutActionUrl,
   isPolling,
   isTeamCheckout,
   previewVariant,

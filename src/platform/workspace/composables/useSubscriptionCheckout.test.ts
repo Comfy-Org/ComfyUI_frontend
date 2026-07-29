@@ -78,6 +78,7 @@ const {
   mockResubscribe,
   mockToastAdd,
   mockStartOperation,
+  mockGetOperation,
   mockTrackBeginCheckout,
   mockTrackBillingEvent,
   mockShowDowngradeToPersonalDialog,
@@ -95,6 +96,7 @@ const {
   mockResubscribe: vi.fn(),
   mockToastAdd: vi.fn(),
   mockStartOperation: vi.fn(),
+  mockGetOperation: vi.fn(),
   mockTrackBeginCheckout: vi.fn(),
   mockTrackBillingEvent: vi.fn(),
   mockShowDowngradeToPersonalDialog: vi.fn(),
@@ -155,7 +157,7 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
     startOperation: mockStartOperation,
-    hasPendingOperations: false
+    getOperation: mockGetOperation
   })
 }))
 
@@ -211,6 +213,7 @@ describe('useSubscriptionCheckout', () => {
     mockPlans.value = allPlans()
     mockFetchPlans.mockResolvedValue(undefined)
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
+    mockGetOperation.mockReturnValue(undefined)
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
     mockUserId.value = 'user-1'
     mockIsTeamPlan.value = false
@@ -911,6 +914,35 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.checkoutStep.value).toBe('pricing')
       expect(checkout.selectedTeamStop.value).toBeNull()
+    })
+
+    it('keeps the active payment preview open while polling', async () => {
+      const checkout = await setup()
+      checkout.checkoutStep.value = 'preview'
+      checkout.selectedTierKey.value = 'standard'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-pending'
+      })
+      mockGetOperation.mockImplementation((opId) =>
+        opId === 'op-pending' ? { status: 'pending' } : undefined
+      )
+      let resolveOperation!: (operation: { status: 'failed' }) => void
+      mockStartOperation.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveOperation = resolve
+          })
+      )
+
+      const payment = checkout.handleAddCreditCard()
+      await vi.waitFor(() => expect(mockStartOperation).toHaveBeenCalledOnce())
+      checkout.handleBackToPricing()
+
+      expect(checkout.checkoutStep.value).toBe('preview')
+
+      resolveOperation({ status: 'failed' })
+      await payment
     })
   })
 

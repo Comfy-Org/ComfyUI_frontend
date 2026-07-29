@@ -85,6 +85,7 @@
       :tier-key="selectedTierKey!"
       :billing-cycle="selectedBillingCycle"
       :is-loading="isSubscribing || isPolling"
+      :action-url="activeCheckoutActionUrl"
       @add-credit-card="handleAddCreditCard"
       @back="handleBackToPricing"
     />
@@ -151,6 +152,7 @@ const {
   previewData,
   selectedTierKey,
   selectedBillingCycle,
+  activeCheckoutActionUrl,
   isPolling,
   handleSubscribeClick,
   handleBackToPricing,

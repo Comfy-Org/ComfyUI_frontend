@@ -1,5 +1,6 @@
 import { setActivePinia, createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest'
+import { ref } from 'vue'
 
 import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
@@ -62,9 +63,13 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 const mockUpdateActiveWorkspace = vi.fn()
+const mockActiveWorkspaceId = ref('workspace-1')
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
+    get activeWorkspaceId() {
+      return mockActiveWorkspaceId.value
+    },
     updateActiveWorkspace: mockUpdateActiveWorkspace
   })
 }))
@@ -78,6 +83,7 @@ describe('billingOperationStore', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     vi.useFakeTimers()
+    mockActiveWorkspaceId.value = 'workspace-1'
   })
 
   afterEach(() => {
@@ -412,7 +418,7 @@ describe('billingOperationStore', () => {
   })
 
   describe('polling timeout', () => {
-    it('times out after 2 minutes and shows error toast', async () => {
+    it('allows five minutes to discover a subscription action', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'pending',
@@ -425,6 +431,9 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       await vi.advanceTimersByTimeAsync(121_000)
+      expect(store.getOperation('op-1')?.status).toBe('pending')
+
+      await vi.advanceTimersByTimeAsync(181_000)
       await vi.runAllTimersAsync()
 
       const operation = store.getOperation('op-1')
@@ -435,6 +444,87 @@ describe('billingOperationStore', () => {
         severity: 'error',
         summary: 'billingOperation.subscriptionTimeout'
       })
+    })
+
+    it('keeps a valid action URL pending past discovery and clears it on success', async () => {
+      const actionUrl = 'https://verify.example/sensitive-token'
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-1',
+          status: 'pending',
+          started_at: new Date().toISOString(),
+          action_url: actionUrl
+        })
+        .mockResolvedValue({
+          id: 'op-1',
+          status: 'pending',
+          started_at: new Date().toISOString()
+        })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')?.actionUrl).toBe(actionUrl)
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(store.getOperation('op-1')).toMatchObject({
+        status: 'pending',
+        actionUrl: null,
+        authenticationRequiredSeen: true
+      })
+
+      await vi.advanceTimersByTimeAsync(4.5 * 60_000)
+      expect(store.getOperation('op-1')?.status).toBe('pending')
+
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValueOnce({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect((await terminal).status).toBe('succeeded')
+      expect(store.getOperation('op-1')?.actionUrl).toBeNull()
+      expect(JSON.stringify(mockToastAdd.mock.calls)).not.toContain(actionUrl)
+      expect(JSON.stringify(mockTrackBillingEvent.mock.calls)).not.toContain(
+        actionUrl
+      )
+    })
+
+    it('ignores non-HTTPS action URLs', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString(),
+        action_url: 'http://verify.example/sensitive-token'
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')?.actionUrl).toBeNull()
+    })
+
+    it('only exposes subscription actions for the active workspace', async () => {
+      const actionUrl = 'https://verify.example/sensitive-token'
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString(),
+        action_url: actionUrl
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.subscriptionActionOperation?.actionUrl).toBe(actionUrl)
+      expect(store.isSettingUp).toBe(true)
+
+      mockActiveWorkspaceId.value = 'workspace-2'
+
+      expect(store.subscriptionActionOperation).toBeUndefined()
+      expect(store.isSettingUp).toBe(false)
     })
 
     it('shows topup timeout message for topup operations', async () => {

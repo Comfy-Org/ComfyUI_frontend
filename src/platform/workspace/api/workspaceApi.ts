@@ -310,6 +310,7 @@ export interface BillingOpStatusResponse {
   error_message?: string
   started_at: string
   completed_at?: string
+  action_url?: string
 }
 
 interface BillingEvent {

@@ -879,6 +879,10 @@ export type BillingOpStatusResponse = {
    * When the operation completed (success or failure)
    */
   completed_at?: string
+  /**
+   * HTTPS URL for completing required customer authentication
+   */
+  action_url?: string
 }
 
 /**

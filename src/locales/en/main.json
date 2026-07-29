@@ -2858,6 +2858,7 @@
       "message": "Team billing is coming soon. You'll be able to subscribe to a plan for your workspace with per-seat pricing. Stay tuned for updates."
     },
     "preview": {
+      "completeVerification": "Complete verification",
       "confirmPayment": "Confirm your payment",
       "confirmPlanChange": "Confirm your plan change",
       "startingToday": "Starts today",
