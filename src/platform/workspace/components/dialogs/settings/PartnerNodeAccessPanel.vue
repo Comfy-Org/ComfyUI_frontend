@@ -85,7 +85,7 @@
       <p class="text-sm text-muted-foreground">
         {{ $t('workspacePanel.partnerNodes.loadError') }}
       </p>
-      <Button variant="secondary" @click="loadPolicy">
+      <Button variant="secondary" @click="retryLoadPolicy">
         {{ $t('workspacePanel.partnerNodes.retry') }}
       </Button>
     </div>
@@ -317,7 +317,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -328,6 +328,8 @@ import Button from '@/components/ui/button/Button.vue'
 import { buttonVariants } from '@/components/ui/button/button.variants'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import { useTelemetry } from '@/platform/telemetry'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -420,15 +422,28 @@ const sortedProviders = computed(() =>
   })
 )
 
+useSearchQueryTracking('allowlist', searchQuery, sortedProviders)
+onMounted(() => trackAllowlistAction('workspace_allowlist_opened'))
+
+function trackAllowlistAction(buttonId: `workspace_allowlist_${string}`): void {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: buttonId,
+    element_group: 'workspace_allowlist'
+  })
+}
+
 function sortBy(field: SortField) {
   if (sortField.value === field) {
     sortDirection.value =
       sortDirection.value === 'ascending' ? 'descending' : 'ascending'
-    return
+  } else {
+    sortField.value = field
+    sortDirection.value = field === 'provider' ? 'ascending' : 'descending'
   }
 
-  sortField.value = field
-  sortDirection.value = field === 'provider' ? 'ascending' : 'descending'
+  trackAllowlistAction(
+    `workspace_allowlist_sort_${field}_${sortDirection.value}`
+  )
 }
 
 function toggleExpanded(providerId: string) {
@@ -436,6 +451,13 @@ function toggleExpanded(providerId: string) {
   if (nextIds.has(providerId)) nextIds.delete(providerId)
   else nextIds.add(providerId)
   expandedProviderIds.value = nextIds
+  if (searchQuery.value.trim()) return
+
+  trackAllowlistAction(
+    `workspace_allowlist_provider_${
+      nextIds.has(providerId) ? 'expanded' : 'collapsed'
+    }`
+  )
 }
 
 function isProviderExpanded(providerId: string) {
@@ -460,6 +482,11 @@ function saveProviderChange(providerId: string, enabled: boolean) {
 
 async function handleEnableAll() {
   await performSave(() => setAllProvidersEnabled(true))
+}
+
+function retryLoadPolicy() {
+  trackAllowlistAction('workspace_allowlist_retry_clicked')
+  void loadPolicy()
 }
 
 function createPolicyConfirmationGuard() {

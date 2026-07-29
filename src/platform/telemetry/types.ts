@@ -407,6 +407,7 @@ export type SearchSurface =
   | 'node_modal'
   | 'node_sidebar'
   | 'apps'
+  | 'allowlist'
   | 'templates'
   | 'settings'
 

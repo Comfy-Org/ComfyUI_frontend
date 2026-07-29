@@ -27,6 +27,8 @@ const {
   mockSetProviderEnabled,
   mockShowConfirmDialog,
   mockStatus,
+  mockTrackUiButtonClicked,
+  mockUseSearchQueryTracking,
   mockWorkspaceRole
 } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
@@ -45,6 +47,8 @@ const {
     mockSetProviderEnabled: vi.fn(),
     mockShowConfirmDialog: vi.fn(),
     mockStatus: ref('configured'),
+    mockTrackUiButtonClicked: vi.fn(),
+    mockUseSearchQueryTracking: vi.fn(),
     mockWorkspaceRole: ref<'owner' | 'member'>('owner')
   }
 })
@@ -86,6 +90,17 @@ vi.mock('@/stores/nodeDefStore', () => ({
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({ workspaceRole: mockWorkspaceRole })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackFeatureFlagExposure: vi.fn(),
+    trackUiButtonClicked: mockTrackUiButtonClicked
+  })
+}))
+
+vi.mock('@/platform/telemetry/searchQuery/useSearchQueryTracking', () => ({
+  useSearchQueryTracking: mockUseSearchQueryTracking
 }))
 
 const i18n = createI18n({
@@ -157,6 +172,74 @@ describe('PartnerNodeAccessPanel', () => {
 
     expect(screen.getByText('Create image')).toBeTruthy()
     expect(screen.getByText('Create video')).toBeTruthy()
+  })
+
+  it('tracks opening and search telemetry for the Allowlist surface', () => {
+    renderComponent()
+
+    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'workspace_allowlist_opened',
+      element_group: 'workspace_allowlist'
+    })
+    expect(mockUseSearchQueryTracking).toHaveBeenCalledExactlyOnceWith(
+      'allowlist',
+      expect.objectContaining({ value: '' }),
+      expect.objectContaining({ value: expect.any(Array) })
+    )
+  })
+
+  it('tracks sorting and explicit provider expansion in order', async () => {
+    const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Provider' }))
+    await user.click(screen.getByRole('button', { name: 'Nodes' }))
+    await user.click(screen.getByRole('button', { name: 'OpenAI (inc. Sora)' }))
+
+    expect(mockTrackUiButtonClicked.mock.calls.map(([event]) => event)).toEqual(
+      [
+        {
+          button_id: 'workspace_allowlist_opened',
+          element_group: 'workspace_allowlist'
+        },
+        {
+          button_id: 'workspace_allowlist_sort_provider_descending',
+          element_group: 'workspace_allowlist'
+        },
+        {
+          button_id: 'workspace_allowlist_sort_nodes_descending',
+          element_group: 'workspace_allowlist'
+        },
+        {
+          button_id: 'workspace_allowlist_provider_expanded',
+          element_group: 'workspace_allowlist'
+        }
+      ]
+    )
+  })
+
+  it('does not track expansion intent while search forces providers open', async () => {
+    const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
+    renderComponent()
+
+    await user.type(
+      screen.getByRole('combobox', {
+        name: 'Search providers and partner nodes...'
+      }),
+      'Create'
+    )
+    mockTrackUiButtonClicked.mockClear()
+    await user.click(screen.getByRole('button', { name: 'OpenAI (inc. Sora)' }))
+
+    expect(mockTrackUiButtonClicked).not.toHaveBeenCalled()
   })
 
   it('sorts providers from the Provider column header', async () => {
@@ -619,5 +702,9 @@ describe('PartnerNodeAccessPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }))
 
     expect(mockLoadPolicy).toHaveBeenCalledOnce()
+    expect(mockTrackUiButtonClicked).toHaveBeenCalledWith({
+      button_id: 'workspace_allowlist_retry_clicked',
+      element_group: 'workspace_allowlist'
+    })
   })
 })
