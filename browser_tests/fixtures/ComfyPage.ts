@@ -371,8 +371,17 @@ export class ComfyPage {
       // context for clearing storage without loading the full frontend app.
       await this.page.goto(`${this.url}/api/users`)
       await this.page.evaluate((id) => {
+        // setPersistence(browserLocalPersistence) migrates the signed-in user
+        // out of IndexedDB, so localStorage holds the only copy of the session.
+        const session = Object.keys(localStorage)
+          .filter((key) => key.startsWith('firebase:'))
+          .map((key): [string, string] => [
+            key,
+            localStorage.getItem(key) ?? ''
+          ])
         localStorage.clear()
         sessionStorage.clear()
+        for (const [key, value] of session) localStorage.setItem(key, value)
         localStorage.setItem('Comfy.userId', id)
       }, this.id)
     }
