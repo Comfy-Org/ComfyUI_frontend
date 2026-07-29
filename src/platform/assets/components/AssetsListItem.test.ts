@@ -75,4 +75,18 @@ describe('AssetsListItem', () => {
 
     expect(emitted()['preview-click']).toHaveLength(1)
   })
+
+  it('shows the selected fraction for a partially selected stack', () => {
+    render(AssetsListItem, {
+      props: {
+        stackCount: 2,
+        selectedStackCount: 1,
+        stackIndicatorLabel: 'See more outputs'
+      }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'See more outputs' })
+    ).toHaveTextContent('1/2')
+  })
 })

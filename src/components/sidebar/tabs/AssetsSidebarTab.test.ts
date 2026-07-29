@@ -162,6 +162,40 @@ const assetsGridStub = {
   `
 }
 
+const assetsListStub = {
+  props: [
+    'assetItems',
+    'selectableAssets',
+    'isSelected',
+    'isPartiallySelected',
+    'getSelectedOutputCount',
+    'toggleStack'
+  ],
+  emits: ['select-asset'],
+  template: `
+    <button
+      v-if="assetItems.length"
+      aria-label="Expand list group"
+      @click.stop="toggleStack(assetItems[0].asset)"
+    />
+    <button
+      v-for="item in assetItems"
+      :key="item.key"
+      :aria-label="'List select ' + item.asset.name"
+      :aria-pressed="
+        isSelected(item.asset)
+          ? 'true'
+          : isPartiallySelected(item.asset)
+            ? 'mixed'
+            : 'false'
+      "
+      @click.stop="$emit('select-asset', item.asset, selectableAssets)"
+    >
+      {{ getSelectedOutputCount(item.asset) }}
+    </button>
+  `
+}
+
 const buttonStub = {
   template: '<button><slot /></button>'
 }
@@ -196,7 +230,7 @@ function renderTab() {
       stubs: {
         SidebarTabTemplate: sidebarTabTemplateStub,
         AssetsSidebarGridView: assetsGridStub,
-        AssetsSidebarListView: true,
+        AssetsSidebarListView: assetsListStub,
         Button: buttonStub,
         MediaAssetFilterBar: filterBarStub,
         MediaAssetSelectionBar: selectionBarStub,
@@ -319,5 +353,73 @@ describe('AssetsSidebarTab folder navigation', () => {
     expect(
       screen.getByRole('button', { name: 'Select multi-output-b.png' })
     ).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('toggles an inherited child selection in list view and preserves it in grid view', async () => {
+    localStorage.setItem('Comfy.Assets.Sidebar.ViewMode', 'list')
+    const user = userEvent.setup()
+    renderTab()
+
+    await user.click(
+      screen.getByRole('button', { name: 'List select multi-output.png' })
+    )
+    await user.click(screen.getByRole('button', { name: 'Expand list group' }))
+
+    const parent = screen.getByRole('button', {
+      name: 'List select multi-output.png'
+    })
+    const childA = await screen.findByRole('button', {
+      name: 'List select multi-output-a.png'
+    })
+    const childB = screen.getByRole('button', {
+      name: 'List select multi-output-b.png'
+    })
+
+    expect(parent).toHaveAttribute('aria-pressed', 'true')
+    expect(childA).toHaveAttribute('aria-pressed', 'true')
+    expect(childB).toHaveAttribute('aria-pressed', 'true')
+
+    await user.keyboard('{Control>}')
+    await user.click(
+      screen.getByRole('button', {
+        name: 'List select multi-output-b.png'
+      })
+    )
+    await user.keyboard('{/Control}')
+
+    expect(parent).toHaveAttribute('aria-pressed', 'mixed')
+    expect(childA).toHaveAttribute('aria-pressed', 'true')
+    expect(childB).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('selection-count')).toHaveTextContent(
+      '1 selected'
+    )
+
+    await user.keyboard('{Control>}')
+    await user.click(childB)
+    await user.keyboard('{/Control}')
+
+    expect(parent).toHaveAttribute('aria-pressed', 'true')
+    expect(childA).toHaveAttribute('aria-pressed', 'true')
+    expect(childB).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('selection-count')).toHaveTextContent(
+      '2 selected'
+    )
+
+    await user.keyboard('{Control>}')
+    await user.click(childB)
+    await user.keyboard('{/Control}')
+
+    expect(parent).toHaveAttribute('aria-pressed', 'mixed')
+    expect(childA).toHaveAttribute('aria-pressed', 'true')
+    expect(childB).toHaveAttribute('aria-pressed', 'false')
+
+    await user.click(screen.getByRole('button', { name: 'Show grid view' }))
+
+    expect(
+      screen.getByRole('button', { name: 'Select multi-output.png' })
+    ).toHaveAttribute('aria-pressed', 'mixed')
+    expect(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    ).toHaveTextContent('1/2')
   })
 })

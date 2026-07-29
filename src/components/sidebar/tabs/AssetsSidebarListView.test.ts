@@ -1,4 +1,4 @@
-import { render, fireEvent } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -44,6 +44,7 @@ const AssetsListItemStub = defineComponent({
     primaryText: { type: String, default: '' },
     secondaryText: { type: String, default: '' },
     stackCount: { type: Number, default: 0 },
+    selectedStackCount: { type: Number, default: 0 },
     stackIndicatorLabel: { type: String, default: '' },
     stackExpanded: { type: Boolean, default: false },
     progressTotalPercent: { type: Number, default: undefined },
@@ -78,6 +79,8 @@ function renderListView(
       assetItems,
       selectableAssets: [],
       isSelected: () => false,
+      isPartiallySelected: () => false,
+      getSelectedOutputCount: () => 0,
       isStackExpanded: () => false,
       toggleStack: async () => {},
       ...props
@@ -170,5 +173,48 @@ describe('AssetsSidebarListView', () => {
     await fireEvent.dblClick(stub)
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
+  })
+
+  it('exposes a partially selected output group as mixed', () => {
+    const groupedAsset = {
+      ...buildAsset('grouped-asset', 'grouped.png'),
+      user_metadata: { outputCount: 2 }
+    } satisfies AssetItem
+
+    renderListView([buildOutputItem(groupedAsset)], {
+      isPartiallySelected: () => true,
+      getSelectedOutputCount: () => 1
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'assetBrowser.ariaLabel.assetCard'
+      })
+    ).toHaveAttribute('aria-pressed', 'mixed')
+  })
+
+  it('derives selected state from each asset', () => {
+    const parent = buildAsset('parent', 'parent.png')
+    const child = buildAsset('child', 'child.png')
+
+    renderListView(
+      [
+        buildOutputItem(parent),
+        {
+          ...buildOutputItem(child),
+          isChild: true
+        }
+      ],
+      {
+        isSelected: (asset: AssetItem) =>
+          asset.id === parent.id || asset.id === child.id
+      }
+    )
+
+    const rows = screen.getAllByRole('button', {
+      name: 'assetBrowser.ariaLabel.assetCard'
+    })
+    expect(rows[0]).toHaveAttribute('aria-pressed', 'true')
+    expect(rows[1]).toHaveAttribute('aria-pressed', 'true')
   })
 })
