@@ -22,11 +22,18 @@ module.exports = defineConfig({
     'tr',
     'pt-BR',
     'fa',
-    'he'
+    'he',
+    'de'
   ],
   reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream, Civitai, Hugging Face.
   'latent' is the short form of 'latent space'.
   'mask' is in the context of image processing.
+
+  IMPORTANT German Translation Guidelines:
+  - For 'de' locale: Use formal, standard German (Hochdeutsch/Sie-Form) for a professional tone throughout the UI.
+  - Prefer shorter German equivalents over long compound nouns (Komposita) for button labels, menu items, and any UI text with limited display width, since German words tend to run longer than the English source and can overflow fixed-width widgets. Where a literal compound would be significantly longer than the English original, choose a shorter phrasing or an established abbreviation instead.
+  - Tooltips and node descriptions (nodeDefs.json) are floating/wrapping text with no fixed width, so full, precise German phrasing is fine there even if longer.
+  - Keep widely-recognized technical terms in English (Latin script): API, GPU, CUDA, VAE, CLIP, LoRA, ControlNet, Civitai, Hugging Face, Workflow, Node, Sampler, Checkpoint, Prompt.
   
   IMPORTANT Chinese Translation Guidelines:
   - For 'zh' locale: Use ONLY Simplified Chinese characters (简体中文). Common examples: 节点 (not 節點), 画布 (not 畫布), 图像 (not 圖像), 选择 (not 選擇), 减小 (not 減小).
