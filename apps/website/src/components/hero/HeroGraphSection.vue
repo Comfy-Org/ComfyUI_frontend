@@ -2,7 +2,7 @@
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { externalLinks } from '../../config/routes'
-import Button from '../ui/button/Button.vue'
+import BrandButton from '../common/BrandButton.vue'
 import HeroHeadline from './HeroHeadline.vue'
 import HeroGraph from './HeroGraph.vue'
 import HeroMobileFlow from './HeroMobileFlow.vue'
@@ -21,14 +21,13 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <div class="flex w-full flex-col items-center gap-8 md:hidden">
       <div class="flex flex-col items-center gap-6">
         <HeroHeadline :locale class="text-3xl" />
-        <Button
-          as="a"
+        <BrandButton
           :href="externalLinks.cloudCta('hero_get_started_free')"
           variant="outline"
-          size="lg"
+          class="uppercase"
         >
           {{ t('hero.getStartedFree', locale) }}
-        </Button>
+        </BrandButton>
       </div>
       <HeroMobileFlow />
     </div>
