@@ -1,6 +1,6 @@
 import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware, Placement, Rect } from '@floating-ui/vue'
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useMutationObserver } from '@vueuse/core'
 import { computed, ref, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
@@ -12,8 +12,8 @@ import {
 } from './coachmarkLayout'
 import {
   coachmarkElements,
-  isLaidOut,
-  isMovingTarget
+  isMovingTarget,
+  laidOutElement
 } from './coachmarkRegistry'
 import type { CoachTarget } from './coachmarkRegistry'
 import type { CoachPlacement, CoachStep } from './onboardingTours'
@@ -78,12 +78,34 @@ export function useCoachmarkTarget(
     return id ? coachmarkElements(id) : []
   })
 
-  const targetEl = computed<CoachTarget | null>(
-    () => candidateEls.value.find(isLaidOut) ?? null
+  const domRevision = ref(0)
+
+  const anchor = computed(() => {
+    void domRevision.value
+    for (const candidate of candidateEls.value) {
+      const el = laidOutElement(candidate)
+      if (el) return { candidate, el }
+    }
+    return null
+  })
+
+  const targetEl = computed(() => anchor.value?.el ?? null)
+
+  const movingAnchor = computed(() =>
+    anchor.value && isMovingTarget(anchor.value.candidate)
+      ? anchor.value.candidate
+      : null
   )
 
-  const isVirtualTarget = computed(
-    () => !!targetEl.value && !(targetEl.value instanceof Element)
+  const targetMoves = computed(() => !!movingAnchor.value)
+
+  useMutationObserver(
+    () => (candidateEls.value.some(isMovingTarget) ? document.body : null),
+    () => {
+      if (targetEl.value?.isConnected) return
+      domRevision.value++
+    },
+    { childList: true, subtree: true }
   )
 
   // The top bar's height only changes on resize, so read it once and refresh
@@ -102,10 +124,9 @@ export function useCoachmarkTarget(
     })
 
   watchEffect((onCleanup) => {
-    const el = targetEl.value
-    if (!el || !isMovingTarget(el)) return
-    void update()
-    onCleanup(el.onMove(() => void update()))
+    const candidate = movingAnchor.value
+    if (!candidate) return
+    onCleanup(candidate.onMove(() => void update()))
   })
 
   const targetRect = computed<DOMRect | null>(() => {
@@ -140,11 +161,11 @@ export function useCoachmarkTarget(
   })
 
   watchEffect((onCleanup) => {
-    const anchor = targetEl.value
+    const reference = targetEl.value
     const floating = cardRef.value
-    if (!anchor || !floating) return
+    if (!reference || !floating) return
     onCleanup(
-      autoUpdate(anchor, floating, update, {
+      autoUpdate(reference, floating, update, {
         animationFrame: trackMotion.value
       })
     )
@@ -153,7 +174,7 @@ export function useCoachmarkTarget(
   return {
     targetEl,
     targetRect,
-    isVirtualTarget,
+    targetMoves,
     floatingStyles,
     isPositioned,
     placement

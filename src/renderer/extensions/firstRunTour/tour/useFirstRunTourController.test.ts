@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
   workflowStatus: { value: new Map<unknown, string>() },
   executionErrors: { hasNodeError: false, hasPromptError: false },
   activeWorkflow: null as unknown,
-  transformValid: true,
+  vueNodesEnabled: true,
   steps: [] as CoachStep[],
   runState: { value: 'idle' } as Ref<string>,
   releaseFirstRunTargets: vi.fn(),
@@ -67,8 +67,14 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   })
 }))
 
-vi.mock('./canvasCoachTarget', () => ({
-  canvasTransformValid: () => mocks.transformValid
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({
+    get: () => mocks.vueNodesEnabled,
+    set: (_key: string, value: boolean) => {
+      mocks.vueNodesEnabled = value
+      return Promise.resolve()
+    }
+  })
 }))
 
 vi.mock('./firstRunTourDefinition', () => ({
@@ -154,7 +160,7 @@ describe('useFirstRunTourController', () => {
     mocks.executionErrors.hasNodeError = false
     mocks.executionErrors.hasPromptError = false
     mocks.activeWorkflow = null
-    mocks.transformValid = true
+    mocks.vueNodesEnabled = true
     mocks.steps = []
     mocks.engine.activeTour = null
     mocks.engine.step = null
@@ -169,13 +175,19 @@ describe('useFirstRunTourController', () => {
   })
 
   describe('starting', () => {
-    it('does not start before the canvas can place a spotlight', async () => {
-      mocks.transformValid = false
+    it('turns on the renderer whose nodes it spotlights', async () => {
+      mocks.vueNodesEnabled = false
+      mocks.steps = [runStep()]
       const controller = await freshController()
 
-      await expect(controller.beginTour('image_z_image_turbo')).resolves.toBe(
-        false
-      )
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+      await starting
+
+      expect(
+        mocks.vueNodesEnabled,
+        'a new user has no installed version, so Nodes 2.0 reads off and every step is blind'
+      ).toBe(true)
     })
 
     it('leaves the workflow undimmed before taking the screen over', async () => {

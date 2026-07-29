@@ -9,6 +9,7 @@ import {
 } from '@/platform/onboarding/coachmarkRegistry'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import { TOUR_ROLE_PINS } from '../roles/tourRolePins'
 import type { RolePin } from '../roles/tourRolePins'
@@ -55,7 +56,13 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-/** A live graph holding the template's pinned nodes, measured as the renderer would. */
+function renderVueNode(nodeId: NodeId) {
+  const el = document.createElement('div')
+  el.setAttribute('data-node-id', nodeId)
+  el.getBoundingClientRect = () => new DOMRect(0, 0, 120, 80)
+  document.body.append(el)
+}
+
 function loadTemplate(templateId: keyof typeof TOUR_ROLE_PINS): LGraph {
   const graph = new LGraph()
   const { source, prompt, sink } = TOUR_ROLE_PINS[templateId]
@@ -68,6 +75,7 @@ function loadTemplate(templateId: keyof typeof TOUR_ROLE_PINS): LGraph {
     node.size = [120, 80]
     graph.add(node)
     node.updateArea()
+    renderVueNode(node.id)
   }
   appState.graph = graph
   return graph
@@ -77,6 +85,7 @@ describe('firstRunTourSteps', () => {
   afterEach(() => {
     releaseFirstRunTargets()
     clearCoachmarks()
+    document.body.replaceChildren()
     appState.graph = undefined
     runState.value = 'idle'
     framings.length = 0
