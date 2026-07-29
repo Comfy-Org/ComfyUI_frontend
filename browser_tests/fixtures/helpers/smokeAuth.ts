@@ -159,6 +159,7 @@ async function bypassOnboardingSurvey(page: Page): Promise<void> {
       await route.continue()
       return
     }
+    console.warn(`[cloud] survey gate intercepted: ${route.request().url()}`)
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

@@ -152,6 +152,39 @@ class ComfyMenu {
   }
 }
 
+function traceCloudPage(page: Page): void {
+  page.on('framenavigated', (frame) => {
+    if (frame === page.mainFrame())
+      console.warn(`[trace] navigated -> ${frame.url()}`)
+  })
+  page.on('pageerror', (error) => {
+    console.warn(`[trace] page error: ${error.message}`)
+  })
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning')
+      console.warn(
+        `[trace] console.${message.type()}: ${message.text().slice(0, 300)}`
+      )
+  })
+  page.on('requestfailed', (request) => {
+    console.warn(
+      `[trace] request FAILED ${request.method()} ${request.url()} - ${request.failure()?.errorText ?? 'unknown'}`
+    )
+  })
+  page.on('response', (response) => {
+    const url = response.url()
+    const status = response.status()
+    if (status >= 400)
+      console.warn(
+        `[trace] HTTP ${status} ${response.request().method()} ${url}`
+      )
+    else if (
+      /\/(api\/)?(features|users|settings|object_info|userdata)/.test(url)
+    )
+      console.warn(`[trace] HTTP ${status} ${url}`)
+  })
+}
+
 export class ComfyPage {
   public readonly url: string
   public readonly apiUrl: string
@@ -377,10 +410,9 @@ export class ComfyPage {
         .locator('.p-blockui-mask')
         .waitFor({ state: 'hidden', timeout: readyFuseMs })
     } catch (error) {
-      throw new Error(
-        `app never became ready: ${await this.describeUnreadyApp()}`,
-        { cause: error }
-      )
+      const state = await this.describeUnreadyApp()
+      console.warn(`[cloud] app never became ready: ${state}`)
+      throw new Error(`app never became ready: ${state}`, { cause: error })
     }
     await this.nextFrame()
   }
@@ -592,6 +624,8 @@ export const comfyPageFixture = base.extend<{
     // The smoke account IS the user; startup settings are applied in-app
     // after boot instead.
     const isCloudEnv = customNodesEnv() === 'cloud'
+    if (isCloudEnv) traceCloudPage(page)
+
     const userId = isCloudEnv ? username : await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
 
