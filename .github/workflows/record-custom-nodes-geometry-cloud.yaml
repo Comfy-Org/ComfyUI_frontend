@@ -39,8 +39,8 @@ concurrency:
   # Shared literal group with ci-tests-custom-nodes-cloud.yaml. The reason
   # is queue-scoped, not instance-topology (the earlier "one shared Cloud
   # instance" wording here was unsourced and is retracted): both workflows
-  # sign in as the ONE smoke account (smokeAuth.ts memoizes a single
-  # SMOKE_ACCOUNT_EMAIL identity), so they share one ComfyUI queue. Per-test
+  # sign in as the ONE smoke account (smokeAuth.ts logs SMOKE_ACCOUNT_EMAIL
+  # into the login form), so they share one ComfyUI queue. Per-test
   # cleanup is now scoped to each page's own prompt ids, but the shared
   # queue still makes a record run and a gate run interfere: waitForQueueQuiet
   # (customNodeSuite.ts) waits on the whole queue and cannot tell whose work
