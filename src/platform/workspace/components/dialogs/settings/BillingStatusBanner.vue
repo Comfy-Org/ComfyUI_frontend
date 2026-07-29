@@ -57,6 +57,14 @@
         >
           {{ $t('workspacePanel.billingStatus.updatePayment') }}
         </Button>
+        <Button
+          v-else-if="banner.action === 'retryPayment'"
+          variant="inverted"
+          size="lg"
+          @click="handleRetryPayment"
+        >
+          {{ $t('workspacePanel.billingStatus.retryPayment') }}
+        </Button>
       </div>
     </div>
   </div>
@@ -74,10 +82,20 @@ import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
-type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
+type BannerAction =
+  | 'addCredits'
+  | 'reactivate'
+  | 'updatePayment'
+  | 'retryPayment'
 
 const { t, d } = useI18n()
-const { renewalDate, subscription, manageSubscription } = useBillingContext()
+const {
+  renewalDate,
+  subscription,
+  subscriptionStatus,
+  manageSubscription,
+  showSubscriptionDialog
+} = useBillingContext()
 const { permissions } = useWorkspaceUI()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
@@ -122,6 +140,15 @@ const banner = computed<BannerView | null>(() => {
         dismissible: false
       }
     case 'paymentFailed':
+      if (subscriptionStatus.value !== 'active') {
+        return {
+          muted: false,
+          title: t(`${bs}.warning.title`),
+          body: t(`${bs}.warning.retryBody`),
+          action: 'retryPayment',
+          dismissible: false
+        }
+      }
       return {
         muted: false,
         title: t(`${bs}.warning.title`),
@@ -161,5 +188,8 @@ function handleAddCredits() {
 }
 function handleUpdatePayment() {
   void manageSubscription()
+}
+function handleRetryPayment() {
+  showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 </script>

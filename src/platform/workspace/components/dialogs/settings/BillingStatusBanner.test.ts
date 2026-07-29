@@ -21,6 +21,7 @@ const state = vi.hoisted(() => ({
   isActiveSubscription: true,
   isTeamPlan: true,
   billingStatus: 'paid' as string | null,
+  subscriptionStatus: 'active' as string | null,
   subscription: {
     hasFunds: true,
     isCancelled: false,
@@ -33,6 +34,7 @@ const state = vi.hoisted(() => ({
   canTopUp: true,
   showTopUpCreditsDialog: vi.fn(),
   manageSubscription: vi.fn(),
+  showSubscriptionDialog: vi.fn(),
   handleResubscribe: vi.fn()
 }))
 
@@ -53,9 +55,11 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isActiveSubscription: computed(() => state.isActiveSubscription),
     isTeamPlan: computed(() => state.isTeamPlan),
     billingStatus: computed(() => state.billingStatus as BillingStatus | null),
+    subscriptionStatus: computed(() => state.subscriptionStatus),
     subscription: computed(() => state.subscription),
     renewalDate: computed(() => state.renewalDate),
-    manageSubscription: state.manageSubscription
+    manageSubscription: state.manageSubscription,
+    showSubscriptionDialog: state.showSubscriptionDialog
   })
 }))
 
@@ -94,7 +98,8 @@ const i18n = createI18n({
             title: 'Payment declined',
             body: "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
             bodyNoDate:
-              "Your last payment didn't go through. Update payment to avoid a pause."
+              "Your last payment didn't go through. Update payment to avoid a pause.",
+            retryBody: 'Replace your payment method to retry this subscription.'
           },
           paused: {
             title: 'Subscription paused',
@@ -117,7 +122,8 @@ const i18n = createI18n({
             body: 'Members keep full access until then. Reactivate to keep your shared credits and seats.',
             reactivate: 'Reactivate plan'
           },
-          updatePayment: 'Update payment'
+          updatePayment: 'Update payment',
+          retryPayment: 'Replace and retry'
         }
       }
     }
@@ -162,6 +168,7 @@ describe('BillingStatusBanner', () => {
     state.isActiveSubscription = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'
+    state.subscriptionStatus = 'active'
     state.subscription = { hasFunds: true, isCancelled: false, endDate: null }
     state.renewalDate = null
     state.workspaceType = 'team'
@@ -267,6 +274,23 @@ describe('BillingStatusBanner', () => {
     expect(
       screen.getByRole('button', { name: 'Update payment' })
     ).toBeInTheDocument()
+  })
+
+  it('opens subscription recovery for a failed initial subscription', async () => {
+    paymentFailedState()
+    state.subscriptionStatus = null
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Replace your payment method to retry this subscription'
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Replace and retry' })
+    )
+    expect(state.showSubscriptionDialog).toHaveBeenCalledWith({
+      reason: 'settings_billing_panel'
+    })
+    expect(state.manageSubscription).not.toHaveBeenCalled()
   })
 
   it('does not expose payment controls to members', () => {

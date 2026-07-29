@@ -2930,7 +2930,8 @@
       "warning": {
         "title": "Payment declined",
         "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
-        "bodyNoDate": "Your last payment didn't go through. Update payment to avoid a pause."
+        "bodyNoDate": "Your last payment didn't go through. Update payment to avoid a pause.",
+        "retryBody": "Replace your payment method to retry this subscription."
       },
       "paused": {
         "title": "Subscription paused",
@@ -2950,7 +2951,8 @@
         "body": "Members keep full access until then. Reactivate to keep your shared credits and seats.",
         "reactivate": "Reactivate plan"
       },
-      "updatePayment": "Update payment"
+      "updatePayment": "Update payment",
+      "retryPayment": "Replace and retry"
     },
     "invite": "Invite",
     "inviteMember": "Invite member",
