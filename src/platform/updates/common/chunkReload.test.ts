@@ -24,15 +24,10 @@ vi.mock('@datadog/browser-rum', () => ({
   datadogRum: { addAction: vi.fn() }
 }))
 
-// jsdom doesn't implement location.reload; stub it ONCE at module scope with
-// writable:true (the pattern used elsewhere in this repo). Redefining
-// window.location per-test is unreliable — the stub doesn't take effect for calls
-// made from nested callbacks/listeners.
+// location.reload isn't implemented in the test DOM. Override just the `reload`
+// method on the EXISTING window.location object (rather than replacing the whole
+// object, which doesn't survive into nested callbacks/listeners under happy-dom).
 const mockReload = vi.fn()
-Object.defineProperty(window, 'location', {
-  value: { reload: mockReload, origin: 'http://localhost' },
-  writable: true
-})
 
 const APP_CHUNK = 'http://localhost/assets/settingStore-CUtU9ycZ.js'
 const EXTENSION_CHUNK =
@@ -55,6 +50,13 @@ describe('chunkReload', () => {
     executionState.runningJobIds = []
     mockReload.mockClear()
     addAction.mockClear()
+    // Override only the reload method on the live location object so the stub is
+    // the same function chunkReload sees, including from callbacks/listeners.
+    Object.defineProperty(window.location, 'reload', {
+      configurable: true,
+      writable: true,
+      value: mockReload
+    })
   })
 
   afterEach(() => {
