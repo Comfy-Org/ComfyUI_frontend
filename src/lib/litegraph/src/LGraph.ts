@@ -7,12 +7,10 @@ import {
 } from '@/lib/litegraph/src/constants'
 import {
   attachNodeToStores,
+  detachAllNodesFromStores,
+  detachNodeFromStores,
   releaseGraphStores
 } from '@/core/graph/nodeShell/nodeShellLifecycle'
-import {
-  unregisterAllNodeStates,
-  unregisterNodeState
-} from '@/core/graph/nodeShell/nodeShellState'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -1191,7 +1189,7 @@ export class LGraph
       for (const subgraph of releasedSubgraphs) {
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
-        unregisterAllNodeStates(subgraph)
+        detachAllNodesFromStores(subgraph)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
     }
@@ -1199,7 +1197,7 @@ export class LGraph
     // callback
     node.onRemoved?.()
 
-    unregisterNodeState(node)
+    detachNodeFromStores(this, node)
 
     node.graph = null
     this.incrementVersion()
