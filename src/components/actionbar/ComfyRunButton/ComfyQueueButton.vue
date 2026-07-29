@@ -8,6 +8,7 @@
         value: queueButtonTooltip,
         showDelay: 600
       }"
+      v-coachmark="COACH_IDS.graphRunButton"
       :variant="queueButtonVariant"
       size="unset"
       :class="queueActionButtonClass"
@@ -79,6 +80,8 @@ import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import { isCloud } from '@/platform/distribution/types'
+import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'

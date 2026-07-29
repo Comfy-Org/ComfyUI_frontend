@@ -77,6 +77,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
+import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 import { CURATED_TEMPLATE_IDS } from './curatedTemplates'
 import { useFirstRunEntry } from './firstRunEntry'
 
@@ -105,6 +106,7 @@ async function pick(id: string) {
   if (loadingTemplateId.value) return
   if (await loadWorkflowTemplate(id, 'default')) {
     await dismissGettingStarted()
+    await useFirstRunTourController().beginTour(id)
     return
   }
   useToastStore().add({

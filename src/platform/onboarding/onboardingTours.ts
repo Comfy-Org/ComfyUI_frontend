@@ -19,10 +19,11 @@ export const COACH_IDS = {
   appRunButton: 'app-run-button',
   inputsList: 'inputs-list',
   outputs: 'outputs',
-  assetsPanel: 'assets-panel'
+  assetsPanel: 'assets-panel',
+  graphRunButton: 'graph-run-button'
 } as const
 
-export type CoachId = (typeof COACH_IDS)[keyof typeof COACH_IDS]
+export type CoachId = (typeof COACH_IDS)[keyof typeof COACH_IDS] | (string & {})
 
 export interface CoachStep {
   /**
