@@ -2,11 +2,6 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import {
-  LGraph,
-  LGraphCanvas,
-  createUuidv4
-} from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -14,6 +9,7 @@ import {
   normalizePendingWarnings,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
+import { workflowToClipboardItems } from '@/platform/workflow/core/utils/workflowToClipboardItems'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import {
   ComfyWorkflow,
@@ -21,8 +17,6 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
@@ -549,31 +543,12 @@ export const useWorkflowService = () => {
   ) => {
     const loadedWorkflow = await workflow.load()
     const workflowJSON = toRaw(loadedWorkflow.initialState)
-    const old = localStorage.getItem('litegrapheditor_clipboard')
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
-    // serialisation schema. The synthetic id keeps the scratch graph out of
-    // the open workflow's root-scoped store buckets.
-    layoutStore.whileDetached(() => {
-      const graph = new LGraph({
-        ...(workflowJSON as unknown as SerialisableGraph),
-        id: createUuidv4()
-      })
-      const canvasElement = document.createElement('canvas')
-      const canvas = new LGraphCanvas(canvasElement, graph, {
-        skip_events: true,
-        skip_render: true
-      })
-      try {
-        canvas.selectItems()
-        canvas.copyToClipboard()
-      } finally {
-        graph.clear()
-      }
-    })
-    app.canvas.pasteFromClipboard(options)
-    if (old !== null) {
-      localStorage.setItem('litegrapheditor_clipboard', old)
-    }
+    // serialisation schema.
+    const items = workflowToClipboardItems(
+      workflowJSON as unknown as SerialisableGraph
+    )
+    app.canvas._deserializeItems(items, options)
   }
 
   const loadNextOpenedWorkflow = async () => {

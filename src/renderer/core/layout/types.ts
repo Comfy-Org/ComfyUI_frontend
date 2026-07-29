@@ -346,9 +346,6 @@ export interface LayoutStore {
     }>
   ): void
 
-  /** @see {@link LayoutStoreImpl.whileDetached} */
-  whileDetached<T>(work: () => T): T
-
   // Source and actor management
   setSource(source: LayoutSource): void
   setActor(actor: string): void

@@ -17,6 +17,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -26,7 +27,7 @@ import type { UUID } from '@/utils/uuid'
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    canvas: { pasteFromClipboard: vi.fn() }
+    canvas: { _deserializeItems: vi.fn() }
   }
 }))
 
@@ -189,5 +190,34 @@ describe('insertWorkflow scratch graph isolation', () => {
 
     expect(widgetStore.getWidget(liveWidgetId)).toBe(liveWidgetState)
     expect(widgetStore.getWidget(missingWidgetId)).toBeUndefined()
+  })
+
+  it('passes source reroute geometry directly to the destination canvas', async () => {
+    const workflow = graphJson(createUuidv4(), 7)
+    workflow.state.lastLinkId = 1
+    workflow.state.lastRerouteId = 1
+    workflow.links = [
+      {
+        id: 1,
+        origin_id: 1,
+        origin_slot: 0,
+        target_id: 2,
+        target_slot: 0,
+        type: 'number',
+        parentId: 1
+      }
+    ]
+    workflow.reroutes = [{ id: 1, pos: [320, 240], linkIds: [1] }]
+
+    await useWorkflowService().insertWorkflow(stubWorkflow(workflow), {
+      position: [100, 200]
+    })
+
+    expect(app.canvas._deserializeItems).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reroutes: [{ id: 1, pos: [320, 240], linkIds: [1] }]
+      }),
+      { position: [100, 200] }
+    )
   })
 })

@@ -159,25 +159,6 @@ class LayoutStoreImpl implements LayoutStore {
     this._pendingSlotSync = value
   }
 
-  private suspended = false
-
-  /**
-   * Runs `work` with layout operations ignored, for graphs that exist only to
-   * be serialised and thrown away. Entity ids are unique within a root graph
-   * but not across them, so a graph built off to the side allocates ids that
-   * collide with the open workflow's and would otherwise overwrite and delete
-   * its geometry.
-   */
-  whileDetached<T>(work: () => T): T {
-    const previous = this.suspended
-    this.suspended = true
-    try {
-      return work()
-    } finally {
-      this.suspended = previous
-    }
-  }
-
   constructor() {
     // Initialize Yjs data structures
     this.ynodes = this.ydoc.getMap('nodes')
@@ -808,8 +789,6 @@ class LayoutStoreImpl implements LayoutStore {
    * Apply a layout operation using Yjs transactions
    */
   applyOperation(operation: LayoutOperation): void {
-    if (this.suspended) return
-
     // Create change object outside transaction so we can use it after
     const change: LayoutChange = {
       type: 'update',
