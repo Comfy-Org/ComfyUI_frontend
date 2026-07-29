@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 import FreeTierQuota from './FreeTierQuota.vue'
 
 const mockIsFreeTier = ref(true)
+const mockAvailable = ref(3)
 const mockShowSubscriptionDialog = vi.fn()
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -17,7 +18,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 vi.mock('@/platform/cloud/subscription/composables/useFreeTierQuota', () => ({
   useFreeTierQuota: () => ({
-    available: computed(() => 3),
+    available: computed(() => mockAvailable.value),
     hasInvalidNodes: computed(() => false),
     maxAvailable: computed(() => 5),
     quotaEnabled: computed(() => true)
@@ -30,8 +31,7 @@ const i18n = createI18n({
   messages: {
     en: {
       actionbar: {
-        freeTierRuns: '{available} / {MAX_AVAILABLE} runs left',
-        freeTierRunsExhausted: 'No runs left'
+        freeTierRuns: '{available} / {MAX_AVAILABLE} runs left'
       }
     }
   }
@@ -47,5 +47,14 @@ describe('FreeTierQuota', () => {
     await nextTick()
 
     expect(screen.queryByTestId('free-tier-quota')).not.toBeInTheDocument()
+  })
+
+  it('shows an explicit zero count when the quota is exhausted', async () => {
+    mockIsFreeTier.value = true
+    mockAvailable.value = 0
+    render(FreeTierQuota, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByText('0 / 5 runs left')).toBeInTheDocument()
+    mockAvailable.value = 3
   })
 })
