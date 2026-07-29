@@ -9,31 +9,46 @@
         v-if="isInFolderView"
         class="flex w-full items-center justify-between gap-2"
       >
-        <div class="flex items-center gap-2">
-          <span class="font-bold">{{ $t('assetBrowser.jobId') }}:</span>
-          <span class="text-sm">{{ folderJobId?.substring(0, 8) }}</span>
-          <button
-            class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
-            role="button"
+        <div class="flex min-w-0 flex-1 items-center gap-2">
+          <Button
+            v-tooltip.bottom="{
+              value: $t('sideToolbar.backToAssets'),
+              showDelay: 300
+            }"
+            variant="textonly"
+            size="icon"
+            type="button"
+            class="shrink-0"
+            :aria-label="$t('sideToolbar.backToAssets')"
+            @click="exitFolderView"
+          >
+            <i class="icon-[lucide--arrow-left] size-4" />
+          </Button>
+          <span class="shrink-0 font-bold">
+            {{ $t('assetBrowser.jobId') }}:
+          </span>
+          <span class="min-w-0 truncate text-sm">{{ folderJobId }}</span>
+          <Button
+            v-tooltip.bottom="{
+              value: $t('g.copyJobId'),
+              showDelay: 300
+            }"
+            variant="textonly"
+            size="icon"
+            type="button"
+            class="shrink-0"
+            :aria-label="$t('g.copyJobId')"
             @click="copyJobId"
           >
-            <i class="icon-[lucide--copy] text-sm"></i>
-          </button>
+            <i class="icon-[lucide--copy] size-4" />
+          </Button>
         </div>
-        <div>
+        <div class="shrink-0">
           <span>{{ formattedExecutionTime }}</span>
         </div>
       </div>
     </template>
     <template #header>
-      <!-- Job Detail View Header -->
-      <div v-if="isInFolderView" class="px-2 2xl:px-4">
-        <Button variant="secondary" size="lg" @click="exitFolderView">
-          <i class="icon-[lucide--arrow-left] size-4" />
-          <span>{{ $t('sideToolbar.backToAssets') }}</span>
-        </Button>
-      </div>
-
       <!-- Filter Bar -->
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
@@ -110,6 +125,7 @@
             :get-output-count
             :grid-mode
             @select-asset="handleAssetSelect"
+            @toggle-asset-selection="handleAssetSelectionToggle"
             @context-menu="handleAssetContextMenu"
             @approach-end="handleApproachEnd"
             @zoom="handleZoomClick"
@@ -286,6 +302,7 @@ const {
   isSelected,
   selectedIds,
   handleAssetClick,
+  toggleAssetSelection,
   selectAll,
   setSelectedIds,
   hasSelection,
@@ -475,6 +492,12 @@ function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   const index = assetList.findIndex((a) => a.id === asset.id)
   emit('assetSelected', asset)
   handleAssetClick(asset, index, assetList)
+}
+
+function handleAssetSelectionToggle(asset: AssetItem) {
+  const index = visibleAssets.value.findIndex((item) => item.id === asset.id)
+  emit('assetSelected', asset)
+  toggleAssetSelection(asset, index, visibleAssets.value)
 }
 
 const { start: scheduleCleanup, stop: cancelCleanup } = useTimeoutFn(

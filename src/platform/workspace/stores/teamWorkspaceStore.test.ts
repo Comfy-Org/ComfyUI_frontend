@@ -31,6 +31,14 @@ vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
   useWorkspaceAuthStore: () => mockWorkspaceAuthStore
 }))
 
+const mockClearWorkflowRestoreState = vi.hoisted(() => vi.fn())
+const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
+  clearWorkflowRestoreState: mockClearWorkflowRestoreState,
+  prepareWorkflowWorkspaceTransition: mockPrepareWorkflowWorkspaceTransition
+}))
+
 const mockEnsureSessionCookie = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/auth/session/useSessionCookie', () => ({
@@ -137,6 +145,18 @@ const mockMemberWorkspace = {
   joined_at: '2026-03-01T00:00:00Z'
 }
 
+function expectCleanupBeforeContextAndReload(): void {
+  expect(mockPrepareWorkflowWorkspaceTransition).toHaveBeenCalledOnce()
+  expect(
+    mockPrepareWorkflowWorkspaceTransition.mock.invocationCallOrder[0]
+  ).toBeLessThan(
+    mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+  )
+  expect(
+    mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+  ).toBeLessThan(mockReload.mock.invocationCallOrder[0])
+}
+
 describe('useTeamWorkspaceStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -218,6 +238,27 @@ describe('useTeamWorkspaceStore', () => {
 
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
       expect(mockWorkspaceAuthStore.switchWorkspace).not.toHaveBeenCalled()
+    })
+
+    it('clears transient restore state before falling back from a missing session workspace', async () => {
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = {
+        ...mockTeamWorkspace,
+        id: 'missing-workspace'
+      }
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(mockClearWorkflowRestoreState).toHaveBeenCalledExactlyOnceWith()
+      expect(
+        mockClearWorkflowRestoreState.mock.invocationCallOrder[0]
+      ).toBeLessThan(
+        mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+      )
+      expect(mockWorkspaceAuthStore.switchWorkspace).toHaveBeenCalledWith(
+        mockPersonalWorkspace.id
+      )
     })
 
     it('falls back to localStorage if no session', async () => {
@@ -344,16 +385,27 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.initState).toBe('error')
     })
 
-    it('continues initialization even if token exchange fails', async () => {
+    it('does not activate a workspace when token exchange fails', async () => {
+      vi.useFakeTimers()
       mockWorkspaceAuthStore.switchWorkspace.mockRejectedValue(
         new Error('Token exchange failed')
       )
 
       const store = useTeamWorkspaceStore()
-      await store.initialize()
+      const initialization = store.initialize()
+      const rejection = expect(initialization).rejects.toThrow(
+        'Token exchange failed'
+      )
 
-      expect(store.initState).toBe('ready')
-      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(2000)
+      await vi.advanceTimersByTimeAsync(4000)
+      await rejection
+
+      expect(store.initState).toBe('error')
+      expect(store.activeWorkspaceId).toBeNull()
+      expect(store.error).toEqual(new Error('Token exchange failed'))
+      vi.useRealTimers()
     })
   })
 
@@ -368,14 +420,23 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockReload).not.toHaveBeenCalled()
     })
 
-    it('clears context and reloads for valid workspace', async () => {
+    it('clears workflow restore state before switching workspaces', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()
 
       await store.switchWorkspace(mockTeamWorkspace.id)
 
+      expect(mockPrepareWorkflowWorkspaceTransition).toHaveBeenCalledOnce()
       expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalled()
       expect(mockReload).toHaveBeenCalled()
+      expect(
+        mockPrepareWorkflowWorkspaceTransition.mock.invocationCallOrder[0]
+      ).toBeLessThan(
+        mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+      )
+      expect(
+        mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+      ).toBeLessThan(mockReload.mock.invocationCallOrder[0])
     })
 
     it('sets isSwitching flag during operation', async () => {
@@ -477,7 +538,15 @@ describe('useTeamWorkspaceStore', () => {
         store.forgetRevokedActiveWorkspace(workspace.id)
 
         expect(mockLocalStorage.removeItem).toHaveBeenCalledTimes(reloads)
+        expect(mockPrepareWorkflowWorkspaceTransition).toHaveBeenCalledTimes(
+          reloads
+        )
         expect(mockReload).toHaveBeenCalledTimes(reloads)
+        if (reloads === 1) {
+          expect(
+            mockPrepareWorkflowWorkspaceTransition.mock.invocationCallOrder[0]
+          ).toBeLessThan(mockReload.mock.invocationCallOrder[0])
+        }
       }
     )
 
@@ -518,6 +587,7 @@ describe('useTeamWorkspaceStore', () => {
       )
       expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalled()
       expect(mockReload).toHaveBeenCalled()
+      expectCleanupBeforeContextAndReload()
     })
 
     it('sets isCreating flag during operation', async () => {
@@ -589,6 +659,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockWorkspaceApi.delete).toHaveBeenCalledWith(mockTeamWorkspace.id)
       expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalled()
       expect(mockReload).toHaveBeenCalled()
+      expectCleanupBeforeContextAndReload()
     })
 
     it('throws when trying to delete personal workspace', async () => {
@@ -655,6 +726,7 @@ describe('useTeamWorkspaceStore', () => {
         mockPersonalWorkspace.id
       )
       expect(mockReload).toHaveBeenCalled()
+      expectCleanupBeforeContextAndReload()
     })
 
     it('forwards personal workspace leave and clears its persisted ID', async () => {

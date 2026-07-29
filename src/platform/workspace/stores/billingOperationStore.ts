@@ -20,8 +20,11 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const INITIAL_INTERVAL_MS = 1000
 const MAX_INTERVAL_MS = 8000
+const ACTION_REQUIRED_INTERVAL_MS = 30_000
 const BACKOFF_MULTIPLIER = 1.5
-const TIMEOUT_MS = 120_000 // 2 minutes
+const TIMEOUT_MS = 120_000
+const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
+const SUBSCRIPTION_AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
@@ -44,6 +47,9 @@ interface BillingOperation {
   status: OperationStatus
   errorMessage: string | null
   startedAt: number
+  actionUrl: string | null
+  authenticationRequiredSeen: boolean
+  workspaceId: string | null
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkoutType?: SubscriptionCheckoutType
@@ -54,6 +60,7 @@ interface BillingOperation {
 type TerminalResolver = (operation: BillingOperation) => void
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {
+  const workspaceStore = useTeamWorkspaceStore()
   const operations = ref<Map<string, BillingOperation>>(new Map())
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
   const intervals = new Map<string, number>()
@@ -67,13 +74,26 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   const isSettingUp = computed(() =>
     [...operations.value.values()].some(
-      (op) => op.status === 'pending' && op.type === 'subscription'
+      (op) =>
+        op.status === 'pending' &&
+        op.type === 'subscription' &&
+        op.workspaceId === workspaceStore.activeWorkspaceId
     )
   )
 
   const isAddingCredits = computed(() =>
     [...operations.value.values()].some(
       (op) => op.status === 'pending' && op.type === 'topup'
+    )
+  )
+
+  const subscriptionActionOperation = computed(() =>
+    [...operations.value.values()].find(
+      (op) =>
+        op.status === 'pending' &&
+        op.type === 'subscription' &&
+        op.workspaceId === workspaceStore.activeWorkspaceId &&
+        op.actionUrl !== null
     )
   )
 
@@ -84,19 +104,24 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function startOperation(
     opId: string,
     type: OperationType,
-    metadata?: StartOperationMetadata
+    metadata?: StartOperationMetadata,
+    initialActionUrl?: string
   ): Promise<BillingOperation> {
     const existing = operations.value.get(opId)
     if (existing) {
       return terminalPromises.get(opId) ?? Promise.resolve(existing)
     }
 
+    const actionUrl = validateActionUrl(initialActionUrl)
     const operation: BillingOperation = {
       opId,
       type,
       status: 'pending',
       errorMessage: null,
       startedAt: Date.now(),
+      actionUrl,
+      authenticationRequiredSeen: actionUrl !== null,
+      workspaceId: workspaceStore.activeWorkspaceId,
       tier: metadata?.tier,
       cycle: metadata?.cycle,
       checkoutType: metadata?.checkoutType,
@@ -136,13 +161,22 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
 
-    if (Date.now() - operation.startedAt > TIMEOUT_MS) {
-      handleTimeout(opId)
+    if (stopIfTimedOut(opId, operation)) return
+
+    if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+      scheduleNextPoll(opId)
       return
     }
 
     try {
       const response = await workspaceApi.getBillingOpStatus(opId)
+      const currentOperation = operations.value.get(opId)
+      if (currentOperation !== operation) return
+      if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+        if (stopIfTimedOut(opId, operation)) return
+        scheduleNextPoll(opId)
+        return
+      }
 
       if (response.status === 'succeeded') {
         await handleSuccess(opId)
@@ -154,26 +188,66 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         return
       }
 
+      if (stopIfTimedOut(opId, operation)) return
+
+      updateOperationActionUrl(opId, validateActionUrl(response.action_url))
       scheduleNextPoll(opId)
     } catch {
-      if (Date.now() - operation.startedAt > TIMEOUT_MS) {
-        handleTimeout(opId)
-        return
-      }
+      const currentOperation = operations.value.get(opId)
+      if (currentOperation !== operation) return
+      if (stopIfTimedOut(opId, currentOperation)) return
       scheduleNextPoll(opId)
     }
   }
 
   function scheduleNextPoll(opId: string) {
-    const currentInterval = intervals.get(opId) ?? INITIAL_INTERVAL_MS
-    const nextInterval = Math.min(
-      currentInterval * BACKOFF_MULTIPLIER,
-      MAX_INTERVAL_MS
-    )
+    const operation = operations.value.get(opId)
+    if (!operation || operation.status !== 'pending') return
+    const nextInterval = operation.authenticationRequiredSeen
+      ? ACTION_REQUIRED_INTERVAL_MS
+      : Math.min(
+          (intervals.get(opId) ?? INITIAL_INTERVAL_MS) * BACKOFF_MULTIPLIER,
+          MAX_INTERVAL_MS
+        )
     intervals.set(opId, nextInterval)
 
     const timeoutId = setTimeout(() => void poll(opId), nextInterval)
     timeouts.set(opId, timeoutId)
+  }
+
+  function validateActionUrl(value: string | undefined): string | null {
+    if (!value) return null
+    try {
+      const url = new URL(value)
+      return url.protocol === 'https:' ? value : null
+    } catch {
+      return null
+    }
+  }
+
+  function hasTimedOut(operation: BillingOperation): boolean {
+    const elapsed = Date.now() - operation.startedAt
+    if (operation.type !== 'subscription') return elapsed > TIMEOUT_MS
+    return operation.authenticationRequiredSeen
+      ? elapsed > SUBSCRIPTION_AUTHENTICATION_TIMEOUT_MS
+      : elapsed > SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS
+  }
+
+  function stopIfTimedOut(opId: string, operation: BillingOperation): boolean {
+    if (!hasTimedOut(operation)) return false
+    handleTimeout(opId)
+    return true
+  }
+
+  function updateOperationActionUrl(opId: string, actionUrl: string | null) {
+    const operation = operations.value.get(opId)
+    if (!operation || operation.status !== 'pending') return
+    operations.value = new Map(operations.value).set(opId, {
+      ...operation,
+      actionUrl,
+      authenticationRequiredSeen:
+        operation.authenticationRequiredSeen || actionUrl !== null
+    })
   }
 
   async function handleSuccess(opId: string) {
@@ -267,8 +341,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (!operation) return
 
     const defaultMessage = failureMessage(operation.type)
+    const detail =
+      operation.type === 'subscription'
+        ? t('billingOperation.subscriptionFailedDetail')
+        : errorMessage
 
-    updateOperationStatus(opId, 'failed', errorMessage ?? defaultMessage)
+    updateOperationStatus(opId, 'failed', detail ?? defaultMessage)
     cleanup(opId)
 
     const telemetry = useTelemetry()
@@ -301,7 +379,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       useToastStore().add({
         severity: 'error',
         summary: defaultMessage,
-        detail: errorMessage ?? undefined
+        detail: detail ?? undefined
       })
     }
 
@@ -384,7 +462,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation) return
 
-    const updated = { ...operation, status, errorMessage }
+    const updated = { ...operation, status, errorMessage, actionUrl: null }
     operations.value = new Map(operations.value).set(opId, updated)
   }
 
@@ -418,6 +496,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     hasPendingOperations,
     isSettingUp,
     isAddingCredits,
+    subscriptionActionOperation,
     getOperation,
     startOperation,
     clearOperation
