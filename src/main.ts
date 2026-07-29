@@ -19,6 +19,7 @@ import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { reportAssertFailureToRum } from '@/platform/telemetry/assertRumReporter'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
@@ -98,6 +99,9 @@ Sentry.init({
 setAssertReporter((message) => {
   if (isDesktop) {
     Sentry.captureMessage(message, { level: 'warning' })
+  }
+  if (isCloud) {
+    reportAssertFailureToRum(message)
   }
   if (isNightly) {
     useToastStore(pinia).add({
