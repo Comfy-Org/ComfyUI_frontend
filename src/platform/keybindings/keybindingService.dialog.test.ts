@@ -167,9 +167,13 @@ describe('keybindingService - dialog gate', () => {
   })
 
   it('leaves Escape un-prevented so reka can dismiss its own dialog', async () => {
-    appendRekaDialog()
+    const dialog = appendRekaDialog()
+    const inner = document.createElement('button')
+    dialog.appendChild(inner)
 
-    const event = createKeyboardEvent('Escape')
+    // Targeted inside the dialog: from outside, the containment check below
+    // the Escape branch would satisfy this assertion on its own.
+    const event = createKeyboardEvent('Escape', inner)
     await keybindingService.keybindHandler(event)
 
     expect(event.preventDefault).not.toHaveBeenCalled()
@@ -225,6 +229,18 @@ describe('keybindingService - dialog gate', () => {
 
     expect(mockCommandExecute).not.toHaveBeenCalled()
     expect(event.preventDefault).not.toHaveBeenCalled()
+  })
+
+  it('does NOT execute a global keybinding targeted inside a popover layered over an open dialog', async () => {
+    appendRekaDialog()
+    const popover = appendRekaPopover()
+    const inner = document.createElement('button')
+    popover.appendChild(inner)
+
+    const event = createKeyboardEvent('w', inner)
+    await keybindingService.keybindHandler(event)
+
+    expect(mockCommandExecute).not.toHaveBeenCalled()
   })
 
   it('blocks a global keybinding when a popover precedes the open dialog', async () => {

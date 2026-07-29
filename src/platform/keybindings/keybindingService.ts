@@ -12,16 +12,32 @@ const OPEN_REKA_CONTENT_SELECTOR = '[role="dialog"][data-state="open"]'
 const POPPER_WRAPPER_SELECTOR = '[data-reka-popper-content-wrapper]'
 
 /**
- * Dialogs built directly on reka's `DialogRoot` never register with
- * `dialogStore`, so its stack cannot see them. Reka marks open dialog content
- * with `role="dialog"` + `data-state="open"`, but reuses that same pair for
+ * Reka marks open dialog content with `role="dialog"`, but reuses that role for
  * `PopoverContent`, which is non-modal and must keep global keybindings
  * working. Only popover content is positioned inside a popper wrapper.
  */
+function isDialogContent(content: Element): boolean {
+  return content.closest(POPPER_WRAPPER_SELECTOR) === null
+}
+
+/**
+ * Dialogs built directly on reka's `DialogRoot` never register with
+ * `dialogStore`, so its stack cannot see them.
+ */
 function hasOpenRekaDialog(): boolean {
   return Array.from(document.querySelectorAll(OPEN_REKA_CONTENT_SELECTOR)).some(
-    (content) => content.closest(POPPER_WRAPPER_SELECTOR) === null
+    isDialogContent
   )
+}
+
+/**
+ * Whether the event originated inside the open dialog rather than a popover
+ * layered over it, so dialog-scoped shortcuts fire while background commands
+ * pressed inside a popover stay suppressed.
+ */
+function isTargetInDialog(target: HTMLElement): boolean {
+  const content = target.closest?.('[role="dialog"]')
+  return content != null && isDialogContent(content)
 }
 
 export function useKeybindingService() {
@@ -78,8 +94,7 @@ export function useKeybindingService() {
         ) {
           return
         }
-        const inDialog = target.closest?.('[role="dialog"]') != null
-        if (!inDialog) {
+        if (!isTargetInDialog(target)) {
           return
         }
       }
