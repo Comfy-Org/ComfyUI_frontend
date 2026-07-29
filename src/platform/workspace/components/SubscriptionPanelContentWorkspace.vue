@@ -338,6 +338,7 @@ import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
@@ -355,6 +356,8 @@ const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
 const { permissions, isSubscriptionCancelled } = useWorkspaceUI()
+const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
+  useFreeTierQuota()
 const { t, n, locale } = useI18n()
 
 const billingOperationStore = useBillingOperationStore()
@@ -406,7 +409,9 @@ const showTeamSubscribePrompt = computed(
 )
 
 const isPersonalFree = computed(
-  () => showSubscribePrompt.value && isInPersonalWorkspace.value
+  () =>
+    isInPersonalWorkspace.value &&
+    (showSubscribePrompt.value || isFreeTierPlan.value)
 )
 
 const isTeamActive = computed(
@@ -489,6 +494,18 @@ const tierBenefits = computed((): TierBenefit[] => {
   }
   if (isPersonalFree.value) {
     return [
+      ...(freeRunsQuotaEnabled.value
+        ? [
+            {
+              key: 'freeRuns',
+              type: 'feature' as const,
+              label: t(
+                'subscription.freePerks.freeRuns',
+                freeRunsAllowance.value
+              )
+            }
+          ]
+        : []),
       {
         key: 'maxRuntime',
         type: 'feature',
