@@ -364,9 +364,10 @@ describe('jobOutputCache', () => {
   describe('getJobAssets', () => {
     it('caches assets after the first fetch', async () => {
       const jobId = uniqueId('job-assets')
-      vi.mocked(api.getJobAssets).mockResolvedValue([
-        { id: 'a1', name: 'a.png', created_at: 't' }
-      ])
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [{ id: 'a1', name: 'a.png', created_at: 't' }],
+        complete: true
+      })
 
       await getJobAssets(jobId)
       const result = await getJobAssets(jobId)
@@ -377,9 +378,10 @@ describe('jobOutputCache', () => {
 
     it('dedupes concurrent requests for the same job', async () => {
       const jobId = uniqueId('job-assets')
-      vi.mocked(api.getJobAssets).mockResolvedValue([
-        { id: 'a1', name: 'a.png', created_at: 't' }
-      ])
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [{ id: 'a1', name: 'a.png', created_at: 't' }],
+        complete: true
+      })
 
       const [first, second] = await Promise.all([
         getJobAssets(jobId),
@@ -392,11 +394,38 @@ describe('jobOutputCache', () => {
 
     it('does not cache empty results', async () => {
       const jobId = uniqueId('job-assets')
-      vi.mocked(api.getJobAssets).mockResolvedValue([])
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [],
+        complete: true
+      })
 
       await getJobAssets(jobId)
       await getJobAssets(jobId)
 
+      expect(api.getJobAssets).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not cache a truncated result, and re-fetches once complete', async () => {
+      const jobId = uniqueId('job-assets')
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [{ id: 'a1', name: 'a.png', created_at: 't' }],
+        complete: false
+      })
+
+      const truncated = await getJobAssets(jobId)
+      expect(truncated.map((asset) => asset.id)).toEqual(['a1'])
+
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [
+          { id: 'a1', name: 'a.png', created_at: 't' },
+          { id: 'a2', name: 'b.png', created_at: 't' }
+        ],
+        complete: true
+      })
+
+      const recovered = await getJobAssets(jobId)
+
+      expect(recovered.map((asset) => asset.id)).toEqual(['a1', 'a2'])
       expect(api.getJobAssets).toHaveBeenCalledTimes(2)
     })
   })

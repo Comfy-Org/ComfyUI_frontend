@@ -58,9 +58,9 @@ import type {
   UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type {
+  JobAssetsResult,
   JobDetail,
-  JobListItem,
-  JobOutputAsset
+  JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useAuthStore } from '@/stores/authStore'
@@ -1206,12 +1206,12 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets a job's output assets, each resolved to a real asset entity with
-   * per-output node context. Returns an empty array when the endpoint is
+   * per-output node context. Returns an empty list when the endpoint is
    * unavailable (e.g. non-cloud distributions).
    * @param jobId The job ID
-   * @returns The job's output assets
+   * @returns The job's output assets and whether the list is exhaustive
    */
-  async getJobAssets(jobId: string): Promise<JobOutputAsset[]> {
+  async getJobAssets(jobId: string): Promise<JobAssetsResult> {
     return fetchJobAssets(this.fetchApi.bind(this), jobId)
   }
 

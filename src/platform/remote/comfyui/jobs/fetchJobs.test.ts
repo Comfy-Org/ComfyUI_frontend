@@ -426,15 +426,16 @@ describe('fetchJobs', () => {
           )
       })
 
-      const result = await fetchJobAssets(mockFetch, 'job1')
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
 
       expect(mockFetch).toHaveBeenCalledWith(
         '/jobs/job1/assets?limit=500&offset=0'
       )
-      expect(result).toHaveLength(1)
-      expect(result[0].id).toBe('asset-1')
-      expect(result[0].node_id).toBe('9')
-      expect(result[0].output_index).toBe(0)
+      expect(assets).toHaveLength(1)
+      expect(assets[0].id).toBe('asset-1')
+      expect(assets[0].node_id).toBe('9')
+      expect(assets[0].output_index).toBe(0)
+      expect(complete).toBe(true)
     })
 
     it('accepts null node context fields', async () => {
@@ -455,10 +456,11 @@ describe('fetchJobs', () => {
           )
       })
 
-      const result = await fetchJobAssets(mockFetch, 'job1')
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
 
-      expect(result).toHaveLength(1)
-      expect(result[0].node_id).toBeNull()
+      expect(assets).toHaveLength(1)
+      expect(assets[0].node_id).toBeNull()
+      expect(complete).toBe(true)
     })
 
     it('accepts null hash, preview_url, mime_type, size, and created_at fields', async () => {
@@ -480,10 +482,11 @@ describe('fetchJobs', () => {
           )
       })
 
-      const result = await fetchJobAssets(mockFetch, 'job1')
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
 
-      expect(result).toHaveLength(1)
-      expect(result[0].id).toBe('asset-1')
+      expect(assets).toHaveLength(1)
+      expect(assets[0].id).toBe('asset-1')
+      expect(complete).toBe(true)
     })
 
     it('paginates until has_more is false', async () => {
@@ -514,14 +517,15 @@ describe('fetchJobs', () => {
             )
         })
 
-      const result = await fetchJobAssets(mockFetch, 'job1')
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
 
       expect(mockFetch).toHaveBeenCalledTimes(2)
       expect(mockFetch).toHaveBeenNthCalledWith(
         2,
         '/jobs/job1/assets?limit=500&offset=1'
       )
-      expect(result.map((a) => a.id)).toEqual(['a1', 'a2'])
+      expect(assets.map((a) => a.id)).toEqual(['a1', 'a2'])
+      expect(complete).toBe(true)
     })
 
     it('returns empty array and logs the status on non-ok response', async () => {
@@ -530,9 +534,10 @@ describe('fetchJobs', () => {
         .mockImplementation(() => {})
       const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 404 })
 
-      const result = await fetchJobAssets(mockFetch, 'job1')
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
 
-      expect(result).toEqual([])
+      expect(assets).toEqual([])
+      expect(complete).toBe(false)
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         expect.stringContaining('404')
       )
@@ -549,9 +554,10 @@ describe('fetchJobs', () => {
           })
       })
 
-      const result = await fetchJobAssets(mockFetch, 'job1')
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
 
-      expect(result.map((a) => a.id)).toEqual(['asset-1'])
+      expect(assets.map((a) => a.id)).toEqual(['asset-1'])
+      expect(complete).toBe(true)
     })
 
     it('stops after one page when pagination is absent', async () => {
@@ -563,23 +569,28 @@ describe('fetchJobs', () => {
           })
       })
 
-      const result = await fetchJobAssets(mockFetch, 'job1')
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
 
       expect(mockFetch).toHaveBeenCalledTimes(1)
-      expect(result).toHaveLength(1)
+      expect(assets).toHaveLength(1)
+      expect(complete).toBe(true)
     })
 
     it('returns empty array on error', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-      const result = await fetchJobAssets(mockFetch, 'job1')
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
 
-      expect(result).toEqual([])
+      expect(assets).toEqual([])
+      expect(complete).toBe(false)
       consoleSpy.mockRestore()
     })
 
     it('stops at the page cap when the server always reports has_more', async () => {
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
       const mockFetch = vi.fn().mockImplementation((url: string) => {
         const offset = Number(
           new URL(url, 'http://x').searchParams.get('offset')
@@ -598,10 +609,42 @@ describe('fetchJobs', () => {
         })
       })
 
-      const result = await fetchJobAssets(mockFetch, 'job1')
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
 
       expect(mockFetch).toHaveBeenCalledTimes(20)
-      expect(result).toHaveLength(20)
+      expect(assets).toHaveLength(20)
+      expect(complete).toBe(false)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('20-page cap')
+      )
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('reports incomplete when a later page fails mid-pagination', async () => {
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createAssetsResponse(
+                'job1',
+                [{ id: 'a1', name: 'a.png', created_at: 't' }],
+                true,
+                0
+              )
+            )
+        })
+        .mockResolvedValueOnce({ ok: false, status: 503 })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(assets.map((a) => a.id)).toEqual(['a1'])
+      expect(complete).toBe(false)
+      consoleWarnSpy.mockRestore()
     })
 
     it('warns when has_more is true but the page is empty', async () => {
@@ -613,9 +656,10 @@ describe('fetchJobs', () => {
         json: () => Promise.resolve(createAssetsResponse('job1', [], true, 0))
       })
 
-      const result = await fetchJobAssets(mockFetch, 'job1')
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
 
-      expect(result).toEqual([])
+      expect(assets).toEqual([])
+      expect(complete).toBe(false)
       expect(mockFetch).toHaveBeenCalledTimes(1)
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         expect.stringContaining('has_more with an empty page')

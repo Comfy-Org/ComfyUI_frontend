@@ -157,6 +157,17 @@ export type JobListItem = RawJobListItem & { priority: number }
 export type JobDetail = z.infer<typeof zJobDetail>
 export type JobOutputAsset = z.infer<typeof zJobOutputAsset>
 
+/**
+ * A job's output assets plus whether the list is known to be exhaustive.
+ * `complete` is false when a page failed, the server reported more pages it
+ * did not deliver, or the page cap was hit — callers use it to avoid caching a
+ * truncated list as if it were the whole set.
+ */
+export interface JobAssetsResult {
+  assets: JobOutputAsset[]
+  complete: boolean
+}
+
 /** Task type used in the API (queue vs history endpoints) */
 export type APITaskType = 'queue' | 'history'
 

@@ -125,7 +125,15 @@ function mapOutputsToAssetItems({
 /**
  * Overlays a resolved job asset onto a synthesized output item, linking it to
  * the asset system: the placeholder `<jobId>-<outputKey>` id becomes the real
- * asset id, and size/mime/preview plus `nodeId` are filled from the endpoint.
+ * asset id, and size/mime/preview are filled from the endpoint.
+ *
+ * `user_metadata` is left untouched. Its `nodeId` and `subfolder` come from
+ * the same output entry and are read back as a pair — `useOutputStacks` rebuilds
+ * `getOutputKey({ nodeId, subfolder, filename })` to exclude the output already
+ * on screen — so overwriting only `nodeId` with the endpoint's (hash-correlated,
+ * possibly disagreeing) `node_id` would describe an output that does not exist.
+ * The endpoint's `node_id` is used to disambiguate matches instead, not to
+ * relabel an item whose own `nodeId` is already required to be present.
  *
  * The endpoint's `hash` is deliberately not copied: downstream
  * `getAssetUrlFilename` treats `hash` as the storage filename, which the
@@ -140,11 +148,57 @@ function overlayJobAsset(item: AssetItem, asset: JobOutputAsset): AssetItem {
     size: asset.size ?? item.size,
     mime_type: asset.mime_type ?? item.mime_type,
     preview_url: asset.preview_url ?? item.preview_url,
-    thumbnail_url: item.thumbnail_url ?? asset.preview_url ?? undefined,
-    user_metadata: {
-      ...item.user_metadata,
-      nodeId: asset.node_id ?? item.user_metadata?.nodeId
+    thumbnail_url: item.thumbnail_url ?? asset.preview_url ?? undefined
+  }
+}
+
+/**
+ * Composite `(filename, node id)` key. The node id is stringified because the
+ * output side carries a `SerializedNodeId` (`string | number`) while the
+ * endpoint always sends a string, and `9` must pair with `'9'`.
+ */
+function nodeScopedName(name: string, nodeId: unknown): string | null {
+  return typeof nodeId === 'string' || typeof nodeId === 'number'
+    ? JSON.stringify([name, String(nodeId)])
+    : null
+}
+
+/**
+ * Indexes items and assets under a shared key and returns a lookup that pairs
+ * them only when the key identifies exactly one of each. A null key (the field
+ * it needs is absent) is never indexed, so it can never pair.
+ */
+function createUniquePairing(
+  items: readonly AssetItem[],
+  jobAssets: readonly JobOutputAsset[],
+  keyOfItem: (item: AssetItem) => string | null,
+  keyOfAsset: (asset: JobOutputAsset) => string | null
+): (key: string | null) => JobOutputAsset | null {
+  const assetsByKey = new Map<string, JobOutputAsset[]>()
+  for (const asset of jobAssets) {
+    const key = keyOfAsset(asset)
+    if (key === null) continue
+    const existing = assetsByKey.get(key)
+    if (existing) {
+      existing.push(asset)
+    } else {
+      assetsByKey.set(key, [asset])
     }
+  }
+
+  const itemCounts = new Map<string, number>()
+  for (const item of items) {
+    const key = keyOfItem(item)
+    if (key === null) continue
+    itemCounts.set(key, (itemCounts.get(key) ?? 0) + 1)
+  }
+
+  return (key) => {
+    if (key === null) return null
+    const candidates = assetsByKey.get(key)
+    return candidates?.length === 1 && itemCounts.get(key) === 1
+      ? candidates[0]
+      : null
   }
 }
 
@@ -155,10 +209,12 @@ function overlayJobAsset(item: AssetItem, asset: JobOutputAsset): AssetItem {
  * unresolved items when the endpoint returns nothing (e.g. not yet deployed).
  *
  * A filename duplicated on either side — among the outputs or among the
- * returned assets — is left unresolved: `zJobOutputAsset` carries no
- * subfolder and the endpoint's ordering is unspecified, so there is no field
- * to pair duplicates reliably, and a wrong pairing would render one file's
- * preview under another's identity.
+ * returned assets — falls back to `(filename, node_id)`, which separates the
+ * common collision of one filename written by two different nodes. An output
+ * still ambiguous under that pair, or whose asset carries no `node_id`, is
+ * left unresolved: `zJobOutputAsset` carries no subfolder and the endpoint's
+ * ordering is unspecified, so nothing else pairs duplicates reliably, and a
+ * wrong pairing would render one file's preview under another's identity.
  */
 async function enrichWithJobAssets(
   jobId: string,
@@ -175,26 +231,26 @@ async function enrichWithJobAssets(
   }
   if (!jobAssets.length) return items
 
-  const assetsByName = new Map<string, JobOutputAsset[]>()
-  for (const asset of jobAssets) {
-    const existing = assetsByName.get(asset.name)
-    if (existing) {
-      existing.push(asset)
-    } else {
-      assetsByName.set(asset.name, [asset])
-    }
-  }
-
-  const itemNameCounts = new Map<string, number>()
-  for (const item of items) {
-    itemNameCounts.set(item.name, (itemNameCounts.get(item.name) ?? 0) + 1)
-  }
+  const matchByName = createUniquePairing(
+    items,
+    jobAssets,
+    (item) => item.name,
+    (asset) => asset.name
+  )
+  const matchByNodeScopedName = createUniquePairing(
+    items,
+    jobAssets,
+    (item) => nodeScopedName(item.name, item.user_metadata?.nodeId),
+    (asset) => nodeScopedName(asset.name, asset.node_id)
+  )
 
   return items.map((item) => {
-    const candidates = assetsByName.get(item.name)
-    const isUnambiguous =
-      candidates?.length === 1 && itemNameCounts.get(item.name) === 1
-    return isUnambiguous ? overlayJobAsset(item, candidates[0]) : item
+    const match =
+      matchByName(item.name) ??
+      matchByNodeScopedName(
+        nodeScopedName(item.name, item.user_metadata?.nodeId)
+      )
+    return match ? overlayJobAsset(item, match) : item
   })
 }
 

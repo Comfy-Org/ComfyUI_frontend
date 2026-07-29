@@ -119,8 +119,10 @@ export async function getJobDetail(
 /**
  * Gets a job's output assets with LRU caching and in-flight request dedupe,
  * so N concurrent resolutions of the same job issue one network request.
- * Empty results are not cached: they usually mean the endpoint is unavailable
- * or the assets are not yet persisted, both worth retrying later.
+ * Only complete, non-empty results are cached: an empty list usually means the
+ * endpoint is unavailable or the assets are not yet persisted, and a truncated
+ * one means a page failed mid-pagination. Caching either would pin an
+ * under-resolved set until LRU eviction, long after the endpoint recovered.
  */
 export async function getJobAssets(jobId: string): Promise<JobOutputAsset[]> {
   const cached = jobAssetsCache.get(jobId)
@@ -131,8 +133,8 @@ export async function getJobAssets(jobId: string): Promise<JobOutputAsset[]> {
 
   const request = api
     .getJobAssets(jobId)
-    .then((assets) => {
-      if (assets.length) jobAssetsCache.set(jobId, assets)
+    .then(({ assets, complete }) => {
+      if (complete && assets.length) jobAssetsCache.set(jobId, assets)
       return assets
     })
     .finally(() => inFlightJobAssets.delete(jobId))
