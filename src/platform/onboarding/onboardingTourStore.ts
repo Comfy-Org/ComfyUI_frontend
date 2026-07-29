@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, readonly, ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -12,11 +12,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { targetMounted, waitForTarget } from './coachmarkRegistry'
-import {
-  tourDefinition,
-  TOUR_SEEN_SETTING,
-  resolveSteps
-} from './onboardingTours'
+import { TOURS, TOUR_SEEN_SETTING, resolveSteps } from './onboardingTours'
 import type { CoachStep, EntryPath } from './onboardingTours'
 import { useTourTriggers } from './useTourTriggers'
 
@@ -48,10 +44,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     return s ? countedSteps.value.indexOf(s) : 0
   })
   // Back navigates the numbered steps only — never into the landing.
-  const canGoBack = computed(
-    () =>
-      countedStepIdx.value > 0 && !steps.value[stepIdx.value - 1]?.selfAdvancing
-  )
+  const canGoBack = computed(() => countedStepIdx.value > 0)
 
   function trackTour(
     stage: OnboardingTourStage,
@@ -167,14 +160,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     finish('skipped')
   }
 
-  function complete() {
-    finish('completed')
-  }
-
-  function postpone() {
-    finish('skipped', { markSeen: false, skipReason: 'postponed' })
-  }
-
   function finish(
     outcome: 'completed' | 'skipped',
     {
@@ -217,8 +202,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
 
   async function begin(entryPath: EntryPath): Promise<boolean> {
     if (steps.value.length) return false
-    const definition = tourDefinition(entryPath)
-    if (!definition) return false
+    const definition = TOURS[entryPath]
     const built = Array.isArray(definition) ? definition : await definition()
     if (steps.value.length) return false
     const resolved = resolveSteps(built, targetMounted)
@@ -255,9 +239,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     replayTour,
     next,
     back,
-    skip,
-    complete,
-    postpone,
-    activeTour: readonly(activeTour)
+    skip
   }
 })
