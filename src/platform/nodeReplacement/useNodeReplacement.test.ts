@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeReplacement } from './types'
 
@@ -1163,10 +1164,23 @@ describe('useNodeReplacement', () => {
   })
 
   describe('widget value provenance', () => {
-    it('indexes a null-padded widgets_values by full widget position', () => {
+    it('indexes a padded widgets_values by full widget position', () => {
       const placeholder = createPlaceholderNode(1, 'PaddedNode')
-      // Legacy workflow JSON: position 1 held a non-serializing widget.
-      placeholder.last_serialization!.widgets_values = ['lanczos', null, 2.0]
+      // `LGraphNode.serialize` keys widgets_values by unfiltered widget index,
+      // so a `serialize: false` widget at position 1 leaves the slot empty.
+      const paddedValues: TWidgetValue[] = []
+      paddedValues[0] = 'lanczos'
+      paddedValues[2] = 2.0
+      placeholder.last_serialization!.widgets_values = paddedValues
+      // Real placeholders carry only errorNodeWidgets' UNKNOWN_N widgets,
+      // which never match a mapping's real input name.
+      Object.assign(placeholder, {
+        widgets: [
+          { name: 'UNKNOWN', value: 'lanczos', type: 'string' },
+          { name: 'UNKNOWN_1', value: 'null', type: 'string' },
+          { name: 'UNKNOWN_2', value: 2.0, type: 'number' }
+        ]
+      })
 
       const graph = createMockGraph([placeholder])
       placeholder.graph = graph
@@ -1205,7 +1219,7 @@ describe('useNodeReplacement', () => {
             type: 'string',
             serialize: false
           },
-          { name: 'scale_by', value: 3.5, type: 'number' }
+          { name: 'scale_by', value: 4.25, type: 'number' }
         ]
       })
 
@@ -1229,7 +1243,7 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      expect(newNode.widgets![0].value).toBe(3.5)
+      expect(newNode.widgets![0].value).toBe(4.25)
     })
   })
 })

@@ -76,23 +76,24 @@ function transferOutputConnections(
 }
 
 /**
- * Reads the old node's value for `oldInputName`, preferring its live widget so
- * the read does not depend on how `widgets_values` was indexed. Missing-node
- * placeholders only carry the `UNKNOWN…` widgets synthesised by
- * `errorNodeWidgets`, so they never match by name and fall through.
+ * Reads the old node's value for `oldInputName`, preferring a live widget of
+ * that name so the read does not depend on `widgets_values` indexing. Only
+ * missing-node placeholders reach here (`replaceNodesInPlace` selects on
+ * `last_serialization`, which litegraph sets only for them), and they carry
+ * just the `UNKNOWN…` widgets synthesised by `errorNodeWidgets` — so today the
+ * name match never hits and every replacement takes the positional fallback.
  *
- * The positional fallback deliberately reads `last_serialization` only: that
- * array comes straight from the workflow JSON, where index N is widget position
- * N — the basis `old_widget_ids` indexes on. `serialize()` compacts
- * `widgets_values` to serializable widgets, so it must not be indexed this way.
+ * That fallback indexes by full widget position, the basis `old_widget_ids`
+ * uses: `LGraphNode.serialize` writes `widgets_values[i]` from the unfiltered
+ * widget index, leaving an empty slot for each `serialize: false` widget.
  */
 function readOldWidgetValue(
   oldNode: LGraphNode,
   oldWidgetIds: string[] | null,
   oldInputName: string
 ): TWidgetValue | undefined {
-  const liveValue = oldNode.widgets?.find((w) => w.name === oldInputName)?.value
-  if (liveValue !== undefined) return liveValue
+  const liveWidget = oldNode.widgets?.find((w) => w.name === oldInputName)
+  if (liveWidget) return liveWidget.value
 
   const widgetsValues = oldNode.last_serialization?.widgets_values
   if (!oldWidgetIds || !widgetsValues) return undefined
