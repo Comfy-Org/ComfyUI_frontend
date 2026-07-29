@@ -88,7 +88,8 @@ describe('LGraphNode widget ordering', () => {
         flags: {},
         order: 0,
         mode: 0,
-        widgets_values: [30, 12345] // Only serializable widgets
+        // Compacted: one entry per serializable widget, matching serialize()
+        widgets_values: [30, 12345]
       }
 
       node.configure(info)
@@ -96,6 +97,30 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets![0].value).toBe(30) // steps
       expect(node.widgets![1].value).toBe('Click') // button unchanged
       expect(node.widgets![2].value).toBe(12345) // seed
+    })
+
+    it('should round-trip its own serialize() output through configure() when a non-serializing widget is not last', () => {
+      node.serialize_widgets = true
+      node.addWidget('number', 'steps', 20, null, {})
+      node.addWidget('button', 'action', 'Click', null, {})
+      node.widgets![1].serialize = false
+      node.addWidget('number', 'seed', 12345, null, {})
+
+      const serialized = node.serialize()
+
+      expect(serialized.widgets_values).toEqual([20, 12345])
+
+      const roundTripNode = new LGraphNode('TestNode')
+      roundTripNode.addWidget('number', 'steps', 0, null, {})
+      roundTripNode.addWidget('button', 'action', 'Click', null, {})
+      roundTripNode.widgets![1].serialize = false
+      roundTripNode.addWidget('number', 'seed', 0, null, {})
+
+      roundTripNode.configure(serialized)
+
+      expect(roundTripNode.widgets![0].value).toBe(20) // steps
+      expect(roundTripNode.widgets![1].value).toBe('Click') // button unchanged
+      expect(roundTripNode.widgets![2].value).toBe(12345) // seed
     })
   })
 })
