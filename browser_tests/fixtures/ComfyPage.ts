@@ -357,13 +357,25 @@ export class ComfyPage {
    * `WorkflowHelper.reloadAndWaitForApp()`.
    */
   async waitForAppReady() {
+    // A fuse, not a cap. The per-test cap is off on cloud because every
+    // number picked there only moved the cliff, but an UNBOUNDED wait is
+    // worse: a hung boot then burns the whole step ceiling in silence and
+    // the diagnostic below never runs, which is exactly what record run
+    // 30468334258 did. Five minutes is far past any healthy boot (cloud
+    // sign-in lands in well under a second and the app follows), so this
+    // fires only on a genuine hang - and when it fires it explains itself.
+    const readyFuseMs = 300_000
     try {
       await this.page.waitForFunction(
         // window.app => GraphCanvas ready
         // window.app.extensionManager => GraphView ready
-        () => window.app?.extensionManager
+        () => window.app?.extensionManager,
+        null,
+        { timeout: readyFuseMs }
       )
-      await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
+      await this.page
+        .locator('.p-blockui-mask')
+        .waitFor({ state: 'hidden', timeout: readyFuseMs })
     } catch (error) {
       throw new Error(
         `app never became ready: ${await this.describeUnreadyApp()}`,
