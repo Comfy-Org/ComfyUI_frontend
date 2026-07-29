@@ -65,7 +65,10 @@ async function initialize(): Promise<void> {
     // This ensures teamWorkspacesEnabled reflects the authenticated user's state
     // Timeout prevents hanging if server is slow/unresponsive
     await Promise.race([
-      refreshRemoteConfig({ useAuth: true }),
+      refreshRemoteConfig({
+        useAuth: true,
+        getSessionId: () => currentUser.value?.uid ?? null
+      }),
       promiseTimeout(CONFIG_REFRESH_TIMEOUT_MS).then(() => {
         throw new Error('Config refresh timeout')
       })

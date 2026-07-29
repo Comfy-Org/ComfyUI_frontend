@@ -47,6 +47,7 @@ async function initializeDatadogRum(env: string): Promise<void> {
     beforeSend: rumBeforeSend,
     sessionSampleRate: 100,
     sessionReplaySampleRate: 0,
+    enableExperimentalFeatures: ['feature_flags'],
     allowedTracingUrls: [/^https:\/\/[^/]+\.comfy\.org/]
   })
   trackUserManualRefresh()

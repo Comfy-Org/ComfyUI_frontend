@@ -11,13 +11,14 @@ import {
 // on timeout the catch below clears remoteConfig and consumers fall back to build-time defaults.
 const FEATURES_FETCH_TIMEOUT_MS = 5_000
 
-interface RefreshRemoteConfigOptions {
-  /**
-   * Whether to use authenticated API (default: true).
-   * Set to false during bootstrap before auth is initialized.
-   */
-  useAuth?: boolean
-}
+type RefreshRemoteConfigOptions =
+  | {
+      useAuth: false
+    }
+  | {
+      useAuth?: true
+      getSessionId: () => string | null
+    }
 
 async function fetchRemoteConfig(
   useAuth: boolean,
@@ -39,17 +40,25 @@ async function fetchRemoteConfig(
  * - 'authenticated' when loaded with auth
  * - 'error' when load fails
  */
-async function performRefreshRemoteConfig(useAuth: boolean): Promise<void> {
+async function performRefreshRemoteConfig(
+  useAuth: boolean,
+  sessionId?: string | null,
+  getSessionId?: () => string | null
+): Promise<void> {
   const controller = useAuth ? null : new AbortController()
   const timeoutId = controller
     ? setTimeout(() => controller.abort(), FEATURES_FETCH_TIMEOUT_MS)
     : null
+  const sessionIsCurrent = () => !useAuth || getSessionId?.() === sessionId
 
   try {
     const response = await fetchRemoteConfig(useAuth, controller?.signal)
+    if (!sessionIsCurrent()) return
 
     if (response.ok) {
       const config = await response.json()
+      if (!sessionIsCurrent()) return
+
       window.__CONFIG__ = config
       remoteConfig.value = config
       remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
@@ -81,6 +90,8 @@ async function performRefreshRemoteConfig(useAuth: boolean): Promise<void> {
     remoteConfig.value = safeConfig
     remoteConfigState.value = 'error'
   } catch (error) {
+    if (!sessionIsCurrent()) return
+
     console.error('Failed to fetch remote config:', error)
     window.__CONFIG__ = {}
     remoteConfig.value = {}
@@ -90,17 +101,35 @@ async function performRefreshRemoteConfig(useAuth: boolean): Promise<void> {
   }
 }
 
-let authenticatedRefreshPromise: Promise<void> | null = null
+interface AuthenticatedRefresh {
+  sessionId: string | null
+  token: object
+  promise: Promise<void>
+}
+
+let authenticatedRefresh: AuthenticatedRefresh | null = null
 
 export function refreshRemoteConfig(
-  options: RefreshRemoteConfigOptions = {}
+  options: RefreshRemoteConfigOptions
 ): Promise<void> {
-  const { useAuth = true } = options
+  const useAuth = options.useAuth !== false
   if (!useAuth) return performRefreshRemoteConfig(false)
-  if (authenticatedRefreshPromise) return authenticatedRefreshPromise
+  const { getSessionId } = options
+  const sessionId = getSessionId()
+  if (authenticatedRefresh?.sessionId === sessionId) {
+    return authenticatedRefresh.promise
+  }
 
-  authenticatedRefreshPromise = performRefreshRemoteConfig(true).finally(() => {
-    authenticatedRefreshPromise = null
+  const token = {}
+  const promise = performRefreshRemoteConfig(
+    true,
+    sessionId,
+    getSessionId
+  ).finally(() => {
+    if (authenticatedRefresh?.token === token) {
+      authenticatedRefresh = null
+    }
   })
-  return authenticatedRefreshPromise
+  authenticatedRefresh = { sessionId, token, promise }
+  return promise
 }

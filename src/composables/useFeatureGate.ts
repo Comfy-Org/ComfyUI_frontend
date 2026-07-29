@@ -7,6 +7,28 @@ import {
 import { useTelemetry } from '@/platform/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
+const fallbackRecordedExposures = new Set<string>()
+
+function hasRecordedExposure(key: string): boolean {
+  if (fallbackRecordedExposures.has(key)) return true
+
+  try {
+    return sessionStorage.getItem(key) !== null
+  } catch {
+    return false
+  }
+}
+
+function markExposureRecorded(key: string): void {
+  fallbackRecordedExposures.add(key)
+
+  try {
+    sessionStorage.setItem(key, '1')
+  } catch {
+    return
+  }
+}
+
 export function useFeatureGate(key: string) {
   const value = computed(() => {
     const override = getDevOverride<boolean>(key)
@@ -21,13 +43,13 @@ export function useFeatureGate(key: string) {
     if (remoteConfigState.value !== 'authenticated') return
 
     const exposureKey = `feature-flag-exposure:${key}:${value.value}`
-    if (sessionStorage.getItem(exposureKey) !== null) return
+    if (hasRecordedExposure(exposureKey)) return
 
     const telemetry = useTelemetry()
     if (!telemetry) return
 
     telemetry.trackFeatureFlagExposure(key, value.value)
-    sessionStorage.setItem(exposureKey, '1')
+    markExposureRecorded(exposureKey)
   }
 
   return {

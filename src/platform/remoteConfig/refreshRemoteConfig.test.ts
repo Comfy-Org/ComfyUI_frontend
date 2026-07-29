@@ -16,6 +16,13 @@ vi.stubGlobal('fetch', vi.fn())
 
 describe('refreshRemoteConfig', () => {
   const mockConfig = { feature1: true, feature2: 'value' }
+  let sessionId = 'user-a'
+
+  function refreshAuthenticated() {
+    return refreshRemoteConfig({
+      getSessionId: () => sessionId
+    })
+  }
 
   function mockSuccessResponse(config = mockConfig) {
     return {
@@ -36,6 +43,7 @@ describe('refreshRemoteConfig', () => {
     vi.clearAllMocks()
     remoteConfig.value = {}
     window.__CONFIG__ = {}
+    sessionId = 'user-a'
   })
 
   describe('with auth (default)', () => {
@@ -46,8 +54,8 @@ describe('refreshRemoteConfig', () => {
       })
       vi.mocked(api.fetchApi).mockReturnValue(pendingResponse)
 
-      const firstRefresh = refreshRemoteConfig()
-      const secondRefresh = refreshRemoteConfig()
+      const firstRefresh = refreshAuthenticated()
+      const secondRefresh = refreshAuthenticated()
 
       expect(secondRefresh).toBe(firstRefresh)
       await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
@@ -58,7 +66,7 @@ describe('refreshRemoteConfig', () => {
       expect(api.fetchApi).toHaveBeenCalledOnce()
 
       vi.mocked(api.fetchApi).mockResolvedValueOnce(mockSuccessResponse())
-      await refreshRemoteConfig()
+      await refreshAuthenticated()
 
       expect(api.fetchApi).toHaveBeenCalledTimes(2)
     })
@@ -66,7 +74,10 @@ describe('refreshRemoteConfig', () => {
     it('uses api.fetchApi when useAuth is true', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
 
-      await refreshRemoteConfig({ useAuth: true })
+      await refreshRemoteConfig({
+        useAuth: true,
+        getSessionId: () => sessionId
+      })
 
       expect(api.fetchApi).toHaveBeenCalledWith(
         '/features',
@@ -80,7 +91,7 @@ describe('refreshRemoteConfig', () => {
     it('uses api.fetchApi by default', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
 
-      await refreshRemoteConfig()
+      await refreshAuthenticated()
 
       expect(api.fetchApi).toHaveBeenCalled()
       expect(global.fetch).not.toHaveBeenCalled()
@@ -89,10 +100,44 @@ describe('refreshRemoteConfig', () => {
     it('does not pass an abort signal on the authed branch (so it is never aborted)', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
 
-      await refreshRemoteConfig({ useAuth: true })
+      await refreshRemoteConfig({
+        useAuth: true,
+        getSessionId: () => sessionId
+      })
 
       const init = vi.mocked(api.fetchApi).mock.calls[0][1]
       expect(init?.signal).toBeUndefined()
+    })
+
+    it('discards a response from a previous authenticated session', async () => {
+      let resolveResponse: (response: Response) => void
+      vi.mocked(api.fetchApi).mockReturnValue(
+        new Promise((resolve) => {
+          resolveResponse = resolve
+        })
+      )
+
+      const staleRefresh = refreshAuthenticated()
+      sessionId = 'user-b'
+      resolveResponse!(
+        mockSuccessResponse({ feature1: true, feature2: 'stale' })
+      )
+      await staleRefresh
+
+      expect(remoteConfig.value).toEqual({})
+      expect(window.__CONFIG__).toEqual({})
+    })
+
+    it('starts a new request after a failed authenticated refresh', async () => {
+      vi.mocked(api.fetchApi)
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce(mockSuccessResponse())
+
+      await refreshAuthenticated()
+      await refreshAuthenticated()
+
+      expect(api.fetchApi).toHaveBeenCalledTimes(2)
+      expect(remoteConfig.value).toEqual(mockConfig)
     })
   })
 
@@ -141,7 +186,7 @@ describe('refreshRemoteConfig', () => {
         mockErrorResponse(401, 'Unauthorized')
       )
 
-      await refreshRemoteConfig()
+      await refreshAuthenticated()
 
       expect(remoteConfig.value).toEqual({})
       expect(window.__CONFIG__).toEqual({})
@@ -152,7 +197,7 @@ describe('refreshRemoteConfig', () => {
         mockErrorResponse(403, 'Forbidden')
       )
 
-      await refreshRemoteConfig()
+      await refreshAuthenticated()
 
       expect(remoteConfig.value).toEqual({})
       expect(window.__CONFIG__).toEqual({})
@@ -161,7 +206,7 @@ describe('refreshRemoteConfig', () => {
     it('clears config on fetch error', async () => {
       vi.mocked(api.fetchApi).mockRejectedValue(new Error('Network error'))
 
-      await refreshRemoteConfig()
+      await refreshAuthenticated()
 
       expect(remoteConfig.value).toEqual({})
       expect(window.__CONFIG__).toEqual({})
@@ -179,7 +224,7 @@ describe('refreshRemoteConfig', () => {
         mockErrorResponse(500, 'Internal Server Error')
       )
 
-      await refreshRemoteConfig()
+      await refreshAuthenticated()
 
       const safeConfig = { subscription_required: true }
       expect(remoteConfig.value).toEqual(safeConfig)

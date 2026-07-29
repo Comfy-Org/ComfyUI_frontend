@@ -13,8 +13,12 @@ useExtensionService().registerExtension({
   name: 'Comfy.Cloud.RemoteConfig',
 
   setup: async () => {
-    const { isLoggedIn } = useCurrentUser()
+    const { isLoggedIn, resolvedUserInfo } = useCurrentUser()
     const { isActiveSubscription } = useBillingContext()
+    const refreshAuthenticatedConfig = () =>
+      refreshRemoteConfig({
+        getSessionId: () => resolvedUserInfo.value?.id ?? null
+      })
 
     // Refresh config when auth or subscription status changes
     // Primary auth refresh is handled by WorkspaceAuthGate on mount
@@ -23,13 +27,13 @@ useExtensionService().registerExtension({
       [isLoggedIn, isActiveSubscription],
       () => {
         if (!isLoggedIn.value) return
-        void refreshRemoteConfig()
+        void refreshAuthenticatedConfig()
       },
       { debounce: 256, immediate: true }
     )
 
     setInterval(() => {
-      if (isLoggedIn.value) void refreshRemoteConfig()
+      if (isLoggedIn.value) void refreshAuthenticatedConfig()
     }, 60_000)
   }
 })

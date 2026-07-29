@@ -179,7 +179,13 @@ describe('WorkspaceAuthGate', () => {
       mountComponent()
       await flushPromises()
 
-      expect(mockRefreshRemoteConfig).toHaveBeenCalledWith({ useAuth: true })
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledWith({
+        useAuth: true,
+        getSessionId: expect.any(Function)
+      })
+      expect(mockRefreshRemoteConfig.mock.calls[0][0].getSessionId()).toBe(
+        'user-123'
+      )
     })
 
     it('renders slot when teamWorkspacesEnabled is false', async () => {
