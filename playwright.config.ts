@@ -61,7 +61,11 @@ export default defineConfig({
         trace:
           process.env.CUSTOM_NODES_ENV === 'cloud' ? 'off' : 'retain-on-failure'
       },
-      timeout: 15000,
+      // Cloud app boots are network-bound (multi-MB /object_info + auth
+      // seeding) and can exceed 15s INSIDE fixture setup, before any test
+      // body's setTimeout can extend the budget - record run 30408428601
+      // lost all 87 tests at exactly 15.1s this way.
+      timeout: process.env.CUSTOM_NODES_ENV === 'cloud' ? 60_000 : 15000,
       grep: /@custom-nodes/,
       fullyParallel: false
     },
