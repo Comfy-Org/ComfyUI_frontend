@@ -6,10 +6,8 @@ const mocks = vi.hoisted(() => ({
   engine: {
     activeTour: null as string | null,
     step: null as { name: string } | null,
-    isLast: false,
     startTour: vi.fn(() => Promise.resolve(true)),
     next: vi.fn(),
-    complete: vi.fn(),
     postpone: vi.fn()
   },
   canRun: { value: true },
@@ -93,10 +91,8 @@ describe('useFirstRunTourController', () => {
     document.body.replaceChildren()
     mocks.engine.activeTour = null
     mocks.engine.step = null
-    mocks.engine.isLast = false
     mocks.engine.startTour.mockClear()
     mocks.engine.next.mockClear()
-    mocks.engine.complete.mockClear()
     mocks.engine.postpone.mockClear()
     mocks.canRun.value = true
     mocks.showSubscriptionDialog.mockClear()
@@ -122,17 +118,13 @@ describe('useFirstRunTourController', () => {
     expect(mocks.release).toHaveBeenCalled()
   })
 
-  it('advances on a funded run click, completing on the last step', async () => {
+  it('advances on a funded run click', async () => {
     const controller = await freshController()
     await controller.beginTour('image_z_image_turbo')
     mocks.engine.activeTour = 'firstRun'
     mocks.engine.step = { name: 'run' }
     runButton().click()
     expect(mocks.engine.next).toHaveBeenCalled()
-
-    mocks.engine.isLast = true
-    runButton().click()
-    expect(mocks.engine.complete).toHaveBeenCalled()
   })
 
   it('consumes a paywalled run click and postpones the tour', async () => {
