@@ -47,7 +47,7 @@ import { ModelLibraryHelper } from '@e2e/fixtures/helpers/ModelLibraryHelper'
 import { NodeOperationsHelper } from '@e2e/fixtures/helpers/NodeOperationsHelper'
 import { PerformanceHelper } from '@e2e/fixtures/helpers/PerformanceHelper'
 import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
-import { seedSmokeAuth } from '@e2e/fixtures/helpers/smokeAuth'
+import { signInSmokeUser } from '@e2e/fixtures/helpers/smokeAuth'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
@@ -690,7 +690,7 @@ export const comfyPageFixture = base.extend<{
       // sign-in apart from app boot - the whole reason cloud failures have
       // been undiagnosable. These two lines name which half spent the budget.
       const authStartedAt = Date.now()
-      await seedSmokeAuth(page, comfyPage.url)
+      await signInSmokeUser(page, comfyPage.url)
       console.warn(`[cloud] smoke sign-in took ${Date.now() - authStartedAt}ms`)
     }
 
