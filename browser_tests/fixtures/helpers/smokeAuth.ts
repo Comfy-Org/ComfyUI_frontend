@@ -150,67 +150,37 @@ export async function seedSmokeAuth(page: Page, appUrl: string): Promise<void> {
   })
   const user = await smokeUser
   await seedFirebaseAuthUser(page, appUrl, user)
-  await markOnboardingSurveyCompleted(page, appUrl, user)
+  await bypassOnboardingSurvey(page)
 }
 
-// Cloud's router guard reads GET /settings/onboarding_survey BEFORE the graph
-// view mounts and treats 404 - the key never stored - as "not completed",
-// redirecting to /cloud/survey (src/router.ts, and the 404 branch of
-// getSurveyCompletedStatus). CloudSurveyView never initializes
-// `window.app.extensionManager`, so an account missing that key hangs every
-// app-ready wait forever with a perfectly healthy sign-in behind it - which
-// is how a run reports nothing but "timeout". The guard is live on testcloud
-// (/api/features reports onboarding_survey_enabled: true), and its survey has
-// four required questions, so a headless account never satisfies it by
-// accident. Seeding the key is what a real user does by finishing onboarding.
+// Cloud runs an onboarding gate BEFORE the graph view mounts: the router asks
+// getSurveyCompletedStatus(), which GETs /settings/onboarding_survey and reads
+// a 404 - the key was never stored - as "not completed", then redirects to
+// /cloud/survey (src/router.ts, src/platform/cloud/onboarding/auth.ts).
+// CloudSurveyView never creates `window.app.extensionManager`, so a test
+// account that has not answered the survey's four required questions hangs
+// every app-ready wait forever behind a perfectly healthy sign-in - a run
+// reports only "timeout" and nothing about the cause.
 //
-// Reads back after writing: an unverified write here would put us right back
-// to inferring a cause from a downstream hang.
-async function markOnboardingSurveyCompleted(
-  page: Page,
-  appUrl: string,
-  user: FirebaseAuthUserRecord
-): Promise<void> {
-  const auth = {
-    Authorization: `Bearer ${user.stsTokenManager.accessToken}`,
-    'Content-Type': 'application/json'
-  }
-  const settingsUrl = new URL('/api/settings', appUrl).toString()
-  const surveyUrl = new URL(
-    '/api/settings/onboarding_survey',
-    appUrl
-  ).toString()
-
-  const before = await page.request.get(surveyUrl, { headers: auth })
-  if (before.ok()) {
-    console.warn('[cloud] onboarding survey already satisfied; no seed needed')
-    return
-  }
-
-  // Same endpoint, method and body shape the app itself uses when a real user
-  // finishes onboarding (submitSurvey in src/platform/cloud/onboarding/auth.ts):
-  // POST /settings with { onboarding_survey: <record> }.
-  const wrote = await page.request.post(settingsUrl, {
-    headers: auth,
-    data: JSON.stringify({
-      onboarding_survey: { completed_by: 'e2e-smoke-fixture' }
+// This suite tests custom nodes, not onboarding, so the check is answered at
+// the network edge rather than by writing a survey record to the shared smoke
+// account: nothing persists, no shared state is mutated, and the bypass cannot
+// outlive the page. The same endpoint is mocked this way in
+// browser_tests/tests/cloudSurveyGate.spec.ts, which is where the gate's own
+// behavior is actually under test.
+//
+// Contract, from the 200 branch of getSurveyCompletedStatus: completed means
+// `!isEmpty(data.value)`, so `value` must be present and non-empty.
+async function bypassOnboardingSurvey(page: Page): Promise<void> {
+  await page.route('**/settings/onboarding_survey', async (route) => {
+    if (route.request().method() !== 'GET') {
+      await route.continue()
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ value: { completed_by: 'e2e-smoke-fixture' } })
     })
   })
-  if (!wrote.ok())
-    throw new Error(
-      `could not mark the onboarding survey completed for the smoke account ` +
-        `(GET was ${before.status()}, POST was ${wrote.status()}) - without ` +
-        `this key cloud boots land on /cloud/survey and never reach the graph`
-    )
-
-  const after = await page.request.get(surveyUrl, { headers: auth })
-  if (!after.ok())
-    throw new Error(
-      `onboarding survey key did not persist: POST returned ${wrote.status()} ` +
-        `but the read back still returns ${after.status()} - the guard will ` +
-        `still bounce this boot to /cloud/survey`
-    )
-  console.warn(
-    `[cloud] onboarding survey seeded and verified (was ${before.status()}, now ${after.status()})`
-  )
 }
