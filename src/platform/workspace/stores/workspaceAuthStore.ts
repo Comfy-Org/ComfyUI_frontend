@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { t } from '@/i18n'
+import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
 import {
   TOKEN_REFRESH_BUFFER_MS,
   WORKSPACE_STORAGE_KEYS
@@ -172,31 +173,31 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   function scheduleClearAtExpiry(): void {
     if (workspaceTokenExpiresAt.value === null) {
-      clearWorkspaceContext()
+      endWorkspaceSession()
       return
     }
 
     const timeUntilExpiry = workspaceTokenExpiresAt.value - Date.now()
     if (timeUntilExpiry <= 0) {
-      clearWorkspaceContext()
+      endWorkspaceSession()
       return
     }
 
     stopRefreshTimer()
     refreshTimerId = setTimeout(() => {
-      clearWorkspaceContext()
+      endWorkspaceSession()
     }, timeUntilExpiry)
   }
 
   function scheduleTokenRefreshRetry(delayMs: number): boolean {
     if (workspaceTokenExpiresAt.value === null) {
-      clearWorkspaceContext()
+      endWorkspaceSession()
       return false
     }
 
     const timeUntilExpiry = workspaceTokenExpiresAt.value - Date.now()
     if (timeUntilExpiry <= 0) {
-      clearWorkspaceContext()
+      endWorkspaceSession()
       return false
     }
 
@@ -536,12 +537,13 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   ): void {
     if (isPermanentRecoveryFailure(err)) {
       const hadContext = currentWorkspace.value !== null
-      clearWorkspaceContext()
+      endWorkspaceSession(
+        failedWorkspaceId && isWorkspaceSelectionInvalid(err)
+          ? failedWorkspaceId
+          : undefined
+      )
       if (hadContext) {
         surfacePermanentAuthError(err)
-      }
-      if (failedWorkspaceId && isWorkspaceSelectionInvalid(err)) {
-        useTeamWorkspaceStore().forgetRevokedActiveWorkspace(failedWorkspaceId)
       }
     }
     startRecoveryCooldown()
@@ -644,10 +646,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         if (isPermanentError) {
           if (!isStaleWorkspaceRequest(capturedRequestId)) {
             console.error('Workspace access revoked or auth invalid:', err)
-            clearWorkspaceContext()
-            if (isWorkspaceSelectionInvalid(err)) {
-              useTeamWorkspaceStore().forgetRevokedActiveWorkspace(workspaceId)
-            }
+            endWorkspaceSession(
+              isWorkspaceSelectionInvalid(err) ? workspaceId : undefined
+            )
           }
           return
         }
@@ -681,7 +682,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
           }
 
           console.error('Failed to refresh workspace token after retries:', err)
-          clearWorkspaceContext()
+          endWorkspaceSession()
         }
       }
     }
@@ -958,6 +959,18 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     error.value = null
     clearSessionStorage()
     clearUnifiedContext()
+  }
+
+  function endWorkspaceSession(revokedWorkspaceId?: string): void {
+    const hadContext = currentWorkspace.value !== null
+    if (hadContext) prepareWorkflowWorkspaceTransition()
+    const reloadRequested = revokedWorkspaceId
+      ? useTeamWorkspaceStore().forgetRevokedActiveWorkspace(revokedWorkspaceId)
+      : false
+    clearWorkspaceContext()
+    if ((hadContext || revokedWorkspaceId !== undefined) && !reloadRequested) {
+      window.location.reload()
+    }
   }
 
   return {

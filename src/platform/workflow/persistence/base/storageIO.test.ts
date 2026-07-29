@@ -9,10 +9,12 @@ import {
   deletePayloads,
   getPayloadKeys,
   markStorageUnavailable,
+  prepareWorkflowWorkspaceTransition,
   readActivePath,
   readIndex,
   readOpenPaths,
   readPayload,
+  registerWorkflowPersistenceFlush,
   writeActivePath,
   writeIndex,
   writeOpenPaths,
@@ -395,6 +397,23 @@ describe('storageIO', () => {
   })
 
   describe('clearWorkflowRestoreState', () => {
+    it('blocks writes and clears restore state when a persistence flush fails', () => {
+      localStorage.setItem('workflow', '{}')
+      const successfulFlush = vi.fn()
+      const unregisterFailedFlush = registerWorkflowPersistenceFlush(() => {
+        throw new DOMException('Storage unavailable', 'SecurityError')
+      })
+      const unregisterSuccessfulFlush =
+        registerWorkflowPersistenceFlush(successfulFlush)
+
+      expect(() => prepareWorkflowWorkspaceTransition()).not.toThrow()
+
+      expect(successfulFlush).toHaveBeenCalledOnce()
+      expect(localStorage.getItem('workflow')).toBeNull()
+      unregisterFailedFlush()
+      unregisterSuccessfulFlush()
+    })
+
     it('clears cross-workspace restore state without deleting scoped drafts', () => {
       localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{}')

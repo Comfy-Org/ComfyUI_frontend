@@ -25,7 +25,13 @@ export function registerWorkflowPersistenceFlush(
 }
 
 function flushPendingWorkflowPersistence(): void {
-  for (const flush of pendingPersistenceFlushes) flush()
+  for (const flush of pendingPersistenceFlushes) {
+    try {
+      flush()
+    } catch {
+      continue
+    }
+  }
 }
 
 export function isStorageAvailable(): boolean {
@@ -449,7 +455,7 @@ export function clearWorkflowRestoreState(
 }
 
 export function prepareWorkflowWorkspaceTransition(): void {
-  flushPendingWorkflowPersistence()
+  if (!workflowWritesBlocked) flushPendingWorkflowPersistence()
   workflowWritesBlocked = true
   clearWorkflowRestoreState()
 }

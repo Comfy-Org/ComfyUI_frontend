@@ -419,15 +419,16 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Drop a revoked/deleted active workspace and reload so init falls back to the
    * personal workspace. Skips the personal workspace to avoid a reload loop.
    */
-  function forgetRevokedActiveWorkspace(workspaceId: string): void {
-    if (activeWorkspaceId.value !== workspaceId) return
+  function forgetRevokedActiveWorkspace(workspaceId: string): boolean {
+    if (activeWorkspaceId.value !== workspaceId) return false
 
     const revoked = workspaces.value.find((w) => w.id === workspaceId)
-    if (revoked?.type === 'personal') return
+    if (revoked?.type === 'personal') return false
 
     prepareWorkflowWorkspaceTransition()
     clearLastWorkspaceId()
     window.location.reload()
+    return true
   }
 
   /**
