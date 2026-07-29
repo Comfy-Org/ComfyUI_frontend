@@ -231,7 +231,7 @@ defineEmits<{
 }>()
 
 const { t, n } = useI18n()
-const { subscription, isInitialized } = useBillingContext()
+const { subscription } = useBillingContext()
 
 function formatTierName(tier: string): string {
   return t(`subscription.tiers.${tier.toLowerCase()}.name`)
@@ -351,9 +351,13 @@ watch(chargeCents, () => {
   reactivationConfirmed.value = false
 })
 
+// isInitialized is aggregate (status + balance + plans); a balance or plans
+// failure must not permanently disable an otherwise-valid, already-loaded
+// subscription status. subscription is null exactly until status has loaded
+// at least once, so gate on that instead.
 const confirmDisabled = computed(
   () =>
-    !isInitialized.value ||
+    subscription.value === null ||
     (exceedsMonthlyThreshold.value && !reactivationConfirmed.value)
 )
 const confirmReactivation = computed(
@@ -428,6 +432,23 @@ const refillLabel = computed(() =>
 )
 
 const effectiveDateLabel = computed(() => formatDate(previewData.effective_at))
+// Date.setUTCMonth rolls a day-of-month past the target month's end into the
+// following month (e.g. Jan 31 + 1mo => Mar 3); clamp to the target month's
+// last day instead.
+function addUtcMonthsClamped(date: Date, months: number): Date {
+  const year = date.getUTCFullYear()
+  const targetMonthIndex = date.getUTCMonth() + months
+  const lastDayOfTargetMonth = new Date(
+    Date.UTC(year, targetMonthIndex + 1, 0)
+  ).getUTCDate()
+  return new Date(
+    Date.UTC(
+      year,
+      targetMonthIndex,
+      Math.min(date.getUTCDate(), lastDayOfTargetMonth)
+    )
+  )
+}
 // Without an explicit period_end, fall back to one billing period after
 // activation rather than the activation date itself — the activation date
 // reads as "renews today" for an immediate reactivation, which is wrong.
@@ -435,8 +456,10 @@ const nextPaymentDate = computed(() => {
   if (previewData.new_plan.period_end) {
     return formatDate(previewData.new_plan.period_end)
   }
-  const fallback = new Date(previewData.effective_at)
-  fallback.setUTCMonth(fallback.getUTCMonth() + (newIsYearly.value ? 12 : 1))
+  const fallback = addUtcMonthsClamped(
+    new Date(previewData.effective_at),
+    newIsYearly.value ? 12 : 1
+  )
   return formatDate(fallback)
 })
 const currentPeriodEnd = computed(() =>

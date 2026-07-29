@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -11,17 +11,15 @@ import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPrev
 // Real i18n plugin (not the mocked `vue-i18n` module used by the sibling
 // SubscriptionTransitionPreviewWorkspace.test.ts) so <i18n-t> resolves and
 // renders its named slots for these reactivation-banner assertions.
-const { mockSubscription, mockIsInitialized } = vi.hoisted(() => ({
+const { mockSubscription } = vi.hoisted(() => ({
   mockSubscription: {
     value: null as { isCancelled: boolean; endDate: string | null } | null
-  },
-  mockIsInitialized: { value: true }
+  }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    subscription: computed(() => mockSubscription.value),
-    isInitialized: computed(() => mockIsInitialized.value)
+    subscription: computed(() => mockSubscription.value)
   })
 }))
 
@@ -134,10 +132,6 @@ function renderComponent(previewData: PreviewSubscribeResponse) {
 }
 
 describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () => {
-  beforeEach(() => {
-    mockIsInitialized.value = true
-  })
-
   describe('banner visibility', () => {
     it('does not render when the subscription is not cancelled', () => {
       mockSubscription.value = { isCancelled: false, endDate: null }
@@ -508,9 +502,8 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
   })
 
   describe('confirm gating on load state', () => {
-    it('disables confirm while billing context has not finished initializing, even below the charge threshold', () => {
-      mockSubscription.value = { isCancelled: false, endDate: null }
-      mockIsInitialized.value = false
+    it('disables confirm while subscription status has not loaded yet, even below the charge threshold', () => {
+      mockSubscription.value = null
       renderComponent(
         makePreview({ transition_type: 'downgrade', is_immediate: false })
       )
@@ -520,9 +513,8 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       ).toBeDisabled()
     })
 
-    it('re-enables confirm once billing context finishes initializing', () => {
+    it('re-enables confirm once subscription status has loaded', () => {
       mockSubscription.value = { isCancelled: false, endDate: null }
-      mockIsInitialized.value = true
       renderComponent(
         makePreview({ transition_type: 'downgrade', is_immediate: false })
       )
@@ -691,6 +683,96 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       // today"); one month later instead.
       expect(bodyText).not.toContain('renew automatically on Aug 1, 2026')
       expect(bodyText).toContain('renew automatically on Sep 1, 2026')
+    })
+
+    it('clamps a Jan 31 + 1 month fallback to Feb 28, not Mar 3', () => {
+      mockSubscription.value = {
+        isCancelled: true,
+        endDate: '2026-01-15T00:00:00Z'
+      }
+      const { container } = renderComponent(
+        makePreview({
+          transition_type: 'upgrade',
+          effective_at: '2026-01-31T00:00:00Z',
+          new_plan: {
+            slug: 'creator-monthly',
+            tier: 'CREATOR',
+            duration: 'MONTHLY',
+            price_cents: 3500,
+            credits_cents: 0,
+            seat_summary: {
+              seat_count: 1,
+              total_cost_cents: 3500,
+              total_credits_cents: 0
+            }
+            // No period_end.
+          }
+        })
+      )
+      const bodyText = container.textContent ?? ''
+
+      expect(bodyText).not.toContain('renew automatically on Mar')
+      expect(bodyText).toContain('renew automatically on Feb 28, 2026')
+    })
+
+    it('clamps a Feb 29 leap-day + 12 months fallback to Feb 28 the next year', () => {
+      mockSubscription.value = {
+        isCancelled: true,
+        endDate: '2028-02-15T00:00:00Z'
+      }
+      const { container } = renderComponent(
+        makePreview({
+          transition_type: 'upgrade',
+          effective_at: '2028-02-29T00:00:00Z',
+          new_plan: {
+            slug: 'creator-annual',
+            tier: 'CREATOR',
+            duration: 'ANNUAL',
+            price_cents: 33_600,
+            credits_cents: 0,
+            seat_summary: {
+              seat_count: 1,
+              total_cost_cents: 33_600,
+              total_credits_cents: 0
+            }
+            // No period_end.
+          }
+        })
+      )
+      const bodyText = container.textContent ?? ''
+
+      expect(bodyText).not.toContain('renew automatically on Mar')
+      expect(bodyText).toContain('renew automatically on Feb 28, 2029')
+    })
+
+    it('clamps a Mar 31 + 1 month fallback to Apr 30, not May 1', () => {
+      mockSubscription.value = {
+        isCancelled: true,
+        endDate: '2026-03-15T00:00:00Z'
+      }
+      const { container } = renderComponent(
+        makePreview({
+          transition_type: 'upgrade',
+          effective_at: '2026-03-31T00:00:00Z',
+          new_plan: {
+            slug: 'creator-monthly',
+            tier: 'CREATOR',
+            duration: 'MONTHLY',
+            price_cents: 3500,
+            credits_cents: 0,
+            seat_summary: {
+              seat_count: 1,
+              total_cost_cents: 3500,
+              total_credits_cents: 0
+            }
+            // No period_end.
+          }
+        })
+      )
+      const bodyText = container.textContent ?? ''
+
+      expect(bodyText).not.toContain('renew automatically on May')
+      expect(bodyText).toContain('renew automatically on Apr 30, 2026')
     })
   })
 })
