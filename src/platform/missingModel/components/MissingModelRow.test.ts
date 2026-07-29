@@ -19,6 +19,7 @@ const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockShowUploadDialog = vi.hoisted(() => vi.fn())
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockDownloadModel = vi.hoisted(() => vi.fn())
+const mockFetchModelMetadata = vi.hoisted(() => vi.fn())
 const mockRootGraph = vi.hoisted<{
   value: Record<string, never> | null
 }>(() => ({ value: null }))
@@ -104,10 +105,7 @@ vi.mock('@/platform/missingModel/missingModelDownload', async () => {
   return {
     ...actual,
     downloadModel: mockDownloadModel,
-    fetchModelMetadata: vi.fn().mockResolvedValue({
-      fileSize: null,
-      gatedRepoUrl: null
-    })
+    fetchModelMetadata: mockFetchModelMetadata
   }
 })
 
@@ -183,6 +181,10 @@ describe('MissingModelRow', () => {
     mockGetNodeByExecutionId.mockReset()
     mockUploadContext.resolver = undefined
     mockUploadCallbacks.onUploadSuccess = undefined
+    mockFetchModelMetadata.mockResolvedValue({
+      fileSize: null,
+      gatedRepoUrl: null
+    })
   })
 
   it('opens the model import dialog from the cloud row', async () => {
@@ -441,13 +443,20 @@ describe('MissingModelRow', () => {
     mockIsCloud.value = false
     const user = userEvent.setup()
     const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
-    model.representative.url =
+    const url =
       'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+    model.representative.url = url
 
     renderRow(model, vi.fn(), false)
 
+    expect(mockFetchModelMetadata).not.toHaveBeenCalled()
+
     await user.click(screen.getByTestId('missing-model-download'))
 
+    expect(mockFetchModelMetadata).toHaveBeenCalledOnce()
+    expect(mockFetchModelMetadata).toHaveBeenCalledWith(
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+    )
     expect(mockDownloadModel).toHaveBeenCalledWith(
       {
         name: 'model.safetensors',
@@ -456,5 +465,71 @@ describe('MissingModelRow', () => {
       },
       {}
     )
+  })
+
+  it('does not start concurrent metadata requests from repeated download clicks', async () => {
+    mockIsCloud.value = false
+    const user = userEvent.setup()
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    const url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+    model.representative.url = url
+    let resolveMetadata!: (
+      metadata: Awaited<
+        ReturnType<typeof MissingModelDownload.fetchModelMetadata>
+      >
+    ) => void
+    mockFetchModelMetadata.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveMetadata = resolve
+      })
+    )
+
+    renderRow(model, vi.fn(), false)
+
+    const downloadButton = screen.getByTestId('missing-model-download')
+    await user.click(downloadButton)
+    await user.click(downloadButton)
+
+    expect(mockFetchModelMetadata).toHaveBeenCalledOnce()
+    expect(mockDownloadModel).toHaveBeenCalledTimes(2)
+
+    resolveMetadata({ fileSize: 1024, gatedRepoUrl: null })
+
+    await waitFor(() => {
+      expect(useMissingModelStore().fileSizes[url]).toBe(1024)
+    })
+  })
+
+  it('keeps download available and retries metadata after a fetch error', async () => {
+    mockIsCloud.value = false
+    const user = userEvent.setup()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    const url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+    model.representative.url = url
+    mockFetchModelMetadata
+      .mockRejectedValueOnce(new Error('metadata failed'))
+      .mockResolvedValueOnce({ fileSize: 2048, gatedRepoUrl: null })
+
+    renderRow(model, vi.fn(), false)
+
+    const downloadButton = screen.getByTestId('missing-model-download')
+    await user.click(downloadButton)
+
+    await waitFor(() => {
+      expect(warn).toHaveBeenCalledOnce()
+    })
+    await Promise.resolve()
+    await user.click(downloadButton)
+
+    await waitFor(() => {
+      expect(mockFetchModelMetadata).toHaveBeenCalledTimes(2)
+      expect(useMissingModelStore().fileSizes[url]).toBe(2048)
+    })
+    expect(mockDownloadModel).toHaveBeenCalledTimes(2)
+
+    warn.mockRestore()
   })
 })
