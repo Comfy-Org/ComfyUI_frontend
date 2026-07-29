@@ -833,11 +833,11 @@ for (const entry of loadManifest()) {
           const geometryBaseline = loadPackGeometry(entry.pack)
           expect(
             geometryBaseline,
-            `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (ADDING_CUSTOM_NODES.md Step 5b)`
+            `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (docs/custom-node-regression-suite.md Step 5b)`
           ).not.toBeNull()
           expect(
             diffGeometry(geometryBaseline!.nodes, measuredGeometry),
-            'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per ADDING_CUSTOM_NODES.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger by mechanism in GEOMETRY_UNSTABLE_NODES'
+            'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per docs/custom-node-regression-suite.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger by mechanism in GEOMETRY_UNSTABLE_NODES'
           ).toEqual([])
         }
       })

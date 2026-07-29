@@ -7,7 +7,7 @@
 # Run it (manual dispatch) whenever a deliberate pin/core bump or an
 # intended restyle legitimately moves layout, then commit the artifact in
 # the same PR as the change that moved it. Procedure:
-# browser_tests/tests/customNodes/ADDING_CUSTOM_NODES.md Step 5b.
+# docs/custom-node-regression-suite.md Step 5b.
 name: 'Record Custom Nodes Geometry'
 
 on:

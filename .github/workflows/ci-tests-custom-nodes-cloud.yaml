@@ -154,10 +154,10 @@ jobs:
           [ -n "${SMOKE_ACCOUNT_EMAIL:-}" ] || missing+=(SMOKE_ACCOUNT_EMAIL)
           [ -n "${SMOKE_ACCOUNT_PASSWORD:-}" ] || missing+=(SMOKE_ACCOUNT_PASSWORD)
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "::notice::custom-nodes-e2e-cloud did not run: smoke user credentials unconfigured (missing: ${missing[*]}). Expected pre-calibration - the gate no-ops green until these repo secrets AND the generated customNodeManifest.cloud.json land. See browser_tests/tests/customNodes/README.md."
+            echo "::notice::custom-nodes-e2e-cloud did not run: smoke user credentials unconfigured (missing: ${missing[*]}). Expected pre-calibration - the gate no-ops green until these repo secrets AND the generated customNodeManifest.cloud.json land. See docs/custom-node-regression-suite.md."
             echo "run-cloud=false" >> "$GITHUB_OUTPUT"
           elif [ ! -f browser_tests/fixtures/data/customNodeManifest.cloud.json ]; then
-            echo "::notice::custom-nodes-e2e-cloud did not run: secrets are configured but the generated browser_tests/fixtures/data/customNodeManifest.cloud.json is not in this checkout. Generate it from the Phase-1 probe snapshot ('pnpm gen:cloud-manifest') and commit it - the gate no-ops green until then. See browser_tests/tests/customNodes/README.md."
+            echo "::notice::custom-nodes-e2e-cloud did not run: secrets are configured but the generated browser_tests/fixtures/data/customNodeManifest.cloud.json is not in this checkout. Generate it from the Phase-1 probe snapshot ('pnpm gen:cloud-manifest') and commit it - the gate no-ops green until then. See docs/custom-node-regression-suite.md."
             echo "run-cloud=false" >> "$GITHUB_OUTPUT"
           else
             echo "run-cloud=true" >> "$GITHUB_OUTPUT"

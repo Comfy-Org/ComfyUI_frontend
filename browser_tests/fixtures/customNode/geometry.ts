@@ -157,7 +157,7 @@ export function diffGeometry(
   for (const key of Object.keys(measured))
     if (!(key in baseline))
       failures.push(
-        `${key}: no geometry baseline - re-record via the record workflow (ADDING_CUSTOM_NODES.md Step 5b) with the change that added it`
+        `${key}: no geometry baseline - re-record via the record workflow (docs/custom-node-regression-suite.md Step 5b) with the change that added it`
       )
   for (const [key, expected] of Object.entries(baseline)) {
     const actual = measured[key]

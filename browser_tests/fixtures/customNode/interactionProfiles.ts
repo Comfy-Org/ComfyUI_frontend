@@ -94,7 +94,7 @@ export function loadPackProfiles(
   const parsed = JSON.parse(readFileSync(path, 'utf-8'))
   if (parsed.schema !== 1 || !parsed.recordedAt?.core)
     throw new Error(
-      `${path} is not schema 1 with recordedAt provenance - re-record it (ADDING_CUSTOM_NODES.md Step 5d)`
+      `${path} is not schema 1 with recordedAt provenance - re-record it (docs/custom-node-regression-suite.md Step 5d)`
     )
   return parsed
 }
@@ -142,7 +142,7 @@ export function comparePackProfiles(input: {
   if (committed === null)
     return [
       `S13: no committed interaction profiles for '${pack}' - record them ` +
-        `(CN_INTERACTION=record run, commit the fixture; ADDING_CUSTOM_NODES.md Step 5d)`
+        `(CN_INTERACTION=record run, commit the fixture; docs/custom-node-regression-suite.md Step 5d)`
     ]
   const provenance = `(baseline recorded at core ${committed.recordedAt.core}, pin ${committed.recordedAt.pin})`
   const unstable = INTERACTION_UNSTABLE_NODES[pack] ?? {}

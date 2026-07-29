@@ -169,7 +169,7 @@ export function compareOutputHashes(input: {
   const { workflowKey, observed, committed } = input
   if (committed.schema !== 1 || !committed.recordedAt?.core)
     throw new Error(
-      'curatedOutputHashes fixture is not schema 1 with recordedAt provenance - re-record it (ADDING_CUSTOM_NODES.md Step 5c)'
+      'curatedOutputHashes fixture is not schema 1 with recordedAt provenance - re-record it (docs/custom-node-regression-suite.md Step 5c)'
     )
   const provenance = `(baseline recorded at core ${committed.recordedAt.core}, run ${committed.recordedAt.run})`
   const expected = committed.workflows[workflowKey]
