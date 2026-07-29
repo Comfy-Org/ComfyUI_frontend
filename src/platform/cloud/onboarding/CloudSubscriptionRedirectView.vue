@@ -6,11 +6,11 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { performTeamSubscriptionCheckout } from '@/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil'
+import type { CheckoutTierKey } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
 
@@ -19,17 +19,17 @@ function isBillingCycle(value: string): value is BillingCycle {
 }
 
 // Only paid personal tiers can be checked out via this redirect.
-function isCheckoutTierKey(value: string): value is TierKey {
-  return ['standard', 'creator', 'pro', 'founder'].includes(value)
+function isCheckoutTierKey(value: string): value is CheckoutTierKey {
+  return ['standard', 'creator', 'pro'].includes(value)
 }
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { reportError, accessBillingPortal } = useAuthActions()
-const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const { toastErrorHandler, wrapWithErrorHandlingAsync } = useErrorHandling()
+const { showPricingTable } = useSubscriptionDialog()
 
-const { isActiveSubscription, isInitialized, initialize } = useBillingContext()
+const { isInitialized, initialize } = useBillingContext()
 
 const selectedTierKey = ref<TierKey | null>(null)
 
@@ -111,15 +111,16 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     await initialize()
   }
 
-  if (isActiveSubscription.value) {
-    await accessBillingPortal(undefined, false)
-  } else {
-    await performSubscriptionCheckout(tierKeyParam, billingCycle, {
-      openInNewTab: false,
-      paymentIntentSource: 'deep_link'
-    })
-  }
-}, reportError)
+  showPricingTable({
+    reason: 'deep_link',
+    planMode: 'personal',
+    initialCheckout: {
+      planMode: 'personal',
+      tierKey: tierKeyParam,
+      billingCycle
+    }
+  })
+}, toastErrorHandler)
 
 onMounted(() => {
   void runRedirect()

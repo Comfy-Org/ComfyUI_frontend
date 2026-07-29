@@ -402,13 +402,14 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
-    it('subscribe() sends POST with plan_slug and optional URLs', async () => {
+    it('subscribe() sends POST with plan_slug and Checkout options', async () => {
       const data = { billing_op_id: 'op-1', status: 'subscribed' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
       const result = await workspaceApi.subscribe('pro-monthly', {
         returnUrl: 'https://return.url',
-        cancelUrl: 'https://cancel.url'
+        cancelUrl: 'https://cancel.url',
+        useCheckout: true
       })
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
@@ -417,6 +418,7 @@ describe('workspaceApi', () => {
           plan_slug: 'pro-monthly',
           return_url: 'https://return.url',
           cancel_url: 'https://cancel.url',
+          use_checkout: true,
           team_credit_stop_id: undefined,
           billing_cycle: undefined
         },
@@ -440,6 +442,7 @@ describe('workspaceApi', () => {
           plan_slug: 'team_per_credit_annual',
           return_url: undefined,
           cancel_url: undefined,
+          use_checkout: undefined,
           team_credit_stop_id: 'team_700',
           billing_cycle: 'yearly'
         },

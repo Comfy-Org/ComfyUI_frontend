@@ -1,13 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive } from 'vue'
 
-const { mockIsCloud, mockSubscribe, mockTrackBeginCheckout, mockUserId } =
-  vi.hoisted(() => ({
-    mockIsCloud: { value: true },
-    mockSubscribe: vi.fn(),
-    mockTrackBeginCheckout: vi.fn(),
-    mockUserId: { value: 'user-1' as string | null }
-  }))
+const {
+  mockIsCloud,
+  mockStartOperation,
+  mockSubscribe,
+  mockTrackBeginCheckout,
+  mockUserId
+} = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
+  mockStartOperation: vi.fn(),
+  mockSubscribe: vi.fn(),
+  mockTrackBeginCheckout: vi.fn(),
+  mockUserId: { value: 'user-1' as string | null }
+}))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -19,6 +25,9 @@ vi.mock('@/config/comfyApi', () => ({
 }))
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: { subscribe: mockSubscribe }
+}))
+vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
+  useBillingOperationStore: () => ({ startOperation: mockStartOperation })
 }))
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({ trackBeginCheckout: mockTrackBeginCheckout })
@@ -60,7 +69,8 @@ describe('performTeamSubscriptionCheckout', () => {
     expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_annual', {
       returnUrl: 'https://app.test/payment/success',
       cancelUrl: 'https://app.test/payment/failed',
-      teamCreditStopId: 'team_700'
+      teamCreditStopId: 'team_700',
+      useCheckout: true
     })
     expect(assignedHref).toBe('https://stripe.test/pay')
     expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
@@ -84,8 +94,34 @@ describe('performTeamSubscriptionCheckout', () => {
     expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_monthly', {
       returnUrl: expect.any(String),
       cancelUrl: expect.any(String),
-      teamCreditStopId: 'team_1400'
+      teamCreditStopId: 'team_1400',
+      useCheckout: true
     })
+    expect(assignedHref).toBe('/')
+  })
+
+  it('polls a pending native Checkout operation until it redirects', async () => {
+    mockSubscribe.mockResolvedValue({
+      status: 'pending_payment',
+      billing_op_id: 'op_checkout'
+    })
+    mockStartOperation.mockResolvedValue({ status: 'succeeded' })
+
+    await performTeamSubscriptionCheckout('team_700', 'monthly', {
+      paymentIntentSource: 'deep_link'
+    })
+
+    expect(mockStartOperation).toHaveBeenCalledWith(
+      'op_checkout',
+      'subscription',
+      {
+        tier: 'team',
+        cycle: 'monthly',
+        checkoutType: 'new',
+        paymentIntentSource: 'deep_link',
+        checkoutReturnUrl: undefined
+      }
+    )
     expect(assignedHref).toBe('/')
   })
 

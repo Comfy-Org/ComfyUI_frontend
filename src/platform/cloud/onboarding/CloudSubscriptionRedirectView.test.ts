@@ -19,9 +19,7 @@ vi.mock('vue-router', () => ({
   })
 }))
 
-// Firebase / subscription mocks
 const authActionMocks = vi.hoisted(() => ({
-  reportError: vi.fn(),
   accessBillingPortal: vi.fn()
 }))
 
@@ -31,6 +29,7 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({
+    toastErrorHandler: vi.fn(),
     wrapWithErrorHandlingAsync:
       <T extends (...args: never[]) => unknown>(fn: T) =>
       (...args: Parameters<T>) =>
@@ -41,7 +40,8 @@ vi.mock('@/composables/useErrorHandling', () => ({
 const subscriptionMocks = vi.hoisted(() => ({
   isActiveSubscription: { value: false },
   isInitialized: { value: true },
-  subscriptionStatus: { value: null }
+  subscriptionStatus: { value: null },
+  initialize: vi.fn()
 }))
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
@@ -52,11 +52,25 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => subscriptionMocks
 }))
 
-// Avoid real network / isCloud behavior
-const mockPerformSubscriptionCheckout = vi.fn()
-vi.mock('@/platform/cloud/subscription/utils/subscriptionCheckoutUtil', () => ({
-  performSubscriptionCheckout: (...args: unknown[]) =>
-    mockPerformSubscriptionCheckout(...args)
+const mockShowPricingTable = vi.fn()
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: () => ({ showPricingTable: mockShowPricingTable })
+  })
+)
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    activeWorkspace: { id: 'w-personal', type: 'personal' },
+    isInPersonalWorkspace: true
+  })
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: { teamWorkspacesEnabled: true, consolidatedBillingEnabled: true }
+  })
 }))
 
 const mockPerformTeamSubscriptionCheckout = vi.fn()
@@ -136,15 +150,15 @@ describe('CloudSubscriptionRedirectView', () => {
     // Shows copy under logo
     expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
 
-    // Triggers checkout flow
-    expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
-      'creator',
-      'monthly',
-      {
-        openInNewTab: false,
-        paymentIntentSource: 'deep_link'
+    expect(mockShowPricingTable).toHaveBeenCalledWith({
+      reason: 'deep_link',
+      planMode: 'personal',
+      initialCheckout: {
+        planMode: 'personal',
+        tierKey: 'creator',
+        billingCycle: 'monthly'
       }
-    )
+    })
 
     // Shows loading affordances
     expect(
@@ -152,14 +166,17 @@ describe('CloudSubscriptionRedirectView', () => {
     ).toBeInTheDocument()
   })
 
-  test('opens billing portal when subscription is already active', async () => {
+  test('uses workspace checkout for an existing personal subscription', async () => {
     subscriptionMocks.isActiveSubscription.value = true
 
     await mountView({ tier: 'creator' })
 
-    expect(mockRouterPush).not.toHaveBeenCalledWith('/')
-    expect(authActionMocks.accessBillingPortal).toHaveBeenCalledTimes(1)
-    expect(mockPerformSubscriptionCheckout).not.toHaveBeenCalled()
+    expect(mockShowPricingTable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialCheckout: expect.objectContaining({ tierKey: 'creator' })
+      })
+    )
+    expect(authActionMocks.accessBillingPortal).not.toHaveBeenCalled()
   })
 
   test('uses first value when subscriptionType is an array', async () => {
@@ -169,13 +186,10 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
-    expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
-      'creator',
-      'monthly',
-      {
-        openInNewTab: false,
-        paymentIntentSource: 'deep_link'
-      }
+    expect(mockShowPricingTable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialCheckout: expect.objectContaining({ tierKey: 'creator' })
+      })
     )
   })
 
@@ -190,7 +204,7 @@ describe('CloudSubscriptionRedirectView', () => {
       { paymentIntentSource: 'deep_link' }
     )
     // Team never goes through the personal checkout path
-    expect(mockPerformSubscriptionCheckout).not.toHaveBeenCalled()
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 
   test('redirects to home for a team link with no stop', async () => {
