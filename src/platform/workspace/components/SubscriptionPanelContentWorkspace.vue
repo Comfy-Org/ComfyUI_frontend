@@ -392,7 +392,9 @@ const showTeamSubscribePrompt = computed(
 )
 
 const isPersonalFree = computed(
-  () => showSubscribePrompt.value && isInPersonalWorkspace.value
+  () =>
+    isInPersonalWorkspace.value &&
+    (showSubscribePrompt.value || isFreeTierPlan.value)
 )
 
 const isTeamActive = computed(
