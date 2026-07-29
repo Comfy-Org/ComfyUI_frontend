@@ -24,9 +24,11 @@ vi.mock('@datadog/browser-rum', () => ({
   datadogRum: { addAction: vi.fn() }
 }))
 
-// location.reload isn't implemented in the test DOM. Override just the `reload`
-// method on the EXISTING window.location object (rather than replacing the whole
-// object, which doesn't survive into nested callbacks/listeners under happy-dom).
+// performReload emits the RUM action immediately before window.location.reload(),
+// so `addAction` is the reliable "recovery was triggered" signal (a clean module
+// mock, unlike stubbing location.reload which the test DOM doesn't cooperate with
+// for calls made from callbacks/listeners). We still override reload on the live
+// location object so the direct-call path can also assert the reload itself.
 const mockReload = vi.fn()
 
 const APP_CHUNK = 'http://localhost/assets/settingStore-CUtU9ycZ.js'
@@ -50,8 +52,6 @@ describe('chunkReload', () => {
     executionState.runningJobIds = []
     mockReload.mockClear()
     addAction.mockClear()
-    // Override only the reload method on the live location object so the stub is
-    // the same function chunkReload sees, including from callbacks/listeners.
     Object.defineProperty(window.location, 'reload', {
       configurable: true,
       writable: true,
@@ -67,35 +67,35 @@ describe('chunkReload', () => {
     const triggered = attemptChunkReload(undefined, APP_CHUNK)
 
     expect(triggered).toBe(true)
-    expect(mockReload).toHaveBeenCalledTimes(1)
     // A RUM action is emitted so the recovery is observable/aggregatable.
     expect(addAction).toHaveBeenCalledWith('stale-chunk-reload', {
       chunkUrl: APP_CHUNK
     })
+    // Direct-call path: the actual reload fires too.
+    expect(mockReload).toHaveBeenCalledTimes(1)
     // Guard is persisted so a subsequent failure will not reload again.
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).not.toBeNull()
   })
 
-  it('does NOT reload a second time once the loop guard is set', () => {
+  it('does NOT trigger a second recovery once the loop guard is set', () => {
     expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(true)
-    expect(mockReload).toHaveBeenCalledTimes(1)
+    expect(addAction).toHaveBeenCalledTimes(1)
 
     // Second failure in the same session must be a no-op (asset is genuinely gone).
     expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
-    expect(mockReload).toHaveBeenCalledTimes(1)
     expect(addAction).toHaveBeenCalledTimes(1)
   })
 
-  it('defers the reload when there are unsaved workflow changes', () => {
+  it('defers recovery when there are unsaved workflow changes', () => {
     workflowState.modifiedWorkflows = [{ path: 'wf.json' }]
 
     expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
-    expect(mockReload).not.toHaveBeenCalled()
+    expect(addAction).not.toHaveBeenCalled()
     // Guard is NOT set, so recovery can still happen once work is safe.
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).toBeNull()
   })
 
-  it('does not reload if the loop guard cannot be persisted', () => {
+  it('does not recover if the loop guard cannot be persisted', () => {
     // Storage is readable (getItem -> null) but writes fail (e.g. quota). Without
     // a stored guard a reload could loop, so we must not reload.
     vi.spyOn(window.sessionStorage, 'setItem').mockImplementation(() => {
@@ -103,19 +103,18 @@ describe('chunkReload', () => {
     })
 
     expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
-    expect(mockReload).not.toHaveBeenCalled()
     expect(addAction).not.toHaveBeenCalled()
   })
 
-  it('defers the reload when a generation is running', () => {
+  it('defers recovery when a generation is running', () => {
     executionState.runningJobIds = ['job-1']
 
     expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
-    expect(mockReload).not.toHaveBeenCalled()
+    expect(addAction).not.toHaveBeenCalled()
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).toBeNull()
   })
 
-  it('reloads at the next safe navigation after a deferred (dirty) failure', () => {
+  it('recovers at the next safe navigation after a deferred (dirty) failure', () => {
     let afterEachCb: (() => void) | undefined
     const router = {
       afterEach: (cb: () => void) => {
@@ -126,41 +125,39 @@ describe('chunkReload', () => {
 
     workflowState.modifiedWorkflows = [{ path: 'wf.json' }]
     expect(attemptChunkReload(router, APP_CHUNK)).toBe(false)
-    expect(mockReload).not.toHaveBeenCalled()
+    expect(addAction).not.toHaveBeenCalled()
     expect(afterEachCb).toBeDefined()
 
-    // Navigation happens but still dirty -> no reload yet.
+    // Navigation happens but still dirty -> no recovery yet.
     afterEachCb?.()
-    expect(mockReload).not.toHaveBeenCalled()
+    expect(addAction).not.toHaveBeenCalled()
 
-    // Now safe -> reload fires once.
+    // Now safe -> recovery fires once.
     workflowState.modifiedWorkflows = []
     afterEachCb?.()
-    expect(mockReload).toHaveBeenCalledTimes(1)
+    expect(addAction).toHaveBeenCalledTimes(1)
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).not.toBeNull()
   })
 
-  it('reloads on a vite:preloadError for an app /assets/ chunk', () => {
+  it('recovers on a vite:preloadError for an app /assets/ chunk', () => {
     installChunkReload()
     window.dispatchEvent(preloadErrorEvent(APP_CHUNK))
 
-    expect(mockReload).toHaveBeenCalledTimes(1)
     expect(addAction).toHaveBeenCalledWith('stale-chunk-reload', {
       chunkUrl: APP_CHUNK
     })
   })
 
-  it('does NOT reload on a vite:preloadError for an /extensions/ asset', () => {
+  it('does NOT recover on a vite:preloadError for an /extensions/ asset', () => {
     installChunkReload()
     window.dispatchEvent(preloadErrorEvent(EXTENSION_CHUNK))
 
     // Missing custom-node assets are not stale — a reload can't fix them, and
     // they dominate preloadError volume, so recovery must not fire for them.
-    expect(mockReload).not.toHaveBeenCalled()
     expect(addAction).not.toHaveBeenCalled()
   })
 
-  it('reloads on an unhandledrejection ChunkLoadError for an app chunk', () => {
+  it('recovers on an unhandledrejection ChunkLoadError for an app chunk', () => {
     installChunkReload()
 
     const reason = new Error(
@@ -171,7 +168,7 @@ describe('chunkReload', () => {
     event.reason = reason
     window.dispatchEvent(event)
 
-    expect(mockReload).toHaveBeenCalledTimes(1)
+    expect(addAction).toHaveBeenCalledTimes(1)
   })
 
   it('ignores an unhandledrejection for an /extensions/ asset', () => {
@@ -183,7 +180,7 @@ describe('chunkReload', () => {
     )
     window.dispatchEvent(event)
 
-    expect(mockReload).not.toHaveBeenCalled()
+    expect(addAction).not.toHaveBeenCalled()
   })
 
   it('ignores unrelated unhandledrejections', () => {
@@ -193,6 +190,6 @@ describe('chunkReload', () => {
     event.reason = new Error('some unrelated error')
     window.dispatchEvent(event)
 
-    expect(mockReload).not.toHaveBeenCalled()
+    expect(addAction).not.toHaveBeenCalled()
   })
 })
