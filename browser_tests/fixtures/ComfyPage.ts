@@ -371,17 +371,26 @@ export class ComfyPage {
       // context for clearing storage without loading the full frontend app.
       await this.page.goto(`${this.url}/api/users`)
       await this.page.evaluate((id) => {
-        // setPersistence(browserLocalPersistence) migrates the signed-in user
-        // out of IndexedDB, so localStorage holds the only copy of the session.
-        const session = Object.keys(localStorage)
-          .filter((key) => key.startsWith('firebase:'))
-          .map((key): [string, string] => [
-            key,
-            localStorage.getItem(key) ?? ''
-          ])
+        // The smoke user signs in before setup() runs. Firebase keeps the
+        // session under firebase:* (localStorage, because the app calls
+        // setPersistence(browserLocalPersistence)) and the workspace token
+        // under Comfy.Workspace.* (sessionStorage). Clearing either one logs
+        // the cloud suite out: no session redirects to /cloud/login, and no
+        // workspace token falls back to the Firebase token, which Cloud
+        // refuses with 403 on every workspace-scoped endpoint.
+        const keep = (key: string) =>
+          key.startsWith('firebase:') || key.startsWith('Comfy.Workspace.')
+        const save = (store: Storage) =>
+          Object.keys(store)
+            .filter(keep)
+            .map((key): [string, string] => [key, store.getItem(key) ?? ''])
+        const keptLocal = save(localStorage)
+        const keptSession = save(sessionStorage)
         localStorage.clear()
         sessionStorage.clear()
-        for (const [key, value] of session) localStorage.setItem(key, value)
+        for (const [key, value] of keptLocal) localStorage.setItem(key, value)
+        for (const [key, value] of keptSession)
+          sessionStorage.setItem(key, value)
         localStorage.setItem('Comfy.userId', id)
       }, this.id)
     }
