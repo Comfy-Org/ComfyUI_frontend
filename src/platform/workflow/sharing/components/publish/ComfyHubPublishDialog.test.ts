@@ -266,54 +266,23 @@ describe('ComfyHubPublishDialog', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('renames the local workflow when the published name differs', async () => {
+  it('keeps the local workflow name when the Hub title differs', async () => {
     renderComponent()
     await flushPromises()
-    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
+    if (mockFormDataHolder.value) {
+      mockFormDataHolder.value.name = 'Published title'
+    }
 
     await userEvent.click(screen.getByTestId('publish'))
     await flushPromises()
 
-    expect(mockRenameWorkflow).toHaveBeenCalledWith(
-      expect.anything(),
-      'workflows/renamed.json'
+    expect(mockSubmitToComfyHub).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Published title' })
     )
-    expect(mockSubmitToComfyHub.mock.invocationCallOrder[0]).toBeLessThan(
-      mockRenameWorkflow.mock.invocationCallOrder[0]
-    )
-  })
-
-  it('does not rename when the published name matches the file name', async () => {
-    renderComponent()
-    await flushPromises()
-    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'test'
-
-    await userEvent.click(screen.getByTestId('publish'))
-    await flushPromises()
-
     expect(mockRenameWorkflow).not.toHaveBeenCalled()
   })
 
-  it('still reports success but warns when the post-publish rename fails', async () => {
-    mockRenameWorkflow.mockRejectedValueOnce(new Error('rename failed'))
-    renderComponent()
-    await flushPromises()
-    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
-
-    await userEvent.click(screen.getByTestId('publish'))
-    await flushPromises()
-
-    expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'warn' })
-    )
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
-    )
-    expect(onClose).toHaveBeenCalledOnce()
-  })
-
-  it('does not rename or close when publish submission fails', async () => {
+  it('does not close when publish submission fails', async () => {
     mockSubmitToComfyHub.mockRejectedValueOnce(new Error('submit failed'))
     renderComponent()
     await flushPromises()
@@ -323,7 +292,6 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
-    expect(mockRenameWorkflow).not.toHaveBeenCalled()
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
@@ -333,49 +301,19 @@ describe('ComfyHubPublishDialog', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it('does not refetch publish status when the rename changes the path mid-publish', async () => {
-    mockRenameWorkflow.mockImplementationOnce(async () => {
-      setActiveWorkflow({
-        path: 'workflows/renamed.json',
-        filename: 'renamed.json',
-        directory: 'workflows',
-        isTemporary: false,
-        isModified: false
-      })
-    })
+  it('caches the Hub title under the unchanged workflow path', async () => {
     renderComponent()
     await flushPromises()
-    mockGetPublishStatus.mockClear()
-    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
-
-    await userEvent.click(screen.getByTestId('publish'))
-    await flushPromises()
-
-    expect(mockGetPublishStatus).not.toHaveBeenCalledWith(
-      'workflows/renamed.json'
-    )
-  })
-
-  it('caches the prefill under the renamed path after publish', async () => {
-    mockRenameWorkflow.mockImplementationOnce(async () => {
-      setActiveWorkflow({
-        path: 'workflows/renamed.json',
-        filename: 'renamed.json',
-        directory: 'workflows',
-        isTemporary: false,
-        isModified: false
-      })
-    })
-    renderComponent()
-    await flushPromises()
-    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
+    if (mockFormDataHolder.value) {
+      mockFormDataHolder.value.name = 'Published title'
+    }
 
     await userEvent.click(screen.getByTestId('publish'))
     await flushPromises()
 
     expect(mockCachePublishPrefill).toHaveBeenCalledWith(
-      'workflows/renamed.json',
-      expect.anything()
+      'workflows/test.json',
+      expect.objectContaining({ name: 'Published title' })
     )
   })
 
@@ -386,6 +324,7 @@ describe('ComfyHubPublishDialog', () => {
       shareUrl: 'http://localhost/?share=abc123',
       publishedAt: new Date(),
       prefill: {
+        name: 'Published title',
         description: 'Existing description',
         tags: ['art', 'upscale'],
         thumbnailType: 'video',
@@ -397,6 +336,7 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockApplyPrefill).toHaveBeenCalledWith({
+      name: 'Published title',
       description: 'Existing description',
       tags: ['art', 'upscale'],
       thumbnailType: 'video',

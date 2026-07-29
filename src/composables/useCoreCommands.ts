@@ -517,7 +517,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         useTelemetry()?.trackWorkflowExecution()
 
-        await app.queuePrompt(0, batchCount)
+        await app.queuePrompt(0, batchCount, { intent: metadata })
       }
     },
     {
@@ -540,7 +540,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         useTelemetry()?.trackWorkflowExecution()
 
-        await app.queuePrompt(-1, batchCount)
+        await app.queuePrompt(-1, batchCount, { intent: metadata })
       }
     },
     {
@@ -584,7 +584,10 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
         useTelemetry()?.trackWorkflowExecution()
-        await app.queuePrompt(0, batchCount, executionIds)
+        await app.queuePrompt(0, batchCount, {
+          queueNodeIds: executionIds,
+          intent: metadata
+        })
       }
     },
     {
