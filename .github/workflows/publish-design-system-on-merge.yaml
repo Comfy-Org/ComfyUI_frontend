@@ -105,6 +105,8 @@ jobs:
           TEXT=":package: *@comfyorg/design-system@${VERSION}* published to npm — <${PR_URL}|#${PR_NUMBER}> by ${PR_AUTHOR}. <https://www.npmjs.com/package/@comfyorg/design-system/v/${VERSION}|View on npm>"
           BODY=$(jq -n --arg ch "$SLACK_CHANNEL_ID" --arg text "$TEXT" '{channel: $ch, text: $text}')
           RESPONSE=$(curl -sS -X POST \
+            --connect-timeout 10 \
+            --max-time 30 \
             -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$BODY" \
