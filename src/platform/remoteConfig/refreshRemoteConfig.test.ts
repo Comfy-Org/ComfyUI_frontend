@@ -143,8 +143,11 @@ describe('refreshRemoteConfig', () => {
       expect(window.__CONFIG__).toEqual({})
     })
 
-    it('preserves config on 500 response', async () => {
-      const existingConfig = { subscription_required: true }
+    it('clears release flags but preserves other config on 500 response', async () => {
+      const existingConfig = {
+        subscription_required: true,
+        release_flags: { might_be_risky_feature_foo: true }
+      }
       remoteConfig.value = existingConfig
       window.__CONFIG__ = existingConfig
 
@@ -154,8 +157,9 @@ describe('refreshRemoteConfig', () => {
 
       await refreshRemoteConfig()
 
-      expect(remoteConfig.value).toEqual(existingConfig)
-      expect(window.__CONFIG__).toEqual(existingConfig)
+      const safeConfig = { subscription_required: true }
+      expect(remoteConfig.value).toEqual(safeConfig)
+      expect(window.__CONFIG__).toEqual(safeConfig)
     })
   })
 })

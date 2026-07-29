@@ -11,6 +11,10 @@ import {
 } from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
+  trackFeatureFlagExposure(key: string, value: boolean): void {
+    datadogRum.addFeatureFlagEvaluation(key, value)
+  }
+
   trackBillingEvent(event: BillingTelemetryEvent): void {
     datadogRum.addAction(
       getBillingTelemetryEventName(event),

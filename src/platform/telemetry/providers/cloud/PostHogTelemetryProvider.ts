@@ -81,8 +81,8 @@ const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
 )
 
 interface QueuedEvent {
-  eventName: TelemetryEventName
-  properties?: TelemetryEventProperties
+  eventName: TelemetryEventName | '$feature_flag_called'
+  properties?: TelemetryEventProperties | Record<string, unknown>
 }
 
 interface DesktopEntryProps {
@@ -259,11 +259,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   private captureRaw(
-    eventName: TelemetryEventName,
+    eventName: TelemetryEventName | '$feature_flag_called',
     properties?: Record<string, unknown>
   ): void {
     if (!this.isEnabled) return
-    if (this.disabledEvents.has(eventName)) return
+    if (
+      eventName !== '$feature_flag_called' &&
+      this.disabledEvents.has(eventName)
+    ) {
+      return
+    }
 
     if (this.isInitialized && this.posthog) {
       try {
@@ -272,11 +277,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         console.error('Failed to track PostHog event:', error)
       }
     } else {
-      this.eventQueue.push({
-        eventName,
-        properties: properties as TelemetryEventProperties
-      })
+      this.eventQueue.push({ eventName, properties })
     }
+  }
+
+  trackFeatureFlagExposure(key: string, value: boolean): void {
+    this.captureRaw('$feature_flag_called', {
+      $feature_flag: key,
+      $feature_flag_response: value,
+      feature_flag_value: value
+    })
   }
 
   private configureDisabledEvents(config: Partial<RemoteConfig> | null): void {

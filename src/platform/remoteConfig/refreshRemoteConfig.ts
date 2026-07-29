@@ -76,7 +76,14 @@ export async function refreshRemoteConfig(
       window.__CONFIG__ = {}
       remoteConfig.value = {}
       remoteConfigState.value = 'error'
+      return
     }
+
+    const safeConfig = { ...remoteConfig.value }
+    delete safeConfig.release_flags
+    window.__CONFIG__ = safeConfig
+    remoteConfig.value = safeConfig
+    remoteConfigState.value = 'error'
   } catch (error) {
     console.error('Failed to fetch remote config:', error)
     window.__CONFIG__ = {}

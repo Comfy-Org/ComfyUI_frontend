@@ -338,6 +338,22 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('event tracking', () => {
+    it('records a feature flag exposure with PostHog standard properties', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackFeatureFlagExposure('might_be_risky_feature_foo', true)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+        '$feature_flag_called',
+        {
+          $feature_flag: 'might_be_risky_feature_foo',
+          $feature_flag_response: true,
+          feature_flag_value: true
+        }
+      )
+    })
+
     it('captures events after initialization', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
