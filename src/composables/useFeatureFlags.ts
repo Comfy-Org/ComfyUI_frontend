@@ -41,6 +41,41 @@ export enum ServerFeatureFlag {
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags'
 }
 
+interface FeatureFlagDefinition<T> {
+  key: string
+  resolve: (key: string) => T
+}
+
+type FeatureFlagDefinitions = Record<string, FeatureFlagDefinition<unknown>>
+
+type ResolvedFeatureFlags<T extends FeatureFlagDefinitions> = {
+  readonly [K in keyof T]: T[K] extends FeatureFlagDefinition<infer V>
+    ? V
+    : never
+}
+
+function defineFeatureFlag<T>(
+  key: string,
+  resolve: (key: string) => T
+): FeatureFlagDefinition<T> {
+  return { key, resolve }
+}
+
+function createFeatureFlags<const T extends FeatureFlagDefinitions>(
+  definitions: T
+): ResolvedFeatureFlags<T> {
+  const flags: Record<string, unknown> = {}
+
+  for (const [property, { key, resolve }] of Object.entries(definitions)) {
+    Object.defineProperty(flags, property, {
+      enumerable: true,
+      get: () => resolve(key)
+    })
+  }
+
+  return flags as ResolvedFeatureFlags<T>
+}
+
 /**
  * Resolves a feature flag value with dev override > remoteConfig > serverFeature priority.
  */
@@ -78,173 +113,161 @@ function resolveAuthGatedFlag(
  * Composable for reactive access to server-side feature flags
  */
 export function useFeatureFlags() {
-  const flags = reactive({
-    get supportsPreviewMetadata() {
-      return api.getServerFeature(ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
-    },
-    get maxUploadSize() {
-      return api.getServerFeature(ServerFeatureFlag.MAX_UPLOAD_SIZE)
-    },
-    get supportsManagerV4() {
-      return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
-    },
-    get modelUploadButtonEnabled() {
-      return resolveFlag(
+  const flags = reactive(
+    createFeatureFlags({
+      supportsPreviewMetadata: defineFeatureFlag(
+        ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA,
+        (key) => api.getServerFeature(key)
+      ),
+      maxUploadSize: defineFeatureFlag(
+        ServerFeatureFlag.MAX_UPLOAD_SIZE,
+        (key) => api.getServerFeature(key)
+      ),
+      supportsManagerV4: defineFeatureFlag(
+        ServerFeatureFlag.MANAGER_SUPPORTS_V4,
+        (key) => api.getServerFeature(key)
+      ),
+      modelUploadButtonEnabled: defineFeatureFlag(
         ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
-        remoteConfig.value.model_upload_button_enabled,
-        false
-      )
-    },
-    get assetRenameEnabled() {
-      return resolveFlag(
+        (key) =>
+          resolveFlag(
+            key,
+            remoteConfig.value.model_upload_button_enabled,
+            false
+          )
+      ),
+      assetRenameEnabled: defineFeatureFlag(
         ServerFeatureFlag.ASSET_RENAME_ENABLED,
-        remoteConfig.value.asset_rename_enabled,
-        false
-      )
-    },
-    get privateModelsEnabled() {
-      return resolveFlag(
+        (key) =>
+          resolveFlag(key, remoteConfig.value.asset_rename_enabled, false)
+      ),
+      privateModelsEnabled: defineFeatureFlag(
         ServerFeatureFlag.PRIVATE_MODELS_ENABLED,
-        remoteConfig.value.private_models_enabled,
-        false
-      )
-    },
-    get onboardingSurveyEnabled() {
-      return resolveFlag(
+        (key) =>
+          resolveFlag(key, remoteConfig.value.private_models_enabled, false)
+      ),
+      onboardingSurveyEnabled: defineFeatureFlag(
         ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED,
-        remoteConfig.value.onboarding_survey_enabled,
-        false
-      )
-    },
-    get linearToggleEnabled() {
-      if (isNightly) return true
-
-      return resolveFlag(
+        (key) =>
+          resolveFlag(key, remoteConfig.value.onboarding_survey_enabled, false)
+      ),
+      linearToggleEnabled: defineFeatureFlag(
         ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
-        remoteConfig.value.linear_toggle_enabled,
-        false
-      )
-    },
-    /**
-     * Whether team workspaces feature is enabled.
-     * IMPORTANT: Returns false until authenticated remote config is loaded.
-     * This ensures we never use workspace tokens when the feature is disabled,
-     * and prevents race conditions during initialization.
-     */
-    get teamWorkspacesEnabled() {
-      return resolveAuthGatedFlag(
+        (key) =>
+          isNightly
+            ? true
+            : resolveFlag(key, remoteConfig.value.linear_toggle_enabled, false)
+      ),
+      /**
+       * Whether team workspaces feature is enabled.
+       * IMPORTANT: Returns false until authenticated remote config is loaded.
+       * This ensures we never use workspace tokens when the feature is disabled,
+       * and prevents race conditions during initialization.
+       */
+      teamWorkspacesEnabled: defineFeatureFlag(
         ServerFeatureFlag.TEAM_WORKSPACES_ENABLED,
-        remoteConfig.value.team_workspaces_enabled,
-        cachedTeamWorkspacesEnabled
-      )
-    },
-    get partnerNodeGovernanceEnabled() {
-      return resolveFlag(
+        (key) =>
+          resolveAuthGatedFlag(
+            key,
+            remoteConfig.value.team_workspaces_enabled,
+            cachedTeamWorkspacesEnabled
+          )
+      ),
+      partnerNodeGovernanceEnabled: defineFeatureFlag(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
-        remoteConfig.value.partner_node_governance_enabled,
-        false
-      )
-    },
-    get userSecretsEnabled() {
-      return resolveFlag(
+        (key) =>
+          resolveFlag(
+            key,
+            remoteConfig.value.partner_node_governance_enabled,
+            false
+          )
+      ),
+      userSecretsEnabled: defineFeatureFlag(
         ServerFeatureFlag.USER_SECRETS_ENABLED,
-        remoteConfig.value.user_secrets_enabled,
-        false
-      )
-    },
-    get nodeReplacementsEnabled() {
-      return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
-    },
-    get nodeLibraryEssentialsEnabled() {
-      if (isNightly || import.meta.env.DEV) return true
-
-      return (
-        remoteConfig.value.node_library_essentials_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
-          false
-        )
-      )
-    },
-    get workflowSharingEnabled() {
-      // UI is also gated on `isCloud` in TopMenuSection; default false
-      // to match other flags' opt-in convention.
-      return resolveFlag(
+        (key) =>
+          resolveFlag(key, remoteConfig.value.user_secrets_enabled, false)
+      ),
+      nodeReplacementsEnabled: defineFeatureFlag(
+        ServerFeatureFlag.NODE_REPLACEMENTS,
+        (key) => api.getServerFeature(key, false)
+      ),
+      nodeLibraryEssentialsEnabled: defineFeatureFlag(
+        ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
+        (key) =>
+          isNightly || import.meta.env.DEV
+            ? true
+            : (remoteConfig.value.node_library_essentials_enabled ??
+              api.getServerFeature(key, false))
+      ),
+      workflowSharingEnabled: defineFeatureFlag(
         ServerFeatureFlag.WORKFLOW_SHARING_ENABLED,
-        remoteConfig.value.workflow_sharing_enabled,
-        false
-      )
-    },
-    get comfyHubUploadEnabled() {
-      return resolveFlag(
+        (key) =>
+          resolveFlag(key, remoteConfig.value.workflow_sharing_enabled, false)
+      ),
+      comfyHubUploadEnabled: defineFeatureFlag(
         ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED,
-        remoteConfig.value.comfyhub_upload_enabled,
-        false
-      )
-    },
-    get comfyHubProfileGateEnabled() {
-      return resolveFlag(
+        (key) =>
+          resolveFlag(key, remoteConfig.value.comfyhub_upload_enabled, false)
+      ),
+      comfyHubProfileGateEnabled: defineFeatureFlag(
         ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
-        remoteConfig.value.comfyhub_profile_gate_enabled,
-        false
-      )
-    },
-    get showSignInButton(): boolean | undefined {
-      return api.getServerFeature<boolean | undefined>(
+        (key) =>
+          resolveFlag(
+            key,
+            remoteConfig.value.comfyhub_profile_gate_enabled,
+            false
+          )
+      ),
+      showSignInButton: defineFeatureFlag(
         ServerFeatureFlag.SHOW_SIGNIN_BUTTON,
-        undefined
-      )
-    },
-    get unifiedCloudAuthEnabled() {
-      return resolveFlag(
+        (key) => api.getServerFeature<boolean | undefined>(key, undefined)
+      ),
+      unifiedCloudAuthEnabled: defineFeatureFlag(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
-        remoteConfig.value.unified_cloud_auth,
-        false
-      )
-    },
-    /**
-     * Whether personal workspaces use the consolidated (workspace-scoped)
-     * billing flow. While false (default), personal workspaces stay on the
-     * legacy per-user billing flow; team workspaces are unaffected.
-     */
-    get consolidatedBillingEnabled() {
-      return resolveAuthGatedFlag(
+        (key) => resolveFlag(key, remoteConfig.value.unified_cloud_auth, false)
+      ),
+      /**
+       * Whether personal workspaces use the consolidated (workspace-scoped)
+       * billing flow. While false (default), personal workspaces stay on the
+       * legacy per-user billing flow; team workspaces are unaffected.
+       */
+      consolidatedBillingEnabled: defineFeatureFlag(
         ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED,
-        remoteConfig.value.consolidated_billing_enabled,
-        cachedConsolidatedBillingEnabled
-      )
-    },
-    get billingControlEnabled() {
-      return resolveAuthGatedFlag(
+        (key) =>
+          resolveAuthGatedFlag(
+            key,
+            remoteConfig.value.consolidated_billing_enabled,
+            cachedConsolidatedBillingEnabled
+          )
+      ),
+      billingControlEnabled: defineFeatureFlag(
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
-        remoteConfig.value.billing_control_enabled,
-        cachedBillingControlEnabled
-      )
-    },
-    get freeTierJobAllowanceEnabled() {
-      const config = remoteConfig.value as typeof remoteConfig.value & {
-        free_tier_job_allowance_enabled?: boolean
-      }
-      return resolveFlag(
+        (key) =>
+          resolveAuthGatedFlag(
+            key,
+            remoteConfig.value.billing_control_enabled,
+            cachedBillingControlEnabled
+          )
+      ),
+      freeTierJobAllowanceEnabled: defineFeatureFlag(
         ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED,
-        config.free_tier_job_allowance_enabled,
-        false
-      )
-    },
-    get signupTurnstileMode() {
-      return resolveFlag(
+        (key) => {
+          const config = remoteConfig.value as typeof remoteConfig.value & {
+            free_tier_job_allowance_enabled?: boolean
+          }
+          return resolveFlag(key, config.free_tier_job_allowance_enabled, false)
+        }
+      ),
+      signupTurnstileMode: defineFeatureFlag(
         ServerFeatureFlag.SIGNUP_TURNSTILE,
-        remoteConfig.value.signup_turnstile,
-        'off'
-      )
-    },
-    get supportsModelTypeTags() {
-      return api.getServerFeature(
+        (key) => resolveFlag(key, remoteConfig.value.signup_turnstile, 'off')
+      ),
+      supportsModelTypeTags: defineFeatureFlag(
         ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
-        false
+        (key) => api.getServerFeature(key, false)
       )
-    }
-  })
+    })
+  )
 
   const featureFlag = <T = unknown>(featurePath: string, defaultValue?: T) =>
     computed(() => api.getServerFeature(featurePath, defaultValue))
