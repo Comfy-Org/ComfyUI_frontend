@@ -32,12 +32,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
+      - name: Setup E2E dependencies
+        uses: ./.github/actions/setup-e2e-dependencies
         with:
-          include_build_step: true
+          setup_node: true
+      - name: Build frontend
+        run: pnpm build
+        env:
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
 
-      # Upload only built dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
         uses: actions/upload-artifact@v6
         with:
@@ -87,8 +90,8 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Install frontend deps
-        run: pnpm install --frozen-lockfile
+      - name: Setup E2E dependencies
+        uses: ./.github/actions/setup-e2e-dependencies
 
       # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
@@ -145,8 +148,8 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Install frontend deps
-        run: pnpm install --frozen-lockfile
+      - name: Setup E2E dependencies
+        uses: ./.github/actions/setup-e2e-dependencies
 
       # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})

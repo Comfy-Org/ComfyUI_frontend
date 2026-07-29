@@ -1,0 +1,37 @@
+name: Setup E2E Dependencies
+description: 'Install pnpm dependencies using a shared offline-capable store'
+inputs:
+  setup_node:
+    description: 'Set up the Node.js version declared in .nvmrc'
+    required: false
+    default: 'false'
+runs:
+  using: 'composite'
+  steps:
+    - name: Install pnpm
+      uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+    - name: Setup Node.js
+      if: ${{ inputs.setup_node == 'true' }}
+      uses: actions/setup-node@v6
+      with:
+        node-version-file: '.nvmrc'
+
+    - name: Restore pnpm store
+      id: pnpm-store
+      uses: actions/cache@v5 # v5.0.2
+      with:
+        path: .pnpm-store
+        key: e2e-pnpm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.nvmrc', 'package.json', 'pnpm-lock.yaml') }}
+        restore-keys: |
+          e2e-pnpm-${{ runner.os }}-${{ runner.arch }}-
+
+    - name: Install dependencies offline
+      if: ${{ steps.pnpm-store.outputs.cache-hit == 'true' }}
+      shell: bash
+      run: pnpm install --offline --frozen-lockfile --store-dir .pnpm-store
+
+    - name: Install dependencies
+      if: ${{ steps.pnpm-store.outputs.cache-hit != 'true' }}
+      shell: bash
+      run: pnpm install --frozen-lockfile --store-dir .pnpm-store
