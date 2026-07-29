@@ -73,8 +73,16 @@
         :team-plan="selectedTeamStop!"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
+        :show-submit="false"
         @add-credit-card="handleTeamSubscribe"
         @back="handleBackToPricing"
+      />
+
+      <UnifiedStripePaymentSelector
+        v-if="previewVariant === 'team-new'"
+        :amount-cents="selectedTeamStop!.discountedUsd * 100"
+        :is-loading="isSubscribing || isPolling"
+        @confirm="handleTeamSubscribe"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -83,16 +91,40 @@
         :tier-key="selectedTierKey!"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
+        :show-submit="previewData!.cost_today_cents === 0"
         @add-credit-card="handleAddCreditCard"
         @back="handleBackToPricing"
+      />
+
+      <UnifiedStripePaymentSelector
+        v-if="
+          previewVariant === 'personal-new' && previewData!.cost_today_cents > 0
+        "
+        :amount-cents="previewData!.cost_today_cents"
+        :is-loading="isSubscribing || isPolling"
+        @confirm="handleAddCreditCard"
       />
 
       <SubscriptionTransitionPreviewWorkspace
         v-else-if="previewVariant === 'personal-change'"
         :preview-data="previewData!"
         :is-loading="isSubscribing || isPolling"
+        :show-submit="
+          !previewData!.is_immediate || previewData!.cost_today_cents === 0
+        "
         @confirm="handleConfirmTransition"
         @back="handleBackToPricing"
+      />
+
+      <UnifiedStripePaymentSelector
+        v-if="
+          previewVariant === 'personal-change' &&
+          previewData!.is_immediate &&
+          previewData!.cost_today_cents > 0
+        "
+        :amount-cents="previewData!.cost_today_cents"
+        :is-loading="isSubscribing || isPolling"
+        @confirm="handleConfirmTransition"
       />
     </template>
 
@@ -122,6 +154,7 @@ import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPrev
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
+import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 
 const { onClose, reason, initialPlanMode, initialCheckout } = defineProps<{
   onClose: () => void

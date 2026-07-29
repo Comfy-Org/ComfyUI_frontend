@@ -22,6 +22,7 @@ const INITIAL_INTERVAL_MS = 1000
 const MAX_INTERVAL_MS = 8000
 const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000 // 2 minutes
+const REDIRECT_OPERATION_STORAGE_KEY = 'Comfy.BillingRedirectOperation'
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
@@ -49,6 +50,11 @@ interface BillingOperation {
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
   downgradeToPersonal?: StartOperationMetadata['downgradeToPersonal']
+}
+
+interface PersistedRedirectOperation {
+  opId: string
+  type: OperationType
 }
 
 type TerminalResolver = (operation: BillingOperation) => void
@@ -88,6 +94,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   ): Promise<BillingOperation> {
     const existing = operations.value.get(opId)
     if (existing) {
+      if (existing.status !== 'pending') {
+        clearOperation(opId)
+        return startOperation(opId, type)
+      }
       return terminalPromises.get(opId) ?? Promise.resolve(existing)
     }
 
@@ -132,6 +142,47 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     return terminal
   }
 
+  function beginRedirectOperation(opId: string, type: OperationType) {
+    try {
+      localStorage.setItem(
+        REDIRECT_OPERATION_STORAGE_KEY,
+        JSON.stringify({ opId, type } satisfies PersistedRedirectOperation)
+      )
+    } catch {
+      return
+    }
+  }
+
+  function restoreRedirectOperation() {
+    let persisted: string | null
+    try {
+      persisted = localStorage.getItem(REDIRECT_OPERATION_STORAGE_KEY)
+    } catch {
+      return
+    }
+    if (!persisted) return
+
+    try {
+      const operation: unknown = JSON.parse(persisted)
+      if (!isPersistedRedirectOperation(operation)) {
+        localStorage.removeItem(REDIRECT_OPERATION_STORAGE_KEY)
+        return
+      }
+      void startOperation(operation.opId, operation.type)
+    } catch {
+      localStorage.removeItem(REDIRECT_OPERATION_STORAGE_KEY)
+    }
+  }
+
+  function isPersistedRedirectOperation(
+    value: unknown
+  ): value is PersistedRedirectOperation {
+    if (!value || typeof value !== 'object') return false
+    if (!('opId' in value) || typeof value.opId !== 'string') return false
+    if (!('type' in value)) return false
+    return value.type === 'subscription' || value.type === 'topup'
+  }
+
   async function poll(opId: string) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
@@ -143,6 +194,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     try {
       const response = await workspaceApi.getBillingOpStatus(opId)
+
+      if (response.next_action_redirect_url) {
+        beginRedirectOperation(opId, operation.type)
+        globalThis.location.assign(response.next_action_redirect_url)
+        return
+      }
 
       if (response.status === 'succeeded') {
         await handleSuccess(opId)
@@ -378,6 +435,20 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
     terminalResolvers.delete(opId)
     terminalPromises.delete(opId)
+    clearPersistedRedirectOperation(opId)
+  }
+
+  function clearPersistedRedirectOperation(opId: string) {
+    try {
+      const persisted = localStorage.getItem(REDIRECT_OPERATION_STORAGE_KEY)
+      if (!persisted) return
+      const operation: unknown = JSON.parse(persisted)
+      if (isPersistedRedirectOperation(operation) && operation.opId === opId) {
+        localStorage.removeItem(REDIRECT_OPERATION_STORAGE_KEY)
+      }
+    } catch {
+      localStorage.removeItem(REDIRECT_OPERATION_STORAGE_KEY)
+    }
   }
 
   function updateOperationStatus(
@@ -424,6 +495,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     isAddingCredits,
     getOperation,
     startOperation,
+    beginRedirectOperation,
+    restoreRedirectOperation,
     clearOperation
   }
 })

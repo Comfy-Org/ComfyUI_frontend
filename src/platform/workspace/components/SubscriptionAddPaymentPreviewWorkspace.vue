@@ -138,6 +138,7 @@
 
       <!-- Add Credit Card Button -->
       <Button
+        v-if="showSubmit"
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
@@ -186,6 +187,7 @@ interface Props {
   previewData?: PreviewSubscribeResponse | null
   /** Team-plan checkout (selected slider stop); overrides tier-derived display. */
   teamPlan?: TeamPlanSelection | null
+  showSubmit?: boolean
 }
 
 const {
@@ -193,7 +195,8 @@ const {
   billingCycle = 'monthly',
   isLoading = false,
   previewData = null,
-  teamPlan = null
+  teamPlan = null,
+  showSubmit = true
 } = defineProps<Props>()
 
 defineEmits<{
