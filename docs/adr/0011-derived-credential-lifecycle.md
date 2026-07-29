@@ -86,14 +86,13 @@ traffic and prompts re-authentication in place. Invalidation for that case is
 identity-driven rather than polled or timed, and it deliberately does not infer
 session death from a `401`. A `401` is per-endpoint and overloaded, so treating
 one as terminal would disrupt a working user. Recovery also re-scopes: it
-restores the workspace context the same sign-out reset, and a revalidation
+restores the workspace context that the same sign-out reset, and a revalidation
 re-checks that its captured scope is still current before minting. The realtime
 socket is reconnected only once that scope has settled, because its handshake
 token fixes its scope at connect time and nothing re-handshakes on a workspace
 change; everywhere else the app changes workspace by reloading, and only a
-dropped connection re-handshakes at all. Re-scoping
-is bounded, so a stalled workspace list costs the scope rather than realtime as
-well. Invariant 4 is not absolute here: recovery lifts the suspension as soon as
+dropped connection re-handshakes at all. Re-scoping is bounded, so a stalled
+workspace list costs the scope rather than realtime as well. Invariant 4 is not absolute here: recovery lifts the suspension as soon as
 it holds a usable credential, so HTTP has a brief personal-scoped window before
 the workspace context returns. A re-scope that throws degrades to personal, as
 the workspace gate does at cold boot; a re-scope that outlives the bound is

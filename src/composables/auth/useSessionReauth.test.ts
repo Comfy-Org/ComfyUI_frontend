@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
   signInWithGithub: vi.fn(),
   showSignInDialog: vi.fn(),
   restoreCloudSession: vi.fn(),
-  currentUser: null as { uid: string } | null,
   lastKnownProviderId: vi.fn<() => string | undefined>()
 }))
 
@@ -22,14 +21,6 @@ vi.mock('@/platform/auth/session/restoreCloudSession', () => ({
   restoreCloudSession: mocks.restoreCloudSession
 }))
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({
-    get currentUser() {
-      return mocks.currentUser
-    }
-  })
-}))
-
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({ showSignInDialog: mocks.showSignInDialog })
 }))
@@ -40,11 +31,12 @@ vi.mock('@/platform/auth/session/sessionExpiry', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.signInWithGoogle.mockResolvedValue(undefined)
-  mocks.signInWithGithub.mockResolvedValue(undefined)
+  // The real actions resolve to a UserCredential on success and to undefined
+  // when they reported a failure, so the mocks must carry that signal too.
+  mocks.signInWithGoogle.mockResolvedValue({ user: { uid: 'uid-a' } })
+  mocks.signInWithGithub.mockResolvedValue({ user: { uid: 'uid-a' } })
   mocks.showSignInDialog.mockResolvedValue(true)
   mocks.restoreCloudSession.mockResolvedValue(undefined)
-  mocks.currentUser = { uid: 'uid-a' }
 })
 
 describe('useSessionReauth', () => {
@@ -94,17 +86,35 @@ describe('useSessionReauth', () => {
     expect(mocks.restoreCloudSession).toHaveBeenCalledTimes(1)
   })
 
+  it('does not restore on a cancelled retry after an earlier sign-in succeeded', async () => {
+    mocks.lastKnownProviderId.mockReturnValue('google.com')
+    const { reauthenticate } = useSessionReauth()
+
+    // First attempt signs in but the restore fails, so the banner stays up and
+    // a signed-in user is left behind.
+    mocks.restoreCloudSession.mockRejectedValueOnce(new Error('mint failed'))
+    await reauthenticate().catch(() => {})
+    expect(mocks.restoreCloudSession).toHaveBeenCalledTimes(1)
+
+    // Second attempt is cancelled. Reading the leftover user instead of the
+    // action's result would restore again and report a failure the user did
+    // not trigger.
+    mocks.signInWithGoogle.mockResolvedValue(undefined)
+    await reauthenticate()
+
+    expect(mocks.restoreCloudSession).toHaveBeenCalledTimes(1)
+  })
+
   it('leaves failure reporting to the shared sign-in action', async () => {
     mocks.lastKnownProviderId.mockReturnValue('google.com')
     // Production contract: the shared action reports its own failure and
     // resolves undefined either way. It cannot reject.
     mocks.signInWithGoogle.mockResolvedValue(undefined)
-    mocks.currentUser = null
     const { reauthenticate, isReauthenticating } = useSessionReauth()
 
     await reauthenticate()
 
-    // No user means the sign-in did not complete. Restoring anyway would toast
+    // Nothing returned means nobody signed in. Restoring anyway would toast
     // "we couldn't restore your session" for a cancel the user chose.
     expect(mocks.restoreCloudSession).not.toHaveBeenCalled()
     expect(isReauthenticating.value).toBe(false)

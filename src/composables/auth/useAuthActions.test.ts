@@ -1,3 +1,4 @@
+import { createTestingPinia } from '@pinia/testing'
 import { FirebaseError } from 'firebase/app'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -459,7 +460,7 @@ describe('useAuthActions.reportError', () => {
 
 describe('reauthentication recovery', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     mockDistributionState.isCloud = true
   })

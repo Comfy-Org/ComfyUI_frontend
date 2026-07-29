@@ -5,7 +5,6 @@ import { resolveAuthProvider } from '@/platform/auth/authProvider'
 import { restoreCloudSession } from '@/platform/auth/session/restoreCloudSession'
 import { lastKnownProviderId } from '@/platform/auth/session/sessionExpiry'
 import { useDialogService } from '@/services/dialogService'
-import { useAuthStore } from '@/stores/authStore'
 
 /**
  * Re-authenticates an expired session in place, without leaving the page.
@@ -32,26 +31,27 @@ export function useSessionReauth() {
     isReauthenticating.value = true
 
     const { signInWithGoogle, signInWithGithub } = useAuthActions()
-    const authStore = useAuthStore()
 
     try {
+      let signedIn: unknown
       switch (resolveAuthProvider(lastKnownProviderId())) {
         case 'google':
-          await signInWithGoogle()
+          signedIn = await signInWithGoogle()
           break
         case 'github':
-          await signInWithGithub()
+          signedIn = await signInWithGithub()
           break
         default:
-          await useDialogService().showSignInDialog()
+          signedIn = await useDialogService().showSignInDialog()
       }
 
-      // The shared sign-in actions report their own failures and resolve either
-      // way, so a closed popup arrives here looking like success. Restoring on
-      // that would report a failure the user never triggered, on top of the
-      // message they already saw, and they may have closed it deliberately, to
-      // export their work first as the banner asked.
-      if (!authStore.currentUser) return
+      // The shared actions report their own failures and resolve either way,
+      // returning nothing when they did not sign anyone in. Their result is the
+      // only honest signal: a live `currentUser` proves nothing here, because a
+      // restore that failed after a successful sign-in leaves one behind, and
+      // the next cancelled popup would then report a failure the user never
+      // triggered, on top of the message they already saw.
+      if (!signedIn) return
 
       await restoreCloudSession()
     } finally {
