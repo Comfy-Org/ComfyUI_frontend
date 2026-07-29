@@ -415,19 +415,21 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     }
   }
 
+  // `node:before-removed` covers both single removals and graph.clear();
+  // `node:removed` fires only from LGraph.remove.
   const onNodeRemoved = ({ detail: { node } }: NodeLifecycleEvent) => {
-    // node.graph is already null by the time this fires, so derive the
-    // execution ID from the graph the hook is installed on plus node.id. For
-    // subgraph interior nodes this yields the full "parentId:...:nodeId" path
-    // that matches how missing asset errors are keyed; without this, removal
-    // falls back to the local ID and misses subgraph entries.
+    // Derive the execution ID from the graph the hook is installed on plus
+    // node.id. For subgraph interior nodes this yields the full
+    // "parentId:...:nodeId" path that matches how missing asset errors are
+    // keyed; without this, removal falls back to the local ID and misses
+    // subgraph entries.
     const execId = getRemovedNodeExecutionId(graph, node.id)
     removeNodeErrors(node, execId)
     restoreNodeHooksRecursive(node)
   }
 
   graph.events.addEventListener('node:added', onNodeAdded)
-  graph.events.addEventListener('node:removed', onNodeRemoved)
+  graph.events.addEventListener('node:before-removed', onNodeRemoved)
 
   const originalOnTrigger = graph.onTrigger
   graph.onTrigger = (event: LGraphTriggerEvent) => {
@@ -447,7 +449,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
       restoreNodeHooksRecursive(node)
     }
     graph.events.removeEventListener('node:added', onNodeAdded)
-    graph.events.removeEventListener('node:removed', onNodeRemoved)
+    graph.events.removeEventListener('node:before-removed', onNodeRemoved)
     graph.onTrigger = originalOnTrigger || undefined
   }
 }
