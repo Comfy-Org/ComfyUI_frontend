@@ -14,6 +14,7 @@ import { StorageKeys } from './storageKeys'
 
 /** Flag indicating if storage is available */
 let storageAvailable = true
+let workflowWritesBlocked = false
 
 export function isStorageAvailable(): boolean {
   return storageAvailable
@@ -69,7 +70,7 @@ export function readIndex(workspaceId: string): DraftIndexV2 | null {
  * Writes the draft index to localStorage.
  */
 export function writeIndex(workspaceId: string, index: DraftIndexV2): boolean {
-  if (!storageAvailable) return false
+  if (!storageAvailable || workflowWritesBlocked) return false
 
   try {
     const key = StorageKeys.draftIndex(workspaceId)
@@ -109,7 +110,7 @@ export function writePayload(
   draftKey: string,
   payload: DraftPayloadV2
 ): boolean {
-  if (!storageAvailable) return false
+  if (!storageAvailable || workflowWritesBlocked) return false
 
   try {
     const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
@@ -365,6 +366,8 @@ function readLocalPointer<T>(
 }
 
 function writeStorage(storage: Storage, key: string, value: string): void {
+  if (!storageAvailable || workflowWritesBlocked) return
+
   try {
     storage.setItem(key, value)
   } catch {
@@ -372,24 +375,36 @@ function writeStorage(storage: Storage, key: string, value: string): void {
   }
 }
 
-/**
- * Clears all V2 workflow persistence data from storage.
- * Used during signout to prevent data leakage.
- */
-export function clearAllV2Storage(): void {
-  if (!storageAvailable) return
+export function clearAllWorkflowStorage(
+  options: { blockWrites?: boolean } = {}
+): void {
+  if (options.blockWrites) workflowWritesBlocked = true
 
-  const prefixes = [
+  const localPrefixes = [
     StorageKeys.prefixes.draftIndex,
     StorageKeys.prefixes.draftPayload,
     StorageKeys.prefixes.lastActivePath,
-    StorageKeys.prefixes.lastOpenPaths
+    StorageKeys.prefixes.lastOpenPaths,
+    'Comfy.Workflow.Drafts:',
+    'Comfy.Workflow.DraftOrder:'
+  ]
+  const localKeys = [
+    'Comfy.Workflow.Drafts',
+    'Comfy.Workflow.DraftOrder',
+    'Comfy.OpenWorkflowsPaths',
+    'Comfy.ActiveWorkflowIndex',
+    'Comfy.PreviousWorkflow',
+    'workflow'
   ]
 
   try {
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i)
-      if (key && prefixes.some((prefix) => key.startsWith(prefix))) {
+      if (
+        key &&
+        (localKeys.includes(key) ||
+          localPrefixes.some((prefix) => key.startsWith(prefix)))
+      ) {
         try {
           localStorage.removeItem(key)
         } catch {
@@ -403,13 +418,26 @@ export function clearAllV2Storage(): void {
 
   const sessionPrefixes = [
     StorageKeys.prefixes.activePath,
-    StorageKeys.prefixes.openPaths
+    StorageKeys.prefixes.openPaths,
+    'Comfy.PreviousWorkflow:',
+    'Comfy.OpenWorkflowsPaths:',
+    'Comfy.ActiveWorkflowIndex:',
+    'workflow:'
+  ]
+  const sessionKeys = [
+    'Comfy.PreviousWorkflow',
+    'Comfy.OpenWorkflowsPaths',
+    'Comfy.ActiveWorkflowIndex'
   ]
 
   try {
     for (let i = sessionStorage.length - 1; i >= 0; i--) {
       const key = sessionStorage.key(i)
-      if (key && sessionPrefixes.some((prefix) => key.startsWith(prefix))) {
+      if (
+        key &&
+        (sessionKeys.includes(key) ||
+          sessionPrefixes.some((prefix) => key.startsWith(prefix)))
+      ) {
         try {
           sessionStorage.removeItem(key)
         } catch {
