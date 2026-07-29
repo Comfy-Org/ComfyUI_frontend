@@ -2697,7 +2697,8 @@
       "rolePermissions": "Role-based permissions"
     },
     "freePerks": {
-      "maxRuntime": "{duration} max runtime"
+      "maxRuntime": "{duration} max runtime",
+      "monthlyRuns": "{count} free runs per month"
     },
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
