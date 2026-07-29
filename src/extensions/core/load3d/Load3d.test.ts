@@ -668,7 +668,7 @@ describe('Load3d', () => {
         STATUS_MOUSE_ON_SCENE: false,
         STATUS_MOUSE_ON_VIEWER: false,
         INITIAL_RENDER_DONE: false,
-        clock: new THREE.Clock(),
+        timer: new THREE.Timer(),
         animationManager: {
           update: animationUpdate,
           isAnimationPlaying: false,

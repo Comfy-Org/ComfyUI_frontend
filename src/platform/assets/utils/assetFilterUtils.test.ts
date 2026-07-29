@@ -26,19 +26,54 @@ function createAsset(
 
 describe('filterByCategory', () => {
   it.for([
-    { category: 'all', tags: ['checkpoint'], expected: true },
-    { category: 'checkpoint', tags: ['checkpoint'], expected: true },
-    { category: 'lora', tags: ['checkpoint'], expected: false },
+    { category: 'all', tags: ['checkpoint'], mode: false, expected: true },
+    {
+      category: 'checkpoint',
+      tags: ['checkpoint'],
+      mode: false,
+      expected: true
+    },
+    { category: 'lora', tags: ['checkpoint'], mode: false, expected: false },
     {
       category: 'checkpoint',
       tags: ['models', 'checkpoint/xl'],
+      mode: false,
       expected: true
     },
-    { category: 'xl', tags: ['models', 'checkpoint/xl'], expected: false }
+    {
+      category: 'xl',
+      tags: ['models', 'checkpoint/xl'],
+      mode: false,
+      expected: false
+    },
+    {
+      category: 'checkpoints',
+      tags: ['models', 'model_type:checkpoints'],
+      mode: true,
+      expected: true
+    },
+    {
+      category: 'LLM',
+      tags: ['models', 'model_type:LLM'],
+      mode: true,
+      expected: true
+    },
+    {
+      category: 'sdxl',
+      tags: ['models', 'model_type:checkpoints', 'sdxl'],
+      mode: true,
+      expected: false
+    },
+    {
+      category: 'checkpoints',
+      tags: ['models', 'model_type:checkpoints'],
+      mode: false,
+      expected: false
+    }
   ])(
-    'category=$category with tags=$tags returns $expected',
-    ({ category, tags, expected }) => {
-      const filter = filterByCategory(category)
+    'category=$category tags=$tags mode=$mode returns $expected',
+    ({ category, tags, mode, expected }) => {
+      const filter = filterByCategory(category, mode)
       const asset = createAsset('model.safetensors', { tags })
       expect(filter(asset)).toBe(expected)
     }
@@ -117,8 +152,14 @@ describe('filterByOwnership', () => {
   it.for([
     { ownership: 'all' as const, is_immutable: true, expected: true },
     { ownership: 'all' as const, is_immutable: false, expected: true },
+    { ownership: 'all' as const, is_immutable: undefined, expected: true },
     { ownership: 'my-models' as const, is_immutable: false, expected: true },
     { ownership: 'my-models' as const, is_immutable: true, expected: false },
+    {
+      ownership: 'my-models' as const,
+      is_immutable: undefined,
+      expected: true
+    },
     {
       ownership: 'public-models' as const,
       is_immutable: true,
@@ -127,6 +168,11 @@ describe('filterByOwnership', () => {
     {
       ownership: 'public-models' as const,
       is_immutable: false,
+      expected: false
+    },
+    {
+      ownership: 'public-models' as const,
+      is_immutable: undefined,
       expected: false
     }
   ])(
@@ -143,12 +189,13 @@ describe('filterItemByOwnership', () => {
   const items = [
     { id: '1', is_immutable: true },
     { id: '2', is_immutable: false },
-    { id: '3', is_immutable: true }
+    { id: '3', is_immutable: true },
+    { id: '4', is_immutable: undefined }
   ]
 
   it.for([
-    { ownership: 'all' as const, expectedIds: ['1', '2', '3'] },
-    { ownership: 'my-models' as const, expectedIds: ['2'] },
+    { ownership: 'all' as const, expectedIds: ['1', '2', '3', '4'] },
+    { ownership: 'my-models' as const, expectedIds: ['2', '4'] },
     { ownership: 'public-models' as const, expectedIds: ['1', '3'] }
   ])(
     'ownership=$ownership returns items with ids=$expectedIds',

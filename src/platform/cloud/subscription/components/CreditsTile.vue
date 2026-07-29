@@ -57,7 +57,7 @@
           role="progressbar"
           :aria-valuenow="usage.used"
           :aria-valuemin="0"
-          :aria-valuemax="monthlyTotalCredits ?? 0"
+          :aria-valuemax="creditPoolTotalCredits ?? 0"
           :aria-valuetext="monthlyUsageLabel"
           class="h-2 w-full overflow-hidden rounded-full bg-secondary-background-hover"
         >
@@ -86,7 +86,7 @@
               {{
                 $t('subscription.creditsLeftOfTotal', {
                   remaining: monthlyBonusCredits,
-                  total: monthlyTotalDisplay
+                  total: creditPoolTotalDisplay
                 })
               }}
             </span>
@@ -94,7 +94,7 @@
               {{
                 $t('subscription.creditsLeftOfTotal', {
                   remaining: monthlyRemainingCompact,
-                  total: monthlyTotalCompact
+                  total: creditPoolTotalCompact
                 })
               }}
             </span>
@@ -233,16 +233,20 @@ const tierKey = computed(() => {
   return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
 })
 
-const monthlyTotalCredits = computed<number | null>(() => {
-  const teamStop = currentTeamCreditStop.value
-  if (teamStop) return teamStop.credits_monthly
-  return getTierCredits(tierKey.value)
+const creditPoolTotalCredits = computed<number | null>(() => {
+  const monthlyCredits =
+    currentTeamCreditStop.value?.credits_monthly ??
+    getTierCredits(tierKey.value)
+  if (monthlyCredits === null) return null
+  return subscription.value?.duration === 'ANNUAL'
+    ? monthlyCredits * 12
+    : monthlyCredits
 })
 
 const usage = computed(() =>
   computeMonthlyUsage(
     monthlyBonusCreditsValue.value,
-    monthlyTotalCredits.value ?? 0
+    creditPoolTotalCredits.value ?? 0
   )
 )
 
@@ -270,8 +274,8 @@ const formatCreditCount = (value: number) =>
     numberOptions: { maximumFractionDigits: 0 }
   })
 
-const monthlyTotalDisplay = computed(() => {
-  const total = monthlyTotalCredits.value
+const creditPoolTotalDisplay = computed(() => {
+  const total = creditPoolTotalCredits.value
   return total === null ? '—' : formatCreditCount(total)
 })
 
@@ -283,8 +287,8 @@ const compactNumber = computed(
 const monthlyRemainingCompact = computed(() =>
   compactNumber.value.format(monthlyBonusCreditsValue.value)
 )
-const monthlyTotalCompact = computed(() => {
-  const total = monthlyTotalCredits.value
+const creditPoolTotalCompact = computed(() => {
+  const total = creditPoolTotalCredits.value
   return total === null ? '—' : compactNumber.value.format(total)
 })
 
@@ -296,7 +300,7 @@ const usedBarWidth = computed(
 const monthlyUsageLabel = computed(() =>
   t('subscription.monthlyUsageProgress', {
     used: usedDisplay.value,
-    total: monthlyTotalDisplay.value
+    total: creditPoolTotalDisplay.value
   })
 )
 
@@ -304,8 +308,8 @@ const showBreakdown = computed(() => isActiveSubscription.value && !zeroState)
 const showBar = computed(
   () =>
     showBreakdown.value &&
-    monthlyTotalCredits.value !== null &&
-    monthlyTotalCredits.value > 0
+    creditPoolTotalCredits.value !== null &&
+    creditPoolTotalCredits.value > 0
 )
 const showActionButton = computed(
   () => isActiveSubscription.value && !zeroState && permissions.value.canTopUp

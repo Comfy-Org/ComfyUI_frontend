@@ -95,9 +95,11 @@ export const TestIds = {
   },
   topbar: {
     queueButton: 'queue-button',
+    queueButtonIcon: 'queue-button-icon',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
     subscribeButton: 'topbar-subscribe-button',
+    subscribeToRunButton: 'subscribe-to-run-button',
     loginButton: 'login-button',
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
@@ -219,6 +221,7 @@ export const TestIds = {
   },
   appMode: {
     widgetItem: 'app-mode-widget-item',
+    widgetDescription: 'app-mode-widget-description',
     welcome: 'linear-welcome',
     emptyWorkflow: 'linear-welcome-empty-workflow',
     buildApp: 'linear-welcome-build-app',
@@ -248,7 +251,9 @@ export const TestIds = {
     workflowCard: (id: string) => `template-workflow-${id}`
   },
   user: {
-    currentUserIndicator: 'current-user-indicator'
+    currentUserButton: 'current-user-button',
+    currentUserIndicator: 'current-user-indicator',
+    currentUserPopover: 'current-user-popover'
   },
   queue: {
     jobHistorySidebar: 'job-history-sidebar',
