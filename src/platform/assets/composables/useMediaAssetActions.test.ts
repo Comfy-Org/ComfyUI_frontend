@@ -10,6 +10,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import { api } from '@/scripts/api'
 import type * as outputAssetUtilModule from '../utils/outputAssetUtil'
 import { useMediaAssetActions } from './useMediaAssetActions'
 
@@ -1192,6 +1193,40 @@ describe('useMediaAssetActions', () => {
         itemList: string[]
       }
       expect(dialogProps.itemList).toEqual(['fallback-image.png'])
+    })
+  })
+
+  describe('deleteAssets — temp (preview-node) outputs', () => {
+    beforeEach(() => {
+      mockIsCloud.value = false
+      mockGetAssetType.mockReturnValue('temp')
+      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-temp' })
+      mockShowDialog.mockImplementation(
+        (opts: { props: { onConfirm: () => Promise<void> | void } }) => {
+          void opts.props.onConfirm()
+        }
+      )
+    })
+
+    it('deletes via the history API in OSS instead of failing as an imported file', async () => {
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({
+        id: 'job-temp',
+        name: 'ComfyUI_temp_gjcnq_00002_.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'job-temp' }
+      })
+
+      await actions.deleteAssets(asset)
+
+      await vi.waitFor(() => {
+        expect(vi.mocked(api.deleteItem)).toHaveBeenCalledWith(
+          'history',
+          'job-temp'
+        )
+      })
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+      expect(mockUpdateHistory).toHaveBeenCalled()
     })
   })
 

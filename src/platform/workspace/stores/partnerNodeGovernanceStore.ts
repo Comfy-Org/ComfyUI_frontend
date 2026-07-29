@@ -32,16 +32,21 @@ export const usePartnerNodeGovernanceStore = defineStore(
     const policy = shallowRef<PartnerNodePolicy | null>(null)
     const status = ref<PartnerNodePolicyStatus>('inactive')
     const error = shallowRef<Error | null>(null)
-    const isSaving = ref(false)
+    const activeSaveIdsByWorkspace = shallowRef(new Map<string, number>())
     let requestVersion = 0
     let nextSaveId = 0
-    let activeSave: { id: number; workspaceId: string } | null = null
 
     const governedWorkspaceId = computed(() =>
       flags.partnerNodeGovernanceEnabled
         ? (workspaceStore.activeWorkspace?.id ?? null)
         : null
     )
+    const isSaving = computed(() => {
+      const workspaceId = governedWorkspaceId.value
+      return (
+        workspaceId !== null && activeSaveIdsByWorkspace.value.has(workspaceId)
+      )
+    })
 
     function createInitialPolicy(): PartnerNodePolicy {
       return {
@@ -65,10 +70,6 @@ export const usePartnerNodeGovernanceStore = defineStore(
     async function loadPolicy(): Promise<void> {
       const workspaceId = governedWorkspaceId.value
       const version = ++requestVersion
-      if (activeSave?.workspaceId !== workspaceId) {
-        activeSave = null
-        isSaving.value = false
-      }
       if (!workspaceId) {
         providers.value = []
         policy.value = null
@@ -120,14 +121,15 @@ export const usePartnerNodeGovernanceStore = defineStore(
     async function savePolicy(nextPolicy: PartnerNodePolicy): Promise<void> {
       const workspaceId = governedWorkspaceId.value
       if (!workspaceId) return
-      if (isSaving.value) {
+      if (activeSaveIdsByWorkspace.value.has(workspaceId)) {
         throw new Error('Provider policy save already in progress')
       }
 
       const version = ++requestVersion
       const saveId = ++nextSaveId
-      activeSave = { id: saveId, workspaceId }
-      isSaving.value = true
+      activeSaveIdsByWorkspace.value = new Map(
+        activeSaveIdsByWorkspace.value
+      ).set(workspaceId, saveId)
       try {
         const savedPolicy = await updatePartnerNodePolicy(nextPolicy)
         if (
@@ -155,11 +157,60 @@ export const usePartnerNodeGovernanceStore = defineStore(
         }
         throw saveError
       } finally {
-        if (activeSave?.id === saveId) {
-          activeSave = null
-          isSaving.value = false
+        if (activeSaveIdsByWorkspace.value.get(workspaceId) === saveId) {
+          const nextActiveSaveIds = new Map(activeSaveIdsByWorkspace.value)
+          nextActiveSaveIds.delete(workspaceId)
+          activeSaveIdsByWorkspace.value = nextActiveSaveIds
         }
       }
+    }
+
+    async function setProviderEnabled(
+      providerId: string,
+      enabled: boolean
+    ): Promise<void> {
+      if (!providers.value.some(({ id }) => id === providerId)) return
+
+      const currentPolicy = policy.value ?? createInitialPolicy()
+      const currentEntry = currentPolicy.providers.find(
+        (provider) => provider.providerId === providerId
+      )
+      const nextProviders = currentEntry
+        ? currentPolicy.providers.map((provider) =>
+            provider.providerId === providerId
+              ? { ...provider, enabled }
+              : provider
+          )
+        : [...currentPolicy.providers, { providerId, enabled }]
+
+      await savePolicy({
+        ...currentPolicy,
+        enforcementEnabled: currentPolicy.enforcementEnabled || !enabled,
+        providers: nextProviders
+      })
+    }
+
+    async function setAllProvidersEnabled(enabled: boolean): Promise<void> {
+      const currentPolicy = policy.value ?? createInitialPolicy()
+      await savePolicy({
+        ...currentPolicy,
+        enforcementEnabled: currentPolicy.enforcementEnabled || !enabled,
+        providers: providers.value.map(({ id }) => ({
+          providerId: id,
+          enabled
+        }))
+      })
+    }
+
+    async function setEnforcementEnabled(enabled: boolean): Promise<void> {
+      const currentPolicy = policy.value ?? createInitialPolicy()
+      await savePolicy({
+        ...currentPolicy,
+        enforcementEnabled: enabled,
+        providers: enabled
+          ? currentPolicy.providers
+          : providers.value.map(({ id }) => ({ providerId: id, enabled: true }))
+      })
     }
 
     watch(governedWorkspaceId, () => void loadPolicy(), { immediate: true })
@@ -171,10 +222,11 @@ export const usePartnerNodeGovernanceStore = defineStore(
       error,
       isSaving,
       governedWorkspaceId,
-      createInitialPolicy,
       isProviderEnabled,
       loadPolicy,
-      savePolicy
+      setProviderEnabled,
+      setAllProvidersEnabled,
+      setEnforcementEnabled
     }
   }
 )
