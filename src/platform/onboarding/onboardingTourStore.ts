@@ -1,3 +1,4 @@
+import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
@@ -177,13 +178,9 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   }
 
   for (const [entryPath, trigger] of useTourTriggers()) {
-    watch(
-      trigger.autoOpen,
-      (visible) => {
-        if (visible) startTour(entryPath)
-      },
-      { immediate: true }
-    )
+    whenever(trigger.autoOpen, () => startTour(entryPath), {
+      immediate: true
+    })
     watch(trigger.holds, (holding) => {
       if (!holding && activeTour.value === entryPath)
         finish('skipped', { markSeen: false, skipReason: 'trigger_lost' })
