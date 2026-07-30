@@ -59,6 +59,8 @@ let isUnmounted = false
 
 onMounted(async () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  const paymentMethodConfiguration = import.meta.env
+    .VITE_STRIPE_PAYMENT_METHOD_CONFIGURATION_ID
   if (!publishableKey || amountCents <= 0) {
     configurationError.value = t('subscription.preview.stripeUnavailable')
     return
@@ -74,7 +76,8 @@ onMounted(async () => {
     mode: 'subscription',
     amount: amountCents,
     currency: 'usd',
-    setupFutureUsage: 'off_session'
+    setupFutureUsage: 'off_session',
+    ...(paymentMethodConfiguration && { paymentMethodConfiguration })
   })
   paymentElement = stripeElements.value.create('payment', {
     layout: 'accordion'
