@@ -125,7 +125,7 @@ import {
 
 import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
-import { isViewableResultItem } from '@/utils/resultItemUtil'
+import { viewableResultItems } from '@/utils/resultItemUtil'
 import {
   collectAllNodes,
   forEachNode,
@@ -510,15 +510,15 @@ export class ComfyApp {
 
     // for vueNodes mode. Filtered to match the compacted `imgs` preview list
     // that `selectedIndex` indexes into.
-    const images = (
+    const images = viewableResultItems(
       node.images ?? useNodeOutputStore().getNodeOutputs(node)?.images
-    )?.filter(isViewableResultItem)
+    )
 
     ComfyApp.clipspace = {
       widgets: widgets,
       imgs: imgs,
       original_imgs: orig_imgs,
-      images: images,
+      images: images.length ? images : undefined,
       selectedIndex: selectedIndex,
       img_paste_mode: 'selected', // reset to default im_paste_mode state on copy action
       paintedIndex: paintedIndex,

@@ -25,6 +25,15 @@ export function isViewableResultItem(
   return typeof filename === 'string' && filename !== ''
 }
 
+/**
+ * The collection itself is equally untrusted: an unvalidated payload can carry a
+ * non-array `images`/`audio` value, so callers must not reach for array methods
+ * on it directly.
+ */
+export function viewableResultItems(items: unknown): ViewableResultItem[] {
+  return Array.isArray(items) ? items.filter(isViewableResultItem) : []
+}
+
 export function findViewableResultItem(
   items: unknown
 ): ViewableResultItem | undefined {

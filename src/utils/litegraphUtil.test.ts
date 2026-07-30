@@ -220,4 +220,22 @@ describe('isVideoOutput', () => {
 
     expect(isVideoOutput(output)).toBe(true)
   })
+
+  it('treats a non-array images payload as carrying no filenames', () => {
+    const output = fromAny<ExecutedWsMessage['output'], unknown>({
+      animated: [true],
+      images: 'clip.webp'
+    })
+
+    expect(isVideoOutput(output)).toBe(true)
+  })
+
+  it('treats a non-array animated payload as not animated', () => {
+    const output = fromAny<ExecutedWsMessage['output'], unknown>({
+      animated: true,
+      images: [{ filename: 'clip.webp', subfolder: '', type: 'output' }]
+    })
+
+    expect(isVideoOutput(output)).toBe(false)
+  })
 })
