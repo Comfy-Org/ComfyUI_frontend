@@ -57,5 +57,3 @@ API"), which is always loaded. In addition:
 
 - Extract complex conditionals to `computed`
 - In unmounted hooks, implement cleanup for async operations
-- Use `Teleport` when content must render outside the component's DOM position
-- Use `Suspense` for async components
