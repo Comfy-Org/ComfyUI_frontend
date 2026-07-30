@@ -13,6 +13,7 @@
  * commits by design (dead lines, unreleased work) and would be pure noise.
  */
 import { execFileSync } from 'child_process'
+import { pathToFileURL } from 'url'
 
 export interface Commit {
   sha: string
@@ -253,7 +254,10 @@ async function main(): Promise<void> {
 
 if (
   process.argv[1] &&
-  import.meta.url.endsWith(process.argv[1].split('/').pop()!)
+  import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-  void main()
+  main().catch((error: unknown) => {
+    console.error(error)
+    process.exitCode = 1
+  })
 }
