@@ -53,6 +53,7 @@ function nodeStep(name: string, coachId: CoachId, nodeId: NodeId): CoachStep {
     coachId,
     placement: 'auto',
     deferTarget: true,
+    interactive: true,
     onEnter: (signal) => frameNode(nodeId, signal)
   }
 }
@@ -74,10 +75,7 @@ export function firstRunTourSteps(
   }
   if (roles.promptHost) {
     void registerWhenMounted(NODE_COACH_IDS.prompt, roles.promptHost)
-    steps.push({
-      ...nodeStep('prompt', NODE_COACH_IDS.prompt, roles.promptHost),
-      interactive: true
-    })
+    steps.push(nodeStep('prompt', NODE_COACH_IDS.prompt, roles.promptHost))
   }
   steps.push({
     name: 'run',
