@@ -284,7 +284,7 @@ describe('TaskItemImpl', () => {
   })
 
   describe('previewableOutputsCount', () => {
-    it('returns undefined when the job has no previewable_outputs_count (e.g. local ComfyUI)', () => {
+    it('returns undefined when the job has no previewable_outputs_count', () => {
       const job = createHistoryJob(0, 'job-id')
       const taskItem = new TaskItemImpl(job)
       expect(taskItem.previewableOutputsCount).toBeUndefined()
