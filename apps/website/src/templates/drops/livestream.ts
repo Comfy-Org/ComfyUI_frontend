@@ -1,5 +1,5 @@
 export const livestream = {
-  youtubeVideoId: 'yo7b_zHd20g',
-  startDateTime: '2026-06-29T15:00:00Z',
-  endDateTime: '2026-07-02T17:15:00Z'
+  youtubeVideoId: '4xS4LOn3CTE',
+  startDateTime: '2026-07-30T00:00:00Z',
+  endDateTime: '2026-08-15T20:00:00Z'
 } as const

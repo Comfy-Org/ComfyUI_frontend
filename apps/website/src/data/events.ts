@@ -71,9 +71,9 @@ const foundersLiveStreamHref: LocalizedText = {
   'zh-CN': 'https://www.youtube.com/live/dbp5Jnto7S8'
 }
 
-const julyLaunchesStreamHref: LocalizedText = {
-  en: 'https://www.youtube.com/live/8RGN69h_xTU',
-  'zh-CN': 'https://www.youtube.com/live/8RGN69h_xTU'
+const postProductionStreamHref: LocalizedText = {
+  en: 'https://www.youtube.com/live/4xS4LOn3CTE',
+  'zh-CN': 'https://www.youtube.com/live/4xS4LOn3CTE'
 }
 
 function youtubeWatchHref(videoId: string): LocalizedText {
@@ -105,46 +105,66 @@ const foundersLiveFeatured: FeaturedEvent = {
 }
 
 // Referenced by both the hero carousel and the upcoming-events list.
-const julyLaunches: UpcomingEvent = {
-  id: 'july-launches',
-  name: { en: 'July Launches', 'zh-CN': '七月发布' },
+const postProduction: UpcomingEvent = {
+  id: 'future-ai-post-production',
+  name: {
+    en: 'The Future of AI Post Production',
+    'zh-CN': 'AI 后期制作的未来'
+  },
   description: {
-    en: 'Our monthly livestream covering the latest ComfyUI launches and updates.',
-    'zh-CN': '我们的月度直播，介绍 ComfyUI 最新发布与更新。'
+    en: 'Ingi Erlingsson explores the future of AI post production with custom LoRAs and motion graphics nodes.',
+    'zh-CN':
+      'Ingi Erlingsson 探讨 AI 后期制作的未来，聚焦自定义 LoRA 与动态图形节点。'
   },
   location: { en: 'Online', 'zh-CN': '线上' },
   dateLabel: {
-    en: 'July 29, 2026 · 10AM PT',
-    'zh-CN': '2026年7月29日 · 上午10点（PT）'
+    en: 'August 5, 2026 · 1PM PT',
+    'zh-CN': '2026年8月5日 · 下午1点（PT）'
   },
-  dateTime: '2026-07-29T10:00:00-07:00',
-  link: { href: julyLaunchesStreamHref, newTab: true }
+  dateTime: '2026-08-05T13:00:00-07:00',
+  link: { href: postProductionStreamHref, newTab: true }
 }
 
-const julyLaunchesFeatured: FeaturedEvent = {
-  id: julyLaunches.id,
+const postProductionFeatured: FeaturedEvent = {
+  id: postProduction.id,
   eyebrow: UPCOMING_LIVESTREAM,
-  title: julyLaunches.name,
+  title: postProduction.name,
   // The artwork already carries the title and date.
   showTitle: false,
-  media: eventImage('july-launches.png', {
-    en: 'July Launches livestream',
-    'zh-CN': '七月发布直播'
+  media: eventImage('livestream-aug05.jpg', {
+    en: 'The Future of AI Post Production livestream',
+    'zh-CN': 'AI 后期制作的未来直播'
   }),
-  href: julyLaunches.link.href,
+  href: postProduction.link.href,
   newTab: true,
   autoplayMs: 7000
 }
 
 export const featuredEvents: readonly FeaturedEvent[] = [
   foundersLiveFeatured,
-  julyLaunchesFeatured
+  postProductionFeatured
 ]
 
 // zh-CN copy is a first pass and pending native review.
-export const upcomingEvents: readonly UpcomingEvent[] = [julyLaunches]
+export const upcomingEvents: readonly UpcomingEvent[] = [postProduction]
 
 const pastEventEntries: readonly PastEvent[] = [
+  {
+    id: 'july-launches',
+    category: 'livestream',
+    title: { en: 'July Launches', 'zh-CN': '七月发布' },
+    description: {
+      en: 'Our monthly livestream covering the latest ComfyUI launches and updates.',
+      'zh-CN': '我们的月度直播，介绍 ComfyUI 最新发布与更新。'
+    },
+    media: eventImage('july-launches.png', {
+      en: 'July Launches livestream recording',
+      'zh-CN': '七月发布直播回放'
+    }),
+    watch: { href: youtubeWatchHref('8RGN69h_xTU'), newTab: true },
+    youtubeVideoId: '8RGN69h_xTU',
+    publishedDate: '2026-07-29'
+  },
   {
     id: 'black-math-hackathon',
     category: 'livestream',

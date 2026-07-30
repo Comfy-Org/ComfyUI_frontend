@@ -4676,12 +4676,12 @@ const translations = {
   // Launches page (/launches) — subscribe banner
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.banner.text': {
-    en: 'Now turn your agent into a creative technologist.',
-    'zh-CN': '现在，让你的智能体成为创意技术专家。'
+    en: 'The Future of AI Post Production — join us live August 5.',
+    'zh-CN': 'AI 后期制作的未来 — 8 月 5 日与我们一起观看直播。'
   },
   'launches.banner.cta': {
-    en: 'Start Comfy MCP',
-    'zh-CN': '启动 Comfy MCP'
+    en: 'Watch live',
+    'zh-CN': '观看直播'
   },
 
   // Launches page (/launches) — closing CTA

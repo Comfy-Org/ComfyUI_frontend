@@ -52,7 +52,7 @@ export const bannerConfig: BannerConfig = {
   targetSections: ['sitewide'],
   titleKey: 'launches.banner.text',
   link: {
-    href: '/mcp',
+    href: '/launches',
     titleKey: 'launches.banner.cta',
     buttonVariant: 'underlineLink'
   }
