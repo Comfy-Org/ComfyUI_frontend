@@ -51,6 +51,14 @@ test.describe(
       )
       await comfyPage.subgraph.exitViaBreadcrumb()
 
+      // Guards against a vacuous pass: if promotion silently became a no-op,
+      // the size assertions below would hold without exercising the bug.
+      await expect
+        .poll(() =>
+          comfyPage.subgraph.getPromotedWidgetOrder(String(nodeRef.id))
+        )
+        .toContain('steps')
+
       const sizeAfter = await nodeRef.getSize()
       expect(sizeAfter.width).toBeCloseTo(size.width, 0)
       // A newly promoted widget can legitimately raise the minimum height, so
