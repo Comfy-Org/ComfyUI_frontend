@@ -10,7 +10,7 @@
 
 import { debounce } from 'es-toolkit'
 import { useToast } from 'primevue'
-import { tryOnScopeDispose } from '@vueuse/core'
+import { tryOnScopeDispose, whenever } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -23,6 +23,8 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -31,6 +33,8 @@ import {
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import {
   clearAllWorkflowStorage,
+  completeWorkflowLogoutTransition,
+  prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
 } from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
@@ -55,17 +59,12 @@ export function useWorkflowPersistenceV2() {
   const draftStore = useWorkflowDraftStoreV2()
   const tabState = useWorkflowTabState()
   const toast = useToast()
-  const { onUserLogout } = useCurrentUser()
+  const { onUserLogout, onUserResolved } = useCurrentUser()
+  const { flags } = useFeatureFlags()
+  const teamWorkspaceStore = useTeamWorkspaceStore()
 
   // Run migration on module load, passing clientId for tab state migration
   migrateV1toV2(undefined, api.clientId ?? api.initialClientId ?? undefined)
-
-  // Clear workflow persistence storage when user signs out (cloud only)
-  onUserLogout(() => {
-    if (isCloud) {
-      clearAllWorkflowStorage()
-    }
-  })
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)
@@ -137,6 +136,28 @@ export function useWorkflowPersistenceV2() {
   const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(() =>
     debouncedPersist.flush()
   )
+
+  onUserLogout(() => {
+    if (!isCloud) return
+    debouncedPersist.cancel()
+    prepareWorkflowLogoutTransition()
+    clearAllWorkflowStorage()
+  })
+  onUserResolved(() => {
+    if (!isCloud) return
+    if (!flags.teamWorkspacesEnabled) {
+      completeWorkflowLogoutTransition()
+      return
+    }
+
+    whenever(
+      () =>
+        teamWorkspaceStore.initState === 'ready' &&
+        teamWorkspaceStore.activeWorkspaceId !== null,
+      completeWorkflowLogoutTransition,
+      { immediate: true, once: true }
+    )
+  })
 
   const loadPreviousWorkflowFromStorage = async () => {
     const sessionPath = tabState.getActivePath()
