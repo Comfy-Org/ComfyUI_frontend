@@ -24,6 +24,7 @@ test.describe(
       const subgraphNode =
         await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
       await subgraphNode.resizeFromCorner('SE', 250, 200)
+      await comfyPage.nextFrame()
       const resizedBox = (await subgraphNode.boundingBox())!
 
       const ksampler = comfyPage.vueNodes.getNodeLocator('1')
@@ -49,6 +50,7 @@ test.describe(
       await comfyPage.subgraph.exitViaBreadcrumb()
 
       await subgraphNode.resizeFromCorner('SE', 250, 200)
+      await comfyPage.nextFrame()
       const resizedBox = (await subgraphNode.boundingBox())!
 
       await comfyPage.vueNodes.enterSubgraph('2')
@@ -87,6 +89,7 @@ test.describe(
       const subgraphNode =
         await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
       await subgraphNode.resizeFromCorner('SE', 300, 250)
+      await comfyPage.nextFrame()
       const resizedBox = (await subgraphNode.boundingBox())!
       const ksampler = comfyPage.vueNodes.getNodeLocator('1')
 
@@ -136,8 +139,12 @@ test.describe(
 
 test.describe(
   'Subgraph node resize preservation — nested subgraphs',
-  { tag: ['@subgraph', '@widget'] },
+  { tag: ['@subgraph', '@widget', '@vue-nodes'] },
   () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    })
+
     test('Demoting a nested promotion does not shrink a user-resized outer host', async ({
       comfyPage
     }) => {
