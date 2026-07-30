@@ -22,7 +22,7 @@ const { slug } = Astro.params
 const model = getModelBySlug(slug as string)!
 
 if (model.canonicalSlug) {
-  return Astro.redirect(`/p/supported-models/${model.canonicalSlug}`, 301)
+  return Astro.redirect(`/p/supported-models/${model.canonicalSlug}/`, 301)
 }
 
 const { displayName } = model
