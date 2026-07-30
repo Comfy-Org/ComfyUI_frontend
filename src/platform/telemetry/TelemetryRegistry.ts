@@ -14,6 +14,8 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  NamedValuesShadowDiffMismatchMetadata,
+  NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
@@ -315,6 +317,22 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
+  }
+
+  trackNamedValuesShadowDiffMismatch(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackNamedValuesShadowDiffMismatch?.(metadata)
+    )
+  }
+
+  trackNamedValuesShadowDiffSummary(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackNamedValuesShadowDiffSummary?.(metadata)
+    )
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
