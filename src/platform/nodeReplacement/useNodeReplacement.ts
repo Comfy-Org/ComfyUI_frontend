@@ -9,7 +9,6 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
@@ -333,23 +332,15 @@ export function useNodeReplacement() {
     return replacedTypes
   }
 
-  function resolveReplacedMissingNodeTypes(replacedTypes: string[]): void {
-    if (replacedTypes.length === 0) return
-
-    const missingNodesStore = useMissingNodesErrorStore()
-    const hadMissingNodes = missingNodesStore.hasMissingNodes
-    missingNodesStore.removeMissingNodesByType(replacedTypes)
-    useExecutionErrorStore().clearResolvedMissingNodePromptError(
-      hadMissingNodes
-    )
-  }
-
   /**
    * Replaces all nodes in a single swap group and removes successfully
    * replaced types from the missing nodes error store.
    */
   function replaceGroup(group: ReplacementGroup): void {
-    resolveReplacedMissingNodeTypes(replaceNodesInPlace(group.nodeTypes))
+    const replacedTypes = replaceNodesInPlace(group.nodeTypes)
+    if (replacedTypes.length > 0) {
+      useMissingNodesErrorStore().removeMissingNodesByType(replacedTypes)
+    }
   }
 
   /**
@@ -358,7 +349,10 @@ export function useNodeReplacement() {
    */
   function replaceAllGroups(groups: ReplacementGroup[]): void {
     const allNodeTypes = groups.flatMap((g) => g.nodeTypes)
-    resolveReplacedMissingNodeTypes(replaceNodesInPlace(allNodeTypes))
+    const replacedTypes = replaceNodesInPlace(allNodeTypes)
+    if (replacedTypes.length > 0) {
+      useMissingNodesErrorStore().removeMissingNodesByType(replacedTypes)
+    }
   }
 
   return {

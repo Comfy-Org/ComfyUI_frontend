@@ -1361,7 +1361,6 @@ describe('useErrorGroups', () => {
       })
 
       missingNodesStore.removeMissingNodesByType(['MissingNode'])
-      store.clearResolvedMissingNodePromptError(true)
       await nextTick()
 
       expect(store.lastPromptError).toBeNull()
@@ -1384,7 +1383,6 @@ describe('useErrorGroups', () => {
       })
 
       missingNodesStore.removeMissingNodesByType(['MissingNode'])
-      store.clearResolvedMissingNodePromptError(true)
       await nextTick()
 
       expect(store.lastPromptError?.type).toBe('prompt_no_outputs')
@@ -1415,7 +1413,6 @@ describe('useErrorGroups', () => {
       })
 
       missingNodesStore.removeMissingNodesByType(['ReplaceableNode'])
-      store.clearResolvedMissingNodePromptError(true)
       await nextTick()
 
       expect(store.lastPromptError?.type).toBe('missing_node_type')

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { whenever } from '@vueuse/core'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
@@ -16,6 +17,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -62,6 +64,20 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   const isErrorOverlayOpen = ref(false)
 
+  whenever(
+    () => !missingNodesStore.hasMissingNodes,
+    () => {
+      if (
+        ChangeTracker.isLoadingGraph ||
+        !isMissingNodePromptError(lastPromptError.value)
+      ) {
+        return
+      }
+      lastPromptError.value = null
+    },
+    { flush: 'sync' }
+  )
+
   /** Replaces the full record; empty or null means the run produced no errors. */
   function recordNodeErrors(nodeErrors: Record<string, NodeError> | null) {
     lastNodeErrors.value =
@@ -107,18 +123,6 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Clear only prompt-level errors. Called during resetExecutionState. */
   function clearPromptError() {
     lastPromptError.value = null
-  }
-
-  /** Drop a missing-node prompt error when tracked missing nodes transition
-   *  from present to resolved. */
-  function clearResolvedMissingNodePromptError(hadMissingNodes: boolean): void {
-    if (
-      hadMissingNodes &&
-      isMissingNodePromptError(lastPromptError.value) &&
-      !missingNodesStore.hasMissingNodes
-    ) {
-      lastPromptError.value = null
-    }
   }
 
   function clearSimpleNodeErrorsFromRecord(
@@ -566,7 +570,6 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     clearAllErrors,
     clearExecutionStartErrors,
     clearPromptError,
-    clearResolvedMissingNodePromptError,
 
     // Overlay UI
     isErrorOverlayOpen,
