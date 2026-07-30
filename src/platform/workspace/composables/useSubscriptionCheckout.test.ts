@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive } from 'vue'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type {
+  Plan,
+  PreviewSubscribeResponse
+} from '@/platform/workspace/api/workspaceApi'
 
 import { findPlanSlug } from './useSubscriptionCheckout'
 
@@ -44,6 +47,70 @@ function makeCreatorMonthly(): Plan {
 
 function allPlans(): Plan[] {
   return [makeStandardYearly(), makeCreatorMonthly()]
+}
+
+interface ReactivationPreviewPlanInput {
+  slug: string
+  tier: PreviewSubscribeResponse['new_plan']['tier']
+  duration: PreviewSubscribeResponse['new_plan']['duration']
+  priceCents: number
+  creditsCents: number
+  periodEnd: string
+}
+
+interface ReactivationPreviewInput {
+  effectiveAt: string
+  costTodayCents: number
+  costNextPeriodCents: number
+  creditsTodayCents: number
+  creditsNextPeriodCents: number
+  currentPlan: ReactivationPreviewPlanInput
+  newPlan: ReactivationPreviewPlanInput
+}
+
+function makeReactivationAuthorityPreview({
+  effectiveAt,
+  costTodayCents,
+  costNextPeriodCents,
+  creditsTodayCents,
+  creditsNextPeriodCents,
+  currentPlan,
+  newPlan
+}: ReactivationPreviewInput): PreviewSubscribeResponse {
+  const makePlan = ({
+    slug,
+    tier,
+    duration,
+    priceCents,
+    creditsCents,
+    periodEnd
+  }: ReactivationPreviewPlanInput): PreviewSubscribeResponse['new_plan'] => ({
+    slug,
+    tier,
+    duration,
+    price_cents: priceCents,
+    credits_cents: creditsCents,
+    period_end: periodEnd,
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: priceCents,
+      total_credits_cents: creditsCents
+    }
+  })
+
+  return {
+    allowed: true,
+    transition_type: 'upgrade',
+    effective_at: effectiveAt,
+    is_immediate: true,
+    cost_today_cents: costTodayCents,
+    cost_next_period_cents: costNextPeriodCents,
+    credits_today_cents: creditsTodayCents,
+    credits_next_period_cents: creditsNextPeriodCents,
+    proration_at: '2026-07-30T00:00:00Z',
+    current_plan: makePlan(currentPlan),
+    new_plan: makePlan(newPlan)
+  }
 }
 
 describe('findPlanSlug', () => {
@@ -1093,6 +1160,14 @@ describe('useSubscriptionCheckout', () => {
           detail: 'subscription.preview.reactivation.confirmationRequired'
         })
       )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          tier: 'team'
+        })
+      )
 
       mockSubscribe.mockResolvedValueOnce({
         status: 'subscribed',
@@ -1294,43 +1369,29 @@ describe('useSubscriptionCheckout', () => {
     it('recovers when the subscribe authority sees a cancellation omitted by the status read', async () => {
       mockSubscription.value = { isCancelled: false }
       const checkout = await setup()
-      const preview = {
-        allowed: true,
-        transition_type: 'upgrade' as const,
-        effective_at: '2026-08-30T00:00:00Z',
-        is_immediate: true,
-        cost_today_cents: 18_999,
-        cost_next_period_cents: 39_000,
-        credits_today_cents: 42_200,
-        credits_next_period_cents: 84_400,
-        proration_at: '2026-07-30T00:00:00Z',
-        current_plan: {
+      const preview = makeReactivationAuthorityPreview({
+        effectiveAt: '2026-08-30T00:00:00Z',
+        costTodayCents: 18_999,
+        costNextPeriodCents: 39_000,
+        creditsTodayCents: 42_200,
+        creditsNextPeriodCents: 84_400,
+        currentPlan: {
           slug: 'team_per_credit_monthly',
           tier: 'TEAM',
           duration: 'MONTHLY',
-          price_cents: 20_000,
-          credits_cents: 42_200,
-          period_end: '2026-08-29T00:00:00Z',
-          seat_summary: {
-            seat_count: 1,
-            total_cost_cents: 20_000,
-            total_credits_cents: 42_200
-          }
+          priceCents: 20_000,
+          creditsCents: 42_200,
+          periodEnd: '2026-08-29T00:00:00Z'
         },
-        new_plan: {
+        newPlan: {
           slug: 'team_per_credit_monthly',
           tier: 'TEAM',
           duration: 'MONTHLY',
-          price_cents: 39_000,
-          credits_cents: 84_400,
-          period_end: '2026-08-30T00:00:00Z',
-          seat_summary: {
-            seat_count: 1,
-            total_cost_cents: 39_000,
-            total_credits_cents: 84_400
-          }
+          priceCents: 39_000,
+          creditsCents: 84_400,
+          periodEnd: '2026-08-30T00:00:00Z'
         }
-      }
+      })
       mockPreviewSubscribe.mockResolvedValueOnce(preview)
       await checkout.handleSubscribeTeamClick({
         stop: {
@@ -1357,6 +1418,14 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: 'subscription.preview.reactivation.confirmationRequired'
+        })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          tier: 'team'
         })
       )
 
@@ -2022,43 +2091,29 @@ describe('useSubscriptionCheckout', () => {
     it('recovers a personal transition when the subscribe authority requires reactivation consent', async () => {
       mockSubscription.value = { isCancelled: false }
       const checkout = await setup()
-      const preview = {
-        allowed: true,
-        transition_type: 'upgrade' as const,
-        effective_at: '2026-08-29T00:00:00Z',
-        is_immediate: true,
-        cost_today_cents: 1500,
-        cost_next_period_cents: 1600,
-        credits_today_cents: 3150,
-        credits_next_period_cents: 4200,
-        proration_at: '2026-07-30T00:00:00Z',
-        current_plan: {
+      const preview = makeReactivationAuthorityPreview({
+        effectiveAt: '2026-08-29T00:00:00Z',
+        costTodayCents: 1500,
+        costNextPeriodCents: 1600,
+        creditsTodayCents: 3150,
+        creditsNextPeriodCents: 4200,
+        currentPlan: {
           slug: 'creator-monthly',
           tier: 'CREATOR',
           duration: 'MONTHLY',
-          price_cents: 3500,
-          credits_cents: 7400,
-          period_end: '2026-08-29T00:00:00Z',
-          seat_summary: {
-            seat_count: 1,
-            total_cost_cents: 3500,
-            total_credits_cents: 7400
-          }
+          priceCents: 3500,
+          creditsCents: 7400,
+          periodEnd: '2026-08-29T00:00:00Z'
         },
-        new_plan: {
+        newPlan: {
           slug: 'standard-yearly',
           tier: 'STANDARD',
           duration: 'ANNUAL',
-          price_cents: 1600,
-          credits_cents: 4200,
-          period_end: '2027-08-29T00:00:00Z',
-          seat_summary: {
-            seat_count: 1,
-            total_cost_cents: 1600,
-            total_credits_cents: 4200
-          }
+          priceCents: 1600,
+          creditsCents: 4200,
+          periodEnd: '2027-08-29T00:00:00Z'
         }
-      }
+      })
       mockPreviewSubscribe.mockResolvedValueOnce(preview)
       await checkout.handleSubscribeClick({
         tierKey: 'standard',
@@ -2078,6 +2133,14 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: 'subscription.preview.reactivation.confirmationRequired'
+        })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          tier: 'standard'
         })
       )
     })
@@ -2165,6 +2228,14 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: 'subscription.preview.reactivation.amountChanged'
+        })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          tier: 'standard'
         })
       )
 

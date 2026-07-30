@@ -161,7 +161,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         transition_type: 'upgrade',
         cost_today_cents: 2500
       })
-      preview.current_plan!.tier = 'TEAM' as never
+      preview.current_plan!.tier = 'TEAM'
       preview.current_plan!.period_end = '2026-08-29T00:00:00Z'
 
       const { container } = renderComponent(preview, true)
@@ -170,7 +170,11 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         screen.getByText('Reactivating your subscription')
       ).toBeInTheDocument()
       expect(container.textContent).toContain(
-        'Your Team Plan was set to end on Aug 29, 2026'
+        i18n.global.t('subscription.teamPlan.name')
+      )
+      expect(container.textContent).toContain('Aug 29, 2026')
+      expect(container.textContent).not.toContain(
+        'subscription.tiers.team.name'
       )
       expect(
         screen.getByRole('button', {

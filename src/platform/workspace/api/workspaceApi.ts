@@ -225,7 +225,10 @@ interface PaymentPortalResponse {
 
 interface PreviewPlanInfo {
   slug: string
-  tier: SubscriptionTier
+  // The billing preview contract includes the workspace-level Team tier even
+  // though the registry subscription tier used by the personal plan catalog
+  // does not.
+  tier: SubscriptionTier | 'TEAM'
   duration: SubscriptionDuration
   price_cents: number
   credits_cents: number

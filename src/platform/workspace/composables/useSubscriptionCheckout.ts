@@ -597,10 +597,22 @@ export function useSubscriptionCheckout(
       })
     } catch (error) {
       if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
+        trackSubscriptionFailure({
+          tier: tierKey,
+          cycle: billingCycle,
+          checkoutType
+        })
         await refreshPreviewOnReactivationBlock(planSlug)
         return
       }
-      if (await refreshExpiredProrationQuote(error, planSlug)) return
+      if (await refreshExpiredProrationQuote(error, planSlug)) {
+        trackSubscriptionFailure({
+          tier: tierKey,
+          cycle: billingCycle,
+          checkoutType
+        })
+        return
+      }
       trackSubscriptionFailure({
         tier: tierKey,
         cycle: billingCycle,
@@ -790,6 +802,11 @@ export function useSubscriptionCheckout(
       })
     } catch (error) {
       if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
+        trackSubscriptionFailure({
+          tier: 'team',
+          cycle: billingCycle,
+          checkoutType
+        })
         await refreshPreviewOnReactivationBlock(planSlug, {
           teamCreditStopId: stop.id,
           billingCycle
@@ -802,6 +819,11 @@ export function useSubscriptionCheckout(
           billingCycle
         })
       ) {
+        trackSubscriptionFailure({
+          tier: 'team',
+          cycle: billingCycle,
+          checkoutType
+        })
         return
       }
       trackSubscriptionFailure({
