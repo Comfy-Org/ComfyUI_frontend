@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
+import type * as LitegraphUtil from '@/utils/litegraphUtil'
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -17,7 +18,8 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof GraphTraversalUtil>()),
   getNodeByExecutionId: vi.fn(),
   getExecutionIdByNode: vi.fn(),
   getRootParentNode: vi.fn(() => null),
@@ -117,7 +119,8 @@ vi.mock('@/utils/nodeTitleUtil', () => ({
   resolveNodeDisplayName: vi.fn(() => '')
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof LitegraphUtil>()),
   isLGraphNode: vi.fn(() => false)
 }))
 
@@ -133,16 +136,21 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  createBoundaryLinkedSubgraph,
+  createTestRootGraph
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   getExecutionIdByNode,
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useErrorGroups } from './useErrorGroups'
 import { useHasBlockingError } from './useHasBlockingError'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { scanAllModelCandidates } from '@/platform/missingModel/missingModelScan'
+import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
+import { toNodeId } from '@/types/nodeId'
 
 function makeMissingNodeType(
   type: string,
@@ -215,12 +223,42 @@ function createErrorGroups() {
   return { store, searchQuery, groups }
 }
 
+function createUnnormalisableModelErrorFixture() {
+  const rootGraph = createTestRootGraph()
+  const node = new LGraphNode('CheckpointLoaderSimple')
+  node.id = toNodeId('not::a-node')
+  const input = node.addInput('ckpt_name', 'COMBO')
+  const widget = node.addWidget(
+    'combo',
+    'ckpt_name',
+    'missing.safetensors',
+    () => {},
+    { values: ['present.safetensors'] }
+  )
+  input.widget = { name: widget.name }
+  rootGraph.add(node)
+  vi.mocked(getExecutionIdByNode).mockReturnValue(
+    fromAny<NodeExecutionId, string>('not::a-node')
+  )
+
+  return {
+    missingModels: scanAllModelCandidates(rootGraph, () => false),
+    nodeErrors: liftNodeErrorsToBoundary(rootGraph, {
+      'not::a-node': nodeError(
+        [validationError('value_not_in_list', 'ckpt_name')],
+        'CheckpointLoaderSimple'
+      )
+    })
+  }
+}
+
 describe('useErrorGroups', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockIsCloud.value = false
     vi.mocked(isLGraphNode).mockReturnValue(false)
     vi.mocked(getNodeByExecutionId).mockReset()
+    vi.mocked(getExecutionIdByNode).mockReset()
   })
 
   describe('missingPackGroups', () => {
@@ -688,6 +726,28 @@ describe('useErrorGroups', () => {
       expect(executionGroup.cards[0]).toMatchObject({
         id: 'exec-not::a-node',
         title: 'KSampler'
+      })
+      expect(executionGroup.cards[0].nodeId).toBeUndefined()
+    })
+
+    it('renders an unnormalisable matching model error as an unlocated card', async () => {
+      const fixture = createUnnormalisableModelErrorFixture()
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels(fixture.missingModels)
+      store.recordNodeErrors(fixture.nodeErrors)
+      await nextTick()
+
+      const executionGroup = groups.allErrorGroups.value.find(
+        (group) => group.type === 'execution'
+      )
+      expect(executionGroup).toMatchObject({
+        severity: 'error',
+        count: 1
+      })
+      if (executionGroup?.type !== 'execution') return
+      expect(executionGroup.cards[0]).toMatchObject({
+        id: 'node-not::a-node',
+        title: 'CheckpointLoaderSimple'
       })
       expect(executionGroup.cards[0].nodeId).toBeUndefined()
     })

@@ -61,10 +61,8 @@ export function classifyErrorSeverity(input: ErrorSeverityInput) {
     }
   )
 
-  const hasBlockingNodeError = nodeErrors.some(
-    ({ nodeId, errors }) =>
-      (nodeId === null && errors.length > 0) ||
-      errors.some(({ absorption }) => absorption === null)
+  const hasBlockingNodeError = nodeErrors.some(({ errors }) =>
+    errors.some(({ absorption }) => !absorption)
   )
 
   return {

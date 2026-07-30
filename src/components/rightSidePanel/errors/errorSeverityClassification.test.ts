@@ -1,11 +1,21 @@
-import { describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
+import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { scanAllModelCandidates } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
+import { toNodeId } from '@/types/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import { classifyErrorSeverity } from './errorSeverityClassification'
 import type { ErrorSeverityInput } from './errorSeverityClassification'
+
+beforeEach(() => {
+  setActivePinia(createPinia())
+})
 
 function classify(overrides: Partial<ErrorSeverityInput> = {}) {
   return classifyErrorSeverity({
@@ -29,6 +39,32 @@ function runtimeError(nodeId: string): ExecutionErrorWsMessage {
     exception_type: 'RuntimeError',
     exception_message: 'Execution failed',
     traceback: []
+  }
+}
+
+function createUnnormalisableModelErrorFixture() {
+  const rootGraph = createTestRootGraph()
+  const node = new LGraphNode('CheckpointLoaderSimple')
+  node.id = toNodeId('not::a-node')
+  const input = node.addInput('ckpt_name', 'COMBO')
+  const widget = node.addWidget(
+    'combo',
+    'ckpt_name',
+    'missing.safetensors',
+    () => {},
+    { values: ['present.safetensors'] }
+  )
+  input.widget = { name: widget.name }
+  rootGraph.add(node)
+
+  return {
+    missingModels: scanAllModelCandidates(rootGraph, () => false),
+    nodeErrors: liftNodeErrorsToBoundary(rootGraph, {
+      'not::a-node': nodeError(
+        [validationError('value_not_in_list', 'ckpt_name')],
+        'CheckpointLoaderSimple'
+      )
+    })
   }
 }
 
@@ -86,6 +122,15 @@ describe('classifyErrorSeverity', () => {
         }
       }).hasBlockingError
     ).toBe(true)
+  })
+
+  it('keeps an unnormalisable matching model error blocking', () => {
+    const fixture = createUnnormalisableModelErrorFixture()
+    const classification = classify(fixture)
+
+    expect(classification.nodeErrors[0].nodeId).toBeNull()
+    expect(classification.nodeErrors[0].errors[0].absorption).toBeNull()
+    expect(classification.hasBlockingError).toBe(true)
   })
 
   it('classifies an execution error with an unnormalisable node id as blocking', () => {
