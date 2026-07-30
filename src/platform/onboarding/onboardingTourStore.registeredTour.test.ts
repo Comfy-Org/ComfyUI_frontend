@@ -86,6 +86,22 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
     expect(stages()).not.toContain('started')
   })
 
+  it('stays startable after a resolver rejects', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    registerTour('firstRun', () =>
+      Promise.reject(new Error('unreadable graph'))
+    )
+    const store = mountStore()
+
+    await expect(store.startTour('firstRun')).resolves.toBe(false)
+
+    registerTour('firstRun', () => Promise.resolve([step('run')]))
+    await expect(
+      store.startTour('firstRun'),
+      'one unreadable graph must not cost the user every tour after it'
+    ).resolves.toBe(true)
+  })
+
   it('runs the steps its resolver builds', async () => {
     registerTour('firstRun', () =>
       Promise.resolve([step('upload'), step('run')])

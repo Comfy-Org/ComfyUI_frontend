@@ -191,7 +191,6 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       card,
       'Run hands over to the last step, the one spotlighting where output lands'
     ).toContainText(`Step ${totalSteps} of ${totalSteps}`)
-    await expect(page.getByTestId('coach-busy')).toBeVisible()
   }
 
   wstest(
@@ -212,10 +211,6 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
         card.getByText(RESULT_IMAGE_TITLE),
         'the run finished, so the Result step has to stop saying it is still coming'
       ).toBeVisible({ timeout: 15_000 })
-      await expect(
-        page.getByTestId('coach-busy'),
-        'nothing is in flight once the run succeeds'
-      ).toBeHidden()
     }
   )
 
@@ -236,7 +231,6 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
         card.getByText(RESULT_FAILED_TITLE),
         'announcing a result that does not exist is the bug D2 filed'
       ).toBeVisible({ timeout: 15_000 })
-      await expect(page.getByTestId('coach-busy')).toBeHidden()
     }
   )
 

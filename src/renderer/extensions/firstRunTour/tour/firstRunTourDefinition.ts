@@ -100,8 +100,7 @@ function toCoachStep(
         if (runState.value === 'generating') return 'result.generating'
         if (runState.value === 'failed') return 'result.failed'
         return `result.${step.mediaKind}`
-      },
-      busy: () => runState.value === 'generating'
+      }
     }
 
   return { ...framed, name: `${step.kind}.${shape}` }

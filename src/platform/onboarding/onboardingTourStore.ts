@@ -17,7 +17,7 @@ import {
   resolveSteps,
   tourDefinition
 } from './onboardingTours'
-import type { CoachStep, EntryPath } from './onboardingTours'
+import type { CoachStep, EntryPath, TourDefinition } from './onboardingTours'
 import { useTourTriggers } from './useTourTriggers'
 
 const DEFER_TIMEOUT_MS = 8000
@@ -63,6 +63,19 @@ function shownIdx(state: TourState): number | null {
     return state.fromIdx === null ? null : state.toIdx
   if (state.phase === 'waiting') return state.fromIdx
   return null
+}
+
+/** Empty when a runtime resolver fails, so one bad graph costs only its own tour. */
+async function resolveDefinition(
+  definition: TourDefinition
+): Promise<CoachStep[]> {
+  if (Array.isArray(definition)) return definition
+  try {
+    return await definition()
+  } catch (error) {
+    console.error('coachmark tour definition failed', error)
+    return []
+  }
 }
 
 /**
@@ -319,7 +332,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const definition = tourDefinition(entryPath)
     if (!definition) return false
     state.value = { phase: 'resolving', tour: entryPath }
-    const built = Array.isArray(definition) ? definition : await definition()
+    const built = await resolveDefinition(definition)
     const resolved = resolveSteps(built, targetMounted)
     if (!resolved.length) {
       state.value = IDLE

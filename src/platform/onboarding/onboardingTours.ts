@@ -62,8 +62,6 @@ export interface CoachStep {
   interactive?: boolean
   /** Draws a pointer glyph on the card edge facing the target. */
   cursor?: boolean
-  /** The app is still doing what this step asked for; the card shows a spinner. */
-  busy?: () => boolean
   /**
    * Offers no primary action: the only way past this step is doing the thing it
    * asks for in the app, and the consumer advances once that happens.

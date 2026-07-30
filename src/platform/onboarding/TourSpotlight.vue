@@ -92,12 +92,6 @@
           "
           aria-hidden="true"
         />
-        <i
-          v-if="step.busy?.()"
-          data-testid="coach-busy"
-          class="absolute top-4 right-4 z-10 icon-[lucide--loader-circle] size-3.5 animate-spin text-muted-foreground"
-          aria-hidden="true"
-        />
         <CoachmarkCard
           class="max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto"
           :subtitle="
