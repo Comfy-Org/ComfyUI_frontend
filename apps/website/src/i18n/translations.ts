@@ -803,6 +803,24 @@ const translations = {
     'zh-CN': '从 GITHUB 安装'
   },
 
+  // Download – MobileDownloadEmailForm
+  'download.emailForm.heading': {
+    en: 'Get download link',
+    'zh-CN': '获取下载链接'
+  },
+  'download.emailForm.placeholder': {
+    en: 'you@email.com',
+    'zh-CN': 'you@email.com'
+  },
+  'download.emailForm.submit': {
+    en: 'Send download link',
+    'zh-CN': '发送下载链接'
+  },
+  'download.emailForm.success': {
+    en: 'Check your email for the download link.',
+    'zh-CN': '请查收邮件获取下载链接。'
+  },
+
   // Download – CloudBannerSection
   'download.cloud.prefix': {
     en: 'Need more power?',

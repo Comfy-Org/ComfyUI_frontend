@@ -11,6 +11,7 @@ const IMAGE_PLACEHOLDER = assetPath('../assets/placeholder-1x1.webp')
 const VIDEO_PLACEHOLDER = assetPath('../assets/placeholder.webm')
 
 const ANALYTICS_PATTERN = '**/va.vercel-scripts.com/**' as const
+const CDP_PATTERN = '**/cdp.customer.io/**' as const
 const MEDIA_PATTERN =
   /^https:\/\/media\.comfy\.org\/.*\.(webp|webm|mp4|png|jpg|jpeg|vtt)(\?.*)?$/i
 const VIDEO_PATTERN = /\.(webm|mp4)(\?|$)/i
@@ -39,6 +40,7 @@ export const test = base.extend<{ blockExternalMedia: void }>({
   blockExternalMedia: [
     async ({ page }, use) => {
       await page.route(ANALYTICS_PATTERN, blockAnalytics)
+      await page.route(CDP_PATTERN, blockAnalytics)
       await page.route(MEDIA_PATTERN, fulfillMedia)
       await use()
     },

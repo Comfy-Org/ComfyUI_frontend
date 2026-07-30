@@ -9,6 +9,7 @@ import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
 import DownloadLocalButton from './DownloadLocalButton.vue'
+import MobileDownloadEmailForm from './MobileDownloadEmailForm.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -298,6 +299,7 @@ onUnmounted(() => {
       </p>
 
       <div class="mt-8 flex flex-col gap-4 lg:flex-row">
+        <MobileDownloadEmailForm :locale />
         <DownloadLocalButton :locale class="lg:min-w-60 lg:p-4" />
         <BrandButton
           :href="externalLinks.githubInstall"

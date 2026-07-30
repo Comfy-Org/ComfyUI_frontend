@@ -1,3 +1,4 @@
+import type { BrowserContext } from '@playwright/test'
 import { devices, expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -8,6 +9,54 @@ const LINUX_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 const IPHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+
+// Customer.io CDP request/response shapes (external API — no generated types).
+interface CdpEventBody {
+  userId?: string
+  traits?: { email?: string }
+  event?: string
+  properties?: { locale?: string; page?: string }
+}
+
+interface CdpCapture {
+  method: string
+  path: string
+  body?: CdpEventBody
+}
+
+// The email form only renders when the site was built with
+// PUBLIC_CUSTOMERIO_WRITE_KEY set (see ci-website-e2e.yaml).
+async function routeCdp(context: BrowserContext, captured: CdpCapture[]) {
+  await context.route('**/cdp.customer.io/**', async (route) => {
+    const request = route.request()
+    const method = request.method()
+    const path = new URL(request.url()).pathname
+    if (path.endsWith('/settings')) {
+      captured.push({ method, path })
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          integrations: { 'Customer.io Data Pipelines': {} }
+        })
+      })
+    }
+    if (method === 'POST') {
+      captured.push({
+        method,
+        path,
+        body: request.postDataJSON() as CdpEventBody
+      })
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true })
+      })
+    }
+    captured.push({ method, path })
+    return route.abort('blockedbyclient')
+  })
+}
 
 test.describe('Download page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -35,6 +84,8 @@ test.describe('Download page @smoke', () => {
 
   test('HeroSection has download and GitHub buttons', async ({ browser }) => {
     const context = await browser.newContext({ userAgent: WINDOWS_UA })
+    const captured: CdpCapture[] = []
+    await routeCdp(context, captured)
     const page = await context.newPage()
     await page.goto('/download')
 
@@ -59,6 +110,12 @@ test.describe('Download page @smoke', () => {
       'href',
       'https://github.com/Comfy-Org/ComfyUI#installing'
     )
+
+    await expect(hero.getByRole('textbox')).toHaveCount(0)
+
+    // Desktop must never load the CDP SDK — settle the network, then assert silence.
+    await page.waitForLoadState('networkidle')
+    expect(captured).toHaveLength(0)
 
     await context.close()
   })
@@ -93,11 +150,14 @@ test.describe('Download page @smoke', () => {
       hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
     ).toHaveCount(2)
 
+    await expect(hero.getByRole('textbox')).toHaveCount(0)
+
     await context.close()
   })
 
   test('HeroSection hides every desktop CTA on mobile', async ({ browser }) => {
     const context = await browser.newContext({ userAgent: IPHONE_UA })
+    await routeCdp(context, [])
     const page = await context.newPage()
     await page.goto('/download')
 
@@ -114,6 +174,54 @@ test.describe('Download page @smoke', () => {
     await expect(
       hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
     ).toBeVisible()
+
+    await context.close()
+  })
+
+  test('mobile email form submits identify then track to Customer.io', async ({
+    browser
+  }) => {
+    const context = await browser.newContext({ userAgent: IPHONE_UA })
+    const captured: CdpCapture[] = []
+    await routeCdp(context, captured)
+    const page = await context.newPage()
+    await page.goto('/download')
+
+    const hero = page.locator('section', {
+      has: page.getByRole('heading', {
+        name: /Run on your hardware/i,
+        level: 1
+      })
+    })
+
+    const emailInput = hero.getByRole('textbox', { name: /Get download link/i })
+    await expect(emailInput).toBeVisible()
+    await expect(
+      hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
+    ).toBeVisible()
+
+    await emailInput.fill('someone@example.com')
+    await hero.getByRole('button', { name: /Send download link/i }).click()
+
+    await expect(
+      hero.getByText(/Check your email for the download link/i)
+    ).toBeVisible()
+
+    const events = () => captured.filter((capture) => capture.method === 'POST')
+    await expect
+      .poll(() => events().map((capture) => capture.path))
+      .toEqual(['/v1/i', '/v1/t'])
+
+    const [identify, track] = events()
+    expect(identify.body?.userId).toBe('someone@example.com')
+    expect(identify.body?.traits).toMatchObject({
+      email: 'someone@example.com'
+    })
+    expect(track.body?.event).toBe('download_link_requested')
+    expect(track.body?.properties).toMatchObject({
+      locale: 'en',
+      page: '/download'
+    })
 
     await context.close()
   })
