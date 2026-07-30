@@ -328,6 +328,11 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
           alternateTheme
         )
         await expect
+          .poll(() =>
+            comfyPage.settings.getSetting<string>('Comfy.ColorPalette')
+          )
+          .toBe(alternateTheme)
+        await expect
           .poll(() => getMinimumToolIconContrast(dialog))
           .toBeGreaterThanOrEqual(3)
       } finally {
