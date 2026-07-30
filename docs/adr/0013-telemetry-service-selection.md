@@ -6,6 +6,8 @@ Date: 2026-07-28
 
 Accepted
 
+<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-NNNN](NNNN-title.md)] -->
+
 ## Context
 
 A billing telemetry audit (frontend PR
