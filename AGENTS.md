@@ -4,6 +4,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 
 - `docs/guidance/engineering.md` — general engineering guidelines, project philosophy, code-review checklist, external resource links
 - `docs/guidance/vue-components.md` — Vue 3 Composition API best practices
+- `docs/guidance/state-and-effects.md` — modelling a feature's state: one discriminated union, named events, a pure transition, effects reserved for synchronising outward
 - `docs/guidance/typescript.md` — TypeScript type-safety rules
 - `docs/guidance/vitest.md` — Vitest unit/component test conventions
 - `docs/guidance/playwright.md` — Playwright E2E conventions and API-mock typing table
