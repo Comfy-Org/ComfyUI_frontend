@@ -1291,6 +1291,93 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('recovers when the subscribe authority sees a cancellation omitted by the status read', async () => {
+      mockSubscription.value = { isCancelled: false }
+      const checkout = await setup()
+      const preview = {
+        allowed: true,
+        transition_type: 'upgrade' as const,
+        effective_at: '2026-08-30T00:00:00Z',
+        is_immediate: true,
+        cost_today_cents: 18_999,
+        cost_next_period_cents: 39_000,
+        credits_today_cents: 42_200,
+        credits_next_period_cents: 84_400,
+        proration_at: '2026-07-30T00:00:00Z',
+        current_plan: {
+          slug: 'team_per_credit_monthly',
+          tier: 'TEAM',
+          duration: 'MONTHLY',
+          price_cents: 20_000,
+          credits_cents: 42_200,
+          period_end: '2026-08-29T00:00:00Z',
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 20_000,
+            total_credits_cents: 42_200
+          }
+        },
+        new_plan: {
+          slug: 'team_per_credit_monthly',
+          tier: 'TEAM',
+          duration: 'MONTHLY',
+          price_cents: 39_000,
+          credits_cents: 84_400,
+          period_end: '2026-08-30T00:00:00Z',
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 39_000,
+            total_credits_cents: 84_400
+          }
+        }
+      }
+      mockPreviewSubscribe.mockResolvedValueOnce(preview)
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_400',
+          usd: 400,
+          credits: 84_400,
+          discountedUsd: 390
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      mockSubscribe.mockRejectedValueOnce(
+        Object.assign(new Error('reactivation confirmation required'), {
+          code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+        })
+      )
+      mockPreviewSubscribe.mockResolvedValueOnce(preview)
+
+      await checkout.handleTeamSubscribe()
+
+      expect(checkout.reactivationRequired.value).toBe(true)
+      expect(checkout.previewData.value).toStrictEqual(preview)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'subscription.preview.reactivation.confirmationRequired'
+        })
+      )
+
+      mockPreviewSubscribe.mockResolvedValueOnce(preview)
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-authoritative-reactivation'
+      })
+
+      await checkout.handleTeamSubscribe(true)
+
+      expect(mockSubscribe).toHaveBeenLastCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({
+          confirmReactivation: true,
+          prorationAt: '2026-07-30T00:00:00Z'
+        })
+      )
+      expect(checkout.checkoutStep.value).toBe('success')
+    })
+
     it('uses the annual plan slug for the yearly cycle', async () => {
       const checkout = await setup()
       await checkout.handleSubscribeTeamClick({
@@ -1929,6 +2016,69 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).toHaveBeenCalledWith(
         'standard-yearly',
         expect.objectContaining({ confirmReactivation: true })
+      )
+    })
+
+    it('recovers a personal transition when the subscribe authority requires reactivation consent', async () => {
+      mockSubscription.value = { isCancelled: false }
+      const checkout = await setup()
+      const preview = {
+        allowed: true,
+        transition_type: 'upgrade' as const,
+        effective_at: '2026-08-29T00:00:00Z',
+        is_immediate: true,
+        cost_today_cents: 1500,
+        cost_next_period_cents: 1600,
+        credits_today_cents: 3150,
+        credits_next_period_cents: 4200,
+        proration_at: '2026-07-30T00:00:00Z',
+        current_plan: {
+          slug: 'creator-monthly',
+          tier: 'CREATOR',
+          duration: 'MONTHLY',
+          price_cents: 3500,
+          credits_cents: 7400,
+          period_end: '2026-08-29T00:00:00Z',
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 3500,
+            total_credits_cents: 7400
+          }
+        },
+        new_plan: {
+          slug: 'standard-yearly',
+          tier: 'STANDARD',
+          duration: 'ANNUAL',
+          price_cents: 1600,
+          credits_cents: 4200,
+          period_end: '2027-08-29T00:00:00Z',
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 1600,
+            total_credits_cents: 4200
+          }
+        }
+      }
+      mockPreviewSubscribe.mockResolvedValueOnce(preview)
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        Object.assign(new Error('reactivation confirmation required'), {
+          code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+        })
+      )
+      mockPreviewSubscribe.mockResolvedValueOnce(preview)
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.reactivationRequired.value).toBe(true)
+      expect(checkout.previewData.value).toStrictEqual(preview)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'subscription.preview.reactivation.confirmationRequired'
+        })
       )
     })
 

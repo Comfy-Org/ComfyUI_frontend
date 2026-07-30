@@ -226,7 +226,8 @@ const {
   previewData,
   isLoading = false,
   teamPlan = null,
-  actionUrl = null
+  actionUrl = null,
+  forceReactivation = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -234,6 +235,9 @@ const {
    *  the selected slider stop; all proration money stays driven by previewData. */
   teamPlan?: TeamPlanSelection | null
   actionUrl?: string | null
+  /** Server-authoritative fallback for legacy status reads that omit a
+   * scheduled cancellation until subscribe enforces the consent gate. */
+  forceReactivation?: boolean
 }>()
 
 defineEmits<{
@@ -306,7 +310,9 @@ const currentPlanLabel = computed(() =>
     : currentTierName.value
 )
 
-const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+const isCancelled = computed(
+  () => forceReactivation || (subscription.value?.isCancelled ?? false)
+)
 
 const reactivationVariant = computed<
   'upgrade' | 'downgrade' | 'duration_change' | null
@@ -326,16 +332,20 @@ const reactivationVariant = computed<
 // Requires the data the banner and threshold math actually read
 // (subscription.endDate, previewData.current_plan) — without it the banner
 // would render broken copy or force the checkbox on a bogus $0 threshold.
+const cancelAt = computed(
+  () => subscription.value?.endDate ?? previewData.current_plan?.period_end
+)
+
 const isReactivating = computed(
   () =>
     isCancelled.value &&
     reactivationVariant.value !== null &&
-    !!subscription.value?.endDate &&
+    !!cancelAt.value &&
     !!previewData.current_plan
 )
 
 const cancelDate = computed(() =>
-  subscription.value?.endDate ? formatDate(subscription.value.endDate) : ''
+  cancelAt.value ? formatDate(cancelAt.value) : ''
 )
 
 // seat_summary.total_cost_cents is the whole-subscription price; price_cents

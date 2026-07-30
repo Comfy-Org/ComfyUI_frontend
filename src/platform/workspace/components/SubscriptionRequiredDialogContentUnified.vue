@@ -66,6 +66,7 @@
         :team-plan="selectedTeamStop!"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
+        :force-reactivation="reactivationRequired"
         @confirm="handleTeamSubscribe"
         @back="handleBackToPricing"
       />
@@ -96,6 +97,7 @@
         :preview-data="previewData!"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
+        :force-reactivation="reactivationRequired"
         @confirm="handleConfirmTransition"
         @back="handleBackToPricing"
       />
@@ -146,6 +148,7 @@ const {
   isSubscribing,
   isResubscribing,
   previewData,
+  reactivationRequired,
   selectedTierKey,
   selectedTeamStop,
   selectedBillingCycle,

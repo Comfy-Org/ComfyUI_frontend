@@ -113,6 +113,11 @@ export function useSubscriptionCheckout(
   const previewData = ref<PreviewSubscribeResponse | null>(null)
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
+  // Some legacy-rail status reads cannot expose a scheduled cancellation even
+  // though the subscribe authority can see it in Stripe. Once that authority
+  // rejects an unconfirmed change, keep the consent screen in reactivation
+  // mode until the user backs out or completes the change.
+  const reactivationRequired = ref(false)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const activeCheckoutOperationId = ref<string | null>(null)
   const activeCheckoutOperation = computed(() => {
@@ -325,9 +330,11 @@ export function useSubscriptionCheckout(
     }
     if (isReactivationCapablePreview(freshPreview)) {
       previewData.value = freshPreview
+      reactivationRequired.value = true
       notifyReactivationConfirmationRequired()
       return
     }
+    reactivationRequired.value = false
     handleBackToPricing()
     toast.add({
       severity: 'error',
@@ -404,6 +411,7 @@ export function useSubscriptionCheckout(
 
     const { tierKey, billingCycle } = payload
 
+    reactivationRequired.value = false
     isLoadingPreview.value = true
     loadingTier.value = tierKey
     selectedTierKey.value = tierKey
@@ -467,6 +475,7 @@ export function useSubscriptionCheckout(
   }) {
     if (!permissions.value.canManageSubscription) return
 
+    reactivationRequired.value = false
     selectedTeamCheckout.value = {
       stop: payload.stop,
       checkoutType: payload.isChange ? 'change' : 'new'
@@ -520,6 +529,7 @@ export function useSubscriptionCheckout(
 
   function handleBackToPricing() {
     if (isPolling.value) return
+    reactivationRequired.value = false
     checkoutStep.value = 'pricing'
     previewData.value = null
     selectedTeamCheckout.value = null
@@ -549,11 +559,17 @@ export function useSubscriptionCheckout(
     try {
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       await fetchStatus()
-      if (!confirmReactivation && isCancelled.value) {
+      if (
+        !confirmReactivation &&
+        (isCancelled.value || reactivationRequired.value)
+      ) {
         await refreshPreviewOnReactivationBlock(planSlug)
         return
       }
-      if (confirmReactivation && isCancelled.value) {
+      if (
+        confirmReactivation &&
+        (isCancelled.value || reactivationRequired.value)
+      ) {
         await assertReactivationAmountUnchanged(planSlug)
       }
       const response = await subscribe(planSlug, {
@@ -580,6 +596,10 @@ export function useSubscriptionCheckout(
         checkoutType
       })
     } catch (error) {
+      if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
+        await refreshPreviewOnReactivationBlock(planSlug)
+        return
+      }
       if (await refreshExpiredProrationQuote(error, planSlug)) return
       trackSubscriptionFailure({
         tier: tierKey,
@@ -724,14 +744,20 @@ export function useSubscriptionCheckout(
     isSubscribing.value = true
     try {
       await fetchStatus()
-      if (!confirmReactivation && isCancelled.value) {
+      if (
+        !confirmReactivation &&
+        (isCancelled.value || reactivationRequired.value)
+      ) {
         await refreshPreviewOnReactivationBlock(planSlug, {
           teamCreditStopId: stop.id,
           billingCycle
         })
         return
       }
-      if (confirmReactivation && isCancelled.value) {
+      if (
+        confirmReactivation &&
+        (isCancelled.value || reactivationRequired.value)
+      ) {
         await assertReactivationAmountUnchanged(planSlug, {
           teamCreditStopId: stop.id,
           billingCycle
@@ -763,6 +789,13 @@ export function useSubscriptionCheckout(
         checkoutType
       })
     } catch (error) {
+      if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
+        await refreshPreviewOnReactivationBlock(planSlug, {
+          teamCreditStopId: stop.id,
+          billingCycle
+        })
+        return
+      }
       if (
         await refreshExpiredProrationQuote(error, planSlug, {
           teamCreditStopId: stop.id,
@@ -837,6 +870,7 @@ export function useSubscriptionCheckout(
     isSubscribing,
     isResubscribing,
     previewData,
+    reactivationRequired,
     selectedTierKey,
     selectedTeamStop,
     selectedBillingCycle,

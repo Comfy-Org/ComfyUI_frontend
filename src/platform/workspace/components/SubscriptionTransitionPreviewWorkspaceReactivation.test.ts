@@ -124,9 +124,12 @@ function makePreview(
   }
 }
 
-function renderComponent(previewData: PreviewSubscribeResponse) {
+function renderComponent(
+  previewData: PreviewSubscribeResponse,
+  forceReactivation = false
+) {
   return render(SubscriptionTransitionPreviewWorkspace, {
-    props: { previewData },
+    props: { previewData, forceReactivation },
     global: { plugins: [i18n] }
   })
 }
@@ -149,6 +152,29 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       expect(
         screen.queryByText('Reactivating your subscription')
       ).not.toBeInTheDocument()
+    })
+
+    it('uses a server-authoritative reactivation requirement when status omits the cancellation', () => {
+      mockSubscription.value = { isCancelled: false, endDate: null }
+      const preview = makePreview({
+        transition_type: 'upgrade',
+        cost_today_cents: 2500
+      })
+      preview.current_plan!.period_end = '2026-08-29T00:00:00Z'
+
+      const { container } = renderComponent(preview, true)
+
+      expect(
+        screen.getByText('Reactivating your subscription')
+      ).toBeInTheDocument()
+      expect(container.textContent).toContain(
+        'Your Standard was set to end on Aug 29, 2026'
+      )
+      expect(
+        screen.getByRole('button', {
+          name: 'Confirm & reactivate — $25.00 today'
+        })
+      ).toBeDisabled()
     })
   })
 
