@@ -231,7 +231,7 @@ function refreshPromotedWidgetRendering() {
   const node = activeNode.value
   if (!node) return
 
-  node.computeSize(node.size)
+  node.expandToFitContent()
   node.setDirtyCanvas(true, true)
   canvasStore.canvas?.setDirty(true, true)
 }
