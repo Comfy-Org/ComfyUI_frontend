@@ -29,14 +29,17 @@
               role="button"
               tabindex="0"
               :data-testid="`getting-started-card-${template.name}`"
-              class="group/card focus-visible:ring-ring relative min-w-0 cursor-pointer overflow-hidden rounded-2xl focus-visible:ring-1 focus-visible:outline-none"
+              class="group/card focus-visible:ring-ring relative min-w-0 cursor-pointer overflow-hidden rounded-2xl **:cursor-pointer focus-visible:ring-1 focus-visible:outline-none"
               @click="pick(template.name)"
               @keydown.enter.prevent="pick(template.name)"
+              @mouseenter="hoveredId = template.name"
+              @mouseleave="hoveredId = null"
             >
               <DefaultThumbnail
                 :src="getTemplateThumbnailUrl(template, 'default')"
                 :alt="getTemplateTitle(template, 'default')"
                 :hover-zoom="5"
+                :is-hovered="hoveredId === template.name"
                 :is-video="template.mediaType === 'video'"
               />
               <h3
@@ -67,7 +70,7 @@
 
 <script setup lang="ts">
 import { FocusScope } from 'reka-ui'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
@@ -90,6 +93,8 @@ const {
   getTemplateThumbnailUrl,
   getTemplateTitle
 } = useTemplateWorkflows()
+
+const hoveredId = ref<string | null>(null)
 
 const templates = computed(() =>
   CURATED_TEMPLATE_IDS.map((id) => templatesStore.getTemplateByName(id)).filter(
