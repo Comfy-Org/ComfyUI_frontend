@@ -8,6 +8,7 @@ import { readonly, ref } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import { useNewUserService } from '@/services/useNewUserService'
@@ -24,6 +25,15 @@ export const useFirstRunEntry = createSharedComposable(() => {
     useFeatureFlags().flags.onboardingTourEnabled
 
   async function handleStartupOutcome(outcome: StartupOutcome) {
+    if (
+      import.meta.env.DEV &&
+      localStorage.getItem('ff:force_first_run') === 'true'
+    ) {
+      await useSettingStore().set('Comfy.TutorialCompleted', false)
+      await useSettingStore().set(TOUR_SEEN_SETTING, [])
+      gettingStartedVisible.value = true
+      return
+    }
     if (outcome !== 'fresh') return
     if (isCandidate()) {
       gettingStartedVisible.value = true
