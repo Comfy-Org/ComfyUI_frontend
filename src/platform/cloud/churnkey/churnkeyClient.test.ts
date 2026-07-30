@@ -113,6 +113,19 @@ describe('churnkeyClient', () => {
     expect(mocks.init).not.toHaveBeenCalled()
   })
 
+  it('settles when closed without requesting cancellation', async () => {
+    const session = await prepareChurnkey()
+    if (!session) throw new Error('Expected a Churnkey session')
+    const handleCancel = vi.fn()
+
+    const showPromise = session.show({ handleCancel })
+    capturedConfig().onClose({ aborted: true })
+
+    await expect(showPromise).resolves.toEqual({ aborted: true })
+    expect(handleCancel).not.toHaveBeenCalled()
+    expect(mocks.clearState).toHaveBeenCalledOnce()
+  })
+
   it('waits for an in-flight cancellation before settling close', async () => {
     let rejectCancellation: ((reason: Error) => void) | undefined
     const cancellation = new Promise<never>((_resolve, reject) => {
