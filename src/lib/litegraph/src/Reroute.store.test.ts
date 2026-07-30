@@ -251,10 +251,11 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([12, 17], link)!
     reroute.snapToGrid(10)
-    const operationCount = layoutStore.getOperationsSince(0).length
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+    onTestFinished(() => applyOperation.mockRestore())
 
     expect(reroute.snapToGrid(10)).toBe(false)
-    expect(layoutStore.getOperationsSince(0)).toHaveLength(operationCount)
+    expect(applyOperation).not.toHaveBeenCalled()
   })
 
   it('refuses parentId writes that would create a cycle, allows repair', () => {
