@@ -1,7 +1,7 @@
 import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware, Placement, Rect } from '@floating-ui/vue'
 import { useEventListener } from '@vueuse/core'
-import { computed, readonly, ref, toValue, watch, watchEffect } from 'vue'
+import { computed, ref, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
@@ -135,11 +135,5 @@ export function useCoachmarkTarget(
     )
   })
 
-  return {
-    targetEl,
-    targetRect,
-    floatingStyles,
-    isPositioned,
-    inMotion: readonly(trackMotion)
-  }
+  return { targetEl, targetRect, floatingStyles, isPositioned }
 }

@@ -26,13 +26,7 @@
     <div
       aria-hidden="true"
       data-testid="coach-spotlight"
-      :class="
-        cn(
-          'pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring',
-          !inMotion &&
-            'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300'
-        )
-      "
+      class="pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring motion-safe:transition-opacity motion-safe:duration-300"
       :style="spotlightStyle"
     />
     <FocusScope
@@ -47,13 +41,7 @@
         aria-modal="true"
         :aria-labelledby="titleId"
         :aria-describedby="`${subtitleId} ${bodyId}`"
-        :class="
-          cn(
-            'pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto',
-            !inMotion &&
-              'motion-safe:transition-[left,top] motion-safe:duration-300'
-          )
-        "
+        class="pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto"
         :style="cardStyle"
       >
         <CoachmarkCard
@@ -146,6 +134,7 @@ import {
 } from './coachmarkLayout'
 import type { CoachStep } from './onboardingTours'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
+import { useSmoothedRect } from './useSmoothedRect'
 
 const {
   step,
@@ -188,8 +177,21 @@ const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-const { targetRect, targetEl, floatingStyles, isPositioned, inMotion } =
-  useCoachmarkTarget(() => step, cardRef)
+const {
+  targetRect: measuredRect,
+  targetEl,
+  floatingStyles,
+  isPositioned
+} = useCoachmarkTarget(() => step, cardRef)
+
+const targetRect = useSmoothedRect(measuredRect)
+
+const cardTarget = computed<DOMRect | null>(() => {
+  if (!targetEl.value || !isPositioned.value) return null
+  const { left, top } = floatingStyles.value
+  return new DOMRect(parseFloat(String(left)), parseFloat(String(top)), 0, 0)
+})
+const cardPos = useSmoothedRect(cardTarget)
 
 // Last step's "Done" already dismisses, so hide Skip there.
 const showSkip = computed(() => !isLast)
@@ -277,11 +279,15 @@ const cardStyle = computed(() => {
     }
   }
   // Hidden until Floating UI positions it, avoiding a first-frame jump.
+  const p = cardPos.value
+  if (!p) return { ...floatingStyles.value, width, maxWidth, opacity: '0' }
   return {
-    ...floatingStyles.value,
+    position: 'fixed' as const,
+    left: `${p.x}px`,
+    top: `${p.y}px`,
     width,
     maxWidth,
-    opacity: isPositioned.value ? '1' : '0'
+    opacity: '1'
   }
 })
 </script>
