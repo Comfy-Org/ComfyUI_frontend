@@ -11,22 +11,25 @@ below happen after the "publish succeeded" line.
 
 ## The first publish is different
 
-**A brand-new package name cannot be published by CI on the first run**, and the
-error does not say so. npm returns:
+**A brand-new package name will fail the first CI publish unless the token was
+scoped for it**, and the error does not say so. npm returns:
 
 ```text
 [E404] 404 Not Found - PUT https://registry.npmjs.org/@comfyorg%2fyour-package
 ```
 
 A 404 on `PUT` means the token may publish _existing_ packages in the scope but
-may not _create_ a new name. It reads like "the package doesn't exist" — which
-is true and irrelevant — and sends you looking for a workflow bug that isn't
-there. `--access public` is already set; the registry URL is already right.
+may not _create_ a new name — a granular token whose write access is a
+hand-picked package list cannot include a package that does not exist yet. It
+reads like "the package doesn't exist" — which is true and irrelevant — and
+sends you looking for a workflow bug that isn't there. `--access public` is
+already set; the registry URL is already right.
 
 Two ways out, both fine:
 
-1. Widen the CI token to read+write over all packages (or the whole `@comfyorg`
-   scope) and re-run the workflow.
+1. Give the CI token read+write on the whole `@comfyorg` scope — the narrowest
+   grant that can create a new name, and preferable to all-packages access —
+   then re-run the workflow.
 2. Publish once by hand, then make sure the CI token covers the new name.
 
 Trusted publishing (OIDC) cannot bootstrap either — npm requires the package to
