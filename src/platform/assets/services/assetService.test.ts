@@ -780,6 +780,24 @@ describe(assetService.getAssetModels, () => {
     // Both folder reads resolve from a single memoized models walk.
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
   })
+
+  it.fails("produces a folder-style model identifier for multi-file QwenVL repos, not a raw asset filename (so the node's own combo validation accepts it)", async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'qwenvl-shard-1',
+          name: 'model-00001-of-00004.safetensors',
+          tags: ['models', 'model_type:LLM/Qwen-VL/Qwen3-VL-8B-Instruct']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels(
+      'LLM/Qwen-VL/Qwen3-VL-8B-Instruct'
+    )
+
+    expect(models[0]?.name).toBe('Qwen3-VL-8B-Instruct')
+  })
 })
 
 describe(assetService.onModelsScanned, () => {
