@@ -1,7 +1,11 @@
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { PromptError } from '@/schemas/apiSchema'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { isImageNotLoadedValidationError } from '@/utils/executionErrorUtil'
+import {
+  isImageNotLoadedValidationError,
+  isMissingNodePromptError
+} from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 function normalizePath(value: string): string {
@@ -104,4 +108,11 @@ export function getMissingResourceValidationErrorAbsorption(
     return 'missing_media'
   }
   return null
+}
+
+export function isMissingNodePromptErrorAbsorbed(
+  promptError: PromptError | null | undefined,
+  hasMissingNodes: boolean
+): boolean {
+  return isMissingNodePromptError(promptError) && hasMissingNodes
 }

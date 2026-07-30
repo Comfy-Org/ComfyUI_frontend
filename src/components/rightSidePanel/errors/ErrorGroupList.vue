@@ -124,7 +124,9 @@
             <template #actions>
               <span
                 v-if="
-                  (group.type === 'missing_model' ||
+                  (group.type === 'missing_node' ||
+                    group.type === 'swap_nodes' ||
+                    group.type === 'missing_model' ||
                     group.type === 'missing_media') &&
                   group.blockedLastRun
                 "
@@ -135,7 +137,21 @@
                   aria-hidden="true"
                   class="size-1.5 rounded-full bg-destructive-background"
                 />
-                {{ t('rightSidePanel.blockedLastRun') }}
+                <span
+                  aria-hidden="true"
+                  class="hidden @[378px]/error-section-header:inline"
+                >
+                  {{ t('rightSidePanel.blockedLastRun') }}
+                </span>
+                <span
+                  aria-hidden="true"
+                  class="hidden @[332px]/error-section-header:inline @[378px]/error-section-header:hidden"
+                >
+                  {{ t('rightSidePanel.blockedLastRunShort') }}
+                </span>
+                <span class="sr-only">
+                  {{ t('rightSidePanel.blockedLastRun') }}
+                </span>
               </span>
               <Button
                 v-if="

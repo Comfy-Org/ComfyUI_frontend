@@ -36,6 +36,7 @@ import {
   errorsForSlot,
   getInputConfigBounds,
   hasErrorForSlot,
+  isMissingNodePromptError,
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -106,6 +107,18 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Clear only prompt-level errors. Called during resetExecutionState. */
   function clearPromptError() {
     lastPromptError.value = null
+  }
+
+  /** Drop a missing-node prompt error when tracked missing nodes transition
+   *  from present to resolved. */
+  function clearResolvedMissingNodePromptError(hadMissingNodes: boolean): void {
+    if (
+      hadMissingNodes &&
+      isMissingNodePromptError(lastPromptError.value) &&
+      !missingNodesStore.hasMissingNodes
+    ) {
+      lastPromptError.value = null
+    }
   }
 
   function clearSimpleNodeErrorsFromRecord(
@@ -553,6 +566,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     clearAllErrors,
     clearExecutionStartErrors,
     clearPromptError,
+    clearResolvedMissingNodePromptError,
 
     // Overlay UI
     isErrorOverlayOpen,

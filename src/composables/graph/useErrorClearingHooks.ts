@@ -378,6 +378,7 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
   const modelStore = useMissingModelStore()
   const mediaStore = useMissingMediaStore()
   const nodesStore = useMissingNodesErrorStore()
+  const hadMissingNodes = nodesStore.hasMissingNodes
 
   modelStore.removeMissingModelsByNodeId(execId)
   modelStore.removeMissingModelsBySourceScope(execId)
@@ -393,6 +394,8 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
     mediaStore.removeMissingMediaByPrefix(prefix)
     nodesStore.removeMissingNodesByPrefix(prefix)
   }
+
+  useExecutionErrorStore().clearResolvedMissingNodePromptError(hadMissingNodes)
 }
 
 export function installErrorClearingHooks(graph: LGraph): () => void {

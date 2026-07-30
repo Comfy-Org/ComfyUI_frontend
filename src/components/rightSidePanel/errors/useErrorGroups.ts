@@ -44,7 +44,10 @@ import {
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 
-import { getMissingResourceValidationErrorAbsorption } from './missingResourceAbsorption'
+import {
+  getMissingResourceValidationErrorAbsorption,
+  isMissingNodePromptErrorAbsorbed
+} from './missingResourceAbsorption'
 
 const PROMPT_CARD_ID = '__prompt__'
 
@@ -346,14 +349,20 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   function processPromptError(
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
-  ) {
+  ): boolean {
     if (
       (filterBySelection && selectedNodeInfo.value.nodeIds) ||
       !executionErrorStore.lastPromptError
     )
-      return
+      return false
 
     const error = executionErrorStore.lastPromptError
+    if (
+      isMissingNodePromptErrorAbsorbed(error, missingNodesStore.hasMissingNodes)
+    ) {
+      return true
+    }
+
     const resolvedDisplay = resolveRunErrorMessage({
       kind: 'prompt',
       error,
@@ -379,6 +388,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         }
       ]
     })
+    return false
   }
 
   function processNodeErrors(
@@ -618,6 +628,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
    * emphasis to the canvas selection); groups reduced to zero are omitted.
    */
   function buildMissingNodeGroups(
+    blockedLastRun: boolean,
     includeGroup: (nodeTypes: MissingNodeType[]) => boolean = () => true
   ): ErrorGroup[] {
     const error = missingNodesStore.missingNodesError
@@ -638,6 +649,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupKey: 'swap_nodes',
         count: swapCount,
         priority: 0,
+        blockedLastRun,
         ...resolveMissingErrorMessage({
           kind: 'swap_nodes',
           nodeTypes: error.nodeTypes,
@@ -654,6 +666,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupKey: 'missing_node',
         count: packCount,
         priority: 1,
+        blockedLastRun,
         ...resolveMissingErrorMessage({
           kind: 'missing_node',
           nodeTypes: error.nodeTypes,
@@ -817,13 +830,13 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const allErrorGroups = computed<ErrorGroup[]>(() => {
     const groupsMap = new Map<string, GroupEntry>()
 
-    processPromptError(groupsMap)
+    const blockedMissingNodes = processPromptError(groupsMap)
     const blockedMissingGroups = processNodeErrors(groupsMap)
     processExecutionError(groupsMap)
 
     return [
       ...toSortedGroups(groupsMap),
-      ...buildMissingNodeGroups(),
+      ...buildMissingNodeGroups(blockedMissingNodes),
       ...buildMissingModelGroups(blockedMissingGroups.has('missing_model')),
       ...buildMissingMediaGroups(blockedMissingGroups.has('missing_media'))
     ]
@@ -839,13 +852,13 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (!hasSelection.value) return []
 
     const groupsMap = new Map<string, GroupEntry>()
-    processPromptError(groupsMap, true)
+    void processPromptError(groupsMap, true)
     void processNodeErrors(groupsMap, true)
     processExecutionError(groupsMap, true)
 
     return [
       ...toSortedGroups(groupsMap),
-      ...buildMissingNodeGroups((nodeTypes) =>
+      ...buildMissingNodeGroups(false, (nodeTypes) =>
         someNodeTypeInSelection(nodeTypes, selectionMatchedAssetNodeIds.value)
       ),
       ...buildMissingModelGroupsForSelection(),

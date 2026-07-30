@@ -578,15 +578,68 @@ describe('TabErrors.vue', () => {
     })
 
     const missingSection = screen.getByTestId('error-group-missing-model')
-    expect(
-      within(missingSection).getByTestId('blocked-last-run-indicator')
-    ).toHaveTextContent('Blocked last run')
+    const marker = within(missingSection).getByTestId(
+      'blocked-last-run-indicator'
+    )
+    expect(marker).toHaveTextContent('Blocked last run')
     expect(
       within(missingSection).getByTestId('error-section-count-badge')
     ).toHaveClass('bg-warning-background')
     expect(
       screen.queryByTestId('error-group-execution')
     ).not.toBeInTheDocument()
+  })
+
+  it('keeps absorbed missing-node markers visible when sections collapse', async () => {
+    const { user } = renderComponent((pinia) => {
+      useMissingNodesErrorStore(pinia).setMissingNodeTypes([
+        {
+          type: 'OldNode',
+          nodeId: '1',
+          isReplaceable: true,
+          replacement: {
+            old_node_id: 'OldNode',
+            new_node_id: 'NewNode',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        },
+        {
+          type: 'MissingNode',
+          nodeId: '2',
+          cnrId: 'missing-pack',
+          isReplaceable: false
+        }
+      ])
+      useExecutionErrorStore(pinia).recordPromptError({
+        type: 'missing_node_type',
+        message: 'Node types are unavailable',
+        details: ''
+      })
+    })
+
+    expect(
+      screen.queryByTestId('errors-summary-hero-error')
+    ).not.toBeInTheDocument()
+    const setupHero = screen.getByTestId('errors-summary-hero-missing')
+    expect(within(setupHero).getByText('2')).toBeInTheDocument()
+    expect(within(setupHero).getByText('Setup pending')).toBeInTheDocument()
+    expect(screen.queryByText('Missing node type')).not.toBeInTheDocument()
+
+    for (const section of [
+      screen.getByTestId('error-group-swap-nodes'),
+      screen.getByTestId('error-group-missing-node')
+    ]) {
+      const marker = within(section).getByTestId('blocked-last-run-indicator')
+      expect(marker).toHaveTextContent('Blocked last run')
+      await user.click(
+        within(section).getByRole('button', { name: 'Collapse' })
+      )
+      expect(
+        within(section).getByTestId('blocked-last-run-indicator')
+      ).toHaveTextContent('Blocked last run')
+    }
   })
 
   it('renders missing media display message below the section title', () => {

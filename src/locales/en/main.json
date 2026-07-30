@@ -4081,6 +4081,7 @@
     "setupNodesSummary": "{nodes} nodes — {count} item | {nodes} nodes — {count} items",
     "nodesAffected": "{count} node affected | {count} nodes affected",
     "blockedLastRun": "Blocked last run",
+    "blockedLastRunShort": "Blocked",
     "severityErrorLabel": "Blocking errors",
     "severitySetupLabel": "Setup pending",
     "expand": "Expand",

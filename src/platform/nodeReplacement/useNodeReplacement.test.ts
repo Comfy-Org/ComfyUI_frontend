@@ -45,12 +45,22 @@ vi.mock('@/i18n', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key
 }))
 
-const { mockRemoveMissingNodesByType } = vi.hoisted(() => ({
+const {
+  mockClearResolvedMissingNodePromptError,
+  mockRemoveMissingNodesByType
+} = vi.hoisted(() => ({
+  mockClearResolvedMissingNodePromptError: vi.fn(),
   mockRemoveMissingNodesByType: vi.fn()
 }))
 vi.mock('@/platform/nodeReplacement/missingNodesErrorStore', () => ({
   useMissingNodesErrorStore: vi.fn(() => ({
+    hasMissingNodes: true,
     removeMissingNodesByType: mockRemoveMissingNodesByType
+  }))
+}))
+vi.mock('@/stores/executionErrorStore', () => ({
+  useExecutionErrorStore: vi.fn(() => ({
+    clearResolvedMissingNodePromptError: mockClearResolvedMissingNodePromptError
   }))
 }))
 
@@ -874,6 +884,7 @@ describe('useNodeReplacement', () => {
       })
 
       expect(mockRemoveMissingNodesByType).toHaveBeenCalledWith(['OldNode'])
+      expect(mockClearResolvedMissingNodePromptError).toHaveBeenCalledWith(true)
     })
 
     it('does not call removeMissingNodesByType when no nodes are replaced', () => {
@@ -896,6 +907,7 @@ describe('useNodeReplacement', () => {
       })
 
       expect(mockRemoveMissingNodesByType).not.toHaveBeenCalled()
+      expect(mockClearResolvedMissingNodePromptError).not.toHaveBeenCalled()
     })
   })
 
@@ -944,6 +956,7 @@ describe('useNodeReplacement', () => {
       expect(mockRemoveMissingNodesByType).toHaveBeenCalledWith(
         expect.arrayContaining(['TypeA', 'TypeB'])
       )
+      expect(mockClearResolvedMissingNodePromptError).toHaveBeenCalledWith(true)
     })
 
     it('removes only the types that were actually replaced when some fail', () => {

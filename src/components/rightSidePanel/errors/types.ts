@@ -38,9 +38,11 @@ export type ErrorGroup =
     })
   | (ErrorGroupBase & {
       type: 'missing_node'
+      blockedLastRun?: boolean
     })
   | (ErrorGroupBase & {
       type: 'swap_nodes'
+      blockedLastRun?: boolean
     })
   | (ErrorGroupBase & {
       type: 'missing_model'

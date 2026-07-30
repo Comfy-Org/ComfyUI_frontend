@@ -71,6 +71,12 @@ export function normalizePromptError(
     : null
 }
 
+export function isMissingNodePromptError(
+  promptError: PromptError | null | undefined
+): boolean {
+  return promptError?.type === 'missing_node_type'
+}
+
 /**
  * Classifies an embedded cloud validation error from `exception_message`
  * as either node-level errors or a prompt-level error.
