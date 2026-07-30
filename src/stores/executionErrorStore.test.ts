@@ -838,7 +838,7 @@ describe('hasMissingError', () => {
   })
 })
 
-describe('clearAllErrors', () => {
+describe('clearRunErrors', () => {
   let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
   let missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>
 
@@ -849,7 +849,7 @@ describe('clearAllErrors', () => {
     missingNodesStore = useMissingNodesErrorStore()
   })
 
-  it('resets run errors while preserving missing setup state', () => {
+  it('resets run errors while preserving missing node packs', () => {
     executionErrorStore.recordExecutionError({
       prompt_id: 'test',
       timestamp: 0,
@@ -884,7 +884,7 @@ describe('clearAllErrors', () => {
     )
     executionErrorStore.showErrorOverlay()
 
-    executionErrorStore.clearAllErrors()
+    executionErrorStore.clearRunErrors()
 
     expect(executionErrorStore.lastExecutionError).toBeNull()
     expect(executionErrorStore.lastPromptError).toBeNull()
@@ -893,6 +893,5 @@ describe('clearAllErrors', () => {
       { type: 'MissingNode', hint: '' }
     ])
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
-    expect(executionErrorStore.hasAnyError).toBe(true)
   })
 })

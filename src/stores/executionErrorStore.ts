@@ -83,11 +83,11 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /** Clear errors tied to the previous run.
-   *  Missing node, model, and media state is preserved because submission does
-   *  not resolve setup issues. Workflow load clears all three; explicit
-   *  workflow clean also clears missing nodes. */
-  function clearAllErrors() {
+  /**
+   * `clearMissingModels()` also resets imported model download task IDs and
+   * file sizes, unlike `setMissingModels([])`.
+   */
+  function clearRunErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
     lastNodeErrors.value = null
@@ -549,7 +549,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     recordPromptError,
 
     // Clearing
-    clearAllErrors,
+    clearRunErrors,
     clearExecutionStartErrors,
     clearPromptError,
 
