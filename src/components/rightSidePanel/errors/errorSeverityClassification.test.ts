@@ -10,7 +10,7 @@ import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { toNodeId } from '@/types/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
-import { classifyErrorSeverity } from './errorSeverityClassification'
+import { classifyPanelErrors } from './errorSeverityClassification'
 import type { ErrorSeverityInput } from './errorSeverityClassification'
 
 beforeEach(() => {
@@ -18,7 +18,7 @@ beforeEach(() => {
 })
 
 function classify(overrides: Partial<ErrorSeverityInput> = {}) {
-  return classifyErrorSeverity({
+  return classifyPanelErrors({
     promptError: null,
     executionError: null,
     nodeErrors: null,
@@ -68,7 +68,7 @@ function createUnnormalisableModelErrorFixture() {
   }
 }
 
-describe('classifyErrorSeverity', () => {
+describe('classifyPanelErrors', () => {
   it('classifies a prompt error as blocking', () => {
     expect(
       classify({

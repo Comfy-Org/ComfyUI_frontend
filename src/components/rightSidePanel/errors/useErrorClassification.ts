@@ -5,7 +5,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
-import { classifyErrorSeverity } from './errorSeverityClassification'
+import { classifyPanelErrors } from './errorSeverityClassification'
 
 export function useErrorClassification() {
   const executionErrorStore = useExecutionErrorStore()
@@ -14,7 +14,7 @@ export function useErrorClassification() {
   const missingNodesStore = useMissingNodesErrorStore()
 
   return computed(() =>
-    classifyErrorSeverity({
+    classifyPanelErrors({
       promptError: executionErrorStore.lastPromptError,
       executionError: executionErrorStore.lastExecutionError,
       nodeErrors: executionErrorStore.surfacedNodeErrors,

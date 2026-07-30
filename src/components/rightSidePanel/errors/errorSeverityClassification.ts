@@ -6,6 +6,8 @@ import type {
   PromptError
 } from '@/schemas/apiSchema'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 import {
   getMissingResourceValidationErrorAbsorption,
@@ -14,14 +16,37 @@ import {
 
 export interface ErrorSeverityInput {
   promptError: PromptError | null | undefined
-  executionError: ExecutionErrorWsMessage | null | undefined
-  nodeErrors: Record<string, NodeError> | null | undefined
+  executionError: ExecutionErrorWsMessage | null
+  nodeErrors: Record<string, NodeError> | null
   missingModels: readonly MissingModelCandidate[] | null | undefined
   missingMedia: readonly MissingMediaCandidate[] | null | undefined
   hasMissingNodes: boolean
 }
 
-export function classifyErrorSeverity(input: ErrorSeverityInput) {
+export interface ErrorClassification {
+  promptError: {
+    error: PromptError
+    isAbsorbed: boolean
+  } | null
+  executionError: {
+    error: ExecutionErrorWsMessage
+    nodeId: NodeExecutionId | null
+  } | null
+  nodeErrors: {
+    rawNodeId: string
+    nodeId: NodeExecutionId | null
+    nodeError: NodeError
+    errors: {
+      error: NodeValidationError
+      absorption: 'missing_model' | 'missing_media' | null
+    }[]
+  }[]
+  hasBlockingError: boolean
+}
+
+export function classifyPanelErrors(
+  input: ErrorSeverityInput
+): ErrorClassification {
   const promptError = input.promptError
     ? {
         error: input.promptError,

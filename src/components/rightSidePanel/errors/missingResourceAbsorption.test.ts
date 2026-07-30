@@ -20,7 +20,7 @@ import { toNodeId } from '@/types/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
-import { classifyErrorSeverity } from './errorSeverityClassification'
+import { classifyPanelErrors } from './errorSeverityClassification'
 import { getMissingResourceValidationErrorAbsorption } from './missingResourceAbsorption'
 
 const nodeId = createNodeExecutionId([12, 4])
@@ -347,7 +347,7 @@ describe('getMissingResourceValidationErrorAbsorption', () => {
       }
     ])
 
-    const result = classifyErrorSeverity({
+    const result = classifyPanelErrors({
       promptError: null,
       executionError: null,
       nodeErrors,
