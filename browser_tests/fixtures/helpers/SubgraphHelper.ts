@@ -359,8 +359,12 @@ export class SubgraphHelper {
     widgetName: string
   ): Promise<void> {
     const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    // A promoted widget's own display is disabled/readonly (its value comes
+    // from the subgraph input link), so the right-click must bypass
+    // Playwright's actionability check for disabled elements. The app still
+    // opens a context menu for a real right-click on these.
     await this.comfyPage.contextMenu
-      .openFor(widget)
+      .openFor(widget, { force: true })
       .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
   }
 

@@ -55,8 +55,17 @@ export class ContextMenu {
     }
   }
 
-  async openFor(locator: Locator): Promise<this> {
-    await locator.click({ button: 'right' })
+  /**
+   * Right-clicks a locator to open its context menu.
+   *
+   * @param force Bypass Playwright's actionability checks. Needed for
+   * widgets that are disabled/readonly because they are driven by a
+   * promoted subgraph input — the app still opens a context menu for a
+   * real right-click on these, but Playwright refuses a plain click on a
+   * disabled element.
+   */
+  async openFor(locator: Locator, { force = false } = {}): Promise<this> {
+    await locator.click({ button: 'right', force })
     await expect(this.anyMenu).toBeVisible()
     return this
   }
