@@ -45,10 +45,20 @@ const codeStates = new Map<string, CodeRedemptionState>()
 // Coalesces concurrent triggers into one drain; a trigger arriving mid-drain
 // (e.g. the auth watcher firing while the dialog is open) is replayed as one
 // more pass instead of being dropped.
-let drainPromise: Promise<void> | null = null
+let draining = false
 let retriggerRequested = false
 
 let authWatcherInstalled = false
+
+// Set at install time so redeemCode can consult the current route: the auth
+// watcher and retry timers trigger drains with no navigation context.
+let activeRouter: Router | null = null
+
+function onAuthHandoffRoute(): boolean {
+  return (
+    activeRouter?.currentRoute.value.meta.defersDesktopLoginRedemption === true
+  )
+}
 
 function getCodeState(code: string): CodeRedemptionState {
   const existing = codeStates.get(code)
@@ -130,6 +140,13 @@ async function redeemCode(code: string): Promise<void> {
   const user = useAuthStore().currentUser
   if (!user) return
 
+  // Mid auth handoff (login → user-check): UserCheckView ends the handoff
+  // with a hard reload that would destroy an open approval dialog and any
+  // in-flight redemption, re-prompting after the reload. The stash survives
+  // the reload in sessionStorage; the reloaded app redeems on a stable,
+  // fully themed route via its own navigation and auth-watcher triggers.
+  if (onAuthHandoffRoute()) return
+
   if (!(await confirmRedemption(state, user.uid))) {
     // Declined/dismissed: drop the code without an error.
     settle(code, state)
@@ -205,7 +222,13 @@ async function redeemCode(code: string): Promise<void> {
   handleTransientFailure(code, state, `status ${response.status}`)
 }
 
-async function drainPendingDesktopLoginCode(): Promise<void> {
+async function redeemPendingDesktopLoginCode(): Promise<void> {
+  // Never rejects: the triggers fire-and-forget this.
+  if (draining) {
+    retriggerRequested = true
+    return
+  }
+  draining = true
   try {
     do {
       retriggerRequested = false
@@ -221,19 +244,9 @@ async function drainPendingDesktopLoginCode(): Promise<void> {
     } while (retriggerRequested)
   } catch (error) {
     console.error('[DesktopLoginRedemption] Redemption failed:', error)
+  } finally {
+    draining = false
   }
-}
-
-function redeemPendingDesktopLoginCode(): Promise<void> {
-  if (drainPromise) {
-    retriggerRequested = true
-    return drainPromise
-  }
-
-  drainPromise = drainPendingDesktopLoginCode().finally(() => {
-    drainPromise = null
-  })
-  return drainPromise
 }
 
 function installAuthWatcherOnce(): void {
@@ -256,12 +269,17 @@ function installAuthWatcherOnce(): void {
  * the cloud backend; redeeming the code from a signed-in browser session,
  * with the user's approval, releases a one-time custom token to that poll
  * and signs the desktop app in. The preserved-query tracker (configured in
- * router.ts) strips the code from the URL at capture time, so the stash is
- * the only place it lives.
+ * router.ts) strips the code from the URL at capture time, so the
+ * sessionStorage-backed stash is the only place it lives.
+ *
+ * Routes flagged `meta.defersDesktopLoginRedemption` (the cloud auth
+ * handoff) suppress the approval prompt, deferring redemption until the
+ * handoff's hard reload lands the app on a stable route.
  */
 export function installDesktopLoginRedemption(router: Router): void {
-  router.beforeResolve(() => {
+  activeRouter = router
+  router.afterEach(() => {
     installAuthWatcherOnce()
-    return redeemPendingDesktopLoginCode()
+    void redeemPendingDesktopLoginCode()
   })
 }

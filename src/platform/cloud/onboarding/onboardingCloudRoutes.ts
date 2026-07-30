@@ -45,6 +45,11 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
     path: '/cloud',
     component: () =>
       import('@/platform/cloud/onboarding/components/CloudLayoutView.vue'),
+    // The onboarding handoff ends in UserCheckView's hard reload, which would
+    // destroy an open desktop-login approval dialog mid-prompt; redemption
+    // stays deferred until the reload lands on a stable route. See
+    // desktopLoginRedemption.ts.
+    meta: { defersDesktopLoginRedemption: true },
     children: [
       {
         path: 'login',
@@ -128,6 +133,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
     path: '/oauth',
     component: () =>
       import('@/platform/cloud/onboarding/components/OAuthLayoutView.vue'),
+    meta: { defersDesktopLoginRedemption: true },
     children: [
       {
         path: 'consent',
