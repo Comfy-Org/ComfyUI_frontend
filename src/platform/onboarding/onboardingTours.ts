@@ -1,3 +1,6 @@
+import { shallowReactive } from 'vue'
+import type { Ref } from 'vue'
+
 /** Every tour, including ones whose steps a consumer registers at runtime. */
 export const ENTRY_PATHS = ['appMode', 'firstRun'] as const
 
@@ -123,14 +126,28 @@ const TOURS: Partial<Record<EntryPath, TourDefinition>> = {
   ]
 }
 
+const HOLDS = shallowReactive(new Map<EntryPath, Readonly<Ref<boolean>>>())
+
 /**
  * Registers a tour whose steps are built by a higher layer — the layer rules
  * forbid this one from importing them. Re-registering replaces the definition.
+ * `holds` reading false ends the tour: the context its steps point at is gone.
  */
-export function registerTour(entry: EntryPath, definition: TourDefinition) {
+export function registerTour(
+  entry: EntryPath,
+  definition: TourDefinition,
+  holds?: Readonly<Ref<boolean>>
+) {
   TOURS[entry] = definition
+  if (holds) HOLDS.set(entry, holds)
+  else HOLDS.delete(entry)
 }
 
 export function tourDefinition(entry: EntryPath): TourDefinition | undefined {
   return TOURS[entry]
+}
+
+/** True for a tour that registered no condition — it has no context to lose. */
+export function tourHolds(entry: EntryPath): boolean {
+  return HOLDS.get(entry)?.value ?? true
 }
