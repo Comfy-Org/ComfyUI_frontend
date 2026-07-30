@@ -273,6 +273,8 @@ export function useLayoutMutations(): LayoutMutations {
   }
 
   const deleteGroup = (rootGraphId: UUID, groupId: GroupId): void => {
+    if (!layoutStore.getGroupLayout(rootGraphId, groupId)) return
+
     layoutStore.applyOperation({
       type: 'deleteGroup',
       entity: 'group',
@@ -288,6 +290,8 @@ export function useLayoutMutations(): LayoutMutations {
    * Delete a reroute
    */
   const deleteReroute = (rootGraphId: UUID, rerouteId: RerouteId): void => {
+    if (!layoutStore.getRerouteLayout(rootGraphId, rerouteId)) return
+
     logger.debug('Deleting reroute:', rerouteId)
     layoutStore.applyOperation({
       type: 'deleteReroute',

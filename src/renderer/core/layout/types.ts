@@ -359,9 +359,6 @@ export interface LayoutStore {
   /** @see {@link LayoutStoreImpl.clearViewGeometry} */
   clearViewGeometry(): void
 
-  /** @see {@link LayoutStoreImpl.reset} */
-  reset(): void
-
   // Source and actor management
   setSource(source: LayoutSource): void
   setActor(actor: string): void

@@ -972,8 +972,10 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Drops everything, including node entries. Only correct when no graph is
-   * attached — nodes normally leave the store via `LGraph.remove`.
+   * Test-only escape hatch: drops everything, including entity entries that
+   * production drops through `unregisterAllGraphLayout`. Deliberately absent
+   * from the {@link LayoutStore} interface — calling it with a graph attached
+   * desyncs the store from every entity in it.
    */
   reset(): void {
     this.ydoc.transact(() => {

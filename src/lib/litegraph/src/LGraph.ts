@@ -8,9 +8,15 @@ import {
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import {
+  registerGroupLayout,
+  registerNodeLayout,
+  unregisterAllGraphLayout,
+  unregisterGroupLayout,
+  unregisterNodeLayout,
+  unregisterRerouteLayout
+} from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
@@ -505,24 +511,8 @@ export class LGraph
       unregisterAllNodeStates(this)
     }
 
-    const graphsToClear = this.isRootGraph
-      ? [this, ...this.subgraphs.values()]
-      : [this]
-    if (
-      graphsToClear.some((graph) => graph._groups.length || graph.reroutes.size)
-    ) {
-      const rootGraphId = this.rootGraph.id
-      const layoutMutations = useLayoutMutations()
-      layoutMutations.setSource(LayoutSource.Canvas)
-      for (const graph of graphsToClear) {
-        for (const group of graph._groups) {
-          layoutMutations.deleteGroup(rootGraphId, group.id)
-        }
-        for (const rerouteId of graph.reroutes.keys()) {
-          layoutMutations.deleteReroute(rootGraphId, rerouteId)
-        }
-      }
-    }
+    // Geometry has no per-rootGraph bucket to wipe, so both branches sweep.
+    unregisterAllGraphLayout(this)
 
     this.id = zeroUuid
     this.revision = 0
@@ -1096,13 +1086,7 @@ export class LGraph
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
-      const { pos, size } = node
-      const layoutMutations = useLayoutMutations()
-      layoutMutations.setSource(LayoutSource.Canvas)
-      layoutMutations.createGroup(this.rootGraph.id, node.id, {
-        position: { x: pos[0], y: pos[1] },
-        size: { width: size[0], height: size[1] }
-      })
+      registerGroupLayout(this, node)
       this.incrementVersion()
       return
     }
@@ -1154,17 +1138,7 @@ export class LGraph
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
 
-    // Geometry registers at attach, as it does for groups and reroutes. zIndex
-    // is the draw order litegraph uses — the index in `_nodes` — not
-    // `node.order`, which is execution order and unrelated to stacking.
-    const layoutMutations = useLayoutMutations()
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createNode(node.id, {
-      position: { x: node.pos[0], y: node.pos[1] },
-      size: { width: node.size[0], height: node.size[1] },
-      zIndex: this._nodes.length - 1,
-      visible: true
-    })
+    registerNodeLayout(node, this._nodes.length - 1)
 
     node.onAdded?.(this)
 
@@ -1209,9 +1183,7 @@ export class LGraph
       if (index != -1) {
         this._groups.splice(index, 1)
       }
-      const layoutMutations = useLayoutMutations()
-      layoutMutations.setSource(LayoutSource.Canvas)
-      layoutMutations.deleteGroup(this.rootGraph.id, node.id)
+      unregisterGroupLayout(this, node)
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)
@@ -1267,6 +1239,7 @@ export class LGraph
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
         unregisterAllNodeStates(subgraph)
+        unregisterAllGraphLayout(subgraph)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
     }
@@ -1275,10 +1248,7 @@ export class LGraph
     node.onRemoved?.()
 
     unregisterNodeState(node)
-
-    const layoutMutations = useLayoutMutations()
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteNode(node.id)
+    unregisterNodeLayout(node)
 
     node.graph = null
     this.incrementVersion()
@@ -1642,9 +1612,7 @@ export class LGraph
     if (!reroute) return
     this.reroutesInternal.delete(id)
     unregisterRerouteChain(reroute)
-    const layoutMutations = useLayoutMutations()
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteReroute(this.rootGraph.id, id)
+    unregisterRerouteLayout(this, id)
   }
 
   /**
@@ -2172,16 +2140,6 @@ export class LGraph
     const groups = structuredClone(
       [...subgraphNode.subgraph.groups].map((g) => g.serialize())
     )
-    for (const g_info of groups) {
-      // The definition survives if another instance remains, so its groups
-      // cannot share root-scoped layout keys with the unpacked copies.
-      g_info.id = ++this.rootGraph.state.lastGroupId
-      const group = new LGraphGroup(g_info.title, g_info.id)
-      this.add(group, true)
-      group.configure(g_info)
-      group.pos = [group.pos[0] + offsetX, group.pos[1] + offsetY]
-      toSelect.push(group)
-    }
     const newLinks: {
       oid: NodeId
       oslot: number
@@ -2257,6 +2215,18 @@ export class LGraph
       })
     }
     this.remove(subgraphNode)
+
+    // The definition survives if another instance remains, so unpacked groups
+    // take fresh ids rather than share its root-scoped layout keys, as the
+    // reroutes below already did.
+    for (const g_info of groups) {
+      g_info.id = ++this.rootGraph.state.lastGroupId
+      const group = new LGraphGroup(g_info.title, g_info.id)
+      this.add(group, true)
+      group.configure(g_info)
+      group.pos = [group.pos[0] + offsetX, group.pos[1] + offsetY]
+      toSelect.push(group)
+    }
 
     // Deduplicate links by (oid, oslot, tid, tslot) to prevent repeated
     // disconnect/reconnect cycles on widget inputs that can shift slot indices.
@@ -2563,6 +2533,7 @@ export class LGraph
       // TODO: Finish typing configure()
       if (!data) return
       if (options.clearGraph) this.clear()
+      else unregisterAllGraphLayout(this)
 
       this._configureBase(data)
 

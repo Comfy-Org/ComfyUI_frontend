@@ -13,7 +13,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { seedNodeLayout } from '@/renderer/core/layout/__fixtures__/seedNodeLayout'
+import { registerNodeLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import type {
   LayoutChange,
   LayoutOperation,
@@ -322,7 +322,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.onNodeChange(nodeId, staleListener)
 
     layoutStore.clearViewGeometry()
-    seedNodeLayout(nodeId, [0, 0], [200, 100], 0)
+    registerNodeLayout({ id: nodeId, pos: [0, 0], size: [200, 100] }, 0)
 
     layoutStore.applyOperation({
       type: 'moveNode',

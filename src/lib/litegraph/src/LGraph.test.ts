@@ -1630,3 +1630,61 @@ describe('node layout registration', () => {
     expect(zIndexOf(second)).toBeGreaterThan(zIndexOf(first)!)
   })
 })
+
+describe('graph teardown drops layout entries', () => {
+  const REROUTE = toRerouteId(1)
+
+  beforeEach(() => {
+    layoutStore.reset()
+  })
+
+  /** Root node, group and reroute, plus a subgraph definition holding a node. */
+  function populatedGraph() {
+    const graph = new LGraph()
+    graph.id = createUuidv4()
+
+    graph.add(new LGraphNode('root'))
+    graph.add(new LGraphGroup('group'))
+    graph._addReroute(new Reroute(REROUTE, graph, [10, 10]))
+
+    const subgraph = graph.createSubgraph(createTestSubgraphData())
+    const interior = new LGraphNode('interior')
+    subgraph.add(interior)
+
+    return { graph, subgraph, interior }
+  }
+
+  function layoutEntryCount(graph: LGraph) {
+    const rootGraphId = graph.rootGraph.id
+    return (
+      layoutStore.getAllNodes().value.size +
+      layoutStore.getAllGroups(rootGraphId).value.size +
+      (layoutStore.getRerouteLayout(rootGraphId, REROUTE) ? 1 : 0)
+    )
+  }
+
+  it.for([
+    ['clear', (graph: LGraph) => graph.clear()],
+    [
+      'reconfigure',
+      (graph: LGraph) => graph.configure(new LGraph().serialize())
+    ]
+  ] as const)('drops every entry on %s', ([, teardown]) => {
+    const { graph } = populatedGraph()
+    expect(layoutEntryCount(graph)).toBeGreaterThan(0)
+
+    teardown(graph)
+
+    expect(layoutEntryCount(graph)).toBe(0)
+  })
+
+  it('drops interior entries when the last SubgraphNode is removed', () => {
+    const { graph, subgraph, interior } = populatedGraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    graph.add(subgraphNode)
+
+    graph.remove(subgraphNode)
+
+    expect(layoutStore.getNodeLayoutRef(interior.id).value).toBeNull()
+  })
+})

@@ -25,7 +25,6 @@ import { test } from './__fixtures__/testExtensions'
 import { NodeSlotType, TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
-import { seedNodeLayout } from '@/renderer/core/layout/__fixtures__/seedNodeLayout'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -797,17 +796,19 @@ describe('snapToGrid', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  /** Layout entries are seeded by the renderer, so stand one up by hand. */
-  function seededNode(graph: LGraph) {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function addedNode(graph: LGraph) {
     const node = new LGraphNode('test')
     node.pos = [103, 97]
     graph.add(node)
-    seedNodeLayout(node.id, [103, 97], [140, 60], 0)
     return node
   }
 
   test('commits the snapped position to the layout store', () => {
-    const node = seededNode(new LGraph())
+    const node = addedNode(new LGraph())
 
     expect(node.snapToGrid(20)).toBe(true)
 
@@ -841,7 +842,7 @@ describe('snapToGrid', () => {
   })
 
   test('leaves a pinned node alone', () => {
-    const node = seededNode(new LGraph())
+    const node = addedNode(new LGraph())
     node.pin(true)
 
     expect(node.snapToGrid(20)).toBe(false)
@@ -853,16 +854,12 @@ describe('snapToGrid', () => {
   })
 
   test('does not report or store a change when already aligned', () => {
-    const node = seededNode(new LGraph())
+    const node = addedNode(new LGraph())
     node.snapToGrid(20)
     const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
 
-    try {
-      expect(node.snapToGrid(20)).toBe(false)
-      expect(applyOperation).not.toHaveBeenCalled()
-    } finally {
-      applyOperation.mockRestore()
-    }
+    expect(node.snapToGrid(20)).toBe(false)
+    expect(applyOperation).not.toHaveBeenCalled()
   })
 })
 
