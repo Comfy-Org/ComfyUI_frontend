@@ -231,17 +231,25 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     )
   }
 
+  function persistWorkspaceIdentity(workspace: WorkspaceWithRole): void {
+    try {
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+        JSON.stringify(workspace)
+      )
+    } catch {
+      console.warn('Failed to persist workspace identity to sessionStorage')
+    }
+  }
+
   function persistToSession(
     workspace: WorkspaceWithRole,
     token: string,
     expiresAt: number,
     ownerUid: string
   ): void {
+    persistWorkspaceIdentity(workspace)
     try {
-      sessionStorage.setItem(
-        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
-        JSON.stringify(workspace)
-      )
       sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, token)
       sessionStorage.setItem(
         WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
@@ -249,7 +257,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       )
       sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.OWNER_UID, ownerUid)
     } catch {
-      console.warn('Failed to persist workspace context to sessionStorage')
+      console.warn('Failed to persist workspace token to sessionStorage')
     }
   }
 
@@ -785,6 +793,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return false
     }
 
+    currentWorkspace.value = mintedToken.workspace
+    persistWorkspaceIdentity(mintedToken.workspace)
     unifiedToken.value = mintedToken.token
     unifiedTokenOwnerUid.value = mintedToken.ownerUid
     issuedUnifiedTokenContexts.set(mintedToken.token, {
@@ -818,7 +828,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   async function switchUnifiedWorkspace(workspaceId: string): Promise<void> {
-    clearUnifiedContext()
+    clearWorkspaceContext()
     const { useSessionCookie } =
       await import('@/platform/auth/session/useSessionCookie')
     await useSessionCookie().ensureSessionCookie()
@@ -849,7 +859,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       // the proactive + reactive paths alarm the user once, not once per caller.
       if (isPermanentAuthError(err)) {
         if (getUnifiedToken()) surfacePermanentAuthError(err)
-        clearUnifiedContext()
+        endWorkspaceSession()
       } else {
         console.warn('Unified token refresh failed:', err)
       }
@@ -904,7 +914,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       // guard the toast on a live token so a concurrent burst surfaces it once.
       if (isPermanentAuthError(err)) {
         if (getUnifiedToken()) surfacePermanentAuthError(err)
-        clearUnifiedContext()
+        endWorkspaceSession()
       } else {
         console.warn('Unified reactive re-mint failed:', err)
       }

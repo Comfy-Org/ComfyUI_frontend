@@ -6,6 +6,10 @@ import {
   WorkspaceAuthError
 } from '@/platform/workspace/stores/workspaceAuthStore'
 
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 const mockGetIdToken = vi.fn()
@@ -109,6 +113,7 @@ describe('useWorkspaceAuthStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockPrepareWorkflowWorkspaceTransition.mockReset()
     vi.useFakeTimers()
     sessionStorage.clear()
     mockTeamWorkspacesEnabled.value = true
@@ -1873,7 +1878,7 @@ describe('useWorkspaceAuthStore', () => {
 
         expect(workspaceToken.value).toBe('workspace-token-abc')
         expect(consoleWarnSpy).toHaveBeenCalledWith(
-          'Failed to persist workspace context to sessionStorage'
+          'Failed to persist workspace identity to sessionStorage'
         )
       } finally {
         vi.stubGlobal('sessionStorage', originalSessionStorage)
@@ -2084,6 +2089,53 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockNotifyTokenRefreshed).not.toHaveBeenCalled()
     })
 
+    it('scopes workflow persistence to each unified workspace', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const secondWorkspace = {
+        ...mockWorkspaceWithRole,
+        id: 'workspace-456'
+      }
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockTokenResponse)
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                ...mockTokenResponse,
+                workspace: secondWorkspace
+              })
+          })
+      )
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-123')
+
+      expect(store.currentWorkspace).toEqual(mockWorkspaceWithRole)
+      expect(getWorkspaceId()).toBe('workspace-123')
+      expect(StorageKeys.draftIndex(getWorkspaceId())).toBe(
+        'Comfy.Workflow.DraftIndex.v2:workspace-123'
+      )
+
+      await store.switchWorkspace('workspace-456')
+
+      expect(store.currentWorkspace).toEqual(secondWorkspace)
+      expect(getWorkspaceId()).toBe('workspace-456')
+      expect(StorageKeys.draftIndex(getWorkspaceId())).toBe(
+        'Comfy.Workflow.DraftIndex.v2:workspace-456'
+      )
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      ).toBe(JSON.stringify(secondWorkspace))
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBeNull()
+    })
+
     it('does not retry an old workspace request with a new workspace token', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
@@ -2237,7 +2289,7 @@ describe('useWorkspaceAuthStore', () => {
       vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
-      const { unifiedToken } = storeToRefs(store)
+      const { currentWorkspace, unifiedToken } = storeToRefs(store)
       await store.mintAtLogin()
       expect(mockFetch).toHaveBeenCalledTimes(1)
 
@@ -2255,6 +2307,12 @@ describe('useWorkspaceAuthStore', () => {
         })
       )
       expect(unifiedToken.value).toBeNull()
+      expect(currentWorkspace.value).toBeNull()
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      ).toBeNull()
+      expect(mockPrepareWorkflowWorkspaceTransition).toHaveBeenCalledOnce()
+      expect(mockReload).toHaveBeenCalledOnce()
     })
 
     it('remintUnifiedOnce does not toast or clear the slot on a transient re-mint failure', async () => {
