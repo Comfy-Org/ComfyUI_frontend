@@ -51,7 +51,10 @@ function compileShader(
   return shader
 }
 
-export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
+export function useGLSLRenderer(
+  config: GLSLRendererConfig = DEFAULT_CONFIG,
+  onContextRestored?: () => void
+) {
   const {
     maxInputs,
     maxFloatUniforms,
@@ -87,7 +90,40 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   const uniformLocations = new Map<string, WebGLUniformLocation | null>()
   let passCount = 1
   let disposed = false
+  let contextLost = false
   let lastCompiledSource: string | null = null
+
+  function handleContextLost(event: Event): void {
+    event.preventDefault()
+    contextLost = true
+  }
+
+  function handleContextRestored(): void {
+    if (disposed || !gl || !canvas) return
+
+    program = null
+    fragmentShader = null
+    vertexShader = null
+    pingPongFBOs = null
+    pingPongTextures = null
+    fallbackTexture = null
+    inputTextures.fill(null)
+    curveTextures.fill(null)
+    uniformLocations.clear()
+    lastCompiledSource = null
+
+    try {
+      if (!gl.getExtension('EXT_color_buffer_float')) throw new Error()
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+      vertexShader = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE)
+      gl.viewport(0, 0, canvas.width, canvas.height)
+      initPingPongFBOs(gl, canvas.width, canvas.height)
+      contextLost = false
+      onContextRestored?.()
+    } catch {
+      contextLost = true
+    }
+  }
 
   function initPingPongFBOs(
     ctx: WebGL2RenderingContext,
@@ -207,6 +243,9 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
       if (!gl.getExtension('EXT_color_buffer_float')) return false
 
+      canvas.addEventListener('webglcontextlost', handleContextLost)
+      canvas.addEventListener('webglcontextrestored', handleContextRestored)
+
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
       vertexShader = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE)
       initPingPongFBOs(gl, width, height)
@@ -218,7 +257,8 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   }
 
   function compileFragment(source: string): CompileResult {
-    if (disposed || !gl) return { success: false, log: 'Engine disposed' }
+    if (disposed) return { success: false, log: 'Engine disposed' }
+    if (contextLost || !gl) return { success: false, log: 'WebGL context lost' }
 
     passCount = Math.min(detectPassCount(source), MAX_PASSES)
 
@@ -263,7 +303,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   }
 
   function setResolution(width: number, height: number): void {
-    if (disposed || !gl || !canvas) return
+    if (disposed || contextLost || !gl || !canvas) return
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width
       canvas.height = height
@@ -274,7 +314,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   }
 
   function setFloatUniform(index: number, value: number): void {
-    if (disposed || !program || !gl) return
+    if (disposed || contextLost || !program || !gl) return
     const loc = uniformLocations.get(`u_float${index}`)
     if (loc != null) {
       gl.useProgram(program)
@@ -283,7 +323,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   }
 
   function setIntUniform(index: number, value: number): void {
-    if (disposed || !program || !gl) return
+    if (disposed || contextLost || !program || !gl) return
     const loc = uniformLocations.get(`u_int${index}`)
     if (loc != null) {
       gl.useProgram(program)
@@ -292,7 +332,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   }
 
   function setBoolUniform(index: number, value: boolean): void {
-    if (disposed || !program || !gl) return
+    if (disposed || contextLost || !program || !gl) return
     const loc = uniformLocations.get(`u_bool${index}`)
     if (loc != null) {
       gl.useProgram(program)
@@ -301,7 +341,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   }
 
   function bindCurveTexture(index: number, lut: Float32Array): void {
-    if (disposed || !gl) return
+    if (disposed || contextLost || !gl) return
     if (index < 0 || index >= maxCurves) return
 
     if (curveTextures[index]) {
@@ -340,7 +380,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     index: number,
     image: HTMLImageElement | ImageBitmap
   ): void {
-    if (disposed || !gl) return
+    if (disposed || contextLost || !gl) return
     if (index < 0 || index >= maxInputs) {
       throw new Error(
         `Input index ${index} out of range (max ${maxInputs - 1})`
@@ -367,7 +407,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   }
 
   function clearInputImage(index: number): void {
-    if (disposed || !gl) return
+    if (disposed || contextLost || !gl) return
     if (index < 0 || index >= maxInputs) return
     const texture = inputTextures[index]
     if (texture) {
@@ -377,7 +417,8 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   }
 
   function render(): void {
-    if (disposed || !program || !pingPongFBOs || !gl || !canvas) return
+    if (disposed || contextLost || !program || !pingPongFBOs || !gl || !canvas)
+      return
 
     gl.useProgram(program)
     gl.disable(gl.BLEND)
@@ -456,6 +497,8 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   function dispose(): void {
     if (disposed) return
     disposed = true
+    canvas?.removeEventListener('webglcontextlost', handleContextLost)
+    canvas?.removeEventListener('webglcontextrestored', handleContextRestored)
     if (!gl) return
 
     for (const tex of inputTextures) {
@@ -495,6 +538,10 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     ext?.loseContext()
   }
 
+  function isReady(): boolean {
+    return !disposed && !contextLost && gl !== null
+  }
+
   return {
     init,
     compileFragment,
@@ -508,6 +555,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     render,
     readPixels,
     toBlob,
-    dispose
+    dispose,
+    isReady
   }
 }

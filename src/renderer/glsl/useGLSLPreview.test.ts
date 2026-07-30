@@ -27,11 +27,14 @@ const mockRendererFactory = vi.hoisted(() => {
   const render = vi.fn()
   const toBlob = vi.fn(() => Promise.resolve(new Blob(['test'])))
   const dispose = vi.fn()
+  const isReady = vi.fn(() => true)
   const lastConfig = { value: undefined as GLSLRendererConfig | undefined }
+  const lastOnContextRestored = { value: undefined as (() => void) | undefined }
 
   return {
-    create: (config?: GLSLRendererConfig) => {
+    create: (config?: GLSLRendererConfig, onContextRestored?: () => void) => {
       lastConfig.value = config
+      lastOnContextRestored.value = onContextRestored
       return {
         init,
         compileFragment,
@@ -44,10 +47,12 @@ const mockRendererFactory = vi.hoisted(() => {
         clearInputImage,
         render,
         toBlob,
-        dispose
+        dispose,
+        isReady
       }
     },
     lastConfig,
+    lastOnContextRestored,
     init,
     compileFragment,
     setResolution,
@@ -59,13 +64,16 @@ const mockRendererFactory = vi.hoisted(() => {
     clearInputImage,
     render,
     toBlob,
-    dispose
+    dispose,
+    isReady
   }
 })
 
 vi.mock('@/renderer/glsl/useGLSLRenderer', () => ({
-  useGLSLRenderer: (config?: GLSLRendererConfig) =>
-    mockRendererFactory.create(config)
+  useGLSLRenderer: (
+    config?: GLSLRendererConfig,
+    onContextRestored?: () => void
+  ) => mockRendererFactory.create(config, onContextRestored)
 }))
 
 const mockSetNodePreviewsByNodeId = vi.fn()
@@ -129,6 +137,7 @@ describe('useGLSLPreview', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     mockRendererFactory.lastConfig.value = undefined
+    mockRendererFactory.lastOnContextRestored.value = undefined
     globalThis.URL.createObjectURL = vi.fn(() => 'blob:test')
     globalThis.URL.revokeObjectURL = vi.fn()
     globalThis.ImageBitmap ??=
@@ -493,6 +502,143 @@ describe('useGLSLPreview', () => {
       dispose()
 
       expect(mockRendererFactory.dispose).toHaveBeenCalled()
+    })
+  })
+
+  describe('tab visibility and context recovery', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'visible',
+        configurable: true
+      })
+    })
+
+    // Each test's own preview registers its own document-level
+    // 'visibilitychange' listener. Capturing that exact listener (rather
+    // than dispatching a real event, which would also invoke listeners
+    // left behind by any other preview instance sharing the same jsdom
+    // document) keeps these assertions isolated to the instance under test.
+    async function setupActivePreview(node: LGraphNode) {
+      mockNodeOutputs[String(node.id)] = {
+        images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
+      }
+      const store = fromAny<WidgetValueStoreStub, unknown>(
+        useWidgetValueStore()
+      )
+      store._widgetMap.set(
+        widgetId('test-graph-id', node.id, 'fragment_shader'),
+        { value: 'void main() {}' }
+      )
+
+      const addEventListenerSpy = vi.spyOn(document, 'addEventListener')
+      const nodeRef = shallowRef<LGraphNode | null>(null)
+      const result = useGLSLPreview(nodeRef)
+
+      nodeRef.value = node
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      await nextTick()
+      await nextTick()
+
+      const registeredCall = addEventListenerSpy.mock.calls.find(
+        ([type]) => type === 'visibilitychange'
+      )
+      addEventListenerSpy.mockRestore()
+      const listener = registeredCall?.[1] as EventListener
+
+      return { ...result, listener }
+    }
+
+    function fireVisibility(
+      listener: EventListener,
+      state: 'visible' | 'hidden'
+    ) {
+      Object.defineProperty(document, 'visibilityState', {
+        value: state,
+        configurable: true
+      })
+      listener(new Event('visibilitychange'))
+    }
+
+    it('registers a visibilitychange listener while active', async () => {
+      const node = createMockNode()
+      const { listener } = await setupActivePreview(node)
+      expect(listener).toBeInstanceOf(Function)
+    })
+
+    it('does not render while the document is hidden', async () => {
+      const node = createMockNode()
+      const { listener } = await setupActivePreview(node)
+      mockRendererFactory.render.mockClear()
+
+      fireVisibility(listener, 'hidden')
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      await nextTick()
+
+      expect(mockRendererFactory.render).not.toHaveBeenCalled()
+    })
+
+    it('re-renders once the document becomes visible again', async () => {
+      const node = createMockNode()
+      const { listener } = await setupActivePreview(node)
+      mockRendererFactory.render.mockClear()
+
+      fireVisibility(listener, 'hidden')
+      fireVisibility(listener, 'visible')
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      await nextTick()
+
+      expect(mockRendererFactory.render).toHaveBeenCalledTimes(1)
+    })
+
+    it('coalesces rapid hide/show toggling into a single render', async () => {
+      const node = createMockNode()
+      const { listener } = await setupActivePreview(node)
+      mockRendererFactory.render.mockClear()
+
+      fireVisibility(listener, 'hidden')
+      fireVisibility(listener, 'visible')
+      fireVisibility(listener, 'hidden')
+      fireVisibility(listener, 'visible')
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      await nextTick()
+
+      expect(mockRendererFactory.render).toHaveBeenCalledTimes(1)
+    })
+
+    it('removes the visibilitychange listener on dispose', async () => {
+      const node = createMockNode()
+      const { dispose, listener } = await setupActivePreview(node)
+
+      const removeEventListenerSpy = vi.spyOn(document, 'removeEventListener')
+      dispose()
+
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        'visibilitychange',
+        listener,
+        undefined
+      )
+    })
+
+    it('re-renders when the renderer recovers from context loss', async () => {
+      const node = createMockNode()
+      await setupActivePreview(node)
+      mockRendererFactory.render.mockClear()
+
+      mockRendererFactory.lastOnContextRestored.value?.()
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      await nextTick()
+
+      expect(mockRendererFactory.render).toHaveBeenCalledTimes(1)
     })
   })
 })

@@ -1,3 +1,4 @@
+import { defaultDocument, useEventListener } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import { computed, effectScope, onScopeDispose, ref, toValue, watch } from 'vue'
 
@@ -370,7 +371,9 @@ function createInnerPreview(
       }
     }
     if (!renderer) {
-      renderer = useGLSLRenderer(config)
+      renderer = useGLSLRenderer(config, () => {
+        if (shouldRender.value) debouncedRender()
+      })
       lastRendererConfig = { ...config }
     }
     return renderer
@@ -491,6 +494,12 @@ function createInnerPreview(
 
   watch(shaderSource, () => {
     if (shouldRender.value) debouncedRender()
+  })
+
+  useEventListener(defaultDocument, 'visibilitychange', () => {
+    if (defaultDocument?.visibilityState === 'visible' && shouldRender.value) {
+      debouncedRender()
+    }
   })
 
   // Return dispose function for the inner tier

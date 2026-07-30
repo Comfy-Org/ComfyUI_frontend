@@ -151,6 +151,7 @@ function createMockGLContext(): MockGL {
 }
 
 let mockGL: MockGL
+let lastOffscreenCanvas: EventTarget | null = null
 
 vi.stubGlobal(
   'ImageData',
@@ -168,12 +169,14 @@ vi.stubGlobal(
 
 vi.stubGlobal(
   'OffscreenCanvas',
-  class {
+  class extends EventTarget {
     width: number
     height: number
     constructor(w: number, h: number) {
+      super()
       this.width = w
       this.height = h
+      lastOffscreenCanvas = this
     }
     getContext(contextId: string) {
       return contextId === 'webgl2'
@@ -185,6 +188,16 @@ vi.stubGlobal(
     }
   }
 )
+
+function dispatchContextLost(): void {
+  lastOffscreenCanvas!.dispatchEvent(
+    new Event('webglcontextlost', { cancelable: true })
+  )
+}
+
+function dispatchContextRestored(): void {
+  lastOffscreenCanvas!.dispatchEvent(new Event('webglcontextrestored'))
+}
 
 afterAll(() => {
   vi.unstubAllGlobals()
@@ -664,6 +677,122 @@ describe('useGLSLRenderer', () => {
       mockGL.deleteTexture.mockClear()
       renderer.dispose()
       expect(mockGL.deleteTexture).toHaveBeenCalled()
+    })
+  })
+
+  describe('isReady', () => {
+    it('is false before init', () => {
+      renderer = useGLSLRenderer()
+      expect(renderer.isReady()).toBe(false)
+    })
+
+    it('is true after successful init', () => {
+      renderer = useGLSLRenderer()
+      renderer.init(128, 128)
+      expect(renderer.isReady()).toBe(true)
+    })
+
+    it('is false after dispose', () => {
+      renderer = useGLSLRenderer()
+      renderer.init(128, 128)
+      renderer.dispose()
+      expect(renderer.isReady()).toBe(false)
+    })
+  })
+
+  describe('context loss and restoration', () => {
+    beforeEach(() => {
+      renderer = useGLSLRenderer()
+      renderer.init(128, 128)
+      renderer.compileFragment(validSource)
+    })
+
+    it('prevents the default browser recovery behavior on loss', () => {
+      const event = new Event('webglcontextlost', { cancelable: true })
+      const preventDefaultSpy = vi.spyOn(event, 'preventDefault')
+      lastOffscreenCanvas!.dispatchEvent(event)
+      expect(preventDefaultSpy).toHaveBeenCalled()
+    })
+
+    it('marks the renderer not ready on context loss', () => {
+      dispatchContextLost()
+      expect(renderer.isReady()).toBe(false)
+    })
+
+    it('stops rendering while the context is lost', () => {
+      dispatchContextLost()
+      mockGL.drawArrays.mockClear()
+      renderer.render()
+      expect(mockGL.drawArrays).not.toHaveBeenCalled()
+    })
+
+    it('rejects compilation while the context is lost', () => {
+      dispatchContextLost()
+      const result = renderer.compileFragment(validSource)
+      expect(result.success).toBe(false)
+    })
+
+    it('becomes ready again and recreates ping-pong FBOs on restore', () => {
+      dispatchContextLost()
+      mockGL.createFramebuffer.mockClear()
+
+      dispatchContextRestored()
+
+      expect(renderer.isReady()).toBe(true)
+      expect(mockGL.createFramebuffer).toHaveBeenCalledTimes(2)
+    })
+
+    it('forces fragment recompilation on the next render after restore', () => {
+      dispatchContextLost()
+      dispatchContextRestored()
+
+      mockGL.createShader.mockClear()
+      const result = renderer.compileFragment(validSource)
+
+      expect(result.success).toBe(true)
+      expect(mockGL.createShader).toHaveBeenCalled()
+    })
+
+    it('renders successfully again after restore', () => {
+      dispatchContextLost()
+      dispatchContextRestored()
+      renderer.compileFragment(validSource)
+
+      mockGL.drawArrays.mockClear()
+      renderer.render()
+
+      expect(mockGL.drawArrays).toHaveBeenCalledWith(mockGL.TRIANGLES, 0, 3)
+    })
+
+    it('invokes the onContextRestored callback after reinitializing', () => {
+      const onContextRestored = vi.fn()
+      renderer = useGLSLRenderer(undefined, onContextRestored)
+      renderer.init(128, 128)
+
+      dispatchContextLost()
+      expect(onContextRestored).not.toHaveBeenCalled()
+
+      dispatchContextRestored()
+      expect(onContextRestored).toHaveBeenCalledTimes(1)
+    })
+
+    it('removes context loss listeners on dispose', () => {
+      const removeSpy = vi.spyOn(lastOffscreenCanvas!, 'removeEventListener')
+      renderer.dispose()
+      expect(removeSpy).toHaveBeenCalledWith(
+        'webglcontextlost',
+        expect.any(Function)
+      )
+      expect(removeSpy).toHaveBeenCalledWith(
+        'webglcontextrestored',
+        expect.any(Function)
+      )
+    })
+
+    it('ignores a stray restore event after dispose', () => {
+      renderer.dispose()
+      expect(() => dispatchContextRestored()).not.toThrow()
+      expect(renderer.isReady()).toBe(false)
     })
   })
 
