@@ -1,25 +1,9 @@
-// Assigns the on-call release sheriff to backport and release version-bump PRs
-// so they are never left unowned. Run by pr-assign-release-sheriff.yaml.
-//
-// Ask Datadog who is on call right now, map that person to a GitHub login, then
-// assign them (and request their review) on every in-scope PR that has no owner
-// yet. The rotation is read live, so a handover takes effect on the next run
-// with no commit and no PR.
 import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-// The rotation lives in Datadog On-Call. `githubLoginByEmail` is the one piece
-// maintained by hand: Datadog stores no GitHub identity, and GitHub's
-// email->user search only resolves *public* commit emails (org members keep
-// theirs private), so mapping the on-call person's Datadog email to their
-// GitHub login needs this table — add an entry when someone joins the rotation.
-// `fallbackGithubLogin` owns PRs when Datadog is unreachable/unconfigured or the
-// on-call user is unmapped, so a PR is never left without an owner.
 const CONFIG = {
   datadogSite: 'datadoghq.com',
-  // Empty until the Datadog schedule is created; while empty the workflow
-  // falls back to `fallbackGithubLogin`.
   scheduleId: '',
   fallbackGithubLogin: 'christian-byrne',
   githubLoginByEmail: {} as Record<string, string>
@@ -33,6 +17,7 @@ export interface PullRequestSummary {
   labels: { name: string }[]
   assignees: { login: string }[]
   reviewRequests: { login?: string }[]
+  latestReviews: { author: { login: string } | null }[]
   reviewDecision: string | null
   author: { login: string } | null
 }
@@ -45,12 +30,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-/**
- * Pull the current on-call users out of a Datadog On-Call
- * `/schedules/{id}/responders` payload. Users arrive in the JSON:API
- * `included` array (requires `include=responders.shifts.user`), so the
- * responder/shift graph does not need to be walked to find them.
- */
 export function parseOnCallEmails(payload: unknown): string[] {
   if (!isRecord(payload) || !Array.isArray(payload.included)) return []
 
@@ -66,16 +45,9 @@ export function parseOnCallEmails(payload: unknown): string[] {
 
 export interface OnCallLookup {
   emails: string[]
-  /** Set whenever the lookup could not produce an answer. */
   warning: string | null
 }
 
-/**
- * Ask Datadog who is on call right now. Every failure mode degrades to an empty
- * result plus a warning rather than throwing: an unreachable rotation must leave
- * PRs with the fallback owner, never unowned. The warning is returned, not
- * emitted, so the caller owns logging and the outcomes stay unit-testable.
- */
 export async function fetchOnCallEmails(
   config: Pick<typeof CONFIG, 'datadogSite' | 'scheduleId'>,
   credentials: { apiKey?: string; appKey?: string }
@@ -133,7 +105,6 @@ export interface SheriffResolution {
   unmappedEmails: string[]
 }
 
-/** Map the first on-call email that has a GitHub login; otherwise fall back. */
 export function resolveSheriff(
   emails: string[],
   config: Pick<typeof CONFIG, 'fallbackGithubLogin' | 'githubLoginByEmail'>
@@ -158,17 +129,14 @@ export function resolveSheriff(
     : { login: null, source: 'none', unmappedEmails }
 }
 
-// `release-version-bump.yaml` names its branch after the new version, so the
-// version number must be matched — a plain `version-bump-*` prefix also catches
-// ordinary feature branches like `version-bump-fix-subscription-i18n`.
 const VERSION_BUMP_BRANCH = /^version-bump-\d+\.\d+\.\d+/
+const BACKPORT_TITLE = '[backport'
 
-/** A PR the sheriff should own: a backport, or a release version-bump PR. */
 export function isSheriffPr(pr: PullRequestSummary): boolean {
   const labels = pr.labels.map((label) => label.name.toLowerCase())
   return (
     labels.includes('backport') ||
-    pr.title.toLowerCase().includes('backport') ||
+    pr.title.toLowerCase().startsWith(BACKPORT_TITLE) ||
     labels.includes('release') ||
     VERSION_BUMP_BRANCH.test(pr.headRefName)
   )
@@ -180,11 +148,6 @@ export interface SheriffAction {
   requestReview: boolean
 }
 
-/**
- * Decide what to do with each PR. Existing assignees and review requests are
- * left alone so a human who already picked the PR up is never overwritten and a
- * rotation handover does not churn open PRs.
- */
 export function planActions(
   prs: PullRequestSummary[],
   sheriffLogin: string
@@ -196,7 +159,8 @@ export function planActions(
     const requestReview =
       pr.reviewRequests.length === 0 &&
       pr.reviewDecision !== 'APPROVED' &&
-      pr.author?.login !== sheriffLogin
+      pr.author?.login !== sheriffLogin &&
+      !pr.latestReviews.some((review) => review.author?.login === sheriffLogin)
 
     return assign || requestReview
       ? [{ number: pr.number, assign, requestReview }]
@@ -205,22 +169,35 @@ export function planActions(
 }
 
 const PR_FIELDS =
-  'number,title,isDraft,headRefName,labels,assignees,reviewRequests,reviewDecision,author'
+  'number,title,isDraft,headRefName,labels,assignees,reviewRequests,latestReviews,reviewDecision,author'
+
+const QUERY_LIMIT = 100
 
 function gh(args: string[]): string {
   return execFileSync('gh', args, { encoding: 'utf8' })
 }
 
 function ghPrList(selector: string[]): PullRequestSummary[] {
-  const fixed = ['pr', 'list', '--state', 'open', '--limit', '100', '--json']
-  return JSON.parse(gh([...fixed, PR_FIELDS, ...selector]))
+  const fixed = [
+    'pr',
+    'list',
+    '--state',
+    'open',
+    '--limit',
+    String(QUERY_LIMIT),
+    '--json'
+  ]
+  const prs = JSON.parse(
+    gh([...fixed, PR_FIELDS, ...selector])
+  ) as PullRequestSummary[]
+  if (prs.length === QUERY_LIMIT) {
+    warn(
+      `Candidate query "${selector.join(' ')}" returned ${QUERY_LIMIT} results and may be truncated.`
+    )
+  }
+  return prs
 }
 
-/**
- * The repo carries hundreds of open PRs, so instead of listing them all we run
- * a few narrow queries and merge. `head:version-bump-` also matches feature
- * branches; `isSheriffPr` filters those back out with the version-number rule.
- */
 function collectCandidatePrs(): PullRequestSummary[] {
   const found = [
     ...ghPrList(['--label', 'backport']),
@@ -279,8 +256,6 @@ async function main() {
       else warn(`Could not assign #${number} to ${login}`)
     }
 
-    // A review request can legitimately fail (e.g. the sheriff is not a
-    // collaborator on a fork PR) and must not undo the assignment above.
     if (requestReview) {
       const path = `repos/${repo}/pulls/${number}/requested_reviewers`
       if (ghPost(path, `reviewers[]=${login}`)) {

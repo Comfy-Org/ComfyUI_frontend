@@ -23,6 +23,7 @@ function pr(overrides: Partial<PullRequestSummary> = {}): PullRequestSummary {
     labels: [],
     assignees: [],
     reviewRequests: [],
+    latestReviews: [],
     reviewDecision: null,
     author: { login: 'someone' },
     ...overrides
@@ -193,6 +194,15 @@ describe('isSheriffPr', () => {
       isSheriffPr(pr({ headRefName: 'version-bump-fix-subscription-i18n' }))
     ).toBe(false)
   })
+
+  it('ignores PRs that merely mention backport in the title', () => {
+    expect(
+      isSheriffPr(pr({ title: 'feat(ci): auto-assign backport PRs' }))
+    ).toBe(false)
+    expect(
+      isSheriffPr(pr({ title: 'docs: explain the backport process' }))
+    ).toBe(false)
+  })
 })
 
 describe('planActions', () => {
@@ -242,6 +252,27 @@ describe('planActions', () => {
     expect(planActions(prs, 'sheriff')).toEqual([
       { number: 1, assign: true, requestReview: false },
       { number: 2, assign: true, requestReview: false }
+    ])
+  })
+
+  it('does not re-request review from a sheriff who already reviewed', () => {
+    const prs = [
+      pr({
+        number: 1,
+        labels: [{ name: 'backport' }],
+        assignees: [{ login: 'dev' }],
+        latestReviews: [{ author: { login: 'sheriff' } }],
+        reviewDecision: 'CHANGES_REQUESTED'
+      }),
+      pr({
+        number: 2,
+        labels: [{ name: 'backport' }],
+        latestReviews: [{ author: { login: 'someone-else' } }]
+      })
+    ]
+
+    expect(planActions(prs, 'sheriff')).toEqual([
+      { number: 2, assign: true, requestReview: true }
     ])
   })
 
