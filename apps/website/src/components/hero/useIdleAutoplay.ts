@@ -151,7 +151,9 @@ export function useIdleAutoplay(
       pose.azimuth = clampAzimuth(state.azimuth)
       pose.elevation = clampElevation(state.elevation)
       pose.zoom = clampZoom(state.zoom)
-      hue.value = Math.round(state.hue)
+      // Hue accumulates unwrapped so each leg keeps turning the same way;
+      // wrap on the way out or the handle walks off the end of its track.
+      hue.value = ((Math.round(state.hue) % 360) + 360) % 360
       saturation.value = Math.round(state.saturation * 100) / 100
     },
     { immediate: false }
