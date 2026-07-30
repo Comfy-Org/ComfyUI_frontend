@@ -5,7 +5,7 @@ import { onScopeDispose, ref, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { AutoplayState } from './idleAutoplay'
-import { advanceAutoplay } from './idleAutoplay'
+import { advanceAutoplay, startAutoplay } from './idleAutoplay'
 import type { CameraPose } from './cameraVocabulary'
 import { clampAzimuth, clampElevation, clampZoom } from './cameraVocabulary'
 
@@ -20,6 +20,16 @@ const ACTIVITY_EVENTS = [
   'keydown',
   'wheel',
   'touchstart'
+] as const
+
+/** A press suppresses the demo until it ends, however long it lasts; the
+ * idle countdown starts at release. Bound to window because a drag that
+ * started on a slider can end outside the hero. */
+const RELEASE_EVENTS = [
+  'pointerup',
+  'pointercancel',
+  'touchend',
+  'touchcancel'
 ] as const
 
 /** A backgrounded tab resumes with one enormous frame delta; cap it so the
@@ -45,6 +55,7 @@ export function useIdleAutoplay(
 ): void {
   const idle = ref(false)
   const hoveringAngle = ref(false)
+  const pointerHeld = ref(false)
   const onScreen = useElementVisibility(target)
 
   let idleTimer: ReturnType<typeof setTimeout> | undefined
@@ -55,7 +66,21 @@ export function useIdleAutoplay(
     idleTimer = setTimeout(() => (idle.value = true), IDLE_DELAY)
   }
 
-  function onActivity() {
+  function onActivity(event: Event) {
+    if (event.type === 'pointerdown' || event.type === 'touchstart') {
+      // Held interactions suppress the demo outright; the countdown to
+      // resuming starts when the press is released, not when it began.
+      pointerHeld.value = true
+      idle.value = false
+      clearTimeout(idleTimer)
+      return
+    }
+    restartIdleTimer()
+  }
+
+  function onRelease() {
+    if (!pointerHeld.value) return
+    pointerHeld.value = false
     restartIdleTimer()
   }
 
@@ -89,6 +114,15 @@ export function useIdleAutoplay(
         el.removeEventListener('pointerover', onPointerOver)
         el.removeEventListener('pointerleave', onPointerLeave)
       })
+      for (const type of RELEASE_EVENTS) {
+        window.addEventListener(type, onRelease, {
+          capture: true,
+          passive: true
+        })
+        teardowns.push(() =>
+          window.removeEventListener(type, onRelease, { capture: true })
+        )
+      }
       restartIdleTimer()
     },
     { immediate: true }
@@ -99,14 +133,17 @@ export function useIdleAutoplay(
     teardowns.forEach((fn) => fn())
   })
 
-  let state: AutoplayState = {
-    phase: 0,
-    azimuth: pose.azimuth,
-    elevation: pose.elevation,
-    zoom: pose.zoom,
-    hue: hue.value,
-    saturation: saturation.value
+  function seedFromPose(): AutoplayState {
+    return startAutoplay({
+      azimuth: pose.azimuth,
+      elevation: pose.elevation,
+      zoom: pose.zoom,
+      hue: hue.value,
+      saturation: saturation.value
+    })
   }
+
+  let state = seedFromPose()
 
   const { pause, resume } = useRafFn(
     ({ delta }) => {
@@ -123,6 +160,7 @@ export function useIdleAutoplay(
   watch(
     () =>
       idle.value &&
+      !pointerHeld.value &&
       !hoveringAngle.value &&
       onScreen.value &&
       !prefersReducedMotion(),
@@ -130,14 +168,7 @@ export function useIdleAutoplay(
       if (!active) return pause()
       // Restart from what the visitor left behind, not from the pose this
       // loop last wrote, so taking over and stepping away reads continuous.
-      state = {
-        phase: 0,
-        azimuth: pose.azimuth,
-        elevation: pose.elevation,
-        zoom: pose.zoom,
-        hue: hue.value,
-        saturation: saturation.value
-      }
+      state = seedFromPose()
       resume()
     }
   )

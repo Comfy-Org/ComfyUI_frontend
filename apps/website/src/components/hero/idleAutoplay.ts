@@ -1,31 +1,33 @@
 /** Motion model for the hero's idle self-demo. Kept free of Vue and DOM so the
- * curve can be exercised directly; `useIdleAutoplay` owns the wiring. */
+ * curve can be exercised directly; `useIdleAutoplay` owns the wiring.
+ *
+ * The demo moves like a person browsing poses: ease to a pose, settle, hold,
+ * then move to the next. Every stop lands exactly on a shipped render —
+ * azimuth on a 45-degree bucket, elevation alternating between the eye-level
+ * and elevated rings, zoom pinned to the medium shot — so the OUTPUT image
+ * swaps once per leg while the camera is settling, never mid-glide. */
 
-/** Seconds per full revolution for the values that advance continuously. */
-const AZIMUTH_PERIOD = 24
-const HUE_PERIOD = 30
+const TRAVEL_SECONDS = 1.4
+const HOLD_SECONDS = 1.1
+const LEG_SECONDS = TRAVEL_SECONDS + HOLD_SECONDS
 
-/** Seconds per cycle for the values that ease toward a travelling target.
- * Deliberately co-prime so the combined motion does not visibly loop. */
-const ELEVATION_PERIOD = 17
-const ZOOM_PERIOD = 11
-const SATURATION_PERIOD = 13
+/** Exponential convergence rate onto the leg target. Frame-rate independent,
+ * and fast enough that a leg's travel window settles it to under 2% of the
+ * remaining distance, so the hold reads as a full stop. */
+const EASE_RATE = 3.2
 
-/** Bounds of each eased wave, chosen to sweep the full set of rendered angles
- * without leaving the range its clamp accepts. */
-const ELEVATION_CENTRE = 15
-const ELEVATION_AMPLITUDE = 45
-const ZOOM_CENTRE = 4.5
-const ZOOM_AMPLITUDE = 3.5
-const SATURATION_CENTRE = 1
-const SATURATION_AMPLITUDE = 0.6
-
-/** Exponential convergence rate onto the target wave. Frame-rate independent:
- * the same elapsed time yields the same result at any step size. */
-const EASE_RATE = 1.5
+const AZIMUTH_STEP = 45
+const HUE_STEP = 40
+const ZOOM_TARGET = 4
 
 export interface AutoplayState {
-  phase: number
+  /** Completed legs since the demo took over. */
+  legIndex: number
+  /** Seconds into the current leg (travel + hold). */
+  legTime: number
+  /** Pose the visitor left behind; leg targets step away from it. */
+  azimuthBase: number
+  hueBase: number
   azimuth: number
   elevation: number
   zoom: number
@@ -33,48 +35,77 @@ export interface AutoplayState {
   saturation: number
 }
 
-function wave(
-  phase: number,
-  period: number,
-  centre: number,
-  amplitude: number
+/** Seeds the demo from wherever the visitor left the controls, so taking over
+ * and stepping away reads continuous. */
+export function startAutoplay(pose: {
+  azimuth: number
+  elevation: number
+  zoom: number
+  hue: number
+  saturation: number
+}): AutoplayState {
+  return {
+    legIndex: 0,
+    legTime: 0,
+    azimuthBase: pose.azimuth,
+    hueBase: pose.hue,
+    ...pose
+  }
+}
+
+interface LegTarget {
+  azimuth: number
+  elevation: number
+  zoom: number
+  hue: number
+  saturation: number
+}
+
+function legTarget(state: AutoplayState): LegTarget {
+  const step = state.legIndex + 1
+  return {
+    azimuth: state.azimuthBase + AZIMUTH_STEP * step,
+    elevation: step % 2 === 0 ? 0 : 30,
+    zoom: ZOOM_TARGET,
+    hue: state.hueBase + HUE_STEP * step,
+    saturation: step % 2 === 0 ? 1.15 : 0.85
+  }
+}
+
+/** Eases toward the target, snapping the last sliver of the exponential
+ * tail. Without the snap the pose keeps emitting sub-visible updates at
+ * widening intervals, which reads as noise to anything watching the value
+ * for motion (the sliders' dim overlay); with it, motion stops crisply. */
+function approach(
+  current: number,
+  target: number,
+  dt: number,
+  snap: number
 ): number {
-  return centre + amplitude * Math.sin((phase / period) * Math.PI * 2)
+  const next = current + (target - current) * (1 - Math.exp(-EASE_RATE * dt))
+  return Math.abs(target - next) <= snap ? target : next
 }
 
-function approach(current: number, target: number, dt: number): number {
-  return current + (target - current) * (1 - Math.exp(-EASE_RATE * dt))
-}
-
-function cycle(value: number, period: number, dt: number): number {
-  return (value + (360 / period) * dt) % 360
-}
-
-/** Advances one step. Eased values converge on their wave from wherever the
- * visitor left them, so handing control back never snaps the pose. */
+/** Advances one step. Azimuth and hue accumulate unwrapped so each leg keeps
+ * orbiting the same direction; the caller clamps when writing to the pose. */
 export function advanceAutoplay(
   state: AutoplayState,
   dt: number
 ): AutoplayState {
-  const phase = state.phase + dt
+  let legIndex = state.legIndex
+  let legTime = state.legTime + dt
+  while (legTime >= LEG_SECONDS) {
+    legTime -= LEG_SECONDS
+    legIndex += 1
+  }
+  const next = { ...state, legIndex, legTime }
+  const target = legTarget(next)
   return {
-    phase,
-    azimuth: cycle(state.azimuth, AZIMUTH_PERIOD, dt),
-    hue: cycle(state.hue, HUE_PERIOD, dt),
-    elevation: approach(
-      state.elevation,
-      wave(phase, ELEVATION_PERIOD, ELEVATION_CENTRE, ELEVATION_AMPLITUDE),
-      dt
-    ),
-    zoom: approach(
-      state.zoom,
-      wave(phase, ZOOM_PERIOD, ZOOM_CENTRE, ZOOM_AMPLITUDE),
-      dt
-    ),
-    saturation: approach(
-      state.saturation,
-      wave(phase, SATURATION_PERIOD, SATURATION_CENTRE, SATURATION_AMPLITUDE),
-      dt
-    )
+    ...next,
+    azimuth: approach(state.azimuth, target.azimuth, dt, 2),
+    elevation: approach(state.elevation, target.elevation, dt, 2),
+    zoom: approach(state.zoom, target.zoom, dt, 0.2),
+    hue: approach(state.hue, target.hue, dt, 2),
+    saturation: approach(state.saturation, target.saturation, dt, 0.02)
   }
 }
