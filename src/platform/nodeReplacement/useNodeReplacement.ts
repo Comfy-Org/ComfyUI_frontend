@@ -1,9 +1,9 @@
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
-  LiteGraph,
   registerNodeState,
   unregisterNodeState
-} from '@/lib/litegraph/src/litegraph'
+} from '@/core/graph/nodeShell/nodeShellState'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'

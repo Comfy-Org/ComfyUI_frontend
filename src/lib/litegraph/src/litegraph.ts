@@ -117,11 +117,7 @@ export type { LGraphTriggerEvent } from './types/graphTriggers'
 export { LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
 export { LGraphGroup, type GroupId } from './LGraphGroup'
-export {
-  LGraphNode,
-  registerNodeState,
-  unregisterNodeState
-} from './LGraphNode'
+export { LGraphNode } from './LGraphNode'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'

@@ -4,12 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
-  LiteGraph,
   registerNodeState,
   unregisterNodeState
-} from '@/lib/litegraph/src/litegraph'
+} from '@/core/graph/nodeShell/nodeShellState'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { toLinkId } from '@/types/linkId'
@@ -21,7 +21,10 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
   LiteGraph: {
     createNode: vi.fn(),
     registered_node_types: {}
-  },
+  }
+}))
+
+vi.mock('@/core/graph/nodeShell/nodeShellState', () => ({
   registerNodeState: vi.fn(),
   unregisterNodeState: vi.fn()
 }))

@@ -121,13 +121,20 @@ synthetic `VueNodeData` today). `AppModeWidgetList` stops calling
 
 Follows the shipped trio convention (`LLink` / `Reroute`):
 
-- `LGraphNode` constructs its `_state: NodeState` at instantiation;
-  `registerNodeState(graph, node)` inserts it by reference and the class
-  adopts the returned reactive proxy; `node._graphId` (root id) is the
-  registration-ownership marker.
+- `LGraphNode` constructs its `_state: NodeState` at instantiation (via
+  `createNodeShellState`); `registerNodeState(graph, node)` inserts it by
+  reference and the class adopts the returned reactive proxy;
+  `node._graphId` (root id) is the registration-ownership marker.
 - Chokepoints: `LGraph.add` / `LGraph.remove` (the canonical sites),
   `unregisterAllNodeStates(graph)` on graph `clear()`, identity-checked
   delete (`toRaw` compare) so only the registered state vacates its key.
+- The lifecycle coordination itself is app-owned and lives in
+  `src/core/graph/nodeShell/`: `nodeShellState.ts` (`createNodeShellState`,
+  `setTrackedNodeState`, `registerNodeState`, `unregisterNodeState`,
+  `unregisterAllNodeStates`) and `nodeShellLifecycle.ts`
+  (`attachNodeToStores`, `releaseGraphStores` — the single calls `LGraph.add`
+  and `LGraph.clear` make into the stores). None of these are re-exported from
+  the litegraph barrel; the registration surface is internal.
 - Class fields become accessors reading through `_state`. Reads go
   through the reactive proxy directly (there is no `_stateRaw` raw view),
   so `node.title` / `node.mode` / … track inside Vue effects, matching a
