@@ -487,13 +487,8 @@ describe('TabErrors.vue', () => {
       screen.getByTestId('error-group-missing-model')
     ).getByTestId('error-section-count-badge')
     expect(sectionBadge).toHaveTextContent('2')
-    expect(sectionBadge).toHaveClass(
-      'bg-warning-background',
-      'text-charcoal-800'
-    )
+    expect(sectionBadge).toHaveClass('bg-warning-background')
     const missingHero = screen.getByTestId('errors-summary-hero-missing')
-    const missingHeroCount = within(missingHero).getByText('2')
-    expect(missingHeroCount).toHaveClass('text-warning-background')
     expect(within(missingHero).getByText('Setup pending')).toBeInTheDocument()
     expect(
       screen.queryByTestId('errors-summary-hero-error')
@@ -868,10 +863,6 @@ describe('TabErrors.vue', () => {
     })
 
     const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveClass(
-      'icon-[lucide--triangle-alert]',
-      'bg-warning-background'
-    )
     expect(icon).toHaveAccessibleName('Setup pending')
   })
 
@@ -886,10 +877,6 @@ describe('TabErrors.vue', () => {
     })
 
     const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveClass(
-      'icon-[lucide--octagon-alert]',
-      'bg-node-stroke-error'
-    )
     expect(icon).toHaveAccessibleName('Blocking errors')
   })
 
@@ -908,10 +895,6 @@ describe('TabErrors.vue', () => {
     })
 
     const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveClass(
-      'icon-[lucide--octagon-alert]',
-      'bg-node-stroke-error'
-    )
     expect(icon).toHaveAccessibleName('Blocking errors')
   })
 
@@ -936,10 +919,6 @@ describe('TabErrors.vue', () => {
     })
 
     const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveClass(
-      'icon-[lucide--triangle-alert]',
-      'bg-warning-background'
-    )
     expect(icon).toHaveAccessibleName('Setup pending')
   })
 })

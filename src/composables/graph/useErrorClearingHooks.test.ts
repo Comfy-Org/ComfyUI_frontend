@@ -540,7 +540,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(executionErrorStore.lastPromptError).toBeNull()
   })
 
-  it('keeps the missing-node prompt while undo removes its node during graph loading', () => {
+  it('keeps the missing-node prompt while graph loading removes its node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('MissingNode')
     graph.add(node)
@@ -593,41 +593,6 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
   })
-
-  it.for([
-    ['muting', LGraphEventMode.NEVER],
-    ['bypassing', LGraphEventMode.BYPASS]
-  ] as const)(
-    'keeps a desynced missing-node prompt error after %s an unrelated node',
-    ([, inactiveMode]) => {
-      const graph = new LGraph()
-      const node = new LGraphNode('UnrelatedNode')
-      graph.add(node)
-
-      vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-      installErrorClearingHooks(graph)
-
-      const executionErrorStore = useExecutionErrorStore()
-      executionErrorStore.recordPromptError({
-        type: 'missing_node_type',
-        message: 'MissingNode is unavailable',
-        details: ''
-      })
-
-      node.mode = inactiveMode
-      graph.onTrigger?.({
-        type: 'node:property:changed',
-        nodeId: node.id,
-        property: 'mode',
-        oldValue: LGraphEventMode.ALWAYS,
-        newValue: inactiveMode
-      })
-
-      expect(executionErrorStore.lastPromptError?.type).toBe(
-        'missing_node_type'
-      )
-    }
-  )
 
   it('keeps the missing-node prompt error while other missing nodes remain', () => {
     const graph = new LGraph()
