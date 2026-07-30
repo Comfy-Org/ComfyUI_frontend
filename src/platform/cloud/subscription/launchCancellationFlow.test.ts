@@ -5,12 +5,13 @@ import type {
   ChurnkeyShowOptions
 } from '@/platform/cloud/churnkey/churnkeyClient'
 import type { ChurnkeySessionResults } from '@/platform/cloud/churnkey/types'
+import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 
 const mocks = vi.hoisted(() => ({
   billingType: { value: 'workspace' },
   tier: { value: 'PRO' },
   activeWorkspaceId: 'workspace-1' as string | null,
-  billingRail: 'stripe' as 'legacy_stripe' | 'metronome' | 'stripe' | null,
+  billingRail: 'stripe' as BillingRail | null,
   cancelSubscription: vi.fn(),
   prepare: vi.fn(),
   trackCancellation: vi.fn()
