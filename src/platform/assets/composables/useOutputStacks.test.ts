@@ -76,8 +76,7 @@ describe('useOutputStacks', () => {
     expect(mocks.resolveOutputAssetItems).toHaveBeenCalledWith(
       expect.objectContaining({ jobId: 'job-1' }),
       {
-        createdAt: parent.created_at,
-        excludeOutputKey: 'node-1-outputs-parent.png'
+        createdAt: parent.created_at
       }
     )
     expect(isStackExpanded(parent)).toBe(true)
@@ -95,6 +94,60 @@ describe('useOutputStacks', () => {
       isChild: true
     })
     expect(selectableAssets.value).toEqual([parent, childA, childB])
+  })
+
+  it('stores resolved children in a provided shared cache', async () => {
+    const parent = createAsset({ id: 'parent', name: 'parent.png' })
+    const child = createAsset({
+      id: 'child',
+      name: 'child.png',
+      user_metadata: undefined
+    })
+    const childrenByJobId = ref<Record<string, AssetItem[]>>({})
+
+    vi.mocked(mocks.resolveOutputAssetItems).mockResolvedValue([child])
+
+    const { toggleStack } = useOutputStacks({
+      assets: ref([parent]),
+      childrenByJobId
+    })
+
+    await toggleStack(parent)
+
+    expect(childrenByJobId.value['job-1']).toEqual([child])
+  })
+
+  it('excludes the representative output from a prepopulated shared cache', async () => {
+    const parent = createAsset({ id: 'parent', name: 'parent.png' })
+    const representative = createAsset({
+      id: 'representative',
+      name: 'parent.png'
+    })
+    const sibling = createAsset({
+      id: 'sibling',
+      name: 'sibling.png',
+      user_metadata: {
+        jobId: 'job-1',
+        nodeId: 'node-2',
+        subfolder: 'outputs'
+      }
+    })
+    const childrenByJobId = ref<Record<string, AssetItem[]>>({
+      'job-1': [representative, sibling]
+    })
+
+    const { assetItems, toggleStack } = useOutputStacks({
+      assets: ref([parent]),
+      childrenByJobId
+    })
+
+    await toggleStack(parent)
+
+    expect(assetItems.value.map((item) => item.asset.id)).toEqual([
+      parent.id,
+      sibling.id
+    ])
+    expect(mocks.resolveOutputAssetItems).not.toHaveBeenCalled()
   })
 
   it('collapses an expanded stack when toggled again', async () => {

@@ -9,7 +9,7 @@
       cn(
         'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
         'group gap-2 select-none',
-        selected
+        selected || partiallySelected
           ? 'ring-3 ring-modal-card-border-highlighted ring-inset'
           : 'hover:bg-modal-card-background-hovered/20'
       )
@@ -69,7 +69,7 @@
             type: fileKind
           })
         "
-        :aria-pressed="selected ?? false"
+        :aria-pressed="selected ? true : partiallySelected ? 'mixed' : false"
         @click.stop="emit('toggle-selection')"
       >
         <i
@@ -146,7 +146,15 @@
             @click.stop="handleOutputCountClick"
           >
             <i class="icon-[lucide--layers] size-4" />
-            <span>{{ outputCount }}</span>
+            <span
+              v-if="
+                selectedOutputCount > 0 &&
+                selectedOutputCount < (outputCount ?? 0)
+              "
+            >
+              {{ selectedOutputCount }}/{{ outputCount }}
+            </span>
+            <span v-else>{{ outputCount }}</span>
           </Button>
         </div>
       </div>
@@ -201,12 +209,22 @@ function getTopComponent(kind: PreviewKind) {
   return mediaComponents.top[kind] || mediaComponents.top.other
 }
 
-const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
+const {
+  asset,
+  loading,
+  selected,
+  partiallySelected,
+  showOutputCount,
+  outputCount,
+  selectedOutputCount = 0
+} = defineProps<{
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
+  partiallySelected?: boolean
   showOutputCount?: boolean
   outputCount?: number
+  selectedOutputCount?: number
 }>()
 
 const assetsStore = useAssetsStore()

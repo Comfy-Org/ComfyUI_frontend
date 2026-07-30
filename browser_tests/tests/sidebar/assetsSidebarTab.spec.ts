@@ -283,6 +283,130 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     ).toHaveJSProperty('naturalWidth', 1)
   })
 
+  test.describe('grouped output selection', () => {
+    test.beforeEach(async ({ comfyPage, jobsRoutes }) => {
+      await jobsRoutes.mockJobsHistory([multiOutputJob])
+      await jobsRoutes.mockJobDetail('multi-output', multiOutputJobDetail)
+      await comfyPage.setup()
+      await comfyPage.menu.assetsTab.open()
+    })
+
+    test('preserves a grouped selection when opening its outputs', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+
+      const groupedCard = tab.getAssetCardByName('multi-output-a')
+      await groupedCard.click()
+      await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
+
+      await groupedCard
+        .getByRole('button', { name: 'See more outputs' })
+        .click()
+
+      await expect(tab.selectedCards).toHaveCount(2)
+      await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
+    })
+
+    test('preserves partial output selection when leaving and reopening a folder', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+
+      const groupedCard = tab.getAssetCardByName('multi-output-a')
+      await groupedCard
+        .getByRole('button', { name: 'See more outputs' })
+        .click()
+
+      await tab.getAssetCardByName('multi-output-a').click()
+      await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
+
+      await tab.backToAssetsButton.click()
+
+      await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
+      await expect(
+        groupedCard.getByRole('button', { name: /multi-output-a.*asset/ })
+      ).toHaveAttribute('aria-pressed', 'mixed')
+      await expect(
+        groupedCard.getByRole('button', { name: 'See more outputs' })
+      ).toHaveText('1/2')
+
+      await tab.openSettingsMenu()
+      await tab.listViewOption.click()
+      await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
+      const groupedListItem = tab.listViewItems.filter({
+        hasText: 'multi-output-a'
+      })
+      await expect(groupedListItem).toHaveAttribute('aria-pressed', 'mixed')
+      await expect(
+        groupedListItem.getByRole('button', { name: 'See more outputs' })
+      ).toHaveText('1/2')
+
+      await tab.gridLargeOption.click()
+      await expect(
+        groupedCard.getByRole('button', { name: /multi-output-a.*asset/ })
+      ).toHaveAttribute('aria-pressed', 'mixed')
+
+      await groupedCard
+        .getByRole('button', { name: 'See more outputs' })
+        .click()
+
+      await expect(
+        tab
+          .getAssetCardByName('multi-output-a')
+          .getByRole('button', { name: /multi-output-a.*asset/ })
+      ).toHaveAttribute('aria-pressed', 'true')
+      await expect(
+        tab
+          .getAssetCardByName('multi-output-b')
+          .getByRole('button', { name: /multi-output-b.*asset/ })
+      ).toHaveAttribute('aria-pressed', 'false')
+    })
+
+    test('toggles an inherited list child selection and preserves it in grid', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+
+      await tab.openSettingsMenu()
+      await tab.listViewOption.click()
+
+      await tab.listViewItems.filter({ hasText: 'multi-output-a' }).click()
+      await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
+
+      await tab.listViewItems
+        .filter({ hasText: 'multi-output-a' })
+        .getByRole('button', { name: 'See more outputs' })
+        .click()
+      await expect(
+        tab.listViewItems.filter({ hasText: 'multi-output-b' })
+      ).toHaveAttribute('aria-pressed', 'true')
+
+      await comfyPage.page.keyboard.down('ControlOrMeta')
+      await tab.listViewItems.filter({ hasText: 'multi-output-b' }).click()
+      await comfyPage.page.keyboard.up('ControlOrMeta')
+
+      await expect(
+        tab.listViewItems.filter({ hasText: 'multi-output-a' })
+      ).toHaveAttribute('aria-pressed', 'mixed')
+      await expect(
+        tab.listViewItems.filter({ hasText: 'multi-output-b' })
+      ).toHaveAttribute('aria-pressed', 'false')
+      await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
+
+      await tab.openSettingsMenu()
+      await tab.gridLargeOption.click()
+
+      const groupedCard = tab.getAssetCardByName('multi-output-a')
+      await expect(
+        groupedCard.getByRole('button', { name: /multi-output-a.*asset/ })
+      ).toHaveAttribute('aria-pressed', 'mixed')
+      await expect(
+        groupedCard.getByRole('button', { name: 'See more outputs' })
+      ).toHaveText('1/2')
+    })
+  })
+
   test('deletes a generated output asset through explicit history refresh', async ({
     comfyPage,
     jobsRoutes

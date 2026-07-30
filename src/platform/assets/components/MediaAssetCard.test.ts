@@ -208,6 +208,16 @@ describe('MediaAssetCard', () => {
     )
   })
 
+  it('exposes partial selection without reporting a full selection', () => {
+    renderCard({ loading: false, partiallySelected: true })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'assetBrowser.ariaLabel.assetCard'
+      })
+    ).toHaveAttribute('aria-pressed', 'mixed')
+  })
+
   it('shows image format and dimensions without file size', () => {
     renderCard({
       loading: false,

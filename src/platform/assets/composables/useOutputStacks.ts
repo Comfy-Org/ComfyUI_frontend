@@ -16,11 +16,14 @@ export type OutputStackListItem = {
 
 type UseOutputStacksOptions = {
   assets: Ref<AssetItem[]>
+  childrenByJobId?: Ref<Record<string, AssetItem[]>>
 }
 
-export function useOutputStacks({ assets }: UseOutputStacksOptions) {
+export function useOutputStacks({
+  assets,
+  childrenByJobId = ref<Record<string, AssetItem[]>>({})
+}: UseOutputStacksOptions) {
   const expandedStackJobIds = ref<Set<string>>(new Set())
-  const stackChildrenByJobId = ref<Record<string, AssetItem[]>>({})
   const loadingStackJobIds = ref<Set<string>>(new Set())
 
   const assetItems = computed<OutputStackListItem[]>(() => {
@@ -37,7 +40,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
         continue
       }
 
-      const children = stackChildrenByJobId.value[jobId] ?? []
+      const children = getStackChildren(asset, jobId)
       for (const child of children) {
         items.push({
           key: `asset-${child.id}`,
@@ -65,6 +68,25 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
     return expandedStackJobIds.value.has(jobId)
   }
 
+  function getStackChildren(asset: AssetItem, jobId: string): AssetItem[] {
+    const representativeOutputKey = getStackOutputKey(asset)
+    if (!representativeOutputKey) {
+      return childrenByJobId.value[jobId] ?? []
+    }
+    return (childrenByJobId.value[jobId] ?? []).filter(
+      (child) => getStackOutputKey(child) !== representativeOutputKey
+    )
+  }
+
+  function getStackOutputKey(asset: AssetItem): string | null {
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    return getOutputKey({
+      nodeId: metadata?.nodeId,
+      subfolder: metadata?.subfolder,
+      filename: asset.name
+    })
+  }
+
   async function toggleStack(asset: AssetItem) {
     const jobId = getStackJobId(asset)
     if (!jobId) return
@@ -76,7 +98,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
       return
     }
 
-    if (!stackChildrenByJobId.value[jobId]?.length) {
+    if (!childrenByJobId.value[jobId]?.length) {
       if (loadingStackJobIds.value.has(jobId)) {
         return
       }
@@ -94,8 +116,8 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
         return
       }
 
-      stackChildrenByJobId.value = {
-        ...stackChildrenByJobId.value,
+      childrenByJobId.value = {
+        ...childrenByJobId.value,
         [jobId]: children
       }
     }
@@ -111,17 +133,9 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
       return []
     }
 
-    const excludeOutputKey =
-      getOutputKey({
-        nodeId: metadata.nodeId,
-        subfolder: metadata.subfolder,
-        filename: asset.name
-      }) ?? undefined
-
     try {
       return await resolveOutputAssetItems(metadata, {
-        createdAt: asset.created_at,
-        excludeOutputKey
+        createdAt: asset.created_at
       })
     } catch (error) {
       console.error('Failed to resolve stack children:', error)
