@@ -1,47 +1,77 @@
 <template>
-  <h2
-    :class="
-      cn(
-        'm-0 mb-8 text-center text-xl font-semibold text-base-foreground lg:text-2xl',
-        usePaymentElement && 'xl:mb-4'
-      )
-    "
-  >
-    {{ $t('subscription.preview.confirmPayment') }}
-  </h2>
   <div
     :class="
       cn(
         'mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm',
-        // Stripe-checkout shape on desktop: order summary left, payment
-        // right, inside the pricing table's dialog footprint. Mobile keeps
-        // the stacked flow.
+        // Edge-to-edge Stripe-checkout split on desktop: the summary is a
+        // flush full-height sidebar on base-background, payment beside it on
+        // the shell. Mobile keeps the stacked flow.
         usePaymentElement &&
-          'xl:min-h-0 xl:max-w-none xl:flex-1 xl:flex-row xl:items-stretch xl:justify-center xl:gap-16'
+          'xl:min-h-0 xl:w-full xl:max-w-none xl:flex-1 xl:flex-row xl:items-stretch xl:gap-0'
       )
     "
   >
-    <!-- Dual-tone summary panel: same recipe as the pricing table's inner
-         box (rounded, bg-base-background, borderless) on the dialog's
-         secondary-background shell. -->
     <div
       :class="
         cn(
           usePaymentElement &&
-            'xl:w-[440px] xl:shrink-0 xl:rounded-2xl xl:bg-base-background xl:px-8 xl:py-6'
+            'xl:w-[42%] xl:shrink-0 xl:border-r xl:border-border-subtle xl:bg-base-background xl:px-12 xl:py-10'
         )
       "
     >
+      <div
+        :class="
+          cn('mb-8 flex items-center gap-3', usePaymentElement && 'xl:mb-10')
+        "
+      >
+        <Button
+          v-if="usePaymentElement"
+          size="icon"
+          variant="muted-textonly"
+          class="shrink-0 rounded-full"
+          :aria-label="$t('g.back')"
+          :disabled="isLoading"
+          @click="$emit('back')"
+        >
+          <i class="pi pi-arrow-left text-base" />
+        </Button>
+        <h2
+          :class="
+            cn(
+              'm-0 flex-1 text-center text-xl font-semibold text-base-foreground lg:text-2xl',
+              // In the sidebar the title goes quiet and the money block leads.
+              usePaymentElement &&
+                'xl:text-left xl:text-base xl:font-medium xl:text-muted-foreground'
+            )
+          "
+        >
+          {{ $t('subscription.preview.confirmPayment') }}
+        </h2>
+      </div>
       <!-- Plan Header -->
       <div class="flex flex-col gap-2">
         <span class="text-sm text-base-foreground">
           {{ tierName }}
         </span>
         <div class="flex items-baseline gap-2">
-          <span class="text-4xl font-semibold text-base-foreground">
+          <span
+            :class="
+              cn(
+                'text-4xl font-semibold text-base-foreground tabular-nums',
+                usePaymentElement && 'xl:text-2xl'
+              )
+            "
+          >
             ${{ displayPrice }}
           </span>
-          <span class="text-xl text-base-foreground">
+          <span
+            :class="
+              cn(
+                'text-xl text-base-foreground',
+                usePaymentElement && 'xl:text-base'
+              )
+            "
+          >
             {{ $t('subscription.usdPerMonth') }}
           </span>
         </div>
@@ -72,76 +102,10 @@
           </span>
           <div class="flex items-center gap-1">
             <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
-            <span class="font-bold text-base-foreground">
+            <span class="font-bold text-base-foreground tabular-nums">
               {{ refillCredits }}
             </span>
           </div>
-        </div>
-
-        <!-- Expandable Features -->
-        <button
-          class="flex cursor-pointer items-center justify-end gap-1 border-none bg-transparent p-0 font-inter text-sm text-muted-foreground hover:text-base-foreground"
-          @click="isFeaturesCollapsed = !isFeaturesCollapsed"
-        >
-          <span>
-            {{
-              isFeaturesCollapsed
-                ? $t('subscription.preview.showMoreFeatures')
-                : $t('subscription.preview.hideFeatures')
-            }}
-          </span>
-          <i
-            :class="
-              cn(
-                'pi text-xs',
-                isFeaturesCollapsed ? 'pi-chevron-down' : 'pi-chevron-up'
-              )
-            "
-          />
-        </button>
-        <div v-show="!isFeaturesCollapsed" class="flex flex-col gap-2 pt-2">
-          <template v-if="teamPlan">
-            <div
-              v-for="perk in teamPerks"
-              :key="perk"
-              class="flex items-center gap-2"
-            >
-              <i class="pi pi-check text-success-foreground text-xs" />
-              <span class="text-sm text-base-foreground">{{ perk }}</span>
-            </div>
-          </template>
-          <template v-else>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-base-foreground">
-                {{ $t('subscription.maxDurationLabel') }}
-              </span>
-              <span class="text-sm font-bold text-base-foreground">
-                {{ maxDuration }}
-              </span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-base-foreground">
-                {{ $t('subscription.gpuLabel') }}
-              </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-base-foreground">
-                {{ $t('subscription.addCreditsLabel') }}
-              </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-base-foreground">
-                {{ $t('subscription.customLoRAsLabel') }}
-              </span>
-              <i
-                v-if="hasCustomLoRAs"
-                class="pi pi-check text-success-foreground text-xs"
-              />
-              <i v-else class="pi pi-times text-xs text-muted-foreground" />
-            </div>
-          </template>
         </div>
       </div>
 
@@ -181,7 +145,7 @@
           <span class="text-base-foreground">
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
-          <span class="font-bold text-base-foreground">
+          <span class="font-bold text-base-foreground tabular-nums">
             ${{ totalDueToday }}
           </span>
         </div>
@@ -201,27 +165,31 @@
         cn(
           'flex flex-col gap-2 pt-8',
           usePaymentElement &&
-            'xl:min-h-0 xl:w-[480px] xl:min-w-0 xl:overflow-x-hidden xl:overflow-y-auto xl:pt-0 xl:pr-2'
+            'xl:min-h-0 xl:min-w-0 xl:flex-1 xl:overflow-x-hidden xl:overflow-y-auto xl:px-16 xl:py-10'
         )
       "
     >
-      <UnifiedStripePaymentSelector
-        v-if="usePaymentElement"
-        :amount-cents="amountDueCents"
-        :is-loading
-        :promotion-code="promotionCode"
-        @confirm="confirmPayment"
-      />
-
+      <!-- Pending 3DS verification is the only actionable step, so it takes
+           the top of the column; the pay button below it is demoted and
+           disabled while it shows. -->
       <Button
         v-if="actionUrl"
-        variant="primary"
+        variant="inverted"
         size="lg"
         class="w-full rounded-lg"
         @click="openVerification"
       >
         {{ $t('subscription.preview.completeVerification') }}
       </Button>
+
+      <UnifiedStripePaymentSelector
+        v-if="usePaymentElement"
+        :amount-cents="amountDueCents"
+        :is-loading
+        :promotion-code="promotionCode"
+        :verification-pending="Boolean(actionUrl)"
+        @confirm="confirmPayment"
+      />
 
       <Button
         v-if="!usePaymentElement"
@@ -235,17 +203,7 @@
       </Button>
 
       <!-- Terms Agreement (below the pay action, like Stripe checkout) -->
-      <SubscriptionTermsNote />
-
-      <!-- Back Link -->
-      <Button
-        variant="textonly"
-        class="cursor-pointer text-center text-xs text-muted-foreground transition-colors hover:bg-none hover:text-base-foreground"
-        :disabled="isLoading"
-        @click="$emit('back')"
-      >
-        {{ $t('subscription.preview.backToAllPlans') }}
-      </Button>
+      <SubscriptionTermsNote class="mt-2" />
     </div>
   </div>
 </template>
@@ -259,7 +217,6 @@ import Input from '@/components/ui/input/Input.vue'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import {
   getTierCredits,
-  getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -301,7 +258,6 @@ const emit = defineEmits<{
 
 const { t, n } = useI18n()
 
-const isFeaturesCollapsed = ref(true)
 const isPromoOpen = ref(false)
 const promotionCode = ref('')
 
@@ -354,18 +310,6 @@ const creditsRefillLabelKey = computed(() =>
     ? 'subscription.preview.eachYearCreditsRefill'
     : 'subscription.preview.eachMonthCreditsRefill'
 )
-
-const teamPerks = computed(() => [
-  t('subscription.teamPlan.perkInviteMembers'),
-  t('subscription.teamPlan.perkConcurrentRuns'),
-  t('subscription.teamPlan.perkSharedPool'),
-  t('subscription.teamPlan.perkRolePermissions')
-])
-
-const hasCustomLoRAs = computed(() =>
-  tierKey ? getTierFeatures(tierKey).customLoRAs : false
-)
-const maxDuration = computed(() => t(`subscription.maxDuration.${tierKey}`))
 
 const totalDueToday = computed(() => {
   if (teamPlan) {
