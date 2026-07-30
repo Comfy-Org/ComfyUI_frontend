@@ -2629,6 +2629,7 @@
     "expiresDate": "Expires {date}",
     "renewsOnDate": "Renews on {date}",
     "endsOnDate": "Ends on {date}",
+    "changesToPlanOnDate": "Changes to {plan} on {date}",
     "manageSubscription": "Manage subscription",
     "manageBilling": "Manage billing",
     "changePlan": "Change plan",
