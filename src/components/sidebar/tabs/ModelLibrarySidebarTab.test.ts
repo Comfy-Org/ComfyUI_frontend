@@ -15,6 +15,8 @@ const {
   captureRoot,
   getRoot,
   resetRoot,
+  captureExpandedKeys,
+  getExpandedKeys,
   mockStartDrag,
   mockGetNodeProvider,
   mockToggleNodeOnEvent,
@@ -25,6 +27,7 @@ const {
   modelsState
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode<unknown> | null = null
+  let capturedExpandedKeys: Record<string, boolean> = {}
   return {
     captureRoot: (root: TreeExplorerNode<unknown>) => {
       capturedRoot = root
@@ -33,6 +36,10 @@ const {
     resetRoot: () => {
       capturedRoot = null
     },
+    captureExpandedKeys: (keys: Record<string, boolean>) => {
+      capturedExpandedKeys = keys
+    },
+    getExpandedKeys: () => capturedExpandedKeys,
     mockStartDrag: vi.fn(),
     mockGetNodeProvider: vi.fn(),
     mockToggleNodeOnEvent: vi.fn(),
@@ -88,6 +95,7 @@ vi.mock('@/stores/modelStore', async () => {
       visibleModelFolders: [],
       models,
       loadModels: mockLoadModels,
+      getLoadedModelFolder: vi.fn().mockResolvedValue(null),
       loadModelFolders: vi.fn().mockResolvedValue([]),
       refresh: vi.fn().mockResolvedValue(undefined),
       refreshModelFolder: mockRefreshModelFolder
@@ -142,8 +150,14 @@ vi.mock('@/components/common/TreeExplorer.vue', async () => {
       name: 'TreeExplorer',
       template: '<div data-testid="tree-explorer" />',
       props: ['root', 'expandedKeys'],
-      setup(props: { root: TreeExplorerNode<unknown> }) {
+      setup(props: {
+        root: TreeExplorerNode<unknown>
+        expandedKeys: Record<string, boolean>
+      }) {
         watchEffect(() => captureRoot(props.root))
+        // The v-model record is shared with the component, so mutating the
+        // captured object simulates user expand/collapse actions.
+        watchEffect(() => captureExpandedKeys(props.expandedKeys))
       }
     }
   }
@@ -390,7 +404,7 @@ describe('ModelLibrarySidebarTab', () => {
       ).toBeInTheDocument()
     })
 
-    it('does not re-expand results when a reload lands mid-search', async () => {
+    it('does not re-expand a collapsed folder when a reload lands mid-search', async () => {
       const user = userEvent.setup()
       renderComponent()
       await nextTick()
@@ -398,11 +412,14 @@ describe('ModelLibrarySidebarTab', () => {
       await user.type(screen.getByTestId('search-input'), 'model')
       await nextTick()
       await nextTick()
-      const expandCallsAfterTyping = mockExpandNode.mock.calls.length
-      expect(expandCallsAfterTyping).toBeGreaterThan(0)
+      // The query's initial result folders auto-expand.
+      expect(getExpandedKeys()['root/checkpoints']).toBe(true)
 
-      // A background reload adds another matching model; the tree data
-      // updates but no new expand pass runs (preserves manual collapses).
+      // The user collapses the folder mid-search.
+      delete getExpandedKeys()['root/checkpoints']
+
+      // A background reload adds another matching model to that folder; the
+      // tree data updates but the manual collapse is preserved.
       modelsState.push(
         fromPartial<ComfyModelDef>({
           key: 'checkpoints/model-late.safetensors',
@@ -416,7 +433,38 @@ describe('ModelLibrarySidebarTab', () => {
       await nextTick()
       await nextTick()
 
-      expect(mockExpandNode.mock.calls.length).toBe(expandCallsAfterTyping)
+      expect(getExpandedKeys()['root/checkpoints']).toBeUndefined()
+    })
+
+    it('expands a result folder first surfaced by a mid-search reload', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+      await nextTick()
+
+      // No prefix of the query matches the existing model, so the result
+      // tree stays empty and no folder has auto-expanded yet.
+      await user.type(screen.getByTestId('search-input'), 'zzz')
+      await nextTick()
+      await nextTick()
+      expect(getExpandedKeys()['root/checkpoints']).toBeUndefined()
+
+      // A scan completes mid-search and surfaces the first match; its
+      // folder must render expanded or the result hides in a collapsed
+      // node.
+      modelsState.push(
+        fromPartial<ComfyModelDef>({
+          key: 'checkpoints/zzz-model.safetensors',
+          file_name: 'zzz-model.safetensors',
+          simplified_file_name: 'zzz-model',
+          title: 'Zzz Model',
+          directory: 'checkpoints',
+          searchable: 'checkpoints/zzz-model.safetensors'
+        })
+      )
+      await nextTick()
+      await nextTick()
+
+      expect(getExpandedKeys()['root/checkpoints']).toBe(true)
     })
   })
 

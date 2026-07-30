@@ -29,7 +29,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
-    hasPendingOperations: false,
+    hasPendingOperations: true,
+    isAddingCredits: false,
     startOperation: mockStartOperation
   })
 }))
@@ -157,6 +158,12 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     mockShouldUseWorkspaceBilling.value = true
     mockFetchBalance.mockResolvedValue(undefined)
     mockFetchStatus.mockResolvedValue(undefined)
+  })
+
+  it('allows a top-up while an unrelated billing operation is pending', () => {
+    renderDialog()
+
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
   })
 
   it('refreshes both balance and status after a completed top-up', async () => {
