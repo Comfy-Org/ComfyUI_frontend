@@ -71,6 +71,7 @@ describe('keybindingService - Escape key handling', () => {
       altKey?: boolean
       metaKey?: boolean
       shiftKey?: boolean
+      target?: HTMLElement
     } = {}
   ): KeyboardEvent {
     const event = new KeyboardEvent('keydown', {
@@ -83,8 +84,9 @@ describe('keybindingService - Escape key handling', () => {
       cancelable: true
     })
 
+    const target = options.target ?? document.body
     event.preventDefault = vi.fn()
-    event.composedPath = vi.fn(() => [document.body])
+    event.composedPath = vi.fn(() => [target])
 
     return event
   }
@@ -126,6 +128,39 @@ describe('keybindingService - Escape key handling', () => {
     await keybindingService.keybindHandler(event)
 
     expect(mockCommandExecute).not.toHaveBeenCalled()
+  })
+
+  it('should execute a Shift+Escape keybinding targeted inside an open dialog', async () => {
+    const dialogStore = useDialogStore()
+    dialogStore.dialogStack.push(createTestDialogInstance('test-dialog'))
+
+    const keybindingStore = useKeybindingStore()
+    keybindingStore.addDefaultKeybinding(
+      new KeybindingImpl({
+        commandId: 'Test.ShiftEscape',
+        combo: { key: 'Escape', shift: true }
+      })
+    )
+
+    keybindingService = useKeybindingService()
+
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'dialog')
+    const inner = document.createElement('button')
+    dialog.appendChild(inner)
+    document.body.appendChild(dialog)
+
+    try {
+      const event = createKeyboardEvent('Escape', {
+        shiftKey: true,
+        target: inner
+      })
+      await keybindingService.keybindHandler(event)
+
+      expect(mockCommandExecute).toHaveBeenCalledWith('Test.ShiftEscape')
+    } finally {
+      document.body.removeChild(dialog)
+    }
   })
 
   it('should verify Escape keybinding exists in CORE_KEYBINDINGS', () => {

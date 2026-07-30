@@ -8,6 +8,38 @@ import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
 
+const OPEN_REKA_CONTENT_SELECTOR = '[role="dialog"][data-state="open"]'
+const POPPER_WRAPPER_SELECTOR = '[data-reka-popper-content-wrapper]'
+
+/**
+ * Reka reuses `role="dialog"` for `PopoverContent`, so the role alone cannot
+ * tell dialog content from a popover. Only popover content is positioned
+ * inside a popper wrapper.
+ */
+function isDialogContent(content: Element): boolean {
+  return content.closest(POPPER_WRAPPER_SELECTOR) === null
+}
+
+/**
+ * Dialogs built directly on reka's `DialogRoot` never register with
+ * `dialogStore`, so its stack cannot see them.
+ */
+function hasOpenRekaDialog(): boolean {
+  return Array.from(document.querySelectorAll(OPEN_REKA_CONTENT_SELECTOR)).some(
+    isDialogContent
+  )
+}
+
+/**
+ * Whether the event originated inside the open dialog rather than a popover
+ * layered over it, so dialog-scoped shortcuts fire while background commands
+ * pressed inside a popover stay suppressed.
+ */
+function isTargetInDialog(target: HTMLElement): boolean {
+  const content = target.closest?.('[role="dialog"]')
+  return content != null && isDialogContent(content)
+}
+
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
   const commandStore = useCommandStore()
@@ -44,25 +76,25 @@ export function useKeybindingService() {
           return
         }
       }
-      if (
-        event.key === 'Escape' &&
-        !event.ctrlKey &&
-        !event.altKey &&
-        !event.metaKey
-      ) {
-        if (dialogStore.dialogStack.length > 0) {
-          return
-        }
-      }
-
       /**
        * Block global keybindings from triggering background actions while a
-       * modal dialog is open. Keybindings whose event target lives inside an
-       * open dialog still fire, so dialog-scoped shortcuts keep working.
+       * dialog is open. Keybindings whose event target lives inside an open
+       * dialog still fire, so dialog-scoped shortcuts keep working. Escape is
+       * the exception: it belongs to the dialog, and must also skip the
+       * `preventDefault()` below, since reka dismisses its own dialogs only
+       * while the event is not already default-prevented.
        */
-      if (dialogStore.dialogStack.length > 0) {
-        const inDialog = target.closest?.('[role="dialog"]') != null
-        if (!inDialog) {
+      if (dialogStore.dialogStack.length > 0 || hasOpenRekaDialog()) {
+        if (
+          event.key === 'Escape' &&
+          !event.ctrlKey &&
+          !event.altKey &&
+          !event.metaKey &&
+          !event.shiftKey
+        ) {
+          return
+        }
+        if (!isTargetInDialog(target)) {
           return
         }
       }
