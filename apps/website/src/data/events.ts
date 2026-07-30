@@ -131,7 +131,7 @@ const postProductionFeatured: FeaturedEvent = {
   title: postProduction.name,
   // The artwork already carries the title and date.
   showTitle: false,
-  media: eventImage('livestream-aug05.jpg', {
+  media: eventImage('livestream-aug05-v2.jpg', {
     en: 'The Future of AI Post Production livestream',
     'zh-CN': 'AI 后期制作的未来直播'
   }),
