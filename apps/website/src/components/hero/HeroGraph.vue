@@ -158,7 +158,7 @@ function wrapperStyle(key: ElementKey) {
         <HeroImageCard
           v-if="key === 'input'"
           src="/hero/input.webp"
-          alt="Input image: two robotic hands reaching toward each other through glowing rings"
+          alt="Input image: futuristic over-ear headphones with transparent ear cups and glowing yellow accents"
           dot
         />
         <AngleNode
