@@ -108,9 +108,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     initialActionUrl?: string
   ): Promise<BillingOperation> {
     const existing = operations.value.get(opId)
-    if (existing) {
+    if (existing && existing.status !== 'timeout') {
       return terminalPromises.get(opId) ?? Promise.resolve(existing)
     }
+    if (existing) clearOperation(opId)
 
     const actionUrl = validateActionUrl(initialActionUrl)
     const operation: BillingOperation = {
