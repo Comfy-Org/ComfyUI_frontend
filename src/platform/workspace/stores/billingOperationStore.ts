@@ -261,6 +261,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     const result = await stripe.handleNextAction({ clientSecret })
     if (result.error) {
+      handledPaymentActions.delete(opId)
       useToastStore().add({
         severity: 'error',
         summary: t('billingOperation.authenticationFailed'),
