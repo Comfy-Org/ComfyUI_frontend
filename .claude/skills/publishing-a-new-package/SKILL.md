@@ -145,11 +145,15 @@ permissions:
   id-token: write
 ```
 
-Keep `NODE_AUTH_TOKEN` in place until an OIDC publish has actually succeeded —
-pnpm's OIDC path has open bugs ([pnpm#11513](https://github.com/pnpm/pnpm/issues/11513)),
-and `[WARN] Skipped OIDC` in the log means it silently fell back to the token.
-Only after a real OIDC publish should you tighten the org to require 2FA and
-disallow tokens; doing it earlier removes the only working path.
+Keep `NODE_AUTH_TOKEN` in place until an OIDC publish has actually succeeded.
+`[WARN] Skipped OIDC` in the log means it silently fell back to the token —
+treat that as a failure to chase down, not a warning to scroll past. Suspect
+`pnpm/action-setup` first: every workflow here still pins `v4.4.0`
+(`fc06bc1257f339d1d5d8b3a19a8cae5388b55320`), the version that broke pnpm's OIDC
+publish in [pnpm#11513](https://github.com/pnpm/pnpm/issues/11513) — closed once
+the reporter bumped the action, not by a pnpm release. Only after a real OIDC
+publish should you tighten the org to require 2FA and disallow tokens; doing it
+earlier removes the only working path.
 
 ## Announce it
 
