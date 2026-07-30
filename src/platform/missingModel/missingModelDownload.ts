@@ -50,8 +50,12 @@ async function startDesktop2ModelDownload(
 function openUrlInNewTab(url: string, downloadAs?: string): void {
   try {
     const protocol = new URL(url).protocol
-    if (protocol !== 'https:' && protocol !== 'http:') return
+    if (protocol !== 'https:' && protocol !== 'http:') {
+      console.warn('[missingModelDownload] Blocked unsupported URL scheme')
+      return
+    }
   } catch {
+    console.warn('[missingModelDownload] Blocked malformed download URL')
     return
   }
 

@@ -116,6 +116,7 @@ import MissingModelRow from './MissingModelRow.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
+  escapeParameter: true,
   messages: { en: enMessages },
   missingWarn: false,
   fallbackWarn: false
@@ -496,6 +497,7 @@ describe('MissingModelRow', () => {
       }
     })
     const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.name = 'SD1.5/v1-5-pruned-emaonly.safetensors'
     model.representative.url =
       'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
 
@@ -508,11 +510,13 @@ describe('MissingModelRow', () => {
     await nextTick()
 
     expect(screen.getByTestId('missing-model-download')).toHaveAccessibleName(
-      'model.safetensors download action'
+      'SD1.5/v1-5-pruned-emaonly.safetensors download action'
     )
     expect(
       screen.getByTestId('missing-model-gated-access')
-    ).toHaveAccessibleName('model.safetensors repository action')
+    ).toHaveAccessibleName(
+      'SD1.5/v1-5-pruned-emaonly.safetensors repository action'
+    )
   })
 
   it('opens gated repo action separately from the download action', async () => {
