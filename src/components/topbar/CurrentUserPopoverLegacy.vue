@@ -47,8 +47,6 @@
       >
         <i class="icon-[lucide--circle-help]" />
       </Button>
-      <!-- Secondary on purpose: the topbar Upgrade button already carries
-           the primary (gold) upgrade CTA while this popover is open. -->
       <Button
         v-if="isCloud && isFreeTier"
         variant="secondary"

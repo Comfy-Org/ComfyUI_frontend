@@ -1,6 +1,4 @@
 <template>
-  <!-- Hidden while the run bar shows "Upgrade to Run" (inactive
-       subscription) so only one primary upgrade CTA is visible at a time. -->
   <Button
     v-if="isCloud && isFreeTier && isActiveSubscription"
     class="mr-2 shrink-0 whitespace-nowrap"

@@ -81,9 +81,6 @@
       >
         <i class="icon-[lucide--circle-help]" />
       </Button>
-      <!-- Upgrade (free tier). Secondary on purpose: the topbar Upgrade
-           button already carries the primary (gold) upgrade CTA while
-           this popover is open. -->
       <Button
         v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
         variant="secondary"

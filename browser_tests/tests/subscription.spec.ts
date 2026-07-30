@@ -57,7 +57,6 @@ unsubscribedTest.describe(
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
         ).toBeVisible()
-        // The run bar CTA acts as the upgrade path, so the header stays clean.
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
         ).toBeHidden()

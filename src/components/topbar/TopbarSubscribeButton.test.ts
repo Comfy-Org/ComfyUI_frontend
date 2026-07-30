@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -71,10 +71,13 @@ function renderComponent() {
 }
 
 describe('TopbarSubscribeButton', () => {
-  it('renders on cloud when isFreeTier is true', () => {
+  beforeEach(() => {
     mockIsCloud.value = true
     mockBilling.isFreeTier = true
     mockBilling.isActiveSubscription = true
+  })
+
+  it('renders on cloud when isFreeTier is true', () => {
     renderComponent()
     expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
   })
@@ -87,9 +90,7 @@ describe('TopbarSubscribeButton', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('hides while the run bar shows Subscribe to Run (inactive subscription)', () => {
-    mockIsCloud.value = true
-    mockBilling.isFreeTier = true
+  it('hides while the run bar shows Upgrade to Run (inactive subscription)', () => {
     mockBilling.isActiveSubscription = false
     renderComponent()
     expect(
