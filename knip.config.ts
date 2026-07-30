@@ -53,7 +53,6 @@ const config: KnipConfig = {
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Marketing media tooling — adopted by pages in a follow-up PR
-    'apps/website/src/components/common/SiteVideo.vue',
     'apps/website/src/utils/marketingImage.ts',
     // Pending integration: consumed by the useWorkspaceInvoices seam once
     // #13591 (Plan & Credits tabs) lands — FE-1245
