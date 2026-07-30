@@ -570,7 +570,10 @@ export function useSubscriptionCheckout(
     emit('close', true)
   }
 
-  async function handleSubscription(confirmReactivation = false) {
+  async function handleSubscription(
+    confirmReactivation = false,
+    confirmationToken?: string
+  ) {
     if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
 
     const tierKey = selectedTierKey.value
@@ -603,6 +606,7 @@ export function useSubscriptionCheckout(
         await assertReactivationAmountUnchanged(planSlug)
       }
       const response = await subscribe(planSlug, {
+        ...(confirmationToken && { confirmationToken }),
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
         confirmReactivation,
@@ -766,7 +770,10 @@ export function useSubscriptionCheckout(
     }
   }
 
-  async function handleTeamSubscription(confirmReactivation = false) {
+  async function handleTeamSubscription(
+    confirmReactivation = false,
+    confirmationToken?: string
+  ) {
     if (
       isLoadingPreview.value ||
       isSubscribing.value ||
@@ -812,6 +819,7 @@ export function useSubscriptionCheckout(
         })
       }
       const response = await subscribe(planSlug, {
+        ...(confirmationToken && { confirmationToken }),
         teamCreditStopId: stop.id,
         billingCycle,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
@@ -921,6 +929,14 @@ export function useSubscriptionCheckout(
     }
   }
 
+  function handleSubscriptionPayment(confirmationToken: string) {
+    return handleSubscription(false, confirmationToken)
+  }
+
+  function handleTeamSubscriptionPayment(confirmationToken: string) {
+    return handleTeamSubscription(false, confirmationToken)
+  }
+
   return {
     checkoutStep,
     isLoadingPreview,
@@ -943,6 +959,8 @@ export function useSubscriptionCheckout(
     handleAddCreditCard: handleSubscription,
     handleConfirmTransition: handleSubscription,
     handleTeamSubscribe: handleTeamSubscription,
+    handleSubscriptionPayment,
+    handleTeamSubscriptionPayment,
     handleResubscribe
   }
 }

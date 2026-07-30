@@ -77,7 +77,9 @@
         :billing-cycle="selectedBillingCycle"
         :is-loading="isLoadingPreview || isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
+        :use-payment-element="stripePaymentElementEnabled"
         @add-credit-card="handleTeamSubscribe"
+        @confirm-payment="handleTeamSubscriptionPayment"
         @back="handleBackToPricing"
       />
 
@@ -88,7 +90,9 @@
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
+        :use-payment-element="stripePaymentElementEnabled"
         @add-credit-card="handleAddCreditCard"
+        @confirm-payment="handleSubscriptionPayment"
         @back="handleBackToPricing"
       />
 
@@ -141,6 +145,10 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
+const stripePaymentElementEnabled = Boolean(
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+)
+
 const {
   checkoutStep,
   isLoadingPreview,
@@ -163,6 +171,8 @@ const {
   handleAddCreditCard,
   handleConfirmTransition,
   handleTeamSubscribe,
+  handleSubscriptionPayment,
+  handleTeamSubscriptionPayment,
   handleResubscribe
 } = useSubscriptionCheckout(emit, reason)
 
