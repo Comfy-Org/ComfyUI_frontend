@@ -5,14 +5,11 @@ import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SecretFormDialog from './SecretFormDialog.vue'
+import type { SecretCredentialOption, SecretInputType } from '../types'
 
 const mockState = vi.hoisted(() => ({
-  inputType: 'text' as string,
-  credentialOptions: [] as {
-    credential_type: string
-    input_type: string
-    label: string
-  }[]
+  inputType: 'text' as SecretInputType,
+  credentialOptions: [] as SecretCredentialOption[]
 }))
 
 vi.mock('../composables/useSecretForm', () => ({
