@@ -146,6 +146,66 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
   })
 
+  test('scrolls the list to reveal workspaces past the visible area', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    const OFF_SCREEN_WORKSPACE_NAME = 'Off-screen Team Workspace'
+    const manyWorkspaces: WorkspaceWithRole[] = [
+      ...mockListWorkspacesResponse.workspaces,
+      ...Array.from({ length: 19 }, (_, i) => ({
+        id: `ws-many-${i}`,
+        name: `Team ${i}`,
+        type: 'team' as const,
+        created_at: '2026-01-04T00:00:00Z',
+        joined_at: '2026-01-04T00:00:00Z',
+        role: 'member' as const
+      })),
+      {
+        id: 'ws-off-screen',
+        name: OFF_SCREEN_WORKSPACE_NAME,
+        type: 'team',
+        created_at: '2026-01-05T00:00:00Z',
+        joined_at: '2026-01-05T00:00:00Z',
+        role: 'member'
+      }
+    ]
+
+    await page.route('**/api/workspaces', async (route) => {
+      if (route.request().method() !== 'GET') {
+        await route.fallback()
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ workspaces: manyWorkspaces })
+      })
+    })
+
+    await comfyPage.toast.closeToasts()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('workspace-switcher-trigger').click()
+
+    const list = page.getByTestId('workspace-switcher-list')
+    await expect(list).toBeVisible()
+    const offScreenRow = list.getByText(OFF_SCREEN_WORKSPACE_NAME)
+
+    // Regression: without a bounded, scrollable list container, the panel
+    // just grows past the viewport with no way to reach later rows.
+    await expect(offScreenRow).not.toBeInViewport()
+    await page.screenshot({
+      path: 'test-results/workspace-switcher-before-scroll.png'
+    })
+
+    await offScreenRow.scrollIntoViewIfNeeded()
+
+    await expect(offScreenRow).toBeInViewport()
+    await page.screenshot({
+      path: 'test-results/workspace-switcher-after-scroll.png'
+    })
+  })
+
   test('opens the create-workspace dialog with DES-246 copy', async ({
     comfyPage
   }) => {

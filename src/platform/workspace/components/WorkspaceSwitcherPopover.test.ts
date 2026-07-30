@@ -216,4 +216,31 @@ describe('WorkspaceSwitcherPopover', () => {
 
     expect(screen.getByText('Pro')).toBeInTheDocument()
   })
+
+  it('scrolls the workspace list independently of the create-workspace footer when there are many workspaces', () => {
+    const workspaceNames = Array.from({ length: 25 }, (_, i) => `Team ${i}`)
+    const workspaces = workspaceNames.map((name, i) =>
+      createWorkspaceState({
+        id: `ws-${i}`,
+        name,
+        type: 'team',
+        role: 'member'
+      })
+    )
+
+    renderComponent({ activeWorkspaceId: 'ws-0', workspaces })
+
+    const list = screen.getByTestId('workspace-switcher-list')
+    expect(list.className).toContain('overflow-y-auto')
+    expect(list.className).toMatch(/max-h-/)
+
+    // All rows render (not paginated), so the bounded, scrollable list is
+    // what makes rows past the visible area reachable.
+    workspaceNames.forEach((name) => {
+      expect(list).toContainElement(screen.getByText(name))
+    })
+
+    const createWorkspaceButton = screen.getByText('Create a team workspace')
+    expect(list).not.toContainElement(createWorkspaceButton)
+  })
 })
