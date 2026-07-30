@@ -65,16 +65,19 @@ describe('churnkeyClient', () => {
     const showPromise = session.show({
       handleCancel
     })
-    const config = capturedConfig()
 
-    expect(mocks.init).toHaveBeenCalledWith('show', config)
-    expect(config).toMatchObject({
-      appId: 'app_test',
-      authHash: 'signed-hash',
-      customerId: 'cus_test_1',
-      provider: 'stripe',
-      mode: 'test'
-    })
+    expect(mocks.init).toHaveBeenCalledExactlyOnceWith(
+      'show',
+      expect.objectContaining({
+        appId: 'app_test',
+        authHash: 'signed-hash',
+        customerId: 'cus_test_1',
+        provider: 'stripe',
+        mode: 'test'
+      })
+    )
+
+    const config = capturedConfig()
     expect(config).not.toHaveProperty('customer')
     expect(config).not.toHaveProperty('subscriptions')
     expect(config).not.toHaveProperty('record')
