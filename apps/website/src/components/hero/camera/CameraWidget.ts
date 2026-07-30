@@ -12,7 +12,6 @@ import {
   Color,
   ConeGeometry,
   DirectionalLight,
-  DoubleSide,
   EdgesGeometry,
   GridHelper,
   LineBasicMaterial,
@@ -25,7 +24,6 @@ import {
   Plane,
   Raycaster,
   RepeatWrapping,
-  RingGeometry,
   SRGBColorSpace,
   Scene,
   SphereGeometry,
@@ -273,16 +271,18 @@ export class CameraWidget {
     this.imageFrame.position.copy(this.CENTER)
     this.scene.add(this.imageFrame)
 
-    const glowRingGeo = new RingGeometry(0.55, 0.58, 64)
+    // Same tube radius as the azimuth ring so both circles stroke alike.
+    const glowRingGeo = new TorusGeometry(0.565, 0.028, 16, 100)
     const glowRingMat = new MeshBasicMaterial({
       color: this.pal.frame,
       transparent: true,
-      opacity: 0.4,
-      side: DoubleSide
+      opacity: 0.4
     })
     this.glowRing = new Mesh(glowRingGeo, glowRingMat)
-    this.glowRing.position.set(0, 0.01, 0)
-    this.glowRing.rotation.x = -Math.PI / 2
+    // Sits wholly behind the card rather than through it: the card spans
+    // z -0.01..0.01, and the ring reaches 0.593 either side of its centre.
+    this.glowRing.position.set(0, 0.01, -0.62)
+    this.glowRing.rotation.x = Math.PI / 2
     this.glowRing.visible = this.pal.showGlowRing
     this.scene.add(this.glowRing)
   }

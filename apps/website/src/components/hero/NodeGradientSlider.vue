@@ -94,7 +94,7 @@ function onKeydown(event: KeyboardEvent) {
       :aria-valuemax="max"
       :aria-valuenow="model"
       :aria-valuetext="valueText"
-      class="relative h-[0.55em] w-full cursor-pointer touch-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+      class="group relative h-[0.55em] w-full cursor-pointer touch-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/50"
       :style="{ background: track }"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
@@ -111,7 +111,13 @@ function onKeydown(event: KeyboardEvent) {
         "
       />
       <span
-        class="pointer-events-none absolute top-1/2 size-[0.575em] -translate-1/2 rounded-full bg-primary-comfy-canvas"
+        :class="
+          cn(
+            'pointer-events-none absolute top-1/2 size-[0.575em] -translate-1/2 rounded-full transition-colors duration-150',
+            'group-hover:bg-primary-comfy-yellow bg-primary-comfy-canvas',
+            dragging && 'bg-primary-comfy-yellow'
+          )
+        "
         :style="{ left: `${fraction * 100}%` }"
       />
     </div>
