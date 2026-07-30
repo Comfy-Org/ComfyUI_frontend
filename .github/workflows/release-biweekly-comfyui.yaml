@@ -197,18 +197,37 @@ jobs:
           TARGET_BRANCH="${{ needs.resolve-version.outputs.target_branch }}"
           echo "Waiting for version bump PR for v${TARGET_VERSION} on ${TARGET_BRANCH} to be merged..."
 
-          # Poll for up to 30 minutes (a human or automation needs to merge the version bump PR)
-          for i in $(seq 1 60); do
+          # The tag only appears once a human merges the Release-labelled bump PR,
+          # so this window has to cover a human's response time, not a CI step's.
+          # At 30 minutes it timed out on both the 1.47.10 and the 2026-07-27 runs,
+          # taking the PyPI publish and the ComfyUI pin PR down with it each time.
+          for i in $(seq 1 480); do
             # Check if the tag exists (release-draft-create creates a tag on merge)
             if gh api "repos/Comfy-Org/ComfyUI_frontend/git/ref/tags/v${TARGET_VERSION}" --silent 2>/dev/null; then
               echo "✅ Tag v${TARGET_VERSION} found — release PR has been merged"
               exit 0
             fi
-            echo "Attempt $i/60: Tag v${TARGET_VERSION} not found yet, waiting 30s..."
+            echo "Attempt $i/480: Tag v${TARGET_VERSION} not found yet, waiting 30s..."
             sleep 30
           done
 
           echo "❌ Timed out waiting for tag v${TARGET_VERSION}"
+          {
+            echo "## Release stalled: tag \`v${TARGET_VERSION}\` never appeared"
+            echo
+            echo "The \`Release\`-labelled bump PR for **${TARGET_VERSION}** on \`${TARGET_BRANCH}\` was not merged in time,"
+            echo "so \`publish-pypi\` failed and \`create-comfyui-pr\` was skipped — both the PyPI publish"
+            echo "and the ComfyUI pin PR are missing from this run."
+            echo
+            echo "Recover by merging that PR, then re-running **only the failed jobs of this run**:"
+            echo
+            echo '```bash'
+            echo "gh run rerun ${GITHUB_RUN_ID} --repo ${GITHUB_REPOSITORY} --failed"
+            echo '```'
+            echo
+            echo "Use \`--failed\` on this run, not a fresh biweekly: it reuses the resolved"
+            echo "target_version so there is no re-resolve and no spurious next-patch bump."
+          } >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
       - name: Checkout code at target version

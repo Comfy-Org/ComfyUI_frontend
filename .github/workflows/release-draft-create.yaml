@@ -124,6 +124,10 @@ jobs:
           fetch-depth: 2
 
       - name: Post release summary comment
+        # A comment must never gate release success: this step crashing marked the
+        # whole v1.47.10 run as failed while the tag, GitHub release, and npm types
+        # had all published fine.
+        continue-on-error: true
         uses: ./.github/actions/comment-release-links
         with:
           issue-number: ${{ github.event.pull_request.number }}
