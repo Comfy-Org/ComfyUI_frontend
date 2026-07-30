@@ -4769,11 +4769,13 @@
         },
         "image": {
           "title": "And there it is",
-          "body": "Your new image lands right here, ready to download or share."
+          "body": "Your new image lands right here, ready to download or share.",
+          "primary": "Explore templates"
         },
         "video": {
           "title": "And there it is",
-          "body": "Your new video lands right here, ready to download or share."
+          "body": "Your new video lands right here, ready to download or share.",
+          "primary": "Explore templates"
         }
       }
     }

@@ -14,7 +14,9 @@ import { TOUR_ROLE_PINS } from '../roles/tourRolePins'
 import type { RunState } from './firstRunTourDefinition'
 
 const mocks = vi.hoisted(() => ({
-  rootGraph: null as unknown
+  rootGraph: null as unknown,
+  next: vi.fn(),
+  showTemplates: vi.fn()
 }))
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -24,6 +26,12 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 vi.mock('./cameraFraming', () => ({ frameNode: vi.fn() }))
+vi.mock('@/platform/onboarding/onboardingTourStore', () => ({
+  useOnboardingTourStore: () => ({ next: mocks.next })
+}))
+vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
+  useWorkflowTemplateSelectorDialog: () => ({ show: mocks.showTemplates })
+}))
 
 import { firstRunTourSteps } from './firstRunTourDefinition'
 
@@ -49,6 +57,8 @@ describe('firstRunTourSteps', () => {
     clearCoachmarks()
     document.body.replaceChildren()
     mocks.rootGraph = null
+    mocks.next.mockClear()
+    mocks.showTemplates.mockClear()
   })
 
   it('walks upload, prompt, run, result and registers the node targets', async () => {
@@ -94,5 +104,19 @@ describe('firstRunTourSteps', () => {
     expect(result.name).toBe('result.failed')
     runState.value = 'succeeded'
     expect(result.name).toBe('result.video')
+  })
+
+  it('sends a finished user to the template library, a failed one just out', async () => {
+    mocks.rootGraph = pinnedGraph()
+    const runState = ref<RunState>('succeeded')
+    const steps = await firstRunTourSteps(TEMPLATE_ID, runState)
+    steps.at(-1)!.primaryAction!()
+    expect(mocks.next).toHaveBeenCalledTimes(1)
+    expect(mocks.showTemplates).toHaveBeenCalledWith('command')
+
+    runState.value = 'failed'
+    steps.at(-1)!.primaryAction!()
+    expect(mocks.next).toHaveBeenCalledTimes(2)
+    expect(mocks.showTemplates).toHaveBeenCalledTimes(1)
   })
 })

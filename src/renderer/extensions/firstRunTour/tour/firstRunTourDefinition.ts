@@ -1,9 +1,12 @@
 import type { Ref } from 'vue'
 
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+
 import {
   registerCoachmark,
   unregisterCoachmark
 } from '@/platform/onboarding/coachmarkRegistry'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import type { CoachId, CoachStep } from '@/platform/onboarding/onboardingTours'
 import { app } from '@/scripts/app'
@@ -97,7 +100,12 @@ export function firstRunTourSteps(
       if (runState.value === 'failed') return 'result.failed'
       return `result.${roles.mediaKind}`
     },
-    busy: () => runState.value === 'generating'
+    busy: () => runState.value === 'generating',
+    primaryAction: () => {
+      const succeeded = runState.value === 'succeeded'
+      useOnboardingTourStore().next()
+      if (succeeded) useWorkflowTemplateSelectorDialog().show('command')
+    }
   })
   return steps
 }
