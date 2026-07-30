@@ -1753,6 +1753,7 @@ export class ComfyApp {
               throw error
             }
           )
+          rescanAndSurfaceMissingNodes(this.rootGraph)
           const queuedNodes = collectAllNodes(this.rootGraph)
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
