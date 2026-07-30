@@ -136,6 +136,13 @@
       <!-- Terms Agreement -->
       <SubscriptionTermsNote />
 
+      <UnifiedStripePaymentSelector
+        v-if="usePaymentElement"
+        :amount-cents="amountDueCents"
+        :is-loading
+        @confirm="$emit('confirmPayment', $event)"
+      />
+
       <Button
         v-if="actionUrl"
         variant="primary"
@@ -147,6 +154,7 @@
       </Button>
 
       <Button
+        v-if="!usePaymentElement"
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
@@ -187,6 +195,7 @@ import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspac
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
+import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 
 interface Props {
   /** Personal-tier checkout. Required unless `teamPlan` is set. */
@@ -197,6 +206,7 @@ interface Props {
   /** Team-plan checkout (selected slider stop); overrides tier-derived display. */
   teamPlan?: TeamPlanSelection | null
   actionUrl?: string | null
+  usePaymentElement?: boolean
 }
 
 const {
@@ -205,11 +215,13 @@ const {
   isLoading = false,
   previewData = null,
   teamPlan = null,
-  actionUrl = null
+  actionUrl = null,
+  usePaymentElement = false
 } = defineProps<Props>()
 
 defineEmits<{
   addCreditCard: []
+  confirmPayment: [confirmationToken: string]
   back: []
 }>()
 
@@ -289,6 +301,10 @@ const totalDueToday = computed(() => {
   const priceValue = getTierPrice(tierKey, isYearly.value)
   return (isYearly.value ? priceValue * 12 : priceValue).toFixed(2)
 })
+
+const amountDueCents = computed(() =>
+  Math.round(Number(totalDueToday.value) * 100)
+)
 
 const nextPaymentDate = computed(() => {
   if (previewData?.new_plan?.period_end) {
