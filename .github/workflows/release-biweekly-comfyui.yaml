@@ -215,11 +215,18 @@ jobs:
           {
             echo "## Release stalled: tag \`v${TARGET_VERSION}\` never appeared"
             echo
-            echo "The \`Release\`-labelled bump PR for **${TARGET_VERSION}** on \`${TARGET_BRANCH}\` was not merged in time,"
-            echo "so \`publish-pypi\` failed and \`create-comfyui-pr\` was skipped — both the PyPI publish"
+            echo "Tag \`v${TARGET_VERSION}\` was not observed within the wait window, so"
+            echo "\`publish-pypi\` failed and \`create-comfyui-pr\` was skipped — both the PyPI publish"
             echo "and the ComfyUI pin PR are missing from this run."
             echo
-            echo "Recover by merging that PR, then re-running **only the failed jobs of this run**:"
+            echo "**Not observing the tag does not prove the bump PR is unmerged.** Check, in order:"
+            echo "1. Is the \`Release\`-labelled bump PR for **${TARGET_VERSION}** on \`${TARGET_BRANCH}\` merged?"
+            echo "   If not, merge it — that is what creates the tag."
+            echo "2. If it *is* merged, the tag-producing workflow (\`release-draft-create\`) failed or"
+            echo "   has not finished. Open its run and check the individual jobs before rerunning:"
+            echo "   a crashing summary-comment step can mark an otherwise successful run as failed."
+            echo
+            echo "Once the tag exists, re-run **only the failed jobs of this run**:"
             echo
             echo '```bash'
             echo "gh run rerun ${GITHUB_RUN_ID} --repo ${GITHUB_REPOSITORY} --failed"
