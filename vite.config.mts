@@ -544,7 +544,11 @@ export default defineConfig({
   build: {
     minify: SHOULD_MINIFY,
     target: 'es2022',
-    sourcemap: GENERATE_SOURCEMAP,
+    // Use 'hidden' so sourcemaps are still generated (for Sentry upload) but the
+    // browser-facing `//# sourceMappingURL=` comment is NOT injected into the JS
+    // bundles. This kills the ~57k/3d `/assets/*.js.map` 404 noise in prod
+    // (the .map files aren't served) without losing Sentry symbolication. See FE-1405.
+    sourcemap: GENERATE_SOURCEMAP ? 'hidden' : false,
     // Exclude heavy optional vendor chunks from initial module preload
     // These chunks are only needed when their features are used (3D, terminal, etc.)
     modulePreload: {

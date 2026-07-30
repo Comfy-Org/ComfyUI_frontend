@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
 
 /**
  * Every test drives a real in-memory router and the real preserved-query
@@ -93,7 +94,11 @@ async function flushRedemption() {
 
 // vi.resetModules() also resets the preserved-query manager's in-memory map,
 // so the manager must be imported alongside the module under test.
-async function setup() {
+async function setup(
+  routes: RouteRecordRaw[] = [
+    { path: '/:pathMatch(.*)*', component: { template: '<div />' } }
+  ]
+) {
   const { installDesktopLoginRedemption } =
     await import('./desktopLoginRedemption')
   const { capturePreservedQuery, getPreservedQueryParam } =
@@ -101,7 +106,7 @@ async function setup() {
 
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
+    routes
   })
   installDesktopLoginRedemption(router)
 
@@ -204,6 +209,84 @@ describe('installDesktopLoginRedemption', () => {
     await flushRedemption()
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('defers the prompt during the signed-in login handoff and redeems once after the reload', async () => {
+    const { router, stashedCode } = await setup([
+      {
+        path: '/cloud/login',
+        component: { template: '<div />' },
+        meta: { defersDesktopLoginRedemption: true },
+        beforeEnter: () =>
+          mockAuthStore.currentUser ? { name: 'cloud-user-check' } : true
+      },
+      {
+        path: '/cloud/user-check',
+        name: 'cloud-user-check',
+        component: { template: '<div />' },
+        meta: { defersDesktopLoginRedemption: true }
+      }
+    ])
+    const { installPreservedQueryTracker } =
+      await import('@/platform/navigation/preservedQueryTracker')
+    installPreservedQueryTracker(router, [
+      {
+        namespace: NAMESPACE,
+        keys: ['desktop_login_code'],
+        stripAfterCapture: true
+      }
+    ])
+    mockFetch.mockResolvedValue(okResponse())
+
+    // Signed-in landing forwards to user-check; no prompt may open there.
+    await router.push(`/cloud/login?desktop_login_code=${VALID_CODE}`)
+    await flushRedemption()
+
+    expect(router.currentRoute.value.name).toBe('cloud-user-check')
+    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(stashedCode()).toBe(VALID_CODE)
+
+    // user-check hard-reloads `/`; only the sessionStorage stash survives.
+    vi.resetModules()
+    const reloaded = await setup()
+    await reloaded.trigger()
+
+    expect(mockConfirm).toHaveBeenCalledTimes(1)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(mockFetch).toHaveBeenCalledWith(
+      REDEEM_URL,
+      expectedFetchOptions(VALID_CODE)
+    )
+    expect(reloaded.stashedCode()).toBeUndefined()
+    expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull()
+  })
+
+  it('keeps deferring when the session appears while still on a handoff route', async () => {
+    const { router, seedStash, stashedCode } = await setup([
+      {
+        path: '/cloud/login',
+        component: { template: '<div />' },
+        meta: { defersDesktopLoginRedemption: true }
+      }
+    ])
+    seedStash(VALID_CODE)
+    mockAuthStore.currentUser = null
+
+    await router.push('/cloud/login')
+    await flushRedemption()
+    expect(mockConfirm).not.toHaveBeenCalled()
+
+    // Signing in on the login page fires the auth watcher mid-handoff.
+    mockAuthStore.currentUser = {
+      uid: 'user-1',
+      getIdToken: mockUserGetIdToken
+    }
+    await flushRedemption()
+
+    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(stashedCode()).toBe(VALID_CODE)
   })
 
   it.for([

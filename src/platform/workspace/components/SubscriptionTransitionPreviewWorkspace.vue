@@ -226,7 +226,8 @@ const {
   previewData,
   isLoading = false,
   teamPlan = null,
-  actionUrl = null
+  actionUrl = null,
+  forceReactivation = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -234,6 +235,9 @@ const {
    *  the selected slider stop; all proration money stays driven by previewData. */
   teamPlan?: TeamPlanSelection | null
   actionUrl?: string | null
+  /** Server-authoritative fallback for legacy status reads that omit a
+   * scheduled cancellation until subscribe enforces the consent gate. */
+  forceReactivation?: boolean
 }>()
 
 defineEmits<{
@@ -253,6 +257,10 @@ function openVerification() {
 
 function formatTierName(tier: string): string {
   return t(`subscription.tiers.${tier.toLowerCase()}.name`)
+}
+
+function isTeamTier(tier: string): boolean {
+  return tier.toUpperCase() === 'TEAM'
 }
 
 function formatDate(date: string | Date): string {
@@ -297,16 +305,22 @@ const newTierName = computed(() =>
     ? t('subscription.teamPlan.name')
     : formatTierName(previewData.new_plan.tier)
 )
-const currentTierName = computed(() =>
-  previewData.current_plan ? formatTierName(previewData.current_plan.tier) : ''
-)
+const currentTierName = computed(() => {
+  const tier = previewData.current_plan?.tier
+  if (!tier) return ''
+  return isTeamTier(tier)
+    ? t('subscription.teamPlan.name')
+    : formatTierName(tier)
+})
 const currentPlanLabel = computed(() =>
   currentIsYearly.value
     ? t('subscription.tierNameYearly', { name: currentTierName.value })
     : currentTierName.value
 )
 
-const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+const isCancelled = computed(
+  () => forceReactivation || (subscription.value?.isCancelled ?? false)
+)
 
 const reactivationVariant = computed<
   'upgrade' | 'downgrade' | 'duration_change' | null
@@ -326,16 +340,20 @@ const reactivationVariant = computed<
 // Requires the data the banner and threshold math actually read
 // (subscription.endDate, previewData.current_plan) — without it the banner
 // would render broken copy or force the checkbox on a bogus $0 threshold.
+const cancelAt = computed(
+  () => subscription.value?.endDate ?? previewData.current_plan?.period_end
+)
+
 const isReactivating = computed(
   () =>
     isCancelled.value &&
     reactivationVariant.value !== null &&
-    !!subscription.value?.endDate &&
+    !!cancelAt.value &&
     !!previewData.current_plan
 )
 
 const cancelDate = computed(() =>
-  subscription.value?.endDate ? formatDate(subscription.value.endDate) : ''
+  cancelAt.value ? formatDate(cancelAt.value) : ''
 )
 
 // seat_summary.total_cost_cents is the whole-subscription price; price_cents
@@ -363,11 +381,14 @@ const chargeDisplay = computed(
 )
 
 const reactivationConfirmed = ref(false)
-// A checked box is consent to *this* charge; a later charge change (e.g. a
-// different preview loads) must not carry that consent forward.
-watch(chargeCents, () => {
-  reactivationConfirmed.value = false
-})
+// A checked box is consent to this exact preview. A replacement preview must
+// not inherit that consent, even when its displayed charge is unchanged.
+watch(
+  () => previewData,
+  () => {
+    reactivationConfirmed.value = false
+  }
+)
 
 // isInitialized is aggregate (status + balance + plans); a balance or plans
 // failure must not permanently disable an otherwise-valid, already-loaded
