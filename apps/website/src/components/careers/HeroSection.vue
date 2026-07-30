@@ -31,6 +31,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         autoplay
         loop
         muted
+        controls
         video-class="h-auto w-full rounded-4xl object-cover"
       />
       <div class="space-y-6 p-8 text-base/relaxed text-primary-comfy-canvas">
