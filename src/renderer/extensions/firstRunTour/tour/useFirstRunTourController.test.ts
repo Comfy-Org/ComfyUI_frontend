@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   canRun: { value: true },
   showSubscriptionDialog: vi.fn(),
   nodeError: null as { value: boolean } | null,
+  promptError: null as { value: boolean } | null,
   settings: new Map<string, unknown>(),
   release: vi.fn(),
   registered: null as (() => unknown) | null,
@@ -54,12 +55,15 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/stores/executionErrorStore', async () => {
   const { ref } = await import('vue')
   mocks.nodeError = ref(false)
+  mocks.promptError = ref(false)
   return {
     useExecutionErrorStore: () => ({
       get hasNodeError() {
         return mocks.nodeError!.value
       },
-      hasPromptError: false
+      get hasPromptError() {
+        return mocks.promptError!.value
+      }
     })
   }
 })
@@ -108,6 +112,7 @@ describe('useFirstRunTourController', () => {
     mocks.canRun.value = true
     mocks.showSubscriptionDialog.mockClear()
     if (mocks.nodeError) mocks.nodeError.value = false
+    if (mocks.promptError) mocks.promptError.value = false
     mocks.settings.clear()
     mocks.release.mockClear()
     mocks.runStateRef = null
@@ -177,6 +182,19 @@ describe('useFirstRunTourController', () => {
     clickRunButton()
 
     mocks.nodeError!.value = true
+    await nextTick()
+    expect(mocks.runStateRef!.value).toBe('failed')
+  })
+
+  it('fails the run on a prompt-level refusal', async () => {
+    await controller.beginTour('image_z_image_turbo')
+    mocks.registered!()
+    mocks.activeTour!.value = 'firstRun'
+    mocks.step!.value = { name: 'run' }
+    await nextTick()
+    clickRunButton()
+
+    mocks.promptError!.value = true
     await nextTick()
     expect(mocks.runStateRef!.value).toBe('failed')
   })

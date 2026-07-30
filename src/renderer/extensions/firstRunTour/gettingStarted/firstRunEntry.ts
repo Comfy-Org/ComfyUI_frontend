@@ -6,7 +6,6 @@ import {
 import { readonly, ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
@@ -18,11 +17,10 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const isMdOrLarger = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
   const isCandidate = () =>
+    useFeatureFlags().flags.onboardingTourEnabled &&
     isCloud &&
     isMdOrLarger.value &&
-    useSubscription().isSubscriptionEnabled() &&
-    useNewUserService().isNewUser() === true &&
-    useFeatureFlags().flags.onboardingTourEnabled
+    useNewUserService().isNewUser() === true
 
   async function handleStartupOutcome(outcome: StartupOutcome) {
     if (outcome === 'restored') return
@@ -30,9 +28,9 @@ export const useFirstRunEntry = createSharedComposable(() => {
       gettingStartedVisible.value = true
       return
     }
-    await useSettingStore().set('Comfy.TutorialCompleted', true)
     if (outcome === 'fresh')
       await useCommandStore().execute('Comfy.BrowseTemplates')
+    await useSettingStore().set('Comfy.TutorialCompleted', true)
   }
 
   function hideGettingStarted() {
@@ -41,8 +39,8 @@ export const useFirstRunEntry = createSharedComposable(() => {
 
   async function fallBackToBrowse() {
     hideGettingStarted()
-    await useSettingStore().set('Comfy.TutorialCompleted', true)
     await useCommandStore().execute('Comfy.BrowseTemplates')
+    await useSettingStore().set('Comfy.TutorialCompleted', true)
   }
 
   async function dismissGettingStarted() {

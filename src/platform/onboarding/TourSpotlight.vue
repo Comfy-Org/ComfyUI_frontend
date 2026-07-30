@@ -8,7 +8,7 @@
       <path
         data-testid="coach-hit-region"
         :d="hitRegionPath"
-        fill="transparent"
+        :fill="targetRect ? 'transparent' : 'var(--color-coach-scrim)'"
         fill-rule="evenodd"
         class="pointer-events-auto"
       />

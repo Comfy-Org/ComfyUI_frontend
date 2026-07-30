@@ -58,9 +58,17 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
     }) => {
       const coach = onboarding
       await comfyPage.appMode.enterAppModeWithInputs([])
-      // The assets panel only mounts once the assets sidebar tab is open.
+      // The assets panel only mounts once the assets sidebar tab is open, and
+      // the first-run tour registers its node targets at runtime.
+      const runtimeRegistered = new Set<string>([
+        COACH_IDS.assetsPanel,
+        COACH_IDS.graphRunButton,
+        COACH_IDS.firstRunSource,
+        COACH_IDS.firstRunPrompt,
+        COACH_IDS.firstRunSink
+      ])
       for (const id of Object.values(COACH_IDS).filter(
-        (id) => id !== COACH_IDS.assetsPanel
+        (id) => !runtimeRegistered.has(id)
       )) {
         await expect(coach.coachAnchor(id)).toBeVisible()
       }

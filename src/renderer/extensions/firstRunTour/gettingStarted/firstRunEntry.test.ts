@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   isCloud: true,
   breakpoint: { value: true },
-  subscriptionEnabled: true,
   isNewUser: true as boolean | null,
   tourFlag: true,
   execute: vi.fn(),
@@ -19,11 +18,6 @@ vi.mock('@/platform/distribution/types', () => ({
 vi.mock('@vueuse/core', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useBreakpoints: () => ({ greaterOrEqual: () => mocks.breakpoint })
-}))
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    isSubscriptionEnabled: () => mocks.subscriptionEnabled
-  })
 }))
 vi.mock('@/services/useNewUserService', () => ({
   useNewUserService: () => ({ isNewUser: () => mocks.isNewUser })
@@ -55,7 +49,6 @@ describe('useFirstRunEntry', () => {
     setActivePinia(createPinia())
     mocks.isCloud = true
     mocks.breakpoint.value = true
-    mocks.subscriptionEnabled = true
     mocks.isNewUser = true
     mocks.tourFlag = true
     mocks.execute.mockClear()

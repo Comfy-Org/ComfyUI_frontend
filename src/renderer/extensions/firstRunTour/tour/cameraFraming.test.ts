@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { CARD_WIDTH } from '@/platform/onboarding/coachmarkLayout'
 import { toNodeId } from '@/types/nodeId'
@@ -34,6 +34,29 @@ describe('focusFill', () => {
 })
 
 describe('frameNode', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('animates to the node with the computed zoom', async () => {
+    vi.spyOn(window, 'matchMedia').mockReturnValue({
+      matches: false
+    } as MediaQueryList)
+    const animateToBounds = vi.fn()
+    mocks.canvas = {
+      graph: {
+        getNodeById: () => ({ boundingRect: [0, 0, 400, 200] })
+      },
+      canvas: { getBoundingClientRect: () => new DOMRect(0, 0, 1920, 1080) },
+      ds: { fitToBounds: vi.fn() },
+      setDirty: vi.fn(),
+      animateToBounds
+    }
+    await frameNode(toNodeId(1), new AbortController().signal)
+    expect(animateToBounds).toHaveBeenCalledWith([0, 0, 400, 200], {
+      zoom: expect.any(Number),
+      duration: 450
+    })
+  })
+
   it('does nothing without the node', async () => {
     const fitToBounds = vi.fn()
     mocks.canvas = {

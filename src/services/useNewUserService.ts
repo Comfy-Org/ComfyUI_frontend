@@ -8,8 +8,19 @@ function hasV2DraftHistory(raw: string | null): boolean {
     const parsed = JSON.parse(raw) as {
       entries?: Record<string, { isTemporary?: boolean }>
     }
-    if (!parsed.entries || typeof parsed.entries !== 'object') return false
-    return Object.values(parsed.entries).some((entry) => !entry?.isTemporary)
+    if (
+      !parsed.entries ||
+      typeof parsed.entries !== 'object' ||
+      Array.isArray(parsed.entries)
+    )
+      return false
+    return Object.values(parsed.entries).some(
+      (entry) =>
+        !!entry &&
+        typeof entry === 'object' &&
+        !Array.isArray(entry) &&
+        entry.isTemporary !== true
+    )
   } catch {
     return false
   }
