@@ -44,7 +44,7 @@ import {
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 
-import { classifyErrorSeverity } from './errorSeverityClassification'
+import { useErrorClassification } from './useErrorClassification'
 
 const PROMPT_CARD_ID = '__prompt__'
 
@@ -244,16 +244,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const { inferPackFromNodeName } = useComfyRegistryStore()
   const collapseState = reactive<Record<string, boolean>>({})
 
-  const errorSeverity = computed(() =>
-    classifyErrorSeverity({
-      promptError: executionErrorStore.lastPromptError,
-      executionError: executionErrorStore.lastExecutionError,
-      nodeErrors: executionErrorStore.surfacedNodeErrors,
-      missingModels: missingModelStore.missingModelCandidates,
-      missingMedia: missingMediaStore.missingMediaCandidates,
-      hasMissingNodes: missingNodesStore.hasMissingNodes
-    })
-  )
+  const errorClassification = useErrorClassification()
 
   const selectedNodeInfo = computed(() => {
     const items = canvasStore.selectedItems
@@ -382,7 +373,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
   ): boolean {
-    const classifiedPromptError = errorSeverity.value.promptError
+    const classifiedPromptError = errorClassification.value.promptError
     if (
       (filterBySelection && selectedNodeInfo.value.nodeIds) ||
       !classifiedPromptError
@@ -426,7 +417,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   ): Set<'missing_model' | 'missing_media'> {
     const blockedMissingGroups = new Set<'missing_model' | 'missing_media'>()
 
-    for (const classifiedNodeError of errorSeverity.value.nodeErrors) {
+    for (const classifiedNodeError of errorClassification.value.nodeErrors) {
       const { rawNodeId, nodeId, nodeError } = classifiedNodeError
       if (filterBySelection && !nodeId) continue
       const nodeDisplayName = nodeId
@@ -475,7 +466,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
   ) {
-    const classifiedExecutionError = errorSeverity.value.executionError
+    const classifiedExecutionError = errorClassification.value.executionError
     if (!classifiedExecutionError) return
 
     const { error, nodeId } = classifiedExecutionError
