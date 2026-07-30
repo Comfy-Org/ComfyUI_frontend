@@ -273,6 +273,23 @@ const UNEXPECTED_OPERATION_RESPONSE = {
   completed_at: '2026-07-20T00:00:01Z'
 } satisfies BillingOpStatusResponse
 
+const RECOVERED_3DS_OPERATION_ID = 'recovered-3ds-subscription'
+const RECOVERED_3DS_ACTION_URL = 'https://verify.example/3ds-session'
+
+const RECOVERED_3DS_STATUS = {
+  ...ACTIVE_TEAM_STATUS,
+  billing_status: 'pending_payment',
+  pending_billing_op_id: RECOVERED_3DS_OPERATION_ID,
+  action_url: RECOVERED_3DS_ACTION_URL
+} satisfies BillingStatusResponse
+
+const RECOVERED_3DS_OPERATION = {
+  id: RECOVERED_3DS_OPERATION_ID,
+  status: 'pending',
+  started_at: '2026-07-20T00:00:00Z',
+  action_url: RECOVERED_3DS_ACTION_URL
+} satisfies BillingOpStatusResponse
+
 const TRANSIENT_STATUS_ERROR = {
   code: 'billing_status_unavailable',
   message: 'Billing status is temporarily unavailable'
@@ -442,6 +459,36 @@ async function mockPopupBlockedCreatorDowngrade(page: Page) {
     balanceRefreshRequests,
     operationPollRequests
   }
+}
+
+async function mockRecovered3dsSubscription(page: Page) {
+  const statusRequests: Request[] = []
+  const operationPollRequests: Request[] = []
+  const subscribeRequests: Request[] = []
+
+  await page.route('**/api/billing/status', (route) => {
+    statusRequests.push(route.request())
+    return route.fulfill(jsonRoute(RECOVERED_3DS_STATUS))
+  })
+  await page.route(
+    `**/api/billing/ops/${RECOVERED_3DS_OPERATION_ID}`,
+    (route) => {
+      operationPollRequests.push(route.request())
+      return route.fulfill(jsonRoute(RECOVERED_3DS_OPERATION))
+    }
+  )
+  await page.route('**/api/billing/subscribe', (route) => {
+    subscribeRequests.push(route.request())
+    return route.fulfill({
+      ...jsonRoute({
+        code: 'unexpected_subscribe',
+        message: 'Recovered operations must not resubscribe'
+      } satisfies ErrorResponse),
+      status: 500
+    })
+  })
+
+  return { statusRequests, operationPollRequests, subscribeRequests }
 }
 
 const pricingHeading = (page: Page) =>
@@ -668,7 +715,7 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
     releasePostSubscribeRefresh = downgradeMock.releasePostSubscribeRefresh
   })
 
-  test('shows the existing success view when subscribe replays 200', async ({
+  test('completes the non-3DS flow when subscribe replays 200', async ({
     page
   }) => {
     await page.goto(`${APP_URL}/?pricing=personal`)
@@ -696,6 +743,9 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
         name: "You're all set"
       })
       await expect(successHeading).toBeVisible()
+      await expect(
+        page.getByRole('button', { name: 'Complete verification' })
+      ).toBeHidden()
       await expect.poll(() => statusRefreshRequests.length).toBe(1)
       await expect.poll(() => balanceRefreshRequests.length).toBe(1)
       const successView = successHeading.locator('..').locator('..')
@@ -718,6 +768,64 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
     } finally {
       releasePostSubscribeRefresh()
     }
+  })
+})
+
+test.describe('Recovered 3DS subscription', { tag: '@cloud' }, () => {
+  let statusRequests: Request[]
+  let operationPollRequests: Request[]
+  let subscribeRequests: Request[]
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      window.open = (url, target, features) => {
+        document.documentElement.dataset.openedUrl = String(url)
+        document.documentElement.dataset.openedTarget = target ?? ''
+        document.documentElement.dataset.openedFeatures = features ?? ''
+        return window
+      }
+    })
+    await setupCloudApp(page, workspace('team', 'owner'), [
+      member({ email: SELF_EMAIL, role: 'owner', is_original_owner: true })
+    ])
+    const recoveryMock = await mockRecovered3dsSubscription(page)
+    statusRequests = recoveryMock.statusRequests
+    operationPollRequests = recoveryMock.operationPollRequests
+    subscribeRequests = recoveryMock.subscribeRequests
+  })
+
+  test('recovers on a fresh page without resubscribing and opens verification on click', async ({
+    page
+  }) => {
+    await page.goto(APP_URL)
+    await waitForCloudApp(page)
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('manage-plan-menu-item').click()
+    await expect.poll(() => statusRequests.length).toBeGreaterThan(0)
+    await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
+
+    const verificationButton = page.getByRole('button', {
+      name: 'Complete verification'
+    })
+    await expect(verificationButton).toBeVisible()
+    await expect(page.locator('html')).not.toContainText(
+      RECOVERED_3DS_ACTION_URL
+    )
+    expect(subscribeRequests).toHaveLength(0)
+
+    await verificationButton.click()
+
+    await expect
+      .poll(() => page.locator('html').getAttribute('data-opened-url'))
+      .toBe(RECOVERED_3DS_ACTION_URL)
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-opened-target',
+      '_blank'
+    )
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-opened-features',
+      'noopener,noreferrer'
+    )
   })
 })
 
