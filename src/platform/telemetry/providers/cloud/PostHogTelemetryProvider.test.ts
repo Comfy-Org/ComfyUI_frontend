@@ -16,6 +16,21 @@ const hoisted = vi.hoisted(() => {
   const mockReset = vi.fn()
   const mockOnUserResolved = vi.fn()
   const mockOnUserLogout = vi.fn()
+  const executionContext = {
+    is_template: true,
+    workflow_name: 'image_qwen_image_edit_2509',
+    template_source: 'comfy',
+    template_category: 'image',
+    custom_node_count: 2,
+    api_node_count: 1,
+    toolkit_node_count: 1,
+    subgraph_count: 0,
+    total_node_count: 4,
+    has_api_nodes: true,
+    api_node_names: ['OpenAIImageNode'],
+    has_toolkit_nodes: true,
+    toolkit_node_names: ['LoadImage']
+  }
   const refs = {
     tier: null as unknown as Ref<string | null>,
     remoteConfig: null as unknown as Ref<Record<string, unknown> | null>
@@ -31,6 +46,7 @@ const hoisted = vi.hoisted(() => {
     mockReset,
     mockOnUserResolved,
     mockOnUserLogout,
+    executionContext,
     refs,
     mockPosthog: {
       default: {
@@ -59,6 +75,10 @@ vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
 })
 
 vi.mock('posthog-js', () => hoisted.mockPosthog)
+
+vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
+  getExecutionContext: () => hoisted.executionContext
+}))
 
 vi.mock('@/composables/billing/useBillingContext', async () => {
   const { ref } = await vi.importActual<typeof VueModule>('vue')
@@ -376,6 +396,80 @@ describe('PostHogTelemetryProvider', () => {
         {
           error_code: 'auth/user-not-found',
           auth_action: 'email_sign_in'
+        }
+      )
+    })
+
+    it('captures enriched execution starts with client attribution', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackRunButton({
+        subscribe_to_run: false,
+        workflow_type: 'template',
+        workflow_name: 'image_qwen_image_edit_2509',
+        custom_node_count: 2,
+        total_node_count: 4,
+        subgraph_count: 0,
+        has_api_nodes: true,
+        api_node_names: ['OpenAIImageNode'],
+        has_toolkit_nodes: true,
+        toolkit_node_names: ['LoadImage'],
+        trigger_source: 'keybinding',
+        view_mode: 'graph',
+        is_app_mode: false,
+        dock_state: 'docked'
+      })
+      provider.trackWorkflowExecution()
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        {
+          ...hoisted.executionContext,
+          trigger_source: 'keybinding',
+          event_source: 'web-sdk'
+        }
+      )
+
+      provider.trackWorkflowExecution()
+
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        {
+          ...hoisted.executionContext,
+          trigger_source: 'unknown',
+          event_source: 'web-sdk'
+        }
+      )
+    })
+
+    it('captures execution outcomes with client attribution', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackExecutionSuccess({ jobId: 'job-1' })
+      provider.trackExecutionError({
+        jobId: 'job-2',
+        nodeId: 'node-3',
+        nodeType: 'LoadImage',
+        error: 'failed'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.EXECUTION_SUCCESS,
+        {
+          jobId: 'job-1',
+          event_source: 'web-sdk'
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.EXECUTION_ERROR,
+        {
+          jobId: 'job-2',
+          nodeId: 'node-3',
+          nodeType: 'LoadImage',
+          error: 'failed',
+          event_source: 'web-sdk'
         }
       )
     })
