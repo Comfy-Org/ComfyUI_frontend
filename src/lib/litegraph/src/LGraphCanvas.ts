@@ -38,6 +38,7 @@ import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
 import { LinkConnector } from './canvas/LinkConnector'
+import { findRerouteAtPoint } from './canvas/findRerouteAtPoint'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
@@ -703,7 +704,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   node_capturing_input?: LGraphNode | null
   highlighted_links: Dictionary<boolean> = {}
 
-  private _visibleReroutes: Set<Reroute> = new Set()
+  readonly _visibleReroutes: Set<Reroute> = new Set()
   private _autoPan: AutoPanController | null = null
   /**
    * Modifier state of the most recent drag pointer event, so the auto-pan
@@ -2369,20 +2370,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (node) {
           this.processSelect(node, e, true)
         } else if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-          // Reroutes
-          // Try layout store first, fallback to old method
-          const rerouteLayout = layoutStore.queryRerouteAtPoint(
-            graph.rootGraph.id,
-            {
-              x: e.canvasX,
-              y: e.canvasY
-            }
-          )
-
-          let reroute = rerouteLayout
-            ? graph.getReroute(rerouteLayout.id)
-            : undefined
-          reroute ??= graph.getRerouteOnPos(
+          const reroute = findRerouteAtPoint(
+            graph,
             e.canvasX,
             e.canvasY,
             this._visibleReroutes

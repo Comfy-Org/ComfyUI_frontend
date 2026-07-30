@@ -1,9 +1,8 @@
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-
 import type { LGraphCanvas } from '../LGraphCanvas'
 import type { LGraphGroup } from '../LGraphGroup'
 import type { Reroute } from '../Reroute'
 import { LinkRenderType } from '../types/globalEnums'
+import { findRerouteAtPoint } from './findRerouteAtPoint'
 
 interface CanvasContextMenuTarget {
   reroute?: Reroute
@@ -19,21 +18,10 @@ export function getCanvasContextMenuTarget(
   const { graph } = canvas
   if (!graph) return {}
 
-  let reroute: Reroute | undefined
-  if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-    const layoutHit = layoutStore.queryRerouteAtPoint(graph.rootGraph.id, {
-      x,
-      y
-    })
-    reroute =
-      (layoutHit ? graph.getReroute(layoutHit.id) : undefined) ??
-      graph.getRerouteOnPos(
-        x,
-        y,
-        (canvas as unknown as { _visibleReroutes: Iterable<Reroute> })
-          ._visibleReroutes
-      )
-  }
+  const reroute =
+    canvas.links_render_mode === LinkRenderType.HIDDEN_LINK
+      ? undefined
+      : findRerouteAtPoint(graph, x, y, canvas._visibleReroutes)
 
   return { reroute, group: graph.getGroupOnPos(x, y) }
 }
