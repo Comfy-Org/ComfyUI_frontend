@@ -170,6 +170,7 @@ interface SubscribeRequest {
   billing_cycle?: SubscribeBillingCycle
   /** Required to change plans while the current subscription is cancelled; server rejects the change without it. */
   confirm_reactivation?: boolean
+  proration_at?: string
 }
 
 export interface SubscribeOptions {
@@ -178,6 +179,7 @@ export interface SubscribeOptions {
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
   confirmReactivation?: boolean
+  prorationAt?: string
 }
 
 export interface PreviewSubscribeOptions {
@@ -244,6 +246,7 @@ export interface PreviewSubscribeResponse {
   credits_next_period_cents: number
   current_plan?: PreviewPlanInfo
   new_plan: PreviewPlanInfo
+  proration_at?: string
 }
 
 export type BillingSubscriptionStatus =
@@ -694,7 +697,8 @@ export const workspaceApi = {
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
           billing_cycle: options.billingCycle,
-          confirm_reactivation: options.confirmReactivation
+          confirm_reactivation: options.confirmReactivation,
+          proration_at: options.prorationAt
         } satisfies SubscribeRequest,
         { headers }
       )

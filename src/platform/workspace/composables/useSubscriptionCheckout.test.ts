@@ -694,6 +694,48 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewVariant.value).toBe('team-change')
     })
 
+    it('shows the reactivation preview for a cancelled Team downgrade scheduled at period end', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const preview = {
+        allowed: true,
+        transition_type: 'downgrade' as const,
+        is_immediate: false,
+        cost_today_cents: 0,
+        proration_at: '2026-07-29T12:00:00Z'
+      }
+      mockPreviewSubscribe.mockResolvedValueOnce(preview)
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.previewData.value).toEqual(preview)
+      expect(checkout.previewVariant.value).toBe('team-change')
+      expect(mockToastAdd).not.toHaveBeenCalled()
+
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-scheduled-reactivation'
+      })
+      await checkout.handleTeamSubscribe(true)
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({
+          confirmReactivation: true,
+          prorationAt: undefined
+        })
+      )
+    })
+
     it('bounces a cancelled subscriber back to pricing when the preview does not qualify', async () => {
       mockSubscription.value = { isCancelled: true }
       mockPreviewSubscribe.mockResolvedValueOnce({
@@ -904,6 +946,43 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).toHaveBeenCalledWith(
         'team_per_credit_monthly',
         expect.objectContaining({ confirmReactivation: true })
+      )
+    })
+
+    it('submits the quoted Team reactivation without re-previewing a drifting charge', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000,
+        proration_at: '2026-07-29T12:00:00Z'
+      })
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-quoted-reactivation'
+      })
+
+      await checkout.handleTeamSubscribe(true)
+
+      expect(mockPreviewSubscribe).toHaveBeenCalledTimes(1)
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({
+          confirmReactivation: true,
+          prorationAt: '2026-07-29T12:00:00Z'
+        })
       )
     })
 
@@ -1719,6 +1798,37 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).toHaveBeenCalledWith(
         'standard-yearly',
         expect.objectContaining({ confirmReactivation: true })
+      )
+    })
+
+    it('submits the quoted personal reactivation without re-previewing a drifting charge', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 1500,
+        proration_at: '2026-07-29T12:00:00Z'
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-personal-quoted-reactivation'
+      })
+
+      await checkout.handleConfirmTransition(true)
+
+      expect(mockPreviewSubscribe).toHaveBeenCalledTimes(1)
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.objectContaining({
+          confirmReactivation: true,
+          prorationAt: '2026-07-29T12:00:00Z'
+        })
       )
     })
 

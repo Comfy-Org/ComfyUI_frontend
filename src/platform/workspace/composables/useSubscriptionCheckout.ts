@@ -51,8 +51,7 @@ interface SubscriptionCheckoutOptions {
 
 /**
  * Which screen the `preview` step shows. Only a change prorates: a team change
- * carries `previewData` (handleSubscribeTeamClick sets it solely for an immediate
- * team transition), a personal change is anything other than `new_subscription`;
+ * carries `previewData`, a personal change is anything other than `new_subscription`;
  * the rest are display-only fresh-subscribe confirms.
  */
 type PreviewVariant =
@@ -155,28 +154,23 @@ export function useSubscriptionCheckout(
 
   // Shared by the initial cancelled-Team preview (handleSubscribeTeamClick)
   // and drift recovery (refreshPreviewOnReactivationBlock): a preview can
-  // only feed the reactivation banner if it's allowed, immediate, and an
-  // existing-plan change — new_subscription and scheduled changes route to
-  // screens that can't render the disclosure or emit confirm_reactivation.
+  // only feed the reactivation banner if it's an allowed existing-plan change.
   function isReactivationCapablePreview(
     preview: PreviewSubscribeResponse | null | undefined
   ): boolean {
-    return (
-      !!preview?.allowed &&
-      preview.is_immediate &&
-      preview.transition_type !== 'new_subscription'
-    )
+    return !!preview?.allowed && preview.transition_type !== 'new_subscription'
   }
 
-  // subscribe() recomputes the transaction independently of the preview the
-  // banner showed, so proration or team-seat state can drift while the
-  // screen is open. Re-preview right before billing and refuse if the
-  // amount moved — mirrors the guard useDowngradeToPersonal applies before
-  // a team-to-personal downgrade.
+  // Current backends return the exact proration instant used for the preview;
+  // subscribe() echoes it back so the charge cannot drift while the consent
+  // screen is open. Keep the re-preview guard as compatibility for a backend
+  // that has not started returning proration_at yet.
   async function assertReactivationAmountUnchanged(
     planSlug: string,
     options?: PreviewSubscribeOptions
   ): Promise<void> {
+    if (previewData.value?.proration_at) return
+
     const freshPreview = await previewSubscribe(planSlug, options)
     if (!freshPreview?.allowed) {
       throw new Error(freshPreview?.reason || t('subscription.subscribeFailed'))
@@ -452,7 +446,10 @@ export function useSubscriptionCheckout(
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
-        confirmReactivation
+        confirmReactivation,
+        prorationAt: previewData.value?.is_immediate
+          ? previewData.value.proration_at
+          : undefined
       })
 
       if (response) {
@@ -631,7 +628,10 @@ export function useSubscriptionCheckout(
         billingCycle,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
-        confirmReactivation
+        confirmReactivation,
+        prorationAt: previewData.value?.is_immediate
+          ? previewData.value.proration_at
+          : undefined
       })
 
       if (response) {
