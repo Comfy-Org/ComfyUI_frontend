@@ -1,7 +1,7 @@
 import { createPinia, disposePinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { AppMode } from '@/utils/appMode'
@@ -112,6 +112,48 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
     expect(store.activeTour).toBe('firstRun')
     expect(store.countedStepsTotal).toBe(2)
     expect(store.step?.name).toBe('upload')
+  })
+
+  it('ends a running tour once the context it registered with goes', async () => {
+    const holds = ref(true)
+    registerTour('firstRun', () => Promise.resolve([step('run')]), holds)
+    const store = mountStore()
+    await store.startTour('firstRun')
+
+    holds.value = false
+    await nextTick()
+
+    expect(
+      store.activeTour,
+      'a tour whose targets are no longer laid out points at nothing'
+    ).toBeNull()
+    expect(telemetry.track).toHaveBeenCalledWith(
+      'skipped',
+      expect.objectContaining({ skip_reason: 'trigger_lost' })
+    )
+    await expect(
+      store.startTour('firstRun'),
+      'the context went, not the user, so the tour is still owed'
+    ).resolves.toBe(true)
+  })
+
+  it('starts a tour whose context is already unmet, and ends it only on losing it', async () => {
+    const holds = ref(false)
+    registerTour('firstRun', () => Promise.resolve([step('run')]), holds)
+    const store = mountStore()
+
+    await expect(
+      store.startTour('firstRun'),
+      'startTour decides whether a tour may begin; holds only ends one'
+    ).resolves.toBe(true)
+    await nextTick()
+    expect(store.activeTour).toBe('firstRun')
+
+    holds.value = true
+    await nextTick()
+    holds.value = false
+    await nextTick()
+    expect(store.activeTour).toBeNull()
   })
 
   it('ends the tour as completed when a consumer completes it', async () => {
