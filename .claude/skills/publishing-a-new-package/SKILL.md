@@ -18,8 +18,8 @@ error does not say so. npm returns:
 [E404] 404 Not Found - PUT https://registry.npmjs.org/@comfyorg%2fyour-package
 ```
 
-A 404 on `PUT` means the token may publish *existing* packages in the scope but
-may not *create* a new name. It reads like "the package doesn't exist" — which
+A 404 on `PUT` means the token may publish _existing_ packages in the scope but
+may not _create_ a new name. It reads like "the package doesn't exist" — which
 is true and irrelevant — and sends you looking for a workflow bug that isn't
 there. `--access public` is already set; the registry URL is already right.
 
@@ -61,12 +61,12 @@ Every value must be a real range. If you see `catalog:`, you used the wrong tool
 Copy the four-workflow set from an existing package — `design-system` and
 `desktop-ui` are the references:
 
-| Workflow | Role |
-| --- | --- |
-| `publish-<pkg>.yaml` | `workflow_call` + `workflow_dispatch`; does the publish |
-| `publish-<pkg>-on-merge.yaml` | fires on merged PR with the `Release` label |
-| `version-bump-<pkg>.yaml` | dispatch → opens a version PR labelled `Release` |
-| `ci-<pkg>-pack.yaml` | on PR — typecheck + assert tarball contents |
+| Workflow                      | Role                                                    |
+| ----------------------------- | ------------------------------------------------------- |
+| `publish-<pkg>.yaml`          | `workflow_call` + `workflow_dispatch`; does the publish |
+| `publish-<pkg>-on-merge.yaml` | fires on merged PR with the `Release` label             |
+| `version-bump-<pkg>.yaml`     | dispatch → opens a version PR labelled `Release`        |
+| `ci-<pkg>-pack.yaml`          | on PR — typecheck + assert tarball contents             |
 
 The pack check must allowlist `package.json`, `LICENSE`, **and `README.md`**.
 npm force-includes all three regardless of the `files` field, so a guard that
@@ -95,7 +95,7 @@ version number.
 ## Prove it is consumable
 
 This is the step people skip, and it is the only one that finds real problems.
-In a *different* repo — ideally one on npm rather than pnpm, since that is the
+In a _different_ repo — ideally one on npm rather than pnpm, since that is the
 path where `catalog:` would explode:
 
 ```sh
