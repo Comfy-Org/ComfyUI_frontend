@@ -33,7 +33,7 @@ import { useDialogStore } from '@/stores/dialogStore'
  * billingOperationMachine; to be replaced by a real feature flag and then
  * removed along with the legacy driver.
  */
-const USE_BILLING_OPERATION_MACHINE = false
+const USE_BILLING_OPERATION_MACHINE = true
 
 type OperationType = BillingOperationType
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
