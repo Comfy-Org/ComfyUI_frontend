@@ -58,9 +58,6 @@ const config: KnipConfig = {
     // Animated pill button — retained for reuse after the learning directory
     // switched to ButtonPill; no current consumer
     'apps/website/src/components/ui/button-mask/**',
-    // Add-to-calendar dropdown — retained for reuse on an upcoming surface
-    // after being removed from the launches hero; no current consumer
-    'apps/website/src/components/blocks/AddToCalendarButton.vue',
     // Pending integration: consumed by the useWorkspaceInvoices seam once
     // #13591 (Plan & Credits tabs) lands — FE-1245
     'src/composables/billing/useNextInvoice.ts',

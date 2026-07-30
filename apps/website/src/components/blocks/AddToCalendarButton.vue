@@ -9,6 +9,7 @@ import {
 } from 'reka-ui'
 import { computed } from 'vue'
 
+import type { ButtonVariants } from '../ui/button'
 import type { CalendarEvent } from '../../utils/calendar'
 import {
   toGoogleCalendarUrl,
@@ -18,9 +19,18 @@ import {
 import { resolveRel } from '../../utils/cta'
 import Button from '../ui/button/Button.vue'
 
-const { event, labels } = defineProps<{
+const {
+  event,
+  labels,
+  size = 'lg',
+  portalDisabled = false
+} = defineProps<{
   event: CalendarEvent
   labels: { trigger: string; google: string; apple: string; outlook: string }
+  size?: ButtonVariants['size']
+  /** Render the menu in place, e.g. inside a top-layer `<dialog>` that would
+   * cover a body teleport. */
+  portalDisabled?: boolean
 }>()
 
 const externalRel = resolveRel({ target: '_blank' })
@@ -42,14 +52,14 @@ const itemClass =
     <DropdownMenuTrigger as-child>
       <Button
         variant="outline"
-        size="lg"
+        :size
         :prepend-icon="CalendarPlus"
         :append-icon="ChevronDown"
       >
         {{ labels.trigger }}
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuPortal>
+    <DropdownMenuPortal :disabled="portalDisabled">
       <DropdownMenuContent
         align="start"
         :side-offset="8"

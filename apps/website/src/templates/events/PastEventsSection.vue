@@ -6,7 +6,7 @@ import type { Locale } from '../../i18n/translations'
 import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.vue'
 import type { CardArticleGalleryItem } from '../../components/blocks/CardArticleGallery01.vue'
 import { localizeHref } from '../../config/routes'
-import { pastEvents, pastEventPath } from '../../data/events'
+import { pastEvents, eventPath } from '../../data/events'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -30,7 +30,7 @@ const items = computed<CardArticleGalleryItem[]>(() =>
         label: t('events.past.watchNow', locale),
         href: external
           ? event.watch.href[locale]
-          : localizeHref(pastEventPath(event), locale),
+          : localizeHref(eventPath(event), locale),
         newTab: external ? event.watch.newTab : undefined
       }
     }

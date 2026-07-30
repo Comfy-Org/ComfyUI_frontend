@@ -4739,6 +4739,22 @@ const translations = {
     'zh-CN': '即将举行的活动'
   },
   'events.upcoming.learnMore': { en: 'Learn more', 'zh-CN': '了解更多' },
+  'events.upcoming.addToCalendar': {
+    en: 'Add to calendar',
+    'zh-CN': '添加到日历'
+  },
+  'events.upcoming.calendarGoogle': {
+    en: 'Google Calendar',
+    'zh-CN': 'Google 日历'
+  },
+  'events.upcoming.calendarApple': {
+    en: 'Apple Calendar',
+    'zh-CN': 'Apple 日历'
+  },
+  'events.upcoming.calendarOutlook': {
+    en: 'Outlook',
+    'zh-CN': 'Outlook'
+  },
   'events.past.title': {
     en: 'See our past events',
     'zh-CN': '回顾过往活动'
@@ -4746,7 +4762,7 @@ const translations = {
   'events.past.filterAll': { en: 'ALL', 'zh-CN': '全部' },
   'events.past.watchNow': { en: 'WATCH NOW', 'zh-CN': '立即观看' },
   'events.past.loadMore': { en: 'LOAD MORE', 'zh-CN': '加载更多' },
-  'events.past.close': { en: 'Close', 'zh-CN': '关闭' },
+  'events.videoDialog.close': { en: 'Close', 'zh-CN': '关闭' },
   'events.category.livestream': { en: 'Livestream', 'zh-CN': '直播' },
   'events.category.hackathon': { en: 'Hackathon', 'zh-CN': '黑客松' },
   'events.category.community': { en: 'Community', 'zh-CN': '社区' },

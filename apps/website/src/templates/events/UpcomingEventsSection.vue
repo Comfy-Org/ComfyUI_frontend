@@ -1,14 +1,29 @@
 <script setup lang="ts">
 import { ArrowRight, Calendar, MapPin } from '@lucide/vue'
+import { computed } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 
+import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue'
 import Button from '../../components/ui/button/Button.vue'
-import { upcomingEvents } from '../../data/events'
+import { localizeHref } from '../../config/routes'
+import { eventPath, toCalendarEvent, upcomingEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+// Events with a stream open their own /events/[slug] page (dialog over the
+// directory); the rest link out to the event's page.
+const events = computed(() =>
+  upcomingEvents.map((event) => ({
+    ...event,
+    calendarEvent: toCalendarEvent(event, locale),
+    learnMore: event.youtubeVideoId
+      ? { href: localizeHref(eventPath(event), locale) }
+      : { href: event.link.href[locale], newTab: event.link.newTab }
+  }))
+)
 </script>
 
 <template>
@@ -27,7 +42,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
         <ul class="flex min-w-0 grow flex-col">
           <li
-            v-for="event in upcomingEvents"
+            v-for="event in events"
             :key="event.id"
             class="flex flex-col gap-4 border-b border-primary-comfy-canvas/20 py-6 first:pt-0 sm:flex-row sm:items-start sm:justify-between sm:gap-8"
           >
@@ -54,15 +69,29 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
                   {{ event.dateLabel[locale] }}
                 </span>
               </div>
+              <div v-if="event.calendarEvent" class="mt-4">
+                <AddToCalendarButton
+                  size="sm"
+                  :event="event.calendarEvent"
+                  :labels="{
+                    trigger: t('events.upcoming.addToCalendar', locale),
+                    google: t('events.upcoming.calendarGoogle', locale),
+                    apple: t('events.upcoming.calendarApple', locale),
+                    outlook: t('events.upcoming.calendarOutlook', locale)
+                  }"
+                />
+              </div>
             </div>
 
             <Button
               as="a"
               variant="link"
-              :href="event.link.href[locale]"
-              :target="event.link.newTab ? '_blank' : undefined"
+              :href="event.learnMore.href"
+              :target="event.learnMore.newTab ? '_blank' : undefined"
               :rel="
-                resolveRel({ target: event.link.newTab ? '_blank' : undefined })
+                resolveRel({
+                  target: event.learnMore.newTab ? '_blank' : undefined
+                })
               "
               :append-icon="ArrowRight"
               :aria-label="`${event.name[locale]} — ${t('events.upcoming.learnMore', locale)}`"

@@ -1,5 +1,6 @@
 import { localizeHref } from '../config/routes'
-import type { LocalizedText } from '../i18n/translations'
+import type { Locale, LocalizedText } from '../i18n/translations'
+import type { CalendarEvent } from '../utils/calendar'
 
 type EventCategory = 'livestream' | 'hackathon' | 'community'
 
@@ -26,6 +27,7 @@ export type UpcomingEvent = {
   dateLabel: LocalizedText
   dateTime?: string
   link: { href: LocalizedText; newTab?: boolean }
+  youtubeVideoId?: string
 }
 
 export type PastEvent = {
@@ -82,7 +84,27 @@ function youtubeWatchHref(videoId: string): LocalizedText {
   return { en: href, 'zh-CN': href }
 }
 
-export const pastEventPath = (event: PastEvent): string => `/events/${event.id}`
+export const eventPath = (event: { id: string }): string =>
+  `/events/${event.id}`
+
+const EVENT_DURATION_MS = 60 * 60 * 1000
+const SITE_ORIGIN = 'https://comfy.org'
+
+export function toCalendarEvent(
+  event: UpcomingEvent,
+  locale: Locale
+): CalendarEvent | undefined {
+  if (!event.dateTime) return undefined
+  const href = new URL(event.link.href[locale], SITE_ORIGIN).href
+  const start = new Date(event.dateTime)
+  return {
+    title: event.name[locale],
+    description: `${event.description[locale]}\n\n${href}`,
+    location: event.location[locale],
+    start,
+    end: new Date(start.getTime() + EVENT_DURATION_MS)
+  }
+}
 
 const foundersLiveFeatured: FeaturedEvent = {
   id: 'krea-founders-live',
@@ -123,7 +145,8 @@ const postProduction: UpcomingEvent = {
     'zh-CN': '2026年8月5日 · 下午1点（PT）'
   },
   dateTime: '2026-08-05T13:00:00-07:00',
-  link: { href: launchesHref, newTab: false }
+  link: { href: launchesHref, newTab: false },
+  youtubeVideoId: '4xS4LOn3CTE'
 }
 
 const postProductionFeatured: FeaturedEvent = {
@@ -276,11 +299,19 @@ export const pastEvents: readonly PastEvent[] = [...pastEventEntries].sort(
   (a, b) => b.publishedDate.localeCompare(a.publishedDate)
 )
 
-// Past events that have a recording and therefore their own /events/[slug]
-// page; the slug is the event id.
+// Events with a stream or recording get their own /events/[slug] page; the
+// slug is the event id.
 export const watchablePastEvents: readonly PastEvent[] = pastEvents.filter(
   (event) => event.youtubeVideoId
 )
 
 export const getPastEventBySlug = (slug: string): PastEvent | undefined =>
   watchablePastEvents.find((event) => event.id === slug)
+
+export const watchableUpcomingEvents: readonly UpcomingEvent[] =
+  upcomingEvents.filter((event) => event.youtubeVideoId)
+
+export const getUpcomingEventBySlug = (
+  slug: string
+): UpcomingEvent | undefined =>
+  watchableUpcomingEvents.find((event) => event.id === slug)

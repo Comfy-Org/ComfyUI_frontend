@@ -1,0 +1,78 @@
+---
+// Shared body for upcoming-event /events/[slug] pages in every locale: the
+// events directory renders behind the SSR'd-open livestream dialog, mirroring
+// PastEventPage.astro. Locale comes from the page's URL.
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import EventVideoDialog from './EventVideoDialog.vue'
+import UpcomingEventsSection from './UpcomingEventsSection.vue'
+import { localizeHref } from '../../config/routes'
+import type { UpcomingEvent } from '../../data/events'
+import { toCalendarEvent } from '../../data/events'
+import { t } from '../../i18n/translations'
+import type { JsonLdNode } from '../../utils/jsonLd'
+import { absoluteUrl, eventNode, jsonLdId, pageContext } from '../../utils/jsonLd'
+
+interface Props {
+  event: UpcomingEvent
+}
+
+const { event } = Astro.props
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+
+const title = event.name[locale]
+const description = event.description[locale]
+const eventId = jsonLdId(url, `event-${event.id}`)
+const calendarEvent = toCalendarEvent(event, locale)
+
+const online = event.location.en === 'Online'
+const href = event.link.href[locale]
+
+const eventJsonLd: JsonLdNode | undefined = event.dateTime
+  ? eventNode({
+      siteUrl,
+      id: eventId,
+      name: title,
+      description,
+      startDate: event.dateTime,
+      ...(online
+        ? { virtualUrl: href.startsWith('/') ? absoluteUrl(Astro.site, href) : href }
+        : { placeName: event.location[locale] }),
+      locale
+    })
+  : undefined
+
+const breadcrumbs = [
+  {
+    name: t('breadcrumb.home', locale),
+    url: absoluteUrl(Astro.site, localizeHref('/', locale))
+  },
+  {
+    name: t('breadcrumb.events', locale),
+    url: absoluteUrl(Astro.site, localizeHref('/events', locale))
+  },
+  { name: title }
+]
+---
+
+<BaseLayout
+  title={`${title} - Comfy`}
+  description={description}
+  mainEntityId={event.dateTime ? eventId : undefined}
+  breadcrumbs={breadcrumbs}
+  extraJsonLd={[eventJsonLd]}
+>
+  <UpcomingEventsSection locale={locale} client:visible />
+  <EventVideoDialog
+    title={title}
+    description={description}
+    youtubeVideoId={event.youtubeVideoId!}
+    calendarEvent={calendarEvent}
+    locale={locale}
+    client:load
+  />
+</BaseLayout>

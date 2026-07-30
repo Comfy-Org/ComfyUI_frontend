@@ -3,8 +3,8 @@
 // files are thin wrappers so meta, breadcrumbs, and the VideoObject JSON-LD
 // stay defined once. Locale comes from the page's URL.
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import EventVideoDialog from './EventVideoDialog.vue'
 import PastEventsSection from './PastEventsSection.vue'
-import PastEventVideoDialog from './PastEventVideoDialog.vue'
 import { localizeHref } from '../../config/routes'
 import type { PastEvent } from '../../data/events'
 import { t } from '../../i18n/translations'
@@ -67,5 +67,11 @@ const breadcrumbs = [
   extraJsonLd={[video]}
 >
   <PastEventsSection locale={locale} />
-  <PastEventVideoDialog event={event} locale={locale} client:load />
+  <EventVideoDialog
+    title={title}
+    description={description}
+    youtubeVideoId={event.youtubeVideoId!}
+    locale={locale}
+    client:load
+  />
 </BaseLayout>

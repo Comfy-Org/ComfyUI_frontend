@@ -1,22 +1,32 @@
 <script setup lang="ts">
-// Trello-style past-event card: the event page renders the past-events
+// Trello-style event card: an /events/[slug] page renders the events
 // directory behind this dialog, which is SSR'd open (the `open` attribute, no
 // teleport) so the event's heading stays in the static HTML. On mount it is
 // upgraded to a modal (focus trap, top layer). Closing removes the event from
 // the URL: back to /events when the visitor came from there, or over to
-// /events on a direct visit. The recording is a YouTube embed rather than the
-// learning pages' self-hosted VideoPlayer.
+// /events on a direct visit.
 import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
 
+import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue'
 import { lockScroll, unlockScroll } from '../../composables/scrollLock'
 import { localizeHref } from '../../config/routes'
-import type { PastEvent } from '../../data/events'
 import type { Locale } from '../../i18n/translations'
+import type { CalendarEvent } from '../../utils/calendar'
 
 import { t } from '../../i18n/translations'
 
-const { event, locale = 'en' } = defineProps<{
-  event: PastEvent
+const {
+  title,
+  description,
+  youtubeVideoId,
+  calendarEvent,
+  locale = 'en'
+} = defineProps<{
+  title: string
+  description: string
+  youtubeVideoId: string
+  /** Future events: offer adding the stream to the visitor's calendar. */
+  calendarEvent?: CalendarEvent
   locale?: Locale
 }>()
 
@@ -24,7 +34,7 @@ const dialogEl = useTemplateRef<HTMLDialogElement>('dialogEl')
 
 const embedUrl = computed(
   () =>
-    `https://www.youtube-nocookie.com/embed/${event.youtubeVideoId}?autoplay=1&rel=0`
+    `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1&rel=0`
 )
 
 // Prefer the Navigation API's previous same-origin entry; referrer is a
@@ -82,13 +92,13 @@ onUnmounted(() => {
   <dialog
     ref="dialogEl"
     open
-    :aria-label="event.title[locale]"
+    :aria-label="title"
     class="fixed inset-0 z-50 flex size-full max-h-none max-w-none flex-col items-center justify-center border-0 bg-transparent px-4 py-8 backdrop-blur-xl backdrop:bg-transparent lg:px-20 lg:py-8"
     @click="onBackdropClick"
     @cancel.prevent="closeDialog"
   >
     <button
-      :aria-label="t('events.past.close', locale)"
+      :aria-label="t('events.videoDialog.close', locale)"
       class="border-primary-comfy-yellow hover:bg-primary-comfy-yellow group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 bg-primary-comfy-ink transition-colors lg:right-26"
       @click="closeDialog"
     >
@@ -104,7 +114,7 @@ onUnmounted(() => {
       <div class="aspect-video w-full overflow-hidden rounded-3xl">
         <iframe
           :src="embedUrl"
-          :title="event.title[locale]"
+          :title
           class="size-full"
           allow="autoplay; encrypted-media; picture-in-picture"
           allowfullscreen
@@ -115,8 +125,21 @@ onUnmounted(() => {
     <h1
       class="mt-6 text-center text-lg font-medium text-primary-comfy-canvas lg:text-xl"
     >
-      {{ event.title[locale] }}
+      {{ title }}
     </h1>
-    <p class="sr-only">{{ event.description[locale] }}</p>
+    <div v-if="calendarEvent" class="mt-4">
+      <AddToCalendarButton
+        size="default"
+        portal-disabled
+        :event="calendarEvent"
+        :labels="{
+          trigger: t('events.upcoming.addToCalendar', locale),
+          google: t('events.upcoming.calendarGoogle', locale),
+          apple: t('events.upcoming.calendarApple', locale),
+          outlook: t('events.upcoming.calendarOutlook', locale)
+        }"
+      />
+    </div>
+    <p class="sr-only">{{ description }}</p>
   </dialog>
 </template>

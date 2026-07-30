@@ -10,7 +10,7 @@ import PastEventsSection from './PastEventsSection.vue'
 import UpcomingEventsSection from './UpcomingEventsSection.vue'
 import { localizeHref } from '../../config/routes'
 import {
-  pastEventPath,
+  eventPath,
   upcomingEvents,
   watchablePastEvents
 } from '../../data/events'
@@ -35,7 +35,7 @@ const eventList = itemListNode(
   t('events.past.title', locale),
   watchablePastEvents.map((event) => ({
     name: event.title[locale],
-    url: absoluteUrl(Astro.site, localizeHref(pastEventPath(event), locale))
+    url: absoluteUrl(Astro.site, localizeHref(eventPath(event), locale))
   }))
 )
 
@@ -81,6 +81,6 @@ const breadcrumbs = [
   extraJsonLd={[eventList, ...upcomingEventNodes]}
 >
   <EventsHeroSection locale={locale} client:load />
-  <UpcomingEventsSection locale={locale} />
+  <UpcomingEventsSection locale={locale} client:visible />
   <PastEventsSection locale={locale} client:visible />
 </BaseLayout>
