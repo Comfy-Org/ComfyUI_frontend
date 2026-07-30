@@ -73,6 +73,33 @@ describe('resolveAccountPrecondition', () => {
     ).toBe('credits')
   })
 
+  it('classifies the submit-time 402 body by its insufficient_credits type regardless of message', () => {
+    expect(
+      resolveAccountPrecondition({
+        exceptionType: 'insufficient_credits',
+        exceptionMessage: 'Workspace balance exhausted'
+      })
+    ).toBe('credits')
+  })
+
+  it('classifies the team submit-time 429 (PAYMENT_REQUIRED / insufficient credits) as a credits precondition', () => {
+    expect(
+      resolveAccountPrecondition({
+        exceptionType: 'PAYMENT_REQUIRED',
+        exceptionMessage: 'Insufficient credits to queue workflows'
+      })
+    ).toBe('credits')
+  })
+
+  it('keeps the team submit-time 429 for an inactive subscription on the subscription precondition', () => {
+    expect(
+      resolveAccountPrecondition({
+        exceptionType: 'PAYMENT_REQUIRED',
+        exceptionMessage: 'Subscription required to queue workflows'
+      })
+    ).toBe('subscription')
+  })
+
   it('returns undefined for an ordinary workflow error', () => {
     expect(
       resolveAccountPrecondition({

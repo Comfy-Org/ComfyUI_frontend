@@ -52,7 +52,6 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudLoginView.vue'),
         beforeEnter: async (to, _from, next) => {
-          // Only redirect if not explicitly switching accounts
           if (!to.query.switchAccount) {
             const { useCurrentUser } =
               await import('@/composables/auth/useCurrentUser')
@@ -97,11 +96,6 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, hideHero: true }
       },
       {
-        path: 'oauth/consent',
-        name: 'cloud-oauth-consent',
-        component: () => import('@/platform/cloud/oauth/OAuthConsentView.vue')
-      },
-      {
         path: 'user-check',
         name: 'cloud-user-check',
         component: () =>
@@ -129,5 +123,26 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true }
       }
     ]
+  },
+  {
+    path: '/oauth',
+    component: () =>
+      import('@/platform/cloud/onboarding/components/OAuthLayoutView.vue'),
+    children: [
+      {
+        path: 'consent',
+        name: 'cloud-oauth-consent',
+        component: () => import('@/platform/cloud/oauth/OAuthConsentView.vue')
+      }
+    ]
+  },
+  {
+    // Back-compat (FE-1133 / BE-4146): the cloud OAuth backend still 302s to
+    // the old consent path with `?oauth_request_id=...`; the route moved to
+    // `/oauth/consent`. Redirect the old path (query preserved) so the browser
+    // authorize flow works before the backend `frontendConsentPath` is updated.
+    // Remove once BE-4146 lands the backend path change.
+    path: '/cloud/oauth/consent',
+    redirect: (to) => ({ path: '/oauth/consent', query: to.query })
   }
 ]

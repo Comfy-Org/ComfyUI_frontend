@@ -44,7 +44,7 @@ const dirDescriptions: Record<string, string> = {
 }
 
 const dirDesc = dirDescriptions[model.directory] ?? 'an AI model'
-const whatIsDescription = `${displayName} is ${dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect ${displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${displayName} on Comfy Hub, ready to load and customize.`
+const whatIsDescription = `${displayName} is ${dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect ${displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${displayName} on Comfy Workflows, ready to load and customize.`
 
 const pageTitle = `${displayName} in ComfyUI`
 const pageDescription = `Run ${displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
@@ -87,7 +87,7 @@ const faqPage: JsonLdNode = {
       name: `How many ComfyUI workflows use ${displayName}?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `There are ${model.workflowCount} community workflow templates that use ${displayName} on Comfy Hub. Each template is ready to run in ComfyUI and can be customized to suit your project.`,
+        text: `There are ${model.workflowCount} community workflow templates that use ${displayName} on Comfy Workflows. Each template is ready to run in ComfyUI and can be customized to suit your project.`,
       },
     },
     {

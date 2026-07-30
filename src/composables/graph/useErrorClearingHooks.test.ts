@@ -169,7 +169,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(node.id)]: {
         errors: [
           {
@@ -182,7 +182,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
         dependent_outputs: [],
         class_type: 'TestNode'
       }
-    }
+    })
 
     node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
 
@@ -201,7 +201,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(node.id)]: {
         errors: [
           {
@@ -214,7 +214,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
         dependent_outputs: [],
         class_type: 'TestNode'
       }
-    }
+    })
 
     node.onWidgetChanged!.call(node, 'steps', 150, 20, node.widgets![0])
 
@@ -232,7 +232,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
       fromAny<LGraph, unknown>(undefined)
     )
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(node.id)]: {
         errors: [
           {
@@ -245,7 +245,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
         dependent_outputs: [],
         class_type: 'TestNode'
       }
-    }
+    })
 
     node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
 

@@ -3,11 +3,9 @@ import * as fs from 'fs'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import {
-  escapeVueI18nMessageSyntax,
-  normalizeI18nKey
-} from '@/utils/formatUtil'
 import type { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
+import type { WidgetLabels } from './nodeDefLocaleSerializer'
+import { serializeNodeDefLocales } from './nodeDefLocaleSerializer'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
@@ -15,10 +13,6 @@ const nodeDefsPath = './src/locales/en/nodeDefs.json'
 interface WidgetInfo {
   name?: string
   label?: string
-}
-
-interface WidgetLabels {
-  [key: string]: Record<string, { name: string }>
 }
 
 test('collect-i18n-node-defs', async ({ comfyPage }) => {
@@ -45,26 +39,6 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
           .map((def: ComfyNodeDef) => new ComfyNodeDefImpl(def))
       )
     }
-  )
-
-  const allDataTypesLocale = Object.fromEntries(
-    nodeDefs
-      .flatMap((nodeDef) => {
-        const inputDataTypes = Object.values(nodeDef.inputs).map(
-          (inputSpec) => inputSpec.type
-        )
-        const outputDataTypes = nodeDef.outputs.map(
-          (outputSpec) => outputSpec.type
-        )
-        const allDataTypes = [...inputDataTypes, ...outputDataTypes].flatMap(
-          (type: string) => type.split(',')
-        )
-        return allDataTypes.map((dataType) => [
-          normalizeI18nKey(dataType),
-          escapeVueI18nMessageSyntax(dataType)
-        ])
-      })
-      .sort((a, b) => a[0].localeCompare(b[0]))
   )
 
   async function extractWidgetLabels() {
@@ -95,14 +69,10 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
           [nodeDef.name, nodeDef.display_name, inputNames]
         )
 
-        // Format runtime widgets
         const runtimeWidgets = Object.fromEntries(
           Object.entries(widgetsMappings)
             .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([key, value]) => [
-              normalizeI18nKey(key),
-              { name: value ? escapeVueI18nMessageSyntax(value) : value }
-            ])
+            .map(([key, name]) => [key, { name }])
         )
 
         if (Object.keys(runtimeWidgets).length > 0) {
@@ -121,97 +91,8 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
   }
 
   const nodeDefLabels = await extractWidgetLabels()
-
-  function extractInputs(nodeDef: ComfyNodeDefImpl) {
-    const inputs = Object.fromEntries(
-      Object.values(nodeDef.inputs).flatMap((input) => {
-        const name =
-          input.name === undefined
-            ? undefined
-            : escapeVueI18nMessageSyntax(input.name)
-        const tooltip = input.tooltip
-
-        if (name === undefined && tooltip === undefined) {
-          return []
-        }
-
-        return [
-          [
-            normalizeI18nKey(input.name),
-            {
-              name,
-              tooltip
-            }
-          ]
-        ]
-      })
-    )
-    return Object.keys(inputs).length > 0 ? inputs : undefined
-  }
-
-  function extractOutputs(nodeDef: ComfyNodeDefImpl) {
-    const outputs = Object.fromEntries(
-      nodeDef.outputs.flatMap((output, i) => {
-        // Ignore data types if they are already translated in allDataTypesLocale.
-        const name =
-          output.name === undefined || output.name in allDataTypesLocale
-            ? undefined
-            : escapeVueI18nMessageSyntax(output.name)
-        const tooltip = output.tooltip
-
-        if (name === undefined && tooltip === undefined) {
-          return []
-        }
-
-        return [
-          [
-            i.toString(),
-            {
-              name,
-              tooltip
-            }
-          ]
-        ]
-      })
-    )
-    return Object.keys(outputs).length > 0 ? outputs : undefined
-  }
-
-  const allNodeDefsLocale = Object.fromEntries(
-    nodeDefs
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((nodeDef) => {
-        const inputs = {
-          ...extractInputs(nodeDef),
-          ...(nodeDefLabels[nodeDef.name] ?? {})
-        }
-
-        return [
-          normalizeI18nKey(nodeDef.name),
-          {
-            display_name: escapeVueI18nMessageSyntax(
-              nodeDef.display_name ?? nodeDef.name
-            ),
-            description: nodeDef.description
-              ? escapeVueI18nMessageSyntax(nodeDef.description)
-              : undefined,
-            inputs: Object.keys(inputs).length > 0 ? inputs : undefined,
-            outputs: extractOutputs(nodeDef)
-          }
-        ]
-      })
-  )
-
-  const allNodeCategoriesLocale = Object.fromEntries(
-    nodeDefs.flatMap((nodeDef) =>
-      nodeDef.category
-        .split('/')
-        .map((category) => [
-          normalizeI18nKey(category),
-          escapeVueI18nMessageSyntax(category)
-        ])
-    )
-  )
+  const { dataTypes, nodeCategories, nodeDefinitions } =
+    serializeNodeDefLocales(nodeDefs, nodeDefLabels)
 
   const locale = JSON.parse(fs.readFileSync(localePath, 'utf-8'))
   fs.writeFileSync(
@@ -219,13 +100,13 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     JSON.stringify(
       {
         ...locale,
-        dataTypes: allDataTypesLocale,
-        nodeCategories: allNodeCategoriesLocale
+        dataTypes,
+        nodeCategories
       },
       null,
       2
     )
   )
 
-  fs.writeFileSync(nodeDefsPath, JSON.stringify(allNodeDefsLocale, null, 2))
+  fs.writeFileSync(nodeDefsPath, JSON.stringify(nodeDefinitions, null, 2))
 })
