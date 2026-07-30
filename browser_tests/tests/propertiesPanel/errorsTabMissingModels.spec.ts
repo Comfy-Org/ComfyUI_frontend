@@ -1,8 +1,10 @@
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
+import type { NodeError } from '@/schemas/apiSchema'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import {
   interceptClipboardWrite,
   getClipboardText
@@ -78,6 +80,61 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     await expect(
       modelsGroup.getByTestId(TestIds.dialogs.missingModelLocate)
     ).toHaveCount(2)
+  })
+
+  test.describe('Validation absorption', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+      const nodeErrors = {
+        '1': {
+          class_type: 'CheckpointLoaderSimple',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'value_not_in_list',
+              message: 'Value not in list',
+              details: '',
+              extra_info: {
+                input_name: 'ckpt_name',
+                received_value: FAKE_MODEL_NAME
+              }
+            }
+          ]
+        }
+      } satisfies Record<string, NodeError>
+      await new ExecutionHelper(comfyPage).mockValidationFailure(nodeErrors)
+    })
+
+    test('Should keep an absorbed missing-model validation failure amber', async ({
+      comfyPage
+    }) => {
+      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
+        .click()
+
+      await expect(
+        comfyPage.page.locator('section[data-testid^="error-group-"]')
+      ).toHaveCount(1)
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
+      ).toBeVisible()
+      await expect(
+        comfyPage.page.getByTestId('errors-summary-hero-error')
+      ).toBeHidden()
+      await expect(
+        comfyPage.page.getByTestId('errors-summary-hero-missing')
+      ).toBeVisible()
+      await expect(
+        comfyPage.page
+          .getByTestId(TestIds.propertiesPanel.errorsTab)
+          .getByTestId('panel-tab-icon')
+      ).toHaveAccessibleName('Setup pending')
+    })
   })
 
   test('Should copy model URL to clipboard', async ({ comfyPage }) => {
