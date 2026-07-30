@@ -76,14 +76,17 @@ function liftValidationError(
   return lifted
 }
 
-function createDuplicatePromotedModelFixture() {
+function createDuplicatePromotedModelFixture(secondModelValue = 'None') {
   const rootGraph = createTestRootGraph()
   const subgraph = createTestSubgraph({ rootGraph })
   const host = createTestSubgraphNode(subgraph, { id: 12 })
   rootGraph.add(host)
 
   function addPromotedModelNode(id: number) {
-    const node = new LGraphNode('CheckpointLoaderSimple')
+    const node = new LGraphNode(
+      'CheckpointLoaderSimple',
+      'CheckpointLoaderSimple'
+    )
     node.id = toNodeId(id)
     const input = node.addInput('ckpt_name', 'COMBO')
     const widget = node.addWidget('combo', 'ckpt_name', '', () => {}, {
@@ -106,26 +109,18 @@ function createDuplicatePromotedModelFixture() {
     throw new Error('Expected promoted model inputs')
   }
   widgetValueStore.setValue(firstInput.widgetId, 'missing.safetensors')
-  widgetValueStore.setValue(secondInput.widgetId, 'None')
+  widgetValueStore.setValue(secondInput.widgetId, secondModelValue)
 
   return {
     candidates: scanAllModelCandidates(rootGraph, () => false),
     nodeErrors: liftNodeErrorsToBoundary(rootGraph, {
-      '12:5': nodeError([
-        validationError('value_not_in_list', 'ckpt_name', {
-          received_value: 'missing.safetensors'
-        })
-      ]),
-      '12:7': nodeError([
-        validationError('value_not_in_list', 'ckpt_name', {
-          received_value: 'None'
-        })
-      ])
+      '12:5': nodeError([validationError('value_not_in_list', 'ckpt_name')]),
+      '12:7': nodeError([validationError('value_not_in_list', 'ckpt_name')])
     })
   }
 }
 
-describe('getMissingResourceValidationErrorAbsorption', () => {
+describe('missing resource validation error absorption', () => {
   it('matches a missing model by execution node and widget', () => {
     const error = validationError('value_not_in_list', 'ckpt_name')
 
@@ -289,29 +284,6 @@ describe('getMissingResourceValidationErrorAbsorption', () => {
     ).toBe('missing_media')
   })
 
-  it('absorbs a renamed model input using its lifted interior name', () => {
-    const error = liftValidationError(
-      'source_model',
-      'ckpt_name',
-      validationError('value_not_in_list', 'ckpt_name')
-    )
-
-    expect(
-      getMissingResourceValidationErrorAbsorption(
-        [
-          missingModel({
-            nodeId: 12,
-            sourceExecutionId: liftedSourceNodeId,
-            widgetName: 'ckpt_name'
-          })
-        ],
-        [],
-        error,
-        liftedHostNodeId
-      )
-    ).toBe('missing_model')
-  })
-
   it('does not absorb a lifted error with no matching interior input', () => {
     const error = liftValidationError(
       'source_image',
@@ -341,6 +313,7 @@ describe('getMissingResourceValidationErrorAbsorption', () => {
       {
         nodeId: '12',
         sourceExecutionId: '12:5',
+        nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         name: 'missing.safetensors',
         isMissing: true
@@ -362,6 +335,27 @@ describe('getMissingResourceValidationErrorAbsorption', () => {
       )
     ).toEqual(['missing_model', null])
     expect(result.hasBlockingError).toBe(true)
+  })
+
+  it('absorbs each same-named promoted error into its own model candidate', () => {
+    const { candidates, nodeErrors } =
+      createDuplicatePromotedModelFixture('beta.safetensors')
+
+    const result = classifyPanelErrors({
+      promptError: null,
+      executionError: null,
+      nodeErrors,
+      missingModels: candidates,
+      missingMedia: [],
+      hasMissingNodes: false
+    })
+
+    expect(
+      result.nodeErrors.flatMap(({ errors }) =>
+        errors.map(({ absorption }) => absorption)
+      )
+    ).toEqual(['missing_model', 'missing_model'])
+    expect(result.hasBlockingError).toBe(false)
   })
 
   it('absorbs interior image-not-loaded errors without boundary lifting', () => {
