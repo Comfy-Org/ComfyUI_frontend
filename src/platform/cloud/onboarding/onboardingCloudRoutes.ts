@@ -131,7 +131,8 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
     path: '/oauth',
     component: () =>
       import('@/platform/cloud/onboarding/components/OAuthLayoutView.vue'),
-    meta: { defersDesktopLoginRedemption: true },
+    // Not flagged like /cloud: consent waits for the user and then leaves the
+    // app for the client's redirect URI, so deferral would starve the code.
     children: [
       {
         path: 'consent',
