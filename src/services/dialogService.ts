@@ -1,4 +1,5 @@
 import { merge } from 'es-toolkit/compat'
+import { watch } from 'vue'
 import type { Component } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
@@ -22,6 +23,7 @@ import type {
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -582,6 +584,22 @@ export const useDialogService = () => {
     })
   }
 
+  async function showSetMemberCreditLimitDialog(props: {
+    memberId: string
+    memberName: string
+    creditsUsed?: number
+    currentLimit?: number | null
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'set-member-credit-limit',
+      component,
+      props,
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
   async function showInviteMemberDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/InviteMemberDialogContent.vue')
@@ -649,24 +667,36 @@ export const useDialogService = () => {
   }
 
   /**
-   * Downgrade a team plan to a personal plan (FE-977). Skips the type-"I
-   * understand" confirm dialog when the workspace has no other members;
-   * failures on that path surface as an error toast.
+   * Downgrade a team plan to a personal plan. Skips the type-"I understand"
+   * confirm dialog only when there's nothing to confirm: no other members to
+   * remove and no reactivation charge to disclose. Failures on that fast
+   * path surface as an error toast.
    */
   async function showDowngradeToPersonalDialog(options: {
     planName: string
     planSlug: string
-  }) {
-    const { useDowngradeToPersonal } =
-      await import('@/platform/workspace/composables/useDowngradeToPersonal')
-    const { hasOtherMembers, refreshMembers, downgradeToPersonal } =
-      useDowngradeToPersonal()
+  }): Promise<DowngradeToPersonalResult | null> {
+    const {
+      useDowngradeToPersonal,
+      ReactivationConfirmationRequiredError,
+      ReactivationAmountChangedError
+    } = await import('@/platform/workspace/composables/useDowngradeToPersonal')
+    const {
+      hasOtherMembers,
+      refreshMembers,
+      previewDowngrade,
+      downgradeToPersonal
+    } = useDowngradeToPersonal()
 
+    let requiresReactivation = false
+    let chargeCents = 0
     try {
       await refreshMembers()
-      if (!hasOtherMembers.value) {
-        await downgradeToPersonal(options.planSlug)
-        return
+      const preview = await previewDowngrade(options.planSlug)
+      requiresReactivation = preview.requiresReactivationConfirmation
+      chargeCents = preview.preview.cost_today_cents
+      if (!hasOtherMembers.value && !requiresReactivation) {
+        return await downgradeToPersonal(options.planSlug)
       }
     } catch (error) {
       useToastStore().add({
@@ -674,24 +704,72 @@ export const useDialogService = () => {
         summary: t('subscription.downgrade.failed'),
         detail: error instanceof Error ? error.message : t('g.unknownError')
       })
-      return
+      return null
     }
 
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'downgrade-remove-members',
-      component,
-      props: {
-        planName: options.planName,
-        planSlug: options.planSlug,
-        onConfirm: downgradeToPersonal
-      },
-      dialogComponentProps: {
-        ...workspaceDialogProps,
-        closable: false,
-        dismissableMask: false
+    const dialogKey = 'downgrade-remove-members'
+    dialogStore.closeDialog({ key: dialogKey })
+    return new Promise((resolve) => {
+      const stopWatching = watch(
+        () => dialogStore.isDialogOpen(dialogKey),
+        (isOpen) => {
+          if (!isOpen) resolveResult(null)
+        },
+        { flush: 'sync' }
+      )
+      function resolveResult(result: DowngradeToPersonalResult | null) {
+        stopWatching()
+        resolve(result)
       }
+
+      dialogStore.showDialog({
+        key: dialogKey,
+        component,
+        props: {
+          planName: options.planName,
+          planSlug: options.planSlug,
+          requiresRemoval: hasOtherMembers.value,
+          requiresReactivation,
+          chargeCents,
+          onConfirm: async (planSlug: string, confirmReactivation: boolean) => {
+            try {
+              const result = await downgradeToPersonal(
+                planSlug,
+                confirmReactivation,
+                chargeCents
+              )
+              resolveResult(result)
+            } catch (error) {
+              // A fresh preview inside downgradeToPersonal() found the
+              // dialog's captured state (open-time cancellation/charge) is
+              // stale and refused to bill it. Push the corrected values into
+              // the still-open dialog so a retry sends what these errors'
+              // own preview says is actually true, instead of repeating the
+              // same rejected request forever.
+              if (
+                error instanceof ReactivationConfirmationRequiredError ||
+                error instanceof ReactivationAmountChangedError
+              ) {
+                requiresReactivation = true
+                chargeCents = error.preview.cost_today_cents
+                dialogStore.updateDialog({
+                  key: dialogKey,
+                  contentProps: { requiresReactivation, chargeCents }
+                })
+              }
+              throw error
+            }
+          }
+        },
+        dialogComponentProps: {
+          ...workspaceDialogProps,
+          closable: false,
+          dismissableMask: false,
+          onClose: () => resolveResult(null)
+        }
+      })
     })
   }
 
@@ -753,6 +831,7 @@ export const useDialogService = () => {
     showEditWorkspaceDialog,
     showRemoveMemberDialog,
     showChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,

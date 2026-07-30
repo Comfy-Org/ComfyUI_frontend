@@ -78,7 +78,7 @@ export type Viewport3dDeps = {
 
 export class Viewport3d {
   protected readonly view: RendererView
-  protected clock: THREE.Clock
+  protected timer: THREE.Timer
   private renderLoop: RenderLoopHandle | null = null
   private onContextMenuCallback?: (event: MouseEvent) => void
   private getDimensionsCallback?: () => { width: number; height: number } | null
@@ -114,7 +114,7 @@ export class Viewport3d {
     options: Load3DOptions = {}
   ) {
     this.view = deps.view
-    this.clock = new THREE.Clock()
+    this.timer = new THREE.Timer()
     this.isViewerMode = options.isViewerMode || false
     this.onContextMenuCallback = options.onContextMenu
     this.getDimensionsCallback = options.getDimensions
@@ -215,7 +215,7 @@ export class Viewport3d {
   }
 
   forceRender(): void {
-    const delta = this.clock.getDelta()
+    const delta = this.timer.update().getDelta()
     this.tickPerFrame(delta)
     this.renderView()
     this.INITIAL_RENDER_DONE = true
@@ -403,7 +403,7 @@ export class Viewport3d {
   protected startAnimation(): void {
     this.renderLoop = startRenderLoop({
       tick: () => {
-        const delta = this.clock.getDelta()
+        const delta = this.timer.update().getDelta()
         this.tickPerFrame(delta)
         this.renderView()
       },

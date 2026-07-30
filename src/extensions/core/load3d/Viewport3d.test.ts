@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Viewport3dDeps } from '@/extensions/core/load3d/Viewport3d'
 import { Viewport3d } from '@/extensions/core/load3d/Viewport3d'
 
 type CameraStub = {
@@ -563,6 +564,88 @@ describe('Viewport3d', () => {
       vi.advanceTimersByTime(100)
 
       expect(ctx.forceRender).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('frame timing (constructed instance)', () => {
+    function makeConstructedViewport() {
+      const renderer = {
+        setViewport: vi.fn(),
+        setScissor: vi.fn(),
+        setScissorTest: vi.fn(),
+        setClearColor: vi.fn(),
+        clear: vi.fn(),
+        render: vi.fn()
+      }
+      const view = {
+        canvas: document.createElement('canvas'),
+        renderer,
+        width: 800,
+        height: 600,
+        state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
+        observeResize: vi.fn(),
+        beginRender: vi.fn(),
+        blit: vi.fn(),
+        setSize: vi.fn(),
+        dispose: vi.fn()
+      }
+      const controlsManager = { init: vi.fn(), update: vi.fn() }
+      const viewHelperManager = {
+        createViewHelper: vi.fn(),
+        init: vi.fn(),
+        update: vi.fn<(delta: number) => void>(),
+        render: vi.fn()
+      }
+      const deps = {
+        view,
+        eventManager: {
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          emitEvent: vi.fn()
+        },
+        sceneManager: {
+          init: vi.fn(),
+          scene: new THREE.Scene(),
+          renderBackground: vi.fn()
+        },
+        cameraManager: {
+          init: vi.fn(),
+          activeCamera: new THREE.PerspectiveCamera()
+        },
+        controlsManager,
+        lightingManager: { init: vi.fn() },
+        viewHelperManager
+      } as unknown as Viewport3dDeps
+
+      const viewport = new Viewport3d(document.createElement('div'), deps)
+      return { viewport, view, renderer, controlsManager, viewHelperManager }
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['performance'] })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('forceRender feeds elapsed time between frames to per-frame updates and renders the view', () => {
+      const { viewport, view, renderer, controlsManager, viewHelperManager } =
+        makeConstructedViewport()
+
+      viewport.forceRender()
+      vi.advanceTimersByTime(100)
+      viewport.forceRender()
+
+      const deltas = viewHelperManager.update.mock.calls.map(([delta]) => delta)
+      expect(deltas).toHaveLength(2)
+      expect(deltas[1]).toBeCloseTo(0.1)
+
+      expect(controlsManager.update).toHaveBeenCalledTimes(2)
+      expect(view.beginRender).toHaveBeenCalledTimes(2)
+      expect(renderer.render).toHaveBeenCalledTimes(2)
+      expect(view.blit).toHaveBeenCalledTimes(2)
+      expect(viewport.INITIAL_RENDER_DONE).toBe(true)
     })
   })
 })
