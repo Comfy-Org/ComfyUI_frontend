@@ -727,12 +727,13 @@ test(
 )
 
 test(
-  'Linked widgets can not be demoted',
+  'Linked widgets can be demoted via the toggle button',
   { tag: ['@vue-nodes'] },
   async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
     const { editor } = comfyPage.subgraph
     const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
+    const steps = comfyPage.vueNodes.getWidgetByName('New Subgraph', 'steps')
 
     await test.step('Enter subgraph and link widget to input', async () => {
       await comfyPage.vueNodes.enterSubgraph('2')
@@ -749,8 +750,18 @@ test(
       await comfyPage.subgraph.exitViaBreadcrumb()
     })
 
+    await expect(steps, 'widget shown after linking').toBeVisible()
+
     await editor.ensureOpen(subgraphNode)
     const stepsItem = await editor.resolveItem({ widgetName: 'steps' })
-    await expect(editor.getToggleButton(stepsItem)).toBeDisabled()
+    const toggleButton = editor.getToggleButton(stepsItem)
+    await expect(
+      toggleButton,
+      'toggle is enabled for linked promotions'
+    ).toBeEnabled()
+
+    await toggleButton.click()
+
+    await expect(steps, 'widget hidden after demoting').toBeHidden()
   }
 )

@@ -8,7 +8,12 @@ import { h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import {
+  demoteWidget,
+  promoteWidget
+} from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import WidgetActions from './WidgetActions.vue'
 
@@ -25,9 +30,9 @@ const {
 }))
 
 vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
+  demotePromotedInput: vi.fn(),
   demoteWidget: vi.fn(),
-  promoteWidget: vi.fn(),
-  isLinkedPromotion: vi.fn(() => false)
+  promoteWidget: vi.fn()
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
@@ -120,6 +125,15 @@ describe('WidgetActions', () => {
       computeSize: vi.fn(),
       size: [200, 100],
       isSubgraphNode: () => false
+    })
+  }
+
+  function createMockParentSubgraphNode(): SubgraphNode {
+    return fromAny<SubgraphNode, unknown>({
+      id: 2,
+      type: 'SubgraphNode',
+      computeSize: vi.fn(),
+      size: [200, 100]
     })
   }
 
@@ -261,5 +275,51 @@ describe('WidgetActions', () => {
       is_favorited: false,
       source: 'right_side_panel'
     })
+  })
+
+  it('does not show Hide/Show input option when the widget has no subgraph parents', () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+
+    renderWidgetActions(widget, node)
+
+    expect(
+      screen.queryByRole('button', { name: 'Hide input' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Show input' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides a promoted widget when Hide input is clicked', async () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+    const parent = createMockParentSubgraphNode()
+
+    const { user } = renderWidgetActions(widget, node, {
+      parents: [parent],
+      isShownOnParents: true
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Hide input' }))
+
+    expect(demoteWidget).toHaveBeenCalledExactlyOnceWith(node, widget, [parent])
+  })
+
+  it('promotes a widget when Show input is clicked', async () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+    const parent = createMockParentSubgraphNode()
+
+    const { user } = renderWidgetActions(widget, node, {
+      parents: [parent],
+      isShownOnParents: false
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Show input' }))
+
+    expect(promoteWidget).toHaveBeenCalledExactlyOnceWith(node, widget, [
+      parent
+    ])
   })
 })

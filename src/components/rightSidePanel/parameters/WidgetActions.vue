@@ -9,7 +9,6 @@ import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import {
   demotePromotedInput,
   demoteWidget,
-  isLinkedPromotion,
   promoteWidget
 } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -47,13 +46,6 @@ const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
 
 const hasParents = computed(() => parents?.length > 0)
-const isLinked = computed(() => {
-  if (!node.isSubgraphNode()) return false
-  const source = widgetPromotedSource(node, widget)
-  if (!source) return false
-  return isLinkedPromotion(node, source.nodeId, source.widgetName)
-})
-const canToggleVisibility = computed(() => hasParents.value && !isLinked.value)
 const favoriteNode = computed(() =>
   isShownOnParents && hasParents.value ? parents[0] : node
 )
@@ -152,7 +144,7 @@ function handleResetToDefault() {
       </Button>
 
       <Button
-        v-if="canToggleVisibility"
+        v-if="hasParents"
         variant="textonly"
         size="unset"
         class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
