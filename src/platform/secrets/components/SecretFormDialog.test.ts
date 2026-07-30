@@ -6,7 +6,14 @@ import { createI18n } from 'vue-i18n'
 
 import SecretFormDialog from './SecretFormDialog.vue'
 
-const mockState = vi.hoisted(() => ({ inputType: 'text' as string }))
+const mockState = vi.hoisted(() => ({
+  inputType: 'text' as string,
+  credentialOptions: [] as {
+    credential_type: string
+    input_type: string
+    label: string
+  }[]
+}))
 
 vi.mock('../composables/useSecretForm', () => ({
   useSecretForm: () => ({
@@ -17,6 +24,8 @@ vi.mock('../composables/useSecretForm', () => ({
     providerOptions: [],
     providerHelp: '',
     selectedInputType: computed(() => mockState.inputType),
+    credentialOptions: computed(() => mockState.credentialOptions),
+    credentialType: ref<string | null>(null),
     fileName: ref(''),
     loadSecretFromFile: vi.fn(),
     handleSubmit: vi.fn()
@@ -90,6 +99,7 @@ describe('SecretFormDialog', () => {
   beforeEach(() => {
     capturedPointerDownOutside = null
     mockState.inputType = 'text'
+    mockState.credentialOptions = []
   })
 
   it('prevents backdrop pointer-down-outside from closing the dialog', () => {
@@ -151,5 +161,33 @@ describe('SecretFormDialog', () => {
     await userEvent.keyboard('{Enter}')
 
     expect(fileClickSpy).toHaveBeenCalledOnce()
+  })
+
+  it('renders server-provided credential choices only for create forms with multiple options', () => {
+    mockState.credentialOptions = [
+      { credential_type: 'api_key', input_type: 'text', label: 'API key' },
+      {
+        credential_type: 'gcp_service_account',
+        input_type: 'json_file',
+        label: 'Service account'
+      }
+    ]
+
+    const { unmount } = render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true }
+    })
+
+    expect(screen.getByText('secrets.credentialType')).toBeTruthy()
+    expect(screen.getByText('API key')).toBeTruthy()
+    expect(screen.getByText('Service account')).toBeTruthy()
+
+    unmount()
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true, mode: 'edit' }
+    })
+
+    expect(screen.queryByText('secrets.credentialType')).toBeNull()
   })
 })
