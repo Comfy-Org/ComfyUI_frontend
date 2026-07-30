@@ -36,11 +36,12 @@ export const useExtensionStore = defineStore('extension', () => {
   // of the frontend extension disable list, in case the node pack is re-enabled.
   const inactiveDisabledExtensionNames = computed(() => {
     return Array.from(disabledExtensionNames.value).filter(
-      (name) => !(name in extensionByName.value)
+      (name) => !Object.hasOwn(extensionByName.value, name)
     )
   })
 
-  const isExtensionInstalled = (name: string) => name in extensionByName.value
+  const isExtensionInstalled = (name: string) =>
+    Object.hasOwn(extensionByName.value, name)
 
   const isExtensionEnabled = (name: string) =>
     !disabledExtensionNames.value.has(name)

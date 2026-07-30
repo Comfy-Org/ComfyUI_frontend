@@ -45,6 +45,7 @@ describe('extensionStore', () => {
 
     it('registers an extension named after a built-in property', () => {
       const store = useExtensionStore()
+      expect(store.isExtensionInstalled('toString')).toBe(false)
       expect(store.registerExtension({ name: 'toString' })).toBe(true)
       expect(store.isExtensionInstalled('toString')).toBe(true)
     })

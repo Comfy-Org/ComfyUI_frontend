@@ -147,7 +147,7 @@ describe('useExtensionService', () => {
         expect(warnSpy).toHaveBeenCalledWith(
           'Error loading extension',
           '/extensions/BadPack/bad.js',
-          expect.anything()
+          expect.any(Error)
         )
       } finally {
         warnSpy.mockRestore()
