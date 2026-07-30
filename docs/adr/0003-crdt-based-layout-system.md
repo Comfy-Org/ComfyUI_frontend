@@ -138,6 +138,21 @@ This combination provides both architectural and technical benefits:
 - Implement operation history pruning for long-running sessions
 - Phase implementation to validate approach before full migration
 
+### Amendment (2026-07-30)
+
+The Yjs operation log is deleted. Nothing ever read it: undo/redo is
+snapshot-based through `changeTracker`, and the two query methods
+(`getOperationsSince`, `getOperationsByActor`) had no callers outside tests.
+It was pure write amplification on every mutation, so the "operation history
+storage" memory cost and the history-pruning mitigation above no longer
+apply. Replay and transmission remain available — a Yjs document is itself
+the replayable, mergeable record — and `LayoutOperation` is still the
+serializable command shape every mutation goes through.
+
+Entity geometry registers and unregisters with the entity that owns it
+(`LGraph.add` / `LGraph.remove`, plus `unregisterAllGraphLayout` for bulk
+teardown) rather than being seeded per graph on renderer entry.
+
 ## Notes
 
 This centralized state + CRDT architecture follows patterns from modern collaborative applications:

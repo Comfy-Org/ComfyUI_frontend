@@ -228,24 +228,22 @@ rather than relocated:
 | `VueNodeData` mirror + `node:property:changed` handlers       | deleted; the renderer drills the `NodeState` proxy from `nodeDataStore`                                                   |
 | `getNode()` / `nodeRefs` map                                  | deleted; pinned state is read off the `NodeState` the renderer already holds, live-node lookups go to `graph.getNodeById` |
 | `shallowReactive` graft onto `inputs` / `outputs` / `widgets` | deleted; see 2e                                                                                                           |
-| `layoutStore` seeding on add/remove                           | moved to `useVueNodeLifecycle`, driven by the `node:added` / `node:removed` graph events                                  |
+| `layoutStore` seeding on add/remove                           | moved to `LGraph.add` / `LGraph.remove`, where the entity's geometry registers and unregisters with the entity itself     |
 
 Two consequences worth recording:
 
-- The **`configuringGraph` deferral is gone.** The `node:added` listener seeds
-  the layout entry with whatever geometry the node has; the `pos`/`size` setters
-  already write through to `layoutStore`, so `configure()` updates the entry as
-  the real values land. No `onAfterGraphConfigured` chaining, no `window.app`
-  read.
+- The **`configuringGraph` deferral is gone.** `LGraph.add` registers the layout
+  entry with whatever geometry the node has; the `pos`/`size` setters already
+  write through to `layoutStore`, so `configure()` updates the entry as the real
+  values land. No `onAfterGraphConfigured` chaining, no `window.app` read.
 - The **`onNodeAdded` replay loop is gone.** It re-fired `onNodeAdded` for every
   pre-existing node on each graph switch, which leaked spurious node-added
   notifications to unrelated subscribers (`useErrorClearingHooks` still carries
-  a guard written for exactly that). Per-graph layout bootstrap is now solely
-  `layoutStore.initializeFromLiteGraph`, called from `useVueNodeLifecycle` on
-  graph entry — which is what makes subgraph navigation seed the right nodes.
+  a guard written for exactly that). Geometry registers at attach and
+  unregisters at detach instead, so no bootstrap pass re-seeds a graph on entry.
 
-`useVueNodeLifecycle` keeps only layout bootstrap and the Layout↔LiteGraph sync
-lifecycle, and no longer patches anything — see 2g.
+`useVueNodeLifecycle` is gone. `GraphCanvas` owns the Layout↔LiteGraph sync
+lifecycle and patches nothing — see 2g.
 
 ### 2e. Slot reactivity ✅ Shipped
 
@@ -651,9 +649,11 @@ requires a separate ADR.
 **Questions to resolve:**
 
 - Should non-position stores also be CRDT-backed for collaboration?
-- Do the stores need an operation log for undo/redo, or can that remain external
-  (Y.js undo manager)?
 - How does conflict resolution work when two users modify the same record?
+
+Settled: the stores do not need an operation log for undo/redo. `layoutStore`
+carried one and nothing ever read it — undo/redo is snapshot-based through
+`changeTracker` — so it was deleted.
 
 ### Extension API preservation
 
