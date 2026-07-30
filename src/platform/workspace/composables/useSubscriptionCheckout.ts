@@ -416,11 +416,6 @@ export function useSubscriptionCheckout(
         ? 'change'
         : 'new'
 
-    trackSubscriptionStarted({
-      tier: tierKey,
-      cycle: billingCycle,
-      checkoutType
-    })
     isSubscribing.value = true
     try {
       const planSlug = getApiPlanSlug(tierKey, billingCycle)
@@ -431,6 +426,11 @@ export function useSubscriptionCheckout(
         await refreshPreviewOnReactivationBlock(planSlug)
         return
       }
+      trackSubscriptionStarted({
+        tier: tierKey,
+        cycle: billingCycle,
+        checkoutType
+      })
       if (confirmReactivation && isCancelled.value) {
         await assertReactivationAmountUnchanged(planSlug)
       }
@@ -622,11 +622,6 @@ export function useSubscriptionCheckout(
     const billingCycle = selectedBillingCycle.value
     const planSlug = getTeamPlanSlug(billingCycle)
 
-    trackSubscriptionStarted({
-      tier: 'team',
-      cycle: billingCycle,
-      checkoutType
-    })
     isSubscribing.value = true
     try {
       await fetchStatus()
@@ -637,6 +632,11 @@ export function useSubscriptionCheckout(
         })
         return
       }
+      trackSubscriptionStarted({
+        tier: 'team',
+        cycle: billingCycle,
+        checkoutType
+      })
       if (confirmReactivation && isCancelled.value) {
         await assertReactivationAmountUnchanged(planSlug, {
           teamCreditStopId: stop.id,

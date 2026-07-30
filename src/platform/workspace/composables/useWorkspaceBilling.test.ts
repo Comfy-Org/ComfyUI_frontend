@@ -862,6 +862,21 @@ describe('useWorkspaceBilling', () => {
       expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'failed' })
       )
+      // The idempotent short-circuit still closes the funnel this composable
+      // opened with its own 'started' event — no billing_op_id exists here
+      // since no pollable operation was ever created.
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'cancel'
+      })
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        operation_type: 'cancel'
+      })
     })
 
     it('stays a success when the follow-up status read also fails', async () => {

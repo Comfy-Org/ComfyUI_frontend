@@ -35,7 +35,8 @@ describe('DatadogRumTelemetryProvider', () => {
       cycle: 'monthly',
       checkout_type: 'new',
       payment_intent_source: 'subscribe_to_run',
-      failure_category: 'provider_decline'
+      failure_category: 'provider_decline',
+      duration_ms: 4200
     }
 
     new DatadogRumTelemetryProvider().trackBillingEvent(event)

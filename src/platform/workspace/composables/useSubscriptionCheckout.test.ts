@@ -932,6 +932,10 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
+      // Regression guard: this reactivation-consent guard is not a checkout
+      // attempt, so it must not open a funnel entry no terminal event will
+      // ever close.
+      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('refuses to bill a team reactivation when a fresh preview no longer matches the confirmed charge', async () => {
@@ -1675,6 +1679,10 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
+      // Regression guard: this reactivation-consent guard is not a checkout
+      // attempt, so it must not open a funnel entry no terminal event will
+      // ever close.
+      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('refuses to bill when a fresh preview no longer matches the confirmed charge', async () => {
