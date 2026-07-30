@@ -1,6 +1,11 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import {
+  getExecutionIdByNode,
+  getRootParentNode
+} from '@/utils/graphTraversalUtil'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 import { TOUR_ROLE_PINS } from './tourRolePins'
 import type {
@@ -16,10 +21,16 @@ export interface ResolvedRoles {
   mediaKind: TourMediaKind
 }
 
-function resolvePin(pin: RolePin | undefined, graph: LGraph): NodeId | null {
+function rootHost(node: LGraphNode, root: LGraph): LGraphNode | null {
+  if (node.graph === root) return node
+  const executionId = getExecutionIdByNode(root, node)
+  return executionId ? getRootParentNode(root, executionId) : null
+}
+
+function resolvePin(pin: RolePin | undefined, root: LGraph): NodeId | null {
   if (!pin) return null
-  const node = graph.getNodeById(toNodeId(pin.id))
-  return node?.type === pin.type ? node.id : null
+  const node = resolveNode(pin.id, root)
+  return node?.type === pin.type ? (rootHost(node, root)?.id ?? null) : null
 }
 
 export function resolveTourRoles(
