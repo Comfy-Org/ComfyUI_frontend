@@ -132,7 +132,11 @@
           variant="muted-textonly"
           size="icon"
           class="size-8 shrink-0 text-warning-background hover:text-warning-background focus-visible:ring-inset"
-          :aria-label="`${t('rightSidePanel.missingModels.openHuggingFaceRepo')} ${model.name}`"
+          :aria-label="
+            t('rightSidePanel.missingModels.openHuggingFaceRepo', {
+              model: model.name
+            })
+          "
           :title="gatedModelTooltip"
           @click="handleOpenGatedRepo"
         >
@@ -144,7 +148,11 @@
           variant="secondary"
           size="sm"
           class="shrink-0 focus-visible:ring-inset"
-          :aria-label="`${t('g.download')} ${model.name}`"
+          :aria-label="
+            t('rightSidePanel.missingModels.downloadModel', {
+              model: model.name
+            })
+          "
           :aria-describedby="
             showGatedRepoAction ? gatedDownloadDescriptionId : undefined
           "
