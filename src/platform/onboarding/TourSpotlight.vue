@@ -85,12 +85,14 @@
                 {{ backLabel }}
               </Button>
               <Button
-                v-if="!step.selfAdvancing"
+                v-if="!step.selfAdvancing || step.primaryAction"
                 ref="primaryButton"
                 variant="inverted"
                 size="md"
                 :disabled="waitingForTarget"
-                @click="emit('advance')"
+                @click="
+                  step.primaryAction ? step.primaryAction() : emit('advance')
+                "
               >
                 {{ primaryLabel }}
                 <i v-if="!isLast" class="icon-[lucide--arrow-right]" />
