@@ -282,6 +282,23 @@ describe('TaskItemImpl', () => {
       expect(taskItem.executionError).toEqual(errorDetail)
     })
   })
+
+  describe('previewableOutputsCount', () => {
+    it('returns undefined when the job has no previewable_outputs_count (e.g. local ComfyUI)', () => {
+      const job = createHistoryJob(0, 'job-id')
+      const taskItem = new TaskItemImpl(job)
+      expect(taskItem.previewableOutputsCount).toBeUndefined()
+    })
+
+    it('returns the server-provided previewable_outputs_count', () => {
+      const job: JobListItem = {
+        ...createHistoryJob(0, 'job-id'),
+        previewable_outputs_count: 2
+      }
+      const taskItem = new TaskItemImpl(job)
+      expect(taskItem.previewableOutputsCount).toBe(2)
+    })
+  })
 })
 
 describe('useQueueStore', () => {

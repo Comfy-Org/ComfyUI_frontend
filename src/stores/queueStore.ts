@@ -330,6 +330,15 @@ export class TaskItemImpl {
     return this.job.outputs_count ?? undefined
   }
 
+  /**
+   * Count of outputs previewable in the frontend (images, video, audio, 3D),
+   * as computed by the backend. Cloud-only: absent on local ComfyUI, and on
+   * jobs from before this field existed.
+   */
+  get previewableOutputsCount(): number | undefined {
+    return this.job.previewable_outputs_count ?? undefined
+  }
+
   get status() {
     return this.job.status
   }
