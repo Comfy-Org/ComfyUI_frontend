@@ -85,16 +85,23 @@ describe('UnifiedStripePaymentSelector', () => {
     const { emitted } = renderSelector()
 
     await waitFor(() => {
-      expect(stripeMocks.stripe.elements).toHaveBeenCalledWith({
-        mode: 'subscription',
-        amount: 66500,
-        currency: 'usd',
-        setupFutureUsage: 'off_session',
-        paymentMethodConfiguration: 'pmc_subscription'
-      })
+      expect(stripeMocks.stripe.elements).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: 'subscription',
+          amount: 66500,
+          currency: 'usd',
+          setupFutureUsage: 'off_session',
+          paymentMethodConfiguration: 'pmc_subscription'
+        })
+      )
     })
     expect(stripeMocks.create).toHaveBeenCalledWith('payment', {
-      layout: 'accordion'
+      layout: {
+        type: 'accordion',
+        defaultCollapsed: false,
+        radios: 'always',
+        spacedAccordionItems: true
+      }
     })
     expect(stripeMocks.mount).toHaveBeenCalledTimes(1)
 
@@ -108,7 +115,7 @@ describe('UnifiedStripePaymentSelector', () => {
     expect(stripeMocks.createConfirmationToken).toHaveBeenCalledWith({
       elements: stripeMocks.elements
     })
-    expect(emitted().confirm).toEqual([['ctoken_1']])
+    expect(emitted().confirm).toEqual([['ctoken_1', undefined]])
   })
 
   it('keeps the customer in the form when Stripe rejects its contents', async () => {
