@@ -259,6 +259,10 @@ function formatTierName(tier: string): string {
   return t(`subscription.tiers.${tier.toLowerCase()}.name`)
 }
 
+function isTeamTier(tier: string): boolean {
+  return tier.toUpperCase() === 'TEAM'
+}
+
 function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
@@ -301,9 +305,13 @@ const newTierName = computed(() =>
     ? t('subscription.teamPlan.name')
     : formatTierName(previewData.new_plan.tier)
 )
-const currentTierName = computed(() =>
-  previewData.current_plan ? formatTierName(previewData.current_plan.tier) : ''
-)
+const currentTierName = computed(() => {
+  const tier = previewData.current_plan?.tier
+  if (!tier) return ''
+  return isTeamTier(tier)
+    ? t('subscription.teamPlan.name')
+    : formatTierName(tier)
+})
 const currentPlanLabel = computed(() =>
   currentIsYearly.value
     ? t('subscription.tierNameYearly', { name: currentTierName.value })

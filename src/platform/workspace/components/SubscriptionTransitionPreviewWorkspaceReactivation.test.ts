@@ -37,6 +37,7 @@ const i18n = createI18n({
           standard: { name: 'Standard' },
           creator: { name: 'Creator' }
         },
+        teamPlan: { name: 'Team Plan' },
         preview: {
           switchesToday: 'Switches today',
           startsOn: 'Starts {date}',
@@ -160,6 +161,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         transition_type: 'upgrade',
         cost_today_cents: 2500
       })
+      preview.current_plan!.tier = 'TEAM' as never
       preview.current_plan!.period_end = '2026-08-29T00:00:00Z'
 
       const { container } = renderComponent(preview, true)
@@ -168,7 +170,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         screen.getByText('Reactivating your subscription')
       ).toBeInTheDocument()
       expect(container.textContent).toContain(
-        'Your Standard was set to end on Aug 29, 2026'
+        'Your Team Plan was set to end on Aug 29, 2026'
       )
       expect(
         screen.getByRole('button', {
