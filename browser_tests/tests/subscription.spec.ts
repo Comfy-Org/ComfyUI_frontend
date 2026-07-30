@@ -180,10 +180,15 @@ freeTierTest.describe(
   { tag: '@cloud' },
   () => {
     freeTierTest(
-      'Topbar subscribe button visible for free tier',
+      'No header upgrade CTA for free tier; Upgrade lives in the profile menu',
       async ({ comfyPage }) => {
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
+        ).toBeHidden()
+
+        await comfyPage.page.getByTestId(TestIds.user.currentUserButton).click()
+        await expect(
+          comfyPage.page.getByTestId(TestIds.user.upgradeToAddCreditsButton)
         ).toBeVisible()
       }
     )
