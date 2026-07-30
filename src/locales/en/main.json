@@ -2775,8 +2775,8 @@
       "memberRunTooltip": "Contact your workspace owner to resubscribe",
       "runLabel": "Run"
     },
-    "subscribeToRun": "Subscribe",
-    "subscribeToRunFull": "Subscribe to Run",
+    "subscribeToRun": "Upgrade",
+    "subscribeToRunFull": "Upgrade to Run",
     "subscribeForMore": "Upgrade",
     "upgradeToAddCredits": "Upgrade to add credits",
     "subscribe": "Subscribe",

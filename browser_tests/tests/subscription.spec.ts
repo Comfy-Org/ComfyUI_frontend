@@ -57,6 +57,10 @@ unsubscribedTest.describe(
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
         ).toBeVisible()
+        // The run bar CTA acts as the upgrade path, so the header stays clean.
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
+        ).toBeHidden()
       }
     )
 
@@ -180,11 +184,11 @@ freeTierTest.describe(
   { tag: '@cloud' },
   () => {
     freeTierTest(
-      'No header upgrade CTA for free tier; Upgrade lives in the profile menu',
+      'Topbar Upgrade visible while a free-tier user can still run',
       async ({ comfyPage }) => {
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
-        ).toBeHidden()
+        ).toBeVisible()
 
         await comfyPage.page.getByTestId(TestIds.user.currentUserButton).click()
         await expect(

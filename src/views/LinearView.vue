@@ -11,6 +11,7 @@ import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
@@ -107,6 +108,7 @@ function dragDrop(e: DragEvent) {
       <div class="flex h-full items-center">
         <WorkflowTabs />
         <TopbarBadges />
+        <TopbarSubscribeButton />
       </div>
     </div>
     <div
