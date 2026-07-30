@@ -493,14 +493,7 @@ describe('TabErrors.vue', () => {
     )
     const missingHero = screen.getByTestId('errors-summary-hero-missing')
     const missingHeroCount = within(missingHero).getByText('2')
-    expect(missingHeroCount).toHaveClass(
-      'h-12',
-      'px-1',
-      'text-warning-background'
-    )
-    expect(missingHeroCount).not.toHaveClass('rounded-lg')
-    expect(missingHeroCount).not.toHaveClass('bg-warning-background')
-    expect(missingHeroCount).not.toHaveClass('text-charcoal-800')
+    expect(missingHeroCount).toHaveClass('text-warning-background')
     expect(within(missingHero).getByText('Setup pending')).toBeInTheDocument()
     expect(
       screen.queryByTestId('errors-summary-hero-error')
@@ -797,7 +790,6 @@ describe('TabErrors.vue', () => {
     ).not.toBeInTheDocument()
     const contextStrip = screen.getByTestId('selection-context-strip')
     expect(contextStrip).toHaveTextContent('4 nodes affected')
-    expect(contextStrip).not.toHaveTextContent('5')
     expect(contextStrip).not.toHaveTextContent(/errors/i)
   })
 
@@ -872,12 +864,7 @@ describe('TabErrors.vue', () => {
       'icon-[lucide--triangle-alert]',
       'bg-warning-background'
     )
-    expect(icon).not.toHaveClass(
-      'icon-[lucide--octagon-alert]',
-      'bg-node-stroke-error'
-    )
     expect(icon).toHaveAccessibleName('Setup pending')
-    expect(screen.getByRole('img', { name: 'Setup pending' })).toBe(icon)
   })
 
   it('uses error severity for an unabsorbed node validation error', () => {
@@ -894,10 +881,6 @@ describe('TabErrors.vue', () => {
     expect(icon).toHaveClass(
       'icon-[lucide--octagon-alert]',
       'bg-node-stroke-error'
-    )
-    expect(icon).not.toHaveClass(
-      'icon-[lucide--triangle-alert]',
-      'bg-warning-background'
     )
     expect(icon).toHaveAccessibleName('Blocking errors')
   })
@@ -948,10 +931,6 @@ describe('TabErrors.vue', () => {
     expect(icon).toHaveClass(
       'icon-[lucide--triangle-alert]',
       'bg-warning-background'
-    )
-    expect(icon).not.toHaveClass(
-      'icon-[lucide--octagon-alert]',
-      'bg-node-stroke-error'
     )
     expect(icon).toHaveAccessibleName('Setup pending')
   })

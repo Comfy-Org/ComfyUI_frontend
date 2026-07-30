@@ -3,10 +3,17 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
-import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createBoundaryLinkedSubgraph,
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
@@ -79,10 +86,22 @@ describe('getMissingResourceValidationErrorAbsorption', () => {
     ).toBe('missing_model')
   })
 
-  it('absorbs a subgraph-promoted model at its lifted host node', () => {
-    const hostNodeId = createNodeExecutionId([5])
+  it('absorbs a fail-open interior model error by source execution id', () => {
     const sourceExecutionId = createNodeExecutionId([5, 3])
-    const error = validationError('value_not_in_list', 'ckpt_name')
+    const rootGraph = createTestRootGraph()
+    const subgraph = createTestSubgraph({ rootGraph })
+    const host = createTestSubgraphNode(subgraph, { id: 5 })
+    rootGraph.add(host)
+    const interior = new LGraphNode('CheckpointLoaderSimple')
+    interior.id = toNodeId(3)
+    interior.addInput('ckpt_name', 'COMBO')
+    subgraph.add(interior)
+    const error = liftNodeErrorsToBoundary(rootGraph, {
+      [sourceExecutionId]: nodeError([
+        validationError('value_not_in_list', 'ckpt_name')
+      ])
+    })[sourceExecutionId]?.errors[0]
+    if (!error) throw new Error('Expected validation error to remain interior')
 
     expect(
       getMissingResourceValidationErrorAbsorption(
@@ -94,7 +113,7 @@ describe('getMissingResourceValidationErrorAbsorption', () => {
         ],
         [],
         error,
-        hostNodeId
+        sourceExecutionId
       )
     ).toBe('missing_model')
   })
