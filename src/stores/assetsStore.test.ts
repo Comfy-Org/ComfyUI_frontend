@@ -665,7 +665,7 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(asset.user_metadata!.outputCount).toBe(2)
     })
 
-    it('falls back to outputs_count when previewable_outputs_count is absent (e.g. local ComfyUI)', async () => {
+    it('falls back to outputs_count when previewable_outputs_count is absent', async () => {
       const job: JobListItem = {
         ...createMockJobItem(0),
         outputs_count: 3
