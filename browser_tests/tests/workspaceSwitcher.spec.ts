@@ -199,6 +199,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     await comfyPage.menu.topbar.saveWorkflow(teamWorkflows[1])
 
+    await comfyPage.toast.closeToasts()
     await page.getByRole('button', { name: 'Current user' }).click()
     await page.getByTestId('workspace-switcher-trigger').click()
     await page
@@ -219,6 +220,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       .poll(() => comfyPage.menu.topbar.getTabNames())
       .toEqual(personalWorkflows)
 
+    await comfyPage.toast.closeToasts()
     await page.getByRole('button', { name: 'Current user' }).click()
     await page.getByTestId('workspace-switcher-trigger').click()
     await page
