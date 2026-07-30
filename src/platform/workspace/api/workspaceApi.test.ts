@@ -453,14 +453,16 @@ describe('workspaceApi', () => {
       mockAxiosInstance.post.mockResolvedValue({ data })
 
       const result = await workspaceApi.subscribe('pro-monthly', {
-        confirmReactivation: true
+        confirmReactivation: true,
+        prorationAt: '2026-07-29T12:00:00Z'
       })
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/subscribe',
         expect.objectContaining({
           plan_slug: 'pro-monthly',
-          confirm_reactivation: true
+          confirm_reactivation: true,
+          proration_at: '2026-07-29T12:00:00Z'
         }),
         { headers: AUTH_HEADER }
       )
