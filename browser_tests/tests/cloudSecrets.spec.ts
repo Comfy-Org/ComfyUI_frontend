@@ -1,6 +1,10 @@
 import { expect } from '@playwright/test'
 
-import { ComfyPage, comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import {
+  cloudAppFixture as test,
+  waitForCloudApp
+} from '@e2e/fixtures/cloudAppFixture'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import {
   SECRETS_BOOT_FEATURES,
@@ -34,8 +38,6 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     page,
     request
   }) => {
-    test.slow()
-
     await mockCloudBoot(page, {
       features: SECRETS_BOOT_FEATURES,
       settings: SECRETS_BOOT_SETTINGS
@@ -44,9 +46,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     const backend = await mockSecretsBackend(page, ['runway', 'gemini'])
 
     await page.goto(APP_URL)
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
+    await waitForCloudApp(page)
 
     const comfyPage = new ComfyPage(page, request)
     const settingsDialog = await openSecretsPanel(comfyPage.settingDialog)
@@ -124,8 +124,6 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     page,
     request
   }) => {
-    test.slow()
-
     await mockCloudBoot(page, {
       features: SECRETS_BOOT_FEATURES,
       settings: SECRETS_BOOT_SETTINGS
@@ -135,9 +133,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     await mockSecretsBackend(page, [])
 
     await page.goto(APP_URL)
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
+    await waitForCloudApp(page)
 
     const comfyPage = new ComfyPage(page, request)
     const settingsDialog = await openSecretsPanel(comfyPage.settingDialog)

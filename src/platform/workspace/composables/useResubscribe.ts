@@ -34,16 +34,37 @@ export function useResubscribe() {
     isResubscribing.value = true
     try {
       await resubscribe()
+      if (shouldUseWorkspaceBilling.value) {
+        useTelemetry()?.trackBillingEvent({
+          operation: 'resubscribe',
+          stage: 'succeeded',
+          outcome: 'success',
+          source: 'settings_billing_panel'
+        })
+      }
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),
         life: 5000
       })
     } catch (error) {
+      const detail =
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : t('subscription.resubscribeFailed')
+      if (shouldUseWorkspaceBilling.value) {
+        useTelemetry()?.trackBillingEvent({
+          operation: 'resubscribe',
+          stage: 'failed',
+          outcome: 'failure',
+          source: 'settings_billing_panel',
+          failure_category: 'unknown'
+        })
+      }
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: error instanceof Error ? error.message : t('g.error')
+        detail
       })
     } finally {
       isResubscribing.value = false
