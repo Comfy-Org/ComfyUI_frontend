@@ -183,6 +183,11 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       })
     })
 
+    // The workspace list is only fetched once, on app boot, so the override
+    // above has no effect on the workspaces already loaded via the
+    // fixture-level mock. Reload to re-run boot against the new mock.
+    await comfyPage.workflow.reloadAndWaitForApp()
+
     await comfyPage.toast.closeToasts()
     await page.getByRole('button', { name: 'Current user' }).click()
     await page.getByTestId('workspace-switcher-trigger').click()
