@@ -80,9 +80,6 @@ const isLive = computed(
   <section
     class="max-w-9xl mx-auto flex flex-col items-center px-6 py-16 text-center lg:py-24"
   >
-    <div v-if="$slots.actions" class="mb-8 lg:mb-10">
-      <slot name="actions" />
-    </div>
     <div
       v-if="isLive"
       class="mb-10 aspect-video w-full overflow-hidden rounded-2xl lg:mb-12"

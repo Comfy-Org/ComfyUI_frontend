@@ -4672,32 +4672,16 @@ const translations = {
     en: 'Comfy',
     'zh-CN': 'Comfy'
   },
-  'launches.hero.addToCalendar': {
-    en: 'Add to calendar',
-    'zh-CN': '添加到日历'
-  },
-  'launches.hero.calendarGoogle': {
-    en: 'Google Calendar',
-    'zh-CN': 'Google 日历'
-  },
-  'launches.hero.calendarApple': {
-    en: 'Apple Calendar',
-    'zh-CN': 'Apple 日历'
-  },
-  'launches.hero.calendarOutlook': {
-    en: 'Outlook',
-    'zh-CN': 'Outlook'
-  },
 
   // Launches page (/launches) — subscribe banner
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.banner.text': {
-    en: 'The Future of AI Post Production — join us live August 5.',
-    'zh-CN': 'AI 后期制作的未来 — 8 月 5 日与我们一起观看直播。'
+    en: 'Now turn your agent into a creative technologist.',
+    'zh-CN': '现在，让你的智能体成为创意技术专家。'
   },
   'launches.banner.cta': {
-    en: 'Watch live',
-    'zh-CN': '观看直播'
+    en: 'Start Comfy MCP',
+    'zh-CN': '启动 Comfy MCP'
   },
 
   // Launches page (/launches) — closing CTA

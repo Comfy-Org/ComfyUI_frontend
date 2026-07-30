@@ -72,11 +72,6 @@ const foundersLiveStreamHref: LocalizedText = {
   'zh-CN': 'https://www.youtube.com/live/dbp5Jnto7S8'
 }
 
-export const postProductionStreamHref: LocalizedText = {
-  en: 'https://www.youtube.com/live/4xS4LOn3CTE',
-  'zh-CN': 'https://www.youtube.com/live/4xS4LOn3CTE'
-}
-
 const launchesHref: LocalizedText = {
   en: localizeHref('/launches', 'en'),
   'zh-CN': localizeHref('/launches', 'zh-CN')
@@ -111,7 +106,7 @@ const foundersLiveFeatured: FeaturedEvent = {
 }
 
 // Referenced by both the hero carousel and the upcoming-events list.
-export const postProduction: UpcomingEvent = {
+const postProduction: UpcomingEvent = {
   id: 'future-ai-post-production',
   name: {
     en: 'The Future of AI Post Production',
@@ -158,12 +153,15 @@ const pastEventEntries: readonly PastEvent[] = [
   {
     id: 'july-launches',
     category: 'livestream',
-    title: { en: 'July Launches', 'zh-CN': '七月发布' },
+    title: {
+      en: 'Using ComfyUI MCP with Claude Code',
+      'zh-CN': '在 Claude Code 中使用 ComfyUI MCP'
+    },
     description: {
       en: 'Our monthly livestream covering the latest ComfyUI launches and updates.',
       'zh-CN': '我们的月度直播，介绍 ComfyUI 最新发布与更新。'
     },
-    media: eventImage('july-launches.png', {
+    media: eventImage('july-launches-v2.png', {
       en: 'July Launches livestream recording',
       'zh-CN': '七月发布直播回放'
     }),
