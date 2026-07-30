@@ -47,10 +47,10 @@ function matchesErrorNodeId(
 function matchesErrorInputName(
   candidateNodeIds: readonly (string | number | null | undefined)[],
   candidateInputName: string,
-  error: NodeValidationError,
+  errorInputName: string | undefined,
   liftedSource: LiftedErrorExtraInfo | null
 ): boolean {
-  if (candidateInputName === error.extra_info?.input_name) return true
+  if (candidateInputName === errorInputName) return true
   if (!liftedSource) return false
 
   return (
@@ -77,7 +77,7 @@ function matchesMissingModel(
     matchesErrorInputName(
       candidateNodeIds,
       candidate.widgetName,
-      error,
+      error.extra_info?.input_name,
       liftedSource
     ) || matchesReceivedValue(error.extra_info?.received_value, candidate.name)
   )
@@ -99,7 +99,7 @@ function matchesMissingMedia(
     matchesErrorInputName(
       candidateNodeIds,
       candidate.widgetName,
-      error,
+      error.extra_info?.input_name,
       liftedSource
     ) || matchesReceivedValue(error.extra_info?.received_value, candidate.name)
   )
