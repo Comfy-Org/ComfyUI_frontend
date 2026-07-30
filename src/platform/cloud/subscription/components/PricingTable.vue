@@ -286,7 +286,6 @@ import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptio
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
@@ -529,25 +528,12 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           }
         }
       } else {
-        try {
-          await performSubscriptionCheckout(
-            tierKey,
-            currentBillingCycle.value,
-            { paymentIntentSource: reason }
-          )
-        } catch (error) {
-          telemetry?.trackBillingEvent({
-            operation: 'subscription_checkout',
-            stage: 'failed',
-            outcome: 'failure',
-            tier: tierKey,
-            cycle: currentBillingCycle.value,
-            checkout_type: 'new',
-            payment_intent_source: reason,
-            failure_category: categorizeBillingApiError(error)
-          })
-          throw error
-        }
+        // Failure telemetry now lives in performSubscriptionCheckout itself,
+        // so the marketing deep-link entry point (SubscriptionRedirectView)
+        // gets the same signal without duplicating it here.
+        await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
+          paymentIntentSource: reason
+        })
       }
     } finally {
       isLoading.value = false

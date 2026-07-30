@@ -270,9 +270,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         payment_intent_source: operation.paymentIntentSource,
         billing_op_id: opId
       })
-      // Also fires the pre-existing generic event so the seven providers that
-      // don't yet implement trackBillingEvent (Mixpanel, GTM, Impact,
-      // ClickHouse, Syft, CustomerIo, Sentry) keep receiving a success signal.
+      // Also fires the pre-existing generic event for the two providers that
+      // implement trackMonthlySubscriptionSucceeded but not trackBillingEvent
+      // (Mixpanel, GTM). PostHog implements both.
       telemetry?.trackMonthlySubscriptionSucceeded({
         tier: operation.tier,
         cycle: operation.cycle,

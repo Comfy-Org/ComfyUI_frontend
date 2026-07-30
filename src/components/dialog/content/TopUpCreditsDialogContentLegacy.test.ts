@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { AuthStoreError } from '@/stores/authStore'
+
 import TopUpCreditsDialogContentLegacy from './TopUpCreditsDialogContentLegacy.vue'
 
 const mockPurchaseCreditsDirect = vi.fn()
@@ -53,13 +55,6 @@ vi.mock('@/platform/telemetry', () => ({
 
 vi.mock('@/platform/telemetry/topupTracker', () => ({
   clearTopupTracking: vi.fn()
-}))
-
-vi.mock('@/platform/telemetry/utils/billingFailureCategory', () => ({
-  categorizeBillingApiError: (err: unknown) =>
-    err instanceof Error && err.name === 'AuthStoreError'
-      ? 'api_rejected'
-      : 'unknown'
 }))
 
 vi.mock('@/composables/useExternalLink', () => ({
@@ -190,8 +185,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
   })
 
   it('categorizes an auth-store rejection via the shared classifier', async () => {
-    const authStoreError = new Error('backend rejected the purchase')
-    authStoreError.name = 'AuthStoreError'
+    const authStoreError = new AuthStoreError('backend rejected the purchase')
     mockPurchaseCreditsDirect.mockRejectedValue(authStoreError)
 
     renderDialog()

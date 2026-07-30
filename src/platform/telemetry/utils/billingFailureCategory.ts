@@ -11,8 +11,11 @@ import type { BillingFailure } from '../types'
  *   which rejected it (`api_rejected`) — `WorkspaceApiError` additionally
  *   carries a `status`, so an undefined one (no HTTP response at all) means
  *   the request never reached the backend (`network`).
- * - A bare `TypeError` is what `fetch` throws for a connectivity failure
- *   (`network`).
+ * - A `TypeError` whose message names fetch/network/load failure is what
+ *   `fetch` throws for a connectivity failure (`network`). A `TypeError`
+ *   with any other message (e.g. `Cannot read properties of undefined`) is a
+ *   frontend bug, not a connectivity problem, so it falls through to
+ *   `unknown` instead of being mislabeled as a network issue.
  * - Anything else (e.g. a malformed-response `Error` thrown locally) is
  *   genuinely unclassifiable from a caught error alone.
  */
@@ -25,7 +28,10 @@ export function categorizeBillingApiError(
   if (err instanceof AuthStoreError) {
     return 'api_rejected'
   }
-  if (err instanceof TypeError) {
+  if (
+    err instanceof TypeError &&
+    /fetch|network|load failed/i.test(err.message)
+  ) {
     return 'network'
   }
   return 'unknown'

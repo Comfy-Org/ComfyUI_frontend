@@ -709,7 +709,7 @@ type ResubscribeBillingEvent = {
   operation: 'resubscribe'
   source: ResubscribeClickMetadata['source']
   payment_intent_source?: PaymentIntentSource
-} & (BillingSucceeded | BillingFailed)
+} & (BillingStarted | BillingSucceeded | BillingFailed)
 
 type TopupBillingEvent = {
   operation: 'topup'
@@ -945,6 +945,7 @@ export const TelemetryEvents = {
   BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
   BILLING_OPERATION_FAILED: 'billing.operation.failed',
   BILLING_OPERATION_TIMEOUT: 'billing.operation.timeout',
+  BILLING_RESUBSCRIBE_STARTED: 'billing.resubscribe.started',
   BILLING_RESUBSCRIBE_SUCCEEDED: 'billing.resubscribe.succeeded',
   BILLING_RESUBSCRIBE_FAILED: 'billing.resubscribe.failed',
   BILLING_TOPUP_SUCCEEDED: 'billing.topup.succeeded',

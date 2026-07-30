@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
@@ -72,13 +73,6 @@ vi.mock('@/platform/telemetry', () => ({
 
 vi.mock('@/platform/telemetry/topupTracker', () => ({
   clearTopupTracking: vi.fn()
-}))
-
-vi.mock('@/platform/telemetry/utils/billingFailureCategory', () => ({
-  categorizeBillingApiError: (err: unknown) =>
-    err instanceof Error && err.name === 'WorkspaceApiError'
-      ? 'api_rejected'
-      : 'unknown'
 }))
 
 vi.mock('@/composables/useExternalLink', () => ({
@@ -238,8 +232,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('categorizes a thrown topup error via the shared classifier', async () => {
-    const workspaceApiError = new Error('upstream rejected')
-    workspaceApiError.name = 'WorkspaceApiError'
+    const workspaceApiError = new WorkspaceApiError('upstream rejected', 500)
     mockTopup.mockRejectedValue(workspaceApiError)
 
     renderDialog()
