@@ -32,6 +32,7 @@
               class="group/card focus-visible:ring-ring relative min-w-0 cursor-pointer overflow-hidden rounded-2xl **:cursor-pointer focus-visible:ring-1 focus-visible:outline-none"
               @click="pick(template.name)"
               @keydown.enter.prevent="pick(template.name)"
+              @keydown.space.prevent="pick(template.name)"
               @mouseenter="hoveredId = template.name"
               @mouseleave="hoveredId = null"
             >

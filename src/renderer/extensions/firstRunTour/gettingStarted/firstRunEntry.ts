@@ -16,10 +16,11 @@ import { useCommandStore } from '@/stores/commandStore'
 
 export const useFirstRunEntry = createSharedComposable(() => {
   const gettingStartedVisible = ref(false)
+  const isMdOrLarger = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
   const isCandidate = () =>
     isCloud &&
-    useBreakpoints(breakpointsTailwind).greaterOrEqual('md').value &&
+    isMdOrLarger.value &&
     useSubscription().isSubscriptionEnabled() &&
     useNewUserService().isNewUser() === true &&
     useFeatureFlags().flags.onboardingTourEnabled
