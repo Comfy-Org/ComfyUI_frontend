@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyApiWorkflow,
@@ -730,19 +730,45 @@ describe('ComfyApp', () => {
   })
 
   describe('workflow lifecycle', () => {
-    it('clears missing node packs when loading another workflow', async () => {
+    it('clears missing node packs before loading API JSON without missing nodes', () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
-      app.canvasElRef.value = document.createElement('canvas')
-      mockCanvas.setDirty = vi.fn()
       const missingNodesStore = useMissingNodesErrorStore()
       missingNodesStore.setMissingNodeTypes(['MissingGroupNode'])
+      const nodeType = 'test/RegisteredApiNode'
+      class RegisteredApiNode extends LGraphNode {}
+      LiteGraph.registerNodeType(nodeType, RegisteredApiNode)
 
-      await app.loadGraphData(createWorkflowGraphData(), false, false, null, {
-        deferWarnings: true,
-        skipAssetScans: true
+      try {
+        app.loadApiJson(
+          {
+            '1': {
+              class_type: nodeType,
+              inputs: {},
+              _meta: { title: 'Registered API Node' }
+            }
+          },
+          ''
+        )
+
+        expect(missingNodesStore.missingNodesError).toBeNull()
+      } finally {
+        LiteGraph.unregisterNodeType(nodeType)
+      }
+    })
+
+    it('clears missing node packs before importing A1111 parameters', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes(['MissingGroupNode'])
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'A1111 parameters without generation metadata'
       })
+
+      await app.handleFile(createTestFile('.png', 'image/png'))
 
       expect(missingNodesStore.missingNodesError).toBeNull()
     })

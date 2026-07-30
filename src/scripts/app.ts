@@ -1222,7 +1222,6 @@ export class ComfyApp {
       silentAssetErrors = false
     } = options
     useWorkflowService().beforeLoadNewGraph()
-    useMissingNodesErrorStore().setMissingNodeTypes([])
 
     if (skipAssetScans) {
       // Only reset candidates; preserve UI state (fileSizes, etc.)

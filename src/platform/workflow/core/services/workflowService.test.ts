@@ -316,6 +316,23 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it('should cache missing nodes before clearing the current store', () => {
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+      const missingNodesStore = useMissingNodesErrorStore()
+      const missingNodeTypes = ['MissingGroupNode']
+      missingNodesStore.setMissingNodeTypes(missingNodeTypes)
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(activeWorkflow.pendingWarnings?.missingNodeTypes).toEqual(
+        missingNodeTypes
+      )
+      expect(missingNodesStore.missingNodesError).toBeNull()
+    })
+
     it('should save active workflow state through the V2 draft store', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
         return key === 'Comfy.Workflow.Persist'
