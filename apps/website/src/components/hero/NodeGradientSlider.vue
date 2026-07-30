@@ -115,7 +115,7 @@ function onKeydown(event: KeyboardEvent) {
           cn(
             'pointer-events-none absolute top-1/2 size-[0.575em] -translate-1/2 rounded-full transition-colors duration-150',
             'group-hover:bg-primary-comfy-yellow bg-primary-comfy-canvas',
-            dragging && 'bg-primary-comfy-yellow'
+            (dragging || moving) && 'bg-primary-comfy-yellow'
           )
         "
         :style="{ left: `${fraction * 100}%` }"
