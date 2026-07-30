@@ -51,6 +51,60 @@ describe('useNodeDataStore', () => {
     ])
     expect(store.getGraphNodesFor(rootA, sub).map((n) => n.id)).toEqual(['2'])
   })
+
+  it('rejects a second state claiming a registered node', () => {
+    const store = useNodeDataStore()
+    store.registerNode(rootA, node(1))
+
+    expect(() => store.registerNode(rootA, node(1))).toThrow(
+      /duplicate NodeState for node 1/
+    )
+  })
+
+  it('accepts the same id in a different owning graph', () => {
+    const store = useNodeDataStore()
+    store.registerNode(rootA, node(1))
+
+    expect(() => store.registerNode(rootA, node(1, 'sub-1'))).not.toThrow()
+  })
+
+  it('accepts a state re-registering itself', () => {
+    const store = useNodeDataStore()
+    const only = node(1)
+
+    store.registerNode(rootA, only)
+    expect(() => store.registerNode(rootA, only)).not.toThrow()
+    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([only])
+  })
+
+  it('unregisters a state that was renumbered after registration', () => {
+    const store = useNodeDataStore()
+    const renumbered = node(1)
+    store.registerNode(rootA, renumbered)
+
+    renumbered.id = toNodeId(42)
+
+    expect(store.deleteNode(rootA, renumbered)).toBe(true)
+    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([])
+  })
+
+  it('frees the id a renumbered state vacated', () => {
+    const store = useNodeDataStore()
+    const renumbered = node(1)
+    store.registerNode(rootA, renumbered)
+
+    renumbered.id = toNodeId(42)
+
+    expect(() => store.registerNode(rootA, node(1))).not.toThrow()
+  })
+
+  it('forgets registrations when its graph is cleared', () => {
+    const store = useNodeDataStore()
+    store.registerNode(rootA, node(1))
+    store.clearGraph(rootA)
+
+    expect(() => store.registerNode(rootA, node(1))).not.toThrow()
+  })
 })
 
 describe('nodeDataStore registration via LGraph', () => {

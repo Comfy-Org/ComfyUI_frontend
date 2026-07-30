@@ -21,7 +21,13 @@ field groupings inside `NodeState`, not separate records or stores.
 Buckets are root-graph-scoped (`rootGraph.id`), keyed by `NodeId`.
 Node-id uniqueness across sibling subgraph definitions is already
 guaranteed by the load-time dedup pass
-(`src/lib/litegraph/src/subgraph/subgraphDeduplication.ts`).
+(`src/lib/litegraph/src/subgraph/subgraphDeduplication.ts`). Because
+bucket membership is identity-keyed rather than id-keyed, a regression of
+that guarantee would surface as two states for one node instead of an
+overwrite, so `registerNode` asserts it against a per-bucket
+`(graphId, nodeId)` index. The index tracks the key each state was
+registered under, so renumbering a node still unregisters it cleanly and
+frees the id it vacated.
 
 ## Decision 2: Field set — what is NodeState, what is elsewhere
 
@@ -128,6 +134,12 @@ Follows the shipped trio convention (`LLink` / `Reroute`):
 - Chokepoints: `LGraph.add` / `LGraph.remove` (the canonical sites),
   `unregisterAllNodeStates(graph)` on graph `clear()`, identity-checked
   delete (`toRaw` compare) so only the registered state vacates its key.
+- Both ends assert their invariant rather than failing silently:
+  `registerNodeState` rejects a node already registered under a different
+  root graph (which would strand its old bucket entry), and
+  `unregisterNodeState` rejects a delete that found nothing — a `_state`
+  reassigned after registration, leaving a state the renderer keeps
+  drawing.
 - The lifecycle coordination itself is app-owned and lives in
   `src/core/graph/nodeShell/`: `nodeShellState.ts` (`createNodeShellState`,
   `setTrackedNodeState`, `registerNodeState`, `unregisterNodeState`,
