@@ -4,7 +4,7 @@
     :class="
       cn(
         'flex h-5 shrink-0 items-center bg-component-node-widget-background p-1 text-xs',
-        rest ? 'rounded-l-full pr-1' : 'rounded-full'
+        rest ? 'rounded-l-full pr-2.5' : 'rounded-full'
       )
     "
   >
@@ -14,7 +14,7 @@
   <span
     v-if="rest"
     data-testid="credit-badge-rest"
-    class="flex h-5 max-w-max min-w-0 grow basis-0 items-center truncate rounded-r-full bg-component-node-widget-background text-xs"
+    class="-ml-1 flex h-5 max-w-max min-w-0 grow basis-0 items-center truncate rounded-r-full bg-component-node-widget-background text-xs"
   >
     <span class="pr-2" v-text="rest" />
   </span>
