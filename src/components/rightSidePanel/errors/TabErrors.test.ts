@@ -95,6 +95,7 @@ describe('TabErrors.vue', () => {
             setupNodesSummary:
               '{nodes} nodes — {count} item | {nodes} nodes — {count} items',
             nodesAffected: '{count} node affected | {count} nodes affected',
+            errorsSummary: '{count} error | {count} errors',
             blockedLastRun: 'Blocked last run',
             severityErrorLabel: 'Blocking errors',
             severitySetupLabel: 'Setup pending',
@@ -531,6 +532,21 @@ describe('TabErrors.vue', () => {
     expect(contextStrip).not.toHaveTextContent('0 nodes')
   })
 
+  it('uses an error count for mixed context with no known node ids', () => {
+    renderComponent((pinia) => {
+      useMissingNodesErrorStore(pinia).setMissingNodeTypes(['MissingNode'])
+      useExecutionErrorStore(pinia).recordPromptError({
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      })
+    })
+
+    expect(screen.getByTestId('selection-context-strip')).toHaveTextContent(
+      '2 errors'
+    )
+  })
+
   it('renders missing model display message below the section title', () => {
     const missingModel = {
       nodeId: '1',
@@ -882,6 +898,28 @@ describe('TabErrors.vue', () => {
     expect(icon).not.toHaveClass(
       'icon-[lucide--triangle-alert]',
       'bg-warning-background'
+    )
+    expect(icon).toHaveAccessibleName('Blocking errors')
+  })
+
+  it('uses error severity for a runtime error with an unnormalisable node id', () => {
+    renderRightSidePanel((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: 'not::a-node',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Execution failed',
+        exception_type: 'RuntimeError',
+        traceback: [],
+        timestamp: Date.now()
+      })
+    })
+
+    const icon = screen.getByTestId('panel-tab-icon')
+    expect(icon).toHaveClass(
+      'icon-[lucide--octagon-alert]',
+      'bg-node-stroke-error'
     )
     expect(icon).toHaveAccessibleName('Blocking errors')
   })

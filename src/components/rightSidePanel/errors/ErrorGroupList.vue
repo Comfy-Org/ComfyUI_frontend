@@ -544,9 +544,15 @@ const strip = computed(() => {
   }
   if (hasErrorSeverity.value && hasMissingSeverity.value) {
     return {
-      keypath: 'rightSidePanel.nodesAffected',
+      keypath:
+        errorNodeCount.value === 0
+          ? 'rightSidePanel.errorsSummary'
+          : 'rightSidePanel.nodesAffected',
       nodes: errorNodeCount.value,
-      count: errorNodeCount.value
+      count:
+        errorNodeCount.value === 0
+          ? workflowErrorCount.value
+          : errorNodeCount.value
     }
   }
   if (!hasErrorSeverity.value) {

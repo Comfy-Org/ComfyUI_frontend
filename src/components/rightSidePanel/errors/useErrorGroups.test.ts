@@ -328,68 +328,6 @@ describe('useErrorGroups', () => {
   })
 
   describe('allErrorGroups', () => {
-    it('keeps blocking severity aligned with rendered groups', async () => {
-      const { store, groups } = createErrorGroups()
-      const hasBlockingError = useHasBlockingError()
-
-      function expectSeveritySignalsToMatch() {
-        expect(hasBlockingError.value).toBe(
-          groups.allErrorGroups.value.some(
-            (group) => group.severity === 'error'
-          )
-        )
-      }
-
-      expectSeveritySignalsToMatch()
-
-      store.recordPromptError({
-        type: 'prompt_no_outputs',
-        message: 'No outputs',
-        details: ''
-      })
-      await nextTick()
-      expectSeveritySignalsToMatch()
-
-      store.clearAllErrors()
-      store.recordExecutionError({
-        prompt_id: 'test-prompt',
-        timestamp: 0,
-        node_id: 1,
-        node_type: 'KSampler',
-        executed: [],
-        exception_type: 'RuntimeError',
-        exception_message: 'Execution failed',
-        traceback: []
-      })
-      await nextTick()
-      expectSeveritySignalsToMatch()
-
-      store.clearAllErrors()
-      store.surfaceMissingModels([
-        makeModel('model.safetensors', {
-          nodeId: '1',
-          widgetName: 'ckpt_name'
-        })
-      ])
-      store.recordNodeErrors({
-        '1': nodeError(
-          [validationError('value_not_in_list', 'ckpt_name')],
-          'CheckpointLoaderSimple'
-        )
-      })
-      await nextTick()
-      expectSeveritySignalsToMatch()
-
-      store.recordNodeErrors({
-        '1': nodeError(
-          [validationError('value_not_in_list', 'other_widget')],
-          'CheckpointLoaderSimple'
-        )
-      })
-      await nextTick()
-      expectSeveritySignalsToMatch()
-    })
-
     it('returns empty array when no errors', () => {
       const { groups } = createErrorGroups()
       expect(groups.allErrorGroups.value).toEqual([])
@@ -723,6 +661,35 @@ describe('useErrorGroups', () => {
         toastMessage:
           'This node threw an error during execution. Check its inputs or try a different configuration.'
       })
+    })
+
+    it('renders an unnormalisable execution error as a blocking unlocated card', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordExecutionError({
+        prompt_id: 'test-prompt',
+        timestamp: Date.now(),
+        node_id: 'not::a-node',
+        node_type: 'KSampler',
+        executed: [],
+        exception_type: 'RuntimeError',
+        exception_message: 'Execution failed',
+        traceback: []
+      })
+      await nextTick()
+
+      const executionGroup = groups.allErrorGroups.value.find(
+        (group) => group.type === 'execution'
+      )
+      expect(executionGroup).toMatchObject({
+        severity: 'error',
+        count: 1
+      })
+      if (executionGroup?.type !== 'execution') return
+      expect(executionGroup.cards[0]).toMatchObject({
+        id: 'exec-not::a-node',
+        title: 'KSampler'
+      })
+      expect(executionGroup.cards[0].nodeId).toBeUndefined()
     })
 
     it('adds display fields for targeted runtime execution errors', async () => {

@@ -44,10 +44,7 @@ import {
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 
-import {
-  getMissingResourceValidationErrorAbsorption,
-  isMissingNodePromptErrorAbsorbed
-} from './missingResourceAbsorption'
+import { classifyErrorSeverity } from './errorSeverityClassification'
 
 const PROMPT_CARD_ID = '__prompt__'
 
@@ -246,6 +243,17 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const { inferPackFromNodeName } = useComfyRegistryStore()
   const collapseState = reactive<Record<string, boolean>>({})
 
+  const errorSeverity = computed(() =>
+    classifyErrorSeverity({
+      promptError: executionErrorStore.lastPromptError,
+      executionError: executionErrorStore.lastExecutionError,
+      nodeErrors: executionErrorStore.surfacedNodeErrors,
+      missingModels: missingModelStore.missingModelCandidates,
+      missingMedia: missingMediaStore.missingMediaCandidates,
+      hasMissingNodes: missingNodesStore.hasMissingNodes
+    })
+  )
+
   const selectedNodeInfo = computed(() => {
     const items = canvasStore.selectedItems
     const nodeIds = new Set<string>()
@@ -346,22 +354,42 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     card.errors.push(error)
   }
 
+  function addUnlocatedErrorToGroup(
+    groupsMap: Map<string, GroupEntry>,
+    cardId: string,
+    classType: string,
+    error: CataloguedErrorItem
+  ) {
+    const cards = getOrCreateGroup(
+      groupsMap,
+      error.catalogId,
+      error.displayTitle ?? classType,
+      1,
+      error.displayMessage
+    )
+    if (!cards.has(cardId)) {
+      cards.set(cardId, {
+        id: cardId,
+        title: classType,
+        errors: []
+      })
+    }
+    cards.get(cardId)?.errors.push(error)
+  }
+
   function processPromptError(
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
   ): boolean {
+    const classifiedPromptError = errorSeverity.value.promptError
     if (
       (filterBySelection && selectedNodeInfo.value.nodeIds) ||
-      !executionErrorStore.lastPromptError
+      !classifiedPromptError
     )
       return false
 
-    const error = executionErrorStore.lastPromptError
-    if (
-      isMissingNodePromptErrorAbsorbed(error, missingNodesStore.hasMissingNodes)
-    ) {
-      return true
-    }
+    const { error, isAbsorbed } = classifiedPromptError
+    if (isAbsorbed) return true
 
     const resolvedDisplay = resolveRunErrorMessage({
       kind: 'prompt',
@@ -396,43 +424,46 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     filterBySelection = false
   ): Set<'missing_model' | 'missing_media'> {
     const blockedMissingGroups = new Set<'missing_model' | 'missing_media'>()
-    if (!executionErrorStore.surfacedNodeErrors) return blockedMissingGroups
 
-    for (const [rawNodeId, nodeError] of Object.entries(
-      executionErrorStore.surfacedNodeErrors
-    )) {
-      const nodeId = tryNormalizeNodeExecutionId(rawNodeId)
-      if (!nodeId) continue
-      const nodeDisplayName =
-        resolveNodeInfo(nodeId).title || nodeError.class_type
-      for (const e of nodeError.errors) {
-        const absorbedGroup = getMissingResourceValidationErrorAbsorption(
-          missingModelStore.missingModelCandidates,
-          missingMediaStore.missingMediaCandidates,
-          e,
-          nodeId
-        )
-        if (absorbedGroup) {
-          blockedMissingGroups.add(absorbedGroup)
+    for (const classifiedNodeError of errorSeverity.value.nodeErrors) {
+      const { rawNodeId, nodeId, nodeError } = classifiedNodeError
+      if (filterBySelection && !nodeId) continue
+      const nodeDisplayName = nodeId
+        ? resolveNodeInfo(nodeId).title || nodeError.class_type
+        : nodeError.class_type
+
+      for (const { error, absorption } of classifiedNodeError.errors) {
+        if (absorption) {
+          blockedMissingGroups.add(absorption)
           continue
         }
 
-        addNodeErrorToGroup(
-          groupsMap,
-          nodeId,
-          nodeError.class_type,
-          'node',
-          {
-            message: e.message,
-            details: e.details ?? undefined,
-            ...resolveRunErrorMessage({
-              kind: 'node_validation',
-              error: e,
-              nodeDisplayName
-            })
-          },
-          filterBySelection
-        )
+        const cataloguedError = {
+          message: error.message,
+          details: error.details ?? undefined,
+          ...resolveRunErrorMessage({
+            kind: 'node_validation' as const,
+            error,
+            nodeDisplayName
+          })
+        }
+        if (nodeId) {
+          addNodeErrorToGroup(
+            groupsMap,
+            nodeId,
+            nodeError.class_type,
+            'node',
+            cataloguedError,
+            filterBySelection
+          )
+        } else {
+          addUnlocatedErrorToGroup(
+            groupsMap,
+            `node-${rawNodeId}`,
+            nodeError.class_type,
+            cataloguedError
+          )
+        }
       }
     }
 
@@ -443,30 +474,41 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
   ) {
-    if (!executionErrorStore.lastExecutionError) return
+    const classifiedExecutionError = errorSeverity.value.executionError
+    if (!classifiedExecutionError) return
 
-    const e = executionErrorStore.lastExecutionError
-    const nodeId = tryNormalizeNodeExecutionId(e.node_id)
-    if (!nodeId) return
-
-    addNodeErrorToGroup(
-      groupsMap,
-      nodeId,
-      e.node_type,
-      'exec',
-      {
-        message: `${e.exception_type}: ${e.exception_message}`,
-        details: e.traceback.join('\n'),
-        isRuntimeError: true,
-        exceptionType: e.exception_type,
-        ...resolveRunErrorMessage({
-          kind: 'execution',
-          error: e,
-          nodeDisplayName: resolveNodeInfo(nodeId).title || e.node_type
-        })
-      },
-      filterBySelection
-    )
+    const { error, nodeId } = classifiedExecutionError
+    if (filterBySelection && !nodeId) return
+    const cataloguedError = {
+      message: `${error.exception_type}: ${error.exception_message}`,
+      details: error.traceback.join('\n'),
+      isRuntimeError: true,
+      exceptionType: error.exception_type,
+      ...resolveRunErrorMessage({
+        kind: 'execution' as const,
+        error,
+        nodeDisplayName: nodeId
+          ? resolveNodeInfo(nodeId).title || error.node_type
+          : error.node_type
+      })
+    }
+    if (nodeId) {
+      addNodeErrorToGroup(
+        groupsMap,
+        nodeId,
+        error.node_type,
+        'exec',
+        cataloguedError,
+        filterBySelection
+      )
+    } else {
+      addUnlocatedErrorToGroup(
+        groupsMap,
+        `exec-${error.node_id}`,
+        error.node_type,
+        cataloguedError
+      )
+    }
   }
 
   // Async pack-ID resolution for missing node types that lack a cnrId

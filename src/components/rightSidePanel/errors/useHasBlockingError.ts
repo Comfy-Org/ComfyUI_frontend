@@ -4,12 +4,8 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 
-import {
-  getMissingResourceValidationErrorAbsorption,
-  isMissingNodePromptErrorAbsorbed
-} from './missingResourceAbsorption'
+import { classifyErrorSeverity } from './errorSeverityClassification'
 
 export function useHasBlockingError() {
   const executionErrorStore = useExecutionErrorStore()
@@ -17,37 +13,15 @@ export function useHasBlockingError() {
   const missingMediaStore = useMissingMediaStore()
   const missingNodesStore = useMissingNodesErrorStore()
 
-  return computed(() => {
-    const promptError = executionErrorStore.lastPromptError
-    if (
-      (promptError &&
-        !isMissingNodePromptErrorAbsorbed(
-          promptError,
-          missingNodesStore.hasMissingNodes
-        )) ||
-      (executionErrorStore.lastExecutionError &&
-        tryNormalizeNodeExecutionId(
-          executionErrorStore.lastExecutionError.node_id
-        ))
-    ) {
-      return true
-    }
-
-    return Object.entries(executionErrorStore.surfacedNodeErrors ?? {}).some(
-      ([rawNodeId, nodeError]) => {
-        const nodeId = tryNormalizeNodeExecutionId(rawNodeId)
-        if (!nodeId) return false
-
-        return nodeError.errors.some(
-          (error) =>
-            getMissingResourceValidationErrorAbsorption(
-              missingModelStore.missingModelCandidates,
-              missingMediaStore.missingMediaCandidates,
-              error,
-              nodeId
-            ) === null
-        )
-      }
-    )
-  })
+  return computed(
+    () =>
+      classifyErrorSeverity({
+        promptError: executionErrorStore.lastPromptError,
+        executionError: executionErrorStore.lastExecutionError,
+        nodeErrors: executionErrorStore.surfacedNodeErrors,
+        missingModels: missingModelStore.missingModelCandidates,
+        missingMedia: missingMediaStore.missingMediaCandidates,
+        hasMissingNodes: missingNodesStore.hasMissingNodes
+      }).hasBlockingError
+  )
 }
