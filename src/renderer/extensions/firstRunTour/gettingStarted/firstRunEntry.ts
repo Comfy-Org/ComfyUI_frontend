@@ -47,17 +47,23 @@ export const useFirstRunEntry = createSharedComposable(() => {
       gettingStartedVisible.value = true
       return
     }
+    await useSettingStore().set('Comfy.TutorialCompleted', true)
     await useCommandStore().execute('Comfy.BrowseTemplates')
   }
 
-  async function dismissGettingStarted() {
+  function hideGettingStarted() {
     gettingStartedVisible.value = false
+  }
+
+  async function dismissGettingStarted() {
+    hideGettingStarted()
     await useSettingStore().set('Comfy.TutorialCompleted', true)
   }
 
   return {
     gettingStartedVisible: readonly(gettingStartedVisible),
     handleStartupOutcome,
+    hideGettingStarted,
     dismissGettingStarted
   }
 })

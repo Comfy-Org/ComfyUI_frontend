@@ -84,7 +84,7 @@ import { CURATED_TEMPLATE_IDS } from './curatedTemplates'
 import { useFirstRunEntry } from './firstRunEntry'
 
 const { t } = useI18n()
-const { dismissGettingStarted } = useFirstRunEntry()
+const { dismissGettingStarted, hideGettingStarted } = useFirstRunEntry()
 const templatesStore = useWorkflowTemplatesStore()
 const {
   loadWorkflowTemplate,
@@ -103,11 +103,14 @@ const templates = computed(() =>
 
 onMounted(async () => {
   if (import.meta.env.DEV)
-    console.warn('[first-run] screen mounted, catalog:', templatesStore.isLoaded)
+    console.warn(
+      '[first-run] screen mounted, catalog:',
+      templatesStore.isLoaded
+    )
   if (!templatesStore.isLoaded) await templatesStore.loadWorkflowTemplates()
   if (import.meta.env.DEV)
     console.warn('[first-run] curated resolved:', templates.value.length)
-  if (!templates.value.length) await dismissGettingStarted()
+  if (!templates.value.length) hideGettingStarted()
 })
 
 async function pick(id: string) {
