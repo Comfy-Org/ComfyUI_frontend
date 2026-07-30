@@ -75,6 +75,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       }
       lastPromptError.value = null
     },
+    // The missing-node scan and prompt recording share a synchronous block; clear before recording the new error.
     { flush: 'sync' }
   )
 

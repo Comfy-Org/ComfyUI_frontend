@@ -103,9 +103,7 @@
             "
           >
             <template #node>{{ selectionStripNodeLabel }}</template>
-            <template v-if="strip.nodes !== undefined" #nodes>
-              {{ strip.nodes }}
-            </template>
+            <template #nodes>{{ strip.nodes }}</template>
             <template #count>{{ strip.count }}</template>
           </i18n-t>
         </div>
@@ -410,20 +408,21 @@ interface ExecutionItemListEntry {
 interface ContextStrip {
   keypath: string
   count: number
-  nodes?: number
+  nodes: number
 }
 
+/** Count-only `none` keys keep node-less errors from reading as "0 nodes". */
 const SUMMARY_KEYPATHS = {
-  error: [
-    'rightSidePanel.errorsSummary',
-    'rightSidePanel.errorNodeSummary',
-    'rightSidePanel.errorNodesSummary'
-  ],
-  setup: [
-    'rightSidePanel.setupSummary',
-    'rightSidePanel.setupNodeSummary',
-    'rightSidePanel.setupNodesSummary'
-  ]
+  error: {
+    none: 'rightSidePanel.errorsSummary',
+    single: 'rightSidePanel.errorNodeSummary',
+    multiple: 'rightSidePanel.errorNodesSummary'
+  },
+  setup: {
+    none: 'rightSidePanel.setupSummary',
+    single: 'rightSidePanel.setupNodeSummary',
+    multiple: 'rightSidePanel.setupNodesSummary'
+  }
 } as const
 
 const { t } = useI18n()
@@ -568,6 +567,7 @@ const strip = computed<ContextStrip>(() => {
         errorNodeCount.value === 0
           ? 'rightSidePanel.errorsSummary'
           : 'rightSidePanel.nodesAffected',
+      nodes: errorNodeCount.value,
       count:
         errorNodeCount.value === 0
           ? workflowBlockingErrorCount.value
@@ -577,12 +577,16 @@ const strip = computed<ContextStrip>(() => {
   const keypaths = hasErrorSeverity.value
     ? SUMMARY_KEYPATHS.error
     : SUMMARY_KEYPATHS.setup
-  const keypathIndex =
-    errorNodeCount.value === 0 ? 0 : errorNodeCount.value === 1 ? 1 : 2
+  const nodeCountKey =
+    errorNodeCount.value === 0
+      ? 'none'
+      : errorNodeCount.value === 1
+        ? 'single'
+        : 'multiple'
 
   return {
-    keypath: keypaths[keypathIndex],
-    ...(errorNodeCount.value > 0 && { nodes: errorNodeCount.value }),
+    keypath: keypaths[nodeCountKey],
+    nodes: errorNodeCount.value,
     count: workflowErrorCount.value
   }
 })
