@@ -10,7 +10,8 @@ import type {
 import {
   getComboSpecComboOptions,
   isComboInputSpec,
-  isComboInputSpecV1
+  isComboInputSpecV1,
+  zDynamicComboInputSpec
 } from '@/schemas/nodeDefSchema'
 
 /**
@@ -140,4 +141,58 @@ export function transformInputSpecV2ToV1(
   inputSpecV2: InputSpecV2
 ): InputSpecV1 {
   return [inputSpecV2.type, inputSpecV2]
+}
+
+/**
+ * Flattens a node's input specs, expanding `COMFY_DYNAMICCOMBO_V3` inputs to
+ * also include their nested per-option inputs.
+ *
+ * A dynamic combo (e.g. an API node's "model" selector) reveals a different
+ * set of sub-inputs depending on the selected option. Those sub-inputs live
+ * in the combo's `options`, not the node's top-level `inputs`, so callers
+ * that need every input a node can expose (e.g. the node info panel) must
+ * flatten them explicitly.
+ *
+ * @param inputs The node's top-level input specs
+ * @returns The input specs with nested dynamic combo inputs included
+ */
+export function flattenInputSpecs(
+  inputs: Record<string, InputSpecV2>
+): InputSpecV2[] {
+  const seenNames = new Set<string>()
+  const result: InputSpecV2[] = []
+
+  const addSpec = (spec: InputSpecV2) => {
+    if (seenNames.has(spec.name)) return
+    seenNames.add(spec.name)
+    result.push(spec)
+  }
+
+  for (const spec of Object.values(inputs)) {
+    addSpec(spec)
+    if (spec.type !== 'COMFY_DYNAMICCOMBO_V3') continue
+
+    const dynamicCombo = zDynamicComboInputSpec.safeParse(
+      transformInputSpecV2ToV1(spec)
+    )
+    if (!dynamicCombo.success) continue
+
+    for (const { inputs: nestedInputs } of dynamicCombo.data[1].options) {
+      const inputsByOptionality = [nestedInputs.required, nestedInputs.optional]
+      inputsByOptionality.forEach((nestedInputsOfKind, idx) => {
+        for (const [name, nestedSpec] of Object.entries(
+          nestedInputsOfKind ?? {}
+        )) {
+          addSpec(
+            transformInputSpecV1ToV2(nestedSpec, {
+              name,
+              isOptional: idx !== 0
+            })
+          )
+        }
+      })
+    }
+  }
+
+  return result
 }

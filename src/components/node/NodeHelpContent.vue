@@ -81,6 +81,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'
 
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
+import { flattenInputSpecs } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const { node } = defineProps<{
@@ -90,7 +91,7 @@ const { node } = defineProps<{
 const { renderedHelpHtml, isLoading, error } = useNodeHelpContent(() => node)
 
 const inputList = computed(() =>
-  Object.values(node.inputs).map((spec) => ({
+  flattenInputSpecs(node.inputs).map((spec) => ({
     name: spec.name,
     type: spec.type,
     tooltip: spec.tooltip || ''
