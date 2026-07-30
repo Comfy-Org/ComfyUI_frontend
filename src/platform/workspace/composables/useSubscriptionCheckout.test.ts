@@ -961,6 +961,7 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         cost_today_cents: 105_000,
+        credits_today_cents: 221_550,
         proration_at: '2026-07-29T12:00:00Z'
       })
       await checkout.handleSubscribeTeamClick({
@@ -978,6 +979,7 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         cost_today_cents: 104_999,
+        credits_today_cents: 221_548,
         proration_at: '2026-07-29T12:05:00Z'
       })
       mockSubscribe.mockResolvedValueOnce({
@@ -1938,6 +1940,7 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         cost_today_cents: 1500,
+        credits_today_cents: 3150,
         proration_at: '2026-07-29T12:00:00Z'
       })
       await checkout.handleSubscribeClick({
@@ -1949,6 +1952,7 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         cost_today_cents: 1499,
+        credits_today_cents: 3148,
         proration_at: '2026-07-29T12:05:00Z'
       })
       mockSubscribe.mockResolvedValueOnce({

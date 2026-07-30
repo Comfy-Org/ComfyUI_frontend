@@ -162,7 +162,8 @@ export function useSubscriptionCheckout(
   }
 
   function reactivationMaterialSnapshot(
-    preview: PreviewSubscribeResponse
+    preview: PreviewSubscribeResponse,
+    ignoreTimeDerivedTodayValues = false
   ): string {
     const planSnapshot = (
       plan: PreviewSubscribeResponse['new_plan'] | undefined
@@ -188,7 +189,7 @@ export function useSubscriptionCheckout(
       preview.is_immediate,
       preview.is_immediate ? null : preview.effective_at,
       preview.cost_next_period_cents,
-      preview.credits_today_cents,
+      ignoreTimeDerivedTodayValues ? null : preview.credits_today_cents,
       preview.credits_next_period_cents,
       planSnapshot(preview.current_plan),
       planSnapshot(preview.new_plan)
@@ -210,14 +211,15 @@ export function useSubscriptionCheckout(
     }
 
     if (confirmedPreview?.proration_at) {
-      const amountChanged =
+      const isImmediateUpgrade =
         confirmedPreview.transition_type === 'upgrade' &&
         confirmedPreview.is_immediate
-          ? freshPreview.cost_today_cents > confirmedPreview.cost_today_cents
-          : freshPreview.cost_today_cents !== confirmedPreview.cost_today_cents
+      const amountChanged = isImmediateUpgrade
+        ? freshPreview.cost_today_cents > confirmedPreview.cost_today_cents
+        : freshPreview.cost_today_cents !== confirmedPreview.cost_today_cents
       const materialChanged =
-        reactivationMaterialSnapshot(freshPreview) !==
-        reactivationMaterialSnapshot(confirmedPreview)
+        reactivationMaterialSnapshot(freshPreview, isImmediateUpgrade) !==
+        reactivationMaterialSnapshot(confirmedPreview, isImmediateUpgrade)
       if (amountChanged || materialChanged) {
         previewData.value = freshPreview
         throw new ReactivationAmountChangedError(
