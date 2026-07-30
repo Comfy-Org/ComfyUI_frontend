@@ -126,6 +126,19 @@ describe('resolveModelNodeFromAsset', () => {
       expect(mockGetNodeProvider).toHaveBeenCalledWith('LLM/Qwen-VL/Qwen3-0.6B')
     })
 
+    it.fails('resolves a coarse model_type:LLM asset to a specific loader instead of NO_PROVIDER, once the tag vocabulary can express a subtype', () => {
+      mockSupportsModelTypeTags.value = true
+      mockProvider(null)
+      const result = resolveModelNodeFromAsset(
+        createMockAsset({ tags: ['models', 'model_type:LLM'] })
+      )
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.value.provider.nodeDef.name).toBe('AILab_QwenVL')
+      }
+    })
+
     it('falls back to metadata.filename when user_metadata.filename missing', () => {
       mockProvider(createMockNodeProvider())
       const result = resolveModelNodeFromAsset(
