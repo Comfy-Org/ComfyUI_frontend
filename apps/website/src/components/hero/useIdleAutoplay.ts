@@ -1,7 +1,7 @@
-import { useElementVisibility, useIdle, useRafFn } from '@vueuse/core'
+import { useElementVisibility, useRafFn } from '@vueuse/core'
 
 import type { Ref } from 'vue'
-import { watch } from 'vue'
+import { onScopeDispose, ref, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { AutoplayState } from './idleAutoplay'
@@ -9,20 +9,18 @@ import { advanceAutoplay } from './idleAutoplay'
 import type { CameraPose } from './cameraVocabulary'
 import { clampAzimuth, clampElevation, clampZoom } from './cameraVocabulary'
 
-const IDLE_DELAY = 3000
+const IDLE_DELAY = 1000
 
-/** Pointer events are listed alongside the mouse/touch defaults so dragging a
- * slider or the camera gizmo counts as activity on every input device. */
-const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
-  'mousemove',
-  'mousedown',
+/** Only deliberate interaction with the hero itself counts as activity —
+ * pointerdown covers clicks and drags on the nodes and sliders, keydown the
+ * hidden range inputs, wheel the camera zoom. Page-level mouse movement no
+ * longer holds the demo back. */
+const ACTIVITY_EVENTS = [
+  'pointerdown',
   'keydown',
   'wheel',
-  'touchstart',
-  'pointerdown',
-  'pointermove',
-  'resize'
-]
+  'touchstart'
+] as const
 
 /** A backgrounded tab resumes with one enormous frame delta; cap it so the
  * pose eases onward instead of teleporting. */
@@ -35,16 +33,71 @@ interface HeroPipelineState {
 }
 
 /**
- * Lets the hero demonstrate itself once the visitor has been idle, driving the
- * camera pose and colour grade until they take over again. Runs only while the
- * graph is on screen, so the desktop and mobile copies never animate at once.
+ * Lets the hero demonstrate itself once the visitor has left it alone, driving
+ * the camera pose and colour grade until they take over again. Activity is
+ * scoped to the hero element, hovering the 3D ANGLE node holds the demo still,
+ * and it runs only while the graph is on screen, so the desktop and mobile
+ * copies never animate at once.
  */
 export function useIdleAutoplay(
   { pose, hue, saturation }: HeroPipelineState,
   target: Ref<HTMLElement | undefined>
 ): void {
-  const { idle } = useIdle(IDLE_DELAY, { events: ACTIVITY_EVENTS })
+  const idle = ref(false)
+  const hoveringAngle = ref(false)
   const onScreen = useElementVisibility(target)
+
+  let idleTimer: ReturnType<typeof setTimeout> | undefined
+
+  function restartIdleTimer() {
+    idle.value = false
+    clearTimeout(idleTimer)
+    idleTimer = setTimeout(() => (idle.value = true), IDLE_DELAY)
+  }
+
+  function onActivity() {
+    restartIdleTimer()
+  }
+
+  function onPointerOver(event: Event) {
+    hoveringAngle.value = Boolean(
+      (event.target as Element | null)?.closest('[data-hero-angle]')
+    )
+  }
+
+  function onPointerLeave() {
+    hoveringAngle.value = false
+  }
+
+  const teardowns: (() => void)[] = []
+
+  watch(
+    target,
+    (el) => {
+      teardowns.forEach((fn) => fn())
+      teardowns.length = 0
+      if (!el) return
+      for (const type of ACTIVITY_EVENTS) {
+        el.addEventListener(type, onActivity, { capture: true, passive: true })
+        teardowns.push(() =>
+          el.removeEventListener(type, onActivity, { capture: true })
+        )
+      }
+      el.addEventListener('pointerover', onPointerOver, { passive: true })
+      el.addEventListener('pointerleave', onPointerLeave, { passive: true })
+      teardowns.push(() => {
+        el.removeEventListener('pointerover', onPointerOver)
+        el.removeEventListener('pointerleave', onPointerLeave)
+      })
+      restartIdleTimer()
+    },
+    { immediate: true }
+  )
+
+  onScopeDispose(() => {
+    clearTimeout(idleTimer)
+    teardowns.forEach((fn) => fn())
+  })
 
   let state: AutoplayState = {
     phase: 0,
@@ -68,7 +121,11 @@ export function useIdleAutoplay(
   )
 
   watch(
-    () => idle.value && onScreen.value && !prefersReducedMotion(),
+    () =>
+      idle.value &&
+      !hoveringAngle.value &&
+      onScreen.value &&
+      !prefersReducedMotion(),
     (active) => {
       if (!active) return pause()
       // Restart from what the visitor left behind, not from the pose this
