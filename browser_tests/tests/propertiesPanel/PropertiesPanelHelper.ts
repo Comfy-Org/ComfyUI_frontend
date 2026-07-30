@@ -9,6 +9,7 @@ export class PropertiesPanelHelper {
   readonly panelTitle: Locator
   readonly searchBox: Locator
   readonly closeButton: Locator
+  readonly errorsTab: Locator
   readonly titleEditor: TitleEditor
   readonly pinnedSwitch: Locator
 
@@ -17,6 +18,7 @@ export class PropertiesPanelHelper {
     this.panelTitle = this.root.locator('h3')
     this.searchBox = this.root.getByPlaceholder(/^Search/)
     this.closeButton = this.root.locator('button[aria-pressed]')
+    this.errorsTab = this.root.getByTestId(TestIds.propertiesPanel.errorsTab)
     this.titleEditor = new TitleEditor(this.root)
     this.pinnedSwitch = this.root.getByRole('switch', { name: 'Pinned' })
   }
