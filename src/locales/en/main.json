@@ -3834,6 +3834,7 @@
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
     "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
+    "publishFailedDescriptionWithReason": "Something went wrong while publishing your workflow: {reason}",
     "publishSuccessTitle": "Published successfully",
     "publishSuccessDescription": "Your workflow is now live on Comfy Workflows."
   },
