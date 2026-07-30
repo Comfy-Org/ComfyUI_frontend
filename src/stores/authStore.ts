@@ -31,6 +31,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -180,17 +181,34 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   onAuthStateChanged(auth, (user) => {
-    const clearedUid = previousUid.value
+    const previousUserId = previousUid.value
+    const identityChanged =
+      previousUserId !== null && previousUserId !== (user?.uid ?? null)
+
+    if (user === null || identityChanged) {
+      useWorkspaceAuthStore().clearWorkspaceContext()
+    }
+    if (identityChanged) {
+      useTeamWorkspaceStore().resetForIdentityChange()
+    }
+
+    // A direct account switch (A -> B, or sign-out) must re-handshake the
+    // realtime socket so a tab stops receiving the previous account's live
+    // events. The initial connect is owned by api.init(), so only react once an
+    // identity has been recorded (`identityChanged` is false on first sign-in).
+    if (isCloud && identityChanged) {
+      void api.resetSocket()
+    }
+
     currentUser.value = user
     isInitialized.value = true
     previousUid.value = user?.uid ?? null
     if (user === null) {
-      if (isCloud && clearedUid !== null) {
-        reportAuthStateCleared(clearedUid)
+      if (isCloud && previousUserId !== null) {
+        reportAuthStateCleared(previousUserId)
       }
       userInitiatedLogout = false
       lastTokenUserId.value = null
-      useWorkspaceAuthStore().clearWorkspaceContext()
     } else {
       // Any non-null auth event means the pending logout either never produced a
       // clear or is now stale; drop the flag so it can't misattribute a later
@@ -236,10 +254,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getIdToken = async (): Promise<string | undefined> => {
-    if (!currentUser.value) return
+    const user = currentUser.value
+    if (!user) return
     try {
-      return await currentUser.value.getIdToken()
+      const token = await user.getIdToken()
+      return currentUser.value?.uid === user.uid ? token : undefined
     } catch (error: unknown) {
+      if (currentUser.value?.uid !== user.uid) return
       if (
         error instanceof FirebaseError &&
         error.code === AuthErrorCodes.NETWORK_REQUEST_FAILED
@@ -275,7 +296,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
-      const token = useWorkspaceAuthStore().unifiedToken
+      const token = useWorkspaceAuthStore().getUnifiedToken()
       return token ? { Authorization: `Bearer ${token}` } : null
     }
 
@@ -320,7 +341,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getAuthToken = async (): Promise<string | undefined> => {
     if (flags.unifiedCloudAuthEnabled) {
-      return useWorkspaceAuthStore().unifiedToken ?? undefined
+      return useWorkspaceAuthStore().getUnifiedToken()
     }
 
     if (flags.teamWorkspacesEnabled) {
@@ -360,6 +381,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
+    const requestOwnerUid = currentUser.value?.uid ?? null
     try {
       const authHeader = await getAuthHeader()
       if (!authHeader) {
@@ -391,6 +413,11 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       const balanceData = await response.json()
+      // A direct A->B account switch nulls balance in onAuthStateChanged; a
+      // late-resolving request from the previous identity must not repaint it.
+      if ((currentUser.value?.uid ?? null) !== requestOwnerUid) {
+        return null
+      }
       // Update the last balance update time
       lastBalanceUpdateTime.value = new Date()
       balance.value = balanceData

@@ -436,6 +436,7 @@ import {
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -468,6 +469,7 @@ const emit = defineEmits<{
 
 const { t, n } = useI18n()
 const { flags } = useFeatureFlags()
+const { permissions } = useWorkspaceUI()
 
 /** Team plans only exist behind the flag (mirrors useBillingContext type). */
 const showTeam = computed(() => flags.teamWorkspacesEnabled)
@@ -552,7 +554,7 @@ const planScopeButtonPt = {
   }
 }
 
-const planScopeOptions: PlanScopeOption[] = [
+const allPlanScopeOptions: PlanScopeOption[] = [
   { label: t('subscription.planScope.personal'), value: 'personal' },
   { label: t('subscription.planScope.team'), value: 'team' }
 ]
@@ -611,9 +613,28 @@ const {
   plans: apiPlans,
   currentPlanSlug,
   fetchPlans,
+  isTeamPlan,
   subscription,
   currentTeamCreditStop
 } = useBillingContext()
+
+const canSelectPersonalPlan = computed(
+  () => !isTeamPlan.value || permissions.value.canDowngradeToPersonal
+)
+
+const planScopeOptions = computed(() =>
+  canSelectPersonalPlan.value
+    ? allPlanScopeOptions
+    : allPlanScopeOptions.filter((option) => option.value === 'team')
+)
+
+watch(
+  canSelectPersonalPlan,
+  (canSelect) => {
+    if (!canSelect) planMode.value = 'team'
+  },
+  { immediate: true }
+)
 
 const { teamCreditStops } = useBillingPlans()
 
@@ -722,6 +743,7 @@ const teamButtonLabel = computed(() => {
 
 const isTeamButtonDisabled = computed(
   () =>
+    !permissions.value.canManageSubscription ||
     isLoading ||
     (isTeamSubscribed.value &&
       isTeamCurrentPlanSelected.value &&
@@ -810,7 +832,12 @@ const getButtonSeverity = (
 }
 
 const isButtonDisabled = (tier: PricingTierConfig): boolean => {
-  if (isLoading) return true
+  if (
+    isLoading ||
+    !permissions.value.canManageSubscription ||
+    !canSelectPersonalPlan.value
+  )
+    return true
   if (isCurrentPlan(tier.key)) {
     return !isCancelled.value
   }
@@ -836,7 +863,12 @@ const getAnnualTotal = (tier: PricingTierConfig): number => {
 }
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
-  if (isLoading) return
+  if (
+    isLoading ||
+    !permissions.value.canManageSubscription ||
+    !canSelectPersonalPlan.value
+  )
+    return
   if (isCurrentPlan(tierKey)) {
     if (isCancelled.value) {
       emit('resubscribe')

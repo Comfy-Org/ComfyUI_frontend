@@ -1,9 +1,12 @@
 import type { TooltipOptions } from 'primevue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
+import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import {
@@ -20,8 +23,21 @@ import {
   createNodeLocatorId
 } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
+import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 const GRAPH_ID = 'graph-test'
+
+const { executionIdToNodeLocatorId } = vi.hoisted(() => ({
+  executionIdToNodeLocatorId: vi.fn()
+}))
+
+vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
+  const actual = await importActual<typeof GraphTraversalUtil>()
+  return {
+    ...actual,
+    executionIdToNodeLocatorId
+  }
+})
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -156,7 +172,7 @@ describe('hasWidgetError', () => {
   it('returns true when node has matching input error', () => {
     const widget = createMockWidget({ name: 'seed' })
     const nodeErrors = {
-      errors: [{ extra_info: { input_name: 'seed' } }]
+      errors: [validationError('required_input_missing', 'seed')]
     }
     expect(
       hasWidgetError(
@@ -174,7 +190,7 @@ describe('hasWidgetError', () => {
       name: 'seed',
       sourceExecutionId: createNodeExecutionId([toNodeId(65), toNodeId(18)])
     })
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       '65:18': {
         errors: [
           {
@@ -187,7 +203,7 @@ describe('hasWidgetError', () => {
         class_type: 'TestNode',
         dependent_outputs: []
       }
-    }
+    })
     expect(
       hasWidgetError(
         widget,
@@ -219,7 +235,7 @@ describe('hasWidgetError', () => {
       sourceWidgetName: 'internal_name'
     })
     const nodeErrors = {
-      errors: [{ extra_info: { input_name: 'display_slot' } }]
+      errors: [validationError('required_input_missing', 'display_slot')]
     }
     expect(
       hasWidgetError(
@@ -263,7 +279,7 @@ describe('hasWidgetError', () => {
       sourceExecutionId,
       sourceWidgetName: 'ckpt_name'
     })
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       [sourceExecutionId]: {
         errors: [
           {
@@ -276,7 +292,7 @@ describe('hasWidgetError', () => {
         class_type: 'CheckpointLoaderSimple',
         dependent_outputs: []
       }
-    }
+    })
     expect(
       hasWidgetError(
         widget,
@@ -480,6 +496,49 @@ describe('computeProcessedWidgets borderStyle', () => {
       createNodeLocatorId(subgraphId, toNodeId('inner-node'))
     )
   })
+
+  it('resolves a promoted widget locator from its source execution id', () => {
+    const sourceExecutionId = createNodeExecutionId([
+      toNodeId('host-node'),
+      toNodeId('inner-node')
+    ])
+    executionIdToNodeLocatorId.mockImplementationOnce((_graph, executionId) =>
+      executionId === sourceExecutionId ? 'source:inner-node' : undefined
+    )
+    const widget = createMockWidget({
+      name: 'curve',
+      type: 'curve',
+      nodeId: toNodeId('host-node'),
+      sourceExecutionId
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: toNodeId('host-node'),
+        type: 'SubgraphNode',
+        widgets: [widget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: [],
+        subgraphId: null
+      },
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: fromAny<LGraph, unknown>({}),
+      ui: noopUi
+    })
+
+    expect(result[0].simplified.nodeLocatorId).toBe('source:inner-node')
+    expect(executionIdToNodeLocatorId).toHaveBeenCalledWith(
+      expect.anything(),
+      sourceExecutionId
+    )
+  })
+
   it('deduplication keeps visible widget over hidden duplicate', () => {
     const sharedWidgetId = widgetId(GRAPH_ID, toNodeId('1'), 'text')
     const hiddenWidget = createMockWidget({
@@ -711,7 +770,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       sourceWidgetName: 'ckpt_name'
     })
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       [sourceExecutionId]: {
         errors: [
           {
@@ -724,7 +783,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
         class_type: 'CheckpointLoaderSimple',
         dependent_outputs: []
       }
-    }
+    })
 
     const [processed] = processWidgets([widget])
     processed.updateHandler('real_model.safetensors')
@@ -741,7 +800,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     const executionErrorStore = useExecutionErrorStore()
     const missingModelStore = useMissingModelStore()
 
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       [NODE_ID]: {
         errors: [
           {
@@ -754,7 +813,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
         class_type: 'TestNode',
         dependent_outputs: []
       }
-    }
+    })
 
     const [processed] = processWidgets([widget])
 
@@ -762,7 +821,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       hasWidgetError(
         widget,
         createNodeExecutionId([NODE_ID]),
-        executionErrorStore.lastNodeErrors[NODE_ID],
+        executionErrorStore.lastNodeErrors?.[NODE_ID],
         executionErrorStore,
         missingModelStore
       )
