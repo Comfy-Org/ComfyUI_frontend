@@ -13,16 +13,31 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 /**
  * These fixture workflows carry a saved pan/zoom that was not authored
  * against the default 1280x720 Playwright viewport, so nodes can load
- * partially below the fold. Fitting the view keeps resize handles and the
- * subgraph-enter footer button on-screen for subsequent screen-space clicks
- * and drags.
+ * partially below the fold. Panning the nodes into view keeps resize
+ * handles and the subgraph-enter footer button on-screen for subsequent
+ * screen-space clicks and drags.
+ *
+ * This deliberately pans rather than using the app's zoom-to-fit command:
+ * these tests compute drag targets and pixel-space size deltas directly
+ * from node.pos/node.size, which only line up with on-screen pixels when
+ * the canvas scale is 1. Panning leaves scale untouched, so it also avoids
+ * the 'Top' menu bar's workflow tab strip, which renders above the canvas
+ * and would intercept a click at a fixed coordinate.
  */
 async function fitViewToNodes(comfyPage: ComfyPage): Promise<void> {
-  // Focus rather than click: the 'Top' menu bar's workflow tab strip
-  // renders above the canvas and clicking a fixed coordinate can hit it
-  // instead of the canvas underneath.
-  await comfyPage.canvas.focus()
-  await comfyPage.keyboard.press('Period')
+  await comfyPage.page.evaluate(() => {
+    const canvas = window.app!.canvas
+    const nodes = canvas.graph?.nodes ?? []
+    if (nodes.length === 0) return
+
+    const margin = 100
+    const left = Math.min(...nodes.map((node) => node.pos[0]))
+    const top = Math.min(...nodes.map((node) => node.pos[1]))
+
+    canvas.ds.scale = 1
+    canvas.ds.offset = [margin - left, margin - top]
+    canvas.setDirty(true, true)
+  })
   await comfyPage.nextFrame()
 }
 

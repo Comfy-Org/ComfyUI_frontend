@@ -195,19 +195,13 @@ export class NodeOperationsHelper {
     ratioY: number,
     revertAfter: boolean = false
   ): Promise<void> {
-    // nodePos is in screen space (NodeReference#getPosition already applies
-    // canvas pan/zoom) but nodeSize is raw graph-space size, so it must be
-    // scaled to match before combining the two into screen-space points.
-    const scale = await this.comfyPage.canvasOps.getScale()
-    const screenWidth = nodeSize.width * scale
-    const screenHeight = nodeSize.height * scale
     const bottomRight = {
-      x: nodePos.x + screenWidth,
-      y: nodePos.y + screenHeight
+      x: nodePos.x + nodeSize.width,
+      y: nodePos.y + nodeSize.height
     }
     const target = {
-      x: nodePos.x + screenWidth * ratioX,
-      y: nodePos.y + screenHeight * ratioY
+      x: nodePos.x + nodeSize.width * ratioX,
+      y: nodePos.y + nodeSize.height * ratioY
     }
     // -1 to be inside the node.  -2 because nodes currently get an arbitrary +1 to width.
     await this.comfyPage.canvasOps.dragAndDrop(
