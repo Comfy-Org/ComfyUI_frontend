@@ -6,7 +6,6 @@ import type { Locale } from '../../i18n/translations'
 import {
   categoryChapters,
   categoryLabelKeys,
-  episodeLabel,
   learningCrumbs,
   recommendedFor,
   tutorialDescription,
@@ -36,8 +35,7 @@ const breadcrumbs = [
 
 const chapters = categoryChapters(tutorial).map((item) => ({
   id: item.id,
-  label: episodeLabel(item.episode, locale),
-  title: item.title[locale],
+  label: item.title[locale],
   href: localizeHref(tutorialPath(item), locale),
   poster: item.poster
 }))
@@ -56,7 +54,6 @@ const recommended = recommendedFor(tutorial).map((item) => ({
     :breadcrumbs
     :breadcrumbs-label="t('ui.breadcrumb', locale)"
     :eyebrow="t('learning.watch.nowWatching', locale)"
-    :eyebrow-detail="episodeLabel(tutorial.episode, locale)"
     :title="tutorial.title[locale]"
     :description="tutorialDescription(tutorial, locale)"
     :read-more-label="t('ui.readMore', locale)"
@@ -103,7 +100,7 @@ const recommended = recommendedFor(tutorial).map((item) => ({
 
     <template v-if="chapters.length" #chapters>
       <WatchChapterStrip
-        :heading="t('learning.watch.chapter', locale)"
+        :heading="t('learning.watch.watchMore', locale)"
         :items="chapters"
       />
     </template>

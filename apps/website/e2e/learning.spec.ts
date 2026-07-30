@@ -3,7 +3,6 @@ import type { Page } from '@playwright/test'
 
 import {
   categoryChapters,
-  episodeLabel,
   featuredFor,
   filterByCategory,
   learningCategories,
@@ -280,16 +279,13 @@ test.describe('Learning tutorial page @smoke', () => {
     await expect(breadcrumb.getByText(firstTutorial.title.en)).toBeVisible()
   })
 
-  test('shows the episode eyebrow and tag badges', async ({ page }) => {
+  test('shows the now-watching eyebrow and tag badges', async ({ page }) => {
     await page.goto(tutorialPath(firstTutorial))
 
     const eyebrow = page.locator('p', {
       hasText: t('learning.watch.nowWatching', 'en')
     })
     await expect(eyebrow).toBeVisible()
-    await expect(eyebrow).toContainText(
-      episodeLabel(firstTutorial.episode, 'en')
-    )
     for (const tag of firstTutorial.tags) {
       await expect(page.getByText(t(tag, 'en')).first()).toBeVisible()
     }

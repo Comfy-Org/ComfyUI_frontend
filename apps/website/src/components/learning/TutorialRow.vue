@@ -4,11 +4,7 @@
 import type { LearningTutorial } from '../../data/learningTutorials'
 import type { Locale } from '../../i18n/translations'
 
-import {
-  categoryLabelKeys,
-  episodeLabel,
-  tutorialPath
-} from '../../data/learningTutorials'
+import { categoryLabelKeys, tutorialPath } from '../../data/learningTutorials'
 import { localizeHref } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
@@ -44,11 +40,6 @@ const { tutorial, locale = 'en' } = defineProps<{
         <Badge variant="category" size="xs">
           {{ t(categoryLabelKeys[tutorial.category], locale) }}
         </Badge>
-        <span
-          class="text-primary-warm-gray text-2xs font-semibold tracking-wider uppercase"
-        >
-          {{ episodeLabel(tutorial.episode, locale) }}
-        </span>
       </div>
       <h3 class="mt-1 text-sm/snug text-primary-comfy-canvas lg:text-base/snug">
         <a
