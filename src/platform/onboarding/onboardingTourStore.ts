@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, readonly, ref, shallowRef, watch } from 'vue'
+import { computed, readonly, shallowRef, watch } from 'vue'
 
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -22,6 +22,49 @@ import { useTourTriggers } from './useTourTriggers'
 
 const DEFER_TIMEOUT_MS = 8000
 
+const IDLE = { phase: 'idle' } as const
+
+/** `entering` is separate from `showing` because `onEnter` runs between them. */
+type TourState =
+  | typeof IDLE
+  | { phase: 'resolving'; tour: EntryPath }
+  | {
+      phase: 'waiting'
+      tour: EntryPath
+      steps: CoachStep[]
+      fromIdx: number | null
+    }
+  | {
+      phase: 'entering'
+      tour: EntryPath
+      steps: CoachStep[]
+      fromIdx: number | null
+      toIdx: number
+    }
+  | { phase: 'showing'; tour: EntryPath; steps: CoachStep[]; idx: number }
+
+type RunningState = Extract<
+  TourState,
+  { phase: 'waiting' | 'entering' | 'showing' }
+>
+
+function isRunning(state: TourState): state is RunningState {
+  return (
+    state.phase === 'waiting' ||
+    state.phase === 'entering' ||
+    state.phase === 'showing'
+  )
+}
+
+/** `fromIdx === null` means nothing is on screen yet, so nothing to travel. */
+function shownIdx(state: TourState): number | null {
+  if (state.phase === 'showing') return state.idx
+  if (state.phase === 'entering')
+    return state.fromIdx === null ? null : state.toIdx
+  if (state.phase === 'waiting') return state.fromIdx
+  return null
+}
+
 /**
  * The tour state machine: which tour starts and when, which steps run, and the
  * advance/skip/complete lifecycle.
@@ -30,14 +73,21 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const settingStore = useSettingStore()
   const telemetry = useTelemetry()
 
-  const steps = shallowRef<CoachStep[]>([])
-  const stepIdx = ref(-1)
-  const waitingForTarget = ref(false)
-  const activeTour = ref<EntryPath | null>(null)
+  const state = shallowRef<TourState>(IDLE)
   let stepController: AbortController | null = null
 
-  const step = computed<CoachStep | null>(
-    () => steps.value[stepIdx.value] ?? null
+  const steps = computed<CoachStep[]>(() =>
+    isRunning(state.value) ? state.value.steps : []
+  )
+  const activeTour = computed<EntryPath | null>(() =>
+    state.value.phase === 'idle' ? null : state.value.tour
+  )
+  const waitingForTarget = computed(() => state.value.phase === 'waiting')
+
+  const stepIdx = computed(() => shownIdx(state.value))
+
+  const step = computed<CoachStep | null>(() =>
+    stepIdx.value === null ? null : (steps.value[stepIdx.value] ?? null)
   )
   const isLast = computed(() => stepIdx.value === steps.value.length - 1)
 
@@ -47,24 +97,29 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const s = step.value
     return s ? countedSteps.value.indexOf(s) : 0
   })
+  const previousStep = computed<CoachStep | null>(() =>
+    stepIdx.value === null ? null : (steps.value[stepIdx.value - 1] ?? null)
+  )
+
   const canGoBack = computed(
-    () =>
-      countedStepIdx.value > 0 && !steps.value[stepIdx.value - 1]?.selfAdvancing
+    () => countedStepIdx.value > 0 && previousStep.value?.selfAdvancing !== true
   )
 
   function trackTour(
     stage: OnboardingTourStage,
-    skipReason?: OnboardingTourSkipReason
+    skipReason?: OnboardingTourSkipReason,
+    reported: CoachStep | null = step.value
   ) {
     const tour = activeTour.value
     if (!tour) return
+    const reportedIdx = reported ? countedSteps.value.indexOf(reported) : -1
     telemetry?.trackOnboardingTour(stage, {
       tour,
       step_count: countedSteps.value.length,
       ...(stage !== 'started' &&
-        countedStepIdx.value >= 0 && {
-          step_number: countedStepIdx.value + 1,
-          coach_id: step.value?.coachId
+        reportedIdx >= 0 && {
+          step_number: reportedIdx + 1,
+          coach_id: reported?.coachId
         }),
       ...(skipReason && { skip_reason: skipReason })
     })
@@ -95,58 +150,86 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const backLabel = computed(() => t('onboardingCoachmarks.back'))
 
   async function showStep(idx: number) {
-    const nextStep = steps.value[idx]
+    const current = state.value
+    if (!isRunning(current)) return
+    const nextStep = current.steps[idx]
     if (!nextStep) return
+
     stepController?.abort()
     const controller = new AbortController()
     stepController = controller
     const { signal } = controller
-    waitingForTarget.value = false
+
+    const fromIdx = shownIdx(current)
+    const { steps: running, tour } = current
     if (nextStep.openSidebarTab) openSidebarTab(nextStep.openSidebarTab)
-    const targetStillComing =
+
+    if (
       nextStep.deferTarget &&
       nextStep.coachId &&
       !targetMounted(nextStep.coachId)
-        ? nextStep.coachId
-        : null
-    if (targetStillComing) {
-      waitingForTarget.value = true
+    ) {
+      state.value = { phase: 'waiting', tour, steps: running, fromIdx }
       const found = await waitForTarget(
-        targetStillComing,
+        nextStep.coachId,
         signal,
         DEFER_TIMEOUT_MS
       )
-      if (signal.aborted) {
-        if (stepController === controller) waitingForTarget.value = false
-        return
-      }
-      waitingForTarget.value = false
-      // Point at the timed-out step so telemetry reports it, and skip without
-      // the seen-flag so a missed target isn't permanent.
+      // An abort has already moved the tour on; only a timeout ends it here.
+      if (signal.aborted) return
       if (!found) {
-        stepIdx.value = idx
-        finish('skipped', { markSeen: false, skipReason: 'target_timeout' })
-        useToastStore().add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('onboardingCoachmarks.loadError')
-        })
+        abandonStep(nextStep)
         return
       }
     }
-    const stepAlreadyOnScreen = stepIdx.value >= 0
-    if (stepAlreadyOnScreen) stepIdx.value = idx
+
+    state.value = {
+      phase: 'entering',
+      tour,
+      steps: running,
+      fromIdx,
+      toIdx: idx
+    }
     if (nextStep.onEnter) {
       try {
         await nextStep.onEnter(signal)
       } catch (error) {
-        if (!signal.aborted) console.error('coachmark onEnter failed', error)
+        if (signal.aborted) return
+        console.error('coachmark onEnter failed', error)
+        abandonStep(nextStep)
+        return
       }
       if (signal.aborted) return
     }
-    stepIdx.value = idx
+    state.value = { phase: 'showing', tour, steps: running, idx }
     trackTour('step_shown')
   }
+
+  /**
+   * Ends the tour on a step it could not present, without the seen-flag so the
+   * user is offered it again rather than losing it to a bad moment.
+   */
+  function abandonStep(step: CoachStep) {
+    finish('skipped', {
+      markSeen: false,
+      skipReason: 'target_timeout',
+      reported: step
+    })
+    useToastStore().add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('onboardingCoachmarks.loadError')
+    })
+  }
+  const lostTarget = computed(() => {
+    if (state.value.phase !== 'showing') return null
+    const shown = step.value
+    return shown?.coachId && !targetMounted(shown.coachId) ? shown : null
+  })
+
+  watch(lostTarget, (lost) => {
+    if (lost) abandonStep(lost)
+  })
 
   function openSidebarTab(tabId: string) {
     const sidebar = useSidebarTabStore()
@@ -159,11 +242,12 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       finish('completed')
       return
     }
-    void showStep(stepIdx.value + 1)
+    if (stepIdx.value !== null) void showStep(stepIdx.value + 1)
   }
 
   function back() {
-    if (canGoBack.value) void showStep(stepIdx.value - 1)
+    if (canGoBack.value && stepIdx.value !== null)
+      void showStep(stepIdx.value - 1)
   }
 
   function skip() {
@@ -187,16 +271,23 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     outcome: 'completed' | 'skipped',
     {
       markSeen = true,
-      skipReason = 'user'
-    }: { markSeen?: boolean; skipReason?: OnboardingTourSkipReason } = {}
+      skipReason = 'user',
+      reported
+    }: {
+      markSeen?: boolean
+      skipReason?: OnboardingTourSkipReason
+      reported?: CoachStep
+    } = {}
   ) {
-    trackTour(outcome, outcome === 'skipped' ? skipReason : undefined)
+    const tour = activeTour.value
+    trackTour(
+      outcome,
+      outcome === 'skipped' ? skipReason : undefined,
+      reported ?? step.value
+    )
     stepController?.abort()
-    waitingForTarget.value = false
-    steps.value = []
-    stepIdx.value = -1
-    if (markSeen && activeTour.value) markTourSeen(activeTour.value)
-    activeTour.value = null
+    if (markSeen && tour) markTourSeen(tour)
+    state.value = IDLE
   }
 
   for (const [entryPath, trigger] of useTourTriggers()) {
@@ -224,16 +315,23 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   }
 
   async function begin(entryPath: EntryPath): Promise<boolean> {
-    if (steps.value.length) return false
+    if (state.value.phase !== 'idle') return false
     const definition = tourDefinition(entryPath)
     if (!definition) return false
+    state.value = { phase: 'resolving', tour: entryPath }
     const built = Array.isArray(definition) ? definition : await definition()
-    // A resolver settling late may have let a concurrent start fill steps first.
-    if (steps.value.length) return false
     const resolved = resolveSteps(built, targetMounted)
-    if (!resolved.length) return false
-    steps.value = resolved
-    activeTour.value = entryPath
+    if (!resolved.length) {
+      state.value = IDLE
+      return false
+    }
+    state.value = {
+      phase: 'entering',
+      tour: entryPath,
+      steps: resolved,
+      fromIdx: null,
+      toIdx: 0
+    }
     trackTour('started')
     void showStep(0)
     return true

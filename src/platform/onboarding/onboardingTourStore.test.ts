@@ -9,8 +9,12 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AppMode } from '@/utils/appMode'
 
-import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
-import { TOUR_SEEN_SETTING } from './onboardingTours'
+import {
+  clearCoachmarks,
+  registerCoachmark,
+  unregisterCoachmark
+} from './coachmarkRegistry'
+import { TOUR_SEEN_SETTING, tourDefinition } from './onboardingTours'
 import type { CoachId } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
@@ -88,14 +92,24 @@ function startedCount() {
     .length
 }
 
+function shownCount(coachId?: CoachId) {
+  return telemetry.track.mock.calls.filter(
+    ([stage, meta]) =>
+      stage === 'step_shown' && (!coachId || meta.coach_id === coachId)
+  ).length
+}
+
 describe('onboardingTourStore', () => {
   // Removed in teardown even when a test throws before its own cleanup.
   const appendedTargets: HTMLElement[] = []
+  let restoreOnEnter: (() => void) | null = null
 
   afterEach(() => {
     if (pinia) disposePinia(pinia)
     pinia = undefined
     clearCoachmarks()
+    restoreOnEnter?.()
+    restoreOnEnter = null
     appendedTargets.forEach((el) => el.remove())
     appendedTargets.length = 0
     settings.store.clear()
@@ -227,6 +241,23 @@ describe('onboardingTourStore', () => {
       ([stage]) => stage === 'skipped'
     )
     expect(skipped?.[1]).toMatchObject({ skip_reason: 'user' })
+  })
+
+  it('holds the card on its step while a deferred target is awaited', async () => {
+    vi.useFakeTimers()
+    const store = mountStore()
+    store.replayTour('appMode')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(store.step?.name).toBe('landing')
+
+    store.next()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(store.waitingForTarget).toBe(true)
+    expect(
+      store.step?.name,
+      'blanking the card while a target is awaited reads as the tour dying'
+    ).toBe('landing')
   })
 
   it('skips without the seen-flag and toasts when a deferred target never appears', async () => {
@@ -512,5 +543,164 @@ describe('onboardingTourStore', () => {
       ([stage]) => stage === 'skipped'
     )
     expect(skipped).toBe(false)
+  })
+
+  it('ends the tour when the step it is pointing at leaves the page', async () => {
+    const targets = registerAppModeTargets()
+    const store = mountStore()
+    store.replayTour('appMode')
+    await nextTick()
+    store.next()
+    await nextTick()
+    expect(store.step?.coachId).toBe('inputs-list')
+
+    const el = targets.get('inputs-list')
+    if (!el) throw new Error('no inputs target')
+    unregisterCoachmark('inputs-list', el)
+    await nextTick()
+
+    expect(
+      store.step,
+      'a tour must not keep describing something that has gone'
+    ).toBeNull()
+    expect(
+      seenTours(),
+      'the user never got this tour, so it must be offered again'
+    ).not.toContain('appMode')
+  })
+
+  describe('a step whose onEnter is still running', () => {
+    function suspendOnEnter(stepName: string) {
+      const steps = tourDefinition('appMode')
+      if (!Array.isArray(steps)) throw new Error('appMode tour is not a list')
+      const target = steps.find((s) => s.name === stepName)
+      if (!target) throw new Error(`no ${stepName} step to suspend`)
+
+      const original = target.onEnter
+      restoreOnEnter = () => {
+        target.onEnter = original
+      }
+
+      let settle = () => {}
+      const entered = new Promise<AbortSignal>((resolveEntered) => {
+        target.onEnter = (signal: AbortSignal) =>
+          new Promise<void>((done) => {
+            settle = done
+            resolveEntered(signal)
+          })
+      })
+      return { entered, settle: () => settle() }
+    }
+
+    it('moves the card to the next step as soon as it starts entering', async () => {
+      registerAppModeTargets()
+      const { entered, settle } = suspendOnEnter('inputs')
+      const store = mountStore()
+      store.replayTour('appMode')
+      await nextTick()
+      expect(store.step?.name).toBe('landing')
+
+      store.next()
+      await entered
+
+      expect(
+        store.step?.name,
+        'a card that waits out the camera flight jumps at the end of it'
+      ).toBe('inputs')
+
+      settle()
+      await nextTick()
+
+      expect(store.step?.name).toBe('inputs')
+    })
+
+    it('advances again from the step it is entering, not the one it left', async () => {
+      registerAppModeTargets()
+      const { entered, settle } = suspendOnEnter('inputs')
+      const store = mountStore()
+      store.replayTour('appMode')
+      await nextTick()
+
+      store.next()
+      await entered
+      store.next()
+      settle()
+      await nextTick()
+
+      expect(
+        store.step?.name,
+        'a second Next during the camera flight must not be swallowed'
+      ).toBe('run')
+    })
+
+    it('shows no step until the first one has entered', async () => {
+      registerAppModeTargets()
+      const { entered, settle } = suspendOnEnter('landing')
+      const store = mountStore()
+      store.replayTour('appMode')
+      await entered
+
+      expect(
+        store.step,
+        'a card placed before its step has framed itself reads as a glitch'
+      ).toBeNull()
+
+      settle()
+      await nextTick()
+
+      expect(store.step?.name).toBe('landing')
+    })
+
+    it('ends the tour when onEnter throws, rather than showing the step', async () => {
+      registerAppModeTargets()
+      const steps = tourDefinition('appMode')
+      if (!Array.isArray(steps)) throw new Error('appMode tour is not a list')
+      const target = steps.find((s) => s.name === 'inputs')
+      if (!target) throw new Error('no inputs step')
+      const original = target.onEnter
+      restoreOnEnter = () => {
+        target.onEnter = original
+      }
+      target.onEnter = () => Promise.reject(new Error('framing blew up'))
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      const store = mountStore()
+      store.replayTour('appMode')
+      await nextTick()
+      store.next()
+      await nextTick()
+      await nextTick()
+
+      expect(
+        shownCount('inputs-list'),
+        'a step whose setup failed was never presented'
+      ).toBe(0)
+      expect(store.step).toBeNull()
+      expect(
+        seenTours(),
+        'a tour cut short by a failure must be offered again'
+      ).not.toContain('appMode')
+      expect(useToastStore().messagesToAdd).toHaveLength(1)
+    })
+
+    it('reports no step_shown until onEnter settles', async () => {
+      registerAppModeTargets()
+      const { entered, settle } = suspendOnEnter('inputs')
+      const store = mountStore()
+      store.replayTour('appMode')
+      await nextTick()
+      store.next()
+      await entered
+
+      expect(
+        shownCount('inputs-list'),
+        'a step still framing itself has not been shown to anyone'
+      ).toBe(0)
+
+      settle()
+      await nextTick()
+
+      expect(shownCount('inputs-list')).toBe(1)
+    })
   })
 })

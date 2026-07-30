@@ -11,7 +11,7 @@ import type { NodeId } from '@/types/nodeId'
 
 const FOCUS_DURATION_MS = 450
 /** Never magnify past this: the aim is a node that reads, not one that dominates. */
-const MAX_FOCUS_SCALE = 0.6
+export const MAX_FOCUS_SCALE = 0.65
 const CARD_COLUMN = CARD_WIDTH + CURSOR_GAP * 2
 
 interface Viewport {
@@ -54,6 +54,33 @@ function fitInstantly(bounds: ReadOnlyRect) {
   canvas.setDirty(true, true)
 }
 
+const SETTLED_PX = 8
+const SETTLED_SCALE = 0.01
+
+/** The scale litegraph's fit lands on: it takes whichever axis binds first. */
+function framedScale(bounds: ReadOnlyRect, viewport: Viewport): number {
+  const zoom = focusFill(bounds, viewport)
+  return Math.min(
+    (zoom * viewport.width) / Math.max(bounds[2], 300),
+    (zoom * viewport.height) / Math.max(bounds[3], 300)
+  )
+}
+
+/** Back onto a step already framed would otherwise animate 0px for 750ms. */
+function alreadyFramed(
+  bounds: ReadOnlyRect,
+  ds: { offset: ArrayLike<number>; scale: number },
+  viewport: Viewport
+): boolean {
+  const centreX = (bounds[0] + bounds[2] / 2 + ds.offset[0]) * ds.scale
+  const centreY = (bounds[1] + bounds[3] / 2 + ds.offset[1]) * ds.scale
+  return (
+    Math.abs(ds.scale - framedScale(bounds, viewport)) <= SETTLED_SCALE &&
+    Math.abs(centreX - viewport.width / 2) < SETTLED_PX &&
+    Math.abs(centreY - viewport.height / 2) < SETTLED_PX
+  )
+}
+
 /**
  * Brings a node into view for the step that spotlights it. Resolves once the
  * camera has landed, so an opening tour reveals its card on a still view.
@@ -76,6 +103,7 @@ export async function frameNode(
   window.addEventListener('resize', () => fitInstantly(bounds), { signal })
 
   if (prefersReducedMotion()) return fitInstantly(bounds)
+  if (alreadyFramed(bounds, canvas.ds, viewport)) return
 
   if (glide) await delay(CARD_GLIDE_MS, { signal })
   canvas.animateToBounds(bounds, {
