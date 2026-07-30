@@ -1,0 +1,61 @@
+{
+  "id": "3d3c9d1a-5a0f-4b1e-9d9b-2e8d1c2f6a11",
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 1,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "SaveImage",
+      "pos": [400, 100],
+      "size": [270, 100],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "title": "Locked Widget Target",
+      "inputs": [
+        { "name": "images", "type": "IMAGE", "link": null },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": { "name": "filename_prefix" },
+          "link": 1
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": ["ComfyUI"],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 2,
+      "type": "PrimitiveString",
+      "pos": [24, 100],
+      "size": [270, 80],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "title": "String Source",
+      "inputs": [],
+      "outputs": [{ "name": "STRING", "type": "STRING", "links": [1] }],
+      "properties": {
+        "Node name for S&R": "PrimitiveString"
+      },
+      "widgets_values": ["locked_prefix"]
+    }
+  ],
+  "links": [[1, 2, 0, 1, 1, "STRING"]],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [0, 0]
+    },
+    "frontendVersion": "1.28.6"
+  },
+  "version": 0.4
+}
