@@ -8,6 +8,14 @@ import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
 
+function hasOpenRekaDialog(): boolean {
+  return Array.from(
+    document.querySelectorAll('[role="dialog"][data-state="open"]')
+  ).some(
+    (dialog) => dialog.closest('[data-reka-popper-content-wrapper]') === null
+  )
+}
+
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
   const commandStore = useCommandStore()
@@ -46,7 +54,8 @@ export function useKeybindingService() {
       }
       if (
         dialogStore.dialogStack.length > 0 ||
-        document.querySelector('[role="dialog"][aria-modal="true"]')
+        document.querySelector('[role="dialog"][aria-modal="true"]') ||
+        hasOpenRekaDialog()
       ) {
         return
       }

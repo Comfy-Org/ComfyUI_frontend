@@ -130,4 +130,42 @@ describe('keybindingService - dialog gate', () => {
       document.body.removeChild(dialog)
     }
   })
+
+  it('does NOT execute a global keybinding while a reka dialog is open', async () => {
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('data-state', 'open')
+    document.body.appendChild(dialog)
+
+    try {
+      const event = createKeyboardEvent('w')
+      await keybindingService.keybindHandler(event)
+
+      expect(mockCommandExecute).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
+    } finally {
+      document.body.removeChild(dialog)
+    }
+  })
+
+  it('executes a global keybinding while a reka popover is open', async () => {
+    const popper = document.createElement('div')
+    popper.setAttribute('data-reka-popper-content-wrapper', '')
+    const popover = document.createElement('div')
+    popover.setAttribute('role', 'dialog')
+    popover.setAttribute('data-state', 'open')
+    popper.appendChild(popover)
+    document.body.appendChild(popper)
+
+    try {
+      const event = createKeyboardEvent('w')
+      await keybindingService.keybindHandler(event)
+
+      expect(mockCommandExecute).toHaveBeenCalledWith(
+        'Workspace.ToggleSidebarTab.workflows'
+      )
+    } finally {
+      document.body.removeChild(popper)
+    }
+  })
 })
