@@ -62,6 +62,19 @@ describe('useFirstRunEntry', () => {
     mocks.setSetting.mockClear()
   })
 
+  it('forces the takeover in dev regardless of gates', async () => {
+    localStorage.setItem('ff:force_first_run', 'true')
+    mocks.isCloud = false
+    const entry = await freshEntry()
+    await entry.handleStartupOutcome('restored')
+    expect(entry.gettingStartedVisible.value).toBe(true)
+    expect(mocks.setSetting).toHaveBeenCalledWith(
+      'Comfy.TutorialCompleted',
+      false
+    )
+    localStorage.removeItem('ff:force_first_run')
+  })
+
   it('shows the takeover to a fresh candidate without touching settings', async () => {
     const entry = await freshEntry()
     await entry.handleStartupOutcome('fresh')
@@ -82,6 +95,10 @@ describe('useFirstRunEntry', () => {
       await entry.handleStartupOutcome('fresh')
       expect(entry.gettingStartedVisible.value).toBe(false)
       expect(mocks.execute).toHaveBeenCalledWith('Comfy.BrowseTemplates')
+      expect(mocks.setSetting).toHaveBeenCalledWith(
+        'Comfy.TutorialCompleted',
+        true
+      )
     }
   )
 

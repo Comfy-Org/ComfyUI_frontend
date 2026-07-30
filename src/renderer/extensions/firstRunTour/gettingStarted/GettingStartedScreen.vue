@@ -32,6 +32,7 @@
               class="group/card focus-visible:ring-ring relative min-w-0 cursor-pointer overflow-hidden rounded-2xl **:cursor-pointer focus-visible:ring-1 focus-visible:outline-none"
               @click="pick(template.name)"
               @keydown.enter.prevent="pick(template.name)"
+              @keydown.space.prevent="pick(template.name)"
               @mouseenter="hoveredId = template.name"
               @mouseleave="hoveredId = null"
             >
@@ -85,7 +86,7 @@ import { CURATED_TEMPLATE_IDS } from './curatedTemplates'
 import { useFirstRunEntry } from './firstRunEntry'
 
 const { t } = useI18n()
-const { dismissGettingStarted } = useFirstRunEntry()
+const { dismissGettingStarted, hideGettingStarted } = useFirstRunEntry()
 const templatesStore = useWorkflowTemplatesStore()
 const {
   loadWorkflowTemplate,
@@ -104,11 +105,14 @@ const templates = computed(() =>
 
 onMounted(async () => {
   if (import.meta.env.DEV)
-    console.warn('[first-run] screen mounted, catalog:', templatesStore.isLoaded)
+    console.warn(
+      '[first-run] screen mounted, catalog:',
+      templatesStore.isLoaded
+    )
   if (!templatesStore.isLoaded) await templatesStore.loadWorkflowTemplates()
   if (import.meta.env.DEV)
     console.warn('[first-run] curated resolved:', templates.value.length)
-  if (!templates.value.length) await dismissGettingStarted()
+  if (!templates.value.length) hideGettingStarted()
 })
 
 async function pick(id: string) {

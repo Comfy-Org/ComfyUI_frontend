@@ -16,10 +16,11 @@ import { useCommandStore } from '@/stores/commandStore'
 
 export const useFirstRunEntry = createSharedComposable(() => {
   const gettingStartedVisible = ref(false)
+  const isMdOrLarger = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
   const isCandidate = () =>
     isCloud &&
-    useBreakpoints(breakpointsTailwind).greaterOrEqual('md').value &&
+    isMdOrLarger.value &&
     useSubscription().isSubscriptionEnabled() &&
     useNewUserService().isNewUser() === true &&
     useFeatureFlags().flags.onboardingTourEnabled
@@ -47,17 +48,23 @@ export const useFirstRunEntry = createSharedComposable(() => {
       gettingStartedVisible.value = true
       return
     }
+    await useSettingStore().set('Comfy.TutorialCompleted', true)
     await useCommandStore().execute('Comfy.BrowseTemplates')
   }
 
-  async function dismissGettingStarted() {
+  function hideGettingStarted() {
     gettingStartedVisible.value = false
+  }
+
+  async function dismissGettingStarted() {
+    hideGettingStarted()
     await useSettingStore().set('Comfy.TutorialCompleted', true)
   }
 
   return {
     gettingStartedVisible: readonly(gettingStartedVisible),
     handleStartupOutcome,
+    hideGettingStarted,
     dismissGettingStarted
   }
 })
