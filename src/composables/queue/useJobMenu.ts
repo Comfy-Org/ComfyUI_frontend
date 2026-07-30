@@ -159,7 +159,7 @@ export function useJobMenu(
     const apiItem: ResultItem = {
       filename: result.filename,
       subfolder: result.subfolder,
-      type: isResultItemType(result.type) ? result.type : undefined
+      type: isResultItemType(result.type) ? result.type : 'output'
     }
 
     const annotated = createAnnotatedPath(apiItem, {

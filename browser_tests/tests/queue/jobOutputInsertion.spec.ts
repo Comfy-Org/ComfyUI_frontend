@@ -1,8 +1,10 @@
 import { expect } from '@playwright/test'
 
 import { jobOutputInsertionCases } from '@e2e/fixtures/data/jobOutputInsertion'
-import { expectNoErrorUiForObservationWindow } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { jobOutputInsertionTest as test } from '@e2e/fixtures/jobOutputInsertionFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 test.describe(
   'Job output insertion',
@@ -12,7 +14,12 @@ test.describe(
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
       await comfyPage.toast.closeToasts()
-      await expectNoErrorUiForObservationWindow(comfyPage)
+      const panel = new PropertiesPanelHelper(comfyPage.page)
+      await panel.open(comfyPage.actionbar.propertiesButton)
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+      ).toBeHidden()
+      await expect(panel.errorsTab).toBeHidden()
       await comfyPage.queuePanel.open()
     })
 
@@ -20,9 +27,17 @@ test.describe(
       test(`does not surface errors when inserting the owned ${scenario.mediaKind} job asset`, async ({
         comfyPage
       }) => {
+        const panel = new PropertiesPanelHelper(comfyPage.page)
+        await expect(panel.root).toBeVisible()
         const initialLoaderCount = (
           await comfyPage.nodeOps.getNodeRefsByType(scenario.nodeType)
         ).length
+        const assetsVerificationResponse = comfyPage.page.waitForResponse(
+          (response) =>
+            response.request().method().toUpperCase() === 'GET' &&
+            response.status() === 200 &&
+            new URL(response.url()).pathname.endsWith('/api/assets')
+        )
 
         await comfyPage.queuePanel.addOutputToCurrentWorkflow(scenario.job.id)
 
@@ -34,7 +49,11 @@ test.describe(
           )
           .toBe(initialLoaderCount + 1)
 
-        await expectNoErrorUiForObservationWindow(comfyPage)
+        await expectNoErrorUiAfterVerification(
+          comfyPage,
+          panel,
+          assetsVerificationResponse
+        )
       })
     }
   }

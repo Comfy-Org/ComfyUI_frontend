@@ -1,3 +1,4 @@
+import type { Response } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -43,12 +44,13 @@ export async function openErrorsTab(comfyPage: ComfyPage) {
   await errorsTab.click()
 }
 
-export async function expectNoErrorUiForObservationWindow(
+export async function expectNoErrorUiAfterVerification(
   comfyPage: ComfyPage,
+  panel: PropertiesPanelHelper,
+  verificationResponse: Promise<Response>,
   observationMs = 2_000
 ): Promise<void> {
-  const panel = new PropertiesPanelHelper(comfyPage.page)
-  await panel.open(comfyPage.actionbar.propertiesButton)
+  await verificationResponse
 
   const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
   let sawErrorUi = false
