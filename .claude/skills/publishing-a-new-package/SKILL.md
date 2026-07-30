@@ -85,7 +85,10 @@ only permits the first two rejects any package that has a readme.
 - **Export `./package.json`.** Tooling reads it; an `exports` map that omits it
   throws `ERR_PACKAGE_PATH_NOT_EXPORTED`.
 - **Check `files` against the exports map.** Every path in `exports` must be
-  covered by `files` or consumers get a resolution error at install time.
+  covered by `files`, or the target is simply absent from the tarball. Nothing
+  catches this at install time — neither `npm pack` nor `npm install` resolves
+  export targets — so it surfaces as a consumer resolution error the first time
+  something imports that entry.
 
 ## Releasing after the first time
 
@@ -106,8 +109,10 @@ npm install @comfyorg/<name>
 ```
 
 Then import it somewhere real, build, and grep the build output to confirm the
-thing you imported actually reached the bundle. A green build proves the import
-resolved; it does not prove the values landed. For CSS:
+thing you imported actually reached the bundle. Import **every** entry in the
+`exports` map while you are there — a subpath whose target never made it into
+the tarball fails only here. A green build proves the import resolved; it does
+not prove the values landed. For CSS:
 
 ```sh
 grep -o -- "--your-token:[^;]*" .output/public/_nuxt/*.css
