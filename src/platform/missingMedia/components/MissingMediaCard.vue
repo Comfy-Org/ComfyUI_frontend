@@ -40,9 +40,13 @@
             size="icon-sm"
             class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
             :aria-label="
-              t('rightSidePanel.locateNodeFor', {
-                item: item.displayItemLabel
-              })
+              t(
+                'rightSidePanel.locateNodeFor',
+                {
+                  item: item.displayItemLabel
+                },
+                { escapeParameter: false }
+              )
             "
             @click.stop="emit('locateNode', item.nodeId)"
           >

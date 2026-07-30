@@ -1,0 +1,60 @@
+---
+interface Author {
+  name?: string
+  role?: string
+  photo?: string
+  bio?: string
+}
+
+interface Props {
+  label?: string
+  people: Author[]
+}
+
+const { label, people } = Astro.props
+const hasBioSlot = Astro.slots.has('default')
+---
+
+<div class="mt-12 border-t border-white/10 pt-8">
+  {
+    label && (
+      <span class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase">
+        {label}
+      </span>
+    )
+  }
+  <div class="mt-4 space-y-8">
+    {
+      people.map((person) => (
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+          {person.photo && (
+            <img
+              src={person.photo}
+              alt={person.name ?? ''}
+              class="size-20 shrink-0 rounded-full object-cover"
+            />
+          )}
+          <div>
+            {person.name && (
+              <p class="text-sm font-semibold text-primary-comfy-canvas">
+                {person.name}
+                {person.role && (
+                  <span class="text-primary-warm-gray"> · {person.role}</span>
+                )}
+              </p>
+            )}
+            {person.bio ? (
+              <p class="mt-2 text-sm/relaxed text-primary-comfy-canvas italic">
+                {person.bio}
+              </p>
+            ) : hasBioSlot && people.length === 1 ? (
+              <p class="mt-2 text-sm/relaxed text-primary-comfy-canvas italic">
+                <slot />
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ))
+    }
+  </div>
+</div>

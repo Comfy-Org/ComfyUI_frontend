@@ -152,9 +152,9 @@ describe('ErrorOverlay', () => {
     renderOverlay()
 
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       '1': makeNodeError(['Only error'])
-    }
+    })
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
@@ -189,9 +189,9 @@ describe('ErrorOverlay', () => {
     renderOverlay({ appMode: true })
 
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       '1': makeNodeError(['Only error'])
-    }
+    })
     executionErrorStore.showErrorOverlay()
     await nextTick()
 

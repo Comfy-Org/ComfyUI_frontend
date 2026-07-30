@@ -52,10 +52,6 @@ export function useTypeformEmbed(
     isTypeformIdValid(toValue(typeformIdInput))
   )
 
-  const typeformId = computed(() =>
-    isValidTypeformId.value ? (toValue(typeformIdInput) ?? '') : ''
-  )
-
   whenever(typeformRef, async () => {
     try {
       await ensureScriptLoaded()
@@ -72,7 +68,6 @@ export function useTypeformEmbed(
 
   return {
     typeformError,
-    isValidTypeformId,
-    typeformId
+    isValidTypeformId
   }
 }

@@ -77,15 +77,15 @@ test.describe('Help Center', () => {
       expect(url.pathname).toBe('/')
     })
 
-    test('Discord item opens comfy.org/discord in a new tab', async ({
+    test('Discord item opens the Discord invite in a new tab', async ({
       helpCenter
     }) => {
       const url = await waitForPopup(helpCenter.page, () =>
         helpCenter.menuItem('discord').click()
       )
 
-      expect(url.hostname).toBe('www.comfy.org')
-      expect(url.pathname).toBe('/discord')
+      expect(url.hostname).toBe('discord.com')
+      expect(url.pathname).toBe('/invite/comfyorg')
     })
 
     test('Github item opens the ComfyUI repo in a new tab', async ({

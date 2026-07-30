@@ -23,7 +23,7 @@ export function getCommonTierBenefits(
 
   if (isFree) {
     const credits = getTierCredits(key)
-    if (credits !== null) {
+    if (credits) {
       benefits.push({
         key: 'monthlyCredits',
         type: 'metric',

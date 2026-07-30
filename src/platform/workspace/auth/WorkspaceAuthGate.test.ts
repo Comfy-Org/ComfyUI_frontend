@@ -9,6 +9,11 @@ async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
 
+const mockCaptureException = vi.hoisted(() => vi.fn())
+vi.mock('@sentry/vue', () => ({
+  captureException: mockCaptureException
+}))
+
 const mockIsInitialized = ref(false)
 const mockCurrentUser = ref<object | null>(null)
 
@@ -24,14 +29,38 @@ vi.mock('@/platform/remoteConfig/refreshRemoteConfig', () => ({
   refreshRemoteConfig: (options: unknown) => mockRefreshRemoteConfig(options)
 }))
 
+const mockRemoteConfigState = vi.hoisted(() => ({
+  value: 'authenticated' as
+    | 'uninitialized'
+    | 'anonymous'
+    | 'authenticated'
+    | 'error'
+}))
+vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+  remoteConfigState: mockRemoteConfigState
+}))
+
 const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: false }))
+const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
     flags: {
       get teamWorkspacesEnabled() {
         return mockTeamWorkspacesEnabled.value
+      },
+      get unifiedCloudAuthEnabled() {
+        return mockUnifiedCloudAuthEnabled.value
       }
     }
+  })
+}))
+
+const mockMintAtLogin = vi.fn()
+const mockGetUnifiedToken = vi.fn()
+vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
+  useWorkspaceAuthStore: () => ({
+    mintAtLogin: mockMintAtLogin,
+    getUnifiedToken: mockGetUnifiedToken
   })
 }))
 
@@ -39,10 +68,16 @@ const mockWorkspaceStoreInitialize = vi.fn()
 const mockWorkspaceStoreInitState = vi.hoisted(() => ({
   value: 'uninitialized' as string
 }))
+const mockActiveWorkspaceId = vi.hoisted(() => ({
+  value: 'workspace-123' as string | null
+}))
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     get initState() {
       return mockWorkspaceStoreInitState.value
+    },
+    get activeWorkspaceId() {
+      return mockActiveWorkspaceId.value
     },
     initialize: mockWorkspaceStoreInitialize
   })
@@ -76,9 +111,16 @@ describe('WorkspaceAuthGate', () => {
     mockIsInitialized.value = false
     mockCurrentUser.value = null
     mockTeamWorkspacesEnabled.value = false
+    mockUnifiedCloudAuthEnabled.value = false
+    mockRemoteConfigState.value = 'authenticated'
     mockWorkspaceStoreInitState.value = 'uninitialized'
+    mockActiveWorkspaceId.value = 'workspace-123'
     mockRefreshRemoteConfig.mockResolvedValue(undefined)
-    mockWorkspaceStoreInitialize.mockResolvedValue(undefined)
+    mockWorkspaceStoreInitialize.mockImplementation(async () => {
+      mockWorkspaceStoreInitState.value = 'ready'
+    })
+    mockMintAtLogin.mockResolvedValue(true)
+    mockGetUnifiedToken.mockReturnValue('cloud-jwt')
   })
 
   const i18n = createI18n({ legacy: false })
@@ -150,6 +192,18 @@ describe('WorkspaceAuthGate', () => {
       expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
     })
 
+    it('mints unified auth after refreshing authenticated flags', async () => {
+      mockRefreshRemoteConfig.mockImplementation(async () => {
+        mockUnifiedCloudAuthEnabled.value = true
+      })
+
+      mountComponent()
+      await flushPromises()
+
+      expect(mockMintAtLogin).toHaveBeenCalledOnce()
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+    })
+
     it('initializes workspace store when teamWorkspacesEnabled is true', async () => {
       mockTeamWorkspacesEnabled.value = true
 
@@ -182,22 +236,28 @@ describe('WorkspaceAuthGate', () => {
     })
   })
 
-  describe('error handling - graceful degradation', () => {
+  describe('error handling', () => {
     beforeEach(() => {
       mockIsInitialized.value = true
       mockCurrentUser.value = { uid: 'user-123' }
     })
 
-    it('renders slot when remote config refresh fails', async () => {
-      mockRefreshRemoteConfig.mockRejectedValue(new Error('Network error'))
+    it('keeps the app gated when remote config refresh fails', async () => {
+      const error = new Error('Network error')
+      mockRefreshRemoteConfig.mockRejectedValue(error)
 
       mountComponent()
       await flushPromises()
 
-      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+      expect(mockCaptureException).toHaveBeenCalledWith(error, {
+        tags: {
+          error_type: 'workspace_auth_gate_initialization_failure'
+        }
+      })
     })
 
-    it('renders slot when remote config refresh times out', async () => {
+    it('keeps the app gated when remote config refresh times out', async () => {
       vi.useFakeTimers()
       try {
         // Never-resolving promise simulates a hanging request
@@ -212,14 +272,33 @@ describe('WorkspaceAuthGate', () => {
         // Advance past the 10 second timeout
         await vi.advanceTimersByTimeAsync(10_001)
 
-        // Should render slot after timeout (graceful degradation)
-        expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+        expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
       } finally {
         vi.useRealTimers()
       }
     })
 
-    it('renders slot when workspace store initialization fails', async () => {
+    it('keeps the app gated when authenticated config is unavailable', async () => {
+      mockRemoteConfigState.value = 'error'
+
+      mountComponent()
+      await flushPromises()
+
+      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+    })
+
+    it('keeps the app gated when unified auth initialization fails', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockMintAtLogin.mockResolvedValue(false)
+
+      mountComponent()
+      await flushPromises()
+
+      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+    })
+
+    it('keeps the app gated when workspace store initialization fails', async () => {
       mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitialize.mockRejectedValue(
         new Error('Workspace init failed')
@@ -228,7 +307,28 @@ describe('WorkspaceAuthGate', () => {
       mountComponent()
       await flushPromises()
 
-      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+    })
+
+    it('keeps the app gated when workspace setup clears unified auth', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockTeamWorkspacesEnabled.value = true
+      mockGetUnifiedToken.mockReturnValue(undefined)
+
+      mountComponent()
+      await flushPromises()
+
+      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+    })
+
+    it('keeps the app gated without a ready workspace context', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockWorkspaceStoreInitState.value = 'loading'
+
+      mountComponent()
+      await flushPromises()
+
+      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
     })
   })
 })

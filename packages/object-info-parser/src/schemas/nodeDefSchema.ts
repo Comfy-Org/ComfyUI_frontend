@@ -317,7 +317,13 @@ export const zComfyNodeDef = z.object({
   /** Category for the Essentials tab. If set, the node appears in Essentials. */
   essentials_category: z.string().optional(),
   /** Whether the blueprint is a global/installed blueprint (not user-created). */
-  isGlobal: z.boolean().optional()
+  isGlobal: z.boolean().optional(),
+  /**
+   * An optional ordered list of widget names to be used when migrating a
+   * workflow that lacks widgets_values_named. Only useful if the order of
+   * widgets is changed after the introduction of widgets_values_named.
+   */
+  fallbackWidgetsValuesNames: z.array(z.string()).optional()
 })
 
 export const zAutogrowOptions = z.object({
@@ -357,6 +363,9 @@ export const zMatchTypeOptions = z.object({
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
 export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
+
+/** Full `/object_info` response: node definitions keyed by node type. */
+export type ObjectInfoResponse = Record<string, ComfyNodeDef>
 export type RemoteWidgetConfig = z.infer<typeof zRemoteWidgetConfig>
 
 export type ComboInputOptions = z.infer<typeof zComboInputOptions>

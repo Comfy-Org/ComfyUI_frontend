@@ -513,6 +513,25 @@ describe('useGLSLRenderer', () => {
     })
   })
 
+  describe('clearInputImage', () => {
+    beforeEach(() => {
+      renderer = useGLSLRenderer()
+      renderer.init(128, 128)
+    })
+
+    it('deletes the texture bound at the given index', () => {
+      renderer.bindInputImage(0, new Image())
+      mockGL.deleteTexture.mockClear()
+      renderer.clearInputImage(0)
+      expect(mockGL.deleteTexture).toHaveBeenCalledTimes(1)
+    })
+
+    it('does nothing when the slot is empty', () => {
+      renderer.clearInputImage(0)
+      expect(mockGL.deleteTexture).not.toHaveBeenCalled()
+    })
+  })
+
   describe('render', () => {
     const source = 'void main() { fragColor0 = vec4(1.0); }'
 

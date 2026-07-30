@@ -40,10 +40,10 @@
                 <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
                   <div class="flex max-w-full min-w-0 items-center gap-1.5">
                     <span
-                      :title="getDisplayName(workspace)"
+                      :title="workspace.name"
                       class="min-w-0 truncate text-sm text-base-foreground"
                     >
-                      {{ getDisplayName(workspace) }}
+                      {{ workspace.name }}
                     </span>
                     <span
                       v-if="resolveTierLabel(workspace)"
@@ -168,12 +168,6 @@ const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
 
 function isCurrentWorkspace(workspace: AvailableWorkspace): boolean {
   return workspace.id === workspaceId.value
-}
-
-function getDisplayName(workspace: AvailableWorkspace): string {
-  return workspace.type === 'personal'
-    ? t('workspaceSwitcher.personal')
-    : workspace.name
 }
 
 function getRoleLabel(role: AvailableWorkspace['role']): string {

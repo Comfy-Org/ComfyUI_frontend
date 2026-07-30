@@ -1,21 +1,14 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
-import { getAssetBaseModels } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  getAssetBaseModels,
+  getAssetCategories
+} from '@/platform/assets/utils/assetMetadataUtils'
 
-export function filterByCategory(category: string) {
+export function filterByCategory(category: string, modelTypeMode: boolean) {
   return (asset: AssetItem) => {
     if (category === 'all') return true
-
-    // Check if any tag matches the category (for exact matches)
-    if (asset.tags.includes(category)) return true
-
-    // Check if any tag's top-level folder matches the category
-    return asset.tags.some((tag) => {
-      if (typeof tag === 'string' && tag.includes('/')) {
-        return tag.split('/')[0] === category
-      }
-      return false
-    })
+    return getAssetCategories(asset, modelTypeMode).includes(category)
   }
 }
 
@@ -40,7 +33,9 @@ export function filterByBaseModels(models: string[] | Set<string>) {
 export function filterByOwnership(ownership: OwnershipOption) {
   return (asset: AssetItem) => {
     if (ownership === 'all') return true
-    if (ownership === 'my-models') return asset.is_immutable === false
+    // is_immutable is optional; an asset omitting it counts as owned so it
+    // never vanishes from both ownership views.
+    if (ownership === 'my-models') return asset.is_immutable !== true
     if (ownership === 'public-models') return asset.is_immutable === true
     return true
   }
@@ -51,8 +46,10 @@ export function filterItemByOwnership<T extends { is_immutable?: boolean }>(
   ownership: OwnershipOption
 ): T[] {
   if (ownership === 'all') return items
-  const isPublic = ownership === 'public-models'
-  return items.filter((item) => item.is_immutable === isPublic)
+  if (ownership === 'public-models') {
+    return items.filter((item) => item.is_immutable === true)
+  }
+  return items.filter((item) => item.is_immutable !== true)
 }
 
 export function filterItemByBaseModels<T extends { base_models?: string[] }>(

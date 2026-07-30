@@ -7,6 +7,7 @@ import {
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
 import {
+  cachedBillingControlEnabled,
   cachedConsolidatedBillingEnabled,
   cachedTeamWorkspacesEnabled,
   remoteConfig,
@@ -182,6 +183,30 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('partnerNodeGovernanceEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('uses the workspace eligibility flag', () => {
+      remoteConfig.value = { partner_node_governance_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.partnerNodeGovernanceEnabled).toBe(true)
+    })
+
+    it('defaults to false when the remote flag is unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.partnerNodeGovernanceEnabled).toBe(false)
+    })
+  })
+
   describe('dev override via localStorage', () => {
     afterEach(() => {
       localStorage.clear()
@@ -226,6 +251,14 @@ describe('useFeatureFlags', () => {
       expect(flags.teamWorkspacesEnabled).toBe(true)
     })
 
+    it('billingControlEnabled override bypasses isCloud and isAuthenticatedConfigLoaded guards', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      localStorage.setItem('ff:billing_control_enabled', 'true')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.billingControlEnabled).toBe(true)
+    })
+
     it('consolidatedBillingEnabled override bypasses isCloud and isAuthenticatedConfigLoaded guards', () => {
       vi.mocked(distributionTypes).isCloud = false
       localStorage.setItem('ff:consolidated_billing_enabled', 'true')
@@ -234,10 +267,11 @@ describe('useFeatureFlags', () => {
       expect(flags.consolidatedBillingEnabled).toBe(true)
     })
 
-    it('consolidatedBillingEnabled is false off-cloud even without an override', () => {
+    it('billingControlEnabled is false off-cloud even without an override', () => {
       vi.mocked(distributionTypes).isCloud = false
 
       const { flags } = useFeatureFlags()
+      expect(flags.billingControlEnabled).toBe(false)
       expect(flags.consolidatedBillingEnabled).toBe(false)
     })
   })
@@ -249,6 +283,7 @@ describe('useFeatureFlags', () => {
       remoteConfig.value = {}
       cachedTeamWorkspacesEnabled.value = undefined
       cachedConsolidatedBillingEnabled.value = undefined
+      cachedBillingControlEnabled.value = undefined
       localStorage.clear()
     })
 
@@ -258,35 +293,41 @@ describe('useFeatureFlags', () => {
       remoteConfig.value = {}
       cachedTeamWorkspacesEnabled.value = undefined
       cachedConsolidatedBillingEnabled.value = undefined
+      cachedBillingControlEnabled.value = undefined
       localStorage.clear()
     })
 
     it('returns the cached session value during the auth window', () => {
       cachedTeamWorkspacesEnabled.value = false
       cachedConsolidatedBillingEnabled.value = true
+      cachedBillingControlEnabled.value = true
 
       const { flags } = useFeatureFlags()
       expect(flags.teamWorkspacesEnabled).toBe(false)
       expect(flags.consolidatedBillingEnabled).toBe(true)
+      expect(flags.billingControlEnabled).toBe(true)
     })
 
     it('defaults to false during the auth window when nothing is cached', () => {
       const { flags } = useFeatureFlags()
       expect(flags.teamWorkspacesEnabled).toBe(false)
       expect(flags.consolidatedBillingEnabled).toBe(false)
+      expect(flags.billingControlEnabled).toBe(false)
     })
 
     it('prefers authenticated remoteConfig over the server feature fallback', () => {
       remoteConfigState.value = 'authenticated'
       remoteConfig.value = {
         team_workspaces_enabled: true,
-        consolidated_billing_enabled: true
+        consolidated_billing_enabled: true,
+        billing_control_enabled: false
       }
       vi.mocked(api.getServerFeature).mockReturnValue(false)
 
       const { flags } = useFeatureFlags()
       expect(flags.teamWorkspacesEnabled).toBe(true)
       expect(flags.consolidatedBillingEnabled).toBe(true)
+      expect(flags.billingControlEnabled).toBe(false)
     })
 
     it('falls back to api.getServerFeature when authenticated config omits the flag', () => {
@@ -297,6 +338,7 @@ describe('useFeatureFlags', () => {
           if (path === ServerFeatureFlag.TEAM_WORKSPACES_ENABLED) return true
           if (path === ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED)
             return true
+          if (path === ServerFeatureFlag.BILLING_CONTROL_ENABLED) return true
           return defaultValue
         }
       )
@@ -304,6 +346,7 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
       expect(flags.teamWorkspacesEnabled).toBe(true)
       expect(flags.consolidatedBillingEnabled).toBe(true)
+      expect(flags.billingControlEnabled).toBe(true)
     })
   })
 

@@ -10,31 +10,32 @@
   >
     <ComboboxAnchor as-child>
       <ComboboxTrigger
-        v-bind="$attrs"
+        v-bind="attrsWithoutClass"
         :aria-label="label || t('g.multiSelectDropdown')"
         :class="
           cn(
             selectTriggerVariants({
               size,
               border: selectedCount > 0 ? 'active' : 'none'
-            })
+            }),
+            attrsClass
           )
         "
       >
         <div
-          :class="
-            cn(
-              'flex flex-1 items-center overflow-hidden py-2 whitespace-nowrap',
-              size === 'md' ? 'pl-3' : 'pl-4'
-            )
-          "
+          class="flex flex-1 items-center overflow-hidden py-2 pl-2 whitespace-nowrap"
         >
           <span :class="size === 'md' ? 'text-xs' : 'text-sm'">
             {{ label }}
           </span>
           <span
             v-if="selectedCount > 0"
-            class="pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 items-center justify-center rounded-full bg-base-foreground text-xs font-semibold text-base-background"
+            :class="
+              cn(
+                'pointer-events-none absolute -top-1.5 -right-1.5 z-10',
+                selectCountBadgeClass
+              )
+            "
           >
             {{ selectedCount }}
           </span>
@@ -50,40 +51,41 @@
         position="popper"
         :side-offset="8"
         align="start"
-        :style="[popoverStyle, contentStyle]"
-        :class="selectContentClass"
+        :style="[popoverStyle, contentStyle, liftedContentStyle]"
+        :class="cn(selectContentClass, 'flex flex-col')"
         @keydown="onContentKeydown"
         @focus-outside="preventFocusDismiss"
       >
-        <div
-          v-if="showSearchBox || showSelectedCount || showClearButton"
-          class="flex flex-col px-2 pt-2 pb-0"
-        >
+        <FocusScope class="contents" @mount-auto-focus.prevent>
+          <div v-if="showSearchBox" class="px-2 pt-2 pb-0">
+            <div
+              class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
+            >
+              <i
+                class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+              />
+              <ComboboxInput
+                v-model="searchQuery"
+                :placeholder="searchPlaceholder ?? t('g.search')"
+                class="w-full border-none bg-transparent text-sm outline-none"
+              />
+            </div>
+          </div>
+
           <div
-            v-if="showSearchBox"
+            v-if="hasActions"
             :class="
               cn(
-                'flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5',
-                (showSelectedCount || showClearButton) && 'mb-2'
+                'flex shrink-0 items-center justify-between px-2',
+                actionsPlacement === 'header'
+                  ? 'mt-2 border-b border-border-default pb-4'
+                  : 'order-last mt-2 border-t border-border-default pt-3 pb-1'
               )
             "
           >
-            <i
-              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
-            />
-            <ComboboxInput
-              v-model="searchQuery"
-              :placeholder="searchPlaceholder ?? t('g.search')"
-              class="w-full border-none bg-transparent text-sm outline-none"
-            />
-          </div>
-          <div
-            v-if="showSelectedCount || showClearButton"
-            class="mt-2 flex items-center justify-between"
-          >
             <span
               v-if="showSelectedCount"
-              class="px-1 text-sm text-base-foreground"
+              class="px-1 text-sm text-muted-foreground"
             >
               {{ $t('g.itemsSelected', { count: selectedCount }) }}
             </span>
@@ -96,40 +98,39 @@
               {{ $t('g.clearAll') }}
             </Button>
           </div>
-          <div class="my-4 h-px bg-border-default" />
-        </div>
 
-        <ComboboxViewport
-          :class="
-            cn(
-              'flex flex-col gap-0 p-0 text-sm',
-              'scrollbar-custom overflow-y-auto',
-              'min-w-(--reka-combobox-trigger-width)'
-            )
-          "
-          :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
-        >
-          <ComboboxItem
-            v-for="opt in filteredOptions"
-            :key="opt.value"
-            :value="opt"
-            :class="cn('group', selectItemVariants({ layout: 'multi' }))"
+          <ComboboxViewport
+            :class="
+              cn(
+                'flex flex-col gap-0 p-0 text-sm',
+                'scrollbar-custom overflow-y-auto',
+                'min-w-(--reka-combobox-trigger-width)'
+              )
+            "
+            :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
           >
-            <div
-              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
+            <ComboboxItem
+              v-for="opt in filteredOptions"
+              :key="opt.value"
+              :value="opt"
+              :class="cn('group', selectItemVariants({ layout: 'multi' }))"
             >
-              <ComboboxItemIndicator>
-                <i
-                  class="icon-[lucide--check] text-xs font-bold text-base-foreground"
-                />
-              </ComboboxItemIndicator>
-            </div>
-            <span>{{ opt.name }}</span>
-          </ComboboxItem>
-          <ComboboxEmpty :class="selectEmptyMessageClass">
-            {{ $t('g.noResultsFound') }}
-          </ComboboxEmpty>
-        </ComboboxViewport>
+              <div
+                class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
+              >
+                <ComboboxItemIndicator>
+                  <i
+                    class="icon-[lucide--check] text-xs font-bold text-base-foreground"
+                  />
+                </ComboboxItemIndicator>
+              </div>
+              <span>{{ opt.name }}</span>
+            </ComboboxItem>
+            <ComboboxEmpty :class="selectEmptyMessageClass">
+              {{ $t('g.noResultsFound') }}
+            </ComboboxEmpty>
+          </ComboboxViewport>
+        </FocusScope>
       </ComboboxContent>
     </ComboboxPortal>
   </ComboboxRoot>
@@ -149,7 +150,8 @@ import {
   ComboboxPortal,
   ComboboxRoot,
   ComboboxTrigger,
-  ComboboxViewport
+  ComboboxViewport,
+  FocusScope
 } from 'reka-ui'
 import { computed, ref } from 'vue'
 import type { StyleValue } from 'vue'
@@ -159,6 +161,7 @@ import Button from '@/components/ui/button/Button.vue'
 
 import {
   selectContentClass,
+  selectCountBadgeClass,
   selectDropdownClass,
   selectEmptyMessageClass,
   selectItemVariants,
@@ -166,12 +169,16 @@ import {
   stopEscapeToDocument
 } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
+import { useAttrsClass } from '@/composables/useAttrsClass'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false
 })
+
+const { attrsClass, attrsWithoutClass } = useAttrsClass()
 
 const {
   label,
@@ -181,6 +188,7 @@ const {
   showSearchBox = false,
   showSelectedCount = false,
   showClearButton = false,
+  actionsPlacement = 'header',
   searchPlaceholder,
   listMaxHeight = '28rem',
   popoverMinWidth,
@@ -201,6 +209,7 @@ const {
   showSelectedCount?: boolean
   /** Show "Clear all" action in the panel header */
   showClearButton?: boolean
+  actionsPlacement?: 'header' | 'footer'
   /** Placeholder for the search input */
   searchPlaceholder?: string
   /** Maximum height of the dropdown panel (default: 28rem) */
@@ -219,7 +228,9 @@ const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
 const { t } = useI18n()
 const isOpen = ref(false)
+const liftedContentStyle = useModalLiftedZIndex(isOpen)
 const selectedCount = computed(() => selectedItems.value.length)
+const hasActions = computed(() => showSelectedCount || showClearButton)
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {

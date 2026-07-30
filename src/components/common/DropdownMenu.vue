@@ -72,6 +72,7 @@ const contentStyle = useModalLiftedZIndex(open)
             :key="toValue(item.label) ?? index"
             :item-class
             :content-class
+            :content-style
             :item
           />
         </slot>

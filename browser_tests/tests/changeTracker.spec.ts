@@ -335,4 +335,47 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       await expect(input).toHaveValue('512')
     }
   )
+
+  test(
+    'Does not restore invalid navigation stack',
+    { tag: ['@vue-nodes', '@subgraph'] },
+    async ({ comfyPage }) => {
+      const convertToSubgraph = (nodeTitle: string) =>
+        comfyPage.contextMenu
+          .openFor(comfyPage.vueNodes.getNodeByTitle(nodeTitle))
+          .then((menu) => menu.clickMenuItem('Convert to Subgraph'))
+
+      await test.step('setup nested subgraph', async () => {
+        await convertToSubgraph('Load Checkpoint')
+        await convertToSubgraph('New Subgraph')
+        await comfyPage.vueNodes.enterSubgraph()
+      })
+
+      await test.step('deeply nested subgraphs', async () => {
+        await convertToSubgraph('New Subgraph')
+        const intermediateGraphId = await comfyPage.subgraph.getActiveGraphId()
+        await comfyPage.vueNodes.enterSubgraph()
+        await expect
+          .poll(() => comfyPage.subgraph.getActiveGraphId())
+          .not.toBe(intermediateGraphId)
+
+        await comfyPage.keyboard.undo()
+        await expect
+          .poll(
+            () => comfyPage.subgraph.getActiveGraphId(),
+            'undo from deeply nested subgraph resolves immediate valid parent'
+          )
+          .toBe(intermediateGraphId)
+      })
+
+      await comfyPage.keyboard.undo()
+      await comfyPage.keyboard.undo()
+      await expect
+        .poll(
+          () => comfyPage.subgraph.isInSubgraph(),
+          'Currently bugged: click after subgraph requires additional undo'
+        )
+        .toBe(false)
+    }
+  )
 })

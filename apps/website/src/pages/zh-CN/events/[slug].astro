@@ -1,0 +1,12 @@
+---
+import type { GetStaticPaths } from 'astro'
+import PastEventPage from '../../../templates/events/PastEventPage.astro'
+import { getPastEventBySlug, watchablePastEvents } from '../../../data/events'
+
+export const getStaticPaths: GetStaticPaths = () =>
+  watchablePastEvents.map((event) => ({ params: { slug: event.id } }))
+
+const event = getPastEventBySlug(Astro.params.slug as string)!
+---
+
+<PastEventPage event={event} />

@@ -40,6 +40,11 @@ export type ComfyDesktop2TelemetryProperties = Record<
   ComfyDesktop2TelemetryValue | ComfyDesktop2TelemetryValue[]
 >
 
+export type ComfyDesktop2FirebaseAuthState =
+  | { status: 'pending' }
+  | { status: 'signed_out' }
+  | { status: 'signed_in'; userId: string }
+
 export interface ComfyDesktop2TerminalBridge {
   subscribe(installationId?: string): Promise<TerminalRestore>
   unsubscribe(installationId?: string): Promise<void>
@@ -60,10 +65,16 @@ export interface ComfyDesktop2LogsBridge {
 
 export interface ComfyDesktop2TelemetryBridge {
   capture(event: string, properties?: ComfyDesktop2TelemetryProperties): void
+  reportFirebaseAuthState?(state: ComfyDesktop2FirebaseAuthState): void
 }
 
 export interface ComfyDesktop2Bridge {
+  /** Reports whether the backend server is cloud/remote, not the user's location. */
   isRemote(): boolean
+  /** Opens a model provider access page in the hosted frontend's browser session.
+   *  Resolves `true` when the host has taken ownership of the request.
+   *  On `false` or rejection the frontend falls back to opening a new tab. */
+  openModelAccessPage?: (url: string) => Promise<boolean>
   downloadModel?: (
     url: string,
     filename: string,

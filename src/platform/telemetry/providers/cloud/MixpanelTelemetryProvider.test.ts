@@ -38,6 +38,8 @@ import type {
   AuthMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
+  OnboardingTourMetadata,
+  OnboardingTourStage,
   RunButtonProperties,
   ShareFlowMetadata,
   ShellLayoutMetadata,
@@ -459,6 +461,35 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       properties
     )
   })
+
+  it.for<
+    [
+      OnboardingTourStage,
+      (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+    ]
+  >([
+    ['started', TelemetryEvents.ONBOARDING_TOUR_STARTED],
+    ['step_shown', TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN],
+    ['completed', TelemetryEvents.ONBOARDING_TOUR_COMPLETED],
+    ['skipped', TelemetryEvents.ONBOARDING_TOUR_SKIPPED]
+  ])(
+    'trackOnboardingTour(%s) dispatches %s',
+    async ([stage, expectedEvent]) => {
+      const provider = new MixpanelTelemetryProvider()
+      await waitForMixpanelInit()
+      mockMixpanel.track.mockClear()
+
+      const metadata: OnboardingTourMetadata = {
+        tour: 'appMode',
+        step_count: 6,
+        step_number: 2,
+        coach_id: 'app-run-button'
+      }
+      provider.trackOnboardingTour(stage, metadata)
+
+      expect(mockMixpanel.track).toHaveBeenCalledWith(expectedEvent, metadata)
+    }
+  )
 
   it('omits share_id from existing Mixpanel events', async () => {
     const provider = new MixpanelTelemetryProvider()

@@ -58,6 +58,17 @@ class MaskEditorHelper {
     return dialog
   }
 
+  async reopenDialog(): Promise<Locator> {
+    const imagePreview = this.page.locator('.image-preview').first()
+    await imagePreview.getByRole('region').hover()
+    await this.page.getByLabel('Edit or mask image').click()
+
+    const dialog = this.page.locator('.mask-editor-dialog')
+    await expect(dialog).toBeVisible()
+
+    return dialog
+  }
+
   async drawStrokeOnPointerZone(dialog: Locator) {
     const pointerZone = dialog.getByTestId('pointer-zone')
     await expect(pointerZone).toBeVisible()

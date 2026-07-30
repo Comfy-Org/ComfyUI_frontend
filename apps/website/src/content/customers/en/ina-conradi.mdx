@@ -1,0 +1,147 @@
+---
+title: "From Node Graph to Building Façade: how Ina Conradi's NTU students compose architectural-scale public art with ComfyUI"
+category: "CREATIVE CAMPUS SHOWCASE"
+description: "At NTU in Singapore, Ina Conradi's students compose 90-second films for building-sized LED walls that prompt boxes cannot render but ComfyUI can, work that travels from campus to Hangzhou's West Lake Media Façade and a million viewers a day."
+cover: "https://media.comfy.org/website/customers/ina-conradi/cover.png"
+order: 6
+sections:
+  - id: topic-1
+    label: "INTRO"
+  - id: topic-2
+    label: "THE CANVAS"
+  - id: topic-3
+    label: "WHY COMFYUI"
+  - id: topic-4
+    label: "THE 2026 BRIEF"
+  - id: topic-5
+    label: "STUDENT WORK"
+  - id: topic-6
+    label: "PUBLIC SCREENS"
+  - id: topic-7
+    label: "AT A GLANCE"
+---
+
+<Section id="topic-1">
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig1-quantum-logos.jpg" alt="Quantum Logos (Vision Serpent) on the Media Art Nexus LED screen" caption="Quantum Logos (Vision Serpent), Mark Chavez and Ina Conradi. Experimental animation, Media Art Nexus LED screen (15 m × 2 m), Singapore. Photo: Quek Jia Liang." />
+
+### Building an AI art pipeline from studio to screen
+
+Ina Conradi has written and taught NTU's two AI courses since 2022: DM2012, Explorations in AI-Generated Art (undergraduate), and AP7055, Art in the Age of the Creative Machine (postgraduate). Each runs about 30 students a semester. Working alongside her on the production pipeline is Mark Chavez, an animation veteran (DreamWorks, Rhythm & Hues) and early ComfyUI adopter. Together they co-curate the platform those courses build for: a 15-metre by 2-metre LED wall installed at NTU's North Spine in 2016 as Media Art Nexus, now run by NTU Museum as NTU Index and still taking new work each semester.
+
+Work from the wall has travelled to giant public screens in Singapore (Ten Square), Hangzhou, and Chongqing, and into collaborations with Bauhaus University, the University of the Arts Berlin, and the Elbphilharmonie in Hamburg.
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig2-nature-sanctuary.jpg" alt="Nature Sanctuary 3000 on the West Lake Media Façade" caption="Nature Sanctuary 3000, Sowmya Sreeshna. Experimental animation, West Lake Media Façade (170 m × 18 m), Hangzhou, China. Photo: Limpid Art." />
+
+</Section>
+
+<Section id="topic-2">
+
+### Ina, your students don't make films for laptops. Why screens the size of buildings?
+
+Because the format teaches. A 90-second film at 6K across, in an 8:1 panorama, cannot be a lucky prompt. It has to be composed. And the screens are real: the strongest student work plays on NTU Index, our 15-metre by 2-metre wall on campus, and travels to urban façades in China and Europe through the City Digital Skin Art Festival (CDSA). When a student knows a million people a day might walk past their film in Hangzhou, the conversation about craft changes.
+
+### Mark, describe the canvas.
+
+Basically, we do compositions for really large media LED screens in Singapore and China. We have a screen that's eight by one in Singapore. It's 5,888 by 768 pixels.Students create images in the class, usually about 6K resolution across, a long landscape panorama. The output is 90-second short films. Two minutes, 90 seconds. I'm not going to change. I love that format because it's manageable within the class.
+
+</Section>
+
+<Section id="topic-3">
+
+### That format breaks most AI tools. What happened?
+
+Runway is one of the tools we use, on an educational plan that has worked well for the school. The constraint we hit is format: Runway works in 16:9, and our 6K panoramas fall outside that. Last semester Midjourney gave us trouble at our resolution, and the upscale was difficult. So we're expanding the palette and bringing in ComfyUI alongside what we already run.
+
+<Quote>ComfyUI gave the cleanest results. Upscaling to 8K at a 1-by-8 panorama after composition is genuinely hard, and ComfyUI is the only pipeline that lets students compose image, motion, and upscale models together.</Quote>
+
+### What about the budget side?
+
+Budget will keep being an issue. The school supports us well, but new tools arrive every semester and students want to try them and build their own pipelines. Monthly per-seat licenses don't fit how a semester runs. Running ComfyUI locally is hard for students: most laptops don't have a GPU with enough VRAM, and getting it working takes real trial and error. Many would rather work from home, but the hardware blocks them, so they come into the lab. Others used Comfy Cloud. It charges a subscription, but it still cost significantly less than the prepaid tools, and the results were better. Either way they're chasing the same thing: a pipeline they can keep working on, wherever they are.
+
+### Ina, you insist these courses are not about tools. What are they about?
+
+My class isn’t about teaching a single tool. It is the responsive system students interact with across platforms, directing, critiquing, and shaping outputs through ongoing dialogue. ComfyUI fits this: a node graph is an argument you can read, question, and rebuild. A prompt box is not. Singaporean students become technically fluent very fast. What they need from arts education is the language to question what they're making, not just the skill to make it.
+
+</Section>
+
+<Section id="topic-4">
+
+### Ina, the 2026 brief sends students to the ocean. What's the assignment?
+
+The project is The Liquid Commons: Bringing Ocean Science into Global Media Architecture, developed in dialogue with OceanX, the organization behind the OceanXplorer research vessel, and the CDSA 2026 festival theme. The brief is strict: do not illustrate the science, translate it. The 2026 cohort is the first to build these films in ComfyUI with Topaz upscaling, working towards two real deadlines at once. Their pieces are in consideration for the OceanX Summit in Singapore this October, and jury-selected works will screen during the City Digital Skin Art Festival on Hangzhou's West Lake Media Façade: 170 metres by 18 metres, around a million viewers a day.
+
+<Quote>The delivery spec tells you why the tooling matters: final exports at 5,888 × 768 px, 8K where required. That's the brief no prompt box can fill.</Quote>
+
+</Section>
+
+<Section id="topic-5">
+
+### Mark, what does the student work look like?
+
+About eight students have built their films through Comfy so far, and they're all pretty cool. They're surprising and insightful, because they're not limited by game-engine graphics. One student was the standout: he tried every model in Comfy and pushed the furthest.
+
+Three projects from the 2026 cohort show the range.
+
+**The Tao of Water** (Wang Zilin, AP7055) reads the ocean through the Tao Te Ching, a three-part arc from water to marine plant to void and back to origin. The pipeline moves from Pinterest research boards through Midjourney into ComfyUI, where Nano Banana extends single frames into seamless panoramas and Kling 3.0 animates first-frame-to-last-frame motion at full 5,888-pixel width, before a Premiere edit.
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig3-tao-of-water.jpg" alt="The Tao of Water on the NTU Index screen" caption="The Tao of Water, Wang Zilin. Experimental animation, NTU Index screen (15 m × 2 m), Singapore. Photo: Quek Jia Liang." />
+
+**microscophony** (Jiin Ko, AP7055) fuses *microscopic* and *micropolyphony*, Ligeti's term for dense webs of voices that blur into a single cloud of sound. The source is based on OceanX microscope footage of deep-sea microbes, translated into the visual logic of graphic notation (Ligeti, Xenakis, Cardew) so the panorama becomes a listening score. Images ran through Midjourney and Nano Banana, video through ComfyUI with Vidu Q2, sound design in Ableton Live, with distinct sonic textures mapped to distinct visual forms.
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig4-microscophony.jpg" alt="microscophony on the NTU Index screen" caption="microscophony, Jiin Ko. Experimental animation, NTU Index screen (15 m × 2 m), Singapore. Photo: Quek Jia Liang." />
+
+**GO! PLASTIC** (Jianwei Hoe, DM2012) is an ocean-plastics piece whose production log reads like studio paperwork, not prompt history. It opens with a one-line art direction (every project states its idea in a single line, with embedded irony, before a frame is generated), then walks through model selection, a platform-versus-local cost comparison (cost per clip and per scene on an RTX 5090 against a cloud B200, render times included), and a shot-by-shot sheet pairing every source image with its full prompt and settings.
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig5-go-plastic.jpg" alt="GO! PLASTIC on the NTU Index screen" caption="GO! PLASTIC, Hoe Jianwei. Experimental animation, NTU Index screen (15 m × 2 m), Singapore. Photo: Quek Jia Liang." />
+
+</Section>
+
+<Section id="topic-6">
+
+### Ina, where does the work go after the classroom?
+
+Onto public screens, and into juried international competition. The City Digital Skin Art Festival was established in 2023, initiated by the China Academy of Art's School of Sculpture and Public Art and co-curated with Public Art Lab Berlin, MEET Digital Culture Center Milan, and NTU ADM, with a network of more than 29 art academies across China and Europe.
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig6-cdsa-awards.jpg" alt="CDSA Festival award winners on the West Lake Media Façade" caption="CDSA Festival award winners, curators, and organizers. West Lake Media Façade (170 m × 18 m), Hangzhou, China. Photo: Limpid Art. Asia's largest high-definition outdoor screen" />
+
+The 2024 edition ran across 11 LED screens in 9 cities in 5 countries and reached over 100 million views. The 2025–2026 edition, themed Memory Coexistence, drew over 200 international submissions, with the top 40 selected by a 16-member jury. I curate the Singapore programme across NTU Index and the Ten Square landmark façade. A student composing at 6K in our classroom is composing for that circuit.
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig7-crispr.jpg" alt="Crispr on the Ten Square Landmark Façade" caption="Crispr, Lee Chaewon. Experimental animation, Ten Square Landmark Façade (21.2 m × 14.4 m), Singapore. Photo: Quek Jia Liang." />
+
+NTU ADM students have already won at this level. At CDSA 2025, the majority of the top awards went to students from these two courses: Gold (Sun Yutong, *Echoes of Her*), Silver (Tan Yu Yan Cheerie, *Eternal Flux*), Bronze (Shah Pranjal Kirti, *Mumbai Miniatures*), Business (Ong Sze Ching, *Nuwa*), and Creative (Leah Chakola, *Caravan of Memory*). The courses have also taken NTU to Ars Electronica in Linz as the only Singapore campus partner since 2023, first with *Butterfly's Dreams* (2023, "Who Owns the Truth?") and then in 2025 with *Beyond the Screen*, a joint exhibition with the China Academy of Art and Bauhaus-Universität Weimar.
+
+### Mark, you spent a decade at DreamWorks. Why does this tool fit art students?
+
+I come from visual effects. I was at DreamWorks about ten years, then Rhythm & Hues, then the game industry and big interactive installations. I'm not a programmer, so I love ComfyUI.
+
+<Quote>Everybody I know who does graphics now is using this, because it's so adaptable. Sometimes we use Comfy as just a back end. That's what everybody's doing.</Quote>
+
+We got this large 15-metre by 2-metre screen in an art installation at the university, and it let us explore media and different techniques. We found students weren't technical enough to handle TouchDesigner, so they just started making movies. Then I started playing with AI, and now everything's AI. What I'd love next is templates custom-made for these screens.
+
+Take *Echoes, Whispers and Memories*, the piece Ina and I made. We don't use Comfy to spit out finished illustrations. We build workflows that keep recomposing the image, breaking it apart and putting it back together so it evolves on screen, which is the whole point: entropy, memory, things falling apart and reforming. Then we push those outputs into real-time and projection systems for big rooms, places like Ars Electronica's Deep Space 8K and MEET in Milan.
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig8-echoes.jpg" alt="Echoes, Whispers and Memories at Ars Electronica Deep Space 8K" caption="Echoes, Whispers and Memories, Mark Chavez and Ina Conradi. AI-generated immersive installation using ComfyUI, Deep Space 8K, Ars Electronica, Linz, Austria. Photo: Wolfgang Simlinger." />
+
+### The signal from the industry
+
+<Quote>I hear from my students looking for internships or jobs that the first question over there is, "Do you know Comfy?" Because they want to hire kids who know the pipeline.</Quote>
+
+</Section>
+
+<Section id="topic-7" title="At a glance">
+
+<AtAGlance rows={[
+  { label: "Institution", value: "Nanyang Technological University, School of Art, Design and Media (Singapore)" },
+  { label: "Courses", value: "DM2012: Explorations in AI-Generated Art (UG) and AP7055: Art in the Age of the Creative Machine (PG), written and taught by Ina Conradi since 2022; ~30 students/semester" },
+  { label: "The canvas", value: "6K-wide, 8:1 LED walls in Singapore and China; NTU Index wall on campus (15 m × 2 m, 5,888 × 768 px)" },
+  { label: "Core technique", value: "ComfyUI compositions with Topaz upscaling for ultra-wide panoramic output; production logs with per-clip cost and prompt sheets" },
+  { label: "Why Comfy won", value: "Hosted tools locked to 16:9; upscaling to 8K at a 1-by-8 panorama after composition needed a multi-model pipeline; per-seat monthly renewals didn't fit the semester" }
+]} />
+
+</Section>
+
+<AuthorBio label="About the authors" people={[
+  { name: "Ina Conradi", photo: "https://media.comfy.org/website/customers/ina-conradi/author-ina.jpg", bio: `Ina Conradi is an artist and curator based between Singapore and Los Angeles. She is founding faculty at NTU's School of Art, Design and Media (est. 2005), where she has written and taught the school's AI courses since 2022. Her film Moirai: Thread of Life won Best in Show at the SIGGRAPH Asia Computer Animation Festival 2023, a first for Singapore.` },
+  { name: "Mark Chavez", photo: "https://media.comfy.org/website/customers/ina-conradi/author-mark.jpg", bio: `Mark Chavez is an animator, director, and founding faculty at NTU's School of Art, Design and Media in Singapore. After a decade at DreamWorks Animation and visual effects work at the original Rhythm & Hues Studios, he established NTU's Digital Animation area (2005) and an animation research think-tank funded by Singapore's National Research Foundation and the Media Development Authority.` }
+]} />

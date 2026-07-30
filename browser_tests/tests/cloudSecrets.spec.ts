@@ -1,9 +1,18 @@
+import type {
+  CreateSecretRequest,
+  SecretListResponse,
+  SecretProvidersResponse,
+  SecretResponse
+} from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  cloudAppFixture as test,
+  waitForCloudApp
+} from '@e2e/fixtures/cloudAppFixture'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -35,26 +44,11 @@ const BOOT_SETTINGS = { 'Comfy.TutorialCompleted': true }
 // back by the API or rendered anywhere in the UI.
 const RUNWAY_KEY_VALUE = 'sk-runway-do-not-echo-0xDEADBEEF'
 
-interface SecretRecord {
-  id: string
-  name: string
-  provider?: string
-  created_at: string
-  updated_at: string
-  last_used_at?: string
-}
-
-interface CreateCapture {
-  name?: string
-  provider?: string
-  secret_value?: string
-}
-
 interface SecretsBackend {
   /** Bodies received by POST /secrets, in order — for asserting what was sent. */
-  createRequests: CreateCapture[]
+  createRequests: CreateSecretRequest[]
   /** Current server-side store — for asserting delete actually removed a row. */
-  store: SecretRecord[]
+  store: SecretResponse[]
 }
 
 /**
@@ -73,7 +67,9 @@ async function mockSecretsBackend(
   let idSeq = 0
 
   const respondList = (route: Route) =>
-    route.fulfill(jsonRoute({ data: backend.store }))
+    route.fulfill(
+      jsonRoute({ data: backend.store } satisfies SecretListResponse)
+    )
 
   await page.route('**/api/secrets**', async (route) => {
     const request = route.request()
@@ -93,7 +89,9 @@ async function mockSecretsBackend(
     // GET /secrets/providers — the entitlement-gated provider allowlist.
     if (pathname.endsWith('/secrets/providers')) {
       return route.fulfill(
-        jsonRoute({ data: providerIds.map((id) => ({ id })) })
+        jsonRoute({
+          data: providerIds.map((id) => ({ id }))
+        } satisfies SecretProvidersResponse)
       )
     }
 
@@ -110,19 +108,23 @@ async function mockSecretsBackend(
 
     // /secrets — collection routes.
     if (method === 'POST') {
-      const body = (request.postDataJSON() ?? {}) as CreateCapture
+      const body = (request.postDataJSON() ?? {}) as CreateSecretRequest
       backend.createRequests.push(body)
       idSeq += 1
-      const created: SecretRecord = {
+      const created: SecretResponse = {
         id: `00000000-0000-4000-8000-${String(idSeq).padStart(12, '0')}`,
-        name: body.name ?? '',
+        name: body.name,
         provider: body.provider,
         created_at: '2026-07-08T00:00:00Z',
         updated_at: '2026-07-08T00:00:00Z'
       }
       backend.store.push(created)
-      // Response echoes metadata ONLY — the schema has no secret_value field.
-      return route.fulfill(jsonRoute(created))
+      // 201 Created, echoing metadata ONLY — the schema has no secret_value field.
+      return route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify(created)
+      })
     }
 
     // GET /secrets (list).
@@ -168,8 +170,6 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
   test('an entitled account can add, list, and delete a provider key', async ({
     page
   }) => {
-    test.slow()
-
     await mockCloudBoot(page, {
       features: BOOT_FEATURES,
       settings: BOOT_SETTINGS
@@ -178,9 +178,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     const backend = await mockSecretsBackend(page, ['runway', 'gemini'])
 
     await page.goto(APP_URL)
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
+    await waitForCloudApp(page)
 
     const settingsDialog = await openSecretsPanel(page)
 
@@ -240,8 +238,6 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
   test('a non-entitled account never sees the gated providers', async ({
     page
   }) => {
-    test.slow()
-
     await mockCloudBoot(page, {
       features: BOOT_FEATURES,
       settings: BOOT_SETTINGS
@@ -251,9 +247,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     await mockSecretsBackend(page, [])
 
     await page.goto(APP_URL)
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
+    await waitForCloudApp(page)
 
     const settingsDialog = await openSecretsPanel(page)
     await expect(settingsDialog.getByText(/No secrets stored/)).toBeVisible()

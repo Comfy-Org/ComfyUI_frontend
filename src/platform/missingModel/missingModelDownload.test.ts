@@ -4,6 +4,8 @@ import {
   downloadModel,
   fetchModelMetadata,
   isModelDownloadable,
+  isTrustedHuggingFaceUrl,
+  openGatedRepoPage,
   toBrowsableUrl
 } from './missingModelDownload'
 
@@ -89,21 +91,49 @@ describe('fetchModelMetadata', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('returns gatedRepoUrl for gated HuggingFace HEAD requests (403)', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, status: 403 })
+  it.for([401, 403, 451])(
+    'returns gatedRepoUrl for gated HuggingFace HEAD requests (%s)',
+    async (status) => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status,
+        headers: new Headers({ 'x-error-code': 'GatedRepo' })
+      })
+
+      const metadata = await fetchModelMetadata(
+        `https://huggingface.co/bfl/FLUX.1/resolve/main/gated-${status}-${testId}.safetensors`
+      )
+      expect(metadata.gatedRepoUrl).toBe('https://huggingface.co/bfl/FLUX.1')
+      expect(metadata.fileSize).toBeNull()
+    }
+  )
+
+  it.for([401, 403, 451, 404, 500])(
+    'does not treat HuggingFace %s as gated without the GatedRepo error code',
+    async (status) => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status,
+        headers: new Headers()
+      })
+
+      const metadata = await fetchModelMetadata(
+        `https://huggingface.co/org/model/resolve/main/not-gated-${status}-${testId}.safetensors`
+      )
+      expect(metadata.gatedRepoUrl).toBeNull()
+      expect(metadata.fileSize).toBeNull()
+    }
+  )
+
+  it('does not treat non-HuggingFace hosts as gated', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      headers: new Headers({ 'x-error-code': 'GatedRepo' })
+    })
 
     const metadata = await fetchModelMetadata(
-      `https://huggingface.co/bfl/FLUX.1/resolve/main/gated-${testId}.safetensors`
-    )
-    expect(metadata.gatedRepoUrl).toBe('https://huggingface.co/bfl/FLUX.1')
-    expect(metadata.fileSize).toBeNull()
-  })
-
-  it('does not treat HuggingFace 404/500 as gated', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, status: 404 })
-
-    const metadata = await fetchModelMetadata(
-      `https://huggingface.co/org/model/resolve/main/notfound-${testId}.safetensors`
+      `https://huggingface.co.evil.com/org/model/resolve/main/gated-${testId}.safetensors`
     )
     expect(metadata.gatedRepoUrl).toBeNull()
     expect(metadata.fileSize).toBeNull()
@@ -133,14 +163,25 @@ describe('fetchModelMetadata', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('does not cache incomplete results so retries are possible', async () => {
-    const url = `https://example.com/retry-${testId}.safetensors`
+  it('caches successful responses without content-length', async () => {
+    const url = `https://example.com/no-size-${testId}.safetensors`
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({})
+    })
 
+    const first = await fetchModelMetadata(url)
+    const second = await fetchModelMetadata(url)
+
+    expect(first.fileSize).toBeNull()
+    expect(second.fileSize).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries after a metadata request fails', async () => {
+    const url = `https://example.com/retry-${testId}.safetensors`
     fetchMock
-      .mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({})
-      })
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
       .mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-length': '1024' })
@@ -151,6 +192,24 @@ describe('fetchModelMetadata', () => {
 
     expect(first.fileSize).toBeNull()
     expect(second.fileSize).toBe(1024)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('retries after a non-ok HEAD response', async () => {
+    const url = `https://huggingface.co/org/model/resolve/main/retry-${testId}.safetensors`
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        headers: new Headers()
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-length': '1024' })
+      })
+
+    expect((await fetchModelMetadata(url)).fileSize).toBeNull()
+    expect((await fetchModelMetadata(url)).fileSize).toBe(1024)
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
@@ -173,6 +232,18 @@ describe('fetchModelMetadata', () => {
   })
 })
 
+describe('isTrustedHuggingFaceUrl', () => {
+  it.for([
+    { url: 'https://huggingface.co/org/model', expected: true },
+    { url: 'http://huggingface.co/org/model', expected: false },
+    { url: 'https://huggingface.co:8443/org/model', expected: false },
+    { url: 'https://huggingface.co.evil.com/org/model', expected: false },
+    { url: 'javascript:alert(1)', expected: false }
+  ] as const)('returns $expected for $url', ({ url, expected }) => {
+    expect(isTrustedHuggingFaceUrl(url)).toBe(expected)
+  })
+})
+
 describe('toBrowsableUrl', () => {
   it('replaces /resolve/ with /blob/ in HuggingFace URLs', () => {
     expect(
@@ -182,9 +253,22 @@ describe('toBrowsableUrl', () => {
     ).toBe('https://huggingface.co/org/model/blob/main/file.safetensors')
   })
 
+  it('keeps trust validation separate from URL formatting', () => {
+    expect(
+      toBrowsableUrl(
+        'http://huggingface.co/org/model/resolve/main/file.safetensors'
+      )
+    ).toBe('http://huggingface.co/org/model/blob/main/file.safetensors')
+  })
+
   it('returns non-HuggingFace URLs unchanged', () => {
     const url =
       'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
+    expect(toBrowsableUrl(url)).toBe(url)
+  })
+
+  it('does not rewrite URLs just because the path contains huggingface.co', () => {
+    const url = 'https://example.com/huggingface.co/org/model/resolve/main/file'
     expect(toBrowsableUrl(url)).toBe(url)
   })
 
@@ -217,6 +301,36 @@ describe('toBrowsableUrl', () => {
     expect(toBrowsableUrl('https://civitai.red/api/v1/models/12345')).toBe(
       'https://civitai.red/models/12345'
     )
+  })
+})
+
+describe('openGatedRepoPage', () => {
+  it('opens gated repo pages without a download attribute', () => {
+    const clickedAnchors: HTMLAnchorElement[] = []
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+      function (this: HTMLAnchorElement) {
+        clickedAnchors.push(this)
+      }
+    )
+
+    openGatedRepoPage('https://huggingface.co/bfl/FLUX.1')
+
+    expect(clickedAnchors).toHaveLength(1)
+    expect(clickedAnchors[0]?.href).toBe('https://huggingface.co/bfl/FLUX.1')
+    expect(clickedAnchors[0]?.target).toBe('_blank')
+    expect(clickedAnchors[0]?.rel).toBe('noopener noreferrer')
+    expect(clickedAnchors[0]?.getAttribute('download')).toBeNull()
+  })
+
+  it('does not open untrusted URLs', () => {
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+
+    openGatedRepoPage('javascript:alert(1)')
+    openGatedRepoPage('https://example.com/org/model')
+
+    expect(anchorClick).not.toHaveBeenCalled()
   })
 })
 

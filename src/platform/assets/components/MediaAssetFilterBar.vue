@@ -46,6 +46,7 @@ import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
 import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'
 import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
 import type { SortBy } from './MediaAssetSettingsMenu.vue'
+import type { MediaAssetViewMode } from './mediaAssetViewOptions'
 
 const { showGenerationTimeSort = false, bottomDivider = false } = defineProps<{
   searchQuery: string
@@ -60,7 +61,7 @@ const emit = defineEmits<{
 }>()
 
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
-const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
+const viewMode = defineModel<MediaAssetViewMode>('viewMode', { required: true })
 
 const handleSearchChange = (value: string | undefined) => {
   emit('update:searchQuery', value ?? '')

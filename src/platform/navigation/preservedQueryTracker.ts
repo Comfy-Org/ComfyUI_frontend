@@ -2,12 +2,14 @@ import type { Router } from 'vue-router'
 
 import {
   capturePreservedQuery,
+  clearPreservedQuery,
   hydratePreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 
 interface PreservedQueryDefinition {
   namespace: string
   keys: string[]
+  requiredKey?: string
   /**
    * When set, keys present in the query are removed from the client-side URL
    * before navigation completes. Later guards, afterEach hooks, and views must
@@ -28,17 +30,23 @@ export const installPreservedQueryTracker = (
     const queryKeys = new Set(Object.keys(to.query))
     const keysToStrip = new Set<string>()
 
-    definitions.forEach(({ namespace, keys, stripAfterCapture }) => {
-      hydratePreservedQuery(namespace)
-      const presentKeys = keys.filter((key) => queryKeys.has(key))
-      if (presentKeys.length === 0) return
-      capturePreservedQuery(namespace, to.query, keys, {
-        merge: stripAfterCapture
-      })
-      if (stripAfterCapture) {
-        presentKeys.forEach((key) => keysToStrip.add(key))
+    definitions.forEach(
+      ({ namespace, keys, requiredKey, stripAfterCapture }) => {
+        hydratePreservedQuery(namespace)
+        const presentKeys = keys.filter((key) => queryKeys.has(key))
+        if (presentKeys.length === 0) return
+        if (requiredKey && !queryKeys.has(requiredKey)) {
+          clearPreservedQuery(namespace)
+          return
+        }
+        capturePreservedQuery(namespace, to.query, keys, {
+          merge: stripAfterCapture
+        })
+        if (stripAfterCapture) {
+          presentKeys.forEach((key) => keysToStrip.add(key))
+        }
       }
-    })
+    )
 
     if (keysToStrip.size === 0) {
       next()

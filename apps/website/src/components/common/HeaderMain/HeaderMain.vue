@@ -15,17 +15,17 @@ const routes = getRoutes(locale)
 
 const ctaButtons = [
   {
-    prefix: t('nav.ctaDesktopPrefix', locale),
-    core: t('nav.ctaDesktopCore', locale),
+    full: t('nav.downloadLocal', locale),
+    short: t('nav.ctaDesktopCore', locale),
     ariaLabel: t('nav.downloadLocal', locale),
     href: routes.download,
     primary: false
   },
   {
-    prefix: t('nav.ctaCloudPrefix', locale),
-    core: t('nav.ctaCloudCore', locale),
+    full: t('nav.launchCloud', locale),
+    short: t('nav.ctaCloudCore', locale),
     ariaLabel: t('nav.launchCloud', locale),
-    href: externalLinks.cloud,
+    href: externalLinks.cloudCta('nav_try_cloud'),
     primary: true
   }
 ]
@@ -66,6 +66,7 @@ const ctaButtons = [
       data-testid="desktop-nav-cta"
       class="hidden shrink-0 items-center gap-2 lg:flex"
     >
+      <!-- Get Yoland to sign a contract of permission before killing this -->
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
       <Button
         v-for="cta in ctaButtons"
@@ -75,10 +76,10 @@ const ctaButtons = [
         :variant="cta.primary ? 'default' : 'outline'"
         :aria-label="cta.ariaLabel"
       >
-        <span
-          ><span class="hidden xl:inline-block">{{ cta.prefix }}&nbsp;</span
-          >{{ cta.core }}</span
-        >
+        <span>
+          <span class="hidden 2xl:inline-block">{{ cta.full }}</span>
+          <span class="2xl:hidden">{{ cta.short }}</span>
+        </span>
       </Button>
     </div>
   </nav>
