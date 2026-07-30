@@ -1,0 +1,84 @@
+# Asserts that fixes merged onto a consumed release branch have actually shipped.
+# Backport-merged is not shipped: v1.47.10 was tagged 19h before the dropdown fix
+# landed on core/1.47, ComfyUI then pinned that tag, and the fix sat unreleased for
+# a week while users kept reporting the bug. Nothing failed. This is what fails.
+name: 'Release: Stranded Commits Check'
+
+permissions:
+  contents: read
+
+on:
+  schedule:
+    # Daily at 16:00 UTC — a stranded fix is caught within a day, not a week.
+    - cron: '0 16 * * *'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          # Tags and full history are required to diff a tag against its branch.
+          fetch-depth: 0
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Check consumed release lines
+        id: check
+        run: |
+          set -o pipefail
+          pnpm exec tsx scripts/cicd/check-stranded-release-commits.ts 2>&1 | tee report.txt
+
+      - name: Build Slack payload
+        # Only on failure — a passing guard should stay silent.
+        if: failure() && steps.check.outcome == 'failure'
+        id: payload
+        run: |
+          REPORT=$(head -c 2500 report.txt)
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          jq -n --arg text "$REPORT" --arg url "$RUN_URL" '{
+            text: "Unshipped fixes on a consumed release line",
+            blocks: [
+              {type: "header", text: {type: "plain_text", text: "Unshipped fixes on a consumed release line"}},
+              {type: "section", text: {type: "mrkdwn", text: ("```" + $text + "```")}},
+              {type: "context", elements: [{type: "mrkdwn", text: ("Cut the next patch release, or mark the line dead. <" + $url + "|Run log>")}]}
+            ]
+          }' > payload.json
+
+      - name: Post to Slack
+        if: failure() && steps.check.outcome == 'failure'
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_FRONTEND_RELEASES_CHANNEL_ID }}
+        run: |
+          if [ -z "$SLACK_CHANNEL_ID" ]; then
+            echo "::warning::SLACK_FRONTEND_RELEASES_CHANNEL_ID is unset — skipping Slack notification."
+            exit 0
+          fi
+          BODY=$(jq --arg ch "$SLACK_CHANNEL_ID" '. + {channel: $ch}' payload.json)
+          curl -sf -X POST \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" \
+            -o /dev/null \
+            https://slack.com/api/chat.postMessage
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo '## Stranded release commits' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat report.txt >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo '(no report)' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
