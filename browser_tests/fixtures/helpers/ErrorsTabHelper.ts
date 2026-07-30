@@ -50,10 +50,15 @@ export async function expectNoErrorUiAfterVerification(
   verificationResponse: Promise<Response>,
   observationMs = 2_000
 ): Promise<void> {
-  await verificationResponse
-
   const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-  let sawErrorUi = false
+  const readiness = await Promise.race([
+    verificationResponse.then(() => 'verification' as const),
+    overlay.waitFor({ state: 'visible' }).then(() => 'error-ui' as const),
+    panel.errorsTab
+      .waitFor({ state: 'visible' })
+      .then(() => 'error-ui' as const)
+  ])
+  let sawErrorUi = readiness === 'error-ui'
   const startedAt = Date.now()
 
   await expect
