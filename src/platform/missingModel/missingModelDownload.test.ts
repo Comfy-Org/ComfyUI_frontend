@@ -131,6 +131,21 @@ describe('fetchModelMetadata', () => {
     }
   )
 
+  it('caches gated HuggingFace metadata', async () => {
+    const url =
+      'https://huggingface.co/bfl/FLUX.1/resolve/main/gated-cache.safetensors'
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      headers: new Headers({ 'x-error-code': 'GatedRepo' })
+    })
+
+    await fetchModelMetadata(url)
+    await fetchModelMetadata(url)
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it.for([401, 403, 451])(
     'does not treat HuggingFace %s as gated without the GatedRepo error code',
     async (status) => {
