@@ -500,6 +500,12 @@ describe('useAuthStore', () => {
 
       // The just-created user is deleted so the email is freed for retry.
       expect(mockUser.delete).toHaveBeenCalledTimes(1)
+
+      // The rollback delete is an intentional clear, not a spontaneous one.
+      authStateCallback(null)
+      expect(mockTrackAuthCleared).toHaveBeenCalledWith(
+        expect.objectContaining({ user_initiated: true })
+      )
     })
 
     it('does not delete the user on a successful registration', async () => {

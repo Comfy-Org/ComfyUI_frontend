@@ -110,10 +110,11 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const previousUid = ref<string | null>(null)
   /**
-   * Set true immediately before a user-initiated `signOut`, read in the
-   * `onAuthStateChanged` null branch to tell a normal logout apart from a
+   * Set true immediately before an intentional Firebase auth-state clear —
+   * a user-initiated `signOut`, or the signup-rollback `user.delete()` — and
+   * read in the `onAuthStateChanged` null branch to tell those apart from a
    * spontaneous Firebase clear. Reset on every auth-state event so a resolved
-   * signOut that never produces a clear can't leave it stuck true.
+   * action that never produces a clear can't leave it stuck true.
    */
   let userInitiatedLogout = false
 
@@ -542,10 +543,16 @@ export const useAuthStore = defineStore('auth', () => {
         )
       } catch (error) {
         // Best-effort rollback of the user created in THIS call; never let a
-        // cleanup failure mask the original error.
+        // cleanup failure mask the original error. The delete is an
+        // intentional clear, same as signOut — flag it so it isn't reported
+        // as a spontaneous one.
         try {
+          userInitiatedLogout = true
           await credential.user.delete()
         } catch (deleteError) {
+          // Delete failed, so the auth state was not cleared; drop the flag so
+          // a later spontaneous clear is not misattributed as intentional.
+          userInitiatedLogout = false
           console.warn(
             'Failed to roll back orphaned Firebase user after customer creation failed',
             deleteError
