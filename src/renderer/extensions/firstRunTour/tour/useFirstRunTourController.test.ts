@@ -166,6 +166,7 @@ describe('useFirstRunTourController', () => {
     it('turns on the renderer whose nodes it spotlights', async () => {
       mocks.vueNodesEnabled = false
       mocks.steps = [runStep()]
+      mocks.engine.startTour.mockResolvedValue(true)
       const controller = await freshController()
 
       const starting = controller.beginTour('image_z_image_turbo')
@@ -176,6 +177,54 @@ describe('useFirstRunTourController', () => {
         mocks.vueNodesEnabled,
         'a new user has no installed version, so Nodes 2.0 reads off and every step is blind'
       ).toBe(true)
+    })
+
+    it('hands back the renderer when the engine turns the start down', async () => {
+      mocks.vueNodesEnabled = false
+      mocks.steps = [runStep()]
+      mocks.engine.startTour.mockResolvedValue(false)
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+      await starting
+
+      expect(
+        mocks.vueNodesEnabled,
+        'a user who got no tour must not be left migrated by the one that never ran'
+      ).toBe(false)
+    })
+
+    it('leaves a renderer the user already had switched on', async () => {
+      mocks.vueNodesEnabled = true
+      mocks.steps = [runStep()]
+      mocks.engine.startTour.mockResolvedValue(false)
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+      await starting
+
+      expect(
+        mocks.vueNodesEnabled,
+        'the tour only undoes the switch it threw itself'
+      ).toBe(true)
+    })
+
+    it('starts nothing over a tour that is already running', async () => {
+      mocks.engine.activeTour = 'appMode'
+      mocks.steps = [runStep()]
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      expect(
+        await starting,
+        'the engine would refuse it anyway, so the side effects must not fire either'
+      ).toBe(false)
+      expect(mocks.engine.startTour).not.toHaveBeenCalled()
+      expect(mocks.vueNodesEnabled).toBe(true)
     })
 
     it('leaves the workflow undimmed before taking the screen over', async () => {
@@ -320,6 +369,37 @@ describe('useFirstRunTourController', () => {
         'whoever subscribes off the back of this still has their first run ahead of them'
       ).toHaveBeenCalled()
       expect(mocks.engine.skip).not.toHaveBeenCalled()
+    })
+
+    it('keeps intercepting after the step renames its copy', async () => {
+      await tourOnRunStep()
+      mocks.engine.step = { ...runStep(), name: 'run.cloud' }
+      mocks.canRunWorkflows.value = false
+      await nextTick()
+      const underlyingHandler = vi.fn()
+
+      mountRunButton('subscribe-to-run-button', underlyingHandler).click()
+
+      expect(
+        underlyingHandler,
+        'a translation key is copy, so renaming it must not open the paywall gate'
+      ).not.toHaveBeenCalled()
+      expect(mocks.engine.postpone).toHaveBeenCalled()
+    })
+
+    it('leaves the Run button alone on a step the user can walk past', async () => {
+      await tourOnRunStep()
+      mocks.engine.step = { name: 'result.image', placement: 'auto' }
+      await nextTick()
+      const underlyingHandler = vi.fn()
+
+      mountRunButton('queue-button', underlyingHandler).click()
+
+      expect(
+        underlyingHandler,
+        'only the step whose sole way forward is running may intercept the run'
+      ).toHaveBeenCalled()
+      expect(mocks.engine.next).not.toHaveBeenCalled()
     })
 
     it('lets a funded run through untouched', async () => {

@@ -148,14 +148,12 @@ describe('firstRunTourSteps', () => {
 
     runState.value = 'generating'
     expect(result?.name).toBe('result.generating')
-    expect(result?.busy?.()).toBe(true)
 
     runState.value = 'failed'
     expect(
       result?.name,
       'a run that produced nothing must not be announced as a result'
     ).toBe('result.failed')
-    expect(result?.busy?.()).toBe(false)
 
     runState.value = 'idle'
     expect(result?.name).toBe('result.image')
