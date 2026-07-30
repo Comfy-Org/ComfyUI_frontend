@@ -102,7 +102,11 @@ const templates = computed(() =>
 )
 
 onMounted(async () => {
+  if (import.meta.env.DEV)
+    console.warn('[first-run] screen mounted, catalog:', templatesStore.isLoaded)
   if (!templatesStore.isLoaded) await templatesStore.loadWorkflowTemplates()
+  if (import.meta.env.DEV)
+    console.warn('[first-run] curated resolved:', templates.value.length)
   if (!templates.value.length) await dismissGettingStarted()
 })
 
