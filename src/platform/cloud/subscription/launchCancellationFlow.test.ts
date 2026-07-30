@@ -137,7 +137,7 @@ describe('launchCancellationFlow', () => {
 
     await launchCancellationFlow({ showFallback: preparationFallback })
 
-    expect(preparationFallback).toHaveBeenCalledOnce()
+    expect(preparationFallback).toHaveBeenCalledWith()
     expect(mocks.trackCancellation).not.toHaveBeenCalled()
 
     mocks.prepare.mockResolvedValueOnce(
@@ -149,7 +149,7 @@ describe('launchCancellationFlow', () => {
 
     await launchCancellationFlow({ showFallback: runtimeFallback })
 
-    expect(runtimeFallback).toHaveBeenCalledOnce()
+    expect(runtimeFallback).toHaveBeenCalledWith({ flowAlreadyOpened: true })
     expect(mocks.trackCancellation).toHaveBeenLastCalledWith(
       'failed',
       expect.objectContaining({ error_message: 'provider unavailable' })
@@ -176,7 +176,7 @@ describe('launchCancellationFlow', () => {
       'failed',
       expect.objectContaining({ error_message: 'API down' })
     )
-    expect(showFallback).toHaveBeenCalledOnce()
+    expect(showFallback).toHaveBeenCalledWith({ flowAlreadyOpened: true })
   })
 
   it('stops when the active workspace changes during preparation', async () => {

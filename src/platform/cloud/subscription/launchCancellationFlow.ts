@@ -6,8 +6,14 @@ import type { SubscriptionCancellationMetadata } from '@/platform/telemetry/type
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
+interface CancellationFallbackOptions {
+  flowAlreadyOpened?: boolean
+}
+
 interface LaunchCancellationFlowOptions {
-  showFallback: () => void | Promise<unknown>
+  showFallback: (
+    options?: CancellationFallbackOptions
+  ) => void | Promise<unknown>
 }
 
 export async function launchCancellationFlow({
@@ -72,6 +78,6 @@ export async function launchCancellationFlow({
       ...metadata,
       error_message: getErrorMessage(error) ?? t('g.unknownError')
     })
-    await showFallback()
+    await showFallback({ flowAlreadyOpened: true })
   }
 }

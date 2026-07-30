@@ -58,8 +58,9 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
 
-const props = defineProps<{
+const { cancelAt, flowAlreadyOpened = false } = defineProps<{
   cancelAt?: string
+  flowAlreadyOpened?: boolean
 }>()
 
 const { t } = useI18n()
@@ -75,7 +76,7 @@ const isLoading = ref(false)
 const didCancelSucceed = ref(false)
 
 function cancellationMetadata(): SubscriptionCancellationMetadata {
-  const endDate = props.cancelAt ?? subscription.value?.endDate
+  const endDate = cancelAt ?? subscription.value?.endDate
   return {
     source: 'cancel_plan_menu' as const,
     current_tier: tier.value?.toLowerCase(),
@@ -92,6 +93,7 @@ function cancellationMetadata(): SubscriptionCancellationMetadata {
 }
 
 onMounted(() => {
+  if (flowAlreadyOpened) return
   telemetry?.trackSubscriptionCancellation(
     'flow_opened',
     cancellationMetadata()
@@ -104,7 +106,7 @@ onUnmounted(() => {
 })
 
 const formattedEndDate = computed(() => {
-  const date = parseIsoDateSafe(props.cancelAt ?? subscription.value?.endDate)
+  const date = parseIsoDateSafe(cancelAt ?? subscription.value?.endDate)
   if (!date) return t('subscription.cancelDialog.endOfBillingPeriod')
   return date.toLocaleDateString('en-US', {
     month: 'long',
