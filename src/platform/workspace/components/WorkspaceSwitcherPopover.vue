@@ -1,7 +1,7 @@
 <template>
-  <div class="flex w-80 flex-col overflow-hidden rounded-lg">
+  <div class="flex max-h-96 w-80 flex-col overflow-hidden rounded-lg">
     <div
-      class="flex max-h-[70vh] flex-col overflow-y-auto"
+      class="flex scrollbar-custom min-h-0 flex-1 flex-col"
       data-testid="workspace-switcher-list"
     >
       <!-- Loading state -->
@@ -71,7 +71,7 @@
     </div>
 
     <!-- Create workspace button -->
-    <div class="p-2">
+    <div class="shrink-0 border-t border-border-default p-2">
       <div
         :class="
           cn(

@@ -73,17 +73,24 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       const offScreenRow = list.getByText(OFF_SCREEN_WORKSPACE_NAME)
 
       // Regression: without a bounded, scrollable list container, the panel
-      // just grows past the viewport with no way to reach later rows.
+      // just grows past the viewport and the *window* scrolls instead of the
+      // list, so scrollIntoViewIfNeeded()/toBeInViewport() pass either way.
+      // Drive a real wheel scroll instead, which only moves the list's own
+      // scrollTop when the list is actually overflow-y-auto/scrollbar-custom.
       await expect(offScreenRow).not.toBeInViewport()
 
-      await offScreenRow.scrollIntoViewIfNeeded()
+      await list.hover()
+      await page.mouse.wheel(0, 2000)
 
+      await expect
+        .poll(() => list.evaluate((el) => el.scrollTop))
+        .toBeGreaterThan(0)
+      await expect
+        .poll(() => page.evaluate(() => document.scrollingElement?.scrollTop))
+        .toBe(0)
       await expect(offScreenRow).toBeInViewport()
-      await comfyPage.expectScreenshot(
-        list,
-        'workspace-switcher-scrolled.png',
-        { mask: [page.locator('.p-toast')] }
-      )
+
+      await comfyPage.expectScreenshot(list, 'workspace-switcher-scrolled.png')
     }
   )
 
