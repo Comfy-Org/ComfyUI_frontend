@@ -222,6 +222,12 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // ---- FILM frame interpolation (ComfyUI-Frame-Interpolation) ----
   ['film', 'FILM VFI', 'ckpt_name'],
 
+  // ---- ATM frame interpolation (ComfyUI-Frame-Interpolation) ----
+  ['atm', 'ATM VFI', 'ckpt_name'],
+
+  // ---- MOMO frame interpolation (ComfyUI-Frame-Interpolation) ----
+  ['momo', 'MOMO VFI', 'ckpt_name'],
+
   // ---- Ultralytics YOLO detectors (ComfyUI-Impact-Pack) ----
   // Intentionally NOT mapped to the asset-picker. The cloud asset-ingestion
   // metadata for nested model folders (`ultralytics/bbox`, `ultralytics/segm`)
