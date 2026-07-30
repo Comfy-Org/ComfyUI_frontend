@@ -7,6 +7,7 @@ import type { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
+import { createGeometryView } from './infrastructure/createGeometryView'
 import type {
   ColorOption,
   IColorable,
@@ -61,9 +62,25 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   flags: IGraphGroupFlags = {}
   selected?: boolean
 
-  readonly _bounding = this.createGeometryView(this.bounds)
-  readonly _pos: Point = this.createGeometryView(this.bounds.pos)
-  readonly _size: Size = this.createGeometryView(this.bounds.size)
+  readonly _pos: Point = createGeometryView(this.bounds.pos, {
+    synchronize: () => this.syncBoundsFromStore(),
+    commit: () => this.commitBounds(),
+    observe: this.bounds
+  })
+  readonly _size: Size = createGeometryView(this.bounds.size, {
+    synchronize: () => this.syncBoundsFromStore(),
+    commit: () => this.commitBounds(),
+    observe: this.bounds
+  })
+  readonly _bounding = createGeometryView(this.bounds, {
+    synchronize: () => this.syncBoundsFromStore(),
+    commit: () => this.commitBounds(),
+    mapValue: (property, value) => {
+      if (property === 'pos') return this._pos
+      if (property === 'size') return this._size
+      return value
+    }
+  })
 
   constructor(title?: string, id?: GroupId) {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
@@ -117,32 +134,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       Math.max(LGraphGroup.minWidth, v[0]),
       Math.max(LGraphGroup.minHeight, v[1])
     )
-  }
-
-  private createGeometryView<T extends object>(target: T): T {
-    return new Proxy(target, {
-      get: (target, property, receiver) => {
-        this.syncBoundsFromStore()
-        const value = Reflect.get(target, property, target)
-        if (typeof value !== 'function') return value
-
-        return (...args: unknown[]) => {
-          const previousBounds = [...this.bounds]
-          const result = Reflect.apply(value, target, args)
-          if (
-            this.bounds.some((entry, index) => entry !== previousBounds[index])
-          )
-            this.commitBounds()
-          return result === target ? receiver : result
-        }
-      },
-      set: (target, property, value) => {
-        this.syncBoundsFromStore()
-        const updated = Reflect.set(target, property, value, target)
-        this.commitBounds()
-        return updated
-      }
-    })
   }
 
   private syncBoundsFromStore(): void {

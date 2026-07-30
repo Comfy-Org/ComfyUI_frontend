@@ -363,6 +363,7 @@ describe('Reroute position lives only in layoutStore', () => {
   it('reads a store write back through pos, with no class-side copy', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([10, 10], link)!
+    const pos = reroute.pos
 
     // Move it in the store only. A mirrored copy on the class could not see
     // this without a synchronisation step.
@@ -372,7 +373,38 @@ describe('Reroute position lives only in layoutStore', () => {
     })
 
     expect([...reroute.pos]).toEqual([300, 400])
+    expect(reroute.pos).toBe(pos)
+    expect([...pos]).toEqual([300, 400])
     expect(reroute.boundingRect[0]).toBe(300 - Reroute.radius)
+  })
+
+  it('writes indexed and method mutations through to the store', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 20], link)!
+
+    reroute.pos[0] = 30
+    const pos = reroute.pos
+    pos.fill(40)
+    pos[1] = 50
+
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({ x: 40, y: 50 })
+  })
+
+  it('rejects mutations that change the position length', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 20], link)!
+    const pos = reroute.pos
+
+    pos.pop()
+    pos.push(30)
+
+    expect(pos).toHaveLength(2)
+    expect([...pos]).toEqual([10, 20])
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({ x: 10, y: 20 })
   })
 
   it('routes move and snapToGrid through the same stored point', () => {

@@ -15,6 +15,7 @@ import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
+import { createGeometryView } from './infrastructure/createGeometryView'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -64,6 +65,11 @@ export class Reroute
   /** The network this reroute belongs to.  Contains all valid links and reroutes. */
   private readonly network: WeakRef<LinkNetwork>
   private readonly rootGraphId: UUID
+  private readonly position: Point = [0, 0]
+  private readonly positionView = createGeometryView(this.position, {
+    synchronize: () => this.syncPosition(),
+    commit: () => this.commitPosition()
+  })
 
   /**
    * The reroute's chain state. Once registered with {@link useRerouteStore},
@@ -117,8 +123,7 @@ export class Reroute
    * registers itself on construction, so there is always an entry to read.
    */
   get pos(): Point {
-    const { x, y } = this.storedPosition
-    return [x, y]
+    return this.positionView
   }
 
   set pos(value: Point) {
@@ -134,7 +139,21 @@ export class Reroute
     })
   }
 
-  /** Reads the stored point without the array {@link pos} allocates. */
+  private syncPosition(): void {
+    const { x, y } = this.storedPosition
+    this.position.length = 2
+    this.position[0] = x
+    this.position[1] = y
+  }
+
+  private commitPosition(): void {
+    if (this.position.length !== 2) {
+      this.syncPosition()
+      return
+    }
+    this.pos = [this.position[0], this.position[1]]
+  }
+
   private get storedPosition(): Readonly<LayoutPoint> {
     return (
       layoutStore.getRerouteLayout(this.rootGraphId, this.id)?.position ??

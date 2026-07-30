@@ -238,6 +238,14 @@ describe('group layout in layoutStore', () => {
       position: { x: 30, y: 40 },
       size: { width: 500, height: 600 }
     })
+
+    group._bounding.pos[0] = 35
+    group._bounding.size[1] = 650
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 35, y: 40 },
+      size: { width: 500, height: 650 }
+    })
   })
 
   test('reads geometry from the store', () => {

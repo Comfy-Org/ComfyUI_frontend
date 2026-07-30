@@ -134,7 +134,7 @@ describe('LGraphNode', () => {
       }))
     }
     node.configure(configureData)
-    expect(node.pos).toEqual(new Float64Array([50, 60]))
+    expect(Array.from(node.pos)).toEqual([50, 60])
     expect(Array.from(node.size)).toEqual([70, 80])
   })
 
@@ -817,6 +817,28 @@ describe('snapToGrid', () => {
       x: 100,
       y: 100
     })
+  })
+
+  test('writes indexed position mutations through to the layout store', () => {
+    const node = seededNode(new LGraph())
+    const pos = node.pos
+
+    node.pos[0] = 120
+
+    expect(node.pos).toBe(pos)
+    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+      x: 120,
+      y: 97
+    })
+  })
+
+  test('does not re-commit the current stored position', () => {
+    const node = seededNode(new LGraph())
+    const operationCount = layoutStore.getOperationsSince(0).length
+
+    node.pos = [103, 97]
+
+    expect(layoutStore.getOperationsSince(0)).toHaveLength(operationCount)
   })
 
   test('leaves a pinned node alone', () => {
