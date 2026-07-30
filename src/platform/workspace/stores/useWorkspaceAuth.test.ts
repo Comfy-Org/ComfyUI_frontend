@@ -1205,6 +1205,7 @@ describe('useWorkspaceAuthStore', () => {
         workspaceWhenRevocationHandled = sessionStorage.getItem(
           WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
         )
+        return true
       })
 
       await store.switchWorkspace('workspace-123')

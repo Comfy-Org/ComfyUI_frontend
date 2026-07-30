@@ -859,7 +859,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       // the proactive + reactive paths alarm the user once, not once per caller.
       if (isPermanentAuthError(err)) {
         if (getUnifiedToken()) surfacePermanentAuthError(err)
-        endWorkspaceSession()
+        endWorkspaceSession(
+          isWorkspaceSelectionInvalid(err)
+            ? (currentWorkspace.value?.id ?? undefined)
+            : undefined
+        )
       } else {
         console.warn('Unified token refresh failed:', err)
       }
@@ -914,7 +918,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       // guard the toast on a live token so a concurrent burst surfaces it once.
       if (isPermanentAuthError(err)) {
         if (getUnifiedToken()) surfacePermanentAuthError(err)
-        endWorkspaceSession()
+        endWorkspaceSession(
+          isWorkspaceSelectionInvalid(err)
+            ? (currentWorkspace.value?.id ?? undefined)
+            : undefined
+        )
       } else {
         console.warn('Unified reactive re-mint failed:', err)
       }
@@ -974,11 +982,14 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   function endWorkspaceSession(revokedWorkspaceId?: string): void {
     const hadContext = currentWorkspace.value !== null
     if (hadContext) prepareWorkflowWorkspaceTransition()
-    const reloadRequested = revokedWorkspaceId
+    const revokedWorkspaceHandled = revokedWorkspaceId
       ? useTeamWorkspaceStore().forgetRevokedActiveWorkspace(revokedWorkspaceId)
       : false
     clearWorkspaceContext()
-    if ((hadContext || revokedWorkspaceId !== undefined) && !reloadRequested) {
+    const shouldReload = revokedWorkspaceId
+      ? !revokedWorkspaceHandled
+      : hadContext
+    if (shouldReload) {
       window.location.reload()
     }
   }

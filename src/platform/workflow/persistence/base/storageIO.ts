@@ -28,8 +28,8 @@ function flushPendingWorkflowPersistence(): void {
   for (const flush of pendingPersistenceFlushes) {
     try {
       flush()
-    } catch {
-      continue
+    } catch (error) {
+      console.warn('Failed to flush pending workflow persistence', error)
     }
   }
 }

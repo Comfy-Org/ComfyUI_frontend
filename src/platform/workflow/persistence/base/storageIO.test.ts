@@ -9,12 +9,10 @@ import {
   deletePayloads,
   getPayloadKeys,
   markStorageUnavailable,
-  prepareWorkflowWorkspaceTransition,
   readActivePath,
   readIndex,
   readOpenPaths,
   readPayload,
-  registerWorkflowPersistenceFlush,
   writeActivePath,
   writeIndex,
   writeOpenPaths,
@@ -397,21 +395,37 @@ describe('storageIO', () => {
   })
 
   describe('clearWorkflowRestoreState', () => {
-    it('blocks writes and clears restore state when a persistence flush fails', () => {
+    it('blocks writes and clears restore state when a persistence flush fails', async () => {
+      const isolatedStorageIO = await import('./storageIO')
       localStorage.setItem('workflow', '{}')
       const successfulFlush = vi.fn()
-      const unregisterFailedFlush = registerWorkflowPersistenceFlush(() => {
-        throw new DOMException('Storage unavailable', 'SecurityError')
-      })
+      const flushError = new DOMException(
+        'Storage unavailable',
+        'SecurityError'
+      )
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+      const unregisterFailedFlush =
+        isolatedStorageIO.registerWorkflowPersistenceFlush(() => {
+          throw flushError
+        })
       const unregisterSuccessfulFlush =
-        registerWorkflowPersistenceFlush(successfulFlush)
+        isolatedStorageIO.registerWorkflowPersistenceFlush(successfulFlush)
 
-      expect(() => prepareWorkflowWorkspaceTransition()).not.toThrow()
+      expect(() =>
+        isolatedStorageIO.prepareWorkflowWorkspaceTransition()
+      ).not.toThrow()
 
       expect(successfulFlush).toHaveBeenCalledOnce()
       expect(localStorage.getItem('workflow')).toBeNull()
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Failed to flush pending workflow persistence',
+        flushError
+      )
       unregisterFailedFlush()
       unregisterSuccessfulFlush()
+      consoleWarnSpy.mockRestore()
     })
 
     it('clears cross-workspace restore state without deleting scoped drafts', () => {
