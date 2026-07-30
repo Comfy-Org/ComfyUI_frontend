@@ -48,7 +48,7 @@ export async function launchCancellationFlow({
     const results = await session.show({
       handleCancel: async () => {
         if (!isLaunchWorkspaceCurrent()) {
-          throw new Error('Active workspace changed during cancellation')
+          throw new Error(t('subscription.cancelDialog.workspaceChanged'))
         }
         telemetry?.trackSubscriptionCancellation('confirmed', metadata)
         try {

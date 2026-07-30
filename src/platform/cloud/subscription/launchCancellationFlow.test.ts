@@ -200,10 +200,16 @@ describe('launchCancellationFlow', () => {
   })
 
   it('does not cancel after the active workspace changes', async () => {
+    let cancellationError: unknown
     mocks.prepare.mockResolvedValue(
       session(async (options) => {
         mocks.activeWorkspaceId = 'workspace-2'
-        await options.handleCancel()
+        try {
+          await options.handleCancel()
+        } catch (error) {
+          cancellationError = error
+          throw error
+        }
         return { aborted: false }
       })
     )
@@ -213,5 +219,8 @@ describe('launchCancellationFlow', () => {
 
     expect(mocks.cancelSubscription).not.toHaveBeenCalled()
     expect(showFallback).not.toHaveBeenCalled()
+    expect(cancellationError).toMatchObject({
+      message: 'subscription.cancelDialog.workspaceChanged'
+    })
   })
 })

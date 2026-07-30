@@ -21,6 +21,8 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
+vi.mock('@/i18n', () => ({ t: (key: string) => key }))
+
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
     getChurnkeyAuth: mocks.getChurnkeyAuth
@@ -90,7 +92,9 @@ describe('churnkeyClient', () => {
       config.handleRedirect
     ]
     for (const handler of unsupportedHandlers) {
-      await expect(handler()).rejects.toThrow('Unsupported ChurnKey offer')
+      await expect(handler()).rejects.toThrow(
+        'subscription.cancelDialog.offerUnavailable'
+      )
     }
 
     config.onClose({ aborted: true })

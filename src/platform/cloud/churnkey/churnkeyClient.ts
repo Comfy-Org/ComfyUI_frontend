@@ -1,6 +1,7 @@
 import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { toError } from '@/utils/errorUtil'
 import { createScriptLoader } from '@/utils/loadExternalScript'
@@ -44,7 +45,9 @@ export interface ChurnkeySession {
 }
 
 function rejectUnsupportedOffer(): Promise<never> {
-  return Promise.reject(new Error('Unsupported ChurnKey offer'))
+  return Promise.reject(
+    new Error(t('subscription.cancelDialog.offerUnavailable'))
+  )
 }
 
 function createSession(

@@ -2654,7 +2654,9 @@
       "endOfBillingPeriod": "end of billing period",
       "keepSubscription": "Keep subscription",
       "confirmCancel": "Cancel subscription",
-      "failed": "Failed to cancel subscription"
+      "failed": "Failed to cancel subscription",
+      "workspaceChanged": "Your active workspace changed. Switch back and try again.",
+      "offerUnavailable": "This option isn't available. Please choose another option."
     },
     "downgrade": {
       "title": "Change to {plan} plan?",
