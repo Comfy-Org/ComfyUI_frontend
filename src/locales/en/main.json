@@ -893,6 +893,8 @@
       "title": "Media Assets",
       "sortNewestFirst": "Newest first",
       "sortOldestFirst": "Oldest first",
+      "sortAToZ": "Name (A → Z)",
+      "sortZToA": "Name (Z → A)",
       "sortLongestFirst": "Generation time (longest first)",
       "sortFastestFirst": "Generation time (fastest first)",
       "filterImage": "Image",
@@ -1976,6 +1978,7 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
@@ -2233,19 +2236,32 @@
     "swatchTitle": "Click edit · drag reorder · right-click remove"
   },
   "videoEdit": {
+    "trimVideo": "Trim Video",
+    "cropVideo": "Crop Video",
+    "startFrame": "Start Frame",
+    "endFrame": "End Frame",
+    "duration": "Duration",
+    "frames": "Number of Frames",
+    "fileSize": "File Size",
+    "resolution": "{width} × {height}",
     "play": "Play",
     "pause": "Pause",
+    "loadingVideo": "Loading video preview",
     "loadingFilmstrip": "Loading filmstrip…",
     "seekVideo": "Seek video",
     "adjustStartFrame": "Adjust start frame",
     "adjustEndFrame": "Adjust end frame",
     "adjustCrop": "Adjust crop region",
+    "setStartFrame": "Reset start frame",
+    "setEndFrame": "Reset end frame",
     "durationZero": "0s",
     "durationSeconds": "{count}s",
+    "selectedOfTotal": "{selected} / {total}",
     "fileSizeUnknown": "—",
     "fileSizeBytes": "{count} B",
     "fileSizeKilobytes": "{count} KB",
-    "fileSizeMegabytes": "{count} MB"
+    "fileSizeMegabytes": "{count} MB",
+    "noVideoSource": "Select or connect a video to preview and edit"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
@@ -2593,6 +2609,7 @@
     "subscriptionProcessing": "Processing payment — setting up your workspace...",
     "subscriptionSuccess": "Subscription updated successfully",
     "subscriptionFailed": "Subscription update failed",
+    "subscriptionFailedDetail": "We couldn't update your subscription. Please try again.",
     "subscriptionTimeout": "Subscription verification timed out",
     "topupProcessing": "Processing payment — adding credits...",
     "topupSuccess": "Credits added successfully",
@@ -2622,6 +2639,7 @@
     "expiresDate": "Expires {date}",
     "renewsOnDate": "Renews on {date}",
     "endsOnDate": "Ends on {date}",
+    "changesToPlanOnDate": "Changes to {plan} on {date}",
     "manageSubscription": "Manage subscription",
     "manageBilling": "Manage billing",
     "changePlan": "Change plan",
@@ -2635,7 +2653,10 @@
     "subscribeFailed": "Failed to subscribe",
     "canceledCard": {
       "title": "Your subscription has been canceled",
-      "description": "You won't be charged again. Your features remain active until {date}."
+      "description": "You won't be charged again. Your features remain active until {date}.",
+      "descriptionWithoutDate": "You won't be charged again. Your features remain active until the end of your billing period.",
+      "endedTitle": "Your subscription has ended",
+      "endedDescription": "Your subscription is no longer active."
     },
     "cancelSuccess": "Subscription cancelled successfully",
     "cancelDialog": {
@@ -2649,6 +2670,8 @@
     "downgrade": {
       "title": "Change to {plan} plan?",
       "body": "All other members of this workspace will be immediately removed.",
+      "bodyReactivation": "Your subscription is cancelled. Changing your plan will resume it, and you'll be charged {amount} today.",
+      "bodyRemovalAndReactivation": "All other members of this workspace will be immediately removed. Your subscription is cancelled, so changing your plan will also resume it, and you'll be charged {amount} today.",
       "confirmationPhrase": "I understand",
       "confirmationPrompt": "Type \"{phrase}\" to confirm.",
       "confirm": "Change plan",
@@ -2657,7 +2680,9 @@
       "paymentMethodRequired": "A payment method is required to change plans",
       "paymentPageBlocked": "Couldn't open the payment page — please try again",
       "memberRemovalFailed": "Couldn't remove {email} from the team — some members may already be removed and your plan was not changed",
-      "failedAfterMemberRemoval": "Team members were removed, but the plan change didn't complete — please try again or contact support"
+      "failedAfterMemberRemoval": "Team members were removed, but the plan change didn't complete — please try again or contact support",
+      "reactivationConfirmationRequired": "Please confirm the reactivation charge before continuing",
+      "reactivationAmountChanged": "The charge amount changed since you confirmed it — please review and try again"
     },
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
     "partnerNodesDescription": "For running commercial/proprietary models",
@@ -2705,7 +2730,8 @@
       "rolePermissions": "Role-based permissions"
     },
     "freePerks": {
-      "maxRuntime": "{duration} max runtime"
+      "maxRuntime": "{duration} max runtime",
+      "freeRuns": "{count} free run | {count} free runs"
     },
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
@@ -2815,22 +2841,6 @@
     "pricingBlurbQuestions": "questions",
     "pricingBlurbEnterprise": "enterprise discussions",
     "pricingBlurbClickHere": "click here",
-    "freeTier": {
-      "title": "You're on the Free plan",
-      "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
-      "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
-      "descriptionQuota": "Your free plan includes {runs} runs to get started with Comfy Cloud — no card needed.",
-      "nextRefresh": "Your credits refresh on {date}.",
-      "subscribeCta": "Subscribe for more",
-      "outOfCredits": {
-        "title": "You're out of free credits",
-        "subtitle": "Subscribe to add top-ups and more"
-      },
-      "topUpBlocked": {
-        "title": "Add top-ups and more"
-      },
-      "upgradeCta": "View plans"
-    },
     "partnerNodesCredits": "Partner nodes pricing",
     "partnerNodesPricingTable": "Partner Nodes pricing table",
     "plansAndPricing": "Plans & pricing",
@@ -2868,6 +2878,7 @@
       "message": "Team billing is coming soon. You'll be able to subscribe to a plan for your workspace with per-seat pricing. Stay tuned for updates."
     },
     "preview": {
+      "completeVerification": "Complete verification",
       "confirmPayment": "Confirm your payment",
       "confirmPlanChange": "Confirm your plan change",
       "startingToday": "Starts today",
@@ -2910,7 +2921,21 @@
       "confirm": "Confirm",
       "subscribeToPlan": "Subscribe to {plan}",
       "switchToPlan": "Switch to {plan}",
-      "backToAllPlans": "Back to all plans"
+      "backToAllPlans": "Back to all plans",
+      "reactivation": {
+        "title": "Reactivating your subscription",
+        "titleAnnual": "Reactivating your subscription — full year billed today",
+        "upgradeBody": "Your {plan} was set to end on {date}. Upgrading now reactivates it — you'll be charged {amount} today, and it will renew automatically on {nextDate} instead of ending.",
+        "downgradeBody": "Your {plan} was set to end on {date}. Switching to {newPlan} reactivates it — you won't be charged today, but it will now renew automatically on {nextDate} at the new price instead of ending.",
+        "durationChangeBody": "Your {plan} was set to end on {date}. Switching to annual billing reactivates it and charges the full year, {amount}, today. It will then renew annually on {nextDate} instead of ending.",
+        "durationChangeBodyMonthly": "Your {plan} was set to end on {date}. Switching to monthly billing reactivates it — you'll be charged {amount} today, and it will renew automatically on {nextDate} instead of ending.",
+        "confirmButton": "Confirm & reactivate",
+        "confirmButtonWithCharge": "Confirm & reactivate — {amount} today",
+        "checkboxLabel": "I understand I'll be charged {amount} today",
+        "confirmationRequired": "Your subscription is cancelled — please confirm the reactivation charge before continuing",
+        "amountChanged": "The charge amount changed since you confirmed it — please review and try again",
+        "unavailable": "We can't confirm this reactivation right now — please choose your plan again"
+      }
     },
     "success": {
       "allSet": "You're all set",
@@ -3714,7 +3739,6 @@
     "feedback": "Feedback",
     "feedbackTooltip": "Feedback",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
-    "freeTierRunsExhausted": "No runs left",
     "freeTierPartner": "Partner nodes need a paid plan",
     "share": "Share",
     "shareTooltip": "Share workflow"
@@ -3756,9 +3780,9 @@
     "checkingAssets": "Checking media visibility…",
     "acknowledgeCheckbox": "I understand anyone with the link can view these files",
     "inLibrary": "In library",
-    "comfyHubTitle": "Upload to ComfyHub",
-    "comfyHubDescription": "ComfyHub is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
-    "comfyHubButton": "Upload to ComfyHub"
+    "comfyHubTitle": "Upload to Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
+    "comfyHubButton": "Upload to Comfy Workflows"
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",
@@ -3774,12 +3798,12 @@
     "loadError": "Could not load this shared workflow. Please try again later."
   },
   "comfyHubPublish": {
-    "title": "Publish to ComfyHub",
-    "unsavedDescription": "You must save your workflow before publishing to ComfyHub. Save it now to continue.",
+    "title": "Publish to Comfy Workflows",
+    "unsavedDescription": "You must save your workflow before publishing to Comfy Workflows. Save it now to continue.",
     "stepDescribe": "Describe your workflow",
     "stepExamples": "Add output examples",
     "stepFinish": "Finish publishing",
-    "workflowName": "Hub title",
+    "workflowName": "Title",
     "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
     "workflowDescription": "Workflow description",
     "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people know what to expect.",
@@ -3805,7 +3829,7 @@
     "uploadThumbnailHint": "1:1 preferred, 1080p max",
     "back": "Back",
     "next": "Next",
-    "publishButton": "Publish to ComfyHub",
+    "publishButton": "Publish to Comfy Workflows",
     "updateButton": "Update workflow",
     "examplesDescription": "Add up to {total} additional sample images",
     "uploadAnImage": "Click to browse or drag an image",
@@ -3817,26 +3841,27 @@
     "maxExamples": "You can select up to {max} examples",
     "shareAs": "Share as",
     "additionalInfo": "Additional information",
-    "createProfileToPublish": "Create a profile to publish to ComfyHub",
+    "createProfileToPublish": "Create a profile to publish to Comfy Workflows",
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
     "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
+    "publishFailedDescriptionWithReason": "Something went wrong while publishing your workflow: {reason}",
     "publishSuccessTitle": "Published successfully",
-    "publishSuccessDescription": "Your workflow is now live on ComfyHub."
+    "publishSuccessDescription": "Your workflow is now live on Comfy Workflows."
   },
   "comfyHubProfile": {
     "checkingAccess": "Checking your publishing access...",
     "profileCreationNav": "Profile creation",
-    "introTitle": "Publish to the ComfyHub",
+    "introTitle": "Publish to Comfy Workflows",
     "introDescription": "Publish your workflows, build your portfolio and get discovered by millions of users",
-    "updateIntroTitle": "Update your ComfyHub workflow",
-    "updateIntroDescription": "Push your latest changes to ComfyHub. Your share link and stats stay the same.",
-    "introSubtitle": "To share your workflow on ComfyHub, let's first create your profile.",
+    "updateIntroTitle": "Update your workflow on Comfy Workflows",
+    "updateIntroDescription": "Push your latest changes to Comfy Workflows. Your share link and stats stay the same.",
+    "introSubtitle": "To share your workflow on Comfy Workflows, let's first create your profile.",
     "createProfileButton": "Create my profile",
     "startPublishingButton": "Start publishing",
     "startUpdatingButton": "Update workflow",
-    "modalTitle": "Create your profile on ComfyHub",
-    "createProfileTitle": "Create your Comfy Hub profile",
+    "modalTitle": "Create your profile on Comfy Workflows",
+    "createProfileTitle": "Create your Comfy Workflows profile",
     "uploadCover": "+ Upload a cover",
     "uploadProfilePicture": "+ Upload a profile picture",
     "chooseProfilePicture": "Choose a profile picture",
@@ -4116,7 +4141,11 @@
       "importNotSupported": "Import Not Supported",
       "copyModelName": "Copy model name",
       "copyUrl": "Copy URL",
+      "gatedModelsHint": "Some models are gated. To download them, sign in to Hugging Face and accept the model license agreement.",
+      "gatedModelTooltip": "This model is gated and requires you to be logged in to Hugging Face and to accept its license agreement.",
+      "gatedModelDownloadTooltip": "Download may require signing in to Hugging Face first.",
       "locateNode": "Locate node on canvas",
+      "openHuggingFaceRepo": "Open Hugging Face repo",
       "expandNodes": "Show referencing nodes",
       "collapseNodes": "Hide referencing nodes",
       "unknownCategory": "Unknown",
@@ -4604,6 +4633,8 @@
     "namePlaceholder": "e.g., My API Key",
     "provider": "Provider",
     "providerHint": "Select a provider to enable automatic token usage.",
+    "credentialType": "Credential Type",
+    "credentialTypeHint": "Choose how you will provide this credential.",
     "providerHelp": {
       "runway": "Enter your Runway API key. You can find it in your Runway account settings under API keys.",
       "gemini": "Enter your Google Gemini API key. You can generate one in Google AI Studio."

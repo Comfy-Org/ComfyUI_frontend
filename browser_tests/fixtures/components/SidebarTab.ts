@@ -318,6 +318,8 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Sort options (cloud-only, shown inside settings popover) ---
   public readonly sortNewestFirst: Locator
   public readonly sortOldestFirst: Locator
+  public readonly sortAToZ: Locator
+  public readonly sortZToA: Locator
   public readonly sortLongestFirst: Locator
   public readonly sortFastestFirst: Locator
 
@@ -374,6 +376,8 @@ export class AssetsSidebarTab extends SidebarTab {
     this.gridItems = page.locator('[data-virtual-grid-item]')
     this.sortNewestFirst = page.getByText('Newest first')
     this.sortOldestFirst = page.getByText('Oldest first')
+    this.sortAToZ = page.getByText('Name (A → Z)')
+    this.sortZToA = page.getByText('Name (Z → A)')
     this.sortLongestFirst = page.getByText('Generation time (longest first)')
     this.sortFastestFirst = page.getByText('Generation time (fastest first)')
     this.assetCards = page.locator(

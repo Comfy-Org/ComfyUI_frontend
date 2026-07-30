@@ -143,6 +143,8 @@
       "modelDescription": "Description du modèle",
       "modelTagging": "Étiquetage du modèle",
       "modelType": "Type de modèle",
+      "modelTypeCoreReadonly": "Le type de modèle ne peut pas être modifié sur le core, le déplacement du fichier n'est pas encore pris en charge.",
+      "modelTypeImmutableReadonly": "Le type de modèle ne peut pas être modifié pour un modèle en lecture seule.",
       "noAdditionalTags": "Aucun tag supplémentaire",
       "selectModelPrompt": "Sélectionnez un modèle pour voir ses informations",
       "selectModelType": "Sélectionner le type de modèle...",
@@ -173,6 +175,7 @@
     "rename": {
       "failed": "Impossible de renommer l'actif."
     },
+    "searchModels": "Rechercher des modèles",
     "selectFrameworks": "Sélectionner les frameworks",
     "selectModelType": "Sélectionner le type de modèle",
     "selectProjects": "Sélectionner les projets",
@@ -611,14 +614,14 @@
     "chooseProfilePicture": "Choisir une photo de profil",
     "createProfile": "Créer le profil",
     "createProfileButton": "Créer mon profil",
-    "createProfileTitle": "Créez votre profil Comfy Hub",
+    "createProfileTitle": "Créez votre profil Comfy Workflows",
     "creatingProfile": "Création du profil...",
     "descriptionLabel": "Votre description",
     "descriptionPlaceholder": "Parlez de vous à la communauté...",
     "introDescription": "Publiez vos workflows, construisez votre portfolio et faites-vous découvrir par des millions d'utilisateurs",
-    "introSubtitle": "Pour partager votre workflow sur ComfyHub, créons d'abord votre profil.",
-    "introTitle": "Publier sur le ComfyHub",
-    "modalTitle": "Créez votre profil sur ComfyHub",
+    "introSubtitle": "Pour partager votre workflow sur Comfy Workflows, créons d'abord votre profil.",
+    "introTitle": "Publier sur le Comfy Workflows",
+    "modalTitle": "Créez votre profil sur Comfy Workflows",
     "nameLabel": "Votre nom",
     "namePlaceholder": "Entrez votre nom ici",
     "profileCreationNav": "Création du profil",
@@ -628,8 +631,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "Votre page de profil est en ligne sur",
     "successTitle": "Superbe, {'@'}{username} !",
-    "updateIntroDescription": "Poussez vos dernières modifications sur ComfyHub. Votre lien de partage et vos statistiques restent inchangés.",
-    "updateIntroTitle": "Mettez à jour votre workflow ComfyHub",
+    "updateIntroDescription": "Poussez vos dernières modifications sur Comfy Workflows. Votre lien de partage et vos statistiques restent inchangés.",
+    "updateIntroTitle": "Mettez à jour votre workflow Comfy Workflows",
     "uploadCover": "+ Télécharger une couverture",
     "uploadProfilePicture": "+ Télécharger une photo de profil",
     "uploadWorkflowButton": "Télécharger mon workflow",
@@ -641,20 +644,18 @@
     "additionalInfo": "Informations supplémentaires",
     "back": "Retour",
     "createProfileCta": "Créer un profil",
-    "createProfileToPublish": "Créez un profil pour publier sur ComfyHub",
+    "createProfileToPublish": "Créez un profil pour publier sur Comfy Workflows",
     "exampleImage": "Image d'exemple {index}",
     "exampleImagePosition": "Image d’exemple {index} sur {total}",
     "examplesDescription": "Ajoutez jusqu'à {total} images d'exemple supplémentaires",
     "maxExamples": "Vous pouvez sélectionner jusqu'à {max} exemples",
     "next": "Suivant",
-    "publishButton": "Publier sur ComfyHub",
+    "publishButton": "Publier sur Comfy Workflows",
     "publishFailedDescription": "Une erreur s’est produite lors de la publication de votre workflow. Veuillez réessayer.",
     "publishFailedTitle": "Échec de la publication",
-    "publishSuccessDescription": "Votre workflow est maintenant en ligne sur ComfyHub.",
+    "publishSuccessDescription": "Votre workflow est maintenant en ligne sur Comfy Workflows.",
     "publishSuccessTitle": "Publication réussie",
     "removeExampleImage": "Supprimer l’image d’exemple",
-    "renameFailedDescription": "Votre workflow a été publié avec succès, mais le renommage du fichier local a échoué. Renommez-le à nouveau pour correspondre.",
-    "renameFailedTitle": "Échec du renommage",
     "selectAThumbnail": "Sélectionner une miniature",
     "shareAs": "Partager en tant que",
     "showLessTags": "Afficher moins...",
@@ -670,8 +671,8 @@
     "thumbnailImageComparison": "Comparaison d'images",
     "thumbnailPreview": "Aperçu de la miniature",
     "thumbnailVideo": "Vidéo",
-    "title": "Publier sur ComfyHub",
-    "unsavedDescription": "Vous devez enregistrer votre workflow avant de le publier sur ComfyHub. Enregistrez-le maintenant pour continuer.",
+    "title": "Publier sur Comfy Workflows",
+    "unsavedDescription": "Vous devez enregistrer votre workflow avant de le publier sur Comfy Workflows. Enregistrez-le maintenant pour continuer.",
     "updateButton": "Mettre à jour le workflow",
     "uploadAnImage": "Cliquez pour parcourir ou faites glisser une image",
     "uploadComparison": "Télécharger avant et après",
@@ -1268,6 +1269,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "Ce nœud a été désactivé par la politique de votre espace de travail. Utilisez un autre nœud.",
+        "title": "Nœud désactivé",
+        "toastMessage": "Ce nœud a été désactivé par la politique de votre espace de travail.",
+        "toastTitle": "Nœuds partenaires"
+      },
       "bad_linked_input": {
         "details": "{nodeName} a une connexion invalide pour {inputName}.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2624,8 @@
     "resetView": "Réinitialiser la vue du canevas",
     "run": "Exécuter",
     "runWorkflow": "Exécuter le workflow (Maj pour mettre en file d'attente en premier)",
-    "runWorkflowDisabled": "Le workflow contient des nœuds non pris en charge (en rouge). Supprimez-les pour exécuter le workflow.",
     "runWorkflowFront": "Exécuter le workflow (Mettre en file d'attente en premier)",
+    "runWorkflowMissingResources": "Le workflow contient des ressources manquantes.",
     "settings": "Paramètres",
     "showMenu": "Afficher le menu",
     "stopRunInstant": "Arrêter l'exécution (immédiat)",
@@ -3049,6 +3057,38 @@
       "owner": "Propriétaire",
       "personal": "Personnel"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "Chaque génération et importation se trouve dans Médias. Ouvrez-le à tout moment pour parcourir, télécharger ou réutiliser vos travaux précédents.",
+        "title": "Trouvez tous vos médias"
+      },
+      "inputs": {
+        "body": "Ajoutez ce avec quoi vous souhaitez travailler. Vos entrées sont ce que l'application transforme en résultats.",
+        "title": "Ajoutez vos entrées"
+      },
+      "landing": {
+        "body": "Une visite rapide des éléments essentiels, en environ une minute. Nous vous montrerons où ajouter des entrées, exécuter votre application et trouver vos résultats.",
+        "primary": "Commencer le tutoriel",
+        "title": "Bienvenue dans les Applications"
+      },
+      "outputs": {
+        "body": "Vos résultats finaux s'affichent ici au centre. Téléchargez-les, ou modifiez une entrée et relancez.",
+        "title": "Obtenez vos résultats"
+      },
+      "replay": "Faire une visite du mode Application",
+      "run": {
+        "body": "Satisfait de vos entrées ? Cliquez sur Exécuter et votre résultat apparaîtra au centre dès qu'il sera prêt.",
+        "title": "Exécutez votre application"
+      }
+    },
+    "back": "Précédent",
+    "done": "Terminé",
+    "loadError": "Une erreur est survenue lors de l'affichage de ce tutoriel",
+    "next": "Suivant",
+    "skip": "Passer",
+    "stepLabel": "Étape {current} sur {total}"
   },
   "openSharedWorkflow": {
     "author": "Auteur :",
@@ -3487,6 +3527,7 @@
     "3DViewer": "3DViewer",
     "API Nodes": "Nœuds API",
     "About": "À Propos",
+    "Allowlist": "Liste autorisée",
     "Appearance": "Apparence",
     "BrushAdjustment": "Ajustement de Brosse",
     "Camera": "Caméra",
@@ -3565,9 +3606,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "Je comprends que ces éléments médias seront publiés et rendus publics",
     "checkingAssets": "Vérification de la visibilité des médias…",
-    "comfyHubButton": "Téléverser sur ComfyHub",
-    "comfyHubDescription": "ComfyHub est le hub communautaire officiel de ComfyUI.\nVotre workflow aura une page publique visible par tous.",
-    "comfyHubTitle": "Téléverser sur ComfyHub",
+    "comfyHubButton": "Téléverser sur Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows est le hub communautaire officiel de ComfyUI.\nVotre workflow aura une page publique visible par tous.",
+    "comfyHubTitle": "Téléverser sur Comfy Workflows",
     "copyLink": "Copier",
     "createLinkButton": "Créer un lien",
     "createLinkDescription": "Lorsque vous créez un lien pour votre workflow, vous partagerez ces éléments médias avec votre workflow",
@@ -3641,6 +3682,7 @@
     "logout": "Déconnexion",
     "mediaAssets": "Ressources multimédias",
     "modelLibrary": "Bibliothèque de modèles",
+    "modelLibraryLoadFailed": "Échec du chargement des modèles. Vérifiez la connexion au serveur et utilisez Actualiser pour réessayer.",
     "newBlankWorkflow": "Créer un nouveau flux de travail vierge",
     "noFilesFound": "Aucun fichier trouvé",
     "noFilesFoundMessage": "Téléversez des fichiers ou générez du contenu pour les voir ici",
@@ -3746,6 +3788,7 @@
       "viewList": "Vue en liste"
     },
     "searchAssets": "Rechercher des ressources",
+    "searchResultsCapped": "Affichage des {limit} premiers résultats. Affinez votre recherche pour voir des résultats plus spécifiques.",
     "sidebar": "Barre latérale",
     "templates": "Modèles",
     "themeToggle": "Basculer le thème",
@@ -4181,6 +4224,11 @@
     "modelsSelected": "{count} Modèles",
     "noResults": "Aucun modèle trouvé",
     "noResultsHint": "Essayez d'ajuster votre recherche ou vos filtres",
+    "paidTemplate": {
+      "badgeLabel": "API partenaire",
+      "credits": "S'exécute avec des crédits",
+      "title": "Modèle premium"
+    },
     "resultsCount": "Affichage de {count} sur {total} modèles",
     "runsOnFilter": "Exécute sur",
     "runsOnSelected": "{count} exécutions sur",
@@ -4318,6 +4366,21 @@
     "title": "Avertissement de compatibilité de version",
     "updateFrontend": "Mettre à jour le frontend"
   },
+  "videoEdit": {
+    "adjustCrop": "Ajuster la zone de recadrage",
+    "adjustEndFrame": "Ajuster l'image de fin",
+    "adjustStartFrame": "Ajuster l'image de début",
+    "durationSeconds": "{count}s",
+    "durationZero": "0s",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB",
+    "fileSizeUnknown": "—",
+    "loadingFilmstrip": "Chargement de la pellicule…",
+    "pause": "Pause",
+    "play": "Lire",
+    "seekVideo": "Naviguer dans la vidéo"
+  },
   "vueNodesBanner": {
     "desc": "– Flux de travail plus flexibles, nouveaux widgets puissants, conçu pour l’extensibilité",
     "title": "Présentation de Nodes 2.0",
@@ -4424,9 +4487,7 @@
         "lastActivity": "Dernière activité",
         "partnerNodeUsed": "Nœud partenaire utilisé",
         "totalCreditsUsed": "Total de crédits utilisés"
-      },
-      "perUserHint": "Vous cherchez l'utilisation totale par utilisateur ?",
-      "seeMembers": "Voir les membres"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4562,6 +4623,39 @@
       "deleteWorkspaceDisabledTooltip": "Annulez d’abord l’abonnement actif de votre espace de travail",
       "editWorkspace": "Modifier les détails de l’espace de travail",
       "leaveWorkspace": "Quitter l’espace de travail"
+    },
+    "partnerNodes": {
+      "accessMode": "Mode d'accès aux nœuds partenaires",
+      "allowAllAccessHint": "Cela peut prendre jusqu'à 10 minutes pour s'appliquer à l'ensemble de votre espace de travail.",
+      "allowAllAccessMessage": "Les nœuds partenaires de chaque fournisseur seront disponibles pour tous les membres de l'espace de travail.",
+      "allowAllAccessTitle": "Autoriser l'accès à tous les nœuds partenaires ?",
+      "columns": {
+        "nodes": "Nœuds",
+        "provider": "Fournisseur"
+      },
+      "disableAll": "Tout désactiver",
+      "disableAllMessage": "Tous les fournisseurs seront désactivés. Les nœuds partenaires ne seront pas disponibles tant que l'accès est restreint.",
+      "disableAllTitle": "Désactiver tous les fournisseurs ?",
+      "enableAll": "Tout activer",
+      "loadError": "Impossible de charger l'accès aux nœuds partenaires.",
+      "loading": "Chargement de l'accès aux nœuds partenaires",
+      "noResults": "Aucun fournisseur ou nœud partenaire trouvé",
+      "nodeCount": "{count} activé(s)",
+      "ownerOnly": "Seuls les propriétaires de l'espace de travail peuvent mettre à jour l'accès aux nœuds partenaires.",
+      "restrictAccessHint": "Cela peut prendre jusqu'à 10 minutes pour s'appliquer à l'ensemble de votre espace de travail.",
+      "restrictAccessMessage": "Les membres de l'espace de travail ne pourront utiliser que les nœuds partenaires des fournisseurs que vous activez.",
+      "restrictAccessTitle": "Restreindre l'accès aux nœuds partenaires ?",
+      "restricted": "Restreint",
+      "restrictedDescription": "Seuls les nœuds partenaires des fournisseurs activés sont disponibles. Les modifications peuvent prendre jusqu'à 10 minutes pour s'appliquer.",
+      "retry": "Réessayer",
+      "saveError": "Impossible de mettre à jour l'accès aux nœuds partenaires. Veuillez réessayer.",
+      "searchPlaceholder": "Rechercher des fournisseurs et des nœuds partenaires...",
+      "tableLabel": "Fournisseurs de nœuds partenaires",
+      "title": "Accès aux nœuds partenaires",
+      "toggleProvider": "Définir l'accès pour {provider}",
+      "unavailable": "L'accès aux nœuds partenaires n'est pas disponible pour cet espace de travail.",
+      "unrestricted": "Non restreint",
+      "unrestrictedDescription": "Les nœuds partenaires de chaque fournisseur sont disponibles pour tous. Désactiver des fournisseurs définira ce mode sur Restreint."
     },
     "planCredits": {
       "tabs": {

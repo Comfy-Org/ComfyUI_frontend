@@ -218,7 +218,9 @@ test.describe('Publish dialog - no profile', () => {
   }) => {
     await expect(publishDialog.profilePrompt).toBeVisible()
     await expect(
-      publishDialog.root.getByText('Create a profile to publish to ComfyHub')
+      publishDialog.root.getByText(
+        'Create a profile to publish to Comfy Workflows'
+      )
     ).toBeVisible()
   })
 
@@ -331,4 +333,83 @@ test.describe('Publish dialog - submission', () => {
     // Dialog should remain open
     await expect(publishDialog.root).toBeVisible()
   })
+})
+
+const BREAKPOINTS = [
+  { name: 'mobile', width: 390 },
+  { name: 'sm', width: 640 },
+  { name: 'md', width: 768 },
+  { name: 'lg', width: 1024 },
+  { name: 'xl', width: 1280 },
+  { name: '2xl', width: 1536 },
+  { name: 'wide', width: 1920 }
+] as const
+
+const VIEWPORT_HEIGHT = 800
+
+async function expectWithinViewport(
+  dialog: PublishDialog,
+  viewport: { width: number; height: number },
+  label: string
+): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const box = await dialog.root.boundingBox()
+        if (!box) return false
+
+        return (
+          box.x >= 0 &&
+          box.y >= 0 &&
+          box.x + box.width <= viewport.width &&
+          box.y + box.height <= viewport.height
+        )
+      },
+      { message: `dialog escapes the viewport at ${label}` }
+    )
+    .toBe(true)
+}
+
+test.describe('Publish dialog - layout', () => {
+  test.beforeEach(async ({ comfyPage, publishApi, publishDialog }) => {
+    await comfyPage.featureFlags.setFlags(PUBLISH_FEATURE_FLAGS)
+    await publishApi.setupDefaultMocks()
+    await saveAndOpenPublishDialog(comfyPage, publishDialog, 'test-layout-wf')
+  })
+
+  test('renders fully inside the viewport at every breakpoint', async ({
+    comfyPage,
+    publishDialog
+  }) => {
+    await expect(publishDialog.describeStep).toBeVisible()
+
+    for (const { name, width } of BREAKPOINTS) {
+      await comfyPage.page.setViewportSize({ width, height: VIEWPORT_HEIGHT })
+      await expectWithinViewport(
+        publishDialog,
+        { width, height: VIEWPORT_HEIGHT },
+        `${name} (${width}px)`
+      )
+    }
+  })
+
+  for (const { name, width } of BREAKPOINTS) {
+    test(
+      `matches the expected layout at ${name}`,
+      { tag: ['@screenshot'] },
+      async ({ comfyPage, publishDialog }) => {
+        await comfyPage.page.setViewportSize({ width, height: VIEWPORT_HEIGHT })
+        await expect(publishDialog.describeStep).toBeVisible()
+        await expect(publishDialog.nameInput).toHaveValue(/test-layout-wf/)
+        await comfyPage.toast.closeToasts()
+        await comfyPage.canvas.evaluate((el) => {
+          el.style.visibility = 'hidden'
+        })
+
+        await expect(comfyPage.page).toHaveScreenshot(
+          `publish-dialog-${name}.png`
+        )
+      }
+    )
+  }
 })

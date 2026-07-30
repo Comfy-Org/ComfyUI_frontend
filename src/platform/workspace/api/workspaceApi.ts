@@ -168,6 +168,9 @@ interface SubscribeRequest {
   /** Required for the per-credit Team plan; selects the slider stop. */
   team_credit_stop_id?: string
   billing_cycle?: SubscribeBillingCycle
+  /** Required to change plans while the current subscription is cancelled; server rejects the change without it. */
+  confirm_reactivation?: boolean
+  proration_at?: string
 }
 
 export interface SubscribeOptions {
@@ -175,6 +178,8 @@ export interface SubscribeOptions {
   cancelUrl?: string
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
+  confirmReactivation?: boolean
+  prorationAt?: string
 }
 
 export interface PreviewSubscribeOptions {
@@ -220,7 +225,10 @@ interface PaymentPortalResponse {
 
 interface PreviewPlanInfo {
   slug: string
-  tier: SubscriptionTier
+  // The billing preview contract includes the workspace-level Team tier even
+  // though the registry subscription tier used by the personal plan catalog
+  // does not.
+  tier: SubscriptionTier | 'TEAM'
   duration: SubscriptionDuration
   price_cents: number
   credits_cents: number
@@ -241,6 +249,7 @@ export interface PreviewSubscribeResponse {
   credits_next_period_cents: number
   current_plan?: PreviewPlanInfo
   new_plan: PreviewPlanInfo
+  proration_at?: string
 }
 
 export type BillingSubscriptionStatus =
@@ -272,7 +281,11 @@ export interface BillingStatusResponse {
   subscription_tier?: SubscriptionTier
   subscription_duration?: SubscriptionDuration
   plan_slug?: string
+  scheduled_plan_slug?: string
+  change_at?: string
   billing_status?: BillingStatus
+  pending_billing_op_id?: string
+  action_url?: string
   has_funds: boolean
   cancel_at?: string
   renewal_date?: string
@@ -310,6 +323,7 @@ export interface BillingOpStatusResponse {
   error_message?: string
   started_at: string
   completed_at?: string
+  action_url?: string
 }
 
 interface BillingEvent {
@@ -687,7 +701,9 @@ export const workspaceApi = {
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
-          billing_cycle: options.billingCycle
+          billing_cycle: options.billingCycle,
+          confirm_reactivation: options.confirmReactivation,
+          proration_at: options.prorationAt
         } satisfies SubscribeRequest,
         { headers }
       )
@@ -810,7 +826,7 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
         api.apiURL(`/billing/ops/${opId}`),
-        { headers }
+        { headers, timeout: 30_000 }
       )
       return response.data
     } catch (err) {

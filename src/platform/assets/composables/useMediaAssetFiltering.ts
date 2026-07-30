@@ -8,9 +8,10 @@ import type { Ref } from 'vue'
 import { useMediaAssetFilterStore } from '@/platform/assets/composables/useMediaAssetFilterStore'
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
-type SortOption = 'newest' | 'oldest' | 'longest' | 'fastest'
+type SortOption = 'newest' | 'oldest' | 'az' | 'za' | 'longest' | 'fastest'
 
 /**
  * Get timestamp from asset (either create_time or created_at)
@@ -48,6 +49,12 @@ function getDateThreshold(filter: MediaAssetDateFilter): number | null {
       return null
   }
 }
+
+const compareAssetNames = (a: AssetItem, b: AssetItem): number =>
+  getAssetDisplayName(a).localeCompare(getAssetDisplayName(b), undefined, {
+    numeric: true,
+    sensitivity: 'base'
+  })
 
 /**
  * Media Asset Filtering composable
@@ -102,6 +109,10 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
       case 'fastest':
         // Ascending order (fastest execution time first)
         return sortByUtil(filtered, [getAssetExecutionTime])
+      case 'az':
+        return [...filtered].sort(compareAssetNames)
+      case 'za':
+        return [...filtered].sort((a, b) => compareAssetNames(b, a))
       case 'newest':
       default:
         // Descending order (newest first) - negate for descending

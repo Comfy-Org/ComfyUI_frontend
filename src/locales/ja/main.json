@@ -143,6 +143,8 @@
       "modelDescription": "モデル説明",
       "modelTagging": "モデルタグ付け",
       "modelType": "モデルタイプ",
+      "modelTypeCoreReadonly": "コア上ではモデルタイプを変更できません。ファイルの移動はまだサポートされていません。",
+      "modelTypeImmutableReadonly": "読み取り専用モデルのモデルタイプは変更できません。",
       "noAdditionalTags": "追加タグなし",
       "selectModelPrompt": "モデルを選択して情報を表示してください",
       "selectModelType": "モデルタイプを選択...",
@@ -173,6 +175,7 @@
     "rename": {
       "failed": "アセットの名前を変更できませんでした。"
     },
+    "searchModels": "モデルを検索",
     "selectFrameworks": "フレームワークを選択",
     "selectModelType": "モデルタイプを選択",
     "selectProjects": "プロジェクトを選択",
@@ -611,14 +614,14 @@
     "chooseProfilePicture": "プロフィール画像を選択",
     "createProfile": "プロフィールを作成",
     "createProfileButton": "プロフィールを作成する",
-    "createProfileTitle": "Comfy Hubプロフィールを作成",
+    "createProfileTitle": "Comfy Workflowsプロフィールを作成",
     "creatingProfile": "プロフィール作成中...",
     "descriptionLabel": "自己紹介",
     "descriptionPlaceholder": "コミュニティに自己紹介しましょう...",
     "introDescription": "ワークフローを公開してポートフォリオを作成し、数百万人のユーザーに見つけてもらいましょう",
-    "introSubtitle": "ComfyHubでワークフローを共有するには、まずプロフィールを作成しましょう。",
-    "introTitle": "ComfyHub へ公開",
-    "modalTitle": "ComfyHubのプロフィールを作成",
+    "introSubtitle": "Comfy Workflowsでワークフローを共有するには、まずプロフィールを作成しましょう。",
+    "introTitle": "Comfy Workflows へ公開",
+    "modalTitle": "Comfy Workflowsのプロフィールを作成",
     "nameLabel": "お名前",
     "namePlaceholder": "ここにお名前を入力してください",
     "profileCreationNav": "プロフィール作成",
@@ -628,8 +631,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "あなたのプロフィールページ：",
     "successTitle": "素敵です、{'@'}{username}！",
-    "updateIntroDescription": "最新の変更をComfyHubにプッシュします。共有リンクや統計情報はそのまま維持されます。",
-    "updateIntroTitle": "ComfyHubワークフローを更新",
+    "updateIntroDescription": "最新の変更をComfy Workflowsにプッシュします。共有リンクや統計情報はそのまま維持されます。",
+    "updateIntroTitle": "Comfy Workflowsワークフローを更新",
     "uploadCover": "+ カバー画像をアップロード",
     "uploadProfilePicture": "+ プロフィール画像をアップロード",
     "uploadWorkflowButton": "ワークフローをアップロード",
@@ -641,20 +644,18 @@
     "additionalInfo": "追加情報",
     "back": "戻る",
     "createProfileCta": "プロフィールを作成",
-    "createProfileToPublish": "ComfyHubに公開するにはプロフィールを作成してください",
+    "createProfileToPublish": "Comfy Workflowsに公開するにはプロフィールを作成してください",
     "exampleImage": "サンプル画像 {index}",
     "exampleImagePosition": "サンプル画像 {index} / {total}",
     "examplesDescription": "追加サンプル画像は最大{total}枚まで",
     "maxExamples": "最大{max}件まで選択できます",
     "next": "次へ",
-    "publishButton": "ComfyHub へ公開",
+    "publishButton": "Comfy Workflows へ公開",
     "publishFailedDescription": "ワークフローの公開中に問題が発生しました。もう一度お試しください。",
     "publishFailedTitle": "公開に失敗しました",
-    "publishSuccessDescription": "あなたのワークフローがComfyHubで公開されました。",
+    "publishSuccessDescription": "あなたのワークフローがComfy Workflowsで公開されました。",
     "publishSuccessTitle": "公開に成功しました",
     "removeExampleImage": "サンプル画像を削除",
-    "renameFailedDescription": "ワークフローは正常に公開されましたが、ローカルファイルの名前変更に失敗しました。再度名前を変更してください。",
-    "renameFailedTitle": "名前の変更に失敗しました",
     "selectAThumbnail": "サムネイルを選択",
     "shareAs": "次の形式で共有",
     "showLessTags": "表示を減らす...",
@@ -670,8 +671,8 @@
     "thumbnailImageComparison": "画像比較",
     "thumbnailPreview": "サムネイルプレビュー",
     "thumbnailVideo": "動画",
-    "title": "ComfyHub へ公開",
-    "unsavedDescription": "ComfyHub に公開する前にワークフローを保存する必要があります。続行するには今すぐ保存してください。",
+    "title": "Comfy Workflows へ公開",
+    "unsavedDescription": "Comfy Workflows に公開する前にワークフローを保存する必要があります。続行するには今すぐ保存してください。",
     "updateButton": "ワークフローを更新",
     "uploadAnImage": "クリックして選択 または画像をドラッグ",
     "uploadComparison": "ビフォーアフターをアップロード",
@@ -1268,6 +1269,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "このノードはワークスペースのポリシーにより無効化されています。別のノードを使用してください。",
+        "title": "ノードが無効化されています",
+        "toastMessage": "このノードはワークスペースのポリシーにより無効化されています。",
+        "toastTitle": "パートナーノード"
+      },
       "bad_linked_input": {
         "details": "{nodeName} の {inputName} に無効な接続があります。",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2624,8 @@
     "resetView": "ビューをリセット",
     "run": "実行する",
     "runWorkflow": "ワークフローを実行する (Shiftで先頭にキュー)",
-    "runWorkflowDisabled": "ワークフローに未対応のノード（赤でハイライト）が含まれています。これらを削除してワークフローを実行してください。",
     "runWorkflowFront": "ワークフローを実行する (先頭にキュー)",
+    "runWorkflowMissingResources": "ワークフローに不足しているリソースがあります。",
     "settings": "設定",
     "showMenu": "メニューを表示",
     "stopRunInstant": "実行を即時停止",
@@ -3049,6 +3057,38 @@
       "owner": "オーナー",
       "personal": "個人"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "すべての生成物やインポートは「メディアアセット」に保存されます。いつでも開いて、閲覧・ダウンロード・再利用が可能です。",
+        "title": "すべてのアセットを探す"
+      },
+      "inputs": {
+        "body": "作業したい内容を追加しましょう。入力がアプリによって結果に変換されます。",
+        "title": "入力を追加"
+      },
+      "landing": {
+        "body": "約1分で基本を素早くご案内します。入力の追加、アプリの実行、結果の確認方法をご紹介します。",
+        "primary": "チュートリアルを開始",
+        "title": "Appsへようこそ"
+      },
+      "outputs": {
+        "body": "完成した結果は中央に表示されます。ダウンロードしたり、入力を調整して再実行もできます。",
+        "title": "結果を取得"
+      },
+      "replay": "アプリモードのツアーを見る",
+      "run": {
+        "body": "入力内容に満足したら「実行」を押してください。準備ができ次第、中央に結果が表示されます。",
+        "title": "アプリを実行"
+      }
+    },
+    "back": "戻る",
+    "done": "完了",
+    "loadError": "このツアーの表示中に問題が発生しました",
+    "next": "次へ",
+    "skip": "スキップ",
+    "stepLabel": "ステップ {current} / {total}"
   },
   "openSharedWorkflow": {
     "author": "作成者：",
@@ -3487,6 +3527,7 @@
     "3DViewer": "3Dビューア",
     "API Nodes": "APIノード",
     "About": "情報",
+    "Allowlist": "許可リスト",
     "Appearance": "外観",
     "BrushAdjustment": "ブラシ調整",
     "Camera": "カメラ",
@@ -3565,9 +3606,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "これらのメディアアイテムが公開されることを理解しました",
     "checkingAssets": "メディアの公開状況を確認中…",
-    "comfyHubButton": "ComfyHubにアップロード",
-    "comfyHubDescription": "ComfyHubはComfyUI公式のコミュニティハブです。\nあなたのワークフローは全員が閲覧できる公開ページになります。",
-    "comfyHubTitle": "ComfyHubにアップロード",
+    "comfyHubButton": "Comfy Workflowsにアップロード",
+    "comfyHubDescription": "Comfy WorkflowsはComfyUI公式のコミュニティハブです。\nあなたのワークフローは全員が閲覧できる公開ページになります。",
+    "comfyHubTitle": "Comfy Workflowsにアップロード",
     "copyLink": "コピー",
     "createLinkButton": "リンクを作成",
     "createLinkDescription": "ワークフローのリンクを作成すると、これらのメディアアイテムもワークフローと一緒に共有されます",
@@ -3641,6 +3682,7 @@
     "logout": "ログアウト",
     "mediaAssets": "メディアアセット",
     "modelLibrary": "モデルライブラリ",
+    "modelLibraryLoadFailed": "モデルの読み込みに失敗しました。サーバー接続を確認し、「再読み込み」で再試行してください。",
     "newBlankWorkflow": "新しい空のワークフローを作成",
     "noFilesFound": "ファイルが見つかりません",
     "noFilesFoundMessage": "ファイルをアップロードするかコンテンツを生成するとここに表示されます",
@@ -3746,6 +3788,7 @@
       "viewList": "リスト表示"
     },
     "searchAssets": "アセットを検索",
+    "searchResultsCapped": "最初の{limit}件のみ表示しています。検索条件を絞り込んで、より具体的な結果を表示してください。",
     "sidebar": "サイドバー",
     "templates": "テンプレート",
     "themeToggle": "テーマを切り替え",
@@ -4181,6 +4224,11 @@
     "modelsSelected": "{count}件のモデル",
     "noResults": "テンプレートが見つかりません",
     "noResultsHint": "検索条件やフィルターを調整してみてください",
+    "paidTemplate": {
+      "badgeLabel": "パートナーAPI",
+      "credits": "クレジットで実行",
+      "title": "プレミアムテンプレート"
+    },
     "resultsCount": "{total}件中{count}件のテンプレートを表示中",
     "runsOnFilter": "実行環境",
     "runsOnSelected": "{count} 回実行",
@@ -4318,6 +4366,21 @@
     "title": "バージョン互換性の警告",
     "updateFrontend": "フロントエンドを更新"
   },
+  "videoEdit": {
+    "adjustCrop": "切り抜き範囲を調整",
+    "adjustEndFrame": "終了フレームを調整",
+    "adjustStartFrame": "開始フレームを調整",
+    "durationSeconds": "{count}秒",
+    "durationZero": "0秒",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB",
+    "fileSizeUnknown": "—",
+    "loadingFilmstrip": "フィルムストリップを読み込み中…",
+    "pause": "一時停止",
+    "play": "再生",
+    "seekVideo": "ビデオをシーク"
+  },
   "vueNodesBanner": {
     "desc": "– より柔軟なワークフロー、強力な新ウィジェット、拡張性を重視",
     "title": "Nodes 2.0 のご紹介",
@@ -4424,9 +4487,7 @@
         "lastActivity": "最終アクティビティ",
         "partnerNodeUsed": "パートナーノード使用",
         "totalCreditsUsed": "合計クレジット使用量"
-      },
-      "perUserHint": "ユーザーごとの合計使用量をお探しですか？",
-      "seeMembers": "メンバーを見る"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4562,6 +4623,39 @@
       "deleteWorkspaceDisabledTooltip": "まずワークスペースの有効なサブスクリプションをキャンセルしてください",
       "editWorkspace": "ワークスペースの詳細を編集",
       "leaveWorkspace": "ワークスペースを退出"
+    },
+    "partnerNodes": {
+      "accessMode": "パートナーノードアクセスモード",
+      "allowAllAccessHint": "反映には最大10分かかる場合があります。",
+      "allowAllAccessMessage": "すべてのプロバイダーのパートナーノードがワークスペースメンバー全員に利用可能になります。",
+      "allowAllAccessTitle": "すべてのパートナーノードへのアクセスを許可しますか？",
+      "columns": {
+        "nodes": "ノード",
+        "provider": "プロバイダー"
+      },
+      "disableAll": "すべて無効化",
+      "disableAllMessage": "すべてのプロバイダーがオフになります。アクセスが制限されている間、パートナーノードは利用できません。",
+      "disableAllTitle": "すべてのプロバイダーを無効にしますか？",
+      "enableAll": "すべて有効化",
+      "loadError": "パートナーノードアクセスの読み込みに失敗しました。",
+      "loading": "パートナーノードアクセスを読み込み中",
+      "noResults": "プロバイダーまたはパートナーノードが見つかりません",
+      "nodeCount": "{count}件有効",
+      "ownerOnly": "ワークスペースのオーナーのみパートナーノードアクセスを更新できます。",
+      "restrictAccessHint": "反映には最大10分かかる場合があります。",
+      "restrictAccessMessage": "ワークスペースメンバーは、有効にしたプロバイダーのパートナーノードのみ利用できます。",
+      "restrictAccessTitle": "パートナーノードへのアクセスを制限しますか？",
+      "restricted": "制限あり",
+      "restrictedDescription": "有効なプロバイダーのパートナーノードのみ利用可能です。反映には最大10分かかる場合があります。",
+      "retry": "再試行",
+      "saveError": "パートナーノードアクセスの更新に失敗しました。再試行してください。",
+      "searchPlaceholder": "プロバイダーとパートナーノードを検索...",
+      "tableLabel": "パートナーノードプロバイダー",
+      "title": "パートナーノードアクセス",
+      "toggleProvider": "{provider}のアクセスを設定",
+      "unavailable": "このワークスペースではパートナーノードアクセスを利用できません。",
+      "unrestricted": "制限なし",
+      "unrestrictedDescription": "すべてのプロバイダーのパートナーノードが全員に利用可能です。プロバイダーを無効にすると「制限あり」になります。"
     },
     "planCredits": {
       "tabs": {
