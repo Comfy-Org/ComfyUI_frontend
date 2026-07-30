@@ -149,6 +149,7 @@ function wrapperStyle(key: ElementKey) {
           )
         "
         :style="wrapperStyle(key)"
+        :data-hero-angle="key === 'angle' ? '' : undefined"
         @pointerdown="onPointerDown(key, $event)"
         @pointermove="onPointerMove"
         @pointerup="onPointerUp"
