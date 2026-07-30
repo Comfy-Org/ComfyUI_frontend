@@ -45,7 +45,7 @@ const codeStates = new Map<string, CodeRedemptionState>()
 // Coalesces concurrent triggers into one drain; a trigger arriving mid-drain
 // (e.g. the auth watcher firing while the dialog is open) is replayed as one
 // more pass instead of being dropped.
-let draining = false
+let drainPromise: Promise<void> | null = null
 let retriggerRequested = false
 
 let authWatcherInstalled = false
@@ -205,13 +205,7 @@ async function redeemCode(code: string): Promise<void> {
   handleTransientFailure(code, state, `status ${response.status}`)
 }
 
-async function redeemPendingDesktopLoginCode(): Promise<void> {
-  // Never rejects: the triggers fire-and-forget this.
-  if (draining) {
-    retriggerRequested = true
-    return
-  }
-  draining = true
+async function drainPendingDesktopLoginCode(): Promise<void> {
   try {
     do {
       retriggerRequested = false
@@ -227,9 +221,19 @@ async function redeemPendingDesktopLoginCode(): Promise<void> {
     } while (retriggerRequested)
   } catch (error) {
     console.error('[DesktopLoginRedemption] Redemption failed:', error)
-  } finally {
-    draining = false
   }
+}
+
+function redeemPendingDesktopLoginCode(): Promise<void> {
+  if (drainPromise) {
+    retriggerRequested = true
+    return drainPromise
+  }
+
+  drainPromise = drainPendingDesktopLoginCode().finally(() => {
+    drainPromise = null
+  })
+  return drainPromise
 }
 
 function installAuthWatcherOnce(): void {
@@ -256,8 +260,8 @@ function installAuthWatcherOnce(): void {
  * the only place it lives.
  */
 export function installDesktopLoginRedemption(router: Router): void {
-  router.afterEach(() => {
+  router.beforeResolve(() => {
     installAuthWatcherOnce()
-    void redeemPendingDesktopLoginCode()
+    return redeemPendingDesktopLoginCode()
   })
 }

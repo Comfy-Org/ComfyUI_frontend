@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
 
 /**
  * Every test drives a real in-memory router and the real preserved-query
  * manager: the tracker strips the code from the URL at capture time, so the
- * stash is the only carrier, and redemption fires from router.afterEach, an
+ * stash is the only carrier, and redemption fires from router.beforeResolve, an
  * auth watcher, and a delayed retry after a transient failure.
  *
  * The fake clock (installed for every test) keeps those retry timers from
@@ -85,15 +86,19 @@ function expectedFetchOptions(code: string) {
   }
 }
 
-// The triggers fire-and-forget the redemption; a zero-length advance of the
-// fake clock yields the event loop so the whole mocked promise chain settles.
+// The watcher and retry triggers fire-and-forget the redemption; a zero-length
+// advance of the fake clock yields the event loop so mocked promises settle.
 async function flushRedemption() {
   await vi.advanceTimersByTimeAsync(0)
 }
 
 // vi.resetModules() also resets the preserved-query manager's in-memory map,
 // so the manager must be imported alongside the module under test.
-async function setup() {
+async function setup(
+  routes: RouteRecordRaw[] = [
+    { path: '/:pathMatch(.*)*', component: { template: '<div />' } }
+  ]
+) {
   const { installDesktopLoginRedemption } =
     await import('./desktopLoginRedemption')
   const { capturePreservedQuery, getPreservedQueryParam } =
@@ -101,7 +106,7 @@ async function setup() {
 
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
+    routes
   })
   installDesktopLoginRedemption(router)
 
@@ -196,14 +201,69 @@ describe('installDesktopLoginRedemption', () => {
     )
     mockFetch.mockResolvedValue(okResponse())
 
-    await trigger()
+    const navigation = trigger()
     await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1))
     expect(mockFetch).not.toHaveBeenCalled()
 
     approve(true)
-    await flushRedemption()
+    await navigation
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('finishes redemption before the signed-in user-check navigation completes', async () => {
+    const { router, stashedCode } = await setup([
+      {
+        path: '/cloud/login',
+        component: { template: '<div />' },
+        beforeEnter: () =>
+          mockAuthStore.currentUser ? { name: 'cloud-user-check' } : true
+      },
+      {
+        path: '/cloud/user-check',
+        name: 'cloud-user-check',
+        component: { template: '<div />' }
+      }
+    ])
+    const { installPreservedQueryTracker } =
+      await import('@/platform/navigation/preservedQueryTracker')
+    installPreservedQueryTracker(router, [
+      {
+        namespace: NAMESPACE,
+        keys: ['desktop_login_code'],
+        stripAfterCapture: true
+      }
+    ])
+    let approve!: (value: boolean) => void
+    mockConfirm.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        approve = resolve
+      })
+    )
+    mockFetch.mockResolvedValue(okResponse())
+    const userCheckNavigationCompleted = vi.fn()
+    router.afterEach((to) => {
+      if (to.name === 'cloud-user-check') {
+        userCheckNavigationCompleted(stashedCode())
+      }
+    })
+
+    const navigation = router.push(
+      `/cloud/login?desktop_login_code=${VALID_CODE}`
+    )
+
+    await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1))
+    expect(userCheckNavigationCompleted).not.toHaveBeenCalled()
+    expect(mockFetch).not.toHaveBeenCalled()
+
+    approve(true)
+    await navigation
+
+    expect(mockConfirm).toHaveBeenCalledTimes(1)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(userCheckNavigationCompleted).toHaveBeenCalledTimes(1)
+    expect(userCheckNavigationCompleted).toHaveBeenCalledWith(undefined)
+    expect(stashedCode()).toBeUndefined()
   })
 
   it.for([
@@ -532,7 +592,7 @@ describe('installDesktopLoginRedemption', () => {
     )
     mockFetch.mockResolvedValue(okResponse())
 
-    await trigger()
+    const navigation = trigger()
     await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1))
 
     // The session swaps to user-2 while user-1's dialog is open: the stale
@@ -545,7 +605,7 @@ describe('installDesktopLoginRedemption', () => {
     mockAuthStore.currentUser = secondUser
     await flushRedemption()
     approve(true)
-    await flushRedemption()
+    await navigation
 
     await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(2))
     await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
@@ -575,7 +635,7 @@ describe('installDesktopLoginRedemption', () => {
         })
       )
 
-      await trigger()
+      const navigation = trigger()
       await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
 
       // A second code arrives while the first redemption is in flight; it
@@ -584,6 +644,7 @@ describe('installDesktopLoginRedemption', () => {
       mockFetch.mockResolvedValue(okResponse())
       resolveFirstFetch(firstResponse())
 
+      await navigation
       await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
       expect(mockConfirm).toHaveBeenCalledTimes(2)
       expect(mockFetch).toHaveBeenLastCalledWith(
@@ -605,12 +666,12 @@ describe('installDesktopLoginRedemption', () => {
     )
     mockFetch.mockResolvedValue(okResponse())
 
-    await router.push('/burst-1')
-    await router.push('/burst-2')
+    const firstNavigation = router.push('/burst-1')
     await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1))
+    const secondNavigation = router.push('/burst-2')
 
     approve(true)
-    await flushRedemption()
+    await Promise.all([firstNavigation, secondNavigation])
 
     expect(mockConfirm).toHaveBeenCalledTimes(1)
     expect(mockFetch).toHaveBeenCalledTimes(1)
