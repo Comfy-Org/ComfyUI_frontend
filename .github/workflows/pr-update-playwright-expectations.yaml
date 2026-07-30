@@ -73,18 +73,14 @@ jobs:
           retention-days: 1
 
       - name: Build cloud frontend
-        run: pnpm build:cloud
-        env:
-          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+        uses: ./.github/actions/build-cloud-frontend
 
-      - name: Upload cloud frontend
-        uses: actions/upload-artifact@v6
-        with:
-          name: frontend-dist-cloud
-          path: dist/
-          retention-days: 1
-
-  # Sharded snapshot updates
+  # Snapshot updates: shards 1-4 run everything except @cloud tests against
+  # the plain build, and the `cloud` leg runs the `cloud` Playwright project
+  # against the frontend-dist-cloud build, so @cloud-tagged screenshot tests
+  # get a baseline generated against the same distribution that
+  # ci-tests-e2e.yaml's `playwright-tests` matrix runs against for that
+  # project (mirrors its frontend-dist / frontend-dist-cloud selection).
   update-snapshots-sharded:
     needs: setup
     runs-on: ubuntu-latest
@@ -99,8 +95,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4]
-        shardTotal: [4]
+        shard: [1, 2, 3, 4, cloud]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -109,7 +104,7 @@ jobs:
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
-          name: frontend-dist
+          name: ${{ matrix.shard == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
 
       - name: Start ComfyUI server
@@ -118,13 +113,10 @@ jobs:
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
 
-      # Run sharded tests with snapshot updates (browsers pre-installed in container)
-      # @cloud tests are excluded here and handled by update-snapshots-cloud,
-      # which runs them against the frontend-dist-cloud build instead of this
-      # plain build (mirrors ci-tests-e2e.yaml's playwright-tests matrix).
-      - name: Update snapshots (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+      # Run tests with snapshot updates (browsers pre-installed in container)
+      - name: Update snapshots (${{ matrix.shard == 'cloud' && 'cloud' || format('Shard {0}/4', matrix.shard) }})
         id: playwright-tests
-        run: pnpm exec playwright test --update-snapshots --grep @screenshot --grep-invert @cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: pnpm exec playwright test --update-snapshots --grep @screenshot ${{ matrix.shard == 'cloud' && '--project=cloud' || format('--grep-invert @cloud --shard={0}/4', matrix.shard) }}
         continue-on-error: true
 
       - name: Stage changed snapshot files
@@ -143,13 +135,13 @@ jobs:
           ) | sort -u | grep -E '\-snapshots/' || true )
 
           if [ -z "$changed_files" ]; then
-            echo "No snapshot changes in shard ${{ matrix.shardIndex }}"
+            echo "No snapshot changes in shard ${{ matrix.shard }}"
             echo "has-changes=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           file_count=$(echo "$changed_files" | wc -l)
-          echo "Shard ${{ matrix.shardIndex }}: $file_count changed snapshot(s):"
+          echo "Shard ${{ matrix.shard }}: $file_count changed snapshot(s):"
           echo "$changed_files"
           echo "has-changes=true" >> $GITHUB_OUTPUT
 
@@ -167,7 +159,7 @@ jobs:
         uses: actions/upload-artifact@v6
         if: steps.changed-snapshots.outputs.has-changes == 'true'
         with:
-          name: snapshots-shard-${{ matrix.shardIndex }}
+          name: snapshots-shard-${{ matrix.shard }}
           path: /tmp/changed_snapshots_shard/
           retention-days: 1
 
@@ -175,105 +167,13 @@ jobs:
         uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: playwright-report-shard-${{ matrix.shardIndex }}
-          path: ./playwright-report/
-          retention-days: 30
-
-  # Cloud-distribution snapshot updates. Runs the `cloud` Playwright project
-  # against the frontend-dist-cloud build (built via `pnpm build:cloud`), so
-  # @cloud-tagged screenshot tests get a baseline generated against the same
-  # distribution that ci-tests-e2e.yaml's `playwright-tests` / cloud leg runs
-  # against. Not sharded since only one spec is tagged @cloud @screenshot today.
-  update-snapshots-cloud:
-    needs: setup
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    permissions:
-      contents: read
-      packages: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ needs.setup.outputs.branch }}
-      - name: Download built cloud frontend
-        uses: actions/download-artifact@v7
-        with:
-          name: frontend-dist-cloud
-          path: dist/
-
-      - name: Start ComfyUI server
-        uses: ./.github/actions/start-comfyui-server
-
-      - name: Install frontend deps
-        run: pnpm install --frozen-lockfile
-
-      # Update snapshots for the cloud project only (browsers pre-installed in container)
-      - name: Update snapshots (cloud)
-        id: playwright-tests
-        run: pnpm exec playwright test --update-snapshots --grep @screenshot --project=cloud
-        continue-on-error: true
-
-      - name: Stage changed snapshot files
-        id: changed-snapshots
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # Configure git safe.directory for container environment
-          git config --global --add safe.directory "$(pwd)"
-
-          # Get list of changed snapshot files (including untracked/new files)
-          changed_files=$( (
-            git diff --name-only browser_tests/ 2>/dev/null || true
-            git ls-files --others --exclude-standard browser_tests/ 2>/dev/null || true
-          ) | sort -u | grep -E '\-snapshots/' || true )
-
-          if [ -z "$changed_files" ]; then
-            echo "No snapshot changes in cloud shard"
-            echo "has-changes=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          file_count=$(echo "$changed_files" | wc -l)
-          echo "Cloud shard: $file_count changed snapshot(s):"
-          echo "$changed_files"
-          echo "has-changes=true" >> $GITHUB_OUTPUT
-
-          # Copy changed files to staging directory
-          mkdir -p /tmp/changed_snapshots_shard
-          while IFS= read -r file; do
-            [ -f "$file" ] || continue
-            file_without_prefix="${file#browser_tests/}"
-            mkdir -p "/tmp/changed_snapshots_shard/$(dirname "$file_without_prefix")"
-            cp "$file" "/tmp/changed_snapshots_shard/$file_without_prefix"
-          done <<< "$changed_files"
-
-      # Upload ONLY the changed files from this job. Named to match the
-      # snapshots-shard-* pattern so merge-and-commit picks it up unchanged.
-      - name: Upload changed snapshots
-        uses: actions/upload-artifact@v6
-        if: steps.changed-snapshots.outputs.has-changes == 'true'
-        with:
-          name: snapshots-shard-cloud
-          path: /tmp/changed_snapshots_shard/
-          retention-days: 1
-
-      - name: Upload test report
-        uses: actions/upload-artifact@v6
-        if: always()
-        with:
-          name: playwright-report-shard-cloud
+          name: playwright-report-shard-${{ matrix.shard }}
           path: ./playwright-report/
           retention-days: 30
 
   # Merge snapshots and commit
   merge-and-commit:
-    needs: [setup, update-snapshots-sharded, update-snapshots-cloud]
+    needs: [setup, update-snapshots-sharded]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
