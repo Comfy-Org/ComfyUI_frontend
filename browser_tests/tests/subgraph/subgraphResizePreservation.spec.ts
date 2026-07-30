@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 /**
@@ -8,6 +9,20 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
  * collapse the node back to its computed minimum size, discarding whatever
  * size the user had explicitly set.
  */
+
+/**
+ * These fixture workflows carry a saved pan/zoom that was not authored
+ * against the default 1280x720 Playwright viewport, so nodes can load
+ * partially below the fold. Fitting the view keeps resize handles and the
+ * subgraph-enter footer button on-screen for subsequent screen-space clicks
+ * and drags.
+ */
+async function fitViewToNodes(comfyPage: ComfyPage): Promise<void> {
+  await comfyPage.canvas.click({ position: { x: 10, y: 10 } })
+  await comfyPage.keyboard.press('Period')
+  await comfyPage.nextFrame()
+}
+
 test.describe(
   'Subgraph node resize preservation',
   { tag: ['@subgraph', '@widget', '@vue-nodes'] },
@@ -20,6 +35,7 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await fitViewToNodes(comfyPage)
 
       const subgraphNode =
         await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
@@ -41,6 +57,7 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await fitViewToNodes(comfyPage)
 
       const subgraphNode =
         await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
@@ -66,6 +83,7 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await fitViewToNodes(comfyPage)
 
       const subgraphNode =
         await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
@@ -85,6 +103,7 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await fitViewToNodes(comfyPage)
 
       const subgraphNode =
         await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
@@ -119,6 +138,7 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await fitViewToNodes(comfyPage)
 
       const subgraphNode =
         await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
@@ -151,6 +171,7 @@ test.describe(
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-nested-promotion'
       )
+      await fitViewToNodes(comfyPage)
 
       const [outerHost] = await comfyPage.nodeOps.getNodeRefsByTitle('Sub 0')
       expect(outerHost).toBeDefined()
