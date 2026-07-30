@@ -566,7 +566,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
   })
 
   describe('reactivation consent lifetime', () => {
-    it('resets a ticked checkbox when the charge amount changes', async () => {
+    it('resets a ticked checkbox when a replacement preview keeps the same charge', async () => {
       const user = userEvent.setup()
       mockSubscription.value = {
         isCancelled: true,
@@ -598,22 +598,24 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         })
       ).toBeEnabled()
 
-      // A different preview loads (e.g. user went back and re-previewed) with
-      // a higher charge; the earlier tick must not carry over as consent.
+      // A fresh quote can carry materially different billing state while
+      // displaying the same charge; the earlier tick must not carry over.
       await rerender({
         previewData: makePreview({
           transition_type: 'duration_change',
-          cost_today_cents: 50_000,
+          cost_today_cents: 33_600,
+          credits_next_period_cents: 1_000,
+          proration_at: '2026-08-01T00:01:00Z',
           new_plan: {
             slug: 'standard-annual',
             tier: 'STANDARD',
             duration: 'ANNUAL',
-            price_cents: 50_000,
+            price_cents: 33_600,
             credits_cents: 0,
             period_end: '2027-08-15T00:00:00Z',
             seat_summary: {
               seat_count: 1,
-              total_cost_cents: 50_000,
+              total_cost_cents: 33_600,
               total_credits_cents: 0
             }
           }
@@ -623,7 +625,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       expect(screen.getByRole('checkbox')).not.toBeChecked()
       expect(
         screen.getByRole('button', {
-          name: 'Confirm & reactivate — $500.00 today'
+          name: 'Confirm & reactivate — $336.00 today'
         })
       ).toBeDisabled()
     })

@@ -61,10 +61,10 @@ type PreviewVariant =
   | 'personal-new'
   | null
 
-/** Thrown by `assertReactivationAmountUnchanged` when a fresh preview's
- *  `cost_today_cents` no longer matches what the reactivation banner showed
- *  and the user consented to. Caught by the surrounding try/catch and
- *  surfaced through the same toast as any other subscribe failure. */
+/** Thrown by `assertReactivationAmountUnchanged` when a fresh preview no
+ *  longer matches the billing state the reactivation banner showed and the
+ *  user consented to. Caught by the surrounding try/catch and surfaced
+ *  through the same toast as any other subscribe failure. */
 class ReactivationAmountChangedError extends Error {}
 
 export function findPlanSlug(
@@ -157,37 +157,148 @@ export function useSubscriptionCheckout(
   // only feed the reactivation banner if it's an allowed existing-plan change.
   function isReactivationCapablePreview(
     preview: PreviewSubscribeResponse | null | undefined
-  ): boolean {
+  ): preview is PreviewSubscribeResponse & { allowed: true } {
     return !!preview?.allowed && preview.transition_type !== 'new_subscription'
+  }
+
+  function reactivationMaterialSnapshot(
+    preview: PreviewSubscribeResponse
+  ): string {
+    const planSnapshot = (
+      plan: PreviewSubscribeResponse['new_plan'] | undefined
+    ) =>
+      plan
+        ? [
+            plan.slug,
+            plan.tier,
+            plan.duration,
+            plan.price_cents,
+            plan.credits_cents,
+            plan.seat_summary.seat_count,
+            plan.seat_summary.total_cost_cents,
+            plan.seat_summary.total_credits_cents,
+            plan.period_start,
+            plan.period_end
+          ]
+        : null
+
+    return JSON.stringify([
+      preview.allowed,
+      preview.transition_type,
+      preview.is_immediate,
+      preview.is_immediate ? null : preview.effective_at,
+      preview.cost_next_period_cents,
+      preview.credits_today_cents,
+      preview.credits_next_period_cents,
+      planSnapshot(preview.current_plan),
+      planSnapshot(preview.new_plan)
+    ])
   }
 
   // Current backends return the exact proration instant used for the preview;
   // subscribe() echoes it back so the charge cannot drift while the consent
-  // screen is open. Keep the re-preview guard as compatibility for a backend
-  // that has not started returning proration_at yet.
+  // screen is open. A fresh preview still checks non-time-based plan, quantity,
+  // credit, and period state before the charge is submitted.
   async function assertReactivationAmountUnchanged(
     planSlug: string,
     options?: PreviewSubscribeOptions
   ): Promise<void> {
-    if (previewData.value?.proration_at) return
-
+    const confirmedPreview = previewData.value
     const freshPreview = await previewSubscribe(planSlug, options)
     if (!freshPreview?.allowed) {
       throw new Error(freshPreview?.reason || t('subscription.subscribeFailed'))
     }
+
+    if (confirmedPreview?.proration_at) {
+      const amountChanged =
+        confirmedPreview.transition_type === 'upgrade' &&
+        confirmedPreview.is_immediate
+          ? freshPreview.cost_today_cents > confirmedPreview.cost_today_cents
+          : freshPreview.cost_today_cents !== confirmedPreview.cost_today_cents
+      const materialChanged =
+        reactivationMaterialSnapshot(freshPreview) !==
+        reactivationMaterialSnapshot(confirmedPreview)
+      if (amountChanged || materialChanged) {
+        previewData.value = freshPreview
+        throw new ReactivationAmountChangedError(
+          t(
+            amountChanged
+              ? 'subscription.preview.reactivation.amountChanged'
+              : 'subscription.preview.reactivation.confirmationRequired'
+          )
+        )
+      }
+      return
+    }
+
     const amountChanged =
       freshPreview.cost_today_cents !==
-      (previewData.value?.cost_today_cents ?? 0)
+      (confirmedPreview?.cost_today_cents ?? 0)
+    const materialChanged =
+      !!confirmedPreview &&
+      reactivationMaterialSnapshot(freshPreview) !==
+        reactivationMaterialSnapshot(confirmedPreview)
     // Install regardless of outcome: on drift this is what makes the confirm
     // screen show the new amount and resets prior consent (via the
-    // component's own chargeCents watcher), so the next attempt compares
+    // component's own preview watcher), so the next attempt compares
     // against what's on screen instead of repeating this same failure.
     previewData.value = freshPreview
-    if (amountChanged) {
+    if (amountChanged || materialChanged) {
       throw new ReactivationAmountChangedError(
-        t('subscription.preview.reactivation.amountChanged')
+        t(
+          amountChanged
+            ? 'subscription.preview.reactivation.amountChanged'
+            : 'subscription.preview.reactivation.confirmationRequired'
+        )
       )
     }
+  }
+
+  function hasErrorCode(error: unknown, code: string): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === code
+    )
+  }
+
+  async function refreshExpiredProrationQuote(
+    error: unknown,
+    planSlug: string,
+    options?: PreviewSubscribeOptions
+  ): Promise<boolean> {
+    if (!hasErrorCode(error, 'PRORATION_QUOTE_EXPIRED')) return false
+
+    let freshPreview: PreviewSubscribeResponse | null = null
+    try {
+      freshPreview = await previewSubscribe(planSlug, options)
+    } catch {
+      // Handled by the unavailable path below.
+    }
+    if (!isReactivationCapablePreview(freshPreview)) {
+      handleBackToPricing()
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('subscription.preview.reactivation.unavailable')
+      })
+      return true
+    }
+
+    const amountChanged =
+      freshPreview.cost_today_cents !== previewData.value?.cost_today_cents
+    previewData.value = freshPreview
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t(
+        amountChanged
+          ? 'subscription.preview.reactivation.amountChanged'
+          : 'subscription.preview.reactivation.confirmationRequired'
+      )
+    })
+    return true
   }
 
   // The reactivation guard below reads cached `subscription.isCancelled`. If
@@ -424,6 +535,8 @@ export function useSubscriptionCheckout(
     if (!tierKey) return
 
     const billingCycle = selectedBillingCycle.value
+    const planSlug = getApiPlanSlug(tierKey, billingCycle)
+    if (!planSlug) return
     const checkoutType =
       previewData.value &&
       previewData.value.transition_type !== 'new_subscription'
@@ -432,8 +545,6 @@ export function useSubscriptionCheckout(
 
     isSubscribing.value = true
     try {
-      const planSlug = getApiPlanSlug(tierKey, billingCycle)
-      if (!planSlug) return
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       await fetchStatus()
       if (!confirmReactivation && isCancelled.value) {
@@ -467,6 +578,7 @@ export function useSubscriptionCheckout(
         checkoutType
       })
     } catch (error) {
+      if (await refreshExpiredProrationQuote(error, planSlug)) return
       trackSubscriptionFailure({
         tier: tierKey,
         cycle: billingCycle,
@@ -649,6 +761,14 @@ export function useSubscriptionCheckout(
         checkoutType
       })
     } catch (error) {
+      if (
+        await refreshExpiredProrationQuote(error, planSlug, {
+          teamCreditStopId: stop.id,
+          billingCycle
+        })
+      ) {
+        return
+      }
       trackSubscriptionFailure({
         tier: 'team',
         cycle: billingCycle,

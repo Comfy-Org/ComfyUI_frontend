@@ -363,11 +363,14 @@ const chargeDisplay = computed(
 )
 
 const reactivationConfirmed = ref(false)
-// A checked box is consent to *this* charge; a later charge change (e.g. a
-// different preview loads) must not carry that consent forward.
-watch(chargeCents, () => {
-  reactivationConfirmed.value = false
-})
+// A checked box is consent to this exact preview. A replacement preview must
+// not inherit that consent, even when its displayed charge is unchanged.
+watch(
+  () => previewData,
+  () => {
+    reactivationConfirmed.value = false
+  }
+)
 
 // isInitialized is aggregate (status + balance + plans); a balance or plans
 // failure must not permanently disable an otherwise-valid, already-loaded
