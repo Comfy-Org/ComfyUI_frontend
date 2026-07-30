@@ -43,28 +43,38 @@ export const useFirstRunEntry = createSharedComposable(() => {
       if (import.meta.env.DEV) console.warn('[first-run] forced takeover on')
       return
     }
-    if (outcome !== 'fresh') return
-    if (isCandidate()) {
+    if (outcome === 'restored') return
+    if (outcome === 'fresh' && isCandidate()) {
       gettingStartedVisible.value = true
       return
     }
     await useSettingStore().set('Comfy.TutorialCompleted', true)
-    await useCommandStore().execute('Comfy.BrowseTemplates')
+    if (outcome === 'fresh')
+      await useCommandStore().execute('Comfy.BrowseTemplates')
   }
 
   function hideGettingStarted() {
     gettingStartedVisible.value = false
   }
 
-  async function dismissGettingStarted() {
+  async function fallBackToBrowse() {
     hideGettingStarted()
     await useSettingStore().set('Comfy.TutorialCompleted', true)
+    await useCommandStore().execute('Comfy.BrowseTemplates')
+  }
+
+  async function dismissGettingStarted() {
+    hideGettingStarted()
+    await useSettingStore()
+      .set('Comfy.TutorialCompleted', true)
+      .catch(console.error)
   }
 
   return {
     gettingStartedVisible: readonly(gettingStartedVisible),
     handleStartupOutcome,
     hideGettingStarted,
+    fallBackToBrowse,
     dismissGettingStarted
   }
 })

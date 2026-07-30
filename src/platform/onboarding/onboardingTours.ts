@@ -20,10 +20,13 @@ export const COACH_IDS = {
   inputsList: 'inputs-list',
   outputs: 'outputs',
   assetsPanel: 'assets-panel',
-  graphRunButton: 'graph-run-button'
+  graphRunButton: 'graph-run-button',
+  firstRunSource: 'first-run-source',
+  firstRunPrompt: 'first-run-prompt',
+  firstRunSink: 'first-run-sink'
 } as const
 
-export type CoachId = (typeof COACH_IDS)[keyof typeof COACH_IDS] | (string & {})
+export type CoachId = (typeof COACH_IDS)[keyof typeof COACH_IDS]
 
 export interface CoachStep {
   /**

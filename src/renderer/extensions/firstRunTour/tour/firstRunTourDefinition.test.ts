@@ -8,6 +8,7 @@ import {
   clearCoachmarks,
   coachmarkElements
 } from '@/platform/onboarding/coachmarkRegistry'
+import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { toNodeId } from '@/types/nodeId'
 
 import { TOUR_ROLE_PINS } from '../roles/tourRolePins'
@@ -44,6 +45,7 @@ function pinnedGraph() {
     node.id = toNodeId(pin.id)
     graph.add(node)
     const element = document.createElement('div')
+    element.className = 'lg-node'
     element.setAttribute('data-node-id', String(pin.id))
     element.getBoundingClientRect = () => new DOMRect(0, 0, 80, 40)
     document.body.append(element)
@@ -71,9 +73,9 @@ describe('firstRunTourSteps', () => {
       'result.video'
     ])
     for (const coachId of [
-      'first-run-source',
-      'first-run-prompt',
-      'first-run-sink'
+      COACH_IDS.firstRunSource,
+      COACH_IDS.firstRunPrompt,
+      COACH_IDS.firstRunSink
     ])
       expect(coachmarkElements(coachId)).toHaveLength(1)
   })
@@ -82,7 +84,7 @@ describe('firstRunTourSteps', () => {
     mocks.rootGraph = pinnedGraph()
     const steps = await firstRunTourSteps('some_shared', ref<RunState>('idle'))
     expect(steps).toEqual([])
-    expect(coachmarkElements('first-run-sink')).toHaveLength(0)
+    expect(coachmarkElements(COACH_IDS.firstRunSink)).toHaveLength(0)
   })
 
   it('gives drifted pins no steps', async () => {

@@ -18,16 +18,21 @@ import { frameNode } from './cameraFraming'
 export type RunState = 'idle' | 'generating' | 'succeeded' | 'failed'
 
 const NODE_COACH_IDS = {
-  source: 'first-run-source',
-  prompt: 'first-run-prompt',
-  sink: 'first-run-sink'
+  source: COACH_IDS.firstRunSource,
+  prompt: COACH_IDS.firstRunPrompt,
+  sink: COACH_IDS.firstRunSink
 } as const
 
-const MOUNT_ATTEMPTS = 60
+export const RUN_BUTTON_SELECTOR =
+  '[data-testid="queue-button"], [data-testid="subscribe-to-run-button"]'
+
+const MOUNT_DEADLINE_MS = 8000
 
 const registered = new Map<CoachId, HTMLElement>()
+let generation = 0
 
 export function releaseFirstRunTargets() {
+  generation++
   for (const [coachId, element] of registered)
     unregisterCoachmark(coachId, element)
   registered.clear()
@@ -38,10 +43,15 @@ function nextFrame(): Promise<void> {
 }
 
 async function registerWhenMounted(coachId: CoachId, nodeId: NodeId) {
-  const selector = `[data-node-id="${CSS.escape(String(nodeId))}"]`
-  for (let attempt = 0; attempt < MOUNT_ATTEMPTS; attempt++) {
+  const spawned = generation
+  const selector = `.lg-node[data-node-id="${CSS.escape(String(nodeId))}"]`
+  const deadline = performance.now() + MOUNT_DEADLINE_MS
+  while (generation === spawned && performance.now() < deadline) {
     const element = document.querySelector<HTMLElement>(selector)
     if (element) {
+      const previous = registered.get(coachId)
+      if (previous === element) return
+      if (previous) unregisterCoachmark(coachId, previous)
       registered.set(coachId, element)
       registerCoachmark(coachId, element)
       return
@@ -57,7 +67,10 @@ function nodeStep(name: string, coachId: CoachId, nodeId: NodeId): CoachStep {
     placement: 'auto',
     deferTarget: true,
     interactive: true,
-    onEnter: (signal) => frameNode(nodeId, signal)
+    onEnter: (signal) => {
+      void registerWhenMounted(coachId, nodeId)
+      return frameNode(nodeId, signal)
+    }
   }
 }
 
@@ -88,9 +101,7 @@ export function firstRunTourSteps(
     interactive: true,
     selfAdvancing: true,
     primaryAction: () =>
-      document
-        .querySelector<HTMLElement>('[data-testid="queue-button"]')
-        ?.click()
+      document.querySelector<HTMLElement>(RUN_BUTTON_SELECTOR)?.click()
   })
   const sink = nodeStep('result', NODE_COACH_IDS.sink, roles.sink)
   steps.push({

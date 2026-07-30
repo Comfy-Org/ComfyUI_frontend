@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   isNewUser: true as boolean | null,
   tourFlag: true,
   execute: vi.fn(),
-  setSetting: vi.fn()
+  setSetting: vi.fn(() => Promise.resolve())
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -102,16 +102,24 @@ describe('useFirstRunEntry', () => {
     }
   )
 
-  it.for(['restored', 'url-intent'] as const)(
-    'leaves a %s startup alone',
-    async (outcome) => {
-      const entry = await freshEntry()
-      await entry.handleStartupOutcome(outcome)
-      expect(entry.gettingStartedVisible.value).toBe(false)
-      expect(mocks.execute).not.toHaveBeenCalled()
-      expect(mocks.setSetting).not.toHaveBeenCalled()
-    }
-  )
+  it('leaves a restored startup alone', async () => {
+    const entry = await freshEntry()
+    await entry.handleStartupOutcome('restored')
+    expect(entry.gettingStartedVisible.value).toBe(false)
+    expect(mocks.execute).not.toHaveBeenCalled()
+    expect(mocks.setSetting).not.toHaveBeenCalled()
+  })
+
+  it('marks a url-intent arrival done without opening anything', async () => {
+    const entry = await freshEntry()
+    await entry.handleStartupOutcome('url-intent')
+    expect(entry.gettingStartedVisible.value).toBe(false)
+    expect(mocks.execute).not.toHaveBeenCalled()
+    expect(mocks.setSetting).toHaveBeenCalledWith(
+      'Comfy.TutorialCompleted',
+      true
+    )
+  })
 
   it('writes TutorialCompleted only on dismissal', async () => {
     const entry = await freshEntry()

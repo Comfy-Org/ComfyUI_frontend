@@ -290,7 +290,9 @@ export function useWorkflowPersistenceV2() {
    * Restores saved workflow tabs after initializeWorkflow skips the single-workflow fallback.
    * GraphCanvas must call this during startup when workflow persistence is enabled.
    */
-  const restoreWorkflowTabsState = async () => {
+  const restoreWorkflowTabsState = async (): Promise<
+    StartupOutcome | undefined
+  > => {
     if (!workflowPersistenceEnabled.value) {
       tabStateRestored = true
       return
@@ -300,9 +302,9 @@ export function useWorkflowPersistenceV2() {
       await workflowStore.loadWorkflows()
     } catch (err) {
       console.error('Error loading workflows for tab restore', err)
-      await resolveStartupOutcome()
+      const outcome = await resolveStartupOutcome()
       tabStateRestored = true
-      return
+      return outcome
     }
 
     const restorableTabState = getRestorableTabState()

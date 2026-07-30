@@ -6,6 +6,9 @@ import { toNodeId } from '@/types/nodeId'
 const mocks = vi.hoisted(() => ({
   canvas: null as Record<string, unknown> | null
 }))
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({ get: () => false })
+}))
 vi.mock('@/scripts/app', () => ({
   app: {
     get canvas() {

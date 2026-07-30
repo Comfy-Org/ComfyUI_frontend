@@ -2,6 +2,7 @@ import { delay } from 'es-toolkit'
 
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { CARD_WIDTH } from '@/platform/onboarding/coachmarkLayout'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import type { NodeId } from '@/types/nodeId'
 
@@ -38,7 +39,10 @@ export async function frameNode(
   if (!canvas || !node || !viewport?.width || !viewport.height) return
   const bounds = node.boundingRect
   const zoom = focusFill(bounds, viewport)
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const reduced =
+    useSettingStore().get('Comfy.Appearance.DisableAnimations') ||
+    (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
+  if (reduced) {
     canvas.ds.fitToBounds(bounds, { zoom })
     canvas.setDirty(true, true)
     return
