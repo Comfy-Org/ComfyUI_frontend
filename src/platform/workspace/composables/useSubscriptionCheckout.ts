@@ -425,7 +425,8 @@ export function useSubscriptionCheckout(
 
   async function handleSubscription(
     confirmReactivation = false,
-    confirmationToken?: string
+    confirmationToken?: string,
+    promotionCode?: string
   ) {
     if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
 
@@ -454,6 +455,7 @@ export function useSubscriptionCheckout(
       }
       const response = await subscribe(planSlug, {
         ...(confirmationToken && { confirmationToken }),
+        ...(promotionCode && { promotionCode }),
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
         confirmReactivation
@@ -599,7 +601,8 @@ export function useSubscriptionCheckout(
 
   async function handleTeamSubscription(
     confirmReactivation = false,
-    confirmationToken?: string
+    confirmationToken?: string,
+    promotionCode?: string
   ) {
     if (!permissions.value.canManageSubscription) return
 
@@ -635,6 +638,7 @@ export function useSubscriptionCheckout(
       }
       const response = await subscribe(planSlug, {
         ...(confirmationToken && { confirmationToken }),
+        ...(promotionCode && { promotionCode }),
         teamCreditStopId: stop.id,
         billingCycle,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
@@ -716,12 +720,18 @@ export function useSubscriptionCheckout(
     }
   }
 
-  function handleSubscriptionPayment(confirmationToken: string) {
-    return handleSubscription(false, confirmationToken)
+  function handleSubscriptionPayment(
+    confirmationToken: string,
+    promotionCode?: string
+  ) {
+    return handleSubscription(false, confirmationToken, promotionCode)
   }
 
-  function handleTeamSubscriptionPayment(confirmationToken: string) {
-    return handleTeamSubscription(false, confirmationToken)
+  function handleTeamSubscriptionPayment(
+    confirmationToken: string,
+    promotionCode?: string
+  ) {
+    return handleTeamSubscription(false, confirmationToken, promotionCode)
   }
 
   return {

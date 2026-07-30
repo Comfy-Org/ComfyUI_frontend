@@ -2892,6 +2892,7 @@
       "paymentPopupBlocked": "Couldn't open the payment page — please allow popups and try again.",
       "paymentMethod": "Payment method",
       "stripeMethodChoice": "Choose card or Alipay. Your payment details are handled securely by Stripe.",
+      "promotionCodePlaceholder": "Promotion code (optional)",
       "alipayRenewalNote": "Alipay authorization will also be used for automatic renewals and future purchases.",
       "payAndSubscribe": "Pay and subscribe",
       "stripeUnavailable": "Payment options are unavailable. Please refresh and try again.",

@@ -12,6 +12,11 @@
       {{ configurationError }}
     </div>
     <div ref="paymentElementTarget" />
+    <Input
+      v-model="promotionCode"
+      :placeholder="$t('subscription.preview.promotionCodePlaceholder')"
+      autocomplete="off"
+    />
     <p class="m-0 text-xs text-muted-foreground">
       {{ $t('subscription.preview.alipayRenewalNote') }}
     </p>
@@ -38,6 +43,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 
 const { amountCents, isLoading = false } = defineProps<{
   amountCents: number
@@ -45,13 +51,14 @@ const { amountCents, isLoading = false } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  confirm: [confirmationToken: string]
+  confirm: [confirmationToken: string, promotionCode?: string]
 }>()
 
 const { t } = useI18n()
 const paymentElementTarget = ref<HTMLDivElement>()
 const stripeElements = ref<StripeElements>()
 const configurationError = ref('')
+const promotionCode = ref('')
 const isSubmitting = ref(false)
 let stripe: Stripe | null = null
 let paymentElement: StripePaymentElement | undefined
@@ -107,7 +114,11 @@ async function submit() {
       configurationError.value = result.error.message ?? t('g.error')
       return
     }
-    emit('confirm', result.confirmationToken.id)
+    emit(
+      'confirm',
+      result.confirmationToken.id,
+      promotionCode.value.trim() || undefined
+    )
   } catch {
     configurationError.value = t('g.error')
   } finally {
