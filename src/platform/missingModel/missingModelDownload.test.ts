@@ -91,6 +91,30 @@ describe('fetchModelMetadata', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('caches successful Civitai responses without a matching file', async () => {
+    const url = `https://civitai.com/api/download/models/${testId}`
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ files: [] })
+    })
+
+    const first = await fetchModelMetadata(url)
+    const second = await fetchModelMetadata(url)
+
+    expect(first.fileSize).toBeNull()
+    expect(second.fileSize).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries failed Civitai metadata responses', async () => {
+    const url = `https://civitai.com/api/download/models/${testId}`
+    fetchMock.mockResolvedValue({ ok: false })
+
+    expect((await fetchModelMetadata(url)).fileSize).toBeNull()
+    expect((await fetchModelMetadata(url)).fileSize).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it.for([401, 403, 451])(
     'returns gatedRepoUrl for gated HuggingFace HEAD requests (%s)',
     async (status) => {

@@ -156,19 +156,29 @@ interface CivitaiModelVersionResponse {
 const metadataCache = new Map<string, ModelMetadata>()
 const inflight = new Map<string, Promise<ModelMetadata>>()
 
-async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
+async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
   try {
     const pathname = new URL(url).pathname
     const versionIdMatch =
       pathname.match(/^\/api\/download\/models\/(\d+)$/) ??
       pathname.match(/^\/api\/v1\/models-versions\/(\d+)$/)
 
-    if (!versionIdMatch) return { fileSize: null, gatedRepoUrl: null }
+    if (!versionIdMatch) {
+      return {
+        metadata: { fileSize: null, gatedRepoUrl: null },
+        cacheable: false
+      }
+    }
 
     const [, modelVersionId] = versionIdMatch
     const apiUrl = `https://civitai.com/api/v1/model-versions/${modelVersionId}`
     const res = await fetch(apiUrl)
-    if (!res.ok) return { fileSize: null, gatedRepoUrl: null }
+    if (!res.ok) {
+      return {
+        metadata: { fileSize: null, gatedRepoUrl: null },
+        cacheable: false
+      }
+    }
 
     const data: CivitaiModelVersionResponse = await res.json()
     const matchingFile = data.files?.find((file) => {
@@ -180,9 +190,15 @@ async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
       )
     })
     const fileSize = matchingFile?.sizeKB ? matchingFile.sizeKB * 1024 : null
-    return { fileSize, gatedRepoUrl: null }
+    return {
+      metadata: { fileSize, gatedRepoUrl: null },
+      cacheable: true
+    }
   } catch {
-    return { fileSize: null, gatedRepoUrl: null }
+    return {
+      metadata: { fileSize: null, gatedRepoUrl: null },
+      cacheable: false
+    }
   }
 }
 
@@ -230,10 +246,6 @@ async function fetchHeadMetadata(url: string): Promise<MetadataFetchResult> {
   }
 }
 
-function isComplete(metadata: ModelMetadata): boolean {
-  return metadata.fileSize !== null || metadata.gatedRepoUrl !== null
-}
-
 export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
   const cached = metadataCache.get(url)
   if (cached !== undefined) return cached
@@ -242,15 +254,9 @@ export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
   if (existing) return existing
 
   const promise = (async () => {
-    if (isCivitaiModelUrl(url)) {
-      const metadata = await fetchCivitaiMetadata(url)
-      if (isComplete(metadata)) {
-        metadataCache.set(url, metadata)
-      }
-      return metadata
-    }
-
-    const result = await fetchHeadMetadata(url)
+    const result = isCivitaiModelUrl(url)
+      ? await fetchCivitaiMetadata(url)
+      : await fetchHeadMetadata(url)
     if (result.cacheable) {
       metadataCache.set(url, result.metadata)
     }
