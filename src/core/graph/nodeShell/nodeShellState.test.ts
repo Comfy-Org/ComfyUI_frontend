@@ -7,11 +7,15 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { zeroUuid } from '@/utils/uuid'
 
-import { createNodeShellState } from './nodeShellState'
+import {
+  createNodeShellState,
+  registerNodeState,
+  unregisterNodeState
+} from './nodeShellState'
 
 describe('node shell state', () => {
   beforeEach(() => {
@@ -67,6 +71,41 @@ describe('node shell state', () => {
     subgraph.remove(node)
 
     expect(statesIn(subgraph)).toEqual([])
+    expect(node._graphId).toBeUndefined()
+  })
+
+  it('vacates its store entry after the node is renumbered', () => {
+    const { subgraph, node } = addNodeToSubgraph()
+
+    node.id = toNodeId(4242)
+    unregisterNodeState(node)
+
+    expect(statesIn(subgraph)).toEqual([])
+    expect(node._graphId).toBeUndefined()
+  })
+
+  it('refuses to re-register a node under a second root graph', () => {
+    const { node } = addNodeToSubgraph()
+    const other = createTestSubgraph()
+
+    expect(() => registerNodeState(other, node)).toThrow(
+      /already registered under a different root graph/
+    )
+  })
+
+  it('tolerates re-registration under the same root graph', () => {
+    const { subgraph, node } = addNodeToSubgraph()
+
+    expect(() => registerNodeState(subgraph, node)).not.toThrow()
+    expect(statesIn(subgraph)).toHaveLength(1)
+  })
+
+  it('reports a state swapped out from under the registration', () => {
+    const { node } = addNodeToSubgraph()
+
+    node._state = { ...toRaw(node._state) }
+
+    expect(() => unregisterNodeState(node)).toThrow(/identity drift/)
     expect(node._graphId).toBeUndefined()
   })
 })
