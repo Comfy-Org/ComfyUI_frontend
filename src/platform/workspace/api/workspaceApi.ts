@@ -166,6 +166,7 @@ interface SubscribeRequest {
   billing_cycle?: SubscribeBillingCycle
   /** Required to change plans while the current subscription is cancelled; server rejects the change without it. */
   confirm_reactivation?: boolean
+  proration_at?: string
 }
 
 export interface SubscribeOptions {
@@ -174,6 +175,7 @@ export interface SubscribeOptions {
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
   confirmReactivation?: boolean
+  prorationAt?: string
 }
 
 export interface PreviewSubscribeOptions {
@@ -219,7 +221,10 @@ interface PaymentPortalResponse {
 
 interface PreviewPlanInfo {
   slug: string
-  tier: SubscriptionTier
+  // The billing preview contract includes the workspace-level Team tier even
+  // though the registry subscription tier used by the personal plan catalog
+  // does not.
+  tier: SubscriptionTier | 'TEAM'
   duration: SubscriptionDuration
   price_cents: number
   credits_cents: number
@@ -240,6 +245,7 @@ export interface PreviewSubscribeResponse {
   credits_next_period_cents: number
   current_plan?: PreviewPlanInfo
   new_plan: PreviewPlanInfo
+  proration_at?: string
 }
 
 export type BillingSubscriptionStatus =
@@ -687,7 +693,8 @@ export const workspaceApi = {
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
           billing_cycle: options.billingCycle,
-          confirm_reactivation: options.confirmReactivation
+          confirm_reactivation: options.confirmReactivation,
+          proration_at: options.prorationAt
         } satisfies SubscribeRequest,
         { headers }
       )
