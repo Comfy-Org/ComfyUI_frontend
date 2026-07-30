@@ -23,7 +23,7 @@ test.describe(
     test('retains a manual resize when Edit Subgraph Widgets is clicked', async ({
       comfyPage
     }) => {
-      const { nodeRef, node, size } = await comfyPage.subgraph.growNodeByDrag(
+      const { nodeRef, node, size } = await comfyPage.nodeOps.growNodeByDrag(
         'New Subgraph',
         { x: 250, y: 250 }
       )
@@ -39,7 +39,7 @@ test.describe(
     test('retains a manual resize when an interior widget is promoted', async ({
       comfyPage
     }) => {
-      const { nodeRef, size } = await comfyPage.subgraph.growNodeByDrag(
+      const { nodeRef, size } = await comfyPage.nodeOps.growNodeByDrag(
         'New Subgraph',
         { x: 250, y: 250 }
       )
