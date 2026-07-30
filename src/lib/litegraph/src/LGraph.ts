@@ -120,7 +120,9 @@ import type {
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import {
+  collectReservedGroupIds,
   collectReservedRerouteIds,
+  deduplicateSubgraphGroupIds,
   deduplicateSubgraphNodeIds,
   deduplicateSubgraphRerouteIds,
   topologicalSortSubgraphs
@@ -2649,6 +2651,11 @@ export class LGraph
           : undefined
 
         if (deduplicated) {
+          deduplicateSubgraphGroupIds(
+            deduplicated.subgraphs,
+            collectReservedGroupIds(this, data.groups),
+            this.state
+          )
           deduplicateSubgraphRerouteIds(
             deduplicated.subgraphs,
             collectReservedRerouteIds(this),

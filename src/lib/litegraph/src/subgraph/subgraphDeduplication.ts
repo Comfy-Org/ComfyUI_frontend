@@ -1,10 +1,12 @@
 import type { LGraph, LGraphState } from '../LGraph'
+import type { GroupId } from '../LGraphGroup'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import type {
   ExportedSubgraph,
   ExposedWidget,
+  ISerialisedGroup,
   ISerialisedNode,
   SerialisableLLink
 } from '../types/serialisation'
@@ -153,6 +155,45 @@ function patchPromotedWidgets(
   }
 }
 
+export function collectReservedGroupIds(
+  graph: Pick<LGraph, 'groups' | 'subgraphs'>,
+  serializedGroups: ISerialisedGroup[] = []
+): Set<number> {
+  return new Set<number>([
+    ...serializedGroups.map((group) => group.id),
+    ...[graph, ...graph.subgraphs.values()].flatMap((g) =>
+      g.groups.map((group) => group.id)
+    )
+  ])
+}
+
+/**
+ * Dedupes group IDs across serialized subgraph definitions. Groups have no
+ * ID-based references to patch, but their layout-store keys share the root
+ * graph scope and therefore require root-wide IDs.
+ */
+export function deduplicateSubgraphGroupIds(
+  subgraphs: ExportedSubgraph[],
+  reservedGroupIds: Set<number>,
+  state: LGraphState
+): void {
+  const usedGroupIds = new Set(reservedGroupIds)
+  for (const id of reservedGroupIds) reserveGroupId(id, state)
+
+  for (const subgraph of subgraphs) {
+    remapNumericIds(
+      subgraph.groups ?? [],
+      usedGroupIds,
+      () => ++state.lastGroupId,
+      (id) => reserveGroupId(id, state),
+      'group'
+    )
+  }
+}
+
+function reserveGroupId(id: GroupId, state: LGraphState): void {
+  if (id > state.lastGroupId) state.lastGroupId = id
+}
 export function collectReservedRerouteIds(
   graph: Pick<LGraph, 'reroutes' | 'subgraphs'>
 ): Set<number> {
@@ -201,23 +242,40 @@ function remapRerouteIds(
   usedRerouteIds: Set<number>,
   state: LGraphState
 ): Map<number, number> {
+  return remapNumericIds(
+    subgraph.reroutes ?? [],
+    usedRerouteIds,
+    () => {
+      state.lastRerouteId = toRerouteId(state.lastRerouteId + 1)
+      return state.lastRerouteId
+    },
+    (id) => reserveRerouteId(id, state),
+    'reroute'
+  )
+}
+
+function remapNumericIds<T extends { id: number }>(
+  items: T[],
+  usedIds: Set<number>,
+  nextId: () => number,
+  reserveId: (id: number) => void,
+  entity: 'group' | 'reroute'
+): Map<number, number> {
   const remapped = new Map<number, number>()
 
-  for (const reroute of subgraph.reroutes ?? []) {
-    if (usedRerouteIds.has(reroute.id)) {
-      const newId = findNextAvailableId(usedRerouteIds, () => {
-        state.lastRerouteId = toRerouteId(state.lastRerouteId + 1)
-        return state.lastRerouteId
-      })
-      remapped.set(reroute.id, newId)
+  for (const item of items) {
+    const oldId = item.id
+    if (usedIds.has(oldId)) {
+      const newId = findNextAvailableId(usedIds, nextId)
+      remapped.set(oldId, newId)
+      item.id = newId
+      usedIds.add(newId)
       console.warn(
-        `LiteGraph: duplicate subgraph reroute ID ${reroute.id} remapped to ${newId}`
+        `LiteGraph: duplicate subgraph ${entity} ID ${oldId} remapped to ${newId}`
       )
-      reroute.id = newId
-      usedRerouteIds.add(newId)
     } else {
-      usedRerouteIds.add(reroute.id)
-      reserveRerouteId(reroute.id, state)
+      usedIds.add(oldId)
+      reserveId(oldId)
     }
   }
 

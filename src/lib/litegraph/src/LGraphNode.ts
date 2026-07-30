@@ -3547,6 +3547,8 @@ export class LGraphNode
 
     const snapped: Point = [this._pos[0], this._pos[1]]
     snapPoint(snapped, snapTo)
+    if (snapped[0] === this._pos[0] && snapped[1] === this._pos[1]) return false
+
     this.pos = snapped
     return true
   }

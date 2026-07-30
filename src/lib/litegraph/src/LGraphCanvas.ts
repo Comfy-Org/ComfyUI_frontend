@@ -97,7 +97,9 @@ import {
 import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
 import {
+  collectReservedGroupIds,
   collectReservedRerouteIds,
+  deduplicateSubgraphGroupIds,
   deduplicateSubgraphRerouteIds,
   topologicalSortSubgraphs
 } from './subgraph/subgraphDeduplication'
@@ -4222,6 +4224,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (nodeInfo.type in subgraphIdMap)
         nodeInfo.type = subgraphIdMap[nodeInfo.type]
     remapClipboardSubgraphNodeIds(parsed, graph.rootGraph)
+    deduplicateSubgraphGroupIds(
+      parsed.subgraphs,
+      collectReservedGroupIds(graph.rootGraph),
+      graph.rootGraph.state
+    )
     deduplicateSubgraphRerouteIds(
       parsed.subgraphs,
       collectReservedRerouteIds(graph.rootGraph),

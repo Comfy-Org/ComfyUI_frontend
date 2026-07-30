@@ -830,6 +830,15 @@ describe('snapToGrid', () => {
       y: 97
     })
   })
+
+  test('does not report or store a change when already aligned', () => {
+    const node = seededNode(new LGraph())
+    node.snapToGrid(20)
+    const operationCount = layoutStore.getOperationsSince(0).length
+
+    expect(node.snapToGrid(20)).toBe(false)
+    expect(layoutStore.getOperationsSince(0)).toHaveLength(operationCount)
+  })
 })
 
 describe('_setConcreteSlots', () => {
