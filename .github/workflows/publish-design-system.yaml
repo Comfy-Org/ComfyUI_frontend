@@ -43,18 +43,6 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Validate version input
-        env:
-          VERSION: ${{ inputs.version }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          SEMVER_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
-          if [[ ! "$VERSION" =~ $SEMVER_REGEX ]]; then
-            echo "::error title=Invalid version::Version '$VERSION' must follow semantic versioning (x.y.z[-suffix][+build])" >&2
-            exit 1
-          fi
-
       - name: Determine ref to checkout
         id: resolve_ref
         env:
@@ -93,6 +81,17 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Validate version input
+        env:
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! node -e "process.exit(require('semver').valid(process.argv[1]) ? 0 : 1)" "$VERSION"; then
+            echo "::error title=Invalid version::Version '$VERSION' must follow semantic versioning (x.y.z[-suffix][+build])" >&2
+            exit 1
+          fi
 
       - name: Validate dist-tag
         env:

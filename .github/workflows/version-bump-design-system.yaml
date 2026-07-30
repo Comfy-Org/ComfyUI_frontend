@@ -51,15 +51,6 @@ jobs:
           NEW_VERSION=$(node -p "require('./packages/design-system/package.json').version")
           echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Format PR string
-        id: capitalised
-        env:
-          VERSION_TYPE: ${{ github.event.inputs.version_type }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "capitalised=${VERSION_TYPE@u}" >> "$GITHUB_OUTPUT"
-
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
         with:
@@ -67,7 +58,7 @@ jobs:
           commit-message: '[release] Increment design-system to ${{ steps.bump-version.outputs.NEW_VERSION }}'
           title: design-system ${{ steps.bump-version.outputs.NEW_VERSION }}
           body: |
-            ${{ steps.capitalised.outputs.capitalised }} version increment for @comfyorg/design-system to ${{ steps.bump-version.outputs.NEW_VERSION }}
+            ${{ github.event.inputs.version_type }} version increment for @comfyorg/design-system to ${{ steps.bump-version.outputs.NEW_VERSION }}
           branch: design-system-version-bump-${{ steps.bump-version.outputs.NEW_VERSION }}
           base: main
           labels: |
