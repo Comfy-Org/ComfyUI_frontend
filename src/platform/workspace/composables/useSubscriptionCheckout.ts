@@ -16,11 +16,13 @@ import type {
 } from '@/platform/telemetry/types'
 import type {
   Plan,
+  PreviewSubscribeOptions,
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
@@ -60,6 +62,12 @@ type PreviewVariant =
   | 'personal-new'
   | null
 
+/** Thrown by `assertReactivationAmountUnchanged` when a fresh preview's
+ *  `cost_today_cents` no longer matches what the reactivation banner showed
+ *  and the user consented to. Caught by the surrounding try/catch and
+ *  surfaced through the same toast as any other subscribe failure. */
+class ReactivationAmountChangedError extends Error {}
+
 export function findPlanSlug(
   plans: Plan[],
   tierKey: CheckoutTierKey,
@@ -87,13 +95,16 @@ export function useSubscriptionCheckout(
     previewSubscribe,
     plans,
     fetchPlans,
+    fetchStatus,
     isTeamPlan,
-    resubscribe
+    resubscribe,
+    subscription
   } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
   const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
+  const workspaceStore = useTeamWorkspaceStore()
 
   const checkoutStep = ref<CheckoutStep>('pricing')
   const isLoadingPreview = ref(false)
@@ -104,11 +115,119 @@ export function useSubscriptionCheckout(
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
-  const isPolling = computed(() => billingOperationStore.hasPendingOperations)
+  const activeCheckoutOperationId = ref<string | null>(null)
+  const activeCheckoutOperation = computed(() => {
+    if (!activeCheckoutOperationId.value) {
+      return billingOperationStore.subscriptionActionOperation
+    }
+    const operation = billingOperationStore.getOperation(
+      activeCheckoutOperationId.value
+    )
+    return operation?.workspaceId === workspaceStore.activeWorkspaceId
+      ? operation
+      : undefined
+  })
+  const activeCheckoutActionUrl = computed(
+    () => activeCheckoutOperation.value?.actionUrl ?? null
+  )
+  const isPolling = computed(
+    () => activeCheckoutOperation.value?.status === 'pending'
+  )
   const selectedTeamStop = computed(
     () => selectedTeamCheckout.value?.stop ?? null
   )
   const isTeamCheckout = computed(() => selectedTeamCheckout.value !== null)
+  const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+
+  // A cancelled subscription needs confirm_reactivation, and the only place
+  // that can honestly collect it is the reactivation banner. Paths with no
+  // banner (add-payment preview, a preview-less team-new fallback) always
+  // call in with confirmReactivation=false, so block here instead of sending
+  // a request the BE is guaranteed to reject with no way for the user to
+  // consent.
+  function notifyReactivationConfirmationRequired(): void {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('subscription.preview.reactivation.confirmationRequired')
+    })
+  }
+
+  // Shared by the initial cancelled-Team preview (handleSubscribeTeamClick)
+  // and drift recovery (refreshPreviewOnReactivationBlock): a preview can
+  // only feed the reactivation banner if it's allowed, immediate, and an
+  // existing-plan change — new_subscription and scheduled changes route to
+  // screens that can't render the disclosure or emit confirm_reactivation.
+  function isReactivationCapablePreview(
+    preview: PreviewSubscribeResponse | null | undefined
+  ): boolean {
+    return (
+      !!preview?.allowed &&
+      preview.is_immediate &&
+      preview.transition_type !== 'new_subscription'
+    )
+  }
+
+  // subscribe() recomputes the transaction independently of the preview the
+  // banner showed, so proration or team-seat state can drift while the
+  // screen is open. Re-preview right before billing and refuse if the
+  // amount moved — mirrors the guard useDowngradeToPersonal applies before
+  // a team-to-personal downgrade.
+  async function assertReactivationAmountUnchanged(
+    planSlug: string,
+    options?: PreviewSubscribeOptions
+  ): Promise<void> {
+    const freshPreview = await previewSubscribe(planSlug, options)
+    if (!freshPreview?.allowed) {
+      throw new Error(freshPreview?.reason || t('subscription.subscribeFailed'))
+    }
+    const amountChanged =
+      freshPreview.cost_today_cents !==
+      (previewData.value?.cost_today_cents ?? 0)
+    // Install regardless of outcome: on drift this is what makes the confirm
+    // screen show the new amount and resets prior consent (via the
+    // component's own chargeCents watcher), so the next attempt compares
+    // against what's on screen instead of repeating this same failure.
+    previewData.value = freshPreview
+    if (amountChanged) {
+      throw new ReactivationAmountChangedError(
+        t('subscription.preview.reactivation.amountChanged')
+      )
+    }
+  }
+
+  // The reactivation guard below reads cached `subscription.isCancelled`. If
+  // the subscription was cancelled in another tab after this preview loaded,
+  // that cache is stale and the guard blocks a request the banner never
+  // actually disclosed as a reactivation. Refresh here, right before the
+  // guard, so a retry sees the real current transaction — but only install
+  // the refresh if it can actually feed the banner; one that can't (e.g. it
+  // comes back as a fresh subscribe) would leave every retry blocked on a
+  // screen that can never collect consent, so send the user back to pricing
+  // instead. Mirrors the fetchStatus() call useDowngradeToPersonal makes
+  // before its own reactivation guard.
+  async function refreshPreviewOnReactivationBlock(
+    planSlug: string,
+    options?: PreviewSubscribeOptions
+  ): Promise<void> {
+    let freshPreview: PreviewSubscribeResponse | null = null
+    try {
+      freshPreview = await previewSubscribe(planSlug, options)
+    } catch {
+      // Treated the same as an incapable preview below.
+    }
+    if (isReactivationCapablePreview(freshPreview)) {
+      previewData.value = freshPreview
+      notifyReactivationConfirmationRequired()
+      return
+    }
+    handleBackToPricing()
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('subscription.preview.reactivation.unavailable')
+    })
+  }
 
   function canSelectTierPlan(): boolean {
     return (
@@ -250,36 +369,61 @@ export function useSubscriptionCheckout(
     previewData.value = null
     checkoutStep.value = 'preview'
 
-    if (!payload.isChange || !payload.stop.id) return
+    // A cancelled subscriber picking Team is a reactivation even when
+    // nothing existing is "changing" (isChange false, e.g. a first-time Team
+    // pick): the add-payment screen this would otherwise fall back to can't
+    // collect confirm_reactivation, so it always needs a real,
+    // reactivation-capable preview instead of the consent-less fallback.
+    const needsPreview = payload.isChange || isCancelled.value
+    if (!needsPreview || !payload.stop.id) return
+
+    let response: PreviewSubscribeResponse | null = null
+    let previewError: unknown
     try {
       const planSlug = getTeamPlanSlug(payload.billingCycle)
-      const response = await previewSubscribe(planSlug, {
+      response = await previewSubscribe(planSlug, {
         teamCreditStopId: payload.stop.id,
         billingCycle: payload.billingCycle
       })
-      if (
-        response?.allowed &&
-        response.is_immediate &&
-        response.transition_type !== 'new_subscription'
-      ) {
-        previewData.value = response
-      }
-    } catch {
-      // Preview is best-effort; keep the display-only confirm on any failure.
+    } catch (error) {
+      previewError = error
     }
+
+    if (isReactivationCapablePreview(response)) {
+      previewData.value = response
+      return
+    }
+    // Not cancelled: preview is best-effort, keep the display-only confirm.
+    if (!isCancelled.value) return
+
+    // Cancelled with no qualifying preview: the add-payment fallback has no
+    // way to collect confirm_reactivation, so every submit from it would be
+    // an unrecoverable dead end. Surface the failure instead.
+    toast.add({
+      severity: 'error',
+      summary: t('subscription.teamPlan.name'),
+      detail:
+        previewError instanceof Error
+          ? previewError.message
+          : response?.reason || t('subscription.subscribeFailed')
+    })
+    checkoutStep.value = 'pricing'
+    selectedTeamCheckout.value = null
   }
 
   function handleBackToPricing() {
+    if (isPolling.value) return
     checkoutStep.value = 'pricing'
     previewData.value = null
     selectedTeamCheckout.value = null
+    activeCheckoutOperationId.value = null
   }
 
   function handleSuccessClose() {
     emit('close', true)
   }
 
-  async function handleSubscription() {
+  async function handleSubscription(confirmReactivation = false) {
     if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
 
     const tierKey = selectedTierKey.value
@@ -297,9 +441,18 @@ export function useSubscriptionCheckout(
       const planSlug = getApiPlanSlug(tierKey, billingCycle)
       if (!planSlug) return
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      await fetchStatus()
+      if (!confirmReactivation && isCancelled.value) {
+        await refreshPreviewOnReactivationBlock(planSlug)
+        return
+      }
+      if (confirmReactivation && isCancelled.value) {
+        await assertReactivationAmountUnchanged(planSlug)
+      }
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
-        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
+        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
+        confirmReactivation
       })
 
       if (response) {
@@ -420,6 +573,7 @@ export function useSubscriptionCheckout(
     opId: string,
     context: SubscriptionOutcomeContext
   ) {
+    activeCheckoutOperationId.value = opId
     const operation = await billingOperationStore.startOperation(
       opId,
       'subscription',
@@ -430,10 +584,16 @@ export function useSubscriptionCheckout(
         paymentIntentSource
       }
     )
-    if (operation.status === 'succeeded') checkoutStep.value = 'success'
+    if (
+      operation.status === 'succeeded' &&
+      activeCheckoutOperationId.value === opId &&
+      operation.workspaceId === workspaceStore.activeWorkspaceId
+    ) {
+      checkoutStep.value = 'success'
+    }
   }
 
-  async function handleTeamSubscription() {
+  async function handleTeamSubscription(confirmReactivation = false) {
     if (!permissions.value.canManageSubscription) return
 
     const teamCheckout = selectedTeamCheckout.value
@@ -448,15 +608,30 @@ export function useSubscriptionCheckout(
 
     const { stop, checkoutType } = teamCheckout
     const billingCycle = selectedBillingCycle.value
+    const planSlug = getTeamPlanSlug(billingCycle)
 
     isSubscribing.value = true
     try {
-      const planSlug = getTeamPlanSlug(billingCycle)
+      await fetchStatus()
+      if (!confirmReactivation && isCancelled.value) {
+        await refreshPreviewOnReactivationBlock(planSlug, {
+          teamCreditStopId: stop.id,
+          billingCycle
+        })
+        return
+      }
+      if (confirmReactivation && isCancelled.value) {
+        await assertReactivationAmountUnchanged(planSlug, {
+          teamCreditStopId: stop.id,
+          billingCycle
+        })
+      }
       const response = await subscribe(planSlug, {
         teamCreditStopId: stop.id,
         billingCycle,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
-        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
+        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
+        confirmReactivation
       })
 
       if (response) {
@@ -543,6 +718,7 @@ export function useSubscriptionCheckout(
     selectedTierKey,
     selectedTeamStop,
     selectedBillingCycle,
+    activeCheckoutActionUrl,
     isPolling,
     isTeamCheckout,
     previewVariant,

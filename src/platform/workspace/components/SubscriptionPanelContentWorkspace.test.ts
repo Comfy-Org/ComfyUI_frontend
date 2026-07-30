@@ -9,11 +9,19 @@ import type { SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
 import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
+  BillingSubscriptionStatus,
   CurrentTeamCreditStop,
   TeamCreditStops
 } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
+
+const { mockIsSettingUp, mockSubscriptionActionOperation } = vi.hoisted(() => ({
+  mockIsSettingUp: { value: false },
+  mockSubscriptionActionOperation: {
+    value: undefined as { actionUrl: string } | undefined
+  }
+}))
 
 const RENEWAL_DATE_ISO = '2026-06-20T12:00:00Z'
 const END_DATE_ISO = '2026-01-20T12:00:00Z'
@@ -46,8 +54,10 @@ const teamCreditStops: TeamCreditStops = {
   ]
 }
 
-const mockSubscriptionStatus = ref<'active' | 'canceled'>('active')
+const mockSubscriptionStatus = ref<BillingSubscriptionStatus>('active')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
+const mockRenewalDate = ref<string | null>(RENEWAL_DATE_ISO)
+const mockEndDate = ref<string | null>(END_DATE_ISO)
 const mockHasSubscription = ref(true)
 const mockIsActiveSubscription = ref(true)
 const mockIsInPersonalWorkspace = ref(false)
@@ -105,8 +115,8 @@ const mockSubscription = computed<SubscriptionInfo | null>(() =>
         tier: mockSubscriptionTier.value,
         duration: mockSubscriptionDuration.value,
         planSlug: mockPlanSlug.value,
-        renewalDate: RENEWAL_DATE_ISO,
-        endDate: END_DATE_ISO,
+        renewalDate: mockRenewalDate.value,
+        endDate: mockEndDate.value,
         isCancelled: mockSubscriptionStatus.value === 'canceled',
         hasFunds: true
       }
@@ -126,6 +136,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isFreeTier: computed(() => false),
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
+    subscriptionStatus: mockSubscriptionStatus,
     teamCreditStops: mockTeamCreditStops,
     currentTeamCreditStop: mockCurrentTeamCreditStop,
     isLoading: mockIsLoading,
@@ -179,7 +190,14 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 }))
 
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({ isSettingUp: false })
+  useBillingOperationStore: () => ({
+    get isSettingUp() {
+      return mockIsSettingUp.value
+    },
+    get subscriptionActionOperation() {
+      return mockSubscriptionActionOperation.value
+    }
+  })
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -257,6 +275,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSubscriptionStatus.value = 'active'
+    mockRenewalDate.value = RENEWAL_DATE_ISO
+    mockEndDate.value = END_DATE_ISO
     mockHasSubscription.value = true
     mockIsActiveSubscription.value = true
     mockIsInPersonalWorkspace.value = false
@@ -277,6 +297,41 @@ describe('SubscriptionPanelContentWorkspace', () => {
     }
     mockIsLoading.value = false
     mockError.value = null
+    mockIsSettingUp.value = false
+    mockSubscriptionActionOperation.value = undefined
+  })
+
+  it('keeps verification available in settings without exposing its URL', async () => {
+    const actionUrl = 'https://verify.example/sensitive-token'
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    mockIsSettingUp.value = true
+    mockSubscriptionActionOperation.value = { actionUrl }
+    const { container } = renderComponent()
+
+    expect(open).not.toHaveBeenCalled()
+    expect(container.innerHTML).not.toContain(actionUrl)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Complete verification' })
+    )
+    expect(open).toHaveBeenCalledWith(
+      actionUrl,
+      '_blank',
+      'noopener,noreferrer'
+    )
+  })
+
+  it('hides verification from users without billing permission', () => {
+    mockIsSettingUp.value = true
+    mockCanManageSubscription.value = false
+    mockSubscriptionActionOperation.value = {
+      actionUrl: 'https://verify.example/sensitive-token'
+    }
+
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).not.toBeInTheDocument()
   })
 
   it('renders the subscribed credit stop price and renewal subtitle', () => {
@@ -296,6 +351,17 @@ describe('SubscriptionPanelContentWorkspace', () => {
       'true'
     )
   })
+
+  it.for([null, 'not-a-date', '2026-02-31T12:00:00Z'])(
+    'omits renewal copy when the active renewal date is %s',
+    (renewalDate) => {
+      mockRenewalDate.value = renewalDate
+      renderComponent()
+
+      expect(screen.queryByText(/^Renews on/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/i)).not.toBeInTheDocument()
+    }
+  )
 
   it('uses the yearly stop price for an annual subscription, still shown per month', () => {
     mockSubscriptionDuration.value = 'ANNUAL'
@@ -416,12 +482,17 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('reactivates a cancelled plan for an owner, keeping Manage billing', async () => {
+  it('shows dated cancellation copy while a cancelled plan remains active', async () => {
     const user = userEvent.setup()
     mockSubscriptionStatus.value = 'canceled'
     mockCanLeaveWorkspace.value = false
     renderComponent()
 
+    expect(
+      screen.getByText(
+        `You won't be charged again. Your features remain active until ${formatPanelDate(END_DATE_ISO)}.`
+      )
+    ).toBeInTheDocument()
     expect(
       screen.getByText(`Ends on ${formatPanelDate(END_DATE_ISO)}`)
     ).toBeInTheDocument()
@@ -438,6 +509,67 @@ describe('SubscriptionPanelContentWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Reactivate plan' }))
     expect(mockResubscribe).toHaveBeenCalledOnce()
   })
+
+  it('shows ended copy for an inactive ended subscription without a date', () => {
+    mockSubscriptionStatus.value = 'ended'
+    mockIsActiveSubscription.value = false
+    mockIsInPersonalWorkspace.value = true
+    mockEndDate.value = null
+    renderComponent()
+
+    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.getByText('Your subscription is no longer active.')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/features remain active/i)
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+  })
+
+  it('shows ended copy and subscribe CTA after a canceled Team plan becomes inactive', () => {
+    mockSubscriptionStatus.value = 'canceled'
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    renderComponent()
+
+    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.getByText('Your subscription is no longer active.')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe Now' })
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
+  })
+
+  it('does not show stale renewal copy for an explicitly ended active state', () => {
+    mockSubscriptionStatus.value = 'ended'
+    renderComponent()
+
+    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(screen.queryByText(/^Renews on/i)).not.toBeInTheDocument()
+  })
+
+  it.for([null, 'not-a-date', '2026-02-31T12:00:00Z'])(
+    'uses safe cancellation copy when the active end date is %s',
+    (endDate) => {
+      mockSubscriptionStatus.value = 'canceled'
+      mockEndDate.value = endDate
+      renderComponent()
+
+      expect(
+        screen.getByText(
+          "You won't be charged again. Your features remain active until the end of your billing period."
+        )
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/i)).not.toBeInTheDocument()
+    }
+  )
 
   it('keeps a cancelled Personal plan in a Team workspace reactivatable', () => {
     mockSubscriptionStatus.value = 'canceled'
