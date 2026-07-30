@@ -30,6 +30,7 @@ import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
 import TabNormalInputs from './parameters/TabNormalInputs.vue'
 import TabSubgraphInputs from './parameters/TabSubgraphInputs.vue'
+import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
 import {
@@ -111,6 +112,11 @@ function closePanel() {
     element_group: 'right_side_panel'
   })
   rightSidePanelStore.closePanel()
+}
+
+function handleTabChange(newTab: RightSidePanelTab) {
+  trackRightSidePanelTabOpened(newTab)
+  rightSidePanelStore.openPanel(newTab)
 }
 
 type RightSidePanelTabList = Array<{
@@ -347,14 +353,7 @@ function handleTitleCancel() {
         </div>
       </div>
       <nav class="overflow-x-auto px-4 pt-1 pb-2">
-        <TabList
-          :model-value="activeTab"
-          @update:model-value="
-            (newTab: RightSidePanelTab) => {
-              rightSidePanelStore.openPanel(newTab)
-            }
-          "
-        >
+        <TabList :model-value="activeTab" @update:model-value="handleTabChange">
           <Tab
             v-for="tab in tabs"
             :key="tab.value"
