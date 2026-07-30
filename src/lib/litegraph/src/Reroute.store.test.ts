@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
 import {
@@ -47,9 +47,11 @@ describe('Reroute ↔ rerouteStore integration', () => {
     expect(store.getReroute(graph.rootGraph.id, reroute.id)).toBeUndefined()
   })
 
-  it('setReroute (deserialisation) registers the chain', () => {
+  it('setReroute creates and updates geometry in one layout write', () => {
     const { graph } = connectedGraph()
     const store = useRerouteStore()
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+    onTestFinished(() => applyOperation.mockRestore())
 
     const reroute = graph.setReroute({
       id: toRerouteId(3),
@@ -59,6 +61,35 @@ describe('Reroute ↔ rerouteStore integration', () => {
     })
 
     expect(store.getReroute(graph.rootGraph.id, reroute.id)?.id).toBe(3)
+    const creationOperations = applyOperation.mock.calls.filter(
+      ([operation]) => operation.entity === 'reroute'
+    )
+    expect(creationOperations).toHaveLength(1)
+    expect(creationOperations[0][0]).toMatchObject({
+      type: 'createReroute',
+      rerouteId: toRerouteId(3),
+      position: { x: 5, y: 5 }
+    })
+
+    applyOperation.mockClear()
+    const existing = graph.setReroute({
+      id: reroute.id,
+      parentId: undefined,
+      pos: [8, 9],
+      linkIds: []
+    })
+
+    expect(existing).toBe(reroute)
+    expect(existing.pos).toEqual([8, 9])
+    const updateOperations = applyOperation.mock.calls.filter(
+      ([operation]) => operation.entity === 'reroute'
+    )
+    expect(updateOperations).toHaveLength(1)
+    expect(updateOperations[0][0]).toMatchObject({
+      type: 'moveReroute',
+      rerouteId: reroute.id,
+      position: { x: 8, y: 9 }
+    })
   })
 
   it('class parentId writes are observable through the store query', () => {

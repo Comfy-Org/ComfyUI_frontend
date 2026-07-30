@@ -1650,10 +1650,11 @@ export class LGraph
       this.state.lastRerouteId = rerouteId
     }
 
-    const reroute = this.reroutes.get(rerouteId) ?? new Reroute(rerouteId, this)
+    const existingReroute = this.reroutes.get(rerouteId)
+    const reroute = existingReroute ?? new Reroute(rerouteId, this, pos)
     reroute.parentId =
       parentId === undefined ? undefined : toRerouteId(parentId)
-    if (pos) reroute.pos = pos
+    if (pos && existingReroute) reroute.pos = pos
     reroute.floating = floating
     this._addReroute(reroute)
     return reroute
