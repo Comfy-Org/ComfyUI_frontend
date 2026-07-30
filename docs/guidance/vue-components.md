@@ -19,7 +19,6 @@ Applies to all `.vue` files anywhere in the codebase.
 
 - Prefer `emit/@event-name` for state changes (promotes loose coupling)
 - Use `defineExpose` only for imperative operations (`form.validate()`, `modal.open()`)
-- Proper props and emits definitions
 
 ## VueUse Composables
 
@@ -46,28 +45,13 @@ Prefer Vue native options when available:
 
 ## Props, Slots & Reactivity
 
+The props/slots/state rules live in the root `AGENTS.md` ("Vue 3 Composition
+API"), which is always loaded. In addition:
+
 - Use `watch`/`watchEffect` for side effects; avoid a `ref` + `watch` when a `computed` would work instead
-- Use `provide`/`inject` for dependency injection — but not when a Store or a shared composable would be simpler
-- Use the Vue 3.5 TypeScript style of default prop declaration:
-
-  ```typescript
-  const { nodes, showTotal = true } = defineProps<{
-    nodes: ApiNodeCost[]
-    showTotal?: boolean
-  }>()
-  ```
-
-  - Prefer reactive props destructuring to `const props = defineProps<...>`
-  - Do not use `withDefaults` or runtime props declaration
-  - Do not import Vue macros unnecessarily
-
-- Define slots via template usage, not `defineSlots`
+- Prefer reactive props destructuring to `const props = defineProps<...>`; do not import Vue macros unnecessarily
 - Use same-name shorthand for slot prop bindings: `:isExpanded` instead of `:is-expanded="isExpanded"`
 - Derive component types using `vue-component-type-helpers` (`ComponentProps`, `ComponentSlots`) instead of separate type files
-- Be judicious with new refs or other state:
-  - If a prop alone accomplishes the design goal, don't add a `ref`
-  - If the `ref` or prop can be used directly, don't add a `computed`
-  - If a `computed` can name and reuse a derived value, don't use a `watch`
 
 ## Best Practices
 

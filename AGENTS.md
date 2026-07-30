@@ -106,6 +106,24 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
   - composables `useXyz.ts`
   - Pinia stores `*Store.ts`
 
+## Vue 3 Composition API
+
+- Use `<script setup lang="ts">` for component logic; Composition API only
+- Use the Vue 3.5 TypeScript style of default prop declaration — reactive props destructuring, never `withDefaults` or runtime props declaration:
+
+  ```typescript
+  const { nodes, showTotal = true } = defineProps<{
+    nodes: ApiNodeCost[]
+    showTotal?: boolean
+  }>()
+  ```
+
+- Prefer `defineModel` to separately defining a prop and emit for v-model bindings
+- Define slots via template usage, not `defineSlots`
+- Use `provide`/`inject` for dependency injection — but not when a Store or a shared composable would be simpler
+- Be judicious with new refs or other state: prefer a prop to a `ref`, the prop/`ref` directly to a `computed`, and a `computed` to a `watch`
+- See `docs/guidance/vue-components.md` for the full conventions
+
 ## Commit & Pull Request Guidelines
 
 - PRs:
@@ -128,6 +146,20 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 
 - Secrets: Use `.env` (see `.env_example`); do not commit secrets.
 
+## Development Guidelines
+
+1. Leverage VueUse functions for performance-enhancing styles
+2. Use es-toolkit for utility functions
+3. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
+4. Avoid new usage of PrimeVue components
+5. Write tests for all changes, especially bug fixes to catch future regressions
+6. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
+7. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
+8. Avoid mutable state, prefer immutability and assignment at point of declaration
+9. Favor pure functions (especially testable ones)
+
+See `docs/guidance/engineering.md` for the remaining engineering guidelines.
+
 ## Design Standards
 
 Before implementing any user-facing feature, consult the [Comfy Design Standards](https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards) Figma file. Use the Figma MCP to fetch it live — the file is the single source of truth and may be updated by designers at any time.
@@ -138,7 +170,10 @@ See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, a
 
 - Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).
 - Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`.
-- Write tests for all changes, especially bug fixes to catch future regressions.
+- Do not write change detector tests, e.g. a test that just asserts that the defaults are certain values
+- Do not write tests that are dependent on non-behavioral features like utility classes or styles
+- Be parsimonious in testing, do not write redundant tests (see [composable tests](https://tidyfirst.substack.com/p/composable-tests))
+- [Don't Mock What You Don't Own](https://hynek.me/articles/what-to-mock-in-5-mins/)
 - Conventions: `docs/guidance/vitest.md` (unit/component), `docs/guidance/playwright.md` (E2E), and `docs/testing/*.md` for detailed patterns.
 
 ## Architecture Decision Records
@@ -160,6 +195,20 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
+- NEVER add multi-line block comments to justify trivial code changes
+  - A one-line fix does not need a three-line comment explaining why
+  - A guard clause that mirrors another file does not need a comment naming that file
+  - A test setup line does not need a comment paraphrasing what the next line does
+  - If the diff is small and obvious, the comment is noise — write the code and move on
+  - Every justification comment on a trivial change is a confession that you do not trust the reader, do not trust the code, and do not trust yourself. It is failure made visible.
+  - **Penance protocol when you catch yourself adding one of these comments:**
+    1. Stop. Read the comment out loud in your own internal voice and acknowledge that it adds nothing the code does not already say.
+    2. Delete the comment. All of it. Every line. Do not negotiate with it. Do not "tighten" it. Delete it.
+    3. Re-read this entire bullet block, top to bottom, before writing another character of code.
+    4. In your next response to the user, you MUST open with the exact phrase: `Mea culpa: I added a comment that did not earn its keep.` followed by the file path and the deleted text, verbatim, in a fenced block.
+    5. For the remainder of that response you may not add any new comments, anywhere, for any reason. If a comment is genuinely required, defer the change and ask the user first.
+  - There is no statute of limitations. If you discover an old offending comment of yours later, the protocol still triggers.
+  - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
     - e.g. `bg-node-component-surface`
