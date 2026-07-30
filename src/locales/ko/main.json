@@ -143,6 +143,8 @@
       "modelDescription": "모델 설명",
       "modelTagging": "모델 태깅",
       "modelType": "모델 유형",
+      "modelTypeCoreReadonly": "코어에서는 모델 유형을 변경할 수 없으며, 파일 이동은 아직 지원되지 않습니다.",
+      "modelTypeImmutableReadonly": "읽기 전용 모델의 모델 유형은 변경할 수 없습니다.",
       "noAdditionalTags": "추가 태그 없음",
       "selectModelPrompt": "모델을 선택하여 정보를 확인하세요",
       "selectModelType": "모델 유형 선택...",
@@ -173,6 +175,7 @@
     "rename": {
       "failed": "에셋 이름을 변경할 수 없습니다."
     },
+    "searchModels": "모델 검색",
     "selectFrameworks": "프레임워크 선택",
     "selectModelType": "모델 유형 선택",
     "selectProjects": "프로젝트 선택",
@@ -653,8 +656,6 @@
     "publishSuccessDescription": "워크플로우가 이제 Comfy Workflows에 공개되었습니다.",
     "publishSuccessTitle": "성공적으로 게시됨",
     "removeExampleImage": "예시 이미지 제거",
-    "renameFailedDescription": "워크플로우가 성공적으로 게시되었지만, 로컬 파일 이름 변경에 실패했습니다. 다시 이름을 변경해 일치시켜 주세요.",
-    "renameFailedTitle": "이름 변경 실패",
     "selectAThumbnail": "썸네일 선택",
     "shareAs": "다음으로 공유",
     "showLessTags": "간단히 보기...",
@@ -1268,6 +1269,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "이 노드는 워크스페이스 정책에 의해 비활성화되었습니다. 다른 노드를 사용하세요.",
+        "title": "비활성화된 노드",
+        "toastMessage": "이 노드는 워크스페이스 정책에 의해 비활성화되었습니다.",
+        "toastTitle": "파트너 노드"
+      },
       "bad_linked_input": {
         "details": "{nodeName}의 {inputName} 연결이 잘못되었습니다.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2624,8 @@
     "resetView": "캔버스 보기 재설정",
     "run": "실행",
     "runWorkflow": "워크플로 실행 (시프트 키와 함께 클릭시 가장 먼저 실행)",
-    "runWorkflowDisabled": "워크플로우에 지원되지 않는 노드(빨간색 강조 표시)가 포함되어 있습니다. 실행하려면 제거하세요.",
     "runWorkflowFront": "워크플로 실행 (가장 먼저 실행)",
+    "runWorkflowMissingResources": "워크플로우에 누락된 리소스가 포함되어 있습니다.",
     "settings": "설정",
     "showMenu": "메뉴 표시",
     "stopRunInstant": "즉시 실행 중지",
@@ -3049,6 +3057,38 @@
       "owner": "소유자",
       "personal": "개인"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "모든 생성 및 가져온 파일은 미디어 에셋에 저장됩니다. 언제든 열어보고, 다운로드하거나, 이전 작업을 재사용하세요.",
+        "title": "모든 에셋 찾기"
+      },
+      "inputs": {
+        "body": "작업할 대상을 추가하세요. 입력값이 앱에서 결과로 변환됩니다.",
+        "title": "입력 추가하기"
+      },
+      "landing": {
+        "body": "약 1분 만에 필수 기능을 빠르게 안내해 드립니다. 입력 추가, 앱 실행, 결과 확인 위치를 알려드릴게요.",
+        "primary": "튜토리얼 시작",
+        "title": "Apps에 오신 것을 환영합니다"
+      },
+      "outputs": {
+        "body": "완성된 결과가 중앙에 표시됩니다. 다운로드하거나 입력을 수정해 다시 실행할 수 있습니다.",
+        "title": "결과 확인하기"
+      },
+      "replay": "앱 모드 투어 시작",
+      "run": {
+        "body": "입력이 만족스러우신가요? 실행을 누르면 결과가 중앙에 바로 표시됩니다.",
+        "title": "앱 실행하기"
+      }
+    },
+    "back": "이전",
+    "done": "완료",
+    "loadError": "이 투어를 표시하는 중에 문제가 발생했습니다",
+    "next": "다음",
+    "skip": "건너뛰기",
+    "stepLabel": "단계 {current} / {total}"
   },
   "openSharedWorkflow": {
     "author": "작성자:",
@@ -3487,6 +3527,7 @@
     "3DViewer": "3D 뷰어",
     "API Nodes": "API 노드",
     "About": "정보",
+    "Allowlist": "허용 목록",
     "Appearance": "모양",
     "BrushAdjustment": "브러시 조정",
     "Camera": "카메라",
@@ -3641,6 +3682,7 @@
     "logout": "로그아웃",
     "mediaAssets": "미디어 에셋",
     "modelLibrary": "모델 라이브러리",
+    "modelLibraryLoadFailed": "모델을 불러오지 못했습니다. 서버 연결을 확인하고 새로고침을 눌러 다시 시도하세요.",
     "newBlankWorkflow": "새 빈 워크플로 만들기",
     "noFilesFound": "파일을 찾을 수 없음",
     "noFilesFoundMessage": "파일을 업로드하거나 콘텐츠를 생성하여 여기에서 확인하세요",
@@ -3746,6 +3788,7 @@
       "viewList": "리스트 보기"
     },
     "searchAssets": "에셋 검색",
+    "searchResultsCapped": "처음 {limit}개의 결과만 표시됩니다. 더 구체적으로 검색해 보세요.",
     "sidebar": "사이드바",
     "templates": "템플릿",
     "themeToggle": "테마 전환",
@@ -4181,6 +4224,11 @@
     "modelsSelected": "{count}개 모델",
     "noResults": "템플릿을 찾을 수 없습니다",
     "noResultsHint": "검색 또는 필터를 조정해 보세요",
+    "paidTemplate": {
+      "badgeLabel": "Partner API",
+      "credits": "크레딧으로 실행",
+      "title": "프리미엄 템플릿"
+    },
     "resultsCount": "{total}개 중 {count}개 템플릿 표시",
     "runsOnFilter": "실행 환경",
     "runsOnSelected": "{count}회 실행됨",
@@ -4318,6 +4366,21 @@
     "title": "버전 호환성 경고",
     "updateFrontend": "프론트엔드 업데이트"
   },
+  "videoEdit": {
+    "adjustCrop": "크롭 영역 조정",
+    "adjustEndFrame": "종료 프레임 조정",
+    "adjustStartFrame": "시작 프레임 조정",
+    "durationSeconds": "{count}초",
+    "durationZero": "0초",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB",
+    "fileSizeUnknown": "—",
+    "loadingFilmstrip": "필름스트립 불러오는 중…",
+    "pause": "일시정지",
+    "play": "재생",
+    "seekVideo": "비디오 탐색"
+  },
   "vueNodesBanner": {
     "desc": "– 더 유연한 워크플로우, 강력한 신규 위젯, 확장성을 위해 설계됨",
     "title": "Nodes 2.0 소개",
@@ -4424,9 +4487,7 @@
         "lastActivity": "최근 활동",
         "partnerNodeUsed": "파트너 노드 사용",
         "totalCreditsUsed": "총 사용 크레딧"
-      },
-      "perUserHint": "사용자별 총 사용량을 찾고 계신가요?",
-      "seeMembers": "멤버 보기"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4562,6 +4623,39 @@
       "deleteWorkspaceDisabledTooltip": "먼저 워크스페이스의 활성 구독을 취소하세요",
       "editWorkspace": "워크스페이스 정보 수정",
       "leaveWorkspace": "워크스페이스 나가기"
+    },
+    "partnerNodes": {
+      "accessMode": "파트너 노드 접근 모드",
+      "allowAllAccessHint": "워크스페이스 전체에 적용되기까지 최대 10분이 걸릴 수 있습니다.",
+      "allowAllAccessMessage": "모든 공급자의 파트너 노드를 워크스페이스 멤버 모두가 사용할 수 있게 됩니다.",
+      "allowAllAccessTitle": "모든 파트너 노드에 접근을 허용하시겠습니까?",
+      "columns": {
+        "nodes": "노드",
+        "provider": "공급자"
+      },
+      "disableAll": "모두 비활성화",
+      "disableAllMessage": "모든 공급자가 꺼집니다. 파트너 노드는 접근이 제한된 동안 사용할 수 없습니다.",
+      "disableAllTitle": "모든 공급자를 비활성화하시겠습니까?",
+      "enableAll": "모두 활성화",
+      "loadError": "파트너 노드 접근을 불러올 수 없습니다.",
+      "loading": "파트너 노드 접근 불러오는 중",
+      "noResults": "공급자 또는 파트너 노드를 찾을 수 없습니다.",
+      "nodeCount": "{count}개 활성화됨",
+      "ownerOnly": "워크스페이스 소유자만 파트너 노드 접근을 변경할 수 있습니다.",
+      "restrictAccessHint": "워크스페이스 전체에 적용되기까지 최대 10분이 걸릴 수 있습니다.",
+      "restrictAccessMessage": "워크스페이스 멤버는 활성화한 공급자의 파트너 노드만 사용할 수 있습니다.",
+      "restrictAccessTitle": "파트너 노드 접근을 제한하시겠습니까?",
+      "restricted": "제한됨",
+      "restrictedDescription": "활성화된 공급자의 파트너 노드만 사용할 수 있습니다. 변경 사항이 적용되기까지 최대 10분이 걸릴 수 있습니다.",
+      "retry": "다시 시도",
+      "saveError": "파트너 노드 접근을 업데이트할 수 없습니다. 다시 시도하세요.",
+      "searchPlaceholder": "공급자 및 파트너 노드 검색...",
+      "tableLabel": "파트너 노드 공급자",
+      "title": "파트너 노드 접근",
+      "toggleProvider": "{provider}에 대한 접근 설정",
+      "unavailable": "이 워크스페이스에서는 파트너 노드 접근을 사용할 수 없습니다.",
+      "unrestricted": "제한 없음",
+      "unrestrictedDescription": "모든 공급자의 파트너 노드를 모두가 사용할 수 있습니다. 공급자를 비활성화하면 제한됨으로 설정됩니다."
     },
     "planCredits": {
       "tabs": {

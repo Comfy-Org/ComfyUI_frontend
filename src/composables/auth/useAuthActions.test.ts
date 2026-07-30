@@ -34,6 +34,7 @@ const mockDialogService = vi.hoisted(() => ({
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockTrackAuthFailed = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+const mockClearAllWorkflowStorage = vi.hoisted(() => vi.fn())
 
 const knownAuthErrorCodes = new Set([
   'auth/invalid-credential',
@@ -64,6 +65,10 @@ vi.mock('@/platform/telemetry', () => ({
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn(() => mockToastStore)
+}))
+
+vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
+  clearAllWorkflowStorage: mockClearAllWorkflowStorage
 }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
@@ -135,6 +140,7 @@ describe('useAuthActions.logout', () => {
     expect(mockDialogService.confirm).not.toHaveBeenCalled()
     expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
+    expect(mockClearAllWorkflowStorage).not.toHaveBeenCalled()
   })
 
   it('logs out without prompting when no workflows are modified', async () => {
@@ -145,6 +151,34 @@ describe('useAuthActions.logout', () => {
     expect(mockDialogService.confirm).not.toHaveBeenCalled()
     expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
+  })
+
+  it('clears persisted workflows after cloud logout and before navigation', async () => {
+    const navigationSpy = vi
+      .spyOn(window.location, 'href', 'set')
+      .mockImplementation(() => {})
+    const { logout } = useAuthActions()
+
+    await logout()
+
+    expect(mockClearAllWorkflowStorage).toHaveBeenCalledExactlyOnceWith({
+      blockWrites: true
+    })
+    expect(mockAuthStore.logout.mock.invocationCallOrder[0]).toBeLessThan(
+      mockClearAllWorkflowStorage.mock.invocationCallOrder[0]
+    )
+    expect(
+      mockClearAllWorkflowStorage.mock.invocationCallOrder[0]
+    ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
+  })
+
+  it('does not clear cloud workflows when logout fails', async () => {
+    mockAuthStore.logout.mockRejectedValueOnce(new Error('network failed'))
+    const { logout } = useAuthActions()
+
+    await logout()
+
+    expect(mockClearAllWorkflowStorage).not.toHaveBeenCalled()
   })
 
   it('cancels sign-out when the dialog is dismissed (null)', async () => {
