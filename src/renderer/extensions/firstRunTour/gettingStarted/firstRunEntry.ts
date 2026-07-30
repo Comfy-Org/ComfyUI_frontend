@@ -25,6 +25,13 @@ export const useFirstRunEntry = createSharedComposable(() => {
     useFeatureFlags().flags.onboardingTourEnabled
 
   async function handleStartupOutcome(outcome: StartupOutcome) {
+    if (import.meta.env.DEV)
+      console.warn('[first-run] outcome:', outcome, {
+        force: localStorage.getItem('ff:force_first_run'),
+        cloud: isCloud,
+        newUser: useNewUserService().isNewUser(),
+        flag: useFeatureFlags().flags.onboardingTourEnabled
+      })
     if (
       import.meta.env.DEV &&
       localStorage.getItem('ff:force_first_run') === 'true'
@@ -32,6 +39,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
       await useSettingStore().set('Comfy.TutorialCompleted', false)
       await useSettingStore().set(TOUR_SEEN_SETTING, [])
       gettingStartedVisible.value = true
+      if (import.meta.env.DEV) console.warn('[first-run] forced takeover on')
       return
     }
     if (outcome !== 'fresh') return
