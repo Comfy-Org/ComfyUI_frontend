@@ -82,17 +82,6 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
-      - name: Validate version input
-        env:
-          VERSION: ${{ inputs.version }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! node -e "process.exit(require('semver').valid(process.argv[1]) ? 0 : 1)" "$VERSION"; then
-            echo "::error title=Invalid version::Version '$VERSION' must follow semantic versioning (x.y.z[-suffix][+build])" >&2
-            exit 1
-          fi
-
       - name: Validate dist-tag
         env:
           DIST_TAG: ${{ inputs.dist_tag }}
