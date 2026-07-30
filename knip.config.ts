@@ -4,6 +4,12 @@ const config: KnipConfig = {
   treatConfigHintsAsErrors: true,
   treatTagHintsAsErrors: true,
   workspaces: {
+    'apps/cms': {
+      project: ['src/**/*.{ts,tsx}'],
+      // Payload's admin UI package: loaded via the generated importMap and
+      // imported by custom admin components added in later gallery tickets.
+      ignoreDependencies: ['@payloadcms/ui']
+    },
     '.': {
       entry: [
         '{build,scripts}/**/*.{js,ts}',

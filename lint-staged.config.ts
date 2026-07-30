@@ -1,22 +1,38 @@
 import path from 'node:path'
 
+const isCms = (file: string) => toRelative(file).startsWith('apps/cms/')
+
 export default {
   'tests-ui/**': () =>
     'echo "Files in tests-ui/ are deprecated. Colocate tests with source files." && exit 1',
 
+  // apps/cms is a Payload app with its own Prettier + ESLint; it is excluded
+  // from the repo-wide oxfmt/stylelint gates, so run its own gates instead.
+  'apps/cms/**': () => ['pnpm --filter @comfyorg/cms exec prettier --check .'],
+  'apps/cms/**/*.{ts,tsx,mjs,js}': () => [
+    'pnpm lint:cms',
+    'pnpm typecheck:cms'
+  ],
+
   './**/*.{css,vue}': (stagedFiles: string[]) => {
-    const joinedPaths = toJoinedRelativePaths(stagedFiles)
-    return [`pnpm exec stylelint --allow-empty-input ${joinedPaths}`]
+    const files = stagedFiles.filter((f) => !isCms(f))
+    if (!files.length) return []
+    return [
+      `pnpm exec stylelint --allow-empty-input ${toJoinedRelativePaths(files)}`
+    ]
   },
 
-  './**/*.js': (stagedFiles: string[]) => formatAndEslint(stagedFiles),
+  './**/*.js': (stagedFiles: string[]) => {
+    const files = stagedFiles.filter((f) => !isCms(f))
+    return files.length ? formatAndEslint(files) : []
+  },
 
   './**/*.{ts,tsx,vue,mts,json,yaml,md}': (stagedFiles: string[]) => {
-    const commands = [...formatAndEslint(stagedFiles), 'pnpm typecheck']
+    const files = stagedFiles.filter((f) => !isCms(f))
+    if (!files.length) return []
 
-    const relativePaths = stagedFiles.map((f) =>
-      path.relative(process.cwd(), f).replace(/\\/g, '/')
-    )
+    const commands = [...formatAndEslint(files), 'pnpm typecheck']
+    const relativePaths = files.map(toRelative)
 
     if (relativePaths.some((f) => f.startsWith('browser_tests/'))) {
       commands.push('pnpm typecheck:browser')
@@ -39,9 +55,10 @@ function formatAndEslint(fileNames: string[]) {
   ]
 }
 
+function toRelative(file: string) {
+  return path.relative(process.cwd(), file).replace(/\\/g, '/')
+}
+
 function toJoinedRelativePaths(fileNames: string[]) {
-  const relativePaths = fileNames.map((f) =>
-    path.relative(process.cwd(), f).replace(/\\/g, '/')
-  )
-  return relativePaths.map((p) => `"${p}"`).join(' ')
+  return fileNames.map((f) => `"${toRelative(f)}"`).join(' ')
 }
