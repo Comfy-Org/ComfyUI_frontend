@@ -239,7 +239,11 @@
                           )
                         "
                         :aria-label="
-                          t('rightSidePanel.infoFor', { item: item.label })
+                          t(
+                            'rightSidePanel.infoFor',
+                            { item: item.label },
+                            { escapeParameter: false }
+                          )
                         "
                         :aria-controls="getExecutionItemDetailId(item.key)"
                         :aria-expanded="isExecutionItemDetailExpanded(item.key)"
@@ -248,19 +252,18 @@
                         <i class="icon-[lucide--info] size-3.5" />
                       </Button>
                     </span>
-                    <Button
-                      variant="textonly"
-                      size="icon-sm"
-                      class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
-                      :aria-label="
-                        t('rightSidePanel.locateNodeFor', {
-                          item: item.label
-                        })
+                    <LocateNodeButton
+                      :label="
+                        t(
+                          'rightSidePanel.locateNodeFor',
+                          {
+                            item: item.label
+                          },
+                          { escapeParameter: false }
+                        )
                       "
-                      @click.stop="handleLocateNode(item.nodeId)"
-                    >
-                      <i class="icon-[lucide--locate] size-4" />
-                    </Button>
+                      @locate="handleLocateNode(item.nodeId)"
+                    />
                   </div>
                   <TransitionCollapse>
                     <p
@@ -323,6 +326,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
+import { useTelemetry } from '@/platform/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -332,6 +336,7 @@ import TransitionCollapse from '../layout/TransitionCollapse.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import ErrorCardSection from './ErrorCardSection.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
+import LocateNodeButton from './LocateNodeButton.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
@@ -415,6 +420,10 @@ function toggleExecutionItemDetail(key: string) {
     nextKeys.delete(key)
   } else {
     nextKeys.add(key)
+    useTelemetry()?.trackUiButtonClicked({
+      button_id: 'error_tab_info_opened',
+      element_group: 'errors_panel'
+    })
   }
   expandedExecutionItemDetailKeys.value = nextKeys
 }
