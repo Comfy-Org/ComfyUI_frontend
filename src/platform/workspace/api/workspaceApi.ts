@@ -275,6 +275,8 @@ export interface BillingStatusResponse {
   subscription_tier?: SubscriptionTier
   subscription_duration?: SubscriptionDuration
   plan_slug?: string
+  scheduled_plan_slug?: string
+  change_at?: string
   billing_status?: BillingStatus
   pending_billing_op_id?: string
   action_url?: string

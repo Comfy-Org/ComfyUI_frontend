@@ -11,6 +11,7 @@ import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricin
 import type {
   BillingSubscriptionStatus,
   CurrentTeamCreditStop,
+  Plan,
   TeamCreditStops
 } from '@/platform/workspace/api/workspaceApi'
 
@@ -58,6 +59,8 @@ const mockSubscriptionStatus = ref<BillingSubscriptionStatus>('active')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockRenewalDate = ref<string | null>(RENEWAL_DATE_ISO)
 const mockEndDate = ref<string | null>(END_DATE_ISO)
+const mockScheduledPlanSlug = ref<string | null>(null)
+const mockChangeAt = ref<string | null>(null)
 const mockHasSubscription = ref(true)
 const mockIsActiveSubscription = ref(true)
 const mockIsInPersonalWorkspace = ref(false)
@@ -107,6 +110,22 @@ const mockUiConfig = ref<MenuUiConfig>(ownerUiConfig)
 const mockSubscriptionTier = ref<SubscriptionInfo['tier']>('PRO')
 const mockPlanSlug = ref('team-monthly')
 const mockHasTeamPlan = ref(true)
+const mockPlans = ref<Plan[]>([
+  {
+    slug: 'pro-annual',
+    tier: 'PRO',
+    duration: 'ANNUAL',
+    price_cents: 96000,
+    credits_cents: 253200,
+    max_seats: 1,
+    availability: { available: true },
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: 96000,
+      total_credits_cents: 253200
+    }
+  }
+])
 
 const mockSubscription = computed<SubscriptionInfo | null>(() =>
   mockHasSubscription.value
@@ -115,6 +134,8 @@ const mockSubscription = computed<SubscriptionInfo | null>(() =>
         tier: mockSubscriptionTier.value,
         duration: mockSubscriptionDuration.value,
         planSlug: mockPlanSlug.value,
+        scheduledPlanSlug: mockScheduledPlanSlug.value,
+        changeAt: mockChangeAt.value,
         renewalDate: mockRenewalDate.value,
         endDate: mockEndDate.value,
         isCancelled: mockSubscriptionStatus.value === 'canceled',
@@ -136,6 +157,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isFreeTier: computed(() => false),
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
+    plans: mockPlans,
     subscriptionStatus: mockSubscriptionStatus,
     teamCreditStops: mockTeamCreditStops,
     currentTeamCreditStop: mockCurrentTeamCreditStop,
@@ -277,6 +299,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockSubscriptionStatus.value = 'active'
     mockRenewalDate.value = RENEWAL_DATE_ISO
     mockEndDate.value = END_DATE_ISO
+    mockScheduledPlanSlug.value = null
+    mockChangeAt.value = null
     mockHasSubscription.value = true
     mockIsActiveSubscription.value = true
     mockIsInPersonalWorkspace.value = false
@@ -350,6 +374,26 @@ describe('SubscriptionPanelContentWorkspace', () => {
       'data-show-invoice-history',
       'true'
     )
+  })
+
+  it('shows a scheduled plan change instead of the renewal date', () => {
+    mockScheduledPlanSlug.value = 'pro-annual'
+    mockChangeAt.value = END_DATE_ISO
+    renderComponent()
+
+    expect(
+      screen.getByText(`Changes to Pro on ${formatPanelDate(END_DATE_ISO)}`)
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/^Renews on/i)).not.toBeInTheDocument()
+  })
+
+  it('does not show an incomplete scheduled plan change', () => {
+    mockScheduledPlanSlug.value = 'missing-plan'
+    mockChangeAt.value = END_DATE_ISO
+    renderComponent()
+
+    expect(screen.queryByText(/^Changes to/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Renews on/i)).not.toBeInTheDocument()
   })
 
   it.for([null, 'not-a-date', '2026-02-31T12:00:00Z'])(
@@ -485,6 +529,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('shows dated cancellation copy while a cancelled plan remains active', async () => {
     const user = userEvent.setup()
     mockSubscriptionStatus.value = 'canceled'
+    mockScheduledPlanSlug.value = 'pro-annual'
+    mockChangeAt.value = RENEWAL_DATE_ISO
     mockCanLeaveWorkspace.value = false
     renderComponent()
 
@@ -499,6 +545,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.queryByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
     ).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Changes to/i)).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Manage billing' })
     ).toBeInTheDocument()
