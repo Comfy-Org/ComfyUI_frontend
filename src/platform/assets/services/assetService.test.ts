@@ -43,7 +43,8 @@ vi.mock('@/stores/modelToNodeStore', () => {
   }
   const nodeTypeCategories: Record<string, string> = {
     CheckpointLoaderSimple: 'checkpoints',
-    LoraLoader: 'loras'
+    LoraLoader: 'loras',
+    AILab_QwenVL: 'LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct'
   }
   return {
     useModelToNodeStore: vi.fn(() => ({
@@ -1207,6 +1208,20 @@ describe(assetService.getAssetsPageForNodeType, () => {
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('offset')).toBe('500')
     expect(params.has('after')).toBe(false)
+  })
+
+  describe('QwenVL model directories', () => {
+    it.fails('lists models from every registered QwenVL directory, not just the first one (Qwen3-VL-8B-Instruct is currently unreachable in the dropdown)', async () => {
+      fetchApiMock.mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'qwen3-vl-8b-instruct' })])
+      )
+
+      await assetService.getAssetsPageForNodeType('AILab_QwenVL')
+
+      const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+      const params = new URL(requestedUrl, 'http://localhost').searchParams
+      expect(params.get('include_tags')).toContain('Qwen3-VL-8B-Instruct')
+    })
   })
 })
 
