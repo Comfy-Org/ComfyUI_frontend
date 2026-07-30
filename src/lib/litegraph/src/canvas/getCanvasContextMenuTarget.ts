@@ -21,7 +21,10 @@ export function getCanvasContextMenuTarget(
 
   let reroute: Reroute | undefined
   if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-    const layoutHit = layoutStore.queryRerouteAtPoint({ x, y })
+    const layoutHit = layoutStore.queryRerouteAtPoint(graph.rootGraph.id, {
+      x,
+      y
+    })
     reroute =
       (layoutHit ? graph.getReroute(layoutHit.id) : undefined) ??
       graph.getRerouteOnPos(

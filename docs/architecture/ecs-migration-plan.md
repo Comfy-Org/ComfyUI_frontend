@@ -808,7 +808,7 @@ The dedicated stores use per-concern keying strategies:
 | ------------------------- | ------------------------------------------------------------------------------------ |
 | `widgetValueStore`        | `WidgetId` (`graphId:nodeId:name`)                                                   |
 | `domWidgetStore`          | Widget UUID                                                                          |
-| `layoutStore`             | Raw nodeId/linkId/rerouteId                                                          |
+| `layoutStore`             | Raw node/link IDs; `${rootGraphId}:${localId}` for group/reroute geometry            |
 | `nodeOutputStore`         | `"${subgraphId}:${nodeId}"`                                                          |
 | `subgraphNavigationStore` | subgraphId or `'root'`                                                               |
 | `linkStore`               | `` `${targetNodeId}:${targetSlot}` `` (target input slot), root-graph-scoped buckets |

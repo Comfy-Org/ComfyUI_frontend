@@ -57,9 +57,8 @@ all graphs increment one shared `lastRerouteId` counter.
 
 Serialized workflows from older frontends or external tools can carry
 colliding reroute ids across sibling subgraph definitions. Today this is
-tolerated only because `graph.reroutes` is a per-graph map; a root-scoped
-bucket would break on it, and the layout store's bare-`rerouteId` keying
-already collides latently.
+bucket would break on it. Layout geometry now uses the same root-graph scope,
+so duplicate reroute IDs within one root still require load-time repair.
 
 On configure, colliding subgraph reroute ids are rewritten to fresh ids
 from the shared counter, patching that subgraph's `link.parentId` and

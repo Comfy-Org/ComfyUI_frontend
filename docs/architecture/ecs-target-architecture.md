@@ -18,7 +18,8 @@ Map&lt;WidgetId, WidgetValue&gt;"]
         DomWidgetStore["domWidgetStore
 Map&lt;WidgetId, DomWidgetState&gt;"]
         LayoutStore["layoutStore (Y.js CRDT)
-nodeId / linkId / rerouteId → geometry"]
+raw nodeId/linkId; rootGraphId:localId
+for group/reroute geometry"]
         LinkStore["linkStore
 rootGraphId → targetNodeId:targetSlot
 → LinkTopology"]
@@ -68,7 +69,7 @@ graphId:nodeId:name
 subgraphId:nodeId"]
         NID["nodeId (raw)"]
         LID["linkId (raw)"]
-        RID["rerouteId (raw)"]
+        RID["rootGraphId:rerouteId"]
         TIS["targetNodeId:targetSlot
 (root-graph-scoped bucket)"]
     end

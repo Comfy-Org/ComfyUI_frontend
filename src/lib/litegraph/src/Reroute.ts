@@ -62,6 +62,7 @@ export class Reroute
 
   /** The network this reroute belongs to.  Contains all valid links and reroutes. */
   private readonly network: WeakRef<LinkNetwork>
+  private readonly rootGraphId: UUID
 
   /**
    * The reroute's chain state. Once registered with {@link useRerouteStore},
@@ -126,12 +127,18 @@ export class Reroute
       )
 
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.moveReroute(this.id, { x: value[0], y: value[1] })
+    layoutMutations.moveReroute(this.rootGraphId, this.id, {
+      x: value[0],
+      y: value[1]
+    })
   }
 
   /** Reads the stored point without the array {@link pos} allocates. */
   private get storedPosition(): { x: number; y: number } {
-    return layoutStore.getRerouteLayout(this.id)?.position ?? ORIGIN
+    return (
+      layoutStore.getRerouteLayout(this.rootGraphId, this.id)?.position ??
+      ORIGIN
+    )
   }
 
   /** @inheritdoc */
@@ -264,11 +271,15 @@ export class Reroute
   ) {
     this.id = id
     this.network = new WeakRef(network)
+    this.rootGraphId = network.rootGraph.id
     this._chain = { id }
     this.parentId = parentId
 
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createReroute(id, { x: pos?.[0] ?? 0, y: pos?.[1] ?? 0 })
+    layoutMutations.createReroute(this.rootGraphId, id, {
+      x: pos?.[0] ?? 0,
+      y: pos?.[1] ?? 0
+    })
   }
 
   /**

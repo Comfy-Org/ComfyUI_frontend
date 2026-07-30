@@ -4,6 +4,7 @@ import { beforeEach, describe, expect } from 'vitest'
 
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { test } from './__fixtures__/testExtensions'
 
@@ -98,14 +99,14 @@ describe('group layout in layoutStore', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, 801)
 
-    expect(layoutStore.getGroupLayout(801)).toEqual({
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, 801)).toEqual({
       id: 801,
       position: { x: 100, y: 100 },
       size: { width: 300, height: 200 }
     })
 
     graph.remove(group)
-    expect(layoutStore.getGroupLayout(801)).toBeNull()
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, 801)).toBeNull()
   })
 
   test('drops entries when the graph is cleared', () => {
@@ -114,7 +115,37 @@ describe('group layout in layoutStore', () => {
 
     graph.clear()
 
-    expect(layoutStore.getGroupLayout(802)).toBeNull()
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, 802)).toBeNull()
+  })
+
+  test('isolates colliding group IDs across live root graphs', () => {
+    const firstGraph = new LGraph()
+    const secondGraph = new LGraph()
+    firstGraph.id = createUuidv4()
+    secondGraph.id = createUuidv4()
+    const firstGroup = addedGroup(firstGraph, 803)
+    const secondGroup = addedGroup(secondGraph, 803)
+
+    firstGroup.pos = [20, 30]
+    secondGroup.pos = [200, 300]
+
+    expect(layoutStore.getGroupLayout(firstGraph.id, 803)?.position).toEqual({
+      x: 20,
+      y: 30
+    })
+    expect(layoutStore.getGroupLayout(secondGraph.id, 803)?.position).toEqual({
+      x: 200,
+      y: 300
+    })
+
+    firstGraph.remove(firstGroup)
+    expect(layoutStore.getGroupLayout(firstGraph.id, 803)).toBeNull()
+    expect(layoutStore.getGroupLayout(secondGraph.id, 803)).not.toBeNull()
+
+    firstGraph.clear()
+    expect(
+      layoutStore.getGroupLayout(secondGraph.id, secondGroup.id)
+    ).not.toBeNull()
   })
 
   describe('every geometry mutation keeps the store in step', () => {
@@ -142,7 +173,7 @@ describe('group layout in layoutStore', () => {
 
       mutate(group)
 
-      expect(layoutStore.getGroupLayout(group.id)).toEqual({
+      expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
         id: group.id,
         position: { x: group.pos[0], y: group.pos[1] },
         size: { width: group.size[0], height: group.size[1] }
@@ -162,7 +193,7 @@ describe('group layout in layoutStore', () => {
 
     // Narrower than minWidth: fit-to-contents deliberately does not clamp.
     expect(group.size[0]).toBeLessThan(LGraphGroup.minWidth)
-    expect(layoutStore.getGroupLayout(group.id)).toEqual({
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
       id: group.id,
       position: { x: group.pos[0], y: group.pos[1] },
       size: { width: group.size[0], height: group.size[1] }
@@ -191,7 +222,7 @@ describe('group layout in layoutStore', () => {
     group.size[1] = 450
     group._bounding.set([30, 40, 500, 600])
 
-    expect(layoutStore.getGroupLayout(group.id)).toEqual({
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
       id: group.id,
       position: { x: 30, y: 40 },
       size: { width: 500, height: 600 }
@@ -211,6 +242,7 @@ describe('group layout in layoutStore', () => {
       timestamp: 1,
       source: layoutStore.getCurrentSource(),
       entity: 'group',
+      graphId: graph.rootGraph.id,
       groupId: group.id,
       position: { x: 11, y: 12 },
       size: { width: 410, height: 310 }
@@ -227,7 +259,7 @@ describe('group layout in layoutStore', () => {
   test('group collections react to nested bounds updates', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, 808)
-    const groups = layoutStore.getAllGroups()
+    const groups = layoutStore.getAllGroups(graph.rootGraph.id)
 
     expect(groups.value.get(group.id)?.position.x).toBe(100)
 

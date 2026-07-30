@@ -15,6 +15,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { toRerouteId } from '@/types/rerouteId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
 
@@ -206,7 +207,9 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     reroute.snapToGrid(10)
 
-    expect(layoutStore.getRerouteLayout(reroute.id)?.position).toEqual({
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({
       x: reroute.pos[0],
       y: reroute.pos[1]
     })
@@ -272,10 +275,47 @@ describe('Reroute position lives only in layoutStore', () => {
 
     const reroute = graph.createReroute([37, 41], link)!
 
-    expect(layoutStore.getRerouteLayout(reroute.id)?.position).toEqual({
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({
       x: 37,
       y: 41
     })
+  })
+
+  it('isolates colliding reroute IDs across live root graphs', () => {
+    const firstGraph = new LGraph()
+    const secondGraph = new LGraph()
+    firstGraph.id = createUuidv4()
+    secondGraph.id = createUuidv4()
+    const rerouteId = toRerouteId(12)
+    const first = firstGraph.setReroute({
+      id: rerouteId,
+      pos: [10, 20],
+      linkIds: []
+    })
+    const second = secondGraph.setReroute({
+      id: rerouteId,
+      pos: [100, 200],
+      linkIds: []
+    })
+
+    first.pos = [30, 40]
+    expect(
+      layoutStore.getRerouteLayout(firstGraph.id, rerouteId)?.position
+    ).toEqual({ x: 30, y: 40 })
+    expect(
+      layoutStore.getRerouteLayout(secondGraph.id, rerouteId)?.position
+    ).toEqual({ x: 100, y: 200 })
+
+    firstGraph.removeReroute(rerouteId)
+    expect(layoutStore.getRerouteLayout(firstGraph.id, rerouteId)).toBeNull()
+    expect([...second.pos]).toEqual([100, 200])
+
+    firstGraph.clear()
+    expect(
+      layoutStore.getRerouteLayout(secondGraph.id, rerouteId)
+    ).not.toBeNull()
   })
 
   it('reads a store write back through pos, with no class-side copy', () => {
@@ -284,7 +324,10 @@ describe('Reroute position lives only in layoutStore', () => {
 
     // Move it in the store only. A mirrored copy on the class could not see
     // this without a synchronisation step.
-    useLayoutMutations().moveReroute(reroute.id, { x: 300, y: 400 })
+    useLayoutMutations().moveReroute(graph.rootGraph.id, reroute.id, {
+      x: 300,
+      y: 400
+    })
 
     expect([...reroute.pos]).toEqual([300, 400])
     expect(reroute.boundingRect[0]).toBe(300 - Reroute.radius)
@@ -295,14 +338,18 @@ describe('Reroute position lives only in layoutStore', () => {
     const reroute = graph.createReroute([10, 10], link)!
 
     reroute.move(5, 7)
-    expect(layoutStore.getRerouteLayout(reroute.id)?.position).toEqual({
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({
       x: 15,
       y: 17
     })
 
     // y snaps about an offset of NODE_SLOT_HEIGHT * 0.7, so it lands on 14.
     reroute.snapToGrid(10)
-    expect(layoutStore.getRerouteLayout(reroute.id)?.position).toEqual({
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({
       x: 20,
       y: 14
     })

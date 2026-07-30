@@ -2369,10 +2369,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         } else if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
           // Reroutes
           // Try layout store first, fallback to old method
-          const rerouteLayout = layoutStore.queryRerouteAtPoint({
-            x: e.canvasX,
-            y: e.canvasY
-          })
+          const rerouteLayout = layoutStore.queryRerouteAtPoint(
+            graph.rootGraph.id,
+            {
+              x: e.canvasX,
+              y: e.canvasY
+            }
+          )
 
           let reroute = rerouteLayout
             ? graph.getReroute(rerouteLayout.id)
@@ -2534,7 +2537,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // Reroutes
       if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
         // Try layout store first for hit detection
-        const rerouteLayout = layoutStore.queryRerouteAtPoint({ x, y })
+        const rerouteLayout = layoutStore.queryRerouteAtPoint(
+          graph.rootGraph.id,
+          { x, y }
+        )
         let foundReroute: Reroute | undefined
 
         if (rerouteLayout) {

@@ -11,6 +11,7 @@ import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import type { SlotDirection, SlotId, SlotIndex } from '@/types/slotId'
+import type { UUID } from '@/utils/uuid'
 
 // Enum for layout source types
 export enum LayoutSource {
@@ -127,6 +128,7 @@ interface OperationMeta {
 type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
 type RerouteOpBase = OperationMeta & {
   entity: 'reroute'
+  graphId: UUID
   rerouteId: RerouteId
 }
 
@@ -228,7 +230,11 @@ export interface MoveRerouteOperation extends RerouteOpBase {
   position: Point
 }
 
-type GroupOpBase = OperationMeta & { entity: 'group'; groupId: GroupId }
+type GroupOpBase = OperationMeta & {
+  entity: 'group'
+  graphId: UUID
+  groupId: GroupId
+}
 
 interface CreateGroupOperation extends GroupOpBase {
   type: 'createGroup'
@@ -281,7 +287,8 @@ export interface LayoutStore {
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
   getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
-  getAllGroups(): ComputedRef<ReadonlyMap<GroupId, GroupLayout>>
+  getAllGroups(graphId: UUID): ComputedRef<ReadonlyMap<GroupId, GroupLayout>>
+  getGroupLayout(graphId: UUID, groupId: GroupId): GroupLayout | null
   getVersion(): ComputedRef<number>
 
   // Spatial queries (non-reactive)
@@ -295,8 +302,11 @@ export interface LayoutStore {
     ctx?: CanvasRenderingContext2D
   ): { linkId: LinkId; rerouteId: RerouteId | null } | null
   querySlotAtPoint(point: Point): SlotLayout | null
-  queryRerouteAtPoint(point: Point): RerouteLayout | null
-  queryItemsInBounds(bounds: Bounds): {
+  queryRerouteAtPoint(graphId: UUID, point: Point): RerouteLayout | null
+  queryItemsInBounds(
+    graphId: UUID,
+    bounds: Bounds
+  ): {
     nodes: NodeId[]
     links: LinkId[]
     slots: SlotId[]
@@ -311,7 +321,11 @@ export interface LayoutStore {
     layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
   ): void
   updateSlotLayout(key: SlotId, layout: SlotLayout): void
-  updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void
+  updateRerouteLayout(
+    graphId: UUID,
+    rerouteId: RerouteId,
+    layout: RerouteLayout
+  ): void
 
   // Delete methods for cleanup
   deleteLinkLayout(linkId: LinkId): void
@@ -322,7 +336,7 @@ export interface LayoutStore {
   // Get layout data
   getLinkLayout(linkId: LinkId): LinkLayout | null
   getSlotLayout(key: SlotId): SlotLayout | null
-  getRerouteLayout(rerouteId: RerouteId): RerouteLayout | null
+  getRerouteLayout(graphId: UUID, rerouteId: RerouteId): RerouteLayout | null
 
   // Returns all slot layout keys currently tracked by the store
   getAllSlotKeys(): SlotId[]

@@ -7,6 +7,7 @@
 import log from 'loglevel'
 
 import type { NodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
 import type {
@@ -29,14 +30,23 @@ interface LayoutMutations {
   deleteNode(nodeId: NodeId): void
 
   // Reroute operations
-  createReroute(rerouteId: RerouteId, position: Point): void
-  deleteReroute(rerouteId: RerouteId): void
-  moveReroute(rerouteId: RerouteId, position: Point): void
+  createReroute(graphId: UUID, rerouteId: RerouteId, position: Point): void
+  deleteReroute(graphId: UUID, rerouteId: RerouteId): void
+  moveReroute(graphId: UUID, rerouteId: RerouteId, position: Point): void
 
   // Group operations
-  createGroup(groupId: GroupId, layout: Omit<GroupLayout, 'id'>): void
-  setGroupBounds(groupId: GroupId, position: Point, size: Size): void
-  deleteGroup(groupId: GroupId): void
+  createGroup(
+    graphId: UUID,
+    groupId: GroupId,
+    layout: Omit<GroupLayout, 'id'>
+  ): void
+  setGroupBounds(
+    graphId: UUID,
+    groupId: GroupId,
+    position: Point,
+    size: Size
+  ): void
+  deleteGroup(graphId: UUID, groupId: GroupId): void
 
   bringNodeToFront(nodeId: NodeId): void
   setSource(source: LayoutSource): void
@@ -205,11 +215,16 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Create a new reroute
    */
-  const createReroute = (rerouteId: RerouteId, position: Point): void => {
+  const createReroute = (
+    graphId: UUID,
+    rerouteId: RerouteId,
+    position: Point
+  ): void => {
     logger.debug('Creating reroute:', { rerouteId, position })
     layoutStore.applyOperation({
       type: 'createReroute',
       entity: 'reroute',
+      graphId,
       rerouteId,
       position,
       timestamp: Date.now(),
@@ -219,12 +234,14 @@ export function useLayoutMutations(): LayoutMutations {
   }
 
   const createGroup = (
+    graphId: UUID,
     groupId: GroupId,
     layout: Omit<GroupLayout, 'id'>
   ): void => {
     layoutStore.applyOperation({
       type: 'createGroup',
       entity: 'group',
+      graphId,
       groupId,
       layout: { id: groupId, ...layout },
       timestamp: Date.now(),
@@ -234,16 +251,18 @@ export function useLayoutMutations(): LayoutMutations {
   }
 
   const setGroupBounds = (
+    graphId: UUID,
     groupId: GroupId,
     position: Point,
     size: Size
   ): void => {
-    const existing = layoutStore.getGroupLayout(groupId)
+    const existing = layoutStore.getGroupLayout(graphId, groupId)
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'setGroupBounds',
       entity: 'group',
+      graphId,
       groupId,
       position,
       size,
@@ -253,10 +272,11 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  const deleteGroup = (groupId: GroupId): void => {
+  const deleteGroup = (graphId: UUID, groupId: GroupId): void => {
     layoutStore.applyOperation({
       type: 'deleteGroup',
       entity: 'group',
+      graphId,
       groupId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -267,11 +287,12 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Delete a reroute
    */
-  const deleteReroute = (rerouteId: RerouteId): void => {
+  const deleteReroute = (graphId: UUID, rerouteId: RerouteId): void => {
     logger.debug('Deleting reroute:', rerouteId)
     layoutStore.applyOperation({
       type: 'deleteReroute',
       entity: 'reroute',
+      graphId,
       rerouteId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -282,10 +303,15 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Move a reroute
    */
-  const moveReroute = (rerouteId: RerouteId, position: Point): void => {
+  const moveReroute = (
+    graphId: UUID,
+    rerouteId: RerouteId,
+    position: Point
+  ): void => {
     layoutStore.applyOperation({
       type: 'moveReroute',
       entity: 'reroute',
+      graphId,
       rerouteId,
       position,
       timestamp: Date.now(),

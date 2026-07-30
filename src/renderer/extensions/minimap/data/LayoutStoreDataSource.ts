@@ -56,10 +56,11 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
    * root graph's `state`, so the flat store map cannot mix two live groups up.
    */
   override getGroups(): MinimapGroupData[] {
-    const groups = this.graph?._groups
-    if (!groups?.length) return []
+    const graph = this.graph
+    const groups = graph?._groups
+    if (!graph || !groups?.length) return []
 
-    const layouts = layoutStore.getAllGroups().value
+    const layouts = layoutStore.getAllGroups(graph.rootGraph.id).value
     return groups.flatMap((group): MinimapGroupData[] => {
       const layout = layouts.get(group.id)
       if (!layout) return []

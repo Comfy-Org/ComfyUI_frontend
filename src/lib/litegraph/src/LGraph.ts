@@ -503,12 +503,22 @@ export class LGraph
       unregisterAllNodeStates(this)
     }
 
-    if (this._groups.length || this.reroutes.size) {
+    const graphsToClear = this.isRootGraph
+      ? [this, ...this.subgraphs.values()]
+      : [this]
+    if (
+      graphsToClear.some((graph) => graph._groups.length || graph.reroutes.size)
+    ) {
+      const rootGraphId = this.rootGraph.id
       const layoutMutations = useLayoutMutations()
       layoutMutations.setSource(LayoutSource.Canvas)
-      for (const group of this._groups) layoutMutations.deleteGroup(group.id)
-      for (const rerouteId of this.reroutes.keys()) {
-        layoutMutations.deleteReroute(rerouteId)
+      for (const graph of graphsToClear) {
+        for (const group of graph._groups) {
+          layoutMutations.deleteGroup(rootGraphId, group.id)
+        }
+        for (const rerouteId of graph.reroutes.keys()) {
+          layoutMutations.deleteReroute(rootGraphId, rerouteId)
+        }
       }
     }
 
@@ -1087,7 +1097,7 @@ export class LGraph
       const { pos, size } = node
       const layoutMutations = useLayoutMutations()
       layoutMutations.setSource(LayoutSource.Canvas)
-      layoutMutations.createGroup(node.id, {
+      layoutMutations.createGroup(this.rootGraph.id, node.id, {
         position: { x: pos[0], y: pos[1] },
         size: { width: size[0], height: size[1] }
       })
@@ -1187,7 +1197,7 @@ export class LGraph
       }
       const layoutMutations = useLayoutMutations()
       layoutMutations.setSource(LayoutSource.Canvas)
-      layoutMutations.deleteGroup(node.id)
+      layoutMutations.deleteGroup(this.rootGraph.id, node.id)
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)
@@ -1616,7 +1626,7 @@ export class LGraph
     unregisterRerouteChain(reroute)
     const layoutMutations = useLayoutMutations()
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteReroute(id)
+    layoutMutations.deleteReroute(this.rootGraph.id, id)
   }
 
   /**

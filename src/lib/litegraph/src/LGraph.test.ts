@@ -20,7 +20,7 @@ import type {
   SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
-import { zeroUuid } from '@/utils/uuid'
+import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
@@ -1306,6 +1306,28 @@ describe('Subgraph Unpacking', () => {
     expect(rootGraph.links.size).toBe(1)
   })
 
+  it('clears subgraph geometry only for the owning root graph', () => {
+    registerTestNodes()
+    const firstRoot = new LGraph()
+    const secondRoot = new LGraph()
+    firstRoot.id = createUuidv4()
+    secondRoot.id = createUuidv4()
+    const firstRootId = firstRoot.id
+    const subgraph = createSubgraphOnGraph(firstRoot)
+    const subgraphGroup = new LGraphGroup('subgraph group', 909)
+    const secondGroup = new LGraphGroup('second root group', 909)
+
+    subgraph.add(subgraphGroup)
+    secondRoot.add(secondGroup)
+    expect(layoutStore.getGroupLayout(firstRoot.id, 909)).not.toBeNull()
+    expect(layoutStore.getGroupLayout(secondRoot.id, 909)).not.toBeNull()
+
+    firstRoot.clear()
+
+    expect(layoutStore.getGroupLayout(firstRootId, 909)).toBeNull()
+    expect(layoutStore.getGroupLayout(secondRoot.id, 909)).not.toBeNull()
+  })
+
   it('offsets unpacked group geometry in the layout store too', () => {
     registerTestNodes()
     const rootGraph = new LGraph()
@@ -1324,7 +1346,9 @@ describe('Subgraph Unpacking', () => {
     // The unpacked copy is offset by the wrapper position; element-wise writes
     // would reach _pos and leave the store holding the pre-offset value.
     const unpacked = rootGraph.groups.find((g) => g.title === 'inner')!
-    expect(layoutStore.getGroupLayout(unpacked.id)?.position).toEqual({
+    expect(
+      layoutStore.getGroupLayout(rootGraph.id, unpacked.id)?.position
+    ).toEqual({
       x: unpacked.pos[0],
       y: unpacked.pos[1]
     })

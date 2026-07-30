@@ -26,6 +26,13 @@ import type { UUID } from '@/utils/uuid'
 
 const layouts = vi.hoisted(() => new Map<string, NodeLayout>())
 const groupLayouts = vi.hoisted(() => new Map<number, GroupLayout>())
+const getAllGroups = vi.hoisted(() =>
+  vi.fn(() => ({
+    get value() {
+      return groupLayouts
+    }
+  }))
+)
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
@@ -34,11 +41,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
         return layouts.get(String(nodeId)) ?? null
       }
     })),
-    getAllGroups: vi.fn(() => ({
-      get value() {
-        return groupLayouts
-      }
-    }))
+    getAllGroups
   }
 }))
 
@@ -221,6 +224,7 @@ describe('MinimapDataSource', () => {
       expect(dataSource.getGroups()).toEqual([
         { x: 40, y: 60, width: 300, height: 200, color: '#abcdef' }
       ])
+      expect(getAllGroups).toHaveBeenCalledWith(GRAPH_ID)
     })
 
     it('skips groups with no store entry', () => {

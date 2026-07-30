@@ -12,17 +12,17 @@ no longer a store; ADR 0009 represents it as ordinary linked `SubgraphInput`
 state, and promoted value data lives in `WidgetValueStore` keyed by the input's
 `WidgetId`.
 
-| Store                   | Extracts From                | Scoping           | Key Format                                                | Data Shape                    |
-| ----------------------- | ---------------------------- | ----------------- | --------------------------------------------------------- | ----------------------------- |
-| WidgetValueStore        | `BaseWidget`                 | `graphId`         | `WidgetId` (`graphId:nodeId:name`)                        | Plain `WidgetState` object    |
-| DomWidgetStore          | `BaseDOMWidget`              | Global            | `widgetId` (UUID)                                         | Position, visibility, z-index |
-| LayoutStore             | Node, Link geometry, Reroute | Workflow-level    | `nodeId`, `linkId`, `rerouteId`                           | Y.js CRDT maps (pos, size)    |
-| NodeOutputStore         | Execution results            | `nodeLocatorId`   | `"${subgraphId}:${nodeId}"`                               | Output data, preview URLs     |
-| SubgraphNavigationStore | Canvas viewport              | `subgraphId`      | `subgraphId` or `'root'`                                  | LRU viewport cache            |
-| PreviewExposureStore    | Subgraph host node           | host node locator | host locator + exposure name                              | Display-only preview state    |
-| LinkStore               | `LLink`                      | Root graph        | `` `${targetNodeId}:${targetSlot}` `` (target input slot) | Plain `LinkTopology` object   |
-| RerouteStore            | `Reroute`                    | Root graph        | `RerouteId`                                               | Plain `RerouteChain` object   |
-| NodeDataStore           | `LGraphNode` shell state     | Root graph        | `NodeId`                                                  | Plain `NodeState` object      |
+| Store                   | Extracts From                       | Scoping                        | Key Format                                                         | Data Shape                    |
+| ----------------------- | ----------------------------------- | ------------------------------ | ------------------------------------------------------------------ | ----------------------------- |
+| WidgetValueStore        | `BaseWidget`                        | `graphId`                      | `WidgetId` (`graphId:nodeId:name`)                                 | Plain `WidgetState` object    |
+| DomWidgetStore          | `BaseDOMWidget`                     | Global                         | `widgetId` (UUID)                                                  | Position, visibility, z-index |
+| LayoutStore             | Node, Link, Group, Reroute geometry | Root graph for groups/reroutes | Raw node/link IDs; `${rootGraphId}:${localId}` for groups/reroutes | Y.js CRDT maps (pos, size)    |
+| NodeOutputStore         | Execution results                   | `nodeLocatorId`                | `"${subgraphId}:${nodeId}"`                                        | Output data, preview URLs     |
+| SubgraphNavigationStore | Canvas viewport                     | `subgraphId`                   | `subgraphId` or `'root'`                                           | LRU viewport cache            |
+| PreviewExposureStore    | Subgraph host node                  | host node locator              | host locator + exposure name                                       | Display-only preview state    |
+| LinkStore               | `LLink`                             | Root graph                     | `` `${targetNodeId}:${targetSlot}` `` (target input slot)          | Plain `LinkTopology` object   |
+| RerouteStore            | `Reroute`                           | Root graph                     | `RerouteId`                                                        | Plain `RerouteChain` object   |
+| NodeDataStore           | `LGraphNode` shell state            | Root graph                     | `NodeId`                                                           | Plain `NodeState` object      |
 
 **Update (2026-07-05):** `LinkStore` (`src/stores/linkStore.ts`, PR #13436) and
 `RerouteStore` (`src/stores/rerouteStore.ts`, PR #13449) hold plain-data records
@@ -173,7 +173,9 @@ The most architecturally advanced extraction — uses Y.js CRDTs for collaborati
 
 ```
 ynodes:    Y.Map<NodeLayoutMap>     // nodeId → { pos, size, zIndex, bounds }
-yreroutes: Y.Map<Y.Map<...>>       // rerouteId → { id, position }
+ygroups:   Y.Map<GroupLayoutMap>    // rootGraphId:groupId → geometry
+
+yreroutes: Y.Map<Y.Map<...>>       // rootGraphId:rerouteId → { id, position }
 ```
 
 **Update (2026-07-05):** The link-connectivity mirror (`ylinks`, `LinkData`,
@@ -190,8 +192,8 @@ only — the write-only `parentId`/`linkIds` fields were removed.
 - `resizeNode(nodeId, size)`
 - `setNodeZIndex(nodeId, zIndex)` / `bringNodeToFront(nodeId)`
 - `createNode(nodeId, layout)` / `deleteNode(nodeId)`
-- `createReroute(rerouteId, pos)` / `deleteReroute(rerouteId)` /
-  `moveReroute(rerouteId, pos, prevPos)`
+- `createReroute(graphId, rerouteId, pos)` /
+  `deleteReroute(graphId, rerouteId)` / `moveReroute(graphId, rerouteId, pos)`
 
 (`createLink`/`removeLink` are gone — link topology is `LinkStore`'s concern.)
 
@@ -209,14 +211,14 @@ These module-scope calls create implicit dependencies on the Vue runtime and mak
 
 ### ECS Alignment
 
-| Aspect                       | ECS-like  | Why                                                     |
-| ---------------------------- | --------- | ------------------------------------------------------- |
-| Position data extracted      | Yes       | Closest to the ECS `Position` component                 |
-| CRDT-ready                   | Yes       | Enables collaboration (ADR 0003)                        |
-| Covers multiple entity kinds | Yes       | Nodes, links, reroutes in one store                     |
-| Mutation API (composable)    | Partially | System-like, but called from entities, not a system     |
-| Module-scope access          | **No**    | Domain objects import store at module level             |
-| Per-store keying             | Yes       | Owns `nodeId`/`linkId`/`rerouteId` keys for its concern |
+| Aspect                       | ECS-like  | Why                                                       |
+| ---------------------------- | --------- | --------------------------------------------------------- |
+| Position data extracted      | Yes       | Closest to the ECS `Position` component                   |
+| CRDT-ready                   | Yes       | Enables collaboration (ADR 0003)                          |
+| Covers multiple entity kinds | Yes       | Nodes, links, reroutes in one store                       |
+| Mutation API (composable)    | Partially | System-like, but called from entities, not a system       |
+| Module-scope access          | **No**    | Domain objects import store at module level               |
+| Per-store keying             | Yes       | Uses raw node/link IDs and root-scoped group/reroute keys |
 
 ## 5. Pattern Analysis
 
@@ -267,14 +269,14 @@ graph TD
 
 Each store owns the identity scheme that fits its concern:
 
-| Store            | Key Format                                                  | Key Type           | Type-Safe?        |
-| ---------------- | ----------------------------------------------------------- | ------------------ | ----------------- |
-| WidgetValueStore | `WidgetId` (`graphId:nodeId:name`)                          | branded string     | Yes (`WidgetId`)  |
-| DomWidgetStore   | Widget UUID                                                 | UUID (string)      | No                |
-| LayoutStore      | Raw nodeId/linkId/rerouteId                                 | Mixed number types | No                |
-| NodeOutputStore  | `"${subgraphId}:${nodeId}"`                                 | Composite string   | No                |
-| LinkStore        | `` `${targetNodeId}:${targetSlot}` `` (root-scoped buckets) | Composite string   | No                |
-| RerouteStore     | `RerouteId` (root-scoped buckets)                           | branded number     | Yes (`RerouteId`) |
+| Store            | Key Format                                                         | Key Type         | Type-Safe?        |
+| ---------------- | ------------------------------------------------------------------ | ---------------- | ----------------- |
+| WidgetValueStore | `WidgetId` (`graphId:nodeId:name`)                                 | branded string   | Yes (`WidgetId`)  |
+| DomWidgetStore   | Widget UUID                                                        | UUID (string)    | No                |
+| LayoutStore      | Raw node/link IDs; `${rootGraphId}:${localId}` for groups/reroutes | Mixed/composite  | Partially         |
+| NodeOutputStore  | `"${subgraphId}:${nodeId}"`                                        | Composite string | No                |
+| LinkStore        | `` `${targetNodeId}:${targetSlot}` `` (root-scoped buckets)        | Composite string | No                |
+| RerouteStore     | `RerouteId` (root-scoped buckets)                                  | branded number   | Yes (`RerouteId`) |
 
 `WidgetValueStore` already keys on a branded `WidgetId` string (`src/types/widgetId.ts`),
 which carries its scope and survives renames at the store layer. The remaining

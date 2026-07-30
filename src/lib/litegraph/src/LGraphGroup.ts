@@ -148,7 +148,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   private syncBoundsFromStore(): void {
     if (!this.graph || this.id === -1) return
 
-    const layout = layoutStore.getGroupLayout(this.id)
+    const layout = layoutStore.getGroupLayout(this.graph.rootGraph.id, this.id)
     if (!layout) return
 
     const { position, size } = layout
@@ -167,7 +167,12 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     }
 
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.setGroupBounds(this.id, { x, y }, { width, height })
+    layoutMutations.setGroupBounds(
+      this.graph.rootGraph.id,
+      this.id,
+      { x, y },
+      { width, height }
+    )
     this.syncBoundsFromStore()
   }
 
