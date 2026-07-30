@@ -238,9 +238,7 @@ describe('installDesktopLoginRedemption', () => {
     ])
     mockFetch.mockResolvedValue(okResponse())
 
-    // The desktop login link lands on /cloud/login; the signed-in guard
-    // forwards to user-check, which ends the handoff in a hard reload. No
-    // prompt may open mid-handoff: the reload would destroy it.
+    // Signed-in landing forwards to user-check; no prompt may open there.
     await router.push(`/cloud/login?desktop_login_code=${VALID_CODE}`)
     await flushRedemption()
 
@@ -249,8 +247,7 @@ describe('installDesktopLoginRedemption', () => {
     expect(mockFetch).not.toHaveBeenCalled()
     expect(stashedCode()).toBe(VALID_CODE)
 
-    // UserCheckView hard-reloads `/`: module state is gone, the
-    // sessionStorage stash is not. The reloaded app prompts exactly once.
+    // user-check hard-reloads `/`; only the sessionStorage stash survives.
     vi.resetModules()
     const reloaded = await setup()
     await reloaded.trigger()
@@ -280,8 +277,7 @@ describe('installDesktopLoginRedemption', () => {
     await flushRedemption()
     expect(mockConfirm).not.toHaveBeenCalled()
 
-    // Signing in on the login page fires the auth watcher mid-handoff; the
-    // prompt must wait for the post-reload triggers on a stable route.
+    // Signing in on the login page fires the auth watcher mid-handoff.
     mockAuthStore.currentUser = {
       uid: 'user-1',
       getIdToken: mockUserGetIdToken

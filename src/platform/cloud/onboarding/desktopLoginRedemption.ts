@@ -50,8 +50,6 @@ let retriggerRequested = false
 
 let authWatcherInstalled = false
 
-// Set at install time so redeemCode can consult the current route: the auth
-// watcher and retry timers trigger drains with no navigation context.
 let activeRouter: Router | null = null
 
 function onAuthHandoffRoute(): boolean {
@@ -140,11 +138,8 @@ async function redeemCode(code: string): Promise<void> {
   const user = useAuthStore().currentUser
   if (!user) return
 
-  // Mid auth handoff (login → user-check): UserCheckView ends the handoff
-  // with a hard reload that would destroy an open approval dialog and any
-  // in-flight redemption, re-prompting after the reload. The stash survives
-  // the reload in sessionStorage; the reloaded app redeems on a stable,
-  // fully themed route via its own navigation and auth-watcher triggers.
+  // Mid-handoff the imminent hard reload would destroy an open dialog; keep
+  // the stash and let the reloaded app prompt on a stable route.
   if (onAuthHandoffRoute()) return
 
   if (!(await confirmRedemption(state, user.uid))) {
@@ -272,9 +267,8 @@ function installAuthWatcherOnce(): void {
  * router.ts) strips the code from the URL at capture time, so the
  * sessionStorage-backed stash is the only place it lives.
  *
- * Routes flagged `meta.defersDesktopLoginRedemption` (the cloud auth
- * handoff) suppress the approval prompt, deferring redemption until the
- * handoff's hard reload lands the app on a stable route.
+ * Routes flagged `meta.defersDesktopLoginRedemption` suppress the prompt:
+ * the auth handoff ends in a hard reload that only the stash survives.
  */
 export function installDesktopLoginRedemption(router: Router): void {
   activeRouter = router
