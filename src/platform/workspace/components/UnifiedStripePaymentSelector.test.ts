@@ -61,6 +61,10 @@ function renderSelector(amountCents = 66500) {
 describe('UnifiedStripePaymentSelector', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
+    vi.stubEnv(
+      'VITE_STRIPE_PAYMENT_METHOD_CONFIGURATION_ID',
+      'pmc_subscription'
+    )
     vi.resetAllMocks()
     stripeMocks.loadStripe.mockResolvedValue(stripeMocks.stripe)
     stripeMocks.stripe.elements.mockReturnValue(stripeMocks.elements)
@@ -85,7 +89,8 @@ describe('UnifiedStripePaymentSelector', () => {
         mode: 'subscription',
         amount: 66500,
         currency: 'usd',
-        setupFutureUsage: 'off_session'
+        setupFutureUsage: 'off_session',
+        paymentMethodConfiguration: 'pmc_subscription'
       })
     })
     expect(stripeMocks.create).toHaveBeenCalledWith('payment', {
