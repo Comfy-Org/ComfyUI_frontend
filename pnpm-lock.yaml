@@ -189,6 +189,9 @@ catalogs:
     '@webgpu/types':
       specifier: ^0.1.66
       version: 0.1.71
+    '@xstate/graph':
+      specifier: ^3.0.4
+      version: 3.0.4
     algoliasearch:
       specifier: ^5.21.0
       version: 5.56.0
@@ -417,6 +420,9 @@ catalogs:
     wwobjloader2:
       specifier: ^6.2.1
       version: 6.2.1
+    xstate:
+      specifier: ^5.32.5
+      version: 5.32.5
     yjs:
       specifier: ^13.6.27
       version: 13.6.31
@@ -657,6 +663,9 @@ importers:
       wwobjloader2:
         specifier: 'catalog:'
         version: 6.2.1(three@0.184.0)
+      xstate:
+        specifier: 'catalog:'
+        version: 5.32.5
       yjs:
         specifier: 'catalog:'
         version: 13.6.31
@@ -742,6 +751,9 @@ importers:
       '@webgpu/types':
         specifier: 'catalog:'
         version: 0.1.71
+      '@xstate/graph':
+        specifier: 'catalog:'
+        version: 3.0.4(xstate@5.32.5)
       cross-env:
         specifier: 'catalog:'
         version: 10.1.0
@@ -4816,6 +4828,11 @@ packages:
 
   '@xstate/fsm@1.6.5':
     resolution: {integrity: sha512-b5o1I6aLNeYlU/3CPlj/Z91ybk1gUsKT+5NAJI+2W4UjvS5KLG28K9v5UvNoFVjHV8PajVZ00RH3vnjyQO7ZAw==}
+
+  '@xstate/graph@3.0.4':
+    resolution: {integrity: sha512-b12RA7E//+7FJVrD09Td+BhHRJbeKZnK+98xXBd+JmccG360xVP1lyzVhUZPgBgwPdmIGBJqhKzmWYJQ9c8ojQ==}
+    peerDependencies:
+      xstate: ^5.19.4
 
   '@xterm/addon-fit@0.10.0':
     resolution: {integrity: sha512-UFYkDm4HUahf2lnEyHvio51TNGiLK66mqP2JoATy7hRZeXaGMRDr00JiSF7m63vR5WKATF605yEggJKsw0JpMQ==}
@@ -9514,6 +9531,9 @@ packages:
   xmlchars@2.2.0:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
 
+  xstate@5.32.5:
+    resolution: {integrity: sha512-ULazi1oe6wGrXl0Frb6otSlkm5HLifbbVTkMk5kkSKqz4TkxJaVpnl6jOJwKeid3ORPxYyZQgNLUSYX9q65SIA==}
+
   xxhash-wasm@1.1.0:
     resolution: {integrity: sha512-147y/6YNh+tlp6nd/2pWq38i9h6mz/EuQ6njIrmW8D1BS5nCqs0P6DG+m6zTGnNz5I+uhZ0SHxBs9BsPrwcKDA==}
 
@@ -13295,6 +13315,10 @@ snapshots:
   '@webgpu/types@0.1.71': {}
 
   '@xstate/fsm@1.6.5': {}
+
+  '@xstate/graph@3.0.4(xstate@5.32.5)':
+    dependencies:
+      xstate: 5.32.5
 
   '@xterm/addon-fit@0.10.0(@xterm/xterm@5.5.0)':
     dependencies:
@@ -19009,6 +19033,8 @@ snapshots:
   xml-name-validator@5.0.0: {}
 
   xmlchars@2.2.0: {}
+
+  xstate@5.32.5: {}
 
   xxhash-wasm@1.1.0: {}
 

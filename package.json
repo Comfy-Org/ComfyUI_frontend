@@ -134,6 +134,7 @@
     "vue-router": "catalog:",
     "vuefire": "catalog:",
     "wwobjloader2": "catalog:",
+    "xstate": "catalog:",
     "yjs": "catalog:",
     "zod": "catalog:",
     "zod-validation-error": "catalog:"
@@ -164,6 +165,7 @@
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "@webgpu/types": "catalog:",
+    "@xstate/graph": "catalog:",
     "cross-env": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
