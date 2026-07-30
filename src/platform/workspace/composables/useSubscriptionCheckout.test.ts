@@ -665,6 +665,101 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewData.value).toStrictEqual(transition)
     })
 
+    it('blocks confirmation until the Team change preview resolves', async () => {
+      let resolvePreview!: (preview: Partial<PreviewSubscribeResponse>) => void
+      mockPreviewSubscribe.mockImplementationOnce(
+        () =>
+          new Promise<Partial<PreviewSubscribeResponse>>((resolve) => {
+            resolvePreview = resolve
+          })
+      )
+      const checkout = await setup()
+
+      const selectionPromise = checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.checkoutStep.value).toBe('preview')
+      expect(checkout.isLoadingPreview.value).toBe(true)
+      await checkout.handleTeamSubscribe()
+      expect(mockSubscribe).not.toHaveBeenCalled()
+
+      resolvePreview({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000
+      })
+      await selectionPromise
+
+      expect(checkout.isLoadingPreview.value).toBe(false)
+      expect(checkout.previewVariant.value).toBe('team-change')
+    })
+
+    it('discards a Team preview for a superseded stop and cycle', async () => {
+      let resolveStalePreview!: (
+        preview: Partial<PreviewSubscribeResponse>
+      ) => void
+      mockPreviewSubscribe
+        .mockImplementationOnce(
+          () =>
+            new Promise<Partial<PreviewSubscribeResponse>>((resolve) => {
+              resolveStalePreview = resolve
+            })
+        )
+        .mockResolvedValueOnce({
+          allowed: true,
+          transition_type: 'downgrade',
+          is_immediate: false,
+          cost_today_cents: 0
+        })
+      const checkout = await setup()
+
+      const staleSelection = checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 630
+        },
+        billingCycle: 'yearly',
+        isChange: true
+      })
+
+      resolveStalePreview({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000
+      })
+      await staleSelection
+
+      expect(checkout.selectedTeamStop.value?.id).toBe('team_700')
+      expect(checkout.selectedBillingCycle.value).toBe('yearly')
+      expect(checkout.previewData.value).toMatchObject({
+        transition_type: 'downgrade',
+        cost_today_cents: 0
+      })
+      expect(checkout.isLoadingPreview.value).toBe(false)
+    })
+
     it('falls back to the display-only confirm when the preview is a fresh subscription', async () => {
       const checkout = await setup()
       mockPreviewSubscribe.mockResolvedValueOnce({

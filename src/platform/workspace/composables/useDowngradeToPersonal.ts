@@ -30,9 +30,9 @@ export interface DowngradePreview {
   requiresReactivationConfirmation: boolean
 }
 
-/** Thrown by `downgradeToPersonal` before any member is removed, so a caller
- *  can collect consent and retry with `confirmReactivation: true` instead of
- *  losing team members on a request the BE was always going to reject. */
+/** Thrown by `downgradeToPersonal` when the billing authority requires
+ *  reactivation consent, so the still-open confirmation can collect it and
+ *  retry with `confirmReactivation: true`. */
 export class ReactivationConfirmationRequiredError extends Error {
   constructor(public readonly preview: PreviewSubscribeResponse) {
     super(t('subscription.downgrade.reactivationConfirmationRequired'))
@@ -49,8 +49,10 @@ export class ReactivationAmountChangedError extends Error {
 }
 
 /**
- * Team-plan downgrade to personal: validate via `previewSubscribe`, initiate
- * the tier change, then remove every member except the original owner.
+ * Team-plan downgrade to personal: validate via `previewSubscribe`, remove
+ * every member except the original owner, then initiate the tier change.
+ * Billing is not committed until member cleanup succeeds, so a removal failure
+ * cannot leave a personal plan with Team members still attached.
  * The removal-email and an atomic downgrade endpoint are backend-owned future
  * work; until then the frontend orchestrates the two steps non-atomically.
  */
@@ -190,11 +192,11 @@ export function useDowngradeToPersonal() {
           : 'monthly'
         : undefined
 
-      // Guard before touching membership: the BE rejects this subscribe
-      // without confirm_reactivation, so members must never be removed for a
-      // transition that's going to fail on consent anyway. Refresh the
-      // cached subscription first — it can predate a cancellation that
-      // happened after the earlier previewDowngrade() call.
+      // Catch cancellations visible to billing status before touching
+      // membership. Refresh first because the cached value can predate a
+      // cancellation that happened after previewDowngrade(); legacy-rail
+      // cancellations omitted by status are recovered from the later
+      // authority rejection while the confirmation remains open.
       await fetchStatus()
       if (requiresReactivationConfirmation(preview)) {
         if (!confirmReactivation) {
@@ -210,6 +212,25 @@ export function useDowngradeToPersonal() {
             error_code: 'reactivation_amount_changed'
           }
           throw new ReactivationAmountChangedError(preview)
+        }
+      }
+
+      for (const member of membersToRemove) {
+        ensureCanDowngrade()
+        try {
+          await workspaceStore.removeMember(member.id)
+        } catch (error) {
+          memberRemovalFailures += 1
+          telemetryFailure = {
+            failure_category: 'unknown',
+            error_code: 'member_removal_failed'
+          }
+          throw new Error(
+            t('subscription.downgrade.memberRemovalFailed', {
+              email: member.email
+            }),
+            { cause: error }
+          )
         }
       }
 
@@ -240,26 +261,11 @@ export function useDowngradeToPersonal() {
           failure_category: 'unknown',
           error_code: 'missing_checkout_response'
         }
-        throw new Error(t('subscription.downgrade.failed'))
-      }
-
-      for (const member of membersToRemove) {
-        ensureCanDowngrade()
-        try {
-          await workspaceStore.removeMember(member.id)
-        } catch (error) {
-          memberRemovalFailures += 1
-          telemetryFailure = {
-            failure_category: 'unknown',
-            error_code: 'member_removal_failed'
-          }
-          throw new Error(
-            t('subscription.downgrade.memberRemovalFailed', {
-              email: member.email
-            }),
-            { cause: error }
-          )
-        }
+        throw new Error(
+          membersToRemove.length > 0
+            ? t('subscription.downgrade.failedAfterMemberRemoval')
+            : t('subscription.downgrade.failed')
+        )
       }
 
       if (response.status === 'needs_payment_method') {

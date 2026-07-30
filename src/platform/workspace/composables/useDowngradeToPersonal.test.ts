@@ -221,7 +221,7 @@ describe('useDowngradeToPersonal', () => {
       expect(mockSubscribe).not.toHaveBeenCalled()
     })
 
-    it('stops further member removal when downgrade access is revoked', async () => {
+    it('stops before submit when downgrade access is revoked during member removal', async () => {
       mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       mockRemoveMember.mockImplementation(async () => {
         mockPermissions.value.canDowngradeToPersonal = false
@@ -232,7 +232,7 @@ describe('useDowngradeToPersonal', () => {
         'subscription.downgrade.notAllowed'
       )
       expect(mockRemoveMember).toHaveBeenCalledOnce()
-      expect(mockSubscribe).toHaveBeenCalledOnce()
+      expect(mockSubscribe).not.toHaveBeenCalled()
     })
 
     it('removes every non-creator member then initiates the tier change', async () => {
@@ -333,7 +333,7 @@ describe('useDowngradeToPersonal', () => {
       expect(mockSubscribe).not.toHaveBeenCalled()
     })
 
-    it('recovers a hidden cancellation before removing members and forwards the quote timestamp', async () => {
+    it('surfaces a hidden cancellation after member cleanup and forwards the quote timestamp', async () => {
       mockSubscription.value = { isCancelled: false }
       mockMembers.value = teamWithOwnerAnd('m1')
       mockPreviewSubscribe.mockResolvedValue({
@@ -359,7 +359,7 @@ describe('useDowngradeToPersonal', () => {
           prorationAt: '2026-07-30T00:00:00Z'
         })
       )
-      expect(mockRemoveMember).not.toHaveBeenCalled()
+      expect(mockRemoveMember).toHaveBeenCalledWith('m1')
     })
 
     it('requires reactivation confirmation when subscription state has not loaded yet', async () => {
@@ -436,7 +436,7 @@ describe('useDowngradeToPersonal', () => {
       expect(mockSubscribe).toHaveBeenCalled()
     })
 
-    it('validates and initiates the transition before removing members', async () => {
+    it('validates the transition before removing members, then subscribes', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
       const calls: string[] = []
       mockPreviewSubscribe.mockImplementation(() => {
@@ -455,7 +455,7 @@ describe('useDowngradeToPersonal', () => {
 
       await downgradeToPersonal('founder-monthly')
 
-      expect(calls).toEqual(['preview', 'subscribe', 'remove'])
+      expect(calls).toEqual(['preview', 'remove', 'subscribe'])
     })
 
     it('returns the preview and subscribe response', async () => {
@@ -620,18 +620,18 @@ describe('useDowngradeToPersonal', () => {
       )
     })
 
-    it('removes nobody when subscribe returns no response', async () => {
+    it('reports members were already removed when subscribe returns no response', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
       mockSubscribe.mockResolvedValue(undefined)
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
-        /^subscription\.downgrade\.failed$/
+        'subscription.downgrade.failedAfterMemberRemoval'
       )
-      expect(mockRemoveMember).not.toHaveBeenCalled()
+      expect(mockRemoveMember).toHaveBeenCalledWith('m1')
     })
 
-    it('surfaces which member failed after the plan request succeeds', async () => {
+    it('surfaces which member failed and skips the plan change', async () => {
       mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       mockRemoveMember.mockImplementation((id: string) =>
         id === 'm2' ? Promise.reject(new Error('network')) : Promise.resolve()
@@ -642,7 +642,7 @@ describe('useDowngradeToPersonal', () => {
         'm2@example.com'
       )
       expect(mockRemoveMember).toHaveBeenCalledWith('m1')
-      expect(mockSubscribe).toHaveBeenCalledOnce()
+      expect(mockSubscribe).not.toHaveBeenCalled()
     })
   })
 

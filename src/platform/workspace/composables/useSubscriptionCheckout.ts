@@ -113,6 +113,7 @@ export function useSubscriptionCheckout(
   const previewData = ref<PreviewSubscribeResponse | null>(null)
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
+  let teamPreviewRequestId = 0
   // Some legacy-rail status reads cannot expose a scheduled cancellation even
   // though the subscribe authority can see it in Stripe. Once that authority
   // rejects an unconfirmed change, keep the consent screen in reactivation
@@ -487,6 +488,7 @@ export function useSubscriptionCheckout(
   }) {
     if (isSubscribing.value || !permissions.value.canManageSubscription) return
 
+    const previewRequestId = ++teamPreviewRequestId
     reactivationRequired.value = false
     selectedTeamCheckout.value = {
       stop: payload.stop,
@@ -503,6 +505,7 @@ export function useSubscriptionCheckout(
     // collect confirm_reactivation, so it always needs a real,
     // reactivation-capable preview instead of the consent-less fallback.
     const needsPreview = payload.isChange || isCancelled.value
+    isLoadingPreview.value = needsPreview && !!payload.stop.id
     if (!needsPreview || !payload.stop.id) return
 
     let response: PreviewSubscribeResponse | null = null
@@ -515,7 +518,13 @@ export function useSubscriptionCheckout(
       })
     } catch (error) {
       previewError = error
+    } finally {
+      if (previewRequestId === teamPreviewRequestId) {
+        isLoadingPreview.value = false
+      }
     }
+
+    if (previewRequestId !== teamPreviewRequestId) return
 
     if (
       (isCancelled.value && isReactivationCapablePreview(response)) ||
@@ -543,6 +552,8 @@ export function useSubscriptionCheckout(
   }
 
   function resetToPricing() {
+    teamPreviewRequestId += 1
+    isLoadingPreview.value = false
     reactivationRequired.value = false
     checkoutStep.value = 'pricing'
     previewData.value = null
@@ -756,7 +767,13 @@ export function useSubscriptionCheckout(
   }
 
   async function handleTeamSubscription(confirmReactivation = false) {
-    if (!permissions.value.canManageSubscription) return
+    if (
+      isLoadingPreview.value ||
+      isSubscribing.value ||
+      !permissions.value.canManageSubscription
+    ) {
+      return
+    }
 
     const teamCheckout = selectedTeamCheckout.value
     if (!teamCheckout?.stop.id) {
