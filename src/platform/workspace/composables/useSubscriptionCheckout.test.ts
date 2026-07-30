@@ -735,7 +735,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 70_000
+        cost_today_cents: 70_000,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       const checkout = await setup()
 
@@ -768,7 +769,8 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'downgrade' as const,
         is_immediate: false,
         cost_today_cents: 0,
-        proration_at: '2026-07-29T12:00:00Z'
+        proration_at: '2026-07-29T12:00:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       }
       mockPreviewSubscribe.mockResolvedValueOnce(preview)
       const checkout = await setup()
@@ -1029,7 +1031,8 @@ describe('useSubscriptionCheckout', () => {
         is_immediate: true,
         cost_today_cents: 105_000,
         credits_today_cents: 221_550,
-        proration_at: '2026-07-29T12:00:00Z'
+        proration_at: '2026-07-29T12:00:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       await checkout.handleSubscribeTeamClick({
         stop: {
@@ -1047,7 +1050,8 @@ describe('useSubscriptionCheckout', () => {
         is_immediate: true,
         cost_today_cents: 104_999,
         credits_today_cents: 221_548,
-        proration_at: '2026-07-29T12:05:00Z'
+        proration_at: '2026-07-29T12:05:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       mockSubscribe.mockResolvedValueOnce({
         status: 'subscribed',
@@ -1075,7 +1079,8 @@ describe('useSubscriptionCheckout', () => {
         is_immediate: true,
         cost_today_cents: 105_000,
         credits_next_period_cents: 295_400,
-        proration_at: '2026-07-29T12:00:00Z'
+        proration_at: '2026-07-29T12:00:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       await checkout.handleSubscribeTeamClick({
         stop: {
@@ -1093,7 +1098,8 @@ describe('useSubscriptionCheckout', () => {
         is_immediate: true,
         cost_today_cents: 105_000,
         credits_next_period_cents: 300_000,
-        proration_at: '2026-07-29T12:05:00Z'
+        proration_at: '2026-07-29T12:05:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
 
       await checkout.handleTeamSubscribe(true)
@@ -1117,7 +1123,8 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         cost_today_cents: 105_000,
-        proration_at: '2026-07-29T12:00:00Z'
+        proration_at: '2026-07-29T12:00:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       await checkout.handleSubscribeTeamClick({
         stop: {
@@ -1134,7 +1141,8 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         cost_today_cents: 104_999,
-        proration_at: '2026-07-29T12:14:00Z'
+        proration_at: '2026-07-29T12:14:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       mockSubscribe.mockRejectedValueOnce(
         Object.assign(new Error('Quote expired'), {
@@ -1146,7 +1154,8 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         cost_today_cents: 105_000,
-        proration_at: '2026-07-29T12:16:00Z'
+        proration_at: '2026-07-29T12:16:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
 
       await checkout.handleTeamSubscribe(true)
@@ -1178,7 +1187,8 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         cost_today_cents: 104_999,
-        proration_at: '2026-07-29T12:16:05Z'
+        proration_at: '2026-07-29T12:16:05Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       await checkout.handleTeamSubscribe(true)
 
@@ -1226,7 +1236,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 105_000
+        cost_today_cents: 105_000,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       await checkout.handleSubscribeTeamClick({
         stop: {
@@ -1242,7 +1253,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 120_000
+        cost_today_cents: 120_000,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
 
       await checkout.handleTeamSubscribe(true)
@@ -1265,7 +1277,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 120_000
+        cost_today_cents: 120_000,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       mockSubscribe.mockResolvedValueOnce({
         status: 'subscribed',
@@ -1322,9 +1335,9 @@ describe('useSubscriptionCheckout', () => {
 
     // Regression guard: drift recovery must reuse the same reactivation-
     // capable predicate as the initial cancelled-Team preview. A refreshed
-    // preview that comes back as a fresh subscribe can't feed the banner or
-    // emit confirm_reactivation, so installing it as a team-change would
-    // strand every retry; this must bounce back to pricing instead.
+    // preview without the current-plan date can't feed the banner or emit
+    // confirm_reactivation, so installing it as a team-change would strand
+    // every retry; this must bounce back to pricing instead.
     it('bounces to pricing when a status-drift refresh returns a preview that cannot collect reactivation consent', async () => {
       mockSubscription.value = { isCancelled: false }
       const checkout = await setup()
@@ -1348,11 +1361,12 @@ describe('useSubscriptionCheckout', () => {
 
       mockFetchStatus.mockImplementationOnce(() => {
         mockSubscription.value = { isCancelled: true }
+        checkout.reactivationRequired.value = true
         return Promise.resolve()
       })
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
-        transition_type: 'new_subscription',
+        transition_type: 'upgrade',
         is_immediate: true
       })
 
@@ -1607,13 +1621,15 @@ describe('useSubscriptionCheckout', () => {
 
       mockFetchStatus.mockImplementationOnce(() => {
         mockSubscription.value = { isCancelled: true }
+        checkout.reactivationRequired.value = true
         return Promise.resolve()
       })
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 110_000
+        cost_today_cents: 110_000,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
 
       await checkout.handleTeamSubscribe()
@@ -1628,7 +1644,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 110_000
+        cost_today_cents: 110_000,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       mockSubscribe.mockResolvedValueOnce({
         status: 'subscribed',
@@ -1714,6 +1731,16 @@ describe('useSubscriptionCheckout', () => {
 
       resolveOperation({ status: 'failed' })
       await payment
+    })
+
+    it('keeps the confirmation open while a submit is in flight', async () => {
+      const checkout = await setup()
+      checkout.checkoutStep.value = 'preview'
+      checkout.isSubscribing.value = true
+
+      checkout.handleBackToPricing()
+
+      expect(checkout.checkoutStep.value).toBe('preview')
     })
 
     it('does not apply an operation result after switching workspaces', async () => {
@@ -2145,16 +2172,34 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    it('keeps the quoted personal charge when fresh material state is unchanged', async () => {
+    it('keeps a pinned immediate duration-change quote when time-derived values drift', async () => {
       mockSubscription.value = { isCancelled: true }
       const checkout = await setup()
+      const currentPlan = {
+        slug: 'creator-monthly',
+        tier: 'CREATOR',
+        duration: 'MONTHLY',
+        price_cents: 3500,
+        credits_cents: 7400,
+        period_end: '2026-08-29T00:00:00Z'
+      }
+      const newPlan = {
+        slug: 'standard-yearly',
+        tier: 'STANDARD',
+        duration: 'ANNUAL',
+        price_cents: 1600,
+        credits_cents: 4200,
+        period_end: '2027-08-29T00:00:00Z'
+      }
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
-        transition_type: 'upgrade',
+        transition_type: 'duration_change',
         is_immediate: true,
         cost_today_cents: 1500,
         credits_today_cents: 3150,
-        proration_at: '2026-07-29T12:00:00Z'
+        proration_at: '2026-07-29T12:00:00Z',
+        current_plan: currentPlan,
+        new_plan: newPlan
       })
       await checkout.handleSubscribeClick({
         tierKey: 'standard',
@@ -2162,11 +2207,13 @@ describe('useSubscriptionCheckout', () => {
       })
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
-        transition_type: 'upgrade',
+        transition_type: 'duration_change',
         is_immediate: true,
         cost_today_cents: 1499,
         credits_today_cents: 3148,
-        proration_at: '2026-07-29T12:05:00Z'
+        proration_at: '2026-07-29T12:05:00Z',
+        current_plan: currentPlan,
+        new_plan: newPlan
       })
       mockSubscribe.mockResolvedValueOnce({
         status: 'subscribed',
@@ -2216,7 +2263,8 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         cost_today_cents: 1600,
-        proration_at: '2026-07-29T12:16:00Z'
+        proration_at: '2026-07-29T12:16:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
 
       await checkout.handleConfirmTransition(true)
@@ -2248,7 +2296,8 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         cost_today_cents: 1599,
-        proration_at: '2026-07-29T12:16:05Z'
+        proration_at: '2026-07-29T12:16:05Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       await checkout.handleConfirmTransition(true)
 
@@ -2260,6 +2309,46 @@ describe('useSubscriptionCheckout', () => {
         })
       )
       expect(checkout.checkoutStep.value).toBe('success')
+    })
+
+    it('keeps the confirmation open when an expired-quote refresh fails', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 1500,
+        proration_at: '2026-07-29T12:00:00Z'
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 1499
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        Object.assign(new Error('Quote expired'), {
+          code: 'PRORATION_QUOTE_EXPIRED'
+        })
+      )
+      mockPreviewSubscribe.mockRejectedValueOnce(new Error('Preview offline'))
+
+      await checkout.handleConfirmTransition(true)
+
+      expect(checkout.checkoutStep.value).toBe('preview')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'Preview offline' })
+      )
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'subscription.preview.reactivation.unavailable'
+        })
+      )
     })
 
     // Regression guard: confirmReactivation must come from the disclosure
@@ -2418,7 +2507,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 1600
+        cost_today_cents: 1600,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
 
       await checkout.handleConfirmTransition()
@@ -2438,7 +2528,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 1600
+        cost_today_cents: 1600,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       mockSubscribe.mockResolvedValueOnce({
         status: 'subscribed',

@@ -157,13 +157,20 @@ export function useSubscriptionCheckout(
     })
   }
 
-  // Shared by the initial cancelled-Team preview (handleSubscribeTeamClick)
-  // and drift recovery (refreshPreviewOnReactivationBlock): a preview can
-  // only feed the reactivation banner if it's an allowed existing-plan change.
-  function isReactivationCapablePreview(
+  function isExistingPlanPreview(
     preview: PreviewSubscribeResponse | null | undefined
   ): preview is PreviewSubscribeResponse & { allowed: true } {
     return !!preview?.allowed && preview.transition_type !== 'new_subscription'
+  }
+
+  function isReactivationCapablePreview(
+    preview: PreviewSubscribeResponse | null | undefined
+  ): preview is PreviewSubscribeResponse & { allowed: true } {
+    return (
+      isExistingPlanPreview(preview) &&
+      !!preview.current_plan &&
+      !!(subscription.value?.endDate ?? preview.current_plan.period_end)
+    )
   }
 
   function reactivationMaterialSnapshot(
@@ -180,9 +187,9 @@ export function useSubscriptionCheckout(
             plan.duration,
             plan.price_cents,
             plan.credits_cents,
-            plan.seat_summary.seat_count,
-            plan.seat_summary.total_cost_cents,
-            plan.seat_summary.total_credits_cents,
+            plan.seat_summary?.seat_count,
+            plan.seat_summary?.total_cost_cents,
+            plan.seat_summary?.total_credits_cents,
             plan.period_start,
             plan.period_end
           ]
@@ -216,15 +223,13 @@ export function useSubscriptionCheckout(
     }
 
     if (confirmedPreview?.proration_at) {
-      const isImmediateUpgrade =
-        confirmedPreview.transition_type === 'upgrade' &&
-        confirmedPreview.is_immediate
-      const amountChanged = isImmediateUpgrade
+      const isImmediateTransition = confirmedPreview.is_immediate
+      const amountChanged = isImmediateTransition
         ? freshPreview.cost_today_cents > confirmedPreview.cost_today_cents
         : freshPreview.cost_today_cents !== confirmedPreview.cost_today_cents
       const materialChanged =
-        reactivationMaterialSnapshot(freshPreview, isImmediateUpgrade) !==
-        reactivationMaterialSnapshot(confirmedPreview, isImmediateUpgrade)
+        reactivationMaterialSnapshot(freshPreview, isImmediateTransition) !==
+        reactivationMaterialSnapshot(confirmedPreview, isImmediateTransition)
       if (amountChanged || materialChanged) {
         previewData.value = freshPreview
         throw new ReactivationAmountChangedError(
@@ -277,14 +282,15 @@ export function useSubscriptionCheckout(
   ): Promise<boolean> {
     if (!hasErrorCode(error, 'PRORATION_QUOTE_EXPIRED')) return false
 
-    let freshPreview: PreviewSubscribeResponse | null = null
+    let freshPreview: PreviewSubscribeResponse | null
     try {
       freshPreview = await previewSubscribe(planSlug, options)
-    } catch {
-      // Handled by the unavailable path below.
+    } catch (previewError) {
+      showSubscribeError(previewError)
+      return true
     }
     if (!isReactivationCapablePreview(freshPreview)) {
-      handleBackToPricing()
+      resetToPricing()
       toast.add({
         severity: 'error',
         summary: t('g.error'),
@@ -335,7 +341,7 @@ export function useSubscriptionCheckout(
       return
     }
     reactivationRequired.value = false
-    handleBackToPricing()
+    resetToPricing()
     toast.add({
       severity: 'error',
       summary: t('g.error'),
@@ -407,7 +413,13 @@ export function useSubscriptionCheckout(
     tierKey: CheckoutTierKey
     billingCycle: BillingCycle
   }) {
-    if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
+    if (
+      isSubscribing.value ||
+      !permissions.value.canManageSubscription ||
+      !canSelectTierPlan()
+    ) {
+      return
+    }
 
     const { tierKey, billingCycle } = payload
 
@@ -473,7 +485,7 @@ export function useSubscriptionCheckout(
     billingCycle: BillingCycle
     isChange?: boolean
   }) {
-    if (!permissions.value.canManageSubscription) return
+    if (isSubscribing.value || !permissions.value.canManageSubscription) return
 
     reactivationRequired.value = false
     selectedTeamCheckout.value = {
@@ -505,7 +517,10 @@ export function useSubscriptionCheckout(
       previewError = error
     }
 
-    if (isReactivationCapablePreview(response)) {
+    if (
+      (isCancelled.value && isReactivationCapablePreview(response)) ||
+      (!isCancelled.value && isExistingPlanPreview(response))
+    ) {
       previewData.value = response
       return
     }
@@ -527,13 +542,17 @@ export function useSubscriptionCheckout(
     selectedTeamCheckout.value = null
   }
 
-  function handleBackToPricing() {
-    if (isPolling.value) return
+  function resetToPricing() {
     reactivationRequired.value = false
     checkoutStep.value = 'pricing'
     previewData.value = null
     selectedTeamCheckout.value = null
     activeCheckoutOperationId.value = null
+  }
+
+  function handleBackToPricing() {
+    if (isPolling.value || isSubscribing.value) return
+    resetToPricing()
   }
 
   function handleSuccessClose() {

@@ -49,8 +49,8 @@ export class ReactivationAmountChangedError extends Error {
 }
 
 /**
- * Team-plan downgrade to personal: validate via `previewSubscribe`, remove
- * every member except the original owner, then initiate the tier change.
+ * Team-plan downgrade to personal: validate via `previewSubscribe`, initiate
+ * the tier change, then remove every member except the original owner.
  * The removal-email and an atomic downgrade endpoint are backend-owned future
  * work; until then the frontend orchestrates the two steps non-atomically.
  */
@@ -79,6 +79,15 @@ export function useDowngradeToPersonal() {
     if (!permissions.value.canDowngradeToPersonal) {
       throw new Error(t('subscription.downgrade.notAllowed'))
     }
+  }
+
+  function hasErrorCode(error: unknown, code: string): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === code
+    )
   }
 
   async function refreshMembers(): Promise<void> {
@@ -204,6 +213,36 @@ export function useDowngradeToPersonal() {
         }
       }
 
+      ensureCanDowngrade()
+      let response: SubscribeResponse | void
+      try {
+        response = await subscribe(planSlug, {
+          returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+          cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
+          confirmReactivation,
+          ...(preview.proration_at && { prorationAt: preview.proration_at })
+        })
+      } catch (error) {
+        if (
+          !confirmReactivation &&
+          hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')
+        ) {
+          telemetryFailure = {
+            failure_category: 'validation',
+            error_code: 'reactivation_not_confirmed'
+          }
+          throw new ReactivationConfirmationRequiredError(preview)
+        }
+        throw error
+      }
+      if (!response) {
+        telemetryFailure = {
+          failure_category: 'unknown',
+          error_code: 'missing_checkout_response'
+        }
+        throw new Error(t('subscription.downgrade.failed'))
+      }
+
       for (const member of membersToRemove) {
         ensureCanDowngrade()
         try {
@@ -221,24 +260,6 @@ export function useDowngradeToPersonal() {
             { cause: error }
           )
         }
-      }
-
-      ensureCanDowngrade()
-      const response = await subscribe(planSlug, {
-        returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
-        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
-        confirmReactivation
-      })
-      if (!response) {
-        telemetryFailure = {
-          failure_category: 'unknown',
-          error_code: 'missing_checkout_response'
-        }
-        throw new Error(
-          membersToRemove.length > 0
-            ? t('subscription.downgrade.failedAfterMemberRemoval')
-            : t('subscription.downgrade.failed')
-        )
       }
 
       if (response.status === 'needs_payment_method') {
