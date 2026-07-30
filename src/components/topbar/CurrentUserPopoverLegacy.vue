@@ -47,17 +47,14 @@
       >
         <i class="icon-[lucide--circle-help]" />
       </Button>
-      <!-- Secondary on purpose: the topbar Upgrade button already carries
-           the primary (gold) upgrade CTA while this popover is open. -->
       <Button
         v-if="isCloud && isFreeTier"
-        variant="secondary"
+        variant="subscribe"
         size="sm"
-        class="text-base-foreground"
         data-testid="upgrade-to-add-credits-button"
         @click="handleUpgradeToAddCredits"
       >
-        {{ $t('subscription.upgradeToAddCredits') }}
+        {{ $t('subscription.subscribeForMore') }}
       </Button>
       <Button
         v-else

@@ -81,18 +81,15 @@
       >
         <i class="icon-[lucide--circle-help]" />
       </Button>
-      <!-- Upgrade to add credits (free tier). Secondary on purpose: the
-           topbar Upgrade button already carries the primary (gold) upgrade
-           CTA while this popover is open. -->
+      <!-- Upgrade (free tier): gold CTA lives in the menu, not the header -->
       <Button
         v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
-        variant="secondary"
+        variant="subscribe"
         size="sm"
-        class="text-base-foreground"
         data-testid="upgrade-to-add-credits-button"
         @click="handleUpgradeToAddCredits"
       >
-        {{ $t('subscription.upgradeToAddCredits') }}
+        {{ $t('subscription.subscribeForMore') }}
       </Button>
       <Button
         v-else-if="isActiveSubscription && permissions.canTopUp"

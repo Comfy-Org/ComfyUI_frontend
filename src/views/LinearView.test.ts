@@ -88,7 +88,6 @@ const baseStubs = {
   ExtensionSlot: leafStub('extension-slot'),
   SideToolbar: leafStub('side-toolbar'),
   TopbarBadges: leafStub('topbar-badges'),
-  TopbarSubscribeButton: leafStub('topbar-subscribe-button'),
   WorkflowTabs: leafStub('workflow-tabs'),
   LinearControls: leafStub('linear-controls'),
   LinearPreview: leafStub('linear-preview'),
