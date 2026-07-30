@@ -410,7 +410,28 @@ describe('workspaceApi', () => {
         }
       })
 
-      await expect(workspaceApi.getChurnkeyAuth()).rejects.toThrow()
+      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+        name: 'ZodError'
+      })
+    })
+
+    it('getChurnkeyAuth() normalizes Axios failures', async () => {
+      mockAxiosInstance.get.mockRejectedValue({
+        isAxiosError: true,
+        response: {
+          status: 503,
+          data: { message: 'Churnkey auth unavailable', code: 'UNAVAILABLE' }
+        },
+        message: 'Request failed',
+        config: { headers: AUTH_HEADER }
+      })
+
+      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 503,
+        code: 'UNAVAILABLE',
+        message: 'Churnkey auth unavailable'
+      })
     })
   })
 

@@ -736,11 +736,15 @@ export const workspaceApi = {
 
   async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse> {
     const headers = await getAuthHeaderOrThrow()
-    const response = await workspaceApiClient.get<unknown>(
-      api.apiURL('/billing/churnkey/auth'),
-      { headers }
-    )
-    return churnkeyAuthResponseSchema.parse(response.data)
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        api.apiURL('/billing/churnkey/auth'),
+        { headers }
+      )
+      return churnkeyAuthResponseSchema.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err)
+    }
   },
 
   /**
