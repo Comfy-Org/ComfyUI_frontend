@@ -196,7 +196,12 @@ test.describe(
 
       const nodePos = await outerHost.getPosition()
       const nodeSize = await outerHost.getSize()
-      await comfyPage.nodeOps.resizeNode(nodePos, nodeSize, 2.5, 2.5)
+      // Keep the ratio modest: resizeNode scales the existing size (not an
+      // additive delta), and a larger ratio would push the resized node's
+      // bottom edge — and the subgraph-enter footer button below it — off
+      // the bottom of the viewport, since the top-left corner stays fixed
+      // during a resize-from-corner drag.
+      await comfyPage.nodeOps.resizeNode(nodePos, nodeSize, 1.4, 1.4)
       const resizedSize = await outerHost.getSize()
       expect(resizedSize.width).toBeGreaterThan(nodeSize.width)
       expect(resizedSize.height).toBeGreaterThan(nodeSize.height)
