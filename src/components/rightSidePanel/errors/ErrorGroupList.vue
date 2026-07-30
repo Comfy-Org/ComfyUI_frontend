@@ -137,21 +137,7 @@
                   aria-hidden="true"
                   class="size-1.5 rounded-full bg-destructive-background"
                 />
-                <span
-                  aria-hidden="true"
-                  class="hidden @[378px]/error-section-header:inline"
-                >
-                  {{ t('rightSidePanel.blockedLastRun') }}
-                </span>
-                <span
-                  aria-hidden="true"
-                  class="hidden @[332px]/error-section-header:inline @[378px]/error-section-header:hidden"
-                >
-                  {{ t('rightSidePanel.blockedLastRunShort') }}
-                </span>
-                <span class="sr-only">
-                  {{ t('rightSidePanel.blockedLastRun') }}
-                </span>
+                {{ t('rightSidePanel.blockedLastRun') }}
               </span>
               <Button
                 v-if="
