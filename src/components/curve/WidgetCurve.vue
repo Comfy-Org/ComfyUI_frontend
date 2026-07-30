@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import {
   singleValueExtractor,
@@ -48,6 +48,7 @@ import CurveEditor from './CurveEditor.vue'
 import { isCurveData } from './curveUtils'
 import { CURVE_INTERPOLATIONS } from './types'
 import type { CurveData, CurveInterpolation, CurvePoint } from './types'
+import { hydrateHistogramFromHistory } from './useHistogramHydration'
 
 const { widget } = defineProps<{
   widget: SimplifiedWidget
@@ -73,6 +74,11 @@ const histogram = computed(() => {
   const data = output?.histogram
   if (!Array.isArray(data) || data.length === 0) return null
   return new Uint32Array(data)
+})
+
+onMounted(() => {
+  const locatorId = widget.nodeLocatorId
+  if (locatorId) void hydrateHistogramFromHistory(locatorId)
 })
 
 const upstreamValue = useUpstreamValue(
