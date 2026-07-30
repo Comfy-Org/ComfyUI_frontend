@@ -39,7 +39,10 @@ const mockClearAllWorkflowStorage = vi.hoisted(() => vi.fn())
 const knownAuthErrorCodes = new Set([
   'auth/invalid-credential',
   'auth/email-already-in-use',
-  'auth/user-not-found'
+  'auth/user-not-found',
+  'auth/popup-closed-by-user',
+  'auth/cancelled-popup-request',
+  'auth/popup-blocked'
 ])
 
 vi.mock('@/i18n', () => ({
@@ -434,5 +437,22 @@ describe('useAuthActions.reportError', () => {
 
     expect(mockToastErrorHandler).toHaveBeenCalledWith(networkError)
     expect(mockToastStore.add).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    'auth/popup-closed-by-user',
+    'auth/cancelled-popup-request',
+    'auth/popup-blocked'
+  ])('shows a non-alarming warning instead of an error for %s', (code) => {
+    const { reportError } = useAuthActions()
+
+    reportError(new FirebaseError(code, 'raw firebase'))
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'warn',
+      summary: 'g.warning',
+      detail: `auth.errors.${code}`
+    })
+    expect(mockToastErrorHandler).not.toHaveBeenCalled()
   })
 })
