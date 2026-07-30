@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive } from 'vue'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
   Plan,
   PreviewSubscribeResponse
@@ -233,7 +234,17 @@ vi.mock('@/services/dialogService', () => ({
 
 // Shields the test from the real workspaceApi → @/scripts/api → app.ts import chain
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
-  workspaceApi: { resubscribe: mockResubscribe }
+  workspaceApi: { resubscribe: mockResubscribe },
+  WorkspaceApiError: class WorkspaceApiError extends Error {
+    constructor(
+      message: string,
+      public readonly status?: number,
+      public readonly code?: string
+    ) {
+      super(message)
+      this.name = 'WorkspaceApiError'
+    }
+  }
 }))
 
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
@@ -281,15 +292,14 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/telemetry/utils/billingFailureCategory', () => ({
-  categorizeBillingApiError: (err: unknown) =>
-    err instanceof Error && err.name === 'WorkspaceApiError'
-      ? 'api_rejected'
-      : 'unknown'
-}))
-
 vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) })
+  useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) }),
+  AuthStoreError: class AuthStoreError extends Error {
+    constructor(message: string) {
+      super(message)
+      this.name = 'AuthStoreError'
+    }
+  }
 }))
 
 vi.mock('vue-i18n', async (importOriginal) => {
@@ -2767,7 +2777,7 @@ describe('useSubscriptionCheckout', () => {
       })
     })
 
-    it('fires resubscribe success telemetry on the legacy rail too', async () => {
+    it('does not report checkout launch as terminal legacy success', async () => {
       mockShouldUseWorkspaceBilling.value = false
       mockResubscribe.mockResolvedValueOnce(undefined)
       const checkout = await setup('subscribe_to_run')
@@ -2776,10 +2786,13 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockResubscribe).toHaveBeenCalledOnce()
       expect(mockTrackResubscribeClicked).toHaveBeenCalledOnce()
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'succeeded' })
+      )
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
         operation: 'resubscribe',
-        stage: 'succeeded',
-        outcome: 'success',
+        stage: 'started',
+        outcome: 'pending',
         source: 'pricing_dialog',
         payment_intent_source: 'subscribe_to_run'
       })
@@ -2787,8 +2800,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('fires resubscribe failure telemetry on the legacy rail too', async () => {
       mockShouldUseWorkspaceBilling.value = false
-      const workspaceApiError = new Error('checkout rejected')
-      workspaceApiError.name = 'WorkspaceApiError'
+      const workspaceApiError = new WorkspaceApiError('checkout rejected', 500)
       mockResubscribe.mockRejectedValueOnce(workspaceApiError)
       const checkout = await setup()
 

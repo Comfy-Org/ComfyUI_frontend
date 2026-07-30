@@ -31,6 +31,18 @@ describe('categorizeBillingApiError', () => {
     expect(categorizeBillingApiError(new TypeError('Failed to fetch'))).toBe(
       'network'
     )
+    expect(categorizeBillingApiError(new TypeError('NetworkError'))).toBe(
+      'network'
+    )
+    expect(categorizeBillingApiError(new TypeError('Load failed'))).toBe(
+      'network'
+    )
+  })
+
+  it('does not mislabel a non-connectivity TypeError as network', () => {
+    expect(
+      categorizeBillingApiError(new TypeError('x is not a function'))
+    ).toBe('unknown')
   })
 
   it('falls back to unknown for an unclassifiable error', () => {

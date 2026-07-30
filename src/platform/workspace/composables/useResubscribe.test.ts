@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { AuthStoreError } from '@/stores/authStore'
+
 import { useResubscribe } from './useResubscribe'
 
 const state = vi.hoisted(() => ({
@@ -44,11 +46,13 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/telemetry/utils/billingFailureCategory', () => ({
-  categorizeBillingApiError: (err: unknown) =>
-    err instanceof Error && err.name === 'AuthStoreError'
-      ? 'api_rejected'
-      : 'unknown'
+vi.mock('@/stores/authStore', () => ({
+  AuthStoreError: class AuthStoreError extends Error {
+    constructor(message: string) {
+      super(message)
+      this.name = 'AuthStoreError'
+    }
+  }
 }))
 
 vi.mock('primevue/usetoast', () => ({
@@ -92,7 +96,7 @@ describe('useResubscribe', () => {
     })
   })
 
-  it('fires resubscribe success telemetry on the legacy rail too', async () => {
+  it('does not report checkout launch as terminal legacy success', async () => {
     state.shouldUseWorkspaceBilling = false
     state.canManageSubscriptionLifecycle = false
     const { handleResubscribe } = useResubscribe()
@@ -101,10 +105,13 @@ describe('useResubscribe', () => {
 
     expect(state.resubscribe).toHaveBeenCalledOnce()
     expect(state.trackResubscribeClicked).toHaveBeenCalledOnce()
+    expect(state.trackBillingEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ stage: 'succeeded' })
+    )
     expect(state.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
-      stage: 'succeeded',
-      outcome: 'success',
+      stage: 'started',
+      outcome: 'pending',
       source: 'settings_billing_panel'
     })
     expect(state.toastAdd).toHaveBeenCalledWith(
@@ -139,8 +146,7 @@ describe('useResubscribe', () => {
 
   it('fires resubscribe failure telemetry on the legacy rail too, categorizing the error', async () => {
     state.shouldUseWorkspaceBilling = false
-    const authStoreError = new Error('checkout initiation rejected')
-    authStoreError.name = 'AuthStoreError'
+    const authStoreError = new AuthStoreError('checkout initiation rejected')
     state.resubscribe.mockRejectedValueOnce(authStoreError)
     const { handleResubscribe } = useResubscribe()
 

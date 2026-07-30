@@ -749,8 +749,9 @@ export function useSubscriptionCheckout(
           payment_intent_source: paymentIntentSource,
           billing_op_id: response.billing_op_id
         })
-        // Also fires the pre-existing generic event so providers that don't
-        // yet implement trackBillingEvent keep receiving a success signal.
+        // Also fires the pre-existing generic event for the two providers
+        // that implement trackMonthlySubscriptionSucceeded but not
+        // trackBillingEvent (Mixpanel, GTM). PostHog implements both.
         telemetry?.trackMonthlySubscriptionSucceeded({
           tier: context.tier,
           cycle: context.cycle,
@@ -943,13 +944,26 @@ export function useSubscriptionCheckout(
     isResubscribing.value = true
     try {
       await resubscribe()
-      telemetry?.trackBillingEvent({
-        operation: 'resubscribe',
-        stage: 'succeeded',
-        outcome: 'success',
-        source: 'pricing_dialog',
-        payment_intent_source: paymentIntentSource
-      })
+      // Workspace's resubscribe() call is itself terminal; legacy's only
+      // opens a Stripe tab, so it reports started/pending and lets the
+      // pending-checkout recovery in useSubscription.ts own the terminal.
+      telemetry?.trackBillingEvent(
+        shouldUseWorkspaceBilling.value
+          ? {
+              operation: 'resubscribe',
+              stage: 'succeeded',
+              outcome: 'success',
+              source: 'pricing_dialog',
+              payment_intent_source: paymentIntentSource
+            }
+          : {
+              operation: 'resubscribe',
+              stage: 'started',
+              outcome: 'pending',
+              source: 'pricing_dialog',
+              payment_intent_source: paymentIntentSource
+            }
+      )
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),

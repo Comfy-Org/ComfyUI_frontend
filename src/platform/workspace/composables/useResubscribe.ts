@@ -41,12 +41,24 @@ export function useResubscribe() {
     isResubscribing.value = true
     try {
       await resubscribe()
-      useTelemetry()?.trackBillingEvent({
-        operation: 'resubscribe',
-        stage: 'succeeded',
-        outcome: 'success',
-        source: 'settings_billing_panel'
-      })
+      // Workspace's resubscribe() call is itself terminal; legacy's only
+      // opens a Stripe tab, so it reports started/pending and lets the
+      // pending-checkout recovery in useSubscription.ts own the terminal.
+      useTelemetry()?.trackBillingEvent(
+        shouldUseWorkspaceBilling.value
+          ? {
+              operation: 'resubscribe',
+              stage: 'succeeded',
+              outcome: 'success',
+              source: 'settings_billing_panel'
+            }
+          : {
+              operation: 'resubscribe',
+              stage: 'started',
+              outcome: 'pending',
+              source: 'settings_billing_panel'
+            }
+      )
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),
