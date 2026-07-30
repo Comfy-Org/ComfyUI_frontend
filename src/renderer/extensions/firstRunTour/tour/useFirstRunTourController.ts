@@ -19,6 +19,19 @@ import type { RunState } from './firstRunTourDefinition'
 const RUN_BUTTON_SELECTOR =
   '[data-testid="queue-button"], [data-testid="subscribe-to-run-button"]'
 
+const IDLE_TIMEOUT_MS = 800
+
+async function afterMountSettles() {
+  await new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve))
+  )
+  await new Promise<void>((resolve) =>
+    'requestIdleCallback' in window
+      ? requestIdleCallback(() => resolve(), { timeout: IDLE_TIMEOUT_MS })
+      : setTimeout(resolve, 300)
+  )
+}
+
 function useFirstRunTourControllerInternal() {
   const engine = useOnboardingTourStore()
   const billing = useBillingContext()
@@ -85,6 +98,7 @@ function useFirstRunTourControllerInternal() {
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
     registerTour('firstRun', () => firstRunTourSteps(templateId, runState))
+    await afterMountSettles()
     const started = engine.startTour('firstRun')
     if (!started) {
       releaseFirstRunTargets()
