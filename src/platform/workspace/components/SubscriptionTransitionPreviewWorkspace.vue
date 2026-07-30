@@ -173,6 +173,16 @@
       <SubscriptionTermsNote />
 
       <Button
+        v-if="actionUrl"
+        variant="primary"
+        size="lg"
+        class="w-full rounded-lg"
+        @click="openVerification"
+      >
+        {{ $t('subscription.preview.completeVerification') }}
+      </Button>
+
+      <Button
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
@@ -186,6 +196,7 @@
       <Button
         variant="textonly"
         class="cursor-pointer text-center text-xs text-muted-foreground transition-colors hover:bg-none hover:text-base-foreground"
+        :disabled="isLoading"
         @click="$emit('back')"
       >
         {{ $t('subscription.preview.backToAllPlans') }}
@@ -214,13 +225,15 @@ type PersonalTierKey = 'standard' | 'creator' | 'pro'
 const {
   previewData,
   isLoading = false,
-  teamPlan = null
+  teamPlan = null,
+  actionUrl = null
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
   /** Set for a team credit-commit change: plan name + refill credits come from
    *  the selected slider stop; all proration money stays driven by previewData. */
   teamPlan?: TeamPlanSelection | null
+  actionUrl?: string | null
 }>()
 
 defineEmits<{
@@ -232,6 +245,11 @@ defineEmits<{
 
 const { t, n } = useI18n()
 const { subscription } = useBillingContext()
+
+function openVerification() {
+  if (!actionUrl) return
+  window.open(actionUrl, '_blank', 'noopener,noreferrer')
+}
 
 function formatTierName(tier: string): string {
   return t(`subscription.tiers.${tier.toLowerCase()}.name`)

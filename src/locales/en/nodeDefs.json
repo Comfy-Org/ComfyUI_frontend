@@ -9222,7 +9222,7 @@
     "inputs": {
       "folder_name": {
         "name": "folder_name",
-        "tooltip": "Name of folder containing the saved dataset (inside output directory)."
+        "tooltip": "Saved dataset to load, from the datasets directory."
       }
     },
     "outputs": {
@@ -15507,7 +15507,7 @@
     }
   },
   "RecraftImageToImageNode": {
-    "display_name": "Recraft Image to Image",
+    "display_name": "Recraft V3 Image to Image",
     "description": "Modify image based on prompt and strength.",
     "inputs": {
       "image": {
@@ -15665,7 +15665,7 @@
     }
   },
   "RecraftTextToImageNode": {
-    "display_name": "Recraft Text to Image",
+    "display_name": "Recraft V3 Text to Image",
     "description": "Generates images synchronously based on prompt and resolution.",
     "inputs": {
       "prompt": {
@@ -15706,7 +15706,7 @@
     }
   },
   "RecraftTextToVectorNode": {
-    "display_name": "Recraft Text to Vector",
+    "display_name": "Recraft V3 Text to Vector",
     "description": "Generates SVG synchronously based on prompt and resolution.",
     "inputs": {
       "prompt": {
@@ -15748,7 +15748,7 @@
   },
   "RecraftV4TextToImageNode": {
     "display_name": "Recraft V4 Text to Image",
-    "description": "Generates images using Recraft V4 or V4 Pro models.",
+    "description": "Generates images using Recraft V4 and V4.1 models.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -15756,7 +15756,7 @@
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "An optional text description of undesired elements on an image."
+        "tooltip": "This input is ignored: negative prompt is not supported by Recraft V4 and V4.1 models."
       },
       "model": {
         "name": "model",
@@ -15789,7 +15789,7 @@
   },
   "RecraftV4TextToVectorNode": {
     "display_name": "Recraft V4 Text to Vector",
-    "description": "Generates SVG using Recraft V4 or V4 Pro models.",
+    "description": "Generates SVG using Recraft V4 and V4.1 models.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -15797,7 +15797,7 @@
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "An optional text description of undesired elements on an image."
+        "tooltip": "This input is ignored: negative prompt is not supported by Recraft V4 and V4.1 models."
       },
       "model": {
         "name": "model",
@@ -17999,7 +17999,7 @@
       },
       "folder_name": {
         "name": "folder_name",
-        "tooltip": "Name of folder to save dataset (inside output directory)."
+        "tooltip": "Name of folder to save the dataset into, inside the datasets directory. Subfolders like 'project/run1' are allowed."
       },
       "shard_size": {
         "name": "shard_size",

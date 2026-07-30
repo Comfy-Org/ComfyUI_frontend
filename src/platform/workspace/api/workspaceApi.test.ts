@@ -593,7 +593,8 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/ops/op-1',
         {
-          headers: AUTH_HEADER
+          headers: AUTH_HEADER,
+          timeout: 30_000
         }
       )
       expect(result).toEqual(data)
