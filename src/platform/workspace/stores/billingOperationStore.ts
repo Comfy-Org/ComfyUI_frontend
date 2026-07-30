@@ -27,7 +27,6 @@ const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
 const SUBSCRIPTION_AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
-type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
 
 export interface StartOperationMetadata {
   tier?: SubscriptionCheckoutTier
@@ -41,11 +40,9 @@ export interface StartOperationMetadata {
   }
 }
 
-interface BillingOperation {
+interface BillingOperationBase {
   opId: string
   type: OperationType
-  status: OperationStatus
-  errorMessage: string | null
   startedAt: number
   actionUrl: string | null
   authenticationRequiredSeen: boolean
@@ -57,7 +54,46 @@ interface BillingOperation {
   downgradeToPersonal?: StartOperationMetadata['downgradeToPersonal']
 }
 
-type TerminalResolver = (operation: BillingOperation) => void
+interface PendingOperation extends BillingOperationBase {
+  status: 'pending'
+  errorMessage: null
+}
+
+interface SucceededOperation extends BillingOperationBase {
+  status: 'succeeded'
+  errorMessage: null
+  actionUrl: null
+}
+
+interface FailedOperation extends BillingOperationBase {
+  status: 'failed'
+  errorMessage: string
+  actionUrl: null
+}
+
+interface TimedOutOperation extends BillingOperationBase {
+  status: 'timeout'
+  errorMessage: string
+  actionUrl: null
+}
+
+type BillingOperation =
+  | PendingOperation
+  | SucceededOperation
+  | FailedOperation
+  | TimedOutOperation
+
+type TerminalOperation =
+  | SucceededOperation
+  | FailedOperation
+  | TimedOutOperation
+
+type TransitionOutcome =
+  | { status: 'succeeded' }
+  | { status: 'failed'; summary: string; detail: string | undefined }
+  | { status: 'timeout'; summary: string }
+
+type TerminalResolver = (operation: TerminalOperation) => void
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {
   const workspaceStore = useTeamWorkspaceStore()
@@ -66,7 +102,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const intervals = new Map<string, number>()
   const receivedToasts = new Map<string, ToastMessageOptions>()
   const terminalResolvers = new Map<string, TerminalResolver>()
-  const terminalPromises = new Map<string, Promise<BillingOperation>>()
+  const terminalPromises = new Map<string, Promise<TerminalOperation>>()
 
   const hasPendingOperations = computed(() =>
     [...operations.value.values()].some((op) => op.status === 'pending')
@@ -114,7 +150,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (existing) clearOperation(opId)
 
     const actionUrl = validateActionUrl(initialActionUrl)
-    const operation: BillingOperation = {
+    const operation: PendingOperation = {
       opId,
       type,
       status: 'pending',
@@ -148,7 +184,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       useToastStore().add(toastMessage)
     }
 
-    const terminal = new Promise<BillingOperation>((resolve) => {
+    const terminal = new Promise<TerminalOperation>((resolve) => {
       terminalResolvers.set(opId, resolve)
     })
     terminalPromises.set(opId, terminal)
@@ -180,12 +216,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
 
       if (response.status === 'succeeded') {
-        await handleSuccess(opId)
+        await transitionToTerminal(opId, { status: 'succeeded' })
         return
       }
 
       if (response.status === 'failed') {
-        handleFailure(opId, response.error_message ?? null)
+        await transitionToTerminal(
+          opId,
+          failureOutcome(operation.type, response.error_message ?? null)
+        )
         return
       }
 
@@ -236,7 +275,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function stopIfTimedOut(opId: string, operation: BillingOperation): boolean {
     if (!hasTimedOut(operation)) return false
-    handleTimeout(opId)
+    void transitionToTerminal(opId, {
+      status: 'timeout',
+      summary: timeoutMessage(operation.type)
+    })
     return true
   }
 
@@ -251,54 +293,37 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     })
   }
 
-  async function handleSuccess(opId: string) {
-    const operation = operations.value.get(opId)
-    if (!operation) return
-
-    updateOperationStatus(opId, 'succeeded', null)
-    cleanup(opId)
-
-    const telemetry = useTelemetry()
-    if (operation.type === 'subscription') {
-      telemetry?.trackBillingEvent({
-        operation: 'subscription_checkout',
-        stage: 'succeeded',
-        outcome: 'success',
-        tier: operation.tier,
-        cycle: operation.cycle,
-        checkout_type: operation.checkoutType,
-        payment_intent_source: operation.paymentIntentSource,
-        billing_op_id: opId
-      })
-      if (operation.downgradeToPersonal) {
-        telemetry?.trackBillingEvent({
-          operation: 'downgrade_to_personal',
-          stage: 'succeeded',
-          outcome: 'success',
-          member_removal_count:
-            operation.downgradeToPersonal.memberRemovalCount,
-          member_removal_failures:
-            operation.downgradeToPersonal.memberRemovalFailures,
-          target_tier: operation.downgradeToPersonal.targetTier
-        })
-      }
-    } else if (operation.type === 'topup') {
-      telemetry?.trackBillingEvent({
-        operation: 'topup',
-        stage: 'succeeded',
-        outcome: 'success',
-        billing_op_id: opId
-      })
-    } else {
-      telemetry?.trackBillingEvent({
-        operation: 'operation',
-        stage: 'succeeded',
-        outcome: 'success',
-        billing_op_id: opId,
-        operation_type: 'cancel'
-      })
+  /**
+   * Owns the entire pending -> terminal transition: status update, cleanup,
+   * telemetry, refresh/side effects, toast, and terminal-promise resolution.
+   * The three outcomes (succeeded/failed/timeout) share this one path and
+   * differ only in the pieces below that actually differ.
+   */
+  async function transitionToTerminal(
+    opId: string,
+    outcome: TransitionOutcome
+  ): Promise<void> {
+    if (outcome.status === 'succeeded') {
+      const operation = updateOperationStatus(opId, outcome)
+      if (!operation) return
+      cleanup(opId)
+      trackSuccessTelemetry(operation)
+      await applySuccessSideEffects(operation)
+      resolveTerminal(opId, operation)
+      return
     }
 
+    const operation = updateOperationStatus(opId, outcome)
+    if (!operation) return
+    cleanup(opId)
+    trackFailureTelemetry(operation, outcome)
+    applyFailureToast(operation, outcome)
+    resolveTerminal(opId, operation)
+  }
+
+  async function applySuccessSideEffects(
+    operation: SucceededOperation
+  ): Promise<void> {
     const billingContext = useBillingContext()
     if (operation.type === 'subscription') {
       await Promise.allSettled([billingContext.reconcileSubscriptionSuccess()])
@@ -311,7 +336,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     if (operation.type === 'cancel') {
       useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })
-      resolveTerminal(opId)
       return
     }
 
@@ -322,93 +346,111 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       useSettingsDialog().show('workspace')
     }
 
-    const toastStore = useToastStore()
     const messageKey =
       operation.type === 'subscription'
         ? 'billingOperation.subscriptionSuccess'
         : 'billingOperation.topupSuccess'
 
-    toastStore.add({
+    useToastStore().add({
       severity: 'success',
       summary: t(messageKey),
       life: 5000
     })
-
-    resolveTerminal(opId)
   }
 
-  function handleFailure(opId: string, errorMessage: string | null) {
-    const operation = operations.value.get(opId)
-    if (!operation) return
+  function applyFailureToast(
+    operation: FailedOperation | TimedOutOperation,
+    outcome: Extract<TransitionOutcome, { status: 'failed' | 'timeout' }>
+  ) {
+    if (operation.type === 'cancel') return
 
-    const defaultMessage = failureMessage(operation.type)
-    const detail =
-      operation.type === 'subscription'
-        ? t('billingOperation.subscriptionFailedDetail')
-        : errorMessage
-
-    updateOperationStatus(opId, 'failed', detail ?? defaultMessage)
-    cleanup(opId)
-
-    const telemetry = useTelemetry()
-    telemetry?.trackBillingEvent({
-      operation: 'operation',
-      stage: 'failed',
-      outcome: 'failure',
-      billing_op_id: opId,
-      operation_type: operation.type,
-      tier: operation.tier,
-      cycle: operation.cycle,
-      checkout_type: operation.checkoutType,
-      payment_intent_source: operation.paymentIntentSource,
-      failure_category: 'unknown'
+    useToastStore().add({
+      severity: 'error',
+      summary: outcome.summary,
+      detail: outcome.status === 'failed' ? outcome.detail : undefined
     })
+  }
+
+  function trackSuccessTelemetry(operation: SucceededOperation) {
+    const telemetry = useTelemetry()
+
+    if (operation.type === 'subscription') {
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'succeeded',
+        outcome: 'success',
+        tier: operation.tier,
+        cycle: operation.cycle,
+        checkout_type: operation.checkoutType,
+        payment_intent_source: operation.paymentIntentSource,
+        billing_op_id: operation.opId
+      })
+    } else if (operation.type === 'topup') {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: operation.opId
+      })
+    } else {
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: operation.opId,
+        operation_type: 'cancel'
+      })
+    }
+
     if (operation.downgradeToPersonal) {
       telemetry?.trackBillingEvent({
         operation: 'downgrade_to_personal',
-        stage: 'failed',
-        outcome: 'failure',
+        stage: 'succeeded',
+        outcome: 'success',
         member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
         member_removal_failures:
           operation.downgradeToPersonal.memberRemovalFailures,
-        target_tier: operation.downgradeToPersonal.targetTier,
+        target_tier: operation.downgradeToPersonal.targetTier
+      })
+    }
+  }
+
+  function trackFailureTelemetry(
+    operation: FailedOperation | TimedOutOperation,
+    outcome: Extract<TransitionOutcome, { status: 'failed' | 'timeout' }>
+  ) {
+    const telemetry = useTelemetry()
+    const failureCategory =
+      outcome.status === 'timeout' ? 'poll_timeout' : 'unknown'
+
+    if (outcome.status === 'timeout') {
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'timeout',
+        outcome: 'failure',
+        billing_op_id: operation.opId,
+        operation_type: operation.type,
+        tier: operation.tier,
+        cycle: operation.cycle,
+        checkout_type: operation.checkoutType,
+        payment_intent_source: operation.paymentIntentSource,
+        failure_category: 'poll_timeout'
+      })
+    } else {
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: operation.opId,
+        operation_type: operation.type,
+        tier: operation.tier,
+        cycle: operation.cycle,
+        checkout_type: operation.checkoutType,
+        payment_intent_source: operation.paymentIntentSource,
         failure_category: 'unknown'
       })
     }
 
-    if (operation.type !== 'cancel') {
-      useToastStore().add({
-        severity: 'error',
-        summary: defaultMessage,
-        detail: detail ?? undefined
-      })
-    }
-
-    resolveTerminal(opId)
-  }
-
-  function handleTimeout(opId: string) {
-    const operation = operations.value.get(opId)
-    if (!operation) return
-
-    const message = timeoutMessage(operation.type)
-
-    updateOperationStatus(opId, 'timeout', message)
-    cleanup(opId)
-
-    const telemetry = useTelemetry()
-    telemetry?.trackBillingEvent({
-      operation: 'operation',
-      stage: 'timeout',
-      outcome: 'failure',
-      billing_op_id: opId,
-      operation_type: operation.type,
-      tier: operation.tier,
-      cycle: operation.cycle,
-      checkout_type: operation.checkoutType,
-      payment_intent_source: operation.paymentIntentSource,
-      failure_category: 'poll_timeout'
-    })
     if (operation.downgradeToPersonal) {
       telemetry?.trackBillingEvent({
         operation: 'downgrade_to_personal',
@@ -418,18 +460,20 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         member_removal_failures:
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
-        failure_category: 'poll_timeout'
+        failure_category: failureCategory
       })
     }
+  }
 
-    if (operation.type !== 'cancel') {
-      useToastStore().add({
-        severity: 'error',
-        summary: message
-      })
-    }
-
-    resolveTerminal(opId)
+  function failureOutcome(
+    type: OperationType,
+    backendMessage: string | null
+  ): Extract<TransitionOutcome, { status: 'failed' }> {
+    const detail =
+      type === 'subscription'
+        ? t('billingOperation.subscriptionFailedDetail')
+        : (backendMessage ?? undefined)
+    return { status: 'failed', summary: failureMessage(type), detail }
   }
 
   function failureMessage(type: OperationType) {
@@ -445,26 +489,42 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     return t('billingOperation.cancelTimeout')
   }
 
-  function resolveTerminal(opId: string) {
-    const resolve = terminalResolvers.get(opId)
-    const operation = operations.value.get(opId)
-    if (resolve && operation) {
-      resolve(operation)
-    }
+  function resolveTerminal(opId: string, operation: TerminalOperation) {
+    terminalResolvers.get(opId)?.(operation)
     terminalResolvers.delete(opId)
     terminalPromises.delete(opId)
   }
 
+  /** Applies a transition outcome to the pending operation, returning the new terminal state. */
   function updateOperationStatus(
     opId: string,
-    status: OperationStatus,
-    errorMessage: string | null
-  ) {
+    outcome: Extract<TransitionOutcome, { status: 'succeeded' }>
+  ): SucceededOperation | undefined
+  function updateOperationStatus(
+    opId: string,
+    outcome: Extract<TransitionOutcome, { status: 'failed' | 'timeout' }>
+  ): FailedOperation | TimedOutOperation | undefined
+  function updateOperationStatus(
+    opId: string,
+    outcome: TransitionOutcome
+  ): TerminalOperation | undefined {
     const operation = operations.value.get(opId)
-    if (!operation) return
+    if (!operation) return undefined
 
-    const updated = { ...operation, status, errorMessage, actionUrl: null }
+    const base = { ...operation, actionUrl: null } as const
+    const updated: TerminalOperation =
+      outcome.status === 'succeeded'
+        ? { ...base, status: 'succeeded', errorMessage: null }
+        : outcome.status === 'failed'
+          ? {
+              ...base,
+              status: 'failed',
+              errorMessage: outcome.detail ?? outcome.summary
+            }
+          : { ...base, status: 'timeout', errorMessage: outcome.summary }
+
     operations.value = new Map(operations.value).set(opId, updated)
+    return updated
   }
 
   function cleanup(opId: string) {
