@@ -109,7 +109,7 @@ describe('resolveConcretePromotedWidget', () => {
       subgraph: {
         inputNode: { slots: [{ name: 'x', linkIds: [1] }] },
         getLink: () => ({
-          resolve: () => ({ inputNode: recursiveNode })
+          resolve: () => ({ inputNode: recursiveNode, input: recursiveInput })
         }),
         getNodeById: () => recursiveNode
       }

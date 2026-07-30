@@ -183,6 +183,8 @@ export interface LinkNetwork extends ReadonlyLinkNetwork {
   readonly reroutes: Map<RerouteId, Reroute>
   addFloatingLink(link: LLink): LLink
   removeReroute(id: RerouteId): unknown
+  /** Removes a reroute from the map and its stores, without chain splicing. */
+  _removeReroute(id: RerouteId): void
   removeFloatingLink(link: LLink): void
 }
 
@@ -330,11 +332,6 @@ export interface INodeSlot extends HasBoundingRect {
   /** @remarks Automatically calculated; not included in serialisation. */
   boundingRect: ReadOnlyRect
   /**
-   * A list of floating link IDs that are connected to this slot.
-   * This is calculated at runtime; it is **not** serialized.
-   */
-  _floatingLinks?: Set<LLink>
-  /**
    * Whether the slot has errors. It is **not** serialized.
    */
   hasErrors?: boolean
@@ -363,7 +360,13 @@ export interface IWidgetLocator {
 }
 
 export interface INodeInputSlot extends INodeSlot {
-  link: LinkId | null
+  /**
+   * @deprecated Id of the link targeting this slot, derived from the link
+   * store by a warning getter. Read via `node.isInputConnected(slot)` /
+   * `node.getInputLink(slot)`; mutate via `node.connect()` /
+   * `node.disconnectInput()`.
+   */
+  readonly link?: LinkId | null
   widget?: IWidgetLocator
   widgetId?: WidgetId
   alwaysVisible?: boolean
@@ -379,7 +382,13 @@ export interface IWidgetInputSlot extends INodeInputSlot {
 }
 
 export interface INodeOutputSlot extends INodeSlot {
-  links: LinkId[] | null
+  /**
+   * @deprecated Ids of the links leaving this slot, derived from the link
+   * store by a warning getter. Read via `node.isOutputConnected(slot)` /
+   * `node.getOutputNodes(slot)`; mutate via `node.connect()` /
+   * `node.disconnectOutput()`.
+   */
+  readonly links?: readonly LinkId[] | null
   _data?: unknown
   slot_index?: SlotIndex
 }

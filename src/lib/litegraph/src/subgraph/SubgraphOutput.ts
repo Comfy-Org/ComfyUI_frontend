@@ -1,8 +1,7 @@
-import { pull } from 'es-toolkit/compat'
-
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
+import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type {
   INodeInputSlot,
@@ -59,9 +58,6 @@ export class SubgraphOutput extends SubgraphSlot {
       subgraph.beforeChange()
 
       existingLink.disconnect(subgraph, 'input')
-      const resolved = existingLink.resolve(subgraph)
-      const links = resolved.output?.links
-      if (links) pull(links, existingLink.id)
     }
 
     const linkId = toLinkId(Number(subgraph.state.lastLinkId) + 1)
@@ -78,31 +74,12 @@ export class SubgraphOutput extends SubgraphSlot {
     )
 
     // Add to graph links list
-    subgraph._links.set(link.id, link)
+    subgraph._addLink(link)
 
     // Set link ID in each slot
     this.linkIds[0] = link.id
-    slot.links ??= []
-    slot.links.push(link.id)
 
-    // Reroutes
-    const reroutes = LLink.getReroutes(subgraph, link)
-    for (const reroute of reroutes) {
-      reroute.linkIds.add(link.id)
-      if (reroute.floating) delete reroute.floating
-      reroute._dragging = undefined
-    }
-
-    // If this is the terminus of a floating link, remove it
-    const lastReroute = reroutes.at(-1)
-    if (lastReroute) {
-      for (const linkId of lastReroute.floatingLinkIds) {
-        const link = subgraph.floatingLinks.get(linkId)
-        if (link?.parentId === lastReroute.id) {
-          subgraph.removeFloatingLink(link)
-        }
-      }
-    }
+    anchorRerouteChain(subgraph, link)
     subgraph.incrementVersion()
 
     node.onConnectionsChange?.(
@@ -161,9 +138,7 @@ export class SubgraphOutput extends SubgraphSlot {
       const link = subgraph.links[linkId]
       if (!link) continue
       subgraph.removeLink(linkId)
-      const { output, outputNode } = link.resolve(subgraph)
-      if (output)
-        output.links = output.links?.filter((id) => id !== linkId) ?? null
+      const { outputNode } = link.resolve(subgraph)
       outputNode?.onConnectionsChange?.(
         NodeSlotType.OUTPUT,
         link.origin_slot,

@@ -2,7 +2,7 @@
 
 This document walks through the major entity lifecycle operations — showing the current imperative implementation and how each transforms under the ECS architecture from [ADR 0008](../adr/0008-entity-component-system.md).
 
-ECS principles are realized across a set of dedicated Pinia stores keyed by string IDs (shipped in PR 12617): `widgetValueStore` (keyed by `WidgetId` = `graphId:nodeId:name`, see `src/types/widgetId.ts`), `layoutStore` (mutated via `useLayoutMutations()`), `nodeOutputStore`, `domWidgetStore`, `subgraphNavigationStore`, and `previewExposureStore`. Components live as plain-data entries in these stores; systems read and mutate them through store getters and command-style mutations.
+ECS principles are realized across a set of dedicated Pinia stores keyed by string IDs (shipped in PR 12617): `widgetValueStore` (keyed by `WidgetId` = `graphId:nodeId:name`, see `src/types/widgetId.ts`), `layoutStore` (mutated via `useLayoutMutations()`), `nodeOutputStore`, `domWidgetStore`, `subgraphNavigationStore`, and `previewExposureStore`. Link topology and reroute chain state shipped later into `linkStore` (PR 13436, keyed by target input slot in root-graph-scoped buckets — see [link-topology-store.md](link-topology-store.md)) and `rerouteStore` (PR 13449, membership derived from the links' `parentId` chains — see [reroute-chain-store.md](reroute-chain-store.md)); `layoutStore` keeps link/reroute geometry only. Components live as plain-data entries in these stores; systems read and mutate them through store getters and command-style mutations.
 
 Each scenario follows the same structure: **Current Flow** (what happens today), **ECS Flow** (the store-backed target), and a **Key Differences** table.
 
@@ -66,6 +66,7 @@ sequenceDiagram
     participant Caller
     participant CS as ConnectivitySystem
     participant LM as useLayoutMutations()
+    participant LKS as linkStore
     participant LS as layoutStore
     participant WVS as widgetValueStore
     participant NOS as nodeOutputStore
@@ -73,12 +74,14 @@ sequenceDiagram
 
     Caller->>CS: removeNode(nodeId)
 
-    CS->>LS: read node links (incoming + outgoing)
-    LS-->>CS: linkIds
+    CS->>LKS: read node links (incoming + outgoing)
+    LKS-->>CS: link topologies
 
-    loop each linkId
-        CS->>LM: deleteLink(linkId)
-        Note over LM,LS: removes link entry +<br/>updates both slot endpoints
+    loop each link
+        CS->>LKS: unregister link topology
+        Note over CS,LKS: via the LGraph._removeLink chokepoint —<br/>map delete + store unregistration
+        CS->>LS: drop link geometry
+        Note over LKS,LS: linkStore owns topology;<br/>layoutStore only drops geometry
     end
 
     loop each widget on node
@@ -93,15 +96,15 @@ sequenceDiagram
 
 ### Key Differences
 
-| Aspect              | Current                                          | ECS                                                                                             |
-| ------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Lines of code       | ~107 in one method                               | ~30 in system function                                                                          |
-| Entity types known  | Graph knows about all 6+ types                   | ConnectivitySystem coordinates layoutStore + widget/output stores                               |
-| Cleanup             | Manual per-slot, per-link, per-reroute           | `deleteLink()`/`deleteNode()` mutations per layout entry                                        |
-| Canvas notification | `setDirtyCanvas()` called explicitly             | Vue reactivity: components re-render when store entries change                                  |
-| Store cleanup       | WidgetValueStore/LayoutStore NOT cleaned up      | Coordinated: `deleteWidget`, `deleteLink`/`deleteNode`, `removeNodeOutputs`, `unregisterWidget` |
-| Undo/redo           | `beforeChange()`/`afterChange()` manually placed | Layout mutations are command records, replayable and undoable                                   |
-| Testability         | Needs full LGraph + LGraphCanvas                 | Needs only the relevant stores + ConnectivitySystem                                             |
+| Aspect              | Current                                                                       | ECS                                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Lines of code       | ~107 in one method                                                            | ~30 in system function                                                                                    |
+| Entity types known  | Graph knows about all 6+ types                                                | ConnectivitySystem coordinates linkStore + layout/widget/output stores                                    |
+| Cleanup             | Manual per-slot, per-link, per-reroute                                        | linkStore unregistration per link (via `_removeLink`) + geometry drop per layout entry                    |
+| Canvas notification | `setDirtyCanvas()` called explicitly                                          | Vue reactivity: components re-render when store entries change                                            |
+| Store cleanup       | WidgetValueStore not cleaned up; link geometry still removed from LayoutStore | Coordinated: `deleteWidget`, linkStore unregister + `deleteNode`, `removeNodeOutputs`, `unregisterWidget` |
+| Undo/redo           | `beforeChange()`/`afterChange()` manually placed                              | Layout mutations are command records, replayable and undoable                                             |
+| Testability         | Needs full LGraph + LGraphCanvas                                              | Needs only the relevant stores + ConnectivitySystem                                                       |
 
 ## 2. Serialization
 
@@ -223,7 +226,7 @@ sequenceDiagram
     end
 
     opt has subgraph definitions
-        G->>G: deduplicateSubgraphNodeIds()
+        G->>G: deduplicateSubgraphNodeIds() + deduplicateSubgraphRerouteIds()
         loop each subgraph (topological order)
             G->>G: createSubgraph(data)
         end
@@ -250,7 +253,7 @@ sequenceDiagram
     end
 
     G->>G: add floating links
-    G->>G: validate reroutes
+    G->>G: prune reroutes with derived totalLinks === 0
     G->>G: _removeDuplicateLinks()
 
     loop each serialized group
@@ -261,6 +264,8 @@ sequenceDiagram
 ```
 
 Problems: two-phase creation is necessary because nodes need to reference each other's links during configure. Widget value restoration happens deep inside `node.configure()`. Store population is a side effect of configuration. Subgraph creation requires topological sorting to handle nested subgraphs.
+
+Note on load-time id hygiene: root `configure()` deduplicates **node ids** and **reroute ids** across sibling subgraph definitions before configuring them (`deduplicateSubgraphNodeIds` / `deduplicateSubgraphRerouteIds`), because both share root-graph-scoped store buckets. Link-id dedup is deliberately absent — the linkStore key is the target input slot, not the link id, so duplicate link ids across definitions cannot collide. Orphaned reroutes are pruned by the derived `totalLinks === 0` check; the old `validateLinks` set-repair is gone (membership is derived, so there is no stored set to drift).
 
 ### ECS Flow
 
@@ -532,7 +537,7 @@ sequenceDiagram
     participant G as LGraph
     participant L as LLink
     participant R as Reroute
-    participant LS as LayoutStore
+    participant LKS as linkStore
 
     Caller->>N1: connectSlots(output, targetNode, input)
 
@@ -545,24 +550,24 @@ sequenceDiagram
     end
 
     N1->>L: new LLink(++lastLinkId, type, ...)
-    N1->>G: _links.set(link.id, link)
-    N1->>LS: layoutMutations.createLink()
+    N1->>G: graph._addLink(link)
+    G->>LKS: register topology (keyed by target input slot)
+    Note over G,LKS: chokepoint: _links.set + linkStore registration
 
     N1->>N1: output.links.push(link.id)
     N1->>N2: input.link = link.id
 
-    loop each reroute in path
-        N1->>R: reroute.linkIds.add(link.id)
-    end
+    N1->>R: anchorRerouteChain(graph, link)
+    Note over N1,R: clears floating markers on the chain —<br/>membership is derived from link.parentId,<br/>no per-reroute linkIds writes
 
-    N1->>G: _version++
+    N1->>G: incrementVersion()
     N1->>N1: onConnectionsChange?(OUTPUT, ...)
     N1->>N2: onConnectionsChange?(INPUT, ...)
     N1->>G: setDirtyCanvas()
     N1->>G: afterChange()
 ```
 
-Problems: the source node orchestrates everything — it reaches into the graph's link map, the target node's slot, the layout store, the reroute chain, and the version counter. 19 steps in one method.
+Problems: the source node orchestrates everything — it reaches into the graph's link map (via the `_addLink` chokepoint), the target node's slot, and the version counter. Reroute membership no longer needs writes (derived via rerouteStore), but the slot mirrors (`output.links`, `input.link`) are still mutated by hand.
 
 ### ECS Flow
 
@@ -570,29 +575,28 @@ Problems: the source node orchestrates everything — it reaches into the graph'
 sequenceDiagram
     participant Caller
     participant CS as ConnectivitySystem
-    participant LS as layoutStore
-    participant LM as useLayoutMutations()
+    participant LKS as linkStore
 
     Caller->>CS: connect(outputSlot, inputSlot)
 
-    CS->>LS: read input slot link
+    CS->>LKS: getInputSlotLink(graphId, targetNodeId, targetSlot)
     opt already connected
-        CS->>LM: deleteLink(existingLinkId)
+        CS->>LKS: unregister existing topology
     end
 
-    CS->>LM: createLink(linkId, {<br/>  originNodeId, originSlotIndex,<br/>  targetNodeId, targetSlotIndex, type<br/>})
-    Note over LM,LS: createLink updates both slot endpoints<br/>and emits a command record
+    CS->>LKS: register LinkTopology {<br/>  id, originNodeId, originSlot,<br/>  targetNodeId, targetSlot, type<br/>}
+    Note over CS,LKS: the target-slot key IS the input-side<br/>slot connection — no separate endpoint update.<br/>Reroute membership derives from parentId;<br/>rerouteStore needs no write
 ```
 
 ### Key Differences
 
-| Aspect           | Current                                                      | ECS                                                           |
-| ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------- |
-| Orchestrator     | Source node (reaches into graph, target, reroutes)           | ConnectivitySystem (reads layoutStore)                        |
-| Side effects     | `_version++`, `setDirtyCanvas()`, `afterChange()`, callbacks | `createLink()` command — endpoints + change tracking included |
-| Reroute handling | Manual: iterate chain, add linkId to each                    | Reroute entries updated via layout mutations                  |
-| Slot mutation    | Direct: `output.links.push()`, `input.link = id`             | `createLink(linkId, ...)` updates both endpoints              |
-| Validation       | `onConnectInput`/`onConnectOutput` callbacks on nodes        | Validation system or guard function                           |
+| Aspect           | Current                                                                                                                   | ECS                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Orchestrator     | Source node (reaches into graph, target slots)                                                                            | ConnectivitySystem (reads linkStore)                                                    |
+| Side effects     | `incrementVersion()`, `setDirtyCanvas()`, `afterChange()`, callbacks                                                      | topology registration — endpoints + change tracking included                            |
+| Reroute handling | None needed — membership derived from `parentId` chains (rerouteStore); `anchorRerouteChain` only clears floating markers | Same — derived membership is already the target shape                                   |
+| Slot mutation    | Direct: `output.links.push()`, `input.link = id`                                                                          | Input side subsumed by the linkStore key; output side pending SlotConnection extraction |
+| Validation       | `onConnectInput`/`onConnectOutput` callbacks on nodes                                                                     | Validation system or guard function                                                     |
 
 ## 7. Copy / Paste
 

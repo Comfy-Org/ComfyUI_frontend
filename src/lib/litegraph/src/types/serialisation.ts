@@ -68,14 +68,14 @@ export interface SerialisableGraph extends BaseExportedGraph {
 
 export type ISerialisableNodeInput = Omit<
   INodeInputSlot,
-  'boundingRect' | 'widget' | 'link' | '_floatingLinks'
+  'boundingRect' | 'widget' | 'link'
 > & {
   link?: number | null
   widget?: { name: string }
 }
 export type ISerialisableNodeOutput = Omit<
   INodeOutputSlot,
-  'boundingRect' | '_data' | 'links' | '_floatingLinks'
+  'boundingRect' | '_data' | 'links'
 > & {
   links?: number[] | null
   widget?: { name: string }
@@ -164,7 +164,7 @@ export interface ExportedSubgraph extends SerialisableGraph {
 /** Properties shared by subgraph and node I/O slots. */
 type SubgraphIOShared = Omit<
   INodeSlot,
-  'boundingRect' | 'nameLocked' | 'locked' | 'removable' | '_floatingLinks'
+  'boundingRect' | 'nameLocked' | 'locked' | 'removable'
 >
 
 /** Subgraph I/O slots */

@@ -33,7 +33,7 @@ const captured: { rows: { node: LGraphNode; widget: IBaseWidget }[] } = {
 }
 
 const SectionWidgetsStub = {
-  props: ['widgets', 'node', 'parents'],
+  props: ['widgets', 'node', 'host'],
   setup(props: Record<string, unknown>) {
     captured.rows = props.widgets as {
       node: LGraphNode

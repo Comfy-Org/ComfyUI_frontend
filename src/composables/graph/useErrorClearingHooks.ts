@@ -7,6 +7,7 @@
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -168,11 +169,10 @@ function scanNodeErrorTargets(
 function getActiveExecutionId(node: LGraphNode): string | null {
   if (!app.rootGraph) return null
   // Skip when any enclosing subgraph is muted/bypassed. Callers only
-  // verify each node's own mode; entering a bypassed subgraph (via
-  // useGraphNodeManager replaying onNodeAdded for existing interior
-  // nodes) reaches this point without the ancestor check. A null
-  // execId means the node has no current graph (e.g. detached mid
-  // lifecycle) — also skip, since we cannot verify its scope.
+  // verify each node's own mode, so an active node added inside a
+  // bypassed subgraph reaches this point without the ancestor check.
+  // A null execId means the node has no current graph (e.g. detached
+  // mid lifecycle) — also skip, since we cannot verify its scope.
   const execId = getExecutionIdByNode(app.rootGraph, node)
   if (!execId || !isExecutionPathActive(app.rootGraph, execId)) return null
   return execId
@@ -400,8 +400,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     installNodeHooksRecursive(node)
   }
 
-  const originalOnNodeAdded = graph.onNodeAdded
-  graph.onNodeAdded = function (node: LGraphNode) {
+  const onNodeAdded = ({ detail: { node } }: NodeLifecycleEvent) => {
     installNodeHooksRecursive(node)
 
     // Scan pasted/duplicated nodes for missing models/media.
@@ -414,23 +413,23 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     if (!ChangeTracker.isLoadingGraph) {
       scheduleAddedNodeScan(node)
     }
-
-    originalOnNodeAdded?.call(this, node)
   }
 
-  const originalOnNodeRemoved = graph.onNodeRemoved
-  graph.onNodeRemoved = function (node: LGraphNode) {
-    // node.graph is already null by the time onNodeRemoved fires, so
-    // derive the execution ID from the graph the hook is installed on
-    // plus node.id. For subgraph interior nodes this yields the full
-    // "parentId:...:nodeId" path that matches how missing asset errors
-    // are keyed; without this, removal falls back to the local ID and
-    // misses subgraph entries.
+  // `node:before-removed` covers both single removals and graph.clear();
+  // `node:removed` fires only from LGraph.remove.
+  const onNodeRemoved = ({ detail: { node } }: NodeLifecycleEvent) => {
+    // Derive the execution ID from the graph the hook is installed on plus
+    // node.id. For subgraph interior nodes this yields the full
+    // "parentId:...:nodeId" path that matches how missing asset errors are
+    // keyed; without this, removal falls back to the local ID and misses
+    // subgraph entries.
     const execId = getRemovedNodeExecutionId(graph, node.id)
     removeNodeErrors(node, execId)
     restoreNodeHooksRecursive(node)
-    originalOnNodeRemoved?.call(this, node)
   }
+
+  graph.events.addEventListener('node:added', onNodeAdded)
+  graph.events.addEventListener('node:before-removed', onNodeRemoved)
 
   const originalOnTrigger = graph.onTrigger
   graph.onTrigger = (event: LGraphTriggerEvent) => {
@@ -449,8 +448,8 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     for (const node of graph._nodes ?? []) {
       restoreNodeHooksRecursive(node)
     }
-    graph.onNodeAdded = originalOnNodeAdded || undefined
-    graph.onNodeRemoved = originalOnNodeRemoved || undefined
+    graph.events.removeEventListener('node:added', onNodeAdded)
+    graph.events.removeEventListener('node:before-removed', onNodeRemoved)
     graph.onTrigger = originalOnTrigger || undefined
   }
 }

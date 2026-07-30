@@ -10,7 +10,6 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toLinkId } from '@/types/linkId'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 import { applyPromotedWidgetControl } from './promotedWidgetControl'
@@ -82,7 +81,10 @@ describe('applyPromotedWidgetControl', () => {
   it('does not run control on a host input fed by an external link', () => {
     const host = createPromotedSeedHost('increment')
     const seedInput = host.inputs.find((input) => input.name === 'seed')!
-    seedInput.link = toLinkId(99)
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    host.graph!.add(source)
+    source.connect(0, host, host.inputs.indexOf(seedInput))
 
     applyPromotedWidgetControl(host, 'afterQueued')
 

@@ -1,34 +1,53 @@
-import { createSharedComposable, whenever } from '@vueuse/core'
+import {
+  createSharedComposable,
+  useEventListener,
+  whenever
+} from '@vueuse/core'
 import { shallowRef, watch } from 'vue'
 
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 
+/**
+ * Bootstraps the renderer's layout view of the active graph and owns the
+ * Layout↔LiteGraph sync lifecycle. Re-seeds the whole active graph on entry —
+ * which is what makes subgraph navigation show the right nodes — then keeps it
+ * current from the graph's node lifecycle events.
+ *
+ * Seeding lives here rather than in `LGraph.add` so `layoutStore` stays empty
+ * while the Vue renderer is off, and holds only the graph being viewed.
+ */
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
   const layoutMutations = useLayoutMutations()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-  const nodeManager = shallowRef<GraphNodeManager | null>(null)
+  const isInitialized = shallowRef(false)
   const { startSync, stopSync } = useLayoutSync()
+  let stopNodeListeners: (() => void) | null = null
 
-  const initializeNodeManager = () => {
+  const seedNodeLayout = (node: LGraphNode) => {
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createNode(node.id, {
+      position: { x: node.pos[0], y: node.pos[1] },
+      size: { width: node.size[0], height: node.size[1] },
+      zIndex: node.order || 0,
+      visible: true
+    })
+  }
+
+  const initializeVueNodeLayout = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
     const activeGraph = comfyApp.canvas?.graph
-    if (!activeGraph || nodeManager.value) return
+    if (!activeGraph || isInitialized.value) return
+    isInitialized.value = true
 
-    // Initialize the core node manager
-    const manager = useGraphNodeManager(activeGraph)
-    nodeManager.value = manager
-
-    // Initialize layout system with existing nodes from active graph
     const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
       id: node.id,
       pos: [node.pos[0], node.pos[1]] as [number, number],
@@ -36,28 +55,35 @@ function useVueNodeLifecycleIndividual() {
     }))
     layoutStore.initializeFromLiteGraph(nodes)
 
-    // Seed reroutes into the Layout Store so hit-testing uses the new path
+    // Deserialised reroutes bypass createReroute, so they need seeding here for
+    // hit-testing to find them.
     for (const reroute of activeGraph.reroutes.values()) {
       const [x, y] = reroute.pos
-      const parent = reroute.parentId ?? undefined
-      const linkIds = Array.from(reroute.linkIds)
-      layoutMutations.createReroute(reroute.id, { x, y }, parent, linkIds)
+      layoutMutations.createReroute(reroute.id, { x, y })
     }
 
-    // Seed existing links into the Layout Store (topology only)
-    for (const link of activeGraph._links.values()) {
-      if (
-        link.origin_id === UNASSIGNED_NODE_ID ||
-        link.target_id === UNASSIGNED_NODE_ID
-      )
-        continue
-      layoutMutations.createLink(
-        link.id,
-        link.origin_id,
-        link.origin_slot,
-        link.target_id,
-        link.target_slot
-      )
+    // While configuring, geometry is still placeholder; the `pos`/`size` setters
+    // write through to the store, so the entry catches up as the real values
+    // land and no deferral is needed.
+    const onNodeAdded = ({ detail: { node } }: NodeLifecycleEvent) =>
+      seedNodeLayout(node)
+    const onNodeRemoved = ({ detail: { node } }: NodeLifecycleEvent) => {
+      layoutMutations.setSource(LayoutSource.Canvas)
+      layoutMutations.deleteNode(node.id)
+    }
+    const stopAdded = useEventListener(
+      activeGraph.events,
+      'node:added',
+      onNodeAdded
+    )
+    const stopRemoved = useEventListener(
+      activeGraph.events,
+      'node:removed',
+      onNodeRemoved
+    )
+    stopNodeListeners = () => {
+      stopAdded()
+      stopRemoved()
     }
 
     // Start sync AFTER seeding so bootstrap operations don't trigger
@@ -65,16 +91,11 @@ function useVueNodeLifecycleIndividual() {
     startSync(canvasStore.canvas)
   }
 
-  const disposeNodeManagerAndSyncs = () => {
+  const disposeVueNodeLayout = () => {
     stopSync()
-    if (!nodeManager.value) return
-
-    try {
-      nodeManager.value.cleanup()
-    } catch {
-      /* empty */
-    }
-    nodeManager.value = null
+    stopNodeListeners?.()
+    stopNodeListeners = null
+    isInitialized.value = false
   }
 
   // Watch for Vue nodes enabled state changes
@@ -82,7 +103,7 @@ function useVueNodeLifecycleIndividual() {
     () => shouldRenderVueNodes.value && Boolean(comfyApp.canvas?.graph),
     (enabled) => {
       if (enabled) {
-        initializeNodeManager()
+        initializeVueNodeLayout()
       }
     },
     { immediate: true }
@@ -91,7 +112,7 @@ function useVueNodeLifecycleIndividual() {
   whenever(
     () => !shouldRenderVueNodes.value,
     () => {
-      disposeNodeManagerAndSyncs()
+      disposeVueNodeLayout()
 
       // Force arrange() on all nodes so input.pos is computed before
       // the first legacy drawConnections frame (which may run before
@@ -122,49 +143,33 @@ function useVueNodeLifecycleIndividual() {
     }
   )
 
-  // Handle case where Vue nodes are enabled but graph starts empty
+  /**
+   * When the canvas mounts before its first node exists, bootstrap is deferred
+   * to the first add.
+   */
   const setupEmptyGraphListener = () => {
     const activeGraph = comfyApp.canvas?.graph
     if (
       !shouldRenderVueNodes.value ||
-      nodeManager.value ||
+      isInitialized.value ||
       activeGraph?._nodes.length !== 0
     ) {
       return
     }
-    const originalOnNodeAdded = activeGraph.onNodeAdded
-    activeGraph.onNodeAdded = function (node: LGraphNode) {
-      // Restore original handler
-      activeGraph.onNodeAdded = originalOnNodeAdded
-
-      // Initialize node manager if needed
-      if (shouldRenderVueNodes.value && !nodeManager.value) {
-        initializeNodeManager()
-      }
-
-      // Call original handler
-      if (originalOnNodeAdded) {
-        originalOnNodeAdded.call(this, node)
-      }
-    }
-  }
-
-  // Cleanup function for component unmounting
-  const cleanup = () => {
-    if (nodeManager.value) {
-      nodeManager.value.cleanup()
-      nodeManager.value = null
-    }
+    useEventListener(
+      activeGraph.events,
+      'node:added',
+      () => {
+        if (shouldRenderVueNodes.value) initializeVueNodeLayout()
+      },
+      { once: true }
+    )
   }
 
   return {
-    nodeManager,
-
-    // Lifecycle methods
-    initializeNodeManager,
-    disposeNodeManagerAndSyncs,
-    setupEmptyGraphListener,
-    cleanup
+    initializeVueNodeLayout,
+    disposeVueNodeLayout,
+    setupEmptyGraphListener
   }
 }
 

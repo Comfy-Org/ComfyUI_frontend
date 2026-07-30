@@ -1,4 +1,6 @@
 // TODO: Fix these tests after migration
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -31,6 +33,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
   const mockSetConnectingLinks = vi.fn()
 
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     connector = new LinkConnector(mockSetConnectingLinks)
     vi.clearAllMocks()
   })

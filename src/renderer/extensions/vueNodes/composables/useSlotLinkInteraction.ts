@@ -5,7 +5,7 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
@@ -33,6 +33,8 @@ import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
+import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
+import { useLinkStore } from '@/stores/linkStore'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
@@ -232,11 +234,13 @@ export function useSlotLinkInteraction({
 
   const resolveExistingInputLinkAnchor = (
     graph: LGraph,
+    nodeId: NodeId,
+    slotIndex: number,
     inputSlot: INodeInputSlot | undefined
   ): { position: Point; direction: LinkDirection } | null => {
     if (!inputSlot) return null
 
-    const directLink = graph.getLink(inputSlot.link)
+    const directLink = inputLink(graph, nodeId, slotIndex)
     if (directLink) {
       const reroutes = LLink.getReroutes(graph, directLink)
       const lastReroute = reroutes.at(-1)
@@ -262,10 +266,7 @@ export function useSlotLinkInteraction({
       if (directAnchor) return directAnchor
     }
 
-    const floatingLinkIterator = inputSlot._floatingLinks?.values()
-    const floatingLink = floatingLinkIterator
-      ? floatingLinkIterator.next().value
-      : undefined
+    const [floatingLink] = slotFloatingLinks(graph, 'input', nodeId, slotIndex)
     if (!floatingLink) return null
 
     if (floatingLink.parentId != null) {
@@ -626,13 +627,23 @@ export function useSlotLinkInteraction({
 
     const ctrlOrMeta = event.ctrlKey || event.metaKey
 
-    const inputLinkId = inputSlot?.link ?? null
-    const inputFloatingCount = inputSlot?._floatingLinks?.size ?? 0
-    const hasExistingInputLink = inputLinkId != null || inputFloatingCount > 0
+    const existingInputLink = isInputSlot
+      ? inputLink(graph, localNodeId, index)
+      : undefined
+    const inputFloatingCount = isInputSlot
+      ? slotFloatingLinks(graph, 'input', localNodeId, index).length
+      : 0
+    const hasExistingInputLink =
+      existingInputLink !== undefined || inputFloatingCount > 0
 
-    const outputLinkCount = outputSlot?.links?.length ?? 0
-    const outputFloatingCount = outputSlot?._floatingLinks?.size ?? 0
-    const hasExistingOutputLink = outputLinkCount > 0 || outputFloatingCount > 0
+    const hasExistingOutputLink =
+      isOutputSlot &&
+      (useLinkStore().isOutputSlotConnected(
+        graph.rootGraph.id,
+        localNodeId,
+        index
+      ) ||
+        slotFloatingLinks(graph, 'output', localNodeId, index).length > 0)
 
     const shouldBreakExistingInputLink =
       isInputSlot &&
@@ -647,11 +658,6 @@ export function useSlotLinkInteraction({
       ctrlOrMeta &&
       event.altKey &&
       !event.shiftKey
-
-    const existingInputLink =
-      isInputSlot && inputLinkId != null
-        ? graph.getLink(inputLinkId)
-        : undefined
 
     if (shouldBreakExistingInputLink && resolvedNode) {
       resolvedNode.disconnectInput(index, true)
@@ -671,7 +677,7 @@ export function useSlotLinkInteraction({
 
     const existingAnchor =
       isInputSlot && !shouldBreakExistingInputLink
-        ? resolveExistingInputLinkAnchor(graph, inputSlot)
+        ? resolveExistingInputLinkAnchor(graph, localNodeId, index, inputSlot)
         : null
 
     const shouldMoveExistingOutput =

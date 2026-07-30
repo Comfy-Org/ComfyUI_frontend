@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
@@ -9,6 +11,8 @@ import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import { createNode, getWidgetIdForNode, resolveNode } from './litegraphUtil'
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 const mockBringNodeToFront = vi.fn()
 

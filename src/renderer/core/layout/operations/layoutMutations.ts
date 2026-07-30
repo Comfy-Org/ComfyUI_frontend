@@ -10,7 +10,6 @@ import type { NodeId } from '@/types/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
   LayoutSource,
-  LinkId,
   NodeLayout,
   Point,
   RerouteId,
@@ -26,22 +25,9 @@ interface LayoutMutations {
   setNodeZIndex(nodeId: NodeId, zIndex: number): void
   createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
   deleteNode(nodeId: NodeId): void
-  createLink(
-    linkId: LinkId,
-    sourceNodeId: NodeId,
-    sourceSlot: number,
-    targetNodeId: NodeId,
-    targetSlot: number
-  ): void
-  deleteLink(linkId: LinkId): void
 
   // Reroute operations
-  createReroute(
-    rerouteId: RerouteId,
-    position: Point,
-    parentId?: RerouteId,
-    linkIds?: LinkId[]
-  ): void
+  createReroute(rerouteId: RerouteId, position: Point): void
   deleteReroute(rerouteId: RerouteId): void
   moveReroute(
     rerouteId: RerouteId,
@@ -218,71 +204,15 @@ export function useLayoutMutations(): LayoutMutations {
   }
 
   /**
-   * Create a new link
-   */
-  const createLink = (
-    linkId: LinkId,
-    sourceNodeId: NodeId,
-    sourceSlot: number,
-    targetNodeId: NodeId,
-    targetSlot: number
-  ): void => {
-    logger.debug('Creating link:', {
-      linkId,
-      from: `${sourceNodeId}[${sourceSlot}]`,
-      to: `${targetNodeId}[${targetSlot}]`
-    })
-    layoutStore.applyOperation({
-      type: 'createLink',
-      entity: 'link',
-      linkId,
-      sourceNodeId,
-      sourceSlot,
-      targetNodeId,
-      targetSlot,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
-  /**
-   * Delete a link
-   */
-  const deleteLink = (linkId: LinkId): void => {
-    logger.debug('Deleting link:', linkId)
-    layoutStore.applyOperation({
-      type: 'deleteLink',
-      entity: 'link',
-      linkId,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
-  /**
    * Create a new reroute
    */
-  const createReroute = (
-    rerouteId: RerouteId,
-    position: Point,
-    parentId?: RerouteId,
-    linkIds: LinkId[] = []
-  ): void => {
-    logger.debug('Creating reroute:', {
-      rerouteId,
-      position,
-      parentId,
-      linkCount: linkIds.length
-    })
+  const createReroute = (rerouteId: RerouteId, position: Point): void => {
+    logger.debug('Creating reroute:', { rerouteId, position })
     layoutStore.applyOperation({
       type: 'createReroute',
       entity: 'reroute',
       rerouteId,
       position,
-      parentId,
-      linkIds,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -339,8 +269,6 @@ export function useLayoutMutations(): LayoutMutations {
     createNode,
     deleteNode,
     bringNodeToFront,
-    createLink,
-    deleteLink,
     createReroute,
     deleteReroute,
     moveReroute

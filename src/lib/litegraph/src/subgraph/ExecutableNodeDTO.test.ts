@@ -8,7 +8,6 @@ import {
   LGraphEventMode,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import {
@@ -58,15 +57,18 @@ describe('ExecutableNodeDTO Creation', () => {
     const node = new LGraphNode('Test Node')
     node.addInput('input1', 'number')
     node.addInput('input2', 'string')
-    node.inputs[0].link = toLinkId(123) // Simulate connected input
     graph.add(node)
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    graph.add(source)
+    const link = source.connect(0, node, 0)!
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
 
     expect(dto.inputs).toHaveLength(2)
     expect(dto.inputs[0].name).toBe('input1')
     expect(dto.inputs[0].type).toBe('number')
-    expect(dto.inputs[0].linkId).toBe(123)
+    expect(dto.inputs[0].linkId).toBe(link.id)
     expect(dto.inputs[1].name).toBe('input2')
     expect(dto.inputs[1].type).toBe('string')
     expect(dto.inputs[1].linkId).toBeNull()
@@ -507,8 +509,11 @@ describe('ExecutableNodeDTO Properties', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
     node.addInput('testInput', 'number')
-    node.inputs[0].link = toLinkId(999) // Simulate connection
     graph.add(node)
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    graph.add(source)
+    const link = source.connect(0, node, 0)!
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
 
@@ -516,7 +521,7 @@ describe('ExecutableNodeDTO Properties', () => {
     expect(dto.inputs).toHaveLength(1)
     expect(dto.inputs[0].name).toBe('testInput')
     expect(dto.inputs[0].type).toBe('number')
-    expect(dto.inputs[0].linkId).toBe(999)
+    expect(dto.inputs[0].linkId).toBe(link.id)
   })
 })
 
@@ -665,30 +670,24 @@ describe('ExecutableNodeDTO Integration', () => {
 describe('ExecutableNodeDTO Scale Testing', () => {
   it('should create DTOs at scale', () => {
     const graph = new LGraph()
-    const startTime = performance.now()
     const dtos: ExecutableNodeDTO[] = []
 
-    // Create DTOs to test performance
     for (let i = 0; i < 1000; i++) {
       const node = new LGraphNode(`Node ${i}`)
       node.id = toNodeId(i)
       node.addInput('in', 'number')
-      graph.add(node)
+      // Bulk add, as LGraph.configure does: recomputing execution order per
+      // node is O(n^2) and unrelated to the id generation under test.
+      graph.add(node, { skipComputeOrder: true })
 
       const dto = new ExecutableNodeDTO(node, ['parent'], new Map(), undefined)
       dtos.push(dto)
     }
 
-    const endTime = performance.now()
-    const duration = endTime - startTime
-
     expect(dtos).toHaveLength(1000)
-    // Test deterministic properties instead of flaky timing
     expect(dtos[0].id).toBe('parent:0')
     expect(dtos[999].id).toBe('parent:999')
     expect(dtos.every((dto, i) => dto.id === `parent:${i}`)).toBe(true)
-
-    console.log(`Created 1000 DTOs in ${duration.toFixed(2)}ms`)
   })
 
   it('should handle complex path generation correctly', () => {

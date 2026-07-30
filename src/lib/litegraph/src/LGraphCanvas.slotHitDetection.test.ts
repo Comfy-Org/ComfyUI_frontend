@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -10,6 +12,9 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
+    getCurrentSource: vi.fn(),
+    getCurrentActor: vi.fn(),
+    applyOperation: vi.fn(),
     querySlotAtPoint: vi.fn(),
     queryRerouteAtPoint: vi.fn(),
     getNodeLayoutRef: vi.fn(() => ({ value: null })),
@@ -18,6 +23,8 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
     batchUpdateNodeBounds: vi.fn()
   }
 }))
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 describe('LGraphCanvas slot hit detection', () => {
   let graph: LGraph

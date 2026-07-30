@@ -27,9 +27,11 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import type { LinkTopology } from '@/types/linkTopology'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 interface LegacyProxyEntrySource extends PromotedWidgetSource {
@@ -265,21 +267,30 @@ function pickHostValue(
   return { value: raw, isHole: false }
 }
 
+function primitiveOutputTopologies(
+  hostNode: SubgraphNode,
+  primitiveNode: LGraphNode
+): LinkTopology[] {
+  return [
+    ...useLinkStore().getOutputSlotLinks(
+      hostNode.subgraph.rootGraph.id,
+      primitiveNode.id,
+      0
+    )
+  ]
+}
+
 function collectTargetsStrict(
   hostNode: SubgraphNode,
   primitiveNode: LGraphNode
 ): PrimitiveBypassTargetRef[] | undefined {
   const subgraph = hostNode.subgraph
-  const output = primitiveNode.outputs?.[0]
-  const linkIds = output?.links ?? []
   const targets: PrimitiveBypassTargetRef[] = []
-  for (const linkId of linkIds) {
-    const link = subgraph.links.get(linkId)
-    if (!link) return undefined
-    if (link.target_id === UNASSIGNED_NODE_ID) return undefined
+  for (const topology of primitiveOutputTopologies(hostNode, primitiveNode)) {
+    if (!subgraph.links.get(topology.id)) return undefined
     targets.push({
-      targetNodeId: link.target_id,
-      targetSlot: link.target_slot
+      targetNodeId: topology.targetNodeId,
+      targetSlot: topology.targetSlot
     })
   }
   return targets
@@ -290,18 +301,12 @@ function collectTargetsSkippingDangling(
   primitiveNode: LGraphNode
 ): PrimitiveBypassTargetRef[] {
   const subgraph = hostNode.subgraph
-  const linkIds = primitiveNode.outputs?.[0]?.links ?? []
-  return linkIds.flatMap((linkId) => {
-    const link = subgraph.links.get(linkId)
-    return link && link.target_id !== UNASSIGNED_NODE_ID
-      ? [
-          {
-            targetNodeId: link.target_id,
-            targetSlot: link.target_slot
-          }
-        ]
-      : []
-  })
+  return primitiveOutputTopologies(hostNode, primitiveNode)
+    .filter((topology) => subgraph.links.get(topology.id))
+    .map((topology) => ({
+      targetNodeId: topology.targetNodeId,
+      targetSlot: topology.targetSlot
+    }))
 }
 
 function cohortDuplicatesPrimitive(
@@ -619,17 +624,14 @@ function repairPrimitive(
   }
 
   const baseName = userRenamedTitle(primitiveNode) ?? validated.sourceWidgetName
-  const snapshot: SnapshotLink[] = (primitiveOutput.links ?? [])
-    .map((id) => subgraph.links.get(id))
-    .filter(
-      (l): l is NonNullable<typeof l> =>
-        l !== undefined && l.target_id !== UNASSIGNED_NODE_ID
-    )
-    .map((l) => ({
-      primitiveSlot: l.origin_slot,
-      targetNodeId: l.target_id,
-      targetSlot: l.target_slot
-    }))
+  const snapshot: SnapshotLink[] = primitiveOutputTopologies(
+    hostNode,
+    primitiveNode
+  ).map((topology) => ({
+    primitiveSlot: topology.originSlot,
+    targetNodeId: topology.targetNodeId,
+    targetSlot: topology.targetSlot
+  }))
 
   let newSubgraphInput: SubgraphInput | undefined
   try {

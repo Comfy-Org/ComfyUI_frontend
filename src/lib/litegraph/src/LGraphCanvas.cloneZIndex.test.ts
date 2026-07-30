@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeId } from '@/types/nodeId'
@@ -13,14 +15,15 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
 const TEST_NODE_TYPE = 'test/CloneZIndex' as const
 
 class TestNode extends LGraphNode {
   static override type = TEST_NODE_TYPE
 
   constructor(title?: string) {
-    super(title ?? TEST_NODE_TYPE)
-    this.type = TEST_NODE_TYPE
+    super(title ?? TEST_NODE_TYPE, TEST_NODE_TYPE)
   }
 }
 

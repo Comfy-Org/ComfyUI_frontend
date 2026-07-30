@@ -1,6 +1,8 @@
+import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
+import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { SubgraphInputEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphInputEventMap'
@@ -75,10 +77,10 @@ export class SubgraphInput extends SubgraphSlot {
     // }
 
     // Disconnect target input, if it is already connected.
-    if (slot.link != null) {
+    const existingLink = inputLink(subgraph, node.id, node.inputs.indexOf(slot))
+    if (existingLink) {
       subgraph.beforeChange()
-      const link = subgraph.getLink(slot.link)
-      this.parent._disconnectNodeInput(node, slot, link)
+      this.parent._disconnectNodeInput(node, slot, existingLink)
     }
 
     const inputWidget = node.getWidgetFromSlot(slot)
@@ -114,39 +116,14 @@ export class SubgraphInput extends SubgraphSlot {
     )
 
     // Add to graph links list
-    subgraph._links.set(link.id, link)
+    subgraph._addLink(link)
 
     // Set link ID in each slot
     this.linkIds.push(link.id)
-    slot.link = link.id
 
-    // Reroutes
-    const reroutes = LLink.getReroutes(subgraph, link)
-    for (const reroute of reroutes) {
-      reroute.linkIds.add(link.id)
-      if (reroute.floating) delete reroute.floating
-      reroute._dragging = undefined
-    }
-
-    // If this is the terminus of a floating link, remove it
-    const lastReroute = reroutes.at(-1)
-    if (lastReroute) {
-      for (const linkId of lastReroute.floatingLinkIds) {
-        const link = subgraph.floatingLinks.get(linkId)
-        if (link?.parentId === lastReroute.id) {
-          subgraph.removeFloatingLink(link)
-        }
-      }
-    }
+    anchorRerouteChain(subgraph, link)
     subgraph.incrementVersion()
 
-    subgraph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.INPUT,
-      slotIndex: inputIndex,
-      connected: true,
-      linkId: link.id
-    })
     node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
 
     subgraph.afterChange()

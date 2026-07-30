@@ -3,8 +3,6 @@ import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
-import { getControlWidget } from '@/composables/graph/useGraphNodeManager'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -15,13 +13,18 @@ import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { getControlWidget } from '@/types/simplifiedWidget'
+import type {
+  SimplifiedWidget,
+  WidgetValue as SimplifiedWidgetValue
+} from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -37,8 +40,7 @@ const {
   hiddenFavoriteIndicator = false,
   hiddenWidgetActions = false,
   showNodeName = false,
-  parents = [],
-  isShownOnParents = false
+  host
 } = defineProps<{
   widget: IBaseWidget
   node: LGraphNode
@@ -46,8 +48,7 @@ const {
   hiddenFavoriteIndicator?: boolean
   hiddenWidgetActions?: boolean
   showNodeName?: boolean
-  parents?: SubgraphNode[]
-  isShownOnParents?: boolean
+  host?: SubgraphNode
 }>()
 
 const emit = defineEmits<{
@@ -61,6 +62,7 @@ const canvasStore = useCanvasStore()
 const nodeDefStore = useNodeDefStore()
 const widgetValueStore = useWidgetValueStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
+const linkStore = useLinkStore()
 const isEditing = ref(false)
 
 const widgetComponent = computed(() => {
@@ -69,16 +71,14 @@ const widgetComponent = computed(() => {
 })
 
 const isLinked = computed(() => {
-  const safeWidget = useVueNodeLifecycle()
-    .nodeManager.value?.vueNodeData.get(node.id)
-    ?.widgets?.find((w) => w.name === widget.name)
-  return safeWidget?.slotMetadata
-    ? !!safeWidget.slotMetadata.linked
-    : !!node.inputs?.find((inp) => inp.widget?.name === widget.name)?.link
+  const graphId = node.graph?.rootGraph.id
+  const slot = node.inputs?.findIndex((i) => i.widget?.name === widget.name)
+  if (!graphId || slot === undefined || slot < 0) return false
+  return linkStore.isInputSlotConnected(graphId, node.id, slot)
 })
 
 const simplifiedWidget = computed((): SimplifiedWidget => {
-  const graphId = node.graph?.rootGraph?.id
+  const graphId = node.graph?.rootGraph.id
   const bareNodeId = stripGraphPrefix(node.id)
   const widgetState = widget.widgetId
     ? useWidgetValueStore().getWidget(widget.widgetId)
@@ -93,7 +93,9 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
   return {
     name: widgetName,
     type: widgetType,
-    value: widgetState?.value ?? widget.value,
+    value: (widgetState
+      ? widgetState.value
+      : widget.value) as SimplifiedWidgetValue,
     label: widgetState?.label ?? widget.label,
     options: { ...baseOptions, disabled },
     spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
@@ -111,10 +113,7 @@ const displayNodeName = computed((): string | null => {
   })
 })
 
-const hasParents = computed(() => parents?.length > 0)
-const favoriteNode = computed(() =>
-  isShownOnParents && hasParents.value ? parents[0] : node
-)
+const hasHost = computed(() => host != null)
 
 const widgetValue = computed({
   get: () => widget.value,
@@ -134,7 +133,7 @@ const displayLabel = customRef((track, trigger) => {
 
       const trimmedLabel = newValue.trim()
 
-      const success = renameWidget(widget, node, trimmedLabel, parents)
+      const success = renameWidget(widget, node, trimmedLabel)
 
       if (success) {
         canvasStore.canvas?.setDirty(true)
@@ -167,7 +166,7 @@ const displayLabel = customRef((track, trigger) => {
       <EditableText
         v-if="widget.name"
         :model-value="displayLabel"
-        :is-editing="isEditing"
+        :is-editing
         :input-attrs="{ placeholder: widget.name }"
         class="pointer-events-auto m-0 cursor-text truncate p-0 text-sm/8"
         @edit="displayLabel = $event"
@@ -176,7 +175,7 @@ const displayLabel = customRef((track, trigger) => {
       />
 
       <span
-        v-if="(showNodeName || hasParents) && displayNodeName"
+        v-if="(showNodeName || hasHost) && displayNodeName"
         class="mx-1 my-0 min-w-10 flex-1 truncate p-0 text-right text-xs text-muted-foreground"
       >
         {{ displayNodeName }}
@@ -187,10 +186,9 @@ const displayLabel = customRef((track, trigger) => {
       >
         <WidgetActions
           v-model:label="displayLabel"
-          :widget="widget"
-          :node="node"
-          :parents="parents"
-          :is-shown-on-parents="isShownOnParents"
+          :widget
+          :node
+          :host
           @reset-to-default="emit('resetToDefault', $event)"
         />
       </div>
@@ -199,7 +197,7 @@ const displayLabel = customRef((track, trigger) => {
     <div
       v-if="
         !hiddenFavoriteIndicator &&
-        favoritedWidgetsStore.isFavorited(favoriteNode, widget.name)
+        favoritedWidgetsStore.isFavorited(node, widget.name)
       "
       class="pointer-events-none relative z-2"
     >

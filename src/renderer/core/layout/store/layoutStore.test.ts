@@ -1,3 +1,6 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toLinkId } from '@/types/linkId'
@@ -28,6 +31,10 @@ function expectSingleOperation(
   expect(operations).toHaveLength(1)
   expect(operations[0]).toEqual(expect.objectContaining(expectedOperation))
 }
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+})
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
@@ -771,7 +778,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
     }
   )
 
-  it('emits a deleteNode operation when setter receives null', () => {
+  it('ignores a null assignment; deletion goes through layoutMutations.deleteNode', () => {
     const ref = layoutStore.getNodeLayoutRef(REF_NODE)
     const layout = baseLayout()
     ref.value = layout
@@ -780,12 +787,8 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       ref.value = null
     })
 
-    expectSingleOperation(operations, {
-      type: 'deleteNode',
-      nodeId: REF_NODE,
-      previousLayout: layout
-    })
-    expect(ref.value).toBeNull()
+    expect(operations).toEqual([])
+    expect(ref.value).toEqual(layout)
   })
 })
 
@@ -852,7 +855,7 @@ describe('layoutStore link layout updates', () => {
     layoutStore.initializeFromLiteGraph([])
   })
 
-  const stubPath = () => ({}) as unknown as Path2D
+  const stubPath = () => fromPartial<Path2D>({})
   const baseLink = (path = stubPath()) => ({
     id: toLinkId(1),
     path,
