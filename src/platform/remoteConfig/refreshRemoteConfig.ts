@@ -5,6 +5,7 @@ import {
   remoteConfig,
   remoteConfigState
 } from './remoteConfig'
+import type { RemoteConfig } from './types'
 
 const FEATURES_FETCH_TIMEOUT_MS = 5_000
 
@@ -82,7 +83,9 @@ async function performRefreshRemoteConfig(
       return
     }
 
-    const safeConfig = { ...remoteConfig.value }
+    const safeConfig: RemoteConfig & {
+      release_flags?: Record<string, boolean>
+    } = { ...remoteConfig.value }
     delete safeConfig.release_flags
     window.__CONFIG__ = safeConfig
     remoteConfig.value = safeConfig

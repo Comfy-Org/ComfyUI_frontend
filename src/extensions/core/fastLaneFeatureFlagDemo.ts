@@ -1,7 +1,6 @@
 import { watch } from 'vue'
 
 import { useFeatureGate } from '@/composables/useFeatureGate'
-import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { useExtensionService } from '@/services/extensionService'
 
@@ -11,12 +10,12 @@ useExtensionService().registerExtension({
   name: 'Comfy.Cloud.FastLaneFeatureFlagDemo',
 
   setup: () => {
-    const { value: enabled, recordExposure } = useFeatureGate(flagKey)
+    const { state, value: enabled, recordExposure } = useFeatureGate(flagKey)
 
     watch(
-      [remoteConfigState, enabled],
+      [state, enabled],
       ([state, isEnabled]) => {
-        if (state !== 'authenticated' && state !== 'error') return
+        if (state !== 'resolved' && state !== 'error') return
 
         recordExposure()
         if (!isEnabled) return

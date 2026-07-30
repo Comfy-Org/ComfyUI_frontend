@@ -3,6 +3,7 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { refreshFeatureGates } from '@/composables/useFeatureGate'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useExtensionService } from '@/services/extensionService'
@@ -17,10 +18,12 @@ useExtensionService().registerExtension({
   setup: async () => {
     const { isLoggedIn, resolvedUserInfo } = useCurrentUser()
     const { isActiveSubscription } = useBillingContext()
-    const refreshAuthenticatedConfig = () =>
-      refreshRemoteConfig({
+    const refreshAuthenticatedConfig = async () => {
+      await refreshRemoteConfig({
         getSessionId: () => resolvedUserInfo.value?.id ?? null
       })
+      await refreshFeatureGates()
+    }
 
     watch(
       resolvedUserInfo,
@@ -46,6 +49,6 @@ useExtensionService().registerExtension({
 
     setInterval(() => {
       if (isLoggedIn.value) void refreshAuthenticatedConfig()
-    }, 60_000)
+    }, 30_000)
   }
 })

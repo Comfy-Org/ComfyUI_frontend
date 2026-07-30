@@ -1,19 +1,32 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  remoteConfig,
-  remoteConfigState
-} from '@/platform/remoteConfig/remoteConfig'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import { api } from '@/scripts/api'
 import { setTelemetryRegistry } from '@/platform/telemetry'
-import type { TelemetryProvider } from '@/platform/telemetry/types'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 
 import { useFeatureGate } from './useFeatureGate'
 
+vi.mock('@/scripts/api', () => ({
+  api: {
+    fetchApi: vi.fn()
+  }
+}))
+
+const fetchApi = vi.mocked(api.fetchApi)
+const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+function featureFlagResponse(flags: Record<string, boolean>) {
+  return new Response(JSON.stringify({ flags }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
 describe('useFeatureGate', () => {
   beforeEach(() => {
-    remoteConfig.value = {}
-    remoteConfigState.value = 'unloaded'
+    fetchApi.mockReset()
+    remoteConfigState.value = 'anonymous'
     localStorage.clear()
     sessionStorage.clear()
     setTelemetryRegistry(null)
@@ -23,128 +36,80 @@ describe('useFeatureGate', () => {
     vi.restoreAllMocks()
   })
 
-  it('stays off until authenticated config resolves the flag on', () => {
-    remoteConfig.value = {
-      release_flags: { might_be_risky_feature_foo: true }
-    }
-    remoteConfigState.value = 'anonymous'
-
-    const { value } = useFeatureGate('might_be_risky_feature_foo')
-
-    expect(value.value).toBe(false)
-
-    remoteConfigState.value = 'authenticated'
-
-    expect(value.value).toBe(true)
-  })
-
-  it('defaults missing flags to off', () => {
-    remoteConfigState.value = 'authenticated'
-
-    const { value } = useFeatureGate('missing_flag')
-
-    expect(value.value).toBe(false)
-  })
-
-  it('gives a boolean development override precedence', () => {
-    localStorage.setItem('ff:might_be_risky_feature_foo', 'false')
-    remoteConfig.value = {
-      release_flags: { might_be_risky_feature_foo: true }
-    }
-    remoteConfigState.value = 'authenticated'
-
-    const { value } = useFeatureGate('might_be_risky_feature_foo')
-
-    expect(value.value).toBe(false)
-  })
-
-  it('does not record exposure before authenticated config resolves', () => {
-    const trackFeatureFlagExposure = vi.fn()
-    const registry = new TelemetryRegistry()
-    registry.registerProvider({ trackFeatureFlagExposure })
-    setTelemetryRegistry(registry)
-
-    const { recordExposure } = useFeatureGate('might_be_risky_feature_foo')
-
-    recordExposure()
-
-    expect(trackFeatureFlagExposure).not.toHaveBeenCalled()
-  })
-
-  it('does not throw when telemetry is unavailable', () => {
-    remoteConfigState.value = 'authenticated'
-
-    const { recordExposure } = useFeatureGate('might_be_risky_feature_foo')
-
-    expect(() => recordExposure()).not.toThrow()
-  })
-
-  it('records each resolved key and value once per session', () => {
-    const trackFeatureFlagExposure = vi.fn()
-    const provider: TelemetryProvider = { trackFeatureFlagExposure }
-    const registry = new TelemetryRegistry()
-    registry.registerProvider(provider)
-    setTelemetryRegistry(registry)
-    remoteConfig.value = {
-      release_flags: { might_be_risky_feature_foo: true }
-    }
-    remoteConfigState.value = 'authenticated'
-
-    const { recordExposure } = useFeatureGate('might_be_risky_feature_foo')
-
-    recordExposure()
-    recordExposure()
-
-    expect(trackFeatureFlagExposure).toHaveBeenCalledExactlyOnceWith(
-      'might_be_risky_feature_foo',
-      true
+  it('evaluates any PostHog key after authentication', async () => {
+    fetchApi.mockResolvedValue(
+      featureFlagResponse({ feature_flag_foobar: true })
     )
+    const gate = useFeatureGate('feature_flag_foobar')
+
+    expect(gate.value.value).toBe(false)
+    expect(gate.state.value).toBe('unloaded')
+
+    remoteConfigState.value = 'authenticated'
+    await flushPromises()
+
+    expect(fetchApi).toHaveBeenCalledWith('/feature-flags/evaluate', {
+      body: expect.any(String),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      signal: expect.any(AbortSignal)
+    })
+    expect(JSON.parse(fetchApi.mock.calls.at(-1)![1]!.body as string)).toEqual({
+      keys: expect.arrayContaining(['feature_flag_foobar'])
+    })
+    expect(gate.value.value).toBe(true)
+    expect(gate.state.value).toBe('resolved')
   })
 
   it.for([
     {
-      name: 'registered OFF',
+      name: 'PostHog OFF',
       key: 'registered_off',
-      state: 'authenticated' as const,
-      releaseFlags: { registered_off: false } as Record<string, boolean>,
-      expected: false
+      response: featureFlagResponse({ registered_off: false }),
+      expected: false,
+      expectedState: 'resolved'
     },
     {
-      name: 'registered ON',
+      name: 'PostHog ON',
       key: 'registered_on',
-      state: 'authenticated' as const,
-      releaseFlags: { registered_on: true } as Record<string, boolean>,
-      expected: true
+      response: featureFlagResponse({ registered_on: true }),
+      expected: true,
+      expectedState: 'resolved'
     },
     {
-      name: 'unregistered',
+      name: 'missing',
       key: 'unregistered',
-      state: 'authenticated' as const,
-      releaseFlags: {} as Record<string, boolean>,
-      expected: false
+      response: featureFlagResponse({}),
+      expected: false,
+      expectedState: 'resolved'
     },
     {
       name: 'evaluation failed',
       key: 'evaluation_failed',
-      state: 'error' as const,
-      releaseFlags: {} as Record<string, boolean>,
-      expected: false
+      response: new Error('Cloud unavailable'),
+      expected: false,
+      expectedState: 'error'
     }
   ])(
     'fails closed and records the resolved decision for $name',
-    ({ key, state, releaseFlags, expected }) => {
+    async ({ key, response, expected, expectedState }) => {
       const trackFeatureFlagExposure = vi.fn()
       const registry = new TelemetryRegistry()
       registry.registerProvider({ trackFeatureFlagExposure })
       setTelemetryRegistry(registry)
-      remoteConfig.value = { release_flags: releaseFlags }
-      remoteConfigState.value = state
+      if (response instanceof Error) {
+        fetchApi.mockRejectedValue(response)
+      } else {
+        fetchApi.mockResolvedValue(response)
+      }
+      const gate = useFeatureGate(key)
+      remoteConfigState.value = 'authenticated'
+      await flushPromises()
+      gate.recordExposure()
+      gate.recordExposure()
 
-      const { value, recordExposure } = useFeatureGate(key)
-      recordExposure()
-      recordExposure()
-
-      expect(value.value).toBe(expected)
+      expect(gate.value.value).toBe(expected)
+      expect(gate.state.value).toBe(expectedState)
       expect(trackFeatureFlagExposure).toHaveBeenCalledExactlyOnceWith(
         key,
         expected
@@ -152,47 +117,32 @@ describe('useFeatureGate', () => {
     }
   )
 
-  it('deduplicates in memory when session storage writes are unavailable', () => {
-    const trackFeatureFlagExposure = vi.fn()
-    const registry = new TelemetryRegistry()
-    registry.registerProvider({ trackFeatureFlagExposure })
-    setTelemetryRegistry(registry)
+  it('gives a boolean development override precedence', () => {
+    localStorage.setItem('ff:local_override', 'true')
+    fetchApi.mockResolvedValue(featureFlagResponse({}))
     remoteConfigState.value = 'authenticated'
-    vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
-      throw new Error('Storage unavailable')
-    })
+    fetchApi.mockClear()
 
-    const { recordExposure } = useFeatureGate('storage_unavailable_flag')
+    const gate = useFeatureGate('local_override')
 
-    expect(() => {
-      recordExposure()
-      recordExposure()
-    }).not.toThrow()
-    expect(trackFeatureFlagExposure).toHaveBeenCalledExactlyOnceWith(
-      'storage_unavailable_flag',
-      false
-    )
+    expect(gate.value.value).toBe(true)
+    expect(gate.state.value).toBe('resolved')
+    expect(fetchApi).not.toHaveBeenCalled()
   })
 
-  it('deduplicates in memory when session storage reads are unavailable', () => {
+  it('does not record exposure before evaluation resolves', () => {
     const trackFeatureFlagExposure = vi.fn()
     const registry = new TelemetryRegistry()
     registry.registerProvider({ trackFeatureFlagExposure })
     setTelemetryRegistry(registry)
+    fetchApi.mockReturnValue(new Promise(() => {}))
+
+    const gate = useFeatureGate('pending_flag')
     remoteConfigState.value = 'authenticated'
-    vi.spyOn(sessionStorage, 'getItem').mockImplementation(() => {
-      throw new Error('Storage unavailable')
-    })
 
-    const { recordExposure } = useFeatureGate('storage_read_unavailable_flag')
+    expect(gate.state.value).toBe('loading')
+    gate.recordExposure()
 
-    expect(() => {
-      recordExposure()
-      recordExposure()
-    }).not.toThrow()
-    expect(trackFeatureFlagExposure).toHaveBeenCalledExactlyOnceWith(
-      'storage_read_unavailable_flag',
-      false
-    )
+    expect(trackFeatureFlagExposure).not.toHaveBeenCalled()
   })
 })

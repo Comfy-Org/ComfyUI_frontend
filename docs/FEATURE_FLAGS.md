@@ -9,10 +9,10 @@ The ComfyUI feature flags system enables capability negotiation between frontend
 Capability flags describe what a local ComfyUI server and its client support.
 They use the WebSocket negotiation documented below.
 
-Cloud release flags control gradual rollouts. Cloud evaluates them for the
-authenticated user and returns boolean values under
-`/api/features.release_flags`. Frontend consumers use `useFeatureGate()` and
-default to `false` until an authenticated response resolves the flag:
+Cloud release flags control gradual rollouts. Frontend consumers pass any
+PostHog key to `useFeatureGate()`. Cloud evaluates it for the authenticated user;
+no Cloud registration is required. Consumers default to `false` until the
+evaluation resolves:
 
 ```typescript
 const { value: isEnabled, recordExposure } = useFeatureGate(

@@ -7,23 +7,18 @@ const mocks = await vi.hoisted(async () => {
   return {
     enabled: ref(false),
     fetchApi: vi.fn().mockResolvedValue(new Response()),
+    gateState: ref<'unloaded' | 'loading' | 'resolved' | 'error'>('unloaded'),
     recordExposure: vi.fn(),
-    registerExtension: vi.fn(),
-    remoteConfigState: ref<
-      'unloaded' | 'anonymous' | 'authenticated' | 'error'
-    >('anonymous')
+    registerExtension: vi.fn()
   }
 })
 
 vi.mock('@/composables/useFeatureGate', () => ({
   useFeatureGate: () => ({
+    state: mocks.gateState,
     value: mocks.enabled,
     recordExposure: mocks.recordExposure
   })
-}))
-
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfigState: mocks.remoteConfigState
 }))
 
 vi.mock('@/scripts/api', () => ({
@@ -47,8 +42,8 @@ describe('fastLaneFeatureFlagDemo', () => {
     scope = effectScope()
     mocks.enabled.value = false
     mocks.fetchApi.mockClear()
+    mocks.gateState.value = 'unloaded'
     mocks.recordExposure.mockClear()
-    mocks.remoteConfigState.value = 'anonymous'
   })
 
   afterEach(() => {
@@ -59,16 +54,16 @@ describe('fastLaneFeatureFlagDemo', () => {
     const extension = mocks.registerExtension.mock.calls[0][0]
     scope.run(() => extension.setup())
 
-    mocks.remoteConfigState.value = 'authenticated'
+    mocks.gateState.value = 'resolved'
     await nextTick()
 
     expect(mocks.recordExposure).toHaveBeenCalledOnce()
     expect(mocks.fetchApi).not.toHaveBeenCalled()
 
-    mocks.remoteConfigState.value = 'anonymous'
+    mocks.gateState.value = 'unloaded'
     await nextTick()
     mocks.enabled.value = true
-    mocks.remoteConfigState.value = 'authenticated'
+    mocks.gateState.value = 'resolved'
     await nextTick()
 
     expect(mocks.recordExposure).toHaveBeenCalledTimes(2)
@@ -79,7 +74,7 @@ describe('fastLaneFeatureFlagDemo', () => {
     const extension = mocks.registerExtension.mock.calls[0][0]
     scope.run(() => extension.setup())
 
-    mocks.remoteConfigState.value = 'error'
+    mocks.gateState.value = 'error'
     await nextTick()
 
     expect(mocks.recordExposure).toHaveBeenCalledOnce()
