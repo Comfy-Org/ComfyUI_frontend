@@ -1,4 +1,7 @@
-import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingStatusResponse as GeneratedBillingStatusResponse,
+  ChurnkeyAuthResponse
+} from '@comfyorg/ingest-types'
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
@@ -14,7 +17,9 @@ import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
-export type BillingRail = 'legacy_stripe' | 'metronome' | 'stripe'
+export type BillingRail = NonNullable<
+  GeneratedBillingStatusResponse['billing_rail']
+>
 
 interface Workspace {
   id: WorkspaceId
