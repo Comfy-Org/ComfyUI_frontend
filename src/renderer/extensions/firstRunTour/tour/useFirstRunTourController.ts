@@ -34,7 +34,8 @@ function useFirstRunTourControllerInternal() {
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
   const onRunStep = computed(
-    () => engine.activeTour === 'firstRun' && engine.step?.name === 'run'
+    () =>
+      engine.activeTour === 'firstRun' && engine.step?.selfAdvancing === true
   )
 
   /** Recorded, not derived: the queue clears a status as soon as it turns terminal. */
@@ -95,12 +96,12 @@ function useFirstRunTourControllerInternal() {
     nudgeArmed.value = false
   }
 
-  /** False when this template has no tour to give; the caller keeps the loaded graph. */
+  /** False when there is no tour to give; any renderer switch is undone. */
   async function beginTour(templateId: string): Promise<boolean> {
-    // A new user has no Comfy.InstalledVersion, so the versioned default never
-    // applies and Nodes 2.0 reads off — the tour's own audience.
-    if (!settingStore.get('Comfy.VueNodes.Enabled'))
-      await settingStore.set('Comfy.VueNodes.Enabled', true)
+    if (engine.activeTour) return false
+
+    const enabledForTour = !settingStore.get('Comfy.VueNodes.Enabled')
+    if (enabledForTour) await settingStore.set('Comfy.VueNodes.Enabled', true)
 
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
@@ -111,6 +112,8 @@ function useFirstRunTourControllerInternal() {
     if (!started) {
       releaseFirstRunTargets()
       tourWorkflow.value = null
+      if (enabledForTour)
+        await settingStore.set('Comfy.VueNodes.Enabled', false)
     }
     return started
   }

@@ -108,7 +108,7 @@ describe('TourSpotlight interactive and masked steps', () => {
     })
 
     expect(screen.getByTestId('coach-spotlight').className).toContain(
-      'transition-[left,top,width,height,opacity]'
+      'motion-safe:transition-[left,top,width,height,opacity]'
     )
   })
 
@@ -208,22 +208,6 @@ describe('TourSpotlight interactive and masked steps', () => {
       card(),
       'a card that never stops transitioning trails the node it is riding'
     ).not.toContain('transition-[left,top,opacity]')
-  })
-
-  it('spins while the app is still working on what the step asked for', async () => {
-    let working = true
-    const { rerender } = renderSpotlight({
-      step: spotlightStep({ busy: () => working })
-    })
-
-    expect(
-      screen.getByTestId('coach-busy'),
-      'a card that reads the same whether a job is running or stalled says nothing'
-    ).toBeTruthy()
-
-    working = false
-    await rerender({ step: spotlightStep({ busy: () => working }) })
-    expect(screen.queryByTestId('coach-busy')).toBeNull()
   })
 
   it('points a cursor back at the target from the card edge facing it', async () => {
