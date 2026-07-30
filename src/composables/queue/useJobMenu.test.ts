@@ -441,6 +441,7 @@ describe('useJobMenu', () => {
       filename: 'foo.png',
       widget: 'image',
       type: 'temp',
+      // TODO(#14356): Missing-media detection cannot yet verify [temp] paths.
       expectedWidgetValue: 'bar/foo.png [temp]'
     },
     {
