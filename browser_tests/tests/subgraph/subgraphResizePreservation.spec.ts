@@ -18,7 +18,10 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
  * and drags.
  */
 async function fitViewToNodes(comfyPage: ComfyPage): Promise<void> {
-  await comfyPage.canvas.click({ position: { x: 10, y: 10 } })
+  // Focus rather than click: the 'Top' menu bar's workflow tab strip
+  // renders above the canvas and clicking a fixed coordinate can hit it
+  // instead of the canvas underneath.
+  await comfyPage.canvas.focus()
   await comfyPage.keyboard.press('Period')
   await comfyPage.nextFrame()
 }
