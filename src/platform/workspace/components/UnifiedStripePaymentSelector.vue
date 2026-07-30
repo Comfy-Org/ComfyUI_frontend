@@ -29,7 +29,7 @@
       </p>
     </div>
     <Button
-      variant="inverted"
+      :variant="verificationPending ? 'tertiary' : 'inverted'"
       size="lg"
       class="w-full rounded-lg"
       :disabled="!stripeElements"
@@ -56,12 +56,16 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   amountCents,
   isLoading = false,
-  promotionCode = ''
+  promotionCode = '',
+  verificationPending = false
 } = defineProps<{
   amountCents: number
   isLoading?: boolean
   /** Entered in the order summary; rides along unchanged on confirm. */
   promotionCode?: string
+  /** A 3DS verification is pending: Complete verification (rendered by the
+   *  parent) is the primary action, so the pay button steps back. */
+  verificationPending?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -116,7 +120,10 @@ onMounted(async () => {
       },
       rules: {
         '.AccordionItem': {
-          border: `1px solid ${resolveThemeColor('--border-subtle')}`,
+          backgroundColor: resolveThemeColor('--base-background'),
+          // Transparent (not none) so rows keep their size when the
+          // selected item paints its outline.
+          border: '1px solid transparent',
           boxShadow: 'none'
         },
         '.AccordionItem--selected': {
@@ -144,7 +151,10 @@ onMounted(async () => {
       defaultCollapsed: false,
       radios: 'always',
       spacedAccordionItems: true
-    }
+    },
+    // Our terms note carries the recurring-charge authorization; Stripe's
+    // card mandate text would say it twice.
+    terms: { card: 'never' }
   })
   paymentElement.mount(paymentElementTarget.value)
   // Method-specific notes (e.g. the Alipay auto-renewal disclosure) key off

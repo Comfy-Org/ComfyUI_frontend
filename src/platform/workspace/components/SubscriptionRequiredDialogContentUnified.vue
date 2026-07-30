@@ -9,12 +9,13 @@
         // alone is a floor — the Stripe iframe would stretch the dialog once
         // mounted) and hand scrolling to the payment column so the summary
         // panel stays fixed; below xl the whole dialog scrolls as before.
-        isEmbeddedPaymentStep && 'xl:h-[min(740px,90vh)] xl:overflow-hidden'
+        isEmbeddedPaymentStep &&
+          'xl:h-[min(740px,90vh)] xl:gap-0 xl:overflow-hidden xl:rounded-2xl xl:p-0'
       )
     "
   >
     <Button
-      v-if="checkoutStep === 'preview'"
+      v-if="checkoutStep === 'preview' && !isEmbeddedPaymentStep"
       size="icon"
       variant="muted-textonly"
       class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"

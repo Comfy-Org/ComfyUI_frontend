@@ -2914,7 +2914,7 @@
       "creditsRefillMonthlyTo": "Credits refill monthly to",
       "billedEachMonth": "{amount} billed each month. Cancel anytime.",
       "stayOnUntil": "You'll stay on {plan} until {date}.",
-      "termsAgreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}.",
+      "termsAgreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",
       "terms": "Terms",
       "privacyPolicy": "Privacy Policy",
       "addCreditCard": "Add credit card",
