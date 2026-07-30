@@ -38,14 +38,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          UNEXPECTED=$(pnpm -C packages/design-system pack --dry-run --json 2>/dev/null \
-            | node -pe "
-                const pkg = JSON.parse(require('fs').readFileSync(0, 'utf8'))
-                pkg.files
-                  .map(f => f.path)
-                  .filter(p => p !== 'package.json' && p !== 'LICENSE' && !p.startsWith('src/css/') && !p.startsWith('src/icons/'))
-                  .join('\n')
-              ")
+          UNEXPECTED=$(
+            pnpm -C packages/design-system pack --dry-run --json |
+              jq -r '
+                .files[].path
+                | select(
+                    . != "package.json"
+                    and . != "LICENSE"
+                    and (startswith("src/css/") | not)
+                    and (startswith("src/icons/") | not)
+                  )
+              '
+          )
           if [ -n "$UNEXPECTED" ]; then
             echo "::error title=Unexpected files in tarball::Packed tarball contains files outside src/css and src/icons:" >&2
             echo "$UNEXPECTED" >&2
