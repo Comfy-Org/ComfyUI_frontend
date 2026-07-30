@@ -45,6 +45,7 @@ export interface CoachStep {
   interactive?: boolean
   busy?: () => boolean
   selfAdvancing?: boolean
+  primaryAction?: () => void
 }
 
 export type TourDefinition = CoachStep[] | (() => CoachStep[])
