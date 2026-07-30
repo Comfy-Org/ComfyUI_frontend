@@ -12,6 +12,7 @@ export interface WorkflowPublishResult {
 }
 
 export interface PublishPrefill {
+  name?: string
   description?: string
   tags?: string[]
   thumbnailType?: ThumbnailType

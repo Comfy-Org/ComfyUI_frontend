@@ -65,6 +65,8 @@ export const TestIds = {
     missingModelReferenceCount: 'missing-model-reference-count',
     missingModelUnsupportedSection:
       'missing-model-import-not-supported-section',
+    missingModelGatedAccess: 'missing-model-gated-access',
+    missingModelGatedHint: 'missing-model-gated-hint',
     missingModelDownload: 'missing-model-download',
     missingModelActions: 'missing-model-actions',
     missingModelDownloadAll: 'missing-model-download-all',
@@ -95,6 +97,7 @@ export const TestIds = {
   },
   topbar: {
     queueButton: 'queue-button',
+    queueButtonIcon: 'queue-button-icon',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
     subscribeButton: 'topbar-subscribe-button',
@@ -220,6 +223,7 @@ export const TestIds = {
   },
   appMode: {
     widgetItem: 'app-mode-widget-item',
+    widgetDescription: 'app-mode-widget-description',
     welcome: 'linear-welcome',
     emptyWorkflow: 'linear-welcome-empty-workflow',
     buildApp: 'linear-welcome-build-app',

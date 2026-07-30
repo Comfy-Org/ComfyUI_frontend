@@ -1,6 +1,7 @@
 import { datadogRum } from '@datadog/browser-rum'
 
 import { rumBeforeSend } from './datadogRumBeforeSend'
+import { trackUserManualRefresh } from './manualRefreshTracker'
 
 const DATADOG_ENV_BY_HOSTNAME = new Map([
   ['cloud.comfy.org', 'prod-v2'],
@@ -29,6 +30,10 @@ async function setFrontendContext(): Promise<void> {
 }
 
 async function initializeDatadogRum(env: string): Promise<void> {
+  datadogRum.setGlobalContextProperty(
+    'comfyui_frontend_version',
+    __COMFYUI_FRONTEND_VERSION__
+  )
   await setFrontendContext().catch(() => {})
   if (datadogRum.getInitConfiguration()) return
 
@@ -44,6 +49,7 @@ async function initializeDatadogRum(env: string): Promise<void> {
     sessionReplaySampleRate: 0,
     allowedTracingUrls: [/^https:\/\/[^/]+\.comfy\.org/]
   })
+  trackUserManualRefresh()
 }
 
 export function initDatadogRum(
