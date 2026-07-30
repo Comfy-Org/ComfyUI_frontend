@@ -4,8 +4,8 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
-import { classifyErrorSeverity } from './errorSeverityClassification';
-import type { ErrorSeverityInput } from './errorSeverityClassification';
+import { classifyErrorSeverity } from './errorSeverityClassification'
+import type { ErrorSeverityInput } from './errorSeverityClassification'
 
 function classify(overrides: Partial<ErrorSeverityInput> = {}) {
   return classifyErrorSeverity({
