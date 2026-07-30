@@ -103,7 +103,9 @@
             "
           >
             <template #node>{{ selectionStripNodeLabel }}</template>
-            <template #nodes>{{ strip.nodes }}</template>
+            <template v-if="strip.nodes !== undefined" #nodes>
+              {{ strip.nodes }}
+            </template>
             <template #count>{{ strip.count }}</template>
           </i18n-t>
         </div>
@@ -123,13 +125,7 @@
           >
             <template #actions>
               <span
-                v-if="
-                  (group.type === 'missing_node' ||
-                    group.type === 'swap_nodes' ||
-                    group.type === 'missing_model' ||
-                    group.type === 'missing_media') &&
-                  group.blockedLastRun
-                "
+                v-if="group.blockedLastRun"
                 data-testid="blocked-last-run-indicator"
                 class="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"
               >
@@ -411,6 +407,25 @@ interface ExecutionItemListEntry {
   displayDetails?: string
 }
 
+interface ContextStrip {
+  keypath: string
+  count: number
+  nodes?: number
+}
+
+const SUMMARY_KEYPATHS = {
+  error: [
+    'rightSidePanel.errorsSummary',
+    'rightSidePanel.errorNodeSummary',
+    'rightSidePanel.errorNodesSummary'
+  ],
+  setup: [
+    'rightSidePanel.setupSummary',
+    'rightSidePanel.setupNodeSummary',
+    'rightSidePanel.setupNodesSummary'
+  ]
+} as const
+
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
 const { focusNode } = useFocusNode()
@@ -531,7 +546,7 @@ const hasMissingSeverity = computed(() =>
   allErrorGroups.value.some((group) => group.severity === 'missing')
 )
 
-const strip = computed(() => {
+const strip = computed<ContextStrip>(() => {
   if (hasSelectionEmphasis.value) {
     return {
       keypath:
@@ -548,34 +563,21 @@ const strip = computed(() => {
         errorNodeCount.value === 0
           ? 'rightSidePanel.errorsSummary'
           : 'rightSidePanel.nodesAffected',
-      nodes: errorNodeCount.value,
       count:
         errorNodeCount.value === 0
           ? workflowErrorCount.value
           : errorNodeCount.value
     }
   }
-  if (!hasErrorSeverity.value) {
-    return {
-      keypath:
-        errorNodeCount.value === 0
-          ? 'rightSidePanel.setupSummary'
-          : errorNodeCount.value === 1
-            ? 'rightSidePanel.setupNodeSummary'
-            : 'rightSidePanel.setupNodesSummary',
-      nodes: errorNodeCount.value,
-      count: workflowErrorCount.value
-    }
-  }
+  const keypaths = hasErrorSeverity.value
+    ? SUMMARY_KEYPATHS.error
+    : SUMMARY_KEYPATHS.setup
+  const keypathIndex =
+    errorNodeCount.value === 0 ? 0 : errorNodeCount.value === 1 ? 1 : 2
+
   return {
-    keypath:
-      errorNodeCount.value === 0
-        ? // Node-less errors (e.g. prompt-level) would read as "0 nodes"
-          'rightSidePanel.errorsSummary'
-        : errorNodeCount.value === 1
-          ? 'rightSidePanel.errorNodeSummary'
-          : 'rightSidePanel.errorNodesSummary',
-    nodes: errorNodeCount.value,
+    keypath: keypaths[keypathIndex],
+    ...(errorNodeCount.value > 0 && { nodes: errorNodeCount.value }),
     count: workflowErrorCount.value
   }
 })

@@ -29,6 +29,7 @@ interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
   count: number
   priority: number
   severity: ErrorGroupSeverity
+  blockedLastRun: boolean
 }
 
 export type ErrorGroup =
@@ -38,17 +39,13 @@ export type ErrorGroup =
     })
   | (ErrorGroupBase & {
       type: 'missing_node'
-      blockedLastRun?: boolean
     })
   | (ErrorGroupBase & {
       type: 'swap_nodes'
-      blockedLastRun?: boolean
     })
   | (ErrorGroupBase & {
       type: 'missing_model'
-      blockedLastRun?: boolean
     })
   | (ErrorGroupBase & {
       type: 'missing_media'
-      blockedLastRun?: boolean
     })

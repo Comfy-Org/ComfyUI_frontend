@@ -161,7 +161,8 @@ function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
         displayMessage: groupData.displayMessage,
         count: countExecutionCards(cards),
         cards,
-        priority: groupData.priority
+        priority: groupData.priority,
+        blockedLastRun: false
       }
     })
     .sort((a, b) => {
@@ -837,6 +838,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupKey: 'missing_model',
         count,
         priority: 2,
+        blockedLastRun: false,
         ...resolveMissingErrorMessage({
           kind: 'missing_model',
           groups: missingModelGroupsForSelection.value,
@@ -859,6 +861,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupKey: 'missing_media',
         count: totalRows,
         priority: 3,
+        blockedLastRun: false,
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
           groups: missingMediaGroupsForSelection.value,
