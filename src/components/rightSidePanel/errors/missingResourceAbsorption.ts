@@ -10,10 +10,7 @@ import {
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 function normalizePath(value: string): string {
-  return value
-    .replace(/[\\/]+/g, '/')
-    .replace(/\/+$/, '')
-    .toLowerCase()
+  return value.replace(/[\\/]+/g, '/').replace(/\/+$/, '')
 }
 
 function matchesReceivedValue(

@@ -120,7 +120,7 @@ describe('getMissingResourceValidationErrorAbsorption', () => {
 
   it('matches normalized model values by full-value equality', () => {
     const error = validationError('value_not_in_list', 'other_widget', {
-      received_value: 'sdxl\\MODEL.SAFETENSORS'
+      received_value: 'SDXL\\model.safetensors'
     })
 
     expect(
@@ -137,7 +137,7 @@ describe('getMissingResourceValidationErrorAbsorption', () => {
     const error = validationError(
       'custom_validation_failed',
       'other_widget',
-      { received_value: 'inputs\\PORTRAIT.PNG' },
+      { received_value: 'inputs\\portrait.png' },
       'Invalid image file'
     )
 
@@ -149,6 +149,27 @@ describe('getMissingResourceValidationErrorAbsorption', () => {
         nodeId
       )
     ).toBe('missing_media')
+  })
+
+  it('does not absorb a differently-cased missing candidate', () => {
+    const error = validationError('value_not_in_list', 'other_widget', {
+      received_value: 'SDXL/Model.safetensors'
+    })
+
+    expect(
+      getMissingResourceValidationErrorAbsorption(
+        [
+          missingModel({ name: 'sdxl/model.safetensors' }),
+          missingModel({
+            name: 'SDXL/Model.safetensors',
+            isMissing: false
+          })
+        ],
+        [],
+        error,
+        nodeId
+      )
+    ).toBeNull()
   })
 
   it('absorbs promoted media value errors at their lifted host node', () => {
