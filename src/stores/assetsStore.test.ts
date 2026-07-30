@@ -120,10 +120,12 @@ vi.mock('@/stores/queueStore', () => ({
       | undefined
     public jobId: string
     public outputsCount: number | null
+    public previewableOutputsCount: number | null
 
     constructor(public job: JobListItem) {
       this.jobId = job.id
       this.outputsCount = job.outputs_count ?? null
+      this.previewableOutputsCount = job.previewable_outputs_count ?? null
       if (mockOutputOverrides.value) {
         this.flatOutputs = mockOutputOverrides.value
         const previewable = mockOutputOverrides.value.filter(
@@ -647,6 +649,33 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(asset.user_metadata).toHaveProperty('outputCount')
       expect(asset.user_metadata).toHaveProperty('allOutputs')
       expect(Array.isArray(asset.user_metadata!.allOutputs)).toBe(true)
+    })
+
+    it('prefers previewable_outputs_count over outputs_count for the group badge', async () => {
+      const job: JobListItem = {
+        ...createMockJobItem(0),
+        outputs_count: 3,
+        previewable_outputs_count: 2
+      }
+      vi.mocked(api.getHistory).mockResolvedValue([job])
+
+      await store.updateHistory()
+
+      const asset = store.historyAssets[0]
+      expect(asset.user_metadata!.outputCount).toBe(2)
+    })
+
+    it('falls back to outputs_count when previewable_outputs_count is absent (e.g. local ComfyUI)', async () => {
+      const job: JobListItem = {
+        ...createMockJobItem(0),
+        outputs_count: 3
+      }
+      vi.mocked(api.getHistory).mockResolvedValue([job])
+
+      await store.updateHistory()
+
+      const asset = store.historyAssets[0]
+      expect(asset.user_metadata!.outputCount).toBe(3)
     })
   })
 
