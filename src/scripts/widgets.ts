@@ -26,6 +26,7 @@ import { usePainterWidget } from '@/renderer/extensions/vueNodes/widgets/composa
 import { useRangeWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRangeWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
+import { useVideoEditWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -236,6 +237,7 @@ export const ComfyWidgets = {
   TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),
   CURVE: transformWidgetConstructorV2ToV1(useCurveWidget()),
   RANGE: transformWidgetConstructorV2ToV1(useRangeWidget()),
+  VIDEO_EDIT: transformWidgetConstructorV2ToV1(useVideoEditWidget()),
   BOUNDING_BOXES: transformWidgetConstructorV2ToV1(useBoundingBoxesWidget()),
   COLORS: transformWidgetConstructorV2ToV1(useColorsWidget()),
   ...dynamicWidgets
