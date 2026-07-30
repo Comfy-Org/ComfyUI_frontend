@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { computed, onScopeDispose, ref, watch } from 'vue'
 
 const { label, min, max, step, track, valueText } = defineProps<{
   label: string
@@ -15,6 +17,22 @@ const model = defineModel<number>({ required: true })
 const trackEl = ref<HTMLElement>()
 
 const fraction = computed(() => (model.value - min) / (max - min))
+
+/** The track dims while the value is in motion — a drag in progress, or the
+ * idle demo driving it. Motion is detected from the value itself so both
+ * sources look identical. The demo snaps its eased values once they are
+ * within a rounding step of target, which caps the gap between updates at
+ * ~160ms — the settle window just needs to sit above that. */
+const dragging = ref(false)
+const moving = ref(false)
+
+let settleTimer: ReturnType<typeof setTimeout> | undefined
+watch(model, () => {
+  moving.value = true
+  clearTimeout(settleTimer)
+  settleTimer = setTimeout(() => (moving.value = false), 250)
+})
+onScopeDispose(() => clearTimeout(settleTimer))
 
 function quantize(value: number): number {
   const clamped = Math.min(max, Math.max(min, value))
@@ -32,12 +50,17 @@ function setFromClientX(clientX: number) {
 
 function onPointerDown(event: PointerEvent) {
   ;(event.currentTarget as Element).setPointerCapture(event.pointerId)
+  dragging.value = true
   setFromClientX(event.clientX)
 }
 
 function onPointerMove(event: PointerEvent) {
   if (event.buttons === 0) return
   setFromClientX(event.clientX)
+}
+
+function onPointerUp() {
+  dragging.value = false
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -75,8 +98,18 @@ function onKeydown(event: KeyboardEvent) {
       :style="{ background: track }"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
+      @pointerup="onPointerUp"
+      @pointercancel="onPointerUp"
       @keydown="onKeydown"
     >
+      <span
+        :class="
+          cn(
+            'pointer-events-none absolute inset-0 rounded-full bg-primary-comfy-ink/70 transition-opacity duration-200',
+            dragging || moving ? 'opacity-100' : 'opacity-0'
+          )
+        "
+      />
       <span
         class="pointer-events-none absolute top-1/2 size-[0.575em] -translate-1/2 rounded-full bg-primary-comfy-canvas"
         :style="{ left: `${fraction * 100}%` }"
