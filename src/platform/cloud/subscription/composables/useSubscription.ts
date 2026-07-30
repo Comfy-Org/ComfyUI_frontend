@@ -15,7 +15,7 @@ import { t } from '@/i18n'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
@@ -237,14 +237,7 @@ function useSubscriptionInternal() {
     })
   }, reportError)
 
-  const showSubscriptionDialog = (options?: {
-    reason?: SubscriptionDialogReason
-  }) => {
-    useTelemetry()?.trackSubscription('modal_opened', {
-      current_tier: subscriptionTier.value?.toLowerCase(),
-      reason: options?.reason
-    })
-
+  const showSubscriptionDialog = (options?: SubscriptionDialogOptions) => {
     void showSubscriptionRequiredDialog(options)
   }
 
@@ -277,7 +270,7 @@ function useSubscriptionInternal() {
     await fetchSubscriptionStatus()
 
     if (!isSubscribedOrIsNotCloud.value) {
-      showSubscriptionDialog()
+      showSubscriptionDialog({ reason: 'subscription_required' })
     }
   }
 
@@ -320,11 +313,19 @@ function useSubscriptionInternal() {
     }
   }
 
-  /**
-   * Fetch the current cloud subscription status for the authenticated user
-   * @returns Subscription status or null if no subscription exists
-   */
+  // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
+  let inFlightStatusFetch: Promise<CloudSubscriptionStatusResponse | null> | null =
+    null
+
   async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
+    if (inFlightStatusFetch) return inFlightStatusFetch
+    inFlightStatusFetch = performFetchSubscriptionStatus().finally(() => {
+      inFlightStatusFetch = null
+    })
+    return inFlightStatusFetch
+  }
+
+  async function performFetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
     const headers = await buildAuthHeaders()
 
     const response = await fetchWithUnifiedRemint(

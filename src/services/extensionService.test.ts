@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
-import { useExtensionService } from '@/services/extensionService'
+import {
+  shouldLoadExtension,
+  useExtensionService
+} from '@/services/extensionService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -150,5 +153,31 @@ describe('useExtensionService', () => {
         warnSpy.mockRestore()
       }
     })
+  })
+})
+
+describe('shouldLoadExtension', () => {
+  it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
+    'skips the inlined Cloud extension %s in cloud builds',
+    (extension) => {
+      expect(shouldLoadExtension(extension, true)).toBe(false)
+    }
+  )
+
+  it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
+    'keeps the legacy path %s available outside cloud builds',
+    (extension) => {
+      expect(shouldLoadExtension(extension, false)).toBe(true)
+    }
+  )
+
+  it('skips core extensions that load through the core entry point', () => {
+    expect(shouldLoadExtension('/extensions/core/foo.js', false)).toBe(false)
+  })
+
+  it('loads other extensions', () => {
+    expect(shouldLoadExtension('/extensions/comfyui-foo/main.js', true)).toBe(
+      true
+    )
   })
 })

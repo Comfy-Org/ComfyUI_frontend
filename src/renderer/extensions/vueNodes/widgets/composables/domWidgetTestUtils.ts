@@ -2,6 +2,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { DOMWidgetOptions } from '@/scripts/domWidget'
 
 interface FakeDOMWidget {
   name: string
@@ -31,17 +32,24 @@ export function createMockDOMWidgetNode(overrides: NodeOverrides = {}) {
   return fromAny<LGraphNode & { widgets: FakeDOMWidget[] }, unknown>({
     id: 1,
     widgets,
-    addDOMWidget: vi.fn((name: string, type: string, element: HTMLElement) => {
-      const widget: FakeDOMWidget = {
-        name,
-        type,
-        element,
-        options: {},
-        value: ''
+    addDOMWidget: vi.fn(
+      (
+        name: string,
+        type: string,
+        element: HTMLElement,
+        _options?: DOMWidgetOptions<string>
+      ) => {
+        const widget: FakeDOMWidget = {
+          name,
+          type,
+          element,
+          options: {},
+          value: ''
+        }
+        widgets.push(widget)
+        return widget
       }
-      widgets.push(widget)
-      return widget
-    }),
+    ),
     ...overrides
   })
 }

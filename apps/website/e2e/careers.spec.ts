@@ -8,7 +8,7 @@ test.describe('Careers page @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Careers — Comfy')
+    await expect(page).toHaveTitle('Careers - Comfy')
   })
 
   test('Roles section heading is visible', async ({ page }) => {
@@ -72,7 +72,7 @@ test.describe('Careers page role links', () => {
 test.describe('Careers page (zh-CN) @smoke', () => {
   test('renders localized heading and roles', async ({ page }) => {
     await page.goto('/zh-CN/careers')
-    await expect(page).toHaveTitle('招聘 — Comfy')
+    await expect(page).toHaveTitle('招聘 - Comfy')
     await expect(
       page.getByRole('heading', { name: '职位', level: 2 })
     ).toBeVisible()

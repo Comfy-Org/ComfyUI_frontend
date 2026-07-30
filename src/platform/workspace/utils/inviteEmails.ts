@@ -1,8 +1,6 @@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-/** Split pasted/typed input on commas and newlines only, so addresses with
- *  surrounding whitespace (e.g. Outlook `"Alice B" <a@b.com>`) stay intact. */
-export const EMAIL_DELIMITER = /[,\n]+/
+export const EMAIL_DELIMITER = /[,\s]+/
 
 export function normalizeEmail(value: string): string {
   return value.trim().toLowerCase()

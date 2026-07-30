@@ -8,11 +8,13 @@ export class ComfyActionbar {
   public readonly root: Locator
   public readonly queueButton: ComfyQueueButton
   public readonly propertiesButton: Locator
+  public readonly dragHandle: Locator
 
   constructor(public readonly page: Page) {
     this.root = page.locator('.actionbar-container')
     this.queueButton = new ComfyQueueButton(this)
     this.propertiesButton = this.root.getByLabel('Toggle properties panel')
+    this.dragHandle = this.root.locator('.drag-handle')
   }
 
   async isDocked() {

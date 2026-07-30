@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
@@ -189,12 +190,12 @@ export function useLegacyBilling(): BillingState & BillingActions {
   async function requireActiveSubscription(): Promise<void> {
     await fetchStatus()
     if (!isActiveSubscription.value) {
-      legacyShowSubscriptionDialog()
+      legacyShowSubscriptionDialog({ reason: 'subscription_required' })
     }
   }
 
-  function showSubscriptionDialog(): void {
-    legacyShowSubscriptionDialog()
+  function showSubscriptionDialog(options?: SubscriptionDialogOptions): void {
+    legacyShowSubscriptionDialog(options)
   }
 
   return {

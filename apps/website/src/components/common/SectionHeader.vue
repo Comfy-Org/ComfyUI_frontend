@@ -43,7 +43,7 @@ const headingSizeClass = {
       :is="headingTag"
       :class="
         cn(
-          'text-primary-comfy-canvas',
+          'text-balance text-primary-comfy-canvas',
           label && 'mt-4',
           headingSizeClass[headingSize]
         )

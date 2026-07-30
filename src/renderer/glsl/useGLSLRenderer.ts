@@ -366,6 +366,16 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     inputTextures[index] = texture
   }
 
+  function clearInputImage(index: number): void {
+    if (disposed || !gl) return
+    if (index < 0 || index >= maxInputs) return
+    const texture = inputTextures[index]
+    if (texture) {
+      gl.deleteTexture(texture)
+      inputTextures[index] = null
+    }
+  }
+
   function render(): void {
     if (disposed || !program || !pingPongFBOs || !gl || !canvas) return
 
@@ -494,6 +504,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     setBoolUniform,
     bindCurveTexture,
     bindInputImage,
+    clearInputImage,
     render,
     readPixels,
     toBlob,

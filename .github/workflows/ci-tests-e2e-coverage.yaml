@@ -121,7 +121,7 @@ jobs:
             --title "ComfyUI E2E Coverage" \
             --no-function-coverage \
             --precision 1 \
-            --ignore-errors source,unmapped,range \
+            --ignore-errors source,unmapped \
             --synthesize-missing
 
       - name: Upload HTML report artifact
