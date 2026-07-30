@@ -145,7 +145,7 @@ interface QueuePromptOptions {
 /** Dictionary of Frontend-generated API calls */
 interface FrontendApiCalls {
   graphChanged: ComfyWorkflowJSON
-  executionGraphChanged: ComfyWorkflowJSON
+  executionGraphChanged: never
   promptQueueing: { requestId: number; batchCount: number; number?: number }
   promptQueued: { number: number; batchCount: number; requestId?: number }
   graphCleared: never

@@ -68,11 +68,11 @@ const nonExecutionSlotProperties = new Set([
   'pos',
   'link',
   'links',
-  'linkIds'
+  'linkIds',
+  'slot_index'
 ])
 
 const nonExecutionBoundaryNodeProperties = new Set(['bounding', 'pinned'])
-const nonExecutionLinkProperties = new Set(['id', 'type', 'parentId'])
 const nonExecutableNodeTypes = new Set(['Note', 'MarkdownNote'])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -117,10 +117,30 @@ function getExecutionBoundaryNodeState(value: unknown): unknown {
 }
 
 function getExecutionLinkState(value: unknown): unknown {
-  if (Array.isArray(value)) return value.slice(1, 5)
+  if (Array.isArray(value)) {
+    return [
+      value[1],
+      normalizeSlotIndex(value[2]),
+      value[3],
+      normalizeSlotIndex(value[4])
+    ]
+  }
 
   const link = asRecord(value)
-  return link ? omitProperties(link, nonExecutionLinkProperties) : value
+  if (!link) return value
+  return [
+    link.origin_id,
+    normalizeSlotIndex(link.origin_slot),
+    link.target_id,
+    normalizeSlotIndex(link.target_slot)
+  ]
+}
+
+function normalizeSlotIndex(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+
+  const index = parseInt(value)
+  return Number.isNaN(index) ? value : index
 }
 
 function isExecutableNodeState(value: unknown): boolean {
@@ -161,6 +181,8 @@ function getExecutionGraphState(value: unknown): unknown {
       graph.links.map(getExecutionLinkState),
       (link) => JSON.stringify(link)
     )
+  } else if (!('links' in graph)) {
+    executionGraph.links = []
   }
   if (Array.isArray(graph.inputs)) {
     executionGraph.inputs = graph.inputs.map(getExecutionSlotState)
@@ -328,7 +350,7 @@ export class ChangeTracker {
       const previousExecutionState = getExecutionGraphState(previousState)
       const currentExecutionState = getExecutionGraphState(this.activeState)
       if (!_.isEqual(previousExecutionState, currentExecutionState)) {
-        api.dispatchCustomEvent('executionGraphChanged', this.activeState)
+        api.dispatchCustomEvent('executionGraphChanged')
       }
     }
 

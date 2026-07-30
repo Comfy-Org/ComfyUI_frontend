@@ -1,4 +1,4 @@
-import type { Response } from '@playwright/test'
+import type { Request } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import type { PromptResponse } from '@/schemas/apiSchema'
@@ -20,6 +20,19 @@ webSocketTest.describe(
       'Does not auto-queue multiple changes at a time',
       async ({ comfyPage, getWebSocket }) => {
         await comfyPage.workflow.loadWorkflow('default')
+        await comfyPage.page.evaluate(() => {
+          const sampler = window.app!.graph!._nodes.find(
+            (node) => node.type === 'KSampler'
+          )
+          const control = sampler?.widgets?.find(
+            (widget) => widget.name === 'control_after_generate'
+          )
+          if (!control) throw new Error('seed control widget missing')
+          control.value = 'fixed'
+          ;(
+            window.app!.extensionManager as WorkspaceStore
+          ).workflow.activeWorkflow?.changeTracker.captureCanvasState()
+        })
 
         const ws = await getWebSocket()
 
@@ -33,22 +46,20 @@ webSocketTest.describe(
 
         // Intercept the prompt queue endpoint
         let promptNumber = 0
-        await comfyPage.page.route('**/api/prompt', async (route, req) => {
+        await comfyPage.page.route('**/api/prompt', async (route) => {
           await new Promise((r) => setTimeout(r, 100))
+          promptNumber++
+          const promptResponse: PromptResponse = {
+            prompt_id: String(promptNumber),
+            node_errors: {},
+            error: ''
+          }
           await route.fulfill({
             status: 200,
-            body: JSON.stringify({
-              prompt_id: promptNumber,
-              number: ++promptNumber,
-              node_errors: {},
-              // Include the request data to validate which prompt was queued so we can validate the width
-              __request: req.postDataJSON()
-            })
+            contentType: 'application/json',
+            body: JSON.stringify(promptResponse)
           })
         })
-
-        // Start watching for a message to prompt
-        const requestPromise = comfyPage.page.waitForResponse('**/api/prompt')
 
         // Find and set the width on the latent node
         const triggerChange = async (value: number) => {
@@ -80,41 +91,46 @@ webSocketTest.describe(
           )
         }
 
-        // Extract the width from the queue response
-        const getQueuedWidth = async (resp: Promise<Response>) => {
-          const obj = await (await resp).json()
-          return obj['__request']['prompt']['5']['inputs']['width']
+        const getQueuedWidth = (request: Request) => {
+          return request.postDataJSON().prompt['5'].inputs.width
         }
 
         // Trigger a bunch of changes
         const START = 32
         const END = 64
-        for (let i = START; i <= END; i += 8) {
-          await triggerChange(i)
-        }
+        const initialPromptRequests =
+          await comfyPage.actionbar.collectPromptRequestsDuring(async () => {
+            for (let i = START; i <= END; i += 8) {
+              await triggerChange(i)
+            }
+          }, 2000)
 
-        // Ensure the queued width is the first value
         expect(
-          await getQueuedWidth(requestPromise),
+          initialPromptRequests,
+          'only 1 prompt should have been queued even though there were multiple changes'
+        ).toHaveLength(1)
+        expect(
+          getQueuedWidth(initialPromptRequests[0]),
           'the first queued prompt should be the first change width'
         ).toBe(START)
-
-        // Ensure that no other changes are queued
-        await expect(
-          comfyPage.page.waitForResponse('**/api/prompt', { timeout: 250 })
-        ).rejects.toThrow()
-        expect(
-          promptNumber,
-          'only 1 prompt should have been queued even though there were multiple changes'
-        ).toBe(1)
+        expect(promptNumber, 'the prompt endpoint should be called once').toBe(
+          1
+        )
 
         // Trigger a status update so auto-queue re-runs
-        triggerStatus(1)
-        triggerStatus(0)
+        const deferredPromptRequests =
+          await comfyPage.actionbar.collectPromptRequestsDuring(async () => {
+            triggerStatus(1)
+            triggerStatus(0)
+          }, 2000)
 
         // Ensure the queued width is the last queued value
         expect(
-          await getQueuedWidth(comfyPage.page.waitForResponse('**/api/prompt')),
+          deferredPromptRequests,
+          'the deferred changes should coalesce into one prompt'
+        ).toHaveLength(1)
+        expect(
+          getQueuedWidth(deferredPromptRequests[0]),
           'last queued prompt width should be the last change'
         ).toBe(END)
         expect(promptNumber, 'queued prompt count should be 2').toBe(2)
