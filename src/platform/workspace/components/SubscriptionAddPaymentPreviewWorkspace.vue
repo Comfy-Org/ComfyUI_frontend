@@ -15,7 +15,11 @@
       :class="
         cn(
           usePaymentElement &&
-            'xl:w-[42%] xl:shrink-0 xl:border-r xl:border-border-subtle xl:bg-base-background xl:px-12 xl:py-10'
+            'xl:w-[42%] xl:shrink-0 xl:border-r xl:border-border-subtle xl:bg-base-background xl:px-12 xl:py-10',
+          // Below xl the same dual tone runs vertically: the summary bleeds
+          // dark to the dialog edges, payment continues on the shell below.
+          usePaymentElement &&
+            'max-xl:-mx-4 max-xl:-mt-6 max-xl:rounded-t-2xl max-xl:bg-base-background max-xl:px-6 max-xl:pt-4 max-xl:pb-6'
         )
       "
     >
@@ -47,6 +51,16 @@
         >
           {{ $t('subscription.preview.confirmPayment') }}
         </h2>
+        <Button
+          v-if="usePaymentElement"
+          size="icon"
+          variant="muted-textonly"
+          class="shrink-0 rounded-full xl:hidden"
+          :aria-label="$t('g.close')"
+          @click="$emit('close')"
+        >
+          <i class="pi pi-times text-base" />
+        </Button>
       </div>
       <!-- Plan Header -->
       <div class="flex flex-col gap-2">
@@ -55,23 +69,11 @@
         </span>
         <div class="flex items-baseline gap-2">
           <span
-            :class="
-              cn(
-                'text-4xl font-semibold text-base-foreground tabular-nums',
-                usePaymentElement && 'xl:text-2xl'
-              )
-            "
+            class="text-2xl font-semibold text-base-foreground tabular-nums"
           >
             ${{ displayPrice }}
           </span>
-          <span
-            :class="
-              cn(
-                'text-xl text-base-foreground',
-                usePaymentElement && 'xl:text-base'
-              )
-            "
-          >
+          <span class="text-base text-base-foreground">
             {{ $t('subscription.usdPerMonth') }}
           </span>
         </div>
@@ -167,7 +169,9 @@
         cn(
           'flex flex-col gap-2 pt-8',
           usePaymentElement &&
-            'xl:min-h-0 xl:min-w-0 xl:flex-1 xl:px-16 xl:py-10'
+            'xl:min-h-0 xl:min-w-0 xl:flex-1 xl:px-16 xl:py-10',
+          // Match the summary panel's 24px edge inset (root p-4 provides 16).
+          usePaymentElement && 'max-xl:px-2'
         )
       "
     >
@@ -256,6 +260,7 @@ const emit = defineEmits<{
   addCreditCard: []
   confirmPayment: [confirmationToken: string, promotionCode?: string]
   back: []
+  close: []
 }>()
 
 const { t, n } = useI18n()

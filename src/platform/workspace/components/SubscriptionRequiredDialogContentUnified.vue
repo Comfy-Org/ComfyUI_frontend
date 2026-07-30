@@ -14,7 +14,11 @@
         isEmbeddedSuccessStep &&
           'bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px] xl:rounded-2xl',
         (isEmbeddedPaymentStep || isEmbeddedSuccessStep) &&
-          'motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out'
+          'motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out',
+        // The w-fit shell hugs min-content on phones; give the embedded
+        // steps a real width floor below xl.
+        (isEmbeddedPaymentStep || isEmbeddedSuccessStep) &&
+          'max-xl:w-[min(430px,92vw)]'
       )
     "
   >
@@ -33,7 +37,12 @@
     <Button
       size="icon"
       variant="muted-textonly"
-      class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
+      :class="
+        cn(
+          'absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10',
+          isEmbeddedPaymentStep && 'max-xl:hidden'
+        )
+      "
       :aria-label="$t('g.close')"
       @click="onClose"
     >
@@ -97,6 +106,7 @@
         @add-credit-card="handleTeamSubscribe"
         @confirm-payment="handleTeamSubscriptionPayment"
         @back="handleBackToPricing"
+        @close="onClose"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -110,6 +120,7 @@
         @add-credit-card="handleAddCreditCard"
         @confirm-payment="handleSubscriptionPayment"
         @back="handleBackToPricing"
+        @close="onClose"
       />
 
       <SubscriptionTransitionPreviewWorkspace
