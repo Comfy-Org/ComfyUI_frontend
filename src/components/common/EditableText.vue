@@ -31,7 +31,6 @@ const {
   modelValue,
   isEditing = false,
   inputAttrs = {},
-  labelClass = '',
   labelType = 'span'
 } = defineProps<{
   modelValue: string
