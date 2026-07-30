@@ -133,7 +133,11 @@ Once the package exists, configure it on npmjs.com under package settings:
 - **Allow `npm publish` only.** `npm stage publish` publishes unlisted pending
   manual approval; we do not use it.
 
-Then add to the publish job:
+Then grant OIDC at **both** workflow layers — the caller job that does
+`uses: ./.github/workflows/publish-<pkg>.yaml`, and the publish job inside the
+reusable workflow. A called workflow can never hold more than the calling job
+does, so setting this on the inner job alone leaves it with no token and the
+publish quietly falls back to `NPM_TOKEN`:
 
 ```yaml
 permissions:
