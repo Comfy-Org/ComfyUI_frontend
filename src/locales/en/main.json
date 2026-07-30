@@ -3021,6 +3021,9 @@
         "cta": "Set up auto-reload"
       },
       "enabled": "Enabled",
+      "loadFailed": "Auto-reload settings couldn't be loaded.",
+      "loading": "Loading auto-reload settings…",
+      "retry": "Try again",
       "subtitle": "Automatically add credits when your balance runs low, within an optional monthly budget.",
       "tile": {
         "label": "Auto-reload",

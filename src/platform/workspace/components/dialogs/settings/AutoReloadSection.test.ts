@@ -13,6 +13,14 @@ import type { AutoReloadConfig } from '@/platform/workspace/composables/useAutoR
 const dialogMocks = vi.hoisted(() => ({
   showAutoReloadDialog: vi.fn()
 }))
+const mockWorkspaceApi = vi.hoisted(() => ({
+  getAutoReload: vi.fn(),
+  updateAutoReload: vi.fn()
+}))
+
+vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+  workspaceApi: mockWorkspaceApi
+}))
 
 const mockCanAccess = ref(true)
 const mockAccessFrozen = ref(false)
@@ -62,11 +70,28 @@ function setConfig(overrides: Partial<AutoReloadConfig> = {}) {
 }
 
 describe('AutoReloadSection', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await autoReload.scopeToWorkspace(null)
+    vi.resetAllMocks()
     dialogMocks.showAutoReloadDialog.mockReset()
     mockCanAccess.value = true
     mockAccessFrozen.value = false
-    autoReload.scopeToWorkspace('workspace-a')
+    mockWorkspaceApi.getAutoReload.mockResolvedValue({
+      configured: false,
+      enabled: false,
+      threshold_credits: null,
+      reload_credits: null,
+      monthly_budget_cents: null,
+      spent_this_cycle_cents: 0
+    })
+    mockWorkspaceApi.updateAutoReload.mockImplementation((payload) =>
+      Promise.resolve({
+        configured: true,
+        ...payload,
+        spent_this_cycle_cents: autoReload.config.spentThisCycleCents
+      })
+    )
+    await autoReload.scopeToWorkspace('workspace-a')
     setConfig({ configured: false, enabled: false, monthlyBudgetCents: null })
   })
 
@@ -220,6 +245,6 @@ describe('AutoReloadSection', () => {
     await nextTick()
 
     expect(autoReload.config.configured).toBe(false)
-    expect(screen.getByText('Set up auto-reload')).toBeInTheDocument()
+    expect(await screen.findByText('Set up auto-reload')).toBeInTheDocument()
   })
 })

@@ -15,6 +15,14 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 const dialogStoreMocks = vi.hoisted(() => ({
   closeDialog: vi.fn()
 }))
+const mockWorkspaceApi = vi.hoisted(() => ({
+  getAutoReload: vi.fn(),
+  updateAutoReload: vi.fn()
+}))
+
+vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+  workspaceApi: mockWorkspaceApi
+}))
 
 const mockCanAccess = ref(true)
 const mockAccessFrozen = ref(false)
@@ -64,11 +72,28 @@ function setConfig(overrides: Partial<AutoReloadConfig> = {}) {
 }
 
 describe('AutoReloadDialogContent', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await autoReload.scopeToWorkspace(null)
+    vi.resetAllMocks()
     dialogStoreMocks.closeDialog.mockReset()
     mockCanAccess.value = true
     mockAccessFrozen.value = false
-    autoReload.scopeToWorkspace('workspace-a')
+    mockWorkspaceApi.getAutoReload.mockResolvedValue({
+      configured: false,
+      enabled: false,
+      threshold_credits: null,
+      reload_credits: null,
+      monthly_budget_cents: null,
+      spent_this_cycle_cents: 0
+    })
+    mockWorkspaceApi.updateAutoReload.mockImplementation((payload) =>
+      Promise.resolve({
+        configured: true,
+        ...payload,
+        spent_this_cycle_cents: autoReload.config.spentThisCycleCents
+      })
+    )
+    await autoReload.scopeToWorkspace('workspace-a')
     setConfig()
   })
 
@@ -323,6 +348,23 @@ describe('AutoReloadDialogContent', () => {
     expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
       key: 'auto-reload'
     })
+  })
+
+  it('keeps the dialog open and persisted state unchanged after a failed update', async () => {
+    const user = userEvent.setup()
+    setConfig({ configured: true, enabled: false, thresholdCredits: 2500 })
+    const before = { ...autoReload.config }
+    mockWorkspaceApi.updateAutoReload.mockRejectedValueOnce(
+      new Error('Unable to save')
+    )
+    renderDialog()
+    dialogStoreMocks.closeDialog.mockClear()
+
+    await user.click(screen.getByRole('button', { name: 'Update' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Unable to save')
+    expect(dialogStoreMocks.closeDialog).not.toHaveBeenCalled()
+    expect({ ...autoReload.config }).toEqual(before)
   })
 
   it('keeps Update disabled when the threshold is empty', async () => {

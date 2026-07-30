@@ -211,13 +211,16 @@
         </ToggleGroupItem>
       </ToggleGroup>
       <div class="flex items-center gap-4">
+        <span v-if="error" role="alert" class="text-danger text-sm">
+          {{ error }}
+        </span>
         <Button variant="muted-textonly" size="lg" @click="onClose">
           {{ $t('workspacePanel.autoReload.dialog.cancel') }}
         </Button>
         <Button
           variant="secondary"
           size="lg"
-          :disabled="!canUpdate"
+          :disabled="!canUpdate || isMutating"
           @click="onUpdate"
         >
           {{ $t('workspacePanel.autoReload.dialog.update') }}
@@ -255,13 +258,13 @@ import { storeToRefs } from 'pinia'
 const { t, n: fmtNumber, locale } = useI18n()
 const { workspaceId } = defineProps<{ workspaceId: string | null }>()
 const dialogStore = useDialogStore()
-const { config, save, scopeToWorkspace } = useAutoReload()
+const { config, error, isMutating, save, scopeToWorkspace } = useAutoReload()
 const { activeWorkspaceId } = storeToRefs(useTeamWorkspaceStore())
 const { canConfigure } = useAutoReloadAccess()
 const canConfigureWorkspace = computed(
   () => canConfigure.value && activeWorkspaceId.value === workspaceId
 )
-scopeToWorkspace(activeWorkspaceId.value)
+void scopeToWorkspace(activeWorkspaceId.value)
 
 type Unit = 'credits' | 'usd'
 const unitOptions: Unit[] = ['credits', 'usd']
@@ -508,7 +511,7 @@ function onClose() {
 }
 
 watch(activeWorkspaceId, (workspaceId) => {
-  scopeToWorkspace(workspaceId)
+  void scopeToWorkspace(workspaceId)
   onClose()
 })
 
@@ -520,18 +523,22 @@ watch(
   { immediate: true }
 )
 
-function onUpdate() {
+async function onUpdate() {
   if (!canConfigureWorkspace.value) {
     onClose()
     return
   }
   if (!canUpdate.value) return
-  save({
+  const saved = await save({
     thresholdCredits: thresholdCredits.value,
     reloadCredits: reloadCredits.value,
     monthlyBudgetCents:
       budgetEnabled.value && budgetCents.value > 0 ? budgetCents.value : null
   })
-  onClose()
+    .then(() => true)
+    .catch(() => false)
+  if (saved) {
+    onClose()
+  }
 }
 </script>

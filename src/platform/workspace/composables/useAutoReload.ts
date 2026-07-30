@@ -1,6 +1,11 @@
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 import { creditsToCents } from '@/base/credits/comfyCredits'
+import type {
+  AutoReloadResponse,
+  UpdateAutoReloadRequest
+} from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 export interface AutoReloadConfig {
   configured: boolean
@@ -89,19 +94,103 @@ function createDefaultConfig(): AutoReloadConfig {
   }
 }
 
-// No production auto-reload endpoint exists yet. This state intentionally
-// starts unconfigured and does not imply persistence across a page reload.
 const config = reactive<AutoReloadConfig>(createDefaultConfig())
+const isInitialized = ref(false)
+const isLoading = ref(false)
+const isMutating = ref(false)
+const error = ref<string | null>(null)
 let scopedWorkspaceId: string | null | undefined
+let latestReadId = 0
+let latestMutationId = 0
+
+function mapAutoReloadResponse(response: AutoReloadResponse): AutoReloadConfig {
+  if (!response.configured) return createDefaultConfig()
+
+  return {
+    configured: true,
+    enabled: response.enabled,
+    thresholdCredits: response.threshold_credits ?? 0,
+    reloadCredits: response.reload_credits ?? 0,
+    monthlyBudgetCents: response.monthly_budget_cents,
+    spentThisCycleCents: response.spent_this_cycle_cents
+  }
+}
+
+function errorMessage(err: unknown, fallback: string) {
+  return err instanceof Error ? err.message : fallback
+}
 
 function resetConfig() {
   Object.assign(config, createDefaultConfig())
 }
 
-function scopeToWorkspace(workspaceId: string | null) {
-  if (scopedWorkspaceId === workspaceId) return
+async function load(workspaceId: string, requestId: number) {
+  isLoading.value = true
+  error.value = null
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await workspaceApi.getAutoReload()
+      if (requestId !== latestReadId || scopedWorkspaceId !== workspaceId)
+        return
+
+      Object.assign(config, mapAutoReloadResponse(response))
+      isInitialized.value = true
+      isLoading.value = false
+      return
+    } catch (err) {
+      if (requestId !== latestReadId || scopedWorkspaceId !== workspaceId)
+        return
+      if (attempt === 0) continue
+
+      error.value = errorMessage(err, 'Failed to load auto-reload settings')
+      isLoading.value = false
+    }
+  }
+}
+
+function scopeToWorkspace(workspaceId: string | null): Promise<void> {
+  if (scopedWorkspaceId === workspaceId) return Promise.resolve()
   scopedWorkspaceId = workspaceId
+  latestReadId++
+  latestMutationId++
   resetConfig()
+  isInitialized.value = false
+  isLoading.value = false
+  isMutating.value = false
+  error.value = null
+
+  if (workspaceId === null) return Promise.resolve()
+  return load(workspaceId, latestReadId)
+}
+
+function retry(): Promise<void> {
+  if (scopedWorkspaceId == null) return Promise.resolve()
+  return load(scopedWorkspaceId, ++latestReadId)
+}
+
+async function update(payload: UpdateAutoReloadRequest): Promise<void> {
+  const workspaceId = scopedWorkspaceId
+  if (workspaceId == null) throw new Error('No active workspace')
+
+  const mutationId = ++latestMutationId
+  isMutating.value = true
+  error.value = null
+  try {
+    const response = await workspaceApi.updateAutoReload(payload)
+    if (mutationId === latestMutationId && scopedWorkspaceId === workspaceId) {
+      Object.assign(config, mapAutoReloadResponse(response))
+    }
+  } catch (err) {
+    if (mutationId === latestMutationId && scopedWorkspaceId === workspaceId) {
+      error.value = errorMessage(err, 'Failed to save auto-reload settings')
+    }
+    throw err
+  } finally {
+    if (mutationId === latestMutationId && scopedWorkspaceId === workspaceId) {
+      isMutating.value = false
+    }
+  }
 }
 
 export function useAutoReload() {
@@ -118,20 +207,30 @@ export function useAutoReload() {
   const isPaused = computed(() => state.value.isPaused)
   const isWarning = computed(() => state.value.isWarning)
 
-  function setEnabled(value: boolean) {
-    config.enabled = value
+  async function setEnabled(value: boolean) {
+    await update({
+      enabled: value,
+      threshold_credits: config.thresholdCredits,
+      reload_credits: config.reloadCredits,
+      monthly_budget_cents: config.monthlyBudgetCents
+    })
   }
 
-  function save(next: AutoReloadSettings) {
-    config.configured = true
-    config.enabled = true
-    config.thresholdCredits = next.thresholdCredits
-    config.reloadCredits = next.reloadCredits
-    config.monthlyBudgetCents = next.monthlyBudgetCents
+  async function save(next: AutoReloadSettings) {
+    await update({
+      enabled: true,
+      threshold_credits: next.thresholdCredits,
+      reload_credits: next.reloadCredits,
+      monthly_budget_cents: next.monthlyBudgetCents
+    })
   }
 
   return {
     config,
+    isInitialized,
+    isLoading,
+    isMutating,
+    error,
     isConfigured,
     isEnabled,
     hasBudget,
@@ -145,6 +244,7 @@ export function useAutoReload() {
     isWarning,
     setEnabled,
     save,
-    scopeToWorkspace
+    scopeToWorkspace,
+    retry
   }
 }
