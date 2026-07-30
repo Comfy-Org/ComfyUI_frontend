@@ -26,7 +26,23 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
   })
 
   test('Force input', async ({ comfyPage }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'PR #10704 - forceInput sockets should preserve declaration order'
+    })
+
     await comfyPage.workflow.loadWorkflow('inputs/force_input')
+
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => {
+          const node = window.app!.graph.getNodeById(5)
+          return node?.inputs.map((input) => input.name)
+        })
+      )
+      .toEqual(['int_input', 'int_input_widget', 'float_input'])
+
     await expect(comfyPage.canvas).toHaveScreenshot('force_input.png')
   })
 
