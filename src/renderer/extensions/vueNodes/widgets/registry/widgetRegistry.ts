@@ -75,6 +75,9 @@ const WidgetRange = defineAsyncComponent(
 const WidgetBoundingBoxes = defineAsyncComponent(
   () => import('@/components/boundingBoxes/WidgetBoundingBoxes.vue')
 )
+const WidgetVideoEdit = defineAsyncComponent(
+  () => import('@/components/videoEdit/WidgetVideoEdit.vue')
+)
 const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
 )
@@ -246,6 +249,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'videoedit',
+    {
+      component: WidgetVideoEdit,
+      aliases: ['VIDEO_EDIT'],
+      essential: false
+    }
+  ],
+  [
     'colors',
     {
       component: WidgetColors,
@@ -293,7 +304,8 @@ const EXPANDING_TYPES = [
   'painter',
   'imagecompare',
   'range',
-  'boundingboxes'
+  'boundingboxes',
+  'videoedit'
 ] as const
 
 export function shouldExpand(type: string): boolean {
