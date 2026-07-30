@@ -35,7 +35,10 @@ export async function launchCancellationFlow({
     return workspaceStore.activeWorkspaceId === launchWorkspaceId
   }
 
-  const session = await prepareChurnkey().catch(() => null)
+  const session = await prepareChurnkey().catch((error) => {
+    console.warn('Failed to prepare Churnkey cancellation flow:', error)
+    return null
+  })
   if (!session) {
     if (isLaunchWorkspaceCurrent()) await showFallback()
     return

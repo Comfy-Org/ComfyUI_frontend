@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ChurnkeySession,
@@ -57,6 +57,10 @@ function session(
 }
 
 describe('launchCancellationFlow', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   beforeEach(() => {
     vi.resetAllMocks()
     mocks.billingType.value = 'workspace'
@@ -132,13 +136,19 @@ describe('launchCancellationFlow', () => {
   })
 
   it('falls back when preparation or the provider fails', async () => {
-    mocks.prepare.mockRejectedValueOnce(new Error('blocked by browser'))
+    const preparationError = new Error('blocked by browser')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    mocks.prepare.mockRejectedValueOnce(preparationError)
     const preparationFallback = vi.fn()
 
     await launchCancellationFlow({ showFallback: preparationFallback })
 
     expect(preparationFallback).toHaveBeenCalledWith()
     expect(mocks.trackCancellation).not.toHaveBeenCalled()
+    expect(warn).toHaveBeenCalledWith(
+      'Failed to prepare Churnkey cancellation flow:',
+      preparationError
+    )
 
     mocks.prepare.mockResolvedValueOnce(
       session(async () => {
