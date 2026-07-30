@@ -1,14 +1,14 @@
 import type { Locator, Page, Request } from '@playwright/test'
 import { errors } from '@playwright/test'
 
-import type { AutoQueueMode } from '@/stores/queueStore'
+import type { AutoQueueMode } from '@/stores/queueSettingsStore'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 function isPromptRequest(request: Request): boolean {
   return (
     request.method() === 'POST' &&
-    new URL(request.url()).pathname === '/api/prompt'
+    new URL(request.url()).pathname.endsWith('/api/prompt')
   )
 }
 

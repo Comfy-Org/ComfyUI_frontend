@@ -145,6 +145,13 @@ interface QueuePromptOptions {
 /** Dictionary of Frontend-generated API calls */
 interface FrontendApiCalls {
   graphChanged: ComfyWorkflowJSON
+  /**
+   * Fires when the prompt-relevant projection of the active workflow changes.
+   * Local workflow changes are only evaluated while Run (on change) is active.
+   * Unlike `graphChanged`, position, size, title, collapse, group, viewport,
+   * and slot-label edits do not trigger this signal.
+   * Third-party presentation-only nodes are treated as prompt-relevant.
+   */
   executionGraphChanged: never
   promptQueueing: { requestId: number; batchCount: number; number?: number }
   promptQueued: { number: number; batchCount: number; requestId?: number }
@@ -866,12 +873,18 @@ export class ComfyApi extends EventTarget {
             case 'progress':
             case 'progress_state':
             case 'executed':
-            case 'graphChanged':
             case 'promptQueued':
             case 'logs':
             case 'b_preview':
             case 'notification':
               this.dispatchCustomEvent(msg.type, msg.data)
+              break
+            case 'graphChanged':
+              this.dispatchCustomEvent('graphChanged', msg.data)
+              this.dispatchCustomEvent('executionGraphChanged')
+              break
+            case 'executionGraphChanged':
+              this.dispatchCustomEvent('executionGraphChanged')
               break
             case 'feature_flags':
               // Store server feature flags

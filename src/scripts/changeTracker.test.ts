@@ -13,6 +13,7 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -53,6 +54,10 @@ vi.mock('@/scripts/app', () => ({
     loadGraphData: vi.fn(() => Promise.resolve()),
     canvas: {
       ds: { scale: 1, offset: [0, 0] }
+    },
+    ui: {
+      autoQueueEnabled: false,
+      autoQueueMode: 'instant'
     }
   }
 }))
@@ -83,6 +88,7 @@ import { api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
 
 let nodeIdCounter = 0
+let workflowPathCounter = 0
 
 function createState(nodeCount = 0): ComfyWorkflowJSON {
   const nodes: ComfyWorkflowJSON['nodes'] = Array.from(
@@ -114,9 +120,8 @@ function createState(nodeCount = 0): ComfyWorkflowJSON {
 
 function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
   const state = initialState ?? createState()
-  const testName = expect.getState().currentTestName ?? 'unknown-test'
   const workflow = {
-    path: `/test/${encodeURIComponent(testName)}.json`
+    path: `/test/workflow-${++workflowPathCounter}.json`
   } as never
   const tracker = new ChangeTracker(workflow, state)
   mockWorkflowStore.activeWorkflow = { changeTracker: tracker }
@@ -125,6 +130,14 @@ function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
 
 function mockCanvasState(state: ComfyWorkflowJSON) {
   vi.mocked(app.rootGraph.serialize).mockReturnValue(state as never)
+}
+
+function dispatchedEventNames() {
+  return vi.mocked(api.dispatchCustomEvent).mock.calls.map(([event]) => event)
+}
+
+function expectExecutionGraphChangedNotDispatched() {
+  expect(dispatchedEventNames()).not.toContain('executionGraphChanged')
 }
 
 async function requireValidWorkflow(value: unknown) {
@@ -206,6 +219,7 @@ function omitOptionalSubgraphCollections(state: ComfyWorkflowJSON) {
 describe('ChangeTracker', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(api.dispatchCustomEvent).mockReset()
     vi.useFakeTimers()
     setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
@@ -213,6 +227,11 @@ describe('ChangeTracker', () => {
     ChangeTracker.isLoadingGraph = false
     mockWorkflowStore.activeWorkflow = null
     mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
+    vi.mocked(app.rootGraph.serialize).mockReset()
+    mockCanvasState(createState())
+    useQueueSettingsStore().mode = 'change'
+    app.ui.autoQueueEnabled = false
+    app.ui.autoQueueMode = 'instant'
   })
 
   afterEach(() => {
@@ -296,6 +315,61 @@ describe('ChangeTracker', () => {
         )
       })
 
+      it('does not dispatch an execution change when Run on change is disabled', () => {
+        useQueueSettingsStore().mode = 'disabled'
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expectExecutionGraphChangedNotDispatched()
+      })
+
+      it('dispatches execution changes for legacy Run on change mode', () => {
+        useQueueSettingsStore().mode = 'disabled'
+        app.ui.autoQueueEnabled = true
+        app.ui.autoQueueMode = 'change'
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'executionGraphChanged'
+        )
+      })
+
+      it('decides execution relevance before graphChanged listeners run', () => {
+        const initial = createState(1)
+        initial.nodes[0].widgets_values = [1]
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+        vi.mocked(api.dispatchCustomEvent).mockImplementation((event) => {
+          if (event === 'graphChanged') {
+            tracker.activeState.nodes[0].widgets_values = [1]
+          }
+          return true
+        })
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'executionGraphChanged'
+        )
+      })
+
       it('squashes late serialized updates into the captured state', async () => {
         const initial = createState(1)
         const changed = structuredClone(initial)
@@ -311,7 +385,33 @@ describe('ChangeTracker', () => {
 
         expect(tracker.activeState).toEqual(squashed)
         expect(tracker.undoQueue).toEqual([initial])
-        expect(api.dispatchCustomEvent).toHaveBeenCalledTimes(2)
+        expect(dispatchedEventNames()).toEqual([
+          'graphChanged',
+          'executionGraphChanged',
+          'graphChanged',
+          'executionGraphChanged'
+        ])
+      })
+
+      it('does not emit an execution change for a late layout-only update', async () => {
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        const squashed = structuredClone(changed)
+        squashed.nodes[0].pos = [40, 50]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+        vi.mocked(api.dispatchCustomEvent).mockClear()
+        mockCanvasState(squashed)
+        await vi.advanceTimersByTimeAsync(50)
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          squashed
+        )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it.for([
@@ -414,9 +514,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-          'executionGraphChanged'
-        )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it('does not dispatch a graph change for the canvas viewport', () => {
@@ -455,9 +553,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-          'executionGraphChanged'
-        )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it('normalizes equivalent v0.4 and v1 links', async () => {
@@ -497,9 +593,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-          'executionGraphChanged'
-        )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it('normalizes omitted v1 links and empty v0.4 links', async () => {
@@ -527,9 +621,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-          'executionGraphChanged'
-        )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it('normalizes string and numeric link slot indices', async () => {
@@ -574,9 +666,33 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-          'executionGraphChanged'
+        expectExecutionGraphChangedNotDispatched()
+      })
+
+      it('normalizes string and numeric node IDs', () => {
+        const initial = createState(2)
+        initial.links = [
+          [1, initial.nodes[0].id, 0, initial.nodes[1].id, 0, '*']
+        ]
+        const changed = structuredClone(initial)
+        for (const node of initial.nodes) {
+          node.id = String(node.id)
+        }
+        const initialLink = initial.links[0]
+        if (!initialLink) throw new Error('link missing')
+        initialLink[1] = String(initialLink[1])
+        initialLink[3] = String(initialLink[3])
+        changed.nodes[0].pos = [40, 50]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
         )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it('detects v1 link endpoint changes', async () => {
@@ -643,9 +759,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-          'executionGraphChanged'
-        )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it('ignores slot presentation metadata changes', () => {
@@ -686,9 +800,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-          'executionGraphChanged'
-        )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it('ignores link ordering changes', () => {
@@ -709,9 +821,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-          'executionGraphChanged'
-        )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it.for([
@@ -780,9 +890,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-          'executionGraphChanged'
-        )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it('detects widget changes inside a subgraph', async () => {
@@ -814,6 +922,20 @@ describe('ChangeTracker', () => {
         const initial = await requireValidWorkflow(nested.rootGraph.serialize())
         const leafId = nested.leafSubgraph?.id
         if (!leafId) throw new Error('nested leaf id missing')
+        const rootDefinitions = initial.definitions?.subgraphs
+        if (!rootDefinitions) throw new Error('subgraph definitions missing')
+        const leafIndex = rootDefinitions.findIndex(
+          (subgraph) => subgraph.id === leafId
+        )
+        const parent = rootDefinitions.find(
+          (subgraph) => subgraph.id !== leafId
+        )
+        if (leafIndex === -1 || !parent) {
+          throw new Error('nested subgraph definitions missing')
+        }
+        const [leaf] = rootDefinitions.splice(leafIndex, 1)
+        if (!leaf) throw new Error('nested leaf definition missing')
+        parent.definitions = { subgraphs: [leaf] }
         const initialLeaf = findSubgraphDefinition(initial, leafId)
         if (!initialLeaf) throw new Error('nested leaf definition missing')
         const initialLeafNode = initialLeaf.nodes[0]
@@ -870,9 +992,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-          'executionGraphChanged'
-        )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it('ignores subgraph boundary-node layout changes', async () => {
@@ -892,9 +1012,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-          'executionGraphChanged'
-        )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it('ignores subgraph definition order changes', async () => {
@@ -912,9 +1030,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-          'executionGraphChanged'
-        )
+        expectExecutionGraphChangedNotDispatched()
       })
 
       it.for(['Note', 'MarkdownNote'])(
@@ -934,9 +1050,7 @@ describe('ChangeTracker', () => {
             'graphChanged',
             changed
           )
-          expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-            'executionGraphChanged'
-          )
+          expectExecutionGraphChangedNotDispatched()
         }
       )
 
@@ -1019,17 +1133,13 @@ describe('ChangeTracker', () => {
       await tracker.undo()
 
       expect(tracker.activeState).toEqual(initial)
-      expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-        'executionGraphChanged'
-      )
+      expectExecutionGraphChangedNotDispatched()
 
       vi.mocked(api.dispatchCustomEvent).mockClear()
       await tracker.redo()
 
       expect(tracker.activeState).toEqual(changed)
-      expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
-        'executionGraphChanged'
-      )
+      expectExecutionGraphChangedNotDispatched()
     })
   })
 

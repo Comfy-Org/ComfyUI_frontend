@@ -26,10 +26,8 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
-import {
-  useQueuePendingTaskCountStore,
-  useQueueSettingsStore
-} from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 
 function setupAndGetExecutionGraphChangedListener() {
   setupAutoQueueHandler()

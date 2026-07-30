@@ -10,7 +10,9 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { serializeNodeId } from '@/types/nodeId'
 
 import { api } from './api'
 import type { ComfyApp } from './app'
@@ -22,6 +24,13 @@ function clone<T>(obj: T): T {
 
 function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
+}
+
+function isAutoQueueOnChange(): boolean {
+  return (
+    useQueueSettingsStore().mode === 'change' ||
+    (app.ui.autoQueueEnabled === true && app.ui.autoQueueMode === 'change')
+  )
 }
 
 const nonExecutionGraphProperties = new Set([
@@ -102,6 +111,9 @@ function getExecutionNodeState(value: unknown): unknown {
   if (!node) return value
 
   const executionNode = omitProperties(node, nonExecutionNodeProperties)
+  if ('id' in node) {
+    executionNode.id = normalizeNodeId(node.id)
+  }
   if (Array.isArray(node.inputs)) {
     executionNode.inputs = node.inputs.map(getExecutionSlotState)
   }
@@ -113,15 +125,21 @@ function getExecutionNodeState(value: unknown): unknown {
 
 function getExecutionBoundaryNodeState(value: unknown): unknown {
   const node = asRecord(value)
-  return node ? omitProperties(node, nonExecutionBoundaryNodeProperties) : value
+  if (!node) return value
+
+  const executionNode = omitProperties(node, nonExecutionBoundaryNodeProperties)
+  if ('id' in node) {
+    executionNode.id = normalizeNodeId(node.id)
+  }
+  return executionNode
 }
 
 function getExecutionLinkState(value: unknown): unknown {
   if (Array.isArray(value)) {
     return [
-      value[1],
+      normalizeNodeId(value[1]),
       normalizeSlotIndex(value[2]),
-      value[3],
+      normalizeNodeId(value[3]),
       normalizeSlotIndex(value[4])
     ]
   }
@@ -129,11 +147,17 @@ function getExecutionLinkState(value: unknown): unknown {
   const link = asRecord(value)
   if (!link) return value
   return [
-    link.origin_id,
+    normalizeNodeId(link.origin_id),
     normalizeSlotIndex(link.origin_slot),
-    link.target_id,
+    normalizeNodeId(link.target_id),
     normalizeSlotIndex(link.target_slot)
   ]
+}
+
+function normalizeNodeId(value: unknown): unknown {
+  return typeof value === 'number' || typeof value === 'string'
+    ? serializeNodeId(value)
+    : value
 }
 
 function normalizeSlotIndex(value: unknown): unknown {
@@ -345,15 +369,6 @@ export class ChangeTracker {
   }
 
   updateModified(previousState?: ComfyWorkflowJSON) {
-    api.dispatchCustomEvent('graphChanged', this.activeState)
-    if (previousState) {
-      const previousExecutionState = getExecutionGraphState(previousState)
-      const currentExecutionState = getExecutionGraphState(this.activeState)
-      if (!_.isEqual(previousExecutionState, currentExecutionState)) {
-        api.dispatchCustomEvent('executionGraphChanged')
-      }
-    }
-
     // Get the workflow from the store as ChangeTracker is raw object, i.e.
     // `this.workflow` is not reactive.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
@@ -362,6 +377,19 @@ export class ChangeTracker {
         this.initialState,
         this.activeState
       )
+    }
+
+    const executionGraphChanged =
+      !!previousState &&
+      isAutoQueueOnChange() &&
+      !_.isEqual(
+        getExecutionGraphState(previousState),
+        getExecutionGraphState(this.activeState)
+      )
+
+    api.dispatchCustomEvent('graphChanged', this.activeState)
+    if (executionGraphChanged) {
+      api.dispatchCustomEvent('executionGraphChanged')
     }
   }
 
@@ -411,7 +439,12 @@ export class ChangeTracker {
     )
       return
 
-    this.activeState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    if (ChangeTracker.graphEqual(this.activeState, currentState)) return
+
+    const previousState = this.activeState
+    this.activeState = currentState
+    this.updateModified(previousState)
   }, 50)
 
   /** @deprecated Use {@link captureCanvasState} instead. */

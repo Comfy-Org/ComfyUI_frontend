@@ -2,9 +2,9 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import {
   isInstantRunningMode,
-  useQueuePendingTaskCountStore,
   useQueueSettingsStore
-} from '@/stores/queueStore'
+} from '@/stores/queueSettingsStore'
+import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 
 export function setupAutoQueueHandler() {
   const queueCountStore = useQueuePendingTaskCountStore()
