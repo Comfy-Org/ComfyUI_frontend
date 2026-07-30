@@ -10,7 +10,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
@@ -22,6 +22,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { appendJsonExt } from '@/utils/formatUtil'
+import { isResultItemType } from '@/utils/typeGuardUtil'
 
 export type MenuEntry =
   | {
@@ -152,9 +153,6 @@ export function useJobMenu(
     )
 
     if (!node) return
-
-    const isResultItemType = (v: string | undefined): v is ResultItemType =>
-      v === 'input' || v === 'output' || v === 'temp'
 
     const apiItem: ResultItem = {
       filename: result.filename,
