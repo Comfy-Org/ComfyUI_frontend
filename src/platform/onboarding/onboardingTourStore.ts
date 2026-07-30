@@ -13,9 +13,11 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { targetMounted, waitForTarget } from './coachmarkRegistry'
 import {
+  ENTRY_PATHS,
   TOUR_SEEN_SETTING,
   resolveSteps,
-  tourDefinition
+  tourDefinition,
+  tourHolds
 } from './onboardingTours'
 import type { CoachStep, EntryPath, TourDefinition } from './onboardingTours'
 import { useTourTriggers } from './useTourTriggers'
@@ -315,6 +317,17 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       if (!holding && activeTour.value === entryPath)
         finish('skipped', { markSeen: false, skipReason: 'trigger_lost' })
     })
+  }
+
+  // Watch and end a tour if its tour-specific condition changes.
+  for (const entryPath of ENTRY_PATHS) {
+    watch(
+      () => tourHolds(entryPath),
+      (holding) => {
+        if (!holding && activeTour.value === entryPath)
+          finish('skipped', { markSeen: false, skipReason: 'trigger_lost' })
+      }
+    )
   }
 
   function hasSeenTour(entryPath: EntryPath): boolean {

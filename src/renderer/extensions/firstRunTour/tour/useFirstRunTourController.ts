@@ -1,4 +1,9 @@
-import { createSharedComposable, useEventListener } from '@vueuse/core'
+import {
+  breakpointsTailwind,
+  createSharedComposable,
+  useBreakpoints,
+  useEventListener
+} from '@vueuse/core'
 import { delay } from 'es-toolkit'
 import { computed, readonly, ref, shallowRef, watch } from 'vue'
 
@@ -30,6 +35,7 @@ function useFirstRunTourControllerInternal() {
   const executionErrorStore = useExecutionErrorStore()
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
+  const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
@@ -106,7 +112,11 @@ function useFirstRunTourControllerInternal() {
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
     nudgeArmed.value = false
-    registerTour('firstRun', () => firstRunTourSteps(templateId, runState))
+    registerTour(
+      'firstRun',
+      () => firstRunTourSteps(templateId, runState),
+      desktopLayout
+    )
     await delay(INTRO_PREVIEW_MS)
     const started = await engine.startTour('firstRun')
     if (!started) {
