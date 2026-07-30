@@ -14,6 +14,13 @@ import type {
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
 
+const { mockIsSettingUp, mockSubscriptionActionOperation } = vi.hoisted(() => ({
+  mockIsSettingUp: { value: false },
+  mockSubscriptionActionOperation: {
+    value: undefined as { actionUrl: string } | undefined
+  }
+}))
+
 const RENEWAL_DATE_ISO = '2026-06-20T12:00:00Z'
 const END_DATE_ISO = '2026-01-20T12:00:00Z'
 
@@ -178,7 +185,14 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 }))
 
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({ isSettingUp: false })
+  useBillingOperationStore: () => ({
+    get isSettingUp() {
+      return mockIsSettingUp.value
+    },
+    get subscriptionActionOperation() {
+      return mockSubscriptionActionOperation.value
+    }
+  })
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -272,6 +286,41 @@ describe('SubscriptionPanelContentWorkspace', () => {
     }
     mockIsLoading.value = false
     mockError.value = null
+    mockIsSettingUp.value = false
+    mockSubscriptionActionOperation.value = undefined
+  })
+
+  it('keeps verification available in settings without exposing its URL', async () => {
+    const actionUrl = 'https://verify.example/sensitive-token'
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    mockIsSettingUp.value = true
+    mockSubscriptionActionOperation.value = { actionUrl }
+    const { container } = renderComponent()
+
+    expect(open).not.toHaveBeenCalled()
+    expect(container.innerHTML).not.toContain(actionUrl)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Complete verification' })
+    )
+    expect(open).toHaveBeenCalledWith(
+      actionUrl,
+      '_blank',
+      'noopener,noreferrer'
+    )
+  })
+
+  it('hides verification from users without billing permission', () => {
+    mockIsSettingUp.value = true
+    mockCanManageSubscription.value = false
+    mockSubscriptionActionOperation.value = {
+      actionUrl: 'https://verify.example/sensitive-token'
+    }
+
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).not.toBeInTheDocument()
   })
 
   it('renders the subscribed credit stop price and renewal subtitle', () => {
