@@ -5,6 +5,7 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { toNodeId } from '@/types/nodeId'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const i18n = createI18n({
@@ -42,6 +43,12 @@ const outputsHolder = vi.hoisted(() => ({
 
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => outputsHolder
+}))
+
+const mockHydrateHistogramFromHistory = vi.fn()
+vi.mock('./useHistogramHydration', () => ({
+  hydrateHistogramFromHistory: (...args: unknown[]) =>
+    mockHydrateHistogramFromHistory(...args)
 }))
 
 import WidgetCurve from './WidgetCurve.vue'
@@ -145,6 +152,22 @@ describe('WidgetCurve', () => {
   beforeEach(() => {
     upstreamHolder.ref = null
     outputsHolder.nodeOutputs = {}
+    mockHydrateHistogramFromHistory.mockClear()
+  })
+
+  describe('Histogram hydration', () => {
+    it('hydrates from history on mount when a node locator is present', () => {
+      const nodeLocatorId = '5' as NodeLocatorId
+      renderWidget(makeWidget({ nodeLocatorId }))
+      expect(mockHydrateHistogramFromHistory).toHaveBeenCalledWith(
+        nodeLocatorId
+      )
+    })
+
+    it('does not attempt hydration without a node locator', () => {
+      renderWidget(makeWidget())
+      expect(mockHydrateHistogramFromHistory).not.toHaveBeenCalled()
+    })
   })
 
   describe('Point forwarding', () => {
