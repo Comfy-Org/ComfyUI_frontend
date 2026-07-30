@@ -11,7 +11,7 @@ import {
   CURSOR_GAP
 } from '@/platform/onboarding/coachmarkLayout'
 
-import { focusFill, frameNode } from './cameraFraming'
+import { MAX_FOCUS_SCALE, focusFill, frameNode } from './cameraFraming'
 
 const FOCUS_MS = 450
 const VIEWPORT = { width: 1280, height: 720 }
@@ -35,7 +35,7 @@ vi.mock('@/scripts/app', () => ({
 const camera = {
   animateToBounds: vi.fn(),
   setDirty: vi.fn(),
-  ds: { fitToBounds: vi.fn() }
+  ds: { fitToBounds: vi.fn(), offset: [0, 0], scale: 1 }
 }
 
 let canvasRect = new DOMRect(0, 0, VIEWPORT.width, VIEWPORT.height)
@@ -69,7 +69,7 @@ describe('focusFill', () => {
     expect(
       scaleFor(bounds, focusFill(bounds, VIEWPORT)),
       'a node blown up to fill the viewport reads as a bug, not a spotlight'
-    ).toBeCloseTo(0.6)
+    ).toBeCloseTo(MAX_FOCUS_SCALE)
   })
 
   it('keeps a wide node clear of the column the card sits in', () => {
@@ -123,7 +123,58 @@ describe('frameNode', () => {
     vi.unstubAllGlobals()
     camera.animateToBounds.mockClear()
     camera.ds.fitToBounds.mockClear()
+    camera.ds.offset = [0, 0]
+    camera.ds.scale = 1
     appState.canvas = undefined
+  })
+
+  it('skips the flight for a step already framed, as Back lands on', async () => {
+    const node = mountCanvas()
+    const [x, y, width, height] = node.boundingRect
+    const fill = focusFill(node.boundingRect, VIEWPORT)
+    const scale = scaleFor(node.boundingRect, fill)
+    camera.ds.scale = scale
+    camera.ds.offset = [
+      VIEWPORT.width / 2 / scale - (x + width / 2),
+      VIEWPORT.height / 2 / scale - (y + height / 2)
+    ]
+
+    await frameStep(node.id)
+    await vi.advanceTimersByTimeAsync(CARD_GLIDE_MS + FOCUS_MS)
+
+    expect(
+      camera.animateToBounds,
+      'animating a camera already there is 750ms of nothing'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('still flies for a centred node held at the wrong zoom', async () => {
+    const node = mountCanvas()
+    const [x, y, width, height] = node.boundingRect
+    const scale =
+      scaleFor(node.boundingRect, focusFill(node.boundingRect, VIEWPORT)) / 2
+    camera.ds.scale = scale
+    camera.ds.offset = [
+      VIEWPORT.width / 2 / scale - (x + width / 2),
+      VIEWPORT.height / 2 / scale - (y + height / 2)
+    ]
+
+    void frameStep(node.id)
+    await vi.advanceTimersByTimeAsync(CARD_GLIDE_MS)
+
+    expect(
+      camera.animateToBounds,
+      'centred is not framed: the step still has to zoom in'
+    ).toHaveBeenCalled()
+  })
+
+  it('still flies when the camera sits somewhere else', async () => {
+    const node = mountCanvas()
+
+    void frameStep(node.id)
+    await vi.advanceTimersByTimeAsync(CARD_GLIDE_MS)
+
+    expect(camera.animateToBounds).toHaveBeenCalled()
   })
 
   it('holds the camera until the card has glided to the new step', async () => {

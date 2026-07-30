@@ -56,11 +56,12 @@ function isRunning(state: TourState): state is RunningState {
   )
 }
 
-/** A card already up holds its step while the next enters, so it travels. */
+/** `fromIdx === null` means nothing is on screen yet, so nothing to travel. */
 function shownIdx(state: TourState): number | null {
   if (state.phase === 'showing') return state.idx
-  if (state.phase === 'entering' || state.phase === 'waiting')
-    return state.fromIdx
+  if (state.phase === 'entering')
+    return state.fromIdx === null ? null : state.toIdx
+  if (state.phase === 'waiting') return state.fromIdx
   return null
 }
 

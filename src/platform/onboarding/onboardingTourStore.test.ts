@@ -243,6 +243,23 @@ describe('onboardingTourStore', () => {
     expect(skipped?.[1]).toMatchObject({ skip_reason: 'user' })
   })
 
+  it('holds the card on its step while a deferred target is awaited', async () => {
+    vi.useFakeTimers()
+    const store = mountStore()
+    store.replayTour('appMode')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(store.step?.name).toBe('landing')
+
+    store.next()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(store.waitingForTarget).toBe(true)
+    expect(
+      store.step?.name,
+      'blanking the card while a target is awaited reads as the tour dying'
+    ).toBe('landing')
+  })
+
   it('skips without the seen-flag and toasts when a deferred target never appears', async () => {
     vi.useFakeTimers()
     const store = mountStore()
@@ -575,7 +592,7 @@ describe('onboardingTourStore', () => {
       return { entered, settle: () => settle() }
     }
 
-    it('keeps the card on its step while the next one enters', async () => {
+    it('moves the card to the next step as soon as it starts entering', async () => {
       registerAppModeTargets()
       const { entered, settle } = suspendOnEnter('inputs')
       const store = mountStore()
@@ -588,13 +605,32 @@ describe('onboardingTourStore', () => {
 
       expect(
         store.step?.name,
-        'a card that blanks out mid-move reads as a restart, not a next step'
-      ).toBe('landing')
+        'a card that waits out the camera flight jumps at the end of it'
+      ).toBe('inputs')
 
       settle()
       await nextTick()
 
       expect(store.step?.name).toBe('inputs')
+    })
+
+    it('advances again from the step it is entering, not the one it left', async () => {
+      registerAppModeTargets()
+      const { entered, settle } = suspendOnEnter('inputs')
+      const store = mountStore()
+      store.replayTour('appMode')
+      await nextTick()
+
+      store.next()
+      await entered
+      store.next()
+      settle()
+      await nextTick()
+
+      expect(
+        store.step?.name,
+        'a second Next during the camera flight must not be swallowed'
+      ).toBe('run')
     })
 
     it('shows no step until the first one has entered', async () => {
@@ -656,7 +692,10 @@ describe('onboardingTourStore', () => {
       store.next()
       await entered
 
-      expect(shownCount('inputs-list')).toBe(0)
+      expect(
+        shownCount('inputs-list'),
+        'a step still framing itself has not been shown to anyone'
+      ).toBe(0)
 
       settle()
       await nextTick()
