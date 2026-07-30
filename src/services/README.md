@@ -449,7 +449,7 @@ describe('autoQueueService', () => {
     setupAutoQueueHandler()
 
     expect(mockApi.addEventListener).toHaveBeenCalledWith(
-      'executionGraphChanged',
+      'autoQueueGraphChanged',
       expect.any(Function)
     )
   })

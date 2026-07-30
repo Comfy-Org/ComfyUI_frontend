@@ -396,9 +396,9 @@ describe('API Feature Flags', () => {
   it('preserves server-pushed graph change signals', async () => {
     const socketApi = new ComfyApi()
     const graphChanged = vi.fn()
-    const executionGraphChanged = vi.fn()
+    const autoQueueGraphChanged = vi.fn()
     socketApi.addEventListener('graphChanged', graphChanged)
-    socketApi.addEventListener('executionGraphChanged', executionGraphChanged)
+    socketApi.addEventListener('autoQueueGraphChanged', autoQueueGraphChanged)
     const initPromise = socketApi.init()
     wsEventHandlers['open'](new Event('open'))
     wsEventHandlers['message']({
@@ -419,13 +419,13 @@ describe('API Feature Flags', () => {
 
     expect(graphChanged).toHaveBeenCalledOnce()
     expect(graphChanged.mock.calls[0][0].detail).toEqual(workflow)
-    expect(executionGraphChanged).toHaveBeenCalledOnce()
+    expect(autoQueueGraphChanged).toHaveBeenCalledOnce()
 
     wsEventHandlers['message']({
-      data: JSON.stringify({ type: 'executionGraphChanged', data: null })
+      data: JSON.stringify({ type: 'autoQueueGraphChanged', data: null })
     })
 
-    expect(executionGraphChanged).toHaveBeenCalledTimes(2)
+    expect(autoQueueGraphChanged).toHaveBeenCalledTimes(2)
   })
 
   describe('Dev override via localStorage', () => {

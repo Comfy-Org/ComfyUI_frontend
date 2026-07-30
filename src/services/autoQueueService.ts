@@ -12,7 +12,7 @@ export function setupAutoQueueHandler() {
 
   let graphHasChanged = false
   let internalCount = 0 // Use an internal counter here so it is instantly updated when re-queuing
-  api.addEventListener('executionGraphChanged', () => {
+  api.addEventListener('autoQueueGraphChanged', () => {
     if (queueSettingsStore.mode === 'change') {
       if (internalCount) {
         graphHasChanged = true

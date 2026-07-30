@@ -136,8 +136,8 @@ function dispatchedEventNames() {
   return vi.mocked(api.dispatchCustomEvent).mock.calls.map(([event]) => event)
 }
 
-function expectExecutionGraphChangedNotDispatched() {
-  expect(dispatchedEventNames()).not.toContain('executionGraphChanged')
+function expectAutoQueueGraphChangedNotDispatched() {
+  expect(dispatchedEventNames()).not.toContain('autoQueueGraphChanged')
 }
 
 async function requireValidWorkflow(value: unknown) {
@@ -311,12 +311,34 @@ describe('ChangeTracker', () => {
           changed
         )
         expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
-          'executionGraphChanged'
+          'autoQueueGraphChanged'
         )
       })
 
-      it('does not dispatch an execution change when Run on change is disabled', () => {
+      it.for(['disabled', 'instant-idle', 'instant-running'] as const)(
+        'does not dispatch an auto-queue change in %s mode',
+        (mode) => {
+          useQueueSettingsStore().mode = mode
+          const initial = createState(1)
+          const changed = structuredClone(initial)
+          changed.nodes[0].widgets_values = [2]
+          const tracker = createTracker(initial)
+          mockCanvasState(changed)
+
+          tracker.captureCanvasState()
+
+          expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+            'graphChanged',
+            changed
+          )
+          expectAutoQueueGraphChangedNotDispatched()
+        }
+      )
+
+      it('does not dispatch an auto-queue change for legacy instant mode', () => {
         useQueueSettingsStore().mode = 'disabled'
+        app.ui.autoQueueEnabled = true
+        app.ui.autoQueueMode = 'instant'
         const initial = createState(1)
         const changed = structuredClone(initial)
         changed.nodes[0].widgets_values = [2]
@@ -329,10 +351,10 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
-      it('dispatches execution changes for legacy Run on change mode', () => {
+      it('dispatches auto-queue changes for legacy Run on change mode', () => {
         useQueueSettingsStore().mode = 'disabled'
         app.ui.autoQueueEnabled = true
         app.ui.autoQueueMode = 'change'
@@ -345,7 +367,7 @@ describe('ChangeTracker', () => {
         tracker.captureCanvasState()
 
         expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
-          'executionGraphChanged'
+          'autoQueueGraphChanged'
         )
       })
 
@@ -366,7 +388,7 @@ describe('ChangeTracker', () => {
         tracker.captureCanvasState()
 
         expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
-          'executionGraphChanged'
+          'autoQueueGraphChanged'
         )
       })
 
@@ -387,9 +409,9 @@ describe('ChangeTracker', () => {
         expect(tracker.undoQueue).toEqual([initial])
         expect(dispatchedEventNames()).toEqual([
           'graphChanged',
-          'executionGraphChanged',
+          'autoQueueGraphChanged',
           'graphChanged',
-          'executionGraphChanged'
+          'autoQueueGraphChanged'
         ])
       })
 
@@ -411,7 +433,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           squashed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it.for([
@@ -501,7 +523,7 @@ describe('ChangeTracker', () => {
             ]
           }
         }
-      ])('does not dispatch executionGraphChanged for $name', ({ mutate }) => {
+      ])('does not dispatch autoQueueGraphChanged for $name', ({ mutate }) => {
         const initial = createState(1)
         const tracker = createTracker(initial)
         const changed = structuredClone(initial)
@@ -514,7 +536,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('does not dispatch a graph change for the canvas viewport', () => {
@@ -553,7 +575,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('normalizes equivalent v0.4 and v1 links', async () => {
@@ -593,7 +615,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('normalizes omitted v1 links and empty v0.4 links', async () => {
@@ -621,7 +643,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('normalizes string and numeric link slot indices', async () => {
@@ -666,7 +688,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('normalizes string and numeric node IDs', () => {
@@ -692,7 +714,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('detects v1 link endpoint changes', async () => {
@@ -733,7 +755,7 @@ describe('ChangeTracker', () => {
           changed
         )
         expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
-          'executionGraphChanged'
+          'autoQueueGraphChanged'
         )
       })
 
@@ -759,7 +781,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('ignores slot presentation metadata changes', () => {
@@ -800,7 +822,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('ignores link ordering changes', () => {
@@ -821,7 +843,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it.for([
@@ -858,7 +880,7 @@ describe('ChangeTracker', () => {
           }
         }
       ])(
-        'dispatches executionGraphChanged for a $name change',
+        'dispatches autoQueueGraphChanged for a $name change',
         ({ mutate }) => {
           const initial = createState(2)
           const tracker = createTracker(initial)
@@ -869,7 +891,7 @@ describe('ChangeTracker', () => {
           tracker.captureCanvasState()
 
           expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
-            'executionGraphChanged'
+            'autoQueueGraphChanged'
           )
         }
       )
@@ -890,7 +912,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('detects widget changes inside a subgraph', async () => {
@@ -905,7 +927,7 @@ describe('ChangeTracker', () => {
         tracker.captureCanvasState()
 
         expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
-          'executionGraphChanged'
+          'autoQueueGraphChanged'
         )
       })
 
@@ -954,7 +976,7 @@ describe('ChangeTracker', () => {
         tracker.captureCanvasState()
 
         expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
-          'executionGraphChanged'
+          'autoQueueGraphChanged'
         )
       })
 
@@ -972,7 +994,7 @@ describe('ChangeTracker', () => {
         tracker.captureCanvasState()
 
         expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
-          'executionGraphChanged'
+          'autoQueueGraphChanged'
         )
       })
 
@@ -992,7 +1014,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('ignores subgraph boundary-node layout changes', async () => {
@@ -1012,7 +1034,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('ignores subgraph definition order changes', async () => {
@@ -1030,7 +1052,7 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
-        expectExecutionGraphChangedNotDispatched()
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it.for(['Note', 'MarkdownNote'])(
@@ -1050,7 +1072,7 @@ describe('ChangeTracker', () => {
             'graphChanged',
             changed
           )
-          expectExecutionGraphChangedNotDispatched()
+          expectAutoQueueGraphChangedNotDispatched()
         }
       )
 
@@ -1097,7 +1119,7 @@ describe('ChangeTracker', () => {
   })
 
   describe('undo and redo', () => {
-    it('dispatches executionGraphChanged for a data change in both directions', async () => {
+    it('dispatches autoQueueGraphChanged for a data change in both directions', async () => {
       const initial = createState(1)
       const changed = structuredClone(initial)
       changed.nodes[0].widgets_values = [2]
@@ -1110,7 +1132,7 @@ describe('ChangeTracker', () => {
       expect(tracker.activeState).toEqual(initial)
       expect(tracker.redoQueue).toEqual([changed])
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
-        'executionGraphChanged'
+        'autoQueueGraphChanged'
       )
 
       vi.mocked(api.dispatchCustomEvent).mockClear()
@@ -1119,11 +1141,11 @@ describe('ChangeTracker', () => {
       expect(tracker.activeState).toEqual(changed)
       expect(tracker.undoQueue).toEqual([initial])
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
-        'executionGraphChanged'
+        'autoQueueGraphChanged'
       )
     })
 
-    it('does not dispatch executionGraphChanged for layout-only undo or redo', async () => {
+    it('does not dispatch autoQueueGraphChanged for layout-only undo or redo', async () => {
       const initial = createState(1)
       const changed = structuredClone(initial)
       changed.nodes[0].size = [200, 100]
@@ -1133,13 +1155,13 @@ describe('ChangeTracker', () => {
       await tracker.undo()
 
       expect(tracker.activeState).toEqual(initial)
-      expectExecutionGraphChangedNotDispatched()
+      expectAutoQueueGraphChangedNotDispatched()
 
       vi.mocked(api.dispatchCustomEvent).mockClear()
       await tracker.redo()
 
       expect(tracker.activeState).toEqual(changed)
-      expectExecutionGraphChangedNotDispatched()
+      expectAutoQueueGraphChangedNotDispatched()
     })
   })
 

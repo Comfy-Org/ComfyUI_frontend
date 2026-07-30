@@ -437,7 +437,7 @@ export class ComfyUI {
     )
     autoQueueModeEl.style.display = 'none'
 
-    api.addEventListener('executionGraphChanged', () => {
+    api.addEventListener('autoQueueGraphChanged', () => {
       if (this.autoQueueMode === 'change' && this.autoQueueEnabled === true) {
         if (this.lastQueueSize === 0) {
           this.graphHasChanged = false

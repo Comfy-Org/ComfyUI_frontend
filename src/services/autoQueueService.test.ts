@@ -29,12 +29,12 @@ import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 
-function setupAndGetExecutionGraphChangedListener() {
+function setupAndGetAutoQueueGraphChangedListener() {
   setupAutoQueueHandler()
   const registration = mocks.addEventListener.mock.calls.find(
-    ([event]) => event === 'executionGraphChanged'
+    ([event]) => event === 'autoQueueGraphChanged'
   )
-  if (!registration) throw new Error('executionGraphChanged listener missing')
+  if (!registration) throw new Error('autoQueueGraphChanged listener missing')
   return registration[1]
 }
 
@@ -54,15 +54,15 @@ describe('setupAutoQueueHandler', () => {
     mocks.lastExecutionError = null
   })
 
-  it('queues on executionGraphChanged instead of graphChanged', () => {
-    const listener = setupAndGetExecutionGraphChangedListener()
+  it('queues on autoQueueGraphChanged instead of graphChanged', () => {
+    const listener = setupAndGetAutoQueueGraphChangedListener()
 
     expect(mocks.addEventListener).not.toHaveBeenCalledWith(
       'graphChanged',
       expect.any(Function)
     )
 
-    listener(new Event('executionGraphChanged'))
+    listener(new Event('autoQueueGraphChanged'))
 
     expect(mocks.queuePrompt).toHaveBeenCalledWith(0, 2, {
       intent: { trigger_source: 'auto_queue' }
@@ -70,11 +70,11 @@ describe('setupAutoQueueHandler', () => {
   })
 
   it('coalesces changes while busy and queues once after the queue drains', async () => {
-    const listener = setupAndGetExecutionGraphChangedListener()
+    const listener = setupAndGetAutoQueueGraphChangedListener()
     const queueCountStore = useQueuePendingTaskCountStore()
 
-    listener(new Event('executionGraphChanged'))
-    listener(new Event('executionGraphChanged'))
+    listener(new Event('autoQueueGraphChanged'))
+    listener(new Event('autoQueueGraphChanged'))
 
     expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
 
@@ -90,11 +90,11 @@ describe('setupAutoQueueHandler', () => {
   })
 
   it('does not requeue a deferred change after an execution error', async () => {
-    const listener = setupAndGetExecutionGraphChangedListener()
+    const listener = setupAndGetAutoQueueGraphChangedListener()
     const queueCountStore = useQueuePendingTaskCountStore()
 
-    listener(new Event('executionGraphChanged'))
-    listener(new Event('executionGraphChanged'))
+    listener(new Event('autoQueueGraphChanged'))
+    listener(new Event('autoQueueGraphChanged'))
     mocks.lastExecutionError = new Error('execution failed')
     queueCountStore.count = 1
     await nextTick()

@@ -379,7 +379,7 @@ export class ChangeTracker {
       )
     }
 
-    const executionGraphChanged =
+    const autoQueueGraphChanged =
       !!previousState &&
       isAutoQueueOnChange() &&
       !_.isEqual(
@@ -388,8 +388,8 @@ export class ChangeTracker {
       )
 
     api.dispatchCustomEvent('graphChanged', this.activeState)
-    if (executionGraphChanged) {
-      api.dispatchCustomEvent('executionGraphChanged')
+    if (autoQueueGraphChanged) {
+      api.dispatchCustomEvent('autoQueueGraphChanged')
     }
   }
 
