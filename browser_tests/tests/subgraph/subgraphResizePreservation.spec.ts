@@ -201,18 +201,16 @@ test.describe(
       expect(resizedSize.width).toBeGreaterThan(nodeSize.width)
       expect(resizedSize.height).toBeGreaterThan(nodeSize.height)
 
-      await outerHost.click('title')
-      await comfyPage.actionbar.propertiesButton.click()
-      const editorToggle = comfyPage.page.getByTestId('subgraph-editor-toggle')
-      if (await editorToggle.isVisible()) await editorToggle.click()
-
-      const shownSection = comfyPage.page.getByTestId(
-        'subgraph-editor-shown-section'
-      )
-      await expect(shownSection).toBeVisible()
-      const toggleButtons = shownSection.getByTestId('subgraph-widget-toggle')
-      await expect(toggleButtons.first()).toBeVisible()
-      await toggleButtons.first().click()
+      // Node 6 ('Sub 1' instance) exposes a 'value_1' widget that is itself a
+      // promotion chain three subgraphs deep (Inner 3 -> Sub 2 -> Sub 1),
+      // which Sub 0 re-promotes onto `outerHost`. The per-row toggle in the
+      // properties panel is disabled for widgets promoted this way, so
+      // demoting has to go through the same context-menu action a user would
+      // use: entering the host and un-promoting from the widget's own node.
+      await comfyPage.vueNodes.enterSubgraph(String(outerHost.id))
+      const sub1Instance = comfyPage.vueNodes.getNodeLocator('6')
+      await comfyPage.subgraph.unpromoteWidget(sub1Instance, 'value_1')
+      await comfyPage.subgraph.exitViaBreadcrumb()
 
       await expect
         .poll(async () => (await outerHost.getSize()).width)
