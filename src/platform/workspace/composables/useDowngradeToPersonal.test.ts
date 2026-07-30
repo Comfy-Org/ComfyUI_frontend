@@ -7,10 +7,13 @@ import { useDowngradeToPersonal } from './useDowngradeToPersonal'
 
 const mockMembers = ref<WorkspaceMember[]>([])
 const mockUserEmail = ref<string | null>(null)
+const mockSubscription = ref<{ isCancelled: boolean } | null>(null)
+const mockIsInitialized = ref(true)
 const mockRemoveMember = vi.hoisted(() => vi.fn())
 const mockFetchMembers = vi.hoisted(() => vi.fn())
 const mockSubscribe = vi.hoisted(() => vi.fn())
 const mockPreviewSubscribe = vi.hoisted(() => vi.fn())
+const mockFetchStatus = vi.hoisted(() => vi.fn())
 const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
 const mockPermissions = vi.hoisted(() => ({
@@ -49,7 +52,10 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     subscribe: mockSubscribe,
-    previewSubscribe: mockPreviewSubscribe
+    previewSubscribe: mockPreviewSubscribe,
+    subscription: mockSubscription,
+    isInitialized: mockIsInitialized,
+    fetchStatus: mockFetchStatus
   })
 }))
 
@@ -107,7 +113,14 @@ describe('useDowngradeToPersonal', () => {
     vi.resetAllMocks()
     mockMembers.value = []
     mockUserEmail.value = null
+    // Once loaded (isInitialized true), subscription is never null in
+    // production — it's at least a FREE-tier record. Default to that
+    // loaded-and-active shape; tests that need "not loaded yet" set
+    // subscription back to null explicitly alongside isInitialized: false.
+    mockSubscription.value = { isCancelled: false }
+    mockIsInitialized.value = true
     mockPreviewSubscribe.mockResolvedValue({ allowed: true })
+    mockFetchStatus.mockResolvedValue(undefined)
     mockSubscribe.mockResolvedValue({
       billing_op_id: 'op-1',
       status: 'subscribed'
@@ -231,7 +244,151 @@ describe('useDowngradeToPersonal', () => {
       expect(mockRemoveMember).not.toHaveBeenCalledWith('owner')
       expect(mockSubscribe).toHaveBeenCalledWith('founder-monthly', {
         returnUrl: 'https://platform.test/payment/success',
-        cancelUrl: 'https://platform.test/payment/failed'
+        cancelUrl: 'https://platform.test/payment/failed',
+        confirmReactivation: false
+      })
+    })
+
+    it('removes nobody and never subscribes when the subscription is cancelled and reactivation is not confirmed', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockMembers.value = teamWithOwnerAnd('m1', 'm2')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.reactivationConfirmationRequired'
+      )
+      expect(mockRemoveMember).not.toHaveBeenCalled()
+      expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
+    it('removes members and forwards confirmReactivation once explicitly confirmed with the matching charge', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 1500
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await downgradeToPersonal('founder-monthly', true, 1500)
+
+      expect(mockRemoveMember).toHaveBeenCalledWith('m1')
+      expect(mockSubscribe).toHaveBeenCalledWith('founder-monthly', {
+        returnUrl: 'https://platform.test/payment/success',
+        cancelUrl: 'https://platform.test/payment/failed',
+        confirmReactivation: true
+      })
+    })
+
+    it('refuses to bill when the fresh preview cost no longer matches the confirmed charge', async () => {
+      // The user consented to $15.00; pricing moved to $20.00 before this
+      // fresh preview — billing on the new figure would charge an amount
+      // never actually shown to the user.
+      mockSubscription.value = { isCancelled: true }
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 2000
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(
+        downgradeToPersonal('founder-monthly', true, 1500)
+      ).rejects.toThrow('subscription.downgrade.reactivationAmountChanged')
+      expect(mockRemoveMember).not.toHaveBeenCalled()
+      expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
+    it('refuses to remove members when a status refresh discovers a cancellation the cached read missed', async () => {
+      // Mirrors the previewDowngrade race: the subscription looked active at
+      // the time of the earlier preview, but was cancelled before this
+      // confirm call. The pre-billing status refresh must catch it so
+      // members are never removed for a doomed request.
+      mockSubscription.value = { isCancelled: false }
+      mockFetchStatus.mockImplementation(() => {
+        mockSubscription.value = { isCancelled: true }
+        return Promise.resolve()
+      })
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.reactivationConfirmationRequired'
+      )
+      expect(mockFetchStatus).toHaveBeenCalled()
+      expect(mockRemoveMember).not.toHaveBeenCalled()
+      expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
+    it('requires reactivation confirmation when subscription state has not loaded yet', async () => {
+      // isInitialized false means "cancelled or not" is unknown; must not
+      // default to "not cancelled" and skip disclosure.
+      mockIsInitialized.value = false
+      mockSubscription.value = null
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.reactivationConfirmationRequired'
+      )
+      expect(mockRemoveMember).not.toHaveBeenCalled()
+      expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
+    it('does not require reactivation confirmation for a brand-new subscription even if cancelled', async () => {
+      // A `new_subscription` transition has nothing to reactivate.
+      mockSubscription.value = { isCancelled: true }
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'new_subscription'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(mockRemoveMember).toHaveBeenCalledWith('m1')
+      expect(mockSubscribe).toHaveBeenCalledWith('founder-monthly', {
+        returnUrl: 'https://platform.test/payment/success',
+        cancelUrl: 'https://platform.test/payment/failed',
+        confirmReactivation: false
+      })
+    })
+
+    // Regression guard: isInitialized is aggregate (status + balance +
+    // plans). A balance/plans failure must not force reactivation onto an
+    // otherwise-valid, already-loaded, active subscription.
+    it('removes members and subscribes without requiring reactivation when isInitialized is false but subscription status is loaded and active', async () => {
+      mockIsInitialized.value = false
+      mockSubscription.value = { isCancelled: false }
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(mockRemoveMember).toHaveBeenCalledWith('m1')
+      expect(mockSubscribe).toHaveBeenCalledWith('founder-monthly', {
+        returnUrl: 'https://platform.test/payment/success',
+        cancelUrl: 'https://platform.test/payment/failed',
+        confirmReactivation: false
       })
     })
 
@@ -514,6 +671,103 @@ describe('useDowngradeToPersonal', () => {
         target_tier: undefined,
         failure_category: 'unknown'
       })
+    })
+  })
+
+  describe('previewDowngrade', () => {
+    it('reports requiresReactivationConfirmation for a cancelled subscription changing plans', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 0
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      const result = await previewDowngrade('founder-monthly')
+
+      expect(result.requiresReactivationConfirmation).toBe(true)
+      expect(mockRemoveMember).not.toHaveBeenCalled()
+    })
+
+    it('reports no reactivation requirement when the subscription is known and not cancelled', async () => {
+      mockSubscription.value = { isCancelled: false }
+      mockIsInitialized.value = true
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      const result = await previewDowngrade('founder-monthly')
+
+      expect(result.requiresReactivationConfirmation).toBe(false)
+    })
+
+    // Regression guard: isInitialized only becomes true once status, balance,
+    // AND plans have all loaded — a balance/plans failure must not force
+    // reactivation onto an otherwise-valid, already-loaded, active
+    // subscription. Gate on status readiness (subscription !== null) instead.
+    it('reports no reactivation requirement when isInitialized is false but subscription status is loaded and active', async () => {
+      mockSubscription.value = { isCancelled: false }
+      mockIsInitialized.value = false
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      const result = await previewDowngrade('founder-monthly')
+
+      expect(result.requiresReactivationConfirmation).toBe(false)
+    })
+
+    it('requires reactivation confirmation when subscription state has not loaded, even with no cached subscription', async () => {
+      mockSubscription.value = null
+      mockIsInitialized.value = false
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      const result = await previewDowngrade('founder-monthly')
+
+      expect(result.requiresReactivationConfirmation).toBe(true)
+    })
+
+    it('throws the BE reason without removing members when the transition is disallowed', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: false,
+        reason: 'Outstanding balance'
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      await expect(previewDowngrade('founder-monthly')).rejects.toThrow(
+        'Outstanding balance'
+      )
+    })
+
+    it('reports the cancellation discovered by refreshing status, not the stale cached read', async () => {
+      // The cached subscription (loaded earlier) still says "not cancelled";
+      // the status refresh this call triggers is what discovers the
+      // cancellation, so the decision must reflect the refreshed value.
+      mockSubscription.value = { isCancelled: false }
+      mockFetchStatus.mockImplementation(() => {
+        mockSubscription.value = { isCancelled: true }
+        return Promise.resolve()
+      })
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      const result = await previewDowngrade('founder-monthly')
+
+      expect(mockFetchStatus).toHaveBeenCalled()
+      expect(result.requiresReactivationConfirmation).toBe(true)
     })
   })
 
