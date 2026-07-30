@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import type {
@@ -12,6 +13,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import type { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class NodeOperationsHelper {
   public readonly promptDialogInput: Locator
@@ -214,6 +216,37 @@ export class NodeOperationsHelper {
         bottomRight
       )
     }
+  }
+
+  /**
+   * Enlarges the node titled `title` by dragging its bottom-right Vue resize
+   * handle. The returned size is read from the graph model, not a DOM bounding
+   * box, so it stays comparable across zoom and side-panel layout changes.
+   */
+  async growNodeByDrag(
+    title: string,
+    delta: { x: number; y: number }
+  ): Promise<{ nodeRef: NodeReference; node: VueNodeFixture; size: Size }> {
+    const [nodeRef] = await this.getNodeRefsByTitle(title)
+    expect(nodeRef, `${title} node is on the canvas`).toBeDefined()
+
+    // Saved pans can leave the node too low for a downward drag to stay onscreen.
+    await nodeRef.centerOnNode()
+
+    const node = await this.comfyPage.vueNodes.getFixtureByTitle(title)
+    const sizeBefore = await nodeRef.getSize()
+    await node.resizeFromCorner('SE', delta.x, delta.y)
+    await this.comfyPage.nextFrame()
+
+    const size = await nodeRef.getSize()
+    expect(size.width, 'resize drag widened the node').toBeGreaterThan(
+      sizeBefore.width
+    )
+    expect(size.height, 'resize drag heightened the node').toBeGreaterThan(
+      sizeBefore.height
+    )
+
+    return { nodeRef, node, size }
   }
 
   async fillPromptDialog(value: string): Promise<void> {
