@@ -807,7 +807,9 @@ test.describe('Recovered 3DS subscription', { tag: '@cloud' }, () => {
     page
   }) => {
     await page.goto(APP_URL)
-    await waitForCloudApp(page)
+    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+      timeout: 45_000
+    })
     await page.getByRole('button', { name: 'Current user' }).click()
     await page.getByTestId('manage-plan-menu-item').click()
     await expect.poll(() => statusRequests.length).toBeGreaterThan(0)
