@@ -48,6 +48,13 @@ async function startDesktop2ModelDownload(
 }
 
 function openUrlInNewTab(url: string, downloadAs?: string): void {
+  try {
+    const protocol = new URL(url).protocol
+    if (protocol !== 'https:' && protocol !== 'http:') return
+  } catch {
+    return
+  }
+
   const link = document.createElement('a')
   link.href = url
   if (downloadAs) link.download = downloadAs

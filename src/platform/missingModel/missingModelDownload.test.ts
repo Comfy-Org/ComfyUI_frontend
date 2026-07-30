@@ -362,6 +362,53 @@ describe('downloadModel', () => {
     mockSidebarTabStore.activeSidebarTabId = null
   })
 
+  it.for([
+    'https://huggingface.co/org/model/resolve/main/model.safetensors',
+    'http://localhost:8188/models/model.safetensors'
+  ])('opens browser downloads for supported URL schemes (%s)', (url) => {
+    const clickedAnchors: HTMLAnchorElement[] = []
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+      function (this: HTMLAnchorElement) {
+        clickedAnchors.push(this)
+      }
+    )
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url,
+        directory: 'checkpoints'
+      },
+      {}
+    )
+
+    expect(clickedAnchors).toHaveLength(1)
+    expect(clickedAnchors[0]?.href).toBe(url)
+    expect(clickedAnchors[0]?.download).toBe('model.safetensors')
+    expect(clickedAnchors[0]?.target).toBe('_blank')
+    expect(clickedAnchors[0]?.rel).toBe('noopener noreferrer')
+  })
+
+  it.for(['javascript:alert(1)', 'not a url'])(
+    'does not open browser downloads for unsafe URLs (%s)',
+    (url) => {
+      const anchorClick = vi
+        .spyOn(HTMLAnchorElement.prototype, 'click')
+        .mockImplementation(() => {})
+
+      downloadModel(
+        {
+          name: 'model.safetensors',
+          url,
+          directory: 'checkpoints'
+        },
+        {}
+      )
+
+      expect(anchorClick).not.toHaveBeenCalled()
+    }
+  )
+
   it('uses the Desktop2 bridge directly instead of the browser fallback', () => {
     const anchorClick = vi
       .spyOn(HTMLAnchorElement.prototype, 'click')
