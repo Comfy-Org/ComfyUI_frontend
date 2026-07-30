@@ -1,8 +1,8 @@
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
+import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
-import type { SubscriptionCancellationMetadata } from '@/platform/telemetry/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -11,12 +11,14 @@ interface CancellationFallbackOptions {
 }
 
 interface LaunchCancellationFlowOptions {
+  cancelAt?: string
   showFallback: (
     options?: CancellationFallbackOptions
   ) => void | Promise<unknown>
 }
 
 export async function launchCancellationFlow({
+  cancelAt,
   showFallback
 }: LaunchCancellationFlowOptions): Promise<void> {
   const billing = useBillingContext()
@@ -46,10 +48,12 @@ export async function launchCancellationFlow({
   if (!isLaunchWorkspaceCurrent()) return
 
   const telemetry = useTelemetry()
-  const metadata: SubscriptionCancellationMetadata = {
-    source: 'cancel_plan_menu',
-    current_tier: billing.tier.value?.toLowerCase()
-  }
+  const metadata = getSubscriptionCancellationMetadata({
+    cancelAt,
+    duration: billing.subscription.value?.duration,
+    endDate: billing.subscription.value?.endDate,
+    tier: billing.tier.value
+  })
 
   telemetry?.trackSubscriptionCancellation('flow_opened', metadata)
 

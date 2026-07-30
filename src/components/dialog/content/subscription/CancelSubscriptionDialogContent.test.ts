@@ -136,13 +136,17 @@ describe('CancelSubscriptionDialogContent', () => {
 
   describe('cancellation telemetry', () => {
     it('tracks flow_opened with tier and end date when the dialog mounts', () => {
-      mockSubscription.value = { endDate: '2026-08-01T00:00:00.000Z' }
+      mockSubscription.value = {
+        duration: 'ANNUAL',
+        endDate: '2026-08-01T00:00:00.000Z'
+      }
 
       renderComponent()
 
       expect(mockTrackCancellation).toHaveBeenCalledWith('flow_opened', {
         source: 'cancel_plan_menu',
         current_tier: 'standard',
+        cycle: 'yearly',
         end_date: '2026-08-01T00:00:00.000Z'
       })
     })

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   ChurnkeySession,
   ChurnkeyShowOptions
@@ -10,6 +11,9 @@ import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 const mocks = vi.hoisted(() => ({
   billingType: { value: 'workspace' },
   tier: { value: 'PRO' },
+  subscription: {
+    value: null as Pick<SubscriptionInfo, 'duration' | 'endDate'> | null
+  },
   activeWorkspaceId: 'workspace-1' as string | null,
   billingRail: 'stripe' as BillingRail | null,
   cancelSubscription: vi.fn(),
@@ -21,6 +25,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     type: mocks.billingType,
     tier: mocks.tier,
+    subscription: mocks.subscription,
     cancelSubscription: mocks.cancelSubscription
   })
 }))
@@ -64,6 +69,10 @@ describe('launchCancellationFlow', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mocks.billingType.value = 'workspace'
+    mocks.subscription.value = {
+      duration: 'ANNUAL',
+      endDate: '2026-08-01T00:00:00Z'
+    }
     mocks.activeWorkspaceId = 'workspace-1'
     mocks.billingRail = 'stripe'
     mocks.cancelSubscription.mockResolvedValue(undefined)
@@ -108,17 +117,25 @@ describe('launchCancellationFlow', () => {
     )
     const showFallback = vi.fn()
 
-    await launchCancellationFlow({ showFallback })
+    await launchCancellationFlow({
+      cancelAt: '2026-08-02T00:00:00Z',
+      showFallback
+    })
 
     expect(mocks.cancelSubscription).toHaveBeenCalledOnce()
     expect(mocks.trackCancellation).toHaveBeenNthCalledWith(1, 'flow_opened', {
       source: 'cancel_plan_menu',
-      current_tier: 'pro'
+      current_tier: 'pro',
+      cycle: 'yearly',
+      end_date: '2026-08-02T00:00:00Z'
     })
     expect(mocks.trackCancellation).toHaveBeenNthCalledWith(
       2,
       'confirmed',
-      expect.anything()
+      expect.objectContaining({
+        cycle: 'yearly',
+        end_date: '2026-08-02T00:00:00Z'
+      })
     )
     expect(showFallback).not.toHaveBeenCalled()
   })
@@ -130,7 +147,10 @@ describe('launchCancellationFlow', () => {
 
     expect(mocks.trackCancellation).toHaveBeenLastCalledWith(
       'abandoned',
-      expect.anything()
+      expect.objectContaining({
+        cycle: 'yearly',
+        end_date: '2026-08-01T00:00:00Z'
+      })
     )
     expect(mocks.cancelSubscription).not.toHaveBeenCalled()
   })
@@ -162,7 +182,11 @@ describe('launchCancellationFlow', () => {
     expect(runtimeFallback).toHaveBeenCalledWith({ flowAlreadyOpened: true })
     expect(mocks.trackCancellation).toHaveBeenLastCalledWith(
       'failed',
-      expect.objectContaining({ error_message: 'provider unavailable' })
+      expect.objectContaining({
+        cycle: 'yearly',
+        end_date: '2026-08-01T00:00:00Z',
+        error_message: 'provider unavailable'
+      })
     )
   })
 

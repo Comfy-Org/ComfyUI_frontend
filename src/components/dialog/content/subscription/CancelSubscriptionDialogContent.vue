@@ -51,8 +51,8 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
-import type { SubscriptionCancellationMetadata } from '@/platform/telemetry/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
@@ -75,21 +75,13 @@ const telemetry = useTelemetry()
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
 
-function cancellationMetadata(): SubscriptionCancellationMetadata {
-  const endDate = cancelAt ?? subscription.value?.endDate
-  return {
-    source: 'cancel_plan_menu' as const,
-    current_tier: tier.value?.toLowerCase(),
-    ...(subscription.value?.duration
-      ? {
-          cycle:
-            subscription.value.duration === 'ANNUAL'
-              ? ('yearly' as const)
-              : ('monthly' as const)
-        }
-      : {}),
-    ...(endDate ? { end_date: endDate } : {})
-  }
+function cancellationMetadata() {
+  return getSubscriptionCancellationMetadata({
+    cancelAt,
+    duration: subscription.value?.duration,
+    endDate: subscription.value?.endDate,
+    tier: tier.value
+  })
 }
 
 onMounted(() => {

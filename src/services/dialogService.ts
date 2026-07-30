@@ -673,6 +673,7 @@ export const useDialogService = () => {
     const cancellationFlow =
       await import('@/platform/cloud/subscription/launchCancellationFlow')
     return cancellationFlow.launchCancellationFlow({
+      cancelAt,
       showFallback: ({ flowAlreadyOpened = false } = {}) =>
         showCancelSubscriptionDialog(cancelAt, flowAlreadyOpened)
     })
