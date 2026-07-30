@@ -26,7 +26,13 @@
     <div
       aria-hidden="true"
       data-testid="coach-spotlight"
-      class="pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-200 motion-safe:ease-out"
+      :class="
+        cn(
+          'pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring',
+          !targetMoving &&
+            'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-200 motion-safe:ease-out'
+        )
+      "
       :style="spotlightStyle"
     />
     <FocusScope
@@ -41,7 +47,13 @@
         aria-modal="true"
         :aria-labelledby="titleId"
         :aria-describedby="`${subtitleId} ${bodyId}`"
-        class="pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-200 motion-safe:ease-out"
+        :class="
+          cn(
+            'pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto',
+            !targetMoving &&
+              'motion-safe:transition-[left,top] motion-safe:duration-200 motion-safe:ease-out'
+          )
+        "
         :style="cardStyle"
       >
         <CoachmarkCard
@@ -176,7 +188,7 @@ const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-const { targetRect, targetEl, floatingStyles, isPositioned } =
+const { targetRect, targetEl, floatingStyles, isPositioned, targetMoving } =
   useCoachmarkTarget(() => step, cardRef)
 
 // Last step's "Done" already dismisses, so hide Skip there.
