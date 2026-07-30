@@ -140,7 +140,7 @@
         v-if="usePaymentElement"
         :amount-cents="amountDueCents"
         :is-loading
-        @confirm="$emit('confirmPayment', $event)"
+        @confirm="confirmPayment"
       />
 
       <Button
@@ -219,9 +219,9 @@ const {
   usePaymentElement = false
 } = defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   addCreditCard: []
-  confirmPayment: [confirmationToken: string]
+  confirmPayment: [confirmationToken: string, promotionCode?: string]
   back: []
 }>()
 
@@ -232,6 +232,10 @@ const isFeaturesCollapsed = ref(true)
 function openVerification() {
   if (!actionUrl) return
   window.open(actionUrl, '_blank', 'noopener,noreferrer')
+}
+
+function confirmPayment(confirmationToken: string, promotionCode?: string) {
+  emit('confirmPayment', confirmationToken, promotionCode)
 }
 
 const tierName = computed(() =>
