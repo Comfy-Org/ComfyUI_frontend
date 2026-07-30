@@ -5,7 +5,7 @@ import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue
 import HeroLivestream01 from '../../components/blocks/HeroLivestream01.vue'
 import LaunchesHeroLogo from './LaunchesHeroLogo.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
-import { postProduction } from '../../data/events'
+import { postProduction, postProductionStreamHref } from '../../data/events'
 import { t } from '../../i18n/translations'
 import { livestream } from './livestream'
 
@@ -18,8 +18,8 @@ const EVENT_DURATION_MS = 60 * 60 * 1000
 const calendarEvent = postProduction.dateTime
   ? {
       title: postProduction.name[locale],
-      description: `${postProduction.description[locale]}\n\n${postProduction.link.href[locale]}`,
-      location: postProduction.link.href[locale],
+      description: `${postProduction.description[locale]}\n\n${postProductionStreamHref[locale]}`,
+      location: postProductionStreamHref[locale],
       start: new Date(postProduction.dateTime),
       end: new Date(
         new Date(postProduction.dateTime).getTime() + EVENT_DURATION_MS

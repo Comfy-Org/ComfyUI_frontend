@@ -1,3 +1,4 @@
+import { localizeHref } from '../config/routes'
 import type { LocalizedText } from '../i18n/translations'
 
 type EventCategory = 'livestream' | 'hackathon' | 'community'
@@ -71,9 +72,14 @@ const foundersLiveStreamHref: LocalizedText = {
   'zh-CN': 'https://www.youtube.com/live/dbp5Jnto7S8'
 }
 
-const postProductionStreamHref: LocalizedText = {
+export const postProductionStreamHref: LocalizedText = {
   en: 'https://www.youtube.com/live/4xS4LOn3CTE',
   'zh-CN': 'https://www.youtube.com/live/4xS4LOn3CTE'
+}
+
+const launchesHref: LocalizedText = {
+  en: localizeHref('/launches', 'en'),
+  'zh-CN': localizeHref('/launches', 'zh-CN')
 }
 
 function youtubeWatchHref(videoId: string): LocalizedText {
@@ -122,7 +128,7 @@ export const postProduction: UpcomingEvent = {
     'zh-CN': '2026年8月5日 · 下午1点（PT）'
   },
   dateTime: '2026-08-05T13:00:00-07:00',
-  link: { href: postProductionStreamHref, newTab: true }
+  link: { href: launchesHref, newTab: false }
 }
 
 const postProductionFeatured: FeaturedEvent = {
@@ -135,8 +141,8 @@ const postProductionFeatured: FeaturedEvent = {
     en: 'The Future of AI Post Production livestream',
     'zh-CN': 'AI 后期制作的未来直播'
   }),
-  href: postProduction.link.href,
-  newTab: true,
+  href: launchesHref,
+  newTab: false,
   autoplayMs: 7000
 }
 
