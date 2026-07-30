@@ -186,13 +186,10 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await comfyPage.toast.closeToasts()
     await page.getByRole('button', { name: 'Current user' }).click()
     await page.getByTestId('workspace-switcher-trigger').click()
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-      page
-        .getByTestId('workspace-switcher-panel')
-        .getByText(TEAM_WORKSPACE_NAME, { exact: true })
-        .click()
-    ])
+    await page
+      .getByTestId('workspace-switcher-panel')
+      .getByText(TEAM_WORKSPACE_NAME, { exact: true })
+      .click()
     await comfyPage.waitForAppReady()
 
     await expect
@@ -204,13 +201,10 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
     await page.getByRole('button', { name: 'Current user' }).click()
     await page.getByTestId('workspace-switcher-trigger').click()
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-      page
-        .getByTestId('workspace-switcher-panel')
-        .getByText(PERSONAL_WORKSPACE_NAME, { exact: true })
-        .click()
-    ])
+    await page
+      .getByTestId('workspace-switcher-panel')
+      .getByText(PERSONAL_WORKSPACE_NAME, { exact: true })
+      .click()
     await comfyPage.waitForAppReady()
 
     await expect
@@ -227,13 +221,10 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
     await page.getByRole('button', { name: 'Current user' }).click()
     await page.getByTestId('workspace-switcher-trigger').click()
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-      page
-        .getByTestId('workspace-switcher-panel')
-        .getByText(TEAM_WORKSPACE_NAME, { exact: true })
-        .click()
-    ])
+    await page
+      .getByTestId('workspace-switcher-panel')
+      .getByText(TEAM_WORKSPACE_NAME, { exact: true })
+      .click()
     await comfyPage.waitForAppReady()
 
     await expect

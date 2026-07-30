@@ -112,8 +112,7 @@ function expectedExpiresAtMs(expiresAt: string): string {
 describe('useWorkspaceAuthStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
-    mockPrepareWorkflowWorkspaceTransition.mockReset()
+    vi.resetAllMocks()
     vi.useFakeTimers()
     sessionStorage.clear()
     mockTeamWorkspacesEnabled.value = true
