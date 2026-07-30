@@ -51,34 +51,41 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
   })
 
-  test('scrolls the list to reveal workspaces past the visible area', async ({
-    comfyPage
-  }) => {
-    const page = comfyPage.page
+  test(
+    'scrolls the list to reveal workspaces past the visible area',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const page = comfyPage.page
 
-    await mockWorkspaceList(page, createManyWorkspacesResponse())
+      await mockWorkspaceList(page, createManyWorkspacesResponse())
 
-    // The workspace list is only fetched once, on app boot, so the override
-    // above has no effect on the workspaces already loaded via the
-    // fixture-level mock. Reload to re-run boot against the new mock.
-    await comfyPage.workflow.reloadAndWaitForApp()
+      // The workspace list is only fetched once, on app boot, so the override
+      // above has no effect on the workspaces already loaded via the
+      // fixture-level mock. Reload to re-run boot against the new mock.
+      await comfyPage.workflow.reloadAndWaitForApp()
 
-    await comfyPage.toast.closeToasts()
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('workspace-switcher-trigger').click()
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await page.getByTestId('workspace-switcher-trigger').click()
 
-    const list = page.getByTestId('workspace-switcher-list')
-    await expect(list).toBeVisible()
-    const offScreenRow = list.getByText(OFF_SCREEN_WORKSPACE_NAME)
+      const list = page.getByTestId('workspace-switcher-list')
+      await expect(list).toBeVisible()
+      const offScreenRow = list.getByText(OFF_SCREEN_WORKSPACE_NAME)
 
-    // Regression: without a bounded, scrollable list container, the panel
-    // just grows past the viewport with no way to reach later rows.
-    await expect(offScreenRow).not.toBeInViewport()
+      // Regression: without a bounded, scrollable list container, the panel
+      // just grows past the viewport with no way to reach later rows.
+      await expect(offScreenRow).not.toBeInViewport()
 
-    await offScreenRow.scrollIntoViewIfNeeded()
+      await offScreenRow.scrollIntoViewIfNeeded()
 
-    await expect(offScreenRow).toBeInViewport()
-  })
+      await expect(offScreenRow).toBeInViewport()
+      await comfyPage.expectScreenshot(
+        list,
+        'workspace-switcher-scrolled.png',
+        { mask: [page.locator('.p-toast')] }
+      )
+    }
+  )
 
   test('opens the create-workspace dialog with DES-246 copy', async ({
     comfyPage
