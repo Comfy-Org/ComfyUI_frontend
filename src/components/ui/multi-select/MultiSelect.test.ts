@@ -1,5 +1,6 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import userEvent from '@testing-library/user-event'
 import { FocusScope } from 'reka-ui'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -31,7 +32,7 @@ const options = [
 ]
 
 function renderInParent(
-  multiSelectProps: Record<string, unknown> = {},
+  multiSelectProps: Partial<ComponentProps<typeof MultiSelect>> = {},
   modelValue: { name: string; value: string }[] = []
 ) {
   const parentEscapeCount = { value: 0 }
