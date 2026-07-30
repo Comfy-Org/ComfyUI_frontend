@@ -14,7 +14,7 @@
   <span
     v-if="rest"
     data-testid="credit-badge-rest"
-    class="-ml-1 flex h-5 max-w-max min-w-0 grow basis-0 items-center truncate rounded-r-full bg-component-node-widget-background text-xs"
+    class="flex h-5 max-w-max min-w-0 grow basis-0 items-center truncate rounded-r-full bg-component-node-widget-background text-xs"
   >
     <span class="pr-2" v-text="rest" />
   </span>

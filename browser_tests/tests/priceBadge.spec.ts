@@ -57,8 +57,13 @@ test.describe('Price badge', { tag: '@vue-nodes' }, () => {
       expect(box.x + box.width).toBeLessThanOrEqual(nodeBox.x + nodeBox.width)
       expect(box.y + box.height).toBeLessThanOrEqual(nodeBox.y + nodeBox.height)
     }
+    // Regression guard for FE-1229: the two badge halves must have a real,
+    // visible gap between their text content (roughly a single space
+    // character), not just a non-negative one. The parent flex container's
+    // `gap-1` (4px) utility supplies this gap now that the old margin-cancel
+    // hack (`-ml-1` on the rest pill) has been removed.
     expect(
       restTextBox.x - (requiredTextBox.x + requiredTextBox.width)
-    ).toBeGreaterThan(0)
+    ).toBeGreaterThanOrEqual(3)
   })
 })
