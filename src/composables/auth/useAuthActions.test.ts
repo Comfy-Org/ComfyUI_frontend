@@ -1,4 +1,5 @@
 import { FirebaseError } from 'firebase/app'
+import { AuthErrorCodes } from 'firebase/auth'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -286,6 +287,7 @@ describe('useAuthActions auth flow error telemetry', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     mockWorkflowStore.modifiedWorkflows = []
+    delete window.__comfyDesktop2
   })
 
   it('tracks email sign-in Firebase failures and still shows the error toast', async () => {
@@ -346,6 +348,38 @@ describe('useAuthActions auth flow error telemetry', () => {
     expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'auth/popup-closed-by-user',
       auth_action: 'github_sign_up'
+    })
+  })
+
+  it('ignores the popup rejection when Desktop takes over social sign-in', async () => {
+    window.__comfyDesktop2 = { isRemote: () => false }
+    mockAuthStore.loginWithGoogle.mockRejectedValueOnce(
+      new FirebaseError(AuthErrorCodes.POPUP_BLOCKED, 'msg')
+    )
+    const { signInWithGoogle } = useAuthActions()
+
+    await expect(signInWithGoogle()).resolves.toBeUndefined()
+
+    expect(mockTrackAuthFailed).not.toHaveBeenCalled()
+    expect(mockToastStore.add).not.toHaveBeenCalled()
+  })
+
+  it('reports a real popup-blocked failure outside Desktop', async () => {
+    mockAuthStore.loginWithGoogle.mockRejectedValueOnce(
+      new FirebaseError(AuthErrorCodes.POPUP_BLOCKED, 'msg')
+    )
+    const { signInWithGoogle } = useAuthActions()
+
+    await expect(signInWithGoogle()).resolves.toBeUndefined()
+
+    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+      error_code: AuthErrorCodes.POPUP_BLOCKED,
+      auth_action: 'google_sign_in'
+    })
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.generic'
     })
   })
 
