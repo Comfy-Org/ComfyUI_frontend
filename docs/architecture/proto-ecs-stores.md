@@ -215,7 +215,7 @@ These module-scope calls create implicit dependencies on the Vue runtime and mak
 | ---------------------------- | --------- | --------------------------------------------------------- |
 | Position data extracted      | Yes       | Closest to the ECS `Position` component                   |
 | CRDT-ready                   | Yes       | Enables collaboration (ADR 0003)                          |
-| Covers multiple entity kinds | Yes       | Nodes, links, reroutes in one store                       |
+| Covers multiple entity kinds | Yes       | Nodes, links, groups, reroutes in one store               |
 | Mutation API (composable)    | Partially | System-like, but called from entities, not a system       |
 | Module-scope access          | **No**    | Domain objects import store at module level               |
 | Per-store keying             | Yes       | Uses raw node/link IDs and root-scoped group/reroute keys |

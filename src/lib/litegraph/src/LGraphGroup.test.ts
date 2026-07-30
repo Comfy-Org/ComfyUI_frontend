@@ -219,9 +219,20 @@ describe('group layout in layoutStore', () => {
     const group = addedGroup(graph, 806)
 
     group.pos[0] = 25
-    group.size[1] = 450
-    group._bounding.set([30, 40, 500, 600])
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 25, y: 100 },
+      size: { width: 300, height: 200 }
+    })
 
+    group.size[1] = 450
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 25, y: 100 },
+      size: { width: 300, height: 450 }
+    })
+
+    group._bounding.set([30, 40, 500, 600])
     expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
       id: group.id,
       position: { x: 30, y: 40 },

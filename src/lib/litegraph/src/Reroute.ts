@@ -435,10 +435,11 @@ export class Reroute
 
     const offsetY = LiteGraph.NODE_SLOT_HEIGHT * 0.7
     const { x, y } = this.storedPosition
-    this.pos = [
-      snapTo * Math.round(x / snapTo),
-      snapTo * Math.round((y - offsetY) / snapTo) + offsetY
-    ]
+    const snappedX = snapTo * Math.round(x / snapTo)
+    const snappedY = snapTo * Math.round((y - offsetY) / snapTo) + offsetY
+    if (snappedX === x && snappedY === y) return false
+
+    this.pos = [snappedX, snappedY]
     return true
   }
 

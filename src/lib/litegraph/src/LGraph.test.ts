@@ -1343,16 +1343,15 @@ describe('Subgraph Unpacking', () => {
 
     rootGraph.unpackSubgraph(subgraphNode)
 
-    // The unpacked copy is offset by the wrapper position; element-wise writes
-    // would reach _pos and leave the store holding the pre-offset value.
+    // Unpacking centres the subgraph contents on the wrapper node, moving the
+    // group from [10, 20] to [100, 75].
     const unpacked = rootGraph.groups.find((g) => g.title === 'inner')!
     expect(
       layoutStore.getGroupLayout(rootGraph.id, unpacked.id)?.position
     ).toEqual({
-      x: unpacked.pos[0],
-      y: unpacked.pos[1]
+      x: 100,
+      y: 75
     })
-    expect(unpacked.pos[0]).toBeGreaterThan(10)
   })
 
   it('preserves correct link connections when unpacking with duplicate links', () => {

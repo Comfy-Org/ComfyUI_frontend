@@ -39,11 +39,7 @@ function useNodeDragIndividual() {
   let rafId: number | null = null
   let stopShiftSync: (() => void) | null = null
 
-  // Non-node positionables (groups, reroutes) are driven from their own start
-  // positions, exactly like nodes; `pos` is readonly on Positionable, so the
-  // absolute target is reached via move(). Auto-pan shifts these alongside
-  // dragStartPos, so they track the panned frame rather than the pointer-down
-  // one.
+  /** `pos` is readonly on Positionable, so absolute targets are reached via `move()`. */
   let nonNodeStartPositions: Map<Positionable, Point> | null = null
 
   // Auto-pan state

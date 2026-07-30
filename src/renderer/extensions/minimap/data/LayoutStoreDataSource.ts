@@ -50,11 +50,6 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
     })
   }
 
-  /**
-   * Membership stays with the viewed graph while geometry comes from the store,
-   * mirroring {@link getNodes}. Group ids are root-scoped — subgraphs share the
-   * root graph's `state`, so the flat store map cannot mix two live groups up.
-   */
   override getGroups(): MinimapGroupData[] {
     const graph = this.graph
     const groups = graph?._groups

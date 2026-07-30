@@ -44,10 +44,10 @@ export function ensureCorrectLayoutScale(
 
   const anchor = getGraphRenderAnchor(graph)
 
-  const applySnap = (
+  function applySnap(
     pos: [number, number],
     method: 'round' | 'ceil' | 'floor' = 'round'
-  ) => {
+  ) {
     if (LiteGraph.alwaysSnapToGrid) {
       const snapTo = graph.getSnapToGridSize?.()
       if (snapTo) {
@@ -56,10 +56,9 @@ export function ensureCorrectLayoutScale(
     }
   }
 
-  // Snap the unprojected values first, then assign once: `pos` and `size` are
-  // whole-value setters that commit to the layout store, so element-wise
-  // writes here would land in the class and never reach it.
-  const normalize = (item: Positioned) => {
+  function normalizedBounds(
+    item: Positioned
+  ): [x: number, y: number, width: number, height: number] {
     const c = unprojectBounds(
       {
         x: item.pos[0],
@@ -75,8 +74,13 @@ export function ensureCorrectLayoutScale(
     applySnap(pos)
     applySnap(size, 'ceil')
 
-    item.pos = pos
-    item.size = size
+    return [pos[0], pos[1], size[0], size[1]]
+  }
+
+  function normalize(item: Positioned) {
+    const [x, y, width, height] = normalizedBounds(item)
+    item.pos = [x, y]
+    item.size = [width, height]
   }
 
   for (const node of graph.nodes) {
@@ -95,7 +99,7 @@ export function ensureCorrectLayoutScale(
   }
 
   for (const group of graph.groups) {
-    normalize(group)
+    group.boundingRect.set(normalizedBounds(group))
   }
 
   if ('inputNode' in graph && 'outputNode' in graph) {

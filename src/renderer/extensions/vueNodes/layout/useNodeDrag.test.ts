@@ -110,9 +110,6 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
   })
 }))
 
-// Nodes reach the composable through selectedNodeIds; selectedItems only ever
-// holds non-nodes in these tests. Mocked because the real predicate imports
-// litegraph, which drags in stores this harness does not stand up.
 vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: () => false
 }))

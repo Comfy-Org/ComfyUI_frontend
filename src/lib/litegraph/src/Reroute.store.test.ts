@@ -205,14 +205,25 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([12, 17], link)!
 
-    reroute.snapToGrid(10)
+    expect(reroute.snapToGrid(10)).toBe(true)
 
+    // Y snaps around a NODE_SLOT_HEIGHT * 0.7 offset, so 17 lands on 14.
     expect(
       layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
     ).toEqual({
-      x: reroute.pos[0],
-      y: reroute.pos[1]
+      x: 10,
+      y: 14
     })
+  })
+
+  it('snapToGrid does not report or store a change when already aligned', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([12, 17], link)!
+    reroute.snapToGrid(10)
+    const operationCount = layoutStore.getOperationsSince(0).length
+
+    expect(reroute.snapToGrid(10)).toBe(false)
+    expect(layoutStore.getOperationsSince(0)).toHaveLength(operationCount)
   })
 
   it('refuses parentId writes that would create a cycle, allows repair', () => {
