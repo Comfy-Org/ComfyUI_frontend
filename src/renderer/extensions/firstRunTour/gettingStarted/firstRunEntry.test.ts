@@ -123,6 +123,10 @@ describe('useFirstRunEntry', () => {
           'A non-candidate must keep the existing template-browser flow'
         ).toBe(false)
         expect(mocks.execute).toHaveBeenCalledWith('Comfy.BrowseTemplates')
+        expect(
+          mocks.setSetting,
+          'Without this the browser reopens on every launch, forever'
+        ).toHaveBeenCalledWith('Comfy.TutorialCompleted', true)
       }
     )
   })
