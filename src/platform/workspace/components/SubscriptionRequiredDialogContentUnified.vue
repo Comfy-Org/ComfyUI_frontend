@@ -10,7 +10,11 @@
         // mounted) and hand scrolling to the payment column so the summary
         // panel stays fixed; below xl the whole dialog scrolls as before.
         isEmbeddedPaymentStep &&
-          'xl:h-[min(740px,90vh)] xl:gap-0 xl:overflow-hidden xl:rounded-2xl xl:p-0'
+          'xl:h-[min(740px,90vh)] xl:gap-0 xl:overflow-hidden xl:rounded-2xl xl:p-0',
+        isEmbeddedSuccessStep &&
+          'bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px] xl:rounded-2xl',
+        (isEmbeddedPaymentStep || isEmbeddedSuccessStep) &&
+          'motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out'
       )
     "
   >
@@ -39,7 +43,10 @@
     <!-- The embedded payment step titles itself ("Confirm your payment");
          stacking "Choose a Plan" above it doubled the header and made this
          step taller than the pricing table. -->
-    <div v-if="!isEmbeddedPaymentStep" class="flex flex-col items-center gap-3">
+    <div
+      v-if="!isEmbeddedPaymentStep && !isEmbeddedSuccessStep"
+      class="flex flex-col items-center gap-3"
+    >
       <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
         {{ $t('subscription.descriptionWorkspace') }}
       </h2>
@@ -121,6 +128,7 @@
       :team-plan="selectedTeamStop"
       :preview-data="previewData"
       :is-team="isTeamCheckout"
+      :dark-surface="isEmbeddedSuccessStep"
       @close="handleSuccessClose"
     />
   </div>
@@ -162,6 +170,16 @@ const stripePaymentElementEnabled = Boolean(
 const isEmbeddedPaymentStep = computed(
   () =>
     checkoutStep.value === 'preview' &&
+    stripePaymentElementEnabled &&
+    (previewVariant.value === 'team-new' ||
+      previewVariant.value === 'personal-new')
+)
+
+// Success after an embedded checkout: same pinned height, narrow width, and
+// the darker surface — the dialog collapses around the receipt.
+const isEmbeddedSuccessStep = computed(
+  () =>
+    checkoutStep.value === 'success' &&
     stripePaymentElementEnabled &&
     (previewVariant.value === 'team-new' ||
       previewVariant.value === 'personal-new')
