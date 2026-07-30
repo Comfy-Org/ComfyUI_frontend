@@ -14,7 +14,7 @@ below happen after the "publish succeeded" line.
 **A brand-new package name cannot be published by CI on the first run**, and the
 error does not say so. npm returns:
 
-```
+```text
 [E404] 404 Not Found - PUT https://registry.npmjs.org/@comfyorg%2fyour-package
 ```
 
