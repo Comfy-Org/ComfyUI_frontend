@@ -1,4 +1,4 @@
-import type { ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 
 const IMPLICIT_ASSET_ROOT = 'input'
 
@@ -17,7 +17,7 @@ const createPath = (filename: string, subfolder = ''): string =>
   subfolder ? `${subfolder}/${filename}` : filename
 
 type AnnotatedPathOptions = {
-  rootFolder?: string
+  rootFolder?: ResultItemType
   subfolder?: string
 }
 
@@ -34,7 +34,9 @@ export function createAnnotatedPath(
   const { rootFolder = IMPLICIT_ASSET_ROOT, subfolder } = options
   if (typeof item === 'string')
     return `${createPath(item, subfolder)}${createAnnotation(item, rootFolder)}`
-  return `${createPath(item.filename ?? '', item.subfolder)}${
-    item.type && item.type !== IMPLICIT_ASSET_ROOT ? ` [${item.type}]` : ''
-  }`
+  const filename = item.filename ?? ''
+  return `${createPath(filename, item.subfolder)}${createAnnotation(
+    filename,
+    item.type
+  )}`
 }

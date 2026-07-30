@@ -341,6 +341,24 @@ describe('useMediaAssetActions', () => {
         expect(getAddedImageWidgetValues()).toEqual(['abc123hash.jpeg'])
       })
 
+      it('annotates a single output asset with its metadata subfolder', async () => {
+        mockGetAssetType.mockReturnValue('output')
+        mockGetOutputAssetMetadata.mockReturnValue({
+          subfolder: 'runs/2026'
+        })
+        const actions = useMediaAssetActions()
+
+        await actions.addWorkflow(
+          createMockAsset({
+            name: 'generated.png'
+          })
+        )
+
+        expect(getAddedImageWidgetValues()).toEqual([
+          'runs/2026/generated.png [output]'
+        ])
+      })
+
       it('should fall back to asset.name when hash is not available', async () => {
         const actions = useMediaAssetActions()
 
@@ -376,10 +394,14 @@ describe('useMediaAssetActions', () => {
       })
 
       it('assigns hashes with annotations derived from each asset type', async () => {
-        mockGetAssetType
-          .mockReturnValueOnce('input')
-          .mockReturnValueOnce('temp')
-          .mockReturnValueOnce('output')
+        const typeByAssetId = new Map([
+          ['1', 'input'],
+          ['2', 'temp'],
+          ['3', 'output']
+        ])
+        mockGetAssetType.mockImplementation((asset: AssetItem) =>
+          typeByAssetId.get(asset.id)
+        )
         const { actions, unmount } = mountMediaActions()
 
         const assets = [

@@ -38,6 +38,15 @@ const resultItemCases = [
       subfolder: 'nested'
     },
     expected: 'nested/untyped.png'
+  },
+  {
+    name: 'existing annotation',
+    item: {
+      filename: 'preview.png [temp]',
+      subfolder: 'nested',
+      type: 'output'
+    },
+    expected: 'nested/preview.png [temp]'
   }
 ] satisfies { name: string; item: ResultItem; expected: string }[]
 
@@ -66,7 +75,7 @@ const stringCases = [
     options: { rootFolder: 'output' },
     expected: 'preview.png [temp]'
   }
-]
+] as const
 
 describe('createAnnotatedPath', () => {
   it.for(resultItemCases)(
@@ -82,4 +91,17 @@ describe('createAnnotatedPath', () => {
       expect(createAnnotatedPath(filename, options)).toBe(expected)
     }
   )
+
+  it('ignores caller options for the ResultItem form', () => {
+    const item: ResultItem = {
+      filename: 'result.png',
+      subfolder: 'asset',
+      type: 'output'
+    }
+    const callerOptions = { rootFolder: 'output' as const, subfolder: 'x' }
+
+    // @ts-expect-error ResultItem paths intentionally reject caller options.
+    const actual = createAnnotatedPath(item, callerOptions)
+    expect(actual).toBe('asset/result.png [output]')
+  })
 })

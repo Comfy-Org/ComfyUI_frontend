@@ -340,28 +340,16 @@ bulkInsertionTest.describe(
       async ({ comfyPage }) => {
         const tab = comfyPage.menu.assetsTab
         const panel = new PropertiesPanelHelper(comfyPage.page)
-        const errorOverlay = comfyPage.page.getByTestId(
-          TestIds.dialogs.errorOverlay
-        )
         await expect(panel.root).toBeVisible()
 
         await tab.getAssetCardByName('alpha').click()
-        await comfyPage.page.keyboard.down('Control')
+        await comfyPage.page.keyboard.down('ControlOrMeta')
         await tab.getAssetCardByName('beta').click()
-        await comfyPage.page.keyboard.up('Control')
+        await comfyPage.page.keyboard.up('ControlOrMeta')
         await expect(tab.selectedCards).toHaveCount(2)
 
-        const verificationOrErrorUi = Promise.race([
-          comfyPage.page
-            .waitForResponse(isGeneratedAssetVerificationResponse)
-            .then((response) => ({ kind: 'verification', response }) as const),
-          errorOverlay
-            .waitFor({ state: 'visible' })
-            .then(() => ({ kind: 'error-overlay' }) as const),
-          panel.errorsTab
-            .waitFor({ state: 'visible' })
-            .then(() => ({ kind: 'errors-tab' }) as const)
-        ])
+        const generatedAssetVerificationResponse =
+          comfyPage.page.waitForResponse(isGeneratedAssetVerificationResponse)
 
         await tab.getAssetCardByName('alpha').dispatchEvent('contextmenu', {
           bubbles: true,
@@ -372,17 +360,11 @@ bulkInsertionTest.describe(
         await tab.contextMenuItem('Insert all assets as nodes').click()
 
         await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
-        const readiness = await verificationOrErrorUi
-        if (readiness.kind !== 'verification') {
-          await expect(errorOverlay).toBeHidden()
-          await expect(panel.errorsTab).toBeHidden()
-          return
-        }
 
         await expectNoErrorUiAfterVerification(
           comfyPage,
           panel,
-          Promise.resolve(readiness.response)
+          generatedAssetVerificationResponse
         )
       }
     )
