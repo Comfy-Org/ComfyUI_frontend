@@ -332,15 +332,18 @@ export function useNodeReplacement() {
     return replacedTypes
   }
 
+  function resolveReplacedMissingNodeTypes(replacedTypes: string[]): void {
+    if (replacedTypes.length === 0) return
+
+    useMissingNodesErrorStore().removeMissingNodesByType(replacedTypes)
+  }
+
   /**
    * Replaces all nodes in a single swap group and removes successfully
    * replaced types from the missing nodes error store.
    */
   function replaceGroup(group: ReplacementGroup): void {
-    const replacedTypes = replaceNodesInPlace(group.nodeTypes)
-    if (replacedTypes.length > 0) {
-      useMissingNodesErrorStore().removeMissingNodesByType(replacedTypes)
-    }
+    resolveReplacedMissingNodeTypes(replaceNodesInPlace(group.nodeTypes))
   }
 
   /**
@@ -349,10 +352,7 @@ export function useNodeReplacement() {
    */
   function replaceAllGroups(groups: ReplacementGroup[]): void {
     const allNodeTypes = groups.flatMap((g) => g.nodeTypes)
-    const replacedTypes = replaceNodesInPlace(allNodeTypes)
-    if (replacedTypes.length > 0) {
-      useMissingNodesErrorStore().removeMissingNodesByType(replacedTypes)
-    }
+    resolveReplacedMissingNodeTypes(replaceNodesInPlace(allNodeTypes))
   }
 
   return {

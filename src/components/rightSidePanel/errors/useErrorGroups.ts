@@ -819,7 +819,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return groupCandidatesByMediaType(matched)
   })
 
-  function buildMissingModelGroupsForSelection(): ErrorGroup[] {
+  function buildMissingModelGroupsForSelection(
+    blockedLastRun: boolean
+  ): ErrorGroup[] {
     if (!missingModelGroupsForSelection.value.length) return []
     const count = countMissingModels(missingModelGroupsForSelection.value)
     return [
@@ -829,7 +831,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupKey: 'missing_model',
         count,
         priority: 2,
-        blockedLastRun: false,
+        blockedLastRun,
         ...resolveMissingErrorMessage({
           kind: 'missing_model',
           groups: missingModelGroupsForSelection.value,
@@ -840,7 +842,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     ]
   }
 
-  function buildMissingMediaGroupsForSelection(): ErrorGroup[] {
+  function buildMissingMediaGroupsForSelection(
+    blockedLastRun: boolean
+  ): ErrorGroup[] {
     if (!missingMediaGroupsForSelection.value.length) return []
     const totalRows = countMissingMediaReferences(
       missingMediaGroupsForSelection.value
@@ -852,7 +856,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupKey: 'missing_media',
         count: totalRows,
         priority: 3,
-        blockedLastRun: false,
+        blockedLastRun,
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
           groups: missingMediaGroupsForSelection.value,
@@ -889,7 +893,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
     const groupsMap = new Map<string, GroupEntry>()
     void processPromptError(groupsMap, true)
-    void processNodeErrors(groupsMap, true)
+    const blockedMissingGroups = processNodeErrors(groupsMap, true)
     processExecutionError(groupsMap, true)
 
     return [
@@ -897,8 +901,12 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       ...buildMissingNodeGroups(false, (nodeTypes) =>
         someNodeTypeInSelection(nodeTypes, selectionMatchedAssetNodeIds.value)
       ),
-      ...buildMissingModelGroupsForSelection(),
-      ...buildMissingMediaGroupsForSelection()
+      ...buildMissingModelGroupsForSelection(
+        blockedMissingGroups.has('missing_model')
+      ),
+      ...buildMissingMediaGroupsForSelection(
+        blockedMissingGroups.has('missing_media')
+      )
     ]
   })
 
