@@ -77,6 +77,16 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
 
     const panel = new PropertiesPanelHelper(comfyPage.page)
     await comfyPage.actionbar.propertiesButton.click()
+
+    // The workflow's only node sits at (15, 48), close enough to the canvas
+    // origin that its title bar renders under the fixed top toolbar at the
+    // default view offset/scale. Center on it first so the title-click below
+    // (used by selectNodes) actually lands on the node instead of the
+    // toolbar. See BuilderSelectHelper.selectInputWidget for the same pattern.
+    const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle(NODE_TITLE)
+    if (!nodeRef) throw new Error(`Node ${NODE_TITLE} not found`)
+    await nodeRef.centerOnNode()
+
     await comfyPage.nodeOps.selectNodes([NODE_TITLE])
     await panel.switchToTab('Info')
 
