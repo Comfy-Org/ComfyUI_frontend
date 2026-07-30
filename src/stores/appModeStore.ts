@@ -187,10 +187,29 @@ export const useAppModeStore = defineStore('appMode', () => {
     return null
   }
 
+  function warnOnUninterpretableAppConfig(
+    data: Partial<LinearData> | undefined,
+    resolvedInputs: LinearInput[],
+    resolvedOutputs: NodeId[]
+  ) {
+    if (ChangeTracker.isLoadingGraph) return
+
+    if (!app.rootGraph?.nodes?.length) return
+
+    const hadConfig = !!(data?.inputs?.length || data?.outputs?.length)
+    if (!hadConfig || resolvedInputs.length || resolvedOutputs.length) return
+
+    console.warn(
+      '[appModeStore] app config could not be interpreted; no inputs or outputs resolved from linearData',
+      { inputs: data?.inputs, outputs: data?.outputs }
+    )
+  }
+
   function loadSelections(data: Partial<LinearData> | undefined) {
     const { inputs, outputs } = pruneLinearData(data)
     selectedInputs.value = inputs
     selectedOutputs.value = outputs
+    warnOnUninterpretableAppConfig(data, inputs, outputs)
   }
 
   function resetSelectedToWorkflow() {
@@ -230,14 +249,13 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   let unwatchReadOnly: (() => void) | undefined
   function enforceReadOnly(inSelect: boolean) {
-    const { state } = getCanvas()
-    if (!state) return
-    state.readOnly = inSelect
+    const canvas = getCanvas()
+    canvas.read_only = inSelect
     unwatchReadOnly?.()
     if (inSelect)
       unwatchReadOnly = watch(
-        () => state.readOnly,
-        () => (state.readOnly = true)
+        () => canvas.read_only,
+        () => (canvas.read_only = true)
       )
   }
 

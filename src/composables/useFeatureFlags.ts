@@ -38,7 +38,8 @@ export enum ServerFeatureFlag {
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile',
-  EMAIL_VERIFICATION_NUDGE_ENABLED = 'email_verification_nudge_enabled'
+  EMAIL_VERIFICATION_NUDGE_ENABLED = 'email_verification_nudge_enabled',
+  SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags'
 }
 
 /**
@@ -242,6 +243,12 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.EMAIL_VERIFICATION_NUDGE_ENABLED,
         remoteConfig.value.email_verification_nudge_enabled,
+        false
+      )
+    },
+    get supportsModelTypeTags() {
+      return api.getServerFeature(
+        ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
         false
       )
     }

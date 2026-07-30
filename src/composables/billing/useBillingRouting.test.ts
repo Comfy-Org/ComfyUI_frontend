@@ -73,16 +73,18 @@ describe('useBillingRouting', () => {
     expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
-  it('keeps legacy Stripe personal workspaces on Stripe Checkout', () => {
+  it('uses unified pricing while keeping legacy Stripe top-ups on Checkout', () => {
     mockFlags.teamWorkspacesEnabled = true
     mockFlags.consolidatedBillingEnabled = true
     mockActiveWorkspace.value = personal
     mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
 
-    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
+    const { type, shouldUseWorkspaceBilling, shouldUseUnifiedPricing } =
+      useBillingRouting()
 
     expect(type.value).toBe('legacy')
     expect(shouldUseWorkspaceBilling.value).toBe(false)
+    expect(shouldUseUnifiedPricing.value).toBe(true)
   })
 
   it('uses workspace billing for migrated Stripe personal workspaces', () => {

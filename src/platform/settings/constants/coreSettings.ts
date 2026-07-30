@@ -4,6 +4,7 @@ import {
   SUPPORTED_LOCALE_OPTIONS
 } from '@/locales/localeConfig'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
@@ -162,6 +163,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Sort node IDs when saving workflow',
     type: 'boolean',
     defaultValue: false
+  },
+  {
+    id: 'Comfy.Workflow.NamedValuesRestore',
+    name: 'Restore widget values by name',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true
   },
   {
     id: 'Comfy.Canvas.NavigationMode',
@@ -978,6 +986,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.8.7'
   },
   {
+    id: TOUR_SEEN_SETTING,
+    name: 'Onboarding coachmark tours the user has already seen',
+    type: 'hidden',
+    defaultValue: [],
+    versionAdded: '1.48.0'
+  },
+  {
     id: 'Comfy.InstalledVersion',
     name: 'The frontend version that was running when the user first installed ComfyUI',
     type: 'hidden',
@@ -1212,6 +1227,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use Asset API for model library',
     type: 'hidden',
     tooltip: 'Use new Asset API for model browsing',
+    defaultValue: isCloud ? true : false,
+    experimental: true
+  },
+  {
+    id: 'Comfy.ModelLibrary.UseAssetBrowser',
+    name: 'Use the asset browser for the model library',
+    type: 'hidden',
+    tooltip:
+      'When enabled alongside the asset API, the model library opens the asset browser. Otherwise it opens the sidebar tree.',
     defaultValue: isCloud ? true : false,
     experimental: true
   },

@@ -66,7 +66,7 @@ const i18n = createI18n({
         search: 'Search'
       },
       rightSidePanel: {
-        locateNode: 'Locate node on canvas',
+        locateNodeFor: 'Locate {item}',
         missingNodePacks: {
           unknownPack: 'Unknown pack',
           installing: 'Installing...',
@@ -162,8 +162,11 @@ describe('MissingPackGroupRow', () => {
       })
 
       expect(
-        screen.queryByRole('button', { name: 'Locate node on canvas' })
+        screen.queryByRole('button', { name: 'Locate OnlyNode' })
       ).not.toBeInTheDocument()
+      expect(
+        screen.queryAllByRole('button', { name: /^Locate / })
+      ).toHaveLength(0)
     })
 
     it('renders node count', () => {
@@ -263,9 +266,7 @@ describe('MissingPackGroupRow', () => {
         })
       })
 
-      await user.click(
-        screen.getByRole('button', { name: 'Locate node on canvas' })
-      )
+      await user.click(screen.getByRole('button', { name: 'Locate OnlyNode' }))
 
       expect(onLocateNode).toHaveBeenCalledWith('100')
     })
@@ -274,9 +275,7 @@ describe('MissingPackGroupRow', () => {
       const { user, onLocateNode } = renderRow()
       await user.click(screen.getByRole('button', { name: 'Expand' }))
 
-      await user.click(
-        screen.getAllByRole('button', { name: 'Locate node on canvas' })[0]
-      )
+      await user.click(screen.getByRole('button', { name: 'Locate MissingA' }))
 
       expect(onLocateNode).toHaveBeenCalledWith('10')
     })
@@ -295,8 +294,11 @@ describe('MissingPackGroupRow', () => {
         })
       })
       expect(
-        screen.queryByRole('button', { name: 'Locate node on canvas' })
+        screen.queryByRole('button', { name: 'Locate NoId' })
       ).not.toBeInTheDocument()
+      expect(
+        screen.queryAllByRole('button', { name: /^Locate / })
+      ).toHaveLength(0)
     })
 
     it('handles mixed nodeTypes with and without nodeId', async () => {
@@ -312,7 +314,13 @@ describe('MissingPackGroupRow', () => {
       expect(screen.getByText('WithId')).toBeInTheDocument()
       expect(screen.getByText('WithoutId')).toBeInTheDocument()
       expect(
-        screen.getAllByRole('button', { name: 'Locate node on canvas' })
+        screen.getByRole('button', { name: 'Locate WithId' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Locate WithoutId' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryAllByRole('button', { name: /^Locate / })
       ).toHaveLength(1)
     })
   })

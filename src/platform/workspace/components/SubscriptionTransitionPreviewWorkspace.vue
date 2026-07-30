@@ -6,6 +6,56 @@
     class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm"
   >
     <div>
+      <div
+        v-if="isReactivating"
+        class="mb-6 flex gap-3 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
+      >
+        <div
+          class="flex size-8 shrink-0 items-center justify-center rounded-full text-warning-background"
+        >
+          <i class="pi pi-info-circle" />
+        </div>
+        <div class="flex flex-col gap-2">
+          <p class="m-0 text-sm font-bold text-base-foreground">
+            {{ bannerTitle }}
+          </p>
+          <p class="m-0 text-sm text-muted-foreground">
+            <i18n-t :keypath="bannerBodyKey" tag="span">
+              <template #plan>{{ currentTierName }}</template>
+              <template #date>{{ cancelDate }}</template>
+              <template #newPlan>{{ newTierName }}</template>
+              <template #nextDate>{{ nextPaymentDate }}</template>
+              <template #amount>
+                <span
+                  :class="
+                    cn(
+                      'font-bold text-base-foreground',
+                      exceedsMonthlyThreshold && 'text-base font-extrabold'
+                    )
+                  "
+                  >{{ chargeDisplay }}</span
+                >
+              </template>
+            </i18n-t>
+          </p>
+          <label
+            v-if="exceedsMonthlyThreshold"
+            class="flex items-center gap-2 pt-1 text-sm text-muted-foreground"
+          >
+            <input
+              v-model="reactivationConfirmed"
+              type="checkbox"
+              class="size-4 rounded-sm border-interface-stroke"
+            />
+            {{
+              $t('subscription.preview.reactivation.checkboxLabel', {
+                amount: chargeDisplay
+              })
+            }}
+          </label>
+        </div>
+      </div>
+
       <!-- Plan Header -->
       <div class="flex flex-col gap-2">
         <span class="text-sm font-semibold text-base-foreground">
@@ -123,11 +173,22 @@
       <SubscriptionTermsNote />
 
       <Button
+        v-if="actionUrl"
+        variant="primary"
+        size="lg"
+        class="w-full rounded-lg"
+        @click="openVerification"
+      >
+        {{ $t('subscription.preview.completeVerification') }}
+      </Button>
+
+      <Button
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        @click="$emit('confirm')"
+        :disabled="confirmDisabled"
+        @click="$emit('confirm', confirmReactivation)"
       >
         {{ confirmCta }}
       </Button>
@@ -135,6 +196,7 @@
       <Button
         variant="textonly"
         class="cursor-pointer text-center text-xs text-muted-foreground transition-colors hover:bg-none hover:text-base-foreground"
+        :disabled="isLoading"
         @click="$emit('back')"
       >
         {{ $t('subscription.preview.backToAllPlans') }}
@@ -144,10 +206,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
@@ -160,33 +225,43 @@ type PersonalTierKey = 'standard' | 'creator' | 'pro'
 const {
   previewData,
   isLoading = false,
-  teamPlan = null
+  teamPlan = null,
+  actionUrl = null
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
   /** Set for a team credit-commit change: plan name + refill credits come from
    *  the selected slider stop; all proration money stays driven by previewData. */
   teamPlan?: TeamPlanSelection | null
+  actionUrl?: string | null
 }>()
 
 defineEmits<{
-  confirm: []
+  /** True only once the reactivation banner was shown and confirmed (checkbox
+   *  ticked above the charge threshold, since confirmDisabled gates the button). */
+  confirm: [confirmReactivation: boolean]
   back: []
 }>()
 
 const { t, n } = useI18n()
+const { subscription } = useBillingContext()
+
+function openVerification() {
+  if (!actionUrl) return
+  window.open(actionUrl, '_blank', 'noopener,noreferrer')
+}
 
 function formatTierName(tier: string): string {
   return t(`subscription.tiers.${tier.toLowerCase()}.name`)
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
     timeZone: 'UTC'
-  }).format(new Date(dateStr))
+  }).format(typeof date === 'string' ? new Date(date) : date)
 }
 
 function money(usd: number): string {
@@ -230,6 +305,104 @@ const currentPlanLabel = computed(() =>
     ? t('subscription.tierNameYearly', { name: currentTierName.value })
     : currentTierName.value
 )
+
+const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+
+const reactivationVariant = computed<
+  'upgrade' | 'downgrade' | 'duration_change' | null
+>(() => {
+  if (!isCancelled.value) return null
+  switch (previewData.transition_type) {
+    case 'upgrade':
+      return 'upgrade'
+    case 'downgrade':
+      return 'downgrade'
+    case 'duration_change':
+      return 'duration_change'
+    default:
+      return null
+  }
+})
+// Requires the data the banner and threshold math actually read
+// (subscription.endDate, previewData.current_plan) — without it the banner
+// would render broken copy or force the checkbox on a bogus $0 threshold.
+const isReactivating = computed(
+  () =>
+    isCancelled.value &&
+    reactivationVariant.value !== null &&
+    !!subscription.value?.endDate &&
+    !!previewData.current_plan
+)
+
+const cancelDate = computed(() =>
+  subscription.value?.endDate ? formatDate(subscription.value.endDate) : ''
+)
+
+// seat_summary.total_cost_cents is the whole-subscription price; price_cents
+// is per-seat and understates the threshold on multi-seat team plans. Divide
+// ANNUAL by 12 to get a monthly-equivalent, matching
+// PricingTableWorkspace's getPriceFromApi.
+const currentMonthlyPriceCents = computed(() => {
+  const plan = previewData.current_plan
+  if (!plan) return 0
+  const totalCents = plan.seat_summary.total_cost_cents
+  return currentIsYearly.value ? totalCents / 12 : totalCents
+})
+const chargeCents = computed(() => previewData.cost_today_cents)
+// The downgrade variant's copy always says "you won't be charged today" with
+// no amount shown, so it never gets the checkbox even if cost_today_cents is
+// unexpectedly positive.
+const exceedsMonthlyThreshold = computed(
+  () =>
+    isReactivating.value &&
+    reactivationVariant.value !== 'downgrade' &&
+    chargeCents.value > currentMonthlyPriceCents.value
+)
+const chargeDisplay = computed(
+  () => `$${formatUsdFromCents({ cents: chargeCents.value })}`
+)
+
+const reactivationConfirmed = ref(false)
+// A checked box is consent to *this* charge; a later charge change (e.g. a
+// different preview loads) must not carry that consent forward.
+watch(chargeCents, () => {
+  reactivationConfirmed.value = false
+})
+
+// isInitialized is aggregate (status + balance + plans); a balance or plans
+// failure must not permanently disable an otherwise-valid, already-loaded
+// subscription status. subscription is null exactly until status has loaded
+// at least once, so gate on that instead.
+const confirmDisabled = computed(
+  () =>
+    subscription.value === null ||
+    (exceedsMonthlyThreshold.value && !reactivationConfirmed.value)
+)
+const confirmReactivation = computed(
+  () =>
+    isReactivating.value &&
+    (!exceedsMonthlyThreshold.value || reactivationConfirmed.value)
+)
+
+const bannerTitle = computed(() =>
+  reactivationVariant.value === 'duration_change' && newIsYearly.value
+    ? t('subscription.preview.reactivation.titleAnnual')
+    : t('subscription.preview.reactivation.title')
+)
+const bannerBodyKey = computed<string>(() => {
+  switch (reactivationVariant.value) {
+    case 'upgrade':
+      return 'subscription.preview.reactivation.upgradeBody'
+    case 'downgrade':
+      return 'subscription.preview.reactivation.downgradeBody'
+    case 'duration_change':
+      return newIsYearly.value
+        ? 'subscription.preview.reactivation.durationChangeBody'
+        : 'subscription.preview.reactivation.durationChangeBodyMonthly'
+    default:
+      return ''
+  }
+})
 
 const newMonthlyUsd = computed(() => {
   const cents = previewData.new_plan.price_cents
@@ -277,11 +450,36 @@ const refillLabel = computed(() =>
 )
 
 const effectiveDateLabel = computed(() => formatDate(previewData.effective_at))
-const nextPaymentDate = computed(() =>
-  previewData.new_plan.period_end
-    ? formatDate(previewData.new_plan.period_end)
-    : effectiveDateLabel.value
-)
+// Date.setUTCMonth rolls a day-of-month past the target month's end into the
+// following month (e.g. Jan 31 + 1mo => Mar 3); clamp to the target month's
+// last day instead.
+function addUtcMonthsClamped(date: Date, months: number): Date {
+  const year = date.getUTCFullYear()
+  const targetMonthIndex = date.getUTCMonth() + months
+  const lastDayOfTargetMonth = new Date(
+    Date.UTC(year, targetMonthIndex + 1, 0)
+  ).getUTCDate()
+  return new Date(
+    Date.UTC(
+      year,
+      targetMonthIndex,
+      Math.min(date.getUTCDate(), lastDayOfTargetMonth)
+    )
+  )
+}
+// Without an explicit period_end, fall back to one billing period after
+// activation rather than the activation date itself — the activation date
+// reads as "renews today" for an immediate reactivation, which is wrong.
+const nextPaymentDate = computed(() => {
+  if (previewData.new_plan.period_end) {
+    return formatDate(previewData.new_plan.period_end)
+  }
+  const fallback = addUtcMonthsClamped(
+    new Date(previewData.effective_at),
+    newIsYearly.value ? 12 : 1
+  )
+  return formatDate(fallback)
+})
 const currentPeriodEnd = computed(() =>
   previewData.current_plan?.period_end
     ? formatDate(previewData.current_plan.period_end)
@@ -293,11 +491,22 @@ const confirmTitle = computed(() =>
     ? t('subscription.preview.confirmUpgradeTitle')
     : t('subscription.preview.confirmChangeTitle')
 )
-const confirmCta = computed(() =>
-  isImmediate.value
-    ? t('subscription.preview.confirmUpgradeCta')
-    : t('subscription.preview.confirmChange')
-)
+const confirmCta = computed(() => {
+  // Gated on isReactivating, not reactivationVariant: the banner and the
+  // emitted confirmReactivation use the same stricter gate, so the label
+  // must never promise a reactivation the click won't actually confirm.
+  if (!isReactivating.value) {
+    return isImmediate.value
+      ? t('subscription.preview.confirmUpgradeCta')
+      : t('subscription.preview.confirmChange')
+  }
+  if (reactivationVariant.value === 'downgrade') {
+    return t('subscription.preview.reactivation.confirmButton')
+  }
+  return t('subscription.preview.reactivation.confirmButtonWithCharge', {
+    amount: chargeDisplay.value
+  })
+})
 const totalNote = computed(() =>
   isImmediate.value
     ? t('subscription.preview.nextPaymentDue', { date: nextPaymentDate.value })
