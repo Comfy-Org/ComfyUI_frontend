@@ -1,7 +1,7 @@
 import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware, Placement, Rect } from '@floating-ui/vue'
 import { useEventListener } from '@vueuse/core'
-import { computed, ref, toValue, watch, watchEffect } from 'vue'
+import { computed, readonly, ref, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
@@ -113,7 +113,10 @@ export function useCoachmarkTarget(
     { immediate: true }
   )
 
-  watch(rectKey, (_key, _prev, onCleanup) => {
+  // A rect moving between two real positions re-arms per-frame tracking, so a
+  // dragged or animating target is followed 1:1 instead of via sparse updates.
+  watch(rectKey, (key, prev, onCleanup) => {
+    if (key && prev) trackMotion.value = true
     if (!trackMotion.value) return
     const timer = setTimeout(() => {
       trackMotion.value = false
@@ -132,5 +135,11 @@ export function useCoachmarkTarget(
     )
   })
 
-  return { targetEl, targetRect, floatingStyles, isPositioned }
+  return {
+    targetEl,
+    targetRect,
+    floatingStyles,
+    isPositioned,
+    inMotion: readonly(trackMotion)
+  }
 }
