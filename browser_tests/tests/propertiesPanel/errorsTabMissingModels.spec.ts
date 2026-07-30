@@ -124,6 +124,11 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
         comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
       ).toBeVisible()
       await expect(
+        comfyPage.page
+          .getByTestId(TestIds.dialogs.missingModelsGroup)
+          .getByTestId('blocked-last-run-indicator')
+      ).toBeVisible()
+      await expect(
         comfyPage.page.getByTestId('errors-summary-hero-error')
       ).toBeHidden()
       await expect(
