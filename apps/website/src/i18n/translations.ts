@@ -4672,6 +4672,22 @@ const translations = {
     en: 'Comfy',
     'zh-CN': 'Comfy'
   },
+  'launches.hero.addToCalendar': {
+    en: 'Add to calendar',
+    'zh-CN': '添加到日历'
+  },
+  'launches.hero.calendarGoogle': {
+    en: 'Google Calendar',
+    'zh-CN': 'Google 日历'
+  },
+  'launches.hero.calendarApple': {
+    en: 'Apple Calendar',
+    'zh-CN': 'Apple 日历'
+  },
+  'launches.hero.calendarOutlook': {
+    en: 'Outlook',
+    'zh-CN': 'Outlook'
+  },
 
   // Launches page (/launches) — subscribe banner
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)

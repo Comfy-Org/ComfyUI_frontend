@@ -105,7 +105,7 @@ const foundersLiveFeatured: FeaturedEvent = {
 }
 
 // Referenced by both the hero carousel and the upcoming-events list.
-const postProduction: UpcomingEvent = {
+export const postProduction: UpcomingEvent = {
   id: 'future-ai-post-production',
   name: {
     en: 'The Future of AI Post Production',
