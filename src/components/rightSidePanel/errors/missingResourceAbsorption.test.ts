@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createBoundaryLinkedSubgraph,
@@ -12,11 +13,14 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { scanAllModelCandidates } from '@/platform/missingModel/missingModelScan'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
+import { classifyErrorSeverity } from './errorSeverityClassification'
 import { getMissingResourceValidationErrorAbsorption } from './missingResourceAbsorption'
 
 const nodeId = createNodeExecutionId([12, 4])
@@ -70,6 +74,55 @@ function liftValidationError(
   })[liftedHostNodeId]?.errors[0]
   if (!lifted) throw new Error('Expected validation error to be lifted')
   return lifted
+}
+
+function createDuplicatePromotedModelFixture() {
+  const rootGraph = createTestRootGraph()
+  const subgraph = createTestSubgraph({ rootGraph })
+  const host = createTestSubgraphNode(subgraph, { id: 12 })
+  rootGraph.add(host)
+
+  function addPromotedModelNode(id: number) {
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.id = toNodeId(id)
+    const input = node.addInput('ckpt_name', 'COMBO')
+    const widget = node.addWidget('combo', 'ckpt_name', '', () => {}, {
+      values: ['present.safetensors']
+    })
+    input.widget = { name: widget.name }
+    subgraph.add(node)
+    if (!promoteValueWidgetViaSubgraphInput(host, node, widget).ok) {
+      throw new Error('Expected model widget promotion to succeed')
+    }
+  }
+
+  addPromotedModelNode(5)
+  addPromotedModelNode(7)
+
+  const widgetValueStore = useWidgetValueStore()
+  const firstInput = host.inputs.find((input) => input.name === 'ckpt_name')
+  const secondInput = host.inputs.find((input) => input.name === 'ckpt_name_1')
+  if (!firstInput?.widgetId || !secondInput?.widgetId) {
+    throw new Error('Expected promoted model inputs')
+  }
+  widgetValueStore.setValue(firstInput.widgetId, 'missing.safetensors')
+  widgetValueStore.setValue(secondInput.widgetId, 'None')
+
+  return {
+    candidates: scanAllModelCandidates(rootGraph, () => false),
+    nodeErrors: liftNodeErrorsToBoundary(rootGraph, {
+      '12:5': nodeError([
+        validationError('value_not_in_list', 'ckpt_name', {
+          received_value: 'missing.safetensors'
+        })
+      ]),
+      '12:7': nodeError([
+        validationError('value_not_in_list', 'ckpt_name', {
+          received_value: 'None'
+        })
+      ])
+    })
+  }
 }
 
 describe('getMissingResourceValidationErrorAbsorption', () => {
@@ -279,6 +332,36 @@ describe('getMissingResourceValidationErrorAbsorption', () => {
         liftedHostNodeId
       )
     ).toBeNull()
+  })
+
+  it('keeps a same-named promoted sibling error blocking', () => {
+    const { candidates, nodeErrors } = createDuplicatePromotedModelFixture()
+
+    expect(candidates).toMatchObject([
+      {
+        nodeId: '12',
+        sourceExecutionId: '12:5',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        isMissing: true
+      }
+    ])
+
+    const result = classifyErrorSeverity({
+      promptError: null,
+      executionError: null,
+      nodeErrors,
+      missingModels: candidates,
+      missingMedia: [],
+      hasMissingNodes: false
+    })
+
+    expect(
+      result.nodeErrors.flatMap(({ errors }) =>
+        errors.map(({ absorption }) => absorption)
+      )
+    ).toEqual(['missing_model', null])
+    expect(result.hasBlockingError).toBe(true)
   })
 
   it('absorbs interior image-not-loaded errors without boundary lifting', () => {

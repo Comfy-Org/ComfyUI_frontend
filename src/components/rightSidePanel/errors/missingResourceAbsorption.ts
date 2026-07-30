@@ -3,6 +3,7 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { PromptError } from '@/schemas/apiSchema'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { getLiftedErrorSource } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
+import type { LiftedErrorExtraInfo } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import {
   isImageNotLoadedValidationError,
   isMissingNodePromptError
@@ -30,10 +31,9 @@ function isEligibleValidationError(error: NodeValidationError): boolean {
 
 function matchesErrorNodeId(
   candidateNodeIds: readonly (string | number | null | undefined)[],
-  error: NodeValidationError,
+  liftedSource: LiftedErrorExtraInfo | null,
   nodeId: NodeExecutionId
 ): boolean {
-  const liftedSource = getLiftedErrorSource(error)
   const errorNodeIds = [nodeId, liftedSource?.source_execution_id]
     .filter((id) => id != null)
     .map(String)
@@ -45,16 +45,20 @@ function matchesErrorNodeId(
 }
 
 function matchesErrorInputName(
+  candidateNodeIds: readonly (string | number | null | undefined)[],
   candidateInputName: string,
-  error: NodeValidationError
+  error: NodeValidationError,
+  liftedSource: LiftedErrorExtraInfo | null
 ): boolean {
-  const liftedSource = getLiftedErrorSource(error)
-  const errorInputNames = [
-    error.extra_info?.input_name,
-    liftedSource?.source_input_name
-  ]
+  if (candidateInputName === error.extra_info?.input_name) return true
+  if (!liftedSource) return false
 
-  return errorInputNames.includes(candidateInputName)
+  return (
+    candidateInputName === liftedSource.source_input_name &&
+    candidateNodeIds.some(
+      (id) => id != null && String(id) === liftedSource.source_execution_id
+    )
+  )
 }
 
 function matchesMissingModel(
@@ -63,19 +67,19 @@ function matchesMissingModel(
   nodeId: NodeExecutionId
 ): boolean {
   if (candidate.isMissing === false) return false
-  if (
-    !matchesErrorNodeId(
-      [candidate.sourceExecutionId, candidate.nodeId],
-      error,
-      nodeId
-    )
-  ) {
+  const candidateNodeIds = [candidate.sourceExecutionId, candidate.nodeId]
+  const liftedSource = getLiftedErrorSource(error)
+  if (!matchesErrorNodeId(candidateNodeIds, liftedSource, nodeId)) {
     return false
   }
 
   return (
-    matchesErrorInputName(candidate.widgetName, error) ||
-    matchesReceivedValue(error.extra_info?.received_value, candidate.name)
+    matchesErrorInputName(
+      candidateNodeIds,
+      candidate.widgetName,
+      error,
+      liftedSource
+    ) || matchesReceivedValue(error.extra_info?.received_value, candidate.name)
   )
 }
 
@@ -84,16 +88,20 @@ function matchesMissingMedia(
   error: NodeValidationError,
   nodeId: NodeExecutionId
 ): boolean {
-  if (
-    candidate.isMissing === false ||
-    !matchesErrorNodeId([candidate.nodeId], error, nodeId)
-  ) {
+  if (candidate.isMissing === false) return false
+  const candidateNodeIds = [candidate.nodeId]
+  const liftedSource = getLiftedErrorSource(error)
+  if (!matchesErrorNodeId(candidateNodeIds, liftedSource, nodeId)) {
     return false
   }
 
   return (
-    matchesErrorInputName(candidate.widgetName, error) ||
-    matchesReceivedValue(error.extra_info?.received_value, candidate.name)
+    matchesErrorInputName(
+      candidateNodeIds,
+      candidate.widgetName,
+      error,
+      liftedSource
+    ) || matchesReceivedValue(error.extra_info?.received_value, candidate.name)
   )
 }
 
