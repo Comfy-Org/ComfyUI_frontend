@@ -37,7 +37,7 @@ export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
   return ynode
 }
 
-function yNodeRect(ynode: NodeLayoutMap): StoredRect {
+function yNodeRect(ynode: NodeLayoutMap): Readonly<StoredRect> {
   return (ynode.get('rect') as StoredRect | undefined) ?? DEFAULT_NODE_RECT
 }
 

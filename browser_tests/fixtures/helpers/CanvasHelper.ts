@@ -4,6 +4,7 @@ import type { Locator, Page } from '@playwright/test'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position } from '@e2e/fixtures/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import type { RerouteId } from '@/types/rerouteId'
 
 export class CanvasHelper {
   constructor(
@@ -197,7 +198,7 @@ export class CanvasHelper {
   }
 
   async expectRootReroutePositions(
-    expectedReroutes: Array<Position & { id: number }>
+    expectedReroutes: Record<RerouteId, Position>
   ): Promise<void> {
     await expect(async () => {
       const reroutes = await this.page.evaluate(() => {
@@ -210,11 +211,12 @@ export class CanvasHelper {
         }))
       })
 
-      expect(reroutes).toHaveLength(expectedReroutes.length)
-      for (const expected of expectedReroutes) {
-        const reroute = reroutes.find(({ id }) => id === expected.id)
-        expect(reroute?.x).toBeCloseTo(expected.x, 1)
-        expect(reroute?.y).toBeCloseTo(expected.y, 1)
+      expect(reroutes).toHaveLength(Object.keys(expectedReroutes).length)
+      for (const reroute of reroutes) {
+        const expected = expectedReroutes[reroute.id]
+        if (!expected) throw new Error(`Unexpected reroute ${reroute.id}`)
+        expect(reroute.x).toBeCloseTo(expected.x, 1)
+        expect(reroute.y).toBeCloseTo(expected.y, 1)
       }
     }).toPass({ timeout: 5000 })
   }

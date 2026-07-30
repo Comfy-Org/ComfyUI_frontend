@@ -8,6 +8,7 @@ import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraph } from './LGraph'
@@ -134,7 +135,7 @@ export class Reroute
   }
 
   /** Reads the stored point without the array {@link pos} allocates. */
-  private get storedPosition(): { x: number; y: number } {
+  private get storedPosition(): Readonly<LayoutPoint> {
     return (
       layoutStore.getRerouteLayout(this.rootGraphId, this.id)?.position ??
       ORIGIN
