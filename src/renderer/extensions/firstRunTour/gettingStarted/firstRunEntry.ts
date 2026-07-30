@@ -23,12 +23,12 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const gettingStartedVisible = ref(false)
 
   function isFirstRunCandidate(): boolean {
+    if (!useFeatureFlags().flags.onboardingTourEnabled) return false
     if (!isCloud) return false
     if (!useBreakpoints(breakpointsTailwind).greaterOrEqual('md').value)
       return false
     if (!useSubscription().isSubscriptionEnabled()) return false
-    if (useNewUserService().isNewUser() !== true) return false
-    return useFeatureFlags().flags.onboardingTourEnabled
+    return useNewUserService().isNewUser() === true
   }
 
   /**
@@ -41,13 +41,17 @@ export const useFirstRunEntry = createSharedComposable(() => {
       gettingStartedVisible.value = true
       return
     }
+    await markTutorialCompleted()
     await useCommandStore().execute('Comfy.BrowseTemplates')
   }
 
-  /** The only writer of the seen flag, so it lands on a real user action. */
+  function markTutorialCompleted() {
+    return settingStore.set('Comfy.TutorialCompleted', true)
+  }
+
   async function dismissGettingStarted() {
     gettingStartedVisible.value = false
-    await settingStore.set('Comfy.TutorialCompleted', true)
+    await markTutorialCompleted()
   }
 
   return {
