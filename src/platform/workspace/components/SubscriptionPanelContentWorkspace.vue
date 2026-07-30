@@ -286,6 +286,10 @@
         </div>
       </div>
 
+      <div v-if="showAutoReload" class="@container mt-4">
+        <AutoReloadSection :frozen="autoReloadFrozen" />
+      </div>
+
       <!-- View More Details - Outside main content -->
       <div v-if="permissions.canManageSubscription" class="py-6">
         <Button
@@ -321,6 +325,8 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
+import AutoReloadSection from '@/platform/workspace/components/dialogs/settings/AutoReloadSection.vue'
+import { useAutoReloadAccess } from '@/platform/workspace/composables/useAutoReloadAccess'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
@@ -363,6 +369,9 @@ const {
   manageSubscription,
   initialize
 } = useBillingContext()
+
+const { canAccess: showAutoReload, isFrozen: autoReloadFrozen } =
+  useAutoReloadAccess()
 
 const { showPricingTable } = useSubscriptionDialog()
 
