@@ -195,15 +195,18 @@ equivalent) rather than deleting it.
   `test.beforeEach()` or Playwright fixtures.
 - Inside `test()`, only **act** (user actions) and **assert**.
 - Never call `clearAllMocks` or reset mock state mid-test.
-- **Everything outside `test.describe` lives in a helper, fixture, or page
-  object — never inline in the spec.** A spec file should contain
-  `test.describe`/`test` blocks and their imports, nothing else. Reusable dialog
+- **Free-standing helpers, constants, and locator wiring don't belong inline in
+  the spec — move them to a helper, fixture, or page object.** Reusable dialog
   interactions (closing the templates dialog, dismissing a modal), setup
   routines, and locator wiring belong in `fixtures/components/` (page objects),
   `fixtures/helpers/`, or a Playwright fixture — not as free-standing functions
   or constants at the top of the spec. Example: a "close the templates dialog"
   step becomes a method on a `Templates` page object, not an inline helper in the
-  spec.
+  spec. Top-level Playwright hooks and configuration are fine to keep in the spec:
+  `test.use()`, `test.describe.configure()`, and file-level `test.beforeEach()`/
+  `test.afterEach()` are Playwright's own API, not the free-standing code this
+  rule targets. A spec file should otherwise contain only `test.describe`/`test`
+  blocks, those Playwright hooks/config, and imports.
 
 ```typescript
 import {
