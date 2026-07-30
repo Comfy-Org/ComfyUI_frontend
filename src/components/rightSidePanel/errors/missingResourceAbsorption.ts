@@ -2,6 +2,7 @@ import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { PromptError } from '@/schemas/apiSchema'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { getLiftedErrorSource } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import {
   isImageNotLoadedValidationError,
   isMissingNodePromptError
@@ -35,7 +36,8 @@ function matchesErrorNodeId(
   error: NodeValidationError,
   nodeId: NodeExecutionId
 ): boolean {
-  const errorNodeIds = [nodeId, error.extra_info?.source_execution_id]
+  const liftedSource = getLiftedErrorSource(error)
+  const errorNodeIds = [nodeId, liftedSource?.source_execution_id]
     .filter((id) => id != null)
     .map(String)
 
@@ -43,6 +45,19 @@ function matchesErrorNodeId(
     (candidateId) =>
       candidateId != null && errorNodeIds.includes(String(candidateId))
   )
+}
+
+function matchesErrorInputName(
+  candidateInputName: string,
+  error: NodeValidationError
+): boolean {
+  const liftedSource = getLiftedErrorSource(error)
+  const errorInputNames = [
+    error.extra_info?.input_name,
+    liftedSource?.source_input_name
+  ]
+
+  return errorInputNames.includes(candidateInputName)
 }
 
 function matchesMissingModel(
@@ -62,7 +77,7 @@ function matchesMissingModel(
   }
 
   return (
-    candidate.widgetName === error.extra_info?.input_name ||
+    matchesErrorInputName(candidate.widgetName, error) ||
     matchesReceivedValue(error.extra_info?.received_value, candidate.name)
   )
 }
@@ -80,7 +95,7 @@ function matchesMissingMedia(
   }
 
   return (
-    candidate.widgetName === error.extra_info?.input_name ||
+    matchesErrorInputName(candidate.widgetName, error) ||
     matchesReceivedValue(error.extra_info?.received_value, candidate.name)
   )
 }

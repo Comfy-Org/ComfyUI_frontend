@@ -1,13 +1,24 @@
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
+import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
+import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 import { getMissingResourceValidationErrorAbsorption } from './missingResourceAbsorption'
 
 const nodeId = createNodeExecutionId([12, 4])
+const liftedHostNodeId = createNodeExecutionId([12])
+const liftedSourceNodeId = createNodeExecutionId([12, 5])
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+})
 
 function missingModel(
   overrides: Partial<MissingModelCandidate> = {}
@@ -36,6 +47,22 @@ function missingMedia(
     isMissing: true,
     ...overrides
   }
+}
+
+function liftValidationError(
+  boundaryName: string,
+  inputName: string,
+  error: NodeValidationError
+): NodeValidationError {
+  const { rootGraph } = createBoundaryLinkedSubgraph({
+    boundaryName,
+    inputName
+  })
+  const lifted = liftNodeErrorsToBoundary(rootGraph, {
+    [liftedSourceNodeId]: nodeError([error])
+  })[liftedHostNodeId]?.errors[0]
+  if (!lifted) throw new Error('Expected validation error to be lifted')
+  return lifted
 }
 
 describe('getMissingResourceValidationErrorAbsorption', () => {
@@ -106,38 +133,128 @@ describe('getMissingResourceValidationErrorAbsorption', () => {
   })
 
   it('absorbs promoted media value errors at their lifted host node', () => {
-    const hostNodeId = createNodeExecutionId([5])
-    const sourceExecutionId = createNodeExecutionId([5, 3])
-    const error = validationError('value_not_in_list', 'image', {
-      source_execution_id: sourceExecutionId
-    })
+    const error = liftValidationError(
+      'image',
+      'image',
+      validationError('value_not_in_list', 'image')
+    )
 
     expect(
       getMissingResourceValidationErrorAbsorption(
         [],
-        [missingMedia({ nodeId: sourceExecutionId })],
+        [missingMedia({ nodeId: liftedSourceNodeId })],
         error,
-        hostNodeId
+        liftedHostNodeId
       )
     ).toBe('missing_media')
   })
 
-  it('absorbs promoted image-not-loaded errors at their lifted host node', () => {
-    const hostNodeId = createNodeExecutionId([5])
-    const sourceExecutionId = createNodeExecutionId([5, 3])
+  it('absorbs a renamed media input using its lifted interior name', () => {
+    const error = liftValidationError(
+      'source_image',
+      'image',
+      validationError('value_not_in_list', 'image')
+    )
+
+    expect(
+      getMissingResourceValidationErrorAbsorption(
+        [],
+        [
+          missingMedia({
+            nodeId: liftedSourceNodeId,
+            widgetName: 'image'
+          })
+        ],
+        error,
+        liftedHostNodeId
+      )
+    ).toBe('missing_media')
+  })
+
+  it('does not rely on received value to absorb a renamed media input', () => {
+    const error = liftValidationError(
+      'source_image',
+      'image',
+      validationError('value_not_in_list', 'image', {
+        received_value: 'different-cloud-asset-hash'
+      })
+    )
+
+    expect(
+      getMissingResourceValidationErrorAbsorption(
+        [],
+        [
+          missingMedia({
+            nodeId: liftedSourceNodeId,
+            widgetName: 'image',
+            name: 'expected-cloud-asset-hash'
+          })
+        ],
+        error,
+        liftedHostNodeId
+      )
+    ).toBe('missing_media')
+  })
+
+  it('absorbs a renamed model input using its lifted interior name', () => {
+    const error = liftValidationError(
+      'source_model',
+      'ckpt_name',
+      validationError('value_not_in_list', 'ckpt_name')
+    )
+
+    expect(
+      getMissingResourceValidationErrorAbsorption(
+        [
+          missingModel({
+            nodeId: 12,
+            sourceExecutionId: liftedSourceNodeId,
+            widgetName: 'ckpt_name'
+          })
+        ],
+        [],
+        error,
+        liftedHostNodeId
+      )
+    ).toBe('missing_model')
+  })
+
+  it('does not absorb a lifted error with no matching interior input', () => {
+    const error = liftValidationError(
+      'source_image',
+      'image',
+      validationError('value_not_in_list', 'image')
+    )
+
+    expect(
+      getMissingResourceValidationErrorAbsorption(
+        [],
+        [
+          missingMedia({
+            nodeId: liftedSourceNodeId,
+            widgetName: 'audio'
+          })
+        ],
+        error,
+        liftedHostNodeId
+      )
+    ).toBeNull()
+  })
+
+  it('absorbs interior image-not-loaded errors without boundary lifting', () => {
     const error = validationError(
       'custom_validation_failed',
       'image',
-      { source_execution_id: sourceExecutionId },
+      {},
       'Invalid image file'
     )
 
     expect(
       getMissingResourceValidationErrorAbsorption(
         [],
-        [missingMedia({ nodeId: sourceExecutionId })],
+        [missingMedia({ nodeId: liftedSourceNodeId })],
         error,
-        hostNodeId
+        liftedSourceNodeId
       )
     ).toBe('missing_media')
   })
