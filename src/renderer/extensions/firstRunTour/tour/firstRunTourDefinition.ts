@@ -83,7 +83,11 @@ export function firstRunTourSteps(
     placement: 'bottom',
     deferTarget: true,
     interactive: true,
-    selfAdvancing: true
+    selfAdvancing: true,
+    primaryAction: () =>
+      document
+        .querySelector<HTMLElement>('[data-testid="queue-button"]')
+        ?.click()
   })
   const sink = nodeStep('result', NODE_COACH_IDS.sink, roles.sink)
   steps.push({
