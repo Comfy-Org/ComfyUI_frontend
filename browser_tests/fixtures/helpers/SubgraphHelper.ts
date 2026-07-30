@@ -15,6 +15,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import type { Position, Size } from '@e2e/fixtures/types'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
+import type { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { getAllHostPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
 import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 
@@ -496,6 +497,37 @@ export class SubgraphHelper {
       window.app!.graph!.serialize()
     )
     await this.comfyPage.workflow.loadGraphData(serialized as ComfyWorkflowJSON)
+  }
+
+  /**
+   * Enlarges the node titled `title` by dragging its bottom-right resize
+   * handle. The returned size is read from the graph model, not a DOM bounding
+   * box, so it stays comparable across zoom and side-panel layout changes.
+   */
+  async growNodeByDrag(
+    title: string,
+    delta: { x: number; y: number }
+  ): Promise<{ nodeRef: NodeReference; node: VueNodeFixture; size: Size }> {
+    const [nodeRef] = await this.comfyPage.nodeOps.getNodeRefsByTitle(title)
+    expect(nodeRef, `${title} node is on the canvas`).toBeDefined()
+
+    // Saved pans can leave the node too low for a downward drag to stay onscreen.
+    await nodeRef.centerOnNode()
+
+    const node = await this.comfyPage.vueNodes.getFixtureByTitle(title)
+    const sizeBefore = await nodeRef.getSize()
+    await node.resizeFromCorner('SE', delta.x, delta.y)
+    await this.comfyPage.nextFrame()
+
+    const size = await nodeRef.getSize()
+    expect(size.width, 'resize drag widened the node').toBeGreaterThan(
+      sizeBefore.width
+    )
+    expect(size.height, 'resize drag heightened the node').toBeGreaterThan(
+      sizeBefore.height
+    )
+
+    return { nodeRef, node, size }
   }
 
   async convertDefaultKSamplerToSubgraph(): Promise<NodeReference> {
