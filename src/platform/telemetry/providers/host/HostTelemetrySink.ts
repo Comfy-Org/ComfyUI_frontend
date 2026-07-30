@@ -31,6 +31,8 @@ import type {
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
   SharedWorkflowRunMetadata,
+  ResubscribeClickMetadata,
+  SubscriptionCancellationMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -46,7 +48,7 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata
 } from '../../types'
-import { TelemetryEvents } from '../../types'
+import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
@@ -125,6 +127,17 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackMonthlySubscriptionCancelled(): void {
     this.capture(TelemetryEvents.MONTHLY_SUBSCRIPTION_CANCELLED)
+  }
+
+  trackSubscriptionCancellation(
+    event: 'flow_opened' | 'confirmed' | 'abandoned' | 'failed',
+    metadata?: SubscriptionCancellationMetadata
+  ): void {
+    this.capture(CANCELLATION_STAGE_EVENTS[event], metadata)
+  }
+
+  trackResubscribeClicked(metadata: ResubscribeClickMetadata): void {
+    this.capture(TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED, metadata)
   }
 
   trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {

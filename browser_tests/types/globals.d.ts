@@ -14,6 +14,16 @@ export interface TestGraphAccess {
   _nodes_by_id: Record<string, LGraphNode>
 }
 
+/**
+ * Client-side growth triggers the DevTools `Node Runtime Reflow` node exposes on
+ * its instance (see `tools/devtools/web/runtimeReflow.js`). Used by the runtime
+ * reflow E2E spec to emulate the two custom-node growth idioms.
+ */
+export interface RuntimeReflowNode {
+  growByWidget: () => void
+  growByPreview: () => void
+}
+
 interface AppReadiness {
   featureFlagsReceived: boolean
   apiInitialized: boolean

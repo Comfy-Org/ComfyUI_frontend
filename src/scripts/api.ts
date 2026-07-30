@@ -19,10 +19,8 @@ import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 import { zShareableAssetsResponse } from '@/schemas/apiSchema'
-import type { IFuseOptions } from 'fuse.js'
 import type {
   TemplateIncludeOnDistributionEnum,
-  TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
 import type {
@@ -370,6 +368,16 @@ export class ComfyApi extends EventTarget {
   socket: WebSocket | null = null
 
   /**
+   * Monotonic id bumped by every createSocket() attempt. Because createSocket()
+   * holds `this.socket === null` across its async token fetch, two attempts can
+   * overlap (an identity reset racing the close-handler's reconnect, or two
+   * resets in quick succession). Each attempt captures its generation and, once
+   * its awaits settle, only proceeds if it is still the latest — so the newest
+   * identity always wins and superseded attempts never open a leaked socket.
+   */
+  private socketGeneration = 0
+
+  /**
    * Cache Firebase auth store composable function.
    */
   private authStoreComposable?: typeof useAuthStore
@@ -669,6 +677,7 @@ export class ComfyApi extends EventTarget {
     if (this.socket) {
       return
     }
+    const generation = ++this.socketGeneration
 
     let opened = false
     let existingSession = window.name
@@ -704,8 +713,14 @@ export class ComfyApi extends EventTarget {
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
+    // A newer connect attempt (an identity reset, or a later reconnect) began
+    // while this one awaited its token. Abandon this attempt so only the latest
+    // generation owns this.socket and no superseded socket is opened.
+    if (generation !== this.socketGeneration) return
+
+    let socket: WebSocket
     try {
-      this.socket = new WebSocket(wsUrl)
+      socket = new WebSocket(wsUrl)
     } catch (error) {
       console.error('Failed to open WebSocket connection:', error)
       if (!isReconnect) {
@@ -713,13 +728,14 @@ export class ComfyApi extends EventTarget {
       }
       return
     }
-    this.socket.binaryType = 'arraybuffer'
+    this.socket = socket
+    socket.binaryType = 'arraybuffer'
 
-    this.socket.addEventListener('open', () => {
+    socket.addEventListener('open', () => {
       opened = true
 
       // Send feature flags as the first message
-      this.socket!.send(
+      socket.send(
         JSON.stringify({
           type: 'feature_flags',
           data: this.getClientFeatureFlags()
@@ -731,15 +747,23 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    this.socket.addEventListener('error', () => {
-      if (this.socket) this.socket.close()
+    socket.addEventListener('error', () => {
+      // A replaced socket (e.g. after resetSocket on an account switch) is
+      // already being torn down; ignore its late errors so it cannot start an
+      // unnecessary permanent polling loop for the previous identity.
+      if (this.socket !== socket) return
+      socket.close()
       if (!isReconnect && !opened) {
         this._pollQueue()
       }
     })
 
-    this.socket.addEventListener('close', () => {
+    socket.addEventListener('close', () => {
+      // A replaced socket (e.g. after resetSocket on an account switch) must
+      // not reconnect; only the active socket owns the reconnect lifecycle.
+      if (this.socket !== socket) return
       setTimeout(async () => {
+        if (this.socket !== socket) return
         this.socket = null
         await this.createSocket(true)
       }, 300)
@@ -749,7 +773,10 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    this.socket.addEventListener('message', (event) => {
+    socket.addEventListener('message', (event) => {
+      // Ignore late messages from a replaced socket so previous-account
+      // realtime data is not dispatched after an identity switch.
+      if (this.socket !== socket) return
       try {
         if (event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
@@ -909,6 +936,36 @@ export class ComfyApi extends EventTarget {
    */
   init() {
     this.createSocket()
+  }
+
+  /**
+   * Tears down the active realtime socket and reconnects, re-authenticating
+   * with the currently active account's token. Invoked on a direct identity
+   * change so a tab cannot keep receiving the previous account's realtime
+   * events over a handshake that was authenticated as that account.
+   */
+  async resetSocket(): Promise<void> {
+    const previous = this.socket
+    // Detach before closing so the previous socket's close handler sees it is
+    // no longer the active socket and does not start a competing reconnect.
+    this.socket = null
+    // Clear every handshake identity source: createSocket() reads the client id
+    // from window.name (mirrored in session storage), not this.clientId, so the
+    // next connect must not inherit the prior account's id.
+    this.clientId = undefined
+    window.name = ''
+    sessionStorage.removeItem('clientId')
+    if (previous && previous.readyState !== WebSocket.CLOSED) {
+      try {
+        previous.close()
+      } catch {
+        // Already-terminating socket; nothing to clean up.
+      }
+    }
+    // createSocket() bumps the generation; any overlapping reset or reconnect
+    // that is still awaiting its token will see it lost the race and bail,
+    // leaving this the sole owner of the reconnected socket.
+    await this.createSocket()
   }
 
   /**
@@ -1575,24 +1632,6 @@ export class ComfyApi extends EventTarget {
    */
   getServerFeatures(): Record<string, unknown> {
     return { ...this.serverFeatureFlags.value }
-  }
-
-  async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {
-    try {
-      const res = await axios.get(
-        this.fileURL('/templates/fuse_options.json'),
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-      const contentType = String(res.headers['content-type'] ?? '')
-      return contentType.includes('application/json') ? res.data : null
-    } catch (error) {
-      console.error('Error loading fuse options:', error)
-      return null
-    }
   }
 }
 
