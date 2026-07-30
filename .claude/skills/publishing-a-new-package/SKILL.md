@@ -112,7 +112,8 @@ Then import it somewhere real, build, and grep the build output to confirm the
 thing you imported actually reached the bundle. Import **every** entry in the
 `exports` map while you are there — a subpath whose target never made it into
 the tarball fails only here. A green build proves the import resolved; it does
-not prove the values landed. For CSS:
+not prove the values landed. For CSS, pointed at the consumer's own build output
+— the path below is Nuxt's, so substitute whatever your consumer emits:
 
 ```sh
 grep -o -- "--your-token:[^;]*" .output/public/_nuxt/*.css
