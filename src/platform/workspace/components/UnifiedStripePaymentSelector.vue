@@ -1,31 +1,12 @@
 <template>
-  <div
-    class="flex flex-col gap-6 rounded-2xl border border-border-default bg-secondary-background p-6 shadow-sm"
-  >
+  <div class="flex flex-col gap-6">
     <div class="flex items-start justify-between gap-4">
-      <div class="flex items-start gap-3">
-        <div
-          class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-background text-white"
-        >
-          <i class="icon-[lucide--credit-card] size-5" />
-        </div>
-        <div>
-          <h3 class="m-0 text-base font-semibold text-base-foreground">
-            {{ $t('subscription.preview.paymentMethod') }}
-          </h3>
-          <p class="m-0 mt-1 max-w-md text-sm text-muted-foreground">
-            {{ $t('subscription.preview.stripeMethodChoice') }}
-          </p>
-        </div>
-      </div>
-      <div
-        class="shrink-0 rounded-xl border border-border-subtle bg-base-background px-4 py-2 text-right"
-      >
-        <p class="m-0 text-xs text-muted-foreground">
-          {{ $t('subscription.preview.planPrice') }}
-        </p>
-        <p class="m-0 mt-1 font-semibold text-base-foreground">
-          {{ formattedAmount }}
+      <div>
+        <h3 class="m-0 text-base font-semibold text-base-foreground">
+          {{ $t('subscription.preview.paymentMethod') }}
+        </h3>
+        <p class="m-0 mt-1 max-w-md text-sm text-muted-foreground">
+          {{ $t('subscription.preview.stripeMethodChoice') }}
         </p>
       </div>
     </div>
@@ -35,35 +16,9 @@
     >
       {{ configurationError }}
     </div>
+    <div ref="paymentElementTarget" />
     <div
-      class="rounded-xl border border-border-subtle bg-base-background p-4 shadow-sm"
-    >
-      <div ref="paymentElementTarget" />
-    </div>
-    <div
-      class="flex flex-col gap-3 rounded-xl border border-border-subtle bg-base-background p-4"
-    >
-      <div class="flex items-center gap-2">
-        <i
-          class="icon-[lucide--badge-percent] size-4 text-primary-background"
-        />
-        <label class="text-sm font-medium text-base-foreground">
-          {{ $t('subscription.preview.promotionCode') }}
-        </label>
-      </div>
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Input
-          v-model="promotionCode"
-          class="min-w-0 flex-1"
-          :placeholder="$t('subscription.preview.promotionCodePlaceholder')"
-          autocomplete="off"
-        />
-        <p class="m-0 text-xs text-muted-foreground sm:max-w-52">
-          {{ $t('subscription.preview.promotionCodeHelp') }}
-        </p>
-      </div>
-    </div>
-    <div
+      v-if="selectedMethodType === 'alipay'"
       class="flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-xs text-muted-foreground"
     >
       <i
@@ -74,6 +29,7 @@
       </p>
     </div>
     <Button
+      variant="inverted"
       size="lg"
       class="w-full rounded-lg"
       :disabled="!stripeElements"
@@ -92,15 +48,20 @@ import type {
   StripeElements,
   StripePaymentElement
 } from '@stripe/stripe-js'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
 
-const { amountCents, isLoading = false } = defineProps<{
+const {
+  amountCents,
+  isLoading = false,
+  promotionCode = ''
+} = defineProps<{
   amountCents: number
   isLoading?: boolean
+  /** Entered in the order summary; rides along unchanged on confirm. */
+  promotionCode?: string
 }>()
 
 const emit = defineEmits<{
@@ -111,14 +72,8 @@ const { t } = useI18n()
 const paymentElementTarget = ref<HTMLDivElement>()
 const stripeElements = ref<StripeElements>()
 const configurationError = ref('')
-const promotionCode = ref('')
 const isSubmitting = ref(false)
-const formattedAmount = computed(() =>
-  new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD'
-  }).format(amountCents / 100)
-)
+const selectedMethodType = ref('')
 let stripe: Stripe | null = null
 let paymentElement: StripePaymentElement | undefined
 let isUnmounted = false
@@ -145,11 +100,16 @@ onMounted(async () => {
     setupFutureUsage: 'off_session',
     appearance: {
       variables: {
-        colorPrimary: resolveThemeColor('--primary-background'),
+        // Selection (radio, selected label, accordion highlight) uses the
+        // theme-aware foreground rather than brand blue.
+        colorPrimary: resolveThemeColor('--base-foreground'),
         colorBackground: resolveThemeColor('--base-background'),
         colorText: resolveThemeColor('--base-foreground'),
         colorTextSecondary: resolveThemeColor('--muted-foreground'),
         colorDanger: resolveThemeColor('--destructive-background'),
+        // Same token as the pricing table's "Save 20%" pill, so all
+        // deal/discount badges share one accent.
+        colorSuccess: resolveThemeColor('--primary-background'),
         fontFamily: getComputedStyle(document.body).fontFamily,
         borderRadius: '10px',
         spacingUnit: '5px'
@@ -160,7 +120,7 @@ onMounted(async () => {
           boxShadow: 'none'
         },
         '.AccordionItem--selected': {
-          borderColor: resolveThemeColor('--primary-background')
+          borderColor: resolveThemeColor('--base-foreground')
         },
         '.Input': {
           backgroundColor: resolveThemeColor('--input-surface'),
@@ -187,6 +147,11 @@ onMounted(async () => {
     }
   })
   paymentElement.mount(paymentElementTarget.value)
+  // Method-specific notes (e.g. the Alipay auto-renewal disclosure) key off
+  // whichever payment method the user has selected inside the element.
+  paymentElement.on('change', (event) => {
+    selectedMethodType.value = event.value?.type ?? ''
+  })
 })
 
 onBeforeUnmount(() => {
@@ -214,7 +179,7 @@ async function submit() {
     emit(
       'confirm',
       result.confirmationToken.id,
-      promotionCode.value.trim() || undefined
+      promotionCode.trim() || undefined
     )
   } catch {
     configurationError.value = t('g.error')

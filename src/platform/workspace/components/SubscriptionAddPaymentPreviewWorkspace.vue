@@ -1,11 +1,37 @@
 <template>
-  <h2 class="m-0 mb-8 text-center text-xl text-muted-foreground lg:text-2xl">
+  <h2
+    :class="
+      cn(
+        'm-0 mb-8 text-center text-xl font-semibold text-base-foreground lg:text-2xl',
+        usePaymentElement && 'xl:mb-4'
+      )
+    "
+  >
     {{ $t('subscription.preview.confirmPayment') }}
   </h2>
   <div
-    class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm"
+    :class="
+      cn(
+        'mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm',
+        // Stripe-checkout shape on desktop: order summary left, payment
+        // right, inside the pricing table's dialog footprint. Mobile keeps
+        // the stacked flow.
+        usePaymentElement &&
+          'xl:min-h-0 xl:max-w-none xl:flex-1 xl:flex-row xl:items-stretch xl:justify-center xl:gap-16'
+      )
+    "
   >
-    <div class="">
+    <!-- Dual-tone summary panel: same recipe as the pricing table's inner
+         box (rounded, bg-base-background, borderless) on the dialog's
+         secondary-background shell. -->
+    <div
+      :class="
+        cn(
+          usePaymentElement &&
+            'xl:w-[440px] xl:shrink-0 xl:rounded-2xl xl:bg-base-background xl:px-8 xl:py-6'
+        )
+      "
+    >
       <!-- Plan Header -->
       <div class="flex flex-col gap-2">
         <span class="text-sm text-base-foreground">
@@ -32,7 +58,14 @@
       </div>
 
       <!-- Credits Section -->
-      <div class="flex flex-col gap-3 pt-16 pb-8">
+      <div
+        :class="
+          cn(
+            'flex flex-col gap-3 pt-16 pb-8',
+            usePaymentElement && 'xl:pt-6 xl:pb-4'
+          )
+        "
+      >
         <div class="flex items-center justify-between">
           <span class="text-base-foreground">
             {{ $t(creditsRefillLabelKey) }}
@@ -47,7 +80,7 @@
 
         <!-- Expandable Features -->
         <button
-          class="flex cursor-pointer items-center justify-end gap-1 border-none bg-transparent p-0 text-sm text-muted-foreground hover:text-base-foreground"
+          class="flex cursor-pointer items-center justify-end gap-1 border-none bg-transparent p-0 font-inter text-sm text-muted-foreground hover:text-base-foreground"
           @click="isFeaturesCollapsed = !isFeaturesCollapsed"
         >
           <span>
@@ -112,8 +145,38 @@
         </div>
       </div>
 
+      <!-- Promo code (Figma 5379-30077): below the money block, directly
+           above the divider — adjacent to the number it changes. Validation
+           and discount math need the BE preview endpoint; until then the
+           code rides along at confirm exactly as before. -->
+      <div v-if="usePaymentElement" class="pb-4">
+        <Button
+          v-if="!isPromoOpen"
+          variant="link"
+          size="lg"
+          class="self-start px-0"
+          @click="isPromoOpen = true"
+        >
+          {{ $t('subscription.preview.addPromoCode') }}
+        </Button>
+        <Input
+          v-else
+          v-model="promotionCode"
+          class="w-full"
+          :placeholder="$t('subscription.preview.promotionCodePlaceholder')"
+          autocomplete="off"
+        />
+      </div>
+
       <!-- Total Due Section -->
-      <div class="flex flex-col gap-2 border-t border-border-subtle pt-8">
+      <div
+        :class="
+          cn(
+            'flex flex-col gap-2 border-t border-border-subtle pt-8',
+            usePaymentElement && 'xl:pt-6'
+          )
+        "
+      >
         <div class="flex items-center justify-between text-base">
           <span class="text-base-foreground">
             {{ $t('subscription.preview.totalDueToday') }}
@@ -131,15 +194,22 @@
         </span>
       </div>
     </div>
-    <!-- Footer -->
-    <div class="flex flex-col gap-2 pt-8">
-      <!-- Terms Agreement -->
-      <SubscriptionTermsNote />
-
+    <!-- Footer (right column on desktop when the payment element is embedded;
+         scrolls independently so the summary panel stays put) -->
+    <div
+      :class="
+        cn(
+          'flex flex-col gap-2 pt-8',
+          usePaymentElement &&
+            'xl:min-h-0 xl:w-[480px] xl:min-w-0 xl:overflow-x-hidden xl:overflow-y-auto xl:pt-0 xl:pr-2'
+        )
+      "
+    >
       <UnifiedStripePaymentSelector
         v-if="usePaymentElement"
         :amount-cents="amountDueCents"
         :is-loading
+        :promotion-code="promotionCode"
         @confirm="confirmPayment"
       />
 
@@ -164,6 +234,9 @@
         {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
       </Button>
 
+      <!-- Terms Agreement (below the pay action, like Stripe checkout) -->
+      <SubscriptionTermsNote />
+
       <!-- Back Link -->
       <Button
         variant="textonly"
@@ -182,6 +255,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import {
   getTierCredits,
@@ -228,6 +302,8 @@ const emit = defineEmits<{
 const { t, n } = useI18n()
 
 const isFeaturesCollapsed = ref(true)
+const isPromoOpen = ref(false)
+const promotionCode = ref('')
 
 function openVerification() {
   if (!actionUrl) return

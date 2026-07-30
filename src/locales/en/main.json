@@ -2893,10 +2893,10 @@
       "confirmChangeTitle": "Review your scheduled change",
       "paymentPopupBlocked": "Couldn't open the payment page — please allow popups and try again.",
       "paymentMethod": "Payment method",
-      "stripeMethodChoice": "Choose card or Alipay. Your payment details are handled securely by Stripe.",
+      "stripeMethodChoice": "Your payment details are handled securely by Stripe.",
       "planPrice": "Plan price",
       "promotionCode": "Promotion code",
-      "promotionCodePlaceholder": "Promotion code (optional)",
+      "promotionCodePlaceholder": "Promo code",
       "promotionCodeHelp": "Promotional discounts stack with eligible plan discounts.",
       "alipayRenewalNote": "Alipay authorization will also be used for automatic renewals and future purchases.",
       "payAndSubscribe": "Pay and subscribe",
@@ -2935,7 +2935,8 @@
         "confirmationRequired": "Your subscription is cancelled — please confirm the reactivation charge before continuing",
         "amountChanged": "The charge amount changed since you confirmed it — please review and try again",
         "unavailable": "We can't confirm this reactivation right now — please choose your plan again"
-      }
+      },
+      "addPromoCode": "Add promo code"
     },
     "success": {
       "allSet": "You're all set",
