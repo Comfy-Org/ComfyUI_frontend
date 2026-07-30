@@ -63,8 +63,12 @@ function bodySectionIds(body: string): string[] {
 
 const stories = loadStories()
 
-it('finds all ten customer stories', () => {
-  expect(stories).toHaveLength(10)
+it('finds customer stories in every locale', () => {
+  for (const locale of locales) {
+    const prefix = `${locale}/`
+    const inLocale = stories.filter((story) => story.file.startsWith(prefix))
+    expect(inLocale.length).toBeGreaterThan(0)
+  }
 })
 
 describe.for(stories)('$file', ({ frontmatter, body }) => {

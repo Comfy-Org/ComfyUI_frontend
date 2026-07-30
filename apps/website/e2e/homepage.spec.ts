@@ -17,7 +17,7 @@ test.describe('Homepage @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Comfy — Professional Control of Visual AI')
+    await expect(page).toHaveTitle('Comfy - Professional Control of Visual AI')
   })
 
   test('HeroSection heading is visible', async ({ page }) => {
@@ -217,8 +217,11 @@ test.describe('Get started section links @smoke', () => {
     await expect(downloadLink).toBeVisible()
     await expect(downloadLink).toHaveAttribute('href', '/download')
 
-    const cloudLink = section.getByRole('link', { name: 'Launch Cloud' })
+    const cloudLink = section.getByRole('link', { name: 'Try Cloud for free' })
     await expect(cloudLink).toBeVisible()
-    await expect(cloudLink).toHaveAttribute('href', 'https://cloud.comfy.org')
+    await expect(cloudLink).toHaveAttribute(
+      'href',
+      /^https:\/\/cloud\.comfy\.org\//
+    )
   })
 })

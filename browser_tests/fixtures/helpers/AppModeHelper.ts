@@ -4,6 +4,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 import { OutputHistoryComponent } from '@e2e/fixtures/components/OutputHistory'
+import { WorkflowActionsDropdown } from '@e2e/fixtures/components/WorkflowActionsDropdown'
 import { AppModeWidgetHelper } from '@e2e/fixtures/helpers/AppModeWidgetHelper'
 import { BuilderFooterHelper } from '@e2e/fixtures/helpers/BuilderFooterHelper'
 import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
@@ -19,6 +20,7 @@ export class AppModeHelper {
   readonly outputHistory: OutputHistoryComponent
   readonly steps: BuilderStepsHelper
   readonly widgets: AppModeWidgetHelper
+  readonly workflowActions: WorkflowActionsDropdown
 
   /** The "Connect an output" popover shown when saving without outputs. */
   public readonly connectOutputPopover: Locator
@@ -77,6 +79,7 @@ export class AppModeHelper {
     this.outputHistory = new OutputHistoryComponent(comfyPage.page)
     this.steps = new BuilderStepsHelper(comfyPage)
     this.widgets = new AppModeWidgetHelper(comfyPage)
+    this.workflowActions = new WorkflowActionsDropdown(comfyPage.page)
 
     this.connectOutputPopover = this.page.getByTestId(
       TestIds.builder.connectOutputPopover
@@ -185,10 +188,7 @@ export class AppModeHelper {
       .waitFor({ state: 'hidden', timeout: 5000 })
       .catch(() => {})
 
-    await this.page
-      .getByRole('button', { name: 'Workflow actions' })
-      .first()
-      .click()
+    await this.workflowActions.trigger.click()
     await this.page
       .getByRole('menuitem', { name: /Build app|Edit app/ })
       .click()

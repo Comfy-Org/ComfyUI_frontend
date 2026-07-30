@@ -152,8 +152,12 @@ describe('resolveMissingMediaAssetSources', () => {
 
   it('stops reading cloud output asset pages once all requested names are found', async () => {
     const target = 'target-output.png'
+    const outputAsset = makeAsset('ComfyUI_00001_.png', target)
     mockGetAssetsPageByTag.mockResolvedValueOnce(
-      makeAssetPage([makeAsset(target)], { hasMore: true, total: 501 })
+      makeAssetPage([outputAsset], {
+        hasMore: true,
+        total: 501
+      })
     )
 
     const result = await resolveMissingMediaAssetSources({
@@ -163,8 +167,54 @@ describe('resolveMissingMediaAssetSources', () => {
       allowCompactSuffix: true
     })
 
-    expect(result.generatedAssets).toEqual([makeAsset(target)])
+    expect(result.generatedAssets).toEqual([outputAsset])
     expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
+  })
+
+  it('stops reading cloud output asset pages when a flat target matches by name', async () => {
+    const target = 'ComfyUI_00001_.mp4'
+    const outputAsset = makeAsset(target, 'different-output-hash.mp4')
+    mockGetAssetsPageByTag.mockResolvedValueOnce(
+      makeAssetPage([outputAsset], {
+        hasMore: true,
+        total: 501
+      })
+    )
+
+    const result = await resolveMissingMediaAssetSources({
+      isCloud: true,
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set([target]),
+      allowCompactSuffix: true
+    })
+
+    expect(result.generatedAssets).toEqual([outputAsset])
+    expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
+  })
+
+  it('does not stop cloud output asset paging on a flat asset name collision', async () => {
+    const target = 'target-output.mp4'
+    const collidingNameAsset = makeAsset(target)
+    const matchingHashAsset = makeAsset('ComfyUI_00001_.mp4', target)
+    mockGetAssetsPageByTag
+      .mockResolvedValueOnce(
+        makeAssetPage([collidingNameAsset], { hasMore: true, total: 501 })
+      )
+      .mockResolvedValueOnce(makeAssetPage([matchingHashAsset]))
+
+    const result = await resolveMissingMediaAssetSources({
+      isCloud: true,
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set([target]),
+      generatedHashRequiredNames: new Set([target]),
+      allowCompactSuffix: true
+    })
+
+    expect(result.generatedAssets).toEqual([
+      collidingNameAsset,
+      matchingHashAsset
+    ])
+    expect(mockGetAssetsPageByTag).toHaveBeenCalledTimes(2)
   })
 
   it('aborts cloud output asset loading when input asset loading fails', async () => {

@@ -30,7 +30,7 @@ watch(controlModel, props.widget.controlWidget.update)
     <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
       <Popover>
         <template #button>
-          <ValueControlButton :mode="controlModel" class="self-center" />
+          <ValueControlButton :mode="controlModel" class="mr-1 self-center" />
         </template>
         <ValueControlPopover v-model="controlModel" />
       </Popover>

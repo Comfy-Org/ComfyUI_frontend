@@ -135,6 +135,11 @@ interface MediaVerificationOptions {
   resolveAssetSources?: MissingMediaAssetResolver
 }
 
+interface GeneratedCandidateMatchNames {
+  names: Set<string>
+  hashRequiredNames: Set<string>
+}
+
 /**
  * Verify media candidates against assets available to the current runtime.
  *
@@ -165,6 +170,7 @@ export async function verifyMediaCandidates(
   const pathOptions = { allowCompactSuffix: isCloud }
   const generatedMatchNames = getGeneratedCandidateMatchNames(
     pending,
+    isCloud,
     pathOptions
   )
 
@@ -174,8 +180,9 @@ export async function verifyMediaCandidates(
     const assetSources = await resolveAssetSources({
       signal,
       isCloud,
-      includeGeneratedAssets: generatedMatchNames.size > 0,
-      generatedMatchNames,
+      includeGeneratedAssets: generatedMatchNames.names.size > 0,
+      generatedMatchNames: generatedMatchNames.names,
+      generatedHashRequiredNames: generatedMatchNames.hashRequiredNames,
       allowCompactSuffix: isCloud
     })
     inputAssets = assetSources.inputAssets
@@ -189,37 +196,58 @@ export async function verifyMediaCandidates(
 
   const inputAssetIdentifiers = new Set<string>()
   const outputAssetIdentifiers = new Set<string>()
+  const outputAssetHashIdentifiers = new Set<string>()
   addAssetIdentifiers(inputAssetIdentifiers, inputAssets, pathOptions)
   addAssetIdentifiers(outputAssetIdentifiers, generatedAssets, pathOptions)
+  addAssetHashIdentifiers(
+    outputAssetHashIdentifiers,
+    generatedAssets,
+    pathOptions
+  )
 
   for (const candidate of pending) {
-    const detectionNames = getMediaPathDetectionNames(
-      candidate.name,
-      pathOptions
-    )
     const type = getAnnotatedMediaPathTypeForDetection(
       candidate.name,
       pathOptions
     )
-    const identifiers =
-      type === 'output' ? outputAssetIdentifiers : inputAssetIdentifiers
-    candidate.isMissing = !detectionNames.some((name) => identifiers.has(name))
+    const isOutputCandidate = type === 'output'
+    const identifiers = isOutputCandidate
+      ? outputAssetIdentifiers
+      : inputAssetIdentifiers
+    candidate.isMissing = !isCandidateResolved(
+      candidate,
+      identifiers,
+      isOutputCandidate,
+      isCloud,
+      outputAssetHashIdentifiers,
+      pathOptions
+    )
   }
 }
 
 function getGeneratedCandidateMatchNames(
   candidates: MissingMediaCandidate[],
+  isCloud: boolean,
   pathOptions: { allowCompactSuffix: boolean }
-): Set<string> {
+): GeneratedCandidateMatchNames {
   const names = new Set<string>()
+  const hashRequiredNames = new Set<string>()
+
   for (const candidate of candidates) {
     if (!isGeneratedCandidate(candidate, pathOptions)) continue
 
-    names.add(
-      normalizeAnnotatedMediaPathForDetection(candidate.name, pathOptions)
+    const normalized = normalizeAnnotatedMediaPathForDetection(
+      candidate.name,
+      pathOptions
     )
+    const lookupName = isCloud ? getMediaPathBasename(normalized) : normalized
+    names.add(lookupName)
+    if (isCloud && lookupName !== normalized) {
+      hashRequiredNames.add(lookupName)
+    }
   }
-  return names
+
+  return { names, hashRequiredNames }
 }
 
 function isGeneratedCandidate(
@@ -233,6 +261,34 @@ function isGeneratedCandidate(
   return type === 'output'
 }
 
+function isCandidateResolved(
+  candidate: MissingMediaCandidate,
+  identifiers: ReadonlySet<string>,
+  isOutputCandidate: boolean,
+  isCloud: boolean,
+  outputAssetHashIdentifiers: ReadonlySet<string>,
+  pathOptions: { allowCompactSuffix: boolean }
+): boolean {
+  const detectionNames = getMediaPathDetectionNames(candidate.name, pathOptions)
+  if (detectionNames.some((name) => identifiers.has(name))) return true
+  if (!isOutputCandidate || !isCloud) return false
+
+  const normalized = normalizeAnnotatedMediaPathForDetection(
+    candidate.name,
+    pathOptions
+  )
+  const basename = getMediaPathBasename(normalized)
+  return basename !== normalized && outputAssetHashIdentifiers.has(basename)
+}
+
+function getMediaPathBasename(value: string): string {
+  const separatorIndex = Math.max(
+    value.lastIndexOf('/'),
+    value.lastIndexOf('\\')
+  )
+  return separatorIndex === -1 ? value : value.slice(separatorIndex + 1)
+}
+
 function addAssetIdentifiers(
   identifiers: Set<string>,
   assets: AssetItem[],
@@ -240,6 +296,19 @@ function addAssetIdentifiers(
 ) {
   for (const asset of assets) {
     for (const name of getAssetDetectionNames(asset, pathOptions)) {
+      identifiers.add(name)
+    }
+  }
+}
+
+function addAssetHashIdentifiers(
+  identifiers: Set<string>,
+  assets: AssetItem[],
+  pathOptions: { allowCompactSuffix: boolean }
+) {
+  for (const asset of assets) {
+    if (!asset.hash) continue
+    for (const name of getMediaPathDetectionNames(asset.hash, pathOptions)) {
       identifiers.add(name)
     }
   }

@@ -1,9 +1,24 @@
 <template>
   <div class="px-3">
     <div
+      v-if="showGatedModelsHint"
+      data-testid="missing-model-gated-hint"
+      role="note"
+      class="mb-2 flex gap-2 rounded-md border border-warning-background/30 bg-warning-background/10 p-2.5"
+    >
+      <i
+        aria-hidden="true"
+        class="mt-0.5 icon-[lucide--lock] size-4 shrink-0 text-warning-background"
+      />
+      <p class="m-0 text-xs/relaxed text-warning-background">
+        {{ t('rightSidePanel.missingModels.gatedModelsHint') }}
+      </p>
+    </div>
+
+    <div
       v-if="importableModelRows.length > 0"
       data-testid="missing-model-importable-rows"
-      class="flex flex-col gap-1 overflow-hidden"
+      class="-mx-1.5 flex flex-col gap-1 overflow-hidden px-1.5"
     >
       <MissingModelRow
         v-for="row in importableModelRows"
@@ -12,6 +27,7 @@
         :directory="row.directory"
         :is-asset-supported="row.isAssetSupported"
         :can-cloud-import="true"
+        :highlighted="isRowHighlighted(row)"
         @locate-model="emit('locateModel', $event)"
       />
     </div>
@@ -36,6 +52,7 @@
         :directory="row.directory"
         :is-asset-supported="row.isAssetSupported"
         :can-cloud-import="false"
+        :highlighted="isRowHighlighted(row)"
         @locate-model="emit('locateModel', $event)"
       />
     </div>
@@ -66,7 +83,7 @@ import type { MissingModelGroup } from '@/platform/missingModel/types'
 import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { downloadModel } from '@/platform/missingModel/missingModelDownload'
+import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
 import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { formatSize } from '@/utils/formatUtil'
@@ -86,8 +103,10 @@ const MODEL_TYPE_SORT_ORDER = [
   'diffusion_models'
 ] as const
 
-const { missingModelGroups } = defineProps<{
+const { missingModelGroups, highlightedNodeIds } = defineProps<{
   missingModelGroups: MissingModelGroup[]
+  /** Execution node ids to emphasize (current canvas selection). */
+  highlightedNodeIds?: Set<string>
 }>()
 
 const emit = defineEmits<{
@@ -96,6 +115,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const missingModelStore = useMissingModelStore()
+const { downloadMissingModel } = useMissingModelDownload()
 
 const sortedModelRows = computed(() =>
   missingModelGroups
@@ -124,6 +144,12 @@ const downloadableModels = computed(() => {
   return getDownloadableModels(missingModelGroups)
 })
 
+const showGatedModelsHint = computed(() =>
+  downloadableModels.value.some(
+    (model) => !!missingModelStore.gatedRepoUrls[model.url]
+  )
+)
+
 const downloadAllLabel = computed(() => {
   const base = t('rightSidePanel.missingModels.downloadAll')
   const total = downloadableModels.value.reduce(
@@ -135,7 +161,7 @@ const downloadAllLabel = computed(() => {
 
 function downloadAllModels() {
   for (const model of downloadableModels.value) {
-    downloadModel(model, missingModelStore.folderPaths)
+    downloadMissingModel(model)
   }
 }
 
@@ -171,5 +197,12 @@ function getModelTypeSortIndex(directory: string | null) {
 
 function canCloudImport(row: MissingModelRowEntry) {
   return row.isAssetSupported && row.directory !== null
+}
+
+function isRowHighlighted(row: MissingModelRowEntry) {
+  if (!highlightedNodeIds?.size) return false
+  return row.model.referencingNodes.some((ref) =>
+    highlightedNodeIds.has(String(ref.nodeId))
+  )
 }
 </script>

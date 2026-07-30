@@ -67,7 +67,7 @@ class Load3d extends Viewport3d {
   private hasLoadedModel: boolean = false
 
   constructor(
-    container: Element | HTMLElement,
+    container: HTMLElement,
     deps: Load3dDeps,
     options: Load3DOptions = {}
   ) {
@@ -83,6 +83,9 @@ class Load3d extends Viewport3d {
 
     this.loaderManager.init()
     this.animationManager.init()
+    this.gizmoManager.setPointerNdcSource((clientX, clientY) =>
+      this.clientPointToNdc(clientX, clientY)
+    )
     this.gizmoManager.init()
 
     this.eventManager.addEventListener('modelReady', () => {
@@ -255,8 +258,8 @@ class Load3d extends Viewport3d {
       this.sceneManager.backgroundTexture &&
       this.sceneManager.backgroundMesh
     ) {
-      const containerWidth = this.renderer.domElement.clientWidth
-      const containerHeight = this.renderer.domElement.clientHeight
+      const containerWidth = this.domElement.clientWidth
+      const containerHeight = this.domElement.clientHeight
 
       if (this.shouldMaintainAspectRatio()) {
         const { width, height } = computeLetterboxedViewport(

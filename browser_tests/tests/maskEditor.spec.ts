@@ -46,6 +46,10 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     { tag: ['@smoke', '@screenshot'] },
     async ({ comfyPage, maskEditor }) => {
       const { nodeId } = await maskEditor.loadImageOnNode()
+      // Center the node so its header clears the view-mode toggle floating
+      // at the top-left of the canvas.
+      const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
+      await nodeRef.centerOnNode()
 
       const nodeHeader = comfyPage.vueNodes
         .getNodeLocator(nodeId)

@@ -1,6 +1,14 @@
 <template>
   <div class="mb-1 flex w-full flex-col gap-0.5 last:mb-0">
-    <div class="flex min-h-8 w-full items-center gap-1">
+    <div
+      :aria-current="highlighted ? 'true' : undefined"
+      :class="
+        cn(
+          'flex min-h-8 items-center gap-1',
+          selectionEmphasisClass(highlighted)
+        )
+      "
+    >
       <Button
         v-if="hasMultipleReferences"
         data-testid="missing-model-expand"
@@ -119,16 +127,39 @@
 
       <template v-else>
         <Button
+          v-if="showGatedRepoAction"
+          data-testid="missing-model-gated-access"
+          variant="muted-textonly"
+          size="icon"
+          class="size-8 shrink-0 text-warning-background hover:text-warning-background focus-visible:ring-inset"
+          :aria-label="`${t('rightSidePanel.missingModels.openHuggingFaceRepo')} ${model.name}`"
+          :title="gatedModelTooltip"
+          @click="handleOpenGatedRepo"
+        >
+          <i aria-hidden="true" class="icon-[lucide--lock] size-4" />
+        </Button>
+        <Button
           v-if="showDownloadAction"
           data-testid="missing-model-download"
           variant="secondary"
           size="sm"
           class="shrink-0 focus-visible:ring-inset"
           :aria-label="`${t('g.download')} ${model.name}`"
+          :aria-describedby="
+            showGatedRepoAction ? gatedDownloadDescriptionId : undefined
+          "
+          :title="gatedModelDownloadTooltip"
           @click="handleDownload"
         >
           {{ t('g.download') }}
         </Button>
+        <span
+          v-if="showGatedRepoAction"
+          :id="gatedDownloadDescriptionId"
+          hidden
+        >
+          {{ gatedModelDownloadTooltip }}
+        </span>
       </template>
 
       <Button
@@ -187,10 +218,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  useId,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
@@ -202,12 +242,11 @@ import {
   getModelStateKey,
   getNodeDisplayLabel
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
+import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import {
-  downloadModel,
-  fetchModelMetadata,
   isModelDownloadable,
   toBrowsableUrl
 } from '@/platform/missingModel/missingModelDownload'
@@ -217,12 +256,15 @@ const {
   model,
   directory,
   isAssetSupported,
-  canCloudImport = true
+  canCloudImport = true,
+  highlighted
 } = defineProps<{
   model: MissingModelViewModel
   directory: string | null
   isAssetSupported: boolean
   canCloudImport?: boolean
+  /** Emphasize the header row (model referenced by the canvas selection). */
+  highlighted?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -266,6 +308,8 @@ const store = useMissingModelStore()
 const { selectedLibraryModel } = storeToRefs(store)
 const cloudProgress = useTemplateRef<HTMLElement>('cloudProgress')
 const modelLabelControl = useTemplateRef<HTMLButtonElement>('modelLabelControl')
+const { prefetchModelMetadata, downloadMissingModel, openModelAccessPage } =
+  useMissingModelDownload()
 
 const expanded = computed(
   () =>
@@ -302,6 +346,24 @@ const downloadable = computed(() => {
 })
 
 const showDownloadAction = computed(() => !isCloud && downloadable.value)
+const gatedRepoUrl = computed(() => {
+  const url = model.representative.url
+  return url ? store.gatedRepoUrls[url] : undefined
+})
+const showGatedRepoAction = computed(
+  () => showDownloadAction.value && !!gatedRepoUrl.value
+)
+const gatedModelTooltip = computed(() =>
+  showGatedRepoAction.value
+    ? t('rightSidePanel.missingModels.gatedModelTooltip')
+    : undefined
+)
+const gatedModelDownloadTooltip = computed(() =>
+  showGatedRepoAction.value
+    ? t('rightSidePanel.missingModels.gatedModelDownloadTooltip')
+    : undefined
+)
+const gatedDownloadDescriptionId = useId()
 
 const downloadSizeLabel = computed(() => {
   if (!showDownloadAction.value) return undefined
@@ -349,32 +411,27 @@ onMounted(() => {
   if (isCloud) return
 
   const url = model.representative.url
-  if (url && !store.fileSizes[url]) {
-    fetchModelMetadata(url)
-      .then((metadata) => {
-        if (metadata.fileSize !== null) {
-          store.setFileSize(url, metadata.fileSize)
-        }
-      })
-      .catch((error: unknown) => {
-        console.warn(
-          `[MissingModelRow] Failed to fetch metadata for ${url}:`,
-          error
-        )
-      })
+  if (url && downloadable.value) {
+    void prefetchModelMetadata(url)
   }
 })
 
 function handleDownload() {
   const rep = model.representative
   if (rep.url && rep.directory) {
-    downloadModel(
-      { name: rep.name, url: rep.url, directory: rep.directory },
-      store.folderPaths
-    )
+    downloadMissingModel({
+      name: rep.name,
+      url: rep.url,
+      directory: rep.directory
+    })
   } else {
     console.warn('[MissingModelRow] Cannot download: missing url or directory')
   }
+}
+
+function handleOpenGatedRepo() {
+  const repoUrl = gatedRepoUrl.value
+  if (repoUrl) void openModelAccessPage(repoUrl)
 }
 
 function handleLocatePrimary() {

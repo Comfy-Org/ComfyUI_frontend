@@ -3,6 +3,9 @@
     "dockToTop": "إلصق بالأعلى",
     "feedback": "ملاحظات",
     "feedbackTooltip": "إرسال ملاحظات",
+    "freeTierPartner": "العُقد الشريكة تتطلب خطة مدفوعة",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} عمليات متبقية",
+    "freeTierRunsExhausted": "لا توجد عمليات متبقية",
     "share": "مشاركة",
     "shareTooltip": "مشاركة سير العمل"
   },
@@ -140,6 +143,8 @@
       "modelDescription": "وصف النموذج",
       "modelTagging": "تصنيف النموذج",
       "modelType": "نوع النموذج",
+      "modelTypeCoreReadonly": "لا يمكن تغيير نوع النموذج على core، نقل الملف غير مدعوم بعد.",
+      "modelTypeImmutableReadonly": "لا يمكن تغيير نوع النموذج لنموذج للقراءة فقط.",
       "noAdditionalTags": "لا توجد وسوم إضافية",
       "selectModelPrompt": "اختر نموذجًا لعرض معلوماته",
       "selectModelType": "اختر نوع النموذج...",
@@ -170,6 +175,7 @@
     "rename": {
       "failed": "تعذر إعادة تسمية الأصل."
     },
+    "searchModels": "بحث عن النماذج",
     "selectFrameworks": "اختر الأطر",
     "selectModelType": "اختر نوع النموذج",
     "selectProjects": "اختر المشاريع",
@@ -261,6 +267,7 @@
       "freeTierBadge": "مؤهل للخطة المجانية",
       "freeTierDescription": "سجّل باستخدام Google للحصول على {credits} رصيد مجاني كل شهر. لا حاجة لبطاقة.",
       "freeTierDescriptionGeneric": "سجّل باستخدام Google للحصول على رصيد مجاني كل شهر. لا حاجة لبطاقة.",
+      "googleSsoInAppBrowserNotice": "إذا فتحت هذه الصفحة من متصفح داخل التطبيق (مثل إنستغرام أو لينكدإن)، قد لا يعمل تسجيل الدخول عبر Google. استخدم GitHub أو البريد الإلكتروني، أو افتح هذه الصفحة في متصفح جهازك الافتراضي.",
       "insecureContextWarning": "هذا الاتصال غير آمن (HTTP) - قد يتم اعتراض بيانات اعتمادك من قبل المهاجمين إذا تابعت تسجيل الدخول.",
       "loginButton": "تسجيل الدخول",
       "loginWithGithub": "تسجيل الدخول باستخدام Github",
@@ -359,12 +366,14 @@
     "colors": "لوحة الألوان",
     "descLabel": "الوصف",
     "descPlaceholder": "وصف هذه المنطقة",
+    "grid": "شبكة",
     "textLabel": "نص",
     "textPlaceholder": "النص المراد عرضه (كما هو)",
     "typeObj": "كائن",
     "typeText": "نص"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "وضع {mode}، إجراءات سير العمل",
     "app": "التطبيق",
     "blueprint": "المخطط",
     "clearWorkflow": "مسح سير العمل",
@@ -515,57 +524,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "يرجى إبقاء إجابتك أقل من {max} حرفًا.",
         "chooseAnOption": "يرجى اختيار خيار.",
         "describeAnswer": "يرجى وصف إجابتك.",
         "selectAtLeastOne": "يرجى اختيار خيار واحد على الأقل."
       },
       "intro": "ساعدنا في تخصيص تجربتك مع ComfyUI.",
       "options": {
-        "familiarity": {
-          "advanced": "مستخدم متقدم (سير عمل مخصصة)",
-          "basics": "مرتاح مع الأساسيات",
-          "expert": "خبير (أساعد الآخرين)",
-          "new": "جديد في ComfyUI (لم أستخدمه من قبل)",
-          "starting": "في البداية فقط (أتابع الدروس التعليمية)"
+        "experience": {
+          "new": "جديد على ComfyUI",
+          "pro": "أنا مستخدم محترف",
+          "some": "لدي معرفة جيدة"
+        },
+        "focus": {
+          "custom_nodes": "عُقد مخصصة",
+          "pipelines": "مسارات مؤتمتة",
+          "products": "منتجات للآخرين"
         },
         "intent": {
-          "3d_game": "أصول ثلاثية الأبعاد / أصول ألعاب",
-          "api": "نقاط نهاية API لتشغيل مسارات العمل",
-          "apps": "تطبيقات مبسطة من مسارات العمل",
-          "audio": "صوت / موسيقى",
-          "custom_nodes": "عُقد مخصصة",
+          "apps_api": "تطبيقات وواجهات برمجة التطبيقات",
+          "exploring": "أستكشف فقط",
           "images": "صور",
-          "not_sure": "لست متأكداً",
-          "videos": "فيديوهات",
+          "other": "شيء آخر",
+          "otherPlaceholder": "ماذا تريد أن تصنع؟",
+          "video": "فيديو",
           "workflows": "مسارات عمل أو خطوط معالجة مخصصة"
         },
         "source": {
-          "conference": "مؤتمر أو فعالية",
-          "discord": "ديسكورد / مجتمع",
+          "community": "مجتمع أو منتدى",
           "friend": "صديق أو زميل",
-          "github": "GitHub",
+          "other": "أخرى",
+          "otherPlaceholder": "من أين وجدتنا؟",
+          "search": "جوجل / بحث",
+          "social": "وسائل التواصل الاجتماعي"
+        },
+        "source_social": {
+          "discord": "ديسكورد",
           "instagram": "إنستغرام",
           "linkedin": "لينكدإن",
-          "newsletter": "النشرة البريدية أو مدونة",
-          "other": "أخرى",
           "reddit": "ريديت",
-          "search": "جوجل / بحث",
-          "twitter": "تويتر / X",
+          "tiktok": "تيك توك",
+          "twitter": "X (تويتر)",
           "youtube": "يوتيوب"
-        },
-        "usage": {
-          "education": "تعليمي (طالب أو معلم)",
-          "personal": "استخدام شخصي",
-          "work": "عمل"
         }
       },
+      "otherPlaceholder": "أخبرنا المزيد",
       "placeholder": "نص بديل لأسئلة الاستبيان",
-      "steps": {
-        "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
-        "intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
-        "source": "من أين سمعت عن ComfyUI؟",
-        "usage": "كيف تخطط لاستخدام ComfyUI؟"
-      },
       "title": "استبيان السحابة"
     }
   },
@@ -578,10 +582,11 @@
   "cloudStart_learnAboutButton": "تعرف على السحابة",
   "cloudStart_title": "ابدأ الإبداع في ثوانٍ",
   "cloudStart_wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟",
-  "cloudSurvey_steps_familiarity": "ما مدى معرفتك بـ ComfyUI؟",
+  "cloudSurvey_steps_experience": "ما مدى معرفتك بـ ComfyUI؟",
+  "cloudSurvey_steps_focus": "ماذا تبني؟",
   "cloudSurvey_steps_intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
   "cloudSurvey_steps_source": "من أين سمعت عن ComfyUI؟",
-  "cloudSurvey_steps_usage": "كيف تخطط لاستخدام ComfyUI؟",
+  "cloudSurvey_steps_source_social": "أي منصة؟",
   "cloudWaitlist_contactLink": "هنا",
   "cloudWaitlist_questionsText": "أسئلة؟ اتصل بنا",
   "color": {
@@ -609,22 +614,25 @@
     "chooseProfilePicture": "اختر صورة الملف الشخصي",
     "createProfile": "إنشاء الملف الشخصي",
     "createProfileButton": "إنشاء ملفي الشخصي",
-    "createProfileTitle": "أنشئ ملفك الشخصي على Comfy Hub",
+    "createProfileTitle": "أنشئ ملفك الشخصي على Comfy Workflows",
     "creatingProfile": "جارٍ إنشاء الملف الشخصي...",
     "descriptionLabel": "وصفك",
     "descriptionPlaceholder": "أخبر المجتمع عن نفسك...",
     "introDescription": "انشر سير عملك، وابنِ محفظتك، واكتشفك ملايين المستخدمين",
-    "introSubtitle": "لمشاركة سير عملك على ComfyHub، لنقم أولاً بإنشاء ملفك الشخصي.",
-    "introTitle": "النشر على ComfyHub",
-    "modalTitle": "إنشاء ملفك الشخصي على ComfyHub",
+    "introSubtitle": "لمشاركة سير عملك على Comfy Workflows، لنقم أولاً بإنشاء ملفك الشخصي.",
+    "introTitle": "النشر على Comfy Workflows",
+    "modalTitle": "إنشاء ملفك الشخصي على Comfy Workflows",
     "nameLabel": "اسمك",
     "namePlaceholder": "أدخل اسمك هنا",
     "profileCreationNav": "إنشاء الملف الشخصي",
     "startPublishingButton": "ابدأ النشر",
+    "startUpdatingButton": "تحديث سير العمل",
     "successDescription": "يمكنك الآن رفع سير عملك على صفحة المبدع الخاصة بك",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "صفحتك الشخصية متاحة الآن على",
     "successTitle": "يبدو رائعًا، {'@'}{username}!",
+    "updateIntroDescription": "ادفع أحدث التغييرات إلى Comfy Workflows. سيبقى رابط المشاركة والإحصائيات كما هي.",
+    "updateIntroTitle": "تحديث سير العمل الخاص بك على Comfy Workflows",
     "uploadCover": "+ رفع صورة الغلاف",
     "uploadProfilePicture": "+ رفع صورة الملف الشخصي",
     "uploadWorkflowButton": "رفع سير عملي",
@@ -636,16 +644,16 @@
     "additionalInfo": "معلومات إضافية",
     "back": "رجوع",
     "createProfileCta": "إنشاء ملف شخصي",
-    "createProfileToPublish": "أنشئ ملفًا شخصيًا للنشر على ComfyHub",
+    "createProfileToPublish": "أنشئ ملفًا شخصيًا للنشر على Comfy Workflows",
     "exampleImage": "صورة نموذجية {index}",
     "exampleImagePosition": "الصورة النموذجية {index} من {total}",
     "examplesDescription": "أضف حتى {total} صورة نموذجية إضافية",
     "maxExamples": "يمكنك اختيار حتى {max} أمثلة",
     "next": "التالي",
-    "publishButton": "النشر على ComfyHub",
+    "publishButton": "النشر على Comfy Workflows",
     "publishFailedDescription": "حدث خطأ أثناء نشر سير العمل الخاص بك. يرجى المحاولة مرة أخرى.",
     "publishFailedTitle": "فشل النشر",
-    "publishSuccessDescription": "تم نشر سير العمل الخاص بك على ComfyHub.",
+    "publishSuccessDescription": "تم نشر سير العمل الخاص بك على Comfy Workflows.",
     "publishSuccessTitle": "تم النشر بنجاح",
     "removeExampleImage": "إزالة الصورة النموذجية",
     "selectAThumbnail": "اختر صورة مصغرة",
@@ -663,8 +671,9 @@
     "thumbnailImageComparison": "مقارنة الصور",
     "thumbnailPreview": "معاينة الصورة المصغرة",
     "thumbnailVideo": "فيديو",
-    "title": "النشر على ComfyHub",
-    "unsavedDescription": "يجب حفظ سير العمل الخاص بك قبل النشر على ComfyHub. احفظه الآن للمتابعة.",
+    "title": "النشر على Comfy Workflows",
+    "unsavedDescription": "يجب حفظ سير العمل الخاص بك قبل النشر على Comfy Workflows. احفظه الآن للمتابعة.",
+    "updateButton": "تحديث سير العمل",
     "uploadAnImage": "انقر للاستعراض أو اسحب صورة",
     "uploadComparison": "رفع صورة قبل وبعد",
     "uploadComparisonAfterPrompt": "بعد",
@@ -781,8 +790,15 @@
       "gpuUsage": "استخدام GPU"
     },
     "faqs": "الأسئلة المتكررة",
+    "insufficient": {
+      "memberCta": "حسنًا، فهمت",
+      "memberDescription": "لقد استخدم فريقك جميع أرصدته. يجب على مسؤولي المساحة workspace إضافة المزيد من الأرصدة لتشغيل سير العمل.",
+      "memberTitle": "هذه المساحة workspace نفدت أرصدتها"
+    },
     "invoiceHistory": "تاريخ الفواتير",
     "lastUpdated": "آخر تحديث",
+    "loadEventsError": "فشل في تحميل النشاط. يرجى المحاولة مرة أخرى.",
+    "loadEventsUnknownError": "حدث خطأ أثناء تحميل النشاط. يرجى إعادة التحميل والمحاولة مرة أخرى.",
     "messageSupport": "مراسلة الدعم",
     "model": "النموذج",
     "purchaseCredits": "شراء رصيد",
@@ -949,6 +965,16 @@
       "message": "تم تقديم معرف حوار غير صالح.",
       "title": "حوار غير صالح"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "تطبيق ComfyUI لسطح المكتب ينتظر تسجيل الدخول باستخدام حسابك. تابع فقط إذا بدأت عملية تسجيل الدخول من تطبيق ComfyUI لسطح المكتب.",
+    "confirmSummary": "تأكيد تسجيل الدخول من سطح المكتب؟",
+    "expiredDetail": "انتهت صلاحية طلب تسجيل الدخول أو تم استخدامه بالفعل. ابدأ عملية تسجيل الدخول مرة أخرى من تطبيق ComfyUI لسطح المكتب.",
+    "expiredSummary": "فشل تسجيل الدخول من سطح المكتب",
+    "failedDetail": "حدث خطأ أثناء إكمال تسجيل الدخول من سطح المكتب. ابدأ عملية تسجيل الدخول مرة أخرى من تطبيق ComfyUI لسطح المكتب.",
+    "failedSummary": "فشل تسجيل الدخول من سطح المكتب",
+    "successDetail": "يمكنك العودة إلى تطبيق ComfyUI لسطح المكتب.",
+    "successSummary": "تم تسجيل الدخول"
   },
   "desktopMenu": {
     "confirmQuit": "هناك سير عمل غير محفوظ مفتوح؛ سيتم فقدان أي تغييرات غير محفوظة. هل تتجاهل هذا وتخرج؟",
@@ -1243,6 +1269,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "تم تعطيل هذه العقدة بواسطة سياسة مساحة العمل الخاصة بك. استخدم عقدة أخرى.",
+        "title": "عقدة معطلة",
+        "toastMessage": "تم تعطيل هذه العقدة بواسطة سياسة مساحة العمل الخاصة بك.",
+        "toastTitle": "عقد الشركاء"
+      },
       "bad_linked_input": {
         "details": "{nodeName} لديه اتصال غير صالح لـ {inputName}.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -1437,6 +1470,9 @@
     "preparingExport": "جاري تجهيز التصدير...",
     "retryDownload": "إعادة محاولة التحميل"
   },
+  "feedback": {
+    "title": "مشاركة الملاحظات"
+  },
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -1564,6 +1600,7 @@
     "extensions": "الملحقات",
     "failed": "فشل",
     "failedToCopyJobId": "فشل نسخ معرف المهمة",
+    "failedToDownloadFile": "فشل في تنزيل الملف",
     "failedToDownloadImage": "فشل في تنزيل الصورة",
     "failedToDownloadVideo": "فشل في تنزيل الفيديو",
     "favorites": "المفضلة",
@@ -1808,6 +1845,7 @@
     "systemStatsRAMTotal": "إجمالي الذاكرة (RAM)",
     "systemStatsTemplatesVersion": "إصدار القوالب",
     "terminal": "الطرفية",
+    "textFailedToLoad": "فشل تحميل النص",
     "title": "العنوان",
     "triggerPhrase": "عبارة التشغيل",
     "unknownError": "خطأ غير معروف",
@@ -2061,11 +2099,15 @@
       "appBuilder": "منشئ التطبيقات",
       "apps": "التطبيقات",
       "appsEmptyMessage": "سيتم عرض التطبيقات المحفوظة هنا.\nانقر أدناه لبناء تطبيقك الأول.",
-      "appsEmptyMessageAction": "انقر أدناه لإنشاء أول تطبيق لك."
+      "appsEmptyMessageAction": "انقر أدناه لإنشاء أول تطبيق لك.",
+      "buildAnApp": "إنشاء تطبيق",
+      "create": "إنشاء",
+      "createApp": "إنشاء تطبيق"
     },
     "arrange": {
       "atLeastOne": "عقدة واحدة على الأقل",
       "connectAtLeastOne": "قم بتوصيل {atLeastOne} عقدة مخرجات حتى يتمكن المستخدمون من رؤية النتائج بعد التشغيل.",
+      "descriptionPlaceholder": "انقر مرتين لإضافة وصف",
       "noOutputs": "لم تتم إضافة أي مخرجات بعد",
       "outputExamples": "أمثلة: 'حفظ صورة' أو 'حفظ فيديو'",
       "outputs": "المخرجات",
@@ -2074,8 +2116,6 @@
       "switchToOutputsButton": "الانتقال إلى المخرجات"
     },
     "backToWorkflow": "العودة إلى سير العمل",
-    "beta": "وضع التطبيق تجريبي - أرسل ملاحظاتك",
-    "buildAnApp": "أنشئ تطبيقًا",
     "builder": {
       "exit": "خروج من البناء",
       "exitConfirmMessage": "لديك تغييرات غير محفوظة ستفقد\nهل تريد الخروج بدون حفظ؟",
@@ -2113,6 +2153,7 @@
       "requiresGraph": "حدث خطأ أثناء التوليد. قد يكون ذلك بسبب مدخلات مخفية غير صالحة، أو موارد مفقودة، أو مشاكل في إعداد سير العمل.",
       "support": "الاتصال بالدعم"
     },
+    "feedbackLoadError": "فشل تحميل نموذج الملاحظات. يرجى المحاولة لاحقًا.",
     "giveFeedback": "إعطاء ملاحظات",
     "graphMode": "وضع الرسم البياني",
     "hasCreditCost": "يتطلب أرصدة إضافية",
@@ -2181,6 +2222,7 @@
     "loadingModel": "جارٍ تحميل النموذج ثلاثي الأبعاد...",
     "materialMode": "وضع المادة",
     "materialModes": {
+      "clay": "طين",
       "depth": "العمق",
       "lineart": "الرسم الخطي",
       "normal": "عادي",
@@ -2188,7 +2230,29 @@
       "pointCloud": "سحابة نقطية",
       "wireframe": "إطار سلكي"
     },
+    "menuBar": {
+      "bgColor": "لون الخلفية",
+      "bgImage": "صورة الخلفية",
+      "deleteRecording": "حذف التسجيل",
+      "downloadRecording": "تحميل التسجيل",
+      "fov": "زاوية الرؤية",
+      "intensity": "الشدة",
+      "material": "الخامة",
+      "originalMaterialOnly": "الخامة الأصلية فقط",
+      "panorama": "بانوراما",
+      "record": "تسجيل",
+      "recording": "جارٍ التسجيل",
+      "removeBackground": "إزالة الخلفية",
+      "showGrid": "إظهار الشبكة",
+      "skeleton": "الهيكل العظمي",
+      "startNewRecording": "بدء تسجيل جديد",
+      "stopRecording": "إيقاف التسجيل",
+      "switchProjection": "تبديل الإسقاط",
+      "upDirection": "اتجاه الأعلى",
+      "videoRecordingTooltip": "تسجيل فيديو للمشهد [mp4]"
+    },
     "model": "النموذج",
+    "model3d": "نموذج ثلاثي الأبعاد",
     "openIn3DViewer": "افتح في عارض ثلاثي الأبعاد",
     "panoramaMode": "وضع البانوراما",
     "previewOutput": "معاينة المخرج",
@@ -2401,6 +2465,11 @@
       "pending": "قيد الانتظار",
       "unknown": "غير معروف"
     },
+    "survey": {
+      "error": "تعذر تحميل هذا الاستبيان. يرجى المحاولة مرة أخرى لاحقًا.",
+      "intro": "تثبيت العقد المخصصة قادم قريبًا إلى Comfy Cloud. أجب عن بعض الأسئلة السريعة للانضمام إلى قائمة الانتظار والمساهمة في تطوير هذه الميزة.",
+      "title": "انضم إلى قائمة الانتظار"
+    },
     "title": "مدير العقد المخصصة",
     "toFinishSetup": "لإكمال الإعداد",
     "totalNodes": "إجمالي العقد",
@@ -2555,8 +2624,8 @@
     "resetView": "إعادة تعيين عرض اللوحة",
     "run": "تشغيل",
     "runWorkflow": "تشغيل سير العمل (Shift للانتظار في البداية)",
-    "runWorkflowDisabled": "يحتوي سير العمل على عقد غير مدعومة (مظللة باللون الأحمر). يرجى إزالتها لتشغيل سير العمل.",
     "runWorkflowFront": "تشغيل سير العمل (انتظار في البداية)",
+    "runWorkflowMissingResources": "يتضمن سير العمل موارد مفقودة.",
     "settings": "الإعدادات",
     "showMenu": "عرض القائمة",
     "stopRunInstant": "إيقاف التشغيل (فوري)",
@@ -2735,7 +2804,6 @@
     "accept": "بكل سرور، سأساعد!",
     "description": "لقد استخدمت هذه الميزة. هل يمكنك تخصيص لحظة لمشاركة ملاحظاتك؟",
     "dontAskAgain": "لا تسأل مرة أخرى",
-    "loadError": "فشل في تحميل الاستبيان. يرجى المحاولة لاحقًا.",
     "notNow": "ليس الآن",
     "title": "ساعدنا في التحسين"
   },
@@ -2750,6 +2818,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "جيميني",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "إيديوغرام",
     "Kling": "Kling",
@@ -2769,7 +2838,6 @@
     "Runway": "رن واي",
     "Sonilo": "Sonilo",
     "Sora": "سورا",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "تريبو",
@@ -2780,6 +2848,7 @@
     "ace": "ace",
     "adjustments": "تعديلات",
     "advanced": "متقدم",
+    "anima": "anima",
     "animate": "تحريك",
     "attention_experiments": "تجارب الانتباه",
     "audio": "صوت",
@@ -2801,8 +2870,8 @@
     "cosmos": "cosmos",
     "create": "إنشاء",
     "custom": "مخصص",
-    "custom_sampling": "تجميع مخصص",
     "dancer": "راقص",
+    "dataset": "مجموعة بيانات",
     "debug": "تصحيح",
     "detection": "الكشف",
     "experimental": "تجريبي",
@@ -2824,6 +2893,7 @@
     "image": "صورة",
     "infinite talk": "حديث لا نهائي",
     "instructpix2pix": "instructpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "كامِن",
     "loaders": "التحميلات",
@@ -2831,11 +2901,13 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "قناع",
     "merging": "دمج",
     "mochi": "mochi",
     "model": "نموذج",
     "model specific": "نموذج محدد",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "تعدد وحدات معالجة الرسومات",
     "noise": "ضجيج",
@@ -2845,6 +2917,8 @@
     "phantom subject": "موضوع شبحي",
     "photomaker": "صانع الصور",
     "pixart": "pixart",
+    "post-processors": "معالجات ما بعد",
+    "pre-processors": "معالجات ما قبل",
     "preprocessors": "المعالجون المسبقون",
     "primitive": "بدائي",
     "qwen": "تشي وين",
@@ -2865,8 +2939,8 @@
     "stable video": "stable video",
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
-    "stable_cascade": "سلسلة ثابتة",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "نص",
     "training": "تدريب",
     "transform": "تحويل",
@@ -2953,6 +3027,7 @@
       "appTypeNative": "تطبيق أصلي",
       "appTypeWeb": "تطبيق ويب",
       "deny": "إلغاء",
+      "detailsHeader": "التفاصيل",
       "errorExpired": "انتهت صلاحية طلب الموافقة هذا أو تم استخدامه بالفعل. يرجى إعادة البدء من تطبيق العميل.",
       "errorScopeBroadening": "الأذونات التي تمت الموافقة عليها سابقًا لا تغطي هذا الطلب. ستحتاج إلى إعادة التفويض بالأذونات الجديدة.",
       "errorUnavailable": "هذه الميزة غير متوفرة حاليًا. يرجى التواصل مع الدعم إذا استمرت المشكلة.",
@@ -2967,7 +3042,6 @@
       "sessionErrorToastSummary": "تعذر متابعة تسجيل الدخول عبر OAuth",
       "subtitle": "سجّل الدخول إلى {resource} للمتابعة",
       "title": "{client} يطلب الوصول",
-      "workspaceHelp": "تنطبق الأذونات على مساحة العمل هذه فقط.",
       "workspaceLabel": "مساحة العمل"
     },
     "scopes": {
@@ -2983,6 +3057,38 @@
       "owner": "المالك",
       "personal": "شخصي"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "كل عملية إنشاء أو استيراد محفوظة في الوسائط. يمكنك فتحها في أي وقت لتصفحها أو تنزيلها أو إعادة استخدام أعمالك السابقة.",
+        "title": "اعثر على جميع ملفاتك"
+      },
+      "inputs": {
+        "body": "أضف ما تريد العمل عليه. المدخلات هي ما يحوله التطبيق إلى نتائج.",
+        "title": "أضف مدخلاتك"
+      },
+      "landing": {
+        "body": "جولة سريعة حول الأساسيات في دقيقة تقريبًا. سنوضح لك أين تضيف المدخلات، وكيف تشغل تطبيقك، وأين تجد النتائج.",
+        "primary": "بدء الدليل",
+        "title": "مرحبًا بك في التطبيقات"
+      },
+      "outputs": {
+        "body": "تظهر النتائج النهائية هنا في المنتصف. يمكنك تنزيلها أو تعديل أحد المدخلات وتشغيلها مرة أخرى.",
+        "title": "احصل على نتائجك"
+      },
+      "replay": "جولة في وضع التطبيقات",
+      "run": {
+        "body": "هل أنت راضٍ عن مدخلاتك؟ اضغط على تشغيل وستظهر النتيجة في المنتصف فور جاهزيتها.",
+        "title": "شغّل تطبيقك"
+      }
+    },
+    "back": "السابق",
+    "done": "تم",
+    "loadError": "حدث خطأ أثناء عرض هذه الجولة",
+    "next": "التالي",
+    "skip": "تخطي",
+    "stepLabel": "الخطوة {current} من {total}"
   },
   "openSharedWorkflow": {
     "author": "المؤلف:",
@@ -3102,8 +3208,11 @@
     "errorHelpGithub": "إرسال مشكلة على GitHub",
     "errorHelpSupport": "تواصل مع الدعم الفني",
     "errorLog": "سجل الأخطاء",
+    "errorNodeSummary": "{nodes} عقدة — {count} خطأ | {nodes} عقدة — {count} أخطاء",
+    "errorNodesSummary": "{nodes} عقد — {count} خطأ | {nodes} عقد — {count} أخطاء",
     "errors": "الأخطاء",
     "errorsDetected": "تم اكتشاف خطأ | تم اكتشاف أخطاء",
+    "errorsSummary": "{count} خطأ | {count} أخطاء",
     "executionErrorOccurred": "حدث خطأ أثناء التنفيذ. تحقق من علامة تبويب الأخطاء لمزيد من التفاصيل.",
     "expand": "توسيع",
     "fallbackGroupTitle": "مجموعة",
@@ -3193,6 +3302,8 @@
     "resetToDefault": "إعادة التعيين إلى الافتراضي",
     "resolveBeforeRun": "يرجى الحل قبل تشغيل سير العمل",
     "seeError": "عرض الخطأ",
+    "selectedNodeErrors": "{node} — {count} خطأ | {node} — {count} أخطاء",
+    "selectedNodesErrors": "{nodes} عقد محددة — {count} خطأ | {nodes} عقد محددة — {count} أخطاء",
     "settings": "الإعدادات",
     "showAdvancedInputsButton": "إظهار المدخلات المتقدمة",
     "showAdvancedShort": "إظهار الخيارات المتقدمة",
@@ -3212,24 +3323,35 @@
     "errors": {
       "duplicateName": "يوجد سر بهذا الاسم بالفعل",
       "duplicateProvider": "يوجد سر لهذا المزود بالفعل",
+      "fileReadFailed": "تعذر قراءة الملف المحدد. يرجى المحاولة مرة أخرى",
+      "fileTooLarge": "الملف كبير جدًا. يرجى رفع بيانات اعتماد JSON أقل من ١ ميجابايت",
+      "invalidJson": "يجب أن يحتوي الملف على كائن JSON صالح",
       "nameRequired": "الاسم مطلوب",
       "nameTooLong": "يجب ألا يزيد الاسم عن ٢٥٥ حرفًا",
       "providerRequired": "المزود مطلوب",
       "secretValueRequired": "قيمة السر مطلوبة"
     },
+    "jsonFileHint": "الصق ملف JSON أو قم برفعه. سيتم تشفيره ولن يكون بالإمكان عرضه مرة أخرى.",
+    "jsonFileHintEdit": "اتركه فارغًا للاحتفاظ بالقيمة الحالية، أو ارفع ملف JSON جديد لاستبداله.",
+    "jsonFilePlaceholder": "قم برفع أو لصق بيانات اعتماد المزود بصيغة JSON",
     "lastUsed": "آخر استخدام في {date}",
     "modelProviders": "مزودو النماذج",
     "name": "الاسم",
     "namePlaceholder": "مثال: مفتاح API الخاص بي",
     "noSecrets": "لا توجد أسرار مخزنة. أضف أول مفتاح API للبدء.",
     "provider": "المزود",
+    "providerHelp": {
+      "gemini": "أدخل مفتاح Google Gemini API الخاص بك. يمكنك إنشاء واحد في Google AI Studio.",
+      "runway": "أدخل مفتاح Runway API الخاص بك. يمكنك العثور عليه في إعدادات حسابك على Runway ضمن مفاتيح API."
+    },
     "providerHint": "اختياري. اختيار مزود يتيح استخدام الرمز تلقائيًا.",
     "secretValue": "قيمة السر",
     "secretValueHint": "سيتم تشفير هذه القيمة ولا يمكن عرضها مرة أخرى.",
     "secretValueHintEdit": "اترك الحقل فارغًا للاحتفاظ بالقيمة الحالية.",
     "secretValuePlaceholder": "أدخل مفتاح API الخاص بك",
     "secretValuePlaceholderEdit": "أدخل قيمة جديدة للتغيير",
-    "title": "مفاتيح API والأسرار"
+    "title": "مفاتيح API والأسرار",
+    "uploadJsonFile": "رفع ملف JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "تجاوز عقد المجموعة",
@@ -3405,6 +3527,7 @@
     "3DViewer": "عارض ثلاثي الأبعاد",
     "API Nodes": "عقد API",
     "About": "حول",
+    "Allowlist": "قائمة السماح",
     "Appearance": "المظهر",
     "BrushAdjustment": "تعديل الفرشاة",
     "Camera": "الكاميرا",
@@ -3432,6 +3555,7 @@
     "Load 3D": "تحميل ثلاثي الأبعاد",
     "Locale": "اللغة",
     "Mask Editor": "محرر القناع",
+    "Members": "الأعضاء",
     "Menu": "القائمة",
     "ModelLibrary": "مكتبة النماذج",
     "Node": "العقدة",
@@ -3482,9 +3606,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "أفهم أن عناصر الوسائط هذه سيتم نشرها وجعلها عامة",
     "checkingAssets": "جارٍ التحقق من ظهور الوسائط…",
-    "comfyHubButton": "رفع إلى ComfyHub",
-    "comfyHubDescription": "ComfyHub هو مركز مجتمع ComfyUI الرسمي.\nسيكون لسير العمل الخاص بك صفحة عامة يمكن للجميع مشاهدتها.",
-    "comfyHubTitle": "رفع إلى ComfyHub",
+    "comfyHubButton": "رفع إلى Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows هو مركز مجتمع ComfyUI الرسمي.\nسيكون لسير العمل الخاص بك صفحة عامة يمكن للجميع مشاهدتها.",
+    "comfyHubTitle": "رفع إلى Comfy Workflows",
     "copyLink": "نسخ",
     "createLinkButton": "إنشاء رابط",
     "createLinkDescription": "عند إنشاء رابط لسير العمل الخاص بك، ستشارك عناصر الوسائط هذه مع سير العمل",
@@ -3558,6 +3682,7 @@
     "logout": "تسجيل الخروج",
     "mediaAssets": "الأصول الوسائطية",
     "modelLibrary": "مكتبة النماذج",
+    "modelLibraryLoadFailed": "فشل تحميل النماذج. تحقق من اتصال الخادم واستخدم التحديث لإعادة المحاولة.",
     "newBlankWorkflow": "إنشاء سير عمل جديد فارغ",
     "noFilesFound": "لم يتم العثور على ملفات",
     "noFilesFoundMessage": "قم برفع الملفات أو إنشاء محتوى لرؤيتها هنا",
@@ -3663,6 +3788,7 @@
       "viewList": "عرض القائمة"
     },
     "searchAssets": "بحث في الأصول",
+    "searchResultsCapped": "يتم عرض أول {limit} نتيجة. قم بتضييق البحث لرؤية نتائج أكثر تحديدًا.",
     "sidebar": "الشريط الجانبي",
     "templates": "القوالب",
     "themeToggle": "تبديل المظهر",
@@ -3794,6 +3920,7 @@
     "freeTier": {
       "description": "تشمل خطتك المجانية {credits} رصيد شهري لتجربة Comfy Cloud.",
       "descriptionGeneric": "تشمل خطتك المجانية رصيدًا شهريًا لتجربة Comfy Cloud.",
+      "descriptionQuota": "تشمل خطتك المجانية {runs} تشغيل للبدء مع Comfy Cloud — لا حاجة لبطاقة.",
       "nextRefresh": "سيتم تجديد رصيدك في {date}.",
       "outOfCredits": {
         "subtitle": "اشترك لفتح الشحن والمزيد",
@@ -3934,6 +4061,7 @@
       "waitingForSubscription": "أكمل اشتراكك في علامة التبويب الجديدة. سنكتشف تلقائيًا عند الانتهاء!"
     },
     "resubscribe": "إعادة الاشتراك",
+    "resubscribeFailed": "فشل في إعادة تفعيل الاشتراك",
     "resubscribeSuccess": "تمت إعادة تفعيل الاشتراك بنجاح",
     "resubscribeTo": "إعادة الاشتراك في {plan}",
     "saveYearly": "وفّر 20%",
@@ -4059,7 +4187,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "المرشحات:",
     "allTemplates": "جميع القوالب",
     "categories": "الفئات",
     "category": {
@@ -4084,9 +4211,12 @@
       "Video": "فيديو",
       "Video API": "واجهة برمجة تطبيقات الفيديو"
     },
+    "clearAllFilters": "مسح جميع الفلاتر",
     "error": {
       "templateNotFound": "النموذج \"{templateName}\" غير موجود"
     },
+    "filtersApplied": "{count} فلتر مُطبَّق | {count} فلاتر مُطبَّقة",
+    "filtersButton": "فلاتر",
     "licenseFilter": "الرخصة",
     "loading": "جارٍ تحميل القوالب...",
     "loadingMore": "تحميل المزيد من القوالب...",
@@ -4094,7 +4224,11 @@
     "modelsSelected": "{count} نماذج",
     "noResults": "لم يتم العثور على قوالب",
     "noResultsHint": "حاول تعديل البحث أو المرشحات",
-    "resetFilters": "مسح المرشحات",
+    "paidTemplate": {
+      "badgeLabel": "شريك API",
+      "credits": "يعمل باستخدام الاعتمادات",
+      "title": "قالب مميز"
+    },
     "resultsCount": "عرض {count} من {total} قالب",
     "runsOnFilter": "يعمل على",
     "runsOnSelected": "{count} يعمل على",
@@ -4106,6 +4240,7 @@
       "newest": "الأحدث",
       "popular": "الأكثر شيوعًا",
       "recommended": "موصى به",
+      "relevance": "الصلة",
       "searchPlaceholder": "بحث..."
     },
     "sorting": "ترتيب حسب",
@@ -4185,6 +4320,9 @@
     "useApiKeyTip": "نصيحة: لا يمكنك الدخول عبر تسجيل الدخول العادي؟ استخدم خيار مفتاح API الخاص بـ Comfy.",
     "userNotAuthenticated": "المستخدم غير مصدق"
   },
+  "typeform": {
+    "loadError": "فشل تحميل النموذج. يرجى المحاولة لاحقًا."
+  },
   "userSelect": {
     "enterUsername": "أدخل اسم المستخدم",
     "existingUser": "مستخدم حالي",
@@ -4227,6 +4365,21 @@
     "frontendOutdated": "إصدار الواجهة الأمامية {frontendVersion} قديم. الواجهة الخلفية تتطلب الإصدار {requiredVersion} أو أعلى.",
     "title": "تحذير توافق الإصدار",
     "updateFrontend": "تحديث الواجهة الأمامية"
+  },
+  "videoEdit": {
+    "adjustCrop": "تعديل منطقة الاقتصاص",
+    "adjustEndFrame": "تعديل إطار النهاية",
+    "adjustStartFrame": "تعديل إطار البداية",
+    "durationSeconds": "{count}ث",
+    "durationZero": "٠ث",
+    "fileSizeBytes": "{count} بايت",
+    "fileSizeKilobytes": "{count} ك.ب",
+    "fileSizeMegabytes": "{count} م.ب",
+    "fileSizeUnknown": "—",
+    "loadingFilmstrip": "جارٍ تحميل شريط الفيلم…",
+    "pause": "إيقاف مؤقت",
+    "play": "تشغيل",
+    "seekVideo": "تقديم الفيديو"
   },
   "vueNodesBanner": {
     "desc": "– سير عمل أكثر مرونة، أدوات جديدة قوية، مصمم للتوسعة",
@@ -4320,6 +4473,48 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "الرصيد المستخدم",
+        "date": "التاريخ",
+        "eventDetails": "تفاصيل الحدث",
+        "eventType": "نوع الحدث",
+        "user": "المستخدم"
+      },
+      "empty": "لا يوجد نشاط بعد.",
+      "fullActivity": "كل الأنشطة",
+      "hoverCard": {
+        "lastActivity": "آخر نشاط",
+        "partnerNodeUsed": "تم استخدام عقدة الشريك",
+        "totalCreditsUsed": "إجمالي الرصيد المستخدم"
+      }
+    },
+    "billingStatus": {
+      "ending": {
+        "body": "يحتفظ الأعضاء بكامل الوصول حتى ذلك الحين. أعد تفعيل الخطة للاحتفاظ بالأرصدة والمقاعد المشتركة.",
+        "reactivate": "إعادة تفعيل الخطة",
+        "title": "تنتهي خطة فريقك في {date}"
+      },
+      "outOfCredits": {
+        "addCredits": "إضافة أرصدة",
+        "body": "لقد استخدم فريقك جميع أرصدته. أضف المزيد من الأرصدة للمتابعة أو انتظر حتى يتم إعادة تعبئة الأرصدة في {date}.",
+        "bodyNoDate": "لقد استخدم فريقك جميع أرصدته. أضف المزيد من الأرصدة للمتابعة.",
+        "dismiss": "تجاهل",
+        "memberBody": "لقد استخدم فريقك جميع أرصدته. يجب على مسؤولي المساحة workspace إضافة المزيد من الأرصدة للمتابعة.",
+        "title": "نفدت الأرصدة"
+      },
+      "paused": {
+        "body": "تم إيقاف اشتراك هذه المساحة workspace مؤقتًا. يرجى تحديث الدفع للاستمرار.",
+        "memberBody": "تم إيقاف اشتراك هذه المساحة workspace مؤقتًا. يجب على مسؤولي المساحة تحديث طريقة الدفع.",
+        "title": "تم إيقاف الاشتراك مؤقتًا"
+      },
+      "updatePayment": "تحديث الدفع",
+      "warning": {
+        "body": "لم تتم معالجة آخر دفعة لك. سيتم إيقاف اشتراكك في {date} ما لم يتم تحديث الدفع.",
+        "bodyNoDate": "لم تتم معالجة آخر دفعة لك. يرجى تحديث الدفع لتجنب الإيقاف.",
+        "title": "تم رفض الدفع"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "تخفيض إلى عضو",
       "demoteMessage": "سيفقد صلاحيات الإدارة.",
@@ -4381,14 +4576,31 @@
         "cancelInvite": "إلغاء الدعوة",
         "changeRole": "تغيير الدور",
         "removeMember": "إزالة العضو",
-        "resendInvite": "إعادة إرسال الدعوة"
+        "resendInvite": "إعادة إرسال الدعوة",
+        "setCreditLimit": "تعيين حد الرصيد"
+      },
+      "activity": {
+        "daysAgo": "منذ {count} يوم | منذ {count} أيام",
+        "hoursAgo": "منذ {n} ساعة",
+        "justNow": "الآن",
+        "minutesAgo": "منذ {n} دقيقة"
       },
       "columns": {
+        "creditsUsed": "الرصيد الشهري",
         "expiryDate": "تاريخ الانتهاء",
         "inviteDate": "تاريخ الدعوة",
         "role": "الدور"
       },
       "contactUs": "تواصل معنا",
+      "creditLimitDialog": {
+        "description": "عند وصولهم لهذا الحد، لن يتمكنوا من تشغيل سير العمل.",
+        "invalidLimit": "أدخل حد رصيد أكبر من الصفر.",
+        "limitOption": "تقييد استخدام الرصيد الشهري إلى:",
+        "noLimit": "بدون حد",
+        "title": "تعيين حد شهري للرصيد لـ {name}",
+        "update": "تحديث الحد",
+        "warning": "لقد أنفق هذا المستخدم بالفعل {credits} رصيد. تعيين الحد عند أو أقل من الاستخدام الحالي سيمنع المزيد من التشغيل حتى الشهر القادم."
+      },
       "header": "الأعضاء",
       "membersCount": "{count}/٥٠ عضواً",
       "needMoreMembers": "تحتاج إلى المزيد من الأعضاء؟",
@@ -4411,6 +4623,45 @@
       "deleteWorkspaceDisabledTooltip": "يرجى إلغاء الاشتراك النشط لمساحة العمل أولاً",
       "editWorkspace": "تعديل تفاصيل مساحة العمل",
       "leaveWorkspace": "مغادرة مساحة العمل"
+    },
+    "partnerNodes": {
+      "accessMode": "وضع وصول عقد الشركاء",
+      "allowAllAccessHint": "قد يستغرق تطبيق ذلك حتى ١٠ دقائق عبر مساحة العمل.",
+      "allowAllAccessMessage": "ستصبح عقد الشركاء من جميع المزودين متاحة لكل عضو في مساحة العمل.",
+      "allowAllAccessTitle": "السماح بالوصول إلى جميع عقد الشركاء؟",
+      "columns": {
+        "nodes": "العقد",
+        "provider": "المزود"
+      },
+      "disableAll": "تعطيل الكل",
+      "disableAllMessage": "سيتم إيقاف جميع المزودين. لن تتوفر عقد الشركاء أثناء تقييد الوصول.",
+      "disableAllTitle": "تعطيل جميع المزودين؟",
+      "enableAll": "تفعيل الكل",
+      "loadError": "تعذر تحميل وصول عقد الشركاء.",
+      "loading": "جارٍ تحميل وصول عقد الشركاء",
+      "noResults": "لم يتم العثور على مزودين أو عقد شركاء",
+      "nodeCount": "{count} مفعّلة",
+      "ownerOnly": "فقط مالكو مساحة العمل يمكنهم تحديث وصول عقد الشركاء.",
+      "restrictAccessHint": "قد يستغرق تطبيق ذلك حتى ١٠ دقائق عبر مساحة العمل.",
+      "restrictAccessMessage": "سيتمكن أعضاء مساحة العمل فقط من استخدام عقد الشركاء من المزودين الذين تقوم بتفعيلهم.",
+      "restrictAccessTitle": "تقييد الوصول إلى عقد الشركاء؟",
+      "restricted": "مقيد",
+      "restrictedDescription": "فقط عقد الشركاء من المزودين المفعّلين ستكون متاحة. قد يستغرق تطبيق التغييرات حتى ١٠ دقائق.",
+      "retry": "حاول مرة أخرى",
+      "saveError": "تعذر تحديث وصول عقد الشركاء. حاول مرة أخرى.",
+      "searchPlaceholder": "ابحث عن المزودين وعقد الشركاء...",
+      "tableLabel": "مزودو عقد الشركاء",
+      "title": "وصول عقد الشركاء",
+      "toggleProvider": "تعيين الوصول لـ {provider}",
+      "unavailable": "وصول عقد الشركاء غير متاح لهذه المساحة.",
+      "unrestricted": "غير مقيد",
+      "unrestrictedDescription": "عقد الشركاء من جميع المزودين متاحة للجميع. تعطيل المزودين سيجعل الوضع مقيدًا."
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "النشاط",
+        "overview": "الرصيد"
+      }
     },
     "removeMemberDialog": {
       "error": "فشل في إزالة العضو",

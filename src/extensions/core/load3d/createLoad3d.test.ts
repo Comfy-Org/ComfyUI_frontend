@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapter, ModelAdapterCapabilities } from './ModelAdapter'
@@ -20,7 +20,14 @@ vi.mock('three', async () => {
         rendererCtor(opts)
       }
       setSize() {}
+      setPixelRatio() {}
       setClearColor() {}
+      getSize(target: { set(x: number, y: number): unknown }) {
+        target.set(300, 300)
+        return target
+      }
+      forceContextLoss() {}
+      dispose() {}
     }
   }
 })
@@ -163,6 +170,12 @@ function makeAdapter(overrides: Partial<ModelAdapter> = {}): ModelAdapter {
 }
 
 describe('createLoad3d', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn()
+    } as unknown as ReturnType<HTMLCanvasElement['getContext']>)
+  })
+
   it('constructs the renderer with alpha + antialias and appends it to the container', () => {
     rendererCtor.mockClear()
     const container = createContainer()
