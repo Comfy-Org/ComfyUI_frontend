@@ -3,8 +3,13 @@
     :class="
       cn(
         'relative flex h-full flex-col gap-4 overflow-y-auto p-4 pt-6',
-        checkoutStep === 'pricing' &&
-          'xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)]'
+        (checkoutStep === 'pricing' || isEmbeddedPaymentStep) &&
+          'xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)]',
+        // Pin the embedded step to the pricing table's exact height (min-h
+        // alone is a floor — the Stripe iframe would stretch the dialog once
+        // mounted) and hand scrolling to the payment column so the summary
+        // panel stays fixed; below xl the whole dialog scrolls as before.
+        isEmbeddedPaymentStep && 'xl:h-[min(740px,90vh)] xl:overflow-hidden'
       )
     "
   >
@@ -30,7 +35,10 @@
       <i class="pi pi-times text-xl" />
     </Button>
 
-    <div class="flex flex-col items-center gap-3">
+    <!-- The embedded payment step titles itself ("Confirm your payment");
+         stacking "Choose a Plan" above it doubled the header and made this
+         step taller than the pricing table. -->
+    <div v-if="!isEmbeddedPaymentStep" class="flex flex-col items-center gap-3">
       <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
         {{ $t('subscription.descriptionWorkspace') }}
       </h2>
@@ -122,7 +130,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
@@ -147,6 +155,17 @@ const emit = defineEmits<{
 
 const stripePaymentElementEnabled = Boolean(
   import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+)
+
+// The embedded-payment confirm step keeps the pricing table's dialog
+// dimensions so stepping between them reads as one dialog changing content,
+// not two dialogs. Transition previews (no payment form) stay narrow.
+const isEmbeddedPaymentStep = computed(
+  () =>
+    checkoutStep.value === 'preview' &&
+    stripePaymentElementEnabled &&
+    (previewVariant.value === 'team-new' ||
+      previewVariant.value === 'personal-new')
 )
 
 const {
