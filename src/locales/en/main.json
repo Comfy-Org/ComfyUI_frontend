@@ -2957,7 +2957,9 @@
       "inviteTitle": "Invite your team",
       "planUpdated": "Your plan has been successfully updated.",
       "receiptEmailed": "A receipt has been emailed to you.",
-      "sendInvites": "Send invites"
+      "sendInvites": "Send invites",
+      "promoApplied": "{code} applied.",
+      "promoRenews": "Renews at {amount} on {date}"
     }
   },
   "userSettings": {

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-6">
+  <div class="flex min-h-0 flex-col gap-6 xl:flex-1">
     <div class="flex items-start justify-between gap-4">
       <div>
         <h3 class="m-0 text-base font-semibold text-base-foreground">
@@ -16,17 +16,23 @@
     >
       {{ configurationError }}
     </div>
-    <div ref="paymentElementTarget" />
+    <!-- Only the form region scrolls; the header above and the pay action
+         below hold their positions regardless of which method is expanded. -->
     <div
-      v-if="selectedMethodType === 'alipay'"
-      class="flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-xs text-muted-foreground"
+      class="flex flex-col gap-6 xl:min-h-0 xl:flex-1 xl:overflow-x-hidden xl:overflow-y-auto xl:pr-1"
     >
-      <i
-        class="text-success-foreground mt-0.5 icon-[lucide--shield-check] size-4 shrink-0"
-      />
-      <p class="m-0">
-        {{ $t('subscription.preview.alipayRenewalNote') }}
-      </p>
+      <div ref="paymentElementTarget" />
+      <div
+        v-if="selectedMethodType === 'alipay'"
+        class="flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-xs text-muted-foreground"
+      >
+        <i
+          class="text-success-foreground mt-0.5 icon-[lucide--shield-check] size-4 shrink-0"
+        />
+        <p class="m-0">
+          {{ $t('subscription.preview.alipayRenewalNote') }}
+        </p>
+      </div>
     </div>
     <Button
       :variant="verificationPending ? 'tertiary' : 'inverted'"

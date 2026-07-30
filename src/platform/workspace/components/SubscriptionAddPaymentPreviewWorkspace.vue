@@ -116,19 +116,21 @@
       <div v-if="usePaymentElement" class="pb-4">
         <Button
           v-if="!isPromoOpen"
-          variant="link"
+          variant="secondary"
           size="lg"
-          class="self-start px-0"
-          @click="isPromoOpen = true"
+          class="self-start"
+          @click="openPromo"
         >
           {{ $t('subscription.preview.addPromoCode') }}
         </Button>
         <Input
           v-else
+          ref="promoInput"
           v-model="promotionCode"
           class="w-full"
           :placeholder="$t('subscription.preview.promotionCodePlaceholder')"
           autocomplete="off"
+          @blur="onPromoBlur"
         />
       </div>
 
@@ -165,7 +167,7 @@
         cn(
           'flex flex-col gap-2 pt-8',
           usePaymentElement &&
-            'xl:min-h-0 xl:min-w-0 xl:flex-1 xl:overflow-x-hidden xl:overflow-y-auto xl:px-16 xl:py-10'
+            'xl:min-h-0 xl:min-w-0 xl:flex-1 xl:px-16 xl:py-10'
         )
       "
     >
@@ -209,7 +211,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -260,6 +262,21 @@ const { t, n } = useI18n()
 
 const isPromoOpen = ref(false)
 const promotionCode = ref('')
+const promoInput = ref<InstanceType<typeof Input>>()
+
+function openPromo() {
+  isPromoOpen.value = true
+  void nextTick(() => {
+    const el = promoInput.value?.$el
+    if (el instanceof HTMLInputElement) el.focus()
+  })
+}
+
+// An empty field collapses back to the button on blur; a typed code keeps
+// the field so the entered value stays visible.
+function onPromoBlur() {
+  if (!promotionCode.value.trim()) isPromoOpen.value = false
+}
 
 function openVerification() {
   if (!actionUrl) return
