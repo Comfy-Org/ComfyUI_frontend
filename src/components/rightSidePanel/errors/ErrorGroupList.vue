@@ -539,6 +539,11 @@ const selectionStripNodeLabel = computed(
 const workflowErrorCount = computed(() =>
   allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
 )
+const workflowBlockingErrorCount = computed(() =>
+  allErrorGroups.value
+    .filter((group) => group.severity === 'error')
+    .reduce((sum, group) => sum + group.count, 0)
+)
 const hasErrorSeverity = computed(() =>
   allErrorGroups.value.some((group) => group.severity === 'error')
 )
@@ -565,7 +570,7 @@ const strip = computed<ContextStrip>(() => {
           : 'rightSidePanel.nodesAffected',
       count:
         errorNodeCount.value === 0
-          ? workflowErrorCount.value
+          ? workflowBlockingErrorCount.value
           : errorNodeCount.value
     }
   }

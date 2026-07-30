@@ -527,7 +527,15 @@ describe('TabErrors.vue', () => {
 
   it('uses an error count for mixed context with no known node ids', () => {
     renderComponent((pinia) => {
-      useMissingNodesErrorStore(pinia).setMissingNodeTypes(['MissingNode'])
+      useMissingModelStore(pinia).setMissingModels([
+        {
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'workflow-model.safetensors',
+          isMissing: true,
+          isAssetSupported: false
+        }
+      ])
       useExecutionErrorStore(pinia).recordPromptError({
         type: 'prompt_no_outputs',
         message: 'No outputs',
@@ -536,7 +544,7 @@ describe('TabErrors.vue', () => {
     })
 
     expect(screen.getByTestId('selection-context-strip')).toHaveTextContent(
-      '2 errors'
+      '1 error'
     )
   })
 
