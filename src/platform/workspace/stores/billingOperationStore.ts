@@ -308,8 +308,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       if (!operation) return
       cleanup(opId)
       trackSuccessTelemetry(operation)
-      await applySuccessSideEffects(operation)
-      resolveTerminal(opId, operation)
+      try {
+        await applySuccessSideEffects(operation)
+      } finally {
+        resolveTerminal(opId, operation)
+      }
       return
     }
 
