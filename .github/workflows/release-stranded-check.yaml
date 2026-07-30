@@ -68,12 +68,18 @@ jobs:
             exit 0
           fi
           BODY=$(jq --arg ch "$SLACK_CHANNEL_ID" '. + {channel: $ch}' payload.json)
-          curl -sf -X POST \
+          # Slack answers HTTP 200 with {"ok":false,"error":...} on auth and
+          # channel errors, so -f alone would report a silent drop as success.
+          RESPONSE=$(curl -sS -X POST \
+            --connect-timeout 10 --max-time 30 \
             -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$BODY" \
-            -o /dev/null \
-            https://slack.com/api/chat.postMessage
+            https://slack.com/api/chat.postMessage)
+          if ! jq -e '.ok == true' <<<"$RESPONSE" >/dev/null; then
+            echo "Slack rejected the notification: $(jq -r '.error // "unparseable response"' <<<"$RESPONSE")"
+            exit 1
+          fi
 
       - name: Job summary
         if: always()

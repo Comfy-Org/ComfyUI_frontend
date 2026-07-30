@@ -12,7 +12,7 @@
  * the newest minor published to PyPI. Every other release branch has stranded
  * commits by design (dead lines, unreleased work) and would be pure noise.
  */
-import { execSync } from 'child_process'
+import { execFileSync } from 'child_process'
 
 export interface Commit {
   sha: string
@@ -23,6 +23,7 @@ export type FindingKind =
   | 'stranded-commits'
   | 'published-version-lag'
   | 'published-version-missing'
+  | 'pin-lag'
 
 export interface Finding {
   kind: FindingKind
@@ -111,12 +112,35 @@ export function evaluateLine(input: LineInput): {
   }
 }
 
-function git(command: string): string {
-  return execSync(command, { encoding: 'utf-8' }).trim()
+// execFileSync, never execSync: git ref names legitimately permit `;`, `$()`,
+// backticks and `|`, so a tag name reaching a shell is arbitrary code execution.
+/**
+ * A published fix that ComfyUI does not pin has still reached nobody. Only
+ * same-line lag is a defect: stable intentionally trails the newest minor.
+ */
+export function evaluatePin({
+  pinned,
+  newestOnPinnedLine
+}: {
+  pinned: string
+  newestOnPinnedLine: string
+}): Finding | null {
+  if (pinned === newestOnPinnedLine) return null
+  return {
+    kind: 'pin-lag',
+    branch: releaseBranchFor(minorLineOf(pinned) ?? pinned),
+    severity: 'failure',
+    strandedFixCount: 0,
+    message: `ComfyUI pins ${pinned} but ${newestOnPinnedLine} is published on that line — stable users do not have it yet.`
+  }
+}
+
+function git(...args: string[]): string {
+  return execFileSync('git', args, { encoding: 'utf-8' }).trim()
 }
 
 async function fetchText(url: string): Promise<string> {
-  const response = await fetch(url)
+  const response = await fetch(url, { signal: AbortSignal.timeout(30_000) })
   if (!response.ok) throw new Error(`${url} → HTTP ${response.status}`)
   return response.text()
 }
@@ -142,14 +166,14 @@ export function newestStableVersion(versions: string[]): string | null {
 
 function latestTagOn(branch: string): string | null {
   try {
-    return git(`git describe --tags --abbrev=0 origin/${branch}`)
+    return git('describe', '--tags', '--abbrev=0', `origin/${branch}`)
   } catch {
     return null
   }
 }
 
 function commitsPastTag(tag: string, branch: string): Commit[] {
-  const raw = git(`git log ${tag}..origin/${branch} --format=%H%x1f%s`)
+  const raw = git('log', `${tag}..origin/${branch}`, '--format=%H%x1f%s')
   if (!raw) return []
   return raw.split('\n').map((line) => {
     const [sha, subject] = line.split('\x1f')
@@ -186,7 +210,7 @@ async function main(): Promise<void> {
   const allFindings: Finding[] = []
 
   for (const branch of linesToCheck) {
-    git(`git fetch origin ${branch}:refs/remotes/origin/${branch} --tags`)
+    git('fetch', 'origin', `${branch}:refs/remotes/origin/${branch}`, '--tags')
     const latestTag = latestTagOn(branch)
     if (!latestTag) {
       console.error(`${branch}: no tag found, skipping`)
@@ -201,6 +225,15 @@ async function main(): Promise<void> {
       commits: commitsPastTag(latestTag, branch)
     })
     allFindings.push(...findings)
+  }
+
+  const pinnedLine = minorLineOf(pinned)
+  const newestOnPinnedLine = newestStableVersion(
+    Object.keys(pypi.releases).filter((v) => minorLineOf(v) === pinnedLine)
+  )
+  if (newestOnPinnedLine) {
+    const pinFinding = evaluatePin({ pinned, newestOnPinnedLine })
+    if (pinFinding) allFindings.push(pinFinding)
   }
 
   if (allFindings.length === 0) {
