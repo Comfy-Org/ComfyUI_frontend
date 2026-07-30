@@ -420,7 +420,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Canvas Toggle Lock',
       category: 'view-controls' as const,
       function: () => {
-        app.canvas.state.readOnly = !app.canvas.state.readOnly
+        app.canvas.read_only = !app.canvas.read_only
       }
     },
     {
@@ -429,7 +429,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Lock Canvas',
       category: 'view-controls' as const,
       function: () => {
-        app.canvas.state.readOnly = true
+        app.canvas.read_only = true
       }
     },
     {
@@ -437,7 +437,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-lock-open',
       label: 'Unlock Canvas',
       function: () => {
-        app.canvas.state.readOnly = false
+        app.canvas.read_only = false
       }
     },
     {
@@ -517,7 +517,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         useTelemetry()?.trackWorkflowExecution()
 
-        await app.queuePrompt(0, batchCount)
+        await app.queuePrompt(0, batchCount, { intent: metadata })
       }
     },
     {
@@ -540,7 +540,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         useTelemetry()?.trackWorkflowExecution()
 
-        await app.queuePrompt(-1, batchCount)
+        await app.queuePrompt(-1, batchCount, { intent: metadata })
       }
     },
     {
@@ -584,7 +584,10 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
         useTelemetry()?.trackWorkflowExecution()
-        await app.queuePrompt(0, batchCount, executionIds)
+        await app.queuePrompt(0, batchCount, {
+          queueNodeIds: executionIds,
+          intent: metadata
+        })
       }
     },
     {

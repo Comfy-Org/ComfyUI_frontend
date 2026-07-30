@@ -6,49 +6,26 @@ Bootstrap the ComfyUI Frontend monorepo with all necessary dependencies and veri
 
 This command will:
 
-1. Install pnpm package manager (if not present)
-2. Install all project dependencies
-3. Verify the project builds successfully
-4. Run unit tests to ensure functionality
-5. Start development server to verify frontend boots correctly
+1. Run `.agents/setup` to install the pinned Node.js/pnpm toolchain, dependencies, and Playwright Chromium
+2. Verify the project builds successfully
+3. Run unit tests to ensure functionality
+4. Start development server to verify frontend boots correctly
 
-## Prerequisites Check
+## Step 1: Bootstrap Environment
 
-First, let's verify the environment:
-
-```bash
-# Check Node.js version (should be >= 24)
-node --version
-
-# Check if we're in a git repository
-git status
-```
-
-## Step 1: Install pnpm
+The `.agents/setup` script handles the full toolchain setup — Node.js from `.nvmrc`, pnpm from `package.json#packageManager`, workspace dependencies, and Playwright Chromium:
 
 ```bash
-# Check if pnpm is already installed
-pnpm --version 2>/dev/null || {
-  echo "Installing pnpm..."
-  npm install -g pnpm
-}
-
-# Verify pnpm installation
-pnpm --version
+source .agents/setup
 ```
 
-## Step 2: Install Dependencies
+For fast verification that the toolchain is already in place (e.g. after an environment restart), use the readiness check instead:
 
 ```bash
-# Install all dependencies using pnpm
-echo "Installing project dependencies..."
-pnpm install
-
-# Verify node_modules exists and has packages
-ls -la node_modules | head -5
+source .agents/resume
 ```
 
-## Step 3: Verify Build
+## Step 2: Verify Build
 
 ```bash
 # Run TypeScript type checking
@@ -63,7 +40,7 @@ pnpm build
 ls -la dist/
 ```
 
-## Step 4: Run Unit Tests
+## Step 3: Run Unit Tests
 
 ```bash
 # Run unit tests
@@ -79,7 +56,7 @@ fi
 echo "✅ Unit tests passed successfully"
 ```
 
-## Step 5: Verify Development Server
+## Step 4: Verify Development Server
 
 ```bash
 # Start development server in background
@@ -106,7 +83,7 @@ else
 fi
 ```
 
-## Step 6: Final Verification
+## Step 5: Final Verification
 
 ```bash
 # Run linting to ensure code quality
@@ -135,11 +112,9 @@ echo "3. Check README.md for additional setup instructions"
 
 If any step fails:
 
-1. **pnpm installation fails**: Try using `curl -fsSL https://get.pnpm.io/install.sh | sh -`
-2. **Dependencies fail to install**: Try clearing cache with `pnpm store prune` and retry
-3. **Build fails**: Check for TypeScript errors and fix them first
-4. **Tests fail**: Review test output and fix failing tests
-5. **Dev server fails**: Check if port 5173 is already in use
+2. **Build fails**: Check for TypeScript errors and fix them first
+3. **Tests fail**: Review test output and fix failing tests
+4. **Dev server fails**: Check if port 5173 is already in use
 
 ## Manual Verification Steps
 
@@ -149,10 +124,3 @@ After running the setup, manually verify:
 2. **Build artifacts**: `ls dist/` should show built files
 3. **Server accessible**: Open http://localhost:5173 in browser
 4. **Hot reload works**: Edit a file and see changes reflect
-
-## Environment Requirements
-
-- Node.js >= 24
-- Git repository
-- Internet connection for package downloads
-- Available ports (typically 5173 for dev server)
