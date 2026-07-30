@@ -195,6 +195,37 @@ describe('MissingModelRow', () => {
     vi.restoreAllMocks()
   })
 
+  it('does not prefetch metadata for non-allowlisted URLs outside cloud', () => {
+    mockIsCloud.value = false
+
+    renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))
+
+    expect(mockFetchModelMetadata).not.toHaveBeenCalled()
+  })
+
+  it('does not prefetch metadata in cloud', () => {
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+
+    renderRow(model)
+
+    expect(mockFetchModelMetadata).not.toHaveBeenCalled()
+  })
+
+  it('prefetches metadata for allowlisted URLs outside cloud', () => {
+    mockIsCloud.value = false
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+
+    renderRow(model)
+
+    expect(mockFetchModelMetadata).toHaveBeenCalledWith(
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+    )
+  })
+
   it('opens the model import dialog from the cloud row', async () => {
     const user = userEvent.setup()
     renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))

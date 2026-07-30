@@ -156,6 +156,11 @@ interface CivitaiModelVersionResponse {
 const metadataCache = new Map<string, ModelMetadata>()
 const inflight = new Map<string, Promise<ModelMetadata>>()
 
+export function clearMetadataCache(): void {
+  metadataCache.clear()
+  inflight.clear()
+}
+
 async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
   try {
     const pathname = new URL(url).pathname
