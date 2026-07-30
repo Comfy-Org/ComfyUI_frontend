@@ -335,6 +335,7 @@ export interface BillingOpStatusResponse {
   started_at: string
   completed_at?: string
   action_url?: string
+  payment_intent_client_secret?: string
 }
 
 interface BillingEvent {

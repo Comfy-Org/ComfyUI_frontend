@@ -1,4 +1,5 @@
 import type { ToastMessageOptions } from 'primevue/toast'
+import { loadStripe } from '@stripe/stripe-js'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -25,6 +26,9 @@ const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000
 const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
 const SUBSCRIPTION_AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
+const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+  : Promise.resolve(null)
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
@@ -67,6 +71,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const receivedToasts = new Map<string, ToastMessageOptions>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
+  const handledPaymentActions = new Set<string>()
 
   const hasPendingOperations = computed(() =>
     [...operations.value.values()].some((op) => op.status === 'pending')
@@ -191,6 +196,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
       if (stopIfTimedOut(opId, operation)) return
 
+      if (response.payment_intent_client_secret) {
+        await handlePaymentIntentAction(
+          opId,
+          response.payment_intent_client_secret
+        )
+      }
       updateOperationActionUrl(opId, validateActionUrl(response.action_url))
       scheduleNextPoll(opId)
     } catch {
@@ -228,10 +239,44 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function hasTimedOut(operation: BillingOperation): boolean {
     const elapsed = Date.now() - operation.startedAt
+    if (operation.authenticationRequiredSeen)
+      return elapsed > SUBSCRIPTION_AUTHENTICATION_TIMEOUT_MS
     if (operation.type !== 'subscription') return elapsed > TIMEOUT_MS
-    return operation.authenticationRequiredSeen
-      ? elapsed > SUBSCRIPTION_AUTHENTICATION_TIMEOUT_MS
-      : elapsed > SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS
+    return elapsed > SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS
+  }
+
+  async function handlePaymentIntentAction(opId: string, clientSecret: string) {
+    if (handledPaymentActions.has(opId)) return
+    handledPaymentActions.add(opId)
+    updateAuthenticationRequired(opId)
+
+    const stripe = await stripePromise
+    if (!stripe) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('billingOperation.authenticationUnavailable')
+      })
+      return
+    }
+
+    const result = await stripe.handleNextAction({ clientSecret })
+    if (result.error) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('billingOperation.authenticationFailed'),
+        detail: result.error.message
+      })
+      return
+    }
+  }
+
+  function updateAuthenticationRequired(opId: string) {
+    const operation = operations.value.get(opId)
+    if (!operation || operation.status !== 'pending') return
+    operations.value = new Map(operations.value).set(opId, {
+      ...operation,
+      authenticationRequiredSeen: true
+    })
   }
 
   function stopIfTimedOut(opId: string, operation: BillingOperation): boolean {
@@ -474,6 +519,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       timeouts.delete(opId)
     }
     intervals.delete(opId)
+    handledPaymentActions.delete(opId)
 
     // Remove the "received" toast
     const receivedToast = receivedToasts.get(opId)
