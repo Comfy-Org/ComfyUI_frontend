@@ -453,8 +453,8 @@
    they stop inheriting the charcoal scale that .dark-theme applies to every
    non-light palette. Offsets are measured from the real charcoal scale. */
 :root[data-color-palette]:not([data-color-palette='dark']):not(
-    [data-color-palette='light']
-  ) {
+  [data-color-palette='light']
+) {
   --palette-surface-700: oklch(from var(--comfy-menu-bg) calc(l + 0.0417) c h);
   --palette-surface-600: oklch(from var(--comfy-menu-bg) calc(l + 0.0675) c h);
   --palette-surface-400: oklch(from var(--comfy-menu-bg) calc(l + 0.1123) c h);
