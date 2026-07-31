@@ -99,14 +99,6 @@
         </div>
       </div>
 
-      <!-- Promo code (Figma 5379-30077): below the money block, directly
-           above the divider — adjacent to the number it changes. Validation
-           and discount math need the BE preview endpoint; until then the
-           code rides along at confirm exactly as before. -->
-      <div v-if="usePaymentElement" class="pb-4">
-        <SubscriptionPromoCodeField v-model="promotionCode" />
-      </div>
-
       <!-- Total Due Section -->
       <div
         :class="
@@ -204,7 +196,6 @@
         v-if="captureMode"
         :amount-cents="amountDueCents"
         :is-loading
-        :promotion-code="promotionCode"
         :verification-pending="Boolean(actionUrl)"
         @confirm="confirmPayment"
       />
@@ -254,7 +245,6 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import SubscriptionPromoCodeField from './SubscriptionPromoCodeField.vue'
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 
@@ -296,7 +286,7 @@ const {
 
 const emit = defineEmits<{
   addCreditCard: []
-  confirmPayment: [confirmationToken: string, promotionCode?: string]
+  confirmPayment: [confirmationToken: string]
   back: []
   changePaymentMethod: []
 }>()
@@ -329,15 +319,13 @@ watch(selectedMethod, (value) => {
   emit('changePaymentMethod')
 })
 
-const promotionCode = ref('')
-
 function openVerification() {
   if (!actionUrl) return
   window.open(actionUrl, '_blank', 'noopener,noreferrer')
 }
 
-function confirmPayment(confirmationToken: string, promotionCode?: string) {
-  emit('confirmPayment', confirmationToken, promotionCode)
+function confirmPayment(confirmationToken: string) {
+  emit('confirmPayment', confirmationToken)
 }
 
 const tierName = computed(() =>
