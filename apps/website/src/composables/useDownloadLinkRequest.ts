@@ -2,9 +2,10 @@ import type { Analytics } from '@customerio/cdp-analytics-browser'
 
 import type { Locale } from '../i18n/translations'
 
-// An empty key hides the form (dark launch) until the real website-source write key replaces it.
+// Public client-side key for the "comfy.org website" Customer.io source,
+// overridable per-environment; setting the env var to '' disables the form.
 export const CUSTOMER_IO_WEBSITE_WRITE_KEY: string =
-  import.meta.env.PUBLIC_CUSTOMERIO_WRITE_KEY ?? ''
+  import.meta.env.PUBLIC_CUSTOMERIO_WRITE_KEY ?? '77380595dd956c04ac7c'
 
 let analyticsPromise: Promise<Analytics> | null = null
 
