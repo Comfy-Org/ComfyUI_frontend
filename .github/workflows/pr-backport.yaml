@@ -371,9 +371,20 @@ jobs:
             fi
             echo "::warning::Could not comment on PR #${PR_NUMBER} (${context}); opening a tracking issue instead."
             local title="Backport of #${PR_NUMBER} to ${target} failed"
-            gh issue create --title "${title}" --body "${body}" --label backport \
-              || gh issue create --title "${title}" --body "${body}" \
-              || echo "::warning::Also failed to open a tracking issue for #${PR_NUMBER} (${context})."
+            # gh issue create is not idempotent, so a blind retry can file the
+            # issue twice when the first call actually succeeded but timed out.
+            # Only drop --label when gh specifically rejected the label.
+            local err
+            if err=$(gh issue create --title "${title}" --body "${body}" --label backport 2>&1); then
+              return
+            fi
+            echo "${err}"
+            if grep -qi "label.*not found\|could not add label\|'backport' not found" <<<"${err}"; then
+              gh issue create --title "${title}" --body "${body}" \
+                || echo "::warning::Also failed to open a tracking issue for #${PR_NUMBER} (${context})."
+            else
+              echo "::warning::Could not open a tracking issue for #${PR_NUMBER} (${context})."
+            fi
           }
 
           for backport in ${{ steps.backport.outputs.success }}; do
