@@ -116,6 +116,7 @@ import MissingModelRow from './MissingModelRow.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
+  escapeParameter: true,
   messages: { en: enMessages },
   missingWarn: false,
   fallbackWarn: false
@@ -177,6 +178,7 @@ function renderRow(
 describe('MissingModelRow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    i18n.global.setLocaleMessage('en', enMessages)
     delete window.__comfyDesktop2
     mockIsCloud.value = true
     mockRootGraph.value = null
@@ -192,6 +194,37 @@ describe('MissingModelRow', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('does not prefetch metadata for non-allowlisted URLs outside cloud', () => {
+    mockIsCloud.value = false
+
+    renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))
+
+    expect(mockFetchModelMetadata).not.toHaveBeenCalled()
+  })
+
+  it('does not prefetch metadata in cloud', () => {
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+
+    renderRow(model)
+
+    expect(mockFetchModelMetadata).not.toHaveBeenCalled()
+  })
+
+  it('prefetches metadata for allowlisted URLs outside cloud', () => {
+    mockIsCloud.value = false
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+
+    renderRow(model)
+
+    expect(mockFetchModelMetadata).toHaveBeenCalledWith(
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+    )
   })
 
   it('opens the model import dialog from the cloud row', async () => {
@@ -444,6 +477,46 @@ describe('MissingModelRow', () => {
     expect(
       screen.getByTestId('missing-model-download')
     ).toHaveAccessibleDescription(gatedModelDownloadTooltip)
+  })
+
+  it('uses parameterized accessible labels for gated model actions', async () => {
+    mockIsCloud.value = false
+    i18n.global.setLocaleMessage('en', {
+      ...enMessages,
+      g: {
+        ...enMessages.g,
+        download: 'Visible download'
+      },
+      rightSidePanel: {
+        ...enMessages.rightSidePanel,
+        missingModels: {
+          ...enMessages.rightSidePanel.missingModels,
+          downloadModel: '{model} download action',
+          openHuggingFaceRepo: '{model} repository action'
+        }
+      }
+    })
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.name = 'SD1.5/v1-5-pruned-emaonly.safetensors'
+    model.representative.url =
+      'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+
+    renderRow(model, vi.fn(), false)
+    const store = useMissingModelStore()
+    store.setGatedRepoUrl(
+      model.representative.url,
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+    await nextTick()
+
+    expect(screen.getByTestId('missing-model-download')).toHaveAccessibleName(
+      'SD1.5/v1-5-pruned-emaonly.safetensors download action'
+    )
+    expect(
+      screen.getByTestId('missing-model-gated-access')
+    ).toHaveAccessibleName(
+      'SD1.5/v1-5-pruned-emaonly.safetensors repository action'
+    )
   })
 
   it('opens gated repo action separately from the download action', async () => {

@@ -420,7 +420,7 @@ export const isCivitaiModelUrl = (url: string): boolean => {
 /**
  * Converts a Hugging Face download URL to a repository page URL
  * @param url The download URL to convert
- * @returns The repository page URL or the original URL if conversion fails
+ * @returns The repository page URL or the Hugging Face root if conversion fails
  * @example
  * downloadUrlToHfRepoUrl(
  *  'https://huggingface.co/bfl/FLUX.1/resolve/main/flux1-canny-dev.safetensors?download=true'
@@ -439,8 +439,8 @@ export const downloadUrlToHfRepoUrl = (url: string): string => {
     const repoPath = repoPathMatch?.[1]?.replace(/^\//, '') || ''
 
     return `https://huggingface.co/${repoPath}`
-  } catch (error) {
-    return url
+  } catch {
+    return 'https://huggingface.co/'
   }
 }
 

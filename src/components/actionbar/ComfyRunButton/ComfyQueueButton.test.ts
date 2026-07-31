@@ -14,11 +14,8 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import {
-  TaskItemImpl,
-  useQueueSettingsStore,
-  useQueueStore
-} from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
