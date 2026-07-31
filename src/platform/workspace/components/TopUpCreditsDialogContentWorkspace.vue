@@ -273,7 +273,15 @@ async function handleBuy() {
 
     const amountCents = payAmount.value * 100
     const response = await topup(amountCents)
-    if (!response) return
+    if (!response) {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'unknown'
+      })
+      return
+    }
 
     if (response.status === 'completed') {
       telemetry?.trackBillingEvent({

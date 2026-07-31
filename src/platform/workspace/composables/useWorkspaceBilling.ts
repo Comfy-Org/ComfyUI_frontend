@@ -349,6 +349,9 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         // fetchStatus records its own read failure; the cancellation still
         // holds, so the operation is not in error.
         error.value = null
+        // No billing operation was ever created for this request, so
+        // billing_op_id is omitted here — see the JSDoc on
+        // BillingOperationBillingEvent.billing_op_id in telemetry/types.ts.
         telemetry?.trackBillingEvent({
           operation: 'operation',
           stage: 'succeeded',

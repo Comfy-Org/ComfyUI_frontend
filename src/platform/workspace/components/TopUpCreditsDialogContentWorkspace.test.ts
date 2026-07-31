@@ -10,7 +10,8 @@ import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorks
 
 const mockFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
-const mockTopup = vi.fn<(amountCents: number) => Promise<CreateTopupResponse>>()
+const mockTopup =
+  vi.fn<(amountCents: number) => Promise<CreateTopupResponse | void>>()
 const mockStartOperation = vi.fn()
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
@@ -171,6 +172,20 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       operation: 'topup',
       stage: 'started',
       outcome: 'pending'
+    })
+  })
+
+  it('reports failure telemetry when topup resolves with no response', async () => {
+    mockTopup.mockResolvedValue(undefined)
+
+    renderDialog()
+    await clickAddCredits()
+
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: 'unknown'
     })
   })
 

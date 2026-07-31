@@ -2727,6 +2727,26 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleResubscribe', () => {
+    it('fires a started event before resubscribe resolves', async () => {
+      const checkout = await setup('subscribe_to_run')
+      mockResubscribe.mockResolvedValueOnce({
+        billing_op_id: 'op-4',
+        status: 'active'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleResubscribe()
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'resubscribe',
+        stage: 'started',
+        outcome: 'pending',
+        source: 'pricing_dialog',
+        payment_intent_source: 'subscribe_to_run'
+      })
+    })
+
     it('emits close on success', async () => {
       const checkout = await setup('subscribe_to_run')
       mockResubscribe.mockResolvedValueOnce({

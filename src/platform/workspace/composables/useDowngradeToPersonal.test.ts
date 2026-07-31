@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {
@@ -81,13 +82,6 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackBillingEvent: mockTrackBillingEvent
   })
-}))
-
-vi.mock('@/platform/telemetry/utils/billingFailureCategory', () => ({
-  categorizeBillingApiError: (err: unknown) =>
-    err instanceof Error && err.name === 'WorkspaceApiError'
-      ? 'network'
-      : 'unknown'
 }))
 
 function createMember(
@@ -715,9 +709,29 @@ describe('useDowngradeToPersonal', () => {
 
     it('categorizes an uncaught previewSubscribe failure via the shared classifier', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
-      const workspaceApiError = new Error('offline')
-      workspaceApiError.name = 'WorkspaceApiError'
-      mockPreviewSubscribe.mockRejectedValue(workspaceApiError)
+      mockPreviewSubscribe.mockRejectedValue(
+        new WorkspaceApiError('offline', 502)
+      )
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'offline'
+      )
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: 1,
+        member_removal_failures: 0,
+        target_tier: undefined,
+        failure_category: 'api_rejected'
+      })
+    })
+
+    it('categorizes a status-less previewSubscribe failure as network', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockRejectedValue(new WorkspaceApiError('offline'))
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
@@ -737,9 +751,7 @@ describe('useDowngradeToPersonal', () => {
 
     it('categorizes a member-removal failure via the shared classifier', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
-      const workspaceApiError = new Error('rejected')
-      workspaceApiError.name = 'WorkspaceApiError'
-      mockRemoveMember.mockRejectedValue(workspaceApiError)
+      mockRemoveMember.mockRejectedValue(new WorkspaceApiError('rejected', 400))
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
@@ -753,7 +765,7 @@ describe('useDowngradeToPersonal', () => {
         member_removal_count: 1,
         member_removal_failures: 1,
         target_tier: undefined,
-        failure_category: 'network',
+        failure_category: 'api_rejected',
         error_code: 'member_removal_failed'
       })
     })

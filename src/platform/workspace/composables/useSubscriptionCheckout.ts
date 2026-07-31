@@ -941,6 +941,13 @@ export function useSubscriptionCheckout(
       source: 'pricing_dialog',
       payment_intent_source: paymentIntentSource
     })
+    telemetry?.trackBillingEvent({
+      operation: 'resubscribe',
+      stage: 'started',
+      outcome: 'pending',
+      source: 'pricing_dialog',
+      payment_intent_source: paymentIntentSource
+    })
     isResubscribing.value = true
     try {
       await resubscribe()
