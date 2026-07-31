@@ -31,7 +31,10 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
-import { useAttachment } from './composables/agent/useAttachment'
+import {
+  MAX_ATTACHMENT_BYTES,
+  useAttachment
+} from './composables/agent/useAttachment'
 import type { ActiveTab } from './types/activeTab'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
 import { useCanvasSelection } from './composables/agent/useCanvasSelection'
@@ -747,6 +750,15 @@ const attachment = useAttachment({
   upload: async (file) => ({
     ref: (await rest.uploadImage(file, file.name)).name
   }),
+  maxBytes: (file) => {
+    const serverLimit = api.getServerFeature(
+      'max_upload_size',
+      MAX_ATTACHMENT_BYTES
+    )
+    return hasVideoType(file)
+      ? serverLimit
+      : Math.min(MAX_ATTACHMENT_BYTES, serverLimit)
+  },
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
   onError: (message) =>

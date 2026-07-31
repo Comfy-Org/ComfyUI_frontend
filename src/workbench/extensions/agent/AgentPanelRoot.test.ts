@@ -11,6 +11,10 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
+const getServerFeature = vi.hoisted(() =>
+  vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
+)
+
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
   const listeners = new Map<string, Set<Listener>>()
@@ -34,6 +38,7 @@ vi.mock('@/scripts/api', () => ({
     apiURL: (route: string) => `/api${route}`,
     fetchApi: (route: string, options?: RequestInit) =>
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
+    getServerFeature,
     socket: { readyState: 1 },
     addEventListener: ws.add,
     removeEventListener: ws.remove,
@@ -209,6 +214,7 @@ vi.mock('@/platform/telemetry', () => ({
 
 import type { TurnId } from './schemas/agentApiSchema'
 import { zAgentWsEvent } from './schemas/agentApiSchema'
+import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
@@ -220,6 +226,10 @@ import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
   localStorage.clear()
+  getServerFeature.mockReset()
+  getServerFeature.mockImplementation(
+    (_name: string, defaultValue?: unknown) => defaultValue
+  )
   hostStores.workflow.tabs.clear()
   hostStores.workflow.activeWorkflow = null
   hostStores.canvas.selectedItems = []
@@ -340,6 +350,12 @@ function dispatchDrag(
   return event.defaultPrevented
 }
 
+function fileOfSize(name: string, size: number, type: string): File {
+  const file = new File(['x'], name, { type })
+  Object.defineProperty(file, 'size', { value: size })
+  return file
+}
+
 // DES-527 replaced the paperclip and @ buttons with a single + menu, so every
 // attach or node-mention gesture now starts by opening it.
 async function openAddMenu(): Promise<void> {
@@ -438,6 +454,27 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByText('cat.png')).toBeInTheDocument()
   })
 
+  it('uploads a picked video above 20MB when the server permits it', async () => {
+    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+    const uploaded = stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.attachFiles')
+      })
+    )
+    const movie = fileOfSize('movie.mp4', MAX_ATTACHMENT_BYTES + 1, 'video/mp4')
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      movie
+    )
+
+    expect(await screen.findByText('movie.mp4')).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual(['movie.mp4']))
+  })
+
   it('opens the assets sidebar from the add menu', async () => {
     stubUploadFetch()
     const sidebar = useSidebarTabStore()
@@ -499,24 +536,61 @@ describe('AgentPanelRoot attach flow', () => {
     ).toBeNull()
   })
 
-  it('warns without a server error when a video is over the size limit', async () => {
+  it('warns with the configured server limit when a video exceeds it', async () => {
     // PM-118: dropping a movie showed "Comfy Agent hit a server error" because a
     // size rejection was routed through the agent-failure overlay.
+    getServerFeature.mockReturnValue(24 * 1024 * 1024)
     executionErrors.showErrorOverlay.mockClear()
     stubUploadFetch()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await nextTick()
 
-    const movie = new File(['x'], 'movie.mp4', { type: 'video/mp4' })
-    Object.defineProperty(movie, 'size', { value: 25 * 1024 * 1024 })
+    const movie = fileOfSize('movie.mp4', 25 * 1024 * 1024, 'video/mp4')
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [movie] })
     await nextTick()
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(useToastStore().messagesToAdd).toContainEqual(
-      expect.objectContaining({ severity: 'warn' })
+      expect.objectContaining({
+        severity: 'warn',
+        detail: 'movie.mp4 is larger than 24MB'
+      })
     )
     expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
+  })
+
+  it('keeps the image limit at 20MB when the server permits more', async () => {
+    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+    const uploaded = stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    const image = fileOfSize('huge.png', MAX_ATTACHMENT_BYTES + 1, 'image/png')
+    dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [image] })
+    await nextTick()
+
+    expect(uploaded).toEqual([])
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'warn',
+        detail: 'huge.png is larger than 20MB'
+      })
+    )
+  })
+
+  it('uploads a dropped video above 20MB when the server permits it', async () => {
+    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+    const uploaded = stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    const movie = fileOfSize('movie.mp4', MAX_ATTACHMENT_BYTES + 1, 'video/mp4')
+    expect(
+      dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [movie] })
+    ).toBe(true)
+
+    expect(await screen.findByText('movie.mp4')).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual(['movie.mp4']))
   })
 
   it('claims a dragover carrying files so a drop can reach the panel', async () => {

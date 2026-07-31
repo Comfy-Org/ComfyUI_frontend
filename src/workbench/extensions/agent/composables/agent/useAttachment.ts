@@ -3,7 +3,6 @@ import { hasImageType } from '@/utils/eventUtils'
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
-const MAX_ATTACHMENT_LABEL = `${MAX_ATTACHMENT_BYTES / 1024 / 1024}MB`
 
 interface UploadResult {
   ref: string
@@ -12,6 +11,7 @@ interface UploadResult {
 
 export interface UseAttachmentOptions {
   upload: (file: File) => Promise<UploadResult>
+  maxBytes?: (file: File) => number
   onError?: (message: string) => void
   stage: (attachment: ComposerAttachment) => void
   update: (id: string, patch: Partial<ComposerAttachment>) => void
@@ -23,11 +23,12 @@ let stagedCount = 0
 export function useAttachment(options: UseAttachmentOptions) {
   async function addFiles(files: Iterable<File>): Promise<void> {
     for (const file of files) {
-      if (file.size > MAX_ATTACHMENT_BYTES) {
+      const maxBytes = options.maxBytes?.(file) ?? MAX_ATTACHMENT_BYTES
+      if (file.size > maxBytes) {
         options.onError?.(
           i18n.global.t('agent.attachmentTooLarge', {
             name: file.name,
-            limit: MAX_ATTACHMENT_LABEL
+            limit: `${maxBytes / 1024 / 1024}MB`
           })
         )
         continue
