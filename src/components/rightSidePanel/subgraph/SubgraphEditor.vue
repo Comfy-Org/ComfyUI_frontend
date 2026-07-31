@@ -14,6 +14,7 @@ import {
   isRecommendedWidget,
   promoteWidget,
   pruneDisconnected,
+  refreshPromotedWidgetRendering,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import {
@@ -158,7 +159,7 @@ function updateActivePromotedRows(
       value.map((row) => ({ widgetId: row.widget.widgetId }))
     )
   }
-  refreshPromotedWidgetRendering()
+  refreshActiveNodeRendering()
 }
 
 const interiorWidgets = computed<WidgetItem[]>(() => {
@@ -237,13 +238,11 @@ const filteredActivePreviews = computed<PreviewRow[]>(() =>
   )
 )
 
-function refreshPromotedWidgetRendering() {
+function refreshActiveNodeRendering() {
   const node = activeNode.value
   if (!node) return
 
-  node.computeSize(node.size)
-  node.setDirtyCanvas(true, true)
-  canvasStore.canvas?.setDirty(true, true)
+  refreshPromotedWidgetRendering([node])
 }
 
 function rowDisplayName(row: ActiveRow): string {
@@ -293,7 +292,7 @@ function demoteRow(row: ActiveRow) {
         sourceWidgetName: source.widgetName
       })
     }
-    refreshPromotedWidgetRendering()
+    refreshActiveNodeRendering()
     return
   }
   if (row.realWidget) {
@@ -305,7 +304,7 @@ function demoteRow(row: ActiveRow) {
     String(subgraphNode.id),
     row.exposure.name
   )
-  refreshPromotedWidgetRendering()
+  refreshActiveNodeRendering()
 }
 
 function promotePromotedRow(row: PromotedRow) {

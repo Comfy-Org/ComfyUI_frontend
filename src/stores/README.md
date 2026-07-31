@@ -132,7 +132,7 @@ The following table lists ALL 46 store instances in the system as of 2026-01-29:
 | nodeDefStore.ts              | useNodeFrequencyStore         | Tracks node usage frequency                             | Nodes      |
 | queueStore.ts                | useQueueStore                 | Manages execution queue and task history                | Execution  |
 | queueStore.ts                | useQueuePendingTaskCountStore | Tracks pending task counts                              | Execution  |
-| queueStore.ts                | useQueueSettingsStore         | Manages queue execution settings                        | Execution  |
+| queueSettingsStore.ts        | useQueueSettingsStore         | Manages queue execution settings                        | Execution  |
 | releaseStore.ts              | useReleaseStore               | Manages application release information                 | System     |
 | serverConfigStore.ts         | useServerConfigStore          | Handles server configuration                            | Config     |
 | settingStore.ts              | useSettingStore               | Manages application settings                            | Config     |
