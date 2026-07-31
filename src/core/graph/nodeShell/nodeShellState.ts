@@ -78,7 +78,10 @@ export function registerNodeState(
       ? undefined
       : node._graphScope
 
-  if (strandedScope !== undefined) store.deleteNode(strandedScope, node._state)
+  if (strandedScope !== undefined) {
+    store.deleteNode(strandedScope, node._state)
+    node._graphScope = undefined
+  }
   assert(
     strandedScope === undefined,
     `registerNodeState: node ${node.id} already registered under a different root graph (${strandedScope?.rootGraphId})`

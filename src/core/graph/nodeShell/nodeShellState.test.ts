@@ -92,6 +92,8 @@ describe('node registration invariants', () => {
     first.add(node)
 
     expect(() => second.add(node)).toThrow(/different root graph/)
+    expect(node._graphScope).toBeUndefined()
+    expect(useNodeDataStore().getGraphNodesFor(first.id, first.id)).toEqual([])
   })
 
   it('drops the previous root entry rather than stranding it', () => {
@@ -118,6 +120,6 @@ describe('node registration invariants', () => {
     node._state = createNodeShellState('Node', 'test', undefined)
 
     expect(() => unregisterNodeState(node)).toThrow(/identity drift/)
-    expect(node._graphId).toBeUndefined()
+    expect(node._graphScope).toBeUndefined()
   })
 })
