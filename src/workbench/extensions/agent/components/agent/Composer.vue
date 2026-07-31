@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useTimeoutFn } from '@vueuse/core'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -219,19 +218,8 @@ async function openPlaceholderNodePicker(): Promise<void> {
   textareaRef.value?.focus()
 }
 
-const insertHighlight = ref(false)
-const { start: startInsertHighlight } = useTimeoutFn(
-  () => {
-    insertHighlight.value = false
-  },
-  1000,
-  { immediate: false }
-)
-
 function insert(text: string): void {
   composer.insert(text)
-  insertHighlight.value = true
-  startInsertHighlight()
   textareaRef.value?.focus()
 }
 
@@ -245,13 +233,7 @@ defineExpose({
 
 <template>
   <div
-    :class="
-      cn(
-        'border-agent-border-strong bg-agent-surface focus-within:border-agent-fg relative flex flex-col rounded-[10px] border transition-colors',
-        insertHighlight &&
-          'border-agent-accent focus-within:border-agent-accent'
-      )
-    "
+    class="border-agent-border-strong bg-agent-surface focus-within:border-agent-fg-muted relative flex flex-col rounded-[10px] border transition-colors"
   >
     <div
       v-if="mentionVisible"
