@@ -1,6 +1,8 @@
 import type { ToastMessageOptions } from 'primevue/toast'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import type { Actor, SnapshotFrom } from 'xstate'
+import { createActor, fromPromise } from 'xstate'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
@@ -15,18 +17,25 @@ import type {
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { nextIntervalMs } from '@/platform/workspace/machines/billingOperationActions'
+import type { BillingOperationType } from '@/platform/workspace/machines/billingOperationContext'
+import {
+  INITIAL_INTERVAL_MS,
+  validateActionUrl
+} from '@/platform/workspace/machines/billingOperationContext'
+import { timeoutBudgetMs } from '@/platform/workspace/machines/billingOperationGuards'
+import { billingOperationMachine } from '@/platform/workspace/machines/billingOperationMachine'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const INITIAL_INTERVAL_MS = 1000
-const MAX_INTERVAL_MS = 8000
-const ACTION_REQUIRED_INTERVAL_MS = 30_000
-const BACKOFF_MULTIPLIER = 1.5
-const TIMEOUT_MS = 120_000
-const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
-const SUBSCRIPTION_AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
+/**
+ * Selects the polling driver. Temporary scaffolding for the migration to
+ * billingOperationMachine; to be replaced by a real feature flag and then
+ * removed along with the legacy driver.
+ */
+const USE_BILLING_OPERATION_MACHINE = true
 
-type OperationType = 'subscription' | 'topup' | 'cancel'
+type OperationType = BillingOperationType
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
 
 export interface StartOperationMetadata {
@@ -57,16 +66,24 @@ interface BillingOperation {
   downgradeToPersonal?: StartOperationMetadata['downgradeToPersonal']
 }
 
+type BillingOperationActor = Actor<typeof billingOperationMachine>
+type BillingOperationSnapshot = SnapshotFrom<typeof billingOperationMachine>
 type TerminalResolver = (operation: BillingOperation) => void
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {
   const workspaceStore = useTeamWorkspaceStore()
   const operations = ref<Map<string, BillingOperation>>(new Map())
-  const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
-  const intervals = new Map<string, number>()
+  const metadataById = new Map<string, StartOperationMetadata>()
   const receivedToasts = new Map<string, ToastMessageOptions>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
+
+  // Legacy driver state.
+  const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
+  const intervals = new Map<string, number>()
+
+  // Machine driver state.
+  const actors = new Map<string, BillingOperationActor>()
 
   const hasPendingOperations = computed(() =>
     [...operations.value.values()].some((op) => op.status === 'pending')
@@ -113,25 +130,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
     if (existing) clearOperation(opId)
 
-    const actionUrl = validateActionUrl(initialActionUrl)
-    const operation: BillingOperation = {
-      opId,
-      type,
-      status: 'pending',
-      errorMessage: null,
-      startedAt: Date.now(),
-      actionUrl,
-      authenticationRequiredSeen: actionUrl !== null,
-      workspaceId: workspaceStore.activeWorkspaceId,
-      tier: metadata?.tier,
-      cycle: metadata?.cycle,
-      checkoutType: metadata?.checkoutType,
-      paymentIntentSource: metadata?.paymentIntentSource,
-      downgradeToPersonal: metadata?.downgradeToPersonal
-    }
-
-    operations.value = new Map(operations.value).set(opId, operation)
-    intervals.set(opId, INITIAL_INTERVAL_MS)
+    if (metadata) metadataById.set(opId, metadata)
 
     if (type !== 'cancel') {
       const messageKey =
@@ -153,9 +152,115 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     })
     terminalPromises.set(opId, terminal)
 
-    void poll(opId)
+    if (USE_BILLING_OPERATION_MACHINE) {
+      startWithMachine(opId, type, initialActionUrl)
+    } else {
+      startWithPolling(opId, type, metadata, initialActionUrl)
+    }
 
     return terminal
+  }
+
+  // Machine driver ------------------------------------------------------------
+
+  function snapshotStatus(snapshot: BillingOperationSnapshot): OperationStatus {
+    if (snapshot.matches('succeeded')) return 'succeeded'
+    if (snapshot.matches('failed')) return 'failed'
+    if (snapshot.matches('timedOut')) return 'timeout'
+    return 'pending'
+  }
+
+  function project(snapshot: BillingOperationSnapshot): BillingOperation {
+    const { context } = snapshot
+    const status = snapshotStatus(snapshot)
+    return {
+      opId: context.opId,
+      type: context.type,
+      status,
+      errorMessage: projectErrorMessage(
+        status,
+        context.type,
+        context.backendErrorMessage
+      ),
+      startedAt: context.startedAt,
+      actionUrl: context.actionUrl,
+      authenticationRequiredSeen: context.authenticationRequiredSeen,
+      workspaceId: context.workspaceId,
+      ...metadataById.get(context.opId)
+    }
+  }
+
+  function commit(snapshot: BillingOperationSnapshot) {
+    const operation = project(snapshot)
+    operations.value = new Map(operations.value).set(operation.opId, operation)
+  }
+
+  function startWithMachine(
+    opId: string,
+    type: OperationType,
+    initialActionUrl?: string
+  ) {
+    const actor = createActor(
+      billingOperationMachine.provide({
+        actors: {
+          fetchStatus: fromPromise(({ input }: { input: { opId: string } }) =>
+            workspaceApi.getBillingOpStatus(input.opId)
+          )
+        },
+        guards: {
+          isWorkspaceInactive: ({ context }) =>
+            context.workspaceId !== workspaceStore.activeWorkspaceId
+        }
+      }),
+      {
+        input: {
+          opId,
+          type,
+          workspaceId: workspaceStore.activeWorkspaceId,
+          startedAt: Date.now(),
+          initialActionUrl
+        }
+      }
+    )
+
+    actors.set(opId, actor)
+    commit(actor.getSnapshot())
+
+    actor.subscribe((snapshot) => {
+      commit(snapshot)
+      if (snapshot.status === 'done') {
+        void finalize(opId, snapshot.context.backendErrorMessage)
+      }
+    })
+
+    actor.start()
+  }
+
+  // Legacy driver -------------------------------------------------------------
+
+  function startWithPolling(
+    opId: string,
+    type: OperationType,
+    metadata?: StartOperationMetadata,
+    initialActionUrl?: string
+  ) {
+    const actionUrl = validateActionUrl(initialActionUrl)
+    const operation: BillingOperation = {
+      opId,
+      type,
+      status: 'pending',
+      errorMessage: null,
+      startedAt: Date.now(),
+      actionUrl,
+      authenticationRequiredSeen: actionUrl !== null,
+      workspaceId: workspaceStore.activeWorkspaceId,
+      ...metadata
+    }
+
+    operations.value = new Map(operations.value).set(opId, operation)
+    intervals.set(opId, INITIAL_INTERVAL_MS)
+
+    void poll(opId)
   }
 
   async function poll(opId: string) {
@@ -180,12 +285,19 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
 
       if (response.status === 'succeeded') {
-        await handleSuccess(opId)
+        updateOperationStatus(opId, 'succeeded', null)
+        void finalize(opId, null)
         return
       }
 
       if (response.status === 'failed') {
-        handleFailure(opId, response.error_message ?? null)
+        const backendErrorMessage = response.error_message ?? null
+        updateOperationStatus(
+          opId,
+          'failed',
+          projectErrorMessage('failed', operation.type, backendErrorMessage)
+        )
+        void finalize(opId, backendErrorMessage)
         return
       }
 
@@ -204,39 +316,24 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function scheduleNextPoll(opId: string) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
-    const nextInterval = operation.authenticationRequiredSeen
-      ? ACTION_REQUIRED_INTERVAL_MS
-      : Math.min(
-          (intervals.get(opId) ?? INITIAL_INTERVAL_MS) * BACKOFF_MULTIPLIER,
-          MAX_INTERVAL_MS
-        )
+    const nextInterval = nextIntervalMs({
+      ...operation,
+      intervalMs: intervals.get(opId) ?? INITIAL_INTERVAL_MS,
+      backendErrorMessage: null,
+      readNow: Date.now
+    })
     intervals.set(opId, nextInterval)
 
     const timeoutId = setTimeout(() => void poll(opId), nextInterval)
     timeouts.set(opId, timeoutId)
   }
 
-  function validateActionUrl(value: string | undefined): string | null {
-    if (!value) return null
-    try {
-      const url = new URL(value)
-      return url.protocol === 'https:' ? value : null
-    } catch {
-      return null
-    }
-  }
-
-  function hasTimedOut(operation: BillingOperation): boolean {
-    const elapsed = Date.now() - operation.startedAt
-    if (operation.type !== 'subscription') return elapsed > TIMEOUT_MS
-    return operation.authenticationRequiredSeen
-      ? elapsed > SUBSCRIPTION_AUTHENTICATION_TIMEOUT_MS
-      : elapsed > SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS
-  }
-
   function stopIfTimedOut(opId: string, operation: BillingOperation): boolean {
-    if (!hasTimedOut(operation)) return false
-    handleTimeout(opId)
+    if (Date.now() - operation.startedAt <= timeoutBudgetMs(operation)) {
+      return false
+    }
+    updateOperationStatus(opId, 'timeout', timeoutMessage(operation.type))
+    void finalize(opId, null)
     return true
   }
 
@@ -251,13 +348,55 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     })
   }
 
-  async function handleSuccess(opId: string) {
+  function updateOperationStatus(
+    opId: string,
+    status: OperationStatus,
+    errorMessage: string | null
+  ) {
     const operation = operations.value.get(opId)
     if (!operation) return
 
-    updateOperationStatus(opId, 'succeeded', null)
+    const updated = { ...operation, status, errorMessage, actionUrl: null }
+    operations.value = new Map(operations.value).set(opId, updated)
+  }
+
+  // Shared terminal effects ---------------------------------------------------
+
+  function failureDetail(
+    type: OperationType,
+    backendErrorMessage: string | null
+  ) {
+    return type === 'subscription'
+      ? t('billingOperation.subscriptionFailedDetail')
+      : backendErrorMessage
+  }
+
+  function projectErrorMessage(
+    status: OperationStatus,
+    type: OperationType,
+    backendErrorMessage: string | null
+  ): string | null {
+    if (status === 'timeout') return timeoutMessage(type)
+    if (status !== 'failed') return null
+    return failureDetail(type, backendErrorMessage) ?? failureMessage(type)
+  }
+
+  async function finalize(opId: string, backendErrorMessage: string | null) {
+    const operation = operations.value.get(opId)
+    if (!operation) return
+
     cleanup(opId)
 
+    if (operation.status === 'succeeded') await handleSuccess(operation)
+    else if (operation.status === 'failed')
+      handleFailure(operation, backendErrorMessage)
+    else handleTimeout(operation)
+
+    resolveTerminal(opId)
+  }
+
+  async function handleSuccess(operation: BillingOperation) {
+    const opId = operation.opId
     const telemetry = useTelemetry()
     if (operation.type === 'subscription') {
       telemetry?.trackBillingEvent({
@@ -311,7 +450,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     if (operation.type === 'cancel') {
       useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })
-      resolveTerminal(opId)
       return
     }
 
@@ -322,40 +460,28 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       useSettingsDialog().show('workspace')
     }
 
-    const toastStore = useToastStore()
     const messageKey =
       operation.type === 'subscription'
         ? 'billingOperation.subscriptionSuccess'
         : 'billingOperation.topupSuccess'
 
-    toastStore.add({
+    useToastStore().add({
       severity: 'success',
       summary: t(messageKey),
       life: 5000
     })
-
-    resolveTerminal(opId)
   }
 
-  function handleFailure(opId: string, errorMessage: string | null) {
-    const operation = operations.value.get(opId)
-    if (!operation) return
-
-    const defaultMessage = failureMessage(operation.type)
-    const detail =
-      operation.type === 'subscription'
-        ? t('billingOperation.subscriptionFailedDetail')
-        : errorMessage
-
-    updateOperationStatus(opId, 'failed', detail ?? defaultMessage)
-    cleanup(opId)
-
+  function handleFailure(
+    operation: BillingOperation,
+    backendErrorMessage: string | null
+  ) {
     const telemetry = useTelemetry()
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'failed',
       outcome: 'failure',
-      billing_op_id: opId,
+      billing_op_id: operation.opId,
       operation_type: operation.type,
       tier: operation.tier,
       cycle: operation.cycle,
@@ -376,32 +502,22 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type !== 'cancel') {
-      useToastStore().add({
-        severity: 'error',
-        summary: defaultMessage,
-        detail: detail ?? undefined
-      })
-    }
+    if (operation.type === 'cancel') return
 
-    resolveTerminal(opId)
+    useToastStore().add({
+      severity: 'error',
+      summary: failureMessage(operation.type),
+      detail: failureDetail(operation.type, backendErrorMessage) ?? undefined
+    })
   }
 
-  function handleTimeout(opId: string) {
-    const operation = operations.value.get(opId)
-    if (!operation) return
-
-    const message = timeoutMessage(operation.type)
-
-    updateOperationStatus(opId, 'timeout', message)
-    cleanup(opId)
-
+  function handleTimeout(operation: BillingOperation) {
     const telemetry = useTelemetry()
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'timeout',
       outcome: 'failure',
-      billing_op_id: opId,
+      billing_op_id: operation.opId,
       operation_type: operation.type,
       tier: operation.tier,
       cycle: operation.cycle,
@@ -422,14 +538,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type !== 'cancel') {
-      useToastStore().add({
-        severity: 'error',
-        summary: message
-      })
-    }
+    if (operation.type === 'cancel') return
 
-    resolveTerminal(opId)
+    useToastStore().add({
+      severity: 'error',
+      summary: timeoutMessage(operation.type)
+    })
   }
 
   function failureMessage(type: OperationType) {
@@ -455,18 +569,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     terminalPromises.delete(opId)
   }
 
-  function updateOperationStatus(
-    opId: string,
-    status: OperationStatus,
-    errorMessage: string | null
-  ) {
-    const operation = operations.value.get(opId)
-    if (!operation) return
-
-    const updated = { ...operation, status, errorMessage, actionUrl: null }
-    operations.value = new Map(operations.value).set(opId, updated)
-  }
-
   function cleanup(opId: string) {
     const timeoutId = timeouts.get(opId)
     if (timeoutId) {
@@ -475,7 +577,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
     intervals.delete(opId)
 
-    // Remove the "received" toast
     const receivedToast = receivedToasts.get(opId)
     if (receivedToast) {
       useToastStore().remove(receivedToast)
@@ -485,6 +586,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function clearOperation(opId: string) {
     cleanup(opId)
+    actors.get(opId)?.stop()
+    actors.delete(opId)
+    metadataById.delete(opId)
     const newMap = new Map(operations.value)
     newMap.delete(opId)
     operations.value = newMap
