@@ -143,6 +143,8 @@
       "modelDescription": "توضیحات مدل",
       "modelTagging": "برچسب‌گذاری مدل",
       "modelType": "نوع مدل",
+      "modelTypeCoreReadonly": "نوع مدل در core قابل تغییر نیست، انتقال فایل هنوز پشتیبانی نمی‌شود.",
+      "modelTypeImmutableReadonly": "نوع مدل برای مدل فقط‌خواندنی قابل تغییر نیست.",
       "noAdditionalTags": "برچسب اضافی وجود ندارد",
       "selectModelPrompt": "یک مدل را برای مشاهده اطلاعات آن انتخاب کنید",
       "selectModelType": "انتخاب نوع مدل...",
@@ -173,6 +175,7 @@
     "rename": {
       "failed": "امکان تغییر نام دارایی وجود ندارد."
     },
+    "searchModels": "جستجوی مدل‌ها",
     "selectFrameworks": "فریم‌ورک‌ها را انتخاب کنید",
     "selectModelType": "نوع مدل را انتخاب کنید",
     "selectProjects": "پروژه‌ها را انتخاب کنید",
@@ -611,14 +614,14 @@
     "chooseProfilePicture": "انتخاب تصویر پروفایل",
     "createProfile": "ساخت پروفایل",
     "createProfileButton": "ساخت پروفایل من",
-    "createProfileTitle": "ساخت پروفایل Comfy Hub",
+    "createProfileTitle": "ساخت پروفایل Comfy Workflows",
     "creatingProfile": "در حال ساخت پروفایل...",
     "descriptionLabel": "توضیحات شما",
     "descriptionPlaceholder": "درباره خودتان به جامعه توضیح دهید...",
     "introDescription": "جریان‌کارهای خود را منتشر کنید، نمونه‌کار بسازید و توسط میلیون‌ها کاربر دیده شوید",
-    "introSubtitle": "برای اشتراک‌گذاری جریان‌کار خود در ComfyHub، ابتدا پروفایل خود را بسازید.",
-    "introTitle": "انتشار در ComfyHub",
-    "modalTitle": "ساخت پروفایل در ComfyHub",
+    "introSubtitle": "برای اشتراک‌گذاری جریان‌کار خود در Comfy Workflows، ابتدا پروفایل خود را بسازید.",
+    "introTitle": "انتشار در Comfy Workflows",
+    "modalTitle": "ساخت پروفایل در Comfy Workflows",
     "nameLabel": "نام شما",
     "namePlaceholder": "نام خود را اینجا وارد کنید",
     "profileCreationNav": "ساخت پروفایل",
@@ -628,8 +631,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "صفحه پروفایل شما فعال است در",
     "successTitle": "عالی به نظر می‌رسد، {'@'}{username}!",
-    "updateIntroDescription": "آخرین تغییرات خود را به ComfyHub ارسال کنید. لینک اشتراک‌گذاری و آمار شما بدون تغییر باقی می‌ماند.",
-    "updateIntroTitle": "به‌روزرسانی workflow شما در ComfyHub",
+    "updateIntroDescription": "آخرین تغییرات خود را به Comfy Workflows ارسال کنید. لینک اشتراک‌گذاری و آمار شما بدون تغییر باقی می‌ماند.",
+    "updateIntroTitle": "به‌روزرسانی workflow شما در Comfy Workflows",
     "uploadCover": "+ بارگذاری کاور",
     "uploadProfilePicture": "+ بارگذاری تصویر پروفایل",
     "uploadWorkflowButton": "بارگذاری جریان‌کار من",
@@ -641,20 +644,18 @@
     "additionalInfo": "اطلاعات تکمیلی",
     "back": "بازگشت",
     "createProfileCta": "ساخت پروفایل",
-    "createProfileToPublish": "برای انتشار در ComfyHub یک پروفایل بسازید",
+    "createProfileToPublish": "برای انتشار در Comfy Workflows یک پروفایل بسازید",
     "exampleImage": "تصویر نمونه {index}",
     "exampleImagePosition": "تصویر نمونه {index} از {total}",
     "examplesDescription": "تا {total} تصویر نمونه اضافی اضافه کنید",
     "maxExamples": "شما می‌توانید تا {max} نمونه انتخاب کنید",
     "next": "بعدی",
-    "publishButton": "انتشار در ComfyHub",
+    "publishButton": "انتشار در Comfy Workflows",
     "publishFailedDescription": "در هنگام انتشار گردش‌کار شما مشکلی پیش آمد. لطفاً دوباره تلاش کنید.",
     "publishFailedTitle": "انتشار ناموفق بود",
-    "publishSuccessDescription": "گردش‌کار شما اکنون در ComfyHub فعال است.",
+    "publishSuccessDescription": "گردش‌کار شما اکنون در Comfy Workflows فعال است.",
     "publishSuccessTitle": "با موفقیت منتشر شد",
     "removeExampleImage": "حذف تصویر نمونه",
-    "renameFailedDescription": "workflow شما با موفقیت منتشر شد، اما تغییر نام فایل محلی انجام نشد. لطفاً دوباره نام آن را مطابق‌سازی کنید.",
-    "renameFailedTitle": "تغییر نام ناموفق بود",
     "selectAThumbnail": "یک تصویر بندانگشتی انتخاب کنید",
     "shareAs": "اشتراک‌گذاری به عنوان",
     "showLessTags": "نمایش کمتر...",
@@ -670,8 +671,8 @@
     "thumbnailImageComparison": "مقایسه تصویر",
     "thumbnailPreview": "پیش‌نمایش بندانگشتی",
     "thumbnailVideo": "ویدیو",
-    "title": "انتشار در ComfyHub",
-    "unsavedDescription": "شما باید گردش‌کار خود را قبل از انتشار در ComfyHub ذخیره کنید. اکنون ذخیره کنید تا ادامه دهید.",
+    "title": "انتشار در Comfy Workflows",
+    "unsavedDescription": "شما باید گردش‌کار خود را قبل از انتشار در Comfy Workflows ذخیره کنید. اکنون ذخیره کنید تا ادامه دهید.",
     "updateButton": "به‌روزرسانی workflow",
     "uploadAnImage": "برای انتخاب کلیک کنید یا تصویر را بکشید",
     "uploadComparison": "بارگذاری قبل و بعد",
@@ -1268,6 +1269,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "این node توسط سیاست workspace شما غیرفعال شده است. از node دیگری استفاده کنید.",
+        "title": "node غیرفعال",
+        "toastMessage": "این node توسط سیاست workspace شما غیرفعال شده است.",
+        "toastTitle": "nodeهای شریک"
+      },
       "bad_linked_input": {
         "details": "{nodeName} دارای اتصال نامعتبر برای {inputName} است.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2624,8 @@
     "resetView": "بازنشانی نمای بوم",
     "run": "اجرا",
     "runWorkflow": "اجرای workflow (Shift برای صف در ابتدا)",
-    "runWorkflowDisabled": "workflow شامل nodeهای پشتیبانی‌نشده است (با رنگ قرمز مشخص شده‌اند). برای اجرا، این موارد را حذف کنید.",
     "runWorkflowFront": "اجرای workflow (صف در ابتدا)",
+    "runWorkflowMissingResources": "workflow شامل منابع ناقص است.",
     "settings": "تنظیمات",
     "showMenu": "نمایش منو",
     "stopRunInstant": "توقف اجرا (فوری)",
@@ -3049,6 +3057,38 @@
       "owner": "مالک",
       "personal": "شخصی"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "هر تولید و وارداتی در دارایی‌های رسانه‌ای ذخیره می‌شود. هر زمان خواستید آن را باز کنید تا مرور، دانلود یا استفاده مجدد از کارهای قبلی داشته باشید.",
+        "title": "همه دارایی‌های خود را پیدا کنید"
+      },
+      "inputs": {
+        "body": "آنچه می‌خواهید با آن کار کنید اضافه کنید. ورودی‌های شما همان چیزی است که برنامه به نتیجه تبدیل می‌کند.",
+        "title": "ورودی‌های خود را اضافه کنید"
+      },
+      "landing": {
+        "body": "یک راهنمای سریع از موارد ضروری، در حدود یک دقیقه. به شما نشان می‌دهیم کجا ورودی‌ها را اضافه کنید، برنامه خود را اجرا کنید و نتایج را بیابید.",
+        "primary": "شروع آموزش",
+        "title": "به برنامه‌ها خوش آمدید"
+      },
+      "outputs": {
+        "body": "نتایج نهایی شما اینجا در مرکز نمایش داده می‌شوند. آن‌ها را دانلود کنید یا ورودی را تغییر دهید و دوباره اجرا کنید.",
+        "title": "نتایج خود را دریافت کنید"
+      },
+      "replay": "بازدید مجدد از حالت برنامه",
+      "run": {
+        "body": "از ورودی‌های خود راضی هستید؟ روی اجرا بزنید و نتیجه شما به محض آماده شدن در مرکز نمایش داده می‌شود.",
+        "title": "برنامه خود را اجرا کنید"
+      }
+    },
+    "back": "قبلی",
+    "done": "پایان",
+    "loadError": "در نمایش این راهنما مشکلی پیش آمد",
+    "next": "بعدی",
+    "skip": "رد کردن",
+    "stepLabel": "گام {current} از {total}"
   },
   "openSharedWorkflow": {
     "author": "نویسنده:",
@@ -3487,6 +3527,7 @@
     "3DViewer": "نمایشگر سه‌بعدی",
     "API Nodes": "Nodeهای API",
     "About": "درباره",
+    "Allowlist": "لیست مجاز",
     "Appearance": "ظاهر",
     "BrushAdjustment": "تنظیم قلم‌مو",
     "Camera": "دوربین",
@@ -3565,9 +3606,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "متوجه شدم که این رسانه‌ها منتشر و عمومی خواهند شد",
     "checkingAssets": "در حال بررسی وضعیت رسانه‌ها…",
-    "comfyHubButton": "بارگذاری در ComfyHub",
-    "comfyHubDescription": "ComfyHub مرکز رسمی جامعه ComfyUI است.\nگردش‌کار شما یک صفحه عمومی خواهد داشت که برای همه قابل مشاهده است.",
-    "comfyHubTitle": "بارگذاری در ComfyHub",
+    "comfyHubButton": "بارگذاری در Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows مرکز رسمی جامعه ComfyUI است.\nگردش‌کار شما یک صفحه عمومی خواهد داشت که برای همه قابل مشاهده است.",
+    "comfyHubTitle": "بارگذاری در Comfy Workflows",
     "copyLink": "کپی",
     "createLinkButton": "ایجاد لینک",
     "createLinkDescription": "هنگام ایجاد لینک برای گردش‌کار، این رسانه‌ها نیز همراه با گردش‌کار شما به اشتراک گذاشته می‌شوند",
@@ -3650,9 +3691,12 @@
       "sortNewestFirst": "جدیدترین ابتدا",
       "sortOldestFirst": "قدیمی‌ترین ابتدا",
       "title": "دارایی‌های رسانه‌ای",
+      "viewGridLarge": "نمای شبکه (بزرگ)",
+      "viewGridSmall": "نمای شبکه (کوچک)",
       "viewSettings": "نمایش تنظیمات"
     },
     "modelLibrary": "کتابخانه مدل",
+    "modelLibraryLoadFailed": "بارگذاری مدل‌ها انجام نشد. اتصال به سرور را بررسی کنید و برای تلاش مجدد، دکمه تازه‌سازی را بزنید.",
     "newBlankWorkflow": "ایجاد Workflow جدید خالی",
     "noFilesFound": "فایلی یافت نشد",
     "noFilesFoundMessage": "برای مشاهده فایل‌ها، فایل بارگذاری یا محتوا تولید کنید",
@@ -3758,6 +3802,7 @@
       "viewList": "نمای لیستی"
     },
     "searchAssets": "جستجوی دارایی‌ها",
+    "searchResultsCapped": "نمایش اولین {limit} نتیجه. جستجوی خود را دقیق‌تر کنید تا نتایج خاص‌تری ببینید.",
     "sidebar": "نوار کناری",
     "templates": "قالب‌ها",
     "themeToggle": "تغییر تم",
@@ -4193,6 +4238,11 @@
     "modelsSelected": "{count} مدل",
     "noResults": "قالبی یافت نشد",
     "noResultsHint": "لطفاً جستجو یا فیلترهای خود را تغییر دهید",
+    "paidTemplate": {
+      "badgeLabel": "API شریک",
+      "credits": "با اعتبار اجرا می‌شود",
+      "title": "قالب ویژه"
+    },
     "resultsCount": "نمایش {count} از {total} قالب",
     "runsOnFilter": "اجرا روی",
     "runsOnSelected": "{count} اجرا روی",
@@ -4330,6 +4380,21 @@
     "title": "هشدار ناسازگاری نسخه",
     "updateFrontend": "به‌روزرسانی رابط کاربری"
   },
+  "videoEdit": {
+    "adjustCrop": "تنظیم ناحیه برش",
+    "adjustEndFrame": "تنظیم فریم پایان",
+    "adjustStartFrame": "تنظیم فریم شروع",
+    "durationSeconds": "{count} ثانیه",
+    "durationZero": "۰ ثانیه",
+    "fileSizeBytes": "{count} بایت",
+    "fileSizeKilobytes": "{count} کیلوبایت",
+    "fileSizeMegabytes": "{count} مگابایت",
+    "fileSizeUnknown": "—",
+    "loadingFilmstrip": "در حال بارگذاری نوار فیلم…",
+    "pause": "توقف",
+    "play": "پخش",
+    "seekVideo": "جستجوی ویدیو"
+  },
   "vueNodesBanner": {
     "desc": "– workflowهای منعطف‌تر، ابزارک‌های قدرتمند جدید، ساخته‌شده برای توسعه‌پذیری",
     "title": "معرفی Nodes 2.0",
@@ -4436,9 +4501,7 @@
         "lastActivity": "آخرین فعالیت",
         "partnerNodeUsed": "گره شریک استفاده‌شده",
         "totalCreditsUsed": "مجموع اعتبار مصرف‌شده"
-      },
-      "perUserHint": "دنبال مجموع مصرف هر کاربر هستید؟",
-      "seeMembers": "مشاهده اعضا"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4574,6 +4637,39 @@
       "deleteWorkspaceDisabledTooltip": "ابتدا اشتراک فعال محیط کاری خود را لغو کنید",
       "editWorkspace": "ویرایش جزئیات محیط کاری",
       "leaveWorkspace": "خروج از محیط کاری"
+    },
+    "partnerNodes": {
+      "accessMode": "حالت دسترسی nodeهای شریک",
+      "allowAllAccessHint": "اعمال این تغییر ممکن است تا ۱۰ دقیقه در workspace شما طول بکشد.",
+      "allowAllAccessMessage": "تمام nodeهای شریک از هر ارائه‌دهنده‌ای برای همه اعضای workspace در دسترس قرار می‌گیرند.",
+      "allowAllAccessTitle": "دسترسی به همه nodeهای شریک مجاز شود؟",
+      "columns": {
+        "nodes": "nodeها",
+        "provider": "ارائه‌دهنده"
+      },
+      "disableAll": "غیرفعال‌سازی همه",
+      "disableAllMessage": "همه ارائه‌دهندگان غیرفعال خواهند شد. در حالت محدود، nodeهای شریک در دسترس نخواهند بود.",
+      "disableAllTitle": "همه ارائه‌دهندگان غیرفعال شوند؟",
+      "enableAll": "فعال‌سازی همه",
+      "loadError": "بارگذاری دسترسی به nodeهای شریک انجام نشد.",
+      "loading": "در حال بارگذاری دسترسی به nodeهای شریک",
+      "noResults": "هیچ ارائه‌دهنده یا node شریکی یافت نشد.",
+      "nodeCount": "{count} فعال",
+      "ownerOnly": "فقط مالک workspace می‌تواند دسترسی به nodeهای شریک را به‌روزرسانی کند.",
+      "restrictAccessHint": "اعمال این تغییر ممکن است تا ۱۰ دقیقه در workspace شما طول بکشد.",
+      "restrictAccessMessage": "اعضای workspace فقط می‌توانند از nodeهای شریک ارائه‌دهندگانی که فعال می‌کنید استفاده کنند.",
+      "restrictAccessTitle": "دسترسی به nodeهای شریک محدود شود؟",
+      "restricted": "محدود",
+      "restrictedDescription": "فقط nodeهای شریک از ارائه‌دهندگان فعال در دسترس هستند. اعمال تغییرات ممکن است تا ۱۰ دقیقه طول بکشد.",
+      "retry": "تلاش مجدد",
+      "saveError": "به‌روزرسانی دسترسی به nodeهای شریک انجام نشد. دوباره تلاش کنید.",
+      "searchPlaceholder": "جستجوی ارائه‌دهندگان و nodeهای شریک...",
+      "tableLabel": "ارائه‌دهندگان nodeهای شریک",
+      "title": "دسترسی به nodeهای شریک",
+      "toggleProvider": "تنظیم دسترسی برای {provider}",
+      "unavailable": "دسترسی به nodeهای شریک برای این workspace در دسترس نیست.",
+      "unrestricted": "بدون محدودیت",
+      "unrestrictedDescription": "تمام nodeهای شریک از هر ارائه‌دهنده‌ای برای همه در دسترس هستند. غیرفعال کردن ارائه‌دهندگان این حالت را به محدود تغییر می‌دهد."
     },
     "planCredits": {
       "tabs": {

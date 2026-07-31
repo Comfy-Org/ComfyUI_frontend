@@ -713,10 +713,15 @@ describe('useMembersPanel', () => {
       expect(roleItems.map((i) => i.checked)).toEqual([false, true])
     })
 
-    it('checks Owner for owner rows', async () => {
+    it('omits Set credit limit for owner rows', async () => {
       const panel = await setup()
       const items = panel.memberMenuItems(createMember({ role: 'owner' }))
       const roleItems = items[0].items ?? []
+
+      expect(items.map((item) => item.label)).toEqual([
+        'workspacePanel.members.actions.changeRole',
+        'workspacePanel.members.actions.removeMember'
+      ])
       expect(roleItems.map((i) => i.checked)).toEqual([true, false])
     })
 
@@ -796,16 +801,14 @@ describe('useMembersPanel', () => {
       expect(panel.memberMenuItems(createMember())).toEqual([])
     })
 
-    it('exposes only Set credit limit for the workspace creator', async () => {
+    it('returns no actions for the workspace creator', async () => {
       mockOriginalOwnerId.value = 'creator-1'
       const panel = await setup()
       const items = panel.memberMenuItems(
         createMember({ id: 'creator-1', role: 'owner' })
       )
 
-      expect(items.map((item) => item.label)).toEqual([
-        'workspacePanel.members.actions.setCreditLimit'
-      ])
+      expect(items).toEqual([])
     })
 
     it('omits the credit-limit action when the flag is disabled', async () => {
@@ -820,7 +823,7 @@ describe('useMembersPanel', () => {
       )
     })
 
-    it('gives the creator no menu when the flag is disabled', async () => {
+    it('keeps the creator menu hidden when the flag is disabled', async () => {
       mockBillingControlEnabled.value = false
       mockOriginalOwnerId.value = 'creator-1'
       const panel = await setup()

@@ -143,6 +143,8 @@
       "modelDescription": "תיאור המודל",
       "modelTagging": "תיוג המודל",
       "modelType": "סוג המודל",
+      "modelTypeCoreReadonly": "לא ניתן לשנות את סוג המודל בליבת המערכת, העברת הקובץ אינה נתמכת כרגע.",
+      "modelTypeImmutableReadonly": "לא ניתן לשנות את סוג המודל עבור מודל לקריאה בלבד.",
       "noAdditionalTags": "אין תגיות נוספות",
       "selectModelPrompt": "בחר מודל כדי לראות את המידע שלו",
       "selectModelType": "בחר סוג מודל...",
@@ -173,6 +175,7 @@
     "rename": {
       "failed": "לא ניתן היה לשנות את שם הנכס."
     },
+    "searchModels": "חפש מודלים",
     "selectFrameworks": "בחירת מסגרות עבודה",
     "selectModelType": "בחר סוג מודל",
     "selectProjects": "בחירת פרויקטים",
@@ -611,14 +614,14 @@
     "chooseProfilePicture": "בחר תמונת פרופיל",
     "createProfile": "יצירת פרופיל",
     "createProfileButton": "יצירת הפרופיל שלי",
-    "createProfileTitle": "צור את פרופיל ה-Comfy Hub שלך",
+    "createProfileTitle": "צור את פרופיל ה-Comfy Workflows שלך",
     "creatingProfile": "יוצר פרופיל...",
     "descriptionLabel": "התיאור שלך",
     "descriptionPlaceholder": "ספר לקהילה על עצמך...",
     "introDescription": "פרסם את תהליכי העבודה שלך, בנה את תיק העבודות שלך והיחשף למיליוני משתמשים",
-    "introSubtitle": "כדי לשתף את תהליך העבודה שלך ב-ComfyHub, בוא ניצור תחילה את הפרופיל שלך.",
-    "introTitle": "פרסם ל-ComfyHub",
-    "modalTitle": "צור את הפרופיל שלך ב-ComfyHub",
+    "introSubtitle": "כדי לשתף את תהליך העבודה שלך ב-Comfy Workflows, בוא ניצור תחילה את הפרופיל שלך.",
+    "introTitle": "פרסם ל-Comfy Workflows",
+    "modalTitle": "צור את הפרופיל שלך ב-Comfy Workflows",
     "nameLabel": "השם שלך",
     "namePlaceholder": "הזן את שמך כאן",
     "profileCreationNav": "יצירת פרופיל",
@@ -628,8 +631,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "דף הפרופיל שלך פעיל בכתובת",
     "successTitle": "נראה מצוין, {'@'}{username}!",
-    "updateIntroDescription": "העלו את השינויים האחרונים שלכם ל-ComfyHub. קישור השיתוף והסטטיסטיקות שלכם יישארו ללא שינוי.",
-    "updateIntroTitle": "עדכון תהליך העבודה שלך ב-ComfyHub",
+    "updateIntroDescription": "העלו את השינויים האחרונים שלכם ל-Comfy Workflows. קישור השיתוף והסטטיסטיקות שלכם יישארו ללא שינוי.",
+    "updateIntroTitle": "עדכון תהליך העבודה שלך ב-Comfy Workflows",
     "uploadCover": "+ העלאת תמונת שער",
     "uploadProfilePicture": "+ העלאת תמונת פרופיל",
     "uploadWorkflowButton": "העלאת תהליך העבודה שלי",
@@ -641,20 +644,18 @@
     "additionalInfo": "מידע נוסף",
     "back": "חזרה",
     "createProfileCta": "יצירת פרופיל",
-    "createProfileToPublish": "צור פרופיל כדי לפרסם ל-ComfyHub",
+    "createProfileToPublish": "צור פרופיל כדי לפרסם ל-Comfy Workflows",
     "exampleImage": "תמונת דוגמה {index}",
     "exampleImagePosition": "תמונת דוגמה {index} מתוך {total}",
     "examplesDescription": "הוסף עד {total} תמונות דוגמה נוספות",
     "maxExamples": "ניתן לבחור עד {max} דוגמאות",
     "next": "הבא",
-    "publishButton": "פרסום ל-ComfyHub",
+    "publishButton": "פרסום ל-Comfy Workflows",
     "publishFailedDescription": "משהו השתבש במהלך פרסום תהליך העבודה שלך. אנא נסה שוב.",
     "publishFailedTitle": "הפרסום נכשל",
-    "publishSuccessDescription": "תהליך העבודה שלך פעיל כעת ב-ComfyHub.",
+    "publishSuccessDescription": "תהליך העבודה שלך פעיל כעת ב-Comfy Workflows.",
     "publishSuccessTitle": "פורסם בהצלחה",
     "removeExampleImage": "הסרת תמונת הדוגמה",
-    "renameFailedDescription": "תהליך העבודה פורסם בהצלחה, אך שינוי שם הקובץ המקומי נכשל. נסו לשנות את השם שוב כדי להתאים.",
-    "renameFailedTitle": "השם החדש נכשל",
     "selectAThumbnail": "בחר תמונה ממוזערת",
     "shareAs": "שתף בתור",
     "showLessTags": "הצג פחות...",
@@ -670,8 +671,8 @@
     "thumbnailImageComparison": "השוואת תמונות",
     "thumbnailPreview": "תצוגה מקדימה של התמונה הממוזערת",
     "thumbnailVideo": "סרטון",
-    "title": "פרסום ל-ComfyHub",
-    "unsavedDescription": "עליך לשמור את תהליך העבודה שלך לפני הפרסום ל-ComfyHub. שמור אותו כעת כדי להמשיך.",
+    "title": "פרסום ל-Comfy Workflows",
+    "unsavedDescription": "עליך לשמור את תהליך העבודה שלך לפני הפרסום ל-Comfy Workflows. שמור אותו כעת כדי להמשיך.",
     "updateButton": "עדכן תהליך עבודה",
     "uploadAnImage": "לחץ לעיון או גרור תמונה",
     "uploadComparison": "העלאת 'לפני' ו'אחרי'",
@@ -1268,6 +1269,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "צומת זה הושבת על פי מדיניות סביבת העבודה שלך. השתמש בצומת אחר.",
+        "title": "צומת מושבת",
+        "toastMessage": "צומת זה הושבת על פי מדיניות סביבת העבודה שלך.",
+        "toastTitle": "צמתים שותפים"
+      },
       "bad_linked_input": {
         "details": "ל-{nodeName} יש חיבור לא תקין עבור {inputName}.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2624,8 @@
     "resetView": "איפוס תצוגת הקנבס",
     "run": "הרצה",
     "runWorkflow": "הרצת תהליך העבודה (Shift כדי להוסיף לראש התור)",
-    "runWorkflowDisabled": "תהליך העבודה מכיל צמתים שאינם נתמכים (מודגשים באדום). הסר אותם כדי להריץ את תהליך העבודה.",
     "runWorkflowFront": "הרצת תהליך העבודה (הוספה לראש התור)",
+    "runWorkflowMissingResources": "תהליך העבודה מכיל משאבים חסרים.",
     "settings": "הגדרות",
     "showMenu": "הצגת התפריט",
     "stopRunInstant": "עצירת ההרצה (מיידי)",
@@ -3049,6 +3057,38 @@
       "owner": "בעלים",
       "personal": "אישי"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "כל יצירה וייבוא נשמרים בנכסי מדיה. פתח אותם בכל עת כדי לעיין, להוריד או לעשות שימוש חוזר בעבודות קודמות.",
+        "title": "מצא את כל הנכסים שלך"
+      },
+      "inputs": {
+        "body": "הוסף את מה שברצונך לעבוד איתו. הקלטים שלך הם מה שהאפליקציה הופכת לתוצאות.",
+        "title": "הוסף את הקלטים שלך"
+      },
+      "landing": {
+        "body": "סיור קצר על העיקר, בדקה אחת. נראה לך איפה להוסיף קלטים, להריץ את האפליקציה ולמצוא את התוצאות.",
+        "primary": "התחל הדרכה",
+        "title": "ברוך הבא לאפליקציות"
+      },
+      "outputs": {
+        "body": "התוצאות המוגמרות שלך יופיעו כאן במרכז. תוכל להוריד אותן, או לשנות קלט ולהריץ שוב.",
+        "title": "קבל את התוצאות שלך"
+      },
+      "replay": "צא לסיור במצב אפליקציה",
+      "run": {
+        "body": "מרוצה מהקלטים שלך? לחץ על 'הרץ' והתוצאה תופיע במרכז ברגע שהיא מוכנה.",
+        "title": "הרץ את האפליקציה שלך"
+      }
+    },
+    "back": "חזור",
+    "done": "סיום",
+    "loadError": "משהו השתבש בהצגת הסיור",
+    "next": "הבא",
+    "skip": "דלג",
+    "stepLabel": "שלב {current} מתוך {total}"
   },
   "openSharedWorkflow": {
     "author": "יוצר:",
@@ -3487,6 +3527,7 @@
     "3DViewer": "מציג תלת-ממד",
     "API Nodes": "צמתי API",
     "About": "אודות",
+    "Allowlist": "רשימת מורשים",
     "Appearance": "מראה",
     "BrushAdjustment": "כוונון המברשת",
     "Camera": "מצלמה",
@@ -3565,9 +3606,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "אני מבין שפריטי מדיה אלו יפורסמו ויהפכו לציבוריים",
     "checkingAssets": "בודק את נראות המדיה…",
-    "comfyHubButton": "העלאה ל-ComfyHub",
-    "comfyHubDescription": "ComfyHub הוא מרכז הקהילה הרשמי של ComfyUI.\nלתהליך העבודה שלך יהיה דף ציבורי שכולם יכולים לצפות בו.",
-    "comfyHubTitle": "העלאה ל-ComfyHub",
+    "comfyHubButton": "העלאה ל-Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows הוא מרכז הקהילה הרשמי של ComfyUI.\nלתהליך העבודה שלך יהיה דף ציבורי שכולם יכולים לצפות בו.",
+    "comfyHubTitle": "העלאה ל-Comfy Workflows",
     "copyLink": "העתקה",
     "createLinkButton": "יצירת קישור",
     "createLinkDescription": "כאשר תיצור קישור לתהליך העבודה שלך, תשתף את פריטי המדיה הללו יחד עם תהליך העבודה",
@@ -3650,9 +3691,12 @@
       "sortNewestFirst": "החדשים תחילה",
       "sortOldestFirst": "הישנים תחילה",
       "title": "נכסי מדיה",
+      "viewGridLarge": "תצוגת גריד (גדול)",
+      "viewGridSmall": "תצוגת גריד (קטן)",
       "viewSettings": "הגדרות תצוגה"
     },
     "modelLibrary": "ספריית המודלים",
+    "modelLibraryLoadFailed": "טעינת המודלים נכשלה. בדוק את חיבור השרת והשתמש ברענון כדי לנסות שוב.",
     "newBlankWorkflow": "יצירת תהליך עבודה ריק חדש",
     "noFilesFound": "לא נמצאו קבצים",
     "noFilesFoundMessage": "העלה קבצים או צור תוכן כדי לראותם כאן",
@@ -3758,6 +3802,7 @@
       "viewList": "תצוגת רשימה"
     },
     "searchAssets": "חיפוש נכסים",
+    "searchResultsCapped": "מוצגות {limit} התאמות ראשונות. צמצם את החיפוש להצגת תוצאות ממוקדות יותר.",
     "sidebar": "סרגל צד",
     "templates": "תבניות",
     "themeToggle": "החלפת ערכת הנושא",
@@ -4193,6 +4238,11 @@
     "modelsSelected": "{count} מודלים",
     "noResults": "לא נמצאו תבניות",
     "noResultsHint": "נסה לשנות את החיפוש או המסננים",
+    "paidTemplate": {
+      "badgeLabel": "Partner API",
+      "credits": "הרצה באמצעות קרדיטים",
+      "title": "תבנית פרימיום"
+    },
     "resultsCount": "מציג {count} מתוך {total} תבניות",
     "runsOnFilter": "פועל על",
     "runsOnSelected": "{count} פועל על",
@@ -4330,6 +4380,21 @@
     "title": "אזהרת תאימות גרסאות",
     "updateFrontend": "עדכון הפרונטאנד"
   },
+  "videoEdit": {
+    "adjustCrop": "כוון אזור חיתוך",
+    "adjustEndFrame": "כוון פריים סיום",
+    "adjustStartFrame": "כוון פריים התחלה",
+    "durationSeconds": "{count}ש׳",
+    "durationZero": "0ש׳",
+    "fileSizeBytes": "{count} בייט",
+    "fileSizeKilobytes": "{count} ק\"ב",
+    "fileSizeMegabytes": "{count} מ\"ב",
+    "fileSizeUnknown": "—",
+    "loadingFilmstrip": "טוען פס סרט…",
+    "pause": "השהה",
+    "play": "נגן",
+    "seekVideo": "דלג בווידאו"
+  },
   "vueNodesBanner": {
     "desc": "– תהליכי עבודה גמישים יותר, פקדים חדשים ועוצמתיים, נבנו להרחבה",
     "title": "מציגים את Nodes 2.0",
@@ -4436,9 +4501,7 @@
         "lastActivity": "פעילות אחרונה",
         "partnerNodeUsed": "צומת שותף בשימוש",
         "totalCreditsUsed": "סך הקרדיטים שנוצלו"
-      },
-      "perUserHint": "מחפש סך שימוש לכל משתמש?",
-      "seeMembers": "הצג חברים"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4574,6 +4637,39 @@
       "deleteWorkspaceDisabledTooltip": "בטל תחילה את המנוי הפעיל של סביבת העבודה שלך",
       "editWorkspace": "עריכת פרטי סביבת העבודה",
       "leaveWorkspace": "עזיבת סביבת העבודה"
+    },
+    "partnerNodes": {
+      "accessMode": "מצב גישה לצמתים שותפים",
+      "allowAllAccessHint": "החלת השינוי עשויה להימשך עד 10 דקות בסביבת העבודה.",
+      "allowAllAccessMessage": "כל הצמתים השותפים מכל הספקים יהיו זמינים לכל חברי סביבת העבודה.",
+      "allowAllAccessTitle": "לאפשר גישה לכל הצמתים השותפים?",
+      "columns": {
+        "nodes": "צמתים",
+        "provider": "ספק"
+      },
+      "disableAll": "השבת הכל",
+      "disableAllMessage": "כל הספקים יושבתו. צמתים שותפים לא יהיו זמינים כאשר הגישה מוגבלת.",
+      "disableAllTitle": "להשבית את כל הספקים?",
+      "enableAll": "הפעל הכל",
+      "loadError": "לא ניתן היה לטעון את הגישה לצמתים שותפים.",
+      "loading": "טוען גישה לצמתים שותפים",
+      "noResults": "לא נמצאו ספקים או צמתים שותפים",
+      "nodeCount": "{count} מופעלים",
+      "ownerOnly": "רק בעלי סביבת העבודה יכולים לעדכן את הגישה לצמתים שותפים.",
+      "restrictAccessHint": "החלת השינוי עשויה להימשך עד 10 דקות בסביבת העבודה.",
+      "restrictAccessMessage": "חברי סביבת העבודה יוכלו להשתמש רק בצמתים שותפים מהספקים שתפעיל.",
+      "restrictAccessTitle": "להגביל גישה לצמתים שותפים?",
+      "restricted": "מוגבל",
+      "restrictedDescription": "רק צמתים שותפים מהספקים המופעלים זמינים. ייתכן שיחולו שינויים עד 10 דקות.",
+      "retry": "נסה שוב",
+      "saveError": "לא ניתן היה לעדכן את הגישה לצמתים שותפים. נסה שוב.",
+      "searchPlaceholder": "חפש ספקים וצמתים שותפים...",
+      "tableLabel": "ספקי צמתים שותפים",
+      "title": "גישה לצמתים שותפים",
+      "toggleProvider": "הגדר גישה עבור {provider}",
+      "unavailable": "הגישה לצמתים שותפים אינה זמינה בסביבת עבודה זו.",
+      "unrestricted": "ללא הגבלה",
+      "unrestrictedDescription": "כל הצמתים השותפים מכל הספקים זמינים לכולם. השבתת ספקים תעביר למצב מוגבל."
     },
     "planCredits": {
       "tabs": {
