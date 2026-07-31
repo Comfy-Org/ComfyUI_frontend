@@ -70,7 +70,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
       <button
         type="button"
         :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-        class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center rounded-lg p-2 transition-colors"
+        class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
         @click="copy(text)"
       >
         <span

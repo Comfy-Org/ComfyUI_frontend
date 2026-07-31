@@ -41,7 +41,7 @@ const sizeToggleLabel = computed(() =>
       {{ t('agent.alpha') }}
     </span>
 
-    <div class="ml-auto flex items-center gap-1">
+    <div class="ml-auto flex items-center gap-2">
       <Button
         v-tooltip.bottom="buildTooltipConfig(t('agent.newChat'))"
         variant="muted-textonly"
