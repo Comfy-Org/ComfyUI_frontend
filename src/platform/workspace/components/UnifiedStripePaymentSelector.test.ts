@@ -8,8 +8,9 @@ import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 const stripeMocks = vi.hoisted(() => {
   const mount = vi.fn()
   const destroy = vi.fn()
+  const on = vi.fn()
   const submit = vi.fn()
-  const create = vi.fn(() => ({ mount, destroy }))
+  const create = vi.fn(() => ({ mount, destroy, on }))
   const elements = { submit, create }
   const createConfirmationToken = vi.fn()
   const stripe = {
@@ -19,6 +20,7 @@ const stripeMocks = vi.hoisted(() => {
   return {
     mount,
     destroy,
+    on,
     submit,
     create,
     elements,
@@ -70,7 +72,8 @@ describe('UnifiedStripePaymentSelector', () => {
     stripeMocks.stripe.elements.mockReturnValue(stripeMocks.elements)
     stripeMocks.create.mockReturnValue({
       mount: stripeMocks.mount,
-      destroy: stripeMocks.destroy
+      destroy: stripeMocks.destroy,
+      on: stripeMocks.on
     })
     stripeMocks.submit.mockResolvedValue({})
     stripeMocks.createConfirmationToken.mockResolvedValue({
@@ -101,7 +104,8 @@ describe('UnifiedStripePaymentSelector', () => {
         defaultCollapsed: false,
         radios: 'always',
         spacedAccordionItems: true
-      }
+      },
+      terms: { card: 'never' }
     })
     expect(stripeMocks.mount).toHaveBeenCalledTimes(1)
 
