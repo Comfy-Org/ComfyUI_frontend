@@ -3,17 +3,16 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
-/**
- * FE-853: a subgraph node the user has manually resized snaps back to its
- * computed minimum size as soon as the widget-editing UI is triggered — either
- * by the "Edit Subgraph Widgets" selection-toolbox button or by promoting a
- * widget from inside the subgraph — discarding the size the user set.
- *
- * https://linear.app/comfyorg/issue/FE-853
- */
 test.describe(
   'Subgraph node size across widget editing',
-  { tag: ['@subgraph', '@node', '@widget', '@vue-nodes'] },
+  {
+    tag: ['@subgraph', '@node', '@widget', '@vue-nodes'],
+    annotation: {
+      type: 'issue',
+      description:
+        'FE-853: widget editing collapsed a user-resized subgraph node to its minimum size'
+    }
+  },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)

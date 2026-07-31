@@ -1,4 +1,3 @@
-import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import type {
@@ -228,7 +227,7 @@ export class NodeOperationsHelper {
     delta: { x: number; y: number }
   ): Promise<{ nodeRef: NodeReference; node: VueNodeFixture; size: Size }> {
     const [nodeRef] = await this.getNodeRefsByTitle(title)
-    expect(nodeRef, `${title} node is on the canvas`).toBeDefined()
+    if (!nodeRef) throw new Error(`No node titled "${title}" on the canvas`)
 
     // Saved pans can leave the node too low for a downward drag to stay onscreen.
     await nodeRef.centerOnNode()
@@ -239,12 +238,11 @@ export class NodeOperationsHelper {
     await this.comfyPage.nextFrame()
 
     const size = await nodeRef.getSize()
-    expect(size.width, 'resize drag widened the node').toBeGreaterThan(
-      sizeBefore.width
-    )
-    expect(size.height, 'resize drag heightened the node').toBeGreaterThan(
-      sizeBefore.height
-    )
+    if (size.width <= sizeBefore.width || size.height <= sizeBefore.height) {
+      throw new Error(
+        `Resize drag did not enlarge "${title}": ${sizeBefore.width}x${sizeBefore.height} -> ${size.width}x${size.height}`
+      )
+    }
 
     return { nodeRef, node, size }
   }
