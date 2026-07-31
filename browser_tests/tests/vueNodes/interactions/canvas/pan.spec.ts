@@ -27,27 +27,22 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
     }
   )
 
-  test.describe('spacebar panning', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'standard'
-      )
-      await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
-    })
+  test('spacebar panning', async ({ comfyPage, comfyMouse }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.Canvas.NavigationMode',
+      'standard'
+    )
+    await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
+    const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
-    test('Space + left-drag on a Vue node pans canvas', async ({
-      comfyPage,
-      comfyMouse
-    }) => {
-      const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    await test.step('Space + click on a node starts a pan', async () => {
       const offsetBefore = await comfyPage.canvasOps.getOffset()
 
       await comfyPage.canvas.focus()
       await comfyPage.page.keyboard.down('Space')
       await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
       try {
-        await comfyMouse.dragElementBy(node, { x: 140, y: 90 })
+        await comfyMouse.dragElementBy(node.root, { x: -300, y: 0 })
       } finally {
         await comfyPage.page.keyboard.up('Space')
       }
@@ -55,6 +50,23 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
       await expect
         .poll(() => comfyPage.canvasOps.getOffset())
         .not.toEqual(offsetBefore)
+    })
+
+    await test.step('while dragging node, spacebar starts pan', async () => {
+      await node.header.hover()
+      const offset1 = await comfyPage.canvasOps.getOffset()
+      await comfyPage.page.mouse.down()
+      await comfyPage.page.mouse.move(500, 500, { steps: 5 })
+      expect(await comfyPage.canvasOps.getOffset()).toEqual(offset1)
+      await comfyPage.page.keyboard.down('Space')
+      await comfyPage.page.mouse.move(400, 400, { steps: 5 })
+      await expect
+        .poll(() => comfyPage.canvasOps.getOffset())
+        .not.toEqual(offset1)
+      await comfyPage.page.keyboard.up('Space')
+      const offset2 = await comfyPage.canvasOps.getOffset()
+      await comfyPage.page.mouse.move(500, 500, { steps: 5 })
+      expect(await comfyPage.canvasOps.getOffset()).toEqual(offset2)
     })
   })
 
