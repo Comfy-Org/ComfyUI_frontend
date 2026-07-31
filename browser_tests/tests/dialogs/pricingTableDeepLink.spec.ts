@@ -15,6 +15,7 @@ import type {
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   Member,
+  PreviewSubscribeResponse as WorkspacePreviewSubscribeResponse,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
@@ -40,6 +41,20 @@ import {
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 const SELF_EMAIL = 'e2e@test.comfy.org'
+
+type ExactQuotePreviewResponse = PreviewSubscribeResponse &
+  Required<
+    Pick<
+      WorkspacePreviewSubscribeResponse,
+      | 'quote_id'
+      | 'quote_version'
+      | 'discounts'
+      | 'amount_due_cents'
+      | 'currency'
+      | 'renewal_amount_cents'
+      | 'renewal_at'
+    >
+  >
 
 // consolidated_billing_enabled routes personal workspaces to the unified
 // pricing table asserted here; without it they fall back to the legacy table.
@@ -191,6 +206,66 @@ const TEAM_SUBSCRIBED_RESPONSE = {
   status: 'subscribed',
   effective_at: '2026-07-21T00:00:00Z'
 } satisfies SubscribeResponse
+
+const TEAM_YEARLY_SUBSCRIPTION_QUOTE = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  effective_at: '2026-07-21T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 63_000,
+  cost_next_period_cents: 63_000,
+  credits_today_cents: 1_772_400,
+  credits_next_period_cents: 1_772_400,
+  new_plan: {
+    slug: 'team_per_credit_annual',
+    tier: 'TEAM',
+    duration: 'ANNUAL',
+    price_cents: 63_000,
+    credits_cents: 1_772_400,
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: 63_000,
+      total_credits_cents: 1_772_400
+    }
+  },
+  quote_id: 'team-yearly-quote',
+  quote_version: 1,
+  discounts: [{ kind: 'plan', code: 'team_volume_10' }],
+  amount_due_cents: 63_000,
+  currency: 'usd',
+  renewal_amount_cents: 63_000,
+  renewal_at: '2027-07-21T00:00:00Z'
+} satisfies ExactQuotePreviewResponse
+
+const TEAM_MONTHLY_SUBSCRIPTION_QUOTE = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  effective_at: '2026-07-21T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 39_000,
+  cost_next_period_cents: 39_000,
+  credits_today_cents: 84_400,
+  credits_next_period_cents: 84_400,
+  new_plan: {
+    slug: 'team_per_credit_monthly',
+    tier: 'TEAM',
+    duration: 'MONTHLY',
+    price_cents: 39_000,
+    credits_cents: 84_400,
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: 39_000,
+      total_credits_cents: 84_400
+    }
+  },
+  quote_id: 'team-monthly-quote',
+  quote_version: 1,
+  discounts: [{ kind: 'plan', code: 'team_volume_5' }],
+  amount_due_cents: 39_000,
+  currency: 'usd',
+  renewal_amount_cents: 39_000,
+  renewal_at: '2026-08-21T00:00:00Z'
+} satisfies ExactQuotePreviewResponse
 
 const NEW_CREATOR_SUBSCRIPTION = {
   allowed: true,
@@ -707,6 +782,9 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(jsonRoute(TEAM_CATALOG_PLANS))
     )
+    await page.route('**/api/billing/preview-subscribe', (route) =>
+      route.fulfill(jsonRoute(TEAM_YEARLY_SUBSCRIPTION_QUOTE))
+    )
     await page.route('**/api/billing/subscribe', (route) => {
       subscribeRequests.push(route.request())
       return route.fulfill(jsonRoute(TEAM_SUBSCRIBED_RESPONSE))
@@ -736,7 +814,9 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     expect(subscribeRequests[0].postDataJSON()).toMatchObject({
       plan_slug: 'team_per_credit_annual',
       team_credit_stop_id: 'team_700',
-      billing_cycle: 'yearly'
+      billing_cycle: 'yearly',
+      quote_id: TEAM_YEARLY_SUBSCRIPTION_QUOTE.quote_id,
+      quote_version: TEAM_YEARLY_SUBSCRIPTION_QUOTE.quote_version
     })
   })
 
@@ -753,6 +833,9 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     ])
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(jsonRoute(TEAM_CATALOG_PLANS))
+    )
+    await page.route('**/api/billing/preview-subscribe', (route) =>
+      route.fulfill(jsonRoute(TEAM_MONTHLY_SUBSCRIPTION_QUOTE))
     )
 
     await page.goto(`${APP_URL}/?pricing=team&stop=team_400&cycle=monthly`)
