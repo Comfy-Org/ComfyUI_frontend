@@ -62,8 +62,12 @@ const showActions = computed(
       <ToolCallGroup
         v-else-if="group.kind === 'tools'"
         :tools="group.parts"
-        :streaming="message.streaming"
-        :active="message.streaming && index === groups.length - 1"
+        :streaming="
+          message.streaming && !message.thinking && index === groups.length - 1
+        "
+        :active="
+          message.streaming && !message.thinking && index === groups.length - 1
+        "
       />
       <div v-else-if="group.kind === 'tabLinks'" class="flex flex-col gap-1">
         <TabLinkCard
@@ -91,9 +95,9 @@ const showActions = computed(
 
     <div
       v-if="message.thinking || (message.streaming && !message.parts.length)"
-      class="text-agent-fg-muted flex items-center gap-1.5 py-1 text-sm"
+      class="text-agent-fg-muted flex h-8 items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal"
     >
-      <span class="icon-[lucide--brain] size-3.5 shrink-0" />
+      <span class="icon-[lucide--brain] size-4 shrink-0" />
       <span class="agent-shimmer-text min-w-0 truncate">{{
         message.thinkingText || $t('agent.thinking')
       }}</span>

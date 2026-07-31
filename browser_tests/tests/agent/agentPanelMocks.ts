@@ -96,6 +96,49 @@ export const TOOL_CALL_EVENT: AgentWsEvent = {
     tool_name: 'set_widget',
     status: 'ok',
     args: ['workflow', 'set-widget', 'workflow.json'],
+    duration_ms: 1300,
+    message_id: TURN_ID,
+    thread_id: THREAD_ID
+  }
+}
+
+export const INTERMEDIATE_MESSAGE_EVENT: AgentWsEvent = {
+  type: 'agent_message_delta',
+  data: {
+    delta: 'The first graph edit is complete. I will check the remaining work.',
+    message_id: TURN_ID,
+    thread_id: THREAD_ID
+  }
+}
+
+export const RESUMED_THINKING_EVENT: AgentWsEvent = {
+  type: 'agent_thinking',
+  data: {
+    delta: 'Checking the remaining edits.',
+    message_id: TURN_ID,
+    thread_id: THREAD_ID
+  }
+}
+
+export const OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
+  type: 'agent_tool_call',
+  data: {
+    tool_name: 'new_tab',
+    status: 'ok',
+    args: [],
+    duration_ms: 500,
+    message_id: TURN_ID,
+    thread_id: THREAD_ID
+  }
+}
+
+export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
+  type: 'agent_tool_call',
+  data: {
+    tool_name: 'resize_image_node',
+    status: 'ok',
+    args: [],
+    duration_ms: 200,
     message_id: TURN_ID,
     thread_id: THREAD_ID
   }
