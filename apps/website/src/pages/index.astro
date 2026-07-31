@@ -3,8 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import ProductCardsSection from "../components/home/ProductCardsSection.vue";
 import HeroGraphSection from "../components/hero/HeroGraphSection.vue";
 import SocialProofBarSection from "../components/common/SocialProofBarSection.vue";
-import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vue";
-import UseCaseSection from "../components/home/UseCaseSection.vue";
+import IndustriesSection from "../components/home/IndustriesSection.vue";
 import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSection.vue";
 import GetStartedSection from "../components/home/GetStartedSection.vue";
 import BuildWhatSection from "../components/home/BuildWhatSection.vue";
@@ -45,8 +44,7 @@ const { siteUrl } = pageContext(
 >
   <HeroGraphSection client:load />
   <SocialProofBarSection />
-  <ProductShowcaseSection client:load />
-  <UseCaseSection client:load />
+  <IndustriesSection client:load />
   <GetStartedSection />
   <ProductCardsSection />
   <CaseStudySpotlightSection client:load />
