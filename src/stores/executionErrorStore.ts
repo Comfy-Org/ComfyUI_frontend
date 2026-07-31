@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { whenever } from '@vueuse/core'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
@@ -16,6 +17,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -36,6 +38,7 @@ import {
   errorsForSlot,
   getInputConfigBounds,
   hasErrorForSlot,
+  isMissingNodePromptError,
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -60,6 +63,21 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const lastPromptError = ref<PromptError | null>(null)
 
   const isErrorOverlayOpen = ref(false)
+
+  whenever(
+    () => !missingNodesStore.hasMissingNodes,
+    () => {
+      if (
+        ChangeTracker.isLoadingGraph ||
+        !isMissingNodePromptError(lastPromptError.value)
+      ) {
+        return
+      }
+      lastPromptError.value = null
+    },
+    // The missing-node scan and prompt recording share a synchronous block; clear before recording the new error.
+    { flush: 'sync' }
+  )
 
   /** Replaces the full record; empty or null means the run produced no errors. */
   function recordNodeErrors(nodeErrors: Record<string, NodeError> | null) {
