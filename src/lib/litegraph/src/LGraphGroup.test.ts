@@ -1,8 +1,35 @@
-import { describe, expect } from 'vitest'
+import { describe, expect, vi } from 'vitest'
 
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import * as colorUtil from '@/utils/colorUtil'
 
 import { test } from './__fixtures__/testExtensions'
+
+vi.mock('@/utils/colorUtil', async (importOriginal) => {
+  const actual = await importOriginal<typeof colorUtil>()
+  return { ...actual, textOnColor: vi.fn(actual.textOnColor) }
+})
+
+function createMockContext() {
+  return {
+    beginPath: vi.fn(),
+    rect: vi.fn(),
+    fill: vi.fn(),
+    stroke: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    fillText: vi.fn(),
+    font: '',
+    fillStyle: '',
+    strokeStyle: '',
+    globalAlpha: 1,
+    textAlign: 'left' as CanvasTextAlign,
+    textBaseline: 'alphabetic' as CanvasTextBaseline
+  } as unknown as CanvasRenderingContext2D
+}
+
+const graphCanvas = { editor_alpha: 1 } as Partial<LGraphCanvas> as LGraphCanvas
 
 describe('LGraphGroup', () => {
   test('serializes to the existing format', () => {
@@ -75,6 +102,53 @@ describe('LGraphGroup', () => {
       expect(outer.children.has(inner)).toBe(true)
       // inner should not have computed its own children (it was never processed)
       expect(inner.children.size).toBe(0)
+    })
+  })
+
+  describe('draw', () => {
+    test('uses a light contrasting fillStyle for a dark background', () => {
+      const group = new LGraphGroup('Group')
+      group.color = '#000000'
+      const ctx = createMockContext()
+
+      group.draw(graphCanvas, ctx)
+
+      expect(ctx.fillStyle).toBe('#fff')
+    })
+
+    test('uses a dark contrasting fillStyle for a light background', () => {
+      const group = new LGraphGroup('Group')
+      group.color = '#ffffff'
+      const ctx = createMockContext()
+
+      group.draw(graphCanvas, ctx)
+
+      expect(ctx.fillStyle).toBe('#000')
+    })
+
+    test('does not recompute the contrast color when the background is unchanged', () => {
+      const group = new LGraphGroup('Group')
+      group.color = '#000000'
+      const ctx = createMockContext()
+      vi.mocked(colorUtil.textOnColor).mockClear()
+
+      group.draw(graphCanvas, ctx)
+      group.draw(graphCanvas, ctx)
+
+      expect(colorUtil.textOnColor).toHaveBeenCalledTimes(1)
+    })
+
+    test('recomputes the contrast color when the background changes', () => {
+      const group = new LGraphGroup('Group')
+      group.color = '#000000'
+      const ctx = createMockContext()
+      vi.mocked(colorUtil.textOnColor).mockClear()
+
+      group.draw(graphCanvas, ctx)
+      group.color = '#ffffff'
+      group.draw(graphCanvas, ctx)
+
+      expect(colorUtil.textOnColor).toHaveBeenCalledTimes(2)
     })
   })
 })

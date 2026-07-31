@@ -1,4 +1,5 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
+import { textOnColor } from '@/utils/colorUtil'
 
 import type { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -53,6 +54,11 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   graph?: LGraph
   flags: IGraphGroupFlags = {}
   selected?: boolean
+
+  /** Background colour last used to compute {@link _titleTextColor} */
+  _lastTitleBgColor?: string
+  /** Contrast colour for the title text, cached until the background colour changes */
+  _titleTextColor: string = '#fff'
 
   constructor(title?: string, id?: GroupId) {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
@@ -176,6 +182,11 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     const [width, height] = this._size
     const color = this.color || defaultColour
 
+    if (this._lastTitleBgColor !== color) {
+      this._lastTitleBgColor = color
+      this._titleTextColor = textOnColor(color)
+    }
+
     // Titlebar
     ctx.globalAlpha = 0.25 * graphCanvas.editor_alpha
     ctx.fillStyle = color
@@ -204,6 +215,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     ctx.font = `${font_size}px ${LiteGraph.GROUP_FONT}`
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
+    if (ctx.fillStyle !== this._titleTextColor)
+      ctx.fillStyle = this._titleTextColor
     ctx.fillText(
       this.title + (this.pinned ? '📌' : ''),
       x + font_size / 2,
