@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   canRunWorkflows: { value: true },
   showSubscriptionDialog: vi.fn(),
   workflowStatus: { value: new Map<unknown, string>() },
-  activeWorkflow: null as unknown,
+  activeWorkflow: { value: null as unknown },
   vueNodesEnabled: true,
   steps: [] as CoachStep[],
   runState: { value: 'idle' } as Ref<string>,
@@ -52,13 +52,17 @@ vi.mock('@/stores/executionStore', async () => {
   }
 })
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return mocks.activeWorkflow
-    }
-  })
-}))
+vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
+  const { shallowRef } = await import('vue')
+  mocks.activeWorkflow = shallowRef(null as unknown)
+  return {
+    useWorkflowStore: () => ({
+      get activeWorkflow() {
+        return mocks.activeWorkflow.value
+      }
+    })
+  }
+})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -95,6 +99,7 @@ function runStep(): SpotlightStep {
 
 let controllerScope: EffectScope | undefined
 let resolveRegisteredTour: () => Promise<unknown>
+let registeredTourHolds: () => boolean
 
 /** Scoped so each controller's document listener dies with its test. */
 async function freshController() {
@@ -106,6 +111,7 @@ async function freshController() {
     const definition = tours.tourDefinition('firstRun')
     return Array.isArray(definition) ? definition : definition?.()
   }
+  registeredTourHolds = () => tours.tourHolds('firstRun')
   const { useFirstRunTourController } =
     await import('./useFirstRunTourController')
   return controllerScope.run(() => useFirstRunTourController())!
@@ -114,7 +120,7 @@ async function freshController() {
 /** A started tour sitting on its Run step, the state every run outcome acts on. */
 async function tourOnRunStep() {
   mocks.steps = [runStep()]
-  mocks.activeWorkflow = TOUR_WORKFLOW
+  mocks.activeWorkflow.value = TOUR_WORKFLOW
   mocks.engine.startTour.mockImplementation(async () => {
     await resolveRegisteredTour()
     mocks.engine.activeTour = 'firstRun'
@@ -137,6 +143,14 @@ function finishRun(workflow: unknown, status: string) {
   return nextTick()
 }
 
+/** A user stop, which drops the status instead of reporting an outcome. */
+function dropRun(workflow: unknown) {
+  const next = new Map(mocks.workflowStatus.value)
+  next.delete(workflow)
+  mocks.workflowStatus.value = next
+  return nextTick()
+}
+
 function mountRunButton(
   testId: 'queue-button' | 'subscribe-to-run-button',
   onClick: () => void
@@ -155,7 +169,7 @@ describe('useFirstRunTourController', () => {
     vi.useFakeTimers()
     mocks.canRunWorkflows = ref(true)
     mocks.workflowStatus.value = new Map()
-    mocks.activeWorkflow = null
+    mocks.activeWorkflow.value = null
     mocks.vueNodesEnabled = true
     mocks.steps = []
     mocks.engine.activeTour = null
@@ -291,15 +305,62 @@ describe('useFirstRunTourController', () => {
       expect(mocks.engine.complete).toHaveBeenCalled()
     })
 
+    it('ends the tour when the user swaps to a workflow its ids do not describe', async () => {
+      await tourOnRunStep()
+      expect(registeredTourHolds()).toBe(true)
+
+      mocks.activeWorkflow.value = OTHER_WORKFLOW
+      await nextTick()
+
+      expect(
+        registeredTourHolds(),
+        'node ids are graph-local, so the tour points at strangers now'
+      ).toBe(false)
+    })
+
+    it('keeps the tour running while its own workflow stays active', async () => {
+      await tourOnRunStep()
+
+      await finishRun(TOUR_WORKFLOW, 'running')
+
+      expect(
+        registeredTourHolds(),
+        'a tour must not end just because its run progressed'
+      ).toBe(true)
+    })
+
     it('ignores a run that finished for another workflow', async () => {
       await tourOnRunStep()
-      mocks.activeWorkflow = OTHER_WORKFLOW
+      mocks.activeWorkflow.value = OTHER_WORKFLOW
 
       await finishRun(OTHER_WORKFLOW, 'failed')
 
       expect(
         mocks.runState.value,
         'a job the tour did not start must not speak for the tour'
+      ).toBe('idle')
+    })
+
+    it('stops promising a result once the user stops the run', async () => {
+      await tourOnRunStep()
+      await finishRun(TOUR_WORKFLOW, 'running')
+
+      await dropRun(TOUR_WORKFLOW)
+
+      expect(
+        mocks.runState.value,
+        'a stop drops the status, so the card would promise a result forever'
+      ).toBe('failed')
+    })
+
+    it('leaves a run it never saw start alone', async () => {
+      await tourOnRunStep()
+
+      await dropRun(TOUR_WORKFLOW)
+
+      expect(
+        mocks.runState.value,
+        'a status that was never running has no outcome to report'
       ).toBe('idle')
     })
 

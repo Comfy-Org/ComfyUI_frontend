@@ -95,6 +95,7 @@ export interface SurveyResponses {
 }
 
 export type OnboardingTourStage =
+  | 'not_started'
   | 'started'
   | 'step_shown'
   | 'completed'
@@ -729,6 +730,7 @@ export const TelemetryEvents = {
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
 
   // Onboarding Coachmarks
+  ONBOARDING_TOUR_NOT_STARTED: 'app:onboarding_tour_not_started',
   ONBOARDING_TOUR_STARTED: 'app:onboarding_tour_started',
   ONBOARDING_TOUR_STEP_SHOWN: 'app:onboarding_tour_step_shown',
   ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
@@ -801,6 +803,7 @@ export const OnboardingTourEvents: Record<
   OnboardingTourStage,
   TelemetryEventName
 > = {
+  not_started: TelemetryEvents.ONBOARDING_TOUR_NOT_STARTED,
   started: TelemetryEvents.ONBOARDING_TOUR_STARTED,
   step_shown: TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
   completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,

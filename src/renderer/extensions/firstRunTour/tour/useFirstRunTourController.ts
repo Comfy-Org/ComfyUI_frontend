@@ -34,8 +34,12 @@ function useFirstRunTourControllerInternal() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
-
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
+  const tourContextHolds = computed(
+    () =>
+      desktopLayout.value && workflowStore.activeWorkflow === tourWorkflow.value
+  )
+
   const onRunStep = computed(
     () =>
       engine.activeTour === 'firstRun' &&
@@ -47,10 +51,12 @@ function useFirstRunTourControllerInternal() {
   const runState = ref<RunState>('idle')
   watch(
     () => executionStore.getWorkflowStatus(tourWorkflow.value),
-    (status) => {
+    (status, previous) => {
       if (status === 'running') runState.value = 'generating'
       else if (status === 'completed') runState.value = 'succeeded'
       else if (status === 'failed') runState.value = 'failed'
+      else if (status === undefined && previous === 'running')
+        runState.value = 'failed'
     }
   )
 
@@ -103,7 +109,7 @@ function useFirstRunTourControllerInternal() {
     registerTour(
       'firstRun',
       () => firstRunTourSteps(templateId, runState),
-      desktopLayout
+      tourContextHolds
     )
     await delay(INTRO_PREVIEW_MS)
     const started = await engine.startTour('firstRun')

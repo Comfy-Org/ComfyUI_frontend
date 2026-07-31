@@ -32,21 +32,26 @@ const COACH_ID: Record<TourStep['kind'], CoachId> = {
   result: FIRST_RUN_COACH_IDS.sink
 }
 
-const registered: [CoachId, RectTarget][] = []
+/** Undoes the last registration; the tour holds one target set at a time. */
+let releaseRegistered = () => {}
 
 /** Drops the canvas targets a finished tour registered. */
 export function releaseFirstRunTargets() {
-  for (const [id, target] of registered) unregisterCoachmark(id, target)
-  registered.length = 0
+  releaseRegistered()
+  releaseRegistered = () => {}
 }
 
 function registerCanvasTargets(sequence: TourStep[]) {
+  const registered: [CoachId, RectTarget][] = []
   for (const step of sequence) {
     if (step.kind === 'run') continue
     const id = COACH_ID[step.kind]
     const target = canvasNodeTarget(step.nodeId)
     registerCoachmark(id, target)
     registered.push([id, target])
+  }
+  releaseRegistered = () => {
+    for (const [id, target] of registered) unregisterCoachmark(id, target)
   }
 }
 

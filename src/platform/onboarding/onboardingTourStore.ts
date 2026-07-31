@@ -357,6 +357,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const resolved = resolveSteps(built, targetMounted)
     if (!resolved.length) {
       state.value = IDLE
+      telemetry?.trackOnboardingTour('not_started', {
+        tour: entryPath,
+        step_count: 0
+      })
       return false
     }
     state.value = {
