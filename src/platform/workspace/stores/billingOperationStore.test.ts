@@ -497,6 +497,32 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-1')?.status).toBe('timeout')
     })
 
+    it('restarts a subscription operation after a polling timeout', async () => {
+      let status: 'pending' | 'succeeded' = 'pending'
+      vi.mocked(workspaceApi.getBillingOpStatus).mockImplementation(
+        async () => ({
+          id: 'op-1',
+          status,
+          started_at: new Date().toISOString()
+        })
+      )
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 8001)
+      expect(store.getOperation('op-1')?.status).toBe('timeout')
+
+      status = 'succeeded'
+      const retry = store.startOperation('op-1', 'subscription')
+
+      expect(store.getOperation('op-1')?.status).toBe('pending')
+      expect(store.isSettingUp).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(0)
+      expect((await retry).status).toBe('succeeded')
+    })
+
     it('allows five minutes to discover a subscription action', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',

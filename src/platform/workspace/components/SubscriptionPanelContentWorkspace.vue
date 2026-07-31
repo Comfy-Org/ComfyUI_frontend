@@ -356,6 +356,8 @@ const {
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
   subscription,
+  plans,
+  billingStatus,
   subscriptionStatus,
   isLoading,
   error,
@@ -370,10 +372,18 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
+const isTerminalPersonalSubscription = computed(
+  () =>
+    isInPersonalWorkspace.value &&
+    !isActiveSubscription.value &&
+    billingStatus.value === 'inactive'
+)
+
 const isSubscriptionEnded = computed(
   () =>
     subscriptionStatus.value === 'ended' ||
-    (isSubscriptionCancelled.value && !isActiveSubscription.value)
+    (isSubscriptionCancelled.value && !isActiveSubscription.value) ||
+    isTerminalPersonalSubscription.value
 )
 
 // Show subscribe prompt to owners without active subscription. A cancelled plan
@@ -447,6 +457,23 @@ const formattedEndDate = computed(() =>
   formatSubscriptionDate(subscription.value?.endDate, locale.value)
 )
 
+const formattedChangeDate = computed(() =>
+  formatSubscriptionDate(subscription.value?.changeAt, locale.value)
+)
+
+const scheduledPlanName = computed(() => {
+  const scheduledPlan = plans.value.find(
+    (plan) => plan.slug === subscription.value?.scheduledPlanSlug
+  )
+  if (!scheduledPlan) return ''
+  if (scheduledPlan.slug.startsWith('team')) {
+    return t('subscription.teamPlanName')
+  }
+  return t(
+    `subscription.tiers.${resolveSubscriptionTierKey(scheduledPlan.tier)}.name`
+  )
+})
+
 const showSubscriptionStateCard = computed(
   () => isSubscriptionCancelled.value || isSubscriptionEnded.value
 )
@@ -474,6 +501,14 @@ const planDateDisplay = computed(() => {
   if (isSubscriptionCancelled.value) {
     return formattedEndDate.value
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })
+      : ''
+  }
+  if (subscription.value?.scheduledPlanSlug || subscription.value?.changeAt) {
+    return scheduledPlanName.value && formattedChangeDate.value
+      ? t('subscription.changesToPlanOnDate', {
+          plan: scheduledPlanName.value,
+          date: formattedChangeDate.value
+        })
       : ''
   }
   return formattedRenewalDate.value
