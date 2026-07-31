@@ -1,11 +1,25 @@
 <template>
-  <h2 class="m-0 mb-8 text-center text-xl text-muted-foreground lg:text-2xl">
-    {{ confirmTitle }}
-  </h2>
   <div
-    class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm"
+    class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
   >
     <div>
+      <div class="mb-8 flex items-center gap-3">
+        <Button
+          size="icon"
+          variant="muted-textonly"
+          class="shrink-0 rounded-full"
+          :aria-label="$t('g.back')"
+          :disabled="isLoading"
+          @click="$emit('back')"
+        >
+          <i class="pi pi-arrow-left text-base" />
+        </Button>
+        <h2
+          class="m-0 flex-1 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+        >
+          {{ confirmTitle }}
+        </h2>
+      </div>
       <div
         v-if="isReactivating"
         class="mb-6 flex gap-3 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
@@ -62,10 +76,12 @@
           {{ newTierName }}
         </span>
         <div class="flex items-baseline gap-2">
-          <span class="text-4xl font-semibold text-base-foreground">
+          <span
+            class="text-2xl font-semibold text-base-foreground tabular-nums"
+          >
             ${{ heroPrice }}
           </span>
-          <span class="text-xl text-base-foreground">
+          <span class="text-base text-base-foreground">
             {{ $t('subscription.usdPerMonth') }}
           </span>
         </div>
@@ -90,34 +106,13 @@
         </span>
       </div>
 
-      <!-- Proration Line Items (immediate changes) -->
-      <div v-if="isImmediate" class="flex flex-col gap-2 pt-10">
-        <div class="flex items-center justify-between text-muted-foreground">
-          <span>{{ subscriptionLineLabel }}</span>
-          <span>{{ money(newPlanPriceUsd) }}</span>
-        </div>
-        <div
-          v-if="prorationCreditUsd > 0"
-          class="flex items-center justify-between text-muted-foreground"
-        >
-          <span>
-            {{
-              $t('subscription.preview.creditFromCurrent', {
-                plan: creditFromPlanLabel
-              })
-            }}
-          </span>
-          <span>− {{ money(prorationCreditUsd) }}</span>
-        </div>
-      </div>
-
       <!-- Credits Refill (immediate changes) -->
       <div v-if="isImmediate" class="flex flex-col gap-2 pt-10">
         <div class="flex items-center justify-between">
           <span class="text-base-foreground">{{ refillLabel }}</span>
           <div class="flex items-center gap-1">
             <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
-            <span class="font-bold text-base-foreground">{{
+            <span class="font-bold text-base-foreground tabular-nums">{{
               refillCredits
             }}</span>
           </div>
@@ -146,7 +141,7 @@
           </span>
           <div class="flex items-center gap-1">
             <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
-            <span class="font-bold text-base-foreground">{{
+            <span class="font-bold text-base-foreground tabular-nums">{{
               refillCredits
             }}</span>
           </div>
@@ -164,13 +159,47 @@
         </span>
       </div>
 
-      <!-- Total Due -->
-      <div class="mt-10 flex flex-col gap-2 border-t border-border-subtle pt-8">
+      <!-- Promo (immediate changes only — a scheduled change bills later).
+           The entered code has nowhere to go yet: the change-preview endpoint
+           does not accept promotion_code. Wire on the BE contract. -->
+      <div v-if="isImmediate" class="py-4">
+        <SubscriptionPromoCodeField v-model="promotionCode" />
+      </div>
+
+      <!-- Total Due (immediate changes carry their addends: one sum under
+           one divider, per Figma 5344-35724) -->
+      <div
+        :class="
+          cn(
+            'flex flex-col gap-2 border-t border-border-subtle pt-6',
+            !isImmediate && 'mt-10'
+          )
+        "
+      >
+        <template v-if="isImmediate">
+          <div class="flex items-center justify-between text-muted-foreground">
+            <span>{{ subscriptionLineLabel }}</span>
+            <span class="tabular-nums">{{ money(newPlanPriceUsd) }}</span>
+          </div>
+          <div
+            v-if="prorationCreditUsd > 0"
+            class="flex items-center justify-between text-muted-foreground"
+          >
+            <span>
+              {{
+                $t('subscription.preview.creditFromCurrent', {
+                  plan: creditFromPlanLabel
+                })
+              }}
+            </span>
+            <span class="tabular-nums">− {{ money(prorationCreditUsd) }}</span>
+          </div>
+        </template>
         <div class="flex items-center justify-between text-base">
           <span class="text-base-foreground">
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
-          <span class="font-bold text-base-foreground">
+          <span class="font-bold text-base-foreground tabular-nums">
             {{ money(totalDueTodayUsd) }}
           </span>
         </div>
@@ -179,12 +208,10 @@
     </div>
 
     <!-- Footer -->
-    <div class="flex flex-col gap-2 pt-8">
-      <SubscriptionTermsNote />
-
+    <div class="flex flex-col gap-2 pt-8 pb-4">
       <Button
         v-if="actionUrl"
-        variant="primary"
+        variant="inverted"
         size="lg"
         class="w-full rounded-lg"
         @click="openVerification"
@@ -193,7 +220,7 @@
       </Button>
 
       <Button
-        variant="tertiary"
+        :variant="actionUrl ? 'tertiary' : 'inverted'"
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
@@ -203,14 +230,7 @@
         {{ confirmCta }}
       </Button>
 
-      <Button
-        variant="textonly"
-        class="cursor-pointer text-center text-xs text-muted-foreground transition-colors hover:bg-none hover:text-base-foreground"
-        :disabled="isLoading"
-        @click="$emit('back')"
-      >
-        {{ $t('subscription.preview.backToAllPlans') }}
-      </Button>
+      <SubscriptionTermsNote class="mt-2" />
     </div>
   </div>
 </template>
@@ -228,6 +248,7 @@ import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPric
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
+import SubscriptionPromoCodeField from './SubscriptionPromoCodeField.vue'
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 
 type PersonalTierKey = 'standard' | 'creator' | 'pro'
@@ -258,6 +279,8 @@ defineEmits<{
 }>()
 
 const { t, n } = useI18n()
+
+const promotionCode = ref('')
 const { subscription } = useBillingContext()
 
 function openVerification() {

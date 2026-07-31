@@ -2948,7 +2948,11 @@
         "amountChanged": "The charge amount changed since you confirmed it — please review and try again",
         "unavailable": "We can't confirm this reactivation right now — please choose your plan again"
       },
-      "addPromoCode": "Add promo code"
+      "addPromoCode": "Add promo code",
+      "changePaymentMethod": "Change",
+      "savedPaymentMethod": "Payment method",
+      "addNewPaymentMethod": "Add new payment method",
+      "alipay": "Alipay"
     },
     "success": {
       "allSet": "You're all set",
