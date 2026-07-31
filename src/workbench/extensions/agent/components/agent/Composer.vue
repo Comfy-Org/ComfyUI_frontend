@@ -48,9 +48,18 @@ const emit = defineEmits<{
   mentionPick: [node: SelectedNode]
 }>()
 
+const duplicateIdClass =
+  'shrink-0 rounded-[26px] bg-charcoal-400 px-2 py-0.5 font-mono text-xs/4 font-medium text-smoke-800'
+
 const mentionNodes = ref<SelectedNode[]>([])
+function loadMentionNodes(): void {
+  mentionNodes.value = getMentionNodes().toSorted((a, b) =>
+    a.title.localeCompare(b.title)
+  )
+}
+
 function onAddNodesOpen(open: boolean): void {
-  if (open) mentionNodes.value = getMentionNodes()
+  if (open) loadMentionNodes()
 }
 
 const mentionOpen = ref(false)
@@ -105,7 +114,7 @@ function syncMention(event: Event): void {
     closeMention()
     return
   }
-  if (!mentionOpen.value) mentionNodes.value = getMentionNodes()
+  if (!mentionOpen.value) loadMentionNodes()
   mentionOpen.value = true
   mentionStart.value = at
   mentionQuery.value = query
@@ -250,7 +259,7 @@ defineExpose({
         <span class="truncate">{{ node.title }}</span>
         <span
           v-if="graphDupes.has(node.title)"
-          class="text-agent-fg-subtle ml-auto shrink-0"
+          :class="cn(duplicateIdClass, 'ml-auto')"
         >
           #{{ node.id }}
         </span>
@@ -274,7 +283,7 @@ defineExpose({
         <span class="max-w-40 truncate">{{ tag.title }}</span>
         <span
           v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
-          class="text-agent-fg-subtle shrink-0"
+          :class="duplicateIdClass"
           >#{{ tag.id }}</span
         >
         <button
@@ -362,7 +371,7 @@ defineExpose({
                     <span class="truncate">{{ node.title }}</span>
                     <span
                       v-if="graphDupes.has(node.title)"
-                      class="text-agent-fg-subtle ml-auto shrink-0"
+                      :class="cn(duplicateIdClass, 'ml-auto')"
                     >
                       #{{ node.id }}
                     </span>
