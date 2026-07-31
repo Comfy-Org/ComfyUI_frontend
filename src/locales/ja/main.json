@@ -1474,9 +1474,6 @@
   "feedback": {
     "title": "フィードバックを共有"
   },
-  "freePerks": {
-    "freeRuns": "{count}回の無料実行"
-  },
   "g": {
     "1x": "1倍速",
     "2x": "2倍速",
@@ -3124,23 +3121,6 @@
     "addColor": "色を追加",
     "swatchTitle": "クリックで編集 · ドラッグで並べ替え · 右クリックで削除"
   },
-  "preview": {
-    "completeVerification": "認証を完了する",
-    "reactivation": {
-      "amountChanged": "確認後に請求金額が変更されました。再度ご確認の上、やり直してください",
-      "checkboxLabel": "本日{amount}が請求されることを理解しました",
-      "confirmButton": "確認して再開",
-      "confirmButtonWithCharge": "確認して再開 — 本日{amount}",
-      "confirmationRequired": "サブスクリプションはキャンセルされています — 続行する前に再開の請求金額をご確認ください",
-      "downgradeBody": "{plan}は{date}に終了予定でした。{newPlan}へ変更すると再開され、本日は請求されませんが、以降は{nextDate}に新しい価格で自動更新されます。",
-      "durationChangeBody": "{plan}は{date}に終了予定でした。年間請求に変更すると再開され、本日{amount}が請求されます。以降は{nextDate}に毎年自動更新されます。",
-      "durationChangeBodyMonthly": "{plan}は{date}に終了予定でした。月額請求に変更すると再開され、本日{amount}が請求されます。以降は{nextDate}に自動更新されます。",
-      "title": "サブスクリプションの再開",
-      "titleAnnual": "サブスクリプションの再開 — 本日1年分を請求",
-      "unavailable": "現在この再開を確認できません — もう一度プランを選択してください",
-      "upgradeBody": "{plan}は{date}に終了予定でした。今すぐアップグレードすると再開され、本日{amount}が請求されます。以降は{nextDate}に自動更新されます。"
-    }
-  },
   "progressToast": {
     "allDownloadsCompleted": "すべてのダウンロードが完了しました",
     "downloadingModel": "モデルをダウンロード中...",
@@ -3952,6 +3932,7 @@
     "everythingInPlus": "{plan}のすべて、さらに：",
     "expiresDate": "{date} に期限切れ",
     "freePerks": {
+      "freeRuns": "{count} 回の無料実行",
       "maxRuntime": "最大実行時間：{duration}"
     },
     "gpuLabel": "RTX 6000 Pro（96GB VRAM）",
@@ -4022,6 +4003,7 @@
       "backToAllPlans": "すべてのプランに戻る",
       "billedEachMonth": "毎月{amount}請求されます。いつでもキャンセル可能です。",
       "commitment": "契約期間",
+      "completeVerification": "認証を完了する",
       "confirm": "確認",
       "confirmChange": "変更を確認",
       "confirmChangeTitle": "予定されている変更を確認",
@@ -4046,6 +4028,20 @@
       "privacyPolicy": "プライバシーポリシー",
       "proratedCharge": "{plan}の按分請求",
       "proratedRefund": "{plan}の按分返金",
+      "reactivation": {
+        "amountChanged": "確認後に請求額が変更されました — 内容を確認して再度お試しください",
+        "checkboxLabel": "本日 {amount} が請求されることを理解しました",
+        "confirmButton": "確認して再有効化",
+        "confirmButtonWithCharge": "確認して再有効化 — 本日 {amount}",
+        "confirmationRequired": "サブスクリプションはキャンセルされています — 続行する前に再有効化の請求を確認してください",
+        "downgradeBody": "あなたの {plan} は {date} に終了予定でした。{newPlan} に切り替えると再有効化されます — 本日は請求されませんが、{nextDate} から新しい価格で自動更新されます（終了しません）。",
+        "durationChangeBody": "あなたの {plan} は {date} に終了予定でした。年間請求に切り替えると再有効化され、本日 {amount} が請求されます。その後は毎年 {nextDate} に自動更新されます（終了しません）。",
+        "durationChangeBodyMonthly": "あなたの {plan} は {date} に終了予定でした。月額請求に切り替えると再有効化され、本日 {amount} が請求されます。その後は毎月 {nextDate} に自動更新されます（終了しません）。",
+        "title": "サブスクリプションの再有効化",
+        "titleAnnual": "サブスクリプションの再有効化 — 本日1年分を請求",
+        "unavailable": "現在この再有効化を確認できません — プランを再度選択してください",
+        "upgradeBody": "あなたの {plan} は {date} に終了予定でした。今アップグレードすると再有効化されます — 本日 {amount} が請求され、{nextDate} から自動更新されます（終了しません）。"
+      },
       "refillReplacesNote": "月間補充を置き換えます。既存の残高は保持されます。",
       "showMoreFeatures": "さらに機能を表示",
       "starting": "{date}から開始",

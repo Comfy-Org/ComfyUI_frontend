@@ -1474,9 +1474,6 @@
   "feedback": {
     "title": "分享回饋"
   },
-  "freePerks": {
-    "freeRuns": "{count} 次免費運行"
-  },
   "g": {
     "1x": "1倍速",
     "2x": "2倍速",
@@ -3124,23 +3121,6 @@
     "addColor": "新增顏色",
     "swatchTitle": "點擊編輯 · 拖曳排序 · 右鍵移除"
   },
-  "preview": {
-    "completeVerification": "完成驗證",
-    "reactivation": {
-      "amountChanged": "自您確認後，收費金額已變更 — 請重新檢查並再試一次",
-      "checkboxLabel": "我了解今日將收取 {amount}",
-      "confirmButton": "確認並恢復訂閱",
-      "confirmButtonWithCharge": "確認並恢復訂閱 — 今日收取 {amount}",
-      "confirmationRequired": "您的訂閱已取消 — 請在繼續前確認恢復訂閱的費用",
-      "downgradeBody": "您的 {plan} 原定於 {date} 結束。切換至 {newPlan} 將會恢復訂閱 — 今日不會收費，但將於 {nextDate} 以新價格自動續訂，不會結束。",
-      "durationChangeBody": "您的 {plan} 原定於 {date} 結束。切換為年繳將會恢復訂閱，並於今日收取全年費用 {amount}。之後將於 {nextDate} 每年自動續訂，不會結束。",
-      "durationChangeBodyMonthly": "您的 {plan} 原定於 {date} 結束。切換為月繳將會恢復訂閱 — 今日將收取 {amount}，並於 {nextDate} 自動續訂，不會結束。",
-      "title": "正在恢復您的訂閱",
-      "titleAnnual": "正在恢復您的訂閱 — 今日收取全年費用",
-      "unavailable": "目前無法確認此恢復訂閱 — 請重新選擇您的方案",
-      "upgradeBody": "您的 {plan} 原定於 {date} 結束。現在升級將會恢復訂閱 — 今日將收取 {amount}，並於 {nextDate} 自動續訂，不會結束。"
-    }
-  },
   "progressToast": {
     "allDownloadsCompleted": "所有下載已完成",
     "downloadingModel": "正在下載模型...",
@@ -3952,6 +3932,7 @@
     "everythingInPlus": "包含 {plan} 的所有內容，並加上：",
     "expiresDate": "將於 {date} 到期",
     "freePerks": {
+      "freeRuns": "{count} 次免費運行",
       "maxRuntime": "最長執行時間 {duration}"
     },
     "gpuLabel": "RTX 6000 Pro（96GB VRAM）",
@@ -4022,6 +4003,7 @@
       "backToAllPlans": "返回所有方案",
       "billedEachMonth": "每月收費 {amount}。可隨時取消。",
       "commitment": "承諾期",
+      "completeVerification": "完成驗證",
       "confirm": "確認",
       "confirmChange": "確認變更",
       "confirmChangeTitle": "檢視您的排程變更",
@@ -4046,6 +4028,20 @@
       "privacyPolicy": "隱私政策",
       "proratedCharge": "{plan} 按比例收費",
       "proratedRefund": "{plan} 按比例退款",
+      "reactivation": {
+        "amountChanged": "自您確認後，收費金額已變更 — 請重新檢查並再試一次",
+        "checkboxLabel": "我了解今日將收取 {amount}",
+        "confirmButton": "確認並重新啟用",
+        "confirmButtonWithCharge": "確認並重新啟用 — 今日收取 {amount}",
+        "confirmationRequired": "您的訂閱已取消 — 請確認重新啟用的費用後再繼續",
+        "downgradeBody": "您的 {plan} 原定於 {date} 結束。切換至 {newPlan} 將重新啟用訂閱 — 今日不會收費，但將於 {nextDate} 以新價格自動續訂，而非結束。",
+        "durationChangeBody": "您的 {plan} 原定於 {date} 結束。切換至年度計費將重新啟用訂閱，並於今日收取全年費用 {amount}。之後將於每年 {nextDate} 自動續訂，而非結束。",
+        "durationChangeBodyMonthly": "您的 {plan} 原定於 {date} 結束。切換至月度計費將重新啟用訂閱 — 今日將收取 {amount}，並於 {nextDate} 自動續訂，而非結束。",
+        "title": "正在重新啟用您的訂閱",
+        "titleAnnual": "正在重新啟用您的訂閱 — 今日收取全年費用",
+        "unavailable": "目前無法確認此重新啟用 — 請重新選擇您的方案",
+        "upgradeBody": "您的 {plan} 原定於 {date} 結束。現在升級將重新啟用訂閱 — 今日將收取 {amount}，並於 {nextDate} 自動續訂，而非結束。"
+      },
       "refillReplacesNote": "將取代您的月度補充。現有餘額將保留。",
       "showMoreFeatures": "顯示更多功能",
       "starting": "自 {date} 開始",

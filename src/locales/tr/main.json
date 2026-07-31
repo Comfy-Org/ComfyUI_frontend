@@ -1474,9 +1474,6 @@
   "feedback": {
     "title": "Geri Bildirim Paylaş"
   },
-  "freePerks": {
-    "freeRuns": "{count} ücretsiz çalışma | {count} ücretsiz çalışma"
-  },
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -3124,23 +3121,6 @@
     "addColor": "Renk ekle",
     "swatchTitle": "Düzenlemek için tıkla · Sürükleyerek sırala · Kaldırmak için sağ tıkla"
   },
-  "preview": {
-    "completeVerification": "Doğrulamayı tamamla",
-    "reactivation": {
-      "amountChanged": "Onayladığınızdan beri ücret değişti — lütfen gözden geçirip tekrar deneyin",
-      "checkboxLabel": "Bugün {amount} ücretlendirileceğimi anladım",
-      "confirmButton": "Onayla ve yeniden etkinleştir",
-      "confirmButtonWithCharge": "Onayla ve yeniden etkinleştir — bugün {amount}",
-      "confirmationRequired": "Aboneliğiniz iptal edildi — devam etmeden önce yeniden etkinleştirme ücretini onaylayın",
-      "downgradeBody": "{plan} planınızın {date} tarihinde sona ermesi planlanmıştı. {newPlan} planına geçerseniz yeniden etkinleşir — bugün ücretlendirilmezsiniz, ancak {nextDate} tarihinde yeni fiyatla otomatik olarak yenilenecek.",
-      "durationChangeBody": "{plan} planınızın {date} tarihinde sona ermesi planlanmıştı. Yıllık faturalandırmaya geçerseniz yeniden etkinleşir ve bugün tam yıl için {amount} ücretlendirilir. Sonrasında her yıl {nextDate} tarihinde yenilenecek.",
-      "durationChangeBodyMonthly": "{plan} planınızın {date} tarihinde sona ermesi planlanmıştı. Aylık faturalandırmaya geçerseniz yeniden etkinleşir — bugün {amount} ücretlendirilirsiniz ve {nextDate} tarihinde otomatik olarak yenilenecek.",
-      "title": "Aboneliğiniz yeniden etkinleştiriliyor",
-      "titleAnnual": "Aboneliğiniz yeniden etkinleştiriliyor — tam yıl bugün faturalandırılacak",
-      "unavailable": "Bu yeniden etkinleştirmeyi şu anda onaylayamıyoruz — lütfen planınızı tekrar seçin",
-      "upgradeBody": "{plan} planınızın {date} tarihinde sona ermesi planlanmıştı. Şimdi yükseltirseniz yeniden etkinleşir — bugün {amount} ücretlendirilirsiniz ve {nextDate} tarihinde otomatik olarak yenilenir."
-    }
-  },
   "progressToast": {
     "allDownloadsCompleted": "Tüm indirmeler tamamlandı",
     "downloadingModel": "Model indiriliyor...",
@@ -3952,6 +3932,7 @@
     "everythingInPlus": "{plan} planındaki her şey ve ayrıca:",
     "expiresDate": "{date} tarihinde sona erer",
     "freePerks": {
+      "freeRuns": "{count} ücretsiz çalışma | {count} ücretsiz çalışma",
       "maxRuntime": "Maksimum çalışma süresi: {duration}"
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
@@ -4022,6 +4003,7 @@
       "backToAllPlans": "Tüm planlara geri dön",
       "billedEachMonth": "Her ay {amount} faturalandırılır. İstediğiniz zaman iptal edebilirsiniz.",
       "commitment": "taahhüt",
+      "completeVerification": "Doğrulamayı tamamla",
       "confirm": "Onayla",
       "confirmChange": "Değişikliği onayla",
       "confirmChangeTitle": "Planlanan değişikliğinizi gözden geçirin",
@@ -4046,6 +4028,20 @@
       "privacyPolicy": "Gizlilik Politikası",
       "proratedCharge": "{plan} için orantılı ücret",
       "proratedRefund": "{plan} için orantılı iade",
+      "reactivation": {
+        "amountChanged": "Onayladığınızdan beri ücret değişti — lütfen gözden geçirip tekrar deneyin",
+        "checkboxLabel": "Bugün {amount} ücretlendirileceğimi anladım",
+        "confirmButton": "Onayla ve yeniden etkinleştir",
+        "confirmButtonWithCharge": "Onayla ve yeniden etkinleştir — bugün {amount}",
+        "confirmationRequired": "Aboneliğiniz iptal edildi — devam etmeden önce yeniden etkinleştirme ücretini onaylayın",
+        "downgradeBody": "{plan} aboneliğinizin {date} tarihinde sona ermesi planlanmıştı. {newPlan} paketine geçerseniz yeniden etkinleşir — bugün ücretlendirilmeyeceksiniz, ancak aboneliğiniz sona ermek yerine {nextDate} tarihinde yeni fiyatla otomatik olarak yenilenecek.",
+        "durationChangeBody": "{plan} aboneliğinizin {date} tarihinde sona ermesi planlanmıştı. Yıllık faturalamaya geçerseniz aboneliğiniz yeniden etkinleşir ve bugün {amount} tutarında tam yıl ücreti alınır. Ardından her yıl {nextDate} tarihinde otomatik olarak yenilenecek.",
+        "durationChangeBodyMonthly": "{plan} aboneliğinizin {date} tarihinde sona ermesi planlanmıştı. Aylık faturalamaya geçerseniz aboneliğiniz yeniden etkinleşir — bugün {amount} ücretlendirileceksiniz ve aboneliğiniz sona ermek yerine {nextDate} tarihinde otomatik olarak yenilenecek.",
+        "title": "Aboneliğinizi yeniden etkinleştiriyorsunuz",
+        "titleAnnual": "Aboneliğinizi yeniden etkinleştiriyorsunuz — tam yıl bugün faturalandırılacak",
+        "unavailable": "Bu yeniden etkinleştirmeyi şu anda onaylayamıyoruz — lütfen planınızı tekrar seçin",
+        "upgradeBody": "{plan} aboneliğinizin {date} tarihinde sona ermesi planlanmıştı. Şimdi yükseltirseniz yeniden etkinleşir — bugün {amount} ücretlendirileceksiniz ve aboneliğiniz sona ermek yerine {nextDate} tarihinde otomatik olarak yenilenecek."
+      },
       "refillReplacesNote": "Aylık yenilemeyi değiştirir. Mevcut bakiye korunur.",
       "showMoreFeatures": "Daha fazla özelliği göster",
       "starting": "{date} tarihinde başlıyor",

@@ -1474,9 +1474,6 @@
   "feedback": {
     "title": "Compartir comentarios"
   },
-  "freePerks": {
-    "freeRuns": "{count} ejecución gratuita | {count} ejecuciones gratuitas"
-  },
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -3124,23 +3121,6 @@
     "addColor": "Agregar un color",
     "swatchTitle": "Haz clic para editar · arrastra para reordenar · clic derecho para eliminar"
   },
-  "preview": {
-    "completeVerification": "Completa la verificación",
-    "reactivation": {
-      "amountChanged": "El monto del cargo ha cambiado desde que lo confirmaste — revisa y vuelve a intentarlo",
-      "checkboxLabel": "Entiendo que se me cobrará {amount} hoy",
-      "confirmButton": "Confirmar y reactivar",
-      "confirmButtonWithCharge": "Confirmar y reactivar — {amount} hoy",
-      "confirmationRequired": "Tu suscripción está cancelada — por favor, confirma el cargo de reactivación antes de continuar",
-      "downgradeBody": "Tu {plan} estaba programado para finalizar el {date}. Cambiar a {newPlan} lo reactiva — hoy no se te cobrará, pero ahora se renovará automáticamente el {nextDate} al nuevo precio en lugar de finalizar.",
-      "durationChangeBody": "Tu {plan} estaba programado para finalizar el {date}. Cambiar a facturación anual lo reactiva y se cobrará el año completo, {amount}, hoy. Luego se renovará anualmente el {nextDate} en lugar de finalizar.",
-      "durationChangeBodyMonthly": "Tu {plan} estaba programado para finalizar el {date}. Cambiar a facturación mensual lo reactiva — se te cobrará {amount} hoy y se renovará automáticamente el {nextDate} en lugar de finalizar.",
-      "title": "Reactivando tu suscripción",
-      "titleAnnual": "Reactivando tu suscripción — año completo facturado hoy",
-      "unavailable": "No podemos confirmar esta reactivación en este momento — por favor, elige tu plan nuevamente",
-      "upgradeBody": "Tu {plan} estaba programado para finalizar el {date}. Al actualizar ahora, se reactiva — se te cobrará {amount} hoy y se renovará automáticamente el {nextDate} en lugar de finalizar."
-    }
-  },
   "progressToast": {
     "allDownloadsCompleted": "Todas las descargas completadas",
     "downloadingModel": "Descargando modelo...",
@@ -3952,6 +3932,7 @@
     "everythingInPlus": "Todo en {plan}, además:",
     "expiresDate": "Caduca el {date}",
     "freePerks": {
+      "freeRuns": "{count} ejecución gratuita | {count} ejecuciones gratuitas",
       "maxRuntime": "{duration} de tiempo máximo de ejecución"
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
@@ -4022,6 +4003,7 @@
       "backToAllPlans": "Volver a todos los planes",
       "billedEachMonth": "{amount} facturado cada mes. Cancela en cualquier momento.",
       "commitment": "compromiso",
+      "completeVerification": "Completa la verificación",
       "confirm": "Confirmar",
       "confirmChange": "Confirmar cambio",
       "confirmChangeTitle": "Revisa tu cambio programado",
@@ -4046,6 +4028,20 @@
       "privacyPolicy": "Política de privacidad",
       "proratedCharge": "Cargo prorrateado por {plan}",
       "proratedRefund": "Reembolso prorrateado por {plan}",
+      "reactivation": {
+        "amountChanged": "El monto del cargo ha cambiado desde que lo confirmaste — por favor revisa e inténtalo de nuevo",
+        "checkboxLabel": "Entiendo que se me cobrará {amount} hoy",
+        "confirmButton": "Confirmar y reactivar",
+        "confirmButtonWithCharge": "Confirmar y reactivar — {amount} hoy",
+        "confirmationRequired": "Tu suscripción está cancelada — por favor confirma el cargo de reactivación antes de continuar",
+        "downgradeBody": "Tu {plan} estaba programado para finalizar el {date}. Cambiar a {newPlan} lo reactiva — no se te cobrará hoy, pero ahora se renovará automáticamente el {nextDate} al nuevo precio en lugar de finalizar.",
+        "durationChangeBody": "Tu {plan} estaba programado para finalizar el {date}. Cambiar a facturación anual lo reactiva y se cobrará el año completo, {amount}, hoy. Luego se renovará anualmente el {nextDate} en lugar de finalizar.",
+        "durationChangeBodyMonthly": "Tu {plan} estaba programado para finalizar el {date}. Cambiar a facturación mensual lo reactiva — se te cobrará {amount} hoy y se renovará automáticamente el {nextDate} en lugar de finalizar.",
+        "title": "Reactivando tu suscripción",
+        "titleAnnual": "Reactivando tu suscripción — año completo facturado hoy",
+        "unavailable": "No podemos confirmar esta reactivación en este momento — por favor elige tu plan nuevamente",
+        "upgradeBody": "Tu {plan} estaba programado para finalizar el {date}. Si actualizas ahora, se reactiva — se te cobrará {amount} hoy y se renovará automáticamente el {nextDate} en lugar de finalizar."
+      },
       "refillReplacesNote": "Reemplaza tu recarga mensual. El saldo existente se mantiene.",
       "showMoreFeatures": "Mostrar más funciones",
       "starting": "Comienza el {date}",

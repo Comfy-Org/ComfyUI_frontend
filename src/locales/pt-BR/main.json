@@ -1474,9 +1474,6 @@
   "feedback": {
     "title": "Enviar feedback"
   },
-  "freePerks": {
-    "freeRuns": "{count} execução gratuita | {count} execuções gratuitas"
-  },
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -3124,23 +3121,6 @@
     "addColor": "Adicionar cor",
     "swatchTitle": "Clique para editar · arraste para reordenar · clique direito para remover"
   },
-  "preview": {
-    "completeVerification": "Concluir verificação",
-    "reactivation": {
-      "amountChanged": "O valor da cobrança mudou desde a sua confirmação — revise e tente novamente",
-      "checkboxLabel": "Entendo que serei cobrado {amount} hoje",
-      "confirmButton": "Confirmar e reativar",
-      "confirmButtonWithCharge": "Confirmar e reativar — {amount} hoje",
-      "confirmationRequired": "Sua assinatura está cancelada — por favor, confirme a cobrança de reativação antes de continuar",
-      "downgradeBody": "Seu {plan} estava programado para terminar em {date}. Mudar para {newPlan} reativa — você não será cobrado hoje, mas ela será renovada automaticamente em {nextDate} com o novo valor ao invés de encerrar.",
-      "durationChangeBody": "Seu {plan} estava programado para terminar em {date}. Mudar para cobrança anual reativa e cobra o ano completo, {amount}, hoje. Depois, será renovada anualmente em {nextDate} ao invés de encerrar.",
-      "durationChangeBodyMonthly": "Seu {plan} estava programado para terminar em {date}. Mudar para cobrança mensal reativa — você será cobrado {amount} hoje, e ela será renovada automaticamente em {nextDate} ao invés de encerrar.",
-      "title": "Reativando sua assinatura",
-      "titleAnnual": "Reativando sua assinatura — ano completo cobrado hoje",
-      "unavailable": "Não podemos confirmar esta reativação agora — por favor, escolha seu plano novamente",
-      "upgradeBody": "Seu {plan} estava programado para terminar em {date}. Fazer upgrade agora reativa — você será cobrado {amount} hoje, e ela será renovada automaticamente em {nextDate} ao invés de encerrar."
-    }
-  },
   "progressToast": {
     "allDownloadsCompleted": "Todos os downloads concluídos",
     "downloadingModel": "Baixando modelo...",
@@ -3968,6 +3948,7 @@
     "everythingInPlus": "Tudo do {plan}, além de:",
     "expiresDate": "Expira em {date}",
     "freePerks": {
+      "freeRuns": "{count} execução gratuita | {count} execuções gratuitas",
       "maxRuntime": "{duration} de tempo máximo de execução"
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
@@ -4038,6 +4019,7 @@
       "backToAllPlans": "Voltar para todos os planos",
       "billedEachMonth": "{amount} cobrados a cada mês. Cancele a qualquer momento.",
       "commitment": "compromisso",
+      "completeVerification": "Concluir verificação",
       "confirm": "Confirmar",
       "confirmChange": "Confirmar alteração",
       "confirmChangeTitle": "Revise sua alteração agendada",
@@ -4062,6 +4044,20 @@
       "privacyPolicy": "Política de Privacidade",
       "proratedCharge": "Cobrança proporcional para {plan}",
       "proratedRefund": "Reembolso proporcional para {plan}",
+      "reactivation": {
+        "amountChanged": "O valor da cobrança mudou desde a sua confirmação — revise e tente novamente",
+        "checkboxLabel": "Entendo que serei cobrado {amount} hoje",
+        "confirmButton": "Confirmar e reativar",
+        "confirmButtonWithCharge": "Confirmar e reativar — {amount} hoje",
+        "confirmationRequired": "Sua assinatura está cancelada — confirme a cobrança de reativação antes de continuar",
+        "downgradeBody": "Sua {plan} estava programada para terminar em {date}. Mudar para {newPlan} a reativa — você não será cobrado hoje, mas agora ela será renovada automaticamente em {nextDate} pelo novo valor em vez de encerrar.",
+        "durationChangeBody": "Sua {plan} estava programada para terminar em {date}. Mudar para cobrança anual a reativa e cobra o valor total do ano, {amount}, hoje. Depois, será renovada anualmente em {nextDate} em vez de encerrar.",
+        "durationChangeBodyMonthly": "Sua {plan} estava programada para terminar em {date}. Mudar para cobrança mensal a reativa — você será cobrado {amount} hoje, e ela será renovada automaticamente em {nextDate} em vez de encerrar.",
+        "title": "Reativando sua assinatura",
+        "titleAnnual": "Reativando sua assinatura — ano completo cobrado hoje",
+        "unavailable": "Não podemos confirmar esta reativação agora — por favor, escolha seu plano novamente",
+        "upgradeBody": "Sua {plan} estava programada para terminar em {date}. Fazer o upgrade agora a reativa — você será cobrado {amount} hoje, e ela será renovada automaticamente em {nextDate} em vez de encerrar."
+      },
       "refillReplacesNote": "Substitui sua recarga mensal. O saldo existente é mantido.",
       "showMoreFeatures": "Mostrar mais recursos",
       "starting": "Começando em {date}",

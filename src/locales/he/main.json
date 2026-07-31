@@ -1474,9 +1474,6 @@
   "feedback": {
     "title": "שתף משוב"
   },
-  "freePerks": {
-    "freeRuns": "{count} הרצה חינמית | {count} הרצות חינמיות"
-  },
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -3124,23 +3121,6 @@
     "addColor": "הוסף צבע",
     "swatchTitle": "לחץ לעריכה · גרור לשינוי סדר · קליק ימני להסרה"
   },
-  "preview": {
-    "completeVerification": "השלימו אימות",
-    "reactivation": {
-      "amountChanged": "סכום החיוב השתנה מאז האישור — אנא בדקו ונסו שוב",
-      "checkboxLabel": "אני מבין/ה שאחויב {amount} היום",
-      "confirmButton": "אשרו וחדש",
-      "confirmButtonWithCharge": "אשרו וחדש — {amount} היום",
-      "confirmationRequired": "המנוי שלכם בוטל — אנא אשרו את החיוב לחידוש לפני המשך",
-      "downgradeBody": "{plan} שלכם היה אמור להסתיים בתאריך {date}. מעבר ל-{newPlan} מחדש אותו — לא תחויבו היום, אך הוא יתחדש אוטומטית ב-{nextDate} במחיר החדש במקום להסתיים.",
-      "durationChangeBody": "{plan} שלכם היה אמור להסתיים בתאריך {date}. מעבר לחיוב שנתי מחדש אותו ומחייב את כל השנה, {amount}, היום. לאחר מכן יתחדש מדי שנה ב-{nextDate} במקום להסתיים.",
-      "durationChangeBodyMonthly": "{plan} שלכם היה אמור להסתיים בתאריך {date}. מעבר לחיוב חודשי מחדש אותו — תחויבו {amount} היום, והוא יתחדש אוטומטית ב-{nextDate} במקום להסתיים.",
-      "title": "מחדש את המנוי שלכם",
-      "titleAnnual": "מחדש את המנוי שלכם — שנה מלאה מחויבת היום",
-      "unavailable": "לא ניתן לאשר את החידוש כעת — אנא בחרו מחדש את התוכנית",
-      "upgradeBody": "{plan} שלכם היה אמור להסתיים בתאריך {date}. שדרוג כעת מחדש אותו — תחויבו {amount} היום, והוא יתחדש אוטומטית ב-{nextDate} במקום להסתיים."
-    }
-  },
   "progressToast": {
     "allDownloadsCompleted": "כל ההורדות הושלמו",
     "downloadingModel": "מוריד מודל...",
@@ -3968,6 +3948,7 @@
     "everythingInPlus": "הכל ב-{plan}, בנוסף:",
     "expiresDate": "פג תוקף ב-{date}",
     "freePerks": {
+      "freeRuns": "{count} הרצה חינמית | {count} הרצות חינמיות",
       "maxRuntime": "זמן ריצה מרבי {duration}"
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
@@ -4038,6 +4019,7 @@
       "backToAllPlans": "חזרה לכל המסלולים",
       "billedEachMonth": "{amount} מחויב כל חודש. ניתן לבטל בכל עת.",
       "commitment": "התחייבות",
+      "completeVerification": "השלם אימות",
       "confirm": "אישור",
       "confirmChange": "אשר שינוי",
       "confirmChangeTitle": "סקור את השינוי המתוזמן שלך",
@@ -4062,6 +4044,20 @@
       "privacyPolicy": "מדיניות הפרטיות",
       "proratedCharge": "חיוב יחסי עבור {plan}",
       "proratedRefund": "החזר יחסי עבור {plan}",
+      "reactivation": {
+        "amountChanged": "סכום החיוב השתנה מאז האישור — נא בדוק ונסה שוב",
+        "checkboxLabel": "אני מבין/ה שאחויב {amount} היום",
+        "confirmButton": "אשר וחדש",
+        "confirmButtonWithCharge": "אשר וחדש — {amount} היום",
+        "confirmationRequired": "המנוי שלך בוטל — נא אשר את החיוב לחידוש לפני המשך",
+        "downgradeBody": "המנוי שלך ({plan}) היה אמור להסתיים בתאריך {date}. מעבר ל-{newPlan} מחדש אותו — לא תחויב היום, אך כעת הוא יתחדש אוטומטית בתאריך {nextDate} במחיר החדש במקום להסתיים.",
+        "durationChangeBody": "המנוי שלך ({plan}) היה אמור להסתיים בתאריך {date}. מעבר לחיוב שנתי מחדש אותו ומחייב את הסכום המלא, {amount}, היום. לאחר מכן הוא יתחדש מדי שנה בתאריך {nextDate} במקום להסתיים.",
+        "durationChangeBodyMonthly": "המנוי שלך ({plan}) היה אמור להסתיים בתאריך {date}. מעבר לחיוב חודשי מחדש אותו — תחויב {amount} היום, והוא יתחדש אוטומטית בתאריך {nextDate} במקום להסתיים.",
+        "title": "מחדש את המנוי שלך",
+        "titleAnnual": "מחדש את המנוי שלך — שנה מלאה מחויבת היום",
+        "unavailable": "לא ניתן לאשר את החידוש כעת — נא בחר את התוכנית שלך מחדש",
+        "upgradeBody": "המנוי שלך ({plan}) היה אמור להסתיים בתאריך {date}. שדרוג כעת מחדש אותו — תחויב {amount} היום, והוא יתחדש אוטומטית בתאריך {nextDate} במקום להסתיים."
+      },
       "refillReplacesNote": "מחליף את המילוי החודשי שלך. היתרה הקיימת נשמרת.",
       "showMoreFeatures": "הצגת תכונות נוספות",
       "starting": "החל מ-{date}",

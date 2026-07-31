@@ -1474,9 +1474,6 @@
   "feedback": {
     "title": "Partager un retour"
   },
-  "freePerks": {
-    "freeRuns": "{count} exécution gratuite | {count} exécutions gratuites"
-  },
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -3124,23 +3121,6 @@
     "addColor": "Ajouter une couleur",
     "swatchTitle": "Cliquez pour éditer · glissez pour réordonner · clic droit pour supprimer"
   },
-  "preview": {
-    "completeVerification": "Terminer la vérification",
-    "reactivation": {
-      "amountChanged": "Le montant facturé a changé depuis votre confirmation — veuillez vérifier et réessayer",
-      "checkboxLabel": "Je comprends que je serai facturé {amount} aujourd’hui",
-      "confirmButton": "Confirmer et réactiver",
-      "confirmButtonWithCharge": "Confirmer et réactiver — {amount} aujourd’hui",
-      "confirmationRequired": "Votre abonnement est annulé — veuillez confirmer le montant de la réactivation avant de continuer",
-      "downgradeBody": "Votre {plan} devait se terminer le {date}. Passer à {newPlan} le réactive — vous ne serez pas facturé aujourd’hui, mais il se renouvellera automatiquement le {nextDate} au nouveau tarif au lieu de se terminer.",
-      "durationChangeBody": "Votre {plan} devait se terminer le {date}. Passer à la facturation annuelle le réactive et facture l’année complète, {amount}, aujourd’hui. Il se renouvellera ensuite chaque année le {nextDate} au lieu de se terminer.",
-      "durationChangeBodyMonthly": "Votre {plan} devait se terminer le {date}. Passer à la facturation mensuelle le réactive — vous serez facturé {amount} aujourd’hui, et il se renouvellera automatiquement le {nextDate} au lieu de se terminer.",
-      "title": "Réactivation de votre abonnement",
-      "titleAnnual": "Réactivation de votre abonnement — année complète facturée aujourd’hui",
-      "unavailable": "Nous ne pouvons pas confirmer cette réactivation pour le moment — veuillez choisir à nouveau votre formule",
-      "upgradeBody": "Votre {plan} devait se terminer le {date}. La mise à niveau le réactive — vous serez facturé {amount} aujourd’hui, et il se renouvellera automatiquement le {nextDate} au lieu de se terminer."
-    }
-  },
   "progressToast": {
     "allDownloadsCompleted": "Tous les téléchargements sont terminés",
     "downloadingModel": "Téléchargement du modèle...",
@@ -3952,6 +3932,7 @@
     "everythingInPlus": "Tout ce qui est dans {plan}, plus :",
     "expiresDate": "Expire le {date}",
     "freePerks": {
+      "freeRuns": "{count} exécution gratuite | {count} exécutions gratuites",
       "maxRuntime": "{duration} de temps d’exécution maximum"
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
@@ -4022,6 +4003,7 @@
       "backToAllPlans": "Retour à toutes les offres",
       "billedEachMonth": "{amount} facturé chaque mois. Annulez à tout moment.",
       "commitment": "engagement",
+      "completeVerification": "Terminer la vérification",
       "confirm": "Confirmer",
       "confirmChange": "Confirmer la modification",
       "confirmChangeTitle": "Vérifiez votre modification programmée",
@@ -4046,6 +4028,20 @@
       "privacyPolicy": "Politique de confidentialité",
       "proratedCharge": "Facturation au prorata pour {plan}",
       "proratedRefund": "Remboursement au prorata pour {plan}",
+      "reactivation": {
+        "amountChanged": "Le montant facturé a changé depuis votre confirmation — veuillez vérifier et réessayer",
+        "checkboxLabel": "Je comprends que je serai facturé {amount} aujourd'hui",
+        "confirmButton": "Confirmer et réactiver",
+        "confirmButtonWithCharge": "Confirmer et réactiver — {amount} aujourd'hui",
+        "confirmationRequired": "Votre abonnement est annulé — veuillez confirmer le montant de la réactivation avant de continuer",
+        "downgradeBody": "Votre {plan} devait se terminer le {date}. Passer à {newPlan} réactive votre abonnement — vous ne serez pas facturé aujourd'hui, mais il se renouvellera automatiquement le {nextDate} au nouveau tarif au lieu de se terminer.",
+        "durationChangeBody": "Votre {plan} devait se terminer le {date}. Passer à la facturation annuelle réactive votre abonnement et facture l'année complète, {amount}, aujourd'hui. Il se renouvellera ensuite chaque année le {nextDate} au lieu de se terminer.",
+        "durationChangeBodyMonthly": "Votre {plan} devait se terminer le {date}. Passer à la facturation mensuelle réactive votre abonnement — vous serez facturé {amount} aujourd'hui, et il se renouvellera automatiquement le {nextDate} au lieu de se terminer.",
+        "title": "Réactivation de votre abonnement",
+        "titleAnnual": "Réactivation de votre abonnement — année complète facturée aujourd'hui",
+        "unavailable": "Nous ne pouvons pas confirmer cette réactivation pour le moment — veuillez choisir à nouveau votre abonnement",
+        "upgradeBody": "Votre {plan} devait se terminer le {date}. La mise à niveau réactive votre abonnement — vous serez facturé {amount} aujourd'hui, et il se renouvellera automatiquement le {nextDate} au lieu de se terminer."
+      },
       "refillReplacesNote": "Remplace votre recharge mensuelle. Le solde existant est conservé.",
       "showMoreFeatures": "Afficher plus de fonctionnalités",
       "starting": "À partir du {date}",
