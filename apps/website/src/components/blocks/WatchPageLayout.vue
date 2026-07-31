@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { useResizeObserver } from '@vueuse/core'
+
 import { onMounted, shallowRef, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
@@ -37,10 +39,13 @@ const expanded = shallowRef(false)
 const clamped = shallowRef(false)
 const descriptionEl = useTemplateRef<HTMLParagraphElement>('descriptionEl')
 
-onMounted(() => {
+function updateClamped() {
   const el = descriptionEl.value
   clamped.value = !!el && el.scrollHeight > el.clientHeight
-})
+}
+
+onMounted(updateClamped)
+useResizeObserver(descriptionEl, updateClamped)
 </script>
 
 <template>
