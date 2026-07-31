@@ -388,6 +388,65 @@ describe('workspaceApi', () => {
   })
 
   describe('subscription', () => {
+    it('listSavedPaymentMethods() returns masked methods from GET', async () => {
+      const data = [
+        {
+          type: 'card',
+          id: 'pm_saved',
+          brand: 'visa',
+          last4: '4242',
+          isDefault: true
+        }
+      ]
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.listSavedPaymentMethods()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/payment-methods',
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('previewSubscribe() sends the promotion code only when applied', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: { allowed: true } })
+
+      await workspaceApi.previewSubscribe('pro-monthly', {
+        promotionCode: 'SAVE20'
+      })
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/preview-subscribe',
+        expect.objectContaining({ promotion_code: 'SAVE20' }),
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('subscribe() echoes the quote and selected saved method', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { billing_op_id: 'op-quote', status: 'subscribed' }
+      })
+
+      await workspaceApi.subscribe('pro-monthly', {
+        promotionCode: 'SAVE20',
+        quoteId: 'quote_123',
+        quoteVersion: 2,
+        savedPaymentMethodId: 'pm_saved'
+      })
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/subscribe',
+        expect.objectContaining({
+          promotion_code: 'SAVE20',
+          quote_id: 'quote_123',
+          quote_version: 2,
+          saved_payment_method_id: 'pm_saved'
+        }),
+        { headers: AUTH_HEADER }
+      )
+    })
+
     it('previewSubscribe() sends POST with plan_slug', async () => {
       const data = { allowed: true, transition_type: 'new_subscription' }
       mockAxiosInstance.post.mockResolvedValue({ data })

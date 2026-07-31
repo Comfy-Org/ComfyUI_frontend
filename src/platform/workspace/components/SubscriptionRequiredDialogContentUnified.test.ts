@@ -18,6 +18,9 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     isSubscribing: ref(false),
     isResubscribing: ref(false),
     previewData: ref(null),
+    quoteIsCurrent: ref(false),
+    savedPaymentMethods: ref([]),
+    selectedSavedPaymentMethodId: ref(null),
     selectedTierKey: ref(null),
     selectedTeamStop: ref(null),
     selectedBillingCycle: ref('yearly'),
@@ -32,6 +35,10 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     handleAddCreditCard: vi.fn(),
     handleConfirmTransition: vi.fn(),
     handleTeamSubscribe: vi.fn(),
+    handleSubscriptionPayment: vi.fn(),
+    handleTeamSubscriptionPayment: vi.fn(),
+    applyPromotionCode: vi.fn(),
+    invalidateQuote: vi.fn(),
     handleResubscribe: vi.fn()
   })
 }))

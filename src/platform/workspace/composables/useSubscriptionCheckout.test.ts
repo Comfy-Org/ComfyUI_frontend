@@ -80,6 +80,7 @@ const {
   mockStartOperation,
   mockGetOperation,
   mockSubscriptionActionOperation,
+  mockListSavedPaymentMethods,
   mockTrackBeginCheckout,
   mockTrackBillingEvent,
   mockShowDowngradeToPersonalDialog,
@@ -109,6 +110,7 @@ const {
         }
       | undefined
   },
+  mockListSavedPaymentMethods: vi.fn(),
   mockTrackBeginCheckout: vi.fn(),
   mockTrackBillingEvent: vi.fn(),
   mockShowDowngradeToPersonalDialog: vi.fn(),
@@ -136,7 +138,11 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     fetchBalance: mockFetchBalance,
     isTeamPlan: computed(() => mockIsTeamPlan.value),
     resubscribe: mockResubscribe,
-    subscription: computed(() => mockSubscription.value)
+    subscription: {
+      get value() {
+        return mockSubscription.value
+      }
+    }
   })
 }))
 
@@ -166,7 +172,10 @@ vi.mock('@/services/dialogService', () => ({
 
 // Shields the test from the real workspaceApi → @/scripts/api → app.ts import chain
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
-  workspaceApi: { resubscribe: mockResubscribe }
+  workspaceApi: {
+    resubscribe: mockResubscribe,
+    listSavedPaymentMethods: mockListSavedPaymentMethods
+  }
 }))
 
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
@@ -243,13 +252,25 @@ describe('useSubscriptionCheckout', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    mockSubscribe.mockReset()
+    mockPreviewSubscribe.mockReset()
+    mockFetchPlans.mockReset()
+    mockFetchStatus.mockReset()
+    mockStartOperation.mockReset()
+    mockListSavedPaymentMethods.mockReset()
     mockSubscriptionActionOperation.value = undefined
     mockPlans.value = allPlans()
     mockFetchPlans.mockResolvedValue(undefined)
+    mockPreviewSubscribe.mockResolvedValue({
+      allowed: true,
+      transition_type: 'new_subscription',
+      is_immediate: true
+    })
     mockStartOperation.mockResolvedValue({
       status: 'succeeded',
       workspaceId: 'workspace-1'
     })
+    mockListSavedPaymentMethods.mockResolvedValue([])
     mockGetOperation.mockReturnValue(undefined)
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
     mockUserId.value = 'user-1'
@@ -266,6 +287,131 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleSubscribeClick', () => {
+    it('selects the backend default saved payment method', async () => {
+      const checkout = await setup()
+      mockListSavedPaymentMethods.mockResolvedValueOnce([
+        {
+          type: 'card',
+          id: 'pm_first',
+          brand: 'visa',
+          last4: '1111',
+          isDefault: false
+        },
+        {
+          type: 'alipay',
+          id: 'pm_default',
+          isDefault: true
+        }
+      ])
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.selectedSavedPaymentMethodId.value).toBe('pm_default')
+    })
+
+    it('previews a promotion only after Apply and submits the exact quote', async () => {
+      const checkout = await setup()
+      mockListSavedPaymentMethods.mockResolvedValueOnce([
+        {
+          type: 'card',
+          id: 'pm_saved',
+          brand: 'visa',
+          last4: '4242',
+          isDefault: true
+        }
+      ])
+      mockPreviewSubscribe
+        .mockResolvedValueOnce({
+          allowed: true,
+          transition_type: 'new_subscription'
+        })
+        .mockResolvedValueOnce({
+          allowed: true,
+          transition_type: 'new_subscription',
+          promotion_code: 'SAVE20',
+          quote_id: 'quote_123',
+          quote_version: 2,
+          amount_due_cents: 1280,
+          currency: 'usd',
+          renewal_amount_cents: 1600,
+          renewal_at: '2027-06-19T00:00:00Z'
+        })
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      expect(mockPreviewSubscribe).toHaveBeenCalledOnce()
+
+      await checkout.applyPromotionCode(' SAVE20 ')
+      expect(mockPreviewSubscribe).toHaveBeenLastCalledWith('standard-yearly', {
+        promotionCode: 'SAVE20'
+      })
+
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-quoted'
+      })
+      await checkout.handleConfirmTransition()
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.objectContaining({
+          savedPaymentMethodId: 'pm_saved',
+          promotionCode: 'SAVE20',
+          quoteId: 'quote_123',
+          quoteVersion: 2
+        })
+      )
+    })
+
+    it('returns a stale quote to review with a refreshed quote', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe
+        .mockResolvedValueOnce({
+          allowed: true,
+          transition_type: 'new_subscription',
+          promotion_code: 'SAVE20',
+          quote_id: 'quote_old',
+          quote_version: 1,
+          amount_due_cents: 1280,
+          currency: 'usd',
+          renewal_amount_cents: 1600,
+          renewal_at: '2027-06-19T00:00:00Z'
+        })
+        .mockResolvedValueOnce({
+          allowed: true,
+          transition_type: 'new_subscription',
+          promotion_code: 'SAVE20',
+          quote_id: 'quote_new',
+          quote_version: 1,
+          amount_due_cents: 1280,
+          currency: 'usd',
+          renewal_amount_cents: 1600,
+          renewal_at: '2027-06-19T00:00:00Z'
+        })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        Object.assign(new Error('preview again'), {
+          code: 'SUBSCRIPTION_QUOTE_STALE'
+        })
+      )
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.checkoutStep.value).toBe('preview')
+      expect(checkout.previewData.value?.quote_id).toBe('quote_new')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'subscription.preview.quoteStale' })
+      )
+    })
+
     it('transitions to preview on successful preview', async () => {
       const checkout = await setup()
       const preview = {
@@ -566,7 +712,9 @@ describe('useSubscriptionCheckout', () => {
         discountedUsd: 380
       })
       expect(checkout.selectedBillingCycle.value).toBe('yearly')
-      expect(checkout.previewData.value).toBeNull()
+      expect(checkout.previewData.value?.transition_type).toBe(
+        'new_subscription'
+      )
       expect(checkout.selectedTierKey.value).toBeNull()
     })
 
@@ -598,7 +746,7 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewData.value).toStrictEqual(transition)
     })
 
-    it('falls back to the display-only confirm when the preview is a fresh subscription', async () => {
+    it('keeps the backend quote for a fresh subscription', async () => {
       const checkout = await setup()
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
@@ -617,10 +765,12 @@ describe('useSubscriptionCheckout', () => {
         isChange: true
       })
 
-      expect(checkout.previewData.value).toBeNull()
+      expect(checkout.previewData.value?.transition_type).toBe(
+        'new_subscription'
+      )
     })
 
-    it('falls back to the display-only confirm when the preview request fails', async () => {
+    it('returns to pricing when the exact preview request fails', async () => {
       const checkout = await setup()
       mockPreviewSubscribe.mockRejectedValueOnce(new Error('not supported'))
 
@@ -636,10 +786,10 @@ describe('useSubscriptionCheckout', () => {
       })
 
       expect(checkout.previewData.value).toBeNull()
-      expect(checkout.checkoutStep.value).toBe('preview')
+      expect(checkout.checkoutStep.value).toBe('pricing')
     })
 
-    it('does not preview a fresh team subscribe (nothing to prorate)', async () => {
+    it('previews a fresh team subscribe for exact billing terms', async () => {
       const checkout = await setup()
 
       await checkout.handleSubscribeTeamClick({
@@ -653,8 +803,16 @@ describe('useSubscriptionCheckout', () => {
         isChange: false
       })
 
-      expect(mockPreviewSubscribe).not.toHaveBeenCalled()
-      expect(checkout.previewData.value).toBeNull()
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        {
+          teamCreditStopId: 'team_700',
+          billingCycle: 'monthly'
+        }
+      )
+      expect(checkout.previewData.value?.transition_type).toBe(
+        'new_subscription'
+      )
     })
 
     // Regression guard: a cancelled personal subscriber picking Team has no
@@ -804,6 +962,11 @@ describe('useSubscriptionCheckout', () => {
 
     it('is team-new for a fresh team subscribe (nothing to prorate)', async () => {
       const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true
+      })
 
       await checkout.handleSubscribeTeamClick({
         stop: {
@@ -1186,7 +1349,7 @@ describe('useSubscriptionCheckout', () => {
       })
     })
 
-    it('keeps team checkout_type as change when the preview request fails', async () => {
+    it('does not submit a team change when the required quote fails', async () => {
       const checkout = await setup()
       mockPreviewSubscribe.mockRejectedValueOnce(new Error('not supported'))
       await checkout.handleSubscribeTeamClick({
@@ -1199,22 +1362,12 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'monthly',
         isChange: true
       })
-      mockSubscribe.mockResolvedValueOnce({
-        status: 'subscribed',
-        billing_op_id: 'op-team-change'
-      })
-      mockFetchStatus.mockResolvedValueOnce(undefined)
-      mockFetchBalance.mockResolvedValueOnce(undefined)
-
       await checkout.handleTeamSubscribe()
 
-      expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
-        expect.objectContaining({
-          tier: 'team',
-          cycle: 'monthly',
-          checkout_type: 'change',
-          billing_op_id: 'op-team-change'
-        })
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'not supported' })
       )
     })
 
