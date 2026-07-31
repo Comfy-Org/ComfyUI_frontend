@@ -64,7 +64,7 @@
                 v-if="isLoggedIn && !isIntegratedTabBar"
                 class="shrink-0"
               />
-              <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+              <LoginButton v-else-if="!isIntegratedTabBar" />
               <Button
                 v-if="isCloud && flags.workflowSharingEnabled"
                 v-tooltip.bottom="shareTooltipConfig"
@@ -170,7 +170,7 @@ import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud } from '@/platform/distribution/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   openShareDialog,
@@ -215,8 +215,7 @@ const isActionbarFloating = computed(
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
-  if (isLoggedIn.value && !isIntegratedTabBar.value) return true
-  if (isDesktop && !isIntegratedTabBar.value) return true
+  if (!isIntegratedTabBar.value) return true
   if (isCloud && flags.workflowSharingEnabled) return true
   if (!isRightSidePanelOpen.value) return true
   return false

@@ -448,6 +448,27 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('subscribe() sends confirm_reactivation when reactivating a cancelled subscription', async () => {
+      const data = { billing_op_id: 'op-1c', status: 'subscribed' }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      const result = await workspaceApi.subscribe('pro-monthly', {
+        confirmReactivation: true,
+        prorationAt: '2026-07-29T12:00:00Z'
+      })
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/subscribe',
+        expect.objectContaining({
+          plan_slug: 'pro-monthly',
+          confirm_reactivation: true,
+          proration_at: '2026-07-29T12:00:00Z'
+        }),
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
     it('cancelSubscription() sends POST with idempotency_key', async () => {
       const data = { billing_op_id: 'op-2', cancel_at: '2026-05-01' }
       mockAxiosInstance.post.mockResolvedValue({ data })
@@ -547,7 +568,8 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/ops/op-1',
         {
-          headers: AUTH_HEADER
+          headers: AUTH_HEADER,
+          timeout: 30_000
         }
       )
       expect(result).toEqual(data)
