@@ -29,6 +29,7 @@ interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
   count: number
   priority: number
   severity: ErrorGroupSeverity
+  blockedLastRun: boolean
 }
 
 export type ErrorGroup =

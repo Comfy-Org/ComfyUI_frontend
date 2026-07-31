@@ -120,6 +120,7 @@ describe('useErrorOverlayState', () => {
         displayTitle: 'Execution failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -152,6 +153,7 @@ describe('useErrorOverlayState', () => {
         displayTitle: 'Required input is missing',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -193,6 +195,7 @@ describe('useErrorOverlayState', () => {
         displayTitle: 'Friendly validation title',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -233,6 +236,7 @@ describe('useErrorOverlayState', () => {
         displayTitle: 'Generation failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -308,7 +312,8 @@ describe('useErrorOverlayState', () => {
         toastTitle: 'Media input missing',
         toastMessage: 'Load Image is missing a required media file.',
         count: 1,
-        priority: 3
+        priority: 3,
+        blockedLastRun: false
       }
     ]
     mountOverlayState()
@@ -369,7 +374,8 @@ describe('useErrorOverlayState', () => {
         toastTitle: 'Model missing',
         toastMessage: 'CheckpointLoaderSimple is missing missing.safetensors.',
         count: 1,
-        priority: 2
+        priority: 2,
+        blockedLastRun: false
       }
     ]
     mountOverlayState()
@@ -394,6 +400,7 @@ describe('useErrorOverlayState', () => {
         displayMessage: 'Required input slots have no connection feeding them.',
         count: 2,
         priority: 1,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -463,7 +470,8 @@ describe('useErrorOverlayState', () => {
         toastTitle: 'Missing models',
         toastMessage: '2 model files are missing.',
         count: 2,
-        priority: 2
+        priority: 2,
+        blockedLastRun: false
       }
     ]
     mountOverlayState()
@@ -502,6 +510,7 @@ describe('useErrorOverlayState', () => {
         displayMessage: 'First group message',
         count: 2,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -518,6 +527,7 @@ describe('useErrorOverlayState', () => {
         displayMessage: 'Second group message',
         count: 3,
         priority: 1,
+        blockedLastRun: false,
         cards: [
           {
             id: '2',
