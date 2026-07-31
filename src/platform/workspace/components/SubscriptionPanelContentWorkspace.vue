@@ -345,6 +345,7 @@ const {
   isActiveSubscription,
   isFreeTier: isFreeTierPlan,
   subscription,
+  billingStatus,
   isLoading,
   error,
   showSubscriptionDialog,
@@ -358,12 +359,25 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
+const isTerminalPersonalSubscription = computed(
+  () =>
+    isInPersonalWorkspace.value &&
+    !isActiveSubscription.value &&
+    billingStatus.value === 'inactive'
+)
+
 // Show subscribe prompt to owners without active subscription. A cancelled plan
 // stays active until its end date, so it keeps the subscribed treatment.
 const showSubscribePrompt = computed(() => {
   if (!permissions.value.canManageSubscription) return false
+  if (isTerminalPersonalSubscription.value) return true
   if (isTeamPlanCancelled.value) return false
-  if (isInPersonalWorkspace.value) return !isActiveSubscription.value
+  if (isInPersonalWorkspace.value) {
+    if (!isActiveSubscription.value && subscription.value?.isCancelled) {
+      return true
+    }
+    return !isActiveSubscription.value && !subscription.value
+  }
   return !isWorkspaceSubscribed.value
 })
 

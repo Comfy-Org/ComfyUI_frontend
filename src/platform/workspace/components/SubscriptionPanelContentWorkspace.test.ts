@@ -8,6 +8,7 @@ import { createI18n } from 'vue-i18n'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
 import type {
+  BillingStatus,
   CurrentTeamCreditStop,
   TeamCreditStops
 } from '@/platform/workspace/api/workspaceApi'
@@ -46,6 +47,7 @@ const teamCreditStops: TeamCreditStops = {
 }
 
 const mockSubscriptionStatus = ref<'active' | 'canceled'>('active')
+const mockBillingStatus = ref<BillingStatus>('paid')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockHasSubscription = ref(true)
 const mockIsActiveSubscription = ref(true)
@@ -128,6 +130,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     isFreeTier: computed(() => false),
+    billingStatus: mockBillingStatus,
     subscription: mockSubscription,
     teamCreditStops: mockTeamCreditStops,
     currentTeamCreditStop: mockCurrentTeamCreditStop,
@@ -265,6 +268,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSubscriptionStatus.value = 'active'
+    mockBillingStatus.value = 'paid'
     mockHasSubscription.value = true
     mockIsActiveSubscription.value = true
     mockIsInPersonalWorkspace.value = false
@@ -485,6 +489,39 @@ describe('SubscriptionPanelContentWorkspace', () => {
       'true'
     )
   })
+
+  it('shows the Free plan for an inactive personal subscription with terminal billing', () => {
+    mockIsInPersonalWorkspace.value = true
+    mockIsActiveSubscription.value = false
+    mockBillingStatus.value = 'inactive'
+    renderComponent()
+
+    expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Pro' })
+    ).not.toBeInTheDocument()
+  })
+
+  it.for(['paid', 'payment_failed', 'paused'] as BillingStatus[])(
+    'keeps a %s personal plan visible until it is terminal',
+    (billingStatus) => {
+      mockIsInPersonalWorkspace.value = true
+      mockIsActiveSubscription.value = false
+      mockBillingStatus.value = billingStatus
+      renderComponent()
+
+      expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
+      expect(
+        screen.queryByRole('heading', { name: 'Free' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it('renders the Free plan header with Subscribe CTA for unsubscribed personal workspaces', async () => {
     const user = userEvent.setup()
