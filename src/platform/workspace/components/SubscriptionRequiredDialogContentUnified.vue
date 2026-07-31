@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="contentRoot"
     :class="
       cn(
         'relative flex h-full flex-col gap-4 overflow-y-auto p-4 pt-6',
@@ -12,13 +13,14 @@
         isEmbeddedPaymentStep &&
           'xl:h-[min(740px,90vh)] xl:gap-0 xl:overflow-hidden xl:rounded-2xl xl:p-0',
         isEmbeddedSuccessStep &&
-          'bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px] xl:rounded-2xl',
+          'overflow-hidden rounded-2xl bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px]',
         (isEmbeddedPaymentStep || isEmbeddedSuccessStep) &&
           'motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out',
         // The w-fit shell hugs min-content on phones; give the embedded
         // steps a real width floor below xl.
         (isEmbeddedPaymentStep || isEmbeddedSuccessStep) &&
-          'max-xl:w-[min(430px,92vw)]'
+          'max-xl:w-[min(430px,92vw)]',
+        isEmbeddedPaymentStep && 'max-xl:h-[85vh]'
       )
     "
   >
@@ -148,7 +150,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import { computed, onMounted } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
@@ -229,6 +231,29 @@ onMounted(() => {
     return
   }
   void handleSubscribeClick(initialCheckout)
+})
+
+// Height transitions with an `auto` endpoint never engage in Chromium (even
+// under interpolate-size), and CSS-transition FLIP gets eaten by the same
+// patch cycle that swaps the step content — so the height tween runs on the
+// Web Animations API instead, outside the CSS transition machinery. On
+// desktop both steps pin the same height, so this no-ops.
+const contentRoot = ref<HTMLElement>()
+watch(checkoutStep, async (next, prev) => {
+  const el = contentRoot.value
+  if (!el || !stripePaymentElementEnabled) return
+  const between = (a: string, b: string) =>
+    (prev === a && next === b) || (prev === b && next === a)
+  if (!between('preview', 'success')) return
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const from = el.getBoundingClientRect().height
+  await nextTick()
+  const to = el.getBoundingClientRect().height
+  if (Math.abs(from - to) < 2) return
+  el.animate([{ height: `${from}px` }, { height: `${to}px` }], {
+    duration: 300,
+    easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+  })
 })
 
 // Backspace mirrors the back arrow on the confirm step, but never while an
