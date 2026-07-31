@@ -176,13 +176,6 @@
     var(--border-color) 25%,
     transparent
   );
-  /* Custom palettes rebuild the dark palette's depth from their own menu
-     colour. Dark stacks three levels — canvas (charcoal-950) below sidebar
-     and selected tab (charcoal-900) below the menu and tab bar
-     (charcoal-800) — so each level is a lightness offset from the menu
-     anchor, replayed in OKLCH to keep the palette's hue and chroma. Aliasing
-     these to --bg-color instead would collapse the sidebar onto the canvas.
-     Dark and light override all three with their exact design-system values. */
   --sidebar-surface: oklch(from var(--comfy-menu-bg) calc(l - 0.0274) c h);
   --workflow-tab-selected-surface: oklch(
     from var(--comfy-menu-bg) calc(l - 0.0274) c h
@@ -314,9 +307,6 @@
   --modal-panel-background: var(--color-white);
 }
 
-/* Default dark palette only: the tuned charcoal depth. Other dark palettes
-   (solarized/arc/nord/github) keep the :root fallbacks that derive from
-   their own comfy_base vars, so they use their own colors. */
 :root[data-color-palette='dark'] {
   --sidebar-surface: var(--color-charcoal-900);
   --workflow-tab-selected-surface: var(--color-charcoal-900);
@@ -324,9 +314,6 @@
   --base-background-sunken: var(--color-charcoal-950);
 }
 
-/* Default light palette: the Comfy Design System light-mode values.
-   Sidebar is nudged one step lighter (smoke-100) so the menu reads as
-   near-white while the selected tab keeps smoke-200 to stay distinct. */
 :root[data-color-palette='light'] {
   --sidebar-surface: var(--color-smoke-100);
   --workflow-tab-selected-surface: var(--color-smoke-200);
@@ -678,11 +665,6 @@ body {
   height: 100vh;
   margin: 0;
   overflow: hidden;
-  /* App backdrop = the sunken canvas surface. litegraph stops repainting its
-     clear colour above 1.5x zoom and leaves the canvas transparent, so the
-     body has to carry an equivalent colour or the page shows through. Only
-     the default dark palette defines a sunken step; every other palette
-     falls back to its own canvas base. */
   background-color: var(--base-background-sunken, var(--bg-color));
   min-height: -webkit-fill-available;
   max-height: -webkit-fill-available;
