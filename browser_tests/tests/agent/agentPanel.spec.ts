@@ -8,8 +8,12 @@ import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 
 import {
   DRAFT_PATCH,
+  INTERMEDIATE_MESSAGE_EVENT,
   MESSAGE_DELTA_EVENT,
   MESSAGE_DONE_EVENT,
+  OPEN_TAB_TOOL_EVENT,
+  RESIZE_IMAGE_TOOL_EVENT,
+  RESUMED_THINKING_EVENT,
   THINKING_EVENT,
   THINKING_TEXT,
   TOOL_CALL_EVENT,
@@ -85,22 +89,80 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText(THINKING_TEXT)).toBeVisible()
 
     pushEvent(ws, TOOL_CALL_EVENT)
-    await expect(panel.getByText('Ran 1 tool call')).toBeVisible()
+    const firstSummary = panel.getByRole('button', {
+      name: 'Ran 1 tool call for 1.3 seconds'
+    })
+    await expect(firstSummary).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
     await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText(THINKING_TEXT)).toBeHidden()
+
+    pushEvent(ws, INTERMEDIATE_MESSAGE_EVENT)
+    await expect(
+      panel.getByText(
+        'The first graph edit is complete. I will check the remaining work.'
+      )
+    ).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+
+    pushEvent(ws, RESUMED_THINKING_EVENT)
+    await expect(
+      panel.getByText('Checking the remaining edits.', { exact: true })
+    ).toBeVisible()
+
+    pushEvent(ws, OPEN_TAB_TOOL_EVENT)
+
+    const secondSummary = panel.getByRole('button', {
+      name: 'Ran 1 tool call for 0.5 seconds'
+    })
+    await expect(secondSummary).toBeVisible()
+    await expect(
+      panel.getByText('Checking the remaining edits.', { exact: true })
+    ).toHaveCount(0)
+
+    pushEvent(ws, RESIZE_IMAGE_TOOL_EVENT)
+
+    const finalSummary = panel.getByRole('button', {
+      name: 'Ran 2 tool calls for 0.7 seconds'
+    })
+    await expect(finalSummary).toBeVisible()
+    await expect(finalSummary).toHaveAttribute('aria-expanded', 'true')
+    await expect(
+      panel.getByRole('button', {
+        name: /^Ran \d+ tool calls?(?: for \d+(?:\.\d+)? seconds)?$/
+      })
+    ).toHaveCount(2)
+    await expect(firstSummary).toHaveCount(1)
+    await expect(secondSummary).toHaveCount(0)
+
+    const toolRows = panel.getByRole('listitem')
+    await expect(toolRows).toHaveCount(2)
+    await expect(
+      toolRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
+    ).toBeVisible()
+    await expect(
+      toolRows.filter({ hasText: 'Resize image node' }).getByText('0.2s')
+    ).toBeVisible()
 
     pushEvent(ws, MESSAGE_DELTA_EVENT)
     await expect(
       panel.locator('strong', { hasText: 'fully ready' })
     ).toBeVisible()
 
+    pushEvent(ws, RESUMED_THINKING_EVENT)
+    await expect(
+      panel.getByText('Checking the remaining edits.', { exact: true })
+    ).toBeVisible()
+    await expect(finalSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Opened a new tab')).toBeHidden()
+
     pushEvent(ws, MESSAGE_DONE_EVENT)
     await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()
     await expect(panel.getByRole('button', { name: 'Stop' })).toHaveCount(0)
     await expect(
-      panel.getByRole('button', { name: /ran 1 tool call/i })
+      panel.getByRole('button', { name: /ran 2 tool calls/i })
     ).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Set widget')).toBeHidden()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
   })
 
   test('applies a draft_patch graph to the canvas', async ({
