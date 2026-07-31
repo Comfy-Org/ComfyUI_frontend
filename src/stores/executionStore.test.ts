@@ -2085,6 +2085,20 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.activeJobId).toBe('job-1')
       expect(store.queuedJobs['job-1']).toBeDefined()
     })
+
+    it('discards a progress update still queued when the next node starts', () => {
+      vi.useFakeTimers()
+      try {
+        fire('progress', { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' })
+
+        fire('executing', 'n2')
+        vi.advanceTimersToNextFrame()
+
+        expect(store._executingNodeProgress).toBeNull()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
   })
 
   describe('progress', () => {
