@@ -23,13 +23,55 @@ const websiteRoot = join(import.meta.dirname, '..', '..')
 const read = (relative: string) =>
   readFileSync(join(websiteRoot, relative), 'utf-8')
 
+interface Rgb {
+  r: number
+  g: number
+  b: number
+}
+
+const COLOUR_LITERAL =
+  /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|(?:ok)?l(?:ab|ch)|color|color-mix)\([^)]*\)/gi
+
+function parseColour(literal: string): Rgb | undefined {
+  const hex = /^#([0-9a-f]{3,8})$/i.exec(literal)
+  if (hex) {
+    const digits = hex[1]
+    const channels =
+      digits.length === 3 || digits.length === 4
+        ? [...digits.slice(0, 3)].map((c) => c + c)
+        : digits.length === 6 || digits.length === 8
+          ? [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 6)]
+          : undefined
+    if (!channels) return undefined
+    const [r, g, b] = channels.map((pair) => parseInt(pair, 16))
+    return { r, g, b }
+  }
+  const rgb = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(literal)
+  if (rgb) return { r: +rgb[1], g: +rgb[2], b: +rgb[3] }
+  return undefined
+}
+
+const toHex = ({ r, g, b }: Rgb) =>
+  '#' +
+  [r, g, b].map((n) => Math.round(n).toString(16).padStart(2, '0')).join('')
+
+const isYellow = ({ r, g, b }: Rgb) => r > 200 && g > 200 && b < 200
+
+const coloursIn = (svg: string) => svg.match(COLOUR_LITERAL) ?? []
+
 function yellowsIn(svg: string): string[] {
-  const hexes = svg.toLowerCase().match(/#[0-9a-f]{6}/g) ?? []
-  const isYellow = (hex: string) =>
-    parseInt(hex.slice(1, 3), 16) > 200 &&
-    parseInt(hex.slice(3, 5), 16) > 200 &&
-    parseInt(hex.slice(5, 7), 16) < 200
-  return [...new Set(hexes.filter(isYellow))].sort()
+  const yellows = coloursIn(svg)
+    .map(parseColour)
+    .filter((colour): colour is Rgb => colour !== undefined && isYellow(colour))
+    .map(toHex)
+  return [...new Set(yellows)].sort()
+}
+
+function unreadableColoursIn(svg: string): string[] {
+  const unreadable = coloursIn(svg).filter(
+    (literal) => parseColour(literal) === undefined
+  )
+  return [...new Set(unreadable.map((c) => c.toLowerCase()))].sort()
 }
 
 /*
@@ -86,6 +128,62 @@ describe('brand colours that cannot reference a token', () => {
     for (const file of files) {
       expect(yellowsIn(read(file)), `${file} yellows`).toEqual([yellow])
     }
+  })
+
+  it('every colour in a brand SVG is one the yellow check can read', () => {
+    const files = [
+      'public/favicon.svg',
+      'public/icons/logo.svg',
+      'public/icons/logomark.svg',
+      'public/icons/comfyicon.svg',
+      'public/affiliates/brand/comfy-full-logo-yellow.svg',
+      'public/affiliates/brand/comfy-color-combo-yellow.svg',
+      'public/affiliates/brand/comfy-amplified-logo-mark.svg',
+      'public/affiliates/brand/comfy-color-combo-ink.svg',
+      'public/affiliates/brand/comfy-full-logo-ink.svg'
+    ]
+
+    for (const file of files) {
+      expect(unreadableColoursIn(read(file)), `${file} colour syntax`).toEqual(
+        []
+      )
+    }
+  })
+})
+
+describe('yellowsIn', () => {
+  const yellow = '#f2ff59'
+
+  it('catches a stale yellow written as shorthand hex', () => {
+    expect(yellowsIn(`<path fill="${yellow}"/><path fill="#ff0"/>`)).toEqual([
+      '#f2ff59',
+      '#ffff00'
+    ])
+  })
+
+  it('catches a stale yellow written as rgb()', () => {
+    expect(
+      yellowsIn(`<path fill="${yellow}"/><path fill="rgb(240, 255, 65)"/>`)
+    ).toEqual(['#f0ff41', '#f2ff59'])
+  })
+
+  it('catches a stale yellow written as 8-digit hex', () => {
+    expect(
+      yellowsIn(`<path fill="${yellow}"/><path fill="#f0ff41ff"/>`)
+    ).toEqual(['#f0ff41', '#f2ff59'])
+  })
+
+  it('ignores colours outside the yellow family', () => {
+    expect(
+      yellowsIn(`<path fill="${yellow}"/><path fill="#211927" stroke="none"/>`)
+    ).toEqual([yellow])
+  })
+
+  it('reports a colour syntax it cannot read rather than ignoring it', () => {
+    expect(unreadableColoursIn('<path fill="hsl(65 100% 67%)"/>')).toEqual([
+      'hsl(65 100% 67%)'
+    ])
+    expect(unreadableColoursIn(`<path fill="${yellow}"/>`)).toEqual([])
   })
 
   it('standalone brand SVGs use comfy-ink where they are two-tone', () => {
