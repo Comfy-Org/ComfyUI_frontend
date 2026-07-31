@@ -4767,6 +4767,8 @@
     "switchWorkflow": "Switch workflow",
     "runModeTriggerAsk": "Ask",
     "runModeTriggerAuto": "Auto",
+    "runModeTriggerAskTooltip": "Ask for permission",
+    "runModeTriggerAutoTooltip": "Run workflow without permission",
     "runPermissions": "Run permissions",
     "runPermissionsDescription": "Choose when the agent needs your consent",
     "runModeAsk": "Ask before a workflow runs",

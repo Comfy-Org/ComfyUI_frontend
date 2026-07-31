@@ -61,11 +61,13 @@ const TRIGGER_LABEL_KEYS: Record<AgentRunMode, string> = {
 
 const triggerLabel = computed(() => t(TRIGGER_LABEL_KEYS[store.mode]))
 
-const triggerTooltip = computed(() =>
-  store.mode === 'auto-limit'
-    ? t('agent.runModeTriggerAutoLimitTooltip')
-    : t('agent.runPermissions')
-)
+const TRIGGER_TOOLTIP_KEYS: Record<AgentRunMode, string> = {
+  ask: 'agent.runModeTriggerAskTooltip',
+  auto: 'agent.runModeTriggerAutoTooltip',
+  'auto-limit': 'agent.runModeTriggerAutoLimitTooltip'
+}
+
+const triggerTooltip = computed(() => t(TRIGGER_TOOLTIP_KEYS[store.mode]))
 
 const options: {
   mode: AgentRunMode
@@ -113,30 +115,36 @@ const options: {
         side="top"
         align="end"
         :side-offset="8"
-        class="agent-scope rounded-agent border-agent-border bg-agent-surface-raised z-1100 w-72 border p-3 shadow-lg"
+        class="agent-scope border-agent-border bg-agent-surface-raised z-1100 flex w-80 flex-col gap-2.5 rounded-[10px] border p-2.5 shadow-lg"
       >
-        <div class="text-agent-fg text-sm font-medium">
-          {{ t('agent.runPermissions') }}
-        </div>
-        <div class="text-agent-fg-muted mt-0.5 text-xs">
-          {{ t('agent.runPermissionsDescription') }}
+        <div class="flex flex-col gap-0.5">
+          <div class="text-agent-fg text-sm/5 font-medium">
+            {{ t('agent.runPermissions') }}
+          </div>
+          <div class="text-agent-fg-muted text-xs/4">
+            {{ t('agent.runPermissionsDescription') }}
+          </div>
         </div>
 
         <RadioGroupRoot
           :model-value="draftMode"
           :aria-label="t('agent.runPermissions')"
-          class="mt-3 flex flex-col gap-1"
+          class="flex flex-col gap-1"
           @update:model-value="onDraftMode"
         >
-          <div v-for="option in options" :key="option.mode">
+          <div
+            v-for="option in options"
+            :key="option.mode"
+            :class="
+              cn(
+                'rounded-[10px]',
+                draftMode === option.mode && 'bg-charcoal-500'
+              )
+            "
+          >
             <RadioGroupItem
               :value="option.mode"
-              :class="
-                cn(
-                  'hover:bg-agent-surface-hover rounded-agent flex w-full cursor-pointer items-start gap-2.5 p-2 text-left',
-                  draftMode === option.mode && 'bg-agent-surface-hover'
-                )
-              "
+              class="hover:bg-agent-surface-hover flex w-full cursor-pointer items-start gap-3 rounded-[10px] px-2.5 py-2 text-left"
             >
               <span
                 :class="
@@ -144,10 +152,10 @@ const options: {
                 "
               />
               <span class="min-w-0 flex-1">
-                <span class="text-agent-fg block text-xs">
+                <span class="text-agent-fg block text-sm/5">
                   {{ t(option.title) }}
                 </span>
-                <span class="text-agent-fg-muted mt-0.5 block text-xs">
+                <span class="text-agent-fg-muted mt-0.5 block text-xs/4">
                   {{ t(option.description) }}
                 </span>
               </span>
@@ -163,16 +171,16 @@ const options: {
             </RadioGroupItem>
             <div
               v-if="option.mode === 'auto-limit' && draftMode === 'auto-limit'"
-              class="flex items-center gap-2 px-2 pb-2 pl-8.5"
+              class="flex items-center gap-3 pr-2.5 pb-2.5 pl-9.5"
             >
               <input
                 v-model.number="draftLimit"
                 type="number"
                 min="1"
                 :aria-label="t('agent.credits')"
-                class="border-agent-border bg-agent-surface text-agent-fg focus:border-agent-fg-muted w-24 rounded-md border px-2 py-1 text-xs outline-none"
+                class="border-agent-border bg-agent-surface text-agent-fg focus:border-agent-fg-muted h-8 min-w-0 flex-1 rounded-[10px] border px-2.5 text-sm/5 outline-none"
               />
-              <span class="text-agent-fg-muted text-xs">
+              <span class="text-agent-fg-muted text-xs/4">
                 {{ t('agent.credits') }}
               </span>
             </div>
@@ -182,7 +190,7 @@ const options: {
         <button
           type="button"
           :disabled="!saveable"
-          class="bg-agent-fg text-agent-surface hover:bg-agent-fg/90 mt-3 w-full cursor-pointer rounded-md py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          class="bg-agent-fg text-agent-surface hover:bg-agent-fg/90 h-8 w-full cursor-pointer rounded-[10px] text-sm/5 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           @click="saveChanges"
         >
           {{ t('agent.saveChanges') }}
