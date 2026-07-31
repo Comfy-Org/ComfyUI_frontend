@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -12,7 +13,7 @@ interface AssetRecord {
 
 export function isAssetPreviewSupported(): boolean {
   return (
-    assetService.isAssetAPIEnabled() || api.getServerFeature('assets', false)
+    assetService.isAssetAPIEnabled() || useFeatureFlags().flags.assetsEnabled
   )
 }
 

@@ -10,13 +10,17 @@ import {
   useManagerState
 } from '@/workbench/extensions/manager/composables/useManagerState'
 
+const mockFeatureFlags = vi.hoisted(() => ({
+  supportsManagerV4: undefined as boolean | undefined,
+  managerSupportsCsrfPost: undefined as boolean | undefined
+}))
+
 // Mock dependencies that are not stores
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
 vi.mock('@/scripts/api', () => ({
   api: {
     getClientFeatureFlags: vi.fn(),
-    getServerFeature: vi.fn(),
     getSystemStats: vi.fn()
   }
 }))
@@ -25,7 +29,7 @@ vi.mock('@/composables/useFeatureFlags', () => {
   const featureFlag = vi.fn()
   return {
     useFeatureFlags: vi.fn(() => ({
-      flags: { supportsManagerV4: false },
+      flags: mockFeatureFlags,
       featureFlag
     }))
   }
@@ -93,12 +97,8 @@ const mockServerFeatures = (flags: {
   supports_v4?: boolean
   supports_csrf_post?: boolean
 }) => {
-  vi.mocked(api.getServerFeature).mockImplementation((name: string) => {
-    if (name === 'extension.manager.supports_v4') return flags.supports_v4
-    if (name === 'extension.manager.supports_csrf_post')
-      return flags.supports_csrf_post
-    return undefined
-  })
+  mockFeatureFlags.supportsManagerV4 = flags.supports_v4
+  mockFeatureFlags.managerSupportsCsrfPost = flags.supports_csrf_post
 }
 
 describe('useManagerState', () => {
@@ -122,7 +122,7 @@ describe('useManagerState', () => {
 
     // Set default mock returns
     vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
-    vi.mocked(api.getServerFeature).mockReturnValue(undefined)
+    mockServerFeatures({})
   })
 
   describe('managerUIState property', () => {
@@ -217,7 +217,7 @@ describe('useManagerState', () => {
       })
 
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
-      vi.mocked(api.getServerFeature).mockReturnValue(undefined)
+      mockServerFeatures({})
 
       const managerState = useManagerState()
       expect(managerState.managerUIState.value).toBe(ManagerUIState.NEW_UI)

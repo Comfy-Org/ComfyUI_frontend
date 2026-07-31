@@ -7,6 +7,7 @@ import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 interface ConfirmDialogOptions {
   key?: string
+  onClose?: () => void
   headerProps?: ComponentAttrs<typeof ConfirmHeader>
   props?: ComponentAttrs<typeof ConfirmBody>
   footerProps?: ComponentAttrs<typeof ConfirmFooter>
@@ -16,7 +17,7 @@ export function showConfirmDialog(
   options: ConfirmDialogOptions = {}
 ): DialogInstance {
   const dialogStore = useDialogStore()
-  const { key, headerProps, props, footerProps } = options
+  const { key, onClose, headerProps, props, footerProps } = options
   return dialogStore.showDialog({
     key,
     headerComponent: ConfirmHeader,
@@ -28,6 +29,7 @@ export function showConfirmDialog(
     dialogComponentProps: {
       renderer: 'reka',
       size: 'md',
+      onClose,
       // Confirm sections carry their own padding — zero out the dialog
       // chrome padding, like the PrimeVue `pt` overrides did.
       headerClass: 'p-0',

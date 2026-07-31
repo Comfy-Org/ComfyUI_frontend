@@ -260,6 +260,26 @@ export default defineConfig([
     }
   },
   {
+    name: 'comfy/feature-flags-through-composable',
+    files: ['src/**/*.{ts,tsx,mts,vue}'],
+    ignores: [
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      'src/composables/useFeatureFlags.ts'
+    ],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'api',
+          property: 'getServerFeature',
+          message:
+            'Define and read feature flags through useFeatureFlags() so Datadog receives every evaluation.'
+        }
+      ]
+    }
+  },
+  {
     files: ['**/*.spec.ts'],
     ignores: ['browser_tests/tests/**/*.spec.ts', 'apps/*/e2e/**/*.spec.ts'],
     rules: {

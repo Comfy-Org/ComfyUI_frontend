@@ -11,7 +11,7 @@ const mockFetchApi = vi.hoisted(() => vi.fn())
 const mockApiURL = vi.hoisted(() =>
   vi.fn((path: string) => `http://localhost:8188${path}`)
 )
-const mockGetServerFeature = vi.hoisted(() => vi.fn(() => false))
+const mockFeatureFlags = vi.hoisted(() => ({ assetsEnabled: false }))
 const mockIsAssetAPIEnabled = vi.hoisted(() => vi.fn(() => false))
 const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())
@@ -21,9 +21,12 @@ vi.mock('@/scripts/api', () => ({
   api: {
     fetchApi: mockFetchApi,
     apiURL: mockApiURL,
-    api_base: '',
-    getServerFeature: mockGetServerFeature
+    api_base: ''
   }
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: mockFeatureFlags })
 }))
 
 vi.mock('@/platform/assets/services/assetService', () => ({
@@ -82,7 +85,10 @@ const localAssetWithPreview = {
 }
 
 describe('isAssetPreviewSupported', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockFeatureFlags.assetsEnabled = false
+  })
 
   it('returns true when asset API is enabled (cloud)', () => {
     mockIsAssetAPIEnabled.mockReturnValue(true)
@@ -90,13 +96,13 @@ describe('isAssetPreviewSupported', () => {
   })
 
   it('returns true when server assets feature is enabled (local)', () => {
-    mockGetServerFeature.mockReturnValue(true)
+    mockFeatureFlags.assetsEnabled = true
     expect(isAssetPreviewSupported()).toBe(true)
   })
 
   it('returns false when neither is enabled', () => {
     mockIsAssetAPIEnabled.mockReturnValue(false)
-    mockGetServerFeature.mockReturnValue(false)
+    mockFeatureFlags.assetsEnabled = false
     expect(isAssetPreviewSupported()).toBe(false)
   })
 })

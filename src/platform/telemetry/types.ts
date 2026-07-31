@@ -407,6 +407,7 @@ export type SearchSurface =
   | 'node_modal'
   | 'node_sidebar'
   | 'apps'
+  | 'allowlist'
   | 'templates'
   | 'settings'
 
@@ -781,7 +782,11 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
  */
+export type FeatureFlagValue = string | number | boolean | null | undefined
+
 export interface TelemetryProvider {
+  trackFeatureFlagExposure?(key: string, value: FeatureFlagValue): void
+
   // Authentication flow events
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
