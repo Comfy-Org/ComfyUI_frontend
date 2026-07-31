@@ -2,6 +2,9 @@ import fs from 'fs'
 import path from 'path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+
+import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
 import { getFromPngFile } from './metadata/png'
@@ -10,8 +13,15 @@ import {
   getFlacMetadata,
   getLatentMetadata,
   getPngMetadata,
-  getWebpMetadata
+  getWebpMetadata,
+  importA1111
 } from './pnginfo'
+
+vi.mock('./api', () => ({
+  api: {
+    getEmbeddings: vi.fn()
+  }
+}))
 
 vi.mock('./metadata/png', () => ({
   getFromPngFile: vi.fn()
@@ -232,5 +242,53 @@ describe('format-specific metadata wrappers', () => {
 
     expect(getFromAvifFile).toHaveBeenCalledWith(file)
     expect(result).toEqual({ workflow: '{"avif":1}' })
+  })
+})
+
+describe('importA1111', () => {
+  const parameters =
+    'positive\nNegative prompt: negative\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
+
+  it('returns false without clearing the graph when core nodes are unavailable', async () => {
+    const graph = new LGraph()
+    const clear = vi.spyOn(graph, 'clear')
+    const beforeGraphClear = vi.fn()
+    const onCoreNodesUnavailable = vi.fn()
+    vi.mocked(api.getEmbeddings).mockResolvedValue([])
+    vi.spyOn(LiteGraph, 'createNode').mockReturnValue(null)
+
+    const imported = await importA1111(
+      graph,
+      parameters,
+      beforeGraphClear,
+      onCoreNodesUnavailable
+    )
+
+    expect(imported).toBe(false)
+    expect(beforeGraphClear).not.toHaveBeenCalled()
+    expect(onCoreNodesUnavailable).toHaveBeenCalledOnce()
+    expect(clear).not.toHaveBeenCalled()
+  })
+
+  it('runs the lifecycle callback immediately before clearing the graph', async () => {
+    const graph = new LGraph()
+    const clear = vi.spyOn(graph, 'clear')
+    const beforeGraphClear = vi.fn()
+    vi.mocked(api.getEmbeddings).mockResolvedValue([])
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(LiteGraph, 'createNode').mockImplementation((type) => {
+      const node = new LGraphNode(type)
+      node.type = type
+      vi.spyOn(node, 'connect').mockReturnValue(null)
+      return node
+    })
+
+    const imported = await importA1111(graph, parameters, beforeGraphClear)
+
+    expect(imported).toBe(true)
+    expect(beforeGraphClear).toHaveBeenCalledOnce()
+    expect(beforeGraphClear.mock.invocationCallOrder[0]).toBeLessThan(
+      clear.mock.invocationCallOrder[0]
+    )
   })
 })
