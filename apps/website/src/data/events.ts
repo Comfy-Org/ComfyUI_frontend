@@ -69,11 +69,6 @@ function eventVideo(
   }
 }
 
-const foundersLiveStreamHref: LocalizedText = {
-  en: 'https://www.youtube.com/live/dbp5Jnto7S8',
-  'zh-CN': 'https://www.youtube.com/live/dbp5Jnto7S8'
-}
-
 const launchesHref: LocalizedText = {
   en: localizeHref('/launches', 'en'),
   'zh-CN': localizeHref('/launches', 'zh-CN')
@@ -86,6 +81,13 @@ function youtubeWatchHref(videoId: string): LocalizedText {
 
 export const eventPath = (event: { id: string }): string =>
   `/events/${event.id}`
+
+function eventPageHref(id: string): LocalizedText {
+  return {
+    en: localizeHref(eventPath({ id }), 'en'),
+    'zh-CN': localizeHref(eventPath({ id }), 'zh-CN')
+  }
+}
 
 const EVENT_DURATION_MS = 60 * 60 * 1000
 const SITE_ORIGIN = 'https://comfy.org'
@@ -123,8 +125,8 @@ const foundersLiveFeatured: FeaturedEvent = {
     },
     'founders-live-thumb.png'
   ),
-  href: foundersLiveStreamHref,
-  newTab: true
+  href: eventPageHref('krea-founders-live'),
+  newTab: false
 }
 
 // Referenced by both the hero carousel and the upcoming-events list.
@@ -155,13 +157,17 @@ const postProductionFeatured: FeaturedEvent = {
   title: postProduction.name,
   // The artwork already carries the title and date.
   showTitle: false,
-  media: eventImage('livestream-aug05-v2.jpg', {
-    en: 'The Future of AI Post Production livestream',
-    'zh-CN': 'AI 后期制作的未来直播'
-  }),
-  href: launchesHref,
+  media: eventVideo(
+    'future-of-ai-post-production.mp4',
+    {
+      en: 'The Future of AI Post Production livestream',
+      'zh-CN': 'AI 后期制作的未来直播'
+    },
+    'livestream-aug05-v2.jpg'
+  ),
+  href: eventPageHref(postProduction.id),
   newTab: false,
-  autoplayMs: 7000
+  autoplayMs: 12000
 }
 
 export const featuredEvents: readonly FeaturedEvent[] = [

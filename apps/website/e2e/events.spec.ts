@@ -120,6 +120,44 @@ test.describe('Events page — desktop @smoke', () => {
     }
   })
 
+  test('a video slide that ends while hovered advances once the pointer leaves', async ({
+    page
+  }) => {
+    test.skip(
+      !featuredEvents.some((event) => event.media.type === 'video'),
+      'needs a featured video slide'
+    )
+
+    await page.goto(PATH_EN)
+    const hero = heroSection(page, 'en')
+    const nextSlide = hero.getByRole('button', {
+      name: t('events.hero.nextSlide', 'en')
+    })
+    await nextSlide.scrollIntoViewIfNeeded()
+    await nextSlide.hover()
+
+    // With the pointer inside the carousel, the active video finishes (the
+    // fixture serves a 0.12s placeholder) and the carousel holds its slide.
+    const activeSlide = hero.locator('[aria-hidden="false"]')
+    await expect
+      .poll(() =>
+        activeSlide
+          .locator('video')
+          .evaluate((video: HTMLVideoElement) => video.ended)
+          .catch(() => false)
+      )
+      .toBe(true)
+    const heldLabel = await activeSlide.locator('a').getAttribute('aria-label')
+    expect(heldLabel).toBeTruthy()
+
+    // Leaving the carousel releases the held advance.
+    await page.mouse.move(0, 0)
+    await expect(activeSlide.locator('a')).not.toHaveAttribute(
+      'aria-label',
+      heldLabel!
+    )
+  })
+
   test('upcoming section lists one row per event with localized content and links', async ({
     page
   }) => {
@@ -198,11 +236,13 @@ test.describe('Events page — desktop @smoke', () => {
       await expect(dialog).toBeVisible()
 
       // Closing returns to the events directory. Retry until the dialog
-      // island hydrates and the click lands.
+      // island hydrates and the click lands; once the navigation has happened
+      // the button is gone, so only click while it is still there.
+      const closeButton = dialog.getByRole('button', {
+        name: t('events.videoDialog.close', locale)
+      })
       await expect(async () => {
-        await dialog
-          .getByRole('button', { name: t('events.videoDialog.close', locale) })
-          .click()
+        if (await closeButton.isVisible()) await closeButton.click()
         await expect(page).toHaveURL(new RegExp(`${path}/?$`), {
           timeout: 1000
         })
