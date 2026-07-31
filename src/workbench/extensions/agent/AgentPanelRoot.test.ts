@@ -533,48 +533,71 @@ describe('AgentPanelRoot attach flow', () => {
     )
   })
 
-  it('attaches an asset-card drag that carries a URI instead of a File', async () => {
-    // PM-116: MediaAssetCard.dragStart sets asset-info + text/uri-list on the
-    // transfer and never a File, so the panel must claim and fetch the URI.
-    const png = new Uint8Array([137, 80, 78, 71])
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = String(input)
-        if (url.includes('/api/view'))
-          return new Response(new Blob([png], { type: 'image/png' }))
-        if (url.endsWith('/api/upload/image'))
-          return new Response(
-            JSON.stringify({ name: 'gen.png', subfolder: '', type: 'input' }),
-            { status: 200, headers: { 'Content-Type': 'application/json' } }
-          )
-        return new Response('{"threads":[]}', {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
+  it.for([
+    { mime: 'image/png', filename: 'gen.png' },
+    { mime: 'video/mp4', filename: 'movie.mp4' }
+  ])(
+    'attaches a Media-card $mime URI and forwards its uploaded ref',
+    async ({ mime, filename }) => {
+      // PM-116: MediaAssetCard.dragStart sets asset-info + text/uri-list on the
+      // transfer and never a File, so the panel must claim and fetch the URI.
+      const messageBodies: unknown[] = []
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
+          if (url.includes('/api/view'))
+            return new Response(new Blob(['asset'], { type: mime }))
+          if (url.endsWith('/api/upload/image'))
+            return new Response(
+              JSON.stringify({
+                name: `uploaded_${filename}`,
+                subfolder: '',
+                type: 'input'
+              }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          if (init?.method === 'POST' && url.includes('/messages')) {
+            messageBodies.push(JSON.parse(String(init.body)))
+            return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+          }
+          return new Response('{"threads":[]}', {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          })
         })
+      )
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await nextTick()
+      const target = screen.getByRole('textbox')
+
+      expect(
+        dispatchDrag(target, 'dragover', {
+          types: ['application/x-comfy-asset-info', 'text/uri-list']
+        })
+      ).toBe(true)
+
+      const claimed = dispatchDrag(target, 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename, type: 'output' })
+            : `http://localhost/api/view?filename=${filename}`
       })
-    )
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await nextTick()
-    const target = screen.getByRole('textbox')
+      expect(claimed).toBe(true)
 
-    expect(
-      dispatchDrag(target, 'dragover', {
-        types: ['application/x-comfy-asset-info', 'text/uri-list']
+      expect(await screen.findByText(filename)).toBeInTheDocument()
+
+      await userEvent.type(screen.getByRole('textbox'), 'describe this')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+      expect(messageBodies).toHaveLength(1)
+      expect(messageBodies[0]).toMatchObject({
+        content: 'describe this',
+        attachments: [`uploaded_${filename}`]
       })
-    ).toBe(true)
-
-    const claimed = dispatchDrag(target, 'drop', {
-      types: ['application/x-comfy-asset-info', 'text/uri-list'],
-      getData: (type: string) =>
-        type === 'application/x-comfy-asset-info'
-          ? JSON.stringify({ filename: 'gen.png', type: 'output' })
-          : 'http://localhost/api/view?filename=gen.png'
-    })
-    expect(claimed).toBe(true)
-
-    expect(await screen.findByText('gen.png')).toBeInTheDocument()
-  })
+    }
+  )
 
   it('attaches dropped assets and leaves other files to the graph loader', async () => {
     // The graph loader only opens a dropped workflow while the drop is
