@@ -9,6 +9,7 @@ import type { SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
 import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
+  BillingStatus,
   CurrentTeamCreditStop,
   TeamCreditStops
 } from '@/platform/workspace/api/workspaceApi'
@@ -54,6 +55,7 @@ const teamCreditStops: TeamCreditStops = {
 }
 
 const mockSubscriptionStatus = ref<'active' | 'canceled'>('active')
+const mockBillingStatus = ref<BillingStatus>('paid')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockHasSubscription = ref(true)
 const mockIsActiveSubscription = ref(true)
@@ -131,6 +133,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     isFreeTier: computed(() => false),
+    billingStatus: mockBillingStatus,
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
     teamCreditStops: mockTeamCreditStops,
@@ -271,6 +274,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSubscriptionStatus.value = 'active'
+    mockBillingStatus.value = 'paid'
     mockHasSubscription.value = true
     mockIsActiveSubscription.value = true
     mockIsInPersonalWorkspace.value = false
@@ -453,17 +457,38 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps an inactive paid Team plan visible in a Personal workspace', () => {
+  it('shows the Free plan for an inactive personal subscription with terminal billing', () => {
     mockIsInPersonalWorkspace.value = true
     mockIsActiveSubscription.value = false
+    mockBillingStatus.value = 'inactive'
     renderComponent()
 
-    expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
-    expect(screen.queryByText('Free')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Subscribe' })
+      screen.getByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Team' })
     ).not.toBeInTheDocument()
   })
+
+  it.for(['paid', 'payment_failed', 'paused'] as BillingStatus[])(
+    'keeps a %s personal plan visible until it is terminal',
+    (billingStatus) => {
+      mockIsInPersonalWorkspace.value = true
+      mockIsActiveSubscription.value = false
+      mockBillingStatus.value = billingStatus
+      renderComponent()
+
+      expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
+      expect(
+        screen.queryByRole('heading', { name: 'Free' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it('reactivates a cancelled plan for an owner, keeping Manage billing', async () => {
     const user = userEvent.setup()
