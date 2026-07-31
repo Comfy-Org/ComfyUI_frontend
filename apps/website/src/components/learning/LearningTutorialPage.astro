@@ -5,7 +5,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import CallToActionSection from '../common/CallToActionSection.vue'
 import LearningWatchPage from './LearningWatchPage.vue'
-import { getRoutes, externalLinks, localizeHref } from '../../config/routes'
+import { externalLinks, localizeHref } from '../../config/routes'
 import type { LearningTutorial } from '../../data/learningTutorials'
 import {
   learningCrumbs,
@@ -55,7 +55,6 @@ const breadcrumbs = [
   { name: title }
 ]
 
-const routes = getRoutes(locale)
 ---
 
 <BaseLayout
@@ -70,10 +69,11 @@ const routes = getRoutes(locale)
   <CallToActionSection
     locale={locale}
     headingKey="learning.cta.heading"
-    primaryLabelKey="learning.cta.contactSales"
-    primaryHref={routes.contact}
-    secondaryLabelKey="cta.tryWorkflow"
-    secondaryHref={externalLinks.workflows}
+    primaryLabelKey="cta.tryWorkflow"
+    primaryHref={externalLinks.workflows}
+    secondaryLabelKey="learning.cta.runComfy"
+    secondaryHref={externalLinks.cloud}
+    secondaryTarget="_blank"
     client:visible
   />
 </BaseLayout>

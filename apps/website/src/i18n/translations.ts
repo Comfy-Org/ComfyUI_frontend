@@ -1643,6 +1643,10 @@ const translations = {
     en: 'Contact Sales',
     'zh-CN': '联系销售'
   },
+  'learning.cta.runComfy': {
+    en: 'Run Comfy for free',
+    'zh-CN': '免费运行 Comfy'
+  },
 
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },

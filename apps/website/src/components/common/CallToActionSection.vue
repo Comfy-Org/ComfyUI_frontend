@@ -9,15 +9,19 @@ const {
   headingKey,
   primaryLabelKey,
   primaryHref,
+  primaryTarget,
   secondaryLabelKey,
-  secondaryHref
+  secondaryHref,
+  secondaryTarget
 } = defineProps<{
   locale?: Locale
   headingKey: TranslationKey
   primaryLabelKey: TranslationKey
   primaryHref?: string
+  primaryTarget?: string
   secondaryLabelKey?: TranslationKey
   secondaryHref?: string
+  secondaryTarget?: string
 }>()
 </script>
 
@@ -32,6 +36,7 @@ const {
       <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
         <BrandButton
           :href="primaryHref"
+          :target="primaryTarget"
           variant="solid"
           size="xs"
           class="uppercase"
@@ -41,6 +46,7 @@ const {
         <BrandButton
           v-if="secondaryLabelKey"
           :href="secondaryHref"
+          :target="secondaryTarget"
           variant="outline"
           size="xs"
           class="uppercase"
