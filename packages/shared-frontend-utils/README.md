@@ -34,7 +34,10 @@ parseFilePath('output/run_1/image.png') // { filename: 'image.png', subfolder: '
 normalizeI18nKey('sd_xl.safetensors') // 'sd_xl_safetensors'
 ```
 
-`highlightQuery`, `linkifyHtml`, and `nl2br` return HTML sanitized with DOMPurify, so they require a DOM. Call them from browser code only, not during server-side rendering.
+Three helpers return HTML strings and need care:
+
+- `highlightQuery` passes its input through DOMPurify before wrapping matches, so it needs a DOM and throws in a DOM-less environment such as SSR. Pass `sanitize: false` only when the input is already trusted.
+- `linkifyHtml` and `nl2br` do **not** sanitize. They return raw HTML built from their input, so sanitize untrusted values yourself before rendering the result.
 
 ### `networkUtil`
 
