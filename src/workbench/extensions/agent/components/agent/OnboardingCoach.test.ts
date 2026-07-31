@@ -56,7 +56,9 @@ describe('OnboardingCoach', () => {
     // eslint-disable-next-line testing-library/no-node-access -- position lands on the styled child
     const card = dialog.querySelector('[style]') as HTMLElement
     const left = Number.parseFloat(card.style.left)
-    expect(left + 256).toBeLessThanOrEqual(700)
+    const renderedWidth = Number.parseFloat(getComputedStyle(card).width)
+    expect(renderedWidth).toBe(256)
+    expect(left + renderedWidth).toBeLessThanOrEqual(700 - 8)
     expect(left).toBeGreaterThanOrEqual(8)
     // Anchored near the panel's top, not its bottom edge.
     expect(Number.parseFloat(card.style.top)).toBe(108)

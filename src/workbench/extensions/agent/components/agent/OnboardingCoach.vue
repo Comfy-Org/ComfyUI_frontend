@@ -41,7 +41,11 @@ watchEffect(
       Math.max(MARGIN, rect.top + MARGIN),
       Math.max(MARGIN, height.value - CARD_H - MARGIN)
     )
-    cardStyle.value = { top: `${top}px`, left: `${left}px` }
+    cardStyle.value = {
+      top: `${top}px`,
+      left: `${left}px`,
+      width: `${CARD_W}px`
+    }
   },
   { flush: 'post' }
 )
@@ -58,7 +62,7 @@ watchEffect(
     <div class="absolute inset-0 bg-black/40" />
     <div
       :style="cardStyle"
-      class="rounded-agent border-agent-border bg-agent-surface-raised text-agent-fg absolute w-64 border p-3 shadow-xl"
+      class="rounded-agent border-agent-border bg-agent-surface-raised text-agent-fg absolute border p-3 shadow-xl"
     >
       <p class="text-sm font-semibold">{{ step.title }}</p>
       <p class="text-agent-fg-muted mt-2 text-xs">{{ step.body }}</p>
