@@ -525,7 +525,11 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {
+        name: 'This workspace has no active plan'
+      })
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
@@ -743,7 +747,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
   })
 
-  it('renders the Free plan header with Subscribe CTA for unsubscribed personal workspaces', async () => {
+  it('renders the no-plan state with subscription actions for personal workspaces', async () => {
     const user = userEvent.setup()
     mockIsInPersonalWorkspace.value = true
     mockIsActiveSubscription.value = false
@@ -753,11 +757,20 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockCanLeaveWorkspace.value = false
     renderComponent()
 
-    expect(screen.getByText('Free')).toBeInTheDocument()
-    expect(screen.getByText('$0')).toBeInTheDocument()
-    expect(screen.getByText('USD / mo')).toBeInTheDocument()
-    expect(screen.getByText("What's included:")).toBeInTheDocument()
-    expect(screen.getByText('10 min max runtime')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {
+        name: 'This workspace has no active plan'
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Subscribe to run more workflows on Cloud and invite members'
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Free')).not.toBeInTheDocument()
+    expect(screen.queryByText('$0')).not.toBeInTheDocument()
+    expect(screen.queryByText("What's included:")).not.toBeInTheDocument()
+    expect(screen.queryByText('10 min max runtime')).not.toBeInTheDocument()
     expect(
       screen.queryByText('RTX 6000 Pro (96GB VRAM)')
     ).not.toBeInTheDocument()

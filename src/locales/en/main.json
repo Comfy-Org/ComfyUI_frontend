@@ -2730,10 +2730,6 @@
       "sharedCreditPool": "Shared credit pool for all members",
       "rolePermissions": "Role-based permissions"
     },
-    "freePerks": {
-      "maxRuntime": "{duration} max runtime",
-      "freeRuns": "{count} free run | {count} free runs"
-    },
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
     "billedMonthly": "Billed monthly",
@@ -2796,6 +2792,8 @@
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",
     "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud and invite members",
+    "noActivePlan": "This workspace has no active plan",
+    "noActivePlanDescription": "Subscribe to run more workflows on Cloud and invite members",
     "contactOwnerToSubscribe": "Contact the workspace owner to subscribe",
     "description": "Choose the best plan for you",
     "descriptionWorkspace": "Choose a Plan",
