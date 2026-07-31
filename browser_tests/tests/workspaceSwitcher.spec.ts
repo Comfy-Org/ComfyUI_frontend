@@ -59,9 +59,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
       await mockWorkspaceList(page, createManyWorkspacesResponse())
 
-      // The workspace list is only fetched once, on app boot, so the override
-      // above has no effect on the workspaces already loaded via the
-      // fixture-level mock. Reload to re-run boot against the new mock.
+      // Workspace list is fetched once on boot; reload to pick up the override.
       await comfyPage.workflow.reloadAndWaitForApp()
 
       await comfyPage.toast.closeToasts()
@@ -72,11 +70,8 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       await expect(list).toBeVisible()
       const offScreenRow = list.getByText(OFF_SCREEN_WORKSPACE_NAME)
 
-      // Regression: without a bounded, scrollable list container, the panel
-      // just grows past the viewport and the *window* scrolls instead of the
-      // list, so scrollIntoViewIfNeeded()/toBeInViewport() pass either way.
-      // Drive a real wheel scroll instead, which only moves the list's own
-      // scrollTop when the list is actually overflow-y-auto/scrollbar-custom.
+      // toBeInViewport() passes via window scroll too, so drive a real wheel
+      // scroll to assert the list itself scrolls.
       await expect(offScreenRow).not.toBeInViewport()
 
       await list.hover()

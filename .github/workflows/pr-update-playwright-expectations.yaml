@@ -75,20 +75,8 @@ jobs:
       - name: Build cloud frontend
         uses: ./.github/actions/build-cloud-frontend
 
-  # Snapshot updates: shards 1-4 run everything except @cloud tests against
-  # the plain build, and the `cloud` leg runs the `cloud` Playwright project
-  # against the frontend-dist-cloud build, so @cloud-tagged screenshot tests
-  # get a baseline generated against the same distribution that
-  # ci-tests-e2e.yaml's `playwright-tests` matrix runs against for that
-  # project (mirrors its frontend-dist / frontend-dist-cloud selection).
-  #
-  # Known gap: ci-tests-e2e.yaml also builds `mobile-safari` against
-  # frontend-dist-cloud, but shards 1-4 here only exclude @cloud (not
-  # @mobile-ios), so a future @screenshot test tagged @mobile-ios would get
-  # its baseline built against the plain distribution instead. No spec is
-  # currently tagged both @mobile-ios and @screenshot, so this is latent;
-  # revisit by adding `mobile-safari` to the cloud-distribution leg and
-  # excluding @mobile-ios from the sharded run if that changes.
+  # Shards 1-4 run against the plain build; the `cloud` leg runs @cloud
+  # tests against the frontend-dist-cloud build.
   update-snapshots-sharded:
     needs: setup
     runs-on: ubuntu-latest

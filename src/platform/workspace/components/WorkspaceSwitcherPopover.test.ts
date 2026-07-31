@@ -232,8 +232,6 @@ describe('WorkspaceSwitcherPopover', () => {
 
     const list = screen.getByTestId('workspace-switcher-list')
 
-    // All rows render (not paginated), so the bounded, scrollable list is
-    // what makes rows past the visible area reachable.
     workspaceNames.forEach((name) => {
       expect(list).toContainElement(screen.getByText(name))
     })
