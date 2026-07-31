@@ -449,6 +449,54 @@
   --modal-panel-background: var(--color-charcoal-600);
 }
 
+/* Custom dark palettes derive their surfaces from their own menu colour so
+   they stop inheriting the charcoal scale that .dark-theme applies to every
+   non-light palette. Offsets are measured from the real charcoal scale. */
+:root[data-color-palette]:not([data-color-palette='dark']):not(
+    [data-color-palette='light']
+  ) {
+  --palette-surface-700: oklch(from var(--comfy-menu-bg) calc(l + 0.0417) c h);
+  --palette-surface-600: oklch(from var(--comfy-menu-bg) calc(l + 0.0675) c h);
+  --palette-surface-400: oklch(from var(--comfy-menu-bg) calc(l + 0.1123) c h);
+  --palette-surface-300: oklch(from var(--comfy-menu-bg) calc(l + 0.1559) c h);
+  --palette-surface-200: oklch(from var(--comfy-menu-bg) calc(l + 0.2054) c h);
+
+  --base-background: var(--comfy-menu-bg);
+  --nav-background: var(--comfy-menu-bg);
+  --interface-menu-surface: var(--comfy-menu-bg);
+  --interface-panel-surface: var(--comfy-menu-bg);
+  --node-component-tooltip-surface: var(--comfy-menu-bg);
+  --component-node-widget-background-disabled: var(--comfy-menu-bg);
+
+  --node-component-header-surface: var(--palette-surface-700);
+
+  --button-surface: var(--palette-surface-600);
+  --button-hover-surface: var(--palette-surface-600);
+  --button-active-surface: var(--palette-surface-600);
+  --secondary-background: var(--palette-surface-600);
+  --node-component-surface: var(--palette-surface-600);
+  --node-component-surface-hovered: var(--palette-surface-600);
+  --component-node-background: var(--palette-surface-600);
+  --modal-panel-background: var(--palette-surface-600);
+
+  --interface-stroke: var(--palette-surface-400);
+  --interface-menu-component-surface-hovered: var(--palette-surface-400);
+  --secondary-background-hover: var(--palette-surface-400);
+  --tertiary-background: var(--palette-surface-400);
+
+  --interface-menu-component-surface-selected: var(--palette-surface-300);
+  --tertiary-background-hover: var(--palette-surface-300);
+  --border-subtle: var(--palette-surface-300);
+  --modal-card-button-surface: var(--palette-surface-300);
+
+  --interface-menu-keybind-surface-default: var(--palette-surface-200);
+  --node-component-border-selected: var(--palette-surface-200);
+  --node-component-surface-selected: var(--palette-surface-200);
+  --node-component-tooltip-border: var(--palette-surface-200);
+  --secondary-background-selected: var(--palette-surface-200);
+  --border-default: var(--palette-surface-200);
+}
+
 @theme inline {
   --color-backdrop: var(--backdrop);
   --color-button-active-surface: var(--button-active-surface);
