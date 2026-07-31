@@ -104,6 +104,34 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
     })
   })
 
+  test.describe('reduced motion', () => {
+    test('honours prefers-reduced-motion on every animated tour surface', async ({
+      comfyPage,
+      onboarding
+    }) => {
+      const coach = onboarding
+      await comfyPage.page.emulateMedia({ reducedMotion: 'reduce' })
+      await comfyPage.appMode.enterAppModeWithInputs([])
+
+      await coach.startTour('appMode')
+      await expect(coach.landing).toBeVisible()
+      await coach.landingStartButton.click()
+      await expect(coach.cardForStep(1)).toBeVisible()
+
+      for (const surface of [coach.spotlight, coach.card]) {
+        const unguarded = await surface.evaluate((el) =>
+          [...el.classList].filter(
+            (name) =>
+              name.includes('transition-[') && !name.startsWith('motion-safe:')
+          )
+        )
+        expect(unguarded).toEqual([])
+      }
+
+      await expect(coach.spotlight).toHaveCSS('transition-duration', '0s')
+    })
+  })
+
   test.describe('spotlight placement', () => {
     test('every spotlight card stays fully within the viewport and Done completes the tour', async ({
       comfyPage,

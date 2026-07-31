@@ -36,12 +36,21 @@ function useFirstRunTourControllerInternal() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
-
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
+
+  // The tour's node ids are graph-local, so they only describe the workflow it
+  // resolved against: swapping workflows leaves it pointing at strangers.
+  const tourContextHolds = computed(
+    () =>
+      desktopLayout.value && workflowStore.activeWorkflow === tourWorkflow.value
+  )
+
   const onRunStep = computed(
     () =>
-      engine.activeTour === 'firstRun' && engine.step?.selfAdvancing === true
+      engine.activeTour === 'firstRun' &&
+      engine.step?.kind === 'spotlight' &&
+      engine.step.selfAdvancing === true
   )
 
   /** Recorded, not derived: the queue clears a status as soon as it turns terminal. */
@@ -51,11 +60,15 @@ function useFirstRunTourControllerInternal() {
       executionStore.getWorkflowStatus(tourWorkflow.value),
       executionErrorStore.hasNodeError || executionErrorStore.hasPromptError
     ],
-    ([status, refused]) => {
+    ([status, refused], previous) => {
       if (status === 'running') runState.value = 'generating'
       else if (status === 'completed') runState.value = 'succeeded'
       else if (status === 'failed') runState.value = 'failed'
+      // A refused run never queues; a stopped one drops its status rather than
+      // reporting an outcome. Both end the run, and neither says so.
       else if (refused && runState.value === 'generating')
+        runState.value = 'failed'
+      else if (status === undefined && previous?.[0] === 'running')
         runState.value = 'failed'
     }
   )
@@ -115,7 +128,7 @@ function useFirstRunTourControllerInternal() {
     registerTour(
       'firstRun',
       () => firstRunTourSteps(templateId, runState),
-      desktopLayout
+      tourContextHolds
     )
     await delay(INTRO_PREVIEW_MS)
     const started = await engine.startTour('firstRun')

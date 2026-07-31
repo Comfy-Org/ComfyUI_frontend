@@ -8,7 +8,7 @@ import type { AppMode } from '@/utils/appMode'
 
 import { clearCoachmarks } from './coachmarkRegistry'
 import { TOUR_SEEN_SETTING, registerTour } from './onboardingTours'
-import type { CoachStep } from './onboardingTours'
+import type { SpotlightStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
 const settings = vi.hoisted(() => ({ store: new Map<string, unknown>() }))
@@ -38,8 +38,11 @@ vi.mock('@/stores/appModeStore', () => ({
   useAppModeStore: () => ({ hasOutputs: false })
 }))
 
-function step(name: string, overrides: Partial<CoachStep> = {}): CoachStep {
-  return { name, placement: 'center', ...overrides }
+function step(
+  name: string,
+  overrides: Partial<SpotlightStep> = {}
+): SpotlightStep {
+  return { kind: 'spotlight', name, placement: 'center', ...overrides }
 }
 
 function stages(): string[] {
@@ -84,6 +87,30 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
       null
     )
     expect(stages()).not.toContain('started')
+    expect(
+      stages(),
+      'a pin set covering no real traffic has to be tellable apart from nobody qualifying'
+    ).toContain('not_started')
+  })
+
+  it('says nothing when the user has already had the tour', async () => {
+    settings.store.set(TOUR_SEEN_SETTING, ['firstRun'])
+    registerTour('firstRun', () => Promise.resolve([]))
+    const store = mountStore()
+
+    await expect(store.startTour('firstRun')).resolves.toBe(false)
+    expect(
+      stages(),
+      'someone who has had their tour is not a coverage failure'
+    ).not.toContain('not_started')
+  })
+
+  it('says nothing about a tour that did start', async () => {
+    registerTour('firstRun', () => Promise.resolve([step('run')]))
+    const store = mountStore()
+
+    await expect(store.startTour('firstRun')).resolves.toBe(true)
+    expect(stages()).not.toContain('not_started')
   })
 
   it('stays startable after a resolver rejects', async () => {

@@ -6,7 +6,7 @@ import {
   CARD_WIDTH,
   CURSOR_GAP
 } from '@/platform/onboarding/coachmarkLayout'
-import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/types/nodeId'
 
 const FOCUS_DURATION_MS = 450
@@ -47,7 +47,7 @@ function prefersReducedMotion(): boolean {
 
 /** Re-solves the fill each time: it is a fraction of a viewport that can resize. */
 function fitInstantly(bounds: ReadOnlyRect) {
-  const canvas = app.canvas
+  const canvas = useCanvasStore().canvas
   const viewport = canvas?.canvas.getBoundingClientRect()
   if (!canvas || !viewport?.width || !viewport.height) return
   canvas.ds.fitToBounds(bounds, { zoom: focusFill(bounds, viewport) })
@@ -93,7 +93,7 @@ export async function frameNode(
   signal: AbortSignal,
   { glide = true }: { glide?: boolean } = {}
 ): Promise<void> {
-  const canvas = app.canvas
+  const canvas = useCanvasStore().canvas
   const node = canvas?.graph?.getNodeById(nodeId)
   const viewport = canvas?.canvas.getBoundingClientRect()
   if (!canvas || !node || !viewport?.width || !viewport.height) return

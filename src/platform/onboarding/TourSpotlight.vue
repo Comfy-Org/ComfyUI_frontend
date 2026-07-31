@@ -105,7 +105,6 @@
           :title-id="titleId"
           :message="body"
           :message-id="bodyId"
-          :image="step.image"
         >
           <template #actions>
             <Button
@@ -174,7 +173,7 @@ import {
   clampSpotlightRect,
   noTargetCardLeft
 } from './coachmarkLayout'
-import type { CoachStep } from './onboardingTours'
+import type { SpotlightStep } from './onboardingTours'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
 
 const {
@@ -190,7 +189,7 @@ const {
   countedStepsTotal,
   waitingForTarget
 } = defineProps<{
-  step: CoachStep
+  step: SpotlightStep
   title: string
   body: string
   isLast: boolean
@@ -220,7 +219,7 @@ const { width: windowWidth, height: windowHeight } = useWindowSize()
 
 const {
   targetRect,
-  targetEl,
+  hasTarget,
   targetMoves,
   floatingStyles,
   isPositioned,
@@ -327,13 +326,13 @@ watch([() => step, targetMoves], ([, moves], _previous, onCleanup) => {
 })
 
 /** Hidden until Floating UI has placed it, so it fades in already sited. */
-const cardVisible = computed(() => !targetEl.value || isPositioned.value)
+const cardVisible = computed(() => !hasTarget.value || isPositioned.value)
 
 const cardStyle = computed(() => {
   const width = `${CARD_WIDTH}px`
   const maxWidth = `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`
   const opacity = cardVisible.value ? '1' : '0'
-  if (!targetEl.value) {
+  if (!hasTarget.value) {
     return {
       width,
       maxWidth,
@@ -361,7 +360,7 @@ const TARGET_FACING_EDGE = {
 } as const
 
 const cursorEdgeClass = computed(() => {
-  if (!step.cursor || !targetEl.value) return ''
+  if (!step.cursor || !hasTarget.value) return ''
   const side = placement.value.split('-')[0] as keyof typeof TARGET_FACING_EDGE
   return CURSOR_EDGE_CLASS[TARGET_FACING_EDGE[side]]
 })
