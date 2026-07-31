@@ -431,11 +431,6 @@ onUpdated(() => {
   opacity: 0.75;
 }
 
-:deep(.p-togglebutton-checked) .close-button,
-:deep(.p-togglebutton:hover) .close-button {
-  visibility: visible;
-}
-
 :deep(.p-scrollpanel-content) {
   height: 100%;
 }

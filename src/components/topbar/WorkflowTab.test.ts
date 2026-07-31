@@ -176,6 +176,19 @@ describe('WorkflowTab - workflow status indicator', () => {
     mockWorkflowStatus.value = new Map()
   })
 
+  it('renders the normal saved tab frame without activity indicators', () => {
+    renderTab()
+
+    expect(screen.getByTestId('workflow-tab')).toHaveClass('h-9', 'w-34')
+    expect(screen.getByText('test.json')).toHaveClass('text-sm')
+    expect(screen.getByTestId('close-workflow-icon')).toHaveClass('text-base')
+    expect(screen.getByTestId('close-workflow-button')).not.toHaveClass(
+      'invisible'
+    )
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
+  })
+
   it.for(['running', 'completed', 'failed'] as const)(
     'labels the %s indicator with a translated status name',
     (status) => {
@@ -201,13 +214,21 @@ describe('WorkflowTab - workflow status indicator', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
 
     expect(screen.queryByRole('img')).toBeNull()
-    expect(screen.getByTestId('workflow-dirty-indicator').textContent).toBe('•')
+    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
+      'size-2',
+      'rounded-full',
+      'bg-base-foreground'
+    )
   })
 
   it('shows the unsaved dot when modified and autosave is off', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isModified: true }) })
 
-    expect(screen.getByTestId('workflow-dirty-indicator').textContent).toBe('•')
+    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
+      'size-2',
+      'rounded-full',
+      'bg-base-foreground'
+    )
   })
 
   it('workflow status replaces the unsaved dot', () => {
@@ -234,7 +255,7 @@ describe('WorkflowTab - agent activity indicators', () => {
 
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
-    ).toBeTruthy()
+    ).toHaveClass('size-4')
   })
 
   it('the agent spinner wins over the unseen-changes dot', async () => {
@@ -259,6 +280,7 @@ describe('WorkflowTab - agent activity indicators', () => {
 
     expect(screen.getByTestId('agent-modified-indicator')).toHaveClass(
       'size-2',
+      'rounded-full',
       'bg-primary-background'
     )
     expect(
@@ -296,6 +318,37 @@ describe('WorkflowTab - agent activity indicators', () => {
 describe('WorkflowTab - close button', () => {
   beforeEach(() => {
     mockCloseWorkflow.mockClear()
+  })
+
+  it('replaces the close control with each tab state marker', async () => {
+    const { rerender } = renderTab()
+    const activity = useWorkflowTabActivityStore()
+
+    expect(screen.getByTestId('close-workflow-button')).toBeInTheDocument()
+    expect(screen.getByTestId('close-workflow-icon')).toBeInTheDocument()
+
+    activity.setEditing('/workflows/test.json')
+    await nextTick()
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('close-workflow-button')).toBeNull()
+    expect(screen.queryByTestId('close-workflow-icon')).toBeNull()
+
+    activity.setEditing(null)
+    activity.markModified('/workflows/test.json')
+    await nextTick()
+    expect(screen.getByTestId('agent-modified-indicator')).toBeInTheDocument()
+    expect(screen.queryByTestId('close-workflow-button')).toBeNull()
+    expect(screen.queryByTestId('close-workflow-icon')).toBeNull()
+
+    activity.markSeen('/workflows/test.json')
+    await rerender({
+      workflowOption: makeWorkflowOption({ isPersisted: false })
+    })
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeInTheDocument()
+    expect(screen.queryByTestId('close-workflow-button')).toBeNull()
+    expect(screen.queryByTestId('close-workflow-icon')).toBeNull()
   })
 
   it('delegates close to workflow service with the tab workflow', async () => {
