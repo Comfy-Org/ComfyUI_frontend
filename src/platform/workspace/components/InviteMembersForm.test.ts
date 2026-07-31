@@ -7,13 +7,17 @@ import InviteMembersForm from './InviteMembersForm.vue'
 
 import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const { mockCreateInvite, mockToastAdd, mockTrackInviteSent } = vi.hoisted(
-  () => ({
-    mockCreateInvite: vi.fn(),
-    mockToastAdd: vi.fn(),
-    mockTrackInviteSent: vi.fn()
-  })
-)
+const {
+  mockCreateInvite,
+  mockToastAdd,
+  mockTrackInviteSent,
+  mockTrackInviteFailed
+} = vi.hoisted(() => ({
+  mockCreateInvite: vi.fn(),
+  mockToastAdd: vi.fn(),
+  mockTrackInviteSent: vi.fn(),
+  mockTrackInviteFailed: vi.fn()
+}))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
@@ -29,7 +33,8 @@ vi.mock('primevue/usetoast', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackWorkspaceInviteSent: mockTrackInviteSent
+    trackWorkspaceInviteSent: mockTrackInviteSent,
+    trackWorkspaceInviteFailed: mockTrackInviteFailed
   })
 }))
 
