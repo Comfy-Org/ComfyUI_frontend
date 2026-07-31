@@ -323,6 +323,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # PyPI's index lags the upload by a minute or two. Opening the pin PR before
+      # then makes its CI fail on "No matching distribution found", which reads as
+      # a bad bump to whoever reviews it. This happened on the 1.47.11 pin PR.
+      - name: Wait for the version to be installable from PyPI
+        env:
+          TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            if curl -sf "https://pypi.org/pypi/comfyui-frontend-package/${TARGET_VERSION}/json" \
+                 -o /dev/null; then
+              echo "comfyui-frontend-package==${TARGET_VERSION} is resolvable."
+              exit 0
+            fi
+            echo "Attempt $i/30: not on PyPI yet, waiting 20s..."
+            sleep 20
+          done
+          echo "::warning::${TARGET_VERSION} still not resolvable after 10m; opening the pin PR anyway."
+
       - name: Checkout ComfyUI fork
         uses: actions/checkout@v7
         with:
