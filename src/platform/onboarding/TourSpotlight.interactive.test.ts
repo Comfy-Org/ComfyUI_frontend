@@ -10,9 +10,9 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import TourSpotlight from './TourSpotlight.vue'
 import { CARD_GLIDE_MS } from './coachmarkLayout'
 import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
-import type { CoachTarget } from './coachmarkRegistry'
+import { laidOut, mountNode, movingTarget } from './fixtures/coachmarkTargets'
 import { COACH_IDS, FIRST_RUN_COACH_IDS } from './onboardingTours'
-import type { CoachStep } from './onboardingTours'
+import type { SpotlightStep } from './onboardingTours'
 
 vi.mock('@primeuix/utils/zindex', () => ({
   ZIndex: { set: vi.fn(), clear: vi.fn() }
@@ -24,17 +24,14 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-/** Mounts a canvas node and returns the target that names it. */
-function canvasNode(): CoachTarget {
-  const node = document.createElement('div')
-  node.setAttribute('data-node-id', '7')
-  node.getBoundingClientRect = () => new DOMRect(10, 10, 80, 40)
-  document.body.append(node)
-  return { selector: '[data-node-id="7"]', onMove: () => () => {} }
+/** Mounts a canvas node and returns the target that reports its rect. */
+function canvasNode() {
+  mountNode()
+  return movingTarget()
 }
 
-function spotlightStep(overrides: Partial<CoachStep> = {}): CoachStep {
-  return { name: 'step', placement: 'right', ...overrides }
+function spotlightStep(overrides: Partial<SpotlightStep> = {}): SpotlightStep {
+  return { kind: 'spotlight', name: 'step', placement: 'right', ...overrides }
 }
 
 const baseProps = {
@@ -98,8 +95,7 @@ describe('TourSpotlight interactive and masked steps', () => {
   })
 
   it('transitions the ring between DOM targets, which move on discrete events', () => {
-    const el = document.createElement('div')
-    el.getBoundingClientRect = () => new DOMRect(10, 10, 80, 40)
+    const el = laidOut(new DOMRect(10, 10, 80, 40))
     document.body.append(el)
     registerCoachmark(COACH_IDS.inputsList, el)
 

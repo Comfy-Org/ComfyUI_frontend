@@ -24,12 +24,12 @@ function scaleFor(bounds: ReadOnlyRect, fill: number): number {
 }
 
 const appState = vi.hoisted(() => ({ canvas: undefined as unknown }))
-vi.mock('@/scripts/app', () => ({
-  app: {
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({
     get canvas() {
       return appState.canvas
     }
-  }
+  })
 }))
 
 const camera = {
