@@ -64,6 +64,7 @@ describe('initDatadogRum', () => {
         beforeSend: rumBeforeSend,
         sessionSampleRate: 100,
         sessionReplaySampleRate: 0,
+        enableExperimentalFeatures: ['feature_flags'],
         allowedTracingUrls: [expect.any(RegExp)]
       })
     }

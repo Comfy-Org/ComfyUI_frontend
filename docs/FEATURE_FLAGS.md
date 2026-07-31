@@ -4,6 +4,27 @@
 
 The ComfyUI feature flags system enables capability negotiation between frontend and backend, allowing both sides to communicate their supported features and adapt behavior accordingly. This ensures backward compatibility while enabling progressive enhancement of features.
 
+## Capability flags and release flags
+
+Capability flags describe what a local ComfyUI server and its client support.
+They use the WebSocket negotiation documented below.
+
+Cloud release flags control gradual rollouts. Frontend consumers pass any
+PostHog key to `useFeatureGate()`. Cloud evaluates it for the authenticated user;
+no Cloud registration is required. Consumers default to `false` until the
+evaluation resolves:
+
+```typescript
+const { value: isEnabled, recordExposure } = useFeatureGate(
+  'fastlane_feature_flag_foo'
+)
+```
+
+Call `recordExposure()` only when the user reaches the decision point. It records
+the resolved key and value once per browser tab session in Datadog and PostHog.
+Frontend gating is not authorization. Cloud must enforce risky behavior
+independently.
+
 ## System Architecture
 
 ### High-Level Flow

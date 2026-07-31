@@ -782,6 +782,8 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
  * All methods are optional - providers only implement what they need.
  */
 export interface TelemetryProvider {
+  trackFeatureFlagExposure?(key: string, value: boolean): void
+
   // Authentication flow events
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void

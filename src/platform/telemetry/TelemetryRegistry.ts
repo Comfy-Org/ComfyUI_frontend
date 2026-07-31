@@ -74,6 +74,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     })
   }
 
+  trackFeatureFlagExposure(key: string, value: boolean): void {
+    this.dispatch((provider) => provider.trackFeatureFlagExposure?.(key, value))
+  }
+
   trackSignupOpened(): void {
     this.dispatch((provider) => provider.trackSignupOpened?.())
   }

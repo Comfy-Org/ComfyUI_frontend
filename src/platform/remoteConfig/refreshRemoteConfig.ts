@@ -5,19 +5,18 @@ import {
   remoteConfig,
   remoteConfigState
 } from './remoteConfig'
+import type { RemoteConfig } from './types'
 
-// Cap the bootstrap fetch so a wedged /features endpoint can never block app.mount indefinitely.
-// A same-origin GET against the local comfyui server should resolve in well under a second;
-// on timeout the catch below clears remoteConfig and consumers fall back to build-time defaults.
 const FEATURES_FETCH_TIMEOUT_MS = 5_000
 
-interface RefreshRemoteConfigOptions {
-  /**
-   * Whether to use authenticated API (default: true).
-   * Set to false during bootstrap before auth is initialized.
-   */
-  useAuth?: boolean
-}
+type RefreshRemoteConfigOptions =
+  | {
+      useAuth: false
+    }
+  | {
+      useAuth?: true
+      getSessionId: () => string | null
+    }
 
 async function fetchRemoteConfig(
   useAuth: boolean,
@@ -27,7 +26,7 @@ async function fetchRemoteConfig(
   if (!useAuth) {
     return fetch(api.apiURL('/features'), { cache: 'no-store', signal })
   }
-  return api.fetchApi('/features', { cache: 'no-store' })
+  return api.fetchApi('/features', { cache: 'no-store', signal })
 }
 
 /**
@@ -39,21 +38,26 @@ async function fetchRemoteConfig(
  * - 'authenticated' when loaded with auth
  * - 'error' when load fails
  */
-export async function refreshRemoteConfig(
-  options: RefreshRemoteConfigOptions = {}
+async function performRefreshRemoteConfig(
+  useAuth: boolean,
+  sessionId?: string | null,
+  getSessionId?: () => string | null
 ): Promise<void> {
-  const { useAuth = true } = options
-
-  const controller = useAuth ? null : new AbortController()
-  const timeoutId = controller
-    ? setTimeout(() => controller.abort(), FEATURES_FETCH_TIMEOUT_MS)
-    : null
+  const controller = new AbortController()
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    FEATURES_FETCH_TIMEOUT_MS
+  )
+  const sessionIsCurrent = () => !useAuth || getSessionId?.() === sessionId
 
   try {
-    const response = await fetchRemoteConfig(useAuth, controller?.signal)
+    const response = await fetchRemoteConfig(useAuth, controller.signal)
+    if (!sessionIsCurrent()) return
 
     if (response.ok) {
       const config = await response.json()
+      if (!sessionIsCurrent()) return
+
       window.__CONFIG__ = config
       remoteConfig.value = config
       remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
@@ -76,13 +80,57 @@ export async function refreshRemoteConfig(
       window.__CONFIG__ = {}
       remoteConfig.value = {}
       remoteConfigState.value = 'error'
+      return
     }
+
+    const safeConfig: RemoteConfig & {
+      release_flags?: Record<string, boolean>
+    } = { ...remoteConfig.value }
+    delete safeConfig.release_flags
+    window.__CONFIG__ = safeConfig
+    remoteConfig.value = safeConfig
+    remoteConfigState.value = 'error'
   } catch (error) {
+    if (!sessionIsCurrent()) return
+
     console.error('Failed to fetch remote config:', error)
     window.__CONFIG__ = {}
     remoteConfig.value = {}
     remoteConfigState.value = 'error'
   } finally {
-    if (timeoutId !== null) clearTimeout(timeoutId)
+    clearTimeout(timeoutId)
   }
+}
+
+interface AuthenticatedRefresh {
+  sessionId: string | null
+  token: object
+  promise: Promise<void>
+}
+
+let authenticatedRefresh: AuthenticatedRefresh | null = null
+
+export function refreshRemoteConfig(
+  options: RefreshRemoteConfigOptions
+): Promise<void> {
+  const useAuth = options.useAuth !== false
+  if (!useAuth) return performRefreshRemoteConfig(false)
+  const { getSessionId } = options
+  const sessionId = getSessionId()
+  if (authenticatedRefresh?.sessionId === sessionId) {
+    return authenticatedRefresh.promise
+  }
+
+  const token = {}
+  const promise = performRefreshRemoteConfig(
+    true,
+    sessionId,
+    getSessionId
+  ).finally(() => {
+    if (authenticatedRefresh?.token === token) {
+      authenticatedRefresh = null
+    }
+  })
+  authenticatedRefresh = { sessionId, token, promise }
+  return promise
 }

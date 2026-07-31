@@ -4,14 +4,25 @@ import type { BillingTelemetryEvent } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
-const { addAction, addDurationVital, getInternalContext } = vi.hoisted(() => ({
+const {
+  addAction,
+  addDurationVital,
+  addFeatureFlagEvaluation,
+  getInternalContext
+} = vi.hoisted(() => ({
   addAction: vi.fn(),
   addDurationVital: vi.fn(),
+  addFeatureFlagEvaluation: vi.fn(),
   getInternalContext: vi.fn()
 }))
 
 vi.mock('@datadog/browser-rum', () => ({
-  datadogRum: { addAction, addDurationVital, getInternalContext }
+  datadogRum: {
+    addAction,
+    addDurationVital,
+    addFeatureFlagEvaluation,
+    getInternalContext
+  }
 }))
 
 const workflowExecutionIntent = {
@@ -24,6 +35,18 @@ afterEach(() => {
 })
 
 describe('DatadogRumTelemetryProvider', () => {
+  it('records a feature flag exposure', () => {
+    new DatadogRumTelemetryProvider().trackFeatureFlagExposure(
+      'might_be_risky_feature_foo',
+      false
+    )
+
+    expect(addFeatureFlagEvaluation).toHaveBeenCalledExactlyOnceWith(
+      'might_be_risky_feature_foo',
+      false
+    )
+  })
+
   it('records the same canonical billing name and context as PostHog', () => {
     const event: BillingTelemetryEvent = {
       operation: 'operation',
