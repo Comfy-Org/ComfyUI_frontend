@@ -4080,6 +4080,7 @@
     "setupNodeSummary": "{nodes} node — {count} item | {nodes} node — {count} items",
     "setupNodesSummary": "{nodes} nodes — {count} item | {nodes} nodes — {count} items",
     "nodesAffected": "{count} node affected | {count} nodes affected",
+    "blockedLastRun": "Blocked last run",
     "severityErrorLabel": "Blocking errors",
     "severitySetupLabel": "Setup pending",
     "expand": "Expand",

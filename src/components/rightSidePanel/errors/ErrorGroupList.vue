@@ -122,6 +122,17 @@
             @update:collapse="setSectionCollapsed(group.groupKey, $event)"
           >
             <template #actions>
+              <span
+                v-if="group.blockedLastRun"
+                data-testid="blocked-last-run-indicator"
+                class="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"
+              >
+                <span
+                  aria-hidden="true"
+                  class="size-1.5 rounded-full bg-destructive-background"
+                />
+                {{ t('rightSidePanel.blockedLastRun') }}
+              </span>
               <Button
                 v-if="
                   group.type === 'missing_node' &&
