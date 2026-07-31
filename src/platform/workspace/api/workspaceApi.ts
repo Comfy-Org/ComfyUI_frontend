@@ -1,6 +1,11 @@
+import type {
+  BillingStatusResponse as GeneratedBillingStatusResponse,
+  ChurnkeyAuthResponse
+} from '@comfyorg/ingest-types'
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
+import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
@@ -12,7 +17,9 @@ import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
-export type BillingRail = 'legacy_stripe' | 'stripe'
+export type BillingRail = NonNullable<
+  GeneratedBillingStatusResponse['billing_rail']
+>
 
 interface Workspace {
   id: WorkspaceId
@@ -731,6 +738,19 @@ export const workspaceApi = {
           { headers }
         )
       return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        api.apiURL('/billing/churnkey/auth'),
+        { headers }
+      )
+      return churnkeyAuthResponseSchema.parse(response.data)
     } catch (err) {
       handleAxiosError(err)
     }
