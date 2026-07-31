@@ -68,12 +68,12 @@
 
 <script setup lang="ts">
 import { useElementHover } from '@vueuse/core'
-import Loader from '@/components/loader/Loader.vue'
 import { useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Loader from '@/components/loader/Loader.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 
