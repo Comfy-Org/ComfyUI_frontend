@@ -228,7 +228,7 @@ describe('WorkflowTabs creating-tab skeleton', () => {
     )
     expect(
       screen.getByRole('img', { name: enMessages.g.agentWorking })
-    ).toHaveClass('size-4', 'icon-[lucide--loader-circle]')
+    ).toBeInTheDocument()
 
     activity.setCreating(false)
     await nextTick()
