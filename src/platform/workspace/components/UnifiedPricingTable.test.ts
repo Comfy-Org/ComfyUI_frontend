@@ -24,14 +24,27 @@ const mockSubscription = ref<MockSubscription | null>(null)
 const mockCurrentPlanSlug = ref<string | null>(null)
 const mockCurrentTeamCreditStop = ref<MockTeamStop | null>(null)
 const mockTeamFlag = ref(false)
+const mockIsTeamPlan = ref(false)
+const mockCanManageSubscription = ref(true)
+const mockCanDowngradeToPersonal = ref(true)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     plans: ref([]),
     currentPlanSlug: computed(() => mockCurrentPlanSlug.value),
     fetchPlans: vi.fn(),
+    isTeamPlan: computed(() => mockIsTeamPlan.value),
     subscription: computed(() => mockSubscription.value),
     currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value)
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    permissions: computed(() => ({
+      canManageSubscription: mockCanManageSubscription.value,
+      canDowngradeToPersonal: mockCanDowngradeToPersonal.value
+    }))
   })
 }))
 
@@ -73,6 +86,9 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockTeamFlag.value = false
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
   })
 
   it('prompts free-tier users to subscribe, never to "change"', () => {
@@ -105,17 +121,39 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     ).toBeTruthy()
   })
 
-  it('keeps personal tier cards actionable for a team subscriber', () => {
+  it('keeps personal tier cards actionable for the original owner of a team plan', () => {
     mockSubscription.value = { tier: 'TEAM', duration: 'ANNUAL' }
     mockCurrentTeamCreditStop.value = {
       id: 'team_700',
       credits_monthly: 147_700,
       stop_usd: 700
     }
+    mockIsTeamPlan.value = true
 
     renderComponent()
 
-    expect(screen.queryByRole('button', { name: /Not available/ })).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Change to Standard Yearly' })
+    ).toBeEnabled()
+  })
+
+  it('normalizes a promoted owner on a team plan away from personal plans', () => {
+    mockSubscription.value = { tier: 'TEAM', duration: 'ANNUAL' }
+    mockCurrentTeamCreditStop.value = {
+      id: 'team_700',
+      credits_monthly: 147_700,
+      stop_usd: 700
+    }
+    mockTeamFlag.value = true
+    mockIsTeamPlan.value = true
+    mockCanDowngradeToPersonal.value = false
+
+    renderComponent({ initialPlanMode: 'personal' })
+
+    expect(
+      screen.queryByRole('button', { name: 'Change to Standard Yearly' })
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: 'Current plan' })).toBeDisabled()
   })
 })
 
@@ -131,6 +169,9 @@ describe('UnifiedPricingTable team plan CTA', () => {
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockTeamFlag.value = true
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
   })
 
   it('disables the CTA while sitting on the active current plan', () => {

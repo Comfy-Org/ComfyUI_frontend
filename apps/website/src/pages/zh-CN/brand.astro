@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import BrandBackground from '../../templates/brand/BrandBackground.vue'
+import BrandHeroSection from '../../templates/brand/BrandHeroSection.vue'
+import BrandLogosSection from '../../templates/brand/BrandLogosSection.vue'
+import BrandColorSection from '../../templates/brand/BrandColorSection.vue'
+import BrandVoiceSection from '../../templates/brand/BrandVoiceSection.vue'
+import BrandTrademarkSection from '../../templates/brand/BrandTrademarkSection.vue'
+import BrandQuestionsSection from '../../templates/brand/BrandQuestionsSection.vue'
+import { t } from '../../i18n/translations'
+---
+
+<BaseLayout
+  title={t('brand.page.title', 'zh-CN')}
+  description={t('brand.page.description', 'zh-CN')}
+>
+  <div class="relative">
+    <BrandBackground client:idle />
+    <BrandHeroSection locale="zh-CN" />
+    <BrandLogosSection locale="zh-CN" />
+    <BrandColorSection client:visible locale="zh-CN" />
+    <BrandVoiceSection locale="zh-CN" />
+    <BrandTrademarkSection locale="zh-CN" />
+    <BrandQuestionsSection locale="zh-CN" />
+  </div>
+</BaseLayout>

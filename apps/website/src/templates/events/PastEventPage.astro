@@ -1,0 +1,71 @@
+---
+// Shared body for /events/[slug] in every locale: the locale-specific page
+// files are thin wrappers so meta, breadcrumbs, and the VideoObject JSON-LD
+// stay defined once. Locale comes from the page's URL.
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import PastEventsSection from './PastEventsSection.vue'
+import PastEventVideoDialog from './PastEventVideoDialog.vue'
+import { localizeHref } from '../../config/routes'
+import type { PastEvent } from '../../data/events'
+import { t } from '../../i18n/translations'
+import type { JsonLdNode } from '../../utils/jsonLd'
+import {
+  absoluteUrl,
+  jsonLdId,
+  pageContext,
+  videoObjectNode
+} from '../../utils/jsonLd'
+
+interface Props {
+  event: PastEvent
+}
+
+const { event } = Astro.props
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+
+const title = event.title[locale]
+const description = event.description[locale]
+const videoId = jsonLdId(url, 'video')
+
+const video: JsonLdNode = videoObjectNode({
+  siteUrl,
+  id: videoId,
+  pageUrl: url,
+  name: title,
+  description,
+  thumbnailUrl: event.media.src,
+  contentUrl: event.watch.href[locale],
+  embedUrl: `https://www.youtube-nocookie.com/embed/${event.youtubeVideoId}`,
+  uploadDate: event.publishedDate,
+  locale
+})
+
+const breadcrumbs = [
+  {
+    name: t('breadcrumb.home', locale),
+    url: absoluteUrl(Astro.site, localizeHref('/', locale))
+  },
+  {
+    name: t('breadcrumb.events', locale),
+    url: absoluteUrl(Astro.site, localizeHref('/events', locale))
+  },
+  { name: title }
+]
+---
+
+<BaseLayout
+  title={`${title} - Comfy`}
+  description={description}
+  ogImage={event.media.src}
+  mainEntityId={videoId}
+  breadcrumbs={breadcrumbs}
+  extraJsonLd={[video]}
+>
+  <PastEventsSection locale={locale} />
+  <PastEventVideoDialog event={event} locale={locale} client:load />
+</BaseLayout>

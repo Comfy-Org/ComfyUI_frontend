@@ -86,7 +86,6 @@
 
 <script setup lang="ts">
 import { PopoverTrigger } from 'reka-ui'
-import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -95,6 +94,7 @@ import {
   rowClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
+import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -116,7 +116,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const menuOpen = ref(false)
+const menuOpen = usePopoverExclusivity()('recording-menu')
 
 function downloadRecording() {
   menuOpen.value = false

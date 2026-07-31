@@ -53,10 +53,10 @@ function imageLayerFilenamesIfApplicable(
   }
 }
 
-function toRef(filename: string): ImageRef {
+function toRef(filename: string, subfolder: string): ImageRef {
   return {
     filename,
-    subfolder: 'clipspace',
+    subfolder,
     type: 'input'
   }
 }
@@ -150,34 +150,72 @@ export function useMaskEditorLoader() {
         }
       }
 
-      const baseImageUrl = imageLayerFilenames?.maskedImage
-        ? mkFileUrl({ ref: toRef(imageLayerFilenames.maskedImage) })
-        : nodeImageUrl
+      // Pattern-matched layer files live next to the painted-masked image the
+      // widget points at: the input root for saves under the unified upload
+      // contract (#12318), or the clipspace subfolder for saves made before
+      // it. Cloud resolves the hash filenames from its mask-layers API
+      // server-side, so its refs keep the subfolder they always used.
+      const layerSubfolder = maskLayersFromApi
+        ? 'clipspace'
+        : (nodeImageRef.subfolder ?? '')
 
-      const sourceRef = imageLayerFilenames?.maskedImage
-        ? parseImageRef(baseImageUrl)
-        : nodeImageRef
+      const layeredBaseUrl = imageLayerFilenames?.maskedImage
+        ? mkFileUrl({
+            ref: toRef(imageLayerFilenames.maskedImage, layerSubfolder)
+          })
+        : undefined
+      const baseImageUrl = layeredBaseUrl ?? nodeImageUrl
 
       let paintLayerUrl: string | null = null
       if (maskLayersFromApi?.paint) {
-        paintLayerUrl = mkFileUrl({ ref: toRef(maskLayersFromApi.paint) })
+        paintLayerUrl = mkFileUrl({
+          ref: toRef(maskLayersFromApi.paint, layerSubfolder)
+        })
       } else if (imageLayerFilenames?.paint) {
-        paintLayerUrl = mkFileUrl({ ref: toRef(imageLayerFilenames.paint) })
+        paintLayerUrl = mkFileUrl({
+          ref: toRef(imageLayerFilenames.paint, layerSubfolder)
+        })
       }
 
-      const [baseLayer, maskLayer, paintLayer] = await Promise.all([
-        loadImageLayer(baseImageUrl, 'rgb'),
-        loadImageLayer(baseImageUrl, 'a'),
-        paintLayerUrl
-          ? loadPaintLayer(paintLayerUrl)
-          : Promise.resolve(undefined)
-      ])
+      const loadLayers = (baseUrl: string, paintUrl: string | null) =>
+        Promise.all([
+          loadImageLayer(baseUrl, 'rgb'),
+          loadImageLayer(baseUrl, 'a'),
+          paintUrl ? loadPaintLayer(paintUrl) : Promise.resolve(undefined)
+        ])
+
+      const loadInputData = async () => {
+        try {
+          const [baseLayer, maskLayer, paintLayer] = await loadLayers(
+            baseImageUrl,
+            paintLayerUrl
+          )
+          return {
+            baseLayer,
+            maskLayer,
+            paintLayer,
+            sourceRef: layeredBaseUrl
+              ? parseImageRef(baseImageUrl)
+              : nodeImageRef
+          }
+        } catch (error) {
+          if (!layeredBaseUrl) throw error
+          console.warn(
+            '[MaskEditorLoader] Failed to load editor layer files, falling back to the node image',
+            error
+          )
+          const [baseLayer, maskLayer] = await loadLayers(nodeImageUrl, null)
+          return {
+            baseLayer,
+            maskLayer,
+            paintLayer: undefined,
+            sourceRef: nodeImageRef
+          }
+        }
+      }
 
       dataStore.inputData = {
-        baseLayer,
-        maskLayer,
-        paintLayer,
-        sourceRef,
+        ...(await loadInputData()),
         nodeId: node.id
       }
 

@@ -237,4 +237,19 @@ describe('BaseWidget store integration', () => {
       expect(state?.disabled).toBe(false)
     })
   })
+
+  describe('un-keyable widget id (empty name)', () => {
+    it('keeps local state usable when registration is declined', () => {
+      const widget = createTestWidget(node, { name: '', value: 55 })
+
+      expect(() => widget.setNodeId(toNodeId(1))).not.toThrow()
+      expect(
+        store.getWidget(widgetId(graph.id, toNodeId(1), ''))
+      ).toBeUndefined()
+
+      expect(widget.value).toBe(55)
+      widget.value = 88
+      expect(widget.value).toBe(88)
+    })
+  })
 })

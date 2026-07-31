@@ -24,6 +24,9 @@ export interface SubscriptionInfo {
   tier: SubscriptionTier | null
   duration: SubscriptionDuration | null
   planSlug: string | null
+  scheduledPlanSlug?: string | null
+  /** ISO 8601; format at the display site. */
+  changeAt?: string | null
   /** ISO 8601; format at the display site. */
   renewalDate: string | null
   /** ISO 8601; format at the display site. */
@@ -107,10 +110,19 @@ export interface BillingState {
 
 export interface BillingContext extends BillingState, BillingActions {
   type: ComputedRef<BillingType>
+  reconcileSubscriptionSuccess: () => Promise<void>
   /**
    * True when the active team workspace is still on a pre-credit-slider
    * (legacy) per-member tier plan, which keeps the old team pricing table.
    */
   isLegacyTeamPlan: ComputedRef<boolean>
+  /**
+   * True when the subscription is a team plan of either generation. Unlike
+   * `isLegacyTeamPlan` this does not require an active subscription: the spend
+   * gate folds billing_status into is_active, so a paused or payment-failed team
+   * plan reports is_active=false and must still read as a team plan.
+   */
+  isTeamPlan: ComputedRef<boolean>
   getMaxSeats: (tierKey: TierKey) => number
+  canRunWorkflows: ComputedRef<boolean>
 }

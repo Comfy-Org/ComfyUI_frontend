@@ -188,7 +188,7 @@ After completing all PRs in a wave for a target branch:
 git fetch origin TARGET_BRANCH
 git worktree add /tmp/verify-TARGET origin/TARGET_BRANCH
 cd /tmp/verify-TARGET
-source ~/.nvm/nvm.sh && nvm use 24 && pnpm install && pnpm typecheck && pnpm test:unit
+source .agents/resume && pnpm install && pnpm typecheck && pnpm test:unit
 git worktree remove /tmp/verify-TARGET --force
 ```
 

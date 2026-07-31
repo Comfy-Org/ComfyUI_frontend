@@ -4,7 +4,9 @@ version: 3
 
 files:
   - pattern: .github/workflows/*.yaml
+  - pattern: .github/workflows/*.yml
   - pattern: .github/actions/**/*.yaml
+  - pattern: .github/actions/**/*.yml
 
 # Actions that don't need SHA pinning (official GitHub actions are trusted)
 ignore_actions:

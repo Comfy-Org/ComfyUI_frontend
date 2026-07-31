@@ -54,6 +54,10 @@ vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
   }
 }))
 
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({ isReadOnly: false })
+}))
+
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: {

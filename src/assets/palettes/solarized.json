@@ -17,6 +17,7 @@
       "VAE": "#facfad"
     },
     "litegraph_base": {
+      "CLEAR_BACKGROUND_COLOR": "#002631",
       "NODE_TITLE_COLOR": "#fdf6e3",
       "NODE_SELECTED_TITLE_COLOR": "#A9D400",
       "NODE_TEXT_COLOR": "#657b83",

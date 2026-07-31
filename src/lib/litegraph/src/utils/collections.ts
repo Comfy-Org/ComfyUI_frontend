@@ -32,6 +32,25 @@ export function getAllNestedItems(
 }
 
 /**
+ * Resolves which items a drag gesture should move, honouring the
+ * "move group without its contents" modifier.
+ *
+ * Holding Ctrl (Windows/Linux) or Meta/Cmd (macOS) moves the selected items
+ * on their own, leaving nodes nested inside a dragged group in place.
+ * Without the modifier, a dragged group carries its contents with it.
+ * @param selected The currently selected items being dragged
+ * @param event The pointer event driving the drag
+ * @returns The items to move for this drag frame
+ */
+export function getDraggedItems(
+  selected: Set<Positionable>,
+  event: Pick<MouseEvent, 'ctrlKey' | 'metaKey'>
+): Set<Positionable> {
+  const moveGroupOnly = event.ctrlKey || event.metaKey
+  return moveGroupOnly ? selected : getAllNestedItems(selected)
+}
+
+/**
  * Iterates through a collection of {@link Positionable} items, returning the first {@link LGraphNode}.
  * @param items The items to search through
  * @returns The first node found in {@link items}, otherwise `undefined`

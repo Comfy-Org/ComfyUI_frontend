@@ -148,4 +148,39 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
     expect(emitted().addCreditCard).toBeTruthy()
   })
+
+  it('opens verification only from its button without exposing the URL', async () => {
+    const actionUrl = 'https://verify.example/sensitive-token'
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    const { container } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', actionUrl },
+      global: globalOptions
+    })
+
+    expect(open).not.toHaveBeenCalled()
+    expect(container.innerHTML).not.toContain(actionUrl)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'subscription.preview.completeVerification'
+      })
+    )
+    expect(open).toHaveBeenCalledWith(
+      actionUrl,
+      '_blank',
+      'noopener,noreferrer'
+    )
+  })
+
+  it('prevents leaving the preview while payment is pending', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', isLoading: true },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'subscription.preview.backToAllPlans'
+      })
+    ).toBeDisabled()
+  })
 })

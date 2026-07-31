@@ -6,6 +6,7 @@ import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type * as DistributionModule from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -41,6 +42,7 @@ vi.mock('@/scripts/app', () => {
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
+    read_only: false,
     ds: mockDs,
     setDirty: vi.fn()
   }
@@ -78,6 +80,23 @@ vi.mock('@/stores/modelStore', async (importOriginal) => {
     useModelStore: () => ({ refresh: mockModelStoreRefresh })
   }
 })
+
+const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
+}))
+
+const mockMissingModelStoreRefresh = vi.hoisted(() =>
+  vi.fn().mockResolvedValue(undefined)
+)
+vi.mock('@/platform/missingModel/missingModelStore', () => ({
+  useMissingModelStore: () => ({
+    refreshMissingModels: mockMissingModelStoreRefresh
+  })
+}))
 
 vi.mock('@/platform/settings/settingStore')
 
@@ -260,7 +279,7 @@ describe('useCoreCommands', () => {
   function createMockSettingStore(
     getReturnValue: boolean
   ): ReturnType<typeof useSettingStore> {
-    return {
+    return fromPartial<ReturnType<typeof useSettingStore>>({
       get: vi.fn().mockReturnValue(getReturnValue),
       addSetting: vi.fn(),
       load: vi.fn(),
@@ -287,11 +306,15 @@ describe('useCoreCommands', () => {
       $onAction: vi.fn(),
       $dispose: vi.fn(),
       _customProperties: new Set()
-    } satisfies ReturnType<typeof useSettingStore>
+    })
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockDistributionState.isCloud = false
+    vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
+    mockModelStoreRefresh.mockResolvedValue(undefined)
+    mockMissingModelStoreRefresh.mockResolvedValue(undefined)
 
     // Set up Pinia
     setActivePinia(createPinia())
@@ -575,6 +598,22 @@ describe('useCoreCommands', () => {
       )
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
+
+    it.for([
+      { id: 'Comfy.Canvas.Lock', from: false, to: true },
+      { id: 'Comfy.Canvas.Unlock', from: true, to: false },
+      { id: 'Comfy.Canvas.ToggleLock', from: false, to: true },
+      { id: 'Comfy.Canvas.ToggleLock', from: true, to: false }
+    ] as const)(
+      '$id changes read-only state from $from to $to',
+      async ({ id, from, to }) => {
+        app.canvas.read_only = from
+
+        await findCmd(id).function()
+
+        expect(app.canvas.read_only).toBe(to)
+      }
+    )
   })
 
   describe('Workflow lifecycle commands', () => {
@@ -587,11 +626,56 @@ describe('useCoreCommands', () => {
       expect(app.openClipspace).toHaveBeenCalled()
     })
 
-    it('Comfy.RefreshNodeDefinitions refreshes combos and the model library', async () => {
+    it('Comfy.RefreshNodeDefinitions rescans missing models after refreshing combos', async () => {
+      const order: string[] = []
+      let resolveComboRefresh: () => void = () => {}
+      vi.mocked(app.refreshComboInNodes).mockImplementation(async () => {
+        order.push('combo:start')
+        await new Promise<void>((resolve) => {
+          resolveComboRefresh = resolve
+        })
+        order.push('combo:end')
+      })
+      mockModelStoreRefresh.mockImplementation(async () => {
+        order.push('models')
+      })
+      mockMissingModelStoreRefresh.mockImplementation(async () => {
+        order.push('missing')
+      })
+
+      const commandPromise = findCmd('Comfy.RefreshNodeDefinitions').function()
+
+      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+      resolveComboRefresh()
+      await commandPromise
+
+      expect(app.refreshComboInNodes).toHaveBeenCalled()
+      expect(mockModelStoreRefresh).toHaveBeenCalled()
+      expect(mockMissingModelStoreRefresh).toHaveBeenCalledWith({
+        reloadDefs: false
+      })
+      expect(order.indexOf('missing')).toBeGreaterThan(
+        order.indexOf('combo:end')
+      )
+    })
+
+    it('Comfy.RefreshNodeDefinitions skips the rescan when combo refresh fails', async () => {
+      vi.mocked(app.refreshComboInNodes).mockRejectedValue(new Error('boom'))
+
+      await expect(
+        findCmd('Comfy.RefreshNodeDefinitions').function()
+      ).rejects.toThrow('boom')
+      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+    })
+
+    it('Comfy.RefreshNodeDefinitions skips missing model refresh on cloud', async () => {
+      mockDistributionState.isCloud = true
+
       await findCmd('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
       expect(mockModelStoreRefresh).toHaveBeenCalled()
+      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
     })
   })
 

@@ -22,17 +22,16 @@ test.describe('MediaLightbox', { tag: ['@slow', '@vue-nodes'] }, () => {
       .locator('.sidebar-content-container')
       .waitFor({ state: 'visible' })
 
-    // Wait for any asset card to appear (may contain img or video)
-    const assetCard = comfyPage.page
-      .getByRole('button')
+    // Wait for a generated previewable asset to appear
+    const assetCard = comfyPage.menu.assetsTab.assetCards
       .filter({ has: comfyPage.page.locator('img, video') })
       .first()
 
     await expect(assetCard).toBeVisible({ timeout: 30_000 })
 
-    // Hover to reveal zoom button, then click it
     await assetCard.hover()
-    await assetCard.getByLabel('Zoom in').click()
+    await assetCard.getByRole('button', { name: 'More options' }).click()
+    await comfyPage.menu.assetsTab.contextMenuItem('Inspect asset').click()
 
     const { root } = comfyPage.mediaLightbox
     await expect(root).toBeVisible()

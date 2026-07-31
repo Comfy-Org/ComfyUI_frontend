@@ -5,13 +5,47 @@ import FeedbackSection from '../../components/customers/FeedbackSection.vue'
 import HeroSection from '../../components/customers/HeroSection.vue'
 import StorySection from '../../components/customers/StorySection.vue'
 import VideoSection from '../../components/customers/VideoSection.vue'
+import { t } from '../../i18n/translations'
 import { toCardProps } from '../../utils/customers'
 import { loadStories } from '../../utils/loadStories'
+import {
+  absoluteUrl,
+  itemListNode,
+  jsonLdId,
+  pageContext
+} from '../../utils/jsonLd'
 
 const stories = (await loadStories('zh-CN')).map(toCardProps)
+
+const { url, locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const collectionLabel = t('nav.customerStories', locale)
+const storyList = itemListNode(
+  url,
+  collectionLabel,
+  stories.map((story) => ({
+    url: absoluteUrl(Astro.site, `/zh-CN/customers/${story.slug}`),
+    name: story.title
+  }))
+)
 ---
 
-<BaseLayout title="客户故事 - Comfy">
+<BaseLayout
+  title="客户故事 - Comfy"
+  pageType="CollectionPage"
+  mainEntityId={jsonLdId(url, 'itemlist')}
+  breadcrumbs={[
+    {
+      name: t('breadcrumb.home', locale),
+      url: absoluteUrl(Astro.site, '/zh-CN')
+    },
+    { name: collectionLabel }
+  ]}
+  extraJsonLd={[storyList]}
+>
   <HeroSection locale="zh-CN" client:load />
   <StorySection stories={stories} locale="zh-CN" />
   <FeedbackSection locale="zh-CN" client:load />

@@ -189,6 +189,31 @@ const zRangeInputSpec = zBaseInputOptions.extend({
   value_max: z.number().optional()
 })
 
+const zVideoEditValue = z.object({
+  trim: z
+    .object({
+      start_time: z.number(),
+      duration: z.number()
+    })
+    .optional(),
+  crop: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number()
+    })
+    .optional()
+})
+
+const zVideoEditInputSpec = zBaseInputOptions.extend({
+  type: z.literal('VIDEO_EDIT'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  features: z.array(z.enum(['trim', 'crop'])).optional(),
+  default: zVideoEditValue.optional()
+})
+
 const zCustomInputSpec = zBaseInputOptions.extend({
   type: z.string(),
   name: z.string(),
@@ -213,6 +238,7 @@ const zInputSpec = z.union([
   zTextareaInputSpec,
   zCurveInputSpec,
   zRangeInputSpec,
+  zVideoEditInputSpec,
   zCustomInputSpec
 ])
 
@@ -261,6 +287,7 @@ export type BoundingBoxesInputSpec = z.infer<typeof zBoundingBoxesInputSpec>
 export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
 export type CurveInputSpec = z.infer<typeof zCurveInputSpec>
 export type RangeInputSpec = z.infer<typeof zRangeInputSpec>
+export type VideoEditInputSpec = z.infer<typeof zVideoEditInputSpec>
 export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
 
 export type InputSpec = z.infer<typeof zInputSpec>

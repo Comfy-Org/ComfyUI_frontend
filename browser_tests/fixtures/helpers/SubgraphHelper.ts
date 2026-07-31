@@ -471,6 +471,14 @@ export class SubgraphHelper {
     await this.comfyPage.contextMenu.waitForHidden()
   }
 
+  /** Promoted-widget name order as the subgraph host node exposes it. */
+  async getPromotedWidgetOrder(subgraphNodeId: string): Promise<string[]> {
+    return this.page.evaluate((id) => {
+      const node = window.app!.graph.nodes.find((n) => String(n.id) === id)
+      return (node?.widgets ?? []).map((w) => w.name)
+    }, subgraphNodeId)
+  }
+
   async findSubgraphNodeId(): Promise<string> {
     const id = await this.page.evaluate(() => {
       const graph = window.app!.canvas.graph!
