@@ -137,10 +137,11 @@ function makePreview(
 
 function renderComponent(
   previewData: PreviewSubscribeResponse,
-  forceReactivation = false
+  forceReactivation = false,
+  quoteIsCurrent = true
 ) {
   return render(SubscriptionTransitionPreviewWorkspace, {
-    props: { previewData, forceReactivation, quoteIsCurrent: true },
+    props: { previewData, forceReactivation, quoteIsCurrent },
     global: { plugins: [i18n] }
   })
 }
@@ -556,6 +557,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
           renewal_amount_cents: undefined,
           renewal_at: undefined
         }),
+        false,
         false
       )
       const confirmButton = screen.getByRole('button', {

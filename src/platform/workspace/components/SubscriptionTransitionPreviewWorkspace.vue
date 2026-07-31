@@ -413,11 +413,6 @@ const currentTierName = computed(() => {
     ? t('subscription.teamPlan.name')
     : formatTierName(tier)
 })
-const currentPlanLabel = computed(() =>
-  currentIsYearly.value
-    ? t('subscription.tierNameYearly', { name: currentTierName.value })
-    : currentTierName.value
-)
 
 const isCancelled = computed(
   () => forceReactivation || (subscription.value?.isCancelled ?? false)
