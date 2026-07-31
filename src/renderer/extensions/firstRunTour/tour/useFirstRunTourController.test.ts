@@ -29,7 +29,6 @@ const mocks = vi.hoisted(() => ({
     isLast: false,
     startTour: vi.fn(),
     next: vi.fn(),
-    complete: vi.fn(),
     skip: vi.fn(),
     postpone: vi.fn()
   }
@@ -308,13 +307,16 @@ describe('useFirstRunTourController', () => {
       expect(mocks.runState.value).toBe('generating')
     })
 
-    it('completes the tour when Run is its last step', async () => {
+    it('hands the last step to the engine like any other', async () => {
       await tourOnRunStep()
       mocks.engine.isLast = true
 
       mountRunButton('queue-button', () => {}).click()
 
-      expect(mocks.engine.complete).toHaveBeenCalled()
+      expect(
+        mocks.engine.next,
+        'ending a tour is the engine’s call; the button only reports the click'
+      ).toHaveBeenCalled()
     })
 
     it('ends the tour when the user swaps to a workflow its ids do not describe', async () => {

@@ -183,12 +183,13 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
     expect(store.activeTour).toBeNull()
   })
 
-  it('ends the tour as completed when a consumer completes it', async () => {
+  it('ends the tour as completed once its last step is advanced past', async () => {
     registerTour('firstRun', () => Promise.resolve([step('run')]))
     const store = mountStore()
     await store.startTour('firstRun')
+    await nextTick()
 
-    store.complete()
+    store.next()
 
     expect(stages()).toContain('completed')
     expect(stages()).not.toContain('skipped')
