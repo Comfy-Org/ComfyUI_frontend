@@ -48,6 +48,9 @@ jobs:
   publish:
     name: Publish Design System to npm
     needs: resolve
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/publish-design-system.yaml
     with:
       version: ${{ needs.resolve.outputs.version }}
