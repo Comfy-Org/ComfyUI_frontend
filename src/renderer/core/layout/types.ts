@@ -287,8 +287,10 @@ export interface LayoutStore {
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
   getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
-  getAllGroups(graphId: UUID): ComputedRef<ReadonlyMap<GroupId, GroupLayout>>
-  getGroupLayout(graphId: UUID, groupId: GroupId): GroupLayout | null
+  getAllGroups(
+    rootGraphId: UUID
+  ): ComputedRef<ReadonlyMap<GroupId, GroupLayout>>
+  getGroupLayout(rootGraphId: UUID, groupId: GroupId): GroupLayout | null
   getVersion(): ComputedRef<number>
 
   // Spatial queries (non-reactive)
@@ -302,9 +304,9 @@ export interface LayoutStore {
     ctx?: CanvasRenderingContext2D
   ): { linkId: LinkId; rerouteId: RerouteId | null } | null
   querySlotAtPoint(point: Point): SlotLayout | null
-  queryRerouteAtPoint(graphId: UUID, point: Point): RerouteLayout | null
+  queryRerouteAtPoint(rootGraphId: UUID, point: Point): RerouteLayout | null
   queryItemsInBounds(
-    graphId: UUID,
+    rootGraphId: UUID,
     bounds: Bounds
   ): {
     nodes: NodeId[]
@@ -322,7 +324,7 @@ export interface LayoutStore {
   ): void
   updateSlotLayout(key: SlotId, layout: SlotLayout): void
   updateRerouteLayout(
-    graphId: UUID,
+    rootGraphId: UUID,
     rerouteId: RerouteId,
     layout: RerouteLayout
   ): void
@@ -336,7 +338,10 @@ export interface LayoutStore {
   // Get layout data
   getLinkLayout(linkId: LinkId): LinkLayout | null
   getSlotLayout(key: SlotId): SlotLayout | null
-  getRerouteLayout(graphId: UUID, rerouteId: RerouteId): RerouteLayout | null
+  getRerouteLayout(
+    rootGraphId: UUID,
+    rerouteId: RerouteId
+  ): RerouteLayout | null
 
   // Returns all slot layout keys currently tracked by the store
   getAllSlotKeys(): SlotId[]

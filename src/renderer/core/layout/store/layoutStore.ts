@@ -350,22 +350,24 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Get all groups as a reactive map
    */
-  getAllGroups(graphId: UUID): ComputedRef<ReadonlyMap<GroupId, GroupLayout>> {
+  getAllGroups(
+    rootGraphId: UUID
+  ): ComputedRef<ReadonlyMap<GroupId, GroupLayout>> {
     return computed(() => {
       void this.version.value
 
       const result = new Map<GroupId, GroupLayout>()
       for (const [key, ygroup] of this.ygroups) {
         const parsed = parseLayoutKey(key)
-        if (parsed.graphId !== graphId) continue
+        if (parsed.graphId !== rootGraphId) continue
         result.set(parsed.localId, yGroupToLayout(ygroup, parsed.localId))
       }
       return result
     })
   }
 
-  getGroupLayout(graphId: UUID, groupId: GroupId): GroupLayout | null {
-    const ygroup = this.ygroups.get(makeScopedLayoutKey(graphId, groupId))
+  getGroupLayout(rootGraphId: UUID, groupId: GroupId): GroupLayout | null {
+    const ygroup = this.ygroups.get(makeScopedLayoutKey(rootGraphId, groupId))
     return ygroup ? yGroupToLayout(ygroup, groupId) : null
   }
 
@@ -512,11 +514,11 @@ class LayoutStoreImpl implements LayoutStore {
    * Update reroute layout data
    */
   updateRerouteLayout(
-    graphId: UUID,
+    rootGraphId: UUID,
     rerouteId: RerouteId,
     layout: RerouteLayout
   ): void {
-    const rerouteKey = makeScopedLayoutKey(graphId, rerouteId)
+    const rerouteKey = makeScopedLayoutKey(rootGraphId, rerouteId)
     const existing = this.rerouteLayouts.get(rerouteKey)
 
     if (!existing) {
@@ -554,9 +556,13 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Get reroute layout data
    */
-  getRerouteLayout(graphId: UUID, rerouteId: RerouteId): RerouteLayout | null {
+  getRerouteLayout(
+    rootGraphId: UUID,
+    rerouteId: RerouteId
+  ): RerouteLayout | null {
     return (
-      this.rerouteLayouts.get(makeScopedLayoutKey(graphId, rerouteId)) ?? null
+      this.rerouteLayouts.get(makeScopedLayoutKey(rootGraphId, rerouteId)) ??
+      null
     )
   }
 
@@ -730,7 +736,7 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Query reroute at point
    */
-  queryRerouteAtPoint(graphId: UUID, point: Point): RerouteLayout | null {
+  queryRerouteAtPoint(rootGraphId: UUID, point: Point): RerouteLayout | null {
     // Use spatial index to get candidate reroutes
     const maxRadius = 20 // Maximum expected reroute radius
     const searchArea = {
@@ -751,7 +757,7 @@ class LayoutStoreImpl implements LayoutStore {
     // Check precise distance for candidates
     for (const rerouteKey of candidateRerouteKeys) {
       const parsed = parseLayoutKey(rerouteKey)
-      if (parsed.graphId !== graphId) continue
+      if (parsed.graphId !== rootGraphId) continue
       const rerouteLayout = this.rerouteLayouts.get(rerouteKey)
       if (rerouteLayout) {
         const dx = point.x - rerouteLayout.position.x
@@ -775,7 +781,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Query all items in bounds
    */
   queryItemsInBounds(
-    graphId: UUID,
+    rootGraphId: UUID,
     bounds: Bounds
   ): {
     nodes: NodeId[]
@@ -800,7 +806,7 @@ class LayoutStoreImpl implements LayoutStore {
       reroutes: this.rerouteSpatialIndex
         .query(bounds)
         .map(parseLayoutKey)
-        .filter((key) => key.graphId === graphId)
+        .filter((key) => key.graphId === rootGraphId)
         .map((key) => toRerouteId(key.localId))
     }
   }

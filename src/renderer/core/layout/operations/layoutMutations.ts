@@ -30,23 +30,23 @@ interface LayoutMutations {
   deleteNode(nodeId: NodeId): void
 
   // Reroute operations
-  createReroute(graphId: UUID, rerouteId: RerouteId, position: Point): void
-  deleteReroute(graphId: UUID, rerouteId: RerouteId): void
-  moveReroute(graphId: UUID, rerouteId: RerouteId, position: Point): void
+  createReroute(rootGraphId: UUID, rerouteId: RerouteId, position: Point): void
+  deleteReroute(rootGraphId: UUID, rerouteId: RerouteId): void
+  moveReroute(rootGraphId: UUID, rerouteId: RerouteId, position: Point): void
 
   // Group operations
   createGroup(
-    graphId: UUID,
+    rootGraphId: UUID,
     groupId: GroupId,
     layout: Omit<GroupLayout, 'id'>
   ): void
   setGroupBounds(
-    graphId: UUID,
+    rootGraphId: UUID,
     groupId: GroupId,
     position: Point,
     size: Size
   ): void
-  deleteGroup(graphId: UUID, groupId: GroupId): void
+  deleteGroup(rootGraphId: UUID, groupId: GroupId): void
 
   bringNodeToFront(nodeId: NodeId): void
   setSource(source: LayoutSource): void
@@ -216,7 +216,7 @@ export function useLayoutMutations(): LayoutMutations {
    * Create a new reroute
    */
   const createReroute = (
-    graphId: UUID,
+    rootGraphId: UUID,
     rerouteId: RerouteId,
     position: Point
   ): void => {
@@ -224,7 +224,7 @@ export function useLayoutMutations(): LayoutMutations {
     layoutStore.applyOperation({
       type: 'createReroute',
       entity: 'reroute',
-      graphId,
+      graphId: rootGraphId,
       rerouteId,
       position,
       timestamp: Date.now(),
@@ -234,14 +234,14 @@ export function useLayoutMutations(): LayoutMutations {
   }
 
   const createGroup = (
-    graphId: UUID,
+    rootGraphId: UUID,
     groupId: GroupId,
     layout: Omit<GroupLayout, 'id'>
   ): void => {
     layoutStore.applyOperation({
       type: 'createGroup',
       entity: 'group',
-      graphId,
+      graphId: rootGraphId,
       groupId,
       layout: { id: groupId, ...layout },
       timestamp: Date.now(),
@@ -251,18 +251,18 @@ export function useLayoutMutations(): LayoutMutations {
   }
 
   const setGroupBounds = (
-    graphId: UUID,
+    rootGraphId: UUID,
     groupId: GroupId,
     position: Point,
     size: Size
   ): void => {
-    const existing = layoutStore.getGroupLayout(graphId, groupId)
+    const existing = layoutStore.getGroupLayout(rootGraphId, groupId)
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'setGroupBounds',
       entity: 'group',
-      graphId,
+      graphId: rootGraphId,
       groupId,
       position,
       size,
@@ -272,11 +272,11 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  const deleteGroup = (graphId: UUID, groupId: GroupId): void => {
+  const deleteGroup = (rootGraphId: UUID, groupId: GroupId): void => {
     layoutStore.applyOperation({
       type: 'deleteGroup',
       entity: 'group',
-      graphId,
+      graphId: rootGraphId,
       groupId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -287,12 +287,12 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Delete a reroute
    */
-  const deleteReroute = (graphId: UUID, rerouteId: RerouteId): void => {
+  const deleteReroute = (rootGraphId: UUID, rerouteId: RerouteId): void => {
     logger.debug('Deleting reroute:', rerouteId)
     layoutStore.applyOperation({
       type: 'deleteReroute',
       entity: 'reroute',
-      graphId,
+      graphId: rootGraphId,
       rerouteId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -304,14 +304,14 @@ export function useLayoutMutations(): LayoutMutations {
    * Move a reroute
    */
   const moveReroute = (
-    graphId: UUID,
+    rootGraphId: UUID,
     rerouteId: RerouteId,
     position: Point
   ): void => {
     layoutStore.applyOperation({
       type: 'moveReroute',
       entity: 'reroute',
-      graphId,
+      graphId: rootGraphId,
       rerouteId,
       position,
       timestamp: Date.now(),

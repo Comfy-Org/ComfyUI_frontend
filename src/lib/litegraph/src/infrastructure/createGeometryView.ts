@@ -26,6 +26,7 @@ export function createGeometryView<T extends object & ArrayLike<number>>(
     get(target, property, receiver) {
       synchronize?.()
       const value = mapValue(property, Reflect.get(target, property, target))
+      if (property === 'constructor') return value
       if (typeof value !== 'function') return value
 
       return (...args: unknown[]) => {

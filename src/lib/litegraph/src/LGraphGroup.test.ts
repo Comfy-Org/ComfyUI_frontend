@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect } from 'vitest'
 
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { createUuidv4 } from '@/utils/uuid'
 
@@ -179,6 +180,25 @@ describe('group layout in layoutStore', () => {
         size: { width: group.size[0], height: group.size[1] }
       })
     })
+  })
+
+  test('keeps geometry locally when the store entry is gone', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 809)
+    useLayoutMutations().deleteGroup(graph.rootGraph.id, group.id)
+
+    group.pos = [11, 22]
+
+    expect([...group.pos]).toEqual([11, 22])
+  })
+
+  test('snapToGrid reports whether the group moved', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 810)
+
+    group.pos = [70, 128]
+    expect(group.snapToGrid(64)).toBe(true)
+    expect(group.snapToGrid(64)).toBe(false)
   })
 
   test('resizeTo fits contents and commits, still unclamped', () => {

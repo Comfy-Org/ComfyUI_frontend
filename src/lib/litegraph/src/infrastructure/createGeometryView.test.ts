@@ -31,6 +31,12 @@ describe('createGeometryView', () => {
     expect(synchronize).toHaveBeenCalled()
   })
 
+  it('leaves constructor identity intact for external clone helpers', () => {
+    const view = createGeometryView([1, 2], { commit: vi.fn() })
+
+    expect(view.constructor).toBe(Array)
+  })
+
   it('observes a shared parent buffer and maps nested geometry views', () => {
     const bounds = new Rectangle(1, 2, 3, 4)
     const commit = vi.fn()

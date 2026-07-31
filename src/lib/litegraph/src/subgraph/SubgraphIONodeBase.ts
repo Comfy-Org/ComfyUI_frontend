@@ -97,6 +97,8 @@ export abstract class SubgraphIONodeBase<
 
     const snapped: Point = [this.pos[0], this.pos[1]]
     snapPoint(snapped, snapTo)
+    if (snapped[0] === this.pos[0] && snapped[1] === this.pos[1]) return false
+
     this.pos = snapped
     return true
   }

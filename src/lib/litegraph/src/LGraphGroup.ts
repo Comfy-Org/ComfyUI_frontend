@@ -152,10 +152,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   }
 
   private setBounds(x: number, y: number, width: number, height: number): void {
-    if (!this.graph || this.id === -1) {
-      this.bounds.set([x, y, width, height])
-      return
-    }
+    this.bounds.set([x, y, width, height])
+    if (!this.graph || this.id === -1) return
 
     layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.setGroupBounds(
@@ -304,10 +302,11 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
   /** @inheritdoc */
   snapToGrid(snapTo: number): boolean {
-    if (this.pinned) return false
+    if (this.pinned || !snapTo) return false
 
     const snapped: Point = [this._pos[0], this._pos[1]]
-    if (!snapPoint(snapped, snapTo)) return false
+    snapPoint(snapped, snapTo)
+    if (snapped[0] === this._pos[0] && snapped[1] === this._pos[1]) return false
 
     this.pos = snapped
     return true
