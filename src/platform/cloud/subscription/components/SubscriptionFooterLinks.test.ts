@@ -79,6 +79,9 @@ describe('SubscriptionFooterLinks', () => {
       screen.getByRole('button', { name: 'Learn more' })
     ).toBeInTheDocument()
     expect(
+      screen.getByRole('button', { name: 'Partner Nodes pricing' })
+    ).toBeInTheDocument()
+    expect(
       screen.getByRole('button', { name: 'Message support' })
     ).toBeInTheDocument()
   })
