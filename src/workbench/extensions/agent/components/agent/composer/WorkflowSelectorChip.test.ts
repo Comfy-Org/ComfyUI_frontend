@@ -21,9 +21,9 @@ const i18n = createI18n({
         switchWorkflow: enMessages.agent.switchWorkflow,
         changeWorkflowForChat: enMessages.agent.changeWorkflowForChat,
         chooseWorkflow: enMessages.agent.chooseWorkflow,
+        chooseWorkflowForChat: enMessages.agent.chooseWorkflowForChat,
         dontWorkInWorkflow: enMessages.agent.dontWorkInWorkflow,
-        searchWorkflows: enMessages.agent.searchWorkflows,
-        selectWorkflowToGenerate: enMessages.agent.selectWorkflowToGenerate
+        searchWorkflows: enMessages.agent.searchWorkflows
       },
       g: {
         agentWorking: enMessages.g.agentWorking,
@@ -64,9 +64,17 @@ describe('WorkflowSelectorChip', () => {
     const { user } = renderChip()
     expect(trigger()).toHaveTextContent('portrait')
     expect(screen.getByTestId('workflow-selector-icon')).toHaveClass(
-      'icon-[lucide--folder-closed]'
+      'icon-[lucide--workflow]'
     )
 
+    await user.hover(trigger())
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent(enMessages.agent.changeWorkflowForChat)
+    await user.unhover(trigger())
+    expect(screen.queryByRole('tooltip', { hidden: true })).toBeNull()
+
+    await user.hover(trigger())
     await user.click(trigger())
 
     const items = await screen.findAllByRole('menuitemradio')
@@ -104,27 +112,62 @@ describe('WorkflowSelectorChip', () => {
       })
     ).toBeNull()
 
+    await user.hover(trigger())
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent(enMessages.agent.chooseWorkflowForChat)
     await user.click(trigger())
     expect(await screen.findAllByRole('menuitemradio')).toHaveLength(2)
   })
 
-  it('detached mode shows the placeholder even with an active tab', () => {
-    renderChip({ detached: true })
+  it('detached mode has no current workflow even with an active tab', async () => {
+    const { user } = renderChip({ detached: true })
     expect(trigger()).toHaveTextContent(enMessages.agent.chooseWorkflow)
     expect(trigger()).not.toHaveTextContent('portrait')
+    expect(
+      screen.queryByRole('button', {
+        name: enMessages.agent.dontWorkInWorkflow
+      })
+    ).toBeNull()
+
+    await user.click(trigger())
+    expect(screen.queryByRole('menuitemradio', { checked: true })).toBeNull()
   })
 
   it('emits clear from the X button', async () => {
     const { user, emitted } = renderChip()
-    await user.click(
-      screen.getByRole('button', { name: enMessages.agent.dontWorkInWorkflow })
-    )
+    const clear = screen.getByRole('button', {
+      name: enMessages.agent.dontWorkInWorkflow
+    })
+
+    await user.hover(clear)
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent(enMessages.agent.dontWorkInWorkflow)
+    await user.click(clear)
+
     expect(emitted('clear')).toHaveLength(1)
   })
 
-  it('shows the unsaved dot only for a modified active workflow', () => {
-    renderChip({ activeTab: { ...tabs[0], modified: true } })
+  it('shows unsaved dots on a modified active workflow trigger and row', async () => {
+    const modifiedTab = { ...tabs[0], modified: true }
+    const { user } = renderChip({
+      activeTab: modifiedTab,
+      tabs: [modifiedTab, tabs[1]]
+    })
     expect(screen.getByTestId('unsaved-dot')).toBeInTheDocument()
+
+    await user.click(trigger())
+    const row = await screen.findByRole('menuitemradio', {
+      name: /portrait/
+    })
+    expect(within(row).getByTestId('unsaved-dot')).toBeInTheDocument()
+    expect(row).toBeChecked()
+  })
+
+  it('does not show an unsaved dot for an unchanged active workflow', () => {
+    renderChip()
+    expect(screen.queryByTestId('unsaved-dot')).toBeNull()
   })
 
   it('filters the tab list as the search input is typed into', async () => {
