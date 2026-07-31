@@ -4,6 +4,7 @@ import type { useWorkflowStore } from '@/platform/workflow/management/stores/wor
 import type { ExecutionErrorWsMessage, NodeError } from '@/schemas/apiSchema'
 import type { useDialogService } from '@/services/dialogService'
 import type { ComfyCommand } from '@/stores/commandStore'
+import type { VueNodeRenderingApi } from '@/types/vueNodeRendering'
 
 interface BaseSidebarTabExtension {
   id: string
@@ -114,6 +115,9 @@ export interface ExtensionManager {
     set: <T = unknown>(id: string, value: T) => void
   }
   workflow: ReturnType<typeof useWorkflowStore>
+  readonly vueNodes: {
+    readonly rendering: VueNodeRenderingApi
+  }
 
   // Execution error state (read-only)
   lastNodeErrors: Record<string, NodeError> | null

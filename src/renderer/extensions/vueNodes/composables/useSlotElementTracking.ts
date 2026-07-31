@@ -23,6 +23,7 @@ import {
   isSizeEqual
 } from '@/renderer/core/layout/utils/geometry'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
+import { isVueNodeRenderSuppressed } from '@/renderer/extensions/vueNodes/services/vueNodeRenderingService'
 import { createRafBatch } from '@/utils/rafBatch'
 
 // RAF batching
@@ -50,7 +51,8 @@ function completePendingSlotSync(): void {
   app.canvas?.setDirty(true, true)
 }
 
-function getSlotElementRect(el: HTMLElement): DOMRect | null {
+function getSlotElementRect(el: HTMLElement | undefined): DOMRect | null {
+  if (!el) return null
   if (!el.isConnected) return null
 
   const rect = el.getBoundingClientRect()
@@ -135,11 +137,18 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
   // share the same DOM transform, so their pixel difference divided by the
   // effective scale yields a correct canvas-space offset regardless of
   // whether the TransformPane has flushed its latest transform to the DOM.
-  const closestNode = node.slots
-    .values()
-    .next()
-    .value?.el.closest('[data-node-id]')
-  const nodeEl = closestNode instanceof HTMLElement ? closestNode : null
+  let nodeEl: HTMLElement | null = null
+  for (const entry of node.slots.values()) {
+    if (!entry.el?.isConnected) continue
+    const closestNode = entry.el.closest('[data-node-id]')
+    if (
+      closestNode instanceof HTMLElement &&
+      closestNode.dataset.nodeId === String(nodeId)
+    ) {
+      nodeEl = closestNode
+      break
+    }
+  }
   const nodeRect = nodeEl?.getBoundingClientRect()
 
   // Collapsed nodes preserve expanded size in layoutStore, so DOM-relative
@@ -163,7 +172,17 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
 
   const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
 
-  for (const [slotKey, entry] of node.slots) {
+  for (const [slotKey, entry] of Array.from(node.slots)) {
+    if (!entry.el?.isConnected) {
+      if (isVueNodeRenderSuppressed(nodeId)) continue
+      node.slots.delete(slotKey)
+      layoutStore.deleteSlotLayout(slotKey)
+      continue
+    }
+    if (!nodeEl || entry.el.closest('[data-node-id]') !== nodeEl) {
+      layoutStore.deleteSlotLayout(slotKey)
+      continue
+    }
     const rect = getSlotElementRect(entry.el)
     if (!rect) {
       // Drop stale layout values while the slot is hidden so we don't render
@@ -182,7 +201,10 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
     if (conv) {
       const [cx, cy] = conv.clientPosToCanvasPos(screenCenter)
       centerCanvas = { x: cx, y: cy }
-      entry.cachedOffset = undefined
+      entry.cachedOffset = {
+        x: centerCanvas.x - nodeLayout.position.x,
+        y: centerCanvas.y - nodeLayout.position.y
+      }
     } else {
       if (!nodeRect || effectiveScale <= 0) continue
 
@@ -236,8 +258,13 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
   const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
 
   for (const [slotKey, entry] of node.slots) {
+    if (!entry.el && !isVueNodeRenderSuppressed(nodeId)) {
+      node.slots.delete(slotKey)
+      layoutStore.deleteSlotLayout(slotKey)
+      continue
+    }
     if (!entry.cachedOffset) {
-      // schedule a sync to seed offset
+      layoutStore.deleteSlotLayout(slotKey)
       scheduleSlotLayoutSync(nodeId)
       continue
     }
@@ -259,6 +286,40 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
   }
 
   if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
+  if (node.slots.size === 0) {
+    node.stopLayoutSubscription?.()
+    nodeSlotRegistryStore.deleteNode(nodeId)
+  }
+}
+
+function subscribeToNodeLayoutChanges(nodeId: NodeId): () => void {
+  let previousLayout = layoutStore.getNodeLayoutRef(nodeId).value
+
+  return layoutStore.onNodeChange(nodeId, () => {
+    const node = useNodeSlotRegistryStore().getNode(nodeId)
+    if (!node) return
+
+    const currentLayout = layoutStore.getNodeLayoutRef(nodeId).value
+    if (!currentLayout) return
+
+    const sizeChanged =
+      !previousLayout || !isSizeEqual(currentLayout.size, previousLayout.size)
+    const positionChanged =
+      !previousLayout ||
+      !isPointEqual(currentLayout.position, previousLayout.position)
+    previousLayout = currentLayout
+
+    if (sizeChanged) {
+      for (const [slotKey, entry] of node.slots) {
+        entry.cachedOffset = undefined
+        layoutStore.deleteSlotLayout(slotKey)
+      }
+      if (!isVueNodeRenderSuppressed(nodeId)) scheduleSlotLayoutSync(nodeId)
+      return
+    }
+
+    if (positionChanged) updateNodeSlotsFromCache(nodeId)
+  })
 }
 
 export function useSlotElementTracking(options: {
@@ -279,33 +340,8 @@ export function useSlotElementTracking(options: {
 
         const node = nodeSlotRegistryStore.ensureNode(nodeId)
 
-        if (!node.stopWatch) {
-          const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
-
-          const stopPositionWatch = watch(
-            () => layoutRef.value?.position,
-            (newPosition, oldPosition) => {
-              if (!newPosition) return
-              if (!oldPosition || !isPointEqual(newPosition, oldPosition)) {
-                updateNodeSlotsFromCache(nodeId)
-              }
-            }
-          )
-
-          const stopSizeWatch = watch(
-            () => layoutRef.value?.size,
-            (newSize, oldSize) => {
-              if (!newSize) return
-              if (!oldSize || !isSizeEqual(newSize, oldSize)) {
-                scheduleSlotLayoutSync(nodeId)
-              }
-            }
-          )
-
-          node.stopWatch = () => {
-            stopPositionWatch()
-            stopSizeWatch()
-          }
+        if (!node.stopLayoutSubscription) {
+          node.stopLayoutSubscription = subscribeToNodeLayoutChanges(nodeId)
         }
 
         // Register slot
@@ -314,13 +350,17 @@ export function useSlotElementTracking(options: {
         // Defensive cleanup: remove stale entry if it exists with different element
         // This handles edge cases where Vue component reuse prevents proper unmount
         const existingEntry = node.slots.get(slotKey)
-        if (existingEntry && existingEntry.el !== el) {
+        if (existingEntry?.el && existingEntry.el !== el) {
           delete existingEntry.el.dataset.slotKey
-          layoutStore.deleteSlotLayout(slotKey)
         }
 
         el.dataset.slotKey = String(slotKey)
-        node.slots.set(slotKey, { el, index, type })
+        node.slots.set(slotKey, {
+          ...existingEntry,
+          el,
+          index,
+          type
+        })
 
         // Seed initial sync from DOM
         scheduleSlotLayoutSync(nodeId)
@@ -341,14 +381,18 @@ export function useSlotElementTracking(options: {
     const slotKey = getSlotKey(nodeId, index, type === 'input')
     const entry = node.slots.get(slotKey)
     if (entry) {
-      delete entry.el.dataset.slotKey
+      if (entry.el) delete entry.el.dataset.slotKey
+      if (isVueNodeRenderSuppressed(nodeId)) {
+        entry.el = undefined
+        return
+      }
       node.slots.delete(slotKey)
     }
     layoutStore.deleteSlotLayout(slotKey)
 
     // If node has no more slots, clean up
     if (node.slots.size === 0) {
-      if (node.stopWatch) node.stopWatch()
+      node.stopLayoutSubscription?.()
       nodeSlotRegistryStore.deleteNode(nodeId)
     }
   })
@@ -357,5 +401,26 @@ export function useSlotElementTracking(options: {
     requestSlotLayoutSync: () => {
       if (nodeId) scheduleSlotLayoutSync(nodeId)
     }
+  }
+}
+
+export function deleteTrackedNodeSlotLayouts(nodeId: NodeId): void {
+  pendingNodes.delete(nodeId)
+  const nodeSlotRegistryStore = useNodeSlotRegistryStore()
+  const node = nodeSlotRegistryStore.getNode(nodeId)
+  if (!node) return
+
+  for (const [slotKey, entry] of node.slots) {
+    if (entry.el) delete entry.el.dataset.slotKey
+    layoutStore.deleteSlotLayout(slotKey)
+  }
+  node.stopLayoutSubscription?.()
+  nodeSlotRegistryStore.deleteNode(nodeId)
+}
+
+export function clearTrackedNodeSlotLayouts(): void {
+  const nodeSlotRegistryStore = useNodeSlotRegistryStore()
+  for (const nodeId of nodeSlotRegistryStore.getNodeIds()) {
+    deleteTrackedNodeSlotLayouts(nodeId)
   }
 }

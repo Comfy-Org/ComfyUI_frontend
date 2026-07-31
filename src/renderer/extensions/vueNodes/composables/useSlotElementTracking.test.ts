@@ -14,6 +14,7 @@ import type { SlotLayout } from '@/renderer/core/layout/types'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 import {
+  deleteTrackedNodeSlotLayouts,
   syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
   requestSlotLayoutSyncForAllNodes,
@@ -27,6 +28,7 @@ const mockCanvasState = vi.hoisted(() => ({
 const mockClientPosToCanvasPos = vi.hoisted(() =>
   vi.fn(([x, y]: [number, number]) => [x * 0.5, y * 0.5] as [number, number])
 )
+const suppressedNodeIds = vi.hoisted(() => new Set<string>())
 
 vi.mock('@/scripts/app', () => ({
   app: { canvas: { graph: mockGraph, setDirty: vi.fn() } }
@@ -41,6 +43,13 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
     clientPosToCanvasPos: mockClientPosToCanvasPos
   })
 }))
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/services/vueNodeRenderingService',
+  () => ({
+    isVueNodeRenderSuppressed: (id: string) => suppressedNodeIds.has(id)
+  })
+)
 
 const NODE_ID = toNodeId('test-node')
 const SLOT_INDEX = 0
@@ -101,10 +110,13 @@ function createSlotElement(collapsed = false): HTMLElement {
 /**
  * Mount the wrapper, set the element ref, and wait for slot registration.
  */
-async function mountAndRegisterSlot(type: 'input' | 'output') {
+async function mountAndRegisterSlot(
+  type: 'input' | 'output',
+  collapsed = false
+) {
   const { el, TestComponent } = createTestSetup(type)
   const { unmount } = render(TestComponent)
-  el.value = createSlotElement()
+  el.value = createSlotElement(collapsed)
   await nextTick()
   flushScheduledSlotLayoutSync()
   return { unmount }
@@ -134,6 +146,88 @@ describe('useSlotElementTracking', () => {
     mockGraph._nodes = [{ id: 1 }]
     mockCanvasState.canvas = {}
     mockClientPosToCanvasPos.mockClear()
+    suppressedNodeIds.clear()
+  })
+
+  it('detaches DOM while retaining cached geometry during suppression', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const initialLayout = layoutStore.getSlotLayout(slotKey)
+
+    suppressedNodeIds.add(NODE_ID)
+    unmount()
+
+    expect(
+      useNodeSlotRegistryStore().getNode(NODE_ID)?.slots.get(slotKey)?.el
+    ).toBeUndefined()
+    expect(layoutStore.getSlotLayout(slotKey)).toEqual(initialLayout)
+  })
+
+  it('translates retained cached geometry while a suppressed node moves', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const initialLayout = layoutStore.getSlotLayout(slotKey)!
+    suppressedNodeIds.add(NODE_ID)
+    unmount()
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId: NODE_ID,
+      position: { x: 50, y: 75 },
+      previousPosition: { x: 0, y: 0 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+    await nextTick()
+
+    expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+      x: initialLayout.position.x + 50,
+      y: initialLayout.position.y + 75
+    })
+  })
+
+  it('invalidates retained geometry on resize and remeasures on remount', async () => {
+    const mounted = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    suppressedNodeIds.add(NODE_ID)
+    mounted.unmount()
+
+    layoutStore.applyOperation({
+      type: 'resizeNode',
+      entity: 'node',
+      nodeId: NODE_ID,
+      size: { width: 300, height: 200 },
+      previousSize: { width: 200, height: 100 },
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    await nextTick()
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(
+      useNodeSlotRegistryStore().getNode(NODE_ID)?.slots.get(slotKey)
+        ?.cachedOffset
+    ).toBeUndefined()
+
+    suppressedNodeIds.clear()
+    const remounted = await mountAndRegisterSlot('input')
+    expect(layoutStore.getSlotLayout(slotKey)).not.toBeNull()
+    remounted.unmount()
+  })
+
+  it('removes retained state on real deletion', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    suppressedNodeIds.add(NODE_ID)
+    unmount()
+
+    deleteTrackedNodeSlotLayouts(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(useNodeSlotRegistryStore().getNode(NODE_ID)).toBeUndefined()
   })
 
   it.for([
@@ -306,14 +400,14 @@ describe('useSlotElementTracking', () => {
       expect(layout!.position.y).toBe(screenCenter[1] * 0.5)
     })
 
-    it('clears cachedOffset for collapsed nodes', () => {
+    it('caches collapsed slot offsets relative to the node position', () => {
       const { slotKey, node } = registerCollapsedSlot()
       const entry = node.slots.get(slotKey)!
       expect(entry.cachedOffset).toBeDefined()
 
       syncNodeSlotLayoutsFromDOM(NODE_ID)
 
-      expect(entry.cachedOffset).toBeUndefined()
+      expect(entry.cachedOffset).toEqual({ x: 7.5, y: 17.5 })
     })
 
     it('defers sync when canvas is not initialized', () => {

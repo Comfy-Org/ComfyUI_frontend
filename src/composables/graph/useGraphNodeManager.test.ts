@@ -13,6 +13,9 @@ import {
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -804,5 +807,61 @@ describe('Pre-remove vueNodeData drain', () => {
       vueNodeData.size,
       'node:before-removed listener must drain vueNodeData when clear() removes every node'
     ).toBe(0)
+  })
+})
+
+describe('Vue node slot cleanup', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  function seedSlotState(node: LGraphNode) {
+    const slotKey = getSlotKey(node.id, 0, true)
+    const registry = useNodeSlotRegistryStore()
+    registry.ensureNode(node.id).slots.set(slotKey, {
+      el: document.createElement('div'),
+      index: 0,
+      type: 'input',
+      cachedOffset: { x: 10, y: 20 }
+    })
+    layoutStore.batchUpdateSlotLayouts([
+      {
+        key: slotKey,
+        layout: {
+          nodeId: node.id,
+          index: 0,
+          type: 'input',
+          position: { x: 10, y: 20 },
+          bounds: { x: 5, y: 15, width: 10, height: 10 }
+        }
+      }
+    ])
+    return { registry, slotKey }
+  }
+
+  it('removes retained slot state on real node deletion', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    useGraphNodeManager(graph)
+    const { registry, slotKey } = seedSlotState(node)
+
+    graph.remove(node)
+
+    expect(registry.getNode(node.id)).toBeUndefined()
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+  })
+
+  it('removes retained slot state when the graph manager cleans up', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const manager = useGraphNodeManager(graph)
+    const { registry, slotKey } = seedSlotState(node)
+
+    manager.cleanup()
+
+    expect(registry.getNode(node.id)).toBeUndefined()
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
   })
 })

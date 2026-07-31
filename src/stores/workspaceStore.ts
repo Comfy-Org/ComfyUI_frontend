@@ -8,6 +8,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { Settings } from '@/schemas/apiSchema'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
+import { vueNodeRenderingApi } from '@/renderer/extensions/vueNodes/services/vueNodeRenderingService'
 import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
@@ -48,6 +49,7 @@ function workspaceStoreSetup() {
   const colorPalette = useColorPaletteService()
   const dialog = useDialogService()
   const bottomPanel = useBottomPanelStore()
+  const vueNodes = Object.freeze({ rendering: vueNodeRenderingApi })
 
   const authStore = useAuthStore()
   const apiKeyStore = useApiKeyAuthStore()
@@ -106,6 +108,7 @@ function workspaceStoreSetup() {
     colorPalette,
     dialog,
     bottomPanel,
+    vueNodes,
     user: partialUserStore,
 
     // Execution error state (read-only, exposed for custom extensions)

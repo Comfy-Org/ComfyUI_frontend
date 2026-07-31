@@ -73,7 +73,7 @@
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <LGraphNode
-      v-for="nodeData in allNodes"
+      v-for="nodeData in renderedNodes"
       :key="nodeData.id"
       :node-data="nodeData"
       :error="
@@ -82,6 +82,8 @@
           : null
       "
       :data-node-id="nodeData.id"
+      @node-mounted="onNodeMounted"
+      @node-unmounted="onNodeUnmounted"
     />
   </TransformPane>
 
@@ -182,6 +184,7 @@ import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { useVueNodeRendering } from '@/renderer/extensions/vueNodes/composables/useVueNodeRendering'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -293,6 +296,11 @@ watch(
 const allNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
+const { onNodeMounted, onNodeUnmounted, renderedNodes } = useVueNodeRendering({
+  allNodes,
+  canvas: () => canvasStore.canvas,
+  nodeManager: () => vueNodeLifecycle.nodeManager.value
+})
 watch(
   () => linearMode.value,
   (isLinearMode) => {
