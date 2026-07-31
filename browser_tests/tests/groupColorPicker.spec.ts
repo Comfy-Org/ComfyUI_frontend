@@ -1,0 +1,88 @@
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
+
+// LGraphCanvas.node_colors.red.groupcolor — the group-specific tint that
+// LGraphGroup#setColorOption applies. Regression: the right-click Color menu
+// used to assign colorOption.value.dark/light (the plain node bgcolor,
+// '#533' for red) directly to group.color instead of routing through
+// setColorOption, producing a visibly different shade from the toolbar
+// circle-swatch picker for the same color choice.
+const RED_GROUP_COLOR = '#A88'
+
+test.describe(
+  'Group Color - right-click menu matches toolbar swatch',
+  { tag: ['@screenshot', '@canvas'] },
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+      await comfyPage.workflow.loadWorkflow('groups/two_groups')
+    })
+
+    test('applies the same shade as the toolbar circle-swatch picker', async ({
+      comfyPage
+    }) => {
+      // Set color via the toolbar circle-swatch picker (SelectionToolbox).
+      const toolbarGroupPos = await getGroupTitlePosition(
+        comfyPage,
+        'Toolbar Swatch Group'
+      )
+      await comfyPage.page.mouse.click(toolbarGroupPos.x, toolbarGroupPos.y)
+      await comfyPage.nextFrame()
+
+      const colorPickerButton = comfyPage.page.getByTestId(
+        TestIds.selectionToolbox.colorPickerButton
+      )
+      await expect(colorPickerButton).toBeVisible()
+      await colorPickerButton.click()
+
+      const colorPickerGroup = comfyPage.page.getByRole('group').filter({
+        has: comfyPage.page.getByTestId(TestIds.selectionToolbox.colorRed)
+      })
+      await colorPickerGroup
+        .getByTestId(TestIds.selectionToolbox.colorRed)
+        .click()
+      await comfyPage.nextFrame()
+
+      // Set the same color via the right-click group Color menu — the path
+      // this PR fixes.
+      const menuGroupPos = await getGroupTitlePosition(
+        comfyPage,
+        'Right-Click Menu Group'
+      )
+      await comfyPage.page.mouse.click(menuGroupPos.x, menuGroupPos.y, {
+        button: 'right'
+      })
+      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+
+      await comfyPage.page.getByText('Color', { exact: true }).click()
+      const redSwatch = comfyPage.page.getByTitle('Red')
+      await expect(redSwatch.first()).toBeVisible()
+      await redSwatch.first().click()
+      await comfyPage.nextFrame()
+
+      const groupColors = await comfyPage.page.evaluate(() => {
+        const groups = window.app!.graph.groups
+        const colorOf = (title: string) =>
+          groups.find((g: { title: string }) => g.title === title)?.color
+        return {
+          toolbarSwatch: colorOf('Toolbar Swatch Group'),
+          rightClickMenu: colorOf('Right-Click Menu Group')
+        }
+      })
+
+      expect(groupColors.toolbarSwatch).toBe(RED_GROUP_COLOR)
+      expect(
+        groupColors.rightClickMenu,
+        'right-click Color menu should apply the same shade as the toolbar swatch'
+      ).toBe(groupColors.toolbarSwatch)
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'group-color-right-click-matches-toolbar-swatch.png'
+      )
+    })
+  }
+)
