@@ -721,7 +721,6 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',
       '@': '/src'

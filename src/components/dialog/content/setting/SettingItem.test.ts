@@ -16,7 +16,7 @@ const i18n = createI18n({
   locale: 'en'
 })
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock('@comfyorg/shared-frontend-utils/formatUtil', () => ({
   normalizeI18nKey: vi.fn()
 }))
 

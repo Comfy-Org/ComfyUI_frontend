@@ -9,7 +9,7 @@ vi.mock('@/stores/domWidgetStore', () => ({
   })
 }))
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock('@comfyorg/shared-frontend-utils/formatUtil', () => ({
   generateUUID: () => 'test-uuid'
 }))
 

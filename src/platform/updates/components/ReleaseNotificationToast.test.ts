@@ -47,7 +47,7 @@ vi.mock('vue-i18n', () => ({
   }))
 }))
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock('@comfyorg/shared-frontend-utils/formatUtil', () => ({
   formatVersionAnchor: vi.fn((version: string) => version.replace(/\./g, ''))
 }))
 

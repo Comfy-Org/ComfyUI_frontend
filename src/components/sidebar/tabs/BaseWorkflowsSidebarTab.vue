@@ -183,7 +183,7 @@ import {
   ensureWorkflowSuffix,
   getFilenameDetails,
   getWorkflowSuffix
-} from '@/utils/formatUtil'
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 

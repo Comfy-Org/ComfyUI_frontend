@@ -1,6 +1,6 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
-import { isCivitaiUrl } from '@/utils/formatUtil'
+import { isCivitaiUrl } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 // Reserved tag literals (mirror assetService's MODELS_TAG/MISSING_TAG). Kept
 // local so this leaf util doesn't pull the heavier assetService -> i18n chain.

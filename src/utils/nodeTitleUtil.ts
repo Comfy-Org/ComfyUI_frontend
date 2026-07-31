@@ -1,4 +1,4 @@
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 type NodeTitleInfo = {
   title?: string | number | null
