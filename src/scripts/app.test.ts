@@ -785,6 +785,7 @@ describe('ComfyApp', () => {
       expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
         'MissingGroupNode'
       ])
+      expect(mockWorkspaceWorkflow.createNewTemporary).not.toHaveBeenCalled()
     })
 
     it('clears missing node packs after importing A1111 parameters', async () => {

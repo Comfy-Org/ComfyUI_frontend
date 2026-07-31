@@ -2062,12 +2062,12 @@ export class ComfyApp {
       const graphWasReplaced = await importA1111(this.rootGraph, parameters)
       if (graphWasReplaced) {
         useMissingNodesErrorStore().setMissingNodeTypes([])
+        useWorkflowService().afterLoadNewGraph(
+          fileName,
+          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        )
+        return
       }
-      useWorkflowService().afterLoadNewGraph(
-        fileName,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
-      )
-      return
     }
 
     this.showErrorOnFileLoad(file)
