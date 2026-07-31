@@ -12,7 +12,7 @@ const PRIMEVUE_OVERLAY_SELECTORS =
 // dismiss itself. These selectors cover the portaled roots so we can treat
 // interactions on them as inside.
 const REKA_PORTAL_SELECTORS =
-  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
+  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [data-reka-nested-dialog-overlay], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
 
 const OUTSIDE_LAYER_SELECTORS = `${PRIMEVUE_OVERLAY_SELECTORS}, ${REKA_PORTAL_SELECTORS}`
 
@@ -32,10 +32,9 @@ export function onRekaPointerDownOutside(
 ) {
   // Stacked dialogs each render an independent Reka `Dialog` root, so a lower
   // dialog's DismissableLayer sees a pointer-down that opened (or landed on)
-  // the dialog above it as "outside" and would dismiss itself — including via
-  // the upper dialog's overlay, whose element matches none of the portal
-  // selectors below. Only the top-most dialog may dismiss on an outside
-  // pointer, mirroring the escape-key handling in `GlobalDialog`.
+  // the dialog above it as "outside" and would dismiss itself. Only the
+  // top-most dialog may dismiss on an outside pointer, mirroring the escape-key
+  // handling in `GlobalDialog`.
   if (!isActive) {
     event.preventDefault()
     return
