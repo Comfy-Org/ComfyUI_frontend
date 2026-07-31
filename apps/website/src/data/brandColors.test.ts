@@ -23,6 +23,15 @@ const websiteRoot = join(import.meta.dirname, '..', '..')
 const read = (relative: string) =>
   readFileSync(join(websiteRoot, relative), 'utf-8')
 
+function yellowsIn(svg: string): string[] {
+  const hexes = svg.toLowerCase().match(/#[0-9a-f]{6}/g) ?? []
+  const isYellow = (hex: string) =>
+    parseInt(hex.slice(1, 3), 16) > 200 &&
+    parseInt(hex.slice(3, 5), 16) > 200 &&
+    parseInt(hex.slice(5, 7), 16) < 200
+  return [...new Set(hexes.filter(isYellow))].sort()
+}
+
 /*
  * Everything asserted here is a place a design-system colour has to be written
  * out as a literal, because the consumer cannot read a CSS custom property:
@@ -75,8 +84,7 @@ describe('brand colours that cannot reference a token', () => {
     ]
 
     for (const file of files) {
-      const svg = read(file).toLowerCase()
-      expect(svg, `${file} should use ${yellow}`).toContain(yellow)
+      expect(yellowsIn(read(file)), `${file} yellows`).toEqual([yellow])
     }
   })
 
