@@ -2059,7 +2059,10 @@ export class ComfyApp {
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
       useWorkflowService().beforeLoadNewGraph()
-      importA1111(this.rootGraph, parameters)
+      const graphWasReplaced = await importA1111(this.rootGraph, parameters)
+      if (graphWasReplaced) {
+        useMissingNodesErrorStore().setMissingNodeTypes([])
+      }
       useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
@@ -2198,6 +2201,7 @@ export class ComfyApp {
     const missingNodeTypes = Object.values(apiData).filter(
       (n) => !LiteGraph.registered_node_types[n.class_type]
     )
+    useMissingNodesErrorStore().setMissingNodeTypes([])
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
     }

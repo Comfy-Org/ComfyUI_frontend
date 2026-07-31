@@ -3,7 +3,6 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import type { MissingNodeType } from '@/types/comfy'
 import {
   createBoundaryLinkedSubgraph,
   createTestRootGraph,
@@ -879,9 +878,7 @@ describe('clearRunErrors', () => {
         class_type: 'Test'
       }
     })
-    missingNodesStore.setMissingNodeTypes(
-      fromAny<MissingNodeType[], unknown>([{ type: 'MissingNode', hint: '' }])
-    )
+    missingNodesStore.setMissingNodeTypes([{ type: 'MissingNode', hint: '' }])
     executionErrorStore.showErrorOverlay()
 
     executionErrorStore.clearRunErrors()
@@ -893,5 +890,6 @@ describe('clearRunErrors', () => {
       { type: 'MissingNode', hint: '' }
     ])
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
+    expect(executionErrorStore.hasAnyError).toBe(true)
   })
 })

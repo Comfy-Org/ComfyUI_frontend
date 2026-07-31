@@ -316,7 +316,7 @@ describe('useWorkflowService', () => {
       )
     })
 
-    it('should cache missing nodes before clearing the current store', () => {
+    it('should cache missing nodes without clearing the current store', () => {
       const activeWorkflow = createModeTestWorkflow({
         path: 'workflows/test.json'
       })
@@ -330,7 +330,9 @@ describe('useWorkflowService', () => {
       expect(activeWorkflow.pendingWarnings?.missingNodeTypes).toEqual(
         missingNodeTypes
       )
-      expect(missingNodesStore.missingNodesError).toBeNull()
+      expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual(
+        missingNodeTypes
+      )
     })
 
     it('should save active workflow state through the V2 draft store', () => {

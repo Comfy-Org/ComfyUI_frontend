@@ -430,8 +430,6 @@ export const useWorkflowService = () => {
       // Save subgraph viewport before the canvas gets overwritten
       useSubgraphNavigationStore().saveCurrentViewport()
     }
-
-    missingNodesErrorStore.setMissingNodeTypes([])
   }
 
   /**

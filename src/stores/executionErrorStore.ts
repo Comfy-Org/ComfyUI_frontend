@@ -83,10 +83,11 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /**
-   * `clearMissingModels()` also resets imported model download task IDs and
-   * file sizes, unlike `setMissingModels([])`.
-   */
+  /** Clear errors tied to the previous run: execution, prompt, and node errors.
+   *  Missing node, model, and media state is deliberately preserved — a missing
+   *  resource can sit on a branch the run never executed, so a submission says
+   *  nothing about whether it is still missing, and installing a node pack needs
+   *  a backend restart. Missing state is cleared where the graph is replaced. */
   function clearRunErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null

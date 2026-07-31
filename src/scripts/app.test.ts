@@ -76,7 +76,8 @@ const {
   mockWorkspaceWorkflow: {
     activeWorkflow: null as ComfyWorkflow | null,
     createNewTemporary: vi.fn(),
-    openWorkflow: vi.fn()
+    openWorkflow: vi.fn(),
+    getWorkflowByPath: vi.fn(() => null)
   },
   mockRefreshMissingModelPipeline: vi.fn()
 }))
@@ -235,15 +236,24 @@ describe('ComfyApp', () => {
         workflow: createWorkflowGraphData()
       })
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
-      return graph
     }
 
     it('preserves missing node packs when submitting a prompt', async () => {
-      const graph = prepareEmptyPromptQueue()
+      prepareEmptyPromptQueue()
       const nodeType = 'test/UninstalledLiveNode'
-      graph.add(new LGraphNode('Uninstalled Live Node', nodeType))
       const missingNodesStore = useMissingNodesErrorStore()
+      const executionErrorStore = useExecutionErrorStore()
       missingNodesStore.setMissingNodeTypes([nodeType])
+      executionErrorStore.recordExecutionError({
+        prompt_id: 'previous-run',
+        timestamp: 0,
+        node_id: '1',
+        node_type: 'Test',
+        executed: [],
+        exception_message: 'fail',
+        exception_type: 'RuntimeError',
+        traceback: []
+      })
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
         prompt_id: 'job-1',
         error: ''
@@ -252,6 +262,7 @@ describe('ComfyApp', () => {
       await app.queuePrompt(0)
 
       expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([nodeType])
+      expect(executionErrorStore.lastExecutionError).toBeNull()
     })
 
     it('shows the error overlay for successful prompt responses with node errors', async () => {
@@ -759,7 +770,7 @@ describe('ComfyApp', () => {
       }
     })
 
-    it('clears missing node packs before importing A1111 parameters', async () => {
+    it('preserves missing node packs when A1111 parameters do not import', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
@@ -769,9 +780,46 @@ describe('ComfyApp', () => {
         parameters: 'A1111 parameters without generation metadata'
       })
 
-      await app.handleFile(createTestFile('.png', 'image/png'))
+      await app.handleFile(createTestFile('a1111-bail.png', 'image/png'))
 
-      expect(missingNodesStore.missingNodesError).toBeNull()
+      expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+        'MissingGroupNode'
+      ])
+    })
+
+    it('clears missing node packs after importing A1111 parameters', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes(['MissingGroupNode'])
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters:
+          'positive\nNegative prompt: negative\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
+      })
+      vi.spyOn(api, 'getEmbeddings').mockResolvedValue([])
+      const nodeTypes = [
+        'CheckpointLoaderSimple',
+        'CLIPSetLastLayer',
+        'CLIPTextEncode',
+        'KSampler',
+        'EmptyLatentImage',
+        'VAEDecode',
+        'SaveImage'
+      ]
+      for (const nodeType of nodeTypes) {
+        LiteGraph.registerNodeType(nodeType, class extends LGraphNode {})
+      }
+
+      try {
+        await app.handleFile(createTestFile('a1111.png', 'image/png'))
+
+        expect(missingNodesStore.missingNodesError).toBeNull()
+      } finally {
+        for (const nodeType of nodeTypes) {
+          LiteGraph.unregisterNodeType(nodeType)
+        }
+      }
     })
 
     it('clears missing node packs when clearing the workflow', () => {

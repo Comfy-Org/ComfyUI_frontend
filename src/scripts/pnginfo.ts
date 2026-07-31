@@ -183,7 +183,7 @@ interface LoraEntry {
 export async function importA1111(
   graph: LGraph,
   parameters: string
-): Promise<void> {
+): Promise<boolean> {
   const p = parameters.lastIndexOf('\nSteps:')
   if (p > -1) {
     const embeddings = await api.getEmbeddings()
@@ -193,7 +193,7 @@ export async function importA1111(
       .match(
         new RegExp('\\s*([^:]+:\\s*([^"\\{].*?|".*?"|\\{.*?\\}))\\s*(,|$)', 'g')
       )
-    if (!matchResult) return
+    if (!matchResult) return false
 
     const opts: Record<string, string> = matchResult.reduce(
       (acc: Record<string, string>, n: string) => {
@@ -231,7 +231,7 @@ export async function importA1111(
         !saveNode
       ) {
         console.error('Failed to create required nodes for A1111 import')
-        return
+        return false
       }
 
       let hrSamplerNode: LGraphNode | null = null
@@ -551,6 +551,8 @@ export async function importA1111(
       }
 
       console.warn('Unhandled parameters:', opts)
+      return true
     }
   }
+  return false
 }
