@@ -63,13 +63,15 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm typecheck`: Vue TSC type checking
 - `pnpm storybook`: Start Storybook development server
 
-> **`vue-tsc` needs a full `node_modules` install.** `vue-tsc --noEmit` (what
-> `pnpm typecheck` runs) resolves types through pnpm's nested `.pnpm/` store
-> paths, so a partial, symlinked, or borrowed `node_modules` makes it report
-> ~1300 phantom errors against every `.vue` file — none from your diff — and the
-> typecheck can't be trusted. For a trustworthy typecheck, run `pnpm install` in
-> the checkout first, then `pnpm typecheck` (or `npx vue-tsc --noEmit`). Vitest
-> is unaffected: it doesn't do the `.pnpm` path resolution vue-tsc does.
+> **`vue-tsc` needs its own `node_modules` in the checkout.** `vue-tsc --noEmit`
+> (what `pnpm typecheck` runs) emits type references as relative paths into
+> pnpm's `.pnpm/` store, computed from where that store actually lives. A normal
+> pnpm install is heavily symlinked and works fine — but a `node_modules`
+> borrowed from another directory (symlinked or copied from a sibling checkout)
+> sits at a different depth, so every emitted path overshoots and vue-tsc
+> reports ~1300 phantom `TS2688` errors against `.vue` files unrelated to your
+> diff. Run `pnpm install` in the checkout before trusting `pnpm typecheck`.
+> Vitest is unaffected: it resolves through Vite, not these emitted paths.
 
 ## Development Workflow
 
