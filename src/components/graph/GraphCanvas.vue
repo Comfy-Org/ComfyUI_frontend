@@ -285,8 +285,9 @@ const handleVueNodeLifecycleReset = async () => {
   if (!shouldRenderVueNodes.value) return
 
   stopSync()
+  layoutStore.clearViewGeometry()
   await nextTick()
-  startVueNodeLayout()
+  startSync(canvasStore.canvas)
 }
 
 watch(

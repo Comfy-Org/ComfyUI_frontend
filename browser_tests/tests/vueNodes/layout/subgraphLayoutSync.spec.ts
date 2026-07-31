@@ -5,26 +5,33 @@ import {
 import { toNodeId } from '@/types/nodeId'
 
 test.describe('Subgraph layout sync', { tag: '@vue-nodes' }, () => {
-  test('node keeps receiving layout changes after navigation', async ({
-    comfyPage
-  }) => {
+  test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
     await comfyPage.vueNodes.enterSubgraph('2')
-    await comfyPage.vueNodes.waitForNodes(2)
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(2)
+  })
 
+  test('extension resize updates a Vue node after entering a subgraph', async ({
+    comfyPage
+  }) => {
     const node = comfyPage.vueNodes.getNodeLocator('1')
     await expect(node).toBeVisible()
 
-    await comfyPage.page.evaluate((nodeId) => {
-      window.app!.canvas.graph!.getNodeById(nodeId)!.setSize([360, 200])
+    const modelWidth = await comfyPage.page.evaluate((nodeId) => {
+      const node = window.app!.canvas.graph!.getNodeById(nodeId)!
+      node.setSize([360, 200])
+      return node.size[0]
     }, toNodeId('1'))
 
+    expect(modelWidth).toBe(360)
     await expect
-      .poll(() =>
-        node.evaluate((element) =>
-          element.style.getPropertyValue('--node-width')
-        )
+      .poll(
+        () =>
+          node.evaluate((element) =>
+            element instanceof HTMLElement ? element.offsetWidth : 0
+          ),
+        { message: 'extension resize updates the rendered node width' }
       )
-      .toBe('360px')
+      .toBe(360)
   })
 })
