@@ -212,17 +212,23 @@ jobs:
             sleep 30
           done
 
-          # Self-documenting timeout: publish-pypi failing also skips create-comfyui-pr,
-          # so make the recovery command explicit instead of leaving the operator to guess.
+          # A missing tag only proves the tag was never observed, not that the bump
+          # PR is unmerged: release-draft-create may have failed or still be running.
+          # Sending the operator straight to "merge the PR" is wrong in that case, so
+          # order the two causes instead. Self-documenting recovery: publish-pypi
+          # failing also skips create-comfyui-pr, so spell the command out.
           RECOVERY="gh run rerun ${{ github.run_id }} --failed  # re-runs publish-pypi + create-comfyui-pr once the tag exists"
-          echo "❌ Timed out waiting for tag v${TARGET_VERSION} after 4h (bump PR not merged)."
-          echo "::error title=Release bump PR not merged in time::Tag v${TARGET_VERSION} never appeared. Merge the Release-labeled bump PR for ${TARGET_BRANCH}, then recover with: ${RECOVERY}"
+          echo "❌ Timed out waiting for tag v${TARGET_VERSION} after 4h."
+          echo "::error title=Release tag never appeared::Tag v${TARGET_VERSION} was not created within 4h. Check whether the Release-labeled bump PR for ${TARGET_BRANCH} is merged; if it is, open the release-draft-create run for that merge and check its individual jobs. Then recover with: ${RECOVERY}"
           {
-            echo "## ⚠️ Release stalled — waiting on bump PR merge"
+            echo "## ⚠️ Release stalled — tag \`v${TARGET_VERSION}\` never appeared"
             echo ""
-            echo "Timed out waiting for tag \`v${TARGET_VERSION}\` on \`${TARGET_BRANCH}\` (bump PR not merged within 4h)."
+            echo "Timed out after 4h waiting for tag \`v${TARGET_VERSION}\` on \`${TARGET_BRANCH}\`. Check the two causes in order:"
             echo ""
-            echo "**Recover once the bump PR is merged and the tag exists:**"
+            echo "1. **Is the Release-labeled bump PR for \`${TARGET_BRANCH}\` merged?** If not, merge it."
+            echo "2. **If it is merged**, open the \`release-draft-create\` run for that merge and check its individual jobs — a cosmetic step can mark an otherwise-successful run as failed, so a red run does not mean the tag is unrecoverable."
+            echo ""
+            echo "**Recover once the tag exists:**"
             echo ""
             echo '```bash'
             echo "${RECOVERY}"
