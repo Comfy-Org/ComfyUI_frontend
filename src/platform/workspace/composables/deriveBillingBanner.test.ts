@@ -67,6 +67,12 @@ describe('deriveBillingBanner', () => {
     expect(derive(paymentFailed)).toBe('paymentFailed')
   })
 
+  it('shows payment recovery before an initial subscription has plan identity', () => {
+    expect(derive({ ...paymentFailed, isTeamPlan: false })).toBe(
+      'paymentFailed'
+    )
+  })
+
   it('prioritizes payment failure over out of credits for owners', () => {
     expect(derive({ ...paymentFailed, hasFunds: false })).toBe('paymentFailed')
   })

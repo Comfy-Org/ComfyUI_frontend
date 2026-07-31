@@ -26,26 +26,22 @@ export interface BillingBannerInputs {
   outOfCreditsDismissed: boolean
 }
 
-// The single billing banner slot, in priority order: paused > paymentFailed >
-// outOfCredits > ending. billingControlEnabled is the FE-1246 kill switch: the
-// whole banner is behind it so a PostHog rollback hides it for everyone. Then
-// gated on the team PLAN rather than the workspace type, because personal
-// workspaces are due to gain team plans (BE-1526) — a workspace-type gate would
-// then hide the banner from real team subscribers.
 export function deriveBillingBanner(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
-  if (!inputs.billingControlEnabled || !inputs.isTeamPlan || !inputs.isLoaded) {
+  if (!inputs.billingControlEnabled || !inputs.isLoaded) {
     return null
   }
 
-  // Both sit above the isActiveSubscription gate because the backend folds
-  // billing_status into is_active: paused and payment_failed each report
-  // is_active=false, so either check would be dead code below it.
-  if (inputs.billingStatus === 'paused') return 'paused'
-  if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
+  const canManagePaymentFailure =
+    inputs.billingStatus === 'payment_failed' && inputs.canManage
+  if (canManagePaymentFailure) {
     return 'paymentFailed'
   }
+
+  if (!inputs.isTeamPlan) return null
+
+  if (inputs.billingStatus === 'paused') return 'paused'
 
   // Inactive workspaces surface a run-lock modal, not this banner. Members hit
   // this on payment_failed, which is per design — only billing managers see it.
