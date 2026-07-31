@@ -1,5 +1,6 @@
 import { reactive, shallowReactive } from 'vue'
 
+import { assert } from '@/base/assert'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -63,6 +64,10 @@ export function registerNodeState(
   node: LGraphNode
 ): void {
   const rootGraphId = graph.rootGraph.id
+  assert(
+    node._graphId === undefined || node._graphId === rootGraphId,
+    `registerNodeState: node ${node.id} already registered under a different root graph`
+  )
   node._state.graphId = graph.id
   node._state = reactive(node._state)
   useNodeDataStore().registerNode(rootGraphId, node._state)
@@ -76,8 +81,12 @@ export function registerNodeState(
  */
 export function unregisterNodeState(node: LGraphNode): void {
   if (!node._graphId) return
-  useNodeDataStore().deleteNode(node._graphId, node._state)
+  const deleted = useNodeDataStore().deleteNode(node._graphId, node._state)
   node._graphId = undefined
+  assert(
+    deleted,
+    `unregisterNodeState: state for node ${node.id} not found in bucket (identity drift)`
+  )
 }
 
 /**
