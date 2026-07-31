@@ -87,14 +87,24 @@
                   {{ $t('subscription.subscriptionRequiredMessage') }}
                 </div>
               </div>
-              <Button
-                variant="primary"
-                size="lg"
-                class="ml-auto rounded-lg px-4 py-2 text-sm font-normal"
-                @click="handleSubscribeWorkspace"
-              >
-                {{ $t('subscription.subscribeNow') }}
-              </Button>
+              <div class="flex flex-wrap gap-2 md:ml-auto">
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  @click="manageSubscription"
+                >
+                  {{ $t('subscription.billingAndInvoices') }}
+                </Button>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  class="rounded-lg px-4 py-2 text-sm font-normal"
+                  @click="handleSubscribeWorkspace"
+                >
+                  {{ $t('subscription.subscribeNow') }}
+                </Button>
+              </div>
             </template>
 
             <!-- MEMBER View - read-only, workspace not subscribed -->

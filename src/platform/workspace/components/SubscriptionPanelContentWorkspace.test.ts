@@ -628,6 +628,27 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
   })
 
+  it('keeps Billing & invoices portal access after a Team plan ends', async () => {
+    mockSubscriptionStatus.value = 'canceled'
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
+
+    expect(mockManageSubscription).toHaveBeenCalledOnce()
+  })
+
+  it('keeps Billing & invoices while a cancellation is scheduled', () => {
+    mockSubscriptionStatus.value = 'canceled'
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Billing & invoices' })
+    ).toBeInTheDocument()
+  })
+
   it('does not show stale renewal copy for an explicitly ended active state', () => {
     mockSubscriptionStatus.value = 'ended'
     renderComponent()
