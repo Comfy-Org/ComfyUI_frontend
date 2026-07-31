@@ -158,10 +158,10 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     isFreeTier: computed(() => false),
     billingStatus: mockBillingStatus,
+    subscriptionStatus: mockSubscriptionStatus,
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
     plans: mockPlans,
-    subscriptionStatus: mockSubscriptionStatus,
     teamCreditStops: mockTeamCreditStops,
     currentTeamCreditStop: mockCurrentTeamCreditStop,
     isLoading: mockIsLoading,
@@ -531,6 +531,28 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('heading', { name: 'Team' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows subscribe prompt for an ended Standard plan in a Team workspace', () => {
+    mockIsActiveSubscription.value = false
+    mockSubscriptionStatus.value = 'ended'
+    mockBillingStatus.value = 'inactive'
+    mockSubscriptionTier.value = 'STANDARD'
+    mockPlanSlug.value = 'standard-monthly'
+    mockHasTeamPlan.value = false
+    renderComponent()
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'This workspace is not on a subscription'
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe Now' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Standard' })
     ).not.toBeInTheDocument()
   })
 
