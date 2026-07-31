@@ -1,3 +1,5 @@
+import { clamp } from 'es-toolkit'
+
 interface MonthlyCreditsUsage {
   /** Credits consumed from the monthly allowance (never negative). */
   used: number
@@ -21,7 +23,7 @@ export function computeMonthlyUsage(
     return { used: 0, remaining: 0, usedFraction: 0 }
   }
 
-  const remaining = Math.min(monthlyTotal, Math.max(0, monthlyRemaining))
+  const remaining = clamp(monthlyRemaining, 0, monthlyTotal)
   const used = monthlyTotal - remaining
 
   return { used, remaining, usedFraction: used / monthlyTotal }
