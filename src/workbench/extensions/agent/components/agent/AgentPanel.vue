@@ -4,6 +4,7 @@ import {
   DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuRoot,
+  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from 'reka-ui'
 import { computed, nextTick, ref } from 'vue'
@@ -190,25 +191,30 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-else>
       <div class="flex h-10 shrink-0 items-center px-2">
-        <input
+        <div
           v-if="renaming"
-          ref="renameInput"
-          v-model="renameDraft"
-          type="text"
-          :aria-label="t('g.rename')"
-          class="text-agent-fg border-agent-border focus:border-agent-fg-muted h-6 max-w-64 rounded-sm border px-2 text-xs outline-none"
-          @keydown="onRenameKeydown"
-          @blur="commitRename"
-        />
+          class="text-agent-fg-muted flex items-center gap-2 rounded-sm px-2 py-1"
+        >
+          <span class="icon-[lucide--align-justify] size-4 shrink-0" />
+          <input
+            ref="renameInput"
+            v-model="renameDraft"
+            type="text"
+            :aria-label="t('g.rename')"
+            class="text-agent-fg border-agent-accent h-6 max-w-64 rounded-lg border px-2 py-1 text-xs outline-none"
+            @keydown="onRenameKeydown"
+            @blur="commitRename"
+          />
+        </div>
         <template v-else>
           <button
             ref="titleButton"
             v-tooltip.bottom="buildTooltipConfig(t('agent.showChatHistory'))"
             type="button"
-            class="text-agent-fg-muted hover:bg-agent-surface-hover flex h-6 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors"
+            class="text-agent-fg-muted hover:bg-agent-surface-hover flex h-6 cursor-pointer items-center gap-2 rounded-sm px-2 py-1 text-xs transition-colors"
             @click="onOpenHistory"
           >
-            <span class="icon-[lucide--align-justify] size-3.5 shrink-0" />
+            <span class="icon-[lucide--align-justify] size-4 shrink-0" />
             <span class="max-w-56 truncate">{{
               sessionTitle || t('agent.newChatTitle')
             }}</span>
@@ -219,27 +225,30 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               :aria-label="t('agent.chatOptions')"
               class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-sm transition-colors"
             >
-              <span class="icon-[lucide--chevron-down] size-3.5" />
+              <span class="icon-[lucide--chevron-down] size-3" />
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
                 side="bottom"
                 align="start"
                 :side-offset="4"
-                class="agent-scope rounded-agent border-agent-border bg-agent-surface-raised z-1100 w-40 border p-1 shadow-lg"
+                class="agent-scope rounded-agent bg-agent-surface-raised z-1100 flex h-16 w-32 flex-col gap-1 p-1 shadow-lg"
               >
                 <DropdownMenuItem
-                  class="text-agent-fg data-highlighted:bg-agent-surface-hover rounded-agent flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs outline-none"
+                  class="text-agent-fg data-highlighted:bg-agent-surface-hover flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs outline-none"
                   @select="startRename"
                 >
-                  <span class="icon-[lucide--pencil] size-3.5 shrink-0" />
+                  <span class="icon-[lucide--pencil] size-4 shrink-0" />
                   <span class="truncate">{{ t('g.rename') }}</span>
                 </DropdownMenuItem>
+                <DropdownMenuSeparator
+                  class="before:bg-agent-border relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px"
+                />
                 <DropdownMenuItem
-                  class="text-agent-fg data-highlighted:bg-agent-surface-hover data-highlighted:text-agent-danger rounded-agent flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs outline-none"
+                  class="text-agent-fg data-highlighted:bg-agent-surface-hover data-highlighted:text-agent-danger flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs outline-none"
                   @select="onDeleteChat"
                 >
-                  <span class="icon-[lucide--trash-2] size-3.5 shrink-0" />
+                  <span class="icon-[lucide--trash-2] size-4 shrink-0" />
                   <span class="truncate">{{ t('g.delete') }}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>

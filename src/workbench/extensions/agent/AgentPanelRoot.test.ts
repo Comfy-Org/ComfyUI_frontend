@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -997,14 +997,18 @@ describe('AgentPanelRoot history', () => {
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
     )
+    const menu = await screen.findByRole('menu')
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent)
+    ).toEqual([i18n.global.t('g.rename'), i18n.global.t('g.delete')])
     await userEvent.click(
-      await screen.findByRole('menuitem', { name: i18n.global.t('g.rename') })
+      within(menu).getByRole('menuitem', { name: i18n.global.t('g.rename') })
     )
     const input = await screen.findByRole<HTMLInputElement>('textbox', {
       name: i18n.global.t('g.rename')
     })
-    // DES-522: the full name arrives focused and pre-selected, so typing
-    // replaces it without a manual clear.
     expect(input).toHaveFocus()
     expect(input.selectionStart).toBe(0)
     expect(input.selectionEnd).toBe(input.value.length)
@@ -1015,6 +1019,11 @@ describe('AgentPanelRoot history', () => {
       id: 'th-active',
       title: 'my masterpiece'
     })
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.chatOptions')
+      })
+    ).toBeInTheDocument()
   })
 
   it('commits a rename when the input loses focus', async () => {
