@@ -820,6 +820,14 @@ const translations = {
     en: 'Check your email for the download link.',
     'zh-CN': '请查收邮件获取下载链接。'
   },
+  'download.emailForm.invalidEmail': {
+    en: 'Please enter a valid email address.',
+    'zh-CN': '请输入有效的邮箱地址。'
+  },
+  'download.emailForm.error': {
+    en: 'Something went wrong. Please try again.',
+    'zh-CN': '出错了，请重试。'
+  },
 
   // Download – CloudBannerSection
   'download.cloud.prefix': {

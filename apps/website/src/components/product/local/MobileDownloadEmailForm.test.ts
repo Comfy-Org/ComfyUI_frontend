@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { cleanup, render, screen } from '@testing-library/vue'
+import { cleanup, fireEvent, render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import MobileDownloadEmailForm from './MobileDownloadEmailForm.vue'
@@ -9,7 +9,12 @@ const hoisted = vi.hoisted(() => ({
   isEnabled: true,
   isMobileUa: true,
   mockPreload: vi.fn(),
-  mockSubmit: vi.fn().mockResolvedValue(undefined)
+  mockSubmit: vi.fn().mockResolvedValue(undefined),
+  mockCaptureDownloadLinkRequested: vi.fn()
+}))
+
+vi.mock('../../../scripts/posthog', () => ({
+  captureDownloadLinkRequested: hoisted.mockCaptureDownloadLinkRequested
 }))
 
 vi.mock('../../../composables/useDownloadLinkRequest', () => ({
@@ -63,6 +68,93 @@ describe('MobileDownloadEmailForm', () => {
     expect(hoisted.mockPreload).not.toHaveBeenCalled()
   })
 
+  it('shows an inline validation message for an invalid email and sends nothing', async () => {
+    const user = userEvent.setup()
+    render(MobileDownloadEmailForm)
+
+    await user.type(screen.getByRole('textbox'), 'not-an-email')
+    await user.click(
+      screen.getByRole('button', { name: /send download link/i })
+    )
+
+    expect(await screen.findByText(/enter a valid email address/i)).toBeTruthy()
+    expect(hoisted.mockSubmit).not.toHaveBeenCalled()
+  })
+
+  it('fakes success without sending anything when the honeypot is filled', async () => {
+    const user = userEvent.setup()
+    render(MobileDownloadEmailForm)
+
+    const visibleInput = screen.getByRole('textbox')
+    await user.type(visibleInput, 'someone@example.com')
+    const decoy = screen
+      .getAllByRole('textbox', { hidden: true })
+      .find((input) => input !== visibleInput)!
+    await fireEvent.update(decoy, 'spam corp')
+    await user.click(
+      screen.getByRole('button', { name: /send download link/i })
+    )
+
+    expect(
+      await screen.findByText(/check your email for the download link/i)
+    ).toBeTruthy()
+    expect(hoisted.mockSubmit).not.toHaveBeenCalled()
+    expect(hoisted.mockCaptureDownloadLinkRequested).not.toHaveBeenCalled()
+  })
+
+  it('shows an inline error on failure and lets a retry succeed', async () => {
+    const user = userEvent.setup()
+    hoisted.mockSubmit.mockRejectedValueOnce(new Error('network down'))
+    render(MobileDownloadEmailForm)
+
+    await user.type(screen.getByRole('textbox'), 'someone@example.com')
+    const submitButton = screen.getByRole('button', {
+      name: /send download link/i
+    })
+    await user.click(submitButton)
+
+    expect(await screen.findByText(/something went wrong/i)).toBeTruthy()
+    expect(screen.getByRole('textbox')).toBeTruthy()
+    expect(hoisted.mockCaptureDownloadLinkRequested).not.toHaveBeenCalled()
+
+    await user.click(submitButton)
+
+    expect(
+      await screen.findByText(/check your email for the download link/i)
+    ).toBeTruthy()
+    expect(hoisted.mockSubmit).toHaveBeenCalledTimes(2)
+    expect(hoisted.mockCaptureDownloadLinkRequested).toHaveBeenCalledOnce()
+  })
+
+  it('locks out repeat taps and signals busy while a submission is in flight', async () => {
+    const user = userEvent.setup()
+    let resolveSubmit!: () => void
+    hoisted.mockSubmit.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSubmit = resolve
+        })
+    )
+    render(MobileDownloadEmailForm)
+
+    await user.type(screen.getByRole('textbox'), 'someone@example.com')
+    const submitButton = screen.getByRole('button', {
+      name: /send download link/i
+    })
+    await user.click(submitButton)
+
+    expect(submitButton.getAttribute('aria-busy')).toBe('true')
+    expect((submitButton as HTMLButtonElement).disabled).toBe(true)
+
+    await user.click(submitButton)
+    expect(hoisted.mockSubmit).toHaveBeenCalledTimes(1)
+
+    resolveSubmit()
+    expect(
+      await screen.findByText(/check your email for the download link/i)
+    ).toBeTruthy()
+  })
+
   it('submits the entered email and swaps to the success line', async () => {
     const user = userEvent.setup()
     render(MobileDownloadEmailForm)
@@ -77,5 +169,18 @@ describe('MobileDownloadEmailForm', () => {
       await screen.findByText(/check your email for the download link/i)
     ).toBeTruthy()
     expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('captures a PostHog event on successful submit', async () => {
+    const user = userEvent.setup()
+    render(MobileDownloadEmailForm)
+
+    await user.type(screen.getByRole('textbox'), 'someone@example.com')
+    await user.click(
+      screen.getByRole('button', { name: /send download link/i })
+    )
+
+    await screen.findByText(/check your email for the download link/i)
+    expect(hoisted.mockCaptureDownloadLinkRequested).toHaveBeenCalledOnce()
   })
 })
