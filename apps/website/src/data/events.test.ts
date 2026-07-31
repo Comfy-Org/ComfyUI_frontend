@@ -123,10 +123,7 @@ describe('event list derivation', () => {
   const now = new Date('2026-08-01T00:00:00Z')
   const list: readonly ComfyEvent[] = [
     eventAt('later', { startDateTime: '2026-08-12T10:00:00-07:00' }),
-    eventAt('done', {
-      startDateTime: '2026-07-01',
-      publishedDate: '2026-07-03'
-    }),
+    eventAt('done', { startDateTime: '2026-07-01' }),
     eventAt('sooner', { startDateTime: '2026-08-05T10:00:00-07:00' }),
     eventAt('older', { startDateTime: '2026-06-20' })
   ]
@@ -138,7 +135,7 @@ describe('event list derivation', () => {
     ])
   })
 
-  it('orders past events newest first by publish date, falling back to start', () => {
+  it('orders past events newest first by start', () => {
     expect(derivePastEvents(list, now).map((event) => event.id)).toEqual([
       'done',
       'older'

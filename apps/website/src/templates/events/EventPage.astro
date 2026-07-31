@@ -46,7 +46,7 @@ const description = event.description[locale]
 const isPast = pastEvents.includes(event)
 
 const videoJsonLd: JsonLdNode | undefined =
-  isPast && event.recordingVideoId && event.media && event.publishedDate
+  isPast && event.recordingVideoId && event.media
     ? videoObjectNode({
         siteUrl,
         id: jsonLdId(url, 'video'),
@@ -56,7 +56,7 @@ const videoJsonLd: JsonLdNode | undefined =
         thumbnailUrl: event.media.src,
         contentUrl: youtubeWatchHref(event.recordingVideoId)[locale],
         embedUrl: `https://www.youtube-nocookie.com/embed/${event.recordingVideoId}`,
-        uploadDate: event.publishedDate,
+        uploadDate: event.startDateTime,
         locale
       })
     : undefined

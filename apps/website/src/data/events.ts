@@ -16,13 +16,12 @@ export type ComfyEvent = {
   location?: LocalizedText
   /** Hand-written display date shown on upcoming rows. */
   dateLabel?: LocalizedText
-  /** ISO start; drives upcoming/past classification. Approximate (set to the
-   * recording's publish date) for events that predate this field. */
+  /** ISO start; drives upcoming/past classification, past-section sort order,
+   * and VideoObject uploadDate. Approximate (set to the recording's publish
+   * date) for events that predate this field. */
   startDateTime: string
   /** Defaults to one hour after the start. */
   endDateTime?: string
-  /** Recording publish date; past-section sort key and VideoObject uploadDate. */
-  publishedDate?: string
   /** External target used when the event has no /events/[slug] page. */
   link?: { href: LocalizedText; newTab?: boolean }
   /** Past-gallery card art. */
@@ -141,16 +140,13 @@ export function deriveUpcomingEvents(
     .sort((a, b) => Date.parse(a.startDateTime) - Date.parse(b.startDateTime))
 }
 
-const pastSortKey = (event: ComfyEvent): string =>
-  event.publishedDate ?? event.startDateTime.slice(0, 10)
-
 export function derivePastEvents(
   events: readonly ComfyEvent[],
   now: Date
 ): readonly ComfyEvent[] {
   return events
     .filter((event) => eventStatus(event, now) === 'past')
-    .sort((a, b) => pastSortKey(b).localeCompare(pastSortKey(a)))
+    .sort((a, b) => Date.parse(b.startDateTime) - Date.parse(a.startDateTime))
 }
 
 export function deriveFeaturedEvents(
@@ -265,8 +261,7 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '七月发布直播回放'
     }),
     startDateTime: '2026-07-29',
-    recordingVideoId: '8RGN69h_xTU',
-    publishedDate: '2026-07-29'
+    recordingVideoId: '8RGN69h_xTU'
   },
   {
     id: 'black-math-hackathon',
@@ -284,9 +279,8 @@ const events: readonly ComfyEvent[] = [
       en: 'Black Math X Comfy livestream with Jeremy Sahlman',
       'zh-CN': 'Black Math X Comfy 直播，嘉宾 Jeremy Sahlman'
     }),
-    startDateTime: '2026-07-23',
-    recordingVideoId: 'O72yyU-jupU',
-    publishedDate: '2026-07-23'
+    startDateTime: '2026-07-21',
+    recordingVideoId: 'O72yyU-jupU'
   },
   {
     id: 'comfy-mcp-claude-cursor',
@@ -304,9 +298,8 @@ const events: readonly ComfyEvent[] = [
       en: 'Run ComfyUI From Claude/Cursor with Comfy MCP livestream recording',
       'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI 的直播回放'
     }),
-    startDateTime: '2026-07-15',
-    recordingVideoId: 'sX2sJ5-4MS4',
-    publishedDate: '2026-07-15'
+    startDateTime: '2026-07-08',
+    recordingVideoId: 'sX2sJ5-4MS4'
   },
   {
     id: 'production-pipeline',
@@ -325,8 +318,7 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '重塑生产流水线直播回放'
     }),
     startDateTime: '2026-07-08',
-    recordingVideoId: 'dsYggO4lsSo',
-    publishedDate: '2026-07-08'
+    recordingVideoId: 'dsYggO4lsSo'
   },
   {
     id: 'june-launches',
@@ -345,8 +337,7 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '六月发布直播回放'
     }),
     startDateTime: '2026-06-29',
-    recordingVideoId: 'yo7b_zHd20g',
-    publishedDate: '2026-06-29'
+    recordingVideoId: 'yo7b_zHd20g'
   },
   {
     id: 'krea-founders-live',
@@ -364,9 +355,8 @@ const events: readonly ComfyEvent[] = [
       en: 'Krea X Comfy Founders Live recording',
       'zh-CN': 'Krea X Comfy 创始人直播回放'
     }),
-    startDateTime: '2026-06-24',
+    startDateTime: '2026-06-23',
     recordingVideoId: '31jiUhCEjJ4',
-    publishedDate: '2026-06-24',
     featured: {
       order: 1,
       media: eventVideo(
