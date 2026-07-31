@@ -6,6 +6,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -94,7 +96,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       position: newPosition,
-      previousPosition: layout.position,
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -127,7 +128,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       size: newSize,
-      previousSize: layout.size,
       timestamp: Date.now(),
       source: LayoutSource.Canvas,
       actor: 'test'
@@ -158,7 +158,6 @@ describe('layoutStore CRDT operations', () => {
       type: 'deleteNode',
       entity: 'node',
       nodeId,
-      previousLayout: layout,
       timestamp: Date.now(),
       source: LayoutSource.External,
       actor: 'test'
@@ -242,7 +241,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId: nodeB,
       position: { x: 400, y: 400 },
-      previousPosition: layoutB.position,
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -257,7 +255,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId: nodeA,
       position: { x: 200, y: 250 },
-      previousPosition: layoutA.position,
       timestamp: Date.now(),
       source: LayoutSource.Canvas,
       actor: 'test'
@@ -298,7 +295,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       position: { x: 320, y: 180 },
-      previousPosition: layout.position,
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -333,7 +329,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       position: { x: 10, y: 20 },
-      previousPosition: { x: 0, y: 0 },
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -366,7 +361,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       position: { x: 120, y: 110 },
-      previousPosition: layout.position,
       timestamp: Date.now(),
       source: LayoutSource.External,
       actor: 'test'
@@ -376,7 +370,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       position: { x: 150, y: 140 },
-      previousPosition: { x: 120, y: 110 },
       timestamp: Date.now(),
       source: LayoutSource.External,
       actor: 'test'
@@ -427,7 +420,7 @@ describe('layoutStore CRDT operations', () => {
     const lastChange = changes[changes.length - 1]
     if (lastChange.operation.type === 'batchUpdateBounds') {
       expect(lastChange.nodeIds).toContain(nodeId)
-      expect(lastChange.operation.bounds[nodeId]?.bounds).toEqual(newBounds)
+      expect(lastChange.operation.bounds[nodeId]).toEqual(newBounds)
     }
 
     const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
@@ -505,7 +498,6 @@ describe('layoutStore CRDT operations', () => {
       entity: 'node',
       nodeId,
       position: { x: 150, y: 150 },
-      previousPosition: { x: 100, y: 100 },
       timestamp: startTime + 100,
       source: LayoutSource.Vue,
       actor: 'test-actor'
@@ -673,7 +665,6 @@ describe('layoutStore CRDT operations', () => {
         type: 'deleteNode',
         entity: 'node',
         nodeId,
-        previousLayout: layout,
         timestamp: Date.now(),
         source: LayoutSource.External,
         actor: 'test'
@@ -685,6 +676,181 @@ describe('layoutStore CRDT operations', () => {
   )
 })
 
+describe('reroute layouts outlive an active-graph reseed', () => {
+  const GRAPH_ID = createUuidv4()
+  const REROUTE = toRerouteId(4242)
+  const POSITION = { x: 372, y: 415 }
+
+  function createReroute() {
+    layoutStore.setSource(LayoutSource.Canvas)
+    layoutStore.applyOperation({
+      type: 'createReroute',
+      entity: 'reroute',
+      graphId: GRAPH_ID,
+      rerouteId: REROUTE,
+      position: POSITION,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+  }
+
+  it('survives the reseed that follows subgraph navigation', () => {
+    createReroute()
+
+    layoutStore.initializeFromLiteGraph([
+      { id: toNodeId('node-1'), pos: [0, 0], size: [100, 50] }
+    ])
+
+    expect(layoutStore.getRerouteLayout(GRAPH_ID, REROUTE)?.position).toEqual(
+      POSITION
+    )
+    expect(layoutStore.queryRerouteAtPoint(GRAPH_ID, POSITION)?.id).toBe(
+      REROUTE
+    )
+  })
+
+  it('drops layout and spatial index together on delete', () => {
+    createReroute()
+
+    layoutStore.setSource(LayoutSource.Canvas)
+    layoutStore.applyOperation({
+      type: 'deleteReroute',
+      entity: 'reroute',
+      graphId: GRAPH_ID,
+      rerouteId: REROUTE,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    expect(layoutStore.getRerouteLayout(GRAPH_ID, REROUTE)).toBeNull()
+    expect(layoutStore.queryRerouteAtPoint(GRAPH_ID, POSITION)).toBeNull()
+  })
+})
+
+describe('root-scoped group and reroute layouts', () => {
+  const FIRST_GRAPH = createUuidv4()
+  const SECOND_GRAPH = createUuidv4()
+  const GROUP_ID = 77
+  const REROUTE_ID = toRerouteId(88)
+
+  function apply(operation: LayoutOperation): void {
+    layoutStore.applyOperation(operation)
+  }
+
+  function metadata() {
+    return {
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    } as const
+  }
+
+  it('isolates colliding local IDs across reads, moves, queries, deletes, and clears', () => {
+    for (const [graphId, offset] of [
+      [FIRST_GRAPH, 10],
+      [SECOND_GRAPH, 100]
+    ] as const) {
+      apply({
+        ...metadata(),
+        type: 'createGroup',
+        entity: 'group',
+        graphId,
+        groupId: GROUP_ID,
+        layout: {
+          id: GROUP_ID,
+          position: { x: offset, y: offset },
+          size: { width: 40, height: 40 }
+        }
+      })
+      apply({
+        ...metadata(),
+        type: 'createReroute',
+        entity: 'reroute',
+        graphId,
+        rerouteId: REROUTE_ID,
+        position: { x: offset + 5, y: offset + 5 }
+      })
+    }
+
+    apply({
+      ...metadata(),
+      type: 'setGroupBounds',
+      entity: 'group',
+      graphId: FIRST_GRAPH,
+      groupId: GROUP_ID,
+      position: { x: 20, y: 30 },
+      size: { width: 50, height: 60 }
+    })
+    apply({
+      ...metadata(),
+      type: 'moveReroute',
+      entity: 'reroute',
+      graphId: FIRST_GRAPH,
+      rerouteId: REROUTE_ID,
+      position: { x: 25, y: 35 }
+    })
+
+    expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)?.position).toEqual(
+      { x: 20, y: 30 }
+    )
+    expect(
+      layoutStore.getGroupLayout(SECOND_GRAPH, GROUP_ID)?.position
+    ).toEqual({ x: 100, y: 100 })
+    expect(layoutStore.getAllGroups(FIRST_GRAPH).value.size).toBe(1)
+    expect(layoutStore.getAllGroups(SECOND_GRAPH).value.size).toBe(1)
+    expect(
+      layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)?.position
+    ).toEqual({ x: 25, y: 35 })
+    expect(
+      layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)?.position
+    ).toEqual({ x: 105, y: 105 })
+    expect(
+      layoutStore.queryRerouteAtPoint(FIRST_GRAPH, { x: 25, y: 35 })?.id
+    ).toBe(REROUTE_ID)
+    expect(
+      layoutStore.queryRerouteAtPoint(SECOND_GRAPH, { x: 25, y: 35 })
+    ).toBeNull()
+    expect(
+      layoutStore.queryItemsInBounds(FIRST_GRAPH, {
+        x: 0,
+        y: 0,
+        width: 50,
+        height: 50
+      }).reroutes
+    ).toEqual([REROUTE_ID])
+    expect(
+      layoutStore.queryItemsInBounds(SECOND_GRAPH, {
+        x: 0,
+        y: 0,
+        width: 50,
+        height: 50
+      }).reroutes
+    ).toEqual([])
+
+    apply({
+      ...metadata(),
+      type: 'deleteGroup',
+      entity: 'group',
+      graphId: FIRST_GRAPH,
+      groupId: GROUP_ID
+    })
+    apply({
+      ...metadata(),
+      type: 'deleteReroute',
+      entity: 'reroute',
+      graphId: FIRST_GRAPH,
+      rerouteId: REROUTE_ID
+    })
+    expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)).toBeNull()
+    expect(layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)).toBeNull()
+    expect(layoutStore.getGroupLayout(SECOND_GRAPH, GROUP_ID)).not.toBeNull()
+    expect(
+      layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)
+    ).not.toBeNull()
+  })
+})
 describe('layoutStore getNodeLayoutRef setter', () => {
   beforeEach(() => {
     layoutStore.initializeFromLiteGraph([])
@@ -735,8 +901,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       expectedOperation: {
         type: 'moveNode',
         nodeId: REF_NODE,
-        position: { x: 99, y: 88 },
-        previousPosition: baseLayout().position
+        position: { x: 99, y: 88 }
       }
     },
     {
@@ -749,8 +914,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       expectedOperation: {
         type: 'resizeNode',
         nodeId: REF_NODE,
-        size: { width: 200, height: 80 },
-        previousSize: baseLayout().size
+        size: { width: 200, height: 80 }
       }
     },
     {
@@ -759,8 +923,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       expectedOperation: {
         type: 'setNodeZIndex',
         nodeId: REF_NODE,
-        zIndex: 5,
-        previousZIndex: 0
+        zIndex: 5
       }
     }
   ])(

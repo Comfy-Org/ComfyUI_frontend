@@ -1,6 +1,11 @@
-import { describe, expect } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect } from 'vitest'
 
-import { LGraph, LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { test } from './__fixtures__/testExtensions'
 
@@ -76,5 +81,229 @@ describe('LGraphGroup', () => {
       // inner should not have computed its own children (it was never processed)
       expect(inner.children.size).toBe(0)
     })
+  })
+})
+
+describe('group layout in layoutStore', () => {
+  // graph.add(node) registers node state, which needs a store.
+  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
+  function addedGroup(graph: LGraph, id: number) {
+    const group = new LGraphGroup('group', id)
+    group.pos = [100, 100]
+    group.size = [300, 200]
+    graph.add(group)
+    return group
+  }
+
+  test('registers geometry on add and drops it on remove', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 801)
+
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, 801)).toEqual({
+      id: 801,
+      position: { x: 100, y: 100 },
+      size: { width: 300, height: 200 }
+    })
+
+    graph.remove(group)
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, 801)).toBeNull()
+  })
+
+  test('drops entries when the graph is cleared', () => {
+    const graph = new LGraph()
+    addedGroup(graph, 802)
+
+    graph.clear()
+
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, 802)).toBeNull()
+  })
+
+  test('isolates colliding group IDs across live root graphs', () => {
+    const firstGraph = new LGraph()
+    const secondGraph = new LGraph()
+    firstGraph.id = createUuidv4()
+    secondGraph.id = createUuidv4()
+    const firstGroup = addedGroup(firstGraph, 803)
+    const secondGroup = addedGroup(secondGraph, 803)
+
+    firstGroup.pos = [20, 30]
+    secondGroup.pos = [200, 300]
+
+    expect(layoutStore.getGroupLayout(firstGraph.id, 803)?.position).toEqual({
+      x: 20,
+      y: 30
+    })
+    expect(layoutStore.getGroupLayout(secondGraph.id, 803)?.position).toEqual({
+      x: 200,
+      y: 300
+    })
+
+    firstGraph.remove(firstGroup)
+    expect(layoutStore.getGroupLayout(firstGraph.id, 803)).toBeNull()
+    expect(layoutStore.getGroupLayout(secondGraph.id, 803)).not.toBeNull()
+
+    firstGraph.clear()
+    expect(
+      layoutStore.getGroupLayout(secondGraph.id, secondGroup.id)
+    ).not.toBeNull()
+  })
+
+  describe('every geometry mutation keeps the store in step', () => {
+    const mutations: Array<[name: string, mutate: (g: LGraphGroup) => void]> = [
+      ['pos setter', (g) => void (g.pos = [7, 9])],
+      ['size setter', (g) => void (g.size = [400, 300])],
+      ['move', (g) => g.move(10, 20)],
+      ['resize', (g) => void g.resize(500, 400)],
+      ['snapToGrid', (g) => void g.snapToGrid(64)],
+      [
+        'configure',
+        (g) =>
+          g.configure({
+            id: g.id,
+            title: 'reconfigured',
+            bounding: [1, 2, 300, 200],
+            flags: {}
+          })
+      ]
+    ]
+
+    test.for(mutations)('%s', ([, mutate], { expect }) => {
+      const graph = new LGraph()
+      const group = addedGroup(graph, 803)
+
+      mutate(group)
+
+      expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+        id: group.id,
+        position: { x: group.pos[0], y: group.pos[1] },
+        size: { width: group.size[0], height: group.size[1] }
+      })
+    })
+  })
+
+  test('keeps geometry locally when the store entry is gone', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 809)
+    useLayoutMutations().deleteGroup(graph.rootGraph.id, group.id)
+
+    group.pos = [11, 22]
+
+    expect([...group.pos]).toEqual([11, 22])
+  })
+
+  test('snapToGrid reports whether the group moved', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 810)
+
+    group.pos = [70, 128]
+    expect(group.snapToGrid(64)).toBe(true)
+    expect(group.snapToGrid(64)).toBe(false)
+  })
+
+  test('resizeTo fits contents and commits, still unclamped', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 804)
+    const node = new LGraphNode('tiny')
+    node.pos = [500, 500]
+    node.size = [10, 10]
+    graph.add(node)
+
+    group.resizeTo([node])
+
+    // Narrower than minWidth: fit-to-contents deliberately does not clamp.
+    expect(group.size[0]).toBeLessThan(LGraphGroup.minWidth)
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: group.pos[0], y: group.pos[1] },
+      size: { width: group.size[0], height: group.size[1] }
+    })
+  })
+
+  test('setters write through the shared Rectangle buffer', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 805)
+    const pos = group.pos
+    const size = group.size
+
+    group.pos = [1, 2]
+    group.size = [400, 300]
+
+    expect(group.pos).toBe(pos)
+    expect(group.size).toBe(size)
+    expect([...pos]).toEqual([1, 2])
+  })
+
+  test('legacy geometry buffers write through to the store', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 806)
+
+    group.pos[0] = 25
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 25, y: 100 },
+      size: { width: 300, height: 200 }
+    })
+
+    group.size[1] = 450
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 25, y: 100 },
+      size: { width: 300, height: 450 }
+    })
+
+    group._bounding.set([30, 40, 500, 600])
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 30, y: 40 },
+      size: { width: 500, height: 600 }
+    })
+
+    group._bounding.pos[0] = 35
+    group._bounding.size[1] = 650
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 35, y: 40 },
+      size: { width: 500, height: 650 }
+    })
+  })
+
+  test('reads geometry from the store', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 807)
+    const pos = group.pos
+    const size = group.size
+
+    layoutStore.applyOperation({
+      id: 'set-group-bounds',
+      type: 'setGroupBounds',
+      actor: 'test',
+      timestamp: 1,
+      source: layoutStore.getCurrentSource(),
+      entity: 'group',
+      graphId: graph.rootGraph.id,
+      groupId: group.id,
+      position: { x: 11, y: 12 },
+      size: { width: 410, height: 310 }
+    })
+
+    expect(group.pos).toBe(pos)
+    expect(group.size).toBe(size)
+    expect([...group.boundingRect]).toEqual([11, 12, 410, 310])
+    expect([...pos]).toEqual([11, 12])
+    expect([...size]).toEqual([410, 310])
+    expect(group.serialize().bounding).toEqual([11, 12, 410, 310])
+  })
+
+  test('group collections react to nested bounds updates', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, 808)
+    const groups = layoutStore.getAllGroups(graph.rootGraph.id)
+
+    expect(groups.value.get(group.id)?.position.x).toBe(100)
+
+    group.pos = [75, 80]
+
+    expect(groups.value.get(group.id)?.position).toEqual({ x: 75, y: 80 })
   })
 })

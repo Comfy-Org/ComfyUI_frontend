@@ -1,8 +1,13 @@
+import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
+import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 vi.mock('@/scripts/app', () => ({
@@ -66,9 +71,12 @@ function snapshotGeometry(nodes: MockNode[]) {
   }))
 }
 
+const layoutMutations = useLayoutMutations()
+
 describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('normalizes legacy Vue-scaled graph once', () => {
@@ -220,22 +228,41 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     )
   })
 
-  it('normalizes groups', () => {
+  it('normalizes registered groups in one bounds write', () => {
     const nodes = twoNodeLayout()
     const graph = createMockGraph(nodes, {
       workflowRendererVersion: 'Vue'
     })
 
-    const group = {
-      pos: [150, 150] as Point,
-      size: [300, 200] as Point
-    }
-    ;(graph.groups as (typeof group)[]).push(group)
+    const group = new LGraphGroup('normalize-me', 810)
+    group.graph = graph as LGraph
+    layoutMutations.createGroup(graph.id!, 810, {
+      position: { x: 150, y: 150 },
+      size: { width: 300, height: 200 }
+    })
+    graph.groups!.push(group)
 
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
     ensureCorrectLayoutScale(undefined, graph as LGraph)
 
-    expect(group.size[0]).toBeCloseTo(300 / RENDER_SCALE_FACTOR, 5)
-    expect(group.size[1]).toBeCloseTo(200 / RENDER_SCALE_FACTOR, 5)
+    const boundsWrites = applyOperation.mock.calls.filter(
+      ([operation]) => operation.type === 'setGroupBounds'
+    )
+    expect(boundsWrites).toHaveLength(1)
+
+    const anchor = 90 // min node pos (100) - createBounds padding (10)
+    const relative = 150 - anchor
+    const layout = layoutStore.getGroupLayout(graph.id!, 810)
+    expect(layout?.position.x).toBeCloseTo(
+      anchor + relative / RENDER_SCALE_FACTOR,
+      5
+    )
+    expect(layout?.position.y).toBeCloseTo(
+      anchor + relative / RENDER_SCALE_FACTOR,
+      5
+    )
+    expect(layout?.size.width).toBeCloseTo(300 / RENDER_SCALE_FACTOR, 5)
+    expect(layout?.size.height).toBeCloseTo(200 / RENDER_SCALE_FACTOR, 5)
   })
 
   it('updates group geometry in place without replacing arrays', () => {
@@ -244,18 +271,21 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
       workflowRendererVersion: 'Vue'
     })
 
-    const groupPos = [150, 150] as Point
-    const groupSize = [300, 200] as Point
-    const group = {
-      pos: groupPos,
-      size: groupSize
-    }
-    ;(graph.groups as (typeof group)[]).push(group)
+    // A real group: `pos` and `size` are subarrays of one Rectangle buffer, so
+    // the setters must write through rather than rebind.
+    const group = new LGraphGroup('normalize-me')
+    group._bounding.set([150, 150, 300, 200])
+    const groupPos = group.pos
+    const groupSize = group.size
+    graph.groups!.push(group)
 
     ensureCorrectLayoutScale(undefined, graph as LGraph)
 
     expect(group.pos).toBe(groupPos)
     expect(group.size).toBe(groupSize)
+    // Read through the captured reference: the normalized value must have
+    // landed in the original array, not a replacement.
+    expect(groupSize[0]).toBeCloseTo(300 / RENDER_SCALE_FACTOR, 5)
   })
 
   it('repeated normalization does not compound spacing', () => {

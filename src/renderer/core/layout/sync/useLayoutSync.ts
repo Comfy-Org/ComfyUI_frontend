@@ -40,8 +40,7 @@ export function useLayoutSync() {
         liteNode.pos[0] !== layout.position.x ||
         liteNode.pos[1] !== layout.position.y
       ) {
-        liteNode.pos[0] = layout.position.x
-        liteNode.pos[1] = layout.position.y
+        liteNode.pos = [layout.position.x, layout.position.y]
       }
 
       // Note: layout.size.height is the content height without title.

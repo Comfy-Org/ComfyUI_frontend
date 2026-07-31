@@ -6,10 +6,12 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
+import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import type { SlotDirection, SlotId, SlotIndex } from '@/types/slotId'
+import type { UUID } from '@/utils/uuid'
 
 // Enum for layout source types
 export enum LayoutSource {
@@ -86,6 +88,17 @@ export interface LinkSegmentLayout {
   centerPos: Point
 }
 
+/**
+ * A group's geometry. Unlike {@link NodeLayout} there is no zIndex or spatial
+ * index: groups draw beneath nodes in insertion order and are hit-tested by the
+ * canvas against their own bounds, so nothing queries them positionally.
+ */
+export interface GroupLayout {
+  id: GroupId
+  position: Point
+  size: Size
+}
+
 export interface RerouteLayout {
   id: RerouteId
   position: Point
@@ -115,6 +128,7 @@ interface OperationMeta {
 type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
 type RerouteOpBase = OperationMeta & {
   entity: 'reroute'
+  graphId: UUID
   rerouteId: RerouteId
 }
 
@@ -132,6 +146,9 @@ type OperationType =
   | 'createReroute'
   | 'deleteReroute'
   | 'moveReroute'
+  | 'createGroup'
+  | 'setGroupBounds'
+  | 'deleteGroup'
 
 /**
  * Move node operation
@@ -139,7 +156,6 @@ type OperationType =
 export interface MoveNodeOperation extends NodeOpBase {
   type: 'moveNode'
   position: Point
-  previousPosition: Point
 }
 
 /**
@@ -148,7 +164,6 @@ export interface MoveNodeOperation extends NodeOpBase {
 export interface ResizeNodeOperation extends NodeOpBase {
   type: 'resizeNode'
   size: { width: number; height: number }
-  previousSize: { width: number; height: number }
 }
 
 /**
@@ -157,7 +172,6 @@ export interface ResizeNodeOperation extends NodeOpBase {
 export interface SetNodeZIndexOperation extends NodeOpBase {
   type: 'setNodeZIndex'
   zIndex: number
-  previousZIndex: number
 }
 
 /**
@@ -173,7 +187,6 @@ export interface CreateNodeOperation extends NodeOpBase {
  */
 export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
-  previousLayout: NodeLayout
 }
 
 /**
@@ -182,7 +195,6 @@ export interface DeleteNodeOperation extends NodeOpBase {
 interface SetNodeVisibilityOperation extends NodeOpBase {
   type: 'setNodeVisibility'
   visible: boolean
-  previousVisible: boolean
 }
 
 /**
@@ -192,7 +204,7 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
   entity: 'node'
   type: 'batchUpdateBounds'
   nodeIds: NodeId[]
-  bounds: Record<NodeId, { bounds: Bounds; previousBounds: Bounds }>
+  bounds: Record<NodeId, Bounds>
 }
 
 /**
@@ -216,7 +228,31 @@ export interface DeleteRerouteOperation extends RerouteOpBase {
 export interface MoveRerouteOperation extends RerouteOpBase {
   type: 'moveReroute'
   position: Point
-  previousPosition: Point
+}
+
+type GroupOpBase = OperationMeta & {
+  entity: 'group'
+  graphId: UUID
+  groupId: GroupId
+}
+
+interface CreateGroupOperation extends GroupOpBase {
+  type: 'createGroup'
+  layout: GroupLayout
+}
+
+/**
+ * Groups move and resize as one Rectangle, so a single bounds operation keeps
+ * position and size from ever being written apart.
+ */
+export interface SetGroupBoundsOperation extends GroupOpBase {
+  type: 'setGroupBounds'
+  position: Point
+  size: Size
+}
+
+interface DeleteGroupOperation extends GroupOpBase {
+  type: 'deleteGroup'
 }
 
 /**
@@ -233,6 +269,9 @@ export type LayoutOperation =
   | CreateRerouteOperation
   | DeleteRerouteOperation
   | MoveRerouteOperation
+  | CreateGroupOperation
+  | SetGroupBoundsOperation
+  | DeleteGroupOperation
 
 export interface LayoutChange {
   type: 'create' | 'update' | 'delete'
@@ -248,6 +287,10 @@ export interface LayoutStore {
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
   getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
+  getAllGroups(
+    rootGraphId: UUID
+  ): ComputedRef<ReadonlyMap<GroupId, GroupLayout>>
+  getGroupLayout(rootGraphId: UUID, groupId: GroupId): GroupLayout | null
   getVersion(): ComputedRef<number>
 
   // Spatial queries (non-reactive)
@@ -261,8 +304,11 @@ export interface LayoutStore {
     ctx?: CanvasRenderingContext2D
   ): { linkId: LinkId; rerouteId: RerouteId | null } | null
   querySlotAtPoint(point: Point): SlotLayout | null
-  queryRerouteAtPoint(point: Point): RerouteLayout | null
-  queryItemsInBounds(bounds: Bounds): {
+  queryRerouteAtPoint(rootGraphId: UUID, point: Point): RerouteLayout | null
+  queryItemsInBounds(
+    rootGraphId: UUID,
+    bounds: Bounds
+  ): {
     nodes: NodeId[]
     links: LinkId[]
     slots: SlotId[]
@@ -277,19 +323,25 @@ export interface LayoutStore {
     layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
   ): void
   updateSlotLayout(key: SlotId, layout: SlotLayout): void
-  updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void
+  updateRerouteLayout(
+    rootGraphId: UUID,
+    rerouteId: RerouteId,
+    layout: RerouteLayout
+  ): void
 
   // Delete methods for cleanup
   deleteLinkLayout(linkId: LinkId): void
   deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void
   deleteSlotLayout(key: SlotId): void
-  deleteRerouteLayout(rerouteId: RerouteId): void
   clearAllSlotLayouts(): void
 
   // Get layout data
   getLinkLayout(linkId: LinkId): LinkLayout | null
   getSlotLayout(key: SlotId): SlotLayout | null
-  getRerouteLayout(rerouteId: RerouteId): RerouteLayout | null
+  getRerouteLayout(
+    rootGraphId: UUID,
+    rerouteId: RerouteId
+  ): RerouteLayout | null
 
   // Returns all slot layout keys currently tracked by the store
   getAllSlotKeys(): SlotId[]

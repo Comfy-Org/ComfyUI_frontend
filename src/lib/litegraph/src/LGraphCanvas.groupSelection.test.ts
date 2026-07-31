@@ -17,6 +17,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
     getCurrentActor: vi.fn(),
     applyOperation: vi.fn(),
     querySlotAtPoint: vi.fn(),
+    getGroupLayout: vi.fn(() => null),
     queryRerouteAtPoint: vi.fn(),
     getNodeLayoutRef: vi.fn(() => ({ value: null })),
     getSlotLayout: vi.fn(),

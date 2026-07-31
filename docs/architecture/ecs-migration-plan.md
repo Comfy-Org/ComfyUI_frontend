@@ -429,18 +429,61 @@ data is complete and consistent with the class-based graph.
 Systems begin owning mutations. Legacy class methods delegate to stores and
 systems. This is the highest-risk phase.
 
-### 4a. Position writes through layoutStore
+### 4a. Position writes through layoutStore ✅ Shipped
 
-New code writes position via `useLayoutMutations()` against `layoutStore`. A
-compatibility shim propagates changes back to `LGraphNode.pos` for legacy
-readers.
+Planned as adding a compatibility shim; was mostly about deleting them. Every
+entity now has exactly one write path, and the workarounds that existed because
+writes bypassed it are gone.
 
-**This inverts the data flow:** Phase 2 had legacy -> store (read path). Phase 4
-has store -> legacy (write path). Both must work during the transition.
+**One write path per entity.** Whole-value assignment through `pos` / `size` is
+the only way geometry is written; the setters commit. Element-wise writes reach
+the backing `Rectangle` and never the store, so all of them were converted —
+in three passes, as the forms became apparent:
 
-**Risk:** High. Two-way sync between `layoutStore` and legacy state. Must handle
-re-entrant updates (store write triggers the shim, which writes to legacy, which
-must NOT trigger another store write).
+| Form               | Example                              | Where it hid         |
+| ------------------ | ------------------------------------ | -------------------- |
+| Direct             | `node.pos[0] += dx`                  | greppable            |
+| Helper-routed      | `snapPoint(this.pos, snapTo)`        | mutates its argument |
+| Destructured local | `const { size } = this; size[0] = w` | not a `this.` write  |
+
+The helper-routed form was the costly one: `LGraphNode.snapToGrid` never
+reached the store, and `LGraph.configure` carried a local workaround
+(`node.pos = [node.pos[0], node.pos[1]]`) for that one call site while three
+others had none.
+
+**Groups and reroutes joined the store.** `GroupLayout` is id/position/size
+with no zIndex or spatial index — groups draw beneath nodes in insertion order
+and nothing queries them positionally — and geometry is a single
+`setGroupBounds` operation, because `pos` and `size` are two views onto one
+`Rectangle` and must never be stored apart. Reroutes went further: `posInternal`
+is deleted, `pos` reads the stored point, and a reroute registers its own
+geometry in its constructor, which removed two seeding sites.
+
+**The store -> legacy direction is unchanged and still needed.** `useLayoutSync`
+stays, because `LGraphNode.serialize()` reads `this.pos` / `this.size` and the
+canvas renders from `_posSize`. Removing it means the class getters read from
+the store, but they return `Point` / `Size` views onto one buffer and hundreds
+of element-indexed reads across the renderer depend on that. Yjs cannot hold a
+`Float64Array` by reference, so this needs a store-backed geometry view type,
+not a refactor. The re-entrancy the draft worried about did not materialise: the
+writeback compares before writing, so an equal write-back is a no-op.
+
+**Not done, and each needs a decision rather than more inference:**
+
+1. The geometry views. The hand-written `size` Proxy is gone, replaced by
+   `createGeometryView` over `pos` and `size` on `LGraphNode` plus `pos`,
+   `size` and `bounding` on `LGraphGroup`. Every in-repo element write is gone,
+   so their only remaining job is third-party `node.size[1] = h`. Retiring them
+   means accepting that ecosystem writes stop reflowing, or landing a stable
+   resize API.
+2. Subgraph IO nodes have conforming write paths but no store entry. A keyed
+   entry needs subgraph scoping (`SUBGRAPH_INPUT_ID` is a constant shared by
+   every subgraph) and `Subgraph.id` is reassigned by `clear()`, so the key can
+   go stale — the pattern rejected for the link store. Nothing needs keyed
+   access, since callers reach them as `subgraph.inputNode`.
+3. Two hit-testing systems: litegraph against class geometry, `layoutStore`
+   against a spatial index. Node bounds are duplicated between `_boundingRect`
+   and `NodeLayout.bounds`.
 
 ### 4b. ConnectivitySystem mutations
 
@@ -767,7 +810,7 @@ The dedicated stores use per-concern keying strategies:
 | ------------------------- | ------------------------------------------------------------------------------------ |
 | `widgetValueStore`        | `WidgetId` (`graphId:nodeId:name`)                                                   |
 | `domWidgetStore`          | Widget UUID                                                                          |
-| `layoutStore`             | Raw nodeId/linkId/rerouteId                                                          |
+| `layoutStore`             | Raw node/link IDs; `${rootGraphId}:${localId}` for group/reroute geometry            |
 | `nodeOutputStore`         | `"${subgraphId}:${nodeId}"`                                                          |
 | `subgraphNavigationStore` | subgraphId or `'root'`                                                               |
 | `linkStore`               | `` `${targetNodeId}:${targetSlot}` `` (target input slot), root-graph-scoped buckets |

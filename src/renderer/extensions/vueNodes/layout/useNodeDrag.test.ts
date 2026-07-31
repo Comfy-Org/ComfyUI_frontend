@@ -111,7 +111,7 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
 }))
 
 vi.mock('@/utils/litegraphUtil', () => ({
-  isLGraphGroup: () => false
+  isLGraphNode: () => false
 }))
 
 vi.mock('@vueuse/core', () => ({
@@ -374,5 +374,66 @@ describe('useNodeDrag auto-pan', () => {
     onPan(5, 0)
 
     expect(testState.mutationFns.batchMoveNodes).not.toHaveBeenCalled()
+  })
+})
+
+describe('useNodeDrag non-node positionables', () => {
+  /**
+   * Models just the Positionable contract the drag path uses. Real LGraphGroup
+   * would be preferable; see the harness TODO at the top of this file.
+   */
+  function selectedGroupAt(x: number, y: number) {
+    const pos: [number, number] = [x, y]
+    const group = {
+      pos,
+      pinned: false,
+      move(deltaX: number, deltaY: number) {
+        if (group.pinned) return
+        pos[0] += deltaX
+        pos[1] += deltaY
+      }
+    }
+    testState.selectedItems.value = [group]
+    return group
+  }
+
+  function dragNodeBy(delta: number) {
+    testState.selectedNodeIds.value = new Set([node1])
+    testState.nodeLayouts.set('1', {
+      position: { x: 0, y: 0 },
+      size: { width: 100, height: 50 }
+    })
+
+    const { startDrag, handleDrag } = useNodeDrag()
+    startDrag(pointerEvent(0, 0), node1)
+    handleDrag(pointerEvent(delta, delta), node1)
+    testState.requestAnimationFrameCallback?.(0)
+  }
+
+  it('moves a selected group to the same absolute offset as the nodes', () => {
+    const group = selectedGroupAt(300, 400)
+
+    dragNodeBy(25)
+
+    expect([...group.pos]).toEqual([325, 425])
+  })
+
+  it('leaves a pinned group where it is', () => {
+    const group = selectedGroupAt(300, 400)
+    group.pinned = true
+
+    dragNodeBy(25)
+
+    expect([...group.pos]).toEqual([300, 400])
+  })
+
+  it('carries non-node items along when auto-pan shifts the canvas', () => {
+    const group = selectedGroupAt(300, 400)
+
+    dragNodeBy(25)
+    testState.capturedOnPan.current?.(10, 5)
+    testState.requestAnimationFrameCallback?.(0)
+
+    expect([...group.pos]).toEqual([335, 430])
   })
 })

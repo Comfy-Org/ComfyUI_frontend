@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   LGraph,
   LGraphGroup,
@@ -19,7 +20,7 @@ import type {
   SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
-import { zeroUuid } from '@/utils/uuid'
+import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
@@ -1305,6 +1306,54 @@ describe('Subgraph Unpacking', () => {
     expect(rootGraph.links.size).toBe(1)
   })
 
+  it('clears subgraph geometry only for the owning root graph', () => {
+    registerTestNodes()
+    const firstRoot = new LGraph()
+    const secondRoot = new LGraph()
+    firstRoot.id = createUuidv4()
+    secondRoot.id = createUuidv4()
+    const firstRootId = firstRoot.id
+    const subgraph = createSubgraphOnGraph(firstRoot)
+    const subgraphGroup = new LGraphGroup('subgraph group', 909)
+    const secondGroup = new LGraphGroup('second root group', 909)
+
+    subgraph.add(subgraphGroup)
+    secondRoot.add(secondGroup)
+    expect(layoutStore.getGroupLayout(firstRoot.id, 909)).not.toBeNull()
+    expect(layoutStore.getGroupLayout(secondRoot.id, 909)).not.toBeNull()
+
+    firstRoot.clear()
+
+    expect(layoutStore.getGroupLayout(firstRootId, 909)).toBeNull()
+    expect(layoutStore.getGroupLayout(secondRoot.id, 909)).not.toBeNull()
+  })
+
+  it('offsets unpacked group geometry in the layout store too', () => {
+    registerTestNodes()
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const group = new LGraphGroup('inner', 909)
+    group.pos = [10, 20]
+    group.size = [200, 150]
+    subgraph.add(group)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    rootGraph.unpackSubgraph(subgraphNode)
+
+    // Unpacking centres the subgraph contents on the wrapper node, moving the
+    // group from [10, 20] to [100, 75].
+    const unpacked = rootGraph.groups.find((g) => g.title === 'inner')!
+    expect(
+      layoutStore.getGroupLayout(rootGraph.id, unpacked.id)?.position
+    ).toEqual({
+      x: 100,
+      y: 75
+    })
+  })
+
   it('preserves correct link connections when unpacking with duplicate links', () => {
     registerTestNodes()
     const rootGraph = new LGraph()
@@ -1336,6 +1385,11 @@ describe('Subgraph Unpacking', () => {
     const rootGraph = new LGraph()
     const subgraph = createSubgraphOnGraph(rootGraph)
 
+    const retainedGroup = new LGraphGroup('shared', 909)
+    retainedGroup.pos = [10, 20]
+    retainedGroup.size = [200, 150]
+    subgraph.add(retainedGroup)
+
     const firstInstance = createTestSubgraphNode(subgraph, { pos: [100, 100] })
     const secondInstance = createTestSubgraphNode(subgraph, { pos: [300, 100] })
     secondInstance.id = toNodeId(2)
@@ -1345,6 +1399,11 @@ describe('Subgraph Unpacking', () => {
     rootGraph.unpackSubgraph(firstInstance)
 
     expect(rootGraph.subgraphs.has(subgraph.id)).toBe(true)
+
+    // The unpacked copy must not share the retained definition's layout entry.
+    const unpackedGroup = rootGraph.groups.find((g) => g.title === 'shared')!
+    unpackedGroup.move(50, 50)
+    expect([...retainedGroup.pos]).toEqual([10, 20])
 
     const serialized = rootGraph.serialize()
     const definitionIds =

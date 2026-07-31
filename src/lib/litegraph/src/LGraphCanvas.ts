@@ -24,6 +24,7 @@ import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
+import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
@@ -38,9 +39,11 @@ import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
 import { LinkConnector } from './canvas/LinkConnector'
+import { findRerouteAtPoint } from './canvas/findRerouteAtPoint'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
+import { defineDeprecatedProperty } from './utils/feedback'
 import {
   cachedMeasureText,
   clearTextMeasureCache
@@ -97,7 +100,9 @@ import {
 import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
 import {
+  collectReservedGroupIds,
   collectReservedRerouteIds,
+  deduplicateSubgraphGroupIds,
   deduplicateSubgraphRerouteIds,
   topologicalSortSubgraphs
 } from './subgraph/subgraphDeduplication'
@@ -701,7 +706,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   node_capturing_input?: LGraphNode | null
   highlighted_links: Dictionary<boolean> = {}
 
-  private _visibleReroutes: Set<Reroute> = new Set()
+  readonly _visibleReroutes: Set<Reroute> = new Set()
   private _autoPan: AutoPanController | null = null
   /**
    * Modifier state of the most recent drag pointer event, so the auto-pan
@@ -1106,7 +1111,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     align_to?: LGraphNode
   ): void {
     const newPositions = alignNodes(Object.values(nodes), direction, align_to)
-    LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
+    LGraphCanvas.active_canvas.applyNodePositions(newPositions)
     LGraphCanvas.active_canvas.setDirty(true, true)
   }
 
@@ -1129,7 +1134,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value.toLowerCase() as Direction,
         node
       )
-      LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
+      LGraphCanvas.active_canvas.applyNodePositions(newPositions)
       LGraphCanvas.active_canvas.setDirty(true, true)
     }
   }
@@ -1151,7 +1156,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         Object.values(LGraphCanvas.active_canvas.selected_nodes),
         value.toLowerCase() as Direction
       )
-      LGraphCanvas.active_canvas.repositionNodesVueMode(newPositions)
+      LGraphCanvas.active_canvas.applyNodePositions(newPositions)
       LGraphCanvas.active_canvas.setDirty(true, true)
     }
   }
@@ -1174,7 +1179,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         Object.values(canvas.selected_nodes),
         value === 'Horizontally'
       )
-      canvas.repositionNodesVueMode(newPositions)
+      canvas.applyNodePositions(newPositions)
       canvas.setDirty(true, true)
     }
   }
@@ -2367,23 +2372,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (node) {
           this.processSelect(node, e, true)
         } else if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-          // Reroutes
-          // Try layout store first, fallback to old method
-          const rerouteLayout = layoutStore.queryRerouteAtPoint({
-            x: e.canvasX,
-            y: e.canvasY
-          })
-
-          let reroute: Reroute | undefined
-          if (rerouteLayout) {
-            reroute = graph.getReroute(rerouteLayout.id)
-          } else {
-            reroute = graph.getRerouteOnPos(
-              e.canvasX,
-              e.canvasY,
-              this._visibleReroutes
-            )
-          }
+          const reroute = findRerouteAtPoint(
+            graph,
+            e.canvasX,
+            e.canvasY,
+            this._visibleReroutes
+          )
           if (reroute) {
             if (e.altKey) {
               pointer.onClick = (upEvent) => {
@@ -2536,7 +2530,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // Reroutes
       if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
         // Try layout store first for hit detection
-        const rerouteLayout = layoutStore.queryRerouteAtPoint({ x, y })
+        const rerouteLayout = layoutStore.queryRerouteAtPoint(
+          graph.rootGraph.id,
+          { x, y }
+        )
         let foundReroute: Reroute | undefined
 
         if (rerouteLayout) {
@@ -3573,12 +3570,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const deltaX = delta[0] / this.ds.scale
         const deltaY = delta[1] / this.ds.scale
 
-        if (LiteGraph.vueNodesMode) {
-          this.moveChildNodesInGroupVueMode(allItems, deltaX, deltaY)
-        } else {
-          for (const item of allItems) {
-            item.move(deltaX, deltaY, true)
-          }
+        for (const item of allItems) {
+          item.move(deltaX, deltaY, true)
         }
 
         this._dirty()
@@ -3676,12 +3669,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const selected = this.selectedItems
         const allItems = getDraggedItems(selected, this._lastDragModifiers)
 
-        if (LiteGraph.vueNodesMode) {
-          this.moveChildNodesInGroupVueMode(allItems, panX, panY)
-        } else {
-          for (const item of allItems) {
-            item.move(panX, panY, true)
-          }
+        for (const item of allItems) {
+          item.move(panX, panY, true)
         }
 
         this._dirty()
@@ -4226,6 +4215,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (nodeInfo.type in subgraphIdMap)
         nodeInfo.type = subgraphIdMap[nodeInfo.type]
     remapClipboardSubgraphNodeIds(parsed, graph.rootGraph)
+    deduplicateSubgraphGroupIds(
+      parsed.subgraphs,
+      collectReservedGroupIds(graph.rootGraph),
+      graph.rootGraph.state
+    )
     deduplicateSubgraphRerouteIds(
       parsed.subgraphs,
       collectReservedRerouteIds(graph.rootGraph),
@@ -4252,6 +4246,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // Nodes
+    const targetSlotByLink = new Map<LinkId, number>()
     for (const info of parsed.nodes) {
       const node = info.type == null ? null : LiteGraph.createNode(info.type)
       if (!node) {
@@ -4262,8 +4257,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       nodes.set(serializeNodeId(info.id), node)
       info.id = -1
 
+      const linkByInputName = detachSerialisedLinks(info)
       graph.add(node)
       node.configure(info)
+
+      // `configure` overrides may reorder inputs to match the node definition,
+      // moving the slot each serialized link targets.
+      for (const [slot, input] of (info.inputs ?? []).entries()) {
+        const linkId = linkByInputName.get(input.name)
+        if (linkId != null && !targetSlotByLink.has(linkId))
+          targetSlotByLink.set(linkId, slot)
+      }
 
       if (node instanceof SubgraphNode) {
         if (
@@ -4322,7 +4326,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const link = outNode?.connect(
           info.origin_slot,
           inNode,
-          info.target_slot,
+          targetSlotByLink.get(toLinkId(info.id)) ?? info.target_slot,
           afterRerouteId
         )
         if (link) links.set(toLinkId(info.id), link)
@@ -4340,17 +4344,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    // Adjust positions - use move/setPos to ensure layout store is updated
+    // Children of pasted groups are in `created` already, so skip them here.
     const dx = position[0] - offsetX
     const dy = position[1] - offsetY
     for (const item of created) {
-      if (item instanceof LGraphNode) {
+      // Repositioning a paste is not a user drag, so it ignores the pin.
+      if (item instanceof LGraphNode)
         item.setPos(item.pos[0] + dx, item.pos[1] + dy)
-      } else if (item instanceof Reroute) {
-        item.move(dx, dy)
-      } else if (item instanceof LGraphGroup) {
-        item.move(dx, dy, true)
-      }
+      else item.move(dx, dy, true)
     }
 
     // TODO: Report failures, i.e. `failedNodes`
@@ -8940,58 +8941,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.ds.animateToBounds(bounds, setDirty, options)
   }
 
-  /**
-   * Calculate new position with delta
-   */
-  private calculateNewPosition(
-    node: LGraphNode,
-    deltaX: number,
-    deltaY: number
-  ): { x: number; y: number } {
-    return {
-      x: node.pos[0] + deltaX,
-      y: node.pos[1] + deltaY
-    }
-  }
-
-  /**
-   * Apply batched node position updates
-   */
-  private applyNodePositionUpdates(
-    nodesToMove: Array<{ node: LGraphNode; newPos: { x: number; y: number } }>
-  ): void {
-    for (const { node, newPos } of nodesToMove) {
-      // setPos automatically syncs to layout store
+  /** Moves each node to its given position. */
+  applyNodePositions(positions: NewNodePosition[]): void {
+    for (const { node, newPos } of positions) {
       node.setPos(newPos.x, newPos.y)
     }
-  }
-
-  moveChildNodesInGroupVueMode(
-    allItems: Set<Positionable>,
-    deltaX: number,
-    deltaY: number
-  ) {
-    const nodesToMove: NewNodePosition[] = []
-
-    // First, collect all the moves we need to make
-    for (const item of allItems) {
-      if (item instanceof LGraphNode) {
-        nodesToMove.push({
-          node: item,
-          newPos: this.calculateNewPosition(item, deltaX, deltaY)
-        })
-      } else {
-        // Other items (reroutes, etc.)
-        item.move(deltaX, deltaY, true)
-      }
-    }
-
-    // Now apply all the node moves at once
-    this.applyNodePositionUpdates(nodesToMove)
-  }
-
-  repositionNodesVueMode(nodesToReposition: NewNodePosition[]) {
-    this.applyNodePositionUpdates(nodesToReposition)
   }
 
   /**
@@ -9007,6 +8961,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
   }
 }
+
+export interface LGraphCanvas {
+  /** @deprecated Use {@link LGraphCanvas.applyNodePositions} instead. */
+  repositionNodesVueMode(positions: NewNodePosition[]): void
+}
+
+defineDeprecatedProperty(
+  LGraphCanvas.prototype,
+  'repositionNodesVueMode',
+  'applyNodePositions',
+  'LGraphCanvas.repositionNodesVueMode is deprecated. Use applyNodePositions instead.'
+)
 
 function patchLinkNodeIds(
   links:

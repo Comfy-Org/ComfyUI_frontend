@@ -108,6 +108,43 @@ describe('useLayoutSync', () => {
     unmount()
   })
 
+  it('applies position updates through the whole-value setter', () => {
+    let position = [0, 0]
+    const setPosition = vi.fn((value: number[]) => {
+      position = value
+    })
+    const liteNode = {
+      get pos() {
+        return position
+      },
+      set pos(value: number[]) {
+        setPosition(value)
+      },
+      size: [100, 50],
+      onResize: vi.fn()
+    }
+    const canvas = {
+      graph: {
+        getNodeById: vi.fn(() => liteNode)
+      },
+      setDirty: vi.fn()
+    }
+    testState.layoutByNodeId.set('1', {
+      position: { x: 10, y: 15 },
+      size: { width: 100, height: 50 }
+    })
+    const { unmount } = render(LayoutSyncHarness)
+
+    syncApi.startSync(canvas as never)
+    testState.listener?.({ nodeIds: ['1'], source: LayoutSource.External })
+    testState.rafCallback?.(0)
+
+    expect(setPosition).toHaveBeenCalledOnce()
+    expect(setPosition).toHaveBeenCalledWith([10, 15])
+
+    unmount()
+  })
+
   it('flushes interactive updates in a microtask without waiting for raf', () => {
     const liteNode = {
       pos: [0, 0],

@@ -1,9 +1,13 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
+import { createGeometryView } from './infrastructure/createGeometryView'
 import type {
   ColorOption,
   IColorable,
@@ -25,6 +29,8 @@ import {
 } from './measure'
 import type { ISerialisedGroup } from './types/serialisation'
 
+const layoutMutations = useLayoutMutations()
+
 export type GroupId = number
 
 export interface IGraphGroupFlags extends Record<string, unknown> {
@@ -43,16 +49,38 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   title: string
   font?: string
   font_size: number = LiteGraph.GROUP_TEXT_SIZE
-  _bounding = new Rectangle(10, 10, LGraphGroup.minWidth, LGraphGroup.minHeight)
-
-  _pos: Point = this._bounding.pos
-  _size: Size = this._bounding.size
+  private readonly bounds = new Rectangle(
+    10,
+    10,
+    LGraphGroup.minWidth,
+    LGraphGroup.minHeight
+  )
   /** @deprecated See {@link _children} */
   _nodes: LGraphNode[] = []
   _children: Set<Positionable> = new Set()
   graph?: LGraph
   flags: IGraphGroupFlags = {}
   selected?: boolean
+
+  readonly _pos: Point = createGeometryView(this.bounds.pos, {
+    synchronize: () => this.syncBoundsFromStore(),
+    commit: () => this.commitBounds(),
+    observe: this.bounds
+  })
+  readonly _size: Size = createGeometryView(this.bounds.size, {
+    synchronize: () => this.syncBoundsFromStore(),
+    commit: () => this.commitBounds(),
+    observe: this.bounds
+  })
+  readonly _bounding = createGeometryView(this.bounds, {
+    synchronize: () => this.syncBoundsFromStore(),
+    commit: () => this.commitBounds(),
+    mapValue: (property, value) => {
+      if (property === 'pos') return this._pos
+      if (property === 'size') return this._size
+      return value
+    }
+  })
 
   constructor(title?: string, id?: GroupId) {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
@@ -89,8 +117,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   set pos(v) {
     if (!v || v.length < 2) return
 
-    this._pos[0] = v[0]
-    this._pos[1] = v[1]
+    this.setBounds(v[0], v[1], this._size[0], this._size[1])
   }
 
   /** Size of the group, as width,height in graph units */
@@ -101,15 +128,50 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   set size(v) {
     if (!v || v.length < 2) return
 
-    this._size[0] = Math.max(LGraphGroup.minWidth, v[0])
-    this._size[1] = Math.max(LGraphGroup.minHeight, v[1])
+    this.setBounds(
+      this._pos[0],
+      this._pos[1],
+      Math.max(LGraphGroup.minWidth, v[0]),
+      Math.max(LGraphGroup.minHeight, v[1])
+    )
+  }
+
+  private syncBoundsFromStore(): void {
+    if (!this.graph || this.id === -1) return
+
+    const layout = layoutStore.getGroupLayout(this.graph.rootGraph.id, this.id)
+    if (!layout) return
+
+    const { position, size } = layout
+    this.bounds.set([position.x, position.y, size.width, size.height])
+  }
+
+  private commitBounds(): void {
+    const [x, y, width, height] = this.bounds
+    this.setBounds(x, y, width, height)
+  }
+
+  private setBounds(x: number, y: number, width: number, height: number): void {
+    this.bounds.set([x, y, width, height])
+    if (!this.graph || this.id === -1) return
+
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.setGroupBounds(
+      this.graph.rootGraph.id,
+      this.id,
+      { x, y },
+      { width, height }
+    )
+    this.syncBoundsFromStore()
   }
 
   get boundingRect() {
+    this.syncBoundsFromStore()
     return this._bounding
   }
 
   getBounding() {
+    this.syncBoundsFromStore()
     return this._bounding
   }
 
@@ -147,7 +209,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   configure(o: ISerialisedGroup): void {
     this.id = o.id
     this.title = o.title
-    this._bounding.set(o.bounding)
+    const [x, y, width, height] = o.bounding
+    this.setBounds(x, y, width, height)
     this.color = o.color
     this.flags = o.flags || this.flags
   }
@@ -222,16 +285,14 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   resize(width: number, height: number): boolean {
     if (this.pinned) return false
 
-    this._size[0] = Math.max(LGraphGroup.minWidth, width)
-    this._size[1] = Math.max(LGraphGroup.minHeight, height)
+    this.size = [width, height]
     return true
   }
 
   move(deltaX: number, deltaY: number, skipChildren: boolean = false): void {
     if (this.pinned) return
 
-    this._pos[0] += deltaX
-    this._pos[1] += deltaY
+    this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
     if (skipChildren === true) return
 
     for (const item of this._children) {
@@ -241,7 +302,14 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
   /** @inheritdoc */
   snapToGrid(snapTo: number): boolean {
-    return this.pinned ? false : snapPoint(this.pos, snapTo)
+    if (this.pinned || !snapTo) return false
+
+    const snapped: Point = [this._pos[0], this._pos[1]]
+    snapPoint(snapped, snapTo)
+    if (snapped[0] === this._pos[0] && snapped[1] === this._pos[1]) return false
+
+    this.pos = snapped
+    return true
   }
 
   /**
@@ -308,10 +376,14 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     const boundingBox = createBounds(objects, padding)
     if (boundingBox === null) return
 
-    this.pos[0] = boundingBox[0]
-    this.pos[1] = boundingBox[1] - this.titleHeight
-    this.size[0] = boundingBox[2]
-    this.size[1] = boundingBox[3] + this.titleHeight
+    // Deliberately unclamped, as before: a group fitted to its contents may be
+    // narrower than LGraphGroup.minWidth.
+    this.setBounds(
+      boundingBox[0],
+      boundingBox[1] - this.titleHeight,
+      boundingBox[2],
+      boundingBox[3] + this.titleHeight
+    )
   }
 
   /**

@@ -8,7 +8,10 @@ import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotC
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { isSizeEqual } from '@/renderer/core/layout/utils/geometry'
+import {
+  isPointEqual,
+  isSizeEqual
+} from '@/renderer/core/layout/utils/geometry'
 import { toLinkId } from '@/types/linkId'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -51,6 +54,7 @@ import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
+import { createGeometryView } from './infrastructure/createGeometryView'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -122,15 +126,6 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 // #region Types
 
 export type NodeProperty = string | number | boolean | object | null
-
-/** TypedArray methods that mutate in place, so must trigger a layout commit. */
-const MUTATING_SIZE_METHODS = new Set([
-  'set',
-  'fill',
-  'copyWithin',
-  'reverse',
-  'sort'
-])
 
 /** Captures only the {@link layoutStore} singleton, so shared across nodes. */
 const layoutMutations = useLayoutMutations()
@@ -632,9 +627,15 @@ export class LGraphNode
   _posSize = new Rectangle()
   _pos: Point = this._posSize.pos
   _size: Size = this._posSize.size
+  private readonly posView = createGeometryView(this._pos, {
+    commit: () => this._positionUpdated()
+  })
+  private readonly sizeView = createGeometryView(this._size, {
+    commit: () => this._sizeUpdated()
+  })
 
   public get pos() {
-    return this._pos
+    return this.posView
   }
 
   /** Node position does not necessarily correlate to the top-left corner. */
@@ -643,10 +644,18 @@ export class LGraphNode
 
     this._pos[0] = value[0]
     this._pos[1] = value[1]
+    this._positionUpdated()
+  }
+
+  private _positionUpdated(): void {
     if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 
+    const position = { x: this._pos[0], y: this._pos[1] }
+    const layout = layoutStore.getNodeLayoutRef(this.id).value
+    if (layout && isPointEqual(layout.position, position)) return
+
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.moveNode(this.id, { x: value[0], y: value[1] })
+    layoutMutations.moveNode(this.id, position)
   }
 
   /**
@@ -656,48 +665,8 @@ export class LGraphNode
     this.pos = [x, y]
   }
 
-  private _sizeProxy?: Size
-
-  /**
-   * A Proxy over {@link _size} so that element mutations (`node.size[1] = h`) —
-   * the idiom many custom nodes use to grow a node at runtime — commit to the
-   * layout store, exactly like assigning `node.size = [w, h]`. Without this a
-   * bare element write bypasses the setter and a Vue node keeps its stale
-   * height until a manual resize.
-   *
-   * The Proxy is created once and reused; index writes pass straight through to
-   * the backing `Float64Array`, and function/length access is forwarded to the
-   * real typed array so spread, iteration and `.length` keep working. In-place
-   * mutating methods ({@link MUTATING_SIZE_METHODS}) also commit, so growing the
-   * node via `node.size.set(...)` reflows just like a bare element write.
-   *
-   * TODO(litegraph-stable-resize-api): interim shim — remove once a stable resize
-   * API replaces direct typed-array size access.
-   */
   public get size(): Size {
-    return (this._sizeProxy ??= new Proxy(this._size, {
-      get: (target, prop, receiver) => {
-        const value = Reflect.get(target, prop, target)
-        if (typeof value !== 'function') return value
-        if (typeof prop !== 'string' || !MUTATING_SIZE_METHODS.has(prop))
-          return value.bind(target)
-
-        // `set`/`fill`/etc. mutate the backing array without hitting the set
-        // trap, so commit through the same path a bare element write would.
-        // `fill`/`copyWithin`/`reverse`/`sort` return the backing array; hand
-        // back the Proxy so a chained index write still routes through the trap.
-        return (...args: unknown[]) => {
-          const result = Reflect.apply(value, target, args)
-          this._sizeUpdated()
-          return result === target ? receiver : result
-        }
-      },
-      set: (target, prop, value) => {
-        const result = Reflect.set(target, prop, value)
-        if (prop === '0' || prop === '1') this._sizeUpdated()
-        return result
-      }
-    }))
+    return this.sizeView
   }
 
   public set size(value) {
@@ -2247,14 +2216,6 @@ export class LGraphNode
   move(deltaX: number, deltaY: number): void {
     if (this.pinned) return
 
-    // If Vue nodes mode is enabled, skip LiteGraph's direct position update
-    // The layout store will handle the movement and sync back to LiteGraph
-    if (LiteGraph.vueNodesMode) {
-      // Vue nodes handle their own dragging through the layout store
-      // This prevents the snap-back issue from conflicting position updates
-      return
-    }
-
     this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
   }
 
@@ -3551,7 +3512,14 @@ export class LGraphNode
 
   /** @inheritdoc */
   snapToGrid(snapTo: number): boolean {
-    return this.pinned ? false : snapPoint(this.pos, snapTo)
+    if (this.pinned || !snapTo) return false
+
+    const snapped: Point = [this._pos[0], this._pos[1]]
+    snapPoint(snapped, snapTo)
+    if (snapped[0] === this._pos[0] && snapped[1] === this._pos[1]) return false
+
+    this.pos = snapped
+    return true
   }
 
   /** @see {@link snapToGrid} */

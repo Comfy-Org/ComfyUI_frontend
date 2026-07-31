@@ -4,6 +4,7 @@ import type { WidgetId } from '@/types/widgetId'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/types/nodeId'
 import type { SlotIndex } from '@/types/slotId'
+import type { UUID } from '@/utils/uuid'
 
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphGroup, GroupId } from './LGraphGroup'
@@ -162,6 +163,7 @@ export interface IPinnable {
 }
 
 export interface ReadonlyLinkNetwork {
+  readonly rootGraph: { readonly id: UUID }
   readonly links: ReadonlyMap<LinkId, LLink>
   readonly reroutes: ReadonlyMap<RerouteId, Reroute>
   readonly floatingLinks: ReadonlyMap<LinkId, LLink>

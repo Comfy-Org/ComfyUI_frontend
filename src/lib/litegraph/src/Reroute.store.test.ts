@@ -1,14 +1,21 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  Reroute
+} from '@/lib/litegraph/src/litegraph'
 import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { toRerouteId } from '@/types/rerouteId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
 
@@ -40,9 +47,11 @@ describe('Reroute ↔ rerouteStore integration', () => {
     expect(store.getReroute(graph.rootGraph.id, reroute.id)).toBeUndefined()
   })
 
-  it('setReroute (deserialisation) registers the chain', () => {
+  it('setReroute creates and updates geometry in one layout write', () => {
     const { graph } = connectedGraph()
     const store = useRerouteStore()
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+    onTestFinished(() => applyOperation.mockRestore())
 
     const reroute = graph.setReroute({
       id: toRerouteId(3),
@@ -52,6 +61,35 @@ describe('Reroute ↔ rerouteStore integration', () => {
     })
 
     expect(store.getReroute(graph.rootGraph.id, reroute.id)?.id).toBe(3)
+    const creationOperations = applyOperation.mock.calls.filter(
+      ([operation]) => operation.entity === 'reroute'
+    )
+    expect(creationOperations).toHaveLength(1)
+    expect(creationOperations[0][0]).toMatchObject({
+      type: 'createReroute',
+      rerouteId: toRerouteId(3),
+      position: { x: 5, y: 5 }
+    })
+
+    applyOperation.mockClear()
+    const existing = graph.setReroute({
+      id: reroute.id,
+      parentId: undefined,
+      pos: [8, 9],
+      linkIds: []
+    })
+
+    expect(existing).toBe(reroute)
+    expect(existing.pos).toEqual([8, 9])
+    const updateOperations = applyOperation.mock.calls.filter(
+      ([operation]) => operation.entity === 'reroute'
+    )
+    expect(updateOperations).toHaveLength(1)
+    expect(updateOperations[0][0]).toMatchObject({
+      type: 'moveReroute',
+      rerouteId: reroute.id,
+      position: { x: 8, y: 9 }
+    })
   })
 
   it('class parentId writes are observable through the store query', () => {
@@ -198,12 +236,25 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([12, 17], link)!
 
-    reroute.snapToGrid(10)
+    expect(reroute.snapToGrid(10)).toBe(true)
 
-    expect(layoutStore.getRerouteLayout(reroute.id)?.position).toEqual({
-      x: reroute.pos[0],
-      y: reroute.pos[1]
+    // Y snaps around a NODE_SLOT_HEIGHT * 0.7 offset, so 17 lands on 14.
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({
+      x: 10,
+      y: 14
     })
+  })
+
+  it('snapToGrid does not report or store a change when already aligned', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([12, 17], link)!
+    reroute.snapToGrid(10)
+    const operationCount = layoutStore.getOperationsSince(0).length
+
+    expect(reroute.snapToGrid(10)).toBe(false)
+    expect(layoutStore.getOperationsSince(0)).toHaveLength(operationCount)
   })
 
   it('refuses parentId writes that would create a cycle, allows repair', () => {
@@ -255,5 +306,127 @@ describe('Reroute ↔ rerouteStore integration', () => {
     expect(store.getReroute(graph.rootGraph.id, reroute.id)?.floating).toEqual({
       slotType: 'input'
     })
+  })
+})
+
+describe('Reroute position lives only in layoutStore', () => {
+  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
+  it('registers geometry on construction, before any graph wiring', () => {
+    const { graph, link } = connectedGraph()
+
+    const reroute = graph.createReroute([37, 41], link)!
+
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({
+      x: 37,
+      y: 41
+    })
+  })
+
+  it('isolates colliding reroute IDs across live root graphs', () => {
+    const firstGraph = new LGraph()
+    const secondGraph = new LGraph()
+    firstGraph.id = createUuidv4()
+    secondGraph.id = createUuidv4()
+    const rerouteId = toRerouteId(12)
+    const first = firstGraph.setReroute({
+      id: rerouteId,
+      pos: [10, 20],
+      linkIds: []
+    })
+    const second = secondGraph.setReroute({
+      id: rerouteId,
+      pos: [100, 200],
+      linkIds: []
+    })
+
+    first.pos = [30, 40]
+    expect(
+      layoutStore.getRerouteLayout(firstGraph.id, rerouteId)?.position
+    ).toEqual({ x: 30, y: 40 })
+    expect(
+      layoutStore.getRerouteLayout(secondGraph.id, rerouteId)?.position
+    ).toEqual({ x: 100, y: 200 })
+
+    firstGraph.removeReroute(rerouteId)
+    expect(layoutStore.getRerouteLayout(firstGraph.id, rerouteId)).toBeNull()
+    expect([...second.pos]).toEqual([100, 200])
+
+    firstGraph.clear()
+    expect(
+      layoutStore.getRerouteLayout(secondGraph.id, rerouteId)
+    ).not.toBeNull()
+  })
+
+  it('reads a store write back through pos, with no class-side copy', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 10], link)!
+    const pos = reroute.pos
+
+    // Move it in the store only. A mirrored copy on the class could not see
+    // this without a synchronisation step.
+    useLayoutMutations().moveReroute(graph.rootGraph.id, reroute.id, {
+      x: 300,
+      y: 400
+    })
+
+    expect([...reroute.pos]).toEqual([300, 400])
+    expect(reroute.pos).toBe(pos)
+    expect([...pos]).toEqual([300, 400])
+    expect(reroute.boundingRect[0]).toBe(300 - Reroute.radius)
+  })
+
+  it('writes indexed and method mutations through to the store', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 20], link)!
+
+    reroute.pos[0] = 30
+    const pos = reroute.pos
+    pos.fill(40)
+    pos[1] = 50
+
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({ x: 40, y: 50 })
+  })
+
+  it('rejects mutations that change the position length', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 20], link)!
+    const pos = reroute.pos
+
+    pos.pop()
+    pos.push(30)
+
+    expect(pos).toHaveLength(2)
+    expect([...pos]).toEqual([10, 20])
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({ x: 10, y: 20 })
+  })
+
+  it('routes move and snapToGrid through the same stored point', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 10], link)!
+
+    reroute.move(5, 7)
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({
+      x: 15,
+      y: 17
+    })
+
+    // y snaps about an offset of NODE_SLOT_HEIGHT * 0.7, so it lands on 14.
+    reroute.snapToGrid(10)
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({
+      x: 20,
+      y: 14
+    })
+    expect([...reroute.pos]).toEqual([20, 14])
   })
 })

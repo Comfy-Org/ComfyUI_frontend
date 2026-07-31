@@ -903,8 +903,10 @@ export class GroupNodeHandler {
 
       // Shift each node so the unpacked group appears at the group node position
       for (const newNode of newNodes) {
-        newNode.pos[0] -= (left ?? 0) - x
-        newNode.pos[1] -= (top ?? 0) - y
+        newNode.pos = [
+          newNode.pos[0] - ((left ?? 0) - x),
+          newNode.pos[1] - ((top ?? 0) - y)
+        ]
       }
 
       return { newNodes, selectedIds }

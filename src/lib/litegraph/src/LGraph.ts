@@ -37,6 +37,7 @@ import {
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
+import { Rectangle } from './infrastructure/Rectangle'
 import { LGraphGroup } from './LGraphGroup'
 import type { GroupId } from './LGraphGroup'
 import {
@@ -119,7 +120,9 @@ import type {
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import {
+  collectReservedGroupIds,
   collectReservedRerouteIds,
+  deduplicateSubgraphGroupIds,
   deduplicateSubgraphNodeIds,
   deduplicateSubgraphRerouteIds,
   topologicalSortSubgraphs
@@ -501,6 +504,26 @@ export class LGraph
       unregisterAllRerouteChains(this)
       unregisterAllNodeStates(this)
     }
+
+    const graphsToClear = this.isRootGraph
+      ? [this, ...this.subgraphs.values()]
+      : [this]
+    if (
+      graphsToClear.some((graph) => graph._groups.length || graph.reroutes.size)
+    ) {
+      const rootGraphId = this.rootGraph.id
+      const layoutMutations = useLayoutMutations()
+      layoutMutations.setSource(LayoutSource.Canvas)
+      for (const graph of graphsToClear) {
+        for (const group of graph._groups) {
+          layoutMutations.deleteGroup(rootGraphId, group.id)
+        }
+        for (const rerouteId of graph.reroutes.keys()) {
+          layoutMutations.deleteReroute(rootGraphId, rerouteId)
+        }
+      }
+    }
+
     this.id = zeroUuid
     this.revision = 0
 
@@ -1073,6 +1096,13 @@ export class LGraph
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
+      const { pos, size } = node
+      const layoutMutations = useLayoutMutations()
+      layoutMutations.setSource(LayoutSource.Canvas)
+      layoutMutations.createGroup(this.rootGraph.id, node.id, {
+        position: { x: pos[0], y: pos[1] },
+        size: { width: size[0], height: size[1] }
+      })
       this.incrementVersion()
       return
     }
@@ -1167,6 +1197,9 @@ export class LGraph
       if (index != -1) {
         this._groups.splice(index, 1)
       }
+      const layoutMutations = useLayoutMutations()
+      layoutMutations.setSource(LayoutSource.Canvas)
+      layoutMutations.deleteGroup(this.rootGraph.id, node.id)
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)
@@ -1595,7 +1628,7 @@ export class LGraph
     unregisterRerouteChain(reroute)
     const layoutMutations = useLayoutMutations()
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteReroute(id)
+    layoutMutations.deleteReroute(this.rootGraph.id, id)
   }
 
   /**
@@ -1617,10 +1650,11 @@ export class LGraph
       this.state.lastRerouteId = rerouteId
     }
 
-    const reroute = this.reroutes.get(rerouteId) ?? new Reroute(rerouteId, this)
+    const existingReroute = this.reroutes.get(rerouteId)
+    const reroute = existingReroute ?? new Reroute(rerouteId, this, pos)
     reroute.parentId =
       parentId === undefined ? undefined : toRerouteId(parentId)
-    if (pos) reroute.pos = pos
+    if (pos && existingReroute) reroute.pos = pos
     reroute.floating = floating
     this._addReroute(reroute)
     return reroute
@@ -1634,7 +1668,6 @@ export class LGraph
    * @returns The newly created reroute, or undefined when the segment cannot be resolved.
    */
   createReroute(pos: Point, before: LinkSegment): Reroute | undefined {
-    const layoutMutations = useLayoutMutations()
     if (!(before instanceof LLink) && !(before instanceof Reroute)) {
       return
     }
@@ -1651,10 +1684,6 @@ export class LGraph
         : [before]
     const reroute = new Reroute(rerouteId, this, pos, before.parentId)
     this._addReroute(reroute)
-
-    // Register reroute in Layout Store for spatial tracking
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createReroute(rerouteId, { x: pos[0], y: pos[1] })
 
     // Splice the new reroute into every chain that contained `before`
     for (const link of chainLinks) {
@@ -1895,10 +1924,14 @@ export class LGraph
     // Position the subgraph input nodes
     subgraph.inputNode.arrange()
     subgraph.outputNode.arrange()
-    const { boundingRect: inputRect } = subgraph.inputNode
-    const { boundingRect: outputRect } = subgraph.outputNode
-    alignOutsideContainer(inputRect, Alignment.MidLeft, boundingRect, [50, 0])
-    alignOutsideContainer(outputRect, Alignment.MidRight, boundingRect, [50, 0])
+    for (const [ioNode, alignment] of [
+      [subgraph.inputNode, Alignment.MidLeft],
+      [subgraph.outputNode, Alignment.MidRight]
+    ] as const) {
+      const aligned = new Rectangle(...ioNode.boundingRect)
+      alignOutsideContainer(aligned, alignment, boundingRect, [50, 0])
+      ioNode.pos = [aligned[0], aligned[1]]
+    }
 
     this.rootGraph.events.dispatch('convert-to-subgraph', {
       subgraph,
@@ -1923,17 +1956,18 @@ export class LGraph
     // Resize to inputs/outputs
     subgraphNode.setSize(subgraphNode.computeSize())
 
-    // Center the subgraph node
-    alignToContainer(
-      subgraphNode._posSize,
-      Alignment.Centre | Alignment.Middle,
-      boundingRect
-    )
-
-    //Correct for title height. It's included in bounding box, but not _posSize
-    subgraphNode.setPos(
+    // Center the subgraph node. The title height is included in the bounding
+    // box but not in pos/size, so correct for it in the same assignment.
+    const centred = new Rectangle(
       subgraphNode.pos[0],
-      subgraphNode.pos[1] + LiteGraph.NODE_TITLE_HEIGHT / 2
+      subgraphNode.pos[1],
+      subgraphNode.size[0],
+      subgraphNode.size[1]
+    )
+    alignToContainer(centred, Alignment.Centre | Alignment.Middle, boundingRect)
+    subgraphNode.setPos(
+      centred[0],
+      centred[1] + LiteGraph.NODE_TITLE_HEIGHT / 2
     )
 
     // Add the subgraph node to the graph
@@ -2123,11 +2157,13 @@ export class LGraph
       [...subgraphNode.subgraph.groups].map((g) => g.serialize())
     )
     for (const g_info of groups) {
+      // The definition survives if another instance remains, so its groups
+      // cannot share root-scoped layout keys with the unpacked copies.
+      g_info.id = ++this.rootGraph.state.lastGroupId
       const group = new LGraphGroup(g_info.title, g_info.id)
       this.add(group, true)
       group.configure(g_info)
-      group.pos[0] += offsetX
-      group.pos[1] += offsetY
+      group.pos = [group.pos[0] + offsetX, group.pos[1] + offsetY]
       toSelect.push(group)
     }
     const newLinks: {
@@ -2619,6 +2655,11 @@ export class LGraph
           : undefined
 
         if (deduplicated) {
+          deduplicateSubgraphGroupIds(
+            deduplicated.subgraphs,
+            collectReservedGroupIds(this, data.groups),
+            this.state
+          )
           deduplicateSubgraphRerouteIds(
             deduplicated.subgraphs,
             collectReservedRerouteIds(this),
@@ -2674,12 +2715,11 @@ export class LGraph
 
           if (LiteGraph.alwaysSnapToGrid && node) {
             const snapTo = this.getSnapToGridSize()
-            if (node.snapToGrid(snapTo)) {
-              // snapToGrid mutates the internal _pos array in-place, bypassing the setter
-              // This reassignment triggers the pos setter to sync to the Vue layout store
-              node.pos = [node.pos[0], node.pos[1]]
-            }
-            snapPoint(node.size, snapTo, 'ceil')
+            node.snapToGrid(snapTo)
+
+            const snappedSize: Point = [node.size[0], node.size[1]]
+            snapPoint(snappedSize, snapTo, 'ceil')
+            node.size = snappedSize
           }
         }
       }

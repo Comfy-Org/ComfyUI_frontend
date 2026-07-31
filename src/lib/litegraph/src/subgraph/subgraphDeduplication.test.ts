@@ -10,11 +10,13 @@ import { toRerouteId } from '@/types/rerouteId'
 import type { LGraphState } from '../LGraph'
 import type {
   ExportedSubgraph,
+  ISerialisedGroup,
   SerialisableLLink,
   SerialisableReroute
 } from '../types/serialisation'
 
 import {
+  deduplicateSubgraphGroupIds,
   deduplicateSubgraphRerouteIds,
   topologicalSortSubgraphs
 } from './subgraphDeduplication'
@@ -119,6 +121,46 @@ function freshState(lastRerouteId = 0): LGraphState {
   }
 }
 
+function group(id: number): ISerialisedGroup {
+  return { id, title: `group-${id}`, bounding: [0, 0, 100, 100] }
+}
+
+describe('deduplicateSubgraphGroupIds', () => {
+  it('remaps ids that collide with root groups', () => {
+    const subgraph = makeSubgraph('sg')
+    subgraph.groups = [group(1)]
+    const state = freshState()
+
+    deduplicateSubgraphGroupIds([subgraph], new Set([1]), state)
+
+    expect(subgraph.groups[0].id).not.toBe(1)
+    expect(state.lastGroupId).toBe(subgraph.groups[0].id)
+  })
+
+  it('keeps sibling subgraph group ids unique', () => {
+    const first = makeSubgraph('first')
+    first.groups = [group(1)]
+    const second = makeSubgraph('second')
+    second.groups = [group(1)]
+    const state = freshState()
+
+    deduplicateSubgraphGroupIds([first, second], new Set(), state)
+
+    expect(first.groups[0].id).toBe(1)
+    expect(second.groups[0].id).not.toBe(1)
+  })
+
+  it('skips ids already reserved by later groups', () => {
+    const subgraph = makeSubgraph('sg')
+    subgraph.groups = [group(1)]
+    const state = freshState()
+
+    deduplicateSubgraphGroupIds([subgraph], new Set([1, 2]), state)
+
+    expect(subgraph.groups[0].id).toBe(3)
+    expect(state.lastGroupId).toBe(3)
+  })
+})
 describe('deduplicateSubgraphRerouteIds', () => {
   it('remaps colliding reroute ids and patches parentId references', () => {
     const subgraph = makeSubgraph('sg')

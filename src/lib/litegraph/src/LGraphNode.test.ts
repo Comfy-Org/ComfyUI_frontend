@@ -9,6 +9,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
@@ -133,7 +134,7 @@ describe('LGraphNode', () => {
       }))
     }
     node.configure(configureData)
-    expect(node.pos).toEqual(new Float64Array([50, 60]))
+    expect(Array.from(node.pos)).toEqual([50, 60])
     expect(Array.from(node.size)).toEqual([70, 80])
   })
 
@@ -787,6 +788,78 @@ describe('LGraphNode', () => {
       expect(out[2]).toBe(200)
       expect(out[3]).toBe(120 + LiteGraph.NODE_TITLE_HEIGHT)
     })
+  })
+})
+
+describe('snapToGrid', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  /** Layout entries are seeded by the renderer, so stand one up by hand. */
+  function seededNode(graph: LGraph) {
+    const node = new LGraphNode('test')
+    node.pos = [103, 97]
+    graph.add(node)
+    layoutStore.initializeFromLiteGraph([
+      { id: node.id, pos: [103, 97], size: [140, 60] }
+    ])
+    return node
+  }
+
+  test('commits the snapped position to the layout store', () => {
+    const node = seededNode(new LGraph())
+
+    expect(node.snapToGrid(20)).toBe(true)
+
+    expect([...node.pos]).toEqual([100, 100])
+    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+      x: 100,
+      y: 100
+    })
+  })
+
+  test('writes indexed position mutations through to the layout store', () => {
+    const node = seededNode(new LGraph())
+    const pos = node.pos
+
+    node.pos[0] = 120
+
+    expect(node.pos).toBe(pos)
+    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+      x: 120,
+      y: 97
+    })
+  })
+
+  test('does not re-commit the current stored position', () => {
+    const node = seededNode(new LGraph())
+    const operationCount = layoutStore.getOperationsSince(0).length
+
+    node.pos = [103, 97]
+
+    expect(layoutStore.getOperationsSince(0)).toHaveLength(operationCount)
+  })
+
+  test('leaves a pinned node alone', () => {
+    const node = seededNode(new LGraph())
+    node.pin(true)
+
+    expect(node.snapToGrid(20)).toBe(false)
+    expect([...node.pos]).toEqual([103, 97])
+    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+      x: 103,
+      y: 97
+    })
+  })
+
+  test('does not report or store a change when already aligned', () => {
+    const node = seededNode(new LGraph())
+    node.snapToGrid(20)
+    const operationCount = layoutStore.getOperationsSince(0).length
+
+    expect(node.snapToGrid(20)).toBe(false)
+    expect(layoutStore.getOperationsSince(0)).toHaveLength(operationCount)
   })
 })
 
