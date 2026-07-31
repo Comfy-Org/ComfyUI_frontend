@@ -55,7 +55,7 @@ const i18n = createI18n({
 
 function renderSelector(amountCents = 66500) {
   return render(UnifiedStripePaymentSelector, {
-    props: { amountCents },
+    props: { amountCents, currency: 'usd' },
     global: { plugins: [i18n] }
   })
 }

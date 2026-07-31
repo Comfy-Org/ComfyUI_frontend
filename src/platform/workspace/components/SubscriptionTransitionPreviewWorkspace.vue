@@ -169,23 +169,19 @@
           )
         "
       >
-        <template v-if="isImmediate">
+        <template v-if="isImmediate && previewData.discounts?.length">
           <div class="flex items-center justify-between text-muted-foreground">
-            <span>{{ subscriptionLineLabel }}</span>
-            <span class="tabular-nums">{{ money(newPlanPriceUsd) }}</span>
+            <span>{{ $t('subscription.preview.discountComposition') }}</span>
           </div>
           <div
-            v-if="prorationCreditUsd > 0"
+            v-for="discount in previewData.discounts"
+            :key="`${discount.kind}:${discount.code}`"
             class="flex items-center justify-between text-muted-foreground"
           >
-            <span>
-              {{
-                $t('subscription.preview.creditFromCurrent', {
-                  plan: creditFromPlanLabel
-                })
-              }}
-            </span>
-            <span class="tabular-nums">− {{ money(prorationCreditUsd) }}</span>
+            <span>{{
+              $t(`subscription.preview.discount.${discount.kind}`)
+            }}</span>
+            <span class="text-base-foreground">{{ discount.code }}</span>
           </div>
         </template>
         <div class="flex items-center justify-between text-base">
@@ -193,10 +189,26 @@
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
           <span class="font-bold text-base-foreground tabular-nums">
-            {{ money(totalDueTodayUsd) }}
+            {{ exactAmountDue }}
           </span>
         </div>
-        <span class="text-sm text-muted-foreground">{{ totalNote }}</span>
+        <span class="text-sm text-muted-foreground">{{ renewalTerms }}</span>
+      </div>
+      <div class="flex gap-2 pt-6">
+        <input
+          v-model="promotionCode"
+          class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
+          :placeholder="$t('subscription.preview.promoCodePlaceholder')"
+          @input="$emit('invalidateQuote')"
+        />
+        <Button
+          variant="secondary"
+          size="lg"
+          :disabled="isLoading"
+          @click="$emit('applyPromotionCode', promotionCode)"
+        >
+          {{ $t('subscription.preview.applyPromoCode') }}
+        </Button>
       </div>
     </div>
 
@@ -217,7 +229,7 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="confirmDisabled"
+        :disabled="confirmDisabled || !quoteIsCurrent"
         @click="$emit('confirm', confirmReactivation)"
       >
         {{ confirmCta }}
@@ -250,7 +262,8 @@ const {
   isLoading = false,
   teamPlan = null,
   actionUrl = null,
-  forceReactivation = false
+  forceReactivation = false,
+  quoteIsCurrent = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -261,6 +274,7 @@ const {
   /** Server-authoritative fallback for legacy status reads that omit a
    * scheduled cancellation until subscribe enforces the consent gate. */
   forceReactivation?: boolean
+  quoteIsCurrent?: boolean
 }>()
 
 defineEmits<{
@@ -268,11 +282,20 @@ defineEmits<{
    *  ticked above the charge threshold, since confirmDisabled gates the button). */
   confirm: [confirmReactivation: boolean]
   back: []
+  applyPromotionCode: [code: string]
+  invalidateQuote: []
 }>()
 
 const { t, n } = useI18n()
 
 const { subscription } = useBillingContext()
+const promotionCode = ref(previewData.promotion_code ?? '')
+watch(
+  () => previewData.promotion_code,
+  (code) => {
+    promotionCode.value = code ?? ''
+  }
+)
 
 function openVerification() {
   if (!actionUrl) return
@@ -296,13 +319,6 @@ function formatDate(date: string | Date): string {
   }).format(typeof date === 'string' ? new Date(date) : date)
 }
 
-function money(usd: number): string {
-  return `$${usd.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`
-}
-
 function moneyShort(usd: number): string {
   return `$${n(usd)}`
 }
@@ -318,12 +334,6 @@ const newIsYearly = computed(() =>
 const currentIsYearly = computed(() =>
   isAnnualDuration(previewData.current_plan?.duration)
 )
-const isCadenceChange = computed(
-  () =>
-    !!previewData.current_plan &&
-    previewData.current_plan.duration !== previewData.new_plan.duration
-)
-
 const newTierName = computed(() =>
   teamPlan
     ? t('subscription.teamPlan.name')
@@ -390,7 +400,9 @@ const currentMonthlyPriceCents = computed(() => {
   const totalCents = plan.seat_summary.total_cost_cents
   return currentIsYearly.value ? totalCents / 12 : totalCents
 })
-const chargeCents = computed(() => previewData.cost_today_cents)
+const chargeCents = computed(
+  () => previewData.amount_due_cents ?? previewData.cost_today_cents
+)
 // The downgrade variant's copy always says "you won't be charged today" with
 // no amount shown, so it never gets the checkbox even if cost_today_cents is
 // unexpectedly positive.
@@ -459,25 +471,7 @@ const annualTotalFormatted = computed(
   () => `$${n(previewData.new_plan.price_cents / 100)}`
 )
 
-const newPlanPriceUsd = computed(() => previewData.new_plan.price_cents / 100)
-const prorationCreditUsd = computed(() => {
-  const credit = previewData.new_plan.price_cents - previewData.cost_today_cents
-  return credit > 0 ? credit / 100 : 0
-})
-const totalDueTodayUsd = computed(() => previewData.cost_today_cents / 100)
 const newMonthlyChargeUsd = computed(() => newMonthlyUsd.value)
-
-const subscriptionLineLabel = computed(() =>
-  newIsYearly.value
-    ? t('subscription.preview.yearlySubscription')
-    : t('subscription.preview.newMonthlySubscription')
-)
-const creditFromPlanLabel = computed(() => {
-  if (teamPlan) return t('subscription.preview.commitment')
-  return isCadenceChange.value
-    ? t('subscription.preview.currentMonthly')
-    : currentTierName.value
-})
 
 const refillCredits = computed(() => {
   const monthly = teamPlan
@@ -522,12 +516,6 @@ const nextPaymentDate = computed(() => {
   )
   return formatDate(fallback)
 })
-const currentPeriodEnd = computed(() =>
-  previewData.current_plan?.period_end
-    ? formatDate(previewData.current_plan.period_end)
-    : effectiveDateLabel.value
-)
-
 const confirmTitle = computed(() =>
   isImmediate.value
     ? t('subscription.preview.confirmUpgradeTitle')
@@ -549,12 +537,29 @@ const confirmCta = computed(() => {
     amount: chargeDisplay.value
   })
 })
-const totalNote = computed(() =>
-  isImmediate.value
-    ? t('subscription.preview.nextPaymentDue', { date: nextPaymentDate.value })
-    : t('subscription.preview.stayOnUntil', {
-        plan: currentPlanLabel.value,
-        date: currentPeriodEnd.value
-      })
+function formatQuoteMoney(cents: number): string {
+  if (!previewData.currency) return ''
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: previewData.currency.toUpperCase()
+  }).format(cents / 100)
+}
+
+const exactAmountDue = computed(() =>
+  previewData.amount_due_cents === undefined
+    ? ''
+    : formatQuoteMoney(previewData.amount_due_cents)
 )
+const renewalTerms = computed(() => {
+  if (
+    previewData.renewal_amount_cents === undefined ||
+    !previewData.renewal_at
+  ) {
+    return ''
+  }
+  return t('subscription.preview.renewsAt', {
+    amount: formatQuoteMoney(previewData.renewal_amount_cents),
+    date: formatDate(previewData.renewal_at)
+  })
+})
 </script>

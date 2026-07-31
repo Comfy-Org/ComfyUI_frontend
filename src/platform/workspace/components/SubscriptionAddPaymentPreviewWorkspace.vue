@@ -113,16 +113,43 @@
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
           <span class="font-bold text-base-foreground tabular-nums">
-            ${{ totalDueToday }}
+            {{ totalDueToday }}
           </span>
         </div>
         <span class="text-sm text-muted-foreground">
-          {{
-            $t('subscription.preview.nextPaymentDue', {
-              date: nextPaymentDate
-            })
-          }}
+          {{ renewalTerms }}
         </span>
+      </div>
+      <div
+        v-if="previewData?.discounts?.length"
+        class="flex flex-col gap-2 pt-4 text-sm"
+      >
+        <div
+          v-for="discount in previewData.discounts"
+          :key="`${discount.kind}:${discount.code}`"
+          class="flex items-center justify-between text-muted-foreground"
+        >
+          <span>{{
+            $t(`subscription.preview.discount.${discount.kind}`)
+          }}</span>
+          <span class="text-base-foreground">{{ discount.code }}</span>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-6">
+        <input
+          v-model="promotionCode"
+          class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
+          :placeholder="$t('subscription.preview.promoCodePlaceholder')"
+          @input="$emit('invalidateQuote')"
+        />
+        <Button
+          variant="secondary"
+          size="lg"
+          :disabled="isLoading"
+          @click="$emit('applyPromotionCode', promotionCode)"
+        >
+          {{ $t('subscription.preview.applyPromoCode') }}
+        </Button>
       </div>
       <!-- Saved method: no capture column; a card row with a change
            affordance stands in for the form. -->
@@ -138,11 +165,9 @@
             :class="
               cn(
                 'size-4 shrink-0',
-                savedMethods[0].type === 'bank'
-                  ? 'icon-[lucide--landmark]'
-                  : savedMethods[0].type === 'alipay'
-                    ? 'icon-[lucide--wallet]'
-                    : 'icon-[lucide--credit-card]'
+                savedMethods[0].type === 'alipay'
+                  ? 'icon-[lucide--wallet]'
+                  : 'icon-[lucide--credit-card]'
               )
             "
           />
@@ -195,8 +220,10 @@
       <UnifiedStripePaymentSelector
         v-if="captureMode"
         :amount-cents="amountDueCents"
+        :currency="previewData?.currency ?? ''"
         :is-loading
         :verification-pending="Boolean(actionUrl)"
+        :can-submit="quoteIsCurrent"
         @confirm="confirmPayment"
       />
 
@@ -206,6 +233,7 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
+        :disabled="!quoteIsCurrent"
         @click="$emit('addCreditCard')"
       >
         {{ $t('subscription.preview.payAndSubscribe') }}
@@ -217,6 +245,7 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
+        :disabled="!quoteIsCurrent"
         @click="$emit('addCreditCard')"
       >
         {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
@@ -242,17 +271,14 @@ import {
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import type {
+  PreviewSubscribeResponse,
+  SavedPaymentMethod
+} from '@/platform/workspace/api/workspaceApi'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
-
-export interface SavedPaymentMethod {
-  type: 'card' | 'alipay' | 'bank'
-  brand?: string
-  last4?: string
-}
 
 interface Props {
   /** Personal-tier checkout. Required unless `teamPlan` is set. */
@@ -267,10 +293,11 @@ interface Props {
   /** Saved payment methods; when present the capture form is skipped and the
    *  confirm renders as a narrow summary. One method shows a Change
    *  affordance; two or more become a picker whose last option adds a new
-   *  method. Display varies by type: cards and banks carry brand + last4,
-   *  Alipay is a linked account with neither. The backend does not supply
-   *  this yet. */
+   *  method. Cards carry brand + last4; Alipay is a linked account with
+   *  neither. */
   savedMethods?: SavedPaymentMethod[] | null
+  selectedSavedMethodId?: string | null
+  quoteIsCurrent?: boolean
 }
 
 const {
@@ -281,7 +308,9 @@ const {
   teamPlan = null,
   actionUrl = null,
   usePaymentElement = false,
-  savedMethods = null
+  savedMethods = null,
+  selectedSavedMethodId = null,
+  quoteIsCurrent = false
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -289,6 +318,9 @@ const emit = defineEmits<{
   confirmPayment: [confirmationToken: string]
   back: []
   changePaymentMethod: []
+  'update:selectedSavedMethodId': [id: string | null]
+  applyPromotionCode: [code: string]
+  invalidateQuote: []
 }>()
 
 const { t, n } = useI18n()
@@ -303,21 +335,34 @@ function methodLabel(m: SavedPaymentMethod) {
 }
 
 const savedMethodOptions = computed(() => [
-  ...(savedMethods ?? []).map((m, i) => ({
+  ...(savedMethods ?? []).map((m) => ({
     name: methodLabel(m),
-    value: String(i)
+    value: m.id
   })),
   {
     name: t('subscription.preview.addNewPaymentMethod'),
     value: 'add-new'
   }
 ])
-const selectedMethod = ref('0')
-watch(selectedMethod, (value) => {
-  if (value !== 'add-new') return
-  selectedMethod.value = '0'
-  emit('changePaymentMethod')
+const selectedMethod = computed({
+  get: () => selectedSavedMethodId ?? '',
+  set: (value: string) => {
+    if (value === 'add-new') {
+      emit('update:selectedSavedMethodId', null)
+      emit('changePaymentMethod')
+      return
+    }
+    emit('update:selectedSavedMethodId', value)
+  }
 })
+
+const promotionCode = ref(previewData?.promotion_code ?? '')
+watch(
+  () => previewData?.promotion_code,
+  (code) => {
+    promotionCode.value = code ?? ''
+  }
+)
 
 function openVerification() {
   if (!actionUrl) return
@@ -370,45 +415,40 @@ const creditsRefillLabelKey = computed(() =>
 )
 
 const totalDueTodayUsd = computed(() => {
-  if (teamPlan) {
-    return isYearly.value ? teamPlan.discountedUsd * 12 : teamPlan.discountedUsd
-  }
-  if (previewData) return previewData.cost_today_cents / 100
-  if (!tierKey) return 0
-  const priceValue = getTierPrice(tierKey, isYearly.value)
-  return isYearly.value ? priceValue * 12 : priceValue
+  return (previewData?.amount_due_cents ?? 0) / 100
 })
 
+function formatQuoteMoney(cents: number): string {
+  if (!previewData?.currency) return ''
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: previewData.currency.toUpperCase()
+  }).format(cents / 100)
+}
+
 const totalDueToday = computed(() =>
-  totalDueTodayUsd.value.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
+  previewData?.amount_due_cents === undefined
+    ? ''
+    : formatQuoteMoney(previewData.amount_due_cents)
 )
 
 const amountDueCents = computed(() => Math.round(totalDueTodayUsd.value * 100))
 
-const nextPaymentDate = computed(() => {
-  if (previewData?.new_plan?.period_end) {
-    return new Date(previewData.new_plan.period_end).toLocaleDateString(
-      'en-US',
-      {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      }
-    )
+const renewalTerms = computed(() => {
+  if (
+    previewData?.renewal_amount_cents === undefined ||
+    !previewData.renewal_at
+  ) {
+    return ''
   }
-  const date = new Date()
-  if (billingCycle === 'yearly') {
-    date.setFullYear(date.getFullYear() + 1)
-  } else {
-    date.setMonth(date.getMonth() + 1)
-  }
-  return date.toLocaleDateString('en-US', {
+  const date = new Date(previewData.renewal_at).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
+  })
+  return t('subscription.preview.renewsAt', {
+    amount: formatQuoteMoney(previewData.renewal_amount_cents),
+    date
   })
 })
 </script>
