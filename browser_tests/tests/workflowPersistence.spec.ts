@@ -307,20 +307,28 @@ test.describe('Workflow Persistence', () => {
     }, apiWorkflow)
     await comfyPage.nextFrame()
 
-    // Known nodes (KSampler, EmptyLatentImage) should load; unknown node skipped
+    // Known nodes and an error-marked placeholder for the unknown node load.
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount())
       .toBeGreaterThanOrEqual(2)
 
-    const getNodeTypes = () =>
+    const getNodes = () =>
       comfyPage.page.evaluate(() =>
-        window.app!.graph.nodes.map((n: { type: string }) => n.type)
+        window.app!.graph.nodes.map((node) => ({
+          type: node.type,
+          hasErrors: node.has_errors
+        }))
       )
-    await expect.poll(getNodeTypes).toContain('KSampler')
-    await expect.poll(getNodeTypes).toContain('EmptyLatentImage')
     await expect
-      .poll(getNodeTypes)
-      .not.toContain('NonExistentCustomNode_XYZ_12345')
+      .poll(getNodes)
+      .toContainEqual(expect.objectContaining({ type: 'KSampler' }))
+    await expect
+      .poll(getNodes)
+      .toContainEqual(expect.objectContaining({ type: 'EmptyLatentImage' }))
+    await expect.poll(getNodes).toContainEqual({
+      type: 'NonExistentCustomNode_XYZ_12345',
+      hasErrors: true
+    })
   })
 
   test('Canvas has auxclick handler to prevent middle-click paste', async ({

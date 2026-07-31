@@ -2,13 +2,18 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { ComfyApp, app as singletonApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -22,6 +27,8 @@ import {
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
@@ -33,12 +40,14 @@ import { useDialogStore } from '@/stores/dialogStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 
 const {
   mockApiKeyAuthStore,
@@ -69,10 +78,14 @@ const {
     invokeExtensionsAsync: vi.fn()
   },
   mockNodeOutputStore: {
-    refreshNodeOutputs: vi.fn()
+    refreshNodeOutputs: vi.fn(),
+    resetAllOutputsAndPreviews: vi.fn()
   },
   mockWorkspaceWorkflow: {
-    activeWorkflow: null as ComfyWorkflow | null
+    activeWorkflow: null as ComfyWorkflow | null,
+    createNewTemporary: vi.fn(),
+    openWorkflow: vi.fn(),
+    getWorkflowByPath: vi.fn(() => null)
   },
   mockRefreshMissingModelPipeline: vi.fn()
 }))
@@ -111,6 +124,14 @@ vi.mock('@/scripts/metadata/parser', () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
 
+vi.mock('@/utils/eventUtils', async (importOriginal) => {
+  const eventUtils = await importOriginal<typeof import('@/utils/eventUtils')>()
+  return {
+    ...eventUtils,
+    extractFilesFromDragEvent: vi.fn()
+  }
+})
+
 vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   default: {
     uploadFile: vi.fn()
@@ -127,6 +148,13 @@ vi.mock('@/services/extensionService', () => ({
 
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: vi.fn(() => mockNodeOutputStore)
+}))
+
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: vi.fn(() => ({
+    saveCurrentViewport: vi.fn(),
+    updateHash: vi.fn()
+  }))
 }))
 
 vi.mock('@/stores/workspaceStore', () => ({
@@ -160,7 +188,9 @@ function createMockCanvas(): Partial<LGraphCanvas> {
   return {
     graph: mockGraph as LGraph,
     draw: vi.fn(),
-    selectItems: vi.fn()
+    selectItems: vi.fn(),
+    setDirty: vi.fn(),
+    setGraph: vi.fn()
   }
 }
 
@@ -192,10 +222,21 @@ describe('ComfyApp', () => {
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
     mockWorkspaceWorkflow.activeWorkflow = null
+    const temporaryWorkflow = new ComfyWorkflow({
+      path: 'workflows/temporary.json',
+      modified: 0,
+      size: 0
+    })
+    mockWorkspaceWorkflow.createNewTemporary.mockReturnValue(temporaryWorkflow)
+    mockWorkspaceWorkflow.openWorkflow.mockImplementation(async (workflow) => {
+      mockWorkspaceWorkflow.activeWorkflow = workflow
+      return workflow
+    })
     mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
     mockAuthStore.getAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
+    vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
     mockSettingStore.get.mockImplementation((key: string) =>
       key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
     )
@@ -695,6 +736,97 @@ describe('ComfyApp', () => {
     })
   })
 
+  describe('workflow lifecycle', () => {
+    it('clears missing node packs before loading API JSON without missing nodes', async () => {
+      const graph = new LGraph()
+      const activeSubgraph = createTestSubgraph({ rootGraph: graph })
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      Reflect.set(mockCanvas, 'graph', activeSubgraph)
+      Reflect.set(mockCanvas, 'subgraph', activeSubgraph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes(['MissingGroupNode'])
+      const nodeType = 'test/RegisteredApiNode'
+      class RegisteredApiNode extends LGraphNode {}
+      LiteGraph.registerNodeType(nodeType, RegisteredApiNode)
+
+      try {
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: nodeType,
+              inputs: {},
+              _meta: { title: 'Registered API Node' }
+            }
+          },
+          ''
+        )
+
+        expect(missingNodesStore.missingNodesError).toBeNull()
+        expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
+      } finally {
+        LiteGraph.unregisterNodeType(nodeType)
+      }
+    })
+
+    it('creates a removable placeholder for an API JSON missing node', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const cleanupErrorHooks = installErrorClearingHooks(graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      const replacement: NodeReplacement = {
+        new_node_id: 'ReplacementNode',
+        old_node_id: 'Uninstalled_XYZ',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      }
+      const nodeReplacementStore = useNodeReplacementStore()
+      vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+      vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(
+        replacement
+      )
+
+      try {
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: 'Uninstalled_XYZ',
+              inputs: {},
+              _meta: { title: 'Missing API node' }
+            }
+          },
+          'api-missing'
+        )
+
+        const placeholder = graph.getNodeById(toNodeId(1))
+        expect(placeholder).toMatchObject({
+          id: '1',
+          type: 'Uninstalled_XYZ',
+          has_errors: true
+        })
+        expect(placeholder?.serialize()).toMatchObject({
+          title: 'Missing API node'
+        })
+        expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+          {
+            type: 'Uninstalled_XYZ',
+            nodeId: '1',
+            cnrId: undefined,
+            isReplaceable: true,
+            replacement
+          }
+        ])
+
+        if (!placeholder) throw new Error('Expected missing-node placeholder')
+        graph.remove(placeholder)
+        expect(missingNodesStore.missingNodesError).toBeNull()
+      } finally {
+        cleanupErrorHooks()
+      }
+    })
+  })
   describe('refreshComboInNodes', () => {
     it('shows success toast and removes the pending toast after node defs reload', async () => {
       app.vueAppReady = true
@@ -1205,10 +1337,7 @@ describe('ComfyApp', () => {
   })
 
   describe('drop handler', () => {
-    it('syncs graph_mouse from the drop event before downstream handlers run', async () => {
-      // graph_mouse is only updated on mousemove, so when files are dragged in
-      // from another window the canvas-space cursor is stale. The drop handler
-      // must derive the position from the drop event itself.
+    it('syncs the drop position and waits for the replacement workflow before restoring warnings', async () => {
       const graphMouse: [number, number] = [-999, -999]
       const adjustMouseEvent = vi.fn((e: DragEvent) => {
         ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasX = 123
@@ -1220,13 +1349,75 @@ describe('ComfyApp', () => {
         adjustMouseEvent
       } as unknown as LGraphCanvas
 
-      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const outgoingWorkflow = new ComfyWorkflow({
+        path: 'workflows/outgoing.json',
+        modified: 0,
+        size: 0
+      })
+      outgoingWorkflow.pendingWarnings = {
+        missingNodeTypes: ['OutgoingMissingNode']
+      }
+      mockWorkspaceWorkflow.activeWorkflow = outgoingWorkflow
+      const realWorkflowStore = useWorkflowStore()
+      realWorkflowStore.activeWorkflow = outgoingWorkflow as never
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes(['OutgoingMissingNode'])
 
-      document.dispatchEvent(new DragEvent('drop'))
-      await Promise.resolve()
+      const nodeType = 'test/UninstalledDroppedApiNode'
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        prompt: {
+          '1': {
+            class_type: nodeType,
+            inputs: {}
+          }
+        }
+      })
+      vi.mocked(extractFilesFromDragEvent).mockResolvedValue([
+        createTestFile('workflow.json', 'application/json')
+      ])
 
-      expect(adjustMouseEvent).toHaveBeenCalledTimes(1)
-      expect(graphMouse).toEqual([123, 456])
+      let releaseOpenWorkflow: () => void = () => {}
+      const openWorkflowGate = new Promise<void>((resolve) => {
+        releaseOpenWorkflow = resolve
+      })
+      mockWorkspaceWorkflow.openWorkflow.mockImplementation(
+        async (workflow: ComfyWorkflow) => {
+          await openWorkflowGate
+          mockWorkspaceWorkflow.activeWorkflow = workflow
+          realWorkflowStore.activeWorkflow = workflow as never
+          return workflow
+        }
+      )
+
+      try {
+        ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+        document.dispatchEvent(new DragEvent('drop'))
+        await vi.waitFor(() => {
+          expect(mockWorkspaceWorkflow.openWorkflow).toHaveBeenCalledOnce()
+        })
+
+        expect(adjustMouseEvent).toHaveBeenCalledTimes(1)
+        expect(graphMouse).toEqual([123, 456])
+        expect(missingNodesStore.missingNodesError).toBeNull()
+
+        releaseOpenWorkflow()
+        await vi.waitFor(() => {
+          expect(mockWorkspaceWorkflow.activeWorkflow).not.toBe(
+            outgoingWorkflow
+          )
+        })
+        await vi.waitFor(() => {
+          expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+            expect.objectContaining({ type: nodeType, nodeId: '1' })
+          ])
+        })
+      } finally {
+        releaseOpenWorkflow()
+      }
     })
   })
 })
