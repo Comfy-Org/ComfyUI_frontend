@@ -9,10 +9,13 @@ import SubscriptionRequiredDialogContentUnified from './SubscriptionRequiredDial
 const mockHandleSubscribeTeamClick = vi.fn()
 const mockHandleSubscribeClick = vi.fn()
 const mockIsInPersonalWorkspace = ref(false)
+const mockCheckoutStep = ref('pricing')
+const mockPreviewVariant = ref<string | null>(null)
+const mockEmbeddedCheckoutEnabled = ref(false)
 
 vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
   useSubscriptionCheckout: () => ({
-    checkoutStep: ref('pricing'),
+    checkoutStep: mockCheckoutStep,
     isLoadingPreview: ref(false),
     loadingTier: ref(null),
     isSubscribing: ref(false),
@@ -24,7 +27,7 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     activeCheckoutActionUrl: ref(null),
     isPolling: ref(false),
     isTeamCheckout: computed(() => false),
-    previewVariant: computed(() => null),
+    previewVariant: computed(() => mockPreviewVariant.value),
     handleSubscribeClick: mockHandleSubscribeClick,
     handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
     handleBackToPricing: vi.fn(),
@@ -32,7 +35,19 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     handleAddCreditCard: vi.fn(),
     handleConfirmTransition: vi.fn(),
     handleTeamSubscribe: vi.fn(),
+    handleSubscriptionPayment: vi.fn(),
+    handleTeamSubscriptionPayment: vi.fn(),
     handleResubscribe: vi.fn()
+  })
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get embeddedCheckoutEnabled() {
+        return mockEmbeddedCheckoutEnabled.value
+      }
+    }
   })
 }))
 
@@ -71,6 +86,13 @@ const UnifiedPricingTableStub = {
   }
 }
 
+const SubscriptionAddPaymentPreviewWorkspaceStub = {
+  name: 'SubscriptionAddPaymentPreviewWorkspace',
+  props: ['usePaymentElement'],
+  template:
+    '<div data-testid="payment-preview">{{ String(usePaymentElement) }}</div>'
+}
+
 function renderComponent(props: Record<string, unknown> = {}) {
   return render(SubscriptionRequiredDialogContentUnified, {
     props: { onClose: vi.fn(), ...props },
@@ -78,7 +100,8 @@ function renderComponent(props: Record<string, unknown> = {}) {
       plugins: [i18n],
       stubs: {
         UnifiedPricingTable: UnifiedPricingTableStub,
-        SubscriptionAddPaymentPreviewWorkspace: { template: '<div />' },
+        SubscriptionAddPaymentPreviewWorkspace:
+          SubscriptionAddPaymentPreviewWorkspaceStub,
         SubscriptionTransitionPreviewWorkspace: { template: '<div />' },
         SubscriptionSuccessWorkspace: { template: '<div />' }
       }
@@ -90,6 +113,10 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsInPersonalWorkspace.value = false
+    mockCheckoutStep.value = 'pricing'
+    mockPreviewVariant.value = null
+    mockEmbeddedCheckoutEnabled.value = false
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test')
   })
 
   it('advances to team checkout from a team workspace', async () => {
@@ -151,5 +178,24 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
       })
     })
     expect(mockHandleSubscribeClick).not.toHaveBeenCalled()
+  })
+
+  it('keeps the legacy checkout when the embedded checkout flag is disabled', () => {
+    mockCheckoutStep.value = 'preview'
+    mockPreviewVariant.value = 'personal-new'
+
+    renderComponent()
+
+    expect(screen.getByTestId('payment-preview')).toHaveTextContent('false')
+  })
+
+  it('uses the embedded checkout when the flag is enabled', () => {
+    mockCheckoutStep.value = 'preview'
+    mockPreviewVariant.value = 'personal-new'
+    mockEmbeddedCheckoutEnabled.value = true
+
+    renderComponent()
+
+    expect(screen.getByTestId('payment-preview')).toHaveTextContent('true')
   })
 })

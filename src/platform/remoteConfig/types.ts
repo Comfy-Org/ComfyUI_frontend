@@ -123,6 +123,7 @@ export type RemoteConfig = {
   unified_cloud_auth?: boolean
   consolidated_billing_enabled?: boolean
   billing_control_enabled?: boolean
+  embedded_checkout_enabled?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string
   // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).

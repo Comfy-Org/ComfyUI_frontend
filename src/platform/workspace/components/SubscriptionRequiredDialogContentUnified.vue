@@ -162,6 +162,7 @@ import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
@@ -183,8 +184,11 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const stripePaymentElementEnabled = Boolean(
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+const { flags } = useFeatureFlags()
+const stripePaymentElementEnabled = computed(
+  () =>
+    flags.embeddedCheckoutEnabled &&
+    Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
 )
 
 // The embedded-payment confirm step keeps the pricing table's dialog
@@ -198,7 +202,7 @@ const savedMethodsForConfirm = ref<SavedPaymentMethod[] | null>(null)
 const isEmbeddedPaymentStep = computed(
   () =>
     checkoutStep.value === 'preview' &&
-    stripePaymentElementEnabled &&
+    stripePaymentElementEnabled.value &&
     !savedMethodsForConfirm.value?.length &&
     (previewVariant.value === 'team-new' ||
       previewVariant.value === 'personal-new')
@@ -210,7 +214,7 @@ const isEmbeddedPaymentStep = computed(
 const isEmbeddedConfirmStep = computed(
   () =>
     checkoutStep.value === 'preview' &&
-    stripePaymentElementEnabled &&
+    stripePaymentElementEnabled.value &&
     (previewVariant.value === 'team-change' ||
       previewVariant.value === 'personal-change' ||
       (!!savedMethodsForConfirm.value?.length &&
@@ -223,7 +227,7 @@ const isEmbeddedConfirmStep = computed(
 const isEmbeddedSuccessStep = computed(
   () =>
     checkoutStep.value === 'success' &&
-    stripePaymentElementEnabled &&
+    stripePaymentElementEnabled.value &&
     (previewVariant.value === 'team-new' ||
       previewVariant.value === 'personal-new')
 )
@@ -273,7 +277,7 @@ watch(
   [checkoutStep, () => !!savedMethodsForConfirm.value?.length] as const,
   async ([next, nextSaved], [prev, prevSaved]) => {
     const el = contentRoot.value
-    if (!el || !stripePaymentElementEnabled) return
+    if (!el || !stripePaymentElementEnabled.value) return
     const between = (a: string, b: string) =>
       (prev === a && next === b) || (prev === b && next === a)
     const savedFlip =

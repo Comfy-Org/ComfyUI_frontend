@@ -36,6 +36,7 @@ export enum ServerFeatureFlag {
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  EMBEDDED_CHECKOUT_ENABLED = 'embedded_checkout_enabled',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags'
@@ -219,6 +220,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
         cachedBillingControlEnabled
+      )
+    },
+    get embeddedCheckoutEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED,
+        remoteConfig.value.embedded_checkout_enabled,
+        false
       )
     },
     get freeTierJobAllowanceEnabled() {
