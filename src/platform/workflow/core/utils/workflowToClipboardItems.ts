@@ -35,7 +35,7 @@ function getLinks(graph: WorkflowGraph): SerialisableLLink[] {
       parentId
     ])
   )
-  return graph.links.map(
+  return (graph.links ?? []).map(
     ([
       id,
       origin_id,

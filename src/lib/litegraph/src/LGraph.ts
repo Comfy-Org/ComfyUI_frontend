@@ -2157,6 +2157,9 @@ export class LGraph
       [...subgraphNode.subgraph.groups].map((g) => g.serialize())
     )
     for (const g_info of groups) {
+      // The definition survives if another instance remains, so its groups
+      // cannot share root-scoped layout keys with the unpacked copies.
+      g_info.id = ++this.rootGraph.state.lastGroupId
       const group = new LGraphGroup(g_info.title, g_info.id)
       this.add(group, true)
       group.configure(g_info)

@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -83,6 +84,18 @@ describe('workflowToClipboardItems', () => {
       }
     ])
     expect(items.reroutes).toEqual([{ id: 7, pos: [40, 50], linkIds: [] }])
+  })
+
+  it('tolerates a legacy workflow with no links', () => {
+    const workflow = fromPartial<ISerialisedGraph>({
+      id: createUuidv4(),
+      version: 0.4,
+      nodes: [],
+      groups: [],
+      extra: {}
+    })
+
+    expect(workflowToClipboardItems(workflow).links).toEqual([])
   })
 
   it('flattens nested subgraph definitions once', () => {

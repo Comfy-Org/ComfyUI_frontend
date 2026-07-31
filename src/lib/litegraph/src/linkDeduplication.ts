@@ -72,6 +72,25 @@ export function purgeOrphanedLinks(
 }
 
 /**
+ * Removes serialized link ids from a node's slots, returning the id each input
+ * referenced keyed by input name. Node `configure()` resolves those ids against
+ * the destination graph's link map, which may hold unrelated links with the
+ * same numeric ids.
+ */
+export function detachSerialisedLinks(
+  nodeData: ISerialisedNode
+): Map<string, LinkId> {
+  const linkByInputName = new Map<string, LinkId>()
+  for (const input of nodeData.inputs ?? []) {
+    if (input.link != null)
+      linkByInputName.set(input.name, toLinkId(input.link))
+    input.link = null
+  }
+  for (const output of nodeData.outputs ?? []) output.links = []
+  return linkByInputName
+}
+
+/**
  * Re-points each link's `target_slot` at the index of the serialized input
  * that references it. Node `configure()` overrides may reorder a node's
  * serialized inputs in place to match the current node definition (e.g.

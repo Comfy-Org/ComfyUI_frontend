@@ -1385,6 +1385,11 @@ describe('Subgraph Unpacking', () => {
     const rootGraph = new LGraph()
     const subgraph = createSubgraphOnGraph(rootGraph)
 
+    const retainedGroup = new LGraphGroup('shared', 909)
+    retainedGroup.pos = [10, 20]
+    retainedGroup.size = [200, 150]
+    subgraph.add(retainedGroup)
+
     const firstInstance = createTestSubgraphNode(subgraph, { pos: [100, 100] })
     const secondInstance = createTestSubgraphNode(subgraph, { pos: [300, 100] })
     secondInstance.id = toNodeId(2)
@@ -1394,6 +1399,11 @@ describe('Subgraph Unpacking', () => {
     rootGraph.unpackSubgraph(firstInstance)
 
     expect(rootGraph.subgraphs.has(subgraph.id)).toBe(true)
+
+    // The unpacked copy must not share the retained definition's layout entry.
+    const unpackedGroup = rootGraph.groups.find((g) => g.title === 'shared')!
+    unpackedGroup.move(50, 50)
+    expect([...retainedGroup.pos]).toEqual([10, 20])
 
     const serialized = rootGraph.serialize()
     const definitionIds =

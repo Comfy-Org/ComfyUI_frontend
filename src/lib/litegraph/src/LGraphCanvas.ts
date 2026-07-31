@@ -24,6 +24,7 @@ import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
+import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
@@ -4244,6 +4245,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // Nodes
+    const targetSlotByLink = new Map<LinkId, number>()
     for (const info of parsed.nodes) {
       const node = info.type == null ? null : LiteGraph.createNode(info.type)
       if (!node) {
@@ -4254,8 +4256,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       nodes.set(serializeNodeId(info.id), node)
       info.id = -1
 
+      const linkByInputName = detachSerialisedLinks(info)
       graph.add(node)
       node.configure(info)
+
+      // `configure` overrides may reorder inputs to match the node definition,
+      // moving the slot each serialized link targets.
+      for (const [slot, input] of (info.inputs ?? []).entries()) {
+        const linkId = linkByInputName.get(input.name)
+        if (linkId != null && !targetSlotByLink.has(linkId))
+          targetSlotByLink.set(linkId, slot)
+      }
 
       if (node instanceof SubgraphNode) {
         if (
@@ -4314,7 +4325,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const link = outNode?.connect(
           info.origin_slot,
           inNode,
-          info.target_slot,
+          targetSlotByLink.get(toLinkId(info.id)) ?? info.target_slot,
           afterRerouteId
         )
         if (link) links.set(toLinkId(info.id), link)
@@ -4336,7 +4347,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const dx = position[0] - offsetX
     const dy = position[1] - offsetY
     for (const item of created) {
-      item.move(dx, dy, true)
+      // Repositioning a paste is not a user drag, so it ignores the pin.
+      if (item instanceof LGraphNode)
+        item.setPos(item.pos[0] + dx, item.pos[1] + dy)
+      else item.move(dx, dy, true)
     }
 
     // TODO: Report failures, i.e. `failedNodes`
