@@ -312,6 +312,34 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
     }
 
+    it('preserves missing node packs when submitting a prompt', async () => {
+      prepareEmptyPromptQueue()
+      const missingNodesStore = useMissingNodesErrorStore()
+      const executionErrorStore = useExecutionErrorStore()
+      missingNodesStore.setMissingNodeTypes(['test/UninstalledLiveNode'])
+      executionErrorStore.recordExecutionError({
+        prompt_id: 'previous-run',
+        timestamp: 0,
+        node_id: '1',
+        node_type: 'Test',
+        executed: [],
+        exception_message: 'fail',
+        exception_type: 'RuntimeError',
+        traceback: []
+      })
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      await app.queuePrompt(0)
+
+      expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+        'test/UninstalledLiveNode'
+      ])
+      expect(executionErrorStore.lastExecutionError).toBeNull()
+    })
+
     it('shows the error overlay for successful prompt responses with node errors', async () => {
       const graph = new LGraph()
       const workflow = new ComfyWorkflow({
@@ -1036,6 +1064,19 @@ describe('ComfyApp', () => {
       ])
     })
   })
+  describe('clean', () => {
+    it('clears missing node packs explicitly', () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes(['MissingGroupNode'])
+
+      app.clean()
+
+      expect(missingNodesStore.missingNodesError).toBeNull()
+    })
+  })
+
   describe('refreshComboInNodes', () => {
     it('shows success toast and removes the pending toast after node defs reload', async () => {
       app.vueAppReady = true

@@ -83,16 +83,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /** Clear all error state.
-   *  Missing model state is intentionally preserved here to avoid wiping
-   *  in-progress model repairs (importTaskIds, URL inputs, etc.).
-   *  Missing models are cleared separately during workflow load/clean paths. */
-  function clearAllErrors() {
+  /** Clear errors tied to the previous run: execution, prompt, and node errors.
+   *  Missing node, model, and media state is deliberately preserved because a
+   *  submission cannot prove those resources are no longer missing. Missing
+   *  nodes are cleared by `ComfyApp.clean` and the graph error-clearing hooks. */
+  function clearRunErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
     lastNodeErrors.value = null
-    missingNodesStore.setMissingNodeTypes([])
-    isErrorOverlayOpen.value = false
   }
 
   function clearExecutionStartErrors() {
@@ -550,7 +548,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     recordPromptError,
 
     // Clearing
-    clearAllErrors,
+    clearRunErrors,
     clearExecutionStartErrors,
     clearPromptError,
 

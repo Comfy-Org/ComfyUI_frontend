@@ -113,6 +113,7 @@ import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
 import {
   refreshMissingModelPipeline,
@@ -1645,7 +1646,7 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     const executionErrorStore = useExecutionErrorStore()
     const telemetry = useTelemetry()
-    executionErrorStore.clearAllErrors()
+    executionErrorStore.clearRunErrors()
     let queueResultOverride: boolean | null = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
@@ -2430,7 +2431,8 @@ export class ComfyApp {
     const nodeOutputStore = useNodeOutputStore()
     nodeOutputStore.resetAllOutputsAndPreviews()
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.clearAllErrors()
+    executionErrorStore.clearRunErrors()
+    useMissingNodesErrorStore().setMissingNodeTypes([])
 
     useDomWidgetStore().clear()
 
