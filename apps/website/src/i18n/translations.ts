@@ -72,6 +72,9 @@ const translations = {
     en: 'Copy',
     'zh-CN': '复制'
   },
+  'ui.breadcrumb': { en: 'Breadcrumb', 'zh-CN': '面包屑导航' },
+  'ui.readMore': { en: 'Read more', 'zh-CN': '展开' },
+  'ui.readLess': { en: 'Read less', 'zh-CN': '收起' },
   'ui.copied': {
     en: 'Copied',
     'zh-CN': '已复制'
@@ -1575,7 +1578,6 @@ const translations = {
     'zh-CN': '按创作领域分类的 ComfyUI 实战教程与工作流。'
   },
   'learning.categoryNav': { en: 'Category filter', 'zh-CN': '分类筛选' },
-  'learning.detail.close': { en: 'Close', 'zh-CN': '关闭' },
   'learning.featuredBadge': { en: 'Featured', 'zh-CN': '精选' },
   'learning.categories.all': { en: 'All', 'zh-CN': '全部' },
   'learning.categories.all.blurb': {
@@ -1626,10 +1628,10 @@ const translations = {
     'zh-CN':
       '实战 ComfyUI 广告创意教程——情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
   },
-  'learning.tutorials.titlePrefix': {
-    en: 'Learn how to:',
-    'zh-CN': '学习如何：'
-  },
+  // LearningWatchPage
+  'learning.watch.nowWatching': { en: 'Now watching', 'zh-CN': '正在观看' },
+  'learning.watch.watchMore': { en: 'Watch more', 'zh-CN': '观看更多' },
+  'learning.watch.recommended': { en: 'Recommended', 'zh-CN': '推荐' },
 
   // LearningCallToActionSection
   'learning.cta.heading': {
@@ -1639,6 +1641,10 @@ const translations = {
   'learning.cta.contactSales': {
     en: 'Contact Sales',
     'zh-CN': '联系销售'
+  },
+  'learning.cta.runComfy': {
+    en: 'Run Comfy for free',
+    'zh-CN': '免费运行 Comfy'
   },
 
   // GalleryHeroSection
