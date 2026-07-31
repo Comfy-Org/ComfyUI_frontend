@@ -217,7 +217,7 @@ defineExpose({
   <div
     :class="
       cn(
-        'border-agent-border-strong bg-agent-surface-raised focus-within:border-agent-fg-muted relative flex flex-col rounded-2xl border transition-colors',
+        'border-agent-border-strong bg-agent-surface focus-within:border-agent-fg relative flex flex-col rounded-[10px] border transition-colors',
         insertHighlight &&
           'border-agent-accent focus-within:border-agent-accent'
       )
@@ -229,7 +229,7 @@ defineExpose({
       ref="mentionListRef"
       role="listbox"
       :aria-label="t('agent.addNodesFromGraph')"
-      class="border-agent-border bg-agent-surface-raised rounded-agent absolute inset-x-0 bottom-full z-1100 mb-2 max-h-64 overflow-y-auto border p-1 shadow-lg"
+      class="bg-agent-surface-raised absolute inset-x-0 bottom-full z-1100 mb-2 max-h-64 overflow-y-auto rounded-[10px] border border-black/10 p-1 shadow-md"
       @mousedown.prevent
     >
       <div
@@ -240,8 +240,8 @@ defineExpose({
         :aria-selected="index === mentionActive"
         :class="
           cn(
-            'text-agent-fg rounded-agent flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs',
-            index === mentionActive && 'bg-agent-surface-hover'
+            'text-agent-fg flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-sm/5',
+            index === mentionActive && 'bg-neutral-100 text-neutral-900'
           )
         "
         @mouseenter="mentionActive = index"
@@ -259,28 +259,28 @@ defineExpose({
 
     <div
       v-if="$slots.header"
-      class="border-agent-border bg-agent-surface flex h-11 shrink-0 items-center rounded-t-2xl border-b px-2"
+      class="bg-agent-surface flex h-11 shrink-0 items-center rounded-t-[10px] px-2"
     >
       <slot name="header" />
     </div>
 
-    <div v-if="selectionTags.length" class="flex flex-wrap gap-1.5 px-4 pt-3">
+    <div v-if="selectionTags.length" class="flex flex-wrap gap-2 p-3">
       <span
         v-for="tag in selectionTags"
         :key="tag.id"
-        class="rounded-agent bg-agent-pill text-agent-fg inline-flex items-center gap-1.5 py-1 pr-2 pl-1.5 text-xs"
+        class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-xs/4 font-medium"
       >
-        <span class="text-agent-fg-subtle icon-[lucide--at-sign] size-3.5" />
+        <span class="icon-[comfy--node] size-3.5" />
         <span class="max-w-40 truncate">{{ tag.title }}</span>
         <span
-          v-if="tagDupes.has(tag.title)"
+          v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
           class="text-agent-fg-subtle shrink-0"
           >#{{ tag.id }}</span
         >
         <button
           type="button"
           :aria-label="t('agent.remove')"
-          class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg -my-1 -mr-1 flex size-5 cursor-pointer items-center justify-center rounded-full transition-colors"
+          class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
           @click="emit('removeTag', tag.id)"
         >
           <span class="icon-[lucide--x] size-3.5" />
@@ -307,7 +307,7 @@ defineExpose({
       v-model="composer.draft.value"
       :placeholder="t('agent.placeholder')"
       rows="1"
-      class="field-sizing-content max-h-50 min-h-20 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-xl bg-transparent px-4 py-3 wrap-break-word whitespace-pre-wrap placeholder:whitespace-pre-wrap focus-visible:ring-0"
+      class="field-sizing-content max-h-50 min-h-16 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-none bg-transparent px-3 py-2 text-sm/5 wrap-break-word whitespace-pre-wrap placeholder:whitespace-pre-wrap focus-visible:ring-0"
       :aria-expanded="mentionVisible"
       aria-controls="agent-mention-listbox"
       :aria-activedescendant="
