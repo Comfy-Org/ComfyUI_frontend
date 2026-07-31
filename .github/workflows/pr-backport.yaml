@@ -527,7 +527,7 @@ jobs:
       # already landed are skipped by "Filter already backported targets").
       - name: Remove needs-backport label
         if: steps.filter-targets.outputs.skip != 'true' && steps.backport.outputs.failed == ''
-        run: gh pr edit ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --remove-label "needs-backport"
+        run: gh api --method DELETE "repos/${{ github.repository }}/issues/${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}/labels/needs-backport" || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
