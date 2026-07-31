@@ -1,17 +1,29 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SubscriptionRequiredDialogContentUnified from './SubscriptionRequiredDialogContentUnified.vue'
 
-const mockHandleSubscribeTeamClick = vi.fn()
-const mockHandleSubscribeClick = vi.fn()
-const mockIsInPersonalWorkspace = ref(false)
-const mockCheckoutStep = ref('pricing')
-const mockPreviewVariant = ref<string | null>(null)
-const mockEmbeddedCheckoutEnabled = ref(false)
+const {
+  mockHandleSubscribeTeamClick,
+  mockHandleSubscribeClick,
+  mockIsInPersonalWorkspace,
+  mockCheckoutStep,
+  mockPreviewVariant,
+  mockEmbeddedCheckoutEnabled
+} = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return {
+    mockHandleSubscribeTeamClick: vi.fn(),
+    mockHandleSubscribeClick: vi.fn(),
+    mockIsInPersonalWorkspace: ref(false),
+    mockCheckoutStep: ref('pricing'),
+    mockPreviewVariant: ref<string | null>(null),
+    mockEmbeddedCheckoutEnabled: ref(false)
+  }
+})
 
 vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
   useSubscriptionCheckout: () => ({
@@ -89,8 +101,7 @@ const UnifiedPricingTableStub = {
 const SubscriptionAddPaymentPreviewWorkspaceStub = {
   name: 'SubscriptionAddPaymentPreviewWorkspace',
   props: ['usePaymentElement'],
-  template:
-    '<div data-testid="payment-preview">{{ String(usePaymentElement) }}</div>'
+  template: `<section :aria-label="usePaymentElement ? 'Embedded checkout' : 'Legacy checkout'" />`
 }
 
 function renderComponent(props: Record<string, unknown> = {}) {
@@ -116,7 +127,10 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     mockCheckoutStep.value = 'pricing'
     mockPreviewVariant.value = null
     mockEmbeddedCheckoutEnabled.value = false
-    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('advances to team checkout from a team workspace', async () => {
@@ -186,16 +200,21 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
 
     renderComponent()
 
-    expect(screen.getByTestId('payment-preview')).toHaveTextContent('false')
+    expect(
+      screen.getByRole('region', { name: 'Legacy checkout' })
+    ).toBeInTheDocument()
   })
 
   it('uses the embedded checkout when the flag is enabled', () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewVariant.value = 'personal-new'
     mockEmbeddedCheckoutEnabled.value = true
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test')
 
     renderComponent()
 
-    expect(screen.getByTestId('payment-preview')).toHaveTextContent('true')
+    expect(
+      screen.getByRole('region', { name: 'Embedded checkout' })
+    ).toBeInTheDocument()
   })
 })
