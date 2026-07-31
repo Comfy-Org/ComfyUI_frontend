@@ -1,0 +1,124 @@
+---
+// Shared body for /events/[slug] in every locale: the locale-specific page
+// files are thin wrappers so meta, breadcrumbs, and JSON-LD stay defined once.
+// The events directory renders behind the SSR'd-open video dialog; past events
+// carry VideoObject JSON-LD for the recording, upcoming ones an Event node and
+// an add-to-calendar action. Locale comes from the page's URL.
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import EventVideoDialog from './EventVideoDialog.vue'
+import PastEventsSection from './PastEventsSection.vue'
+import UpcomingEventsSection from './UpcomingEventsSection.vue'
+import { localizeHref } from '../../config/routes'
+import type { ComfyEvent } from '../../data/events'
+import {
+  eventPath,
+  eventVideoId,
+  pastEvents,
+  toCalendarEvent,
+  youtubeWatchHref
+} from '../../data/events'
+import { t } from '../../i18n/translations'
+import type { JsonLdNode } from '../../utils/jsonLd'
+import {
+  absoluteUrl,
+  eventNode,
+  jsonLdId,
+  pageContext,
+  videoObjectNode
+} from '../../utils/jsonLd'
+
+interface Props {
+  event: ComfyEvent
+}
+
+const { event } = Astro.props
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+
+const title = event.title[locale]
+const description = event.description[locale]
+// Same build-time clock as the derived lists, so the page body always agrees
+// with the section rendered behind the dialog.
+const isPast = pastEvents.includes(event)
+
+const videoJsonLd: JsonLdNode | undefined =
+  isPast && event.recordingVideoId && event.media && event.publishedDate
+    ? videoObjectNode({
+        siteUrl,
+        id: jsonLdId(url, 'video'),
+        pageUrl: url,
+        name: title,
+        description,
+        thumbnailUrl: event.media.src,
+        contentUrl: youtubeWatchHref(event.recordingVideoId)[locale],
+        embedUrl: `https://www.youtube-nocookie.com/embed/${event.recordingVideoId}`,
+        uploadDate: event.publishedDate,
+        locale
+      })
+    : undefined
+
+const online = event.location?.en === 'Online'
+const linkHref =
+  event.link?.href[locale] ?? localizeHref(eventPath(event), locale)
+
+const eventJsonLd: JsonLdNode | undefined = isPast
+  ? undefined
+  : eventNode({
+      siteUrl,
+      id: jsonLdId(url, `event-${event.id}`),
+      name: title,
+      description,
+      startDate: event.startDateTime,
+      ...(online
+        ? {
+            virtualUrl: linkHref.startsWith('/')
+              ? absoluteUrl(Astro.site, linkHref)
+              : linkHref
+          }
+        : { placeName: event.location?.[locale] }),
+      locale
+    })
+
+const mainEntityId = videoJsonLd?.['@id'] ?? eventJsonLd?.['@id']
+
+const breadcrumbs = [
+  {
+    name: t('breadcrumb.home', locale),
+    url: absoluteUrl(Astro.site, localizeHref('/', locale))
+  },
+  {
+    name: t('breadcrumb.events', locale),
+    url: absoluteUrl(Astro.site, localizeHref('/events', locale))
+  },
+  { name: title }
+]
+---
+
+<BaseLayout
+  title={`${title} - Comfy`}
+  description={description}
+  ogImage={event.media?.src}
+  mainEntityId={typeof mainEntityId === 'string' ? mainEntityId : undefined}
+  breadcrumbs={breadcrumbs}
+  extraJsonLd={[videoJsonLd, eventJsonLd]}
+>
+  {
+    isPast ? (
+      <PastEventsSection locale={locale} />
+    ) : (
+      <UpcomingEventsSection locale={locale} client:visible />
+    )
+  }
+  <EventVideoDialog
+    title={title}
+    description={description}
+    youtubeVideoId={eventVideoId(event)!}
+    calendarEvent={isPast ? undefined : toCalendarEvent(event, locale)}
+    locale={locale}
+    client:load
+  />
+</BaseLayout>

@@ -7,7 +7,12 @@ import type { Locale } from '../../i18n/translations'
 import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue'
 import Button from '../../components/ui/button/Button.vue'
 import { localizeHref } from '../../config/routes'
-import { eventPath, toCalendarEvent, upcomingEvents } from '../../data/events'
+import {
+  eventPath,
+  eventVideoId,
+  toCalendarEvent,
+  upcomingEvents
+} from '../../data/events'
 import { t } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
 
@@ -19,9 +24,12 @@ const events = computed(() =>
   upcomingEvents.map((event) => ({
     ...event,
     calendarEvent: toCalendarEvent(event, locale),
-    learnMore: event.youtubeVideoId
+    learnMore: eventVideoId(event)
       ? { href: localizeHref(eventPath(event), locale) }
-      : { href: event.link.href[locale], newTab: event.link.newTab }
+      : event.link && {
+          href: event.link.href[locale],
+          newTab: event.link.newTab
+        }
   }))
 )
 </script>
@@ -50,7 +58,7 @@ const events = computed(() =>
               <h3
                 class="text-primary-warm-white text-lg font-medium md:text-xl"
               >
-                {{ event.name[locale] }}
+                {{ event.title[locale] }}
               </h3>
               <p
                 class="mt-2 text-sm font-light text-primary-comfy-canvas/60 md:text-base"
@@ -60,11 +68,11 @@ const events = computed(() =>
               <div
                 class="mt-2 flex flex-col gap-2 text-sm font-light text-primary-comfy-canvas/60"
               >
-                <span class="flex items-center gap-2">
+                <span v-if="event.location" class="flex items-center gap-2">
                   <MapPin class="size-4 shrink-0" aria-hidden="true" />
                   {{ event.location[locale] }}
                 </span>
-                <span class="flex items-center gap-2">
+                <span v-if="event.dateLabel" class="flex items-center gap-2">
                   <Calendar class="size-4 shrink-0" aria-hidden="true" />
                   {{ event.dateLabel[locale] }}
                 </span>
@@ -84,6 +92,7 @@ const events = computed(() =>
             </div>
 
             <Button
+              v-if="event.learnMore"
               as="a"
               variant="link"
               :href="event.learnMore.href"
@@ -94,10 +103,10 @@ const events = computed(() =>
                 })
               "
               :append-icon="ArrowRight"
-              :aria-label="`${event.name[locale]} — ${t('events.upcoming.learnMore', locale)}`"
+              :aria-label="`${event.title[locale]} — ${t('events.upcoming.livestream', locale)}`"
               class="shrink-0 normal-case"
             >
-              {{ t('events.upcoming.learnMore', locale) }}
+              {{ t('events.upcoming.livestream', locale) }}
             </Button>
           </li>
         </ul>

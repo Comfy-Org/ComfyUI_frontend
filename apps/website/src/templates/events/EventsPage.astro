@@ -39,29 +39,27 @@ const eventList = itemListNode(
   }))
 )
 
-// Event rich results need a startDate, so undated placeholders are skipped.
 // The location copy doubles as the online/physical discriminator.
-const upcomingEventNodes: JsonLdNode[] = upcomingEvents
-  .filter((event) => event.dateTime)
-  .map((event) => {
-    const href = event.link.href[locale]
-    const online = event.location.en === 'Online'
-    return eventNode({
-      siteUrl,
-      id: jsonLdId(url, `event-${event.id}`),
-      name: event.name[locale],
-      description: event.description[locale],
-      startDate: event.dateTime!,
-      ...(online
-        ? {
-            virtualUrl: href.startsWith('/')
-              ? absoluteUrl(Astro.site, href)
-              : href
-          }
-        : { placeName: event.location[locale] }),
-      locale
-    })
+const upcomingEventNodes: JsonLdNode[] = upcomingEvents.map((event) => {
+  const href =
+    event.link?.href[locale] ?? localizeHref(eventPath(event), locale)
+  const online = event.location?.en === 'Online'
+  return eventNode({
+    siteUrl,
+    id: jsonLdId(url, `event-${event.id}`),
+    name: event.title[locale],
+    description: event.description[locale],
+    startDate: event.startDateTime,
+    ...(online
+      ? {
+          virtualUrl: href.startsWith('/')
+            ? absoluteUrl(Astro.site, href)
+            : href
+        }
+      : { placeName: event.location?.[locale] }),
+    locale
   })
+})
 
 const breadcrumbs = [
   {

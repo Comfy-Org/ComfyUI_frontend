@@ -8,37 +8,45 @@ type EventMedia =
   | { type: 'image'; src: string; alt: LocalizedText }
   | { type: 'video'; src: string; alt: LocalizedText; poster?: string }
 
+export type ComfyEvent = {
+  id: string
+  category: EventCategory
+  title: LocalizedText
+  description: LocalizedText
+  location?: LocalizedText
+  /** Hand-written display date shown on upcoming rows. */
+  dateLabel?: LocalizedText
+  /** ISO start; drives upcoming/past classification. Approximate (set to the
+   * recording's publish date) for events that predate this field. */
+  startDateTime: string
+  /** Defaults to one hour after the start. */
+  endDateTime?: string
+  /** Recording publish date; past-section sort key and VideoObject uploadDate. */
+  publishedDate?: string
+  /** External target used when the event has no /events/[slug] page. */
+  link?: { href: LocalizedText; newTab?: boolean }
+  /** Past-gallery card art. */
+  media?: EventMedia
+  liveVideoId?: string
+  /** Supersedes liveVideoId once the recording is published. */
+  recordingVideoId?: string
+  featured?: {
+    order: number
+    media: EventMedia
+    autoplayMs?: number
+    showTitle?: boolean
+  }
+}
+
 export type FeaturedEvent = {
   id: string
-  eyebrow: LocalizedText
+  eyebrow?: LocalizedText
   title: LocalizedText
   showTitle: boolean
   media: EventMedia
   href?: LocalizedText
   newTab?: boolean
   autoplayMs?: number
-}
-
-export type UpcomingEvent = {
-  id: string
-  name: LocalizedText
-  description: LocalizedText
-  location: LocalizedText
-  dateLabel: LocalizedText
-  dateTime?: string
-  link: { href: LocalizedText; newTab?: boolean }
-  youtubeVideoId?: string
-}
-
-export type PastEvent = {
-  id: string
-  category: EventCategory
-  title: LocalizedText
-  description: LocalizedText
-  media: EventMedia
-  watch: { href: LocalizedText; newTab?: boolean }
-  youtubeVideoId?: string
-  publishedDate: string
 }
 
 const UPCOMING_LIVESTREAM: LocalizedText = {
@@ -74,7 +82,7 @@ const launchesHref: LocalizedText = {
   'zh-CN': localizeHref('/launches', 'zh-CN')
 }
 
-function youtubeWatchHref(videoId: string): LocalizedText {
+export function youtubeWatchHref(videoId: string): LocalizedText {
   const href = `https://www.youtube.com/watch?v=${videoId}`
   return { en: href, 'zh-CN': href }
 }
@@ -89,96 +97,158 @@ function eventPageHref(id: string): LocalizedText {
   }
 }
 
+export const eventVideoId = (event: ComfyEvent): string | undefined =>
+  event.recordingVideoId ?? event.liveVideoId
+
 const EVENT_DURATION_MS = 60 * 60 * 1000
 const SITE_ORIGIN = 'https://comfy.org'
 
 export function toCalendarEvent(
-  event: UpcomingEvent,
+  event: ComfyEvent,
   locale: Locale
-): CalendarEvent | undefined {
-  if (!event.dateTime) return undefined
-  const href = new URL(event.link.href[locale], SITE_ORIGIN).href
-  const start = new Date(event.dateTime)
+): CalendarEvent {
+  const target = eventVideoId(event)
+    ? eventPageHref(event.id)[locale]
+    : (event.link?.href[locale] ?? eventPageHref(event.id)[locale])
+  const href = new URL(target, SITE_ORIGIN).href
+  const start = new Date(event.startDateTime)
   return {
-    title: event.name[locale],
+    title: event.title[locale],
     description: `${event.description[locale]}\n\n${href}`,
-    location: event.location[locale],
+    location: event.location?.[locale] ?? '',
     start,
-    end: new Date(start.getTime() + EVENT_DURATION_MS)
+    end: eventEnd(event)
   }
 }
 
-const foundersLiveFeatured: FeaturedEvent = {
-  id: 'krea-founders-live',
-  eyebrow: UPCOMING_LIVESTREAM,
-  title: {
-    en: 'Krea X Comfy: Founders Live',
-    'zh-CN': 'Krea X Comfy：创始人直播'
-  },
-  // The video artwork already carries the title.
-  showTitle: false,
-  media: eventVideo(
-    'founders-live.mp4',
-    {
-      en: 'Krea X Comfy Founders Live',
-      'zh-CN': 'Krea X Comfy 创始人直播'
-    },
-    'founders-live-thumb.png'
-  ),
-  href: eventPageHref('krea-founders-live'),
-  newTab: false
+function eventEnd(event: ComfyEvent): Date {
+  if (event.endDateTime) return new Date(event.endDateTime)
+  return new Date(new Date(event.startDateTime).getTime() + EVENT_DURATION_MS)
 }
 
-// Referenced by both the hero carousel and the upcoming-events list.
-const postProduction: UpcomingEvent = {
-  id: 'future-ai-post-production',
-  name: {
-    en: 'The Future of AI Post Production',
-    'zh-CN': 'AI 后期制作的未来'
-  },
-  description: {
-    en: 'Ingi Erlingsson explores the future of AI post production with custom LoRAs and motion graphics nodes.',
-    'zh-CN':
-      'Ingi Erlingsson 探讨 AI 后期制作的未来，聚焦自定义 LoRA 与动态图形节点。'
-  },
-  location: { en: 'Online', 'zh-CN': '线上' },
-  dateLabel: {
-    en: 'August 5, 2026 · 1PM PT',
-    'zh-CN': '2026年8月5日 · 下午1点（PT）'
-  },
-  dateTime: '2026-08-05T13:00:00-07:00',
-  link: { href: launchesHref, newTab: false },
-  youtubeVideoId: '4xS4LOn3CTE'
+export type EventStatus = 'upcoming' | 'past'
+
+export function eventStatus(event: ComfyEvent, now: Date): EventStatus {
+  return now.getTime() >= eventEnd(event).getTime() ? 'past' : 'upcoming'
 }
 
-const postProductionFeatured: FeaturedEvent = {
-  id: postProduction.id,
-  eyebrow: UPCOMING_LIVESTREAM,
-  title: postProduction.name,
-  // The artwork already carries the title and date.
-  showTitle: false,
-  media: eventVideo(
-    'future-of-ai-post-production.mp4',
-    {
-      en: 'The Future of AI Post Production livestream',
-      'zh-CN': 'AI 后期制作的未来直播'
-    },
-    'livestream-aug05-v2.jpg'
-  ),
-  href: eventPageHref(postProduction.id),
-  newTab: false,
-  autoplayMs: 12000
+export function deriveUpcomingEvents(
+  events: readonly ComfyEvent[],
+  now: Date
+): readonly ComfyEvent[] {
+  return events
+    .filter((event) => eventStatus(event, now) === 'upcoming')
+    .sort((a, b) => Date.parse(a.startDateTime) - Date.parse(b.startDateTime))
 }
 
-export const featuredEvents: readonly FeaturedEvent[] = [
-  foundersLiveFeatured,
-  postProductionFeatured
-]
+const pastSortKey = (event: ComfyEvent): string =>
+  event.publishedDate ?? event.startDateTime.slice(0, 10)
+
+export function derivePastEvents(
+  events: readonly ComfyEvent[],
+  now: Date
+): readonly ComfyEvent[] {
+  return events
+    .filter((event) => eventStatus(event, now) === 'past')
+    .sort((a, b) => pastSortKey(b).localeCompare(pastSortKey(a)))
+}
+
+export function deriveFeaturedEvents(
+  events: readonly ComfyEvent[],
+  now: Date
+): readonly FeaturedEvent[] {
+  return events
+    .flatMap((event) =>
+      event.featured ? [{ event, featured: event.featured }] : []
+    )
+    .sort((a, b) => a.featured.order - b.featured.order)
+    .map(({ event, featured }) => ({
+      id: event.id,
+      eyebrow:
+        eventStatus(event, now) === 'upcoming'
+          ? UPCOMING_LIVESTREAM
+          : undefined,
+      title: event.title,
+      showTitle: featured.showTitle ?? false,
+      media: featured.media,
+      href: eventVideoId(event) ? eventPageHref(event.id) : event.link?.href,
+      newTab: eventVideoId(event) ? false : event.link?.newTab,
+      autoplayMs: featured.autoplayMs
+    }))
+}
+
+const showdownStreamHref: LocalizedText = {
+  en: 'https://www.youtube.com/live/VeG1bveKZco',
+  'zh-CN': 'https://www.youtube.com/live/VeG1bveKZco'
+}
 
 // zh-CN copy is a first pass and pending native review.
-export const upcomingEvents: readonly UpcomingEvent[] = [postProduction]
-
-const pastEventEntries: readonly PastEvent[] = [
+const events: readonly ComfyEvent[] = [
+  {
+    id: 'future-ai-post-production',
+    category: 'livestream',
+    title: {
+      en: 'The Future of AI Post Production',
+      'zh-CN': 'AI 后期制作的未来'
+    },
+    description: {
+      en: 'Ingi Erlingsson explores the future of AI post production with custom LoRAs and motion graphics nodes.',
+      'zh-CN':
+        'Ingi Erlingsson 探讨 AI 后期制作的未来，聚焦自定义 LoRA 与动态图形节点。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'August 5, 2026 · 10AM PT',
+      'zh-CN': '2026年8月5日 · 上午10点（PT）'
+    },
+    startDateTime: '2026-08-05T10:00:00-07:00',
+    link: { href: launchesHref, newTab: false },
+    liveVideoId: '4xS4LOn3CTE',
+    featured: {
+      order: 2,
+      media: eventVideo(
+        'future-of-ai-post-production.mp4',
+        {
+          en: 'The Future of AI Post Production livestream',
+          'zh-CN': 'AI 后期制作的未来直播'
+        },
+        'livestream-aug05-v2.jpg'
+      ),
+      autoplayMs: 12000
+    }
+  },
+  {
+    id: 'video-model-showdown',
+    category: 'livestream',
+    title: {
+      en: 'Video Model Showdown: Open-Source vs. Paid AI Video Models',
+      'zh-CN': '视频模型对决：开源与付费 AI 视频模型'
+    },
+    description: {
+      en: 'Purz and Allyson put open-source and paid AI video models head to head in a live comparison.',
+      'zh-CN': 'Purz 与 Allyson 现场对决开源与付费 AI 视频模型，实测效果对比。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'August 12, 2026 · 10AM PT',
+      'zh-CN': '2026年8月12日 · 上午10点（PT）'
+    },
+    startDateTime: '2026-08-12T10:00:00-07:00',
+    link: { href: showdownStreamHref, newTab: true },
+    liveVideoId: 'VeG1bveKZco',
+    featured: {
+      order: 3,
+      media: eventVideo(
+        'august-12-livestream.mp4',
+        {
+          en: 'Video Model Showdown livestream',
+          'zh-CN': '视频模型对决直播'
+        },
+        'august-12-livestream.jpg'
+      ),
+      autoplayMs: 5000
+    }
+  },
   {
     id: 'july-launches',
     category: 'livestream',
@@ -194,8 +264,8 @@ const pastEventEntries: readonly PastEvent[] = [
       en: 'July Launches livestream recording',
       'zh-CN': '七月发布直播回放'
     }),
-    watch: { href: youtubeWatchHref('8RGN69h_xTU'), newTab: true },
-    youtubeVideoId: '8RGN69h_xTU',
+    startDateTime: '2026-07-29',
+    recordingVideoId: '8RGN69h_xTU',
     publishedDate: '2026-07-29'
   },
   {
@@ -214,8 +284,8 @@ const pastEventEntries: readonly PastEvent[] = [
       en: 'Black Math X Comfy livestream with Jeremy Sahlman',
       'zh-CN': 'Black Math X Comfy 直播，嘉宾 Jeremy Sahlman'
     }),
-    watch: { href: youtubeWatchHref('O72yyU-jupU'), newTab: true },
-    youtubeVideoId: 'O72yyU-jupU',
+    startDateTime: '2026-07-23',
+    recordingVideoId: 'O72yyU-jupU',
     publishedDate: '2026-07-23'
   },
   {
@@ -234,8 +304,8 @@ const pastEventEntries: readonly PastEvent[] = [
       en: 'Run ComfyUI From Claude/Cursor with Comfy MCP livestream recording',
       'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI 的直播回放'
     }),
-    watch: { href: youtubeWatchHref('sX2sJ5-4MS4'), newTab: true },
-    youtubeVideoId: 'sX2sJ5-4MS4',
+    startDateTime: '2026-07-15',
+    recordingVideoId: 'sX2sJ5-4MS4',
     publishedDate: '2026-07-15'
   },
   {
@@ -254,8 +324,8 @@ const pastEventEntries: readonly PastEvent[] = [
       en: 'Reinventing the Production Pipeline livestream recording',
       'zh-CN': '重塑生产流水线直播回放'
     }),
-    watch: { href: youtubeWatchHref('dsYggO4lsSo'), newTab: true },
-    youtubeVideoId: 'dsYggO4lsSo',
+    startDateTime: '2026-07-08',
+    recordingVideoId: 'dsYggO4lsSo',
     publishedDate: '2026-07-08'
   },
   {
@@ -274,8 +344,8 @@ const pastEventEntries: readonly PastEvent[] = [
       en: 'June Launches livestream recording',
       'zh-CN': '六月发布直播回放'
     }),
-    watch: { href: youtubeWatchHref('yo7b_zHd20g'), newTab: true },
-    youtubeVideoId: 'yo7b_zHd20g',
+    startDateTime: '2026-06-29',
+    recordingVideoId: 'yo7b_zHd20g',
     publishedDate: '2026-06-29'
   },
   {
@@ -294,30 +364,42 @@ const pastEventEntries: readonly PastEvent[] = [
       en: 'Krea X Comfy Founders Live recording',
       'zh-CN': 'Krea X Comfy 创始人直播回放'
     }),
-    watch: { href: youtubeWatchHref('31jiUhCEjJ4'), newTab: true },
-    youtubeVideoId: '31jiUhCEjJ4',
-    publishedDate: '2026-06-24'
+    startDateTime: '2026-06-24',
+    recordingVideoId: '31jiUhCEjJ4',
+    publishedDate: '2026-06-24',
+    featured: {
+      order: 1,
+      media: eventVideo(
+        'founders-live.mp4',
+        {
+          en: 'Krea X Comfy Founders Live',
+          'zh-CN': 'Krea X Comfy 创始人直播'
+        },
+        'founders-live-thumb.png'
+      )
+    }
   }
 ]
 
-// Newest recording first, regardless of entry order above.
-export const pastEvents: readonly PastEvent[] = [...pastEventEntries].sort(
-  (a, b) => b.publishedDate.localeCompare(a.publishedDate)
+// The site is statically built, so classification is fixed at build time: an
+// event moves between the upcoming and past sections on the next deploy.
+const BUILD_NOW = new Date()
+
+export const upcomingEvents = deriveUpcomingEvents(events, BUILD_NOW)
+
+export const pastEvents = derivePastEvents(events, BUILD_NOW)
+
+export const featuredEvents = deriveFeaturedEvents(events, BUILD_NOW)
+
+export const watchablePastEvents: readonly ComfyEvent[] = pastEvents.filter(
+  (event) => eventVideoId(event)
 )
 
 // Events with a stream or recording get their own /events/[slug] page; the
 // slug is the event id.
-export const watchablePastEvents: readonly PastEvent[] = pastEvents.filter(
-  (event) => event.youtubeVideoId
+export const watchableEvents: readonly ComfyEvent[] = events.filter((event) =>
+  eventVideoId(event)
 )
 
-export const getPastEventBySlug = (slug: string): PastEvent | undefined =>
-  watchablePastEvents.find((event) => event.id === slug)
-
-export const watchableUpcomingEvents: readonly UpcomingEvent[] =
-  upcomingEvents.filter((event) => event.youtubeVideoId)
-
-export const getUpcomingEventBySlug = (
-  slug: string
-): UpcomingEvent | undefined =>
-  watchableUpcomingEvents.find((event) => event.id === slug)
+export const getEventBySlug = (slug: string): ComfyEvent | undefined =>
+  watchableEvents.find((event) => event.id === slug)

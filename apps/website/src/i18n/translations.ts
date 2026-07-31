@@ -4738,7 +4738,7 @@ const translations = {
     en: 'Upcoming events',
     'zh-CN': '即将举行的活动'
   },
-  'events.upcoming.learnMore': { en: 'Learn more', 'zh-CN': '了解更多' },
+  'events.upcoming.livestream': { en: 'Livestream', 'zh-CN': '直播' },
   'events.upcoming.addToCalendar': {
     en: 'Add to calendar',
     'zh-CN': '添加到日历'

@@ -3,8 +3,9 @@ import { expect } from '@playwright/test'
 
 import { localizeHref } from '../src/config/routes'
 import {
-  featuredEvents,
   eventPath,
+  eventVideoId,
+  featuredEvents,
   pastEvents,
   upcomingEvents
 } from '../src/data/events'
@@ -169,27 +170,27 @@ test.describe('Events page — desktop @smoke', () => {
 
       for (const [i, event] of upcomingEvents.entries()) {
         const row = rows.nth(i)
-        await expect(row).toContainText(event.name[locale])
-        await expect(row).toContainText(event.location[locale])
-        await expect(row).toContainText(event.dateLabel[locale])
+        await expect(row).toContainText(event.title[locale])
+        await expect(row).toContainText(event.location![locale])
+        await expect(row).toContainText(event.dateLabel![locale])
 
-        const learnMore = row.getByRole('link', {
-          name: new RegExp(t('events.upcoming.learnMore', locale))
+        const livestreamLink = row.getByRole('link', {
+          name: new RegExp(t('events.upcoming.livestream', locale))
         })
         // Events with a stream open their own detail page (dialog over the
         // directory); the rest link to the event's page.
-        const expectedHref = event.youtubeVideoId
+        const expectedHref = eventVideoId(event)
           ? localizeHref(eventPath(event), locale)
-          : event.link.href[locale]
-        await expect(learnMore).toHaveAttribute('href', expectedHref)
+          : event.link!.href[locale]
+        await expect(livestreamLink).toHaveAttribute('href', expectedHref)
       }
     }
   })
 
-  test('upcoming Learn more opens the event page with the video dialog', async ({
+  test('upcoming Livestream link opens the event page with the video dialog', async ({
     page
   }) => {
-    const event = upcomingEvents.find((entry) => entry.youtubeVideoId)
+    const event = upcomingEvents.find((entry) => eventVideoId(entry))
     test.skip(!event, 'needs an upcoming event with a video')
 
     for (const [path, locale] of LOCALES) {
@@ -199,21 +200,21 @@ test.describe('Events page — desktop @smoke', () => {
 
       await section
         .getByRole('link', {
-          name: new RegExp(t('events.upcoming.learnMore', locale))
+          name: `${event!.title[locale]} — ${t('events.upcoming.livestream', locale)}`
         })
         .click()
 
       await expect(page).toHaveURL(
         new RegExp(`${localizeHref(eventPath(event!), locale)}/?$`)
       )
-      const dialog = page.getByRole('dialog', { name: event!.name[locale] })
+      const dialog = page.getByRole('dialog', { name: event!.title[locale] })
       await expect(dialog).toBeVisible()
       await expect(
-        dialog.getByRole('heading', { level: 1, name: event!.name[locale] })
+        dialog.getByRole('heading', { level: 1, name: event!.title[locale] })
       ).toBeVisible()
       await expect(dialog.locator('iframe')).toHaveAttribute(
         'src',
-        new RegExp(event!.youtubeVideoId!)
+        new RegExp(eventVideoId(event!)!)
       )
 
       // Future events offer adding the stream to the visitor's calendar; the
@@ -222,18 +223,20 @@ test.describe('Events page — desktop @smoke', () => {
       const addToCalendar = dialog.getByRole('button', {
         name: t('events.upcoming.addToCalendar', locale)
       })
+      const googleItem = dialog.getByRole('menuitem', {
+        name: t('events.upcoming.calendarGoogle', locale)
+      })
       await expect(async () => {
         await addToCalendar.click()
-        await expect(
-          dialog.getByRole('menuitem', {
-            name: t('events.upcoming.calendarGoogle', locale)
-          })
-        ).toBeVisible({ timeout: 1000 })
+        await expect(googleItem).toBeVisible({ timeout: 1000 })
       }).toPass()
       // Dismiss the menu: while it is open the outside pointerdown only
-      // closes the menu, never the dialog behind it.
-      await page.mouse.click(10, 10)
-      await expect(dialog).toBeVisible()
+      // closes the menu, never the dialog behind it. The menu's outside-press
+      // listener attaches on a later tick, so retry until it is really gone.
+      await expect(async () => {
+        await page.mouse.click(10, 10)
+        await expect(googleItem).toBeHidden({ timeout: 500 })
+      }).toPass()
 
       // Closing returns to the events directory. Retry until the dialog
       // island hydrates and the click lands; once the navigation has happened
@@ -268,10 +271,10 @@ test.describe('Events page — desktop @smoke', () => {
           name: new RegExp(t('events.past.watchNow', locale))
         })
         // Recorded events open their own detail page; the rest link out to the
-        // external recording.
-        const expectedHref = event.youtubeVideoId
+        // event's external page.
+        const expectedHref = eventVideoId(event)
           ? localizeHref(eventPath(event), locale)
-          : event.watch.href[locale]
+          : event.link!.href[locale]
         await expect(watch).toHaveAttribute('href', expectedHref)
       }
     }
