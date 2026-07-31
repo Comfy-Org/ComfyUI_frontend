@@ -175,8 +175,9 @@ export async function fetchJobDetail(
   fetchApi: JobsApiFetcher,
   jobId: JobId
 ): Promise<JobDetail | undefined> {
+  const signal = pageTeardownSignal()
   try {
-    const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`)
+    const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`, { signal })
 
     if (!res.ok) {
       console.warn(`Job not found for job ${jobId}`)
@@ -185,6 +186,7 @@ export async function fetchJobDetail(
 
     return zJobDetail.parse(await res.json())
   } catch (error) {
+    if (signal.aborted || isAbortError(error)) return undefined
     console.error(`Failed to fetch job detail for job ${jobId}:`, error)
     return undefined
   }

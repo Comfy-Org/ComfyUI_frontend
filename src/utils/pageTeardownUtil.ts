@@ -1,23 +1,31 @@
 /**
- * A signal that aborts when the page goes away — navigation, tab close, or a
- * mobile discard. Requests the browser cancels at teardown reject with a
- * generic `TypeError: Failed to fetch`, indistinguishable from a real network
- * fault; aborting them as the page hides lets a caller recognise the ordinary
- * page exit instead.
+ * A signal that aborts when the page is discarded — navigation away, tab or
+ * window close, or a mobile discard. Requests the browser cancels at teardown
+ * reject with a generic `TypeError: Failed to fetch`, indistinguishable from a
+ * real network fault; aborting them as the page goes lets a caller recognise
+ * the ordinary page exit instead.
  *
  * `pagehide` rather than `beforeunload`, which also fires for navigations the
- * user then cancels — nothing should be aborted while the page keeps running.
- * A hidden page can still come back from the back/forward cache, so the
- * controller is replaced after each abort rather than latching.
+ * user then cancels. A persisted `pagehide` is a back/forward-cache freeze
+ * rather than a discard — the page resumes, so its requests are left alone.
+ * The controller is re-minted on `pageshow` so a page a browser restores after
+ * reporting a discard is not left with a spent signal.
  */
 let controller = new AbortController()
 
-function abortInFlightRequests() {
+function abortInFlightRequests(event: PageTransitionEvent) {
+  if (event.persisted) return
   controller.abort()
-  controller = new AbortController()
 }
 
-window.addEventListener('pagehide', abortInFlightRequests)
+function rearmAfterRestore() {
+  if (controller.signal.aborted) controller = new AbortController()
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', abortInFlightRequests)
+  window.addEventListener('pageshow', rearmAfterRestore)
+}
 
 export function pageTeardownSignal(): AbortSignal {
   return controller.signal

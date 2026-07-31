@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   extractWorkflow,
@@ -14,6 +14,15 @@ import type {
 import type { z } from 'zod'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
+
+function dispatchPageTransition(
+  type: 'pagehide' | 'pageshow',
+  { persisted }: { persisted: boolean }
+) {
+  const event = new Event(type)
+  Object.defineProperty(event, 'persisted', { value: persisted })
+  window.dispatchEvent(event)
+}
 
 function createMockJob(
   id: string,
@@ -45,6 +54,10 @@ function createMockResponse(
 }
 
 describe('fetchJobs', () => {
+  beforeEach(() => {
+    dispatchPageTransition('pageshow', { persisted: true })
+  })
+
   describe('fetchHistory', () => {
     it('fetches completed jobs', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
@@ -219,7 +232,7 @@ describe('fetchJobs', () => {
     it('does not report a request cancelled by page teardown', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockImplementation(() => {
-        window.dispatchEvent(new Event('pagehide'))
+        dispatchPageTransition('pagehide', { persisted: false })
         return Promise.reject(new TypeError('Failed to fetch'))
       })
 
@@ -230,9 +243,28 @@ describe('fetchJobs', () => {
       errorSpy.mockRestore()
     })
 
+    it('leaves requests alone when the page is only frozen', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockImplementation(() => {
+        dispatchPageTransition('pagehide', { persisted: true })
+        return Promise.reject(new TypeError('Failed to fetch'))
+      })
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(mockFetch.mock.calls[0][1].signal.aborted).toBe(false)
+      expect(result).toEqual([])
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Jobs API] Error fetching jobs:',
+        expect.any(TypeError)
+      )
+      errorSpy.mockRestore()
+    })
+
     it('still reports network errors after the page is restored', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      window.dispatchEvent(new Event('pagehide'))
+      dispatchPageTransition('pagehide', { persisted: false })
+      dispatchPageTransition('pageshow', { persisted: true })
       const mockFetch = vi
         .fn()
         .mockRejectedValue(new TypeError('Failed to fetch'))
@@ -390,7 +422,9 @@ describe('fetchJobs', () => {
 
       const result = await fetchJobDetail(mockFetch, 'job1')
 
-      expect(mockFetch).toHaveBeenCalledWith('/jobs/job1')
+      expect(mockFetch).toHaveBeenCalledWith('/jobs/job1', {
+        signal: expect.any(AbortSignal)
+      })
       expect(result?.id).toBe('job1')
       expect(result?.outputs).toBeDefined()
     })
@@ -406,12 +440,32 @@ describe('fetchJobs', () => {
       expect(result).toBeUndefined()
     })
 
-    it('returns undefined on error', async () => {
+    it('reports an error and returns undefined on a network fault', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
       const result = await fetchJobDetail(mockFetch, 'job1')
 
       expect(result).toBeUndefined()
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to fetch job detail for job job1:',
+        expect.any(Error)
+      )
+      errorSpy.mockRestore()
+    })
+
+    it('does not report a request cancelled by page teardown', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockImplementation(() => {
+        dispatchPageTransition('pagehide', { persisted: false })
+        return Promise.reject(new TypeError('Failed to fetch'))
+      })
+
+      const result = await fetchJobDetail(mockFetch, 'job1')
+
+      expect(result).toBeUndefined()
+      expect(errorSpy).not.toHaveBeenCalled()
+      errorSpy.mockRestore()
     })
   })
 
