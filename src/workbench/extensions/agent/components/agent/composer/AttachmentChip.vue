@@ -13,25 +13,25 @@ const emit = defineEmits<{ remove: [] }>()
 
 <template>
   <span
-    class="rounded-agent bg-agent-pill text-agent-fg inline-flex items-center gap-1.5 py-1 pr-2 pl-1 text-xs"
+    class="text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-white/15 bg-white/4.5 px-2.5 text-xs/4 font-medium"
   >
     <span
       v-if="uploading"
       :aria-label="$t('agent.uploading')"
-      class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 animate-spin"
+      class="text-agent-fg-subtle icon-[lucide--loader-circle] size-3.5 animate-spin"
     />
     <img
       v-else-if="previewUrl"
       :src="previewUrl"
       :alt="name"
-      class="size-5 rounded-sm object-cover"
+      class="size-3.5 shrink-0 rounded-sm object-cover"
     />
-    <span v-else class="text-agent-fg-subtle icon-[lucide--paperclip] size-4" />
+    <span v-else class="icon-[lucide--image] size-3.5 shrink-0" />
     <span class="max-w-32 truncate">{{ name }}</span>
     <button
       type="button"
       :aria-label="$t('agent.remove')"
-      class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg -my-1 -mr-1 flex size-5 cursor-pointer items-center justify-center rounded-full transition-colors"
+      class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
       @click="emit('remove')"
     >
       <span class="icon-[lucide--x] size-3.5" />

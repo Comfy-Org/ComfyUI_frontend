@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { app } from '@/scripts/app'
@@ -55,7 +55,18 @@ const appMock = vi.hoisted(() => {
   return {
     loadGraphData: vi.fn(),
     graph,
-    canvas: undefined as { graph: { nodes: unknown[] } } | undefined
+    canvas: undefined as
+      | {
+          graph: {
+            nodes: unknown[]
+            getNodeById: (id: string) => unknown | null
+          }
+          selectedItems: Set<unknown>
+          selectItems: ReturnType<typeof vi.fn>
+          multi_select: boolean
+          canvas: { focus: ReturnType<typeof vi.fn> }
+        }
+      | undefined
   }
 })
 
@@ -86,7 +97,11 @@ const hostStores = vi.hoisted(() => ({
     tabs: Map<string, FakeTab>
     getWorkflowByPath: (path: string) => FakeTab | null
   },
-  canvas: null as unknown as { selectedItems: unknown[] }
+  canvas: null as unknown as {
+    selectedItems: unknown[]
+    updateSelectedItems: () => void
+    currentGraph: unknown | null
+  }
 }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
@@ -123,7 +138,15 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
 
 vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const { reactive } = await import('vue')
-  const store = reactive({ selectedItems: [] as unknown[] })
+  const updateSelectedItems = vi.fn()
+  const store = reactive({
+    selectedItems: [] as unknown[],
+    updateSelectedItems,
+    currentGraph: null as unknown | null
+  })
+  updateSelectedItems.mockImplementation(() => {
+    store.selectedItems = [...(appMock.canvas?.selectedItems ?? [])]
+  })
   hostStores.canvas = store
   return { useCanvasStore: () => store }
 })
@@ -233,6 +256,7 @@ beforeEach(() => {
   hostStores.workflow.tabs.clear()
   hostStores.workflow.activeWorkflow = null
   hostStores.canvas.selectedItems = []
+  hostStores.canvas.currentGraph = null
   appMock.graph.nodes = []
   appMock.canvas = undefined
   workflowService.saveWorkflow.mockClear()
@@ -364,13 +388,109 @@ async function openAddMenu(): Promise<void> {
   )
 }
 
-async function openNodePicker(): Promise<void> {
+async function openMentionPicker(): Promise<void> {
+  await userEvent.type(screen.getByRole('textbox'), '@')
+}
+
+type SelectionTestNode = {
+  isNodeFake: true
+  id: number
+  title: string
+}
+
+function setupNodeSelectionCanvas() {
+  const focus = vi.fn()
+  const nodes: SelectionTestNode[] = [
+    { isNodeFake: true, id: 9, title: 'VAE Decode' },
+    { isNodeFake: true, id: 12, title: 'KSampler' }
+  ]
+  const selectedItems = new Set<unknown>()
+  const selectItems = vi.fn((items: unknown[]) => {
+    selectedItems.clear()
+    for (const item of items) selectedItems.add(item)
+  })
+  const graph = {
+    nodes,
+    getNodeById: (id: string) =>
+      nodes.find((node) => String(node.id) === id) ?? null
+  }
+  const canvas = {
+    graph,
+    selectedItems,
+    selectItems,
+    multi_select: false,
+    canvas: { focus }
+  }
+  appMock.canvas = canvas
+  hostStores.canvas.currentGraph = graph
+  return { canvas, focus, nodes, selectedItems, selectItems }
+}
+
+function renderCanvasNodeButtons(
+  nodes: SelectionTestNode[],
+  onClick: (node: SelectionTestNode) => void
+): void {
+  const CanvasNodes = defineComponent({
+    setup: () => () =>
+      h(
+        'div',
+        nodes.map((node) =>
+          h('button', {
+            type: 'button',
+            class: 'lg-node',
+            'data-node-id': String(node.id),
+            tabindex: 0,
+            'aria-label': `Canvas ${node.title}`,
+            onClick: (event: MouseEvent) => {
+              event.stopPropagation()
+              onClick(node)
+            }
+          })
+        )
+      )
+  })
+  render(CanvasNodes)
+}
+
+async function enterNodeSelectionMode(): Promise<void> {
   await openAddMenu()
   await userEvent.click(
     await screen.findByRole('menuitem', {
       name: i18n.global.t('agent.addNodesFromGraph')
     })
   )
+}
+
+async function startVueNodeSelection() {
+  const state = setupNodeSelectionCanvas()
+  const collapseToClickedNode = vi.fn((node: SelectionTestNode) => {
+    state.selectedItems.clear()
+    state.selectedItems.add(node)
+    hostStores.canvas.updateSelectedItems()
+  })
+  const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+  renderCanvasNodeButtons(state.nodes, collapseToClickedNode)
+  useAgentPanelStore().isOpen = true
+
+  await enterNodeSelectionMode()
+  const buttons = state.nodes.map((node) =>
+    screen.getByRole('button', { name: `Canvas ${node.title}` })
+  )
+  await userEvent.click(buttons[0])
+  await userEvent.click(buttons[1])
+  expect(state.selectItems).toHaveBeenLastCalledWith(state.nodes)
+  expect(hostStores.canvas.selectedItems).toEqual(state.nodes)
+
+  return { ...state, buttons, collapseToClickedNode, unmount: panel.unmount }
+}
+
+async function expectLaterClickCannotRestoreAccumulatedNodes(
+  state: Awaited<ReturnType<typeof startVueNodeSelection>>
+): Promise<void> {
+  state.selectItems.mockClear()
+  await userEvent.click(state.buttons[0])
+  expect(state.selectItems).not.toHaveBeenCalled()
+  expect([...state.selectedItems]).toEqual([state.nodes[0]])
 }
 
 // Records what actually reached the upload endpoint, so an exclusion can be
@@ -1429,19 +1549,29 @@ describe('AgentPanelRoot lifecycle', () => {
   })
 
   it('reports the header close click and attributes the panel close to it', async () => {
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const selection = await startVueNodeSelection()
 
-    useAgentPanelStore().isOpen = true
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.close') })
     )
 
+    expect(selection.canvas.multi_select).toBe(false)
     expect(telemetry.trackAgentCloseButtonClicked).toHaveBeenCalled()
     expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
       open_duration_ms: null
     })
     expect(useAgentPanelStore().isOpen).toBe(false)
+    await expectLaterClickCannotRestoreAccumulatedNodes(selection)
+  })
+
+  it('ends node selection when the panel unmounts', async () => {
+    const selection = await startVueNodeSelection()
+
+    selection.unmount()
+
+    expect(selection.canvas.multi_select).toBe(false)
+    await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
   it('does not cancel the in-flight turn when the panel unmounts', async () => {
@@ -3253,7 +3383,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    await openNodePicker()
+    await openMentionPicker()
     await userEvent.click(await screen.findByText('KSampler'))
 
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
@@ -3301,7 +3431,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ]
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
 
-    await openNodePicker()
+    await openMentionPicker()
     const matches = await screen.findAllByText('KSampler')
     await userEvent.click(matches[matches.length - 1])
 
@@ -3580,36 +3710,99 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('stages a chip from the add-menu node picker and sends its id', async () => {
+  it('keeps modifier-free legacy LiteGraph clicks selected', async () => {
     makeTab()
-    const bodies = mockMessagesEndpoint('wf-42')
-    appMock.graph.nodes = [{ id: 9, title: 'VAE Decode' }]
-
+    mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
+    const selectLegacyNode = (node: SelectionTestNode) => {
+      if (!state.canvas.multi_select) state.selectedItems.clear()
+      state.selectedItems.add(node)
+      hostStores.canvas.updateSelectedItems()
+    }
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderCanvasNodeButtons(state.nodes, selectLegacyNode)
     useAgentPanelStore().isOpen = true
 
-    await openNodePicker()
-    await userEvent.click(await screen.findByText('VAE Decode'))
-    expect(
-      screen.getByRole('button', { name: i18n.global.t('agent.remove') })
-    ).toBeInTheDocument()
+    await enterNodeSelectionMode()
+    const buttons = state.nodes.map((node) =>
+      screen.getByRole('button', { name: `Canvas ${node.title}` })
+    )
+    await userEvent.click(buttons[0])
+    await userEvent.click(buttons[1])
+
+    expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+    expect([...state.selectedItems]).toEqual(state.nodes)
+    expect(state.selectItems).not.toHaveBeenCalled()
+  })
+
+  it('restores collapsed Vue-node selections and sends every node id', async () => {
+    makeTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+    const selection = await startVueNodeSelection()
+
+    expect(selection.canvas.multi_select).toBe(true)
+    expect(selection.focus).toHaveBeenCalledOnce()
+    expect(selection.collapseToClickedNode).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
 
     await sendFromComposer('explain this')
 
-    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['9'] } })
+    expect(selection.canvas.multi_select).toBe(false)
+    expect(bodies[0]).toMatchObject({
+      selection: { node_ids: ['9', '12'] }
+    })
+    await expectLaterClickCannotRestoreAccumulatedNodes(selection)
+  })
+
+  it('ends node selection when the active workflow changes', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const selection = await startVueNodeSelection()
+
+    hostStores.workflow.activeWorkflow = addTab('workflows/other.json')
+    await nextTick()
+
+    expect(selection.canvas.multi_select).toBe(false)
+    await expectLaterClickCannotRestoreAccumulatedNodes(selection)
+  })
+
+  it('ends node selection when the viewed graph changes', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const selection = await startVueNodeSelection()
+    const nextGraph = {
+      nodes: [] as SelectionTestNode[],
+      getNodeById: () => null
+    }
+
+    selection.canvas.graph = nextGraph
+    hostStores.canvas.currentGraph = nextGraph
+    await nextTick()
+
+    expect(selection.canvas.multi_select).toBe(false)
+    await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
     appMock.canvas = {
-      graph: { nodes: [{ id: 12, title: 'KSampler' }] }
+      graph: {
+        nodes: [{ id: 12, title: 'KSampler' }],
+        getNodeById: () => null
+      },
+      selectedItems: new Set(),
+      selectItems: vi.fn(),
+      multi_select: false,
+      canvas: { focus: vi.fn() }
     }
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
 
-    await openNodePicker()
+    await openMentionPicker()
     await userEvent.click(await screen.findByText('KSampler'))
     await sendFromComposer('explain this')
 
