@@ -50,6 +50,8 @@
   /* Brand Colors */
   --color-electric-400: #f2ff59;
   --color-sapphire-700: #172dd7;
+  --color-primary-comfy-ink: #211927;
+  --color-primary-comfy-canvas: #c2bfb9;
   --color-brand-yellow: var(--color-electric-400);
   --color-brand-blue: var(--color-sapphire-700);
 }

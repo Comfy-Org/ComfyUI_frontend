@@ -66,21 +66,22 @@
     var(--color-primary-comfy-ink) 88%,
     black 12%
   );
+  /* comfy-ink and comfy-canvas are provided by base.css — never redeclare them */
   --color-primary-comfy-yellow: var(--color-brand-yellow);
   --color-primary-comfy-orange: #fabc25;
-  --color-primary-comfy-ink: #211927;
   --color-primary-comfy-ink-light: #2a2330;
-  --color-primary-comfy-canvas: #c2bfb9;
   --color-primary-warm-white: #f0efed;
   --color-primary-warm-gray: #7e7c78;
   --color-secondary-mauve: #4d3762;
   --color-destructive: #f44336;
-  --color-primary-comfy-plum: #49378b;
+  --color-primary-comfy-plum: var(--color-plum-600);
   --color-secondary-deep-plum: #2b2040;
   --color-secondary-cool-gray: #3c3c3c;
   --color-illustration-forest: #20464c;
   --color-transparency-white-t4: rgb(255 255 255 / 0.04);
-  --color-transparency-ink-t80: rgb(33 25 39 / 0.8);
+  --color-transparency-ink-t80: rgb(
+    from var(--color-primary-comfy-ink) r g b / 0.8
+  );
   --font-formula: 'PP Formula', sans-serif;
   --font-formula-narrow: 'PP Formula Narrow', sans-serif;
   --text-2xs: 0.6875rem;

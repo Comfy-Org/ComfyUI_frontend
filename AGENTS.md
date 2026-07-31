@@ -212,10 +212,22 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
     - e.g. `bg-node-component-surface`
-- NEVER hardcode a brand color hex value
+- NEVER write out a design-system value — consume the token
   - `packages/design-system` is the single source of truth, published as `@comfyorg/design-system` and consumed by downstream apps
-  - Use the token — `bg-brand-yellow` in a class, `var(--color-brand-yellow)` in CSS
-  - A copied hex silently drifts when the design system changes; brand yellow was already stale by one revision (`#f0ff41` vs `#f2ff59`) before this rule existed
+  - Applies to every token it ships: colors, fonts, icons, spacing, radii, shadows, text sizes
+  - Matching the value is not enough. A literal that merely equals the token today still drifts the day the token changes, and it is invisible when it does. What matters is that the value is _read_ from the package, not that it happens to agree with it
+  - How to consume it, by context:
+    - Tailwind class — `bg-brand-yellow`, `fill-primary-comfy-ink`, `font-inter`
+    - CSS, including `style` attributes and inline SVG — `var(--color-brand-yellow)`
+    - Deriving a variant — `rgb(from var(--color-primary-comfy-ink) r g b / 0.8)`, never a pre-mixed literal
+    - Canvas / WebGL / any API needing a concrete string — read it at runtime, e.g. `readDesignToken('--color-primary-comfy-yellow')` in `apps/website`
+    - A token-valued fallback beats a literal one — `getCssVar('--color-muted-foreground') || getCssVar('--color-smoke-800')`
+  - NEVER use `fill="var(--token)"` as an SVG presentation attribute. Substitution functions there were only resolved into SVG2 in Nov 2025 and Chromium support is uneven — use a `fill-*` utility class or a `style="fill: var(...)"` declaration
+  - Two things this rule does NOT mean:
+    - A value that coincidentally equals a token is not a token usage. `#d9d9d9` as a minimap node fill is not `smoke-400`; rewriting it would couple unrelated UI to the brand and change it on the next brand tweak
+    - Where a literal is unavoidable — a `<meta name="theme-color">`, a copyable hex on the brand page, a standalone `.svg` fetched as an image — pin it with a test instead, as `apps/website/src/data/brandColors.test.ts` does
+  - If the token you need is missing from the entry point you import, add it to the design system rather than copying the value. `base.css` is the marketing-site entry point and deliberately excludes the PrimeVue and node-editor theme
+  - Brand yellow was stale by a full revision (`#f0ff41` vs `#f2ff59`) purely because copies existed
 - NEVER use `:class="[]"` to merge class names
   - Always use `import { cn } from '@comfyorg/tailwind-utils'`
     - e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`

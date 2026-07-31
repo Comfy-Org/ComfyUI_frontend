@@ -212,7 +212,7 @@ onMounted(async () => {
 :deep(.p-inputtext) {
   border: none !important;
   box-shadow: none !important;
-  background: #2d2e32 !important;
+  background: var(--color-charcoal-500) !important;
   color: var(--color-primary-comfy-canvas) !important;
   caret-color: var(--color-primary-comfy-canvas);
 }

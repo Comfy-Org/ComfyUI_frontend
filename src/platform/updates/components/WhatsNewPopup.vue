@@ -220,7 +220,7 @@ defineExpose({
 
 .content-text :deep(h1) {
   color: var(--text-secondary);
-  font-family: Inter, sans-serif;
+  font-family: var(--font-inter);
   font-size: 14px;
   font-weight: 400;
   margin-top: 1rem;
@@ -234,7 +234,7 @@ defineExpose({
 /* stylelint-disable-next-line selector-max-type -- generated markdown offers no class hooks */
 .content-text :deep(h1 + p strong) {
   color: var(--text-primary);
-  font-family: Inter, sans-serif;
+  font-family: var(--font-inter);
   font-size: 14px;
   font-weight: 600;
   margin: 0 0 8px;
@@ -244,7 +244,7 @@ defineExpose({
 /* Regular paragraphs - short description */
 .content-text :deep(p) {
   color: var(--text-secondary);
-  font-family: Inter, sans-serif;
+  font-family: var(--font-inter);
   margin: 1rem 0;
 }
 
@@ -271,7 +271,7 @@ defineExpose({
   position: relative;
   padding-left: 18px;
   color: var(--text-secondary);
-  font-family: Inter, sans-serif;
+  font-family: var(--font-inter);
   font-size: 14px;
   font-weight: 400;
   line-height: 1.2102;
@@ -295,7 +295,7 @@ defineExpose({
 
 .content-text :deep(li strong) {
   color: var(--text-secondary);
-  font-family: Inter, sans-serif;
+  font-family: var(--font-inter);
   font-size: 14px;
   font-weight: 400;
   line-height: 1.2102;
@@ -353,7 +353,7 @@ defineExpose({
 /* Secondary headings */
 .content-text :deep(h3) {
   color: var(--text-primary);
-  font-family: Inter, sans-serif;
+  font-family: var(--font-inter);
   font-size: 16px;
   font-weight: 600;
   margin: 16px 0 8px;
