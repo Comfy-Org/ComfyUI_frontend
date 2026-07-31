@@ -87,7 +87,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    *  Missing node, model, and media state is deliberately preserved — a missing
    *  resource can sit on a branch the run never executed, so a submission says
    *  nothing about whether it is still missing, and installing a node pack needs
-   *  a backend restart. Missing state is cleared where the graph is replaced. */
+   *  a backend restart. Missing nodes are cleared by `ComfyApp.clean` and by the
+   *  file-import paths that rebuild the graph. */
   function clearRunErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
