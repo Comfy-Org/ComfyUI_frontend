@@ -9,6 +9,15 @@
         <i class="pi pi-spin pi-spinner" />
         <span>{{ $t('billingOperation.subscriptionProcessing') }}</span>
       </div>
+      <Button
+        v-if="subscriptionActionUrl && permissions.canManageSubscription"
+        variant="primary"
+        size="lg"
+        class="rounded-lg px-4 text-sm font-normal"
+        @click="openSubscriptionVerification"
+      >
+        {{ $t('subscription.preview.completeVerification') }}
+      </Button>
     </div>
 
     <!-- Billing data still loading: avoid rendering a false Free/$0 plan -->
@@ -333,12 +342,22 @@ const { t, n, locale } = useI18n()
 
 const billingOperationStore = useBillingOperationStore()
 const isSettingUp = computed(() => billingOperationStore.isSettingUp)
+const subscriptionActionUrl = computed(
+  () => billingOperationStore.subscriptionActionOperation?.actionUrl ?? null
+)
+
+function openSubscriptionVerification() {
+  if (!subscriptionActionUrl.value) return
+  window.open(subscriptionActionUrl.value, '_blank', 'noopener,noreferrer')
+}
 
 const {
   isActiveSubscription,
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
   subscription,
+  plans,
+  billingStatus,
   subscriptionStatus,
   isLoading,
   error,
@@ -353,10 +372,18 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
+const isTerminalPersonalSubscription = computed(
+  () =>
+    isInPersonalWorkspace.value &&
+    !isActiveSubscription.value &&
+    billingStatus.value === 'inactive'
+)
+
 const isSubscriptionEnded = computed(
   () =>
     subscriptionStatus.value === 'ended' ||
-    (isSubscriptionCancelled.value && !isActiveSubscription.value)
+    (isSubscriptionCancelled.value && !isActiveSubscription.value) ||
+    isTerminalPersonalSubscription.value
 )
 
 // Show subscribe prompt to owners without active subscription. A cancelled plan
@@ -430,6 +457,23 @@ const formattedEndDate = computed(() =>
   formatSubscriptionDate(subscription.value?.endDate, locale.value)
 )
 
+const formattedChangeDate = computed(() =>
+  formatSubscriptionDate(subscription.value?.changeAt, locale.value)
+)
+
+const scheduledPlanName = computed(() => {
+  const scheduledPlan = plans.value.find(
+    (plan) => plan.slug === subscription.value?.scheduledPlanSlug
+  )
+  if (!scheduledPlan) return ''
+  if (scheduledPlan.slug.startsWith('team')) {
+    return t('subscription.teamPlanName')
+  }
+  return t(
+    `subscription.tiers.${resolveSubscriptionTierKey(scheduledPlan.tier)}.name`
+  )
+})
+
 const showSubscriptionStateCard = computed(
   () => isSubscriptionCancelled.value || isSubscriptionEnded.value
 )
@@ -457,6 +501,14 @@ const planDateDisplay = computed(() => {
   if (isSubscriptionCancelled.value) {
     return formattedEndDate.value
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })
+      : ''
+  }
+  if (subscription.value?.scheduledPlanSlug || subscription.value?.changeAt) {
+    return scheduledPlanName.value && formattedChangeDate.value
+      ? t('subscription.changesToPlanOnDate', {
+          plan: scheduledPlanName.value,
+          date: formattedChangeDate.value
+        })
       : ''
   }
   return formattedRenewalDate.value
