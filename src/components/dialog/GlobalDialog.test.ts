@@ -3,7 +3,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -16,7 +16,42 @@ import UiDialog from '@/components/ui/dialog/Dialog.vue'
 import UiDialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import UiDialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
+import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
+
+vi.mock(
+  '@/platform/workspace/composables/useSubscriptionCheckout',
+  async () => {
+    const { computed, ref } = await import('vue')
+
+    return {
+      useSubscriptionCheckout: () => ({
+        checkoutStep: ref('pricing'),
+        isLoadingPreview: ref(false),
+        loadingTier: ref(null),
+        isSubscribing: ref(false),
+        isResubscribing: ref(false),
+        previewData: ref(null),
+        reactivationRequired: ref(false),
+        selectedTierKey: ref(null),
+        selectedTeamStop: ref(null),
+        selectedBillingCycle: ref('yearly'),
+        activeCheckoutActionUrl: ref(null),
+        isPolling: ref(false),
+        isTeamCheckout: computed(() => false),
+        previewVariant: computed(() => null),
+        handleSubscribeClick: vi.fn(),
+        handleSubscribeTeamClick: vi.fn(),
+        handleBackToPricing: vi.fn(),
+        handleSuccessClose: vi.fn(),
+        handleAddCreditCard: vi.fn(),
+        handleConfirmTransition: vi.fn(),
+        handleTeamSubscribe: vi.fn(),
+        handleResubscribe: vi.fn()
+      })
+    }
+  }
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -404,23 +439,26 @@ describe('GlobalDialog Reka overlay scrim', () => {
   })
 
   it('keeps checkout open on the scrim while preserving explicit dismissal', async () => {
-    mountDialog()
+    render(GlobalDialog, {
+      global: {
+        plugins: [PrimeVue, i18n],
+        stubs: {
+          UnifiedPricingTable: true,
+          SubscriptionAddPaymentPreviewWorkspace: true,
+          SubscriptionTransitionPreviewWorkspace: true,
+          SubscriptionSuccessWorkspace: true
+        }
+      }
+    })
     const store = useDialogStore()
     const user = userEvent.setup()
     const key = 'subscription-required'
-    const CheckoutBody = defineComponent({
-      setup: () => () =>
-        h(
-          'button',
-          { onClick: () => store.closeDialog({ key }) },
-          'Close checkout'
-        )
-    })
 
     function openDialog() {
       store.showDialog({
         key,
-        component: CheckoutBody,
+        component: SubscriptionRequiredDialogContentUnified,
+        props: { onClose: () => store.closeDialog({ key }) },
         dialogComponentProps: {
           renderer: 'reka',
           headless: true,
@@ -430,9 +468,11 @@ describe('GlobalDialog Reka overlay scrim', () => {
     }
 
     openDialog()
-    await screen.findByRole('dialog')
+    const dialog = await screen.findByRole('dialog')
     await user.click(screen.getByTestId('dialog-overlay'))
+    await nextTick()
 
+    expect(dialog).toHaveAttribute('data-state', 'open')
     expect(store.isDialogOpen(key)).toBe(true)
 
     await user.keyboard('{Escape}')
@@ -440,7 +480,7 @@ describe('GlobalDialog Reka overlay scrim', () => {
 
     openDialog()
     await screen.findByRole('dialog')
-    await user.click(screen.getByRole('button', { name: 'Close checkout' }))
+    await user.click(screen.getByRole('button', { name: 'Close' }))
 
     await waitFor(() => expect(store.isDialogOpen(key)).toBe(false))
   })
