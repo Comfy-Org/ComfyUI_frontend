@@ -113,6 +113,18 @@ describe('GlobalToast dynamic positioning', () => {
     expect(injectedToastStyle()).not.toContain('width: 400px !important')
   })
 
+  it('keeps the toast eight pixels from an adjacent docked agent panel', async () => {
+    addCanvasElement('graph-canvas-container', 0, 1000)
+    addCanvasElement('graph-canvas-panel', 0, 795)
+    addCanvasElement('docked-agent-panel', 800, 400)
+
+    renderToast()
+    useAgentPanelStore().isOpen = true
+    await flushDebouncedPosition()
+
+    expect(injectedToastStyle()).toContain('right: 408px')
+  })
+
   it('matches the container anchor while the agent panel is closed', async () => {
     addCanvasElement('graph-canvas-container', 0, 1000)
     addCanvasElement('graph-canvas-panel', 0, 600)

@@ -85,10 +85,16 @@ function updateToastPosition() {
       ? (visibleRect('.graph-canvas-panel') ?? container)
       : container
     : undefined
-  const right =
+  const dockedPanel = agentPanelOpen.value
+    ? visibleRect('.docked-agent-panel')
+    : undefined
+  const rightEdge =
     edge === undefined
-      ? window.innerWidth - anchor.left + 20
-      : window.innerWidth - (edge.left + edge.width) + 20
+      ? anchor.left - 20
+      : dockedPanel !== undefined && dockedPanel.left - 8 <= edge.right
+        ? dockedPanel.left - 8
+        : edge.right - 20
+  const right = window.innerWidth - rightEdge
   const styleElement =
     document.getElementById('dynamic-toast-style') || createStyleElement()
 
