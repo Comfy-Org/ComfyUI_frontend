@@ -9,6 +9,7 @@ import type { SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
 import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
+  BillingStatus,
   BillingSubscriptionStatus,
   CurrentTeamCreditStop,
   Plan,
@@ -56,6 +57,7 @@ const teamCreditStops: TeamCreditStops = {
 }
 
 const mockSubscriptionStatus = ref<BillingSubscriptionStatus>('active')
+const mockBillingStatus = ref<BillingStatus>('paid')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockRenewalDate = ref<string | null>(RENEWAL_DATE_ISO)
 const mockEndDate = ref<string | null>(END_DATE_ISO)
@@ -155,6 +157,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     isFreeTier: computed(() => false),
+    billingStatus: mockBillingStatus,
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
     plans: mockPlans,
@@ -297,6 +300,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSubscriptionStatus.value = 'active'
+    mockBillingStatus.value = 'paid'
     mockRenewalDate.value = RENEWAL_DATE_ISO
     mockEndDate.value = END_DATE_ISO
     mockScheduledPlanSlug.value = null
@@ -514,13 +518,32 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps an inactive paid Team plan visible in a Personal workspace', () => {
+  it('shows ended state for an inactive paid Personal workspace despite active status', () => {
     mockIsInPersonalWorkspace.value = true
     mockIsActiveSubscription.value = false
+    mockBillingStatus.value = 'inactive'
+    renderComponent()
+
+    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Team' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps a payment-failed personal plan visible until it is terminal', () => {
+    mockIsInPersonalWorkspace.value = true
+    mockIsActiveSubscription.value = false
+    mockBillingStatus.value = 'payment_failed'
     renderComponent()
 
     expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
-    expect(screen.queryByText('Free')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Your subscription has ended')
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
