@@ -12,6 +12,7 @@ import {
   tutorialDescription,
   tutorialPath
 } from '../src/data/learningTutorials'
+import { externalLinks } from '../src/config/routes'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -145,16 +146,24 @@ test.describe('Learning page @smoke', () => {
     }
   })
 
-  test('call to action links to contact sales', async ({ page }) => {
+  test('call to action links to the workflow library and cloud', async ({
+    page
+  }) => {
+    const heading = page.getByRole('heading', {
+      name: t('learning.cta.heading', 'en'),
+      level: 2
+    })
+    await expect(heading).toBeVisible()
+
+    // Scope to the CTA section so its "Try Workflow" button doesn't collide
+    // with the per-tutorial workflow links elsewhere on the page.
+    const cta = page.locator('section', { has: heading })
     await expect(
-      page.getByRole('heading', {
-        name: t('learning.cta.heading', 'en'),
-        level: 2
-      })
-    ).toBeVisible()
+      cta.getByRole('link', { name: t('cta.tryWorkflow', 'en') })
+    ).toHaveAttribute('href', externalLinks.workflows)
     await expect(
-      page.getByRole('link', { name: t('learning.cta.contactSales', 'en') })
-    ).toHaveAttribute('href', '/contact')
+      cta.getByRole('link', { name: t('learning.cta.runComfy', 'en') })
+    ).toHaveAttribute('href', externalLinks.cloud)
   })
 })
 
