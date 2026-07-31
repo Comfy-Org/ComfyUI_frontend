@@ -380,6 +380,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
   }
 
+  trackDesktopLoginCodeCaptured(): void {
+    this.trackEvent(TelemetryEvents.DESKTOP_LOGIN_CODE_CAPTURED)
+  }
+
   trackSubscription(
     event: 'modal_opened' | 'subscribe_clicked',
     metadata?: SubscriptionMetadata
