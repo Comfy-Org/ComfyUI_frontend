@@ -274,7 +274,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     <template v-if="!showHistory">
       <footer class="shrink-0 py-3">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
-          <RunNoticeBanner />
+          <RunNoticeBanner :expanded="isMaximized" />
           <Composer
             ref="composerRef"
             :streaming="streaming"
@@ -300,8 +300,10 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               />
             </template>
           </Composer>
-          <p class="text-agent-fg-muted -mt-1.5 mb-0 text-xs">
-            {{ t('agent.caption') }}
+          <p
+            class="text-agent-fg-muted -mt-1.5 mb-0 text-center text-xs leading-none"
+          >
+            {{ t(isMaximized ? 'agent.captionExpanded' : 'agent.caption') }}
           </p>
         </div>
       </footer>

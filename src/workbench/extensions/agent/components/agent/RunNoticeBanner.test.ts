@@ -8,8 +8,11 @@ import RunNoticeBanner from './RunNoticeBanner.vue'
 
 const STORAGE_KEY = 'Comfy.AgentPanel.runNoticeDismissed'
 
-function mount() {
-  return render(RunNoticeBanner, { global: { plugins: [i18n] } })
+function mount(expanded = false) {
+  return render(RunNoticeBanner, {
+    props: { expanded },
+    global: { plugins: [i18n] }
+  })
 }
 
 describe('RunNoticeBanner', () => {
@@ -22,6 +25,15 @@ describe('RunNoticeBanner', () => {
     expect(
       screen.getByText(
         "The agent can modify the graph. You'll need to click run to execute the workflow."
+      )
+    ).not.toBeNull()
+  })
+
+  it('shows the expanded run notice in the maximized panel', () => {
+    mount(true)
+    expect(
+      screen.getByText(
+        "The agent can modify your workflow. You'll need to click run to execute."
       )
     ).not.toBeNull()
   })
