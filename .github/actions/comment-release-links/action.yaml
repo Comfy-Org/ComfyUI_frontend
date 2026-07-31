@@ -66,6 +66,10 @@ runs:
             SECTION_NAME='design-system-release'
             LINKS_VALUE='npm design-system|https://www.npmjs.com/package/@comfyorg/design-system/v/{{version}}'
             ;;
+          packages/shared-frontend-utils/package.json)
+            MARKER='shared-frontend-utils-release-summary'
+            LINKS_VALUE='npm shared-frontend-utils|https://www.npmjs.com/package/@comfyorg/shared-frontend-utils/v/{{version}}'
+            ;;
         esac
 
         DIFF_PREFIX='v'

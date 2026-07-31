@@ -16,7 +16,7 @@ function stripPiiKeys(obj?: Record<string, unknown>): void {
  *
  * Ref: posthog.com/tutorials/web-redact-properties
  */
-interface PostHogEventLike {
+export interface PostHogEventLike {
   properties?: Record<string, unknown>
   $set?: Record<string, unknown>
   $set_once?: Record<string, unknown>
