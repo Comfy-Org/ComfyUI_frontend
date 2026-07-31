@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import {
   categoryChapters,
-  episodeLabel,
   filterByCategory,
   learningCategories,
   learningTutorials,
@@ -25,13 +24,6 @@ describe('episode numbering', () => {
       const episodes = filterByCategory(category).map((item) => item.episode)
       if (episodes.length) expect(Math.min(...episodes)).toBe(1)
     }
-  })
-})
-
-describe('episodeLabel', () => {
-  it('composes the localized episode label', () => {
-    expect(episodeLabel(2, 'en')).toBe('Episode 2')
-    expect(episodeLabel(2, 'zh-CN')).toBe('第 2 集')
   })
 })
 

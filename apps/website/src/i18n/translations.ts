@@ -1630,7 +1630,6 @@ const translations = {
   },
   // LearningWatchPage
   'learning.watch.nowWatching': { en: 'Now watching', 'zh-CN': '正在观看' },
-  'learning.watch.episode': { en: 'Episode {count}', 'zh-CN': '第 {count} 集' },
   'learning.watch.watchMore': { en: 'Watch more', 'zh-CN': '观看更多' },
   'learning.watch.recommended': { en: 'Recommended', 'zh-CN': '推荐' },
 

@@ -9,6 +9,7 @@ import {
   learningTutorials,
   populatedCategories,
   recommendedFor,
+  tutorialDescription,
   tutorialPath
 } from '../src/data/learningTutorials'
 import { t } from '../src/i18n/translations'
@@ -339,6 +340,45 @@ test.describe('Learning tutorial page @smoke', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       firstTutorial.title['zh-CN']
     )
+  })
+})
+
+test.describe('Learning tutorial page description toggle @smoke', () => {
+  // The read more/less toggle only surfaces once the description clamps past
+  // four lines. That needs the longest authored description at a narrow
+  // (mobile) viewport — it stays unclamped at desktop width.
+  test.use({ viewport: { width: 375, height: 800 } })
+
+  const [longestDescription] = [...learningTutorials].sort(
+    (a, b) =>
+      tutorialDescription(b, 'en').length - tutorialDescription(a, 'en').length
+  )
+
+  test('read more expands the clamped description and collapses it again', async ({
+    page
+  }) => {
+    await page.goto(tutorialPath(longestDescription))
+
+    const readMore = page.getByRole('button', { name: t('ui.readMore', 'en') })
+    await expect(readMore).toBeVisible()
+    await expect(readMore).toHaveAttribute('aria-expanded', 'false')
+
+    // aria-controls points at the clamped paragraph.
+    const controls = await readMore.getAttribute('aria-controls')
+    const description = page.locator(`p[id="${controls}"]`)
+    await expect(description).toHaveClass(/line-clamp-4/)
+
+    await readMore.click()
+
+    const readLess = page.getByRole('button', { name: t('ui.readLess', 'en') })
+    await expect(readLess).toBeVisible()
+    await expect(readLess).toHaveAttribute('aria-expanded', 'true')
+    await expect(description).not.toHaveClass(/line-clamp-4/)
+
+    await readLess.click()
+    await expect(readMore).toBeVisible()
+    await expect(readMore).toHaveAttribute('aria-expanded', 'false')
+    await expect(description).toHaveClass(/line-clamp-4/)
   })
 })
 

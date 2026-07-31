@@ -636,10 +636,6 @@ export const featuredFor = (
   return pool.find((tutorial) => tutorial.id === FEATURED_ID) ?? pool[0]
 }
 
-/** "Episode N" / "第 N 集" via the `{count}` replace convention. */
-export const episodeLabel = (episode: number, locale: Locale): string =>
-  t('learning.watch.episode', locale).replace('{count}', String(episode))
-
 /** Same-category siblings in episode order, excluding the tutorial itself. */
 export const categoryChapters = (
   tutorial: LearningTutorial

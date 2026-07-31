@@ -3,7 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useResizeObserver } from '@vueuse/core'
 
-import { onMounted, shallowRef, useTemplateRef } from 'vue'
+import { onMounted, shallowRef, useId, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 type WatchBreadcrumb = {
@@ -37,6 +37,7 @@ const {
 
 const expanded = shallowRef(false)
 const clamped = shallowRef(false)
+const descriptionId = useId()
 const descriptionEl = useTemplateRef<HTMLParagraphElement>('descriptionEl')
 
 function updateClamped() {
@@ -98,6 +99,7 @@ useResizeObserver(descriptionEl, updateClamped)
 
         <div v-if="description" class="mt-5">
           <p
+            :id="descriptionId"
             ref="descriptionEl"
             :class="
               cn(
@@ -111,6 +113,8 @@ useResizeObserver(descriptionEl, updateClamped)
           <button
             v-if="readMoreLabel && (clamped || expanded)"
             type="button"
+            :aria-expanded="expanded"
+            :aria-controls="descriptionId"
             class="text-primary-warm-white mt-2 cursor-pointer text-lg font-light hover:underline"
             @click="expanded = !expanded"
           >
