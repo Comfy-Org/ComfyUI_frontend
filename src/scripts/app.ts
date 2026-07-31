@@ -2432,6 +2432,7 @@ export class ComfyApp {
     nodeOutputStore.resetAllOutputsAndPreviews()
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.clearRunErrors()
+    executionErrorStore.dismissErrorOverlay()
     useMissingNodesErrorStore().setMissingNodeTypes([])
 
     useDomWidgetStore().clear()

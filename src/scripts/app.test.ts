@@ -1065,14 +1065,49 @@ describe('ComfyApp', () => {
     })
   })
   describe('clean', () => {
-    it('clears missing node packs explicitly', () => {
+    it('clears error state explicitly', () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       const missingNodesStore = useMissingNodesErrorStore()
+      const executionErrorStore = useExecutionErrorStore()
       missingNodesStore.setMissingNodeTypes(['MissingGroupNode'])
+      executionErrorStore.recordExecutionError({
+        prompt_id: 'previous-run',
+        timestamp: 0,
+        node_id: '1',
+        node_type: 'Test',
+        executed: [],
+        exception_message: 'fail',
+        exception_type: 'RuntimeError',
+        traceback: []
+      })
+      executionErrorStore.recordPromptError({
+        type: 'execution',
+        message: 'fail',
+        details: ''
+      })
+      executionErrorStore.recordNodeErrors({
+        '1': {
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Missing',
+              details: '',
+              extra_info: { input_name: 'x' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'Test'
+        }
+      })
+      executionErrorStore.showErrorOverlay()
 
       app.clean()
 
+      expect(executionErrorStore.lastExecutionError).toBeNull()
+      expect(executionErrorStore.lastPromptError).toBeNull()
+      expect(executionErrorStore.lastNodeErrors).toBeNull()
+      expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
       expect(missingNodesStore.missingNodesError).toBeNull()
     })
   })
