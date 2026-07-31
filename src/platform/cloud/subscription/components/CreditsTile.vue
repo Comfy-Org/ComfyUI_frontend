@@ -28,7 +28,7 @@
           :class="
             cn(
               'icon-[lucide--component] size-4 self-center',
-              inactivePlan ? 'text-muted' : 'text-credit'
+              !inactivePlan && 'text-credit'
             )
           "
         />
@@ -239,7 +239,7 @@ import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
-const { zeroState = false, inactivePlan = false } = defineProps<{
+const { zeroState = false } = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
   zeroState?: boolean
   inactivePlan?: boolean
