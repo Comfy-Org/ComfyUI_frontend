@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ComposerAttachment } from './useComposer'
 import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
 
-function fileOfSize(name: string, size: number): File {
-  const file = new File(['x'], name, { type: 'image/png' })
+function fileOfSize(name: string, size: number, type = 'image/png'): File {
+  const file = new File(['x'], name, { type })
   Object.defineProperty(file, 'size', { value: size })
   return file
 }
@@ -57,6 +57,39 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
     expect(onError).toHaveBeenCalledOnce()
     expect(onError).toHaveBeenCalledWith('huge.png is larger than 20MB')
+  })
+
+  it('uses the resolved limit for each file', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const maxBytes = vi.fn((file: File) =>
+      file.type.startsWith('video/') ? 30 * 1024 * 1024 : MAX_ATTACHMENT_BYTES
+    )
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, maxBytes, ...registry })
+    const movie = fileOfSize('movie.mp4', 25 * 1024 * 1024, 'video/mp4')
+
+    await addFiles([movie])
+
+    expect(maxBytes).toHaveBeenCalledWith(movie)
+    expect(upload).toHaveBeenCalledWith(movie)
+  })
+
+  it('rejects against the resolved limit and warns with that limit', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({
+      upload,
+      maxBytes: () => 30 * 1024 * 1024,
+      onError,
+      ...registry
+    })
+
+    await addFiles([fileOfSize('huge.mp4', 30 * 1024 * 1024 + 1, 'video/mp4')])
+
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledWith('huge.mp4 is larger than 30MB')
   })
 
   it('stages an uploading chip immediately, then settles it with the server ref', async () => {
