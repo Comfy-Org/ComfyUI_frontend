@@ -2607,6 +2607,10 @@
     "topupTimeout": "Top-up verification timed out",
     "authenticationUnavailable": "Secure payment authentication is unavailable. Please refresh and try again.",
     "authenticationFailed": "Payment authentication wasn't completed",
+    "authenticationFailedDetail": "We couldn't complete payment verification. Please try again.",
+    "retryVerification": "Retry verification",
+    "reconciliationTitle": "Payment received — confirmation pending",
+    "reconciliationDetail": "Your payment was received, but we couldn't finish updating your workspace. Contact support and include operation ID {operationId}.",
     "cancelFailed": "Failed to cancel subscription",
     "cancelTimeout": "Subscription cancellation timed out"
   },

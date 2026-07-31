@@ -207,6 +207,51 @@
       <!-- Pending 3DS verification is the only actionable step, so it takes
            the top of the column; the pay button below it is demoted and
            disabled while it shows. -->
+      <div
+        v-if="reconciliationOperationId"
+        class="rounded-lg border border-interface-stroke bg-secondary-background p-4"
+      >
+        <p class="m-0 font-semibold text-base-foreground">
+          {{ $t('billingOperation.reconciliationTitle') }}
+        </p>
+        <p class="m-0 mt-1 text-sm text-muted-foreground">
+          {{
+            $t('billingOperation.reconciliationDetail', {
+              operationId: reconciliationOperationId
+            })
+          }}
+        </p>
+      </div>
+
+      <div
+        v-if="authenticationState === 'failed_retryable' && authenticationError"
+        role="alert"
+        class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+      >
+        {{ authenticationError }}
+      </div>
+
+      <Button
+        v-if="
+          (authenticationState === 'failed_retryable' ||
+            authenticationState === 'requires_action') &&
+          canRetryAuthentication
+        "
+        variant="inverted"
+        size="lg"
+        class="w-full rounded-lg"
+        :loading="isAuthenticating"
+        @click="$emit('retryAuthentication')"
+      >
+        {{
+          $t(
+            authenticationState === 'failed_retryable'
+              ? 'billingOperation.retryVerification'
+              : 'subscription.preview.completeVerification'
+          )
+        }}
+      </Button>
+
       <Button
         v-if="actionUrl"
         variant="inverted"
@@ -272,6 +317,7 @@ import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricin
 import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type {
+  BillingAuthenticationState,
   PreviewSubscribeResponse,
   SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
@@ -289,6 +335,11 @@ interface Props {
   /** Team-plan checkout (selected slider stop); overrides tier-derived display. */
   teamPlan?: TeamPlanSelection | null
   actionUrl?: string | null
+  authenticationState?: BillingAuthenticationState | null
+  authenticationError?: string | null
+  canRetryAuthentication?: boolean
+  isAuthenticating?: boolean
+  reconciliationOperationId?: string | null
   usePaymentElement?: boolean
   /** Saved payment methods; when present the capture form is skipped and the
    *  confirm renders as a narrow summary. One method shows a Change
@@ -307,6 +358,11 @@ const {
   previewData = null,
   teamPlan = null,
   actionUrl = null,
+  authenticationState = null,
+  authenticationError = null,
+  canRetryAuthentication = false,
+  isAuthenticating = false,
+  reconciliationOperationId = null,
   usePaymentElement = false,
   savedMethods = null,
   selectedSavedMethodId = null,
@@ -321,6 +377,7 @@ const emit = defineEmits<{
   'update:selectedSavedMethodId': [id: string | null]
   applyPromotionCode: [code: string]
   invalidateQuote: []
+  retryAuthentication: []
 }>()
 
 const { t, n } = useI18n()
