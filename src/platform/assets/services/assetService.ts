@@ -882,8 +882,15 @@ function createAssetService() {
   async function getJobAssetIds(jobId: string): Promise<AssetId[]> {
     const assetIds: AssetId[] = []
     let offset = 0
+    let batchCount = 0
 
     while (true) {
+      if (batchCount++ >= MAX_PAGINATION_BATCHES) {
+        throw new Error(
+          `Job assets pagination exceeded ${MAX_PAGINATION_BATCHES} batches`
+        )
+      }
+
       const query = new URLSearchParams({
         limit: DEFAULT_LIMIT.toString(),
         offset: offset.toString()

@@ -107,7 +107,8 @@ export function useMediaAssetActions() {
 
   const deleteAssetApi = async (
     asset: AssetItem,
-    assetType: string
+    assetType: string,
+    outputDeletionByJob: Map<string, Promise<void>>
   ): Promise<void> => {
     if (assetType === 'output' || assetType === 'temp') {
       const jobId =
@@ -116,13 +117,21 @@ export function useMediaAssetActions() {
         throw new Error('Unable to extract job ID from asset')
       }
 
-      const assetIds = isCloud ? await assetService.getJobAssetIds(jobId) : []
-      const results = await Promise.allSettled(
-        assetIds.map((id) => assetService.deleteAsset(id))
-      )
-      const failure = results.find((result) => result.status === 'rejected')
-      if (failure?.status === 'rejected') throw failure.reason
-      await deleteHistoryJob(jobId)
+      const pendingDeletion =
+        outputDeletionByJob.get(jobId) ??
+        (async () => {
+          const assetIds = isCloud
+            ? await assetService.getJobAssetIds(jobId)
+            : []
+          const results = await Promise.allSettled(
+            assetIds.map((id) => assetService.deleteAsset(id))
+          )
+          const failure = results.find((result) => result.status === 'rejected')
+          if (failure?.status === 'rejected') throw failure.reason
+          await deleteHistoryJob(jobId)
+        })()
+      outputDeletionByJob.set(jobId, pendingDeletion)
+      await pendingDeletion
     } else {
       // Input assets can only be deleted in cloud environment
       if (!isCloud) {
@@ -703,10 +712,15 @@ export function useMediaAssetActions() {
             )
 
             try {
+              const outputDeletionByJob = new Map<string, Promise<void>>()
               // Delete all assets using Promise.allSettled to track individual results
               const results = await Promise.allSettled(
                 assetArray.map((asset) =>
-                  deleteAssetApi(asset, getAssetType(asset))
+                  deleteAssetApi(
+                    asset,
+                    getAssetType(asset),
+                    outputDeletionByJob
+                  )
                 )
               )
 

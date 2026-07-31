@@ -513,6 +513,30 @@ describe(assetService.getJobAssetIds, () => {
       'Invalid job assets pagination offset'
     )
   })
+
+  it('throws instead of deleting from an unbounded asset listing', async () => {
+    fetchApiMock.mockImplementation((input) => {
+      const offset = Number(
+        new URL(String(input), 'http://localhost').searchParams.get('offset')
+      )
+      return Promise.resolve(
+        buildResponse({
+          assets: [{ id: `asset-${offset}` }],
+          pagination: {
+            offset,
+            limit: 500,
+            total: Number.MAX_SAFE_INTEGER,
+            has_more: true
+          }
+        })
+      )
+    })
+
+    await expect(assetService.getJobAssetIds('job-1')).rejects.toThrow(
+      'exceeded 1000 batches'
+    )
+    expect(fetchApiMock).toHaveBeenCalledTimes(1000)
+  })
 })
 
 describe(assetService.getAssetModels, () => {

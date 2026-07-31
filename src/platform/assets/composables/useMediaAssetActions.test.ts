@@ -1350,6 +1350,31 @@ describe('useMediaAssetActions', () => {
       expect(mockUpdateFlatOutputs).toHaveBeenCalled()
     })
 
+    it('cleans up a selected output job only once', async () => {
+      mockIsCloud.value = true
+      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-1' })
+      mockGetJobAssetIds.mockResolvedValue(['output-uuid-1', 'output-uuid-2'])
+      mockDeleteAsset.mockResolvedValue(undefined)
+      const actions = useMediaAssetActions()
+
+      await actions.deleteAssets([
+        createMockAsset({
+          id: 'generated-card-1',
+          name: 'generated-1.png',
+          tags: ['output']
+        }),
+        createMockAsset({
+          id: 'generated-card-2',
+          name: 'generated-2.png',
+          tags: ['output']
+        })
+      ])
+
+      expect(mockGetJobAssetIds).toHaveBeenCalledOnce()
+      expect(mockDeleteAsset).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(api.fetchApi)).toHaveBeenCalledOnce()
+    })
+
     it('keeps history when linked asset lookup fails', async () => {
       mockIsCloud.value = true
       mockGetJobAssetIds.mockRejectedValue(new Error('lookup failed'))
