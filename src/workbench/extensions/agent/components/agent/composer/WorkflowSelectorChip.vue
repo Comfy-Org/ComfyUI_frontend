@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   DropdownMenuContent,
   DropdownMenuItemIndicator,
@@ -73,7 +74,12 @@ function onSearchKeydown(event: KeyboardEvent): void {
           )
         "
         :aria-label="t('agent.switchWorkflow')"
-        class="rounded-agent bg-agent-pill text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-1.5 px-2 text-xs transition-colors"
+        :class="
+          cn(
+            'rounded-agent bg-agent-pill text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-1.5 px-2 text-xs transition-colors',
+            !current && 'w-full'
+          )
+        "
       >
         <span
           data-testid="workflow-selector-icon"

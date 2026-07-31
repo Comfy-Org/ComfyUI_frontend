@@ -1504,6 +1504,11 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(workflowService.openWorkflow).toHaveBeenCalledWith(other)
     )
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent('other')
   })
 
   it('flags the bound tab as agent-edited for exactly the turn duration', async () => {
