@@ -15,6 +15,8 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 
+const mockTrackFeatureFlagExposure = vi.hoisted(() => vi.fn())
+
 // Mock the API module
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -28,9 +30,19 @@ vi.mock('@/platform/distribution/types', () => ({
   isNightly: false
 }))
 
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackFeatureFlagExposure: mockTrackFeatureFlagExposure
+  })
+}))
+
 describe('useFeatureFlags', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   describe('flags object', () => {
@@ -39,6 +51,120 @@ describe('useFeatureFlags', () => {
 
       expect(isReadonly(flags)).toBe(true)
       expect(isReactive(flags)).toBe(true)
+    })
+
+    it('reports each resolved production feature flag', () => {
+      vi.stubEnv('DEV', false)
+      vi.mocked(distributionTypes).isCloud = false
+      vi.mocked(distributionTypes).isNightly = false
+      remoteConfig.value = {}
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+      const cases = [
+        [
+          'supportsPreviewMetadata',
+          ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA,
+          undefined
+        ],
+        ['maxUploadSize', ServerFeatureFlag.MAX_UPLOAD_SIZE, undefined],
+        ['assetsEnabled', ServerFeatureFlag.ASSETS, false],
+        ['supportsManagerV4', ServerFeatureFlag.MANAGER_SUPPORTS_V4, undefined],
+        [
+          'managerSupportsCsrfPost',
+          ServerFeatureFlag.MANAGER_SUPPORTS_CSRF_POST,
+          undefined
+        ],
+        [
+          'modelUploadButtonEnabled',
+          ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
+          false
+        ],
+        ['assetRenameEnabled', ServerFeatureFlag.ASSET_RENAME_ENABLED, false],
+        [
+          'privateModelsEnabled',
+          ServerFeatureFlag.PRIVATE_MODELS_ENABLED,
+          false
+        ],
+        [
+          'onboardingSurveyEnabled',
+          ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED,
+          false
+        ],
+        ['linearToggleEnabled', ServerFeatureFlag.LINEAR_TOGGLE_ENABLED, false],
+        [
+          'teamWorkspacesEnabled',
+          ServerFeatureFlag.TEAM_WORKSPACES_ENABLED,
+          false
+        ],
+        [
+          'partnerNodeGovernanceEnabled',
+          ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
+          false
+        ],
+        ['userSecretsEnabled', ServerFeatureFlag.USER_SECRETS_ENABLED, false],
+        ['nodeReplacementsEnabled', ServerFeatureFlag.NODE_REPLACEMENTS, false],
+        [
+          'nodeLibraryEssentialsEnabled',
+          ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
+          false
+        ],
+        [
+          'workflowSharingEnabled',
+          ServerFeatureFlag.WORKFLOW_SHARING_ENABLED,
+          false
+        ],
+        [
+          'comfyHubUploadEnabled',
+          ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED,
+          false
+        ],
+        [
+          'comfyHubProfileGateEnabled',
+          ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
+          false
+        ],
+        ['showSignInButton', ServerFeatureFlag.SHOW_SIGNIN_BUTTON, undefined],
+        [
+          'unifiedCloudAuthEnabled',
+          ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
+          false
+        ],
+        [
+          'consolidatedBillingEnabled',
+          ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED,
+          false
+        ],
+        [
+          'billingControlEnabled',
+          ServerFeatureFlag.BILLING_CONTROL_ENABLED,
+          false
+        ],
+        [
+          'freeTierJobAllowanceEnabled',
+          ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED,
+          false
+        ],
+        ['signupTurnstileMode', ServerFeatureFlag.SIGNUP_TURNSTILE, 'off'],
+        [
+          'supportsModelTypeTags',
+          ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
+          false
+        ]
+      ] as const
+
+      for (const [property, key, expectedValue] of cases) {
+        expect(flags[property]).toBe(expectedValue)
+        expect(mockTrackFeatureFlagExposure).toHaveBeenLastCalledWith(
+          key,
+          expectedValue
+        )
+      }
+
+      expect(Object.keys(flags)).toEqual(cases.map(([property]) => property))
+      expect(mockTrackFeatureFlagExposure).toHaveBeenCalledTimes(cases.length)
     })
 
     it('should access supportsPreviewMetadata', () => {
@@ -114,6 +240,10 @@ describe('useFeatureFlags', () => {
       expect(api.getServerFeature).toHaveBeenCalledWith(
         'custom.feature',
         'default'
+      )
+      expect(mockTrackFeatureFlagExposure).toHaveBeenCalledExactlyOnceWith(
+        'custom.feature',
+        'custom-value'
       )
     })
 

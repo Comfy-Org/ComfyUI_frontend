@@ -3,11 +3,17 @@ import type { NodeReplacementResponse } from './types'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { api } from '@/scripts/api'
 import { fetchNodeReplacements } from './nodeReplacementService'
 import { useNodeReplacementStore } from './nodeReplacementStore'
+
+const mockFeatureFlags = vi.hoisted(() => ({
+  nodeReplacementsEnabled: true
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: mockFeatureFlags })
+}))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn()
@@ -15,12 +21,6 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 vi.mock('./nodeReplacementService', () => ({
   fetchNodeReplacements: vi.fn()
-}))
-
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getServerFeature: vi.fn()
-  }
 }))
 
 function mockSettingStore(enabled: boolean) {
@@ -38,14 +38,7 @@ function mockSettingStore(enabled: boolean) {
 function createStore(settingEnabled = true, serverFeatureEnabled = true) {
   setActivePinia(createPinia())
   mockSettingStore(settingEnabled)
-  vi.mocked(api.getServerFeature).mockImplementation(
-    (flag: string, defaultValue?: unknown) => {
-      if (flag === ServerFeatureFlag.NODE_REPLACEMENTS) {
-        return serverFeatureEnabled
-      }
-      return defaultValue
-    }
-  )
+  mockFeatureFlags.nodeReplacementsEnabled = serverFeatureEnabled
   return useNodeReplacementStore()
 }
 
