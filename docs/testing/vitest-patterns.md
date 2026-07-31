@@ -1,7 +1,6 @@
 ---
 globs:
   - '**/*.test.ts'
-  - '**/*.spec.ts'
 ---
 
 # Vitest Patterns

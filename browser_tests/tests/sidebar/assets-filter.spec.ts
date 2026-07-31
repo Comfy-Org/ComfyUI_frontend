@@ -8,7 +8,7 @@ import type {
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { createMixedMediaJobs } from '@e2e/fixtures/helpers/AssetsHelper'
 
-// The assets sidebar's media-type filter menu only renders in cloud mode
+// The assets sidebar's attribute filter menu only renders in cloud mode
 // (`MediaAssetFilterBar.vue` gates `MediaAssetFilterButton` behind `isCloud`).
 // We tag tests `@cloud` so they run against the cloud Playwright project,
 // and register both `/api/assets` and `/api/jobs` route handlers as auto
@@ -20,7 +20,14 @@ import { createMixedMediaJobs } from '@e2e/fixtures/helpers/AssetsHelper'
 // virtualize the 3D card out of the initial render (#11635). Filtering reads the
 // full store, so the per-filter count assertions still cover the behavior.
 
-const MIXED_JOBS = createMixedMediaJobs(['images', 'video', 'audio', '3D'])
+const now = Date.now()
+const ages = [0, 86_400_000, 8 * 86_400_000, 40 * 86_400_000]
+const MIXED_JOBS = createMixedMediaJobs(['images', 'video', 'audio', '3D']).map(
+  (job, index) => ({
+    ...job,
+    create_time: now - (ages[index] ?? 0)
+  })
+)
 
 // MediaAssetCard renders the filename *without* extension via
 // getFilenameDetails(...).filename, so card-text matching uses the basename.
@@ -111,8 +118,8 @@ const test = comfyPageFixture.extend<{
   ]
 })
 
-test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
-  test('Filter menu opens and exposes all four media-type checkboxes', async ({
+test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
+  test('Filter menu groups media type and date under Attribute', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
@@ -120,6 +127,11 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
     await tab.waitForAssets()
 
     await tab.openFilterMenu()
+
+    await expect(tab.mediaTypeFilterMenuItem).toBeVisible()
+    await expect(tab.dateFilterMenuItem).toBeVisible()
+
+    await tab.openMediaTypeFilterMenu()
 
     await expect(tab.filterImageCheckbox).toBeVisible()
     await expect(tab.filterVideoCheckbox).toBeVisible()
@@ -152,62 +164,69 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
     await expect(tab.getAssetCardByName(threeDCardName)).toHaveCount(0)
   })
 
-  test('Selecting only "Video" hides non-video assets', async ({
-    comfyPage
-  }) => {
+  test('Applied filters survive sidebar remounts', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
+    const imageFilter = tab.removeFilterButton('Image')
+    const dateFilter = tab.removeFilterButton('Past 7 days')
+
     await tab.open()
     await tab.waitForAssets()
-
     await tab.openFilterMenu()
-    await tab.toggleMediaTypeFilter('video')
-
-    await expect(tab.assetCards).toHaveCount(1)
-    await expect(tab.getAssetCardByName(videoCardName)).toBeVisible()
-  })
-
-  test('Selecting only "Audio" hides non-audio assets', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets()
-
-    await tab.openFilterMenu()
-    await tab.toggleMediaTypeFilter('audio')
-
-    await expect(tab.assetCards).toHaveCount(1)
-    await expect(tab.getAssetCardByName(audioCardName)).toBeVisible()
-  })
-
-  test('Selecting only "3D" hides non-3D assets', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets()
-
-    await tab.openFilterMenu()
-    await tab.toggleMediaTypeFilter('3d')
-
-    await expect(tab.assetCards).toHaveCount(1)
-    await expect(tab.getAssetCardByName(threeDCardName)).toBeVisible()
-  })
-
-  test('Multiple filters combine via OR (image + video)', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets()
-
-    await tab.openFilterMenu()
+    await tab.selectDateFilter('Past 7 days')
     await tab.toggleMediaTypeFilter('image')
-    await tab.toggleMediaTypeFilter('video')
+    await tab.closeFilterMenu()
+
+    await expect(imageFilter).toBeVisible()
+    await expect(dateFilter).toBeVisible()
+    await expect(tab.assetCards).toHaveCount(1)
+
+    await comfyPage.menu.nodeLibraryTab.tabButton.click()
+    await expect(tab.generatedTab).toBeHidden()
+    await tab.open()
+
+    await expect(imageFilter).toBeVisible()
+    await expect(dateFilter).toBeVisible()
+    await expect(tab.assetCards).toHaveCount(1)
+
+    await tab.close()
+    await expect(tab.generatedTab).toBeHidden()
+    await tab.open()
+
+    await expect(imageFilter).toBeVisible()
+    await expect(dateFilter).toBeVisible()
+    await expect(tab.assetCards).toHaveCount(1)
+  })
+
+  test('Date and media filters compose and applied controls can clear them', async ({
+    comfyPage,
+    page
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    await tab.openFilterMenu()
+    await tab.selectDateFilter('Past 7 days')
+    await expect(tab.filterButton).toHaveAttribute('aria-expanded', 'true')
+    await tab.toggleMediaTypeFilter('image')
+    await tab.closeFilterMenu()
+
+    await expect(tab.assetCards).toHaveCount(1)
+    await expect(tab.getAssetCardByName(imageCardName)).toBeVisible()
+    await expect(tab.removeFilterButton('Image')).toBeVisible()
+    await expect(tab.removeFilterButton('Past 7 days')).toBeVisible()
+
+    await tab.removeFilterButton('Image').click()
 
     await expect(tab.assetCards).toHaveCount(2)
     await expect(tab.getAssetCardByName(imageCardName)).toBeVisible()
     await expect(tab.getAssetCardByName(videoCardName)).toBeVisible()
-    await expect(tab.getAssetCardByName(audioCardName)).toHaveCount(0)
-    await expect(tab.getAssetCardByName(threeDCardName)).toHaveCount(0)
+    await expect(tab.removeFilterButton('Image')).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Clear all' }).click()
+
+    await expect(tab.getAssetCardByName(audioCardName)).toBeVisible()
+    await expect(tab.removeFilterButton('Past 7 days')).toHaveCount(0)
   })
 
   test('Unchecking the active filter restores previously hidden cards', async ({

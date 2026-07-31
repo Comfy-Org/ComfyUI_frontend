@@ -350,7 +350,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         }
 
         if (input._widget) this.ensureWidgetRemoved(input._widget)
-        if (input.widgetId) useWidgetValueStore().deleteWidget(input.widgetId)
+        if (input.widgetId) {
+          const id = input.widgetId
+          queueMicrotask(() => {
+            if (this.inputs.some((input) => input.widgetId === id)) return
+            useWidgetValueStore().deleteWidget(id)
+          })
+        }
 
         delete input.pos
         delete input.widget
@@ -469,7 +475,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     super.configure(info)
-    this._applyPromotedWidgetValues(info.widgets_values)
+    if (!info.widgets_values_named || !LiteGraph.namedValuesRestore)
+      this._applyPromotedWidgetValues(info.widgets_values)
   }
 
   private _applyPromotedWidgetValues(
