@@ -1,36 +1,23 @@
 import { useElementVisibility, useRafFn } from '@vueuse/core'
 
 import type { Ref } from 'vue'
-import { onScopeDispose, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { AutoplayState } from './idleAutoplay'
-import { advanceAutoplay, startAutoplay } from './idleAutoplay'
+import { advanceAutoplay, isAutoplayDone, startAutoplay } from './idleAutoplay'
 import type { CameraPose } from './cameraVocabulary'
 import { clampAzimuth, clampElevation, clampZoom } from './cameraVocabulary'
 
-const IDLE_DELAY = 1000
+/** How long the hero must sit untouched before the one-shot demo starts. */
+const START_DELAY = 1500
 
-/** Only deliberate interaction with the hero itself counts as activity —
- * pointerdown covers clicks and drags on the nodes and sliders, keydown the
- * hidden range inputs, wheel the camera zoom. Page-level mouse movement no
- * longer holds the demo back. */
-const ACTIVITY_EVENTS = [
-  'pointerdown',
-  'keydown',
-  'wheel',
-  'touchstart'
-] as const
-
-/** A press suppresses the demo until it ends, however long it lasts; the
- * idle countdown starts at release. Bound to window because a drag that
- * started on a slider can end outside the hero. */
-const RELEASE_EVENTS = [
-  'pointerup',
-  'pointercancel',
-  'touchend',
-  'touchcancel'
-] as const
+/** What counts as deliberately taking the controls. A mouse press anywhere on
+ * the hero qualifies (cards, sliders, the 3D scene); a touch only when it
+ * lands on an actual control or a draggable node — a touch elsewhere is just
+ * the page scrolling past. */
+const CONTROL_SELECTOR =
+  'a, button, input, label, [role="slider"], [data-camera-scene], [data-hero-node]'
 
 /** A backgrounded tab resumes with one enormous frame delta; cap it so the
  * pose eases onward instead of teleporting. */
@@ -43,45 +30,42 @@ interface HeroPipelineState {
 }
 
 /**
- * Lets the hero demonstrate itself once the visitor has left it alone, driving
- * the camera pose and colour grade until they take over again. Activity is
- * scoped to the hero element, hovering the 3D ANGLE node holds the demo still,
- * and it runs only while the graph is on screen, so the desktop and mobile
- * copies never animate at once.
+ * Lets the hero demonstrate itself exactly once. If the visitor hasn't touched
+ * it shortly after it comes on screen, the camera makes one full orbit and
+ * settles back where it started; any deliberate interaction — before or during
+ * the tour — cancels it for good, so the demo never fights the visitor for the
+ * controls. Hovering the 3D ANGLE node holds the tour still, and it only
+ * advances while the graph is on screen, so the desktop and mobile copies
+ * never animate at once. `prefers-reduced-motion` disables it entirely.
  */
 export function useIdleAutoplay(
   { pose, hue, saturation }: HeroPipelineState,
   target: Ref<HTMLElement | undefined>
 ): void {
-  const idle = ref(false)
+  const armed = ref(false)
+  const dismissed = ref(false)
   const hoveringAngle = ref(false)
-  const pointerHeld = ref(false)
   const onScreen = useElementVisibility(target)
 
-  let idleTimer: ReturnType<typeof setTimeout> | undefined
+  let startTimer: ReturnType<typeof setTimeout> | undefined
 
-  function restartIdleTimer() {
-    idle.value = false
-    clearTimeout(idleTimer)
-    idleTimer = setTimeout(() => (idle.value = true), IDLE_DELAY)
+  function dismiss() {
+    dismissed.value = true
+    clearTimeout(startTimer)
   }
 
-  function onActivity(event: Event) {
-    if (event.type === 'pointerdown' || event.type === 'touchstart') {
-      // Held interactions suppress the demo outright; the countdown to
-      // resuming starts when the press is released, not when it began.
-      pointerHeld.value = true
-      idle.value = false
-      clearTimeout(idleTimer)
-      return
-    }
-    restartIdleTimer()
+  function onPointerDown(event: Event) {
+    const { pointerType, target: pressed } = event as PointerEvent
+    if (
+      pointerType === 'mouse' ||
+      (pressed as Element | null)?.closest(CONTROL_SELECTOR)
+    )
+      dismiss()
   }
 
-  function onRelease() {
-    if (!pointerHeld.value) return
-    pointerHeld.value = false
-    restartIdleTimer()
+  function onWheel(event: Event) {
+    if ((event.target as Element | null)?.closest('[data-camera-scene]'))
+      dismiss()
   }
 
   function onPointerOver(event: Event) {
@@ -101,52 +85,36 @@ export function useIdleAutoplay(
     (el) => {
       teardowns.forEach((fn) => fn())
       teardowns.length = 0
+      clearTimeout(startTimer)
       if (!el) return
-      for (const type of ACTIVITY_EVENTS) {
-        el.addEventListener(type, onActivity, { capture: true, passive: true })
+      const listeners: [string, (event: Event) => void][] = [
+        ['pointerdown', onPointerDown],
+        ['keydown', dismiss],
+        ['wheel', onWheel],
+        ['pointerover', onPointerOver],
+        ['pointerleave', onPointerLeave]
+      ]
+      for (const [type, handler] of listeners) {
+        el.addEventListener(type, handler, { capture: true, passive: true })
         teardowns.push(() =>
-          el.removeEventListener(type, onActivity, { capture: true })
+          el.removeEventListener(type, handler, { capture: true })
         )
       }
-      el.addEventListener('pointerover', onPointerOver, { passive: true })
-      el.addEventListener('pointerleave', onPointerLeave, { passive: true })
-      teardowns.push(() => {
-        el.removeEventListener('pointerover', onPointerOver)
-        el.removeEventListener('pointerleave', onPointerLeave)
-      })
-      for (const type of RELEASE_EVENTS) {
-        window.addEventListener(type, onRelease, {
-          capture: true,
-          passive: true
-        })
-        teardowns.push(() =>
-          window.removeEventListener(type, onRelease, { capture: true })
-        )
-      }
-      restartIdleTimer()
+      startTimer = setTimeout(() => (armed.value = true), START_DELAY)
     },
     { immediate: true }
   )
 
   onScopeDispose(() => {
-    clearTimeout(idleTimer)
+    clearTimeout(startTimer)
     teardowns.forEach((fn) => fn())
   })
 
-  function seedFromPose(): AutoplayState {
-    return startAutoplay({
-      azimuth: pose.azimuth,
-      elevation: pose.elevation,
-      zoom: pose.zoom,
-      hue: hue.value,
-      saturation: saturation.value
-    })
-  }
-
-  let state = seedFromPose()
+  let state: AutoplayState | undefined
 
   const { pause, resume } = useRafFn(
     ({ delta }) => {
+      if (!state) return
       state = advanceAutoplay(state, Math.min(delta / 1000, MAX_FRAME_SECONDS))
       pose.azimuth = clampAzimuth(state.azimuth)
       pose.elevation = clampElevation(state.elevation)
@@ -155,23 +123,31 @@ export function useIdleAutoplay(
       // wrap on the way out or the handle walks off the end of its track.
       hue.value = ((Math.round(state.hue) % 360) + 360) % 360
       saturation.value = Math.round(state.saturation * 100) / 100
+      if (isAutoplayDone(state)) dismissed.value = true
     },
     { immediate: false }
   )
 
-  watch(
+  const playing = computed(
     () =>
-      idle.value &&
-      !pointerHeld.value &&
+      armed.value &&
+      !dismissed.value &&
       !hoveringAngle.value &&
       onScreen.value &&
-      !prefersReducedMotion(),
-    (active) => {
-      if (!active) return pause()
-      // Restart from what the visitor left behind, not from the pose this
-      // loop last wrote, so taking over and stepping away reads continuous.
-      state = seedFromPose()
-      resume()
-    }
+      !prefersReducedMotion()
   )
+
+  watch(playing, (active) => {
+    if (!active) return pause()
+    // Seed once, from the untouched pose; a hover or scroll-away pause
+    // resumes the same tour rather than starting a new one.
+    state ??= startAutoplay({
+      azimuth: pose.azimuth,
+      elevation: pose.elevation,
+      zoom: pose.zoom,
+      hue: hue.value,
+      saturation: saturation.value
+    })
+    resume()
+  })
 }

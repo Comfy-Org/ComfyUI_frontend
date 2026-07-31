@@ -15,16 +15,17 @@ matching pre-rendered result and the live prompt "words" below the graph update
 
 ## Idle self-demo
 
-After three seconds without input the graph drives itself, orbiting the camera
-and drifting the colour grade so the interaction is discoverable without a
-prompt to click. Any activity hands control straight back, and motion resumes
-from wherever the visitor left the pose rather than snapping to a cycle.
+If the visitor hasn't touched the graph shortly after it comes on screen, it
+demonstrates itself exactly once: a single full orbit that returns to the pose
+it started from, then stops for good. Interacting at any point — before or
+during the demo — cancels it permanently; it never wrestles the visitor for
+the controls.
 
 `idleAutoplay.ts` holds the motion curve as a pure step function (tested
-directly); `useIdleAutoplay.ts` wires it to idle detection and a rAF loop. It
-runs only while the graph is actually on screen, which also keeps the desktop
-and mobile copies — both always mounted, one hidden by CSS — from animating at
-once. `prefers-reduced-motion: reduce` disables it entirely.
+directly); `useIdleAutoplay.ts` wires it to interaction detection and a rAF
+loop. It runs only while the graph is actually on screen, which also keeps the
+desktop and mobile copies — both always mounted, one hidden by CSS — from
+animating at once. `prefers-reduced-motion: reduce` disables it entirely.
 
 ## The "no backend" illusion
 
@@ -36,20 +37,21 @@ return an empty state — see `assetResolver.ts` and its tests.
 
 ## Adding angle assets
 
-1. Drop the source render into `apps/website/design/reference/renders/`, named
-   with its pose slug: `{azimuth}__{elevation}__{distance}.png`, e.g.
-   `right-side-view__eye-level-shot__medium-shot.png`. Use the exact label
-   vocabulary from `cameraVocabulary.ts` (`AZIMUTH_LABELS`, `ELEVATION_LABELS`,
-   `DISTANCE_LABELS`), spaces replaced with hyphens. Source PNGs are gitignored;
-   only the optimized output is committed.
-2. Convert to WebP under `public/hero/angles/` at the same slug.
-3. Add the pose to `ANGLE_ASSETS` in `assetResolver.ts`. The data structure
-   already covers the full 8 × 4 × 3 grid, so the resolver picks it up with no
-   other change.
+The shipped set is a uniform 16-frame 360° turntable (22.5° steps) rendered at
+eye level as medium shots, extracted from a single orbit video. Frames are
+named by turntable azimuth plus the label vocabulary from
+`cameraVocabulary.ts`: `az{degrees}__{elevation}__{distance}.webp`, e.g.
+`az022-5__eye-level-shot__medium-shot.webp` (degrees use `-5` for half steps).
+The source frames are 4:3; each WebP is composed onto the cards' 1392×752
+canvas by mirror-extending and blurring the frame's own background, with the
+sharp centre feathered over it.
 
-The v1 set covers a sparse subset; poses without an exact asset snap to the
-nearest neighbour, so filling in the ring makes the interaction feel denser
-without any code change.
+To add elevation or distance variants (top/bottom views, close-ups, wide
+shots) later: convert to WebP under `public/hero/angles/` at the matching
+slug and add the pose to `ANGLE_ASSETS` in `assetResolver.ts`. The resolver
+scores azimuth first (circular, in degrees), then elevation, then distance, so
+new variants slot in with no other change; poses without an exact asset snap
+to the nearest shipped frame.
 
 ## Vendored code
 

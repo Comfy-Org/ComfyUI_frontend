@@ -15,15 +15,26 @@ useIdleAutoplay({ pose, hue, saturation }, flowEl)
 </script>
 
 <template>
-  <div ref="flowEl" class="flex w-full max-w-md flex-col items-stretch gap-4">
-    <div class="aspect-square w-full">
-      <AngleNode
-        v-model:azimuth="pose.azimuth"
-        v-model:elevation="pose.elevation"
-        v-model:zoom="pose.zoom"
-      />
+  <div ref="flowEl" class="flex w-full max-w-md flex-col items-stretch gap-3">
+    <div class="relative">
+      <div class="aspect-4/3 w-full pt-6 pl-8">
+        <AngleNode
+          v-model:azimuth="pose.azimuth"
+          v-model:elevation="pose.elevation"
+          v-model:zoom="pose.zoom"
+        />
+      </div>
+      <!-- The input photo pinned over the node's corner keeps the
+           image-in → image-out story visible on one phone screen. -->
+      <div class="absolute top-0 left-0 aspect-4/3 w-28 -rotate-3 shadow-xl">
+        <HeroImageCard
+          src="/hero/input.webp"
+          alt="Input image: futuristic over-ear headphones with transparent ear cups and glowing yellow accents"
+          dot
+        />
+      </div>
     </div>
-    <div class="relative aspect-1392/752 w-full">
+    <div class="relative aspect-4/3 w-full">
       <HeroImageCard
         :src="output.src"
         :filter="outputFilter"
