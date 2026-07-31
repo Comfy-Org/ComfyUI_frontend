@@ -1,15 +1,31 @@
 <template>
   <div
+    ref="contentRoot"
     :class="
       cn(
         'relative flex h-full flex-col gap-4 overflow-y-auto p-4 pt-6',
-        checkoutStep === 'pricing' &&
-          'xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)]'
+        (checkoutStep === 'pricing' || isEmbeddedPaymentStep) &&
+          'xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)]',
+        // Pin the embedded step to the pricing table's exact height (min-h
+        // alone is a floor — the Stripe iframe would stretch the dialog once
+        // mounted) and hand scrolling to the payment column so the summary
+        // panel stays fixed; below xl the whole dialog scrolls as before.
+        isEmbeddedPaymentStep &&
+          'xl:h-[min(740px,90vh)] xl:gap-0 xl:overflow-hidden xl:rounded-2xl xl:p-0',
+        isEmbeddedSuccessStep &&
+          'overflow-hidden rounded-2xl bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px]',
+        (isEmbeddedPaymentStep || isEmbeddedSuccessStep) &&
+          'motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out',
+        // The w-fit shell hugs min-content on phones; give the embedded
+        // steps a real width floor below xl.
+        (isEmbeddedPaymentStep || isEmbeddedSuccessStep) &&
+          'max-xl:w-[min(430px,92vw)]',
+        isEmbeddedPaymentStep && 'max-xl:h-[85vh]'
       )
     "
   >
     <Button
-      v-if="checkoutStep === 'preview'"
+      v-if="checkoutStep === 'preview' && !isEmbeddedPaymentStep"
       size="icon"
       variant="muted-textonly"
       class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
@@ -23,14 +39,25 @@
     <Button
       size="icon"
       variant="muted-textonly"
-      class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
+      :class="
+        cn(
+          'absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10',
+          isEmbeddedPaymentStep && 'max-xl:hidden'
+        )
+      "
       :aria-label="$t('g.close')"
       @click="onClose"
     >
       <i class="pi pi-times text-xl" />
     </Button>
 
-    <div class="flex flex-col items-center gap-3">
+    <!-- The embedded payment step titles itself ("Confirm your payment");
+         stacking "Choose a Plan" above it doubled the header and made this
+         step taller than the pricing table. -->
+    <div
+      v-if="!isEmbeddedPaymentStep && !isEmbeddedSuccessStep"
+      class="flex flex-col items-center gap-3"
+    >
       <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
         {{ $t('subscription.descriptionWorkspace') }}
       </h2>
@@ -80,6 +107,7 @@
         @add-credit-card="handleTeamSubscribe"
         @confirm-payment="handleTeamSubscriptionPayment"
         @back="handleBackToPricing"
+        @close="onClose"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -93,6 +121,7 @@
         @add-credit-card="handleAddCreditCard"
         @confirm-payment="handleSubscriptionPayment"
         @back="handleBackToPricing"
+        @close="onClose"
       />
 
       <SubscriptionTransitionPreviewWorkspace
@@ -112,6 +141,7 @@
       :team-plan="selectedTeamStop"
       :preview-data="previewData"
       :is-team="isTeamCheckout"
+      :dark-surface="isEmbeddedSuccessStep"
       @close="handleSuccessClose"
     />
   </div>
@@ -120,7 +150,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import { onMounted } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
@@ -145,6 +175,27 @@ const emit = defineEmits<{
 
 const stripePaymentElementEnabled = Boolean(
   import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+)
+
+// The embedded-payment confirm step keeps the pricing table's dialog
+// dimensions so stepping between them reads as one dialog changing content,
+// not two dialogs. Transition previews (no payment form) stay narrow.
+const isEmbeddedPaymentStep = computed(
+  () =>
+    checkoutStep.value === 'preview' &&
+    stripePaymentElementEnabled &&
+    (previewVariant.value === 'team-new' ||
+      previewVariant.value === 'personal-new')
+)
+
+// Success after an embedded checkout: same pinned height, narrow width, and
+// the darker surface — the dialog collapses around the receipt.
+const isEmbeddedSuccessStep = computed(
+  () =>
+    checkoutStep.value === 'success' &&
+    stripePaymentElementEnabled &&
+    (previewVariant.value === 'team-new' ||
+      previewVariant.value === 'personal-new')
 )
 
 const {
@@ -180,6 +231,29 @@ onMounted(() => {
     return
   }
   void handleSubscribeClick(initialCheckout)
+})
+
+// Height transitions with an `auto` endpoint never engage in Chromium (even
+// under interpolate-size), and CSS-transition FLIP gets eaten by the same
+// patch cycle that swaps the step content — so the height tween runs on the
+// Web Animations API instead, outside the CSS transition machinery. On
+// desktop both steps pin the same height, so this no-ops.
+const contentRoot = ref<HTMLElement>()
+watch(checkoutStep, async (next, prev) => {
+  const el = contentRoot.value
+  if (!el || !stripePaymentElementEnabled) return
+  const between = (a: string, b: string) =>
+    (prev === a && next === b) || (prev === b && next === a)
+  if (!between('preview', 'success')) return
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const from = el.getBoundingClientRect().height
+  await nextTick()
+  const to = el.getBoundingClientRect().height
+  if (Math.abs(from - to) < 2) return
+  el.animate([{ height: `${from}px` }, { height: `${to}px` }], {
+    duration: 300,
+    easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+  })
 })
 
 // Backspace mirrors the back arrow on the confirm step, but never while an

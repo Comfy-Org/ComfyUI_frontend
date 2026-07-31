@@ -1,21 +1,79 @@
 <template>
-  <h2 class="m-0 mb-8 text-center text-xl text-muted-foreground lg:text-2xl">
-    {{ $t('subscription.preview.confirmPayment') }}
-  </h2>
   <div
-    class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm"
+    :class="
+      cn(
+        'mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm',
+        // Edge-to-edge Stripe-checkout split on desktop: the summary is a
+        // flush full-height sidebar on base-background, payment beside it on
+        // the shell. Mobile keeps the stacked flow.
+        usePaymentElement &&
+          'xl:min-h-0 xl:w-full xl:max-w-none xl:flex-1 xl:flex-row xl:items-stretch xl:gap-0'
+      )
+    "
   >
-    <div class="">
+    <div
+      :class="
+        cn(
+          usePaymentElement &&
+            'xl:w-[42%] xl:shrink-0 xl:border-r xl:border-border-subtle xl:bg-base-background xl:px-12 xl:py-10',
+          // Below xl the same dual tone runs vertically: the summary bleeds
+          // dark to the dialog edges, payment continues on the shell below.
+          usePaymentElement &&
+            'max-xl:-mx-4 max-xl:-mt-6 max-xl:rounded-t-2xl max-xl:bg-base-background max-xl:px-6 max-xl:pt-4 max-xl:pb-6'
+        )
+      "
+    >
+      <div
+        :class="
+          cn('mb-8 flex items-center gap-3', usePaymentElement && 'xl:mb-10')
+        "
+      >
+        <Button
+          v-if="usePaymentElement"
+          size="icon"
+          variant="muted-textonly"
+          class="shrink-0 rounded-full"
+          :aria-label="$t('g.back')"
+          :disabled="isLoading"
+          @click="$emit('back')"
+        >
+          <i class="pi pi-arrow-left text-base" />
+        </Button>
+        <h2
+          :class="
+            cn(
+              'm-0 flex-1 text-center text-xl font-semibold text-base-foreground lg:text-2xl',
+              // In the sidebar the title goes quiet and the money block leads.
+              usePaymentElement &&
+                'xl:text-left xl:text-base xl:font-medium xl:text-muted-foreground'
+            )
+          "
+        >
+          {{ $t('subscription.preview.confirmPayment') }}
+        </h2>
+        <Button
+          v-if="usePaymentElement"
+          size="icon"
+          variant="muted-textonly"
+          class="shrink-0 rounded-full xl:hidden"
+          :aria-label="$t('g.close')"
+          @click="$emit('close')"
+        >
+          <i class="pi pi-times text-base" />
+        </Button>
+      </div>
       <!-- Plan Header -->
       <div class="flex flex-col gap-2">
         <span class="text-sm text-base-foreground">
           {{ tierName }}
         </span>
         <div class="flex items-baseline gap-2">
-          <span class="text-4xl font-semibold text-base-foreground">
+          <span
+            class="text-2xl font-semibold text-base-foreground tabular-nums"
+          >
             ${{ displayPrice }}
           </span>
-          <span class="text-xl text-base-foreground">
+          <span class="text-base text-base-foreground">
             {{ $t('subscription.usdPerMonth') }}
           </span>
         </div>
@@ -32,93 +90,66 @@
       </div>
 
       <!-- Credits Section -->
-      <div class="flex flex-col gap-3 pt-16 pb-8">
+      <div
+        :class="
+          cn(
+            'flex flex-col gap-3 pt-16 pb-8',
+            usePaymentElement && 'xl:pt-6 xl:pb-4'
+          )
+        "
+      >
         <div class="flex items-center justify-between">
           <span class="text-base-foreground">
             {{ $t(creditsRefillLabelKey) }}
           </span>
           <div class="flex items-center gap-1">
             <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
-            <span class="font-bold text-base-foreground">
+            <span class="font-bold text-base-foreground tabular-nums">
               {{ refillCredits }}
             </span>
           </div>
         </div>
+      </div>
 
-        <!-- Expandable Features -->
-        <button
-          class="flex cursor-pointer items-center justify-end gap-1 border-none bg-transparent p-0 text-sm text-muted-foreground hover:text-base-foreground"
-          @click="isFeaturesCollapsed = !isFeaturesCollapsed"
+      <!-- Promo code (Figma 5379-30077): below the money block, directly
+           above the divider — adjacent to the number it changes. Validation
+           and discount math need the BE preview endpoint; until then the
+           code rides along at confirm exactly as before. -->
+      <div v-if="usePaymentElement" class="pb-4">
+        <Button
+          v-if="!isPromoOpen"
+          variant="secondary"
+          size="lg"
+          class="self-start"
+          @click="openPromo"
         >
-          <span>
-            {{
-              isFeaturesCollapsed
-                ? $t('subscription.preview.showMoreFeatures')
-                : $t('subscription.preview.hideFeatures')
-            }}
-          </span>
-          <i
-            :class="
-              cn(
-                'pi text-xs',
-                isFeaturesCollapsed ? 'pi-chevron-down' : 'pi-chevron-up'
-              )
-            "
-          />
-        </button>
-        <div v-show="!isFeaturesCollapsed" class="flex flex-col gap-2 pt-2">
-          <template v-if="teamPlan">
-            <div
-              v-for="perk in teamPerks"
-              :key="perk"
-              class="flex items-center gap-2"
-            >
-              <i class="pi pi-check text-success-foreground text-xs" />
-              <span class="text-sm text-base-foreground">{{ perk }}</span>
-            </div>
-          </template>
-          <template v-else>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-base-foreground">
-                {{ $t('subscription.maxDurationLabel') }}
-              </span>
-              <span class="text-sm font-bold text-base-foreground">
-                {{ maxDuration }}
-              </span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-base-foreground">
-                {{ $t('subscription.gpuLabel') }}
-              </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-base-foreground">
-                {{ $t('subscription.addCreditsLabel') }}
-              </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-base-foreground">
-                {{ $t('subscription.customLoRAsLabel') }}
-              </span>
-              <i
-                v-if="hasCustomLoRAs"
-                class="pi pi-check text-success-foreground text-xs"
-              />
-              <i v-else class="pi pi-times text-xs text-muted-foreground" />
-            </div>
-          </template>
-        </div>
+          {{ $t('subscription.preview.addPromoCode') }}
+        </Button>
+        <Input
+          v-else
+          ref="promoInput"
+          v-model="promotionCode"
+          class="w-full"
+          :placeholder="$t('subscription.preview.promotionCodePlaceholder')"
+          autocomplete="off"
+          @blur="onPromoBlur"
+        />
       </div>
 
       <!-- Total Due Section -->
-      <div class="flex flex-col gap-2 border-t border-border-subtle pt-8">
+      <div
+        :class="
+          cn(
+            'flex flex-col gap-2 border-t border-border-subtle pt-8',
+            usePaymentElement && 'xl:pt-6'
+          )
+        "
+      >
         <div class="flex items-center justify-between text-base">
           <span class="text-base-foreground">
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
-          <span class="font-bold text-base-foreground">
+          <span class="font-bold text-base-foreground tabular-nums">
             ${{ totalDueToday }}
           </span>
         </div>
@@ -131,27 +162,40 @@
         </span>
       </div>
     </div>
-    <!-- Footer -->
-    <div class="flex flex-col gap-2 pt-8">
-      <!-- Terms Agreement -->
-      <SubscriptionTermsNote />
-
-      <UnifiedStripePaymentSelector
-        v-if="usePaymentElement"
-        :amount-cents="amountDueCents"
-        :is-loading
-        @confirm="confirmPayment"
-      />
-
+    <!-- Footer (right column on desktop when the payment element is embedded;
+         scrolls independently so the summary panel stays put) -->
+    <div
+      :class="
+        cn(
+          'flex flex-col gap-2 pt-8',
+          usePaymentElement &&
+            'xl:min-h-0 xl:min-w-0 xl:flex-1 xl:px-16 xl:py-10',
+          // Match the summary panel's 24px edge inset (root p-4 provides 16).
+          usePaymentElement && 'max-xl:px-2'
+        )
+      "
+    >
+      <!-- Pending 3DS verification is the only actionable step, so it takes
+           the top of the column; the pay button below it is demoted and
+           disabled while it shows. -->
       <Button
         v-if="actionUrl"
-        variant="primary"
+        variant="inverted"
         size="lg"
         class="w-full rounded-lg"
         @click="openVerification"
       >
         {{ $t('subscription.preview.completeVerification') }}
       </Button>
+
+      <UnifiedStripePaymentSelector
+        v-if="usePaymentElement"
+        :amount-cents="amountDueCents"
+        :is-loading
+        :promotion-code="promotionCode"
+        :verification-pending="Boolean(actionUrl)"
+        @confirm="confirmPayment"
+      />
 
       <Button
         v-if="!usePaymentElement"
@@ -164,28 +208,21 @@
         {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
       </Button>
 
-      <!-- Back Link -->
-      <Button
-        variant="textonly"
-        class="cursor-pointer text-center text-xs text-muted-foreground transition-colors hover:bg-none hover:text-base-foreground"
-        :disabled="isLoading"
-        @click="$emit('back')"
-      >
-        {{ $t('subscription.preview.backToAllPlans') }}
-      </Button>
+      <!-- Terms Agreement (below the pay action, like Stripe checkout) -->
+      <SubscriptionTermsNote class="mt-2" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import {
   getTierCredits,
-  getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -223,11 +260,28 @@ const emit = defineEmits<{
   addCreditCard: []
   confirmPayment: [confirmationToken: string, promotionCode?: string]
   back: []
+  close: []
 }>()
 
 const { t, n } = useI18n()
 
-const isFeaturesCollapsed = ref(true)
+const isPromoOpen = ref(false)
+const promotionCode = ref('')
+const promoInput = ref<InstanceType<typeof Input>>()
+
+function openPromo() {
+  isPromoOpen.value = true
+  void nextTick(() => {
+    const el = promoInput.value?.$el
+    if (el instanceof HTMLInputElement) el.focus()
+  })
+}
+
+// An empty field collapses back to the button on blur; a typed code keeps
+// the field so the entered value stays visible.
+function onPromoBlur() {
+  if (!promotionCode.value.trim()) isPromoOpen.value = false
+}
 
 function openVerification() {
   if (!actionUrl) return
@@ -278,18 +332,6 @@ const creditsRefillLabelKey = computed(() =>
     ? 'subscription.preview.eachYearCreditsRefill'
     : 'subscription.preview.eachMonthCreditsRefill'
 )
-
-const teamPerks = computed(() => [
-  t('subscription.teamPlan.perkInviteMembers'),
-  t('subscription.teamPlan.perkConcurrentRuns'),
-  t('subscription.teamPlan.perkSharedPool'),
-  t('subscription.teamPlan.perkRolePermissions')
-])
-
-const hasCustomLoRAs = computed(() =>
-  tierKey ? getTierFeatures(tierKey).customLoRAs : false
-)
-const maxDuration = computed(() => t(`subscription.maxDuration.${tierKey}`))
 
 const totalDueToday = computed(() => {
   if (teamPlan) {
