@@ -57,7 +57,7 @@ type OriginalCallbacks = {
 const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
 
 function getRemovedNodeExecutionId(graph: LGraph, nodeId: NodeId): string {
-  if (!app.rootGraph) return String(nodeId)
+  if (!app.isGraphReady) return String(nodeId)
 
   return (
     getExecutionIdForNodeInGraph(app.rootGraph, graph, nodeId) ?? String(nodeId)
@@ -77,7 +77,7 @@ function installNodeHooks(node: LGraphNode): void {
     node.onConnectionsChange,
     function (type, slotIndex, isConnected) {
       if (type !== NodeSlotType.INPUT || !isConnected) return
-      if (!app.rootGraph) return
+      if (!app.isGraphReady) return
       const slotName = node.inputs?.[slotIndex]?.name
       if (!slotName) return
       const execId = getExecutionIdByNode(app.rootGraph, node)
@@ -89,7 +89,7 @@ function installNodeHooks(node: LGraphNode): void {
   node.onWidgetChanged = useChainCallback(
     node.onWidgetChanged,
     function (name, newValue, _oldValue, widget) {
-      if (!app.rootGraph) return
+      if (!app.isGraphReady) return
       const hostExecId = getExecutionIdByNode(app.rootGraph, node)
       if (!hostExecId) return
 
@@ -151,7 +151,7 @@ function scanNodeErrorTargets(
   node: LGraphNode,
   scanNode: (node: LGraphNode) => void
 ): void {
-  if (!app.rootGraph) return
+  if (!app.isGraphReady) return
 
   if (node.isSubgraphNode?.() && node.subgraph) {
     scanNode(node)
@@ -166,7 +166,7 @@ function scanNodeErrorTargets(
 }
 
 function getActiveExecutionId(node: LGraphNode): string | null {
-  if (!app.rootGraph) return null
+  if (!app.isGraphReady) return null
   // Skip when any enclosing subgraph is muted/bypassed. Callers only
   // verify each node's own mode; entering a bypassed subgraph (via
   // useGraphNodeManager replaying onNodeAdded for existing interior
@@ -190,7 +190,7 @@ function scanSingleNodeErrors(node: LGraphNode): void {
 }
 
 function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
-  if (!app.rootGraph) return
+  if (!app.isGraphReady) return
   const execId = getActiveExecutionId(node)
   if (!execId) return
 
@@ -237,7 +237,7 @@ function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
 }
 
 function scanSingleNodeMedia(node: LGraphNode): void {
-  if (!app.rootGraph) return
+  if (!app.isGraphReady) return
   if (!getActiveExecutionId(node)) return
 
   const mediaCandidates = scanNodeMediaCandidates(app.rootGraph, node, isCloud)
@@ -267,7 +267,7 @@ function isModelCandidateStillActive(
 
 function isNodeCandidateStillActive(nodeId: unknown): boolean {
   return (
-    app.rootGraph != null &&
+    app.isGraphReady &&
     nodeId != null &&
     isExecutionPathActive(app.rootGraph, String(nodeId))
   )
@@ -312,7 +312,7 @@ function scanAddedNode(
   node: LGraphNode,
   scanNode: (node: LGraphNode) => void
 ): void {
-  if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
+  if (!app.isGraphReady || ChangeTracker.isLoadingGraph) return
   if (isNodeInactive(node.mode)) return
   scanNodeErrorTargets(node, scanNode)
 }
@@ -333,7 +333,7 @@ function handleNodeModeChange(
   oldMode: number,
   newMode: number
 ): void {
-  if (!app.rootGraph) return
+  if (!app.isGraphReady) return
 
   const wasInactive = isNodeInactive(oldMode)
   const isNowInactive = isNodeInactive(newMode)
@@ -364,7 +364,7 @@ function handleNodeModeChange(
 }
 
 function scanAncestorSubgraphHosts(execId: string): void {
-  if (!app.rootGraph) return
+  if (!app.isGraphReady) return
   for (const ancestorId of getParentExecutionIds(execId)) {
     if (!isExecutionPathActive(app.rootGraph, ancestorId)) continue
     const ancestor = getNodeByExecutionId(app.rootGraph, ancestorId)

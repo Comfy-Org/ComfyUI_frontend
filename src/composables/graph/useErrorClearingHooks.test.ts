@@ -31,6 +31,11 @@ beforeEach(() => {
   vi.restoreAllMocks()
 })
 
+function stubRootGraph(graph: LGraph | undefined) {
+  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(fromAny(graph))
+  vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(!!graph)
+}
+
 function createNestedSubgraphRuntime() {
   const rootGraph = new LGraph()
   const outerSubgraph = createTestSubgraph({ rootGraph })
@@ -73,7 +78,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
     installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     seedRequiredInputMissingNodeError(
       store,
       createNodeExecutionId([node.id]),
@@ -138,7 +143,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
     installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     seedRequiredInputMissingNodeError(
       store,
       createNodeExecutionId([node.id]),
@@ -168,7 +173,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     store.recordNodeErrors({
       [String(node.id)]: {
         errors: [
@@ -200,7 +205,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     store.recordNodeErrors({
       [String(node.id)]: {
         errors: [
@@ -229,9 +234,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
-      fromAny<LGraph, unknown>(undefined)
-    )
+    stubRootGraph(undefined)
     store.recordNodeErrors({
       [String(node.id)]: {
         errors: [
@@ -268,7 +271,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
     const store = useExecutionErrorStore()
     const mediaStore = useMissingMediaStore()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     seedRequiredInputMissingNodeError(
       store,
       createNodeExecutionId([node.id]),
@@ -322,7 +325,7 @@ describe('installErrorClearingHooks lifecycle', () => {
 
     // Verify the hooks actually work
     const store = useExecutionErrorStore()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     seedRequiredInputMissingNodeError(
       store,
       createNodeExecutionId([lateNode.id]),
@@ -393,7 +396,7 @@ describe('installErrorClearingHooks lifecycle', () => {
 
   it('scans added-node missing models after widget values are restored', async () => {
     const graph = new LGraph()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     installErrorClearingHooks(graph)
 
     const node = new LGraphNode('CheckpointLoaderSimple')
@@ -414,7 +417,7 @@ describe('installErrorClearingHooks lifecycle', () => {
 
   it('scans added-node missing models before the deferred media scan', async () => {
     const graph = new LGraph()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     const modelScan = vi
       .spyOn(missingModelScan, 'scanNodeModelCandidates')
       .mockImplementation((_rootGraph, node) => [
@@ -455,7 +458,7 @@ describe('installErrorClearingHooks lifecycle', () => {
 
   it('does not surface added-node missing media when upload state is marked between deferred scans', async () => {
     const graph = new LGraph()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
     const mediaScan = vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates')
     installErrorClearingHooks(graph)
@@ -487,7 +490,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     const node = new LGraphNode('CheckpointLoaderSimple')
     graph.add(node)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     installErrorClearingHooks(graph)
 
     const modelStore = useMissingModelStore()
@@ -523,7 +526,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     const rootGraph = subgraphNode.graph as LGraph
     rootGraph.add(subgraphNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     // Hooks are installed on whichever graph is currently active in
     // the canvas; when the user is inside the subgraph, that is the
     // graph whose onNodeRemoved fires for interior deletions.
@@ -559,7 +562,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     const rootGraph = subgraphNode.graph as LGraph
     rootGraph.add(subgraphNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     installErrorClearingHooks(subgraph)
 
     const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
@@ -607,7 +610,7 @@ describe('realtime scan verifies pending cloud candidates', () => {
     const graph = new LGraph()
     const node = new LGraphNode('CheckpointLoaderSimple')
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
 
     // Cloud mode returns candidates with isMissing: undefined until
     // verifyAssetSupportedCandidates resolves them against the assets store.
@@ -656,7 +659,7 @@ describe('realtime scan verifies pending cloud candidates', () => {
     const graph = new LGraph()
     const node = new LGraphNode('LoadImage')
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
 
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
     vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([
@@ -700,7 +703,7 @@ describe('realtime scan verifies pending cloud candidates', () => {
     const graph = new LGraph()
     const node = new LGraphNode('CheckpointLoaderSimple')
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
 
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
@@ -746,7 +749,7 @@ describe('realtime verification staleness guards', () => {
     const graph = new LGraph()
     const node = new LGraphNode('CheckpointLoaderSimple')
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
 
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
@@ -796,7 +799,7 @@ describe('realtime verification staleness guards', () => {
     const graph = new LGraph()
     const node = new LGraphNode('LoadImage')
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
 
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
     vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([
@@ -846,7 +849,7 @@ describe('realtime verification staleness guards', () => {
     const graphA = new LGraph()
     const nodeA = new LGraphNode('CheckpointLoaderSimple')
     graphA.add(nodeA)
-    const rootSpy = vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graphA)
+    stubRootGraph(graphA)
 
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
@@ -884,7 +887,7 @@ describe('realtime verification staleness guards', () => {
     const graphB = new LGraph()
     const nodeB = new LGraphNode('CheckpointLoaderSimple')
     graphB.add(nodeB)
-    rootSpy.mockReturnValue(graphB)
+    stubRootGraph(graphB)
 
     resolveVerify!()
     await new Promise((r) => setTimeout(r, 0))
@@ -916,7 +919,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     const rootGraph = subgraphNode.graph as LGraph
     rootGraph.add(subgraphNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     // Any scanner output would surface the error if the ancestor guard
     // didn't short-circuit first — return a concrete missing candidate.
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
@@ -960,7 +963,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     })
     rootGraph.add(outerSubgraphNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     const modelScanSpy = vi
       .spyOn(missingModelScan, 'scanNodeModelCandidates')
       .mockReturnValue([])
@@ -1007,7 +1010,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
   it('removes host-keyed promoted missing models when a source ancestor is bypassed', () => {
     const { rootGraph, outerSubgraph, innerSubgraphNode } =
       createNestedSubgraphRuntime()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     installErrorClearingHooks(outerSubgraph)
 
     const modelStore = useMissingModelStore()
@@ -1038,7 +1041,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
   it('rescans ancestor hosts when a promoted source ancestor is un-bypassed', () => {
     const { rootGraph, outerSubgraph, innerSubgraphNode, outerSubgraphNode } =
       createNestedSubgraphRuntime()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     const hostCandidate = fromAny<MissingModelCandidate, unknown>({
       nodeId: '65',
       sourceExecutionId: createNodeExecutionId([65, 77, 1]),
@@ -1086,7 +1089,7 @@ describe('clearWidgetRelatedErrors parameter routing', () => {
     installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     const clearSpy = vi.spyOn(store, 'clearWidgetRelatedErrors')
 
     node.onWidgetChanged!.call(node, 'steps', 42, 0, widget)
@@ -1126,7 +1129,7 @@ describe('clearWidgetRelatedErrors parameter routing', () => {
     ).toBe(true)
     installErrorClearingHooks(graph)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     const missingModelStore = useMissingModelStore()
     missingModelStore.setMissingModels([
       {
