@@ -1624,7 +1624,7 @@ export class ComfyApp {
             severity: 'warn',
             summary: st(
               'toastMessages.missingMediaVerificationFailed',
-              'Failed to verify missing media. Some inputs may not be shown in the Errors tab.'
+              'Failed to verify missing media. Some inputs may not be shown in the Issues tab.'
             ),
             life: 5000
           })
