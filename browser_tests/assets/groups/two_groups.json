@@ -7,13 +7,13 @@
     {
       "id": 0,
       "title": "Toolbar Swatch Group",
-      "bounding": [100, 150, 320, 200],
+      "bounding": [100, 400, 320, 200],
       "font_size": 24
     },
     {
       "id": 1,
       "title": "Right-Click Menu Group",
-      "bounding": [500, 150, 320, 200],
+      "bounding": [500, 400, 320, 200],
       "font_size": 24
     }
   ],
