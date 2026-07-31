@@ -1644,6 +1644,27 @@ describe('node layout registration', () => {
     expect.assertions(2)
     expect(layoutStore.getNodeLayoutRef(node.id).value).not.toBeNull()
   })
+
+  it('removing a same-id node from another root keeps this layout', () => {
+    const firstGraph = new LGraph()
+    firstGraph.id = createUuidv4()
+    const firstNode = new LGraphNode('first')
+    firstNode.id = toNodeId(1)
+    firstNode.pos = [10, 20]
+    firstGraph.add(firstNode)
+
+    const secondGraph = new LGraph()
+    secondGraph.id = createUuidv4()
+    const secondNode = new LGraphNode('second')
+    secondNode.id = toNodeId(1)
+    secondGraph.add(secondNode)
+    secondGraph.remove(secondNode)
+
+    expect(layoutStore.getNodeLayoutRef(firstNode.id).value?.position).toEqual({
+      x: 10,
+      y: 20
+    })
+  })
 })
 
 describe('graph teardown drops layout entries', () => {
@@ -1701,5 +1722,29 @@ describe('graph teardown drops layout entries', () => {
     graph.remove(subgraphNode)
 
     expect(layoutStore.getNodeLayoutRef(interior.id).value).toBeNull()
+  })
+
+  it.for([
+    [
+      'keep_old',
+      (graph: LGraph, data: Parameters<LGraph['configure']>[0]) =>
+        graph.configure(data, true)
+    ],
+    [
+      'configuring listener',
+      (graph: LGraph, data: Parameters<LGraph['configure']>[0]) => {
+        graph.events.addEventListener('configuring', (event) => {
+          event.detail.clearGraph = false
+        })
+        graph.configure(data)
+      }
+    ]
+  ] as const)('keeps retained layouts with %s', ([, configure]) => {
+    const { graph } = populatedGraph()
+    const entryCount = layoutEntryCount(graph)
+
+    configure(graph, new LGraph().serialize())
+
+    expect(layoutEntryCount(graph)).toBe(entryCount)
   })
 })
