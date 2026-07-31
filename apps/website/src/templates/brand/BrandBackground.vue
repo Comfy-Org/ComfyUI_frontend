@@ -7,6 +7,7 @@ import {
 import { onMounted, ref } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { readDesignTokenRgba } from '../../utils/designTokens'
 
 interface Node {
   x: number
@@ -43,7 +44,7 @@ function draw() {
     if (n.y < 0 || n.y > 1) n.vy *= -1
   }
 
-  ctx.strokeStyle = 'rgba(242, 255, 89, 0.18)'
+  ctx.strokeStyle = readDesignTokenRgba('--color-primary-comfy-yellow', 0.18)
   ctx.lineWidth = dpr
   const max = Math.min(w, h) * 0.22
   for (let i = 0; i < nodes.length; i++) {
@@ -65,7 +66,7 @@ function draw() {
   }
 
   ctx.globalAlpha = 1
-  ctx.fillStyle = 'rgba(242, 255, 89, 0.9)'
+  ctx.fillStyle = readDesignTokenRgba('--color-primary-comfy-yellow', 0.9)
   for (const n of nodes) {
     ctx.beginPath()
     ctx.arc(n.x * w, n.y * h, 2.5 * dpr, 0, Math.PI * 2)

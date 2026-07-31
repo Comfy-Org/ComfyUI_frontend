@@ -35,15 +35,14 @@ const TICK_MS = 200
 
 function readColors() {
   const style = getComputedStyle(document.documentElement)
-  const get = (name: string, fallback: string): string =>
-    style.getPropertyValue(name).trim() || fallback
+  const get = (name: string): string => style.getPropertyValue(name).trim()
 
   return {
-    bg: get('--color-primary-comfy-ink', '#211927'),
-    fieldStroke: get('--color-secondary-mauve', '#4D3762'),
-    snakeA: get('--color-primary-comfy-plum', '#49378B'),
-    snakeB: get('--color-secondary-mauve', '#4D3762'),
-    accent: get('--color-primary-comfy-yellow', '#F2FF59')
+    bg: get('--color-primary-comfy-ink'),
+    fieldStroke: get('--color-secondary-mauve'),
+    snakeA: get('--color-primary-comfy-plum'),
+    snakeB: get('--color-secondary-mauve'),
+    accent: get('--color-primary-comfy-yellow')
   }
 }
 
