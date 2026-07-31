@@ -146,6 +146,7 @@ export type IWidget =
   | ICurveWidget
   | IPainterWidget
   | IRangeWidget
+  | IVideoEditWidget
   | IBoundingBoxesWidget
   | IColorsWidget
 
@@ -385,6 +386,31 @@ export interface IRangeWidget extends IBaseWidget<
 > {
   type: 'range'
   value: RangeValue
+}
+
+export interface VideoEditTrim {
+  start_time: number
+  duration: number
+}
+
+export interface VideoEditValue {
+  trim?: VideoEditTrim
+  crop?: Bounds
+}
+
+export type VideoEditFeature = 'trim' | 'crop'
+
+export interface IWidgetVideoEditOptions extends IWidgetOptions {
+  features?: VideoEditFeature[]
+}
+
+export interface IVideoEditWidget extends IBaseWidget<
+  VideoEditValue,
+  'videoedit',
+  IWidgetVideoEditOptions
+> {
+  type: 'videoedit'
+  value: VideoEditValue
 }
 
 /**

@@ -1,0 +1,60 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import PlansPricingCta from '../components/individual-submission/PlansPricingCta.vue'
+import HeroSection from '../components/legal/HeroSection.vue'
+import { getRoutes } from '../config/routes'
+
+const routes = getRoutes('en')
+---
+
+<BaseLayout
+  title="Thanks for reaching out - Comfy"
+  description="Thanks for reaching out. Based on what you shared, one of our self-serve plans is probably a better fit."
+  noindex
+>
+  <HeroSection title="Thanks for reaching out." class="text-center" />
+
+  <section class="-mt-8 px-6 pb-24 lg:-mt-12 lg:pb-40">
+    <div
+      class="text-primary-comfy-canvas mx-auto flex max-w-2xl flex-col gap-6 text-center text-base font-light lg:text-lg"
+    >
+      <p>
+        Based on what you shared, one of our self-serve plans is probably a
+        better fit.
+        <strong class="text-primary-comfy-yellow font-semibold italic">
+          Standard</strong
+        >,
+        <strong class="text-primary-comfy-yellow font-semibold italic">
+          Creator</strong
+        >, and
+        <strong class="text-primary-comfy-yellow font-semibold italic">
+          Pro</strong
+        > for individual creators, plus our new
+        <strong class="text-primary-comfy-yellow font-semibold italic">
+          Teams</strong
+        > plan for multiple users under shared billing.
+      </p>
+
+      <PlansPricingCta
+        href={routes.cloudPricing}
+        label="See plans and pricing →"
+      />
+
+      <p class="text-primary-warm-gray mt-8 text-sm">
+        Still think you have an enterprise need?<br /> We're happy to assist. Email: <a
+          href="mailto:gtm-team@comfy.org"
+          class="text-primary-comfy-yellow whitespace-nowrap underline underline-offset-4 hover:no-underline"
+          >gtm-team@comfy.org</a
+        >
+      </p>
+
+      <p class="text-primary-warm-gray text-sm">
+        Need help with something else? Email: <a
+          href="mailto:support@comfy.org"
+          class="text-primary-comfy-yellow whitespace-nowrap underline underline-offset-4 hover:no-underline"
+          >support@comfy.org</a
+        >
+      </p>
+    </div>
+  </section>
+</BaseLayout>

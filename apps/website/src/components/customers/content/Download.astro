@@ -1,0 +1,19 @@
+---
+interface Props {
+  href: string
+  label: string
+  newTab?: boolean
+}
+
+const { href, label, newTab = false } = Astro.props
+---
+
+<a
+  href={href}
+  download={newTab ? undefined : true}
+  target={newTab ? '_blank' : undefined}
+  rel={newTab ? 'noopener noreferrer' : undefined}
+  class="text-primary-comfy-yellow my-4 inline-block text-sm font-semibold underline underline-offset-2 transition-opacity hover:opacity-80"
+>
+  {label}
+</a>

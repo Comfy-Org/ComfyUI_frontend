@@ -112,6 +112,24 @@ describe('missingModelStore', () => {
       expect(store.isRefreshingMissingModels).toBe(false)
     })
 
+    it('forwards the node definition reload option to the app', async () => {
+      const store = useMissingModelStore()
+      const refreshSpy = vi
+        .spyOn(app, 'refreshMissingModels')
+        .mockResolvedValue({
+          missingModels: [],
+          confirmedCandidates: []
+        })
+
+      await store.refreshMissingModels({ reloadDefs: false })
+
+      expect(refreshSpy).toHaveBeenCalledWith({
+        silent: true,
+        reloadDefs: false
+      })
+      expect(store.isRefreshingMissingModels).toBe(false)
+    })
+
     it('ignores overlapping refresh requests', async () => {
       const store = useMissingModelStore()
       let resolveRefresh: () => void = () => {}
@@ -262,6 +280,9 @@ describe('missingModelStore', () => {
       ])
       store.modelExpandState['test-key'] = true
       store.selectedLibraryModel['test-key'] = 'some-model'
+      store.gatedRepoUrls[
+        'https://huggingface.co/org/model/resolve/main/a.safetensors'
+      ] = 'https://huggingface.co/org/model'
       expect(store.missingModelCandidates).not.toBeNull()
 
       store.clearMissingModels()
@@ -270,6 +291,7 @@ describe('missingModelStore', () => {
       expect(store.hasMissingModels).toBe(false)
       expect(store.modelExpandState).toEqual({})
       expect(store.selectedLibraryModel).toEqual({})
+      expect(store.gatedRepoUrls).toEqual({})
     })
   })
 

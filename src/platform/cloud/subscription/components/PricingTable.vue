@@ -123,7 +123,7 @@
               </span>
               <div class="flex flex-row items-center gap-1">
                 <i
-                  class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400"
+                  class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span
@@ -528,9 +528,25 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           }
         }
       } else {
-        await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
-          paymentIntentSource: reason
-        })
+        try {
+          await performSubscriptionCheckout(
+            tierKey,
+            currentBillingCycle.value,
+            { paymentIntentSource: reason }
+          )
+        } catch (error) {
+          telemetry?.trackBillingEvent({
+            operation: 'subscription_checkout',
+            stage: 'failed',
+            outcome: 'failure',
+            tier: tierKey,
+            cycle: currentBillingCycle.value,
+            checkout_type: 'new',
+            payment_intent_source: reason,
+            failure_category: 'unknown'
+          })
+          throw error
+        }
       }
     } finally {
       isLoading.value = false

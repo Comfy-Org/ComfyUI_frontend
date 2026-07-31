@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+node_major="$(tr -d '[:space:]' < "$repo_root/.nvmrc")"
+node_home="$HOME/.local/share/comfyui-frontend-node-v$node_major"
+
+install_node() {
+  local architecture
+  case "$(uname -m)" in
+    x86_64) architecture=x64 ;;
+    aarch64 | arm64) architecture=arm64 ;;
+    *)
+      echo "Unsupported architecture: $(uname -m)" >&2
+      return 1
+      ;;
+  esac
+
+  local release_base="https://nodejs.org/dist/latest-v${node_major}.x"
+  local archive
+  archive="$(curl -fsSL "$release_base/SHASUMS256.txt" | awk -v architecture="$architecture" '$2 == "node-v" substr($2, 7, index($2, "-linux-") - 7) "-linux-" architecture ".tar.xz" { print $2 }')"
+  if [[ -z "$archive" ]]; then
+    echo "Could not resolve the latest Node.js v${node_major} release" >&2
+    return 1
+  fi
+
+  local temporary_directory
+  temporary_directory="$(mktemp -d)"
+  (
+    trap 'rm -rf "$temporary_directory"' EXIT
+    echo "Installing Node.js v${node_major}"
+    curl -fsSL "$release_base/$archive" -o "$temporary_directory/$archive"
+    curl -fsSL "$release_base/SHASUMS256.txt" -o "$temporary_directory/SHASUMS256.txt"
+    (
+      cd "$temporary_directory"
+      grep "  $archive$" SHASUMS256.txt | sha256sum --check --status
+    )
+    rm -rf "$node_home"
+    mkdir -p "$node_home"
+    tar -xJf "$temporary_directory/$archive" --strip-components=1 -C "$node_home"
+  )
+}
+
+if [[ ! -x "$node_home/bin/node" ]] ||
+  [[ "$($node_home/bin/node --version)" != v"$node_major".* ]]; then
+  install_node
+fi
+
+export PATH="$node_home/bin:$PATH"
+
+pnpm_version="$(node -p "require('$repo_root/package.json').packageManager.split('@')[1]")"
+if [[ ! -x "$node_home/bin/pnpm" ]] ||
+  [[ "$(pnpm --version 2>/dev/null || true)" != "$pnpm_version" ]]; then
+  echo "Installing pnpm $pnpm_version"
+  npm install --global --prefix "$node_home" "pnpm@$pnpm_version"
+fi
+
+profile_marker="# ComfyUI Frontend orb toolchain"
+if ! grep -Fqx "$profile_marker" "$HOME/.bash_profile" 2>/dev/null; then
+  cat >> "$HOME/.bash_profile" <<EOF
+
+$profile_marker
+if [[ "\${PWD:-}" == "$repo_root" || "\${PWD:-}" == "$repo_root/"* ]]; then
+  export PATH="$node_home/bin:\$PATH"
+fi
+EOF
+fi
+
+echo "Installing workspace dependencies"
+pnpm install --frozen-lockfile
+
+echo "Installing Playwright Chromium and system dependencies"
+pnpm exec playwright install --with-deps chromium
+
+echo "Orb setup complete"
+node --version
+pnpm --version

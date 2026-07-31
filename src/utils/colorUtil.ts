@@ -366,7 +366,7 @@ function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
   }
 }
 
-function rgbToHsv({ r, g, b }: RGB): {
+export function rgbToHsv({ r, g, b }: RGB): {
   h: number
   s: number
   v: number
@@ -395,6 +395,11 @@ function rgbToHsv({ r, g, b }: RGB): {
     }
   }
   return { h, s, v }
+}
+
+export function normalizeHex(value: string): string | null {
+  const digits = value.trim().replace(/^#/, '')
+  return /^([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(digits) ? `#${digits}` : null
 }
 
 export function hexToHsva(hex: string): HSVA {

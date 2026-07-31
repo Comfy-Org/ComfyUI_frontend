@@ -57,6 +57,32 @@
             </small>
           </div>
 
+          <div
+            v-if="mode === 'create' && credentialOptions.length > 1"
+            class="flex flex-col gap-1"
+          >
+            <label for="secret-credential-type" class="text-sm font-medium">
+              {{ $t('secrets.credentialType') }}
+            </label>
+            <Select v-model="credentialType">
+              <SelectTrigger id="secret-credential-type" class="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent disable-portal>
+                <SelectItem
+                  v-for="option in credentialOptions"
+                  :key="option.credential_type"
+                  :value="option.credential_type"
+                >
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <small class="text-muted">
+              {{ $t('secrets.credentialTypeHint') }}
+            </small>
+          </div>
+
           <div class="flex flex-col gap-1">
             <label for="secret-name" class="text-sm font-medium">
               {{ $t('secrets.name') }}
@@ -205,6 +231,8 @@ const {
   providerOptions,
   providerHelp,
   selectedInputType,
+  credentialOptions,
+  credentialType,
   fileName,
   loadSecretFromFile,
   handleSubmit

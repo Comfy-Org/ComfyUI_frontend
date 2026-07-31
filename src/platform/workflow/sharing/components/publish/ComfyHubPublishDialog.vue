@@ -103,6 +103,7 @@ import { useWorkflowShareService } from '@/platform/workflow/sharing/services/wo
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { OnCloseKey } from '@/types/widgetTypes'
 
@@ -207,27 +208,6 @@ function handleRequireProfile() {
   openProfileCreationStep()
 }
 
-async function syncWorkflowName(): Promise<void> {
-  const workflow = workflowStore.activeWorkflow
-  if (!workflow || workflow.isTemporary) return
-
-  const desiredName = formData.value.name.trim().replace(/\.json$/i, '')
-  const currentName = workflow.filename.replace(/\.json$/i, '')
-  if (!desiredName || desiredName === currentName) return
-
-  const newPath = buildWorkflowPath(workflow.directory, desiredName)
-  try {
-    await workflowService.renameWorkflow(workflow, newPath)
-  } catch (error) {
-    console.error('Failed to rename workflow after publish:', error)
-    toast.add({
-      severity: 'warn',
-      summary: t('comfyHubPublish.renameFailedTitle'),
-      detail: t('comfyHubPublish.renameFailedDescription')
-    })
-  }
-}
-
 async function handlePublish(): Promise<void> {
   if (isPublishing.value) {
     return
@@ -236,7 +216,6 @@ async function handlePublish(): Promise<void> {
   isPublishing.value = true
   try {
     await submitToComfyHub(formData.value)
-    await syncWorkflowName()
     const path = workflowStore.activeWorkflow?.path
     if (path) {
       cachePublishPrefill(path, formData.value)
@@ -250,10 +229,13 @@ async function handlePublish(): Promise<void> {
     onClose()
   } catch (error) {
     console.error('Failed to publish workflow:', error)
+    const reason = getErrorMessage(error)
     toast.add({
       severity: 'error',
       summary: t('comfyHubPublish.publishFailedTitle'),
-      detail: t('comfyHubPublish.publishFailedDescription')
+      detail: reason
+        ? t('comfyHubPublish.publishFailedDescriptionWithReason', { reason })
+        : t('comfyHubPublish.publishFailedDescription')
     })
   } finally {
     isPublishing.value = false

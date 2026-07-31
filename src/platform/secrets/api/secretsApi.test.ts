@@ -36,11 +36,21 @@ describe('listSecretProviders', () => {
     expect(providers).toEqual([{ id: 'huggingface' }, { id: 'civitai' }])
   })
 
-  it('passes through per-provider input_type and label metadata', async () => {
+  it('passes through per-provider credential options and label metadata', async () => {
     mockFetchApi.mockResolvedValue(
       jsonResponse({
         data: [
-          { id: 'gemini', input_type: 'json_file', label: 'Gemini (Vertex)' }
+          {
+            id: 'gemini',
+            label: 'Gemini',
+            credential_options: [
+              {
+                credential_type: 'gcp_service_account',
+                input_type: 'json_file',
+                label: 'Service account (Vertex AI)'
+              }
+            ]
+          }
         ]
       })
     )
@@ -48,7 +58,17 @@ describe('listSecretProviders', () => {
     const providers = await listSecretProviders()
 
     expect(providers).toEqual([
-      { id: 'gemini', input_type: 'json_file', label: 'Gemini (Vertex)' }
+      {
+        id: 'gemini',
+        label: 'Gemini',
+        credential_options: [
+          {
+            credential_type: 'gcp_service_account',
+            input_type: 'json_file',
+            label: 'Service account (Vertex AI)'
+          }
+        ]
+      }
     ])
   })
 

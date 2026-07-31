@@ -35,10 +35,17 @@ function addMultilineWidget(
     setValue(v: string) {
       inputEl.value = v
       const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
-      const widgetState = widgetStore.getWidget(
-        widgetId(graphId, node.id, name)
-      )
-      if (widgetState) widgetState.value = v
+      const id = widgetId(graphId, node.id, name)
+      const widgetState = widgetStore.getWidget(id)
+      if (widgetState) {
+        widgetState.value = v
+        return
+      }
+      widgetStore.registerWidget(id, {
+        type: 'customtext',
+        value: v,
+        options: widget.options ?? {}
+      })
     }
   })
 

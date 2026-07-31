@@ -84,7 +84,7 @@ export function useExternalLink() {
 
   const staticUrls = {
     // Static external URLs
-    discord: 'https://www.comfy.org/discord',
+    discord: 'https://discord.com/invite/comfyorg',
     github: 'https://github.com/Comfy-Org/ComfyUI',
     githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues',
     githubFrontend: 'https://github.com/Comfy-Org/ComfyUI_frontend',

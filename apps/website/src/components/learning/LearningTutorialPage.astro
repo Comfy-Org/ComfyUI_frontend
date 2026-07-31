@@ -1,0 +1,85 @@
+---
+// Shared body for /learning/[category]/[slug] in every locale: the
+// locale-specific page files are thin wrappers so meta, breadcrumbs, and the
+// VideoObject JSON-LD stay defined once. Locale comes from the page's URL.
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import CallToActionSection from '../common/CallToActionSection.vue'
+import LearningDirectorySection from './LearningDirectorySection.vue'
+import TutorialDetailDialog from './TutorialDetailDialog.vue'
+import { getRoutes, externalLinks, localizeHref } from '../../config/routes'
+import type { LearningTutorial } from '../../data/learningTutorials'
+import {
+  learningCrumbs,
+  tutorialDescription
+} from '../../data/learningTutorials'
+import type { JsonLdNode } from '../../utils/jsonLd'
+import {
+  absoluteUrl,
+  jsonLdId,
+  pageContext,
+  videoObjectNode
+} from '../../utils/jsonLd'
+
+interface Props {
+  tutorial: LearningTutorial
+}
+
+const { tutorial } = Astro.props
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+
+const title = tutorial.title[locale]
+const description = tutorialDescription(tutorial, locale)
+const videoId = jsonLdId(url, 'video')
+
+const video: JsonLdNode = videoObjectNode({
+  siteUrl,
+  id: videoId,
+  pageUrl: url,
+  name: title,
+  description,
+  thumbnailUrl: tutorial.poster,
+  contentUrl: tutorial.videoSrc,
+  uploadDate: tutorial.publishedDate,
+  locale
+})
+
+const breadcrumbs = [
+  ...learningCrumbs(locale, tutorial.category).map((crumb) => ({
+    name: crumb.name,
+    url: absoluteUrl(Astro.site, localizeHref(crumb.path, locale))
+  })),
+  { name: title }
+]
+
+const routes = getRoutes(locale)
+---
+
+<BaseLayout
+  title={`${title} - Comfy`}
+  description={description}
+  ogImage={tutorial.poster}
+  mainEntityId={videoId}
+  breadcrumbs={breadcrumbs}
+  extraJsonLd={[video]}
+>
+  <LearningDirectorySection
+    locale={locale}
+    category={tutorial.category}
+    headingTag="p"
+  />
+  <TutorialDetailDialog tutorial={tutorial} locale={locale} client:load />
+  <CallToActionSection
+    locale={locale}
+    headingKey="learning.cta.heading"
+    primaryLabelKey="learning.cta.contactSales"
+    primaryHref={routes.contact}
+    secondaryLabelKey="cta.tryWorkflow"
+    secondaryHref={externalLinks.workflows}
+    client:visible
+  />
+</BaseLayout>

@@ -42,7 +42,7 @@ describe('useExternalLink', () => {
       const { staticUrls } = useExternalLink()
 
       // Static URLs
-      expect(staticUrls.discord).toBe('https://www.comfy.org/discord')
+      expect(staticUrls.discord).toBe('https://discord.com/invite/comfyorg')
       expect(staticUrls.github).toBe('https://github.com/Comfy-Org/ComfyUI')
       expect(staticUrls.githubIssues).toBe(
         'https://github.com/Comfy-Org/ComfyUI/issues'

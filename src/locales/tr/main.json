@@ -3,6 +3,9 @@
     "dockToTop": "Üste sabitle",
     "feedback": "Geri bildirim",
     "feedbackTooltip": "Geri bildirim",
+    "freeTierPartner": "Partner düğümleri için ücretli plan gerekir",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} kullanım kaldı",
+    "freeTierRunsExhausted": "Kullanım hakkı kalmadı",
     "share": "Paylaş",
     "shareTooltip": "İş akışını paylaş"
   },
@@ -140,6 +143,8 @@
       "modelDescription": "Model Açıklaması",
       "modelTagging": "Model Etiketleme",
       "modelType": "Model Türü",
+      "modelTypeCoreReadonly": "Çekirdekte model türü değiştirilemez, dosya taşıma henüz desteklenmiyor.",
+      "modelTypeImmutableReadonly": "Salt okunur bir model için model türü değiştirilemez.",
       "noAdditionalTags": "Ek etiket yok",
       "selectModelPrompt": "Bilgilerini görmek için bir model seçin",
       "selectModelType": "Model türü seç...",
@@ -170,6 +175,7 @@
     "rename": {
       "failed": "Varlık yeniden adlandırılamadı."
     },
+    "searchModels": "Modelleri ara",
     "selectFrameworks": "Framework'leri Seçin",
     "selectModelType": "Model türünü seçin",
     "selectProjects": "Projeleri Seçin",
@@ -261,6 +267,7 @@
       "freeTierBadge": "Ücretsiz Katman Uygun",
       "freeTierDescription": "Google ile kaydolun, her ay {credits} ücretsiz kredi kazanın. Kart gerekmez.",
       "freeTierDescriptionGeneric": "Google ile kaydolun, her ay ücretsiz kredi kazanın. Kart gerekmez.",
+      "googleSsoInAppBrowserNotice": "Bunu bir uygulama içi tarayıcıdan (ör. Instagram, LinkedIn) açtıysanız, Google ile giriş çalışmayabilir. GitHub veya e-posta kullanın ya da bu sayfayı cihazınızın varsayılan tarayıcısında açın.",
       "insecureContextWarning": "Bu bağlantı güvensiz (HTTP) - giriş yapmaya devam ederseniz kimlik bilgileriniz saldırganlar tarafından ele geçirilebilir.",
       "loginButton": "Giriş Yap",
       "loginWithGithub": "Github ile giriş yap",
@@ -607,14 +614,14 @@
     "chooseProfilePicture": "Profil fotoğrafı seçin",
     "createProfile": "Profil oluştur",
     "createProfileButton": "Profilimi oluştur",
-    "createProfileTitle": "Comfy Hub profilinizi oluşturun",
+    "createProfileTitle": "Comfy Workflows profilinizi oluşturun",
     "creatingProfile": "Profil oluşturuluyor...",
     "descriptionLabel": "Açıklamanız",
     "descriptionPlaceholder": "Topluluğa kendinizden bahsedin...",
     "introDescription": "Çalışma akışlarınızı yayınlayın, portföyünüzü oluşturun ve milyonlarca kullanıcı tarafından keşfedilin",
-    "introSubtitle": "Çalışma akışınızı ComfyHub'da paylaşmak için önce profilinizi oluşturalım.",
-    "introTitle": "ComfyHub'da yayınla",
-    "modalTitle": "ComfyHub'da profilinizi oluşturun",
+    "introSubtitle": "Çalışma akışınızı Comfy Workflows'ta paylaşmak için önce profilinizi oluşturalım.",
+    "introTitle": "Comfy Workflows'ta yayınla",
+    "modalTitle": "Comfy Workflows'ta profilinizi oluşturun",
     "nameLabel": "Adınız",
     "namePlaceholder": "Adınızı buraya girin",
     "profileCreationNav": "Profil oluşturma",
@@ -624,8 +631,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "Profil sayfanız şu adreste yayında:",
     "successTitle": "Harika görünüyor, {'@'}{username}!",
-    "updateIntroDescription": "Son değişikliklerinizi ComfyHub'a gönderin. Paylaşım linkiniz ve istatistikleriniz aynı kalır.",
-    "updateIntroTitle": "ComfyHub workflow'unuzu güncelleyin",
+    "updateIntroDescription": "Son değişikliklerinizi Comfy Workflows'a gönderin. Paylaşım linkiniz ve istatistikleriniz aynı kalır.",
+    "updateIntroTitle": "Comfy Workflows workflow'unuzu güncelleyin",
     "uploadCover": "+ Kapak yükle",
     "uploadProfilePicture": "+ Profil fotoğrafı yükle",
     "uploadWorkflowButton": "Çalışma akışımı yükle",
@@ -637,20 +644,18 @@
     "additionalInfo": "Ek bilgi",
     "back": "Geri",
     "createProfileCta": "Profil oluştur",
-    "createProfileToPublish": "ComfyHub'da yayınlamak için bir profil oluşturun",
+    "createProfileToPublish": "Comfy Workflows'ta yayınlamak için bir profil oluşturun",
     "exampleImage": "Örnek görsel {index}",
     "exampleImagePosition": "Örnek görsel {index} / {total}",
     "examplesDescription": "En fazla {total} ek örnek görsel ekleyin",
     "maxExamples": "En fazla {max} örnek seçebilirsiniz",
     "next": "İleri",
-    "publishButton": "ComfyHub'da Yayınla",
+    "publishButton": "Comfy Workflows'ta Yayınla",
     "publishFailedDescription": "Çalışma akışınızı yayınlarken bir hata oluştu. Lütfen tekrar deneyin.",
     "publishFailedTitle": "Yayınlama başarısız",
-    "publishSuccessDescription": "Çalışma akışınız artık ComfyHub'da yayında.",
+    "publishSuccessDescription": "Çalışma akışınız artık Comfy Workflows'ta yayında.",
     "publishSuccessTitle": "Başarıyla yayınlandı",
     "removeExampleImage": "Örnek görseli kaldır",
-    "renameFailedDescription": "Workflow'unuz başarıyla yayınlandı, ancak yerel dosyanın adı değiştirilemedi. Eşleşmesi için tekrar adlandırın.",
-    "renameFailedTitle": "Yeniden adlandırma başarısız",
     "selectAThumbnail": "Bir küçük resim seçin",
     "shareAs": "Olarak paylaş",
     "showLessTags": "Daha az göster...",
@@ -666,8 +671,8 @@
     "thumbnailImageComparison": "Görsel karşılaştırma",
     "thumbnailPreview": "Küçük resim önizlemesi",
     "thumbnailVideo": "Video",
-    "title": "ComfyHub'da Yayınla",
-    "unsavedDescription": "Çalışma akışınızı ComfyHub'da yayınlamadan önce kaydetmelisiniz. Devam etmek için şimdi kaydedin.",
+    "title": "Comfy Workflows'ta Yayınla",
+    "unsavedDescription": "Çalışma akışınızı Comfy Workflows'ta yayınlamadan önce kaydetmelisiniz. Devam etmek için şimdi kaydedin.",
     "updateButton": "Workflow'u güncelle",
     "uploadAnImage": "Göz atmak için tıklayın veya bir görsel sürükleyin",
     "uploadComparison": "Öncesi ve sonrası yükle",
@@ -785,6 +790,11 @@
       "gpuUsage": "GPU Kullanımı"
     },
     "faqs": "SSS",
+    "insufficient": {
+      "memberCta": "Tamam, anladım",
+      "memberDescription": "Ekibiniz tüm kredilerini kullandı. Çalışma alanı yöneticilerinizin iş akışlarını çalıştırmak için daha fazla kredi eklemesi gerekiyor.",
+      "memberTitle": "Bu çalışma alanında kredi kalmadı"
+    },
     "invoiceHistory": "Fatura Geçmişi",
     "lastUpdated": "Son güncellenme",
     "loadEventsError": "Etkinlik yüklenemedi. Lütfen tekrar deneyin.",
@@ -1259,6 +1269,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu düğüm, çalışma alanı politikanız tarafından devre dışı bırakıldı. Farklı bir düğüm kullanın.",
+        "title": "Düğüm devre dışı",
+        "toastMessage": "Bu düğüm, çalışma alanı politikanız tarafından devre dışı bırakıldı.",
+        "toastTitle": "Partner düğümler"
+      },
       "bad_linked_input": {
         "details": "{nodeName} için {inputName} bağlantısı geçersiz.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -1452,6 +1469,9 @@
     "noExportsInQueue": "Kuyrukta {filter} dışa aktarma yok",
     "preparingExport": "Dışa aktarım hazırlanıyor...",
     "retryDownload": "İndirmeyi tekrar dene"
+  },
+  "feedback": {
+    "title": "Geri Bildirim Paylaş"
   },
   "g": {
     "1x": "1x",
@@ -2087,6 +2107,7 @@
     "arrange": {
       "atLeastOne": "en az bir",
       "connectAtLeastOne": "Kullanıcıların çalıştırdıktan sonra sonuçları görebilmesi için {atLeastOne} çıktı düğümünü bağlayın.",
+      "descriptionPlaceholder": "Açıklama eklemek için çift tıklayın",
       "noOutputs": "Henüz çıktı eklenmedi",
       "outputExamples": "Örnekler: 'Görseli Kaydet' veya 'Videoyu Kaydet'",
       "outputs": "Çıktılar",
@@ -2603,8 +2624,8 @@
     "resetView": "Tuval görünümünü sıfırla",
     "run": "Çalıştır",
     "runWorkflow": "İş akışını çalıştır (Öne kuyruklamak için Shift)",
-    "runWorkflowDisabled": "İş akışında desteklenmeyen düğümler var (kırmızı ile vurgulanmış). İş akışını çalıştırmak için bunları kaldırın.",
     "runWorkflowFront": "İş akışını çalıştır (Öne kuyrukla)",
+    "runWorkflowMissingResources": "Çalışma akışında eksik kaynaklar var.",
     "settings": "Ayarlar",
     "showMenu": "Menüyü Göster",
     "stopRunInstant": "Çalışmayı Durdur (Anında)",
@@ -2783,7 +2804,6 @@
     "accept": "Tabii, yardımcı olacağım!",
     "description": "Bu özelliği kullanıyorsunuz. Geri bildiriminizi bizimle paylaşır mısınız?",
     "dontAskAgain": "Bir daha sorma",
-    "loadError": "Anket yüklenemedi. Lütfen daha sonra tekrar deneyin.",
     "notNow": "Şimdi değil",
     "title": "Bize Yardımcı Olun"
   },
@@ -2798,6 +2818,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2827,6 +2848,7 @@
     "ace": "ace",
     "adjustments": "ayarlar",
     "advanced": "gelişmiş",
+    "anima": "anima",
     "animate": "canlandır",
     "attention_experiments": "dikkat_deneyleri",
     "audio": "ses",
@@ -2849,6 +2871,7 @@
     "create": "oluştur",
     "custom": "özel",
     "dancer": "dansçı",
+    "dataset": "veri seti",
     "debug": "hata ayıklama",
     "detection": "tespit",
     "experimental": "deneysel",
@@ -2870,6 +2893,7 @@
     "image": "görüntü",
     "infinite talk": "sonsuz konuşma",
     "instructpix2pix": "instructpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "gizli",
     "loaders": "yükleyiciler",
@@ -2877,11 +2901,13 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "maske",
     "merging": "birleştirme",
     "mochi": "mochi",
     "model": "model",
     "model specific": "model özel",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "çoklu gpu",
     "noise": "gürültü",
@@ -3001,6 +3027,7 @@
       "appTypeNative": "Yerel uygulama",
       "appTypeWeb": "Web uygulaması",
       "deny": "İptal",
+      "detailsHeader": "Detaylar",
       "errorExpired": "Bu onay isteğinin süresi doldu veya zaten kullanıldı. Lütfen istemci uygulamasından tekrar başlatın.",
       "errorScopeBroadening": "Önceden onaylanan izinler bu isteği kapsamıyor. Yeni izinlerle tekrar yetkilendirmeniz gerekiyor.",
       "errorUnavailable": "Bu özellik şu anda kullanılamıyor. Sorun devam ederse lütfen destek ile iletişime geçin.",
@@ -3015,7 +3042,6 @@
       "sessionErrorToastSummary": "OAuth oturum açma devam ettirilemedi",
       "subtitle": "Devam etmek için {resource} hesabınızla oturum açın",
       "title": "{client} erişim istiyor",
-      "workspaceHelp": "İzinler yalnızca bu çalışma alanı için geçerlidir.",
       "workspaceLabel": "Çalışma Alanı"
     },
     "scopes": {
@@ -3031,6 +3057,38 @@
       "owner": "Sahip",
       "personal": "Kişisel"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "Her oluşturulan ve içe aktarılan içerik Medya Varlıkları'nda saklanır. Geçmiş çalışmalarınızı gözden geçirmek, indirmek veya yeniden kullanmak için istediğiniz zaman açabilirsiniz.",
+        "title": "Tüm varlıklarınızı bulun"
+      },
+      "inputs": {
+        "body": "Çalışmak istediğiniz şeyleri ekleyin. Girişleriniz, uygulamanın sonuçlara dönüştürdüğü şeylerdir.",
+        "title": "Girişlerinizi ekleyin"
+      },
+      "landing": {
+        "body": "Yaklaşık bir dakikada temel bilgilerin hızlı bir turu. Size girişleri nasıl ekleyeceğinizi, uygulamanızı nasıl çalıştıracağınızı ve sonuçlarınızı nerede bulacağınızı göstereceğiz.",
+        "primary": "Eğitimi başlat",
+        "title": "Uygulamalara Hoş Geldiniz"
+      },
+      "outputs": {
+        "body": "Tamamlanan sonuçlarınız burada, ortada gösterilir. İndirebilir veya bir girişi değiştirip tekrar çalıştırabilirsiniz.",
+        "title": "Sonuçlarınızı alın"
+      },
+      "replay": "Uygulama Modu turuna katıl",
+      "run": {
+        "body": "Girişlerinizden memnun musunuz? Çalıştır'a tıklayın ve sonuç hazır olduğunda ortada görünecek.",
+        "title": "Uygulamanızı çalıştırın"
+      }
+    },
+    "back": "Geri",
+    "done": "Bitti",
+    "loadError": "Bu tur gösterilirken bir hata oluştu",
+    "next": "İleri",
+    "skip": "Atla",
+    "stepLabel": "Adım {current} / {total}"
   },
   "openSharedWorkflow": {
     "author": "Yazar:",
@@ -3469,6 +3527,7 @@
     "3DViewer": "3D Görüntüleyici",
     "API Nodes": "API Düğümleri",
     "About": "Hakkında",
+    "Allowlist": "İzinli Liste",
     "Appearance": "Görünüm",
     "BrushAdjustment": "Fırça Ayarı",
     "Camera": "Kamera",
@@ -3496,6 +3555,7 @@
     "Load 3D": "3D Yükle",
     "Locale": "Yerel Ayar",
     "Mask Editor": "Maske Düzenleyici",
+    "Members": "Üyeler",
     "Menu": "Menü",
     "ModelLibrary": "Model Kütüphanesi",
     "Node": "Düğüm",
@@ -3546,9 +3606,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "Bu medya öğelerinin yayınlanıp herkese açık olacağını anlıyorum",
     "checkingAssets": "Medya görünürlüğü kontrol ediliyor…",
-    "comfyHubButton": "ComfyHub'a yükle",
-    "comfyHubDescription": "ComfyHub, ComfyUI'nin resmi topluluk merkezidir.\nİş akışınız herkesin görebileceği herkese açık bir sayfada olacak.",
-    "comfyHubTitle": "ComfyHub'a yükle",
+    "comfyHubButton": "Comfy Workflows'a yükle",
+    "comfyHubDescription": "Comfy Workflows, ComfyUI'nin resmi topluluk merkezidir.\nİş akışınız herkesin görebileceği herkese açık bir sayfada olacak.",
+    "comfyHubTitle": "Comfy Workflows'a yükle",
     "copyLink": "Kopyala",
     "createLinkButton": "Bağlantı oluştur",
     "createLinkDescription": "İş akışınız için bir bağlantı oluşturduğunuzda, bu medya öğelerini iş akışınızla birlikte paylaşacaksınız",
@@ -3622,6 +3682,7 @@
     "logout": "Çıkış Yap",
     "mediaAssets": "Medya Varlıkları",
     "modelLibrary": "Model Kütüphanesi",
+    "modelLibraryLoadFailed": "Modeller yüklenemedi. Sunucu bağlantısını kontrol edin ve tekrar denemek için Yenile'yi kullanın.",
     "newBlankWorkflow": "Yeni bir boş iş akışı oluştur",
     "noFilesFound": "Dosya bulunamadı",
     "noFilesFoundMessage": "Dosya yükleyin veya içerik oluşturun, burada görüntülensin",
@@ -3727,6 +3788,7 @@
       "viewList": "Liste görünümü"
     },
     "searchAssets": "Varlıkları Ara",
+    "searchResultsCapped": "İlk {limit} eşleşme gösteriliyor. Daha spesifik sonuçlar görmek için aramanızı daraltın.",
     "sidebar": "Kenar Çubuğu",
     "templates": "Şablonlar",
     "themeToggle": "Temayı Değiştir",
@@ -3858,6 +3920,7 @@
     "freeTier": {
       "description": "Ücretsiz planınız, Comfy Cloud'u denemek için her ay {credits} kredi içerir.",
       "descriptionGeneric": "Ücretsiz planınız, Comfy Cloud'u denemek için aylık kredi hakkı içerir.",
+      "descriptionQuota": "Ücretsiz planınız, Comfy Cloud ile başlamak için {runs} çalıştırma içerir — kart gerekmez.",
       "nextRefresh": "Kredileriniz {date} tarihinde yenilenecek.",
       "outOfCredits": {
         "subtitle": "Yeniden yükleme ve daha fazlasının kilidini açmak için abone olun",
@@ -3998,6 +4061,7 @@
       "waitingForSubscription": "Aboneliğinizi yeni sekmede tamamlayın. İşleminiz bittiğinde otomatik olarak algılayacağız!"
     },
     "resubscribe": "Yeniden abone ol",
+    "resubscribeFailed": "Abonelik yeniden etkinleştirilemedi",
     "resubscribeSuccess": "Abonelik başarıyla yeniden etkinleştirildi",
     "resubscribeTo": "{plan} planına yeniden abone ol",
     "saveYearly": "%20 tasarruf",
@@ -4123,7 +4187,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "Filtreler:",
     "allTemplates": "Tüm Şablonlar",
     "categories": "Kategoriler",
     "category": {
@@ -4148,9 +4211,12 @@
       "Video": "Video",
       "Video API": "Video API"
     },
+    "clearAllFilters": "Tüm filtreleri temizle",
     "error": {
       "templateNotFound": "\"{templateName}\" şablonu bulunamadı"
     },
+    "filtersApplied": "{count} filtre uygulandı | {count} filtre uygulandı",
+    "filtersButton": "Filtreler",
     "licenseFilter": "Lisans",
     "loading": "Şablonlar yükleniyor...",
     "loadingMore": "Daha fazla şablon yükleniyor...",
@@ -4158,7 +4224,11 @@
     "modelsSelected": "{count} Model",
     "noResults": "Şablon bulunamadı",
     "noResultsHint": "Aramanızı veya filtrelerinizi ayarlamayı deneyin",
-    "resetFilters": "Filtreleri Temizle",
+    "paidTemplate": {
+      "badgeLabel": "Partner API",
+      "credits": "Kredilerle çalışır",
+      "title": "Premium şablon"
+    },
     "resultsCount": "{total} şablondan {count} tanesi gösteriliyor",
     "runsOnFilter": "Üzerinde çalışır",
     "runsOnSelected": "{count} Üzerinde Çalışır",
@@ -4250,6 +4320,9 @@
     "useApiKeyTip": "İpucu: Normal girişe erişemiyor musunuz? Comfy API Anahtarı seçeneğini kullanın.",
     "userNotAuthenticated": "Kullanıcı doğrulanmadı"
   },
+  "typeform": {
+    "loadError": "Form yüklenemedi. Lütfen daha sonra tekrar deneyin."
+  },
   "userSelect": {
     "enterUsername": "Bir kullanıcı adı girin",
     "existingUser": "Mevcut kullanıcı",
@@ -4292,6 +4365,21 @@
     "frontendOutdated": "Ön uç sürümü {frontendVersion} güncel değil. Arka uç {requiredVersion} veya daha yüksek bir sürüm gerektiriyor.",
     "title": "Sürüm Uyumluluk Uyarısı",
     "updateFrontend": "Ön Ucu Güncelle"
+  },
+  "videoEdit": {
+    "adjustCrop": "Kırpma bölgesini ayarla",
+    "adjustEndFrame": "Bitiş karesini ayarla",
+    "adjustStartFrame": "Başlangıç karesini ayarla",
+    "durationSeconds": "{count} sn",
+    "durationZero": "0 sn",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB",
+    "fileSizeUnknown": "—",
+    "loadingFilmstrip": "Film şeridi yükleniyor…",
+    "pause": "Duraklat",
+    "play": "Oynat",
+    "seekVideo": "Videoda gez"
   },
   "vueNodesBanner": {
     "desc": "– Daha esnek iş akışları, güçlü yeni bileşenler, genişletilebilirlik için tasarlandı",
@@ -4385,6 +4473,48 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "Kredi",
+        "date": "Tarih",
+        "eventDetails": "Etkinlik detayları",
+        "eventType": "Etkinlik türü",
+        "user": "Kullanıcı"
+      },
+      "empty": "Henüz bir etkinlik yok.",
+      "fullActivity": "Tüm etkinlikler",
+      "hoverCard": {
+        "lastActivity": "Son etkinlik",
+        "partnerNodeUsed": "Kullanılan partner node",
+        "totalCreditsUsed": "Toplam kullanılan kredi"
+      }
+    },
+    "billingStatus": {
+      "ending": {
+        "body": "O zamana kadar üyeler tam erişime sahip olacak. Paylaşılan kredilerinizi ve koltuklarınızı korumak için yeniden etkinleştirin.",
+        "reactivate": "Planı yeniden etkinleştir",
+        "title": "Ekip planınız {date} tarihinde sona eriyor"
+      },
+      "outOfCredits": {
+        "addCredits": "Kredi ekle",
+        "body": "Ekibiniz tüm kredilerini kullandı. Devam etmek için daha fazla kredi ekleyin veya {date} tarihinde krediler yenilenene kadar bekleyin.",
+        "bodyNoDate": "Ekibiniz tüm kredilerini kullandı. Devam etmek için daha fazla kredi ekleyin.",
+        "dismiss": "Kapat",
+        "memberBody": "Ekibiniz tüm kredilerini kullandı. Devam etmek için çalışma alanı yöneticilerinizin daha fazla kredi eklemesi gerekiyor.",
+        "title": "Kredi kalmadı"
+      },
+      "paused": {
+        "body": "Bu çalışma alanının aboneliği duraklatıldı. Devam etmek için ödemeyi güncelleyin.",
+        "memberBody": "Bu çalışma alanının aboneliği duraklatıldı. Çalışma alanı yöneticilerinizin ödeme yöntemini güncellemesi gerekiyor.",
+        "title": "Abonelik duraklatıldı"
+      },
+      "updatePayment": "Ödemeyi güncelle",
+      "warning": {
+        "body": "Son ödemeniz gerçekleşmedi. {date} tarihinde aboneliğiniz duraklatılacak, ödeme güncellenmezse.",
+        "bodyNoDate": "Son ödemeniz gerçekleşmedi. Duraklatmayı önlemek için ödemeyi güncelleyin.",
+        "title": "Ödeme reddedildi"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "Üyeye düşür",
       "demoteMessage": "Yönetici erişimini kaybedecekler.",
@@ -4446,14 +4576,31 @@
         "cancelInvite": "Daveti iptal et",
         "changeRole": "Rolü değiştir",
         "removeMember": "Üyeyi kaldır",
-        "resendInvite": "Daveti yeniden gönder"
+        "resendInvite": "Daveti yeniden gönder",
+        "setCreditLimit": "Kredi limiti belirle"
+      },
+      "activity": {
+        "daysAgo": "{count} gün önce",
+        "hoursAgo": "{n} saat önce",
+        "justNow": "şimdi",
+        "minutesAgo": "{n} dakika önce"
       },
       "columns": {
+        "creditsUsed": "Aylık kredi",
         "expiryDate": "Son kullanma tarihi",
         "inviteDate": "Davet tarihi",
         "role": "Rol"
       },
       "contactUs": "Bize ulaşın",
+      "creditLimitDialog": {
+        "description": "Bu limite ulaştıklarında, iş akışlarını çalıştıramazlar.",
+        "invalidLimit": "Sıfırdan büyük bir kredi limiti girin.",
+        "limitOption": "Aylık kredi kullanımını sınırla:",
+        "noLimit": "Sınırsız",
+        "title": "{name} için aylık kredi limiti belirle",
+        "update": "Limiti güncelle",
+        "warning": "Bu kullanıcı zaten {credits} kredi harcadı. Limiti mevcut kullanımına eşit veya daha düşük ayarlamak, bir sonraki aya kadar daha fazla çalıştırmayı engeller."
+      },
       "header": "Üyeler",
       "membersCount": "{count}/50 Üye",
       "needMoreMembers": "Daha fazla üyeye mi ihtiyacınız var?",
@@ -4476,6 +4623,45 @@
       "deleteWorkspaceDisabledTooltip": "Önce çalışma alanınızın aktif aboneliğini iptal edin",
       "editWorkspace": "Çalışma alanı detaylarını düzenle",
       "leaveWorkspace": "Çalışma Alanından Ayrıl"
+    },
+    "partnerNodes": {
+      "accessMode": "Partner düğüm erişim modu",
+      "allowAllAccessHint": "Bu değişikliğin çalışma alanınızda uygulanması 10 dakikaya kadar sürebilir.",
+      "allowAllAccessMessage": "Tüm sağlayıcılardan partner düğümler, tüm çalışma alanı üyeleri için kullanılabilir olacak.",
+      "allowAllAccessTitle": "Tüm partner düğümlere erişime izin verilsin mi?",
+      "columns": {
+        "nodes": "Düğümler",
+        "provider": "Sağlayıcı"
+      },
+      "disableAll": "Tümünü devre dışı bırak",
+      "disableAllMessage": "Tüm sağlayıcılar kapatılacak. Partner düğümler erişim kısıtlıyken kullanılamayacak.",
+      "disableAllTitle": "Tüm sağlayıcılar devre dışı bırakılsın mı?",
+      "enableAll": "Tümünü etkinleştir",
+      "loadError": "Partner düğüm erişimi yüklenemedi.",
+      "loading": "Partner düğüm erişimi yükleniyor",
+      "noResults": "Sağlayıcı veya partner düğüm bulunamadı",
+      "nodeCount": "{count} etkin",
+      "ownerOnly": "Yalnızca çalışma alanı sahipleri partner düğüm erişimini güncelleyebilir.",
+      "restrictAccessHint": "Bu değişikliğin çalışma alanınızda uygulanması 10 dakikaya kadar sürebilir.",
+      "restrictAccessMessage": "Çalışma alanı üyeleri yalnızca etkinleştirdiğiniz sağlayıcılardan partner düğümleri kullanabilecek.",
+      "restrictAccessTitle": "Partner düğümlere erişim kısıtlansın mı?",
+      "restricted": "Kısıtlı",
+      "restrictedDescription": "Yalnızca etkin sağlayıcılardan partner düğümler kullanılabilir. Değişikliklerin uygulanması 10 dakikaya kadar sürebilir.",
+      "retry": "Tekrar dene",
+      "saveError": "Partner düğüm erişimi güncellenemedi. Tekrar deneyin.",
+      "searchPlaceholder": "Sağlayıcılar ve partner düğümlerini ara...",
+      "tableLabel": "Partner düğüm sağlayıcıları",
+      "title": "Partner düğüm erişimi",
+      "toggleProvider": "{provider} için erişimi ayarla",
+      "unavailable": "Bu çalışma alanı için partner düğüm erişimi mevcut değil.",
+      "unrestricted": "Kısıtlamasız",
+      "unrestrictedDescription": "Tüm sağlayıcılardan partner düğümler herkes için kullanılabilir. Sağlayıcıları devre dışı bırakmak bunu Kısıtlı'ya ayarlayacaktır."
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "Etkinlik",
+        "overview": "Krediler"
+      }
     },
     "removeMemberDialog": {
       "error": "Üye kaldırılamadı",

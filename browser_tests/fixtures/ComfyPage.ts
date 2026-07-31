@@ -4,6 +4,7 @@ import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
+import { TOURS, TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
@@ -542,6 +543,8 @@ export const comfyPageFixture = base.extend<{
         'Comfy.userId': userId,
         // Set tutorial completed to true to avoid loading the tutorial workflow.
         'Comfy.TutorialCompleted': true,
+        // An auto-opened tour's blocker would break unrelated tests.
+        [TOUR_SEEN_SETTING]: Object.keys(TOURS),
         'Comfy.Queue.MaxHistoryItems': 64,
         'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
         // Disable toast warning about version compatibility, as they may or

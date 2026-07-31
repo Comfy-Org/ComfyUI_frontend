@@ -27,16 +27,28 @@ const mockGetWorkspaceToken = vi.fn().mockReturnValue(undefined)
 const mockClearWorkspaceContext = vi.fn()
 const mockMintAtLogin = vi.fn().mockResolvedValue(false)
 let mockUnifiedToken: string | null = null
+const mockResetForIdentityChange = vi.fn()
+let mockActiveWorkspaceId: string | null = null
 
 vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
   useWorkspaceAuthStore: () => ({
     getWorkspaceAuthHeader: mockWorkspaceAuthHeader,
     getWorkspaceToken: mockGetWorkspaceToken,
+    getUnifiedToken: () => mockUnifiedToken ?? undefined,
     clearWorkspaceContext: mockClearWorkspaceContext,
     mintAtLogin: mockMintAtLogin,
     get unifiedToken() {
       return mockUnifiedToken
     }
+  })
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    get activeWorkspaceId() {
+      return mockActiveWorkspaceId
+    },
+    resetForIdentityChange: mockResetForIdentityChange
   })
 }))
 
@@ -121,6 +133,7 @@ describe('auth token priority chain', () => {
     mockFeatureFlags.teamWorkspacesEnabled = false
     mockFeatureFlags.unifiedCloudAuthEnabled = false
     mockUnifiedToken = null
+    mockActiveWorkspaceId = null
     mockWorkspaceAuthHeader.mockReturnValue(null)
     mockGetWorkspaceToken.mockReturnValue(undefined)
     mockMintAtLogin.mockResolvedValue(false)
@@ -230,6 +243,36 @@ describe('auth token priority chain', () => {
       authStateCallback(null)
       expect(mockMintAtLogin).not.toHaveBeenCalled()
       expect(mockClearWorkspaceContext).toHaveBeenCalled()
+    })
+
+    it('clears account-scoped state before minting for a different user', () => {
+      mockClearWorkspaceContext.mockClear()
+      mockResetForIdentityChange.mockClear()
+      mockMintAtLogin.mockClear()
+      const nextUser = {
+        ...mockUser,
+        uid: 'different-user-id',
+        email: 'different@example.com'
+      } as MockUser
+
+      authStateCallback(nextUser)
+
+      expect(mockClearWorkspaceContext).toHaveBeenCalledOnce()
+      expect(mockResetForIdentityChange).toHaveBeenCalledOnce()
+      expect(mockMintAtLogin).toHaveBeenCalledOnce()
+      expect(
+        mockClearWorkspaceContext.mock.invocationCallOrder[0]
+      ).toBeLessThan(mockMintAtLogin.mock.invocationCallOrder[0])
+    })
+
+    it('keeps account-scoped state for a repeated callback with the same uid', () => {
+      mockClearWorkspaceContext.mockClear()
+      mockResetForIdentityChange.mockClear()
+
+      authStateCallback({ ...mockUser } as MockUser)
+
+      expect(mockClearWorkspaceContext).not.toHaveBeenCalled()
+      expect(mockResetForIdentityChange).not.toHaveBeenCalled()
     })
   })
 

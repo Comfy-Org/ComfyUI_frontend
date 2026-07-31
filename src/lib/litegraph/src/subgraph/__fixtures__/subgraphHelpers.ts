@@ -5,7 +5,7 @@
  * These functions provide consistent ways to create test subgraphs, nodes, and
  * verify their behavior.
  */
-import { expect } from 'vitest'
+import { expect, onTestFinished } from 'vitest'
 
 import type {
   ExportedSubgraph,
@@ -285,6 +285,35 @@ export function createTestSubgraphNode(
   }
 
   return new SubgraphNode(parentGraph, subgraph, instanceData)
+}
+
+export function registerTestSubgraphNodeTypes(rootGraph: LGraph): void {
+  const registeredTypes: string[] = []
+
+  rootGraph.events.addEventListener('subgraph-created', (event) => {
+    const subgraph = event.detail.subgraph
+    class TestSubgraphNode extends SubgraphNode {
+      constructor() {
+        super(rootGraph, subgraph, {
+          id: -1,
+          type: subgraph.id,
+          pos: [0, 0],
+          size: [100, 100],
+          inputs: [],
+          outputs: [],
+          flags: {},
+          order: 0,
+          mode: 0
+        })
+      }
+    }
+    LiteGraph.registerNodeType(subgraph.id, TestSubgraphNode)
+    registeredTypes.push(subgraph.id)
+  })
+
+  onTestFinished(() => {
+    for (const type of registeredTypes) LiteGraph.unregisterNodeType(type)
+  })
 }
 
 export function createBoundaryLinkedSubgraph({

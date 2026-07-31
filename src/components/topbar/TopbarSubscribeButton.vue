@@ -2,7 +2,7 @@
   <Button
     v-if="isCloud && isFreeTier"
     class="mr-2 shrink-0 whitespace-nowrap"
-    variant="gradient"
+    variant="subscribe"
     size="sm"
     data-testid="topbar-subscribe-button"
     @click="handleClick"

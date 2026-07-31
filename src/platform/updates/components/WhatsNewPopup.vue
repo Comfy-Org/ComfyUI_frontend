@@ -231,6 +231,7 @@ defineExpose({
 
 /* What's new title - targets h2 or strong text after h1 */
 .content-text :deep(h2),
+/* stylelint-disable-next-line selector-max-type -- generated markdown offers no class hooks */
 .content-text :deep(h1 + p strong) {
   color: var(--text-primary);
   font-family: Inter, sans-serif;

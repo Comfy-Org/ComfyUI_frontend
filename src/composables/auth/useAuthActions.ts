@@ -10,6 +10,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { clearAllWorkflowStorage } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
@@ -82,34 +83,38 @@ export const useAuthActions = () => {
   }
 
   const logout = wrapWithErrorHandlingAsync(async () => {
-    const workflowStore = useWorkflowStore()
-    const modifiedWorkflows = workflowStore.modifiedWorkflows
-    if (modifiedWorkflows.length > 0) {
-      const dialogService = useDialogService()
-      const confirmed = await dialogService.confirm({
-        title: t('auth.signOut.unsavedChangesTitle'),
-        message: t('auth.signOut.unsavedChangesMessage'),
-        type: 'dirtyClose',
-        denyLabel: t('auth.signOut.signOutAnyway')
-      })
-      if (confirmed === null) return
+    if (isCloud) {
+      const workflowStore = useWorkflowStore()
+      const modifiedWorkflows = workflowStore.modifiedWorkflows
+      if (modifiedWorkflows.length > 0) {
+        const dialogService = useDialogService()
+        const confirmed = await dialogService.confirm({
+          title: t('auth.signOut.unsavedChangesTitle'),
+          message: t('auth.signOut.unsavedChangesMessage'),
+          type: 'dirtyClose',
+          denyLabel: t('auth.signOut.signOutAnyway')
+        })
+        if (confirmed === null) return
 
-      if (confirmed === true) {
-        const workflowService = useWorkflowService()
-        for (const workflow of modifiedWorkflows) {
-          try {
-            const saved = await workflowService.saveWorkflow(workflow)
-            if (!saved) return
-          } catch {
-            throw new Error(
-              t('auth.signOut.saveFailed', { workflow: workflow.path })
-            )
+        if (confirmed === true) {
+          const workflowService = useWorkflowService()
+          for (const workflow of modifiedWorkflows) {
+            try {
+              const saved = await workflowService.saveWorkflow(workflow)
+              if (!saved) return
+            } catch {
+              throw new Error(
+                t('auth.signOut.saveFailed', { workflow: workflow.path })
+              )
+            }
           }
         }
       }
     }
 
     await authStore.logout()
+    if (isCloud) clearAllWorkflowStorage({ blockWrites: true })
+
     toastStore.add({
       severity: 'success',
       summary: t('auth.signOut.success'),
@@ -140,7 +145,13 @@ export const useAuthActions = () => {
     reportAuthFlowError('password_reset')
   )
 
-  const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
+  /**
+   * Raw (unwrapped) credit purchase. Exposed separately from `purchaseCredits`
+   * so callers that need to observe a rejection directly (e.g. to fire failure
+   * telemetry) aren't routed through `wrapWithErrorHandlingAsync`, which
+   * resolves instead of re-throwing on failure.
+   */
+  const purchaseCreditsDirect = async (amount: number): Promise<void> => {
     const { isActiveSubscription } = useBillingContext()
     if (!isActiveSubscription.value) return
 
@@ -159,7 +170,12 @@ export const useAuthActions = () => {
 
     useTelemetry()?.startTopupTracking()
     window.open(response.checkout_url, '_blank')
-  }, reportError)
+  }
+
+  const purchaseCredits = wrapWithErrorHandlingAsync(
+    purchaseCreditsDirect,
+    reportError
+  )
 
   const accessBillingPortal = wrapWithErrorHandlingAsync<
     [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
@@ -277,6 +293,7 @@ export const useAuthActions = () => {
     logout,
     sendPasswordReset,
     purchaseCredits,
+    purchaseCreditsDirect,
     accessBillingPortal,
     fetchBalance,
     signInWithGoogle,

@@ -121,6 +121,9 @@ export function useKeybindingService() {
   function registerUserKeybindings() {
     const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
     for (const keybinding of unsetBindings) {
+      if (!commandStore.isRegistered(keybinding.commandId)) {
+        continue
+      }
       keybindingStore.unsetKeybinding(new KeybindingImpl(keybinding))
     }
     const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')

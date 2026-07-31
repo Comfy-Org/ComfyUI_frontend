@@ -15,7 +15,8 @@ export function translateCatalogMessage(
   fallback: string,
   params?: CatalogParams
 ): string {
-  if (te(key)) return params ? t(key, params) : t(key)
+  if (te(key))
+    return params ? t(key, params, { escapeParameter: false }) : t(key)
   if (!params) return fallback
 
   return fallback.replace(/\{(\w+)\}/g, (match, paramName) =>
@@ -28,7 +29,8 @@ export function translateOptionalCatalogMessage(
   fallback?: string,
   params?: CatalogParams
 ): string | undefined {
-  if (te(key)) return params ? t(key, params) : t(key)
+  if (te(key))
+    return params ? t(key, params, { escapeParameter: false }) : t(key)
   return fallback?.trim() ? fallback : undefined
 }
 

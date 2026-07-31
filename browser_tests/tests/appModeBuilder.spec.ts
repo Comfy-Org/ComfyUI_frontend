@@ -46,6 +46,54 @@ test.describe('App mode builder selection', () => {
     await expect(items).toHaveCount(1)
   })
 
+  test(
+    'Can add description to widgets',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      const descLocator =
+        comfyPage.appMode.widgets.getWidgetDescription('6:text')
+
+      await test.step('set up baseline app', async () => {
+        await comfyPage.appMode.enterAppModeWithInputs([['6', 'text']])
+        await expect(descLocator, 'Empty description hidden').toBeHidden()
+      })
+
+      const description = "Don't forget the massive fennec ears!"
+
+      await test.step('Enter builder and add description', async () => {
+        await comfyPage.appMode.enterBuilder()
+        await comfyPage.appMode.steps.goToPreview()
+        await expect(
+          descLocator,
+          'Display placeholder in builder'
+        ).toBeVisible()
+
+        await descLocator.dblclick()
+        await descLocator.locator('input').fill(description)
+        await descLocator.locator('input').blur()
+        await expect(descLocator, 'Description updates').toHaveText(description)
+      })
+
+      await test.step('Exit builder and return to app mode', async () => {
+        await comfyPage.appMode.footer.exitBuilder()
+        await comfyPage.appMode.toggleAppMode()
+        await expect(descLocator, 'Description displays').toHaveText(
+          description
+        )
+      })
+
+      await test.step('Swap workflows to test persistance', async () => {
+        await comfyPage.appMode.toggleAppMode()
+        await comfyPage.menu.topbar.getTab(0).click()
+        await comfyPage.menu.topbar.getTab(1).click()
+        await comfyPage.appMode.toggleAppMode()
+        await expect(descLocator, 'Description persists').toHaveText(
+          description
+        )
+      })
+    }
+  )
+
   test('Can not select nodes with errors or notes', async ({ comfyPage }) => {
     //Manually set error state on checkpoint loader
     //Shouldn't be needed on ci, but has spotty reliability
