@@ -470,10 +470,12 @@ writeback compares before writing, so an equal write-back is a no-op.
 
 **Not done, and each needs a decision rather than more inference:**
 
-1. The `size` Proxy. Every in-repo element write is gone, so its only remaining
-   job is third-party `node.size[1] = h`. Retiring it means accepting that
-   ecosystem writes stop reflowing, or landing the stable resize API its
-   `TODO(litegraph-stable-resize-api)` points at.
+1. The geometry views. The hand-written `size` Proxy is gone, replaced by
+   `createGeometryView` over `pos` and `size` on `LGraphNode` plus `pos`,
+   `size` and `bounding` on `LGraphGroup`. Every in-repo element write is gone,
+   so their only remaining job is third-party `node.size[1] = h`. Retiring them
+   means accepting that ecosystem writes stop reflowing, or landing a stable
+   resize API.
 2. Subgraph IO nodes have conforming write paths but no store entry. A keyed
    entry needs subgraph scoping (`SUBGRAPH_INPUT_ID` is a constant shared by
    every subgraph) and `Subgraph.id` is reassigned by `clear()`, so the key can

@@ -172,7 +172,7 @@ The most architecturally advanced extraction — uses Y.js CRDTs for collaborati
 ### State Shape
 
 ```
-ynodes:    Y.Map<NodeLayoutMap>     // nodeId → { pos, size, zIndex, bounds }
+ynodes:    Y.Map<NodeLayoutMap>     // nodeId → { rect, zIndex }
 ygroups:   Y.Map<GroupLayoutMap>    // rootGraphId:groupId → geometry
 
 yreroutes: Y.Map<Y.Map<...>>       // rootGraphId:rerouteId → { id, position }
@@ -192,8 +192,12 @@ only — the write-only `parentId`/`linkIds` fields were removed.
 - `resizeNode(nodeId, size)`
 - `setNodeZIndex(nodeId, zIndex)` / `bringNodeToFront(nodeId)`
 - `createNode(nodeId, layout)` / `deleteNode(nodeId)`
-- `createReroute(graphId, rerouteId, pos)` /
-  `deleteReroute(graphId, rerouteId)` / `moveReroute(graphId, rerouteId, pos)`
+- `createReroute(rootGraphId, rerouteId, pos)` /
+  `deleteReroute(rootGraphId, rerouteId)` /
+  `moveReroute(rootGraphId, rerouteId, pos)`
+- `createGroup(rootGraphId, groupId, layout)` /
+  `setGroupBounds(rootGraphId, groupId, pos, size)` /
+  `deleteGroup(rootGraphId, groupId)`
 
 (`createLink`/`removeLink` are gone — link topology is `LinkStore`'s concern.)
 
@@ -335,22 +339,19 @@ graph TD
 
     subgraph Reroute["Reroute"]
         R_ext["Extracted:
-- pos → LayoutStore (partial mirror;
-  posInternal still truth)
+- pos → LayoutStore (sole truth)
 - parentId, floating → RerouteStore
 - linkIds, floatingLinkIds → derived
   from links' parentId chains"]
         R_rem["Remains on class:
-- posInternal (position truth)
 - colour, draw()
 - findSourceOutput()"]
     end
 
     subgraph Group["LGraphGroup"]
         G_ext["Extracted:
-(nothing)"]
+- pos, size, bounding → LayoutStore"]
         G_rem["Remains on class:
-- pos, size, bounding
 - title, font, color
 - _children, _nodes
 - draw(), move()
@@ -372,7 +373,7 @@ graph TD
     style W_ext fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
     style L_ext fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
     style R_ext fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
-    style G_ext fill:#4a1a1a,stroke:#6a2a2a,color:#e0e0e0
+    style G_ext fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
     style S_ext fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
 
     style N_rem fill:#4a1a1a,stroke:#6a2a2a,color:#e0e0e0
@@ -393,8 +394,8 @@ What each entity needs to reach the ECS target from [ADR 0008](../adr/0008-entit
 | **Link**     | endpoints, type, parentId (LinkStore, via `_state` proxy); segment geometry (LayoutStore) | visual (color, path), drag state, connectivity methods                               | LinkEndpoints ✅, LinkVisual, LinkState                                              | Small — topology shipped (PR #13436); visual state and slot mirrors remain                 |
 | **Widget**   | value, label, disabled (WidgetValueStore); DOM state (DomWidgetStore)                     | node back-ref, rendering, events, layout                                             | WidgetIdentity, WidgetValue, WidgetLayout                                            | Small — value extraction done; rendering and layout remain                                 |
 | **Slot**     | (nothing)                                                                                 | name, type, direction, link refs, visual, position                                   | SlotIdentity, SlotConnection, SlotVisual                                             | Full — no extraction started                                                               |
-| **Reroute**  | parentId, floating (RerouteStore); pos (LayoutStore, partial mirror)                      | position truth (posInternal), visual, chain traversal                                | Position, RerouteChain ✅, RerouteVisual                                             | Small — chain shipped (PR #13449); position ownership and visual remain                    |
-| **Group**    | (nothing)                                                                                 | pos, size, meta, visual, children                                                    | Position, GroupMeta, GroupVisual, GroupChildren                                      | Full — no extraction started                                                               |
+| **Reroute**  | parentId, floating (RerouteStore); pos (LayoutStore, sole truth)                          | visual, chain traversal                                                              | Position ✅, RerouteChain ✅, RerouteVisual                                          | Small — chain shipped (PR #13449); visual remains                                          |
+| **Group**    | pos, size, bounding (LayoutStore)                                                         | meta, visual, children                                                               | Position ✅, GroupMeta, GroupVisual, GroupChildren                                   | Medium — geometry shipped; meta, visual and children remain                                |
 | **Subgraph** | promoted value exposure (linked inputs); preview exposure (PreviewExposureStore)          | structure, meta, I/O, all LGraph state                                               | SubgraphStructure, SubgraphMeta (as node components)                                 | Large — mostly unextracted; subgraph is a node with components, not a separate entity kind |
 
 `RerouteChain` supersedes the earlier `RerouteLinks` component (ADR 0008
@@ -411,7 +412,8 @@ Based on existing progress and problem severity:
    (`input.link`/`output.links`) and visual state remain
 4. **Slot** — no extraction yet, but small and self-contained
    (`SlotConnection` input side now answerable via LinkStore)
-5. **Reroute** — ✅ chain shipped (RerouteStore, PR #13449); position
-   ownership and visual remain
-6. **Group** — no extraction, but least coupled to other entities
+5. **Reroute** — ✅ chain and position shipped (RerouteStore, PR #13449;
+   LayoutStore, PR #14110); visual remains
+6. **Group** — ✅ geometry shipped (LayoutStore, PR #14110); meta, visual and
+   children remain
 7. **Subgraph** — not a separate entity kind; SubgraphStructure and SubgraphMeta become node components. Depends on Node and Link extraction first. See [Subgraph Boundaries](subgraph-boundaries-and-promotion.md)

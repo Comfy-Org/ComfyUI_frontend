@@ -233,9 +233,9 @@ membership (`Reroute.linkIds` / `floatingLinkIds`) is **not stored** — it is
 derived per root graph by a cached computed reverse index walking the links'
 `parentId` chains, replacing ~10 hand-maintained write sites and the
 `validateLinks` set-repair. See
-[reroute-chain-store.md](reroute-chain-store.md). Reroute _position_ is not
-yet migrated: `Reroute.posInternal` remains the source of truth, with the
-layout store holding a partial `{ id, position }` mirror.
+[reroute-chain-store.md](reroute-chain-store.md). Reroute _position_ has since
+migrated too: `Reroute.posInternal` is deleted and the layout store's
+`{ id, position }` entry is the source of truth.
 
 ### Widget: Before vs After
 

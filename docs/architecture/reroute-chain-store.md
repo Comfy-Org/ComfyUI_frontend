@@ -56,9 +56,10 @@ all graphs increment one shared `lastRerouteId` counter.
 ## Decision 3: Load-time reroute-id dedup
 
 Serialized workflows from older frontends or external tools can carry
-colliding reroute ids across sibling subgraph definitions. Today this
-bucket would break on it. Layout geometry now uses the same root-graph scope,
-so duplicate reroute IDs within one root still require load-time repair.
+colliding reroute ids across sibling subgraph definitions. Today the
+root-scoped bucket would break on it. Layout geometry now uses the same
+root-graph scope, so duplicate reroute IDs within one root still require
+load-time repair.
 
 On configure, colliding subgraph reroute ids are rewritten to fresh ids
 from the shared counter, patching that subgraph's `link.parentId` and
