@@ -199,6 +199,24 @@ describe('Composer', () => {
       { id: '9', title: 'VAE Decode' }
     ]
 
+    it('lists matching nodes alphabetically', async () => {
+      mount({
+        getMentionNodes: () => [
+          { id: '3', title: 'VAE Decode' },
+          { id: '1', title: 'Alpha' },
+          { id: '2', title: 'KSampler' }
+        ]
+      })
+
+      await userEvent.type(screen.getByRole('textbox'), '@')
+
+      expect(
+        screen
+          .getAllByRole('option')
+          .map((option) => option.textContent?.trim())
+      ).toEqual(['Alpha', 'KSampler', 'VAE Decode'])
+    })
+
     it('opens on @, filters with spaces, and stages the pick on Enter', async () => {
       const { emitted } = mount({ getMentionNodes: () => NODES })
       const box = screen.getByRole('textbox')
@@ -379,6 +397,25 @@ describe('Composer', () => {
     expect(screen.getByText('#5')).toBeInTheDocument()
     expect(screen.getByText('#7')).toBeInTheDocument()
     expect(screen.queryByText('#9')).not.toBeInTheDocument()
+  })
+
+  it('lists graph picker nodes alphabetically', async () => {
+    const nodes = [
+      { id: '3', title: 'VAE Decode' },
+      { id: '1', title: 'Alpha' },
+      { id: '2', title: 'KSampler' }
+    ]
+    mount({ getMentionNodes: () => nodes })
+
+    await userEvent.click(await openAddMenu())
+    await screen.findByRole('menuitem', { name: 'Alpha' })
+
+    expect(
+      screen
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent?.trim())
+        .filter((title) => nodes.some((node) => node.title === title))
+    ).toEqual(['Alpha', 'KSampler', 'VAE Decode'])
   })
 
   it('hides the id on a uniquely named selection chip', () => {
