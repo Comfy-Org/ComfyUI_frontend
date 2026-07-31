@@ -19,6 +19,7 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
 }
 
 const {
+  mockBillingContextScopes,
   mockTeamWorkspacesEnabled,
   mockConsolidatedBillingEnabled,
   mockIsPersonal,
@@ -28,11 +29,13 @@ const {
   mockLegacyFetchStatus,
   mockLegacyFetchBalance,
   mockLegacySubscribe,
+  mockLegacySubscriptionTier,
   mockPurchaseCredits,
   mockUpdateActiveWorkspace,
   mockSetWorkspaceBillingRail,
   mockBillingStatus
 } = vi.hoisted(() => ({
+  mockBillingContextScopes: [] as Array<{ stop: () => void }>,
   mockTeamWorkspacesEnabled: { value: false },
   mockConsolidatedBillingEnabled: { value: false },
   mockIsPersonal: { value: true },
@@ -42,6 +45,7 @@ const {
   mockLegacyFetchStatus: vi.fn().mockResolvedValue(undefined),
   mockLegacyFetchBalance: vi.fn().mockResolvedValue(undefined),
   mockLegacySubscribe: vi.fn().mockResolvedValue(undefined),
+  mockLegacySubscriptionTier: { value: 'PRO' },
   mockPurchaseCredits: vi.fn(),
   mockUpdateActiveWorkspace: vi.fn(),
   mockSetWorkspaceBillingRail: vi.fn(),
@@ -56,10 +60,17 @@ const {
 }))
 
 vi.mock('@vueuse/core', async (importOriginal) => {
+  const { effectScope } = await import('vue')
   const original = await importOriginal()
   return {
     ...(original as Record<string, unknown>),
-    createSharedComposable: (fn: (...args: unknown[]) => unknown) => fn
+    createSharedComposable:
+      (fn: (...args: unknown[]) => unknown) =>
+      (...args: unknown[]) => {
+        const scope = effectScope()
+        mockBillingContextScopes.push(scope)
+        return scope.run(() => fn(...args))
+      }
   }
 })
 
@@ -126,7 +137,9 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
     isActiveSubscription: { value: true },
-    subscriptionTier: { value: 'PRO' },
+    get subscriptionTier() {
+      return mockLegacySubscriptionTier
+    },
     subscriptionDuration: { value: 'MONTHLY' },
     subscriptionStatus: {
       value: { renewal_date: '2025-01-01T00:00:00Z', end_date: null }
@@ -189,12 +202,15 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
 
 describe('useBillingContext', () => {
   beforeEach(() => {
+    for (const scope of mockBillingContextScopes) scope.stop()
+    mockBillingContextScopes.length = 0
     setActivePinia(createPinia())
     vi.clearAllMocks()
     mockTeamWorkspacesEnabled.value = false
     mockConsolidatedBillingEnabled.value = false
     mockIsPersonal.value = true
     mockBillingRail.value = undefined
+    mockLegacySubscriptionTier.value = 'PRO'
     mockSetWorkspaceBillingRail.mockImplementation(
       (_workspaceId: string, billingRail: BillingRail) => {
         mockBillingRail.value = billingRail
@@ -318,6 +334,7 @@ describe('useBillingContext', () => {
     ]
 
     const context = useBillingContext()
+    await context.initialize()
     vi.clearAllMocks()
 
     expect(context.type.value).toBe('legacy')
@@ -328,7 +345,7 @@ describe('useBillingContext', () => {
 
     expect(mockFetchPlans).toHaveBeenCalledOnce()
     expect(mockLegacyFetchStatus).toHaveBeenCalledOnce()
-    expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
+    expect(workspaceApi.getBillingStatus).toHaveBeenCalledOnce()
 
     await context.previewSubscribe('creator-annual')
     await context.subscribe('creator-annual')
@@ -344,6 +361,37 @@ describe('useBillingContext', () => {
     )
     expect(mockLegacySubscribe).not.toHaveBeenCalled()
     expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
+  })
+
+  it('exposes workspace payment failure while preserving legacy account state', async () => {
+    mockTeamWorkspacesEnabled.value = true
+    mockConsolidatedBillingEnabled.value = true
+    mockBillingRail.value = 'legacy_stripe'
+    mockLegacySubscriptionTier.value = 'FREE'
+    mockBillingStatus.value = {
+      is_active: false,
+      has_funds: false,
+      billing_status: 'payment_failed'
+    }
+
+    const context = useBillingContext()
+    await context.initialize()
+
+    expect(context.type.value).toBe('legacy')
+    expect(context.subscription.value).toMatchObject({
+      isActive: true,
+      tier: 'FREE'
+    })
+    expect(context.balance.value?.amountMicros).toBe(5000000)
+    expect(context.billingStatus.value).toBe('payment_failed')
+    expect(mockLegacyFetchStatus).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingStatus).toHaveBeenCalledOnce()
+
+    vi.clearAllMocks()
+    await context.fetchStatus()
+
+    expect(mockLegacyFetchStatus).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingStatus).toHaveBeenCalledOnce()
   })
 
   it('switches billing adapters before refreshing a migrated balance', async () => {

@@ -150,7 +150,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
 
       if (response.status === 'failed') {
-        handleFailure(opId, response.error_message ?? null)
+        await handleFailure(opId, response.error_message ?? null)
         return
       }
 
@@ -262,7 +262,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     resolveTerminal(opId)
   }
 
-  function handleFailure(opId: string, errorMessage: string | null) {
+  async function handleFailure(opId: string, errorMessage: string | null) {
     const operation = operations.value.get(opId)
     if (!operation) return
 
@@ -270,6 +270,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     updateOperationStatus(opId, 'failed', errorMessage ?? defaultMessage)
     cleanup(opId)
+
+    const billingStatusRefresh =
+      operation.type === 'subscription'
+        ? useBillingContext().fetchStatus()
+        : Promise.resolve()
 
     const telemetry = useTelemetry()
     telemetry?.trackBillingEvent({
@@ -305,6 +310,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
+    await Promise.allSettled([billingStatusRefresh])
     resolveTerminal(opId)
   }
 

@@ -107,6 +107,7 @@ function useBillingContextInternal(): BillingContext {
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  let pendingInitialization: Promise<void> | null = null
 
   const activeContext = computed(() =>
     type.value === 'legacy' ? getLegacyBilling() : getWorkspaceBilling()
@@ -179,7 +180,7 @@ function useBillingContextInternal(): BillingContext {
   )
 
   const billingStatus = computed(() =>
-    toValue(activeContext.value.billingStatus)
+    toValue(checkoutContext.value.billingStatus)
   )
   const subscriptionStatus = computed(() =>
     toValue(activeContext.value.subscriptionStatus)
@@ -226,13 +227,18 @@ function useBillingContextInternal(): BillingContext {
     isInitialized.value = false
     isLoading.value = false
     error.value = null
+    pendingInitialization = null
   }
 
-  // type flips when the team-workspaces or consolidated-billing flag resolves
-  // from authenticated config, swapping the active backend. Reset then reinit
-  // on every workspace-id or type change.
+  // type and shouldUseUnifiedPricing can flip when authenticated config resolves,
+  // swapping the account, checkout, or status backend. Reset then reinit on
+  // every workspace-id or routing change.
   watch(
-    [() => store.activeWorkspace?.id, () => type.value],
+    [
+      () => store.activeWorkspace?.id,
+      () => type.value,
+      () => shouldUseUnifiedPricing.value
+    ],
     async ([newWorkspaceId]) => {
       resetBillingState()
       if (!newWorkspaceId) return
@@ -248,26 +254,75 @@ function useBillingContextInternal(): BillingContext {
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
+    if (!pendingInitialization) {
+      pendingInitialization = initializeBilling()
+    }
 
+    const initialization = pendingInitialization
+    try {
+      await initialization
+    } finally {
+      if (pendingInitialization === initialization) {
+        pendingInitialization = null
+      }
+    }
+  }
+
+  async function initializeBilling(): Promise<void> {
     const adapter = activeContext.value
+    const statusAdapter = checkoutContext.value
     isLoading.value = true
     error.value = null
     try {
       await adapter.initialize()
-      if (activeContext.value !== adapter) return
+      if (statusAdapter !== adapter) {
+        const [statusInitialization] = await Promise.allSettled([
+          statusAdapter.fetchStatus()
+        ])
+        if (statusInitialization.status === 'rejected') {
+          console.error(
+            'Failed to initialize workspace billing status:',
+            statusInitialization.reason
+          )
+        }
+      }
+      if (
+        activeContext.value !== adapter ||
+        checkoutContext.value !== statusAdapter
+      ) {
+        return
+      }
       isInitialized.value = true
     } catch (err) {
-      if (activeContext.value !== adapter) return
+      if (
+        activeContext.value !== adapter ||
+        checkoutContext.value !== statusAdapter
+      ) {
+        return
+      }
       error.value =
         err instanceof Error ? err.message : 'Failed to initialize billing'
       throw err
     } finally {
-      if (activeContext.value === adapter) isLoading.value = false
+      if (
+        activeContext.value === adapter &&
+        checkoutContext.value === statusAdapter
+      ) {
+        isLoading.value = false
+      }
     }
   }
 
   async function fetchStatus(): Promise<void> {
-    return activeContext.value.fetchStatus()
+    const adapter = activeContext.value
+    const statusAdapter = checkoutContext.value
+    if (statusAdapter === adapter) return adapter.fetchStatus()
+
+    const [accountRefresh] = await Promise.allSettled([
+      adapter.fetchStatus(),
+      statusAdapter.fetchStatus()
+    ])
+    if (accountRefresh.status === 'rejected') throw accountRefresh.reason
   }
 
   async function fetchBalance(): Promise<void> {

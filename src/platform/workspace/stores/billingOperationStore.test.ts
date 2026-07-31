@@ -389,6 +389,7 @@ describe('billingOperationStore', () => {
         payment_intent_source: undefined,
         failure_category: 'unknown'
       })
+      expect(mockFetchStatus).toHaveBeenCalledOnce()
     })
 
     it('uses default message when no error_message in response', async () => {
@@ -408,6 +409,7 @@ describe('billingOperationStore', () => {
         summary: 'billingOperation.topupFailed',
         detail: undefined
       })
+      expect(mockFetchStatus).not.toHaveBeenCalled()
     })
   })
 
