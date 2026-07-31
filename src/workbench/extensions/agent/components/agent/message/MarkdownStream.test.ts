@@ -17,11 +17,17 @@ describe('MarkdownStream', () => {
     expect(container.textContent).toBe('')
   })
 
-  it('resolves relative reply links through the API base', () => {
-    const { html } = render(MarkdownStream, {
-      props: { text: '[result](view?filename=gen.png)' }
+  it('renders the complete asset URL as the link text and target', () => {
+    const assetPath =
+      'view?filename=ComfyUI_00001_32f6b8c7.png&subfolder=agent%2Foutputs&type=output'
+    const assetUrl = `/api/${assetPath}`
+    render(MarkdownStream, {
+      props: { text: `[${assetUrl}](${assetPath})` }
     })
-    expect(html()).toContain('href="/api/view?filename=gen.png"')
+    expect(screen.getByRole('link', { name: assetUrl })).toHaveAttribute(
+      'href',
+      assetUrl
+    )
   })
 
   it('strips a script tag (XSS guard)', () => {
