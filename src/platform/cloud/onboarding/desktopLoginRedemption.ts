@@ -7,6 +7,7 @@ import {
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
@@ -36,6 +37,7 @@ interface CodeRedemptionState {
   approvedUserUid: string | null
   settled: boolean
   forceTokenRefresh: boolean
+  pageArrivalTracked: boolean
 }
 
 // Keyed by code so a different code arriving later gets its own approval and
@@ -65,7 +67,8 @@ function getCodeState(code: string): CodeRedemptionState {
     attempts: 0,
     approvedUserUid: null,
     settled: false,
-    forceTokenRefresh: false
+    forceTokenRefresh: false,
+    pageArrivalTracked: false
   }
   codeStates.set(code, fresh)
   return fresh
@@ -82,6 +85,15 @@ function clearStashIfHolds(code: string): void {
 function settle(code: string, state: CodeRedemptionState): void {
   state.settled = true
   clearStashIfHolds(code)
+}
+
+function trackBrowserPageArrival(state: CodeRedemptionState): void {
+  if (state.pageArrivalTracked) return
+  const telemetry = useTelemetry()
+  if (!telemetry) return
+
+  state.pageArrivalTracked = true
+  telemetry.trackDesktopLoginCodeCaptured()
 }
 
 function handleTransientFailure(
@@ -233,6 +245,8 @@ async function redeemPendingDesktopLoginCode(): Promise<void> {
         clearPreservedQuery(NAMESPACE)
         continue
       }
+      const state = getCodeState(code)
+      trackBrowserPageArrival(state)
       await redeemCode(code)
       if (code !== getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY))
         retriggerRequested = true

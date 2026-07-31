@@ -787,6 +787,7 @@ export interface TelemetryProvider {
   trackAuth?(metadata: AuthMetadata): void
   trackAuthFailed?(metadata: AuthErrorMetadata): void
   trackUserLoggedIn?(): void
+  trackDesktopLoginCodeCaptured?(): void
 
   // Subscription flow events
   trackSubscription?(
@@ -913,6 +914,7 @@ export const TelemetryEvents = {
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
   USER_AUTH_FAILED: 'app:user_auth_failed',
   USER_LOGGED_IN: 'app:user_logged_in',
+  DESKTOP_LOGIN_CODE_CAPTURED: 'app:desktop_login_code_captured',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',

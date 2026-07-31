@@ -27,6 +27,13 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   })
 }))
 
+const mockTrackDesktopLoginCodeCaptured = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackDesktopLoginCodeCaptured: mockTrackDesktopLoginCodeCaptured
+  })
+}))
+
 interface MockAuthStore {
   currentUser: {
     uid: string
@@ -159,9 +166,23 @@ describe('installDesktopLoginRedemption', () => {
 
     await trigger()
 
+    expect(mockTrackDesktopLoginCodeCaptured).not.toHaveBeenCalled()
     expect(mockConfirm).not.toHaveBeenCalled()
     expect(mockFetch).not.toHaveBeenCalled()
     expect(mockToastAdd).not.toHaveBeenCalled()
+  })
+
+  it('emits one code-free browser-arrival event when a valid code is captured', async () => {
+    const { trigger, seedStash } = await setup()
+    mockAuthStore.currentUser = null
+    seedStash(VALID_CODE)
+
+    await trigger()
+    await trigger()
+
+    expect(mockTrackDesktopLoginCodeCaptured).toHaveBeenCalledOnce()
+    expect(mockTrackDesktopLoginCodeCaptured).toHaveBeenCalledWith()
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
   it('redeems a stashed code once on navigation with the Firebase bearer token after approval', async () => {

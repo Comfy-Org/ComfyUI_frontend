@@ -216,6 +216,18 @@ describe('PostHogTelemetryProvider', () => {
     })
   })
 
+  it('captures browser arrival for Desktop login without code properties', async () => {
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    provider.trackDesktopLoginCodeCaptured()
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      TelemetryEvents.DESKTOP_LOGIN_CODE_CAPTURED,
+      {}
+    )
+  })
+
   describe('platform axes (client / deployment)', () => {
     afterEach(() => {
       delete window.__comfyDesktop2
