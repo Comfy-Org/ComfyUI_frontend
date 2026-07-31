@@ -137,7 +137,7 @@ useResizeObserver(descriptionEl, updateClamped)
         </template>
       </div>
 
-      <aside class="w-full shrink-0 lg:w-100">
+      <aside v-if="$slots.sidebar" class="w-full shrink-0 lg:w-100">
         <slot name="sidebar" />
       </aside>
     </div>
