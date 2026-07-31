@@ -171,7 +171,22 @@
           v-model="selectedMethod"
           :options="savedMethodOptions"
           size="lg"
-        />
+        >
+          <template #icon>
+            <i
+              :class="
+                cn(
+                  'size-4 shrink-0',
+                  selectedSavedMethod?.type === 'bank'
+                    ? 'icon-[lucide--landmark]'
+                    : selectedSavedMethod?.type === 'alipay'
+                      ? 'icon-[lucide--wallet]'
+                      : 'icon-[lucide--credit-card]'
+                )
+              "
+            />
+          </template>
+        </SingleSelect>
       </div>
     </div>
 
@@ -323,6 +338,9 @@ const savedMethodOptions = computed(() => [
   }
 ])
 const selectedMethod = ref('0')
+const selectedSavedMethod = computed(
+  () => savedMethods?.[Number(selectedMethod.value)] ?? null
+)
 watch(selectedMethod, (value) => {
   if (value !== 'add-new') return
   selectedMethod.value = '0'
