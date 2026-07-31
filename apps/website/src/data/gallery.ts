@@ -13,7 +13,7 @@ export interface GalleryItem {
   visible?: boolean
 }
 
-const galleryItems: GalleryItem[] = [
+export const galleryItems: GalleryItem[] = [
   {
     id: 'until-our-eye-interlink-harajuku',
     video: 'https://media.comfy.org/videos/compressed_512/eye.webm',

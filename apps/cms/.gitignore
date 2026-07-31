@@ -42,6 +42,9 @@ next-env.d.ts
 
 /media
 
+# Seed download cache
+/.media-cache
+
 # Playwright
 node_modules/
 /test-results/

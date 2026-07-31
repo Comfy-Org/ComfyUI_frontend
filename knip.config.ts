@@ -5,6 +5,8 @@ const config: KnipConfig = {
   treatTagHintsAsErrors: true,
   workspaces: {
     'apps/cms': {
+      // The seed is run via `payload run`, not a Next route, so declare it.
+      entry: ['src/seed/index.ts'],
       project: ['src/**/*.{ts,tsx}'],
       // Payload's admin UI package: loaded via the generated importMap and
       // imported by custom admin components added in later gallery tickets.
