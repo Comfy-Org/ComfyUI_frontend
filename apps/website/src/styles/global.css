@@ -78,7 +78,7 @@
   --color-secondary-deep-plum: #2b2040;
   --color-secondary-cool-gray: #3c3c3c;
   --color-illustration-forest: #20464c;
-  --color-transparency-white-t4: rgb(255 255 255 / 0.04);
+  --color-transparency-white-t4: rgb(from var(--color-white) r g b / 0.04);
   --color-transparency-ink-t80: rgb(
     from var(--color-primary-comfy-ink) r g b / 0.8
   );

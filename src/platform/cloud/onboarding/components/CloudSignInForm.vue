@@ -117,7 +117,7 @@ const onSubmit = (event: FormSubmitEvent) => {
 :deep(.p-inputtext) {
   border: none !important;
   box-shadow: none !important;
-  background: var(--color-charcoal-500) !important;
+  background: var(--color-charcoal-500);
   color: var(--color-primary-comfy-canvas) !important;
   caret-color: var(--color-primary-comfy-canvas);
 }
