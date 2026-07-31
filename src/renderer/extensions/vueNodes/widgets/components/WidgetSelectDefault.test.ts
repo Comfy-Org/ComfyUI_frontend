@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
+import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -24,6 +25,27 @@ const i18n = createI18n({
 const WidgetLayoutFieldStub = defineComponent({
   name: 'WidgetLayoutField',
   template: '<div class="relative"><slot /></div>'
+})
+
+const WidgetSelectDefaultHost = defineComponent({
+  components: { WidgetSelectDefault },
+  props: {
+    widget: {
+      type: Object as PropType<SimplifiedWidget<string | undefined>>,
+      required: true
+    },
+    modelValue: [String, Number]
+  },
+  emits: ['update:modelValue'],
+  template: `
+    <WidgetSelectDefault
+      :widget
+      :model-value="modelValue"
+      @update:model-value="$emit('update:modelValue', $event)"
+    >
+      <slot />
+    </WidgetSelectDefault>
+  `
 })
 
 const flushPromises = () =>
@@ -204,6 +226,29 @@ describe('WidgetSelectDefault', () => {
       expect(onUpdate).toHaveBeenCalledWith('b')
     })
 
+    it('keeps numeric values numeric when an option is selected', async () => {
+      const onUpdate = vi.fn()
+      const user = userEvent.setup()
+      render(WidgetSelectDefaultHost, {
+        props: {
+          widget: createWidget([5, 10]),
+          modelValue: 5,
+          'onUpdate:modelValue': onUpdate
+        },
+        global: {
+          plugins: [i18n],
+          stubs: {
+            WidgetLayoutField: WidgetLayoutFieldStub
+          }
+        }
+      })
+
+      await openDropdown(user)
+      await user.click(screen.getByRole('option', { name: '10' }))
+
+      expect(onUpdate).toHaveBeenCalledWith(10)
+    })
+
     it('allows selecting an explicit empty string option', async () => {
       const { onUpdate, user } = renderComponent(
         createWidget(['filled', ''], {
@@ -344,6 +389,25 @@ describe('WidgetSelectDefault', () => {
       expect(
         screen.getByTestId('widget-select-default-trigger')
       ).toHaveAttribute('aria-invalid', 'true')
+    })
+
+    it('does not mark a valid numeric option as invalid', () => {
+      render(WidgetSelectDefaultHost, {
+        props: {
+          widget: createWidget([5, 10]),
+          modelValue: 5
+        },
+        global: {
+          plugins: [i18n],
+          stubs: {
+            WidgetLayoutField: WidgetLayoutFieldStub
+          }
+        }
+      })
+
+      const trigger = screen.getByTestId('widget-select-default-trigger')
+      expect(trigger).not.toHaveAttribute('aria-invalid')
+      expect(trigger).toHaveTextContent('5')
     })
 
     it('disables the trigger when widget options are disabled', () => {
