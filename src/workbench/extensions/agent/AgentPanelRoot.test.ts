@@ -1445,7 +1445,7 @@ describe('AgentPanelRoot workflow binding', () => {
       content
     })
 
-  it('names the active tab in the panel strip', async () => {
+  it('names the active workflow in the selector', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
@@ -1459,7 +1459,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.queryAllByText('current')).toHaveLength(0)
   })
 
-  it('keeps the active-tab strip visible in the history view', async () => {
+  it('hides the active workflow in history and restores it on return', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
@@ -1472,7 +1472,12 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       await screen.findByText(i18n.global.t('agent.historyEmpty'))
     ).toBeInTheDocument()
-    expect(screen.getByText('current')).toBeInTheDocument()
+    expect(screen.queryByText('current')).not.toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.history') })
+    )
+    expect(await screen.findAllByText('current')).not.toHaveLength(0)
   })
 
   it('activates the tab picked from the workflow selector via the service', async () => {
@@ -1791,6 +1796,98 @@ describe('AgentPanelRoot workflow binding', () => {
       workflow_id: 'wf-42',
       target: 'existing_tab'
     })
+  })
+
+  it('chip X detaches the chat so the next send carries no workflow context', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.dontWorkInWorkflow')
+      })
+    )
+    expect(
+      await screen.findAllByText(i18n.global.t('agent.chooseWorkflow'))
+    ).not.toHaveLength(0)
+
+    await sendFromComposer('work without a canvas')
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).not.toHaveProperty('current_tab')
+    expect(bodies[0]).toMatchObject({
+      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
+    })
+  })
+
+  it('re-attaches by picking a row so the next send carries the workflow again', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.dontWorkInWorkflow')
+      })
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: /current/ })
+    )
+
+    await sendFromComposer('back on the canvas')
+
+    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
+  })
+
+  it('starts a new chat detached from the previously active workflow', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+
+    expect(
+      await screen.findAllByText(i18n.global.t('agent.chooseWorkflow'))
+    ).not.toHaveLength(0)
+    expect(screen.queryByText('current')).not.toBeInTheDocument()
+
+    await sendFromComposer('fresh chat')
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).not.toHaveProperty('current_tab')
+    expect(bodies[0]).toMatchObject({
+      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
+    })
+  })
+
+  it('a detached send never re-arms the editing spinner on the old tab', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await sendFromComposer('attached turn')
+    const activity = useWorkflowTabActivityStore()
+    expect(activity.editingTabPath).toBe('workflows/current.json')
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.dontWorkInWorkflow')
+      })
+    )
+    await sendFromComposer('detached turn')
+
+    expect(activity.editingTabPath).toBeNull()
   })
 
   it('autosaves a minted tab so the next patch applies in place', async () => {

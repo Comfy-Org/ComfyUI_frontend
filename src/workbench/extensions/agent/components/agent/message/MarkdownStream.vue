@@ -49,7 +49,7 @@ const segments = computed<Segment[]>(() => {
 })
 
 const proseClass = cn(
-  'text-agent-fg text-sm/relaxed',
+  'text-agent-fg text-sm wrap-break-word',
   '[&_a]:text-agent-accent [&_a]:cursor-pointer [&_a]:underline',
   '[&_p]:my-0 [&_p]:pt-4 [&_p:first-child]:pt-0 [&_strong]:font-semibold',
   '[&_h1]:mt-0 [&_h1]:pt-4 [&_h1]:pb-2 [&_h1]:text-2xl [&_h1]:font-semibold',
