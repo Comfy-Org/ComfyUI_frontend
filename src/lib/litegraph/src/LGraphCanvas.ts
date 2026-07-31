@@ -4009,6 +4009,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (e.key === ' ') {
         // space
         this.read_only = true
+        this._autoPan?.stop()
         if (this._previously_dragging_canvas === null) {
           this._previously_dragging_canvas = this.dragging_canvas
         }

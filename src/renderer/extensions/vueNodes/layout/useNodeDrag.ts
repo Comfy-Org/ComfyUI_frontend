@@ -197,6 +197,7 @@ function useNodeDragIndividual() {
       return
     }
     if (canvasStore.isReadOnly) {
+      autoPan?.stop()
       const canvas = canvasStore.getCanvas()
       const delta = [event.clientX - lastPointerX, event.clientY - lastPointerY]
 
