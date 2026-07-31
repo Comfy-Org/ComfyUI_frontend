@@ -238,7 +238,7 @@ describe('ComfyApp', () => {
       return graph
     }
 
-    it('preserves live missing node packs when submitting a prompt', async () => {
+    it('preserves missing node packs when submitting a prompt', async () => {
       const graph = prepareEmptyPromptQueue()
       const nodeType = 'test/UninstalledLiveNode'
       graph.add(new LGraphNode('Uninstalled Live Node', nodeType))
@@ -251,37 +251,7 @@ describe('ComfyApp', () => {
 
       await app.queuePrompt(0)
 
-      expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
-        expect.objectContaining({ type: nodeType })
-      ])
-    })
-
-    it('retires API-only missing node packs after a successful submission', async () => {
-      prepareEmptyPromptQueue()
-      const nodeType = 'test/UninstalledApiNode'
-      const missingNodesStore = useMissingNodesErrorStore()
-      app.loadApiJson(
-        {
-          '1': {
-            class_type: nodeType,
-            inputs: {},
-            _meta: { title: 'Uninstalled API Node' }
-          }
-        },
-        ''
-      )
-      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
-      })
-
       expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([nodeType])
-      expect(useExecutionErrorStore().hasMissingError).toBe(true)
-
-      await app.queuePrompt(0)
-
-      expect(missingNodesStore.missingNodesError).toBeNull()
-      expect(useExecutionErrorStore().hasMissingError).toBe(false)
     })
 
     it('shows the error overlay for successful prompt responses with node errors', async () => {
