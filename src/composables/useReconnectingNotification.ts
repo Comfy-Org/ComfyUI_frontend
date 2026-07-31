@@ -7,10 +7,7 @@ import { useI18n } from 'vue-i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const RECONNECT_TOAST_DELAY_MS = 2000
-// A suspended/backgrounded tab throttles timers, so the disconnect that
-// triggers `onReconnecting` and the reconnect that follows can both land in
-// the instant the tab regains focus, racing past RECONNECT_TOAST_DELAY_MS.
-// While that's happening, wait longer before surfacing the toast.
+// Backgrounded-tab timer throttling can let disconnect and reconnect both fire right as the tab regains focus, racing past RECONNECT_TOAST_DELAY_MS, so use a longer delay during the grace window below.
 const VISIBILITY_REGAINED_TOAST_DELAY_MS = 5000
 const VISIBILITY_REGAINED_GRACE_MS = 10000
 
@@ -51,8 +48,6 @@ export function useReconnectingNotification() {
     toastDelayMs.value = VISIBILITY_REGAINED_TOAST_DELAY_MS
     startGracePeriod()
 
-    // A reconnecting toast queued while the tab was hidden may already be
-    // overdue; restart it so it gets the full, extended delay from now.
     if (isPending.value) start()
   })
 
