@@ -480,7 +480,7 @@ describe('Composer', () => {
     expect(screen.getByText('#7')).toBeInTheDocument()
   })
 
-  describe('insert highlight', () => {
+  describe('insert', () => {
     beforeEach(() => {
       vi.useFakeTimers()
     })
@@ -494,46 +494,24 @@ describe('Composer', () => {
       const Host = defineComponent({
         setup: () => () => h(Composer, { ref: composer })
       })
-      const { container } = render(Host, { global: { plugins: [i18n] } })
-      // eslint-disable-next-line testing-library/no-node-access -- composer root has no queryable role
-      const root = container.firstElementChild as HTMLElement
+      render(Host, { global: { plugins: [i18n] } })
       return {
-        root,
         insert: (text: string) => composer.value?.insert(text)
       }
     }
 
-    it('flashes the accent border, focuses the textarea, then clears', async () => {
-      const { root, insert } = mountWithInsert()
-      const focusSpy = vi.spyOn(screen.getByRole('textbox'), 'focus')
+    it('inserts text and focuses without scheduling delayed UI state', async () => {
+      const { insert } = mountWithInsert()
+      const textarea = screen.getByRole('textbox')
+      const focusSpy = vi.spyOn(textarea, 'focus')
 
       insert('foo')
       await nextTick()
-      expect(root.classList.contains('border-agent-accent')).toBe(true)
+
+      expect(textarea).toHaveValue('foo')
+      expect(textarea).toHaveFocus()
       expect(focusSpy).toHaveBeenCalledOnce()
-
-      vi.advanceTimersByTime(1000)
-      await nextTick()
-      expect(root.classList.contains('border-agent-accent')).toBe(false)
-    })
-
-    it('restarts the highlight timer on repeated insert', async () => {
-      const { root, insert } = mountWithInsert()
-
-      insert('foo')
-      await nextTick()
-      vi.advanceTimersByTime(500)
-
-      insert('bar')
-      await nextTick()
-      expect(vi.getTimerCount()).toBe(1)
-      vi.advanceTimersByTime(999)
-      await nextTick()
-      expect(root.classList.contains('border-agent-accent')).toBe(true)
-
-      vi.advanceTimersByTime(1)
-      await nextTick()
-      expect(root.classList.contains('border-agent-accent')).toBe(false)
+      expect(vi.getTimerCount()).toBe(0)
     })
   })
 })
