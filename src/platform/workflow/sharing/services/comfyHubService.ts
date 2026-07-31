@@ -1,4 +1,5 @@
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   zHubAssetUploadUrlResponse,
   zHubLabelListResponse,
@@ -44,22 +45,6 @@ function normalizeThumbnailType(type: ThumbnailTypeInput): HubThumbnailType {
   return type
 }
 
-async function parseErrorMessage(
-  response: Response,
-  fallbackMessage: string
-): Promise<string> {
-  const body = await response.json().catch(() => null)
-  if (!body || typeof body !== 'object') {
-    return fallbackMessage
-  }
-
-  if ('message' in body && typeof body.message === 'string') {
-    return body.message
-  }
-
-  return fallbackMessage
-}
-
 async function parseRequiredJson<T>(
   response: Response,
   parser: {
@@ -93,9 +78,11 @@ export function useComfyHubService() {
     })
 
     if (!response.ok) {
-      throw new Error(
-        await parseErrorMessage(response, 'Failed to request upload URL')
+      const { message } = await parseErrorResponse(
+        response,
+        'Failed to request upload URL'
       )
+      throw new Error(message)
     }
 
     return parseRequiredJson(
@@ -119,7 +106,7 @@ export function useComfyHubService() {
     })
 
     if (!response.ok) {
-      const message = await parseErrorMessage(
+      const { message } = await parseErrorResponse(
         response,
         'Failed to upload file to presigned URL'
       )
@@ -135,9 +122,11 @@ export function useComfyHubService() {
         return null
       }
 
-      throw new Error(
-        await parseErrorMessage(response, 'Failed to load ComfyHub profile')
+      const { message } = await parseErrorResponse(
+        response,
+        'Failed to load ComfyHub profile'
       )
+      throw new Error(message)
     }
 
     return parseRequiredJson(
@@ -163,9 +152,11 @@ export function useComfyHubService() {
     })
 
     if (!response.ok) {
-      throw new Error(
-        await parseErrorMessage(response, 'Failed to create ComfyHub profile')
+      const { message } = await parseErrorResponse(
+        response,
+        'Failed to create ComfyHub profile'
       )
+      throw new Error(message)
     }
 
     return parseRequiredJson(
@@ -202,9 +193,11 @@ export function useComfyHubService() {
     })
 
     if (!response.ok) {
-      throw new Error(
-        await parseErrorMessage(response, 'Failed to publish workflow')
+      const { message } = await parseErrorResponse(
+        response,
+        'Failed to publish workflow'
       )
+      throw new Error(message)
     }
 
     return parseRequiredJson(
@@ -218,9 +211,11 @@ export function useComfyHubService() {
     const response = await api.fetchApi('/hub/labels?type=tag')
 
     if (!response.ok) {
-      throw new Error(
-        await parseErrorMessage(response, 'Failed to fetch hub labels')
+      const { message } = await parseErrorResponse(
+        response,
+        'Failed to fetch hub labels'
       )
+      throw new Error(message)
     }
 
     const data = await parseRequiredJson(

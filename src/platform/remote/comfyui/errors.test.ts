@@ -99,6 +99,19 @@ describe('errorResponseFromBody', () => {
     }
   })
 
+  it('falls back for a storage XML error document instead of leaking it', () => {
+    const s3Error =
+      '<?xml version="1.0" encoding="UTF-8"?><Error><Code>AccessDenied</Code>' +
+      '<Message>Access Denied</Message><BucketName>internal-bucket</BucketName>' +
+      '<RequestId>4442587FB7D0A2F9</RequestId><HostId>secret-host</HostId></Error>'
+    expect(
+      errorResponseFromBody(s3Error, 'Failed to upload file to presigned URL')
+    ).toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'Failed to upload file to presigned URL'
+    })
+  })
+
   it('falls back for a blank-string body', () => {
     expect(errorResponseFromBody('   ', 'fallback')).toEqual({
       code: 'UNKNOWN_ERROR',
@@ -244,5 +257,47 @@ describe('parseErrorResponse', () => {
       code: 'UNKNOWN_ERROR',
       message: 'HTTP 402'
     })
+  })
+
+  it('prefers a caller-supplied fallback over the status text', async () => {
+    const response = makeResponse({
+      text: async () => '',
+      statusText: 'Bad Gateway',
+      status: 502
+    })
+    await expect(
+      parseErrorResponse(response, 'Failed to publish workflow')
+    ).resolves.toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'Failed to publish workflow'
+    })
+  })
+
+  it('still prefers the server message over a caller-supplied fallback', async () => {
+    const response = makeResponse({
+      text: async () => JSON.stringify({ message: 'Username already taken' })
+    })
+    await expect(
+      parseErrorResponse(response, 'Failed to create ComfyHub profile')
+    ).resolves.toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'Username already taken'
+    })
+  })
+
+  it('keeps the code but falls back for message-less JSON bodies', async () => {
+    for (const body of [
+      JSON.stringify({ code: 'USERNAME_TAKEN' }),
+      JSON.stringify({ code: 'USERNAME_TAKEN', message: null }),
+      JSON.stringify({ code: 'USERNAME_TAKEN', message: '' })
+    ]) {
+      const response = makeResponse({ text: async () => body })
+      await expect(
+        parseErrorResponse(response, 'Failed to create ComfyHub profile')
+      ).resolves.toEqual({
+        code: 'USERNAME_TAKEN',
+        message: 'Failed to create ComfyHub profile'
+      })
+    }
   })
 })
