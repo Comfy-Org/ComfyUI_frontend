@@ -19,6 +19,13 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+      // The right-click Color menu on a group is only routed through the
+      // PrimeVue menu (useGroupContextMenu) when Vue Nodes is enabled;
+      // otherwise litegraph's own canvas-rendered context menu is used,
+      // which nests "Color" under an "Edit Group" submenu instead of
+      // exposing it as a top-level item, and never matches
+      // comfyPage.contextMenu.primeVueMenu ('.p-contextmenu, .p-menu').
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow('groups/two_groups')
     })
 
@@ -46,6 +53,14 @@ test.describe(
         .getByTestId(TestIds.selectionToolbox.colorRed)
         .click()
       await comfyPage.nextFrame()
+
+      // Deselect the first group so its SelectionToolbox closes before we
+      // interact with the second group — otherwise the still-visible toolbox
+      // can sit over the second group's title and swallow the right-click.
+      await comfyPage.canvasOps.clickEmptySpace()
+      await expect(
+        comfyPage.page.getByTestId(TestIds.selectionToolbox.root)
+      ).toBeHidden()
 
       // Set the same color via the right-click group Color menu — the path
       // this PR fixes.
