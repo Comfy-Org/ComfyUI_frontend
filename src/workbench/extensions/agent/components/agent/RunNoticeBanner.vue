@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
 
+const { expanded = false } = defineProps<{
+  expanded?: boolean
+}>()
+
 const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
 </script>
 
@@ -8,11 +12,11 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
   <div
     v-if="!dismissed"
     role="note"
-    class="border-agent-border bg-agent-surface border-l-agent-accent flex items-start gap-2 rounded-lg border border-l-4 p-4"
+    class="bg-agent-surface border-l-agent-accent flex items-start gap-2 rounded-lg border-l-4 p-4 shadow-[0_0_1px_var(--color-smoke-200)]"
   >
     <span class="text-agent-accent icon-[lucide--info] size-5 shrink-0" />
     <p class="text-agent-fg my-0 min-w-0 flex-1 text-sm font-medium">
-      {{ $t('agent.runNotice') }}
+      {{ $t(expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice') }}
     </p>
     <button
       type="button"
