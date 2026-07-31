@@ -11,6 +11,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import {
@@ -633,6 +634,7 @@ watch(
 start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
+  exitNodeSelectionMode()
   stop()
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
@@ -676,6 +678,7 @@ watch(threadId, (id) => history.setActive(id), { immediate: true })
 void refreshHistory()
 
 async function onSelectHistory(id: string): Promise<void> {
+  exitNodeSelectionMode()
   resetSnapshotGuard()
   workflowDetached.value = false
   await loadThread(id)
@@ -707,6 +710,7 @@ const coachStep: CoachStep = {
 }
 
 function onSend(text: string, attachments: ComposerAttachment[]): void {
+  exitNodeSelectionMode()
   void applyDraft()
   // PM-124: an already-consumed selection stays staged-out of the chips, but
   // the turn must still tell the agent what is selected right now - unless the
@@ -738,6 +742,7 @@ function onDeleteHistory(id: string): void {
 }
 
 function onNewChat(): void {
+  exitNodeSelectionMode()
   resetSnapshotGuard()
   workflowDetached.value = true
   newChat()
@@ -745,6 +750,60 @@ function onNewChat(): void {
 
 const panelRef = ref<InstanceType<typeof AgentPanel>>()
 const fileInput = ref<HTMLInputElement>()
+let selectingNodes = false
+let nodeSelectionCanvas: LGraphCanvas | undefined
+let selectedGraphNodes = new Map<string, LGraphNode>()
+
+watch(
+  () => canvasStore.selectedItems,
+  (items) => {
+    if (!selectingNodes) return
+    const nodes = items.filter(isLGraphNode)
+    let added = false
+    for (const node of nodes) {
+      const key = String(node.id)
+      if (selectedGraphNodes.has(key)) continue
+      selectedGraphNodes.set(key, node)
+      added = true
+    }
+    if (!added || selectedGraphNodes.size === nodes.length) return
+
+    const canvas = app.canvas
+    if (!canvas) return
+    canvas.selectItems([...selectedGraphNodes.values()])
+    canvasStore.updateSelectedItems()
+  }
+)
+
+function exitNodeSelectionMode(): void {
+  if (!selectingNodes) return
+  const canvas = nodeSelectionCanvas
+  if (canvas) canvas.multi_select = false
+  nodeSelectionCanvas = undefined
+  selectedGraphNodes.clear()
+  selectingNodes = false
+}
+
+watch(
+  [() => workflowStore.activeWorkflow?.path, () => canvasStore.currentGraph],
+  () => exitNodeSelectionMode()
+)
+
+function onSelectNodes(): void {
+  const canvas = app.canvas
+  if (!canvas) return
+  selectedGraphNodes = new Map(
+    [...canvas.selectedItems]
+      .filter(isLGraphNode)
+      .map((node) => [String(node.id), node] as const)
+  )
+  canvas.multi_select = true
+  nodeSelectionCanvas = canvas
+  selectingNodes = true
+  void nextTick(() => {
+    if (selectingNodes) canvas.canvas.focus()
+  })
+}
 
 const attachment = useAttachment({
   upload: async (file) => ({
@@ -769,11 +828,13 @@ const attachment = useAttachment({
 })
 
 function onAttach(): void {
+  exitNodeSelectionMode()
   useTelemetry()?.trackAgentAttachButtonClicked()
   fileInput.value?.click()
 }
 
 function onOpenAssets(): void {
+  exitNodeSelectionMode()
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
@@ -785,6 +846,7 @@ function onMentionPick(node: SelectedNode): void {
 }
 
 function onClosePanel(): void {
+  exitNodeSelectionMode()
   useTelemetry()?.trackAgentCloseButtonClicked()
   agentPanelStore.close('close_button')
 }
@@ -880,6 +942,7 @@ function onPanelDrop(event: DragEvent): void {
       @stop="onStop"
       @attach="onAttach"
       @open-assets="onOpenAssets"
+      @select-nodes="onSelectNodes"
       @remove-tag="removeSelectionTag"
       @mention-pick="onMentionPick"
       @feedback="onFeedback"
