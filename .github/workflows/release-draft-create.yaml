@@ -97,6 +97,34 @@ jobs:
             ${{ needs.build.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
 
+      # make_latest:false only declines to claim Latest; GitHub still surfaces the
+      # newest published release, so a patch on an older line takes it anyway.
+      # v1.47.11 displaced v1.49.1 this way and had to be restored by hand.
+      - name: Restore Latest to the newest published release
+        if: github.event.pull_request.base.ref != 'main'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          NEWEST=$(gh api "repos/${REPO}/releases?per_page=100" \
+            --jq '[.[] | select(.draft == false and .prerelease == false)]
+                  | map(. + {v: (.tag_name | ltrimstr("v") | split(".") | map(tonumber? // 0))})
+                  | sort_by(.v) | last | {id, tag_name}')
+          NEWEST_TAG=$(jq -r '.tag_name' <<<"$NEWEST")
+          NEWEST_ID=$(jq -r '.id' <<<"$NEWEST")
+          CURRENT=$(gh api "repos/${REPO}/releases/latest" --jq '.tag_name')
+
+          if [ "$CURRENT" = "$NEWEST_TAG" ]; then
+            echo "Latest is already ${NEWEST_TAG}."
+            exit 0
+          fi
+
+          echo "::warning::Latest was ${CURRENT}; restoring to ${NEWEST_TAG}."
+          gh api -X PATCH "repos/${REPO}/releases/${NEWEST_ID}" -f make_latest=true >/dev/null
+          gh api "repos/${REPO}/releases/latest" --jq '"Latest is now " + .tag_name'
+
   publish_types:
     needs: build
     uses: ./.github/workflows/release-npm-types.yaml
