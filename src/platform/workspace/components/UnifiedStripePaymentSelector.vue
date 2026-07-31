@@ -38,7 +38,7 @@
       :variant="verificationPending ? 'tertiary' : 'inverted'"
       size="lg"
       class="w-full rounded-lg"
-      :disabled="!stripeElements"
+      :disabled="!stripeElements || !canSubmit"
       :loading="isLoading || isSubmitting"
       @click="submit"
     >
@@ -61,14 +61,18 @@ import Button from '@/components/ui/button/Button.vue'
 
 const {
   amountCents,
+  currency,
   isLoading = false,
-  verificationPending = false
+  verificationPending = false,
+  canSubmit = true
 } = defineProps<{
   amountCents: number
+  currency: string
   isLoading?: boolean
   /** A 3DS verification is pending: Complete verification (rendered by the
    *  parent) is the primary action, so the pay button steps back. */
   verificationPending?: boolean
+  canSubmit?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -101,7 +105,7 @@ onMounted(async () => {
   stripeElements.value = stripe.elements({
     mode: 'subscription',
     amount: amountCents,
-    currency: 'usd',
+    currency: currency.toLowerCase(),
     setupFutureUsage: 'off_session',
     paymentMethodTypes: ['card', 'alipay'],
     appearance: {
