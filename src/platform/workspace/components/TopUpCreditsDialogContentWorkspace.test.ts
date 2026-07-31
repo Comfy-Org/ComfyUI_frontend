@@ -146,6 +146,9 @@ const i18n = createI18n({
           payAmount: 'Pay {amount}',
           changePaymentMethod: 'Change',
           addNewPaymentMethod: 'Add new payment method',
+          verifyTitle: 'Verify your payment',
+          verifyBody:
+            'Your bank requires additional verification to complete this payment.',
           previousBalance: 'Previous balance',
           addedLabel: 'Added',
           newBalance: 'New balance',
@@ -296,13 +299,17 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockCloseDialog).not.toHaveBeenCalled()
   })
 
-  it('opens topup verification without exposing its URL', async () => {
+  it('reopens onto the verifying step and opens verification without exposing its URL', async () => {
     const actionUrl = 'https://verify.example/sensitive-token'
     const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
     mockTopupActionOperation.value = { actionUrl }
 
     const { container } = renderDialog()
 
+    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Add credits' })
+    ).not.toBeInTheDocument()
     expect(container.innerHTML).not.toContain(actionUrl)
     await userEvent
       .setup()
@@ -326,23 +333,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: 'Complete verification' })
     ).not.toBeInTheDocument()
-  })
-
-  it('keeps verification reachable on the confirm step', async () => {
-    mockTopupActionOperation.value = {
-      actionUrl: 'https://verify.example/sensitive-token'
-    }
-
-    renderDialog()
-    await armSavedMethod()
-    await clickAddCredits()
-
-    expect(
-      screen.getByRole('button', { name: 'Complete verification' })
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Pay $50.00' })
-    ).toBeInTheDocument()
   })
 
   it('shows the confirm step instead of charging when a saved method exists', async () => {

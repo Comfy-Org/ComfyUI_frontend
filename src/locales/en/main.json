@@ -2589,6 +2589,8 @@
       "unknownError": "An unknown error occurred",
       "updatePaymentMethod": "Update payment method",
       "usdAmount": "${amount}",
+      "verifyBody": "Your bank requires additional verification to complete this payment.",
+      "verifyTitle": "Verify your payment",
       "videosEstimate": "~{count} videos*",
       "viewChargeNote": "View this charge anytime in {billing} in your workspace settings.",
       "viewPricing": "View pricing details",

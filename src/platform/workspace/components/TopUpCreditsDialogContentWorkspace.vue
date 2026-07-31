@@ -201,6 +201,23 @@
       </div>
     </template>
 
+    <!-- Verifying step: pending 3DS challenge on a charge already in flight -->
+    <template v-if="step === 'verifying'">
+      <div class="flex flex-col items-center gap-3 px-8 text-center">
+        <i
+          class="icon-[lucide--shield-alert] size-10 text-warning-background"
+        />
+        <h2
+          class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+        >
+          {{ $t('credits.topUp.verifyTitle') }}
+        </h2>
+        <p class="m-0 text-sm text-balance text-muted-foreground">
+          {{ $t('credits.topUp.verifyBody') }}
+        </p>
+      </div>
+    </template>
+
     <!-- Preset amount buttons -->
     <div v-if="step === 'amount'" class="px-8">
       <h3 class="m-0 text-sm font-normal text-muted-foreground">
@@ -318,6 +335,15 @@
       >
         {{ $t('credits.topUp.updatePaymentMethod') }}
       </Button>
+      <Button
+        v-else-if="step === 'verifying'"
+        variant="primary"
+        size="lg"
+        class="h-10 justify-center"
+        @click="openTopupVerification"
+      >
+        {{ $t('subscription.preview.completeVerification') }}
+      </Button>
       <div v-else class="flex flex-col gap-2">
         <Button
           v-if="topupActionUrl && permissions.canTopUp"
@@ -395,7 +421,12 @@ const selectedPreset = ref<number | null>(50)
 const payAmount = ref(50)
 const showCeilingWarning = ref(false)
 const loading = ref(false)
-const step = ref<'amount' | 'confirm' | 'success' | 'declined'>('amount')
+const step = ref<'amount' | 'confirm' | 'success' | 'declined' | 'verifying'>(
+  billingOperationStore.topupActionOperation?.actionUrl &&
+    permissions.value.canTopUp
+    ? 'verifying'
+    : 'amount'
+)
 const successSummary = ref<{ previous: number; added: number } | null>(null)
 const declineReason = ref<string | null>(null)
 
