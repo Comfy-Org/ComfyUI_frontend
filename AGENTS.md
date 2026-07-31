@@ -13,37 +13,17 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 ## Project Structure & Module Organization
 
 - Source: `src/`
-  - Vue 3.5+
-  - TypeScript
-  - Tailwind 4
-  - Key areas:
-    - `components/`
-    - `views/`
-    - `stores/` (Pinia)
-    - `composables/`
-    - `services/`
-    - `utils/`
-    - `assets/`
-    - `locales/`
-- Routing: `src/router.ts`,
-- i18n: `src/i18n.ts`,
-- Entry Point: `src/main.ts`.
-- Tests:
-  - unit/component in `src/**/*.test.ts`
-  - E2E (Playwright) in `browser_tests/**/*.spec.ts`
+  - Vue 3.5+, TypeScript, Tailwind 4
+  - Key areas: `components/`, `views/`, `stores/` (Pinia), `composables/`, `services/`, `utils/`, `assets/`, `locales/`
+- Routing: `src/router.ts`; i18n: `src/i18n.ts`; Entry point: `src/main.ts`
+- Tests: unit/component `src/**/*.test.ts`; E2E (Playwright) `browser_tests/**/*.spec.ts`
 - Public assets: `public/`
 - Build output: `dist/`
-- Configs
-  - `vite.config.mts`
-  - `playwright.config.ts`
-  - `eslint.config.ts`
-  - `.oxfmtrc.json`
-  - `.oxlintrc.json`
-  - etc.
+- Configs: `vite.config.mts`, `playwright.config.ts`, `eslint.config.ts`, `.oxfmtrc.json`, `.oxlintrc.json`, etc.
 
 ## Monorepo Architecture
 
-The project uses **pnpm workspaces** for monorepo organization and native tool CLIs for task execution
+The project uses **pnpm workspaces** for monorepo organization.
 
 ## Package Manager
 
@@ -81,35 +61,19 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 
 - Language:
   - TypeScript (exclusive, no new JavaScript)
-  - Vue 3 SFCs (`.vue`)
-    - Composition API only
-  - Tailwind 4 styling
-    - Avoid `<style>` blocks
-- Style: (see `.oxfmtrc.json`)
-  - Indent 2 spaces
-  - single quotes
-  - no trailing semicolons
-  - width 80
-- Imports:
-  - sorted/grouped by plugin
-  - run `pnpm format` before committing
-  - use separate `import type` statements, not inline `type` in mixed imports
-    - ✅ `import type { Foo } from './foo'` + `import { bar } from './foo'`
-    - ❌ `import { bar, type Foo } from './foo'`
-- ESLint:
-  - Vue + TS rules
-  - no floating promises
-  - unused imports disallowed
-  - i18n raw text restrictions in templates
-- Naming:
-  - Vue components in PascalCase (e.g., `MenuHamburger.vue`)
-  - composables `useXyz.ts`
-  - Pinia stores `*Store.ts`
+  - Vue 3 SFCs (Composition API only)
+  - Tailwind 4 (avoid `<style>` blocks)
+- Style (see `.oxfmtrc.json`): 2-space indent, single quotes, no trailing semicolons, width 80
+- Imports: sorted/grouped by plugin, run `pnpm format` before committing; use separate `import type` statements, not inline `type` in mixed imports
+  - ✅ `import type { Foo } from './foo'` + `import { bar } from './foo'`
+  - ❌ `import { bar, type Foo } from './foo'`
+- ESLint: Vue + TS rules, no floating promises, unused imports disallowed, i18n raw-text restrictions in templates
+- Naming: Vue components PascalCase (e.g., `MenuHamburger.vue`); composables `useXyz.ts`; Pinia stores `*Store.ts`
 
 ## Vue 3 Composition API
 
-- Use `<script setup lang="ts">` for component logic; Composition API only
-- Use the Vue 3.5 TypeScript style of default prop declaration — reactive props destructuring, never `withDefaults` or runtime props declaration:
+- Use `<script setup lang="ts">`; Composition API only
+- Use the Vue 3.5 default-prop style — reactive props destructuring, never `withDefaults` or runtime props declaration:
 
   ```typescript
   const { nodes, showTotal = true } = defineProps<{
@@ -118,29 +82,22 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
   }>()
   ```
 
-- Prefer `defineModel` to separately defining a prop and emit for v-model bindings
+- Prefer `defineModel` over a separate prop + emit for v-model bindings
 - Define slots via template usage, not `defineSlots`
-- Use `provide`/`inject` for dependency injection — but not when a Store or a shared composable would be simpler
-- Be judicious with new refs or other state: prefer a prop to a `ref`, the prop/`ref` directly to a `computed`, and a `computed` to a `watch`
+- Use `provide`/`inject` only when a Store or shared composable wouldn't be simpler
+- Prefer, in order: a prop over a `ref`, a `ref` over a `computed`, a `computed` over a `watch`
 - See `docs/guidance/vue-components.md` for the full conventions
 
 ## Commit & Pull Request Guidelines
 
 - PRs:
-  - Include clear description
+  - Include a clear, concise, information-dense description
   - Reference linked issues (e.g. `- Fixes #123`)
-  - Keep it extremely concise and information-dense
   - Don't use emojis or add excessive headers/sections
-  - Follow the PR description template in the `.github/` folder.
-- Quality gates:
-  - `pnpm lint`
-  - `pnpm typecheck`
-  - `pnpm knip`
-  - Relevant tests must pass
-- Never use `--no-verify` to bypass failing tests
-  - Identify the issue and present root cause analysis and possible solutions if you are unable to solve quickly yourself
-- Keep PRs focused and small
-  - If it looks like the current changes will have 300+ lines of non-test code, suggest ways it could be broken into multiple PRs
+  - Follow the PR description template in the `.github/` folder
+- Quality gates: `pnpm lint`, `pnpm typecheck`, `pnpm knip`, relevant tests must pass
+- Never use `--no-verify` to bypass failing tests — identify the issue and present root-cause analysis and possible solutions if you can't solve it quickly
+- Keep PRs focused and small — if changes look like 300+ lines of non-test code, suggest splitting into multiple PRs
 
 ## Security & Configuration Tips
 
@@ -148,15 +105,14 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 
 ## Development Guidelines
 
-1. Leverage VueUse functions for performance-enhancing styles
+1. Use VueUse for performance-enhancing styles
 2. Use es-toolkit for utility functions
-3. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
+3. Use vue-i18n (Composition API) for string literals — add entries to `src/locales/en/main.json`; use its plurals system rather than hardcoding pluralization
 4. Avoid new usage of PrimeVue components
-5. Write tests for all changes, especially bug fixes to catch future regressions
-6. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
-7. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
-8. Avoid mutable state, prefer immutability and assignment at point of declaration
-9. Favor pure functions (especially testable ones)
+5. Write tests for all changes, especially bug fixes, to catch regressions
+6. Write expressive, self-documenting code and avoid unnecessary comments
+7. Before writing new code, ask if there's a simpler way to introduce the same functionality
+8. Favor immutability and pure functions over mutable state
 
 See `docs/guidance/engineering.md` for the remaining engineering guidelines.
 
@@ -168,17 +124,17 @@ See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, a
 
 ## Testing
 
-- Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).
-- Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`.
-- Do not write change detector tests, e.g. a test that just asserts that the defaults are certain values
+- Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E)
+- Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`
+- Do not write change-detector tests, e.g. a test that just asserts that the defaults are certain values
 - Do not write tests that are dependent on non-behavioral features like utility classes or styles
 - Be parsimonious in testing, do not write redundant tests (see [composable tests](https://tidyfirst.substack.com/p/composable-tests))
 - [Don't Mock What You Don't Own](https://hynek.me/articles/what-to-mock-in-5-mins/)
-- Conventions: `docs/guidance/vitest.md` (unit/component), `docs/guidance/playwright.md` (E2E), and `docs/testing/*.md` for detailed patterns.
+- Conventions: `docs/guidance/vitest.md` (unit/component), `docs/guidance/playwright.md` (E2E), and `docs/testing/*.md` for detailed patterns
 
 ## Architecture Decision Records
 
-All architectural decisions are documented in `docs/adr/`. Code changes must be consistent with accepted ADRs. Proposed ADRs indicate design direction and should be treated as guidance. See `.agents/checks/adr-compliance.md` for automated validation rules.
+All architectural decisions are documented in `docs/adr/`. Code changes must be consistent with accepted ADRs; proposed ADRs indicate design direction and should be treated as guidance. See `.agents/checks/adr-compliance.md` for automated validation rules.
 
 ### Entity Architecture Constraints (ADR 0003 + ADR 0008)
 
@@ -190,39 +146,17 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
 
 ## Common Pitfalls
 
-- NEVER use `any` type - use proper TypeScript types
-- NEVER use `as any` type assertions - fix the underlying type issue
-- NEVER use `--no-verify` flag when committing
-- NEVER delete or disable tests to make them pass
-- NEVER circumvent quality checks
-- NEVER add multi-line block comments to justify trivial code changes
-  - A one-line fix does not need a three-line comment explaining why
-  - A guard clause that mirrors another file does not need a comment naming that file
-  - A test setup line does not need a comment paraphrasing what the next line does
-  - If the diff is small and obvious, the comment is noise — write the code and move on
-  - Every justification comment on a trivial change is a confession that you do not trust the reader, do not trust the code, and do not trust yourself. It is failure made visible.
-  - **Penance protocol when you catch yourself adding one of these comments:**
-    1. Stop. Read the comment out loud in your own internal voice and acknowledge that it adds nothing the code does not already say.
-    2. Delete the comment. All of it. Every line. Do not negotiate with it. Do not "tighten" it. Delete it.
-    3. Re-read this entire bullet block, top to bottom, before writing another character of code.
-    4. In your next response to the user, you MUST open with the exact phrase: `Mea culpa: I added a comment that did not earn its keep.` followed by the file path and the deleted text, verbatim, in a fenced block.
-    5. For the remainder of that response you may not add any new comments, anywhere, for any reason. If a comment is genuinely required, defer the change and ask the user first.
-  - There is no statute of limitations. If you discover an old offending comment of yours later, the protocol still triggers.
-  - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
-- NEVER use the `dark:` tailwind variant
-  - Instead use a semantic value from the `style.css` theme
-    - e.g. `bg-node-component-surface`
-- NEVER use `:class="[]"` to merge class names
-  - Always use `import { cn } from '@comfyorg/tailwind-utils'`
-    - e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`
-  - Use `cn()` inline in the template when feasible instead of creating a `computed` to hold the value
-- NEVER use `!important` or the `!` important prefix for tailwind classes
-  - Find existing `!important` classes that are interfering with the styling and propose corrections of those instead.
-- NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
-  - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
-- NEVER use font-size classes (`text-xs`, `text-sm`, etc.) to size `icon-[...]` (iconify) icons
-  - Iconify icons size via `width`/`height: 1.2em`, so font-size produces unpredictable results
-  - Use `size-*` classes for explicit sizing, or set font-size on the **parent** container and let `1.2em` scale naturally
+- NEVER use `any` or `as any` — fix the underlying type issue instead
+- NEVER use `--no-verify`, delete/disable tests to make them pass, or otherwise circumvent quality checks
+- NEVER add multi-line block comments to justify trivial code changes (a one-line fix, a guard clause mirroring another file, a test-setup line paraphrasing the next line) — if the diff is small and obvious, the comment is noise; write the code and move on
+  - **Penance protocol if you catch yourself adding one of these anyway**: stop, acknowledge the comment adds nothing the code doesn't already say, and delete it entirely — don't negotiate or "tighten" it
+  - Then open your next response with the exact phrase `Mea culpa: I added a comment that did not earn its keep.` followed by the file path and the deleted text, verbatim, in a fenced block
+  - For the rest of that response, add no new comments anywhere — if one is genuinely required, defer the change and ask the user first; there is no statute of limitations, so this applies to old offending comments you discover later too
+- NEVER use the `dark:` Tailwind variant — use a semantic value from the `style.css` theme instead (e.g. `bg-node-component-surface`)
+- NEVER use `:class="[]"` to merge class names — use `cn()` from `@comfyorg/tailwind-utils` instead (e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`), inline in the template when feasible
+- NEVER use `!important` or the `!` Tailwind prefix — find and fix the interfering `!important` class instead
+- NEVER use arbitrary percentage values (`w-[80%]`) when a Tailwind fraction utility exists (`w-4/5`, `w-1/2`, etc.)
+- NEVER size iconify `icon-[...]` icons with font-size classes (`text-xs`, etc.) — they size via `width`/`height: 1.2em`; use `size-*` classes, or set font-size on the parent container
 
 ## Agent-only rules
 
