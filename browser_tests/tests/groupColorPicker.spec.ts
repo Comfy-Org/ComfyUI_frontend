@@ -57,7 +57,16 @@ test.describe(
       // Deselect the first group so its SelectionToolbox closes before we
       // interact with the second group — otherwise the still-visible toolbox
       // can sit over the second group's title and swallow the right-click.
-      await comfyPage.canvasOps.clickEmptySpace()
+      // Click a graph point clear of both groups rather than
+      // canvasOps.clickEmptySpace(): that helper's position is calibrated for
+      // the default graph's legacy-menu layout, and with Vue Nodes enabled
+      // the canvas spans the full viewport, so the click lands on the
+      // workflow tab bar instead of the canvas.
+      const emptyCanvasPos = await comfyPage.page.evaluate(() =>
+        window.app!.canvasPosToClientPos([1000, 500])
+      )
+      await comfyPage.page.mouse.click(emptyCanvasPos[0], emptyCanvasPos[1])
+      await comfyPage.nextFrame()
       await expect(
         comfyPage.page.getByTestId(TestIds.selectionToolbox.root)
       ).toBeHidden()
