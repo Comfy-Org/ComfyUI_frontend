@@ -106,6 +106,7 @@ test.describe(
       const subgraphNode =
         await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
       await subgraphNode.resizeFromCorner('SE', 250, 200)
+      await comfyPage.nextFrame()
       const resizedBox = (await subgraphNode.boundingBox())!
 
       await subgraphNode.select()
@@ -167,6 +168,7 @@ test.describe(
 
       const boxBeforeResize = (await subgraphNode.boundingBox())!
       await subgraphNode.resizeFromCorner('SE', 200, 150)
+      await comfyPage.nextFrame()
 
       const box = await subgraphNode.boundingBox()
       expect(box?.width).toBeGreaterThan(boxBeforeResize.width)

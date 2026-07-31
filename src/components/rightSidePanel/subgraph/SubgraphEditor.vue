@@ -14,6 +14,7 @@ import {
   isRecommendedWidget,
   promoteWidget,
   pruneDisconnected,
+  refreshPromotedWidgetRendering as refreshPromotedWidgetRenderingForNodes,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import {
@@ -231,9 +232,7 @@ function refreshPromotedWidgetRendering() {
   const node = activeNode.value
   if (!node) return
 
-  node.expandToFitContent()
-  node.setDirtyCanvas(true, true)
-  canvasStore.canvas?.setDirty(true, true)
+  refreshPromotedWidgetRenderingForNodes([node])
 }
 
 function rowDisplayName(row: ActiveRow): string {

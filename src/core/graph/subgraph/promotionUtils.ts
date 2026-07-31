@@ -257,7 +257,7 @@ function toPromotionSource(
   }
 }
 
-function refreshPromotedWidgetRendering(parents: SubgraphNode[]): void {
+export function refreshPromotedWidgetRendering(parents: SubgraphNode[]): void {
   for (const parent of parents) {
     parent.expandToFitContent()
     parent.setDirtyCanvas(true, true)
