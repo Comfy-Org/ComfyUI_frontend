@@ -460,7 +460,7 @@ const isSubscriptionEnded = computed(
 // stays active until its end date, so it keeps the subscribed treatment.
 const showSubscribePrompt = computed(() => {
   if (!permissions.value.canManageSubscription) return false
-  if (isSubscriptionEnded.value && !isActiveSubscription.value) return true
+  if (isSubscriptionEnded.value) return true
   if (isSubscriptionCancelled.value) return false
   if (
     subscription.value &&
