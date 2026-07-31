@@ -52,12 +52,13 @@ const i18n = createI18n({
 let s: ReturnType<typeof makeTourState>
 
 const spotlightStep: CoachStep = {
+  kind: 'spotlight',
   name: 'run',
   placement: 'right'
 }
 
 function landingStep(): CoachStep {
-  return { name: 'landing', placement: 'center', landing: true }
+  return { kind: 'landing', name: 'landing' }
 }
 
 function renderOverlay() {

@@ -38,7 +38,9 @@ function useFirstRunTourControllerInternal() {
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const onRunStep = computed(
     () =>
-      engine.activeTour === 'firstRun' && engine.step?.selfAdvancing === true
+      engine.activeTour === 'firstRun' &&
+      engine.step?.kind === 'spotlight' &&
+      engine.step.selfAdvancing === true
   )
 
   /** Recorded, not derived: the queue clears a status as soon as it turns terminal. */

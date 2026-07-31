@@ -1,4 +1,4 @@
-import type { MovingTarget } from '@/platform/onboarding/coachmarkRegistry'
+import type { RectTarget } from '@/platform/onboarding/coachmarkRegistry'
 import type { Ref } from 'vue'
 
 import {
@@ -32,7 +32,7 @@ const COACH_ID: Record<TourStep['kind'], CoachId> = {
   result: FIRST_RUN_COACH_IDS.sink
 }
 
-const registered: [CoachId, MovingTarget][] = []
+const registered: [CoachId, RectTarget][] = []
 
 /** Drops the canvas targets a finished tour registered. */
 export function releaseFirstRunTargets() {
@@ -76,6 +76,7 @@ function toCoachStep(
   { shape, runState }: StepContext
 ): CoachStep {
   const common = {
+    kind: 'spotlight' as const,
     coachId: COACH_ID[step.kind],
     deferTarget: true,
     cursor: true,

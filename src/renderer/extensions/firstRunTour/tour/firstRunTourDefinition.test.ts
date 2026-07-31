@@ -1,15 +1,17 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   clearCoachmarks,
   targetMounted
 } from '@/platform/onboarding/coachmarkRegistry'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
 
 import { TOUR_ROLE_PINS } from '../roles/tourRolePins'
 import type { RolePin } from '../roles/tourRolePins'
@@ -56,13 +58,6 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-function renderVueNode(nodeId: NodeId) {
-  const el = document.createElement('div')
-  el.setAttribute('data-node-id', nodeId)
-  el.getBoundingClientRect = () => new DOMRect(0, 0, 120, 80)
-  document.body.append(el)
-}
-
 function loadTemplate(templateId: keyof typeof TOUR_ROLE_PINS): LGraph {
   const graph = new LGraph()
   const { source, prompt, sink } = TOUR_ROLE_PINS[templateId]
@@ -75,13 +70,18 @@ function loadTemplate(templateId: keyof typeof TOUR_ROLE_PINS): LGraph {
     node.size = [120, 80]
     graph.add(node)
     node.updateArea()
-    renderVueNode(node.id)
   }
   appState.graph = graph
+  layoutStore.initializeFromLiteGraph(graph.nodes)
+  useCanvasStore().currentGraph = graph
   return graph
 }
 
 describe('firstRunTourSteps', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   afterEach(() => {
     releaseFirstRunTargets()
     clearCoachmarks()
@@ -163,7 +163,7 @@ describe('firstRunTourSteps', () => {
     loadTemplate(FROM_IMAGE)
 
     const interactive = (await buildSteps(FROM_IMAGE))
-      .filter((step) => step.interactive)
+      .filter((step) => step.kind === 'spotlight' && step.interactive)
       .map((step) => step.name)
 
     expect(interactive).toEqual(['prompt.image-edit', 'run'])

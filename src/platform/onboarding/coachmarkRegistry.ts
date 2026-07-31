@@ -2,31 +2,27 @@ import { shallowReactive, watch } from 'vue'
 
 import type { CoachId } from './onboardingTours'
 
-/** An element the camera carries: it remounts, and it moves without events. */
-export interface MovingTarget {
-  selector: string
+/** Reports its own rect: a canvas node moves without firing any DOM event. */
+export interface RectTarget {
+  getRect: () => DOMRect | null
   onMove: (notify: () => void) => () => void
 }
 
-export type CoachTarget = HTMLElement | MovingTarget
+export type CoachTarget = HTMLElement | RectTarget
 
-export function isMovingTarget(target: CoachTarget): target is MovingTarget {
+export function isRectTarget(target: CoachTarget): target is RectTarget {
   return !(target instanceof HTMLElement)
-}
-
-function resolveTarget(target: CoachTarget): HTMLElement | null {
-  if (!isMovingTarget(target)) return target
-  return document.querySelector<HTMLElement>(target.selector)
 }
 
 const EMPTY: readonly CoachTarget[] = []
 
-/** The element a target names, once it is rendered with a size. */
-export function laidOutElement(target: CoachTarget): HTMLElement | null {
-  const element = resolveTarget(target)
-  if (!element) return null
-  const { width, height } = element.getBoundingClientRect()
-  return width > 0 && height > 0 ? element : null
+/** A target's rect, once it is rendered with a size. */
+export function laidOutRect(target: CoachTarget): DOMRect | null {
+  const rect = isRectTarget(target)
+    ? target.getRect()
+    : target.getBoundingClientRect()
+  if (!rect || rect.width <= 0 || rect.height <= 0) return null
+  return rect
 }
 
 // An id can map to several elements (e.g. responsive variants); consumers pick
@@ -48,10 +44,13 @@ export function coachmarkElements(id: CoachId): readonly CoachTarget[] {
 }
 
 export function targetMounted(id: CoachId): boolean {
-  return coachmarkElements(id).some((target) => !!laidOutElement(target))
+  return coachmarkElements(id).some((target) => !!laidOutRect(target))
 }
 
-/** Resolves once a laid-out element for the id exists; false on timeout or abort. */
+// Frequent enough to feel immediate, cheap enough not to measure every frame.
+export const PLACEMENT_POLL_MS = 100
+
+/** Resolves once a laid-out target for the id exists; false on timeout or abort. */
 export function waitForTarget(
   id: CoachId,
   signal: AbortSignal,
@@ -62,12 +61,12 @@ export function waitForTarget(
   if (signal.aborted) return Promise.resolve(false)
   return new Promise((resolve) => {
     let done = false
-    let frame = 0
+    let poll: ReturnType<typeof setTimeout>
     function finish(found: boolean) {
       if (done) return
       done = true
       stopWatch()
-      cancelAnimationFrame(frame)
+      clearTimeout(poll)
       clearTimeout(timer)
       signal.removeEventListener('abort', onAbort)
       resolve(found)
@@ -75,25 +74,24 @@ export function waitForTarget(
     function onAbort() {
       finish(false)
     }
-    // Laid-out-ness is a layout read the registry can't observe, so it needs
-    // polling — but only while a candidate exists. Registration is reactive,
-    // so the watch (re)starts the poll instead of spinning every frame while
-    // the target hasn't even mounted.
-    function poll() {
+    // Placement is a measurement nothing reports, so it is sampled — but only
+    // while a candidate is registered, which is reactive.
+    function samplePlacement() {
       if (targetMounted(id)) finish(true)
-      else if (coachmarkElements(id).length) frame = requestAnimationFrame(poll)
+      else if (coachmarkElements(id).length)
+        poll = setTimeout(samplePlacement, PLACEMENT_POLL_MS)
     }
     const stopWatch = watch(
       () => coachmarkElements(id).length,
       () => {
-        cancelAnimationFrame(frame)
-        poll()
+        clearTimeout(poll)
+        samplePlacement()
       },
       { flush: 'post' }
     )
     const timer = setTimeout(() => finish(false), timeoutMs)
     signal.addEventListener('abort', onAbort)
-    poll()
+    samplePlacement()
   })
 }
 

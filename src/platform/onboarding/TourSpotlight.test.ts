@@ -9,7 +9,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { clearCoachmarks } from './coachmarkRegistry'
 import TourSpotlight from './TourSpotlight.vue'
-import type { CoachStep } from './onboardingTours'
+import type { SpotlightStep } from './onboardingTours'
 
 vi.mock('@primeuix/utils/zindex', () => ({
   ZIndex: { set: vi.fn(), clear: vi.fn() }
@@ -23,8 +23,8 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function spotlightStep(overrides: Partial<CoachStep> = {}): CoachStep {
-  return { name: 'run', placement: 'right', ...overrides }
+function spotlightStep(overrides: Partial<SpotlightStep> = {}): SpotlightStep {
+  return { kind: 'spotlight', name: 'run', placement: 'right', ...overrides }
 }
 
 const baseProps = {

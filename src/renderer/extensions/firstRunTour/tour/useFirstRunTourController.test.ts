@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
-import type { CoachStep } from '@/platform/onboarding/onboardingTours'
+import type {
+  CoachStep,
+  SpotlightStep
+} from '@/platform/onboarding/onboardingTours'
 
 const TOUR_WORKFLOW = { path: 'tour.json' }
 const OTHER_WORKFLOW = { path: 'other.json' }
@@ -81,8 +84,13 @@ vi.mock('@/platform/onboarding/onboardingTourStore', async () => {
   return { useOnboardingTourStore: () => mocks.engine }
 })
 
-function runStep(): CoachStep {
-  return { name: 'run', placement: 'bottom', selfAdvancing: true }
+function runStep(): SpotlightStep {
+  return {
+    kind: 'spotlight',
+    name: 'run',
+    placement: 'bottom',
+    selfAdvancing: true
+  }
 }
 
 let controllerScope: EffectScope | undefined
@@ -389,7 +397,11 @@ describe('useFirstRunTourController', () => {
 
     it('leaves the Run button alone on a step the user can walk past', async () => {
       await tourOnRunStep()
-      mocks.engine.step = { name: 'result.image', placement: 'auto' }
+      mocks.engine.step = {
+        kind: 'spotlight',
+        name: 'result.image',
+        placement: 'auto'
+      }
       await nextTick()
       const underlyingHandler = vi.fn()
 

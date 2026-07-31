@@ -106,7 +106,9 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   )
   const isLast = computed(() => stepIdx.value === steps.value.length - 1)
 
-  const countedSteps = computed(() => steps.value.filter((s) => !s.landing))
+  const countedSteps = computed<CoachStep[]>(() =>
+    steps.value.filter((s) => s.kind !== 'landing')
+  )
   const countedStepsTotal = computed(() => countedSteps.value.length)
   const countedStepIdx = computed(() => {
     const s = step.value
@@ -116,9 +118,11 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     stepIdx.value === null ? null : (steps.value[stepIdx.value - 1] ?? null)
   )
 
-  const canGoBack = computed(
-    () => countedStepIdx.value > 0 && previousStep.value?.selfAdvancing !== true
-  )
+  const canGoBack = computed(() => {
+    const previous = previousStep.value
+    if (countedStepIdx.value <= 0) return false
+    return previous?.kind !== 'spotlight' || previous.selfAdvancing !== true
+  })
 
   function trackTour(
     stage: OnboardingTourStage,
@@ -134,7 +138,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       ...(stage !== 'started' &&
         reportedIdx >= 0 && {
           step_number: reportedIdx + 1,
-          coach_id: reported?.coachId
+          coach_id:
+            reported?.kind === 'spotlight' ? reported.coachId : undefined
         }),
       ...(skipReason && { skip_reason: skipReason })
     })
@@ -177,9 +182,11 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
 
     const fromIdx = shownIdx(current)
     const { steps: running, tour } = current
-    if (nextStep.openSidebarTab) openSidebarTab(nextStep.openSidebarTab)
+    if (nextStep.kind === 'spotlight' && nextStep.openSidebarTab)
+      openSidebarTab(nextStep.openSidebarTab)
 
     if (
+      nextStep.kind === 'spotlight' &&
       nextStep.deferTarget &&
       nextStep.coachId &&
       !targetMounted(nextStep.coachId)
@@ -239,7 +246,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const lostTarget = computed(() => {
     if (state.value.phase !== 'showing') return null
     const shown = step.value
-    return shown?.coachId && !targetMounted(shown.coachId) ? shown : null
+    if (shown?.kind !== 'spotlight') return null
+    return shown.coachId && !targetMounted(shown.coachId) ? shown : null
   })
 
   watch(lostTarget, (lost) => {

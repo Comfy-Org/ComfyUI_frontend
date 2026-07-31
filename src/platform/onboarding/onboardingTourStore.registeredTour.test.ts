@@ -8,7 +8,7 @@ import type { AppMode } from '@/utils/appMode'
 
 import { clearCoachmarks } from './coachmarkRegistry'
 import { TOUR_SEEN_SETTING, registerTour } from './onboardingTours'
-import type { CoachStep } from './onboardingTours'
+import type { SpotlightStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
 const settings = vi.hoisted(() => ({ store: new Map<string, unknown>() }))
@@ -38,8 +38,11 @@ vi.mock('@/stores/appModeStore', () => ({
   useAppModeStore: () => ({ hasOutputs: false })
 }))
 
-function step(name: string, overrides: Partial<CoachStep> = {}): CoachStep {
-  return { name, placement: 'center', ...overrides }
+function step(
+  name: string,
+  overrides: Partial<SpotlightStep> = {}
+): SpotlightStep {
+  return { kind: 'spotlight', name, placement: 'center', ...overrides }
 }
 
 function stages(): string[] {
