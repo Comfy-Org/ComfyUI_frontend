@@ -150,9 +150,21 @@ describe('agentEventTransport thinking chip', () => {
     expect(message.parts).toHaveLength(0)
   })
 
-  it('thinking after text does not re-flip the chip', () => {
-    const message = drive([delta('hello'), thinking('second thought')])
-    expect(message.thinking).toBe(false)
+  it('thinking after prior text and tools reopens the status', () => {
+    const message = drive([
+      delta('before'),
+      toolCall('run', 'ok'),
+      delta('after'),
+      thinking('Planning the next step')
+    ])
+
+    expect(message.parts.map((part) => part.type)).toEqual([
+      'text',
+      'tool',
+      'text'
+    ])
+    expect(message.thinking).toBe(true)
+    expect(message.thinkingText).toBe('Planning the next step')
   })
 })
 

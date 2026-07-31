@@ -15,7 +15,7 @@ import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
-import type { ActiveTab } from '../ActiveTabStrip.vue'
+import type { ActiveTab } from '../../../types/activeTab'
 
 const {
   activeTab,
@@ -76,7 +76,8 @@ function onSearchKeydown(event: KeyboardEvent): void {
         class="rounded-agent bg-agent-pill text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-1.5 px-2 text-xs transition-colors"
       >
         <span
-          class="text-agent-fg-subtle icon-[lucide--panels-top-left] size-3.5 shrink-0"
+          data-testid="workflow-selector-icon"
+          class="text-agent-fg-subtle icon-[lucide--folder-closed] size-3.5 shrink-0"
         />
         <span class="max-w-40 truncate">{{
           current?.name ?? t('agent.chooseWorkflow')
