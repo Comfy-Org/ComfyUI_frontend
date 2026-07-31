@@ -32,10 +32,12 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
+import { isValueControlWidget } from '@/scripts/valueControl'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -483,10 +485,23 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     widgetValues: ExportedSubgraphInstance['widgets_values']
   ): void {
     const quarantineValuesByInputName = this._readQuarantineHostValuesByName()
+    const promotedInputs = this.inputs.filter(
+      (input): input is typeof input & { widgetId: WidgetId } =>
+        input.widgetId !== undefined
+    )
+
+    // Legacy/imported instances can serialize widgets_values with an extra
+    // slot per control_after_generate companion widget, mirroring the
+    // underlying node's own widget layout, even though the companion is
+    // never itself a promoted input. Only compensate when the array is
+    // longer than the promoted-input count, so current-format instances
+    // (exactly one value per promoted input, see serialize() below) are
+    // unaffected.
+    const hasControlAfterGenerateSlots =
+      (widgetValues?.length ?? 0) > promotedInputs.length
 
     let valueIndex = 0
-    for (const input of this.inputs) {
-      if (!input.widgetId) continue
+    for (const input of promotedInputs) {
       const value =
         quarantineValuesByInputName.get(input.name) ??
         widgetValues?.[valueIndex]
@@ -494,7 +509,30 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         useWidgetValueStore().setValue(input.widgetId, value)
       }
       valueIndex += 1
+      if (
+        hasControlAfterGenerateSlots &&
+        this._hasControlAfterGenerateSlot(input)
+      ) {
+        valueIndex += 1
+      }
     }
+  }
+
+  private _hasControlAfterGenerateSlot(input: INodeInputSlot): boolean {
+    const source = promotedInputSource(this, input)
+    if (!source) return false
+
+    const resolved = resolveConcretePromotedWidget(
+      this,
+      source.nodeId,
+      source.widgetName
+    )
+    if (resolved.status !== 'resolved') return false
+
+    return (
+      resolved.resolved.widget.linkedWidgets?.some(isValueControlWidget) ??
+      false
+    )
   }
 
   private _readQuarantineHostValuesByName(): Map<string, TWidgetValue> {
