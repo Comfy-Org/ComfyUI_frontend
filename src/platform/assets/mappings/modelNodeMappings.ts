@@ -17,6 +17,10 @@
 export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   readonly [string, string, string]
 > = [
+  // Intentionally unmapped (widget values are model ids / HF repo ids, not
+  // asset filenames): rmbg, florence2, LLM/Qwen-VL/*, qwen-tts, diffusers
+  // (Kolors), BiRefNet, EVF-SAM, smol. onnx/human-parts has no assets.
+
   // ---- ComfyUI core loaders ----
   ['checkpoints', 'CheckpointLoaderSimple', 'ckpt_name'],
   ['checkpoints', 'ImageOnlyCheckpointLoader', 'ckpt_name'],
@@ -74,45 +78,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // ---- SEEDVR2 video upscaling (comfyui-seedvr2) ----
   ['SEEDVR2', 'SeedVR2LoadDiTModel', 'model'],
 
-  // ---- Qwen VL vision-language (comfyui-qwen-vl) ----
-  // Intentionally NOT mapped to the asset-picker. The `model_name` widget on
-  // these nodes takes a model folder name (e.g. `Qwen3-VL-4B-Instruct`), not an
-  // asset filename, so the filename-based asset browser cannot represent its
-  // values and replacing the combo breaks published workflows. The store also
-  // only queries the first registered category per node type, which left all
-  // but the first directory unreachable. Leave these unmapped so the nodes
-  // fall back to their own combo populated from `/api/object_info`.
-  // ['LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct', 'AILab_QwenVL', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct', 'AILab_QwenVL', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-2B-Instruct', 'AILab_QwenVL', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-2B-Thinking', 'AILab_QwenVL', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-4B-Instruct', 'AILab_QwenVL', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-4B-Thinking', 'AILab_QwenVL', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-8B-Instruct', 'AILab_QwenVL', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-8B-Thinking', 'AILab_QwenVL', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-32B-Instruct', 'AILab_QwenVL', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-32B-Thinking', 'AILab_QwenVL', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-0.6B', 'AILab_QwenVL_PromptEnhancer', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-4B-Instruct-2507', 'AILab_QwenVL_PromptEnhancer', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-2B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-2B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-4B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-4B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-8B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-8B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-32B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  // ['LLM/Qwen-VL/Qwen3-VL-32B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
+  // ---- ChatGLM3 text encoder ----
   ['LLM/checkpoints', 'LoadChatGLM3', 'chatglm3_checkpoint'],
-
-  // ---- Qwen3 TTS (ComfyUI-FunBox) ----
-  // Intentionally NOT mapped to the asset-picker. The `model_choice` widget
-  // takes a model size id (`0.6B` / `1.7B`), not an asset filename, so the
-  // filename-based asset browser cannot represent its values. Leave it
-  // unmapped so the node falls back to its own combo populated from
-  // `/api/object_info`.
-  // ['qwen-tts', 'FB_Qwen3TTSVoiceClone', 'model_choice'],
 
   // ---- LivePortrait (comfyui-liveportrait) ----
   ['liveportrait', 'DownloadAndLoadLivePortraitModels', ''],
@@ -123,14 +90,6 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
 
   // ---- Face parsing (comfyui_face_parsing) ----
   ['face_parsing', 'FaceParsingModelLoader(FaceParsing)', ''],
-
-  // ---- Kolors (ComfyUI-KolorsWrapper) ----
-  // Intentionally NOT mapped to the asset-picker. The `model` widget takes a
-  // HF repo id (`Kwai-Kolors/Kolors`), not an asset filename, so the
-  // filename-based asset browser cannot represent its values. Leave it
-  // unmapped so the node falls back to its own combo populated from
-  // `/api/object_info`.
-  // ['diffusers', 'DownloadAndLoadKolorsModel', 'model'],
 
   // ---- RIFE video frame interpolation (ComfyUI-RIFE) ----
   ['rife', 'RIFE VFI', 'ckpt_name'],
@@ -162,11 +121,7 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // ---- CogVideoX (comfyui-cogvideoxwrapper) ----
   ['CogVideo', 'DownloadAndLoadCogVideoModel', ''],
   ['CogVideo/GGUF', 'DownloadAndLoadCogVideoGGUFModel', 'model'],
-  // The ControlNet loader is intentionally NOT mapped. Its `model` widget
-  // takes HF repo ids (`TheDenk/cogvideox-*-controlnet-*`), not asset
-  // filenames, so the filename-based asset browser cannot represent its
-  // values. The node falls back to its own combo from `/api/object_info`.
-  // ['CogVideo/ControlNet', 'DownloadAndLoadCogVideoControlNet', ''],
+  ['CogVideo/ControlNet', 'DownloadAndLoadCogVideoControlNet', ''],
 
   // ---- DynamiCrafter (ComfyUI-DynamiCrafterWrapper) ----
   ['checkpoints/dynamicrafter', 'DownloadAndLoadDynamiCrafterModel', 'model'],
@@ -181,9 +136,6 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // ---- LayerStyle (ComfyUI_LayerStyle_Advance) ----
   ['BEN', 'LS_LoadBenModel', 'model'],
   ['BiRefNet/pth', 'LS_LoadBiRefNetModel', 'model'],
-  // No models are available under `onnx/human-parts`, so this mapping can
-  // never resolve an asset and only produces an empty picker.
-  // ['onnx/human-parts', 'LS_HumanPartsUltra', ''],
   ['lama', 'LaMa', 'lama_model'],
 
   // ---- Inpaint (comfyui-inpaint-nodes) ----
@@ -202,48 +154,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
     'image_captioner_name'
   ],
 
-  // ---- BiRefNet background removal (comfyui_layerstyle) ----
-  // Intentionally NOT mapped to the asset-picker. The `version` widget takes
-  // a model version id (`BiRefNet-General` / `RMBG-2.0`), not an asset
-  // filename, so the filename-based asset browser cannot represent its
-  // values. Leave it unmapped so the node falls back to its own combo
-  // populated from `/api/object_info`.
-  // ['BiRefNet', 'LayerMask: LoadBiRefNetModelV2', 'version'],
-
-  // ---- EVF-SAM segmentation (comfyui_layerstyle) ----
-  // Intentionally NOT mapped to the asset-picker. The `model` widget takes a
-  // model folder name (`evf-sam` / `evf-sam2`), not an asset filename, so
-  // the filename-based asset browser cannot represent its values. Leave it
-  // unmapped so the node falls back to its own combo populated from
-  // `/api/object_info`.
-  // ['EVF-SAM', 'LayerMask: EVFSAMUltra', 'model'],
-
-  // ---- Florence2 vision-language (comfyui-florence2) ----
-  // Intentionally NOT mapped to the asset-picker. The `model` widget takes a
-  // HF repo id (e.g. `microsoft/Florence-2-base`), not an asset filename, so
-  // the filename-based asset browser cannot represent its values. Leave it
-  // unmapped so the node falls back to its own combo populated from
-  // `/api/object_info`.
-  // ['florence2', 'DownloadAndLoadFlorence2Model', 'model'],
-
   // ---- GIMM-VFI frame interpolation (ComfyUI-GIMM-VFI) ----
   ['interpolation', 'DownloadAndLoadGIMMVFIModel', 'model'],
-
-  // ---- RMBG background removal (comfyui-rmbg) ----
-  // Intentionally NOT mapped to the asset-picker. The `model` widget takes an
-  // algorithm id (e.g. `RMBG-2.0`), not an asset filename, so the
-  // filename-based asset browser cannot represent its values. Leave it
-  // unmapped so the node falls back to its own combo populated from
-  // `/api/object_info`.
-  // ['rmbg', 'RMBG', 'model'],
-
-  // ---- SmolLM2/SmolVLM language models (comfyui_layerstyle) ----
-  // Intentionally NOT mapped to the asset-picker. The `model` widget takes a
-  // model folder name (e.g. `SmolLM2-1.7B-Instruct`), not an asset filename,
-  // so the filename-based asset browser cannot represent its values. Leave
-  // it unmapped so the node falls back to its own combo populated from
-  // `/api/object_info`.
-  // ['smol', 'LayerUtility: LoadSmolLM2Model', 'model'],
 
   // ---- Transparent background removal (comfyui_layerstyle) ----
   ['transparent-background', 'LayerMask: TransparentBackgroundUltra', 'model'],
