@@ -107,7 +107,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
+
+          # continue-on-error must not make a botched restoration invisible: a failed
+          # lookup or PATCH leaves Latest wrong on a workflow that reports success.
+          report_failure() {
+            echo "::warning::Latest restoration failed; the Latest pointer may name the wrong release."
+            {
+              echo "## ⚠️ Latest release pointer not restored"
+              echo ""
+              echo "This step failed, so GitHub's Latest pointer may still name the wrong release."
+              echo "Check it by hand and treat it as part of post-release verification."
+            } >> "$GITHUB_STEP_SUMMARY"
+          }
+          trap report_failure ERR
+
           NEWEST=$(gh api --paginate "repos/${REPO}/releases?per_page=100" \
             | jq -s 'add
                      | [.[] | select(
