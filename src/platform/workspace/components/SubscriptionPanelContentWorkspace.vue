@@ -357,6 +357,7 @@ const {
   isTeamPlan,
   subscription,
   plans,
+  billingStatus,
   subscriptionStatus,
   isLoading,
   error,
@@ -371,10 +372,18 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
+const isTerminalPersonalSubscription = computed(
+  () =>
+    isInPersonalWorkspace.value &&
+    !isActiveSubscription.value &&
+    billingStatus.value === 'inactive'
+)
+
 const isSubscriptionEnded = computed(
   () =>
     subscriptionStatus.value === 'ended' ||
-    (isSubscriptionCancelled.value && !isActiveSubscription.value)
+    (isSubscriptionCancelled.value && !isActiveSubscription.value) ||
+    isTerminalPersonalSubscription.value
 )
 
 // Show subscribe prompt to owners without active subscription. A cancelled plan
