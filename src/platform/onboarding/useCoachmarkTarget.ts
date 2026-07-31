@@ -1,17 +1,22 @@
 import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
-import type { Middleware, Placement, Rect } from '@floating-ui/vue'
-import { useEventListener, useMutationObserver } from '@vueuse/core'
-import { computed, ref, toValue, watch, watchEffect } from 'vue'
+import type {
+  Middleware,
+  Placement,
+  Rect,
+  ReferenceElement
+} from '@floating-ui/vue'
+import { refDebounced, useEventListener } from '@vueuse/core'
+import { computed, ref, toValue, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
 import {
   coachmarkElements,
-  isMovingTarget,
-  laidOutElement
+  isRectTarget,
+  laidOutRect
 } from './coachmarkRegistry'
 import type { CoachTarget } from './coachmarkRegistry'
-import type { CoachPlacement, CoachStep } from './onboardingTours'
+import type { CoachPlacement, SpotlightStep } from './onboardingTours'
 
 // A target animating in via CSS transform reports through neither scroll nor
 // resize events; poll each frame until its rect holds still this long.
@@ -27,7 +32,7 @@ const PLACEMENT: Record<
   bottom: 'bottom'
 }
 
-function floatingPlacement(step: CoachStep | null): Placement {
+function floatingPlacement(step: SpotlightStep | null): Placement {
   const placement = step?.placement
   if (!placement || placement === 'auto' || placement === 'center')
     return 'right-start'
@@ -40,7 +45,10 @@ const captureReference: Middleware = {
   fn: (state) => ({ data: { rect: state.rects.reference } })
 }
 
-function middleware(step: CoachStep | null, topInset: number): Middleware[] {
+function floatingMiddleware(
+  step: SpotlightStep | null,
+  topInset: number
+): Middleware[] {
   const list: Middleware[] = [offset(CARD_GAP)]
   if (!step?.placement || step.placement === 'auto') list.push(flip())
   // shift only guards the main axis by default; crossAxis keeps vertically-
@@ -61,47 +69,49 @@ function middleware(step: CoachStep | null, topInset: number): Middleware[] {
 }
 
 /**
+ * A deferred target animates in under its own CSS transform, which reports
+ * through neither scroll nor resize: it is still settling until its rect has
+ * held still long enough for the debounced copy to catch up.
+ */
+export function isSettling(
+  step: SpotlightStep | null,
+  rect: DOMRect | null,
+  settled: DOMRect | null
+): boolean {
+  return !!step?.deferTarget && rect !== settled
+}
+
+/**
  * Locates a step's target in the registry and positions the card beside it with
  * Floating UI, following the target until its rect settles.
  */
 export function useCoachmarkTarget(
-  step: MaybeRefOrGetter<CoachStep | null>,
+  step: MaybeRefOrGetter<SpotlightStep | null>,
   cardRef: Ref<HTMLElement | null>
 ) {
-  const candidateEls = computed<readonly CoachTarget[]>(() => {
+  const candidates = computed<readonly CoachTarget[]>(() => {
     const id = toValue(step)?.coachId
     return id ? coachmarkElements(id) : []
   })
 
-  const domRevision = ref(0)
-
-  const anchor = computed(() => {
-    void domRevision.value
-    for (const candidate of candidateEls.value) {
-      const el = laidOutElement(candidate)
-      if (el) return { candidate, el }
-    }
-    return null
-  })
-
-  const targetEl = computed(() => anchor.value?.el ?? null)
+  const anchor = computed(
+    () => candidates.value.find((candidate) => laidOutRect(candidate)) ?? null
+  )
 
   const movingAnchor = computed(() =>
-    anchor.value && isMovingTarget(anchor.value.candidate)
-      ? anchor.value.candidate
-      : null
+    anchor.value && isRectTarget(anchor.value) ? anchor.value : null
   )
 
   const targetMoves = computed(() => !!movingAnchor.value)
 
-  useMutationObserver(
-    () => (candidateEls.value.some(isMovingTarget) ? document.body : null),
-    () => {
-      if (targetEl.value?.isConnected) return
-      domRevision.value++
-    },
-    { childList: true, subtree: true }
-  )
+  const reference = computed<ReferenceElement | null>(() => {
+    const candidate = anchor.value
+    if (!candidate) return null
+    if (!isRectTarget(candidate)) return candidate
+    return {
+      getBoundingClientRect: () => candidate.getRect() ?? new DOMRect()
+    }
+  })
 
   // The top bar's height only changes on resize, so read it once and refresh
   // then — Floating UI re-runs the middleware every frame while tracking motion.
@@ -111,13 +121,13 @@ export function useCoachmarkTarget(
   })
 
   const { floatingStyles, middlewareData, isPositioned, update } = useFloating(
-    targetEl,
+    reference,
     cardRef,
     {
       strategy: 'fixed',
       transform: false,
       placement: () => floatingPlacement(toValue(step)),
-      middleware: () => middleware(toValue(step), topInset.value)
+      middleware: () => floatingMiddleware(toValue(step), topInset.value)
     }
   )
 
@@ -136,38 +146,21 @@ export function useCoachmarkTarget(
     return new DOMRect(rect.x, rect.y, rect.width, rect.height)
   })
 
-  const trackMotion = ref(false)
-  const rectKey = computed(() => {
-    const r = targetRect.value
-    return r ? `${r.x},${r.y},${r.width},${r.height}` : ''
-  })
-
-  watch(
-    () => toValue(step),
-    (s) => {
-      trackMotion.value = !!s?.deferTarget
-    },
-    { immediate: true }
+  const settledRect = refDebounced(targetRect, MOTION_SETTLE_MS)
+  const trackMotion = computed(() =>
+    isSettling(toValue(step), targetRect.value, settledRect.value)
   )
 
-  watch(rectKey, (_key, _prev, onCleanup) => {
-    if (!trackMotion.value) return
-    const timer = setTimeout(() => {
-      trackMotion.value = false
-    }, MOTION_SETTLE_MS)
-    onCleanup(() => clearTimeout(timer))
-  })
-
   watchEffect((onCleanup) => {
-    const reference = targetEl.value
+    const element = anchor.value
     const floating = cardRef.value
-    if (!reference || !floating) return
+    if (!element || isRectTarget(element) || !floating) return
     onCleanup(
-      autoUpdate(reference, floating, update, {
+      autoUpdate(element, floating, update, {
         animationFrame: trackMotion.value
       })
     )
   })
 
-  return { targetEl, targetRect, targetMoves, floatingStyles, isPositioned }
+  return { targetRect, targetMoves, floatingStyles, isPositioned }
 }
