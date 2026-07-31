@@ -41,6 +41,7 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  UnifiedAuthRetryMetadata,
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
@@ -84,6 +85,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAuthFailed(metadata: AuthErrorMetadata): void {
     this.dispatch((provider) => provider.trackAuthFailed?.(metadata))
+  }
+
+  trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
+    this.dispatch((provider) => provider.trackUnifiedAuthRetry?.(metadata))
   }
 
   trackUserLoggedIn(): void {
