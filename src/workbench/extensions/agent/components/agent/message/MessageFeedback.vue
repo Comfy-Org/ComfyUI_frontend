@@ -36,20 +36,20 @@ function copyPlainText(): void {
 </script>
 
 <template>
-  <div class="text-agent-fg-subtle flex items-center gap-0.5">
+  <div class="text-agent-fg-muted flex w-full items-center gap-1">
     <button
       type="button"
       :aria-label="t('agent.helpful')"
       :aria-pressed="vote === 'up'"
       :class="
         cn(
-          'rounded-agent hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 items-center justify-center transition-colors',
+          'rounded-agent hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none',
           vote === 'up' && 'text-agent-fg'
         )
       "
       @click="setVote('up')"
     >
-      <span class="icon-[lucide--thumbs-up] size-3.5" />
+      <span class="icon-[lucide--thumbs-up] size-4" />
     </button>
     <button
       type="button"
@@ -57,48 +57,57 @@ function copyPlainText(): void {
       :aria-pressed="vote === 'down'"
       :class="
         cn(
-          'rounded-agent hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 items-center justify-center transition-colors',
+          'rounded-agent hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none',
           vote === 'down' && 'text-agent-fg'
         )
       "
       @click="setVote('down')"
     >
-      <span class="icon-[lucide--thumbs-down] size-3.5" />
+      <span class="icon-[lucide--thumbs-down] size-4" />
     </button>
-    <DropdownMenuRoot>
-      <DropdownMenuTrigger
+    <div class="flex h-6 w-14">
+      <button
+        type="button"
         :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-        class="rounded-agent hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 items-center justify-center transition-colors"
+        :class="
+          cn(
+            'rounded-l-agent hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex h-6 w-8 cursor-pointer items-center justify-center transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:outline-none',
+            copied && 'text-agent-fg'
+          )
+        "
+        @click="copyPlainText()"
       >
         <span
           :class="
             cn(
-              'size-3.5',
+              'size-4',
               copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
             )
           "
         />
-      </DropdownMenuTrigger>
-      <DropdownMenuPortal>
-        <DropdownMenuContent
-          align="start"
-          :side-offset="4"
-          class="rounded-agent border-agent-border bg-agent-surface-raised z-1100 border p-1 shadow-lg"
+      </button>
+      <DropdownMenuRoot>
+        <DropdownMenuTrigger
+          :aria-label="t('agent.copyMarkdown')"
+          class="rounded-r-agent hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent data-[state=open]:bg-agent-surface-hover data-[state=open]:text-agent-fg flex size-6 cursor-pointer items-center justify-center transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:outline-none"
         >
-          <DropdownMenuItem
-            class="text-agent-fg data-highlighted:bg-agent-surface-hover rounded-agent flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs outline-none"
-            @select="copyPlainText()"
+          <span class="icon-[lucide--chevron-down] size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuContent
+            align="start"
+            :side-offset="4"
+            class="rounded-agent bg-agent-surface-raised z-1100 h-9 w-36 -translate-x-8 p-1 shadow-lg"
           >
-            {{ t('agent.copy') }}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            class="text-agent-fg data-highlighted:bg-agent-surface-hover rounded-agent flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs outline-none"
-            @select="copy(markdown)"
-          >
-            {{ t('agent.copyMarkdown') }}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenuPortal>
-    </DropdownMenuRoot>
+            <DropdownMenuItem
+              class="text-agent-fg data-highlighted:bg-agent-surface-hover rounded-agent flex h-7 w-full cursor-pointer items-center px-2 text-xs whitespace-nowrap outline-none"
+              @select="copy(markdown)"
+            >
+              {{ t('agent.copyMarkdown') }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
+    </div>
   </div>
 </template>
