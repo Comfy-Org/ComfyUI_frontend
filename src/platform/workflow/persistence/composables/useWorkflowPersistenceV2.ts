@@ -62,6 +62,12 @@ export function useWorkflowPersistenceV2() {
   const { onUserLogout, onUserResolved } = useCurrentUser()
   const { flags } = useFeatureFlags()
   const teamWorkspaceStore = useTeamWorkspaceStore()
+  let stopWorkspaceReadinessWatcher: (() => void) | undefined
+
+  function stopPendingWorkspaceReadinessWatcher(): void {
+    stopWorkspaceReadinessWatcher?.()
+    stopWorkspaceReadinessWatcher = undefined
+  }
 
   // Run migration on module load, passing clientId for tab state migration
   migrateV1toV2(undefined, api.clientId ?? api.initialClientId ?? undefined)
@@ -139,23 +145,34 @@ export function useWorkflowPersistenceV2() {
 
   onUserLogout(() => {
     if (!isCloud) return
+    stopPendingWorkspaceReadinessWatcher()
     debouncedPersist.cancel()
     prepareWorkflowLogoutTransition()
     clearAllWorkflowStorage()
   })
   onUserResolved(() => {
     if (!isCloud) return
+    stopPendingWorkspaceReadinessWatcher()
     if (!flags.teamWorkspacesEnabled) {
       completeWorkflowLogoutTransition()
       return
     }
 
-    whenever(
-      () =>
-        teamWorkspaceStore.initState === 'ready' &&
-        teamWorkspaceStore.activeWorkspaceId !== null,
-      completeWorkflowLogoutTransition,
-      { immediate: true, once: true }
+    const isWorkspaceReady = () =>
+      teamWorkspaceStore.initState === 'ready' &&
+      teamWorkspaceStore.activeWorkspaceId !== null
+    if (isWorkspaceReady()) {
+      completeWorkflowLogoutTransition()
+      return
+    }
+
+    stopWorkspaceReadinessWatcher = whenever(
+      isWorkspaceReady,
+      () => {
+        stopWorkspaceReadinessWatcher = undefined
+        completeWorkflowLogoutTransition()
+      },
+      { once: true }
     )
   })
 
@@ -282,6 +299,7 @@ export function useWorkflowPersistenceV2() {
     api.removeEventListener('graphChanged', debouncedPersist)
     unregisterPersistenceFlush()
     debouncedPersist.cancel()
+    stopPendingWorkspaceReadinessWatcher()
   })
 
   // Restore workflow tabs states

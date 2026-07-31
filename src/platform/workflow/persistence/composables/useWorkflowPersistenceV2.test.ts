@@ -8,10 +8,7 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '../base/storageKeys'
-import {
-  prepareWorkflowWorkspaceTransition,
-  writePayload
-} from '../base/storageIO'
+import * as storageIO from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
@@ -680,7 +677,7 @@ describe('useWorkflowPersistenceV2', () => {
     )
     expect(localStorage.getItem(sourcePayloadKey)).toBeNull()
 
-    const cancelTransition = prepareWorkflowWorkspaceTransition()
+    const cancelTransition = storageIO.prepareWorkflowWorkspaceTransition()
     sessionStorage.setItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
       JSON.stringify({ id: destinationWorkspaceId, type: 'team' })
@@ -720,14 +717,44 @@ describe('useWorkflowPersistenceV2', () => {
     expect(localStorage).toHaveLength(0)
     expect(sessionStorage).toHaveLength(0)
     expect(
-      writePayload('workspace-a', 'blocked', { data: '{}', updatedAt: 1 })
+      storageIO.writePayload('workspace-a', 'blocked', {
+        data: '{}',
+        updatedAt: 1
+      })
     ).toBe(false)
 
     onUserResolved({ id: 'user-a' })
 
     expect(
-      writePayload('workspace-a', 'resumed', { data: '{}', updatedAt: 2 })
+      storageIO.writePayload('workspace-a', 'resumed', {
+        data: '{}',
+        updatedAt: 2
+      })
     ).toBe(true)
+  })
+
+  it('cancels stale workspace-readiness watchers across authentication episodes', async () => {
+    distributionMocks.isCloud = true
+    featureFlagMocks.teamWorkspacesEnabled = true
+    const completeTransitionSpy = vi.spyOn(
+      storageIO,
+      'completeWorkflowLogoutTransition'
+    )
+    mountWorkflowPersistence()
+
+    const onLogout = currentUserMocks.onUserLogout.mock.calls[0][0]
+    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+    onLogout()
+    onUserResolved({ id: 'user-b' })
+    onLogout()
+    onUserResolved({ id: 'user-c' })
+
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    teamWorkspaceStore.activeWorkspaceId = 'workspace-c'
+    teamWorkspaceStore.initState = 'ready'
+    await nextTick()
+
+    expect(completeTransitionSpy).toHaveBeenCalledOnce()
   })
 
   it('waits for workspace readiness and drops pending pre-logout edits', async () => {
