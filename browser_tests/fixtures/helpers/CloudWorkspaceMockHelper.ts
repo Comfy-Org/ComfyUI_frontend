@@ -1,4 +1,5 @@
 import type { Page, Route } from '@playwright/test'
+import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 
 import type {
   Member,
@@ -45,9 +46,10 @@ export class CloudWorkspaceMockHelper {
 
   async setup(
     members: Member[] = DEFAULT_TEAM_MEMBERS,
-    activeWorkspace: WorkspaceWithRole = TEAM_WORKSPACE
+    activeWorkspace: WorkspaceWithRole = TEAM_WORKSPACE,
+    billingStatus: BillingStatusResponse = TEAM_BILLING_STATUS
   ): Promise<MemberMockState> {
-    const state = await this.mockBoot(members, activeWorkspace)
+    const state = await this.mockBoot(members, activeWorkspace, billingStatus)
     await new CloudAuthHelper(this.page).mockAuth()
     await this.page.addInitScript((workspaceId) => {
       localStorage.setItem('Comfy.userId', 'test-user-e2e')
@@ -58,7 +60,8 @@ export class CloudWorkspaceMockHelper {
 
   private async mockBoot(
     members: Member[],
-    activeWorkspace: WorkspaceWithRole
+    activeWorkspace: WorkspaceWithRole,
+    billingStatus: BillingStatusResponse
   ): Promise<MemberMockState> {
     const state: MemberMockState = {
       members: members.map((m) => ({ ...m })),
@@ -132,7 +135,7 @@ export class CloudWorkspaceMockHelper {
     )
 
     await page.route('**/api/billing/status', (r) =>
-      r.fulfill(jsonRoute(TEAM_BILLING_STATUS))
+      r.fulfill(jsonRoute(billingStatus))
     )
     await page.route('**/api/billing/balance', (r) =>
       r.fulfill(
@@ -148,7 +151,7 @@ export class CloudWorkspaceMockHelper {
     await page.route('**/api/billing/plans', (r) =>
       r.fulfill(
         jsonRoute({
-          current_plan_slug: TEAM_PRO_PLAN.slug,
+          current_plan_slug: billingStatus.plan_slug ?? TEAM_PRO_PLAN.slug,
           plans: [TEAM_PRO_PLAN]
         })
       )

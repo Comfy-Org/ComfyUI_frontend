@@ -10,6 +10,7 @@ import enMessages from '@/locales/en/main.json'
 import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   BillingStatus,
+  BillingSubscriptionStatus,
   CurrentTeamCreditStop,
   TeamCreditStops
 } from '@/platform/workspace/api/workspaceApi'
@@ -54,7 +55,7 @@ const teamCreditStops: TeamCreditStops = {
   ]
 }
 
-const mockSubscriptionStatus = ref<'active' | 'canceled'>('active')
+const mockSubscriptionStatus = ref<BillingSubscriptionStatus>('active')
 const mockBillingStatus = ref<BillingStatus>('paid')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockHasSubscription = ref(true)
@@ -134,6 +135,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     isFreeTier: computed(() => false),
     billingStatus: mockBillingStatus,
+    subscriptionStatus: mockSubscriptionStatus,
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
     teamCreditStops: mockTeamCreditStops,
@@ -469,6 +471,28 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('heading', { name: 'Team' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows subscribe prompt for an ended Standard plan in a Team workspace', () => {
+    mockIsActiveSubscription.value = false
+    mockSubscriptionStatus.value = 'ended'
+    mockBillingStatus.value = 'inactive'
+    mockSubscriptionTier.value = 'STANDARD'
+    mockPlanSlug.value = 'standard-monthly'
+    mockHasTeamPlan.value = false
+    renderComponent()
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'This workspace is not on a subscription'
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe Now' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Standard' })
     ).not.toBeInTheDocument()
   })
 
