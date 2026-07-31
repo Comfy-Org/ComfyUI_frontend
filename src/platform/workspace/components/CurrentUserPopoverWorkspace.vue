@@ -1,6 +1,7 @@
 <!-- A popover that shows current user information and actions -->
 <template>
   <div
+    data-testid="current-user-popover"
     class="current-user-popover -m-3 w-fit max-w-96 min-w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- User Info Section -->
@@ -27,18 +28,19 @@
     <div class="relative">
       <div
         ref="workspaceSwitcherTrigger"
+        v-tooltip="{ value: workspaceName, showDelay: 300 }"
         class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
         data-testid="workspace-switcher-trigger"
         @click="toggleWorkspaceSwitcher"
       >
-        <div class="flex min-w-0 flex-1 items-center gap-2">
+        <div class="flex w-0 flex-1 items-center gap-2">
           <WorkspaceProfilePic
             class="size-6 shrink-0 text-xs"
             :workspace-name="workspaceName"
           />
-          <span class="truncate text-sm text-base-foreground">{{
-            workspaceName
-          }}</span>
+          <span class="truncate text-sm text-base-foreground">
+            {{ workspaceName }}
+          </span>
         </div>
         <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
       </div>
@@ -59,7 +61,7 @@
     <!-- Credits Section -->
 
     <div class="flex items-center gap-2 px-4 py-2">
-      <i class="icon-[lucide--component] text-sm text-amber-400" />
+      <i class="icon-[lucide--component] text-sm text-credit" />
       <Skeleton
         v-if="isLoadingBalance"
         width="4rem"
@@ -82,14 +84,13 @@
       <!-- Upgrade to add credits (free tier) -->
       <Button
         v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
-        variant="gradient"
+        variant="subscribe"
         size="sm"
         data-testid="upgrade-to-add-credits-button"
         @click="handleUpgradeToAddCredits"
       >
         {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
-      <!-- Add Credits (subscribed + personal or workspace owner only, paid tier) -->
       <Button
         v-else-if="isActiveSubscription && permissions.canTopUp"
         variant="secondary"
@@ -110,14 +111,10 @@
             : $t('workspaceSwitcher.subscribe')
         "
         size="sm"
-        button-variant="gradient"
+        button-variant="subscribe"
       />
       <Button
-        v-if="
-          showSubscribeAction &&
-          !isPersonalWorkspace &&
-          (!isCancelled || permissions.canManageSubscriptionLifecycle)
-        "
+        v-if="showSubscribeAction && !isPersonalWorkspace"
         variant="primary"
         size="sm"
         @click="handleOpenPlansAndPricing"
@@ -132,7 +129,6 @@
 
     <Divider class="mx-0 my-2" />
 
-    <!-- Plans & Pricing (PERSONAL and OWNER only) -->
     <div
       v-if="showPlansAndPricing"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
@@ -145,7 +141,6 @@
       }}</span>
     </div>
 
-    <!-- Manage Plan (PERSONAL and OWNER, only if subscribed) -->
     <div
       v-if="showManagePlan"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
@@ -306,8 +301,8 @@ const showManagePlan = computed(
 )
 const showSubscribeAction = computed(
   () =>
-    permissions.value.canManageSubscription &&
-    (!isActiveSubscription.value || isCancelled.value)
+    (isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
+    (!isActiveSubscription.value && permissions.value.canManageSubscription)
 )
 
 const handleOpenUserSettings = () => {

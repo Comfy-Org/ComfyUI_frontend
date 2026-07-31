@@ -47,6 +47,36 @@ async function startDesktop2ModelDownload(
   }
 }
 
+function openUrlInNewTab(url: string, downloadAs?: string): void {
+  const link = document.createElement('a')
+  link.href = url
+  if (downloadAs) link.download = downloadAs
+  link.target = '_blank'
+  link.rel = 'noopener noreferrer'
+  link.click()
+}
+
+export function openGatedRepoPage(url: string): void {
+  if (!isTrustedHuggingFaceUrl(url)) return
+  openUrlInNewTab(url)
+}
+
+function hasHuggingFaceHost(url: string): boolean {
+  try {
+    return new URL(url).hostname.toLowerCase() === 'huggingface.co'
+  } catch {
+    return false
+  }
+}
+
+export function isTrustedHuggingFaceUrl(url: string): boolean {
+  try {
+    return new URL(url).origin === 'https://huggingface.co'
+  } catch {
+    return false
+  }
+}
+
 /**
  * Converts a model download URL to a browsable page URL.
  * - HuggingFace: `/resolve/` → `/blob/` (file page with model info)
@@ -56,7 +86,7 @@ export function toBrowsableUrl(url: string): string {
   if (isCivitaiModelUrl(url)) {
     return url.replace('/api/download/', '/').replace('/api/v1/', '/')
   }
-  if (url.includes('huggingface.co')) {
+  if (hasHuggingFaceHost(url)) {
     return url.replace('/resolve/', '/blob/')
   }
   return url
@@ -82,12 +112,7 @@ export function downloadModel(
   }
 
   if (!isDesktop) {
-    const link = document.createElement('a')
-    link.href = model.url
-    link.download = model.name
-    link.target = '_blank'
-    link.rel = 'noopener noreferrer'
-    link.click()
+    openUrlInNewTab(model.url, model.name)
     return
   }
 
@@ -105,6 +130,11 @@ export function downloadModel(
 interface ModelMetadata {
   fileSize: number | null
   gatedRepoUrl: string | null
+}
+
+interface MetadataFetchResult {
+  metadata: ModelMetadata
+  cacheable: boolean
 }
 
 interface CivitaiModelFile {
@@ -150,28 +180,46 @@ async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
 }
 
 const GATED_STATUS_CODES = new Set([401, 403, 451])
+const HUGGING_FACE_GATED_ERROR_CODE = 'GatedRepo'
 
-async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
+async function fetchHeadMetadata(url: string): Promise<MetadataFetchResult> {
   try {
+    // Deliberately uncredentialed HEADs prevent re-checks from clearing gating.
     const response = await fetch(url, { method: 'HEAD' })
     if (!response.ok) {
       if (
-        url.includes('huggingface.co') &&
-        GATED_STATUS_CODES.has(response.status)
+        isTrustedHuggingFaceUrl(url) &&
+        GATED_STATUS_CODES.has(response.status) &&
+        response.headers.get('x-error-code') === HUGGING_FACE_GATED_ERROR_CODE
       ) {
-        return { fileSize: null, gatedRepoUrl: downloadUrlToHfRepoUrl(url) }
+        return {
+          metadata: {
+            fileSize: null,
+            gatedRepoUrl: downloadUrlToHfRepoUrl(url)
+          },
+          cacheable: true
+        }
       }
-      return { fileSize: null, gatedRepoUrl: null }
+      return {
+        metadata: { fileSize: null, gatedRepoUrl: null },
+        cacheable: false
+      }
     }
     const size = response.headers.get('content-length')
     const parsedSize = size ? parseInt(size, 10) : null
     return {
-      fileSize:
-        parsedSize !== null && !Number.isNaN(parsedSize) ? parsedSize : null,
-      gatedRepoUrl: null
+      metadata: {
+        fileSize:
+          parsedSize !== null && !Number.isNaN(parsedSize) ? parsedSize : null,
+        gatedRepoUrl: null
+      },
+      cacheable: true
     }
   } catch {
-    return { fileSize: null, gatedRepoUrl: null }
+    return {
+      metadata: { fileSize: null, gatedRepoUrl: null },
+      cacheable: false
+    }
   }
 }
 
@@ -187,14 +235,19 @@ export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
   if (existing) return existing
 
   const promise = (async () => {
-    const metadata = isCivitaiModelUrl(url)
-      ? await fetchCivitaiMetadata(url)
-      : await fetchHeadMetadata(url)
-
-    if (isComplete(metadata)) {
-      metadataCache.set(url, metadata)
+    if (isCivitaiModelUrl(url)) {
+      const metadata = await fetchCivitaiMetadata(url)
+      if (isComplete(metadata)) {
+        metadataCache.set(url, metadata)
+      }
+      return metadata
     }
-    return metadata
+
+    const result = await fetchHeadMetadata(url)
+    if (result.cacheable) {
+      metadataCache.set(url, result.metadata)
+    }
+    return result.metadata
   })()
 
   inflight.set(url, promise)

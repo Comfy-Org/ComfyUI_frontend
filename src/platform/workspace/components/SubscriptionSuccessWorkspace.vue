@@ -28,7 +28,7 @@
           </span>
         </div>
         <div class="flex items-center gap-1 text-sm text-muted-foreground">
-          <i class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400" />
+          <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
           <span>{{ displayCredits }} {{ $t('subscription.perMonth') }}</span>
         </div>
       </div>

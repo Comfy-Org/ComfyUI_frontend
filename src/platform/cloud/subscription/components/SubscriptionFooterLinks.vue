@@ -31,6 +31,7 @@
     </div>
 
     <Button
+      v-if="showInvoiceHistory"
       variant="muted-textonly"
       class="text-xs text-text-secondary"
       @click="handleInvoiceHistory"
@@ -47,6 +48,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 
+const { showInvoiceHistory = true } = defineProps<{
+  showInvoiceHistory?: boolean
+}>()
+
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { manageSubscription } = useBillingContext()
@@ -55,6 +60,7 @@ const { isLoadingSupport, handleMessageSupport, handleLearnMoreClick } =
   useSubscriptionActions()
 
 async function handleInvoiceHistory() {
+  if (!showInvoiceHistory) return
   await manageSubscription()
 }
 

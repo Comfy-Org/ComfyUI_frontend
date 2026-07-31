@@ -22,19 +22,34 @@ import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import SectionWidgets from './SectionWidgets.vue'
 
+const { mockGetInputSpecForWidget, mockTrackUiButtonClicked } = vi.hoisted(
+  () => ({
+    mockGetInputSpecForWidget: vi.fn(),
+    mockTrackUiButtonClicked: vi.fn()
+  })
+)
+
 const setDirty = vi.fn()
+const getNodeById = vi.fn()
+const animateToBounds = vi.fn()
 const selectedItems: unknown[] = []
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
-    canvas: { setDirty },
+    canvas: { setDirty, graph: { getNodeById }, animateToBounds },
     selectedItems
   })
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({
-    getInputSpecForWidget: vi.fn()
+    getInputSpecForWidget: mockGetInputSpecForWidget
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackUiButtonClicked: mockTrackUiButtonClicked
   })
 }))
 
@@ -63,6 +78,7 @@ const i18n = createI18n({
       rightSidePanel: {
         inputs: 'Inputs',
         resetAllParameters: 'Reset all',
+        locateNode: 'Locate',
         seeError: 'See error'
       }
     }
@@ -123,6 +139,10 @@ describe('SectionWidgets', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     setDirty.mockClear()
+    getNodeById.mockReset()
+    animateToBounds.mockClear()
+    mockGetInputSpecForWidget.mockReset()
+    mockTrackUiButtonClicked.mockClear()
     selectedItems.length = 0
   })
 
@@ -170,5 +190,81 @@ describe('SectionWidgets', () => {
       'real_model.safetensors',
       { min: undefined, max: undefined }
     )
+  })
+
+  function createSimpleNodeWithWidget(): {
+    node: LGraphNode
+    widget: IBaseWidget
+  } {
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.id = toNodeId(7)
+    const widget = node.addWidget(
+      'combo',
+      'ckpt_name',
+      'model.safetensors',
+      () => {},
+      { values: ['model.safetensors'] }
+    )
+    return { node, widget }
+  }
+
+  it('tracks and locates the node when the Locate button is clicked', async () => {
+    const { node, widget } = createSimpleNodeWithWidget()
+    const boundingRect = [0, 0, 100, 100]
+    getNodeById.mockReturnValue({ boundingRect })
+    const user = userEvent.setup()
+
+    render(SectionWidgets, {
+      props: {
+        widgets: [{ widget, node }],
+        showLocateButton: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WidgetItem: WidgetItemStub,
+          PropertiesAccordionItem: PropertiesAccordionItemStub
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Locate' }))
+
+    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'right_side_panel_locate_node_clicked',
+      element_group: 'right_side_panel_nodes'
+    })
+    expect(getNodeById).toHaveBeenCalledWith(node.id)
+    expect(animateToBounds).toHaveBeenCalledWith(boundingRect)
+  })
+
+  it('tracks and resets all widgets when the Reset all button is clicked', async () => {
+    const { node, widget } = createSimpleNodeWithWidget()
+    mockGetInputSpecForWidget.mockReturnValue({
+      type: 'COMBO',
+      default: 'default_model.safetensors'
+    })
+    const user = userEvent.setup()
+
+    render(SectionWidgets, {
+      props: {
+        widgets: [{ widget, node }]
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WidgetItem: WidgetItemStub,
+          PropertiesAccordionItem: PropertiesAccordionItemStub
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Reset all' }))
+
+    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'right_side_panel_reset_all_parameters_clicked',
+      element_group: 'right_side_panel_nodes'
+    })
+    expect(widget.value).toBe('default_model.safetensors')
   })
 })

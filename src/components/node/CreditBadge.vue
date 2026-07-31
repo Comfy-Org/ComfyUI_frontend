@@ -1,5 +1,6 @@
 <template>
   <span
+    data-testid="credit-badge-required"
     :class="
       cn(
         'flex h-5 shrink-0 items-center bg-component-node-widget-background p-1 text-xs',
@@ -12,7 +13,8 @@
   </span>
   <span
     v-if="rest"
-    class="-ml-2.5 flex h-5 max-w-max min-w-0 grow basis-0 items-center truncate rounded-r-full bg-component-node-widget-background text-xs"
+    data-testid="credit-badge-rest"
+    class="-ml-1 flex h-5 max-w-max min-w-0 grow basis-0 items-center truncate rounded-r-full bg-component-node-widget-background text-xs"
   >
     <span class="pr-2" v-text="rest" />
   </span>

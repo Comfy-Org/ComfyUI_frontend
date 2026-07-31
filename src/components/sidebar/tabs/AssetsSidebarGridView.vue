@@ -13,7 +13,8 @@
           :selected="isSelected(item.asset.id)"
           :show-output-count="showOutputCount(item.asset)"
           :output-count="getOutputCount(item.asset)"
-          @click="emit('select-asset', item.asset)"
+          @select="emit('select-asset', item.asset)"
+          @toggle-selection="emit('toggle-asset-selection', item.asset)"
           @context-menu="emit('context-menu', $event, item.asset)"
           @zoom="emit('zoom', item.asset)"
           @output-count-click="emit('output-count-click', item.asset)"
@@ -28,17 +29,22 @@ import { computed } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import { getMediaAssetGridColumns } from '@/platform/assets/components/mediaAssetViewOptions'
+import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-const { assets, isSelected, showOutputCount, getOutputCount } = defineProps<{
-  assets: AssetItem[]
-  isSelected: (assetId: string) => boolean
-  showOutputCount: (asset: AssetItem) => boolean
-  getOutputCount: (asset: AssetItem) => number
-}>()
+const { assets, isSelected, showOutputCount, getOutputCount, gridMode } =
+  defineProps<{
+    assets: AssetItem[]
+    isSelected: (assetId: string) => boolean
+    showOutputCount: (asset: AssetItem) => boolean
+    getOutputCount: (asset: AssetItem) => number
+    gridMode: MediaAssetGridMode
+  }>()
 
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem): void
+  (e: 'toggle-asset-selection', asset: AssetItem): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void
   (e: 'zoom', asset: AssetItem): void
@@ -54,10 +60,10 @@ const assetItems = computed<AssetGridItem[]>(() =>
   }))
 )
 
-const gridStyle = {
+const gridStyle = computed(() => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 30vw), 1fr))',
+  gridTemplateColumns: getMediaAssetGridColumns(gridMode),
   padding: '0 0.5rem',
   gap: '0.5rem'
-}
+}))
 </script>

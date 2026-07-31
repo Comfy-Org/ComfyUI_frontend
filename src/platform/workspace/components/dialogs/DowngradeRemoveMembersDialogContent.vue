@@ -22,7 +22,7 @@
     <!-- Body -->
     <div class="flex flex-col gap-4 p-4">
       <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('subscription.downgrade.body') }}
+        {{ bodyText }}
       </p>
       <label class="flex flex-col gap-2 text-sm text-muted-foreground">
         {{ $t('subscription.downgrade.confirmationPrompt', { phrase }) }}
@@ -57,17 +57,31 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { planName, planSlug, onConfirm } = defineProps<{
+const {
+  planName,
+  planSlug,
+  requiresRemoval = false,
+  requiresReactivation = false,
+  chargeCents = 0,
+  onConfirm
+} = defineProps<{
   planName: string
   planSlug: string
-  onConfirm: (planSlug: string) => Promise<void>
+  /** Members are being removed on this change. */
+  requiresRemoval?: boolean
+  /** Subscription is cancelled and this change resumes it; the BE requires
+   *  explicit confirmation of the charge or it rejects the change. */
+  requiresReactivation?: boolean
+  chargeCents?: number
+  onConfirm: (planSlug: string, confirmReactivation: boolean) => Promise<void>
 }>()
 
 const { t } = useI18n()
@@ -79,7 +93,32 @@ const phrase = t('subscription.downgrade.confirmationPhrase')
 const typedValue = ref('')
 const isLoading = ref(false)
 
+// A drift-recovered dialog (see dialogService's onConfirm handler) updates
+// these props in place with corrected values; the typed acknowledgment was
+// for the PRIOR amount/status and must not silently carry forward to a
+// charge the user never actually saw.
+watch([() => requiresReactivation, () => chargeCents], () => {
+  typedValue.value = ''
+})
+
 const isConfirmed = computed(() => typedValue.value === phrase)
+
+const chargeDisplay = computed(
+  () => `$${formatUsdFromCents({ cents: chargeCents })}`
+)
+const bodyText = computed(() => {
+  if (requiresRemoval && requiresReactivation) {
+    return t('subscription.downgrade.bodyRemovalAndReactivation', {
+      amount: chargeDisplay.value
+    })
+  }
+  if (requiresReactivation) {
+    return t('subscription.downgrade.bodyReactivation', {
+      amount: chargeDisplay.value
+    })
+  }
+  return t('subscription.downgrade.body')
+})
 
 function onClose() {
   if (isLoading.value) return
@@ -90,7 +129,7 @@ async function onConfirmDowngrade() {
   if (!isConfirmed.value || isLoading.value) return
   isLoading.value = true
   try {
-    await onConfirm(planSlug)
+    await onConfirm(planSlug, requiresReactivation)
     dialogStore.closeDialog({ key: 'downgrade-remove-members' })
   } catch (error) {
     toast.add({

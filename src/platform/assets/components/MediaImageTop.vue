@@ -1,7 +1,6 @@
 <template>
   <div
     class="relative size-full overflow-hidden rounded-sm bg-modal-card-placeholder-background"
-    @dblclick="emit('view')"
   >
     <img
       v-if="!error"
@@ -32,7 +31,6 @@ const { asset } = defineProps<{
 
 const emit = defineEmits<{
   'image-loaded': [width: number, height: number]
-  view: []
 }>()
 
 const { state, error, isReady } = useImageQuiet({

@@ -21,6 +21,7 @@ const {
   mockOpenWorkflows,
   mockShowTextPreview,
   mockTrackExecutionError,
+  mockTrackExecutionOutcome,
   mockTrackExecutionSuccess,
   mockTrackSharedWorkflowRun
 } = await vi.hoisted(async () => {
@@ -33,6 +34,7 @@ const {
     mockOpenWorkflows: shallowRef<{ path: string }[]>([]),
     mockShowTextPreview: vi.fn(),
     mockTrackExecutionError: vi.fn(),
+    mockTrackExecutionOutcome: vi.fn(),
     mockTrackExecutionSuccess: vi.fn(),
     mockTrackSharedWorkflowRun: vi.fn()
   }
@@ -42,6 +44,10 @@ const mockAppModeState = vi.hoisted(() => ({
   mode: { value: 'graph' },
   isAppMode: { value: false }
 }))
+
+const defaultWorkflowExecutionIntent = {
+  trigger_source: 'unknown'
+} as const
 
 vi.mock('@/composables/useAppMode', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>
@@ -92,6 +98,7 @@ vi.mock('@/platform/distribution/types', async () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackExecutionError: mockTrackExecutionError,
+    trackExecutionOutcome: mockTrackExecutionOutcome,
     trackExecutionSuccess: mockTrackExecutionSuccess,
     trackSharedWorkflowRun: mockTrackSharedWorkflowRun
   })
@@ -614,6 +621,8 @@ describe('useExecutionStore - workflowStatus', () => {
       nodes: ['1'],
       id: jobId,
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
+      startTime: 42,
+      submissionAcceptedAt: 62,
       workflow
     })
   }
@@ -631,6 +640,7 @@ describe('useExecutionStore - workflowStatus', () => {
     callStoreJob('job-1', workflowA)
     fireExecutionStart('job-1')
 
+    expect(mockTrackExecutionOutcome).not.toHaveBeenCalled()
     expect(store.getWorkflowStatus(workflowA)).toBe('running')
   })
 
@@ -643,20 +653,49 @@ describe('useExecutionStore - workflowStatus', () => {
   })
 
   it('flushes terminal completed when WS finishes before storeJob', () => {
-    // Instant-finish race: WS fires start+success before HTTP response.
-    fireExecutionStart('job-1')
-    fireExecutionSuccess('job-1')
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
 
-    callStoreJob('job-1', workflowA)
-    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+    try {
+      fireExecutionStart('job-1')
+      now.mockReturnValue(142)
+      fireExecutionSuccess('job-1')
+
+      callStoreJob('job-1', workflowA)
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: true,
+        failureReason: ''
+      })
+      expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+      expect(store.queuedJobs['job-1']).toBeUndefined()
+    } finally {
+      now.mockRestore()
+    }
   })
 
   it('flushes terminal failed when WS errors before storeJob', () => {
-    // Invalid-workflow path: execution_error fires before HTTP response.
-    fireExecutionError('job-1')
+    const now = vi.spyOn(performance, 'now').mockReturnValue(82)
 
-    callStoreJob('job-1', workflowA)
-    expect(store.getWorkflowStatus(workflowA)).toBe('failed')
+    try {
+      fireExecutionError('job-1')
+
+      callStoreJob('job-1', workflowA)
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        endTime: 82,
+        success: false,
+        failureReason: 'execution_failed'
+      })
+      expect(store.getWorkflowStatus(workflowA)).toBe('failed')
+    } finally {
+      now.mockRestore()
+    }
   })
 
   it('drops pending status on interrupt before storeJob', () => {
@@ -667,28 +706,154 @@ describe('useExecutionStore - workflowStatus', () => {
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 
-  it('sets completed on execution_success', () => {
-    callStoreJob('job-1', workflowA)
-    fireExecutionStart('job-1')
+  it('tracks every stage when execution succeeds', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
+
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      now.mockReturnValue(142)
+      fireExecutionSuccess('job-1')
+
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: true,
+        failureReason: ''
+      })
+      expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+    } finally {
+      now.mockRestore()
+    }
+  })
+
+  it('tracks a workflow outcome only once for duplicate terminal events', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
+
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      now.mockReturnValue(142)
+      fireExecutionSuccess('job-1')
+      fireExecutionSuccess('job-1')
+
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledOnce()
+    } finally {
+      now.mockRestore()
+    }
+  })
+
+  it('keeps timing metadata until success after executing clears', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
+
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      apiEventHandlers.get('executing')!(
+        new CustomEvent('executing', { detail: null })
+      )
+      now.mockReturnValue(142)
+      fireExecutionSuccess('job-1')
+
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: true,
+        failureReason: ''
+      })
+    } finally {
+      now.mockRestore()
+    }
+  })
+
+  it('tracks completion with the workflow context captured for the job', () => {
+    const workflowContext = {
+      workflow_type: 'custom',
+      view_mode: 'graph',
+      execution_scope: 'partial',
+      total_node_count: 42,
+      executable_node_count: 12,
+      custom_node_count: 3,
+      api_node_count: 1,
+      subgraph_count: 2
+    } as const
+
+    store.storeJob({
+      nodes: ['1'],
+      id: 'job-1',
+      promptOutput: { '1': createPromptNode('Node', 'TestNode') },
+      startTime: 42,
+      workflow: workflowA,
+      workflowContext,
+      workflowExecutionIntent: {
+        trigger_source: 'button'
+      }
+    })
     fireExecutionSuccess('job-1')
 
-    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startTime: 42,
+        success: true,
+        failureReason: '',
+        trigger_source: 'button',
+        workflowContext
+      })
+    )
   })
 
-  it('sets failed on execution_error', () => {
-    callStoreJob('job-1', workflowA)
-    fireExecutionStart('job-1')
-    fireExecutionError('job-1')
+  it('tracks the execution stage when execution fails', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
 
-    expect(store.getWorkflowStatus(workflowA)).toBe('failed')
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      now.mockReturnValue(142)
+      fireExecutionError('job-1')
+
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: false,
+        failureReason: 'execution_failed'
+      })
+      expect(store.getWorkflowStatus(workflowA)).toBe('failed')
+    } finally {
+      now.mockRestore()
+    }
   })
 
-  it('skips status badge on user-initiated interrupt', () => {
-    callStoreJob('job-1', workflowA)
-    fireExecutionStart('job-1')
-    fireExecutionInterrupted('job-1')
+  it('tracks an interrupted execution without showing a failed badge', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
 
-    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      now.mockReturnValue(142)
+      fireExecutionInterrupted('job-1')
+
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: false,
+        failureReason: 'execution_interrupted'
+      })
+      expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+    } finally {
+      now.mockRestore()
+    }
   })
 
   it('evicts the oldest pending status once the buffer cap is exceeded', () => {
@@ -749,27 +914,42 @@ describe('useExecutionStore - workflowStatus', () => {
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 
-  it('drops service-level errors without writing failed', () => {
-    callStoreJob('job-1', workflowA)
-    fireExecutionStart('job-1')
-    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+  it('tracks service-level failures without writing failed', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
 
-    // Service-level error: empty node_id triggers the short-circuit branch.
-    const handler = apiEventHandlers.get('execution_error')
-    handler!(
-      new CustomEvent('execution_error', {
-        detail: {
-          prompt_id: 'job-1',
-          node_id: '',
-          node_type: '',
-          exception_message: 'Job has stagnated',
-          exception_type: 'StagnationError',
-          traceback: []
-        }
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      expect(store.getWorkflowStatus(workflowA)).toBe('running')
+
+      now.mockReturnValue(142)
+      const handler = apiEventHandlers.get('execution_error')
+      handler!(
+        new CustomEvent('execution_error', {
+          detail: {
+            prompt_id: 'job-1',
+            node_id: '',
+            node_type: '',
+            exception_message: 'Job has stagnated',
+            exception_type: 'StagnationError',
+            traceback: []
+          }
+        })
+      )
+
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: false,
+        failureReason: 'execution_failed'
       })
-    )
-
-    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+      expect(store.getWorkflowStatus(workflowA)).toBe('running')
+    } finally {
+      now.mockRestore()
+    }
   })
 
   it('drops pending failed when service-level error fires before storeJob', () => {
@@ -935,7 +1115,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
     })
 
     it('should return node error by locator ID for root graph node', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -948,7 +1128,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
       const result = store.getNodeErrors(
         createNodeLocatorId(null, toNodeId(123))
@@ -974,7 +1154,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123:456': {
           errors: [
             {
@@ -987,7 +1167,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'SubgraphNode',
           dependent_outputs: []
         }
-      }
+      })
 
       const locatorId = createNodeLocatorId(subgraphUuid, toNodeId(456))
       const result = store.getNodeErrors(locatorId)
@@ -1006,7 +1186,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
     })
 
     it('should return false when node has errors but slot is not mentioned', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -1019,7 +1199,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
       const result = store.slotHasError(
         createNodeLocatorId(null, toNodeId(123)),
@@ -1029,7 +1209,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
     })
 
     it('should return true when slot has error', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -1042,7 +1222,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
       const result = store.slotHasError(
         createNodeLocatorId(null, toNodeId(123)),
@@ -1052,7 +1232,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
     })
 
     it('should return true when multiple errors exist for the same slot', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -1071,7 +1251,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
       const result = store.slotHasError(
         createNodeLocatorId(null, toNodeId(123)),
@@ -1081,7 +1261,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
     })
 
     it('should handle errors without extra_info', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -1093,7 +1273,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
       const result = store.slotHasError(
         createNodeLocatorId(null, toNodeId(123)),
@@ -1320,7 +1500,10 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
       expect(store.activeJobId).toBe('job-1')
-      expect(store.queuedJobs['job-1']).toEqual({ nodes: {} })
+      expect(store.queuedJobs['job-1']).toEqual({
+        nodes: {},
+        executionStartedAt: expect.any(Number)
+      })
     })
 
     it('clears transient errors while preserving validation errors', () => {
@@ -1339,7 +1522,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
           ]
         }
       }
-      errorStore.lastExecutionError = {
+      errorStore.recordExecutionError({
         prompt_id: 'old-job',
         timestamp: 0,
         node_id: '1',
@@ -1348,13 +1531,13 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         exception_message: 'boom',
         exception_type: 'RuntimeError',
         traceback: []
-      }
-      errorStore.lastPromptError = {
+      })
+      errorStore.recordPromptError({
         type: 'old-error',
         message: 'old prompt error',
         details: ''
-      }
-      errorStore.lastNodeErrors = nodeErrors
+      })
+      errorStore.recordNodeErrors(nodeErrors)
       errorStore.showErrorOverlay()
 
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })

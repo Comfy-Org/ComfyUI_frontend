@@ -15,6 +15,13 @@ All releases use `release-version-bump.yaml`. Effects differ by bump type:
 and `cloud/1.41`, branched from the commit _before_ the bump. Nightly patch
 bumps on `main` are convenience snapshots — no branches created.
 
+The minor bump is scheduled automatically: `release-version-bump.yaml` runs a
+**minor** bump on `main` every Monday 20:00 UTC and enables auto-merge on the
+resulting `version-bump-*` PR (marked with the `weekly-release-cut` label, which
+exempts it from the nightly stale-PR closer), so once its checks pass the merge
+triggers `release-branch-create.yaml` and the `core/` + `cloud/` cut is
+hands-off. The separate nightly `0 0 * * *` cron stays a **patch** bump.
+
 **Patch on `core/X.Y`**: publishes a hotfix draft release. Must not be marked
 "latest" so `main` stays current.
 
@@ -44,11 +51,12 @@ Merged PRs with the `Release` label trigger `release-draft-create.yaml`,
 publishing to GitHub Releases (`dist.zip`), PyPI (`comfyui-frontend-package`),
 and npm (`@comfyorg/comfyui-frontend-types`).
 
-## Bi-weekly ComfyUI Integration
+## Weekly ComfyUI Integration
 
-`release-biweekly-comfyui.yaml` runs every other Monday — if the next `core/`
+`release-biweekly-comfyui.yaml` runs every Monday — if the next `core/`
 branch has unreleased commits, it triggers a patch bump and drafts a PR to
-`Comfy-Org/ComfyUI` updating `requirements.txt`.
+`Comfy-Org/ComfyUI` updating `requirements.txt`. (Filename retains the
+`biweekly` name for run history; the cadence is now weekly.)
 
 ## Workflows
 
@@ -57,6 +65,6 @@ branch has unreleased commits, it triggers a patch bump and drafts a PR to
 | `release-version-bump.yaml`     | Bump version, create Release PR                  |
 | `release-draft-create.yaml`     | Build + publish to GitHub/PyPI/npm               |
 | `release-branch-create.yaml`    | Create `core/` + `cloud/` branches (minor/major) |
-| `release-biweekly-comfyui.yaml` | Auto-patch + ComfyUI requirements PR             |
+| `release-biweekly-comfyui.yaml` | Weekly auto-patch + ComfyUI requirements PR      |
 | `pr-backport.yaml`              | Cherry-pick fixes to stable branches             |
 | `cloud-backport-tag.yaml`       | Tag cloud branch merges                          |

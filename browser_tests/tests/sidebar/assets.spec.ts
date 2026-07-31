@@ -258,13 +258,13 @@ test.describe('Assets sidebar - grid view display', () => {
 })
 
 // ==========================================================================
-// 4. View mode toggle (grid <-> list)
+// 4. View mode
 // ==========================================================================
 
-test.describe('Assets sidebar - view mode toggle', () => {
+test.describe('Assets sidebar - view mode', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles([])
+    await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
     await comfyPage.setup()
   })
 
@@ -282,7 +282,7 @@ test.describe('Assets sidebar - view mode toggle', () => {
     await expect(tab.listViewItems.first()).toBeVisible()
   })
 
-  test('Can switch back to grid view', async ({ comfyPage }) => {
+  test('Can switch from list to large grid', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
@@ -290,10 +290,54 @@ test.describe('Assets sidebar - view mode toggle', () => {
     await tab.listViewOption.click()
     await expect(tab.listViewItems.first()).toBeVisible()
 
-    await tab.gridViewOption.click()
+    await tab.gridLargeOption.click()
     await tab.waitForAssets()
 
     await expect(tab.assetCards.first()).toBeVisible()
+  })
+
+  test('Small grid remains active across asset views', async ({
+    comfyPage
+  }) => {
+    await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
+
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    const largeCardWidth = await tab.getFirstGridItemWidth()
+
+    await tab.openSettingsMenu()
+    await tab.gridSmallOption.click()
+
+    await expect
+      .poll(() => tab.getFirstGridItemWidth())
+      .toBeLessThan(largeCardWidth)
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() =>
+          localStorage.getItem('Comfy.Assets.Sidebar.ViewMode')
+        )
+      )
+      .toBe('grid-small')
+
+    await tab.switchToImported()
+
+    await expect(tab.assetCards.first()).toBeVisible()
+    await expect
+      .poll(() => tab.getFirstGridItemWidth())
+      .toBeLessThan(largeCardWidth)
+
+    await tab.switchToGenerated()
+    await tab.assetCards
+      .first()
+      .getByRole('button', { name: 'See more outputs' })
+      .click()
+
+    await expect(tab.backToAssetsButton).toBeVisible()
+    await expect.poll(() => tab.assetCards.count()).toBe(2)
+    await expect
+      .poll(() => tab.getFirstGridItemWidth())
+      .toBeLessThan(largeCardWidth)
   })
 })
 
@@ -872,7 +916,8 @@ test.describe('Assets sidebar - settings menu', () => {
     await tab.openSettingsMenu()
 
     await expect(tab.listViewOption).toBeVisible()
-    await expect(tab.gridViewOption).toBeVisible()
+    await expect(tab.gridSmallOption).toBeVisible()
+    await expect(tab.gridLargeOption).toBeVisible()
   })
 })
 

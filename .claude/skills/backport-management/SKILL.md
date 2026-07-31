@@ -212,7 +212,7 @@ git fetch origin TARGET_BRANCH
 # Quick smoke check: does the branch build?
 git worktree add /tmp/verify-TARGET origin/TARGET_BRANCH
 cd /tmp/verify-TARGET
-source ~/.nvm/nvm.sh && nvm use 24 && pnpm install && pnpm typecheck && pnpm test:unit
+source .agents/resume && pnpm install && pnpm typecheck && pnpm test:unit
 git worktree remove /tmp/verify-TARGET --force
 ```
 

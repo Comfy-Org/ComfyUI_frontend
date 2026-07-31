@@ -7,7 +7,13 @@ import type {
   JobListItem,
   JobStatus
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   TaskItemImpl,
   useQueueSettingsStore,
@@ -24,16 +30,6 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => null
-}))
-
-vi.mock('@/workbench/extensions/manager/utils/graphHasMissingNodes', () => ({
-  graphHasMissingNodes: () => false
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: {
-    rootGraph: {}
-  }
 }))
 
 vi.mock('@/stores/workspaceStore', () => ({
@@ -62,7 +58,7 @@ const i18n = createI18n({
         stopRunInstantTooltip: 'Stop running',
         runWorkflow: 'Run workflow',
         runWorkflowFront: 'Run workflow front',
-        runWorkflowDisabled: 'Run workflow disabled'
+        runWorkflowMissingResources: 'Workflow contains missing resources'
       }
     }
   }
@@ -79,6 +75,61 @@ function createTask(id: string, status: JobStatus): TaskItemImpl {
   return new TaskItemImpl(job)
 }
 
+function getQueueButtonIcon() {
+  return screen.getByTestId('queue-button-icon')
+}
+
+const missingModelCandidate: MissingModelCandidate = {
+  nodeId: '1',
+  nodeType: 'CheckpointLoaderSimple',
+  widgetName: 'ckpt_name',
+  isAssetSupported: false,
+  name: 'missing.safetensors',
+  isMissing: true
+}
+
+const missingMediaCandidate: MissingMediaCandidate = {
+  nodeId: '2',
+  nodeType: 'LoadImage',
+  widgetName: 'image',
+  mediaType: 'image',
+  name: 'missing.png',
+  isMissing: true
+}
+
+const missingResourceCases = [
+  {
+    label: 'nodes',
+    setMissing: () => {
+      useMissingNodesErrorStore().missingNodesError = {
+        message: 'Missing nodes',
+        nodeTypes: ['MissingNode']
+      }
+    },
+    clearMissing: () => {
+      useMissingNodesErrorStore().missingNodesError = null
+    }
+  },
+  {
+    label: 'models',
+    setMissing: () => {
+      useMissingModelStore().missingModelCandidates = [missingModelCandidate]
+    },
+    clearMissing: () => {
+      useMissingModelStore().missingModelCandidates = null
+    }
+  },
+  {
+    label: 'media',
+    setMissing: () => {
+      useMissingMediaStore().missingMediaCandidates = [missingMediaCandidate]
+    },
+    clearMissing: () => {
+      useMissingMediaStore().missingMediaCandidates = null
+    }
+  }
+]
+
 const stubs = {
   BatchCountEdit: BatchCountEditStub,
   DropdownMenuRoot: { template: '<div><slot /></div>' },
@@ -89,7 +140,10 @@ const stubs = {
 }
 
 function renderQueueButton() {
-  const pinia = createTestingPinia({ createSpy: vi.fn })
+  const pinia = createTestingPinia({
+    createSpy: vi.fn,
+    stubActions: (actionName) => actionName !== 'recordPromptError'
+  })
   const user = userEvent.setup()
 
   const result = render(ComfyQueueButton, {
@@ -112,6 +166,35 @@ describe('ComfyQueueButton', () => {
 
     expect(controls[0]).toHaveAttribute('data-testid', 'batch-count-edit')
     expect(controls[1]).toHaveAttribute('data-testid', 'queue-button')
+  })
+
+  it.for(missingResourceCases)(
+    'clears the warning icon when missing $label are resolved',
+    async ({ setMissing, clearMissing }) => {
+      renderQueueButton()
+
+      setMissing()
+      await nextTick()
+
+      expect(getQueueButtonIcon()).toHaveClass('icon-[lucide--triangle-alert]')
+
+      clearMissing()
+      await nextTick()
+
+      expect(getQueueButtonIcon()).toHaveClass('icon-[lucide--play]')
+    }
+  )
+
+  it('keeps the play icon for non-missing errors', async () => {
+    renderQueueButton()
+    useExecutionErrorStore().recordPromptError({
+      type: 'execution',
+      message: 'Failed to queue',
+      details: ''
+    })
+    await nextTick()
+
+    expect(getQueueButtonIcon()).toHaveClass('icon-[lucide--play]')
   })
 
   it('keeps the run instant presentation while idle even with active jobs', async () => {

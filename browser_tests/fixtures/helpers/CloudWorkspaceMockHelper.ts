@@ -1,6 +1,9 @@
 import type { Page, Route } from '@playwright/test'
 
-import type { Member } from '@/platform/workspace/api/workspaceApi'
+import type {
+  Member,
+  WorkspaceWithRole
+} from '@/platform/workspace/api/workspaceApi'
 
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import {
@@ -41,18 +44,22 @@ export class CloudWorkspaceMockHelper {
   constructor(private readonly page: Page) {}
 
   async setup(
-    members: Member[] = DEFAULT_TEAM_MEMBERS
+    members: Member[] = DEFAULT_TEAM_MEMBERS,
+    activeWorkspace: WorkspaceWithRole = TEAM_WORKSPACE
   ): Promise<MemberMockState> {
-    const state = await this.mockBoot(members)
+    const state = await this.mockBoot(members, activeWorkspace)
     await new CloudAuthHelper(this.page).mockAuth()
-    await this.page.addInitScript(() => {
+    await this.page.addInitScript((workspaceId) => {
       localStorage.setItem('Comfy.userId', 'test-user-e2e')
-      localStorage.setItem('Comfy.Workspace.LastWorkspaceId', 'ws-team')
-    })
+      localStorage.setItem('Comfy.Workspace.LastWorkspaceId', workspaceId)
+    }, activeWorkspace.id)
     return state
   }
 
-  private async mockBoot(members: Member[]): Promise<MemberMockState> {
+  private async mockBoot(
+    members: Member[],
+    activeWorkspace: WorkspaceWithRole
+  ): Promise<MemberMockState> {
     const state: MemberMockState = {
       members: members.map((m) => ({ ...m })),
       patches: []
@@ -93,11 +100,11 @@ export class CloudWorkspaceMockHelper {
     await page.route('**/api/auth/session', (r) =>
       r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
     )
-    await mockWorkspaceTokenMint(page, TEAM_WORKSPACE)
+    await mockWorkspaceTokenMint(page, activeWorkspace)
     await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
     await page.route('**/api/workspaces', (r) =>
-      r.fulfill(jsonRoute({ workspaces: [TEAM_WORKSPACE] }))
+      r.fulfill(jsonRoute({ workspaces: [activeWorkspace] }))
     )
 
     await page.route('**/api/workspace/members**', (route: Route) => {
@@ -140,7 +147,10 @@ export class CloudWorkspaceMockHelper {
     )
     await page.route('**/api/billing/plans', (r) =>
       r.fulfill(
-        jsonRoute({ current_plan_slug: 'pro-monthly', plans: [TEAM_PRO_PLAN] })
+        jsonRoute({
+          current_plan_slug: TEAM_PRO_PLAN.slug,
+          plans: [TEAM_PRO_PLAN]
+        })
       )
     )
 

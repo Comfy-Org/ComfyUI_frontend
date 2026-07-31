@@ -232,7 +232,7 @@ useExtensionService().registerExtension({
       tooltip:
         'Enables the 3D Viewer (Beta) for selected nodes. This feature allows you to visualize and interact with 3D models directly within the full size 3d viewer.',
       type: 'boolean',
-      defaultValue: false,
+      defaultValue: true,
       experimental: true
     },
     {

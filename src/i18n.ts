@@ -155,7 +155,10 @@ export const i18n = createI18n({
 
 /** Convenience shorthand: i18n.global */
 export const t: (typeof i18n.global)['t'] = i18n.global.t
-export const te: (typeof i18n.global)['te'] = i18n.global.te
+// vue-i18n 11's te() consults the fallback locale; default to the active
+// locale to preserve the v9 behavior our fallback paths rely on.
+export const te: (typeof i18n.global)['te'] = (key, locale) =>
+  i18n.global.te(key, locale ?? i18n.global.locale.value)
 export const d: (typeof i18n.global)['d'] = i18n.global.d
 const tm = i18n.global.tm
 

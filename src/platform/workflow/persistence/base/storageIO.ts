@@ -14,9 +14,28 @@ import { StorageKeys } from './storageKeys'
 
 /** Flag indicating if storage is available */
 let storageAvailable = true
+let workflowWritesBlocked = false
+const pendingPersistenceFlushes = new Set<() => void>()
+
+export function registerWorkflowPersistenceFlush(
+  flush: () => void
+): () => void {
+  pendingPersistenceFlushes.add(flush)
+  return () => pendingPersistenceFlushes.delete(flush)
+}
+
+function flushPendingWorkflowPersistence(): void {
+  for (const flush of pendingPersistenceFlushes) {
+    try {
+      flush()
+    } catch (error) {
+      console.warn('Failed to flush pending workflow persistence', error)
+    }
+  }
+}
 
 export function isStorageAvailable(): boolean {
-  return storageAvailable
+  return storageAvailable && !workflowWritesBlocked
 }
 
 export function markStorageUnavailable(): void {
@@ -69,7 +88,7 @@ export function readIndex(workspaceId: string): DraftIndexV2 | null {
  * Writes the draft index to localStorage.
  */
 export function writeIndex(workspaceId: string, index: DraftIndexV2): boolean {
-  if (!storageAvailable) return false
+  if (!storageAvailable || workflowWritesBlocked) return false
 
   try {
     const key = StorageKeys.draftIndex(workspaceId)
@@ -109,7 +128,7 @@ export function writePayload(
   draftKey: string,
   payload: DraftPayloadV2
 ): boolean {
-  if (!storageAvailable) return false
+  if (!storageAvailable || workflowWritesBlocked) return false
 
   try {
     const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
@@ -365,6 +384,8 @@ function readLocalPointer<T>(
 }
 
 function writeStorage(storage: Storage, key: string, value: string): void {
+  if (!storageAvailable || workflowWritesBlocked) return
+
   try {
     storage.setItem(key, value)
   } catch {
@@ -372,52 +393,87 @@ function writeStorage(storage: Storage, key: string, value: string): void {
   }
 }
 
-/**
- * Clears all V2 workflow persistence data from storage.
- * Used during signout to prevent data leakage.
- */
-export function clearAllV2Storage(): void {
-  if (!storageAvailable) return
+const legacyLocalRestoreKeys = [
+  'Comfy.Workflow.Drafts',
+  'Comfy.Workflow.DraftOrder',
+  'Comfy.OpenWorkflowsPaths',
+  'Comfy.ActiveWorkflowIndex',
+  'Comfy.PreviousWorkflow',
+  'workflow'
+]
 
-  const prefixes = [
+const sessionRestorePrefixes = [
+  StorageKeys.prefixes.activePath,
+  StorageKeys.prefixes.openPaths,
+  'Comfy.PreviousWorkflow:',
+  'Comfy.OpenWorkflowsPaths:',
+  'Comfy.ActiveWorkflowIndex:',
+  'workflow:'
+]
+
+const sessionRestoreKeys = [
+  'Comfy.PreviousWorkflow',
+  'Comfy.OpenWorkflowsPaths',
+  'Comfy.ActiveWorkflowIndex'
+]
+
+function removeStorageKeys(
+  storage: Storage,
+  keys: string[],
+  prefixes: string[] = []
+): void {
+  try {
+    for (let i = storage.length - 1; i >= 0; i--) {
+      const key = storage.key(i)
+      if (
+        key &&
+        (keys.includes(key) ||
+          prefixes.some((prefix) => key.startsWith(prefix)))
+      ) {
+        try {
+          storage.removeItem(key)
+        } catch {
+          continue
+        }
+      }
+    }
+  } catch {
+    return
+  }
+}
+
+export function clearWorkflowRestoreState(
+  options: { blockWrites?: boolean } = {}
+): void {
+  if (options.blockWrites) {
+    prepareWorkflowWorkspaceTransition()
+    return
+  }
+
+  removeStorageKeys(localStorage, legacyLocalRestoreKeys)
+  removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
+}
+
+export function prepareWorkflowWorkspaceTransition(): void {
+  if (!workflowWritesBlocked) flushPendingWorkflowPersistence()
+  workflowWritesBlocked = true
+  clearWorkflowRestoreState()
+}
+
+export function clearAllWorkflowStorage(
+  options: { blockWrites?: boolean } = {}
+): void {
+  if (options.blockWrites) workflowWritesBlocked = true
+
+  const localPrefixes = [
     StorageKeys.prefixes.draftIndex,
     StorageKeys.prefixes.draftPayload,
     StorageKeys.prefixes.lastActivePath,
-    StorageKeys.prefixes.lastOpenPaths
+    StorageKeys.prefixes.lastOpenPaths,
+    'Comfy.Workflow.Drafts:',
+    'Comfy.Workflow.DraftOrder:'
   ]
 
-  try {
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const key = localStorage.key(i)
-      if (key && prefixes.some((prefix) => key.startsWith(prefix))) {
-        try {
-          localStorage.removeItem(key)
-        } catch {
-          // Ignore
-        }
-      }
-    }
-  } catch {
-    // Ignore
-  }
-
-  const sessionPrefixes = [
-    StorageKeys.prefixes.activePath,
-    StorageKeys.prefixes.openPaths
-  ]
-
-  try {
-    for (let i = sessionStorage.length - 1; i >= 0; i--) {
-      const key = sessionStorage.key(i)
-      if (key && sessionPrefixes.some((prefix) => key.startsWith(prefix))) {
-        try {
-          sessionStorage.removeItem(key)
-        } catch {
-          // Ignore
-        }
-      }
-    }
-  } catch {
-    // Ignore
-  }
+  removeStorageKeys(localStorage, legacyLocalRestoreKeys, localPrefixes)
+  removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
 }

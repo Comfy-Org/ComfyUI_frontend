@@ -58,7 +58,7 @@ test.describe('Desktop navigation @smoke', () => {
       desktopCTA.getByRole('link', { name: 'DOWNLOAD DESKTOP' })
     ).toBeVisible()
     await expect(
-      desktopCTA.getByRole('link', { name: 'LAUNCH CLOUD' })
+      desktopCTA.getByRole('link', { name: 'TRY CLOUD FOR FREE' })
     ).toBeVisible()
   })
 })

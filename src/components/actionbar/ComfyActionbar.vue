@@ -33,6 +33,7 @@
           <ComfyRunButton />
         </Suspense>
       </div>
+      <FreeTierQuota v-if="!isDocked" />
     </Panel>
 
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
@@ -62,6 +63,7 @@ import { useI18n } from 'vue-i18n'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useActionbarDocked } from '@/composables/useActionbarDock'
+import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'

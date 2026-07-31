@@ -13,7 +13,8 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => {
   return {
     useCanvasStore: vi.fn(() => ({
       getCanvas,
-      setCursorStyle
+      setCursorStyle,
+      isReadOnly: false
     }))
   }
 })

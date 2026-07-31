@@ -1,14 +1,8 @@
-import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
-
-interface BoxOrigin {
-  readonly x: number
-  readonly y: number
-}
 
 /** DOM-centric helper for a single Vue-rendered node on the canvas. */
 export class VueNodeFixture {
@@ -24,6 +18,12 @@ export class VueNodeFixture {
   public readonly imagePreview: Locator
   public readonly imageGrid: Locator
   public readonly content: Locator
+  public readonly priceBadge: {
+    required: Locator
+    requiredText: Locator
+    rest: Locator
+    restText: Locator
+  }
   public readonly resize: { bottomRight: Locator }
 
   constructor(private readonly locator: Locator) {
@@ -39,6 +39,14 @@ export class VueNodeFixture {
     this.imagePreview = locator.locator('.image-preview')
     this.imageGrid = locator.getByTestId(TestIds.node.imageGrid)
     this.content = locator.locator('.lg-node-content')
+    const required = locator.getByTestId('credit-badge-required')
+    const rest = locator.getByTestId('credit-badge-rest')
+    this.priceBadge = {
+      required,
+      requiredText: required.locator('span'),
+      rest,
+      restText: rest.locator('span')
+    }
     const bottomRight = locator.getByRole('button', { name: 'bottom-right' })
     this.resize = { bottomRight }
   }
@@ -89,66 +97,6 @@ export class VueNodeFixture {
         : slotLocators.filter({ has: nameOrLocator })
     return filteredLocator.getByTestId('slot-dot').locator('..')
   }
-
-  /**
-   * Click the node header to select it, then return its bounding box.
-   * Throws if the node is not laid out because geometry-sensitive tests
-   * cannot proceed without coordinates.
-   */
-  async selectAndGetBox(): Promise<{
-    x: number
-    y: number
-    width: number
-    height: number
-  }> {
-    await this.header.click()
-    const box = await this.boundingBox()
-    if (!box) {
-      throw new Error('Node bounding box not found after select')
-    }
-    return box
-  }
-
-  /**
-   * Assert this node's top-left origin stays within `precision` decimal
-   * places of `expected`. Wraps the polled bounding-box pattern that drift
-   * tests repeat for both axes.
-   */
-  async expectAnchoredAt(
-    expected: BoxOrigin,
-    { precision = 1 }: { precision?: number } = {}
-  ): Promise<void> {
-    await expect.poll(this.pollLeftEdge).toBeCloseTo(expected.x, precision)
-    await expect.poll(this.pollTopEdge).toBeCloseTo(expected.y, precision)
-  }
-
-  /** Poll the node's left/x edge for use with `expect.poll`. */
-  pollLeftEdge = async (): Promise<number | null> =>
-    (await this.boundingBox())?.x ?? null
-
-  /** Poll the node's top/y edge for use with `expect.poll`. */
-  pollTopEdge = async (): Promise<number | null> =>
-    (await this.boundingBox())?.y ?? null
-
-  /** Poll the node's right edge (x + width) for use with `expect.poll`. */
-  pollRightEdge = async (): Promise<number | null> => {
-    const b = await this.boundingBox()
-    return b ? b.x + b.width : null
-  }
-
-  /** Poll the node's bottom edge (y + height) for use with `expect.poll`. */
-  pollBottomEdge = async (): Promise<number | null> => {
-    const b = await this.boundingBox()
-    return b ? b.y + b.height : null
-  }
-
-  /** Poll the node's width for use with `expect.poll`. */
-  pollWidth = async (): Promise<number | null> =>
-    (await this.boundingBox())?.width ?? null
-
-  /** Poll the node's height for use with `expect.poll`. */
-  pollHeight = async (): Promise<number | null> =>
-    (await this.boundingBox())?.height ?? null
 
   /** Locator for the resize handle at the given corner, scoped to this node. */
   getResizeHandle(corner: CompassCorners): Locator {

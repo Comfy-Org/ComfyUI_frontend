@@ -285,7 +285,14 @@ export default defineConfig({
 
       '/oauth': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
+        ...cloudProxyConfig,
+        bypass: (req) => {
+          const path = (req.url ?? '').split('?')[0]
+          if (path === '/oauth/consent' || path.startsWith('/oauth/consent/')) {
+            return req.url
+          }
+          return null
+        }
       },
 
       '/ws': {
@@ -605,6 +612,11 @@ export default defineConfig({
             {
               name: 'vendor-sentry',
               test: /[\\/]node_modules[\\/]@sentry[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-datadog',
+              test: /[\\/]node_modules[\\/]@datadog[\\/]/,
               priority: 15
             },
 

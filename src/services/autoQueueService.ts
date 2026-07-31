@@ -19,7 +19,9 @@ export function setupAutoQueueHandler() {
       } else {
         graphHasChanged = false
         // Queue the prompt in the background
-        void app.queuePrompt(0, queueSettingsStore.batchCount)
+        void app.queuePrompt(0, queueSettingsStore.batchCount, {
+          intent: { trigger_source: 'auto_queue' }
+        })
         internalCount++
       }
     }
@@ -34,7 +36,9 @@ export function setupAutoQueueHandler() {
           (queueSettingsStore.mode === 'change' && graphHasChanged)
         ) {
           graphHasChanged = false
-          await app.queuePrompt(0, queueSettingsStore.batchCount)
+          await app.queuePrompt(0, queueSettingsStore.batchCount, {
+            intent: { trigger_source: 'auto_queue' }
+          })
         }
       }
     },

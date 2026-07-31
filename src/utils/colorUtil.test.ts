@@ -10,6 +10,7 @@ import {
   hsvaToHex,
   isTransparent,
   luminance,
+  normalizeHex,
   parseToRgb,
   readableTextColor,
   rgbToHex,
@@ -98,6 +99,22 @@ describe('colorUtil conversions', () => {
     it('round-trips #hex -> rgb -> #hex', () => {
       const hex = '#123abc'
       expect(rgbToHex(hexToRgb(hex))).toBe('#123abc')
+    })
+  })
+
+  describe('normalizeHex', () => {
+    it('canonicalizes 3- and 6-digit hex with or without a leading #', () => {
+      expect(normalizeHex('#ff0000')).toBe('#ff0000')
+      expect(normalizeHex('ff0000')).toBe('#ff0000')
+      expect(normalizeHex('#0f0')).toBe('#0f0')
+      expect(normalizeHex(' 0f0 ')).toBe('#0f0')
+    })
+
+    it('rejects malformed input', () => {
+      expect(normalizeHex('nothex')).toBeNull()
+      expect(normalizeHex('#ff00')).toBeNull()
+      expect(normalizeHex('#ff00000')).toBeNull()
+      expect(normalizeHex('')).toBeNull()
     })
   })
 

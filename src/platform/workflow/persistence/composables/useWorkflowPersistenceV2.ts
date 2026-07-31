@@ -29,7 +29,10 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
-import { clearAllV2Storage } from '../base/storageIO'
+import {
+  clearAllWorkflowStorage,
+  registerWorkflowPersistenceFlush
+} from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
@@ -60,7 +63,7 @@ export function useWorkflowPersistenceV2() {
   // Clear workflow persistence storage when user signs out (cloud only)
   onUserLogout(() => {
     if (isCloud) {
-      clearAllV2Storage()
+      clearAllWorkflowStorage()
     }
   })
 
@@ -131,6 +134,9 @@ export function useWorkflowPersistenceV2() {
 
   // Debounced version for graphChanged events
   const debouncedPersist = debounce(persistCurrentWorkflow, PERSIST_DEBOUNCE_MS)
+  const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(() =>
+    debouncedPersist.flush()
+  )
 
   const loadPreviousWorkflowFromStorage = async () => {
     const sessionPath = tabState.getActivePath()
@@ -253,6 +259,7 @@ export function useWorkflowPersistenceV2() {
   // Clean up event listener when component unmounts
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
+    unregisterPersistenceFlush()
     debouncedPersist.cancel()
   })
 
