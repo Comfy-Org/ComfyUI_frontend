@@ -538,6 +538,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockSubscriptionStatus.value = 'ended'
     mockSubscriptionTier.value = 'STANDARD'
     mockPlanSlug.value = 'standard-monthly'
+    mockHasTeamPlan.value = false
     renderComponent()
 
     expect(
@@ -630,6 +631,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     const user = userEvent.setup()
     renderComponent()
 
+    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Inactive team subscription' })
     ).toBeInTheDocument()
@@ -729,6 +731,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.getByRole('button', { name: 'Subscribe Now' })
     ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Billing & invoices' })
+    ).not.toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
       'true'

@@ -108,6 +108,7 @@
               </div>
               <div class="flex flex-wrap gap-2 md:ml-auto">
                 <Button
+                  v-if="showInactiveTeamSubscription"
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
@@ -552,9 +553,7 @@ const scheduledPlanName = computed(() => {
 })
 
 const showSubscriptionStateCard = computed(
-  () =>
-    !showInactiveTeamSubscription.value &&
-    (isSubscriptionCancelled.value || isSubscriptionEnded.value)
+  () => isSubscriptionCancelled.value || isSubscriptionEnded.value
 )
 
 const subscriptionStateCardTitle = computed(() =>
