@@ -91,6 +91,8 @@ describe('node registration invariants', () => {
     first.add(node)
 
     expect(() => second.add(node)).toThrow(/different root graph/)
+    expect(node._graphId).toBeUndefined()
+    expect(useNodeDataStore().getGraphNodesFor(first.id, first.id)).toEqual([])
   })
 
   it('drops the previous root entry rather than stranding it', () => {

@@ -70,8 +70,10 @@ export function registerNodeState(
       : node._graphId
   const store = useNodeDataStore()
 
-  if (strandedRootId !== undefined)
+  if (strandedRootId !== undefined) {
     store.deleteNode(strandedRootId, node._state)
+    node._graphId = undefined
+  }
   assert(
     strandedRootId === undefined,
     `registerNodeState: node ${node.id} already registered under a different root graph (${strandedRootId})`

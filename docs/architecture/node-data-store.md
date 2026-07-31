@@ -137,9 +137,10 @@ Follows the shipped trio convention (`LLink` / `Reroute`):
   unregister→register sequences (`useNodeReplacement`) are idempotent.
 - `assert` throws in DEV and reports (Sentry) elsewhere, so both paths repair
   the store before reporting rather than relying on the throw to stop them:
-  `registerNodeState` deletes the stale entry from the previous root's bucket,
-  and `unregisterNodeState` clears `node._graphId` regardless. A production
-  build is left consistent, and a DEV throw cannot strand the node it names.
+  `registerNodeState` deletes the stale entry from the previous root's bucket
+  and drops `node._graphId` with it; `unregisterNodeState` clears `_graphId`
+  regardless of the outcome. A production build is left consistent, and a DEV
+  throw cannot strand the node it names.
 - Not asserted: a second `NodeState` object for a `(graphId, id)` the bucket
   already holds. Deserialising a graph keeps its persisted id, so two live
   `LGraph` instances round-tripped from one workflow share a bucket and collide
