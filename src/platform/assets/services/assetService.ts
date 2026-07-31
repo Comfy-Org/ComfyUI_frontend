@@ -210,6 +210,16 @@ const uploadedAssetResponseSchema = assetItemSchema.extend({
   created_new: z.boolean()
 })
 
+const jobAssetsResponseSchema = z.object({
+  assets: z.array(z.object({ id: z.string() })),
+  pagination: z.object({
+    offset: z.number(),
+    limit: z.number(),
+    total: z.number(),
+    has_more: z.boolean()
+  })
+})
+
 function createAbortError(): DOMException {
   return new DOMException('Aborted', 'AbortError')
 }
@@ -860,13 +870,54 @@ function createAssetService() {
       method: 'DELETE'
     })
 
-    if (!res.ok) {
+    if (!res.ok && res.status !== 404) {
       throw new Error(
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
     }
 
     invalidateInputAssetsIncludingPublic()
+  }
+
+  async function getJobAssetIds(jobId: string): Promise<AssetId[]> {
+    const assetIds: AssetId[] = []
+    let offset = 0
+
+    while (true) {
+      const query = new URLSearchParams({
+        limit: DEFAULT_LIMIT.toString(),
+        offset: offset.toString()
+      })
+      const res = await api.fetchApi(
+        `/jobs/${encodeURIComponent(jobId)}/assets?${query}`
+      )
+      if (res.status === 404 && offset === 0) return []
+      if (!res.ok) {
+        throw new Error(
+          `Unable to load assets for job ${jobId}: Server returned ${res.status}`
+        )
+      }
+
+      const result = jobAssetsResponseSchema.safeParse(await res.json())
+      if (!result.success) {
+        throw new Error(
+          `Invalid job assets response:\n${fromZodError(result.error)}`
+        )
+      }
+
+      if (result.data.pagination.offset !== offset) {
+        throw new Error('Invalid job assets pagination offset')
+      }
+
+      assetIds.push(...result.data.assets.map(({ id }) => id))
+      if (!result.data.pagination.has_more) return assetIds
+
+      const nextOffset = offset + result.data.assets.length
+      if (nextOffset <= offset) {
+        throw new Error('Job assets pagination made no progress')
+      }
+      offset = nextOffset
+    }
   }
 
   /**
@@ -1214,6 +1265,7 @@ function createAssetService() {
     getAllAssetsByTag,
     getInputAssetsIncludingPublic,
     invalidateInputAssetsIncludingPublic,
+    getJobAssetIds,
     deleteAsset,
     updateAsset,
     addAssetTags,

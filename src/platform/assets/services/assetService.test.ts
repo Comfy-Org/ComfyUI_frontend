@@ -434,6 +434,85 @@ describe(assetService.deleteAsset, () => {
       expect.objectContaining({ method: 'DELETE' })
     )
   })
+
+  it('treats an already deleted asset as success', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(null, { ok: false, status: 404 })
+    )
+
+    await expect(assetService.deleteAsset('asset-1')).resolves.toBeUndefined()
+  })
+})
+
+describe(assetService.getJobAssetIds, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns every asset ID across offset pages', async () => {
+    fetchApiMock
+      .mockResolvedValueOnce(
+        buildResponse({
+          assets: [{ id: 'asset-1' }, { id: 'asset-2' }],
+          pagination: { offset: 0, limit: 500, total: 3, has_more: true }
+        })
+      )
+      .mockResolvedValueOnce(
+        buildResponse({
+          assets: [{ id: 'asset-3' }],
+          pagination: { offset: 2, limit: 500, total: 3, has_more: false }
+        })
+      )
+
+    await expect(assetService.getJobAssetIds('job/1')).resolves.toEqual([
+      'asset-1',
+      'asset-2',
+      'asset-3'
+    ])
+
+    expect(fetchApiMock).toHaveBeenNthCalledWith(
+      1,
+      '/jobs/job%2F1/assets?limit=500&offset=0'
+    )
+    expect(fetchApiMock).toHaveBeenNthCalledWith(
+      2,
+      '/jobs/job%2F1/assets?limit=500&offset=2'
+    )
+  })
+
+  it('returns no assets when the job assets endpoint is unavailable', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(null, { ok: false, status: 404 })
+    )
+
+    await expect(assetService.getJobAssetIds('job-1')).resolves.toEqual([])
+  })
+
+  it('throws instead of returning an incomplete page without progress', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({
+        assets: [],
+        pagination: { offset: 0, limit: 500, total: 1, has_more: true }
+      })
+    )
+
+    await expect(assetService.getJobAssetIds('job-1')).rejects.toThrow(
+      'made no progress'
+    )
+  })
+
+  it('throws when the response offset does not match the requested offset', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({
+        assets: [{ id: 'asset-1' }],
+        pagination: { offset: 2, limit: 500, total: 3, has_more: true }
+      })
+    )
+
+    await expect(assetService.getJobAssetIds('job-1')).rejects.toThrow(
+      'Invalid job assets pagination offset'
+    )
+  })
 })
 
 describe(assetService.getAssetModels, () => {

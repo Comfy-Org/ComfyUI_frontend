@@ -43,6 +43,17 @@ import { assetService } from '../services/assetService'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
+async function deleteHistoryJob(jobId: string): Promise<void> {
+  const response = await api.fetchApi('/history', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ delete: [jobId] })
+  })
+  if (!response.ok) {
+    throw new Error(`Unable to delete history job: ${response.status}`)
+  }
+}
+
 function createAssetWidgetPath(asset: AssetItem): string {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   const assetType = getAssetType(asset, 'input')
@@ -94,24 +105,24 @@ export function useMediaAssetActions() {
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
 
-  /**
-   * Internal helper to perform the API deletion for a single asset
-   * Handles both output assets (via history API) and input assets (via asset service)
-   * @throws Error if deletion fails or is not allowed
-   */
   const deleteAssetApi = async (
     asset: AssetItem,
     assetType: string
   ): Promise<void> => {
-    // Temp files (e.g. preview-node outputs) are history-backed outputs that
-    // happen to live in the temp dir, so they delete via the history API too.
     if (assetType === 'output' || assetType === 'temp') {
       const jobId =
         getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
       if (!jobId) {
         throw new Error('Unable to extract job ID from asset')
       }
-      await api.deleteItem('history', jobId)
+
+      const assetIds = isCloud ? await assetService.getJobAssetIds(jobId) : []
+      const results = await Promise.allSettled(
+        assetIds.map((id) => assetService.deleteAsset(id))
+      )
+      const failure = results.find((result) => result.status === 'rejected')
+      if (failure?.status === 'rejected') throw failure.reason
+      await deleteHistoryJob(jobId)
     } else {
       // Input assets can only be deleted in cloud environment
       if (!isCloud) {
@@ -706,24 +717,29 @@ export function useMediaAssetActions() {
               const failed = results.filter((r) => r.status === 'rejected')
 
               // Log failed deletions for debugging
-              failed.forEach((result, index) => {
-                console.warn(
-                  `Failed to delete asset ${assetArray[index].name}:`,
-                  result.reason
-                )
+              results.forEach((result, index) => {
+                if (result.status === 'rejected') {
+                  console.warn(
+                    `Failed to delete asset ${assetArray[index].name}:`,
+                    result.reason
+                  )
+                }
               })
 
               // Update stores after deletions
-              const hasOutputAssets = assetArray.some((a) => {
-                const type = getAssetType(a)
+              const hasOutputAssets = assetArray.some((asset) => {
+                const type = getAssetType(asset)
                 return type === 'output' || type === 'temp'
               })
               const hasInputAssets = assetArray.some(
-                (a) => getAssetType(a) === 'input'
+                (asset, index) =>
+                  results[index].status === 'fulfilled' &&
+                  getAssetType(asset) === 'input'
               )
 
               if (hasOutputAssets) {
                 await assetsStore.updateHistory()
+                await assetsStore.updateFlatOutputs()
               }
               if (hasInputAssets) {
                 await assetsStore.updateInputs()
