@@ -1,16 +1,31 @@
 <template>
   <div
-    class="flex min-w-[460px] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+    class="flex min-h-[500px] w-[min(512px,95vw)] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- Header -->
     <div class="flex items-center justify-between p-8">
-      <h2 class="m-0 text-lg font-bold text-base-foreground">
-        {{
-          isInsufficientCredits
-            ? $t('credits.topUp.addMoreCreditsToRun')
-            : $t('credits.topUp.addMoreCredits')
-        }}
-      </h2>
+      <div class="flex items-center gap-2">
+        <button
+          v-if="step === 'confirm'"
+          class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground"
+          :aria-label="$t('g.back')"
+          @click="step = 'amount'"
+        >
+          <i class="icon-[lucide--arrow-left] size-5" />
+        </button>
+        <h2
+          v-if="step === 'amount' || step === 'confirm'"
+          class="m-0 text-lg font-bold text-base-foreground"
+        >
+          {{
+            step === 'confirm'
+              ? $t('credits.topUp.confirmTitle')
+              : isInsufficientCredits
+                ? $t('credits.topUp.addMoreCreditsToRun')
+                : $t('credits.topUp.addMoreCredits')
+          }}
+        </h2>
+      </div>
       <button
         class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
         :aria-label="$t('g.close')"
@@ -20,14 +35,174 @@
       </button>
     </div>
     <p
-      v-if="isInsufficientCredits"
+      v-if="isInsufficientCredits && step === 'amount'"
       class="m-0 px-8 text-sm text-muted-foreground"
     >
       {{ $t('credits.topUp.insufficientWorkflowMessage') }}
     </p>
 
+    <!-- Confirm step -->
+    <template v-if="step === 'confirm'">
+      <p class="m-0 px-8 text-sm text-muted-foreground">
+        {{ $t('credits.topUp.confirmSubtitle') }}
+      </p>
+      <div class="flex flex-col gap-3 px-8 pt-6">
+        <span
+          class="flex items-center gap-2 py-2 text-2xl font-semibold text-base-foreground tabular-nums"
+        >
+          <i class="icon-[lucide--component] size-5 text-gold-500" />
+          {{ formatNumber(creditsModel) }}
+        </span>
+        <div
+          v-if="savedMethods.length === 1"
+          class="flex h-10 items-center gap-3 rounded-lg bg-secondary-background px-4"
+        >
+          <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
+          <span class="text-sm text-base-foreground">
+            {{ savedMethod?.brand }}
+          </span>
+          <span class="text-sm text-muted-foreground tabular-nums">
+            ·· {{ savedMethod?.last4 }}
+          </span>
+          <Button
+            variant="link"
+            size="lg"
+            class="ml-auto h-auto p-0 text-sm"
+            @click="handleChangePaymentMethod"
+          >
+            {{ $t('credits.topUp.changePaymentMethod') }}
+          </Button>
+        </div>
+        <SingleSelect
+          v-else
+          v-model="selectedMethodId"
+          :options="methodOptions"
+          size="lg"
+        >
+          <template #icon>
+            <i
+              :class="
+                cn(
+                  'size-4 shrink-0 text-muted-foreground',
+                  savedMethod?.type === 'alipay' && 'icon-[lucide--wallet]',
+                  savedMethod?.type === 'bank' && 'icon-[lucide--landmark]',
+                  (!savedMethod || savedMethod.type === 'card') &&
+                    'icon-[lucide--credit-card]'
+                )
+              "
+            />
+          </template>
+        </SingleSelect>
+        <div
+          class="flex items-center justify-between border-t border-border-default pt-4"
+        >
+          <span class="text-base font-semibold text-base-foreground">
+            {{ $t('subscription.preview.totalDueToday') }}
+          </span>
+          <span
+            class="text-base font-semibold text-base-foreground tabular-nums"
+          >
+            {{ displayTotal }}
+          </span>
+        </div>
+        <p class="m-0 text-xs text-muted-foreground">
+          {{ $t('credits.topUp.chargedImmediatelyNote') }}
+        </p>
+      </div>
+    </template>
+
+    <!-- Success step -->
+    <template v-if="step === 'success'">
+      <div class="flex flex-col items-center gap-3 px-8 text-center">
+        <i
+          class="icon-[lucide--circle-check] size-10 text-success-background"
+        />
+        <h2
+          class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+        >
+          {{ $t('subscription.success.allSet') }}
+        </h2>
+        <i18n-t
+          keypath="credits.topUp.viewChargeNote"
+          tag="p"
+          class="m-0 text-sm text-balance text-muted-foreground"
+        >
+          <template #billing>
+            <button
+              class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm text-base-foreground underline-offset-2 hover:underline"
+              @click="handleViewBilling"
+            >
+              {{ $t('subscription.billingAndInvoices') }}
+            </button>
+          </template>
+        </i18n-t>
+      </div>
+      <div class="flex flex-col gap-2 px-8 pt-6">
+        <div class="flex flex-col gap-2 rounded-lg bg-secondary-background p-4">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-muted-foreground">
+              {{ $t('credits.topUp.previousBalance') }}
+            </span>
+            <span class="font-semibold text-base-foreground tabular-nums">
+              {{ formatNumber(successSummary?.previous ?? 0) }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-muted-foreground">
+              {{ $t('credits.topUp.addedLabel') }}
+            </span>
+            <span class="font-semibold text-base-foreground tabular-nums">
+              +{{ formatNumber(successSummary?.added ?? 0) }}
+            </span>
+          </div>
+          <div
+            class="flex items-center justify-between border-t border-border-default pt-2 text-sm"
+          >
+            <span class="font-semibold text-base-foreground">
+              {{ $t('credits.topUp.newBalance') }}
+            </span>
+            <span
+              class="flex items-center gap-1 text-base font-semibold text-base-foreground tabular-nums"
+            >
+              <i class="icon-[lucide--component] size-4 text-gold-500" />
+              {{
+                formatNumber(
+                  (successSummary?.previous ?? 0) + (successSummary?.added ?? 0)
+                )
+              }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Declined step -->
+    <template v-if="step === 'declined'">
+      <div class="flex flex-col items-center gap-3 px-8 text-center">
+        <i
+          class="icon-[lucide--circle-alert] size-10 text-warning-background"
+        />
+        <h2 class="m-0 text-lg font-bold text-base-foreground">
+          {{ $t('credits.topUp.declinedTitle') }}
+        </h2>
+        <p class="m-0 text-sm text-muted-foreground">
+          {{ $t('credits.topUp.declinedDescription') }}
+        </p>
+      </div>
+      <div v-if="declineReason" class="flex flex-col gap-1 px-8 pt-6">
+        <div class="flex flex-col gap-1 rounded-lg bg-secondary-background p-4">
+          <span class="text-xs text-muted-foreground">
+            {{ $t('credits.topUp.stripeReasoning') }}
+          </span>
+          <span class="text-sm text-base-foreground">
+            {{ declineReason }}
+          </span>
+        </div>
+      </div>
+    </template>
+
     <!-- Preset amount buttons -->
-    <div class="px-8">
+    <div v-if="step === 'amount'" class="px-8">
       <h3 class="m-0 text-sm font-normal text-muted-foreground">
         {{ $t('credits.topUp.selectAmount') }}
       </h3>
@@ -51,7 +226,7 @@
       </div>
     </div>
     <!-- Amount (USD) / Credits -->
-    <div class="flex gap-2 px-8 pt-8">
+    <div v-if="step === 'amount'" class="flex gap-2 px-8 pt-8">
       <!-- You Pay -->
       <div class="flex flex-1 flex-col gap-3" data-testid="top-up-pay-amount">
         <div class="text-sm text-muted-foreground">
@@ -95,7 +270,7 @@
     <!-- Warnings -->
 
     <p
-      v-if="isBelowMin"
+      v-if="isBelowMin && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-red-500"
     >
       <i class="icon-[lucide--component] size-4" />
@@ -106,7 +281,7 @@
       }}
     </p>
     <p
-      v-if="showCeilingWarning"
+      v-if="showCeilingWarning && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-gold-500"
     >
       <i class="icon-[lucide--component] size-4" />
@@ -124,8 +299,26 @@
       >
     </p>
 
-    <div class="flex flex-col gap-8 p-8">
-      <div class="flex flex-col gap-2">
+    <div class="mt-auto flex flex-col gap-8 p-8">
+      <Button
+        v-if="step === 'success'"
+        variant="secondary"
+        size="lg"
+        class="h-10 justify-center"
+        @click="handleSuccessClose"
+      >
+        {{ $t('g.close') }}
+      </Button>
+      <Button
+        v-else-if="step === 'declined'"
+        variant="secondary"
+        size="lg"
+        class="h-10 justify-center"
+        @click="handleChangePaymentMethod"
+      >
+        {{ $t('credits.topUp.updatePaymentMethod') }}
+      </Button>
+      <div v-else class="flex flex-col gap-2">
         <Button
           v-if="topupActionUrl && permissions.canTopUp"
           variant="primary"
@@ -140,37 +333,31 @@
           :loading="loading || isPolling"
           :variant="topupActionUrl ? 'tertiary' : 'primary'"
           size="lg"
-          class="h-10 justify-center"
-          @click="handleBuy"
+          class="h-10 justify-center tabular-nums"
+          @click="handlePrimaryAction"
         >
-          {{ $t('subscription.addCredits') }}
+          {{
+            step === 'confirm'
+              ? $t('credits.topUp.payAmount', { amount: displayTotal })
+              : $t('subscription.addCredits')
+          }}
         </Button>
-      </div>
-      <div class="flex items-center justify-center gap-1">
-        <a
-          :href="pricingUrl"
-          target="_blank"
-          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-base-foreground"
-        >
-          {{ $t('credits.topUp.viewPricing') }}
-          <i class="icon-[lucide--external-link] size-4" />
-        </a>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -187,9 +374,8 @@ const { t } = useI18n()
 const dialogStore = useDialogStore()
 const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
-const toast = useToast()
-const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance, fetchStatus, topup } = useBillingContext()
+const { balance, fetchBalance, fetchStatus, topup, manageSubscription } =
+  useBillingContext()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { permissions } = useWorkspaceUI()
 
@@ -209,11 +395,65 @@ const selectedPreset = ref<number | null>(50)
 const payAmount = ref(50)
 const showCeilingWarning = ref(false)
 const loading = ref(false)
+const step = ref<'amount' | 'confirm' | 'success' | 'declined'>('amount')
+const successSummary = ref<{ previous: number; added: number } | null>(null)
+const declineReason = ref<string | null>(null)
+
+interface SavedPaymentMethod {
+  id: string
+  type: 'card' | 'alipay' | 'bank'
+  brand?: string
+  last4?: string
+}
+
+// BE contract pending: saved methods for the workspace's Stripe customer.
+// Stays empty (confirm step unreachable) until the billing status/preview
+// response carries them. Same contract as the subscription saved-method
+// confirm; the charge call will need the chosen method id.
+// TEMP-DEMO: ?topupdemo=1 arms one mock method, ?topupdemo=2 arms two
+// (picker variant); ⌘⇧9 cycles none → one → two. Strip before PR.
+const DEMO_METHODS: SavedPaymentMethod[] = [
+  { id: 'pm_1', type: 'card', brand: 'Visa', last4: '4242' },
+  { id: 'pm_2', type: 'card', brand: 'Mastercard', last4: '5100' }
+]
+const demoParam = new URLSearchParams(window.location.search).get('topupdemo')
+const savedMethods = ref<SavedPaymentMethod[]>(
+  demoParam ? DEMO_METHODS.slice(0, Number(demoParam) || 1) : []
+)
+const selectedMethodId = ref(savedMethods.value[0]?.id ?? '')
+
+useEventListener(window, 'keydown', (e: KeyboardEvent) => {
+  if (e.metaKey && e.shiftKey && e.code === 'Digit9') {
+    const next = (savedMethods.value.length + 1) % (DEMO_METHODS.length + 1)
+    savedMethods.value = DEMO_METHODS.slice(0, next)
+    selectedMethodId.value = savedMethods.value[0]?.id ?? ''
+    if (!savedMethods.value.length) step.value = 'amount'
+  }
+})
+
+const savedMethod = computed(
+  () =>
+    savedMethods.value.find((m) => m.id === selectedMethodId.value) ??
+    savedMethods.value[0] ??
+    null
+)
+
+const methodOptions = computed(() => [
+  ...savedMethods.value.map((m) => ({
+    name: m.type === 'card' ? `${m.brand} ·· ${m.last4}` : (m.brand ?? m.type),
+    value: m.id
+  })),
+  { name: t('credits.topUp.addNewPaymentMethod'), value: 'add-new' }
+])
+
+watch(selectedMethodId, async (id, previous) => {
+  if (id === 'add-new') {
+    selectedMethodId.value = previous
+    await manageSubscription()
+  }
+})
 
 // Computed
-const pricingUrl = computed(() =>
-  buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
-)
 
 const creditsModel = computed({
   get: () => usdToCredits(payAmount.value),
@@ -228,6 +468,15 @@ const isValidAmount = computed(
 )
 
 const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
+
+const displayTotal = computed(
+  () =>
+    '$' +
+    payAmount.value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
+)
 
 // Utility functions
 function formatNumber(num: number): string {
@@ -259,9 +508,16 @@ function handlePresetClick(amount: number) {
   selectedPreset.value = amount
 }
 
-function openTopupVerification() {
-  if (!topupActionUrl.value) return
-  window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
+function handlePrimaryAction() {
+  if (step.value === 'amount' && savedMethods.value.length) {
+    step.value = 'confirm'
+    return
+  }
+  void handleBuy()
+}
+
+async function handleChangePaymentMethod() {
+  await manageSubscription()
 }
 
 function handleClose(clearTracking = true) {
@@ -280,6 +536,10 @@ async function handleBuy() {
     return
   }
 
+  const previousCredits = balance.value
+    ? Math.round(usdToCredits(balance.value.amountMicros / 1_000_000))
+    : 0
+
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
@@ -295,14 +555,12 @@ async function handleBuy() {
         outcome: 'success',
         billing_op_id: response.billing_op_id
       })
-      toast.add({
-        severity: 'success',
-        summary: t('credits.topUp.purchaseSuccess'),
-        life: 5000
-      })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
-      handleClose(false)
-      settingsDialog.show('workspace')
+      successSummary.value = {
+        previous: previousCredits,
+        added: creditsModel.value
+      }
+      step.value = 'success'
     } else if (response.status === 'pending') {
       billingOperationStore.startOperation(response.billing_op_id, 'topup')
     } else {
@@ -313,11 +571,9 @@ async function handleBuy() {
         billing_op_id: response.billing_op_id,
         failure_category: 'unknown'
       })
-      toast.add({
-        severity: 'error',
-        summary: t('credits.topUp.purchaseError'),
-        detail: t('credits.topUp.unknownError')
-      })
+      // BE contract pending: decline reason for the "Stripe reasoning" tile.
+      declineReason.value = null
+      step.value = 'declined'
     }
   } catch (error) {
     console.error('Purchase failed:', error)
@@ -330,13 +586,24 @@ async function handleBuy() {
       outcome: 'failure',
       failure_category: 'unknown'
     })
-    toast.add({
-      severity: 'error',
-      summary: t('credits.topUp.purchaseError'),
-      detail: t('credits.topUp.purchaseErrorDetail', { error: errorMessage })
-    })
+    declineReason.value = errorMessage
+    step.value = 'declined'
   } finally {
     loading.value = false
   }
+}
+
+function openTopupVerification() {
+  if (!topupActionUrl.value) return
+  window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
+}
+
+function handleSuccessClose() {
+  handleClose(false)
+}
+
+function handleViewBilling() {
+  handleClose(false)
+  settingsDialog.show('workspace')
 }
 </script>

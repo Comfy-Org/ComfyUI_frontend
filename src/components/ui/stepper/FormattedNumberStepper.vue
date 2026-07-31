@@ -28,7 +28,7 @@
         type="text"
         inputmode="numeric"
         :style="{ width: `${inputWidth}ch` }"
-        class="min-w-0 rounded-sm border-none bg-transparent text-center text-lg font-medium text-base-foreground focus-visible:outline-none"
+        class="min-w-0 rounded-sm border-none bg-transparent text-center text-lg font-medium text-base-foreground tabular-nums focus-visible:outline-none"
         :disabled="disabled"
         @input="handleInputChange"
         @blur="handleInputBlur"
