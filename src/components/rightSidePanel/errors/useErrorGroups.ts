@@ -153,6 +153,7 @@ function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
       const cards = Array.from(groupData.cards.values()).sort(compareNodeId)
       return {
         type: 'execution' as const,
+        severity: 'error' as const,
         groupKey: `execution:${rawGroupKey}`,
         displayTitle: groupData.displayTitle,
         displayMessage: groupData.displayMessage,
@@ -617,6 +618,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (swapCount > 0) {
       groups.push({
         type: 'swap_nodes' as const,
+        severity: 'missing' as const,
         groupKey: 'swap_nodes',
         count: swapCount,
         priority: 0,
@@ -632,6 +634,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (packCount > 0) {
       groups.push({
         type: 'missing_node' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_node',
         count: packCount,
         priority: 1,
@@ -660,6 +663,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return [
       {
         type: 'missing_model' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_model',
         count,
         priority: 2,
@@ -685,6 +689,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return [
       {
         type: 'missing_media' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_media',
         count: totalRows,
         priority: 3,
@@ -755,6 +760,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return [
       {
         type: 'missing_model' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_model',
         count,
         priority: 2,
@@ -776,6 +782,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return [
       {
         type: 'missing_media' as const,
+        severity: 'missing' as const,
         groupKey: 'missing_media',
         count: totalRows,
         priority: 3,
@@ -797,10 +804,10 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     processExecutionError(groupsMap)
 
     return [
+      ...toSortedGroups(groupsMap),
       ...buildMissingNodeGroups(),
       ...buildMissingModelGroups(),
-      ...buildMissingMediaGroups(),
-      ...toSortedGroups(groupsMap)
+      ...buildMissingMediaGroups()
     ]
   })
 
@@ -819,12 +826,12 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     processExecutionError(groupsMap, true)
 
     return [
+      ...toSortedGroups(groupsMap),
       ...buildMissingNodeGroups((nodeTypes) =>
         someNodeTypeInSelection(nodeTypes, selectionMatchedAssetNodeIds.value)
       ),
       ...buildMissingModelGroupsForSelection(),
-      ...buildMissingMediaGroupsForSelection(),
-      ...toSortedGroups(groupsMap)
+      ...buildMissingMediaGroupsForSelection()
     ]
   })
 
