@@ -9,7 +9,15 @@
         @click="collapse = !collapse"
       >
         <span
-          class="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-destructive-background-hover px-1 text-2xs/none font-semibold text-white tabular-nums"
+          data-testid="error-section-count-badge"
+          :class="
+            cn(
+              'flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-2xs/none font-semibold tabular-nums',
+              severity === 'error'
+                ? 'bg-destructive-background-hover text-white'
+                : 'bg-warning-background text-charcoal-800'
+            )
+          "
         >
           {{ count }}
         </span>
@@ -52,15 +60,18 @@ import { useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { ErrorGroupSeverity } from '@/components/rightSidePanel/errors/types'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 
 const {
   title,
   count,
+  severity,
   class: className
 } = defineProps<{
   title: string
   count: number
+  severity: ErrorGroupSeverity
   class?: string
 }>()
 
