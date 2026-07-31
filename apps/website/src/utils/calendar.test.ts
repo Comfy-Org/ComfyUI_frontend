@@ -42,6 +42,8 @@ describe('toOutlookCalendarUrl', () => {
     expect(url.searchParams.get('subject')).toBe(event.title)
     expect(url.searchParams.get('startdt')).toBe('2026-08-05T20:00:00.000Z')
     expect(url.searchParams.get('enddt')).toBe('2026-08-05T21:00:00.000Z')
+    expect(url.searchParams.get('body')).toBe(event.description)
+    expect(url.searchParams.get('location')).toBe(event.location)
   })
 })
 
@@ -59,6 +61,7 @@ describe('toIcsDataUri', () => {
     expect(ics).toContain('DTSTART:20260805T200000Z')
     expect(ics).toContain('DTEND:20260805T210000Z')
     expect(ics).toContain('SUMMARY:The Future of AI Post Production')
+    expect(ics).toContain(`LOCATION:${event.location}`)
     expect(ics).toContain('END:VCALENDAR')
   })
 
