@@ -57,7 +57,8 @@ const toHex = ({ r, g, b }: Rgb) =>
 
 const isYellow = ({ r, g, b }: Rgb) => r > 200 && g > 200 && b < 200
 
-const coloursIn = (svg: string) => svg.match(COLOUR_LITERAL) ?? []
+const coloursIn = (svg: string) =>
+  svg.replace(/url\([^)]*\)/gi, '').match(COLOUR_LITERAL) ?? []
 
 function yellowsIn(svg: string): string[] {
   const yellows = coloursIn(svg)
@@ -201,5 +202,29 @@ describe('yellowsIn', () => {
       'hsl(65 100% 67%)'
     ])
     expect(unreadableColoursIn(`<path fill="${yellow}"/>`)).toEqual([])
+  })
+
+  it('reports a malformed hex literal as unreadable', () => {
+    expect(unreadableColoursIn('<path fill="#12345"/>')).toEqual(['#12345'])
+    expect(yellowsIn('<path fill="#ffff7"/>')).toEqual([])
+  })
+
+  it('finds nothing in markup that carries no colour', () => {
+    expect(yellowsIn('')).toEqual([])
+    expect(unreadableColoursIn('')).toEqual([])
+    expect(yellowsIn('<path d="M334.584 -244.988L252.495 -197.594"/>')).toEqual(
+      []
+    )
+    expect(unreadableColoursIn('<path d="M0 0h1v1H0z" fill="none"/>')).toEqual(
+      []
+    )
+  })
+
+  it('does not mistake a url() reference for a colour', () => {
+    const gradientRef =
+      '<defs><linearGradient id="ffee00"/></defs>' +
+      `<path fill="${yellow}"/><path fill="url(#ffee00)"/>`
+    expect(yellowsIn(gradientRef)).toEqual([yellow])
+    expect(unreadableColoursIn(gradientRef)).toEqual([])
   })
 })
