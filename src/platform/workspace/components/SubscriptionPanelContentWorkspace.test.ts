@@ -534,20 +534,23 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps a payment-failed personal plan visible until it is terminal', () => {
-    mockIsInPersonalWorkspace.value = true
-    mockIsActiveSubscription.value = false
-    mockBillingStatus.value = 'payment_failed'
-    renderComponent()
+  it.for(['paid', 'payment_failed', 'paused'] as BillingStatus[])(
+    'keeps a %s personal plan visible until it is terminal',
+    (billingStatus) => {
+      mockIsInPersonalWorkspace.value = true
+      mockIsActiveSubscription.value = false
+      mockBillingStatus.value = billingStatus
+      renderComponent()
 
-    expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
-    expect(
-      screen.queryByText('Your subscription has ended')
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Subscribe' })
-    ).not.toBeInTheDocument()
-  })
+      expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
+      expect(
+        screen.queryByText('Your subscription has ended')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it('shows dated cancellation copy while a cancelled plan remains active', async () => {
     const user = userEvent.setup()

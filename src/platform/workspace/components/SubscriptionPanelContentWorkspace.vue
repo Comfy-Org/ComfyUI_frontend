@@ -372,16 +372,18 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
+const isTerminalPersonalSubscription = computed(
+  () =>
+    isInPersonalWorkspace.value &&
+    !isActiveSubscription.value &&
+    billingStatus.value === 'inactive'
+)
+
 const isSubscriptionEnded = computed(
   () =>
     subscriptionStatus.value === 'ended' ||
     (isSubscriptionCancelled.value && !isActiveSubscription.value) ||
-    (isInPersonalWorkspace.value &&
-      subscription.value !== null &&
-      !isFreeTierPlan.value &&
-      !isActiveSubscription.value &&
-      (billingStatus.value === 'inactive' ||
-        subscriptionStatus.value === 'canceled'))
+    isTerminalPersonalSubscription.value
 )
 
 // Show subscribe prompt to owners without active subscription. A cancelled plan
@@ -390,15 +392,6 @@ const showSubscribePrompt = computed(() => {
   if (!permissions.value.canManageSubscription) return false
   if (isSubscriptionEnded.value && !isActiveSubscription.value) return true
   if (isSubscriptionCancelled.value) return false
-  // A terminal personal subscription can briefly retain an old/omitted
-  // subscription_status while is_active is already false. Treat it as ended
-  // instead of rendering the stale paid plan identity.
-  if (
-    isInPersonalWorkspace.value &&
-    !isActiveSubscription.value &&
-    billingStatus.value === 'inactive'
-  )
-    return true
   if (
     subscription.value &&
     !isFreeTierPlan.value &&
