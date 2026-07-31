@@ -332,7 +332,12 @@ jobs:
           TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
         run: |
           set -euo pipefail
-          for i in $(seq 1 30); do
+          # A wall-clock deadline, not an attempt count: 30 attempts of a 20s
+          # request plus a 20s sleep runs to ~20m, twice the wait advertised below.
+          DEADLINE=$(( SECONDS + 600 ))
+          ATTEMPT=0
+          while [ "$SECONDS" -lt "$DEADLINE" ]; do
+            ATTEMPT=$(( ATTEMPT + 1 ))
             # Timeouts matter: a stalled request would otherwise keep the loop
             # from ever reaching the warning below.
             if curl -sf --connect-timeout 10 --max-time 20 \
@@ -342,8 +347,16 @@ jobs:
               echo "confirmed=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            echo "Attempt $i/30: not on PyPI yet, waiting 20s..."
-            sleep 20
+            REMAINING=$(( DEADLINE - SECONDS ))
+            if [ "$REMAINING" -le 0 ]; then
+              break
+            fi
+            SLEEP=20
+            if [ "$REMAINING" -lt "$SLEEP" ]; then
+              SLEEP="$REMAINING"
+            fi
+            echo "Attempt ${ATTEMPT}: not on PyPI yet, ${REMAINING}s of budget left; retrying in ${SLEEP}s..."
+            sleep "$SLEEP"
           done
           echo "confirmed=false" >> "$GITHUB_OUTPUT"
           echo "::warning::${TARGET_VERSION} still not resolvable after 10m; opening the pin PR anyway."
