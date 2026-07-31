@@ -113,11 +113,10 @@
             <template v-else-if="isPersonalFree">
               <div class="flex flex-col gap-2">
                 <h3 class="m-0 text-base font-bold text-text-primary">
-                  {{ $t('subscription.tiers.free.name') }}
+                  {{ $t('subscription.noActivePlan') }}
                 </h3>
-                <div class="flex items-baseline gap-1 font-inter">
-                  <span class="text-2xl font-semibold">{{ displayPrice }}</span>
-                  <span class="text-base">{{ priceUnitLabel }}</span>
+                <div class="text-sm text-text-secondary">
+                  {{ $t('subscription.noActivePlanDescription') }}
                 </div>
               </div>
               <div class="flex flex-wrap gap-2 md:ml-auto">
@@ -238,10 +237,7 @@
             <CreditsTile :zero-state="showZeroState" />
           </div>
 
-          <div
-            v-if="isActiveSubscription || isPersonalFree"
-            class="flex flex-col gap-2"
-          >
+          <div v-if="isActiveSubscription" class="flex flex-col gap-2">
             <i18n-t
               v-if="isTeamActive"
               keypath="subscription.teamPlanIncludes"
@@ -254,9 +250,6 @@
                 </span>
               </template>
             </i18n-t>
-            <div v-else-if="isPersonalFree" class="text-sm text-muted">
-              {{ $t('subscription.whatsIncluded') }}
-            </div>
             <div v-else class="text-sm text-text-primary">
               {{ $t('subscription.yourPlanIncludes') }}
             </div>
@@ -318,7 +311,6 @@ import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
@@ -336,8 +328,6 @@ const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
 const { permissions, isSubscriptionCancelled } = useWorkspaceUI()
-const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
-  useFreeTierQuota()
 const { t, n, locale } = useI18n()
 
 const billingOperationStore = useBillingOperationStore()
@@ -548,29 +538,6 @@ const tierBenefits = computed((): TierBenefit[] => {
       type: 'feature',
       label: t(`subscription.teamPerks.${key}`)
     }))
-  }
-  if (isPersonalFree.value) {
-    return [
-      ...(freeRunsQuotaEnabled.value
-        ? [
-            {
-              key: 'freeRuns',
-              type: 'feature' as const,
-              label: t(
-                'subscription.freePerks.freeRuns',
-                freeRunsAllowance.value
-              )
-            }
-          ]
-        : []),
-      {
-        key: 'maxRuntime',
-        type: 'feature',
-        label: t('subscription.freePerks.maxRuntime', {
-          duration: t('subscription.maxDuration.free')
-        })
-      }
-    ]
   }
   return getCommonTierBenefits(tierKey.value, t, n)
 })
