@@ -64,6 +64,15 @@ describe('DockedAgentPanel', () => {
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
   })
 
+  it('fills the panel shell and draws the canvas seam border', () => {
+    openPanel()
+    render(DockedAgentPanel)
+
+    const shell = screen.getByTestId('docked-agent-panel-shell')
+
+    expect(shell).toHaveClass('border-l', 'border-interface-stroke')
+  })
+
   it('renders nothing while the panel is closed', () => {
     const store = useAgentPanelStore()
     store.enabled = true

@@ -69,6 +69,19 @@ const mentionMatches = computed(() => {
 
 const mentionVisible = computed(() => mentionMatches.value.length > 0)
 
+function duplicatedTitles(nodes: SelectedNode[]): Set<string> {
+  const seen = new Set<string>()
+  const dupes = new Set<string>()
+  for (const node of nodes) {
+    if (seen.has(node.title)) dupes.add(node.title)
+    else seen.add(node.title)
+  }
+  return dupes
+}
+
+const graphDupes = computed(() => duplicatedTitles(mentionNodes.value))
+const tagDupes = computed(() => duplicatedTitles(selectionTags))
+
 function closeMention(): void {
   mentionOpen.value = false
   mentionQuery.value = ''
@@ -235,7 +248,10 @@ defineExpose({
         @click="pickMention(node)"
       >
         <span class="truncate">{{ node.title }}</span>
-        <span class="text-agent-fg-subtle ml-auto shrink-0">
+        <span
+          v-if="graphDupes.has(node.title)"
+          class="text-agent-fg-subtle ml-auto shrink-0"
+        >
           #{{ node.id }}
         </span>
       </div>
@@ -256,7 +272,11 @@ defineExpose({
       >
         <span class="text-agent-fg-subtle icon-[lucide--at-sign] size-3.5" />
         <span class="max-w-40 truncate">{{ tag.title }}</span>
-        <span class="text-agent-fg-subtle shrink-0">#{{ tag.id }}</span>
+        <span
+          v-if="tagDupes.has(tag.title)"
+          class="text-agent-fg-subtle shrink-0"
+          >#{{ tag.id }}</span
+        >
         <button
           type="button"
           :aria-label="t('agent.remove')"
@@ -287,7 +307,7 @@ defineExpose({
       v-model="composer.draft.value"
       :placeholder="t('agent.placeholder')"
       rows="1"
-      class="field-sizing-content max-h-48 min-h-20 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-xl bg-transparent px-4 py-3 wrap-break-word whitespace-pre-wrap placeholder:whitespace-pre-wrap focus-visible:ring-0"
+      class="field-sizing-content max-h-50 min-h-20 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-xl bg-transparent px-4 py-3 wrap-break-word whitespace-pre-wrap placeholder:whitespace-pre-wrap focus-visible:ring-0"
       :aria-expanded="mentionVisible"
       aria-controls="agent-mention-listbox"
       :aria-activedescendant="
@@ -340,7 +360,10 @@ defineExpose({
                     @select="emit('mentionPick', node)"
                   >
                     <span class="truncate">{{ node.title }}</span>
-                    <span class="text-agent-fg-subtle ml-auto shrink-0">
+                    <span
+                      v-if="graphDupes.has(node.title)"
+                      class="text-agent-fg-subtle ml-auto shrink-0"
+                    >
                       #{{ node.id }}
                     </span>
                   </DropdownMenuItem>
