@@ -11,7 +11,7 @@ import UpcomingEventsSection from './UpcomingEventsSection.vue'
 import { localizeHref } from '../../config/routes'
 import type { ComfyEvent } from '../../data/events'
 import {
-  eventPath,
+  eventJsonLdNode,
   eventVideoId,
   pastEvents,
   toCalendarEvent,
@@ -21,7 +21,6 @@ import { t } from '../../i18n/translations'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import {
   absoluteUrl,
-  eventNode,
   jsonLdId,
   pageContext,
   videoObjectNode
@@ -61,27 +60,9 @@ const videoJsonLd: JsonLdNode | undefined =
       })
     : undefined
 
-const online = event.location?.en === 'Online'
-const linkHref =
-  event.link?.href[locale] ?? localizeHref(eventPath(event), locale)
-
 const eventJsonLd: JsonLdNode | undefined = isPast
   ? undefined
-  : eventNode({
-      siteUrl,
-      id: jsonLdId(url, `event-${event.id}`),
-      name: title,
-      description,
-      startDate: event.startDateTime,
-      ...(online
-        ? {
-            virtualUrl: linkHref.startsWith('/')
-              ? absoluteUrl(Astro.site, linkHref)
-              : linkHref
-          }
-        : { placeName: event.location?.[locale] }),
-      locale
-    })
+  : eventJsonLdNode(event, { siteUrl, site: Astro.site, pageUrl: url, locale })
 
 const mainEntityId = videoJsonLd?.['@id'] ?? eventJsonLd?.['@id']
 

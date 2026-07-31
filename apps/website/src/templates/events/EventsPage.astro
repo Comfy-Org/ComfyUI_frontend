@@ -10,19 +10,14 @@ import PastEventsSection from './PastEventsSection.vue'
 import UpcomingEventsSection from './UpcomingEventsSection.vue'
 import { localizeHref } from '../../config/routes'
 import {
+  eventJsonLdNode,
   eventPath,
   upcomingEvents,
   watchablePastEvents
 } from '../../data/events'
 import { t } from '../../i18n/translations'
 import type { JsonLdNode } from '../../utils/jsonLd'
-import {
-  absoluteUrl,
-  eventNode,
-  itemListNode,
-  jsonLdId,
-  pageContext
-} from '../../utils/jsonLd'
+import { absoluteUrl, itemListNode, jsonLdId, pageContext } from '../../utils/jsonLd'
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
@@ -39,27 +34,9 @@ const eventList = itemListNode(
   }))
 )
 
-// The location copy doubles as the online/physical discriminator.
-const upcomingEventNodes: JsonLdNode[] = upcomingEvents.map((event) => {
-  const href =
-    event.link?.href[locale] ?? localizeHref(eventPath(event), locale)
-  const online = event.location?.en === 'Online'
-  return eventNode({
-    siteUrl,
-    id: jsonLdId(url, `event-${event.id}`),
-    name: event.title[locale],
-    description: event.description[locale],
-    startDate: event.startDateTime,
-    ...(online
-      ? {
-          virtualUrl: href.startsWith('/')
-            ? absoluteUrl(Astro.site, href)
-            : href
-        }
-      : { placeName: event.location?.[locale] }),
-    locale
-  })
-})
+const upcomingEventNodes: JsonLdNode[] = upcomingEvents.map((event) =>
+  eventJsonLdNode(event, { siteUrl, site: Astro.site, pageUrl: url, locale })
+)
 
 const breadcrumbs = [
   {

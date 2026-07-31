@@ -5,6 +5,7 @@ import {
   deriveFeaturedEvents,
   derivePastEvents,
   deriveUpcomingEvents,
+  eventJsonLdNode,
   eventStatus,
   pastEvents,
   toCalendarEvent,
@@ -185,6 +186,47 @@ describe('deriveFeaturedEvents', () => {
     expect(upcoming.href?.en).toBe('/events/second-slide')
     expect(upcoming.autoplayMs).toBe(5000)
     expect(upcoming.showTitle).toBe(false)
+  })
+})
+
+describe('eventJsonLdNode', () => {
+  const input = {
+    siteUrl: 'https://comfy.org',
+    site: undefined,
+    pageUrl: 'https://comfy.org/events/test-event/',
+    locale: 'en' as const
+  }
+
+  it('renders online events as a VirtualLocation with an absolute url', () => {
+    expect(eventJsonLdNode(baseEvent, input)).toMatchObject({
+      '@id': 'https://comfy.org/events/test-event/#event-test-event',
+      eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
+      location: {
+        '@type': 'VirtualLocation',
+        url: 'https://comfy.org/launches/'
+      }
+    })
+  })
+
+  it('absolutizes the event page url when the event has no explicit link', () => {
+    const event: ComfyEvent = { ...baseEvent, link: undefined }
+
+    expect(eventJsonLdNode(event, input).location).toMatchObject({
+      '@type': 'VirtualLocation',
+      url: 'https://comfy.org/events/test-event/'
+    })
+  })
+
+  it('renders offline events as a Place with the localized venue name', () => {
+    const event: ComfyEvent = {
+      ...baseEvent,
+      location: { en: 'San Francisco', 'zh-CN': '旧金山' }
+    }
+
+    expect(eventJsonLdNode(event, input)).toMatchObject({
+      eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+      location: { '@type': 'Place', name: 'San Francisco' }
+    })
   })
 })
 

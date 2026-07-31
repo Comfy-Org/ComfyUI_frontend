@@ -1,6 +1,8 @@
 import { localizeHref } from '../config/routes'
 import type { Locale, LocalizedText } from '../i18n/translations'
 import type { CalendarEvent } from '../utils/calendar'
+import type { JsonLdNode } from '../utils/jsonLd'
+import { absoluteUrl, eventNode, jsonLdId } from '../utils/jsonLd'
 
 type EventCategory = 'livestream' | 'hackathon' | 'community'
 
@@ -118,6 +120,32 @@ export function toCalendarEvent(
     start,
     end: eventEnd(event)
   }
+}
+
+export function eventJsonLdNode(
+  event: ComfyEvent,
+  input: {
+    siteUrl: string
+    site: URL | undefined
+    pageUrl: string
+    locale: Locale
+  }
+): JsonLdNode {
+  const { siteUrl, site, pageUrl, locale } = input
+  const href =
+    event.link?.href[locale] ?? localizeHref(eventPath(event), locale)
+  const online = event.location?.en === 'Online'
+  return eventNode({
+    siteUrl,
+    id: jsonLdId(pageUrl, `event-${event.id}`),
+    name: event.title[locale],
+    description: event.description[locale],
+    startDate: event.startDateTime,
+    ...(online
+      ? { virtualUrl: href.startsWith('/') ? absoluteUrl(site, href) : href }
+      : { placeName: event.location?.[locale] }),
+    locale
+  })
 }
 
 function eventEnd(event: ComfyEvent): Date {
