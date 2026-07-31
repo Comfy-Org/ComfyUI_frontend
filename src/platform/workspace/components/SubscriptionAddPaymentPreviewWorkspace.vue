@@ -2,11 +2,11 @@
   <div
     :class="
       cn(
-        'mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm',
+        'mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2',
         // Edge-to-edge Stripe-checkout split on desktop: the summary is a
         // flush full-height sidebar on base-background, payment beside it on
         // the shell. Mobile keeps the stacked flow.
-        usePaymentElement &&
+        captureMode &&
           'xl:min-h-0 xl:w-full xl:max-w-none xl:flex-1 xl:flex-row xl:items-stretch xl:gap-0'
       )
     "
@@ -14,19 +14,17 @@
     <div
       :class="
         cn(
-          usePaymentElement &&
+          captureMode &&
             'xl:w-[42%] xl:shrink-0 xl:border-r xl:border-border-subtle xl:bg-base-background xl:px-12 xl:py-10',
           // Below xl the same dual tone runs vertically: the summary bleeds
           // dark to the dialog edges, payment continues on the shell below.
-          usePaymentElement &&
-            'max-xl:-mx-4 max-xl:-mt-6 max-xl:rounded-t-2xl max-xl:bg-base-background max-xl:px-6 max-xl:pt-4 max-xl:pb-6'
+          captureMode &&
+            'max-xl:-mx-4 max-xl:-mt-6 max-xl:rounded-t-2xl max-xl:bg-base-background max-xl:p-6'
         )
       "
     >
       <div
-        :class="
-          cn('mb-8 flex items-center gap-3', usePaymentElement && 'xl:mb-10')
-        "
+        :class="cn('mb-8 flex items-center gap-3', captureMode && 'xl:mb-10')"
       >
         <Button
           v-if="usePaymentElement"
@@ -44,23 +42,13 @@
             cn(
               'm-0 flex-1 text-center text-xl font-semibold text-base-foreground lg:text-2xl',
               // In the sidebar the title goes quiet and the money block leads.
-              usePaymentElement &&
+              captureMode &&
                 'xl:text-left xl:text-base xl:font-medium xl:text-muted-foreground'
             )
           "
         >
           {{ $t('subscription.preview.confirmPayment') }}
         </h2>
-        <Button
-          v-if="usePaymentElement"
-          size="icon"
-          variant="muted-textonly"
-          class="shrink-0 rounded-full xl:hidden"
-          :aria-label="$t('g.close')"
-          @click="$emit('close')"
-        >
-          <i class="pi pi-times text-base" />
-        </Button>
       </div>
       <!-- Plan Header -->
       <div class="flex flex-col gap-2">
@@ -116,24 +104,7 @@
            and discount math need the BE preview endpoint; until then the
            code rides along at confirm exactly as before. -->
       <div v-if="usePaymentElement" class="pb-4">
-        <Button
-          v-if="!isPromoOpen"
-          variant="secondary"
-          size="lg"
-          class="self-start"
-          @click="openPromo"
-        >
-          {{ $t('subscription.preview.addPromoCode') }}
-        </Button>
-        <Input
-          v-else
-          ref="promoInput"
-          v-model="promotionCode"
-          class="w-full"
-          :placeholder="$t('subscription.preview.promotionCodePlaceholder')"
-          autocomplete="off"
-          @blur="onPromoBlur"
-        />
+        <SubscriptionPromoCodeField v-model="promotionCode" />
       </div>
 
       <!-- Total Due Section -->
@@ -161,17 +132,58 @@
           }}
         </span>
       </div>
+      <!-- Saved method: no capture column; a card row with a change
+           affordance stands in for the form. -->
+      <div v-if="savedMethods?.length" class="flex flex-col gap-2 pt-6">
+        <span class="text-sm text-muted-foreground">
+          {{ $t('subscription.preview.savedPaymentMethod') }}
+        </span>
+        <div
+          v-if="savedMethods.length === 1"
+          class="flex h-10 items-center gap-3 rounded-lg bg-secondary-background px-4"
+        >
+          <i
+            :class="
+              cn(
+                'size-4 shrink-0',
+                savedMethods[0].type === 'bank'
+                  ? 'icon-[lucide--landmark]'
+                  : savedMethods[0].type === 'alipay'
+                    ? 'icon-[lucide--wallet]'
+                    : 'icon-[lucide--credit-card]'
+              )
+            "
+          />
+          <span class="text-sm text-base-foreground tabular-nums">
+            {{ methodLabel(savedMethods[0]) }}
+          </span>
+          <Button
+            variant="link"
+            size="lg"
+            class="ml-auto px-0"
+            @click="$emit('changePaymentMethod')"
+          >
+            {{ $t('subscription.preview.changePaymentMethod') }}
+          </Button>
+        </div>
+        <SingleSelect
+          v-else
+          v-model="selectedMethod"
+          :options="savedMethodOptions"
+          size="lg"
+        />
+      </div>
     </div>
+
     <!-- Footer (right column on desktop when the payment element is embedded;
          scrolls independently so the summary panel stays put) -->
     <div
       :class="
         cn(
-          'flex flex-col gap-2 pt-8',
-          usePaymentElement &&
-            'xl:min-h-0 xl:min-w-0 xl:flex-1 xl:px-16 xl:py-10',
+          'flex flex-col gap-2 pt-8 pb-4',
+          captureMode && 'xl:min-h-0 xl:min-w-0 xl:flex-1 xl:px-16 xl:py-10',
           // Match the summary panel's 24px edge inset (root p-4 provides 16).
-          usePaymentElement && 'max-xl:px-2'
+          captureMode && 'max-xl:px-2'
         )
       "
     >
@@ -189,7 +201,7 @@
       </Button>
 
       <UnifiedStripePaymentSelector
-        v-if="usePaymentElement"
+        v-if="captureMode"
         :amount-cents="amountDueCents"
         :is-loading
         :promotion-code="promotionCode"
@@ -198,7 +210,18 @@
       />
 
       <Button
-        v-if="!usePaymentElement"
+        v-if="savedMethods?.length"
+        variant="inverted"
+        size="lg"
+        class="w-full rounded-lg"
+        :loading="isLoading"
+        @click="$emit('addCreditCard')"
+      >
+        {{ $t('subscription.preview.payAndSubscribe') }}
+      </Button>
+
+      <Button
+        v-if="!usePaymentElement && !savedMethods?.length"
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
@@ -215,11 +238,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import {
   getTierCredits,
@@ -231,8 +254,15 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import SubscriptionPromoCodeField from './SubscriptionPromoCodeField.vue'
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
+
+export interface SavedPaymentMethod {
+  type: 'card' | 'alipay' | 'bank'
+  brand?: string
+  last4?: string
+}
 
 interface Props {
   /** Personal-tier checkout. Required unless `teamPlan` is set. */
@@ -244,6 +274,13 @@ interface Props {
   teamPlan?: TeamPlanSelection | null
   actionUrl?: string | null
   usePaymentElement?: boolean
+  /** Saved payment methods; when present the capture form is skipped and the
+   *  confirm renders as a narrow summary. One method shows a Change
+   *  affordance; two or more become a picker whose last option adds a new
+   *  method. Display varies by type: cards and banks carry brand + last4,
+   *  Alipay is a linked account with neither. The backend does not supply
+   *  this yet. */
+  savedMethods?: SavedPaymentMethod[] | null
 }
 
 const {
@@ -253,35 +290,46 @@ const {
   previewData = null,
   teamPlan = null,
   actionUrl = null,
-  usePaymentElement = false
+  usePaymentElement = false,
+  savedMethods = null
 } = defineProps<Props>()
 
 const emit = defineEmits<{
   addCreditCard: []
   confirmPayment: [confirmationToken: string, promotionCode?: string]
   back: []
-  close: []
+  changePaymentMethod: []
 }>()
 
 const { t, n } = useI18n()
 
-const isPromoOpen = ref(false)
+// The wide capture split only applies while a payment method is being
+// collected; with a saved method the confirm is a single narrow column.
+const captureMode = computed(() => usePaymentElement && !savedMethods?.length)
+
+function methodLabel(m: SavedPaymentMethod) {
+  if (m.type === 'alipay') return t('subscription.preview.alipay')
+  return `${m.brand} •••• ${m.last4}`
+}
+
+const savedMethodOptions = computed(() => [
+  ...(savedMethods ?? []).map((m, i) => ({
+    name: methodLabel(m),
+    value: String(i)
+  })),
+  {
+    name: t('subscription.preview.addNewPaymentMethod'),
+    value: 'add-new'
+  }
+])
+const selectedMethod = ref('0')
+watch(selectedMethod, (value) => {
+  if (value !== 'add-new') return
+  selectedMethod.value = '0'
+  emit('changePaymentMethod')
+})
+
 const promotionCode = ref('')
-const promoInput = ref<InstanceType<typeof Input>>()
-
-function openPromo() {
-  isPromoOpen.value = true
-  void nextTick(() => {
-    const el = promoInput.value?.$el
-    if (el instanceof HTMLInputElement) el.focus()
-  })
-}
-
-// An empty field collapses back to the button on blur; a typed code keeps
-// the field so the entered value stays visible.
-function onPromoBlur() {
-  if (!promotionCode.value.trim()) isPromoOpen.value = false
-}
 
 function openVerification() {
   if (!actionUrl) return
@@ -303,7 +351,7 @@ const isYearly = computed(() =>
 )
 
 const displayPrice = computed(() => {
-  if (teamPlan) return teamPlan.discountedUsd
+  if (teamPlan) return n(teamPlan.discountedUsd)
   if (previewData?.new_plan) {
     const cents = previewData.new_plan.price_cents
     return ((isYearly.value ? cents / 12 : cents) / 100).toFixed(0)
@@ -333,24 +381,24 @@ const creditsRefillLabelKey = computed(() =>
     : 'subscription.preview.eachMonthCreditsRefill'
 )
 
-const totalDueToday = computed(() => {
+const totalDueTodayUsd = computed(() => {
   if (teamPlan) {
-    const total = isYearly.value
-      ? teamPlan.discountedUsd * 12
-      : teamPlan.discountedUsd
-    return total.toFixed(2)
+    return isYearly.value ? teamPlan.discountedUsd * 12 : teamPlan.discountedUsd
   }
-  if (previewData) {
-    return (previewData.cost_today_cents / 100).toFixed(2)
-  }
-  if (!tierKey) return '0.00'
+  if (previewData) return previewData.cost_today_cents / 100
+  if (!tierKey) return 0
   const priceValue = getTierPrice(tierKey, isYearly.value)
-  return (isYearly.value ? priceValue * 12 : priceValue).toFixed(2)
+  return isYearly.value ? priceValue * 12 : priceValue
 })
 
-const amountDueCents = computed(() =>
-  Math.round(Number(totalDueToday.value) * 100)
+const totalDueToday = computed(() =>
+  totalDueTodayUsd.value.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 )
+
+const amountDueCents = computed(() => Math.round(totalDueTodayUsd.value * 100))
 
 const nextPaymentDate = computed(() => {
   if (previewData?.new_plan?.period_end) {
