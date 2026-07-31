@@ -334,7 +334,7 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
 
   function nodeUnmounted(id: string): void {
     if (!mountedNodeIds.delete(id)) return
-    recompute()
+    scheduleMountRecompute()
   }
 
   function createPushController(

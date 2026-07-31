@@ -197,7 +197,7 @@ describe('vueNodeRenderingService', () => {
     expect(service.getSnapshot().mountedNodeIds).toEqual(['2'])
   })
 
-  it('coalesces mount notifications with the latest mounted state', async () => {
+  it('coalesces lifecycle notifications with the latest mounted state', async () => {
     const service = createVueNodeRenderingService()
     service.updateRuntime(runtime())
     const listener = vi.fn()
@@ -212,6 +212,16 @@ describe('vueNodeRenderingService', () => {
     await Promise.resolve()
     expect(listener).toHaveBeenCalledOnce()
     expect(service.getSnapshot().mountedNodeIds).toEqual(['1', '2', '3'])
+
+    listener.mockClear()
+    service.nodeUnmounted('1')
+    service.nodeUnmounted('2')
+    service.nodeUnmounted('missing')
+
+    expect(listener).not.toHaveBeenCalled()
+    await Promise.resolve()
+    expect(listener).toHaveBeenCalledOnce()
+    expect(service.getSnapshot().mountedNodeIds).toEqual(['3'])
   })
 
   it('keeps frontend-required nodes rendered and freezes suppression changes', () => {
