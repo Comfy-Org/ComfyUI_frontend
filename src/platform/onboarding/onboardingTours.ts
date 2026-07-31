@@ -23,13 +23,26 @@ export const COACH_IDS = {
 
 export type CoachId = (typeof COACH_IDS)[keyof typeof COACH_IDS]
 
-export interface CoachStep {
+interface StepBase {
   /**
    * Derives the step's translation keys:
    * `onboardingCoachmarks.<tour>.<name>.title|body`, plus optional
    * `primary`/`skip` button-label overrides.
    */
   name: string
+  /** Runs when the step is shown; the signal aborts on leaving the step. */
+  onEnter?: (signal: AbortSignal) => void | Promise<void>
+}
+
+/** Renders the landing dialog: no target, no spotlight, no placement. */
+interface LandingStep extends StepBase {
+  kind: 'landing'
+  image?: string
+}
+
+/** Spotlights a target, or centres itself when the step names none. */
+export interface SpotlightStep extends StepBase {
+  kind: 'spotlight'
   /** Element to spotlight (the first laid-out registered candidate wins). */
   coachId?: CoachId
   placement: CoachPlacement
@@ -37,14 +50,11 @@ export interface CoachStep {
   openSidebarTab?: string
   /** Target mounts later (e.g. a dialog); wait for it instead of dropping the step. */
   deferTarget?: boolean
-  /** Renders the landing dialog instead of a spotlight. */
-  landing?: boolean
-  image?: string
   /** Lets pointer input through the scrim's holes and releases the focus trap. */
   interactive?: boolean
-  /** Runs when the step is shown; the signal aborts on leaving the step. */
-  onEnter?: (signal: AbortSignal) => void | Promise<void>
 }
+
+export type CoachStep = LandingStep | SpotlightStep
 
 /** A tour's steps: a fixed list, or a resolver that builds them at start. */
 export type TourDefinition = CoachStep[] | (() => Promise<CoachStep[]>)
@@ -58,37 +68,44 @@ export function resolveSteps(
   isMounted: (id: CoachId) => boolean
 ): CoachStep[] {
   return steps.filter(
-    (s) => !s.coachId || s.deferTarget || isMounted(s.coachId)
+    (s) =>
+      s.kind === 'landing' ||
+      !s.coachId ||
+      s.deferTarget ||
+      isMounted(s.coachId)
   )
 }
 
 export const TOURS: Record<EntryPath, TourDefinition> = {
   appMode: [
     {
+      kind: 'landing',
       name: 'landing',
-      landing: true,
-      placement: 'center',
       image: '/assets/images/app-mode-landing.png'
     },
     {
+      kind: 'spotlight',
       name: 'inputs',
       coachId: COACH_IDS.inputsList,
       placement: 'auto',
       deferTarget: true
     },
     {
+      kind: 'spotlight',
       name: 'run',
       coachId: COACH_IDS.appRunButton,
       placement: 'auto',
       deferTarget: true
     },
     {
+      kind: 'spotlight',
       name: 'outputs',
       coachId: COACH_IDS.outputs,
       placement: 'leftCenter',
       deferTarget: true
     },
     {
+      kind: 'spotlight',
       name: 'assets',
       coachId: COACH_IDS.assetsPanel,
       placement: 'auto',

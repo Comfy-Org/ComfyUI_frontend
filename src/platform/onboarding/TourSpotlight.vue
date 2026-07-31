@@ -84,7 +84,6 @@
           :title-id="titleId"
           :message="body"
           :message-id="bodyId"
-          :image="step.image"
         >
           <template #actions>
             <Button
@@ -152,7 +151,7 @@ import {
   clampSpotlightRect,
   noTargetCardLeft
 } from './coachmarkLayout'
-import type { CoachStep } from './onboardingTours'
+import type { SpotlightStep } from './onboardingTours'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
 
 const {
@@ -168,7 +167,7 @@ const {
   countedStepsTotal,
   waitingForTarget
 } = defineProps<{
-  step: CoachStep
+  step: SpotlightStep
   title: string
   body: string
   isLast: boolean
@@ -196,7 +195,7 @@ const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-const { targetRect, targetEl, targetMoves, floatingStyles, isPositioned } =
+const { targetRect, targetMoves, floatingStyles, isPositioned } =
   useCoachmarkTarget(() => step, cardRef)
 
 // Last step's "Done" already dismisses, so hide Skip there.
@@ -283,7 +282,7 @@ const hitRegionPath = computed(() => {
 const cardStyle = computed(() => {
   const width = `${CARD_WIDTH}px`
   const maxWidth = `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`
-  if (!targetEl.value) {
+  if (!targetRect.value) {
     return {
       width,
       maxWidth,

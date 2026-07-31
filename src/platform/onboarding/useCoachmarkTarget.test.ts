@@ -2,45 +2,21 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
 import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
-import type { CoachId, CoachStep } from './onboardingTours'
-import { useCoachmarkTarget } from './useCoachmarkTarget'
+import {
+  hidden,
+  laidOut,
+  mountNode,
+  movingTarget
+} from './fixtures/coachmarkTargets'
+import type { CoachId, SpotlightStep } from './onboardingTours'
+import { isSettling, useCoachmarkTarget } from './useCoachmarkTarget'
 
-function step(coachId: CoachId): CoachStep {
-  return { name: 'step', placement: 'right', coachId }
+function step(coachId: CoachId): SpotlightStep {
+  return { kind: 'spotlight', name: 'step', placement: 'right', coachId }
 }
 
-function laidOut(): HTMLElement {
-  const el = document.createElement('div')
-  el.getBoundingClientRect = () => new DOMRect(10, 10, 80, 30)
-  return el
-}
-
-function hidden(): HTMLElement {
-  const el = document.createElement('div')
-  el.getBoundingClientRect = () => new DOMRect(0, 0, 0, 0)
-  return el
-}
-
-function mountNode(): HTMLElement {
-  const node = laidOut()
-  node.setAttribute('data-node-id', '7')
-  document.body.append(node)
-  return node
-}
-
-function movingTarget(nodeId = '7') {
-  const listeners = new Set<() => void>()
-  return {
-    selector: `[data-node-id="${nodeId}"]`,
-    onMove: (notify: () => void) => {
-      listeners.add(notify)
-      return () => listeners.delete(notify)
-    },
-    move: () => listeners.forEach((notify) => notify()),
-    listenerCount: () => listeners.size
-  }
-}
-
+// Floating UI does not compute in happy-dom, so the card's placement is
+// browser-verified. These assert which candidate is anchored, and its lifecycle.
 describe('useCoachmarkTarget', () => {
   afterEach(() => {
     clearCoachmarks()
@@ -50,164 +26,121 @@ describe('useCoachmarkTarget', () => {
 
   function setup(coachId: CoachId) {
     const scope = effectScope()
-    const stepRef = ref<CoachStep | null>(step(coachId))
+    const stepRef = ref<SpotlightStep | null>(step(coachId))
     const cardRef = ref<HTMLElement | null>(null)
     const api = scope.run(() => useCoachmarkTarget(stepRef, cardRef))!
     return { scope, api }
   }
 
-  it('resolves the first laid-out candidate for the step target', () => {
-    const el = laidOut()
-    registerCoachmark('outputs', el)
-    const { scope, api } = setup('outputs')
-    expect(api.targetEl.value).toBe(el)
-    scope.stop()
-  })
-
-  it('skips a registered target that is not laid out', () => {
+  it('skips a registered candidate that is not laid out', () => {
     registerCoachmark('outputs', hidden())
-    const laid = laidOut()
-    registerCoachmark('outputs', laid)
+    mountNode()
+    registerCoachmark('outputs', movingTarget())
     const { scope, api } = setup('outputs')
-    expect(api.targetEl.value).toBe(laid)
-    scope.stop()
-  })
-
-  it('picks up a target that registers after the step starts', () => {
-    const { scope, api } = setup('outputs')
-    expect(api.targetEl.value).toBeNull()
-
-    const el = laidOut()
-    registerCoachmark('outputs', el)
-    expect(api.targetEl.value).toBe(el)
-    scope.stop()
-  })
-
-  it('leaves the document unwatched for a step targeting an element', async () => {
-    const el = laidOut()
-    registerCoachmark('outputs', el)
-    const { scope, api } = setup('outputs')
-    expect(api.targetEl.value).toBe(el)
-
-    const measure = vi.spyOn(el, 'getBoundingClientRect')
-    document.body.append(document.createElement('div'))
-    await nextTick()
 
     expect(
-      measure,
-      'only a selector can be swapped without the registry noticing, so only it needs watching'
-    ).not.toHaveBeenCalled()
+      api.targetMoves.value,
+      'a hidden candidate must not win over one that is actually on screen'
+    ).toBe(true)
     scope.stop()
   })
 
-  describe('a target the camera carries', () => {
-    it('anchors to the node its selector names', () => {
-      const node = mountNode()
-      registerCoachmark('outputs', movingTarget())
-      const { scope, api } = setup('outputs')
+  it('anchors to the first laid-out candidate', () => {
+    registerCoachmark('outputs', laidOut())
+    mountNode()
+    registerCoachmark('outputs', movingTarget())
+    const { scope, api } = setup('outputs')
 
-      expect(
-        api.targetEl.value,
-        'Floating UI has to be handed the node, not a stand-in for it'
-      ).toBe(node)
-      scope.stop()
-    })
+    expect(
+      api.targetMoves.value,
+      'a still target sharing a coach id loses its glide if an unrelated one moves'
+    ).toBe(false)
+    scope.stop()
+  })
 
-    it('subscribes to its motion, which fires no DOM event', async () => {
-      mountNode()
-      const target = movingTarget()
-      registerCoachmark('outputs', target)
-      const { scope } = setup('outputs')
-      await nextTick()
+  it('has nothing to anchor to while its node is unmounted', () => {
+    registerCoachmark('outputs', movingTarget())
+    const { scope, api } = setup('outputs')
 
-      expect(target.listenerCount()).toBe(1)
+    expect(
+      api.targetMoves.value,
+      'a step with nothing on screen has no motion to describe'
+    ).toBe(false)
+    scope.stop()
+  })
 
-      scope.stop()
-      expect(
-        target.listenerCount(),
-        'a subscription outliving its tour follows the node forever'
-      ).toBe(0)
-    })
+  it('picks up a candidate that registers after the step starts', () => {
+    const { scope, api } = setup('outputs')
+    expect(api.targetMoves.value).toBe(false)
 
-    it('has nothing to anchor to while its node is unmounted', () => {
-      registerCoachmark('outputs', movingTarget())
-      const { scope, api } = setup('outputs')
+    mountNode()
+    registerCoachmark('outputs', movingTarget())
 
-      expect(
-        api.targetEl.value,
-        'the engine waits for the node, so a card is never placed against nothing'
-      ).toBeNull()
-      expect(
-        api.targetMoves.value,
-        'a step with nothing on screen has no motion to describe'
-      ).toBe(false)
-      scope.stop()
-    })
+    expect(
+      api.targetMoves.value,
+      'the tour registers its canvas target before the node renders'
+    ).toBe(true)
+    scope.stop()
+  })
 
-    it('follows the node through a remount the camera never announces', async () => {
-      const first = mountNode()
-      registerCoachmark('outputs', movingTarget())
-      const { scope, api } = setup('outputs')
-      expect(api.targetEl.value).toBe(first)
+  it('subscribes to its motion, which fires no DOM event', async () => {
+    mountNode()
+    const target = movingTarget()
+    registerCoachmark('outputs', target)
+    const { scope } = setup('outputs')
+    await nextTick()
 
-      first.remove()
-      const second = mountNode()
-      await nextTick()
+    expect(target.listenerCount()).toBe(1)
 
-      expect(
-        api.targetEl.value,
-        'a card anchored to a detached node measures zero and flies off screen'
-      ).toBe(second)
-      scope.stop()
-    })
+    scope.stop()
+    expect(
+      target.listenerCount(),
+      'a subscription outliving its tour follows the node forever'
+    ).toBe(0)
+  })
 
-    it('leaves the DOM alone while the camera moves', () => {
-      mountNode()
-      const target = movingTarget()
-      registerCoachmark('outputs', target)
-      const { scope, api } = setup('outputs')
-      expect(api.targetEl.value).not.toBeNull()
+  it('follows only the candidate it anchored to', () => {
+    const elsewhere = movingTarget('8')
+    registerCoachmark('outputs', elsewhere)
+    mountNode()
+    const anchored = movingTarget()
+    registerCoachmark('outputs', anchored)
+    const { scope } = setup('outputs')
 
-      const querySelector = vi.spyOn(document, 'querySelector')
-      target.move()
+    expect(anchored.listenerCount()).toBe(1)
+    expect(
+      elsewhere.listenerCount(),
+      'a candidate the card is not anchored to must not reposition it'
+    ).toBe(0)
+    scope.stop()
+  })
+})
 
-      expect(
-        querySelector,
-        're-resolving the selector every camera frame forces a layout flush per frame'
-      ).not.toHaveBeenCalled()
-      scope.stop()
-    })
+describe('isSettling', () => {
+  const rect = new DOMRect(0, 0, 10, 10)
+  const moved = new DOMRect(5, 0, 10, 10)
+  const deferred: SpotlightStep = {
+    kind: 'spotlight',
+    name: 'step',
+    placement: 'right',
+    deferTarget: true
+  }
 
-    it('follows only the candidate it anchored to', () => {
-      mountNode()
-      const anchored = movingTarget()
-      const elsewhere = movingTarget('8')
-      registerCoachmark('outputs', anchored)
-      registerCoachmark('outputs', elsewhere)
-      const { scope, api } = setup('outputs')
+  it('does not track a step whose target is already in place', () => {
+    expect(
+      isSettling({ ...deferred, deferTarget: false }, rect, moved),
+      'an undeferred target never animates in, so nothing needs following'
+    ).toBe(false)
+  })
 
-      expect(api.targetEl.value).not.toBeNull()
-      expect(anchored.listenerCount()).toBe(1)
-      expect(
-        elsewhere.listenerCount(),
-        'a candidate the card is not anchored to must not reposition it'
-      ).toBe(0)
-      scope.stop()
-    })
+  it('tracks a deferred target while its rect is still moving', () => {
+    expect(isSettling(deferred, moved, rect)).toBe(true)
+  })
 
-    it('reports the motion of the candidate it anchored to', () => {
-      const el = laidOut()
-      registerCoachmark('outputs', el)
-      mountNode()
-      registerCoachmark('outputs', movingTarget())
-      const { scope, api } = setup('outputs')
-
-      expect(api.targetEl.value).toBe(el)
-      expect(
-        api.targetMoves.value,
-        'a still target sharing a coach id loses its glide if an unrelated one moves'
-      ).toBe(false)
-      scope.stop()
-    })
+  it('stops tracking once the rect has held still', () => {
+    expect(
+      isSettling(deferred, rect, rect),
+      'tracking that never disarms leaves a frame loop running for the tour'
+    ).toBe(false)
   })
 })

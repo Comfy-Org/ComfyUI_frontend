@@ -8,8 +8,9 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import TourSpotlight from './TourSpotlight.vue'
 import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
+import { laidOut, mountNode, movingTarget } from './fixtures/coachmarkTargets'
 import { COACH_IDS } from './onboardingTours'
-import type { CoachStep } from './onboardingTours'
+import type { SpotlightStep } from './onboardingTours'
 
 vi.mock('@primeuix/utils/zindex', () => ({
   ZIndex: { set: vi.fn(), clear: vi.fn() }
@@ -21,8 +22,8 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function spotlightStep(overrides: Partial<CoachStep> = {}): CoachStep {
-  return { name: 'step', placement: 'right', ...overrides }
+function spotlightStep(overrides: Partial<SpotlightStep> = {}): SpotlightStep {
+  return { kind: 'spotlight', name: 'step', placement: 'right', ...overrides }
 }
 
 const baseProps = {
@@ -85,8 +86,7 @@ describe('TourSpotlight interactive and masked steps', () => {
   })
 
   it('transitions the ring between DOM targets, which move on discrete events', () => {
-    const el = document.createElement('div')
-    el.getBoundingClientRect = () => new DOMRect(10, 10, 80, 40)
+    const el = laidOut(new DOMRect(10, 10, 80, 40))
     document.body.append(el)
     registerCoachmark(COACH_IDS.inputsList, el)
 
@@ -95,19 +95,13 @@ describe('TourSpotlight interactive and masked steps', () => {
     })
 
     expect(screen.getByTestId('coach-spotlight').className).toContain(
-      'transition-[left,top,width,height,opacity]'
+      'motion-safe:transition-[left,top,width,height,opacity]'
     )
   })
 
   it('rides a node the camera carries instead of transitioning after it', () => {
-    const node = document.createElement('div')
-    node.setAttribute('data-node-id', '7')
-    node.getBoundingClientRect = () => new DOMRect(10, 10, 80, 40)
-    document.body.append(node)
-    registerCoachmark(COACH_IDS.inputsList, {
-      selector: '[data-node-id="7"]',
-      onMove: () => () => {}
-    })
+    mountNode()
+    registerCoachmark(COACH_IDS.inputsList, movingTarget())
 
     renderSpotlight({
       step: spotlightStep({ coachId: COACH_IDS.inputsList })
