@@ -224,9 +224,14 @@ describe('Composer', () => {
       const { emitted } = mount({ getMentionNodes: () => NODES })
 
       await userEvent.type(screen.getByRole('textbox'), '@')
-      await userEvent.keyboard('{ArrowDown}{Tab}')
+      const options = screen.getAllByRole('option')
+      await userEvent.keyboard('{ArrowDown}')
+      expect(options[1]).toHaveAttribute('aria-selected', 'true')
+      await userEvent.keyboard('{ArrowUp}')
+      expect(options[0]).toHaveAttribute('aria-selected', 'true')
+      await userEvent.keyboard('{Tab}')
 
-      expect(emitted().mentionPick[0]).toEqual([NODES[1]])
+      expect(emitted().mentionPick[0]).toEqual([NODES[0]])
       expect(emitted().send).toBeUndefined()
     })
 

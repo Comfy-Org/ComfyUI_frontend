@@ -3166,6 +3166,31 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
+  it('sends the node selected from a typed mention with the prompt', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    appMock.graph.nodes = [
+      { id: 5, title: 'KSampler' },
+      { id: 7, title: 'KSampler' }
+    ]
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, '@')
+    expect(screen.getByText('#5')).toBeInTheDocument()
+    expect(screen.getByText('#7')).toBeInTheDocument()
+    await userEvent.keyboard('{ArrowDown}{Enter}')
+
+    expect(screen.getByText('#7')).toBeInTheDocument()
+    await sendFromComposer('tune it')
+
+    expect(bodies[0]).toMatchObject({
+      content: 'tune it',
+      selection: { node_ids: ['7'] }
+    })
+  })
+
   it('does not report a mention pick that stages nothing', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
