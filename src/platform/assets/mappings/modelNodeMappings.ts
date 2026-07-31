@@ -75,32 +75,35 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['SEEDVR2', 'SeedVR2LoadDiTModel', 'model'],
 
   // ---- Qwen VL vision-language (comfyui-qwen-vl) ----
-  ['LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-2B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-2B-Thinking', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-4B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-4B-Thinking', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-8B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-8B-Thinking', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-32B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-32B-Thinking', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-0.6B', 'AILab_QwenVL_PromptEnhancer', 'model_name'],
-  [
-    'LLM/Qwen-VL/Qwen3-4B-Instruct-2507',
-    'AILab_QwenVL_PromptEnhancer',
-    'model_name'
-  ],
-  ['LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-2B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-2B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-4B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-4B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-8B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-8B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-32B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-32B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
+  // Intentionally NOT mapped to the asset-picker. The `model_name` widget on
+  // these nodes takes a model folder name (e.g. `Qwen3-VL-4B-Instruct`), not an
+  // asset filename, so the filename-based asset browser cannot represent its
+  // values and replacing the combo breaks published workflows. The store also
+  // only queries the first registered category per node type, which left all
+  // but the first directory unreachable. Leave these unmapped so the nodes
+  // fall back to their own combo populated from `/api/object_info`.
+  // ['LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct', 'AILab_QwenVL', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct', 'AILab_QwenVL', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-2B-Instruct', 'AILab_QwenVL', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-2B-Thinking', 'AILab_QwenVL', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-4B-Instruct', 'AILab_QwenVL', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-4B-Thinking', 'AILab_QwenVL', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-8B-Instruct', 'AILab_QwenVL', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-8B-Thinking', 'AILab_QwenVL', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-32B-Instruct', 'AILab_QwenVL', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-32B-Thinking', 'AILab_QwenVL', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-0.6B', 'AILab_QwenVL_PromptEnhancer', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-4B-Instruct-2507', 'AILab_QwenVL_PromptEnhancer', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-2B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-2B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-4B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-4B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-8B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-8B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-32B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
+  // ['LLM/Qwen-VL/Qwen3-VL-32B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
   ['LLM/checkpoints', 'LoadChatGLM3', 'chatglm3_checkpoint'],
 
   // ---- Qwen3 TTS (ComfyUI-FunBox) ----
@@ -190,13 +193,23 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['EVF-SAM', 'LayerMask: EVFSAMUltra', 'model'],
 
   // ---- Florence2 vision-language (comfyui-florence2) ----
-  ['florence2', 'DownloadAndLoadFlorence2Model', 'model'],
+  // Intentionally NOT mapped to the asset-picker. The `model` widget takes a
+  // HF repo id (e.g. `microsoft/Florence-2-base`), not an asset filename, so
+  // the filename-based asset browser cannot represent its values. Leave it
+  // unmapped so the node falls back to its own combo populated from
+  // `/api/object_info`.
+  // ['florence2', 'DownloadAndLoadFlorence2Model', 'model'],
 
   // ---- GIMM-VFI frame interpolation (ComfyUI-GIMM-VFI) ----
   ['interpolation', 'DownloadAndLoadGIMMVFIModel', 'model'],
 
   // ---- RMBG background removal (comfyui-rmbg) ----
-  ['rmbg', 'RMBG', 'model'],
+  // Intentionally NOT mapped to the asset-picker. The `model` widget takes an
+  // algorithm id (e.g. `RMBG-2.0`), not an asset filename, so the
+  // filename-based asset browser cannot represent its values. Leave it
+  // unmapped so the node falls back to its own combo populated from
+  // `/api/object_info`.
+  // ['rmbg', 'RMBG', 'model'],
 
   // ---- SmolLM2/SmolVLM language models (comfyui_layerstyle) ----
   ['smol', 'LayerUtility: LoadSmolLM2Model', 'model'],
