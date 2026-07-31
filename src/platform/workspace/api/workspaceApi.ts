@@ -1,6 +1,11 @@
+import type {
+  BillingStatusResponse as GeneratedBillingStatusResponse,
+  ChurnkeyAuthResponse
+} from '@comfyorg/ingest-types'
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
+import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
@@ -12,7 +17,9 @@ import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
-export type BillingRail = 'legacy_stripe' | 'stripe'
+export type BillingRail = NonNullable<
+  GeneratedBillingStatusResponse['billing_rail']
+>
 
 interface Workspace {
   id: WorkspaceId
@@ -170,6 +177,7 @@ interface SubscribeRequest {
   billing_cycle?: SubscribeBillingCycle
   /** Required to change plans while the current subscription is cancelled; server rejects the change without it. */
   confirm_reactivation?: boolean
+  proration_at?: string
 }
 
 export interface SubscribeOptions {
@@ -178,6 +186,7 @@ export interface SubscribeOptions {
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
   confirmReactivation?: boolean
+  prorationAt?: string
 }
 
 export interface PreviewSubscribeOptions {
@@ -223,7 +232,10 @@ interface PaymentPortalResponse {
 
 interface PreviewPlanInfo {
   slug: string
-  tier: SubscriptionTier
+  // The billing preview contract includes the workspace-level Team tier even
+  // though the registry subscription tier used by the personal plan catalog
+  // does not.
+  tier: SubscriptionTier | 'TEAM'
   duration: SubscriptionDuration
   price_cents: number
   credits_cents: number
@@ -244,6 +256,7 @@ export interface PreviewSubscribeResponse {
   credits_next_period_cents: number
   current_plan?: PreviewPlanInfo
   new_plan: PreviewPlanInfo
+  proration_at?: string
 }
 
 export type BillingSubscriptionStatus =
@@ -275,6 +288,8 @@ export interface BillingStatusResponse {
   subscription_tier?: SubscriptionTier
   subscription_duration?: SubscriptionDuration
   plan_slug?: string
+  scheduled_plan_slug?: string
+  change_at?: string
   billing_status?: BillingStatus
   pending_billing_op_id?: string
   action_url?: string
@@ -694,7 +709,8 @@ export const workspaceApi = {
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
           billing_cycle: options.billingCycle,
-          confirm_reactivation: options.confirmReactivation
+          confirm_reactivation: options.confirmReactivation,
+          proration_at: options.prorationAt
         } satisfies SubscribeRequest,
         { headers }
       )
@@ -722,6 +738,19 @@ export const workspaceApi = {
           { headers }
         )
       return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        api.apiURL('/billing/churnkey/auth'),
+        { headers }
+      )
+      return churnkeyAuthResponseSchema.parse(response.data)
     } catch (err) {
       handleAxiosError(err)
     }
