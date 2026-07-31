@@ -1,16 +1,51 @@
 {
   "name": "@comfyorg/shared-frontend-utils",
   "version": "1.0.0",
-  "private": true,
   "description": "Shared frontend utils for ComfyUI Frontend",
   "keywords": [],
+  "homepage": "https://comfy.org",
+  "license": "MIT",
+  "author": {
+    "name": "Comfy Org",
+    "email": "support@comfy.org",
+    "url": "https://www.comfy.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
+    "directory": "packages/shared-frontend-utils"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     "./formatUtil": "./src/formatUtil.ts",
     "./networkUtil": "./src/networkUtil.ts",
-    "./piiUtil": "./src/piiUtil.ts"
+    "./piiUtil": "./src/piiUtil.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      "./formatUtil": {
+        "types": "./dist/formatUtil.d.ts",
+        "import": "./dist/formatUtil.js"
+      },
+      "./networkUtil": {
+        "types": "./dist/networkUtil.d.ts",
+        "import": "./dist/networkUtil.js"
+      },
+      "./piiUtil": {
+        "types": "./dist/piiUtil.d.ts",
+        "import": "./dist/piiUtil.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
   },
   "scripts": {
+    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
