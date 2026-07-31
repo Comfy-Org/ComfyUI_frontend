@@ -1,17 +1,17 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { toRaw } from 'vue'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
-import { zeroUuid } from '@/utils/uuid'
+import { createUuidv4, zeroUuid } from '@/utils/uuid'
 
-import { createNodeShellState } from './nodeShellState'
+import { createNodeShellState, unregisterNodeState } from './nodeShellState'
 
 describe('node shell state', () => {
   beforeEach(() => {
@@ -67,6 +67,58 @@ describe('node shell state', () => {
     subgraph.remove(node)
 
     expect(statesIn(subgraph)).toEqual([])
+    expect(node._graphId).toBeUndefined()
+  })
+})
+
+describe('node registration invariants', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.stubEnv('DEV', true)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
+
+  it('refuses to register a node under a second root graph', () => {
+    const first = new LGraph()
+    const second = new LGraph()
+    second.id = createUuidv4()
+    const node = new LGraphNode('Node')
+    first.add(node)
+
+    expect(() => second.add(node)).toThrow(/different root graph/)
+    expect(node._graphId).toBeUndefined()
+    expect(useNodeDataStore().getGraphNodesFor(first.id, first.id)).toEqual([])
+  })
+
+  it('drops the previous root entry rather than stranding it', () => {
+    vi.stubEnv('DEV', false)
+    const first = new LGraph()
+    first.id = createUuidv4()
+    const second = new LGraph()
+    second.id = createUuidv4()
+    const node = new LGraphNode('Node')
+    first.add(node)
+
+    second.add(node)
+
+    const store = useNodeDataStore()
+    const owningGraphId = node._state.graphId
+    expect(store.getGraphNodesFor(first.id, owningGraphId)).toEqual([])
+    expect(store.getGraphNodesFor(second.id, owningGraphId)).toHaveLength(1)
+  })
+
+  it('reports a state that drifted out of its bucket before unregistering', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Node')
+    graph.add(node)
+    node._state = createNodeShellState('Node', 'test', undefined)
+
+    expect(() => unregisterNodeState(node)).toThrow(/identity drift/)
     expect(node._graphId).toBeUndefined()
   })
 })
