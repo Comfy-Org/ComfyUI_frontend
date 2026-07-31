@@ -112,7 +112,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 5. Write tests for all changes, especially bug fixes, to catch regressions
 6. Write expressive, self-documenting code and avoid unnecessary comments
 7. Before writing new code, ask if there's a simpler way to introduce the same functionality
-8. Favor immutability and pure functions over mutable state
+8. Favor immutability (assign at declaration, avoid reassignment) and pure functions over mutable state
 
 See `docs/guidance/engineering.md` for the remaining engineering guidelines.
 
@@ -150,8 +150,10 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
 - NEVER use `--no-verify`, delete/disable tests to make them pass, or otherwise circumvent quality checks
 - NEVER add multi-line block comments to justify trivial code changes (a one-line fix, a guard clause mirroring another file, a test-setup line paraphrasing the next line) — if the diff is small and obvious, the comment is noise; write the code and move on
   - **Penance protocol if you catch yourself adding one of these anyway**: stop, acknowledge the comment adds nothing the code doesn't already say, and delete it entirely — don't negotiate or "tighten" it
+  - Re-read this entire bullet block, top to bottom, before writing another character of code
   - Then open your next response with the exact phrase `Mea culpa: I added a comment that did not earn its keep.` followed by the file path and the deleted text, verbatim, in a fenced block
   - For the rest of that response, add no new comments anywhere — if one is genuinely required, defer the change and ask the user first; there is no statute of limitations, so this applies to old offending comments you discover later too
+  - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
 - NEVER use the `dark:` Tailwind variant — use a semantic value from the `style.css` theme instead (e.g. `bg-node-component-surface`)
 - NEVER use `:class="[]"` to merge class names — use `cn()` from `@comfyorg/tailwind-utils` instead (e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`), inline in the template when feasible
 - NEVER use `!important` or the `!` Tailwind prefix — find and fix the interfering `!important` class instead
