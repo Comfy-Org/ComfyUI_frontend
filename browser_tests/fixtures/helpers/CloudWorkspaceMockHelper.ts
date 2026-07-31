@@ -1,6 +1,7 @@
 import type { Page, Route } from '@playwright/test'
+import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 
-import type { Member } from '@/platform/workspace/api/workspaceApi'
+import type { Member, Plan } from '@/platform/workspace/api/workspaceApi'
 
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import {
@@ -41,9 +42,10 @@ export class CloudWorkspaceMockHelper {
   constructor(private readonly page: Page) {}
 
   async setup(
-    members: Member[] = DEFAULT_TEAM_MEMBERS
+    members: Member[] = DEFAULT_TEAM_MEMBERS,
+    billingStatus: BillingStatusResponse = TEAM_BILLING_STATUS
   ): Promise<MemberMockState> {
-    const state = await this.mockBoot(members)
+    const state = await this.mockBoot(members, billingStatus)
     await new CloudAuthHelper(this.page).mockAuth()
     await this.page.addInitScript(() => {
       localStorage.setItem('Comfy.userId', 'test-user-e2e')
@@ -52,7 +54,10 @@ export class CloudWorkspaceMockHelper {
     return state
   }
 
-  private async mockBoot(members: Member[]): Promise<MemberMockState> {
+  private async mockBoot(
+    members: Member[],
+    billingStatus: BillingStatusResponse
+  ): Promise<MemberMockState> {
     const state: MemberMockState = {
       members: members.map((m) => ({ ...m })),
       patches: []
@@ -125,7 +130,7 @@ export class CloudWorkspaceMockHelper {
     )
 
     await page.route('**/api/billing/status', (r) =>
-      r.fulfill(jsonRoute(TEAM_BILLING_STATUS))
+      r.fulfill(jsonRoute(billingStatus))
     )
     await page.route('**/api/billing/balance', (r) =>
       r.fulfill(
@@ -138,9 +143,25 @@ export class CloudWorkspaceMockHelper {
         })
       )
     )
+    const currentPlan: Plan =
+      billingStatus.plan_slug && billingStatus.plan_slug !== TEAM_PRO_PLAN.slug
+        ? {
+            ...TEAM_PRO_PLAN,
+            slug: billingStatus.plan_slug,
+            tier:
+              billingStatus.subscription_tier === 'TEAM'
+                ? TEAM_PRO_PLAN.tier
+                : (billingStatus.subscription_tier ?? TEAM_PRO_PLAN.tier),
+            duration:
+              billingStatus.subscription_duration ?? TEAM_PRO_PLAN.duration
+          }
+        : TEAM_PRO_PLAN
     await page.route('**/api/billing/plans', (r) =>
       r.fulfill(
-        jsonRoute({ current_plan_slug: 'pro-monthly', plans: [TEAM_PRO_PLAN] })
+        jsonRoute({
+          current_plan_slug: currentPlan.slug,
+          plans: [currentPlan]
+        })
       )
     )
 

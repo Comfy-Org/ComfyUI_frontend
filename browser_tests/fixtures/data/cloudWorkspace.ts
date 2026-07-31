@@ -1,5 +1,6 @@
+import type { BillingStatusResponse as IngestBillingStatusResponse } from '@comfyorg/ingest-types'
+
 import type {
-  BillingStatusResponse,
   Member,
   Plan,
   WorkspaceWithRole
@@ -67,7 +68,7 @@ export const DEFAULT_TEAM_MEMBERS: Member[] = [
   MEMBER_JOHN
 ]
 
-export const TEAM_BILLING_STATUS: BillingStatusResponse = {
+export const TEAM_BILLING_STATUS = {
   is_active: true,
   subscription_status: 'active',
   subscription_tier: 'PRO',
@@ -75,8 +76,21 @@ export const TEAM_BILLING_STATUS: BillingStatusResponse = {
   plan_slug: 'pro-monthly',
   billing_status: 'paid',
   has_funds: true,
-  renewal_date: '2099-02-20T00:00:00Z'
-}
+  renewal_date: '2099-02-20T00:00:00Z',
+  team_credit_stop: null
+} satisfies IngestBillingStatusResponse
+
+export const ENDED_STANDARD_BILLING_STATUS = {
+  billing_rail: 'stripe',
+  billing_status: 'inactive',
+  has_funds: true,
+  is_active: false,
+  plan_slug: 'standard-monthly',
+  subscription_duration: 'MONTHLY',
+  subscription_status: 'ended',
+  subscription_tier: 'STANDARD',
+  team_credit_stop: null
+} satisfies IngestBillingStatusResponse & { billing_rail: 'stripe' }
 
 // `max_seats > 1` on the current plan is what flips `isOnTeamPlan`, which gates
 // the whole role-management UI.

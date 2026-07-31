@@ -9,6 +9,7 @@ import type { SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
 import type {
   BillingStatus,
+  BillingSubscriptionStatus,
   CurrentTeamCreditStop,
   TeamCreditStops
 } from '@/platform/workspace/api/workspaceApi'
@@ -46,7 +47,7 @@ const teamCreditStops: TeamCreditStops = {
   ]
 }
 
-const mockSubscriptionStatus = ref<'active' | 'canceled'>('active')
+const mockSubscriptionStatus = ref<BillingSubscriptionStatus>('active')
 const mockBillingStatus = ref<BillingStatus>('paid')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockHasSubscription = ref(true)
@@ -131,6 +132,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     isFreeTier: computed(() => false),
     billingStatus: mockBillingStatus,
+    subscriptionStatus: mockSubscriptionStatus,
     subscription: mockSubscription,
     teamCreditStops: mockTeamCreditStops,
     currentTeamCreditStop: mockCurrentTeamCreditStop,
@@ -391,6 +393,23 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.queryByRole('button', { name: 'Change plan' })
     ).not.toBeInTheDocument()
     expect(screen.getByText('Invite members')).toBeInTheDocument()
+  })
+
+  it('shows subscribe prompt for an ended subscription despite stale paid plan metadata', () => {
+    mockSubscriptionStatus.value = 'ended'
+    renderComponent()
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'This workspace is not on a subscription'
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe Now' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Team' })
+    ).not.toBeInTheDocument()
   })
 
   it('reactivates a cancelled plan as the original owner, keeping Manage billing', async () => {
