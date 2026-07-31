@@ -61,7 +61,8 @@ describe('fetchJobs', () => {
       const result = await fetchHistory(mockFetch)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed,failed,cancelled&limit=200&offset=0'
+        '/jobs?status=completed,failed,cancelled&limit=200&offset=0',
+        { signal: expect.any(AbortSignal) }
       )
       expect(result).toHaveLength(2)
       expect(result[0].id).toBe('job1')
@@ -112,7 +113,8 @@ describe('fetchJobs', () => {
       const result = await fetchHistory(mockFetch, 200, 5)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed,failed,cancelled&limit=200&offset=5'
+        '/jobs?status=completed,failed,cancelled&limit=200&offset=5',
+        { signal: expect.any(AbortSignal) }
       )
       // Priority base is total - offset = 10 - 5 = 5
       expect(result[0].priority).toBe(5) // (total - offset) - 0
@@ -135,15 +137,22 @@ describe('fetchJobs', () => {
       expect(result[0].priority).toBe(999)
     })
 
-    it('returns empty array on error', async () => {
+    it('reports a network error and returns an empty array', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
       const result = await fetchHistory(mockFetch)
 
       expect(result).toEqual([])
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Jobs API] Error fetching jobs:',
+        expect.any(Error)
+      )
+      errorSpy.mockRestore()
     })
 
-    it('returns empty array on non-ok response', async () => {
+    it('reports a server error and returns an empty array', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 500
@@ -152,6 +161,90 @@ describe('fetchJobs', () => {
       const result = await fetchHistory(mockFetch)
 
       expect(result).toEqual([])
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Jobs API] Failed to fetch jobs: 500'
+      )
+      errorSpy.mockRestore()
+    })
+
+    it('reports a malformed response body as an error', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ jobs: 'not-an-array' })
+      })
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toEqual([])
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Jobs API] Error fetching jobs:',
+        expect.anything()
+      )
+      errorSpy.mockRestore()
+    })
+
+    it('warns instead of erroring on an unauthenticated response', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401
+      })
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toEqual([])
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Jobs API] Failed to fetch jobs: 401'
+      )
+      expect(errorSpy).not.toHaveBeenCalled()
+      errorSpy.mockRestore()
+      warnSpy.mockRestore()
+    })
+
+    it('does not report an aborted request', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi
+        .fn()
+        .mockRejectedValue(new DOMException('Aborted', 'AbortError'))
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toEqual([])
+      expect(errorSpy).not.toHaveBeenCalled()
+      errorSpy.mockRestore()
+    })
+
+    it('does not report a request cancelled by page teardown', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockImplementation(() => {
+        window.dispatchEvent(new Event('pagehide'))
+        return Promise.reject(new TypeError('Failed to fetch'))
+      })
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toEqual([])
+      expect(errorSpy).not.toHaveBeenCalled()
+      errorSpy.mockRestore()
+    })
+
+    it('still reports network errors after the page is restored', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      window.dispatchEvent(new Event('pagehide'))
+      const mockFetch = vi
+        .fn()
+        .mockRejectedValue(new TypeError('Failed to fetch'))
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toEqual([])
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Jobs API] Error fetching jobs:',
+        expect.any(TypeError)
+      )
+      errorSpy.mockRestore()
     })
 
     it('parses batch containing text-only preview outputs', async () => {
@@ -208,7 +301,8 @@ describe('fetchJobs', () => {
       const result = await fetchHistoryPage(mockFetch, 2, 5)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed,failed,cancelled&limit=2&offset=5'
+        '/jobs?status=completed,failed,cancelled&limit=2&offset=5',
+        { signal: expect.any(AbortSignal) }
       )
       expect(result.jobs).toHaveLength(2)
       expect(result.offset).toBe(5)
@@ -237,7 +331,8 @@ describe('fetchJobs', () => {
       const result = await fetchQueue(mockFetch)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=in_progress,pending&limit=200&offset=0'
+        '/jobs?status=in_progress,pending&limit=200&offset=0',
+        { signal: expect.any(AbortSignal) }
       )
       expect(result.Running).toHaveLength(1)
       expect(result.Pending).toHaveLength(2)
