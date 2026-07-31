@@ -25,6 +25,8 @@ function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
 }
 
 test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
+  test.use({ connectWebSocketToServer: false })
+
   test.describe('flag off', () => {
     test.use({ agentFlagEnabled: false })
 
@@ -62,7 +64,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const promptChip = panel.getByRole('button', { name: firstPrompt })
     await expect(promptChip).toBeVisible()
 
-    const composer = panel.getByPlaceholder(enMessages.agent.placeholder)
+    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     const sendButton = panel.getByRole('button', { name: 'Send' })
 
     await expect(composer).toHaveValue('')
@@ -84,6 +86,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     pushEvent(ws, TOOL_CALL_EVENT)
     await expect(panel.getByText('Ran 1 tool call')).toBeVisible()
+    await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText(THINKING_TEXT)).toBeHidden()
 
     pushEvent(ws, MESSAGE_DELTA_EVENT)
@@ -94,6 +97,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     pushEvent(ws, MESSAGE_DONE_EVENT)
     await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()
     await expect(panel.getByRole('button', { name: 'Stop' })).toHaveCount(0)
+    await expect(
+      panel.getByRole('button', { name: /ran 1 tool call/i })
+    ).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Set widget')).toBeHidden()
   })
 
   test('applies a draft_patch graph to the canvas', async ({
@@ -111,7 +118,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await openButton.click()
     await expect(panel).toBeVisible()
 
-    await panel.getByPlaceholder(enMessages.agent.placeholder).fill('Build it')
+    await panel
+      .getByRole('textbox', { name: /^Describe ideas/ })
+      .fill('Build it')
     await panel.getByRole('button', { name: 'Send' }).click()
     await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
 
