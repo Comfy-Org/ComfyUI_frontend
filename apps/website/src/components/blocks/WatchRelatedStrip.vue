@@ -3,8 +3,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import WatchRelatedCard from './WatchRelatedCard.vue';
-import type { WatchRelatedItem } from './WatchRelatedCard.vue';
+import WatchRelatedCard from './WatchRelatedCard.vue'
+import type { WatchRelatedItem } from './WatchRelatedCard.vue'
 
 const {
   heading,
