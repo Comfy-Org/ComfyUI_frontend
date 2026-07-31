@@ -121,7 +121,9 @@ describe('Composer', () => {
       expect(
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
-      expect(screen.getByRole('button', { name: 'Auto' })).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Auto (limited)' })
+      ).toBeInTheDocument()
     })
 
     it('keeps Save disabled while the limit draft is invalid', async () => {
@@ -129,7 +131,9 @@ describe('Composer', () => {
       const store = useAgentRunModeStore()
       store.save('auto-limit', 450)
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Auto' }))
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Auto (limited)' })
+      )
       const input = await screen.findByRole('spinbutton', { name: 'credits' })
       await userEvent.clear(input)
 
@@ -143,7 +147,9 @@ describe('Composer', () => {
       const store = useAgentRunModeStore()
       store.save('auto-limit', 450)
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Auto' }))
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Auto (limited)' })
+      )
       const save = await screen.findByRole('button', { name: 'Save changes' })
       expect(save).toBeDisabled()
 
@@ -154,6 +160,18 @@ describe('Composer', () => {
 
       await userEvent.click(save)
       expect(store.creditLimit).toBe(460)
+    })
+
+    it('keeps unlimited auto mode distinct from limited auto mode', () => {
+      const store = useAgentRunModeStore()
+      store.save('auto', 450)
+
+      mount()
+
+      expect(screen.getByRole('button', { name: 'Auto' })).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Auto (limited)' })
+      ).not.toBeInTheDocument()
     })
 
     it('discards an unsaved draft when the popover closes without saving', async () => {
@@ -188,9 +206,13 @@ describe('Composer', () => {
       await userEvent.type(box, '@')
       expect(screen.getByRole('listbox')).toBeInTheDocument()
       expect(screen.getAllByRole('option')).toHaveLength(3)
+      expect(screen.getByText('#5')).toBeInTheDocument()
+      expect(screen.getByText('#7')).toBeInTheDocument()
+      expect(screen.queryByText('#9')).not.toBeInTheDocument()
 
       await userEvent.type(box, 'vae de')
       expect(screen.getAllByRole('option')).toHaveLength(1)
+      expect(screen.queryByText('#9')).not.toBeInTheDocument()
 
       await userEvent.keyboard('{Enter}')
       expect(emitted().mentionPick[0]).toEqual([NODES[2]])
@@ -206,6 +228,15 @@ describe('Composer', () => {
 
       expect(emitted().mentionPick[0]).toEqual([NODES[1]])
       expect(emitted().send).toBeUndefined()
+    })
+
+    it('keeps a duplicate-title id visible when filtering by id', async () => {
+      mount({ getMentionNodes: () => NODES })
+
+      await userEvent.type(screen.getByRole('textbox'), '@5')
+
+      expect(screen.getAllByRole('option')).toHaveLength(1)
+      expect(screen.getByText('#5')).toBeInTheDocument()
     })
 
     it('closes on Escape so Enter sends normally', async () => {
@@ -329,11 +360,40 @@ describe('Composer', () => {
     expect(getMentionNodes).toHaveBeenCalledOnce()
   })
 
-  it('shows the id beside each staged selection chip', () => {
+  it('shows ids only for duplicate titles in the graph picker', async () => {
+    const nodes = [
+      { id: '5', title: 'KSampler' },
+      { id: '7', title: 'KSampler' },
+      { id: '9', title: 'VAE Decode' }
+    ]
+    mount({ getMentionNodes: () => nodes })
+
+    await userEvent.click(await openAddMenu())
+
+    expect(await screen.findAllByText('KSampler')).toHaveLength(2)
+    expect(screen.getByText('#5')).toBeInTheDocument()
+    expect(screen.getByText('#7')).toBeInTheDocument()
+    expect(screen.queryByText('#9')).not.toBeInTheDocument()
+  })
+
+  it('hides the id on a uniquely named selection chip', () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
     expect(screen.getByText('KSampler')).toBeInTheDocument()
+    expect(screen.queryByText('#5')).not.toBeInTheDocument()
+  })
+
+  it('shows ids when selection chips have duplicate titles', () => {
+    mount({
+      selectionTags: [
+        { id: '5', title: 'KSampler' },
+        { id: '7', title: 'KSampler' }
+      ]
+    })
+
+    expect(screen.getAllByText('KSampler')).toHaveLength(2)
     expect(screen.getByText('#5')).toBeInTheDocument()
+    expect(screen.getByText('#7')).toBeInTheDocument()
   })
 
   describe('insert highlight', () => {

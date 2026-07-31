@@ -217,7 +217,20 @@ describe('WorkflowTabs creating-tab skeleton', () => {
     const activity = useWorkflowTabActivityStore()
     activity.setCreating(true)
     await nextTick()
-    expect(screen.getByTestId('creating-tab-skeleton')).toBeTruthy()
+    expect(screen.getByTestId('creating-tab-skeleton')).toHaveClass(
+      'h-9',
+      'w-39',
+      'gap-2',
+      'px-4',
+      'py-2'
+    )
+    expect(screen.getByTestId('creating-tab-skeleton-shimmer')).toHaveClass(
+      'h-4',
+      'w-25'
+    )
+    expect(
+      screen.getByRole('img', { name: enMessages.g.agentWorking })
+    ).toHaveClass('size-4', 'icon-[lucide--loader-circle]')
 
     activity.setCreating(false)
     await nextTick()
@@ -247,7 +260,13 @@ describe('WorkflowTabs feedback button', () => {
     distribution.isNightly = true
     renderComponent()
 
-    expect(screen.getByRole('button', { name: 'Feedback' })).toBeInTheDocument()
+    const button = screen.getByRole('button', { name: 'Feedback' })
+    expect(button).toBeInTheDocument()
+    expect(button).toHaveClass('size-[32px]', 'rounded-[8px]', 'p-[8px]')
+    expect(screen.getByTestId('feedback-icon')).toHaveClass(
+      'icon-[hugeicons--megaphone-03]',
+      'size-[16px]'
+    )
   })
 
   it('does not render the feedback button on non-Cloud/non-Nightly builds', () => {

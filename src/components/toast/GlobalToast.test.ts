@@ -98,6 +98,19 @@ describe('GlobalToast dynamic positioning', () => {
 
     expect(injectedToastStyle()).toContain('right: 620px')
     expect(injectedToastStyle()).not.toContain('right: 220px')
+    expect(injectedToastStyle()).toContain(
+      '.graph-toast.p-toast.p-component.p-toast-top-right'
+    )
+    expect(injectedToastStyle()).toContain('width: 400px')
+    expect(injectedToastStyle()).toContain('min-height: 73px')
+    expect(injectedToastStyle()).toContain('margin-bottom: 16px')
+    expect(injectedToastStyle()).toContain('padding: 12px')
+    expect(injectedToastStyle()).toContain('gap: 8px')
+    expect(injectedToastStyle()).toContain('font-size: 18px')
+    expect(injectedToastStyle()).toContain('font-size: 16px')
+    expect(injectedToastStyle()).toContain('font-size: 14px')
+    expect(injectedToastStyle()).toContain('width: 28px')
+    expect(injectedToastStyle()).not.toContain('width: 400px !important')
   })
 
   it('matches the container anchor while the agent panel is closed', async () => {

@@ -4743,7 +4743,7 @@
     "gotIt": "Got it",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Describe ideas, add nodes from graph or drop in images or videos",
+    "placeholder": "Describe ideas, {'@'} to reference,\nadd nodes from graph or drag in assets",
     "suggestedPrompts": [
       "Generate a yellow duck with a hockey mask",
       "List my saved workflows",
@@ -4799,7 +4799,9 @@
     "toolSwitchedTabs": "Switched tabs",
     "toolSavedPreference": "Saved a preference",
     "toolForgotPreference": "Forgot a preference",
-    "openWorkflowTab": "Open {name}"
+    "openWorkflowTab": "Open {name}",
+    "runModeTriggerAutoLimit": "Auto (limited)",
+    "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached"
   },
   "onboardingCoachmarks": {
     "stepLabel": "Step {current} of {total}",

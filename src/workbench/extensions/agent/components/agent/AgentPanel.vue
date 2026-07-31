@@ -11,13 +11,12 @@ import { useI18n } from 'vue-i18n'
 
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
-import type { ActiveTab } from './ActiveTabStrip.vue'
+import type { ActiveTab } from '../../types/activeTab'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
-import ActiveTabStrip from './ActiveTabStrip.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
@@ -178,11 +177,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       @close="emit('close')"
     />
 
-    <ActiveTabStrip
-      :tab="activeTab"
-      class="border-agent-border shrink-0 border-b px-2 py-1.5"
-    />
-
     <template v-if="showHistory">
       <ChatHistoryScreen
         :groups="historyGroups"
@@ -195,7 +189,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     </template>
 
     <template v-else>
-      <div class="flex shrink-0 items-center px-2 py-1.5">
+      <div class="flex h-10 shrink-0 items-center px-2">
         <input
           v-if="renaming"
           ref="renameInput"
@@ -269,8 +263,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     </template>
 
     <template v-if="!showHistory">
-      <footer class="shrink-0 px-4 pt-4 pb-3">
-        <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4">
+      <footer class="shrink-0 py-3">
+        <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
           <RunNoticeBanner />
           <Composer
             ref="composerRef"
@@ -297,7 +291,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               />
             </template>
           </Composer>
-          <p class="text-agent-fg-muted -mt-1 mb-0 text-center text-xs">
+          <p class="text-agent-fg-muted -mt-1.5 mb-0 text-xs">
             {{ t('agent.caption') }}
           </p>
         </div>

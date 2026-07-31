@@ -32,7 +32,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import { useAttachment } from './composables/agent/useAttachment'
-import type { ActiveTab } from './components/agent/ActiveTabStrip.vue'
+import type { ActiveTab } from './types/activeTab'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
 import { useCanvasSelection } from './composables/agent/useCanvasSelection'
 import type { CoachStep } from './composables/agent/useOnboarding'
@@ -736,7 +736,7 @@ function onDeleteHistory(id: string): void {
 
 function onNewChat(): void {
   resetSnapshotGuard()
-  workflowDetached.value = false
+  workflowDetached.value = true
   newChat()
 }
 

@@ -1,5 +1,5 @@
 <template>
-  <Toast />
+  <Toast class="graph-toast" />
   <Toast group="billing-operation" position="top-right">
     <template #message="slotProps">
       <div class="flex items-center gap-2">
@@ -97,6 +97,40 @@ function updateToastPosition() {
       top: ${anchor.top + 100}px !important;
       right: ${right}px !important;
        z-index: 10000 !important;
+    }
+    .graph-toast.p-toast.p-component.p-toast-top-right {
+      width: 400px;
+    }
+    .graph-toast .p-toast-message {
+      min-height: 73px;
+      margin-bottom: 16px;
+    }
+    .graph-toast .p-toast-message-content {
+      padding: 12px;
+      gap: 8px;
+    }
+    .graph-toast .p-toast-message-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+    }
+    .graph-toast .p-toast-message-text {
+      gap: 8px;
+    }
+    .graph-toast .p-toast-summary {
+      font-size: 16px;
+    }
+    .graph-toast .p-toast-detail {
+      font-size: 14px;
+    }
+    .graph-toast .p-toast-close-button {
+      width: 28px;
+      height: 28px;
+    }
+    .graph-toast .p-toast-close-icon {
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
     }
   `
 }

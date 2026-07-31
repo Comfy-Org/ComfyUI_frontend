@@ -63,6 +63,9 @@ describe('WorkflowSelectorChip', () => {
   it('names the active workflow on the trigger and lists every open tab', async () => {
     const { user } = renderChip()
     expect(trigger()).toHaveTextContent('portrait')
+    expect(screen.getByTestId('workflow-selector-icon')).toHaveClass(
+      'icon-[lucide--folder-closed]'
+    )
 
     await user.click(trigger())
 

@@ -20,7 +20,7 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
       class="text-agent-fg-muted hover:text-agent-fg flex size-5 shrink-0 cursor-pointer items-center justify-center p-0"
       @click="dismissed = true"
     >
-      <span class="icon-[lucide--x] size-4" />
+      <span class="icon-[lucide--x] size-5" />
     </button>
   </div>
 </template>

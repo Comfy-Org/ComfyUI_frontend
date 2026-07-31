@@ -32,7 +32,7 @@
             role="img"
             :aria-label="t('g.agentModified')"
             data-testid="agent-modified-indicator"
-            class="absolute top-1/2 left-1/2 z-10 size-1.5 -translate-1/2 rounded-full bg-primary-background group-hover:hidden"
+            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background group-hover:hidden"
           />
           <i
             v-else-if="workflowStatus"

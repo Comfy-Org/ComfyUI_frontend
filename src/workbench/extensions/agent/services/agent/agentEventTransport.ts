@@ -25,7 +25,6 @@ export function createAgentEventTransport(
   emit: (m: AssistantMessage) => void
 ): AgentEventTransport {
   let openText: TextPart | null = null
-  let gotText = false
   let toolCount = 0
   let settled = false
   let lastTabWorkflowId: string | undefined
@@ -48,7 +47,7 @@ export function createAgentEventTransport(
     if (settled) return
     switch (event.type) {
       case 'agent_thinking':
-        if (!gotText) message.thinking = true
+        message.thinking = true
         message.thinkingText = (message.thinkingText ?? '') + event.data.delta
         break
       case 'agent_tool_call': {
@@ -83,7 +82,6 @@ export function createAgentEventTransport(
       case 'agent_message_delta':
         message.thinking = false
         message.thinkingText = undefined
-        gotText = true
         ;(openText ?? openNewText()).text += event.data.delta
         break
       case 'agent_message_done':

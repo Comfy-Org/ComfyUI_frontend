@@ -257,7 +257,10 @@ describe('WorkflowTab - agent activity indicators', () => {
     useWorkflowTabActivityStore().markModified('/workflows/test.json')
     await nextTick()
 
-    expect(screen.getByTestId('agent-modified-indicator')).toBeTruthy()
+    expect(screen.getByTestId('agent-modified-indicator')).toHaveClass(
+      'size-2',
+      'bg-primary-background'
+    )
     expect(
       screen.queryByRole('img', { name: statusAriaLabels.running })
     ).toBeNull()

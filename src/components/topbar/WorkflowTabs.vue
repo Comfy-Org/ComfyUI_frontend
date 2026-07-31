@@ -49,12 +49,22 @@
           />
         </template>
       </SelectButton>
-      <Skeleton
+      <div
         v-if="tabActivity.creatingTab"
-        aria-hidden="true"
         data-testid="creating-tab-skeleton"
-        class="m-2 h-4 w-24 shrink-0 self-center"
-      />
+        class="relative flex h-9 w-39 shrink-0 items-center gap-2 self-center bg-comfy-menu-bg px-4 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-interface-stroke after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-interface-stroke"
+      >
+        <Skeleton
+          aria-hidden="true"
+          data-testid="creating-tab-skeleton-shimmer"
+          class="h-4 w-25"
+        />
+        <i
+          role="img"
+          :aria-label="$t('g.agentWorking')"
+          class="icon-[lucide--loader-circle] size-4 text-base-foreground motion-safe:animate-spin"
+        />
+      </div>
     </ScrollPanel>
     <Button
       v-if="showOverflowArrows"
@@ -111,12 +121,15 @@
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
         variant="muted-textonly"
-        size="icon"
-        class="shrink-0 text-base-foreground"
+        size="unset"
+        class="size-[32px] shrink-0 rounded-[8px] p-[8px] text-base-foreground"
         :aria-label="$t('actionbar.feedback')"
         @click="openFeedback"
       >
-        <i class="icon-[lucide--megaphone]" />
+        <i
+          data-testid="feedback-icon"
+          class="icon-[hugeicons--megaphone-03] size-[16px]"
+        />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton
@@ -410,7 +423,7 @@ onUpdated(() => {
 :deep(.p-togglebutton.p-togglebutton-checked) {
   height: 100%;
   border-bottom-style: solid;
-  border-bottom-width: 1px;
+  border-bottom-width: 2px;
   border-bottom-color: var(--p-button-text-primary-color);
 }
 

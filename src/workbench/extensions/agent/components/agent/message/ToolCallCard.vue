@@ -31,9 +31,7 @@ const label = computed(() => {
 
 const glyph = computed(() => toolGlyph(name, state, ok))
 
-const glyphColor = computed(() =>
-  ok === false ? 'text-agent-danger' : 'text-agent-fg-subtle'
-)
+const glyphColor = 'text-agent-fg-subtle'
 </script>
 
 <template>

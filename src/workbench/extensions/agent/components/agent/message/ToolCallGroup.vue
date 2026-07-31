@@ -89,7 +89,7 @@ watch(
       />
       <span
         v-else-if="failed"
-        class="text-agent-danger icon-[lucide--circle-x] size-4 shrink-0"
+        class="text-agent-fg-subtle icon-[lucide--circle-x] size-4 shrink-0"
       />
       <span v-else class="icon-[lucide--wrench] size-4 shrink-0" />
       <span

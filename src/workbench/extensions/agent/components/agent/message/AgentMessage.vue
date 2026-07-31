@@ -22,7 +22,7 @@ type Group =
   | { kind: 'text'; part: TextPart }
   | { kind: 'notice'; part: NoticePart }
   | { kind: 'tools'; parts: ToolPart[] }
-  | { kind: 'tabLink'; part: TabLinkPart }
+  | { kind: 'tabLinks'; parts: TabLinkPart[] }
 
 const groups = computed<Group[]>(() => {
   const out: Group[] = []
@@ -34,7 +34,8 @@ const groups = computed<Group[]>(() => {
     } else if (part.type === 'text') {
       out.push({ kind: 'text', part })
     } else if (part.type === 'tabLink') {
-      out.push({ kind: 'tabLink', part })
+      if (prev?.kind === 'tabLinks') prev.parts.push(part)
+      else out.push({ kind: 'tabLinks', parts: [part] })
     } else {
       out.push({ kind: 'notice', part })
     }
@@ -64,11 +65,14 @@ const showActions = computed(
         :streaming="message.streaming"
         :active="message.streaming && index === groups.length - 1"
       />
-      <TabLinkCard
-        v-else-if="group.kind === 'tabLink'"
-        :workflow-id="group.part.workflowId"
-        :name="group.part.name"
-      />
+      <div v-else-if="group.kind === 'tabLinks'" class="flex flex-col gap-1">
+        <TabLinkCard
+          v-for="(link, linkIndex) in group.parts"
+          :key="linkIndex"
+          :workflow-id="link.workflowId"
+          :name="link.name"
+        />
+      </div>
       <div
         v-else
         :class="

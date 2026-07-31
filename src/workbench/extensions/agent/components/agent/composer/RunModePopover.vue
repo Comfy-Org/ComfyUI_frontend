@@ -53,10 +53,18 @@ const limitValid = computed(
 
 const saveable = computed(() => dirty.value && limitValid.value)
 
-const triggerLabel = computed(() =>
-  store.mode === 'ask'
-    ? t('agent.runModeTriggerAsk')
-    : t('agent.runModeTriggerAuto')
+const TRIGGER_LABEL_KEYS: Record<AgentRunMode, string> = {
+  ask: 'agent.runModeTriggerAsk',
+  auto: 'agent.runModeTriggerAuto',
+  'auto-limit': 'agent.runModeTriggerAutoLimit'
+}
+
+const triggerLabel = computed(() => t(TRIGGER_LABEL_KEYS[store.mode]))
+
+const triggerTooltip = computed(() =>
+  store.mode === 'auto-limit'
+    ? t('agent.runModeTriggerAutoLimitTooltip')
+    : t('agent.runPermissions')
 )
 
 const options: {
@@ -89,7 +97,7 @@ const options: {
 <template>
   <PopoverRoot :open @update:open="onOpenChange">
     <PopoverTrigger
-      v-tooltip.top="buildTooltipConfig(t('agent.runPermissions'))"
+      v-tooltip.top="buildTooltipConfig(triggerTooltip)"
       :class="
         cn(
           'text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors',
