@@ -3417,6 +3417,20 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('no nodes please')
 
     expect(bodies[0]).not.toHaveProperty('selection')
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+    await sendFromComposer('still no nodes')
+    expect(bodies[1]).not.toHaveProperty('selection')
+
+    ws.emit('agent_message_done', { message_id: 'm-2', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 8, title: 'VAEDecode' }
+    ]
+    expect(await screen.findByText('VAEDecode')).toBeInTheDocument()
+    await sendFromComposer('use the new selection')
+    expect(bodies[2]).toMatchObject({ selection: { node_ids: ['8'] } })
   })
 
   it('coalesces patches that stream faster than the canvas apply settles', async () => {
@@ -3527,6 +3541,14 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(bodies).toHaveLength(2))
     expect(bodies[1]).not.toHaveProperty('draft')
+
+    ws.emit('agent_message_done', { message_id: 'm-2', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+    appMock.graph.nodes = [{ id: 2 }]
+    await sendFromComposer('use my canvas edit')
+    expect(bodies[2]).toMatchObject({
+      draft: { content: { version: 0.4, nodes: [{ id: 2 }] } }
+    })
 
     const graph = { version: 0.4, nodes: [{ id: 2 }] }
     ws.emit('draft_patch', {
