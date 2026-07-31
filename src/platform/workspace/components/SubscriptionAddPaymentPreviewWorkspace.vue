@@ -215,20 +215,20 @@
           {{ $t('billingOperation.reconciliationTitle') }}
         </p>
         <p class="m-0 mt-1 text-sm text-muted-foreground">
-          {{
-            $t('billingOperation.reconciliationDetail', {
-              operationId: reconciliationOperationId
-            })
-          }}
+          {{ $t('billingOperation.reconciliationDetail') }}
+          <span class="font-mono">{{ reconciliationOperationId }}</span>
         </p>
       </div>
 
       <div
-        v-if="authenticationState === 'failed_retryable' && authenticationError"
+        v-if="authenticationState === 'failed_retryable'"
         role="alert"
         class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
       >
-        {{ authenticationError }}
+        {{
+          authenticationError ||
+          $t('billingOperation.authenticationManagerRequired')
+        }}
       </div>
 
       <Button
@@ -267,7 +267,7 @@
         :amount-cents="amountDueCents"
         :currency="previewData?.currency ?? ''"
         :is-loading
-        :verification-pending="Boolean(actionUrl)"
+        :verification-pending="Boolean(actionUrl) || verificationRecoveryActive"
         :can-submit="quoteIsCurrent"
         @confirm="confirmPayment"
       />
@@ -278,7 +278,7 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="!quoteIsCurrent"
+        :disabled="!quoteIsCurrent || verificationRecoveryActive"
         @click="$emit('addCreditCard')"
       >
         {{ $t('subscription.preview.payAndSubscribe') }}
@@ -290,7 +290,7 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="!quoteIsCurrent"
+        :disabled="!quoteIsCurrent || verificationRecoveryActive"
         @click="$emit('addCreditCard')"
       >
         {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
@@ -385,6 +385,12 @@ const { t, n } = useI18n()
 // The wide capture split only applies while a payment method is being
 // collected; with a saved method the confirm is a single narrow column.
 const captureMode = computed(() => usePaymentElement && !savedMethods?.length)
+const verificationRecoveryActive = computed(
+  () =>
+    authenticationState === 'requires_action' ||
+    authenticationState === 'failed_retryable' ||
+    Boolean(reconciliationOperationId)
+)
 
 function methodLabel(m: SavedPaymentMethod) {
   if (m.type === 'alipay') return t('subscription.preview.alipay')

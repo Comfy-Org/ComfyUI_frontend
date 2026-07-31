@@ -243,6 +243,41 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
   })
 
+  it('renders an explicit retry action after failed verification', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        authenticationState: 'failed_retryable',
+        authenticationError: 'Challenge was closed',
+        canRetryAuthentication: true
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Challenge was closed')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'billingOperation.retryVerification'
+      })
+    )
+    expect(emitted().retryAuthentication).toBeTruthy()
+  })
+
+  it('shows reconciliation support guidance with the operation id', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        reconciliationOperationId: 'op-reconcile-123'
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getByText('billingOperation.reconciliationTitle')
+    ).toBeTruthy()
+    expect(screen.getByText('op-reconcile-123')).toBeTruthy()
+  })
+
   it('does not render a back action on the payment confirmation', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: { tierKey: 'creator', isLoading: true },
