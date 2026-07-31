@@ -16,6 +16,7 @@ import type {
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { BillingAuthenticationState } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -31,7 +32,12 @@ const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   : Promise.resolve(null)
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
-type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
+type OperationStatus =
+  | 'pending'
+  | 'succeeded'
+  | 'failed'
+  | 'timeout'
+  | 'reconciliation_needed'
 
 export interface StartOperationMetadata {
   tier?: SubscriptionCheckoutTier
@@ -39,6 +45,7 @@ export interface StartOperationMetadata {
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
   suppressProcessingToast?: boolean
+  autoHandleRequiresAction?: boolean
   downgradeToPersonal?: {
     memberRemovalCount: number
     memberRemovalFailures: number
@@ -53,12 +60,17 @@ interface BillingOperation {
   errorMessage: string | null
   startedAt: number
   actionUrl: string | null
+  authenticationState: BillingAuthenticationState | null
+  paymentIntentClientSecret: string | null
+  isAuthenticating: boolean
+  canRetryAuthentication: boolean
   authenticationRequiredSeen: boolean
   workspaceId: string | null
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
+  autoHandleRequiresAction: boolean
   downgradeToPersonal?: StartOperationMetadata['downgradeToPersonal']
 }
 
@@ -72,7 +84,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const receivedToasts = new Map<string, ToastMessageOptions>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
-  const handledPaymentActions = new Set<string>()
+  const autoHandledPaymentActions = new Set<string>()
 
   const hasPendingOperations = computed(() =>
     [...operations.value.values()].some((op) => op.status === 'pending')
@@ -96,10 +108,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const subscriptionActionOperation = computed(() =>
     [...operations.value.values()].find(
       (op) =>
-        op.status === 'pending' &&
         op.type === 'subscription' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
-        op.actionUrl !== null
+        ((op.status === 'pending' &&
+          (op.actionUrl !== null ||
+            op.authenticationState === 'requires_action' ||
+            op.authenticationState === 'failed_retryable')) ||
+          op.status === 'reconciliation_needed')
     )
   )
 
@@ -127,12 +142,17 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       errorMessage: null,
       startedAt: Date.now(),
       actionUrl,
+      authenticationState: null,
+      paymentIntentClientSecret: null,
+      isAuthenticating: false,
+      canRetryAuthentication: false,
       authenticationRequiredSeen: actionUrl !== null,
       workspaceId: workspaceStore.activeWorkspaceId,
       tier: metadata?.tier,
       cycle: metadata?.cycle,
       checkoutType: metadata?.checkoutType,
       paymentIntentSource: metadata?.paymentIntentSource,
+      autoHandleRequiresAction: metadata?.autoHandleRequiresAction ?? false,
       downgradeToPersonal: metadata?.downgradeToPersonal
     }
 
@@ -195,15 +215,23 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         return
       }
 
+      if (
+        response.status === 'reconciliation_needed' ||
+        response.authentication_state === 'reconciliation_needed'
+      ) {
+        handleReconciliationNeeded(opId)
+        return
+      }
+
       if (stopIfTimedOut(opId, operation)) return
 
-      if (response.payment_intent_client_secret) {
-        await handlePaymentIntentAction(
-          opId,
-          response.payment_intent_client_secret
-        )
-      }
+      const pollingPaused = await updateAuthenticationState(
+        opId,
+        response.authentication_state,
+        response.payment_intent_client_secret
+      )
       updateOperationActionUrl(opId, validateActionUrl(response.action_url))
+      if (pollingPaused) return
       scheduleNextPoll(opId)
     } catch {
       const currentOperation = operations.value.get(opId)
@@ -246,39 +274,129 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     return elapsed > SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS
   }
 
-  async function handlePaymentIntentAction(opId: string, clientSecret: string) {
-    if (handledPaymentActions.has(opId)) return
-    handledPaymentActions.add(opId)
-    updateAuthenticationRequired(opId)
+  async function updateAuthenticationState(
+    opId: string,
+    state?: BillingAuthenticationState,
+    clientSecret?: string
+  ): Promise<boolean> {
+    if (!state) return false
+    const operation = operations.value.get(opId)
+    if (!operation || operation.status !== 'pending') return true
+
+    const secret = clientSecret ?? operation.paymentIntentClientSecret
+    updateOperation(opId, {
+      authenticationState: state,
+      paymentIntentClientSecret: secret,
+      canRetryAuthentication:
+        Boolean(secret) &&
+        (state === 'requires_action' || state === 'failed_retryable'),
+      authenticationRequiredSeen:
+        operation.authenticationRequiredSeen || state === 'requires_action'
+    })
+
+    if (state === 'failed_retryable') {
+      pausePolling(opId)
+      return true
+    }
+    if (
+      state !== 'requires_action' ||
+      !operation.autoHandleRequiresAction ||
+      autoHandledPaymentActions.has(opId)
+    ) {
+      return state === 'requires_action'
+    }
+    autoHandledPaymentActions.add(opId)
+    return !(await runPaymentIntentAction(opId))
+  }
+
+  async function retryPaymentAuthentication(opId: string): Promise<boolean> {
+    const operation = operations.value.get(opId)
+    if (
+      !operation ||
+      operation.status !== 'pending' ||
+      !operation.paymentIntentClientSecret ||
+      !operation.canRetryAuthentication
+    ) {
+      return false
+    }
+    const completed = await runPaymentIntentAction(opId)
+    if (completed) void poll(opId)
+    return completed
+  }
+
+  async function runPaymentIntentAction(opId: string): Promise<boolean> {
+    const operation = operations.value.get(opId)
+    const clientSecret = operation?.paymentIntentClientSecret
+    if (!operation || !clientSecret || operation.isAuthenticating) return false
+    updateOperation(opId, {
+      isAuthenticating: true,
+      canRetryAuthentication: false,
+      errorMessage: null
+    })
 
     const stripe = await stripePromise
     if (!stripe) {
-      useToastStore().add({
-        severity: 'error',
-        summary: t('billingOperation.authenticationUnavailable')
-      })
-      return
+      setAuthenticationRetry(
+        opId,
+        t('billingOperation.authenticationUnavailable')
+      )
+      return false
     }
 
-    const result = await stripe.handleNextAction({ clientSecret })
-    if (result.error) {
-      handledPaymentActions.delete(opId)
-      useToastStore().add({
-        severity: 'error',
-        summary: t('billingOperation.authenticationFailed'),
-        detail: result.error.message
+    try {
+      const result = await stripe.handleNextAction({ clientSecret })
+      if (result.error) {
+        setAuthenticationRetry(
+          opId,
+          result.error.message ||
+            t('billingOperation.authenticationFailedDetail')
+        )
+        return false
+      }
+      updateOperation(opId, {
+        authenticationState: 'processing',
+        isAuthenticating: false,
+        canRetryAuthentication: false,
+        errorMessage: null
       })
-      return
+      intervals.set(opId, INITIAL_INTERVAL_MS)
+      return true
+    } catch (error) {
+      setAuthenticationRetry(
+        opId,
+        error instanceof Error
+          ? error.message
+          : t('billingOperation.authenticationFailedDetail')
+      )
+      return false
     }
   }
 
-  function updateAuthenticationRequired(opId: string) {
+  function setAuthenticationRetry(opId: string, errorMessage: string) {
     const operation = operations.value.get(opId)
-    if (!operation || operation.status !== 'pending') return
+    if (!operation) return
+    updateOperation(opId, {
+      authenticationState: 'failed_retryable',
+      isAuthenticating: false,
+      canRetryAuthentication: Boolean(operation.paymentIntentClientSecret),
+      errorMessage
+    })
+    pausePolling(opId)
+  }
+
+  function updateOperation(opId: string, patch: Partial<BillingOperation>) {
+    const operation = operations.value.get(opId)
+    if (!operation) return
     operations.value = new Map(operations.value).set(opId, {
       ...operation,
-      authenticationRequiredSeen: true
+      ...patch
     })
+  }
+
+  function pausePolling(opId: string) {
+    const timeoutId = timeouts.get(opId)
+    if (timeoutId) clearTimeout(timeoutId)
+    timeouts.delete(opId)
   }
 
   function stopIfTimedOut(opId: string, operation: BillingOperation): boolean {
@@ -434,6 +552,22 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     resolveTerminal(opId)
   }
 
+  function handleReconciliationNeeded(opId: string) {
+    const operation = operations.value.get(opId)
+    if (!operation) return
+    updateOperation(opId, {
+      status: 'reconciliation_needed',
+      authenticationState: 'reconciliation_needed',
+      paymentIntentClientSecret: null,
+      canRetryAuthentication: false,
+      isAuthenticating: false,
+      errorMessage: null,
+      actionUrl: null
+    })
+    cleanup(opId)
+    resolveTerminal(opId)
+  }
+
   function handleTimeout(opId: string) {
     const operation = operations.value.get(opId)
     if (!operation) return
@@ -510,7 +644,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation) return
 
-    const updated = { ...operation, status, errorMessage, actionUrl: null }
+    const updated = {
+      ...operation,
+      status,
+      errorMessage,
+      actionUrl: null,
+      paymentIntentClientSecret: null,
+      canRetryAuthentication: false,
+      isAuthenticating: false
+    }
     operations.value = new Map(operations.value).set(opId, updated)
   }
 
@@ -521,7 +663,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       timeouts.delete(opId)
     }
     intervals.delete(opId)
-    handledPaymentActions.delete(opId)
+    autoHandledPaymentActions.delete(opId)
 
     // Remove the "received" toast
     const receivedToast = receivedToasts.get(opId)
@@ -548,6 +690,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     subscriptionActionOperation,
     getOperation,
     startOperation,
+    retryPaymentAuthentication,
     clearOperation
   }
 })

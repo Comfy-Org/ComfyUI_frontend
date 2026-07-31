@@ -214,6 +214,51 @@
 
     <!-- Footer -->
     <div class="flex flex-col gap-2 pt-8 pb-4">
+      <div
+        v-if="reconciliationOperationId"
+        class="rounded-lg border border-interface-stroke bg-secondary-background p-4"
+      >
+        <p class="m-0 font-semibold text-base-foreground">
+          {{ $t('billingOperation.reconciliationTitle') }}
+        </p>
+        <p class="m-0 mt-1 text-sm text-muted-foreground">
+          {{
+            $t('billingOperation.reconciliationDetail', {
+              operationId: reconciliationOperationId
+            })
+          }}
+        </p>
+      </div>
+
+      <div
+        v-if="authenticationState === 'failed_retryable' && authenticationError"
+        role="alert"
+        class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+      >
+        {{ authenticationError }}
+      </div>
+
+      <Button
+        v-if="
+          (authenticationState === 'failed_retryable' ||
+            authenticationState === 'requires_action') &&
+          canRetryAuthentication
+        "
+        variant="inverted"
+        size="lg"
+        class="w-full rounded-lg"
+        :loading="isAuthenticating"
+        @click="$emit('retryAuthentication')"
+      >
+        {{
+          $t(
+            authenticationState === 'failed_retryable'
+              ? 'billingOperation.retryVerification'
+              : 'subscription.preview.completeVerification'
+          )
+        }}
+      </Button>
+
       <Button
         v-if="actionUrl"
         variant="inverted"
@@ -251,7 +296,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
-import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingAuthenticationState,
+  PreviewSubscribeResponse
+} from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 
@@ -263,6 +311,11 @@ const {
   teamPlan = null,
   actionUrl = null,
   forceReactivation = false,
+  authenticationState = null,
+  authenticationError = null,
+  canRetryAuthentication = false,
+  isAuthenticating = false,
+  reconciliationOperationId = null,
   quoteIsCurrent = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
@@ -274,6 +327,11 @@ const {
   /** Server-authoritative fallback for legacy status reads that omit a
    * scheduled cancellation until subscribe enforces the consent gate. */
   forceReactivation?: boolean
+  authenticationState?: BillingAuthenticationState | null
+  authenticationError?: string | null
+  canRetryAuthentication?: boolean
+  isAuthenticating?: boolean
+  reconciliationOperationId?: string | null
   quoteIsCurrent?: boolean
 }>()
 
@@ -284,6 +342,7 @@ defineEmits<{
   back: []
   applyPromotionCode: [code: string]
   invalidateQuote: []
+  retryAuthentication: []
 }>()
 
 const { t, n } = useI18n()

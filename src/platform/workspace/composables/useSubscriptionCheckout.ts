@@ -140,8 +140,29 @@ export function useSubscriptionCheckout(
   const activeCheckoutActionUrl = computed(
     () => activeCheckoutOperation.value?.actionUrl ?? null
   )
+  const authenticationState = computed(
+    () => activeCheckoutOperation.value?.authenticationState ?? null
+  )
+  const authenticationError = computed(
+    () => activeCheckoutOperation.value?.errorMessage ?? null
+  )
+  const canRetryAuthentication = computed(
+    () => activeCheckoutOperation.value?.canRetryAuthentication ?? false
+  )
+  const isAuthenticating = computed(
+    () => activeCheckoutOperation.value?.isAuthenticating ?? false
+  )
+  const reconciliationOperationId = computed(() =>
+    activeCheckoutOperation.value?.status === 'reconciliation_needed'
+      ? activeCheckoutOperation.value.opId
+      : null
+  )
   const isPolling = computed(
-    () => activeCheckoutOperation.value?.status === 'pending'
+    () =>
+      activeCheckoutOperation.value?.status === 'pending' &&
+      activeCheckoutOperation.value.authenticationState !==
+        'failed_retryable' &&
+      activeCheckoutOperation.value.authenticationState !== 'requires_action'
   )
   const selectedTeamStop = computed(
     () => selectedTeamCheckout.value?.stop ?? null
@@ -887,7 +908,7 @@ export function useSubscriptionCheckout(
     context: SubscriptionOutcomeContext
   ) {
     activeCheckoutOperationId.value = opId
-    const operation = await billingOperationStore.startOperation(
+    const terminalOperation = billingOperationStore.startOperation(
       opId,
       'subscription',
       {
@@ -895,9 +916,12 @@ export function useSubscriptionCheckout(
         cycle: context.cycle,
         checkoutType: context.checkoutType,
         paymentIntentSource,
-        suppressProcessingToast: true
+        suppressProcessingToast: true,
+        autoHandleRequiresAction: true
       }
     )
+    isSubscribing.value = false
+    const operation = await terminalOperation
     if (
       operation.status === 'succeeded' &&
       activeCheckoutOperationId.value === opId &&
@@ -905,6 +929,12 @@ export function useSubscriptionCheckout(
     ) {
       checkoutStep.value = 'success'
     }
+  }
+
+  async function retryPaymentAuthentication() {
+    const opId = activeCheckoutOperation.value?.opId
+    if (!opId) return
+    await billingOperationStore.retryPaymentAuthentication(opId)
   }
 
   async function handleTeamSubscription(
@@ -1111,6 +1141,11 @@ export function useSubscriptionCheckout(
     selectedTeamStop,
     selectedBillingCycle,
     activeCheckoutActionUrl,
+    authenticationState,
+    authenticationError,
+    canRetryAuthentication,
+    isAuthenticating,
+    reconciliationOperationId,
     isPolling,
     isTeamCheckout,
     previewVariant,
@@ -1123,6 +1158,7 @@ export function useSubscriptionCheckout(
     handleTeamSubscribe: handleTeamSubscription,
     handleSubscriptionPayment,
     handleTeamSubscriptionPayment,
+    retryPaymentAuthentication,
     applyPromotionCode,
     invalidateQuote,
     handleResubscribe

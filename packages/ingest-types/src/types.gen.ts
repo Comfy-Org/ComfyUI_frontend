@@ -3365,6 +3365,15 @@ export type BillingOpStatusResponse = {
    */
   action_url?: string
   /**
+   * State derived from the PaymentIntent attached to this operation's exact stored Stripe invoice. Absent when the operation has no correlated PaymentIntent.
+   */
+  authentication_state?:
+    | 'requires_action'
+    | 'processing'
+    | 'failed_retryable'
+    | 'succeeded'
+    | 'reconciliation_needed'
+  /**
    * When the operation completed (success or failure)
    */
   completed_at?: string
@@ -3377,13 +3386,17 @@ export type BillingOpStatusResponse = {
    */
   id: string
   /**
+   * Stripe PaymentIntent client secret for completing requires_action. This bearer capability is returned only to workspace billing managers or a recorded initiating actor, and is absent otherwise.
+   */
+  payment_intent_client_secret?: string
+  /**
    * When the operation was initiated
    */
   started_at: string
   /**
    * Current status of the operation
    */
-  status: 'pending' | 'succeeded' | 'failed'
+  status: 'pending' | 'succeeded' | 'failed' | 'reconciliation_needed'
 }
 
 /**

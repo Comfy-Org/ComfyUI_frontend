@@ -101,11 +101,17 @@
         :is-loading="isLoadingPreview || isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"
+        :authentication-state
+        :authentication-error
+        :can-retry-authentication
+        :is-authenticating
+        :reconciliation-operation-id
         :quote-is-current="quoteIsCurrent"
         @confirm="handleTeamSubscribe"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
+        @retry-authentication="retryPaymentAuthentication"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -114,6 +120,11 @@
         :billing-cycle="selectedBillingCycle"
         :is-loading="isLoadingPreview || isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
+        :authentication-state
+        :authentication-error
+        :can-retry-authentication
+        :is-authenticating
+        :reconciliation-operation-id
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
@@ -125,6 +136,7 @@
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
+        @retry-authentication="retryPaymentAuthentication"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -134,6 +146,11 @@
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
+        :authentication-state
+        :authentication-error
+        :can-retry-authentication
+        :is-authenticating
+        :reconciliation-operation-id
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
@@ -145,6 +162,7 @@
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
+        @retry-authentication="retryPaymentAuthentication"
       />
 
       <SubscriptionTransitionPreviewWorkspace
@@ -153,11 +171,17 @@
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"
+        :authentication-state
+        :authentication-error
+        :can-retry-authentication
+        :is-authenticating
+        :reconciliation-operation-id
         :quote-is-current="quoteIsCurrent"
         @confirm="handleConfirmTransition"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
+        @retry-authentication="retryPaymentAuthentication"
       />
     </template>
 
@@ -260,6 +284,11 @@ const {
   selectedTeamStop,
   selectedBillingCycle,
   activeCheckoutActionUrl,
+  authenticationState,
+  authenticationError,
+  canRetryAuthentication,
+  isAuthenticating,
+  reconciliationOperationId,
   isPolling,
   isTeamCheckout,
   previewVariant,
@@ -272,6 +301,7 @@ const {
   handleTeamSubscribe,
   handleSubscriptionPayment,
   handleTeamSubscriptionPayment,
+  retryPaymentAuthentication,
   applyPromotionCode,
   invalidateQuote,
   handleResubscribe
