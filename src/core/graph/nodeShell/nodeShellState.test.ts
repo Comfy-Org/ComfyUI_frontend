@@ -93,6 +93,23 @@ describe('node registration invariants', () => {
     expect(() => second.add(node)).toThrow(/different root graph/)
   })
 
+  it('drops the previous root entry rather than stranding it', () => {
+    vi.stubEnv('DEV', false)
+    const first = new LGraph()
+    first.id = createUuidv4()
+    const second = new LGraph()
+    second.id = createUuidv4()
+    const node = new LGraphNode('Node')
+    first.add(node)
+
+    second.add(node)
+
+    const store = useNodeDataStore()
+    const owningGraphId = node._state.graphId
+    expect(store.getGraphNodesFor(first.id, owningGraphId)).toEqual([])
+    expect(store.getGraphNodesFor(second.id, owningGraphId)).toHaveLength(1)
+  })
+
   it('reports a state that drifted out of its bucket before unregistering', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Node')

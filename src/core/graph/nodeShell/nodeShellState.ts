@@ -64,13 +64,22 @@ export function registerNodeState(
   node: LGraphNode
 ): void {
   const rootGraphId = graph.rootGraph.id
+  const strandedRootId =
+    node._graphId === undefined || node._graphId === rootGraphId
+      ? undefined
+      : node._graphId
+  const store = useNodeDataStore()
+
+  if (strandedRootId !== undefined)
+    store.deleteNode(strandedRootId, node._state)
   assert(
-    node._graphId === undefined || node._graphId === rootGraphId,
-    `registerNodeState: node ${node.id} already registered under a different root graph`
+    strandedRootId === undefined,
+    `registerNodeState: node ${node.id} already registered under a different root graph (${strandedRootId})`
   )
+
   node._state.graphId = graph.id
   node._state = reactive(node._state)
-  useNodeDataStore().registerNode(rootGraphId, node._state)
+  store.registerNode(rootGraphId, node._state)
   node._graphId = rootGraphId
 }
 
