@@ -71,13 +71,21 @@ export function registerNodeState(
   node: LGraphNode
 ): boolean {
   const graphScope = graphScopeOf(graph)
-  assert(
+  const store = useNodeDataStore()
+  const strandedScope =
     node._graphScope === undefined ||
-      node._graphScope.rootGraphId === graphScope.rootGraphId,
-    `registerNodeState: node ${node.id} already registered under a different root graph`
+    node._graphScope.rootGraphId === graphScope.rootGraphId
+      ? undefined
+      : node._graphScope
+
+  if (strandedScope !== undefined) store.deleteNode(strandedScope, node._state)
+  assert(
+    strandedScope === undefined,
+    `registerNodeState: node ${node.id} already registered under a different root graph (${strandedScope?.rootGraphId})`
   )
+
   node._state.graphId = graph.id
-  const registered = useNodeDataStore().registerNode(graphScope, node._state)
+  const registered = store.registerNode(graphScope, node._state)
   if (!registered) return false
   node._state = registered
   node._graphScope = graphScope
