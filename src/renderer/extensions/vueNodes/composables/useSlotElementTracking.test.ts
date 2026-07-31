@@ -191,6 +191,8 @@ describe('useSlotElementTracking', () => {
   it('invalidates retained geometry on resize and remeasures on remount', async () => {
     const mounted = await mountAndRegisterSlot('input')
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    const requestAnimationFrameSpy = vi.spyOn(window, 'requestAnimationFrame')
     suppressedNodeIds.add(NODE_ID)
     mounted.unmount()
 
@@ -206,6 +208,7 @@ describe('useSlotElementTracking', () => {
     })
     await nextTick()
 
+    expect(requestAnimationFrameSpy).not.toHaveBeenCalled()
     expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
     expect(
       useNodeSlotRegistryStore().getNode(NODE_ID)?.slots.get(slotKey)

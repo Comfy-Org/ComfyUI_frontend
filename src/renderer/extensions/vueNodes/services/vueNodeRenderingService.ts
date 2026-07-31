@@ -41,10 +41,12 @@ interface PolicyOwner {
 
 type Owner = PushOwner | PolicyOwner
 
-const EMPTY_CONTRIBUTION = Object.freeze({
-  suppress: new Set<string>(),
-  retain: new Set<string>()
-})
+function emptyContribution(): NormalizedContribution {
+  return {
+    suppress: new Set<string>(),
+    retain: new Set<string>()
+  }
+}
 
 function freezeArea(area: VueNodeRenderArea): VueNodeRenderArea {
   return Object.freeze([area[0], area[1], area[2], area[3]])
@@ -120,6 +122,7 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
   const owners = new Map<string, Owner>()
   const listeners = new Set<(snapshot: VueNodeRenderingSnapshot) => void>()
   let evaluatingPolicies = false
+  let mountRecomputeScheduled = false
   let snapshot = createSnapshot()
 
   function knownNodeIds(): Set<string> {
@@ -237,10 +240,7 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
             knownIds
           )
         } catch (error) {
-          owner.contribution = {
-            suppress: new Set(),
-            retain: new Set()
-          }
+          owner.contribution = emptyContribution()
           console.error(
             `[Vue node rendering] Policy "${ownerName}" failed; rendering all nodes for this owner.`,
             error
@@ -253,11 +253,21 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
   }
 
   function recompute(): void {
+    mountRecomputeScheduled = false
     pruneState()
     snapshot = createSnapshot()
     evaluatePolicies()
     applyContributions()
     notify()
+  }
+
+  function scheduleMountRecompute(): void {
+    if (mountRecomputeScheduled) return
+    mountRecomputeScheduled = true
+    queueMicrotask(() => {
+      if (!mountRecomputeScheduled) return
+      recompute()
+    })
   }
 
   function assertOwnerAvailable(owner: string): void {
@@ -301,7 +311,7 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
       initializedNodeIds.clear()
       renderedNodeIds.clear()
       for (const owner of owners.values()) {
-        if (owner.kind === 'push') owner.contribution = EMPTY_CONTRIBUTION
+        if (owner.kind === 'push') owner.contribution = emptyContribution()
       }
     }
     managerAvailable = state.managerAvailable
@@ -319,7 +329,7 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
     const changed = !mountedNodeIds.has(id) || !initializedNodeIds.has(id)
     mountedNodeIds.add(id)
     initializedNodeIds.add(id)
-    if (changed) recompute()
+    if (changed) scheduleMountRecompute()
   }
 
   function nodeUnmounted(id: string): void {
@@ -333,7 +343,7 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
     assertOwnerAvailable(ownerName)
     const owner: PushOwner = {
       kind: 'push',
-      contribution: EMPTY_CONTRIBUTION
+      contribution: emptyContribution()
     }
     owners.set(ownerName, owner)
     recompute()
@@ -346,7 +356,7 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
       },
       clear() {
         if (owners.get(ownerName) !== owner) return
-        owner.contribution = EMPTY_CONTRIBUTION
+        owner.contribution = emptyContribution()
         recompute()
       },
       dispose() {
@@ -362,7 +372,7 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
     assertOwnerAvailable(ownerName)
     const owner: PolicyOwner = {
       kind: 'policy',
-      contribution: EMPTY_CONTRIBUTION,
+      contribution: emptyContribution(),
       policy
     }
     owners.set(ownerName, owner)

@@ -265,7 +265,7 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
     }
     if (!entry.cachedOffset) {
       layoutStore.deleteSlotLayout(slotKey)
-      scheduleSlotLayoutSync(nodeId)
+      if (!isVueNodeRenderSuppressed(nodeId)) scheduleSlotLayoutSync(nodeId)
       continue
     }
 

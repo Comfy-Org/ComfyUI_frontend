@@ -66,14 +66,15 @@ export function useVueNodeRendering({
   let lastFrameState: readonly unknown[] = []
 
   function getFrontendRequiredNodeIds(
-    activeCanvas: LGraphCanvas | null | undefined
+    activeCanvas: LGraphCanvas | null | undefined,
+    focusedId: string | undefined
   ): string[] {
     const result = new Set<string>()
     const add = (id: string | undefined) => {
       if (id) result.add(id)
     }
 
-    add(focusedNodeId())
+    add(focusedId)
     const titleTarget = titleEditorStore.titleEditorTarget
     if (titleTarget && 'id' in titleTarget) add(String(titleTarget.id))
     add(nodeId(activeCanvas?.node_capturing_input))
@@ -105,6 +106,7 @@ export function useVueNodeRendering({
     const activeCanvas = toValue(canvas)
     const manager = toValue(nodeManager)
     const nodes = toValue(allNodes)
+    const focusedId = focusedNodeId()
 
     vueNodeRenderingService.updateRuntime({
       graph: activeCanvas?.graph ?? null,
@@ -121,7 +123,10 @@ export function useVueNodeRendering({
           })
         : [],
       visibleCanvasArea: visibleArea(activeCanvas),
-      frontendRequiredNodeIds: getFrontendRequiredNodeIds(activeCanvas),
+      frontendRequiredNodeIds: getFrontendRequiredNodeIds(
+        activeCanvas,
+        focusedId
+      ),
       renderFrozen: Boolean(
         layoutStore.isDraggingVueNodes.value ||
         layoutStore.isResizingVueNodes.value ||
@@ -129,11 +134,12 @@ export function useVueNodeRendering({
         activeCanvas?.resizingGroup
       )
     })
-    lastFrameState = getFrameState(activeCanvas)
+    lastFrameState = getFrameState(activeCanvas, focusedId)
   }
 
   function getFrameState(
-    activeCanvas: LGraphCanvas | null | undefined
+    activeCanvas: LGraphCanvas | null | undefined,
+    focusedId: string | undefined
   ): readonly unknown[] {
     return [
       activeCanvas?.ds.scale,
@@ -146,7 +152,7 @@ export function useVueNodeRendering({
       nodeId(activeCanvas?.node_capturing_input),
       nodeId(activeCanvas?.node_widget?.[0]),
       nodeId(activeCanvas?.resizing_node),
-      focusedNodeId(),
+      focusedId,
       isNodeOptionsOpen(),
       ...Array.from(activeCanvas?.linkConnector.renderLinks ?? [], (link) =>
         nodeId(link.node)
@@ -154,11 +160,42 @@ export function useVueNodeRendering({
     ]
   }
 
-  function frameStateChanged(): boolean {
-    const nextState = getFrameState(toValue(canvas))
+  function frameStateChanged(
+    activeCanvas: LGraphCanvas | null | undefined
+  ): boolean {
+    if (
+      activeCanvas?.ds.scale !== lastFrameState[0] ||
+      activeCanvas?.ds.offset[0] !== lastFrameState[1] ||
+      activeCanvas?.ds.offset[1] !== lastFrameState[2] ||
+      activeCanvas?.canvas.width !== lastFrameState[3] ||
+      activeCanvas?.canvas.height !== lastFrameState[4]
+    ) {
+      return true
+    }
+
+    const nextState = getFrameState(activeCanvas, focusedNodeId())
     return (
       nextState.length !== lastFrameState.length ||
       nextState.some((value, index) => value !== lastFrameState[index])
+    )
+  }
+
+  function shouldTrackRuntime(
+    activeCanvas: LGraphCanvas | null | undefined
+  ): boolean {
+    return Boolean(
+      activeCanvas?.dirty_canvas ||
+      activeCanvas?.dirty_bgcanvas ||
+      layoutStore.isDraggingVueNodes.value ||
+      layoutStore.isResizingVueNodes.value ||
+      activeCanvas?.isDragging ||
+      activeCanvas?.resizingGroup ||
+      activeCanvas?.node_capturing_input ||
+      activeCanvas?.node_widget ||
+      activeCanvas?.resizing_node ||
+      linkDragState.active ||
+      activeCanvas?.linkConnector.renderLinks.length ||
+      isNodeOptionsOpen()
     )
   }
 
@@ -194,7 +231,9 @@ export function useVueNodeRendering({
   )
 
   const runtimeTracker = useRafFn(() => {
-    if (frameStateChanged()) refreshRuntime()
+    const activeCanvas = toValue(canvas)
+    if (!shouldTrackRuntime(activeCanvas)) return
+    if (frameStateChanged(activeCanvas)) refreshRuntime()
   })
 
   onScopeDispose(() => {

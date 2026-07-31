@@ -64,7 +64,7 @@ describe('vueNodeRenderingService', () => {
     ])
   })
 
-  it('renders every node by default and protects nodes until first mount', () => {
+  it('renders every node by default and protects nodes until first mount', async () => {
     const service = createVueNodeRenderingService()
     service.updateRuntime(runtime())
     const controller = service.createPushController('viewport')
@@ -73,9 +73,11 @@ describe('vueNodeRenderingService', () => {
     expect(service.getSnapshot().renderedNodeIds).toEqual(['1', '2', '3'])
 
     service.nodeMounted('1')
+    await Promise.resolve()
     expect(service.getSnapshot().renderedNodeIds).toEqual(['2', '3'])
     service.nodeMounted('2')
     service.nodeMounted('3')
+    await Promise.resolve()
 
     expect(service.getSnapshot()).toMatchObject({
       renderedNodeIds: [],
@@ -174,22 +176,42 @@ describe('vueNodeRenderingService', () => {
     expect(listener).toHaveBeenCalledTimes(2)
   })
 
-  it('tracks mounted and initialized lifecycle independently', () => {
+  it('tracks mounted and initialized lifecycle independently', async () => {
     const service = createVueNodeRenderingService()
     service.updateRuntime(runtime())
 
     service.nodeMounted('2')
+    await Promise.resolve()
     expect(service.getSnapshot()).toMatchObject({
       mountedNodeIds: ['2'],
       initializedNodeIds: ['2']
     })
     service.nodeUnmounted('2')
+    await Promise.resolve()
     expect(service.getSnapshot()).toMatchObject({
       mountedNodeIds: [],
       initializedNodeIds: ['2']
     })
     service.nodeMounted('2')
+    await Promise.resolve()
     expect(service.getSnapshot().mountedNodeIds).toEqual(['2'])
+  })
+
+  it('coalesces mount notifications with the latest mounted state', async () => {
+    const service = createVueNodeRenderingService()
+    service.updateRuntime(runtime())
+    const listener = vi.fn()
+    service.subscribe(listener)
+    listener.mockClear()
+
+    service.nodeMounted('1')
+    service.nodeMounted('2')
+    service.nodeMounted('3')
+
+    expect(listener).not.toHaveBeenCalled()
+    await Promise.resolve()
+    expect(listener).toHaveBeenCalledOnce()
+    expect(service.getSnapshot().mountedNodeIds).toEqual(['1', '2', '3'])
   })
 
   it('keeps frontend-required nodes rendered and freezes suppression changes', () => {
