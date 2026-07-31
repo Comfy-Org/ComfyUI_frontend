@@ -19,6 +19,48 @@ describe('Composer', () => {
     setActivePinia(createPinia())
   })
 
+  it('shows the interactive empty-composer hint', () => {
+    mount()
+
+    expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'add nodes from graph,' })
+    ).toBeVisible()
+    expect(screen.getByText('or drag in assets')).toBeVisible()
+  })
+
+  it('hides the empty-composer hint once typing begins', async () => {
+    mount()
+    const box = screen.getByRole('textbox')
+
+    await userEvent.type(box, 'hello')
+
+    expect((box as HTMLTextAreaElement).value).toBe('hello')
+    expect(
+      screen.queryByRole('button', { name: 'add nodes from graph,' })
+    ).toBeNull()
+  })
+
+  it('opens the graph picker from the empty-composer hint', async () => {
+    const node = { id: '5', title: 'KSampler' }
+    const getMentionNodes = vi.fn(() => [node])
+    const { emitted } = mount({ getMentionNodes })
+    const hintButton = screen.getByRole('button', {
+      name: 'add nodes from graph,'
+    })
+
+    await userEvent.tab()
+    await userEvent.tab()
+    expect(hintButton).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(
+      await screen.findByRole('option', { name: 'KSampler' })
+    )
+
+    expect(getMentionNodes).toHaveBeenCalledOnce()
+    expect(emitted().mentionPick[0]).toEqual([node])
+  })
+
   it('disables send when empty and enables once text is typed', async () => {
     mount()
     const send = screen.getByRole('button', { name: 'Send' })
