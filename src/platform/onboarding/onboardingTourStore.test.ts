@@ -15,7 +15,7 @@ import {
   unregisterCoachmark
 } from './coachmarkRegistry'
 import { TOUR_SEEN_SETTING, TOURS } from './onboardingTours'
-import type { CoachId } from './onboardingTours'
+import type { CoachId, CoachStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
 const settings = vi.hoisted(() => ({ store: new Map<string, unknown>() }))
@@ -90,6 +90,10 @@ function mountStore() {
 function startedCount() {
   return telemetry.track.mock.calls.filter(([stage]) => stage === 'started')
     .length
+}
+
+function shownCoachId(step: CoachStep | null | undefined) {
+  return step?.kind === 'spotlight' ? step.coachId : undefined
 }
 
 function shownCount(coachId?: CoachId) {
@@ -284,7 +288,7 @@ describe('onboardingTourStore', () => {
     await nextTick()
 
     expect(store.waitingForTarget).toBe(false)
-    expect(store.step?.coachId).toBe('inputs-list')
+    expect(shownCoachId(store.step)).toBe('inputs-list')
   })
 
   it('keeps the original deadline when advance is requested again mid-wait', async () => {
@@ -411,7 +415,7 @@ describe('onboardingTourStore', () => {
     await nextTick()
 
     expect(store.waitingForTarget).toBe(false)
-    expect(store.step?.coachId).toBe('assets-panel')
+    expect(shownCoachId(store.step)).toBe('assets-panel')
   })
 
   it('leaves an already-open assets tab open when reaching the assets step', async () => {
@@ -428,7 +432,7 @@ describe('onboardingTourStore', () => {
       await nextTick()
     }
 
-    expect(store.step?.coachId).toBe('assets-panel')
+    expect(shownCoachId(store.step)).toBe('assets-panel')
     expect(sidebar.activeSidebarTabId).toBe('assets')
   })
 
@@ -442,12 +446,12 @@ describe('onboardingTourStore', () => {
     await nextTick()
     store.next()
     await nextTick()
-    expect(store.step?.coachId).toBe('app-run-button')
+    expect(shownCoachId(store.step)).toBe('app-run-button')
     expect(store.canGoBack).toBe(true)
 
     store.back()
     await nextTick()
-    expect(store.step?.coachId).toBe('inputs-list')
+    expect(shownCoachId(store.step)).toBe('inputs-list')
   })
 
   it('reports step index 0 while no tour is active', () => {
@@ -462,7 +466,7 @@ describe('onboardingTourStore', () => {
     await nextTick()
 
     // The landing's `primary` entry overrides only the primary label.
-    expect(store.step?.landing).toBe(true)
+    expect(store.step?.kind).toBe('landing')
     expect(store.primaryLabel).toBe('Start tutorial')
     expect(store.skipLabel).toBe('Skip')
 
@@ -516,12 +520,12 @@ describe('onboardingTourStore', () => {
     const store = mountStore()
     store.replayTour('appMode')
     await nextTick()
-    expect(store.step?.landing).toBe(true)
+    expect(store.step?.kind).toBe('landing')
 
     store.next()
     await nextTick()
 
-    expect(store.step?.landing).toBeFalsy()
+    expect(store.step?.kind).not.toBe('landing')
     const skipped = telemetry.track.mock.calls.some(
       ([stage]) => stage === 'skipped'
     )
@@ -535,7 +539,7 @@ describe('onboardingTourStore', () => {
     await nextTick()
     store.next()
     await nextTick()
-    expect(store.step?.coachId).toBe('inputs-list')
+    expect(shownCoachId(store.step)).toBe('inputs-list')
 
     const el = targets.get('inputs-list')
     if (!el) throw new Error('no inputs target')
