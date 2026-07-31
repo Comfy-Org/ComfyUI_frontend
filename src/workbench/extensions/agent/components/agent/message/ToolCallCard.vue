@@ -35,15 +35,18 @@ const glyphColor = 'text-agent-fg-subtle'
 </script>
 
 <template>
-  <div class="text-agent-fg flex items-center gap-2 px-3 py-2 text-sm">
+  <div
+    role="listitem"
+    class="text-agent-fg-muted ml-2 flex h-8 items-center gap-2 px-2 text-sm leading-none"
+  >
     <span :class="cn('size-4 shrink-0', glyph, glyphColor)" />
-    <span class="truncate text-sm">{{ label }}</span>
+    <span class="truncate text-sm leading-none">{{ label }}</span>
     <span v-if="count > 1" class="text-agent-fg-subtle text-xs"
       >×{{ count }}</span
     >
     <span
       v-if="durationMs !== undefined"
-      class="text-agent-fg-subtle ml-auto shrink-0 text-xs"
+      class="text-agent-fg-subtle ml-auto shrink-0 font-mono text-xs/4"
       >{{ (durationMs / 1000).toFixed(1) }}s</span
     >
   </div>

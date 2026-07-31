@@ -81,7 +81,7 @@ watch(
 <template>
   <CollapsibleRoot v-model:open="open">
     <CollapsibleTrigger
-      class="group text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex h-8 w-full cursor-pointer items-center gap-2 rounded-md px-2 text-sm transition-colors"
+      class="group text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal transition-colors"
     >
       <span
         v-if="running"
@@ -93,9 +93,7 @@ watch(
       />
       <span v-else class="icon-[lucide--wrench] size-4 shrink-0" />
       <span
-        :class="
-          cn('flex-1 text-left', (active || running) && 'agent-shimmer-text')
-        "
+        :class="cn('text-left', (active || running) && 'agent-shimmer-text')"
         >{{
           totalSeconds === null
             ? t('agent.ranToolCalls', tools.length)
@@ -113,7 +111,7 @@ watch(
     <CollapsibleContent
       class="data-[state=closed]:animate-agent-collapsible-up data-[state=open]:animate-agent-collapsible-down overflow-hidden"
     >
-      <div class="border-agent-border ml-4 flex flex-col border-l pt-1">
+      <div role="list" class="border-agent-border ml-4 flex flex-col border-l">
         <ToolCallCard
           v-for="(row, index) in rows"
           :key="index"
