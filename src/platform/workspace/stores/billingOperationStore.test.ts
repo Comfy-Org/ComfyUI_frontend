@@ -202,6 +202,21 @@ describe('billingOperationStore', () => {
       })
     })
 
+    it('does not show a processing toast when the checkout owns progress', () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription', {
+        suppressProcessingToast: true
+      })
+
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
     it('shows immediate processing toast for topup operations', () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',

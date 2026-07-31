@@ -149,13 +149,6 @@
         </span>
       </div>
 
-      <!-- Promo (immediate changes only — a scheduled change bills later).
-           The entered code has nowhere to go yet: the change-preview endpoint
-           does not accept promotion_code. Wire on the BE contract. -->
-      <div v-if="isImmediate" class="py-4">
-        <SubscriptionPromoCodeField v-model="promotionCode" />
-      </div>
-
       <!-- Total Due (immediate changes carry their addends: one sum under
            one divider, per Figma 5344-35724) -->
       <div
@@ -238,7 +231,6 @@ import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPric
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
-import SubscriptionPromoCodeField from './SubscriptionPromoCodeField.vue'
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 
 type PersonalTierKey = 'standard' | 'creator' | 'pro'
@@ -266,7 +258,6 @@ defineEmits<{
 
 const { t, n } = useI18n()
 
-const promotionCode = ref('')
 const { subscription } = useBillingContext()
 
 function openVerification() {

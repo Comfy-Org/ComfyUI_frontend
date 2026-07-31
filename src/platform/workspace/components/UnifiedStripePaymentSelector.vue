@@ -62,20 +62,17 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   amountCents,
   isLoading = false,
-  promotionCode = '',
   verificationPending = false
 } = defineProps<{
   amountCents: number
   isLoading?: boolean
-  /** Entered in the order summary; rides along unchanged on confirm. */
-  promotionCode?: string
   /** A 3DS verification is pending: Complete verification (rendered by the
    *  parent) is the primary action, so the pay button steps back. */
   verificationPending?: boolean
 }>()
 
 const emit = defineEmits<{
-  confirm: [confirmationToken: string, promotionCode?: string]
+  confirm: [confirmationToken: string]
 }>()
 
 const { t } = useI18n()
@@ -90,8 +87,6 @@ let isUnmounted = false
 
 onMounted(async () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  const paymentMethodConfiguration = import.meta.env
-    .VITE_STRIPE_PAYMENT_METHOD_CONFIGURATION_ID
   if (!publishableKey || amountCents <= 0) {
     configurationError.value = t('subscription.preview.stripeUnavailable')
     return
@@ -108,6 +103,7 @@ onMounted(async () => {
     amount: amountCents,
     currency: 'usd',
     setupFutureUsage: 'off_session',
+    paymentMethodTypes: ['card', 'alipay'],
     appearance: {
       variables: {
         // Selection (radio, selected label, accordion highlight) uses the
@@ -148,8 +144,7 @@ onMounted(async () => {
           fontWeight: '500'
         }
       }
-    },
-    ...(paymentMethodConfiguration && { paymentMethodConfiguration })
+    }
   })
   paymentElement = stripeElements.value.create('payment', {
     layout: {
@@ -192,11 +187,7 @@ async function submit() {
       configurationError.value = result.error.message ?? t('g.error')
       return
     }
-    emit(
-      'confirm',
-      result.confirmationToken.id,
-      promotionCode.trim() || undefined
-    )
+    emit('confirm', result.confirmationToken.id)
   } catch {
     configurationError.value = t('g.error')
   } finally {

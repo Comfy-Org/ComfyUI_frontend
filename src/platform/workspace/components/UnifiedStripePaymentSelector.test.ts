@@ -8,8 +8,9 @@ import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 const stripeMocks = vi.hoisted(() => {
   const mount = vi.fn()
   const destroy = vi.fn()
+  const on = vi.fn()
   const submit = vi.fn()
-  const create = vi.fn(() => ({ mount, destroy }))
+  const create = vi.fn(() => ({ mount, destroy, on }))
   const elements = { submit, create }
   const createConfirmationToken = vi.fn()
   const stripe = {
@@ -19,6 +20,7 @@ const stripeMocks = vi.hoisted(() => {
   return {
     mount,
     destroy,
+    on,
     submit,
     create,
     elements,
@@ -61,16 +63,13 @@ function renderSelector(amountCents = 66500) {
 describe('UnifiedStripePaymentSelector', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
-    vi.stubEnv(
-      'VITE_STRIPE_PAYMENT_METHOD_CONFIGURATION_ID',
-      'pmc_subscription'
-    )
     vi.resetAllMocks()
     stripeMocks.loadStripe.mockResolvedValue(stripeMocks.stripe)
     stripeMocks.stripe.elements.mockReturnValue(stripeMocks.elements)
     stripeMocks.create.mockReturnValue({
       mount: stripeMocks.mount,
-      destroy: stripeMocks.destroy
+      destroy: stripeMocks.destroy,
+      on: stripeMocks.on
     })
     stripeMocks.submit.mockResolvedValue({})
     stripeMocks.createConfirmationToken.mockResolvedValue({
@@ -91,7 +90,7 @@ describe('UnifiedStripePaymentSelector', () => {
           amount: 66500,
           currency: 'usd',
           setupFutureUsage: 'off_session',
-          paymentMethodConfiguration: 'pmc_subscription'
+          paymentMethodTypes: ['card', 'alipay']
         })
       )
     })
@@ -101,7 +100,8 @@ describe('UnifiedStripePaymentSelector', () => {
         defaultCollapsed: false,
         radios: 'always',
         spacedAccordionItems: true
-      }
+      },
+      terms: { card: 'never' }
     })
     expect(stripeMocks.mount).toHaveBeenCalledTimes(1)
 
@@ -115,7 +115,7 @@ describe('UnifiedStripePaymentSelector', () => {
     expect(stripeMocks.createConfirmationToken).toHaveBeenCalledWith({
       elements: stripeMocks.elements
     })
-    expect(emitted().confirm).toEqual([['ctoken_1', undefined]])
+    expect(emitted().confirm).toEqual([['ctoken_1']])
   })
 
   it('keeps the customer in the form when Stripe rejects its contents', async () => {

@@ -38,6 +38,7 @@ export interface StartOperationMetadata {
   cycle?: BillingCycle
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
+  suppressProcessingToast?: boolean
   downgradeToPersonal?: {
     memberRemovalCount: number
     memberRemovalFailures: number
@@ -137,7 +138,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     operations.value = new Map(operations.value).set(opId, operation)
     intervals.set(opId, INITIAL_INTERVAL_MS)
 
-    if (type !== 'cancel') {
+    if (type !== 'cancel' && !metadata?.suppressProcessingToast) {
       const messageKey =
         type === 'subscription'
           ? 'billingOperation.subscriptionProcessing'

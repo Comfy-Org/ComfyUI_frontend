@@ -1534,7 +1534,8 @@ describe('useSubscriptionCheckout', () => {
           tier: 'standard',
           cycle: 'yearly',
           checkoutType: 'new',
-          paymentIntentSource: undefined
+          paymentIntentSource: undefined,
+          suppressProcessingToast: true
         }
       )
       expect(checkout.checkoutStep.value).toBe('success')
@@ -1565,7 +1566,8 @@ describe('useSubscriptionCheckout', () => {
           tier: 'standard',
           cycle: 'yearly',
           checkoutType: 'new',
-          paymentIntentSource: undefined
+          paymentIntentSource: undefined,
+          suppressProcessingToast: true
         }
       )
       expect(checkout.checkoutStep.value).toBe('success')
@@ -1592,7 +1594,8 @@ describe('useSubscriptionCheckout', () => {
           tier: 'standard',
           cycle: 'yearly',
           checkoutType: 'new',
-          paymentIntentSource: undefined
+          paymentIntentSource: undefined,
+          suppressProcessingToast: true
         }
       )
       expect(checkout.checkoutStep.value).toBe('preview')

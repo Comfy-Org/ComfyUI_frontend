@@ -587,7 +587,8 @@ export function useSubscriptionCheckout(
         tier: context.tier,
         cycle: context.cycle,
         checkoutType: context.checkoutType,
-        paymentIntentSource
+        paymentIntentSource,
+        suppressProcessingToast: true
       }
     )
     if (
