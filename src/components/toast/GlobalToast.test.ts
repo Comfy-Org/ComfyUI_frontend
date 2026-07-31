@@ -23,16 +23,17 @@ function stubRect(
   element: HTMLElement,
   left: number,
   width: number,
-  top = 0
+  top = 0,
+  height = 0
 ): void {
   element.getBoundingClientRect = () =>
     ({
       top,
-      bottom: top,
+      bottom: top + height,
       left,
       right: left + width,
       width,
-      height: 0,
+      height,
       x: left,
       y: top,
       toJSON: () => ({})
@@ -43,11 +44,12 @@ function addCanvasElement(
   className: string,
   left: number,
   width: number,
-  top = 0
+  top = 0,
+  height = 0
 ): HTMLElement {
   const element = document.createElement('div')
   element.className = className
-  stubRect(element, left, width, top)
+  stubRect(element, left, width, top, height)
   document.body.appendChild(element)
   return element
 }
@@ -185,6 +187,24 @@ describe('GlobalToast dynamic positioning', () => {
     expect(injectedToastStyle()).toContain('top: 100px')
     expect(injectedToastStyle()).toContain('right: 620px')
     expect(injectedToastStyle()).not.toContain('top: 188px')
+  })
+
+  it('places the toast eight pixels below the action bar', async () => {
+    addCanvasElement('graph-canvas-container', 0, 1000)
+    const actionBar = addCanvasElement('action-bar', 700, 316, 80, 48)
+    const actionBarContainer = document.createElement('div')
+    actionBarContainer.className = 'actionbar-container'
+    actionBar.appendChild(actionBarContainer)
+
+    renderToast()
+    await nextTick()
+
+    const graphToast = document.querySelector('.graph-toast')
+    expect(graphToast).not.toBeNull()
+    graphToast!.classList.add('p-toast', 'p-component', 'p-toast-top-right')
+
+    const toastTop = Number.parseFloat(getComputedStyle(graphToast!).top)
+    expect(toastTop - actionBar.getBoundingClientRect().bottom).toBe(8)
   })
 
   it('keeps the last good position when the graph anchors are hidden', async () => {

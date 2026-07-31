@@ -68,8 +68,10 @@ watch(
   }
 )
 
-function visibleRect(selector: string): DOMRect | undefined {
-  const rect = document.querySelector(selector)?.getBoundingClientRect()
+function visibleRect(target: string | Element | null): DOMRect | undefined {
+  const element =
+    typeof target === 'string' ? document.querySelector(target) : target
+  const rect = element?.getBoundingClientRect()
   return rect !== undefined && rect.width > 0 ? rect : undefined
 }
 
@@ -88,6 +90,9 @@ function updateToastPosition() {
   const dockedPanel = agentPanelOpen.value
     ? visibleRect('.docked-agent-panel')
     : undefined
+  const actionBar = visibleRect(
+    document.querySelector('.actionbar-container')?.parentElement ?? null
+  )
   const rightEdge =
     edge === undefined
       ? anchor.left - 20
@@ -95,12 +100,13 @@ function updateToastPosition() {
         ? dockedPanel.left - 8
         : edge.right - 20
   const right = window.innerWidth - rightEdge
+  const top = actionBar === undefined ? anchor.top + 100 : actionBar.bottom + 8
   const styleElement =
     document.getElementById('dynamic-toast-style') || createStyleElement()
 
   styleElement.textContent = `
     .p-toast.p-component.p-toast-top-right {
-      top: ${anchor.top + 100}px !important;
+      top: ${top}px !important;
       right: ${right}px !important;
        z-index: 10000 !important;
     }
