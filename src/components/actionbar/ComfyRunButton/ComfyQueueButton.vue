@@ -86,7 +86,7 @@ import {
   isInstantMode,
   isInstantRunningMode,
   useQueueSettingsStore
-} from '@/stores/queueStore'
+} from '@/stores/queueSettingsStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
