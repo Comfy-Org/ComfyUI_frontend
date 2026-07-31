@@ -94,8 +94,7 @@ function useFirstRunTourControllerInternal() {
       }
 
       runState.value = 'generating'
-      if (engine.isLast) engine.complete()
-      else engine.next()
+      engine.next()
     },
     { capture: true }
   )
