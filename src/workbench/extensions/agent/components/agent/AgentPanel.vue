@@ -194,7 +194,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="flex h-10 shrink-0 items-center px-2">
         <div
           v-if="renaming"
-          class="text-agent-fg-muted flex items-center gap-2 rounded-sm px-2 py-1"
+          class="text-agent-fg-muted flex items-center rounded-sm px-2 py-1"
         >
           <span class="icon-[lucide--align-justify] size-4 shrink-0" />
           <input
