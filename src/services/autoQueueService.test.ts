@@ -64,9 +64,7 @@ describe('setupAutoQueueHandler', () => {
 
     listener(new Event('autoQueueGraphChanged'))
 
-    expect(mocks.queuePrompt).toHaveBeenCalledWith(0, 2, {
-      intent: { trigger_source: 'auto_queue' }
-    })
+    expect(mocks.queuePrompt).toHaveBeenCalledWith(0, 2)
   })
 
   it('coalesces changes while busy and queues once after the queue drains', async () => {
@@ -84,9 +82,7 @@ describe('setupAutoQueueHandler', () => {
     await nextTick()
 
     expect(mocks.queuePrompt).toHaveBeenCalledTimes(2)
-    expect(mocks.queuePrompt).toHaveBeenLastCalledWith(0, 2, {
-      intent: { trigger_source: 'auto_queue' }
-    })
+    expect(mocks.queuePrompt).toHaveBeenLastCalledWith(0, 2)
   })
 
   it('does not requeue a deferred change after an execution error', async () => {
