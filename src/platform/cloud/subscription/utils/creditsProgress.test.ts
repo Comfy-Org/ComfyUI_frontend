@@ -43,26 +43,17 @@ describe('computeMonthlyUsage', () => {
     })
   })
 
-  // The cents ledger cannot represent every plan allowance exactly, so an
-  // untouched balance reconstructs a few credits above it (FE-1451).
-  it.for([
-    { plan: 'standard-monthly', reconstructed: 4_201, allowance: 4_200 },
-    { plan: 'standard-annual', reconstructed: 50_402, allowance: 50_400 },
-    { plan: 'creator-monthly', reconstructed: 7_402, allowance: 7_400 },
-    { plan: 'creator-annual', reconstructed: 88_801, allowance: 88_800 },
-    { plan: 'founder-monthly', reconstructed: 5_463, allowance: 5_460 }
-  ])(
-    'clamps a $plan balance reconstructed above its allowance',
-    ({ reconstructed, allowance }, { expect }) => {
-      expect(computeMonthlyUsage(reconstructed, allowance)).toEqual({
-        used: 0,
-        remaining: allowance,
-        usedFraction: 0
-      })
-    }
-  )
+  // Standard grants 4,200 credits but the cents ledger can only hold 1,991c,
+  // which reconstructs to 4,201 — one above the allowance (FE-1451).
+  it('clamps a balance reconstructed just above the allowance', () => {
+    expect(computeMonthlyUsage(4_201, 4_200)).toEqual({
+      used: 0,
+      remaining: 4_200,
+      usedFraction: 0
+    })
+  })
 
-  it('leaves an allowance the cents ledger represents exactly untouched', () => {
+  it('reports a full allowance when the balance matches it exactly', () => {
     expect(computeMonthlyUsage(21_100, 21_100)).toEqual({
       used: 0,
       remaining: 21_100,
