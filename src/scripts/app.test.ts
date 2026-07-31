@@ -815,6 +815,14 @@ describe('ComfyApp', () => {
         await app.handleFile(createTestFile('a1111.png', 'image/png'))
 
         expect(missingNodesStore.missingNodesError).toBeNull()
+        expect(mockWorkspaceWorkflow.createNewTemporary).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({
+            nodes: expect.arrayContaining([
+              expect.objectContaining({ type: 'CheckpointLoaderSimple' })
+            ])
+          })
+        )
       } finally {
         for (const nodeType of nodeTypes) {
           LiteGraph.unregisterNodeType(nodeType)

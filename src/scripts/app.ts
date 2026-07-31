@@ -2201,10 +2201,7 @@ export class ComfyApp {
     const missingNodeTypes = Object.values(apiData).filter(
       (n) => !LiteGraph.registered_node_types[n.class_type]
     )
-    useMissingNodesErrorStore().setMissingNodeTypes([])
-    if (missingNodeTypes.length) {
-      this.showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
-    }
+    this.showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
 
     const ids = Object.keys(apiData)
     app.rootGraph.clear()
