@@ -300,7 +300,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               />
             </template>
           </Composer>
-          <p class="text-agent-fg-muted -mt-1.5 mb-0 text-center text-xs/none">
+          <p class="text-agent-fg-muted -mt-1.5 mb-0 text-center text-xs">
             {{ t(isMaximized ? 'agent.captionExpanded' : 'agent.caption') }}
           </p>
         </div>
