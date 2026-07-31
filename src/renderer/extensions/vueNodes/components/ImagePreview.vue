@@ -388,31 +388,38 @@ function handleKeyDown(event: KeyboardEvent) {
     hasMultipleImages.value
   ) {
     event.preventDefault()
+    event.stopPropagation()
     viewMode.value = 'grid'
     return
   }
 
-  if (imageUrls.length <= 1 || viewMode.value === 'grid') return
+  if (imageUrls.length <= 1 || viewMode.value === 'grid') {
+    return
+  }
 
   switch (event.key) {
     case 'ArrowLeft':
       event.preventDefault()
+      event.stopPropagation()
       setCurrentIndex(
         currentIndex.value > 0 ? currentIndex.value - 1 : imageUrls.length - 1
       )
       break
     case 'ArrowRight':
       event.preventDefault()
+      event.stopPropagation()
       setCurrentIndex(
         currentIndex.value < imageUrls.length - 1 ? currentIndex.value + 1 : 0
       )
       break
     case 'Home':
       event.preventDefault()
+      event.stopPropagation()
       setCurrentIndex(0)
       break
     case 'End':
       event.preventDefault()
+      event.stopPropagation()
       setCurrentIndex(imageUrls.length - 1)
       break
   }
@@ -426,4 +433,6 @@ function getImageFilename(url: string): string {
     return t('g.imageDoesNotExist')
   }
 }
+
+defineExpose({ handleKeyDown })
 </script>
