@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useQueueSettingsStore } from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 import BatchCountEdit from './BatchCountEdit.vue'
 
