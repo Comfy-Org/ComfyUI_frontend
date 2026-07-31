@@ -178,6 +178,16 @@ watch(mentionActive, async () => {
 
 const { t } = useI18n()
 
+const placeholderHint = computed(() => {
+  const [firstLine = '', secondLine = ''] = t('agent.placeholder').split('\n')
+  const addNodes = t('agent.addNodesFromGraph').toLocaleLowerCase()
+  return {
+    firstLine,
+    addNodes,
+    dragAssets: secondLine.slice(addNodes.length).trim()
+  }
+})
+
 const composer = useComposer({
   onSend: (text, attachments) => emit('send', text, attachments),
   isStreaming: () => streaming,
@@ -198,6 +208,17 @@ function onPrimaryAction(): void {
 }
 
 const textareaRef = useTemplateRef<InstanceType<typeof Textarea>>('textareaRef')
+
+async function openPlaceholderNodePicker(): Promise<void> {
+  loadMentionNodes()
+  mentionOpen.value = true
+  mentionQuery.value = ''
+  mentionStart.value = 0
+  mentionActive.value = 0
+  await nextTick()
+  textareaRef.value?.focus()
+}
+
 const insertHighlight = ref(false)
 const { start: startInsertHighlight } = useTimeoutFn(
   () => {
@@ -311,23 +332,47 @@ defineExpose({
       />
     </div>
 
-    <Textarea
-      ref="textareaRef"
-      v-model="composer.draft.value"
-      :placeholder="t('agent.placeholder')"
-      rows="1"
-      class="field-sizing-content max-h-50 min-h-16 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-none bg-transparent px-3 py-2 text-sm/5 wrap-break-word whitespace-pre-wrap placeholder:whitespace-pre-wrap focus-visible:ring-0"
-      :aria-expanded="mentionVisible"
-      aria-controls="agent-mention-listbox"
-      :aria-activedescendant="
-        mentionVisible ? `agent-mention-opt-${mentionActive}` : undefined
-      "
-      @keydown="onComposerKeydown"
-      @keyup="onComposerKeyup"
-      @input="syncMention"
-      @click="syncMention"
-      @blur="closeMention"
-    />
+    <div class="relative min-h-16">
+      <Textarea
+        ref="textareaRef"
+        v-model="composer.draft.value"
+        :aria-label="t('agent.placeholder')"
+        rows="1"
+        class="field-sizing-content max-h-50 min-h-16 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-none bg-transparent px-3 py-2 text-sm/5 wrap-break-word whitespace-pre-wrap focus-visible:ring-0"
+        :aria-expanded="mentionVisible"
+        aria-controls="agent-mention-listbox"
+        :aria-activedescendant="
+          mentionVisible ? `agent-mention-opt-${mentionActive}` : undefined
+        "
+        @keydown="onComposerKeydown"
+        @keyup="onComposerKeyup"
+        @input="syncMention"
+        @click="syncMention"
+        @blur="closeMention"
+      />
+
+      <div
+        v-if="!composer.draft.value"
+        class="text-agent-fg-muted pointer-events-none absolute inset-x-[12px] top-[8px] z-10 text-[14px]/[20px]"
+      >
+        <span class="block h-[20px]">{{ placeholderHint.firstLine }}</span>
+        <div class="-mt-px flex h-[20px] items-center">
+          <button
+            type="button"
+            aria-controls="agent-mention-listbox"
+            :aria-expanded="mentionVisible"
+            class="hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto mr-[4px] ml-[-5px] inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] text-[14px]/[20px] transition-colors focus-visible:outline-1"
+            @click="openPlaceholderNodePicker"
+          >
+            <span
+              class="icon-[lucide--square-mouse-pointer] size-[14px] shrink-0"
+            />
+            <span>{{ placeholderHint.addNodes }},</span>
+          </button>
+          <span>{{ placeholderHint.dragAssets }}</span>
+        </div>
+      </div>
+    </div>
 
     <div class="flex items-center justify-between px-3 py-2">
       <DropdownMenuRoot>
