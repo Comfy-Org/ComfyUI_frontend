@@ -5,7 +5,6 @@ import type {
   ElevationLabel
 } from './cameraVocabulary'
 import {
-  AZIMUTH_LABELS,
   DISTANCE_LABELS,
   ELEVATION_LABELS,
   azimuthLabel,
@@ -14,6 +13,8 @@ import {
 } from './cameraVocabulary'
 
 export interface AngleAsset {
+  /** Turntable azimuth this frame was rendered at, in degrees. */
+  azimuthDegrees: number
   azimuth: AzimuthLabel
   elevation: ElevationLabel
   distance: DistanceLabel
@@ -22,101 +23,55 @@ export interface AngleAsset {
   height: number
 }
 
-function angleAsset(
-  azimuth: AzimuthLabel,
-  elevation: ElevationLabel,
-  distance: DistanceLabel
-): AngleAsset {
-  const slug = [azimuth, elevation, distance]
-    .map((label) => label.replaceAll(' ', '-'))
-    .join('__')
+/** The shipped set is a uniform 360° turntable at eye level, medium shot.
+ * Elevation and distance variants (top/bottom views, close-ups, wide shots)
+ * land later and slot into the same scoring. */
+const RING_STEP_DEGREES = 22.5
+
+function ringAsset(azimuthDegrees: number): AngleAsset {
+  const whole = String(Math.floor(azimuthDegrees)).padStart(3, '0')
+  const slug = `az${whole}-${azimuthDegrees % 1 ? '5' : '0'}`
   return {
-    azimuth,
-    elevation,
-    distance,
-    src: `/hero/angles/${slug}.webp`,
-    width: 960,
-    height: 519
+    azimuthDegrees,
+    azimuth: azimuthLabel(azimuthDegrees),
+    elevation: 'eye-level shot',
+    distance: 'medium shot',
+    src: `/hero/angles/${slug}__eye-level-shot__medium-shot.webp`,
+    width: 1280,
+    height: 960
   }
 }
 
-export const ANGLE_ASSETS: AngleAsset[] = [
-  angleAsset('front view', 'eye-level shot', 'close-up'),
-  angleAsset('front view', 'eye-level shot', 'wide shot'),
-  angleAsset('front view', 'eye-level shot', 'medium shot'),
-  angleAsset('front-right quarter view', 'eye-level shot', 'medium shot'),
-  angleAsset('right side view', 'eye-level shot', 'medium shot'),
-  angleAsset('back view', 'eye-level shot', 'medium shot'),
-  angleAsset('back-left quarter view', 'eye-level shot', 'medium shot'),
-  angleAsset('front-left quarter view', 'eye-level shot', 'medium shot'),
-  angleAsset('front view', 'high-angle shot', 'medium shot'),
-  angleAsset('front view', 'high-angle shot', 'wide shot'),
-  angleAsset('back view', 'high-angle shot', 'wide shot'),
-  angleAsset('left side view', 'high-angle shot', 'wide shot'),
-  angleAsset('right side view', 'high-angle shot', 'wide shot'),
-  angleAsset('left side view', 'low-angle shot', 'close-up'),
-  angleAsset('left side view', 'low-angle shot', 'medium shot'),
-  angleAsset('left side view', 'low-angle shot', 'wide shot'),
-  angleAsset('back-right quarter view', 'eye-level shot', 'medium shot'),
-  angleAsset('left side view', 'eye-level shot', 'medium shot'),
-  angleAsset('front view', 'elevated shot', 'medium shot'),
-  angleAsset('front-right quarter view', 'elevated shot', 'medium shot'),
-  angleAsset('right side view', 'elevated shot', 'medium shot'),
-  angleAsset('back-right quarter view', 'elevated shot', 'medium shot'),
-  angleAsset('back view', 'elevated shot', 'medium shot'),
-  angleAsset('back-left quarter view', 'elevated shot', 'medium shot'),
-  angleAsset('left side view', 'elevated shot', 'medium shot'),
-  angleAsset('front-left quarter view', 'elevated shot', 'medium shot')
-]
-
-function circularIndexDistance(a: number, b: number, size: number): number {
-  const d = Math.abs(a - b)
-  return Math.min(d, size - d)
-}
+export const ANGLE_ASSETS: AngleAsset[] = Array.from(
+  { length: 360 / RING_STEP_DEGREES },
+  (_, index) => ringAsset(index * RING_STEP_DEGREES)
+)
 
 function circularDegreeDistance(a: number, b: number): number {
   const d = Math.abs(a - b) % 360
   return Math.min(d, 360 - d)
 }
 
-const ELEVATION_VALUES = [-30, 0, 30, 60]
-const DISTANCE_VALUES = [1, 4, 8]
-
 /**
- * Nearest-pose snapping: azimuth dominates, then elevation, then distance,
- * scored on label buckets with the raw pose as tiebreak. Never returns
- * undefined — an empty state is impossible by construction.
+ * Nearest-pose snapping: azimuth dominates, then elevation, then distance.
+ * Never returns undefined — an empty state is impossible by construction.
  */
 export function resolveAsset(pose: CameraPose): AngleAsset {
-  const target = {
-    azimuth: AZIMUTH_LABELS.indexOf(azimuthLabel(pose.azimuth)),
-    elevation: ELEVATION_LABELS.indexOf(elevationLabel(pose.elevation)),
-    distance: DISTANCE_LABELS.indexOf(distanceLabel(pose.zoom))
-  }
+  const elevationIndex = ELEVATION_LABELS.indexOf(
+    elevationLabel(pose.elevation)
+  )
+  const distanceIndex = DISTANCE_LABELS.indexOf(distanceLabel(pose.zoom))
 
   let best = ANGLE_ASSETS[0]
   let bestScore = Number.POSITIVE_INFINITY
-  let bestTiebreak = Number.POSITIVE_INFINITY
   for (const asset of ANGLE_ASSETS) {
-    const azimuthIndex = AZIMUTH_LABELS.indexOf(asset.azimuth)
-    const elevationIndex = ELEVATION_LABELS.indexOf(asset.elevation)
-    const distanceIndex = DISTANCE_LABELS.indexOf(asset.distance)
     const score =
-      circularIndexDistance(
-        azimuthIndex,
-        target.azimuth,
-        AZIMUTH_LABELS.length
-      ) *
-        100 +
-      Math.abs(elevationIndex - target.elevation) * 10 +
-      Math.abs(distanceIndex - target.distance)
-    const tiebreak =
-      circularDegreeDistance(azimuthIndex * 45, pose.azimuth) +
-      Math.abs(ELEVATION_VALUES[elevationIndex] - pose.elevation) +
-      Math.abs(DISTANCE_VALUES[distanceIndex] - pose.zoom)
-    if (score < bestScore || (score === bestScore && tiebreak < bestTiebreak)) {
+      circularDegreeDistance(asset.azimuthDegrees, pose.azimuth) * 100 +
+      Math.abs(ELEVATION_LABELS.indexOf(asset.elevation) - elevationIndex) *
+        10 +
+      Math.abs(DISTANCE_LABELS.indexOf(asset.distance) - distanceIndex)
+    if (score < bestScore) {
       bestScore = score
-      bestTiebreak = tiebreak
       best = asset
     }
   }

@@ -279,9 +279,8 @@ export class CameraWidget {
       opacity: 0.4
     })
     this.glowRing = new Mesh(glowRingGeo, glowRingMat)
-    // Sits wholly behind the card rather than through it: the card spans
-    // z -0.01..0.01, and the ring reaches 0.593 either side of its centre.
-    this.glowRing.position.set(0, 0.01, -0.62)
+    // Concentric with the card so the halo reads as its pedestal.
+    this.glowRing.position.set(0, 0.01, 0)
     this.glowRing.rotation.x = Math.PI / 2
     this.glowRing.visible = this.pal.showGlowRing
     this.scene.add(this.glowRing)

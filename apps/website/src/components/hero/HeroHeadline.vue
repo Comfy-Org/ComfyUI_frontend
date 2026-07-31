@@ -20,11 +20,13 @@ const inner = 'inline-block translate-y-[0.11em] whitespace-nowrap'
     class="font-formula-narrow flex flex-col items-center font-semibold tracking-[-0.02em] uppercase"
   >
     <template v-for="(line, i) in lines" :key="line">
+      <!-- The link piece keeps a floor size: purely em-proportional it
+           shrinks to an illegible nub on small canvases. -->
       <img
         v-if="i > 0"
         src="/icons/node-union-vertical.svg"
         alt=""
-        class="h-[0.265em] w-[0.423em]"
+        class="h-[max(0.265em,0.75rem)] w-[max(0.423em,1.2rem)]"
         aria-hidden="true"
       />
       <span class="flex h-[1.667em] items-stretch">

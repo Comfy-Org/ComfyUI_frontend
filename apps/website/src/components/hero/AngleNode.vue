@@ -54,7 +54,8 @@ async function initScene(container: HTMLElement) {
     initialState: {
       azimuth: azimuth.value,
       elevation: elevation.value,
-      distance: zoom.value
+      distance: zoom.value,
+      imageUrl: '/hero/input.webp'
     },
     onStateChange: (state) => {
       syncingFromWidget = true
