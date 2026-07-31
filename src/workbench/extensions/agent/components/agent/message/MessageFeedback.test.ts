@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -31,10 +31,6 @@ function renderFeedback() {
     global: { plugins: [i18n] }
   })
   return { user, ...utils }
-}
-
-async function openCopyMenu(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Copy' }))
 }
 
 describe('MessageFeedback', () => {
@@ -72,22 +68,28 @@ describe('MessageFeedback', () => {
     )
   })
 
-  it('Copy copies the rendered plain text', async () => {
+  it('the primary Copy action copies rendered plain text without opening a menu', async () => {
     const { user } = renderFeedback()
 
-    await openCopyMenu(user)
-    await user.click(await screen.findByRole('menuitem', { name: 'Copy' }))
+    await user.click(screen.getByRole('button', { name: 'Copy' }))
 
     expect(clipboard.copy).toHaveBeenCalledWith('Title\nbold move')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
-  it('Copy as markdown copies the raw markdown source', async () => {
+  it('the chevron menu exposes only Copy as markdown and copies the raw source', async () => {
     const { user } = renderFeedback()
 
-    await openCopyMenu(user)
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Copy as markdown' })
-    )
+    await user.click(screen.getByRole('button', { name: 'Copy as markdown' }))
+    const menu = await screen.findByRole('menu')
+    const menuItems = within(menu).getAllByRole('menuitem')
+
+    expect(menu).toHaveClass('-translate-x-8', 'h-9', 'w-36', 'p-1')
+    expect(menuItems).toHaveLength(1)
+    expect(menuItems[0]).toHaveAccessibleName('Copy as markdown')
+    expect(menuItems[0]).toHaveClass('w-full', 'whitespace-nowrap')
+
+    await user.click(menuItems[0])
 
     expect(clipboard.copy).toHaveBeenCalledWith(markdownSource)
   })
