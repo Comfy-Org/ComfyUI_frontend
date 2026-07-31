@@ -146,10 +146,18 @@ const TOURS: Partial<Record<EntryPath, TourDefinition>> = {
 
 const HOLDS = shallowReactive(new Map<EntryPath, Readonly<Ref<boolean>>>())
 
+/** False ends the tour: the context its steps point at is gone. */
+export function registerTourHolds(
+  entry: EntryPath,
+  holds?: Readonly<Ref<boolean>>
+) {
+  if (holds) HOLDS.set(entry, holds)
+  else HOLDS.delete(entry)
+}
+
 /**
  * Registers a tour whose steps are built by a higher layer — the layer rules
  * forbid this one from importing them. Re-registering replaces the definition.
- * `holds` reading false ends the tour: the context its steps point at is gone.
  */
 export function registerTour(
   entry: EntryPath,
@@ -157,8 +165,7 @@ export function registerTour(
   holds?: Readonly<Ref<boolean>>
 ) {
   TOURS[entry] = definition
-  if (holds) HOLDS.set(entry, holds)
-  else HOLDS.delete(entry)
+  registerTourHolds(entry, holds)
 }
 
 export function tourDefinition(entry: EntryPath): TourDefinition | undefined {

@@ -15,6 +15,7 @@ import { targetMounted, waitForTarget } from './coachmarkRegistry'
 import {
   ENTRY_PATHS,
   TOUR_SEEN_SETTING,
+  registerTourHolds,
   resolveSteps,
   tourDefinition,
   tourHolds
@@ -251,11 +252,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     finish('skipped')
   }
 
-  /** Ends the tour as completed, for consumers whose last step self-completes. */
-  function complete() {
-    finish('completed')
-  }
-
   /**
    * Ends the tour without marking it seen: something outside it barred the way,
    * so the user has not had their tour yet and is offered it again.
@@ -294,6 +290,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   }
 
   for (const [entryPath, trigger] of useTourTriggers()) {
+    registerTourHolds(entryPath, trigger.holds)
     watch(
       trigger.autoOpen,
       (visible) => {
@@ -301,13 +298,9 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       },
       { immediate: true }
     )
-    watch(trigger.holds, (holding) => {
-      if (!holding && activeTour.value === entryPath)
-        finish('skipped', { markSeen: false, skipReason: 'trigger_lost' })
-    })
   }
 
-  // Watch and end a tour if its tour-specific condition changes.
+  // One rule for every tour: lose the context its steps point at, lose the tour.
   for (const entryPath of ENTRY_PATHS) {
     watch(
       () => tourHolds(entryPath),
@@ -378,7 +371,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     next,
     back,
     skip,
-    complete,
     postpone
   }
 })
