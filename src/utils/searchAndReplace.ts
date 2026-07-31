@@ -1,5 +1,5 @@
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { formatDate } from '@/utils/formatUtil'
+import { formatDate } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 export function applyTextReplacements(

@@ -18,7 +18,7 @@ import { computed } from 'vue'
 
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeId } from '@/types/nodeId'
-import { linkifyHtml, nl2br } from '@/utils/formatUtil'
+import { linkifyHtml, nl2br } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 const modelValue = defineModel<string>({ required: true })
 const props = defineProps<{

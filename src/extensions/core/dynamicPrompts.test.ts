@@ -1,6 +1,6 @@
 import { describe, expect, it, test, vi } from 'vitest'
 
-import { processDynamicPrompt } from '@/utils/formatUtil'
+import { processDynamicPrompt } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 describe('dynamic prompts', () => {
   it('handles single and multiline comments', () => {

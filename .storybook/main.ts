@@ -130,12 +130,6 @@ const config: StorybookConfig = {
               process.cwd() + '/src/storybook/mocks/useWorkspaceUI.ts'
           },
           {
-            find: '@/utils/formatUtil',
-            replacement:
-              process.cwd() +
-              '/packages/shared-frontend-utils/src/formatUtil.ts'
-          },
-          {
             find: '@/utils/networkUtil',
             replacement:
               process.cwd() +

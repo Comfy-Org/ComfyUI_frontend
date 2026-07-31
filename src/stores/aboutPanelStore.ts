@@ -5,7 +5,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import type { AboutPageBadge } from '@/types/comfy'
 import { electronAPI } from '@/utils/envUtil'
-import { formatCommitHash } from '@/utils/formatUtil'
+import { formatCommitHash } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import { useExtensionStore } from './extensionStore'
 import { useSystemStatsStore } from './systemStatsStore'

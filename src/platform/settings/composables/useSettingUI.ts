@@ -15,7 +15,7 @@ import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import type { NavGroupData } from '@/types/navTypes'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 
 const CATEGORY_ICONS: Record<string, string> = {

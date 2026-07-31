@@ -9,7 +9,7 @@ import { useMediaAssetFilterStore } from '@/platform/assets/composables/useMedia
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 type SortOption = 'newest' | 'oldest' | 'az' | 'za' | 'longest' | 'fastest'
 
