@@ -61,10 +61,12 @@ import Button from '@/components/ui/button/Button.vue'
 
 const {
   amountCents,
+  currency = 'USD',
   isLoading = false,
   verificationPending = false
 } = defineProps<{
   amountCents: number
+  currency?: string
   isLoading?: boolean
   /** A 3DS verification is pending: Complete verification (rendered by the
    *  parent) is the primary action, so the pay button steps back. */
@@ -101,7 +103,7 @@ onMounted(async () => {
   stripeElements.value = stripe.elements({
     mode: 'subscription',
     amount: amountCents,
-    currency: 'usd',
+    currency: currency.toLowerCase(),
     setupFutureUsage: 'off_session',
     paymentMethodTypes: ['card', 'alipay'],
     appearance: {

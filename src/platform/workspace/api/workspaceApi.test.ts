@@ -388,6 +388,68 @@ describe('workspaceApi', () => {
   })
 
   describe('subscription', () => {
+    it('sends promotion input to preview and quote selection to subscribe', async () => {
+      mockAxiosInstance.post
+        .mockResolvedValueOnce({ data: { quote_id: 'quote-1' } })
+        .mockResolvedValueOnce({
+          data: { billing_op_id: 'op-1', status: 'subscribed' }
+        })
+
+      await workspaceApi.previewSubscribe('creator-monthly', {
+        promotionCode: 'SAVE20'
+      })
+      await workspaceApi.subscribe('creator-monthly', {
+        promotionCode: 'SAVE20',
+        quoteId: 'quote-1',
+        quoteVersion: 1,
+        savedPaymentMethodId: 'pm_owned'
+      })
+
+      expect(mockAxiosInstance.post).toHaveBeenNthCalledWith(
+        1,
+        '/api/billing/preview-subscribe',
+        expect.objectContaining({ promotion_code: 'SAVE20' }),
+        { headers: AUTH_HEADER }
+      )
+      expect(mockAxiosInstance.post).toHaveBeenNthCalledWith(
+        2,
+        '/api/billing/subscribe',
+        expect.objectContaining({
+          promotion_code: 'SAVE20',
+          quote_id: 'quote-1',
+          quote_version: 1,
+          saved_payment_method_id: 'pm_owned'
+        }),
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('returns owner-authorized masked payment methods', async () => {
+      const methods = [
+        {
+          type: 'card',
+          brand: 'visa',
+          last4: '4242',
+          id: 'pm_owned',
+          isDefault: true
+        },
+        {
+          type: 'alipay',
+          id: 'pm_alipay',
+          isDefault: false
+        }
+      ]
+      mockAxiosInstance.get.mockResolvedValue({ data: methods })
+
+      await expect(workspaceApi.listSavedPaymentMethods()).resolves.toEqual(
+        methods
+      )
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/payment-methods',
+        { headers: AUTH_HEADER }
+      )
+    })
+
     it('previewSubscribe() sends POST with plan_slug', async () => {
       const data = { allowed: true, transition_type: 'new_subscription' }
       mockAxiosInstance.post.mockResolvedValue({ data })

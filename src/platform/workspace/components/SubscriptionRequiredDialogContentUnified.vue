@@ -100,20 +100,31 @@
         :team-plan="selectedTeamStop!"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
+        :applied-promotion-code="appliedPromotionCode"
+        :promotion-code-error="promotionCodeError"
+        :is-applying-promotion-code="isApplyingPromotionCode"
+        @apply-promotion-code="applyPromotionCode"
         @confirm="handleTeamSubscribe"
         @back="handleBackToPricing"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
         v-else-if="previewVariant === 'team-new'"
+        :preview-data="previewData"
         :team-plan="selectedTeamStop!"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :use-payment-element="stripePaymentElementEnabled"
-        :saved-methods="savedMethodsForConfirm"
+        :saved-methods="savedPaymentMethods"
+        :selected-saved-payment-method-id="selectedSavedPaymentMethodId"
+        :applied-promotion-code="appliedPromotionCode"
+        :promotion-code-error="promotionCodeError"
+        :is-applying-promotion-code="isApplyingPromotionCode"
         @add-credit-card="handleTeamSubscribe"
-        @change-payment-method="savedMethodsForConfirm = null"
+        @select-payment-method="selectSavedPaymentMethod"
+        @subscribe-saved-method="handleTeamSubscribe"
+        @apply-promotion-code="applyPromotionCode"
         @confirm-payment="handleTeamSubscriptionPayment"
         @back="handleBackToPricing"
       />
@@ -126,9 +137,15 @@
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :use-payment-element="stripePaymentElementEnabled"
-        :saved-methods="savedMethodsForConfirm"
+        :saved-methods="savedPaymentMethods"
+        :selected-saved-payment-method-id="selectedSavedPaymentMethodId"
+        :applied-promotion-code="appliedPromotionCode"
+        :promotion-code-error="promotionCodeError"
+        :is-applying-promotion-code="isApplyingPromotionCode"
         @add-credit-card="handleAddCreditCard"
-        @change-payment-method="savedMethodsForConfirm = null"
+        @select-payment-method="selectSavedPaymentMethod"
+        @subscribe-saved-method="handleAddCreditCard"
+        @apply-promotion-code="applyPromotionCode"
         @confirm-payment="handleSubscriptionPayment"
         @back="handleBackToPricing"
       />
@@ -138,6 +155,10 @@
         :preview-data="previewData!"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
+        :applied-promotion-code="appliedPromotionCode"
+        :promotion-code-error="promotionCodeError"
+        :is-applying-promotion-code="isApplyingPromotionCode"
+        @apply-promotion-code="applyPromotionCode"
         @confirm="handleConfirmTransition"
         @back="handleBackToPricing"
       />
@@ -167,7 +188,6 @@ import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composa
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
-import type { SavedPaymentMethod } from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
@@ -193,13 +213,11 @@ const stripePaymentElementEnabled = Boolean(
 // Default payment method for the confirming workspace. The backend does not
 // expose this pre-confirm yet; once it does, populate from the preview
 // response and the capture form becomes first-subscribe-only.
-const savedMethodsForConfirm = ref<SavedPaymentMethod[] | null>(null)
-
 const isEmbeddedPaymentStep = computed(
   () =>
     checkoutStep.value === 'preview' &&
     stripePaymentElementEnabled &&
-    !savedMethodsForConfirm.value?.length &&
+    !selectedSavedPaymentMethodId.value &&
     (previewVariant.value === 'team-new' ||
       previewVariant.value === 'personal-new')
 )
@@ -213,7 +231,7 @@ const isEmbeddedConfirmStep = computed(
     stripePaymentElementEnabled &&
     (previewVariant.value === 'team-change' ||
       previewVariant.value === 'personal-change' ||
-      (!!savedMethodsForConfirm.value?.length &&
+      (!!selectedSavedPaymentMethodId.value &&
         (previewVariant.value === 'team-new' ||
           previewVariant.value === 'personal-new')))
 )
@@ -238,6 +256,11 @@ const {
   selectedTierKey,
   selectedTeamStop,
   selectedBillingCycle,
+  savedPaymentMethods,
+  selectedSavedPaymentMethodId,
+  appliedPromotionCode,
+  promotionCodeError,
+  isApplyingPromotionCode,
   activeCheckoutActionUrl,
   isPolling,
   isTeamCheckout,
@@ -251,6 +274,8 @@ const {
   handleTeamSubscribe,
   handleSubscriptionPayment,
   handleTeamSubscriptionPayment,
+  applyPromotionCode,
+  selectSavedPaymentMethod,
   handleResubscribe
 } = useSubscriptionCheckout(emit, reason)
 
@@ -270,7 +295,7 @@ onMounted(() => {
 // desktop both steps pin the same height, so this no-ops.
 const contentRoot = ref<HTMLElement>()
 watch(
-  [checkoutStep, () => !!savedMethodsForConfirm.value?.length] as const,
+  [checkoutStep, () => !!selectedSavedPaymentMethodId.value] as const,
   async ([next, nextSaved], [prev, prevSaved]) => {
     const el = contentRoot.value
     if (!el || !stripePaymentElementEnabled) return

@@ -99,6 +99,14 @@
         </div>
       </div>
 
+      <SubscriptionPromoCodeField
+        class="pt-4"
+        :applied-code="appliedPromotionCode"
+        :error="promotionCodeError"
+        :is-loading="isApplyingPromotionCode"
+        @apply="$emit('applyPromotionCode', $event)"
+      />
+
       <!-- Total Due Section -->
       <div
         :class="
@@ -113,13 +121,24 @@
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
           <span class="font-bold text-base-foreground tabular-nums">
-            ${{ totalDueToday }}
+            {{ totalDueToday }}
           </span>
+        </div>
+        <div
+          v-for="discount in previewData?.discounts ?? []"
+          :key="`${discount.kind}-${discount.code}`"
+          class="flex items-center justify-between text-sm text-muted-foreground"
+        >
+          <span>{{
+            $t(`subscription.preview.discount.${discount.kind}`)
+          }}</span>
+          <span>{{ discount.code }}</span>
         </div>
         <span class="text-sm text-muted-foreground">
           {{
-            $t('subscription.preview.nextPaymentDue', {
-              date: nextPaymentDate
+            $t('subscription.preview.renewsOn', {
+              amount: renewalAmount,
+              date: renewalDate
             })
           }}
         </span>
@@ -138,11 +157,9 @@
             :class="
               cn(
                 'size-4 shrink-0',
-                savedMethods[0].type === 'bank'
-                  ? 'icon-[lucide--landmark]'
-                  : savedMethods[0].type === 'alipay'
-                    ? 'icon-[lucide--wallet]'
-                    : 'icon-[lucide--credit-card]'
+                savedMethods[0].type === 'alipay'
+                  ? 'icon-[lucide--wallet]'
+                  : 'icon-[lucide--credit-card]'
               )
             "
           />
@@ -153,7 +170,7 @@
             variant="link"
             size="lg"
             class="ml-auto px-0"
-            @click="$emit('changePaymentMethod')"
+            @click="$emit('selectPaymentMethod', null)"
           >
             {{ $t('subscription.preview.changePaymentMethod') }}
           </Button>
@@ -195,18 +212,19 @@
       <UnifiedStripePaymentSelector
         v-if="captureMode"
         :amount-cents="amountDueCents"
+        :currency="currency"
         :is-loading
         :verification-pending="Boolean(actionUrl)"
         @confirm="confirmPayment"
       />
 
       <Button
-        v-if="savedMethods?.length"
+        v-if="selectedSavedPaymentMethodId"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        @click="$emit('addCreditCard')"
+        @click="$emit('subscribeSavedMethod')"
       >
         {{ $t('subscription.preview.payAndSubscribe') }}
       </Button>
@@ -242,17 +260,15 @@ import {
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import type {
+  PreviewSubscribeResponse,
+  SavedPaymentMethod
+} from '@/platform/workspace/api/workspaceApi'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import SubscriptionPromoCodeField from './SubscriptionPromoCodeField.vue'
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
-
-export interface SavedPaymentMethod {
-  type: 'card' | 'alipay' | 'bank'
-  brand?: string
-  last4?: string
-}
 
 interface Props {
   /** Personal-tier checkout. Required unless `teamPlan` is set. */
@@ -271,6 +287,10 @@ interface Props {
    *  Alipay is a linked account with neither. The backend does not supply
    *  this yet. */
   savedMethods?: SavedPaymentMethod[] | null
+  selectedSavedPaymentMethodId?: string | null
+  appliedPromotionCode?: string
+  promotionCodeError?: string | null
+  isApplyingPromotionCode?: boolean
 }
 
 const {
@@ -281,42 +301,54 @@ const {
   teamPlan = null,
   actionUrl = null,
   usePaymentElement = false,
-  savedMethods = null
+  savedMethods = null,
+  selectedSavedPaymentMethodId = null,
+  appliedPromotionCode = '',
+  promotionCodeError = null,
+  isApplyingPromotionCode = false
 } = defineProps<Props>()
 
 const emit = defineEmits<{
   addCreditCard: []
   confirmPayment: [confirmationToken: string]
   back: []
-  changePaymentMethod: []
+  selectPaymentMethod: [id: string | null]
+  subscribeSavedMethod: []
+  applyPromotionCode: [code: string]
 }>()
 
 const { t, n } = useI18n()
 
 // The wide capture split only applies while a payment method is being
 // collected; with a saved method the confirm is a single narrow column.
-const captureMode = computed(() => usePaymentElement && !savedMethods?.length)
+const captureMode = computed(
+  () => usePaymentElement && !selectedSavedPaymentMethodId
+)
 
 function methodLabel(m: SavedPaymentMethod) {
   if (m.type === 'alipay') return t('subscription.preview.alipay')
-  return `${m.brand} •••• ${m.last4}`
+  return `${m.brand ?? t('subscription.preview.card')} •••• ${m.last4 ?? ''}`
 }
 
 const savedMethodOptions = computed(() => [
-  ...(savedMethods ?? []).map((m, i) => ({
+  ...(savedMethods ?? []).map((m) => ({
     name: methodLabel(m),
-    value: String(i)
+    value: m.id
   })),
   {
     name: t('subscription.preview.addNewPaymentMethod'),
     value: 'add-new'
   }
 ])
-const selectedMethod = ref('0')
+const selectedMethod = ref(selectedSavedPaymentMethodId ?? 'add-new')
+watch(
+  () => selectedSavedPaymentMethodId,
+  (value) => {
+    selectedMethod.value = value ?? 'add-new'
+  }
+)
 watch(selectedMethod, (value) => {
-  if (value !== 'add-new') return
-  selectedMethod.value = '0'
-  emit('changePaymentMethod')
+  emit('selectPaymentMethod', value === 'add-new' ? null : value)
 })
 
 function openVerification() {
@@ -369,46 +401,36 @@ const creditsRefillLabelKey = computed(() =>
     : 'subscription.preview.eachMonthCreditsRefill'
 )
 
-const totalDueTodayUsd = computed(() => {
-  if (teamPlan) {
-    return isYearly.value ? teamPlan.discountedUsd * 12 : teamPlan.discountedUsd
-  }
-  if (previewData) return previewData.cost_today_cents / 100
-  if (!tierKey) return 0
-  const priceValue = getTierPrice(tierKey, isYearly.value)
-  return isYearly.value ? priceValue * 12 : priceValue
-})
-
-const totalDueToday = computed(() =>
-  totalDueTodayUsd.value.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
+const amountDueCents = computed(
+  () =>
+    previewData?.amount_due_cents ??
+    previewData?.cost_today_cents ??
+    (isYearly.value ? annualTotalUsd.value : Number(displayPrice.value)) * 100
 )
-
-const amountDueCents = computed(() => Math.round(totalDueTodayUsd.value * 100))
-
-const nextPaymentDate = computed(() => {
-  if (previewData?.new_plan?.period_end) {
-    return new Date(previewData.new_plan.period_end).toLocaleDateString(
-      'en-US',
-      {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      }
-    )
-  }
-  const date = new Date()
-  if (billingCycle === 'yearly') {
-    date.setFullYear(date.getFullYear() + 1)
-  } else {
-    date.setMonth(date.getMonth() + 1)
-  }
-  return date.toLocaleDateString('en-US', {
+const currency = computed(() => previewData?.currency ?? 'USD')
+const formatMoney = (cents: number) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency.value
+  }).format(cents / 100)
+const totalDueToday = computed(() => formatMoney(amountDueCents.value))
+const renewalAmount = computed(() =>
+  formatMoney(
+    previewData?.renewal_amount_cents ??
+      previewData?.cost_next_period_cents ??
+      amountDueCents.value
+  )
+)
+const renewalDate = computed(() =>
+  new Date(
+    previewData?.renewal_at ??
+      previewData?.new_plan.period_end ??
+      previewData?.effective_at ??
+      0
+  ).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
   })
-})
+)
 </script>

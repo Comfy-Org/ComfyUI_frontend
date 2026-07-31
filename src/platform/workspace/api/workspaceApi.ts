@@ -156,6 +156,7 @@ interface PreviewSubscribeRequest {
   plan_slug: string
   team_credit_stop_id?: string
   billing_cycle?: SubscribeBillingCycle
+  promotion_code?: string
 }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
@@ -165,6 +166,9 @@ interface SubscribeRequest {
   idempotency_key?: string
   confirmation_token?: string
   promotion_code?: string
+  quote_id?: string
+  quote_version?: number
+  saved_payment_method_id?: string
   return_url?: string
   cancel_url?: string
   /** Required for the per-credit Team plan; selects the slider stop. */
@@ -177,6 +181,9 @@ interface SubscribeRequest {
 export interface SubscribeOptions {
   confirmationToken?: string
   promotionCode?: string
+  quoteId?: string
+  quoteVersion?: number
+  savedPaymentMethodId?: string
   returnUrl?: string
   cancelUrl?: string
   teamCreditStopId?: string
@@ -187,6 +194,20 @@ export interface SubscribeOptions {
 export interface PreviewSubscribeOptions {
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
+  promotionCode?: string
+}
+
+export interface SavedPaymentMethod {
+  type: 'card' | 'alipay'
+  brand?: string
+  last4?: string
+  id: string
+  isDefault: boolean
+}
+
+interface SubscriptionDiscount {
+  kind: 'plan' | 'promotion'
+  code: string
 }
 
 type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
@@ -248,6 +269,14 @@ export interface PreviewSubscribeResponse {
   credits_next_period_cents: number
   current_plan?: PreviewPlanInfo
   new_plan: PreviewPlanInfo
+  quote_id?: string
+  quote_version?: number
+  promotion_code?: string
+  discounts?: SubscriptionDiscount[]
+  amount_due_cents?: number
+  currency?: string
+  renewal_amount_cents?: number
+  renewal_at?: string
 }
 
 export type BillingSubscriptionStatus =
@@ -671,7 +700,8 @@ export const workspaceApi = {
         {
           plan_slug: planSlug,
           team_credit_stop_id: options.teamCreditStopId,
-          billing_cycle: options.billingCycle
+          billing_cycle: options.billingCycle,
+          promotion_code: options.promotionCode
         } satisfies PreviewSubscribeRequest,
         { headers }
       )
@@ -697,12 +727,28 @@ export const workspaceApi = {
           plan_slug: planSlug,
           confirmation_token: options.confirmationToken,
           promotion_code: options.promotionCode,
+          quote_id: options.quoteId,
+          quote_version: options.quoteVersion,
+          saved_payment_method_id: options.savedPaymentMethodId,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
           billing_cycle: options.billingCycle,
           confirm_reactivation: options.confirmReactivation
         } satisfies SubscribeRequest,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async listSavedPaymentMethods(): Promise<SavedPaymentMethod[]> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<SavedPaymentMethod[]>(
+        api.apiURL('/billing/payment-methods'),
         { headers }
       )
       return response.data

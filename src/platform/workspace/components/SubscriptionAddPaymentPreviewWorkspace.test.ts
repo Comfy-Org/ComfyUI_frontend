@@ -183,4 +183,59 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       })
     ).toBeNull()
   })
+
+  it('renders the quoted amount, discount composition and renewal data', () => {
+    const preview = {
+      ...previewFixture('MONTHLY', 3_500),
+      amount_due_cents: 2_800,
+      currency: 'USD',
+      discounts: [
+        { kind: 'plan' as const, code: 'creator_monthly' },
+        { kind: 'promotion' as const, code: 'SAVE20' }
+      ],
+      renewal_amount_cents: 2_800,
+      renewal_at: '2026-07-19T00:00:00Z'
+    }
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', previewData: preview },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$28.00')).toBeTruthy()
+    expect(screen.getByText('creator_monthly')).toBeTruthy()
+    expect(screen.getByText('SAVE20')).toBeTruthy()
+    expect(screen.getByText('subscription.preview.renewsOn')).toBeTruthy()
+  })
+
+  it('uses the default saved method and switches to capture on Change', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: {
+          ...previewFixture('MONTHLY', 3_500),
+          amount_due_cents: 3_500,
+          currency: 'USD'
+        },
+        savedMethods: [
+          {
+            type: 'card',
+            brand: 'visa',
+            last4: '4242',
+            id: 'pm_owned',
+            isDefault: true
+          }
+        ],
+        selectedSavedPaymentMethodId: 'pm_owned'
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('visa •••• 4242')).toBeTruthy()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'subscription.preview.changePaymentMethod'
+      })
+    )
+    expect(emitted().selectPaymentMethod?.at(-1)).toEqual([null])
+  })
 })

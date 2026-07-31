@@ -149,6 +149,15 @@
         </span>
       </div>
 
+      <SubscriptionPromoCodeField
+        v-if="isImmediate"
+        class="pt-4"
+        :applied-code="appliedPromotionCode"
+        :error="promotionCodeError"
+        :is-loading="isApplyingPromotionCode"
+        @apply="$emit('applyPromotionCode', $event)"
+      />
+
       <!-- Total Due (immediate changes carry their addends: one sum under
            one divider, per Figma 5344-35724) -->
       <div
@@ -183,8 +192,18 @@
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
           <span class="font-bold text-base-foreground tabular-nums">
-            {{ money(totalDueTodayUsd) }}
+            {{ exactAmountDue }}
           </span>
+        </div>
+        <div
+          v-for="discount in previewData.discounts ?? []"
+          :key="`${discount.kind}-${discount.code}`"
+          class="flex items-center justify-between text-sm text-muted-foreground"
+        >
+          <span>{{
+            $t(`subscription.preview.discount.${discount.kind}`)
+          }}</span>
+          <span>{{ discount.code }}</span>
         </div>
         <span class="text-sm text-muted-foreground">{{ totalNote }}</span>
       </div>
@@ -232,6 +251,7 @@ import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDurati
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
+import SubscriptionPromoCodeField from './SubscriptionPromoCodeField.vue'
 
 type PersonalTierKey = 'standard' | 'creator' | 'pro'
 
@@ -239,7 +259,10 @@ const {
   previewData,
   isLoading = false,
   teamPlan = null,
-  actionUrl = null
+  actionUrl = null,
+  appliedPromotionCode = '',
+  promotionCodeError = null,
+  isApplyingPromotionCode = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -247,6 +270,9 @@ const {
    *  the selected slider stop; all proration money stays driven by previewData. */
   teamPlan?: TeamPlanSelection | null
   actionUrl?: string | null
+  appliedPromotionCode?: string
+  promotionCodeError?: string | null
+  isApplyingPromotionCode?: boolean
 }>()
 
 defineEmits<{
@@ -254,6 +280,7 @@ defineEmits<{
    *  ticked above the charge threshold, since confirmDisabled gates the button). */
   confirm: [confirmReactivation: boolean]
   back: []
+  applyPromotionCode: [code: string]
 }>()
 
 const { t, n } = useI18n()
@@ -319,7 +346,6 @@ const currentPlanLabel = computed(() =>
     ? t('subscription.tierNameYearly', { name: currentTierName.value })
     : currentTierName.value
 )
-
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 
 const reactivationVariant = computed<
@@ -433,8 +459,25 @@ const prorationCreditUsd = computed(() => {
   const credit = previewData.new_plan.price_cents - previewData.cost_today_cents
   return credit > 0 ? credit / 100 : 0
 })
-const totalDueTodayUsd = computed(() => previewData.cost_today_cents / 100)
 const newMonthlyChargeUsd = computed(() => newMonthlyUsd.value)
+
+const exactCurrency = computed(() => previewData.currency ?? 'USD')
+const formatExactMoney = (cents: number) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: exactCurrency.value
+  }).format(cents / 100)
+const exactAmountDue = computed(() =>
+  formatExactMoney(previewData.amount_due_cents ?? previewData.cost_today_cents)
+)
+const exactRenewalAmount = computed(() =>
+  formatExactMoney(
+    previewData.renewal_amount_cents ?? previewData.cost_next_period_cents
+  )
+)
+const exactRenewalDate = computed(() =>
+  formatDate(previewData.renewal_at ?? previewData.effective_at)
+)
 
 const subscriptionLineLabel = computed(() =>
   newIsYearly.value
@@ -499,7 +542,6 @@ const currentPeriodEnd = computed(() =>
     ? formatDate(previewData.current_plan.period_end)
     : effectiveDateLabel.value
 )
-
 const confirmTitle = computed(() =>
   isImmediate.value
     ? t('subscription.preview.confirmUpgradeTitle')
@@ -523,7 +565,10 @@ const confirmCta = computed(() => {
 })
 const totalNote = computed(() =>
   isImmediate.value
-    ? t('subscription.preview.nextPaymentDue', { date: nextPaymentDate.value })
+    ? t('subscription.preview.renewsOn', {
+        amount: exactRenewalAmount.value,
+        date: exactRenewalDate.value
+      })
     : t('subscription.preview.stayOnUntil', {
         plan: currentPlanLabel.value,
         date: currentPeriodEnd.value

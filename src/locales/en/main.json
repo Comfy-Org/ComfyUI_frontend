@@ -2934,6 +2934,18 @@
         "unavailable": "We can't confirm this reactivation right now — please choose your plan again"
       },
       "addPromoCode": "Add promo code",
+      "applyPromoCode": "Apply",
+      "promotionCodePlaceholder": "Promo code",
+      "promotionCodeInvalid": "This promo code could not be applied.",
+      "quoteUnavailable": "An exact price is unavailable. Please choose the plan again.",
+      "quoteStale": "Your price changed or expired. Review the refreshed total and try again.",
+      "savedPaymentMethodUnavailable": "That saved payment method is no longer available. Choose another payment method and try again.",
+      "renewsOn": "Renews for {amount} on {date}. Cancel anytime.",
+      "discount": {
+        "plan": "Plan discount",
+        "promotion": "Promo discount"
+      },
+      "card": "Card",
       "changePaymentMethod": "Change",
       "savedPaymentMethod": "Payment method",
       "addNewPaymentMethod": "Add new payment method",
