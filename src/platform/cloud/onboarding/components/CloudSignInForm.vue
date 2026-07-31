@@ -134,8 +134,4 @@ const onSubmit = (event: FormSubmitEvent) => {
 :deep(.p-password-toggle-mask-icon) {
   cursor: pointer;
 }
-:deep(.p-checkbox-checked .p-checkbox-box) {
-  background-color: #f0ff41 !important;
-  border-color: #f0ff41 !important;
-}
 </style>

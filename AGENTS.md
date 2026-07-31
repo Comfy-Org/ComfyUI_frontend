@@ -212,6 +212,10 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
     - e.g. `bg-node-component-surface`
+- NEVER hardcode a brand color hex value
+  - `packages/design-system` is the single source of truth, published as `@comfyorg/design-system` and consumed by downstream apps
+  - Use the token — `bg-brand-yellow` in a class, `var(--color-brand-yellow)` in CSS
+  - A copied hex silently drifts when the design system changes; brand yellow was already stale by one revision (`#f0ff41` vs `#f2ff59`) before this rule existed
 - NEVER use `:class="[]"` to merge class names
   - Always use `import { cn } from '@comfyorg/tailwind-utils'`
     - e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`
