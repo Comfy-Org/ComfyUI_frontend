@@ -518,22 +518,14 @@ export default defineConfig({
           sentryVitePlugin({
             org: process.env.SENTRY_ORG,
             project: process.env.SENTRY_PROJECT,
-            authToken: process.env.SENTRY_AUTH_TOKEN,
-            sourcemaps: {
-              filesToDeleteAfterUpload: process.env.SENTRY_PROJECT_PROD
-                ? []
-                : ['**/*.map']
-            }
+            authToken: process.env.SENTRY_AUTH_TOKEN
           }),
           ...(process.env.SENTRY_PROJECT_PROD
             ? [
                 sentryVitePlugin({
                   org: process.env.SENTRY_ORG,
                   project: process.env.SENTRY_PROJECT_PROD,
-                  authToken: process.env.SENTRY_AUTH_TOKEN,
-                  sourcemaps: {
-                    filesToDeleteAfterUpload: ['**/*.map']
-                  }
+                  authToken: process.env.SENTRY_AUTH_TOKEN
                 })
               ]
             : [])
