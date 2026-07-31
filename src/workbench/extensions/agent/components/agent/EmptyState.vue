@@ -44,7 +44,8 @@ const promptIcons = [
         </p>
       </div>
       <div
-        class="mx-auto mt-7 flex w-full max-w-[640px] shrink-0 flex-wrap gap-2 @min-[460px]:justify-center"
+        data-testid="suggested-prompts"
+        class="mx-auto mt-7 flex w-full max-w-[372px] shrink-0 flex-wrap gap-2 @min-[460px]:justify-center"
       >
         <button
           v-for="(prompt, index) in prompts"
