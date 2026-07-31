@@ -327,19 +327,25 @@ jobs:
       # then makes its CI fail on "No matching distribution found", which reads as
       # a bad bump to whoever reviews it. This happened on the 1.47.11 pin PR.
       - name: Wait for the version to be installable from PyPI
+        id: pypi-probe
         env:
           TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
         run: |
           set -euo pipefail
           for i in $(seq 1 30); do
-            if curl -sf "https://pypi.org/pypi/comfyui-frontend-package/${TARGET_VERSION}/json" \
+            # Timeouts matter: a stalled request would otherwise keep the loop
+            # from ever reaching the warning below.
+            if curl -sf --connect-timeout 10 --max-time 20 \
+                 "https://pypi.org/pypi/comfyui-frontend-package/${TARGET_VERSION}/json" \
                  -o /dev/null; then
               echo "comfyui-frontend-package==${TARGET_VERSION} is resolvable."
+              echo "confirmed=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             echo "Attempt $i/30: not on PyPI yet, waiting 20s..."
             sleep 20
           done
+          echo "confirmed=false" >> "$GITHUB_OUTPUT"
           echo "::warning::${TARGET_VERSION} still not resolvable after 10m; opening the pin PR anyway."
 
       - name: Checkout ComfyUI fork
@@ -410,7 +416,11 @@ jobs:
           EOF
           )
 
-          PYPI_NOTE="✅ **PyPI package confirmed available** — \`comfyui-frontend-package==${{ needs.resolve-version.outputs.target_version }}\` has been published and verified."
+          if [ "${{ steps.pypi-probe.outputs.confirmed }}" = "true" ]; then
+            PYPI_NOTE="✅ **PyPI package confirmed available** — \`comfyui-frontend-package==${{ needs.resolve-version.outputs.target_version }}\` has been published and verified."
+          else
+            PYPI_NOTE="⚠️ **PyPI availability unconfirmed** — \`comfyui-frontend-package==${{ needs.resolve-version.outputs.target_version }}\` was not resolvable from PyPI within 10 minutes. CI here may fail until the index catches up."
+          fi
           BODY=$''"${PYPI_NOTE}"$'\n\n'"${BODY}"
 
           # Save to file for later use

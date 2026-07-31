@@ -108,10 +108,11 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          NEWEST=$(gh api "repos/${REPO}/releases?per_page=100" \
-            --jq '[.[] | select(.draft == false and .prerelease == false)]
-                  | map(. + {v: (.tag_name | ltrimstr("v") | split(".") | map(tonumber? // 0))})
-                  | sort_by(.v) | last | {id, tag_name}')
+          NEWEST=$(gh api --paginate "repos/${REPO}/releases?per_page=100" \
+            | jq -s 'add
+                     | [.[] | select(.draft == false and .prerelease == false)]
+                     | map(. + {v: (.tag_name | ltrimstr("v") | split(".") | map(tonumber? // 0))})
+                     | sort_by(.v) | last | {id, tag_name}')
           NEWEST_TAG=$(jq -r '.tag_name' <<<"$NEWEST")
           NEWEST_ID=$(jq -r '.id' <<<"$NEWEST")
           CURRENT=$(gh api "repos/${REPO}/releases/latest" --jq '.tag_name')
