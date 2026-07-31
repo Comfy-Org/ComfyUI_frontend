@@ -204,6 +204,51 @@
 
     <!-- Footer -->
     <div class="flex flex-col gap-2 pt-8 pb-4">
+      <div
+        v-if="reconciliationOperationId"
+        class="rounded-lg border border-interface-stroke bg-secondary-background p-4"
+      >
+        <p class="m-0 font-semibold text-base-foreground">
+          {{ $t('billingOperation.reconciliationTitle') }}
+        </p>
+        <p class="m-0 mt-1 text-sm text-muted-foreground">
+          {{ $t('billingOperation.reconciliationDetail') }}
+          <span class="font-mono">{{ reconciliationOperationId }}</span>
+        </p>
+      </div>
+
+      <div
+        v-if="authenticationState === 'failed_retryable'"
+        role="alert"
+        class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+      >
+        {{
+          authenticationError ||
+          $t('billingOperation.authenticationManagerRequired')
+        }}
+      </div>
+
+      <Button
+        v-if="
+          (authenticationState === 'failed_retryable' ||
+            authenticationState === 'requires_action') &&
+          canRetryAuthentication
+        "
+        variant="inverted"
+        size="lg"
+        class="w-full rounded-lg"
+        :loading="isAuthenticating"
+        @click="$emit('retryAuthentication')"
+      >
+        {{
+          $t(
+            authenticationState === 'failed_retryable'
+              ? 'billingOperation.retryVerification'
+              : 'subscription.preview.completeVerification'
+          )
+        }}
+      </Button>
+
       <Button
         v-if="actionUrl"
         variant="inverted"
@@ -219,7 +264,9 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="confirmDisabled || !quoteIsCurrent"
+        :disabled="
+          confirmDisabled || !quoteIsCurrent || verificationRecoveryActive
+        "
         @click="$emit('confirm', confirmReactivation)"
       >
         {{ confirmCta }}
@@ -241,7 +288,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
-import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingAuthenticationState,
+  PreviewSubscribeResponse
+} from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 
@@ -252,6 +302,11 @@ const {
   isLoading = false,
   teamPlan = null,
   actionUrl = null,
+  authenticationState = null,
+  authenticationError = null,
+  canRetryAuthentication = false,
+  isAuthenticating = false,
+  reconciliationOperationId = null,
   quoteIsCurrent = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
@@ -260,6 +315,11 @@ const {
    *  the selected slider stop; all proration money stays driven by previewData. */
   teamPlan?: TeamPlanSelection | null
   actionUrl?: string | null
+  authenticationState?: BillingAuthenticationState | null
+  authenticationError?: string | null
+  canRetryAuthentication?: boolean
+  isAuthenticating?: boolean
+  reconciliationOperationId?: string | null
   quoteIsCurrent?: boolean
 }>()
 
@@ -270,9 +330,16 @@ defineEmits<{
   back: []
   applyPromotionCode: [code: string]
   invalidateQuote: []
+  retryAuthentication: []
 }>()
 
 const { t, n } = useI18n()
+const verificationRecoveryActive = computed(
+  () =>
+    authenticationState === 'requires_action' ||
+    authenticationState === 'failed_retryable' ||
+    Boolean(reconciliationOperationId)
+)
 
 const { subscription } = useBillingContext()
 const promotionCode = ref(previewData.promotion_code ?? '')

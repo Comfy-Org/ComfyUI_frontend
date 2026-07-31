@@ -78,6 +78,7 @@ const {
   mockResubscribe,
   mockToastAdd,
   mockStartOperation,
+  mockRetryPaymentAuthentication,
   mockGetOperation,
   mockSubscriptionActionOperation,
   mockListSavedPaymentMethods,
@@ -100,13 +101,19 @@ const {
   mockResubscribe: vi.fn(),
   mockToastAdd: vi.fn(),
   mockStartOperation: vi.fn(),
+  mockRetryPaymentAuthentication: vi.fn(),
   mockGetOperation: vi.fn(),
   mockSubscriptionActionOperation: {
     value: undefined as
       | {
+          opId?: string
           status: 'pending'
           workspaceId: string
-          actionUrl: string
+          actionUrl?: string
+          authenticationState?: 'failed_retryable'
+          errorMessage?: string | null
+          canRetryAuthentication?: boolean
+          isAuthenticating?: boolean
         }
       | undefined
   },
@@ -181,6 +188,7 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
     startOperation: mockStartOperation,
+    retryPaymentAuthentication: mockRetryPaymentAuthentication,
     getOperation: mockGetOperation,
     get subscriptionActionOperation() {
       return mockSubscriptionActionOperation.value
@@ -257,6 +265,7 @@ describe('useSubscriptionCheckout', () => {
     mockFetchPlans.mockReset()
     mockFetchStatus.mockReset()
     mockStartOperation.mockReset()
+    mockRetryPaymentAuthentication.mockReset()
     mockListSavedPaymentMethods.mockReset()
     mockSubscriptionActionOperation.value = undefined
     mockPlans.value = allPlans()
@@ -1435,6 +1444,7 @@ describe('useSubscriptionCheckout', () => {
   describe('handleBackToPricing', () => {
     it('surfaces a subscription operation recovered from billing status', async () => {
       mockSubscriptionActionOperation.value = {
+        opId: 'op-recovered-3ds',
         status: 'pending',
         workspaceId: 'workspace-1',
         actionUrl: 'https://verify.example/sensitive-token'
@@ -1446,6 +1456,31 @@ describe('useSubscriptionCheckout', () => {
         'https://verify.example/sensitive-token'
       )
       expect(checkout.isPolling.value).toBe(true)
+    })
+
+    it('surfaces and retries recovered failed authentication', async () => {
+      mockSubscriptionActionOperation.value = {
+        opId: 'op-recovered-3ds',
+        status: 'pending',
+        workspaceId: 'workspace-1',
+        authenticationState: 'failed_retryable',
+        errorMessage: 'Challenge was closed',
+        canRetryAuthentication: true,
+        isAuthenticating: false
+      }
+      mockRetryPaymentAuthentication.mockResolvedValue(true)
+
+      const checkout = await setup()
+
+      expect(checkout.authenticationState.value).toBe('failed_retryable')
+      expect(checkout.authenticationError.value).toBe('Challenge was closed')
+      expect(checkout.canRetryAuthentication.value).toBe(true)
+      expect(checkout.isPolling.value).toBe(false)
+
+      await checkout.retryPaymentAuthentication()
+      expect(mockRetryPaymentAuthentication).toHaveBeenCalledWith(
+        'op-recovered-3ds'
+      )
     })
 
     it('resets to pricing step and clears preview data', async () => {
@@ -1688,7 +1723,8 @@ describe('useSubscriptionCheckout', () => {
           cycle: 'yearly',
           checkoutType: 'new',
           paymentIntentSource: undefined,
-          suppressProcessingToast: true
+          suppressProcessingToast: true,
+          autoHandleRequiresAction: true
         }
       )
       expect(checkout.checkoutStep.value).toBe('success')
@@ -1720,7 +1756,8 @@ describe('useSubscriptionCheckout', () => {
           cycle: 'yearly',
           checkoutType: 'new',
           paymentIntentSource: undefined,
-          suppressProcessingToast: true
+          suppressProcessingToast: true,
+          autoHandleRequiresAction: true
         }
       )
       expect(checkout.checkoutStep.value).toBe('success')
@@ -1748,7 +1785,8 @@ describe('useSubscriptionCheckout', () => {
           cycle: 'yearly',
           checkoutType: 'new',
           paymentIntentSource: undefined,
-          suppressProcessingToast: true
+          suppressProcessingToast: true,
+          autoHandleRequiresAction: true
         }
       )
       expect(checkout.checkoutStep.value).toBe('preview')

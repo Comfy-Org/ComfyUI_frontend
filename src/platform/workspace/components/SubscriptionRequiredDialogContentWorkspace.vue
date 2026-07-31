@@ -87,8 +87,14 @@
       :billing-cycle="selectedBillingCycle"
       :is-loading="isSubscribing || isPolling"
       :action-url="activeCheckoutActionUrl"
+      :authentication-state
+      :authentication-error
+      :can-retry-authentication
+      :is-authenticating
+      :reconciliation-operation-id
       @add-credit-card="handleAddCreditCard"
       @back="handleBackToPricing"
+      @retry-authentication="retryPaymentAuthentication"
     />
 
     <!-- Subscription Preview Step - Plan Transition -->
@@ -101,8 +107,14 @@
       :preview-data="previewData"
       :is-loading="isSubscribing || isPolling"
       :action-url="activeCheckoutActionUrl"
+      :authentication-state
+      :authentication-error
+      :can-retry-authentication
+      :is-authenticating
+      :reconciliation-operation-id
       @confirm="handleConfirmTransition"
       @back="handleBackToPricing"
+      @retry-authentication="retryPaymentAuthentication"
     />
 
     <!-- Success Step - subscribe/change-plan confirmation -->
@@ -155,11 +167,17 @@ const {
   selectedTierKey,
   selectedBillingCycle,
   activeCheckoutActionUrl,
+  authenticationState,
+  authenticationError,
+  canRetryAuthentication,
+  isAuthenticating,
+  reconciliationOperationId,
   isPolling,
   handleSubscribeClick,
   handleBackToPricing,
   handleAddCreditCard,
   handleConfirmTransition,
+  retryPaymentAuthentication,
   handleResubscribe,
   handleSuccessClose
 } = useSubscriptionCheckout(emit, reason, {

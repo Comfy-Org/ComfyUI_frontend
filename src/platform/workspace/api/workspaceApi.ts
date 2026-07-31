@@ -341,12 +341,24 @@ export interface CreateTopupResponse {
   amount_cents: number
 }
 
-type BillingOpStatus = 'pending' | 'succeeded' | 'failed'
+type BillingOpStatus =
+  | 'pending'
+  | 'succeeded'
+  | 'failed'
+  | 'reconciliation_needed'
+
+export type BillingAuthenticationState =
+  | 'requires_action'
+  | 'processing'
+  | 'failed_retryable'
+  | 'succeeded'
+  | 'reconciliation_needed'
 
 export interface BillingOpStatusResponse {
   id: string
   status: BillingOpStatus
   error_message?: string
+  authentication_state?: BillingAuthenticationState
   started_at: string
   completed_at?: string
   action_url?: string
