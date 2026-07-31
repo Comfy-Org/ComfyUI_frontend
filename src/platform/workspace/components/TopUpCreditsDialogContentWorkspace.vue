@@ -126,9 +126,18 @@
 
     <div class="flex flex-col gap-8 p-8">
       <Button
+        v-if="topupActionUrl && permissions.canTopUp"
+        variant="primary"
+        size="lg"
+        class="h-10 justify-center"
+        @click="openTopupVerification"
+      >
+        {{ $t('subscription.preview.completeVerification') }}
+      </Button>
+      <Button
         :disabled="!isValidAmount || loading || isPolling"
         :loading="loading || isPolling"
-        variant="primary"
+        :variant="topupActionUrl ? 'tertiary' : 'primary'"
         size="lg"
         class="h-10 justify-center"
         @click="handleBuy"
@@ -184,6 +193,9 @@ const { permissions } = useWorkspaceUI()
 
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.isAddingCredits)
+const topupActionUrl = computed(
+  () => billingOperationStore.topupActionOperation?.actionUrl ?? null
+)
 
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]
@@ -243,6 +255,11 @@ function handlePresetClick(amount: number) {
   showCeilingWarning.value = false
   payAmount.value = amount
   selectedPreset.value = amount
+}
+
+function openTopupVerification() {
+  if (!topupActionUrl.value) return
+  window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
 }
 
 function handleClose(clearTracking = true) {
