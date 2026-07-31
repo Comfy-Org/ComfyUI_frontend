@@ -1,5 +1,6 @@
 import { shallowReactive } from 'vue'
 
+import { assert } from '@/base/assert'
 import {
   canTransferLayoutAttachment,
   transferLayoutAttachment
@@ -70,6 +71,11 @@ export function registerNodeState(
   node: LGraphNode
 ): boolean {
   const graphScope = graphScopeOf(graph)
+  assert(
+    node._graphScope === undefined ||
+      node._graphScope.rootGraphId === graphScope.rootGraphId,
+    `registerNodeState: node ${node.id} already registered under a different root graph`
+  )
   node._state.graphId = graph.id
   const registered = useNodeDataStore().registerNode(graphScope, node._state)
   if (!registered) return false
@@ -85,8 +91,12 @@ export function registerNodeState(
  */
 export function unregisterNodeState(node: LGraphNode): void {
   if (!node._graphScope) return
-  useNodeDataStore().deleteNode(node._graphScope, node._state)
+  const deleted = useNodeDataStore().deleteNode(node._graphScope, node._state)
   node._graphScope = undefined
+  assert(
+    deleted,
+    `unregisterNodeState: state for node ${node.id} not found in bucket (identity drift)`
+  )
 }
 
 /**
