@@ -27,10 +27,6 @@ const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000
 const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
 const SUBSCRIPTION_AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
-  : Promise.resolve(null)
-
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus =
   | 'pending'
@@ -61,7 +57,6 @@ interface BillingOperation {
   startedAt: number
   actionUrl: string | null
   authenticationState: BillingAuthenticationState | null
-  paymentIntentClientSecret: string | null
   isAuthenticating: boolean
   canRetryAuthentication: boolean
   authenticationRequiredSeen: boolean
@@ -85,6 +80,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const autoHandledPaymentActions = new Set<string>()
+  const paymentIntentClientSecrets = new Map<string, string>()
 
   const hasPendingOperations = computed(() =>
     [...operations.value.values()].some((op) => op.status === 'pending')
@@ -94,6 +90,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     [...operations.value.values()].some(
       (op) =>
         op.status === 'pending' &&
+        op.authenticationState !== 'requires_action' &&
+        op.authenticationState !== 'failed_retryable' &&
         op.type === 'subscription' &&
         op.workspaceId === workspaceStore.activeWorkspaceId
     )
@@ -142,7 +140,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       startedAt: Date.now(),
       actionUrl,
       authenticationState: null,
-      paymentIntentClientSecret: null,
       isAuthenticating: false,
       canRetryAuthentication: false,
       authenticationRequiredSeen: actionUrl !== null,
@@ -282,10 +279,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return true
 
-    const secret = clientSecret ?? operation.paymentIntentClientSecret
+    if (clientSecret) paymentIntentClientSecrets.set(opId, clientSecret)
+    const secret = clientSecret ?? paymentIntentClientSecrets.get(opId)
     updateOperation(opId, {
       authenticationState: state,
-      paymentIntentClientSecret: secret,
       canRetryAuthentication:
         Boolean(secret) &&
         (state === 'requires_action' || state === 'failed_retryable'),
@@ -313,7 +310,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (
       !operation ||
       operation.status !== 'pending' ||
-      !operation.paymentIntentClientSecret ||
+      !paymentIntentClientSecrets.has(opId) ||
       !operation.canRetryAuthentication
     ) {
       return false
@@ -325,7 +322,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   async function runPaymentIntentAction(opId: string): Promise<boolean> {
     const operation = operations.value.get(opId)
-    const clientSecret = operation?.paymentIntentClientSecret
+    const clientSecret = paymentIntentClientSecrets.get(opId)
     if (!operation || !clientSecret || operation.isAuthenticating) return false
     updateOperation(opId, {
       isAuthenticating: true,
@@ -333,7 +330,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       errorMessage: null
     })
 
-    const stripe = await stripePromise
+    const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+    const stripe = publishableKey ? await loadStripe(publishableKey) : null
     if (!stripe) {
       setAuthenticationRetry(
         opId,
@@ -377,7 +375,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperation(opId, {
       authenticationState: 'failed_retryable',
       isAuthenticating: false,
-      canRetryAuthentication: Boolean(operation.paymentIntentClientSecret),
+      canRetryAuthentication: paymentIntentClientSecrets.has(opId),
       errorMessage
     })
     pausePolling(opId)
@@ -557,7 +555,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperation(opId, {
       status: 'reconciliation_needed',
       authenticationState: 'reconciliation_needed',
-      paymentIntentClientSecret: null,
       canRetryAuthentication: false,
       isAuthenticating: false,
       errorMessage: null,
@@ -648,7 +645,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       status,
       errorMessage,
       actionUrl: null,
-      paymentIntentClientSecret: null,
       canRetryAuthentication: false,
       isAuthenticating: false
     }
@@ -663,6 +659,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
     intervals.delete(opId)
     autoHandledPaymentActions.delete(opId)
+    paymentIntentClientSecrets.delete(opId)
 
     // Remove the "received" toast
     const receivedToast = receivedToasts.get(opId)
