@@ -73,10 +73,9 @@ describe('Composer', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     mount({ canAttach: true, canOpenAssets: true })
 
-    // The menu strings only compile once reka mounts the (lazy) menu content,
-    // so walk into the submenu before asserting.
-    await userEvent.click(await openAddMenu())
-    await screen.findByText('No nodes in this workflow')
+    // The menu strings only compile once reka mounts the lazy menu content.
+    await openAddMenu()
+    await screen.findByRole('menuitem', { name: 'Attach images or files' })
 
     // Unescaped syntax characters (@, |, {) in a locale message compile to an
     // error and silently fall back to the raw string.
@@ -404,60 +403,14 @@ describe('Composer', () => {
     expect(emitted().openAssets).toHaveLength(1)
   })
 
-  it('explains an empty graph inside the node picker', async () => {
-    mount()
-
-    await userEvent.click(await openAddMenu())
-
-    expect(
-      await screen.findByText('No nodes in this workflow')
-    ).toBeInTheDocument()
-  })
-
-  it('reads the graph when the node picker opens, not when the add menu does', async () => {
+  it('enters graph selection mode without querying the mention picker', async () => {
     const getMentionNodes = vi.fn(() => [])
-    mount({ getMentionNodes })
+    const { emitted } = mount({ getMentionNodes })
 
-    const picker = await openAddMenu()
+    await userEvent.click(await openAddMenu())
+
+    expect(emitted().selectNodes).toHaveLength(1)
     expect(getMentionNodes).not.toHaveBeenCalled()
-
-    await userEvent.click(picker)
-    expect(getMentionNodes).toHaveBeenCalledOnce()
-  })
-
-  it('shows ids only for duplicate titles in the graph picker', async () => {
-    const nodes = [
-      { id: '5', title: 'KSampler' },
-      { id: '7', title: 'KSampler' },
-      { id: '9', title: 'VAE Decode' }
-    ]
-    mount({ getMentionNodes: () => nodes })
-
-    await userEvent.click(await openAddMenu())
-
-    expect(await screen.findAllByText('KSampler')).toHaveLength(2)
-    expect(screen.getByText('#5')).toBeInTheDocument()
-    expect(screen.getByText('#7')).toBeInTheDocument()
-    expect(screen.queryByText('#9')).not.toBeInTheDocument()
-  })
-
-  it('lists graph picker nodes alphabetically', async () => {
-    const nodes = [
-      { id: '3', title: 'VAE Decode' },
-      { id: '1', title: 'Alpha' },
-      { id: '2', title: 'KSampler' }
-    ]
-    mount({ getMentionNodes: () => nodes })
-
-    await userEvent.click(await openAddMenu())
-    await screen.findByRole('menuitem', { name: 'Alpha' })
-
-    expect(
-      screen
-        .getAllByRole('menuitem')
-        .map((item) => item.textContent?.trim())
-        .filter((title) => nodes.some((node) => node.title === title))
-    ).toEqual(['Alpha', 'KSampler', 'VAE Decode'])
   })
 
   it('hides the id on a uniquely named selection chip', () => {
@@ -478,6 +431,29 @@ describe('Composer', () => {
     expect(screen.getAllByText('KSampler')).toHaveLength(2)
     expect(screen.getByText('#5')).toBeInTheDocument()
     expect(screen.getByText('#7')).toBeInTheDocument()
+  })
+
+  it('renders an attachment preview and removes it from the composer', async () => {
+    const composer = ref<InstanceType<typeof Composer> | null>(null)
+    const Host = defineComponent({
+      setup: () => () => h(Composer, { ref: composer })
+    })
+    render(Host, { global: { plugins: [i18n] } })
+    composer.value?.addAttachment({
+      id: 'attachment-1',
+      name: 'cat.png',
+      ref: 'uploaded_cat.png',
+      previewUrl: 'https://example.com/cat.png'
+    })
+    await nextTick()
+
+    expect(screen.getByRole('img', { name: 'cat.png' })).toHaveAttribute(
+      'src',
+      'https://example.com/cat.png'
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
+    expect(screen.queryByRole('img', { name: 'cat.png' })).toBeNull()
   })
 
   describe('insert', () => {
