@@ -82,9 +82,8 @@ const {
       (
         graph: unknown,
         parameters: string,
-        beforeGraphClear?: () => void,
-        onCoreNodesUnavailable?: () => void
-      ) => Promise<boolean>
+        beforeGraphClear?: () => void
+      ) => Promise<'imported' | 'not-a1111' | 'core-nodes-unavailable'>
     >(),
   mockWorkflowService: {
     beforeLoadNewGraph: vi.fn(),
@@ -221,7 +220,7 @@ describe('ComfyApp', () => {
     mockAuthStore.getAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
-    mockImportA1111.mockReset().mockResolvedValue(true)
+    mockImportA1111.mockReset().mockResolvedValue('imported')
     mockWorkflowService.beforeLoadNewGraph.mockReset()
     mockWorkflowService.afterLoadNewGraph.mockReset().mockResolvedValue()
     mockWorkflowService.showPendingWarnings.mockReset()
@@ -1252,30 +1251,42 @@ describe('ComfyApp', () => {
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
       Reflect.set(app, 'rootGraphInternal', graph)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
-      mockImportA1111.mockImplementation(
-        async (_graph, _parameters, _beforeGraphClear, onUnavailable) => {
-          onUnavailable?.()
-          return false
-        }
-      )
+      mockImportA1111.mockResolvedValue('core-nodes-unavailable')
 
       await app.handleFile(createTestFile('a1111.png', 'image/png'))
 
       expect(mockImportA1111).toHaveBeenCalledWith(
         graph,
         parameters,
-        expect.any(Function),
         expect.any(Function)
       )
       expect(mockCanvas.setGraph).not.toHaveBeenCalled()
       expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
       expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
       expect(mockToastStore.addAlert).toHaveBeenCalledWith(
         'Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.'
       )
     })
 
-    it('switches to the root graph before import and awaits A1111 persistence', async () => {
+    it('shows one file-load error when parameters are not A1111-shaped', async () => {
+      const graph = new LGraph()
+      const parameters = 'positive\nSteps: 20'
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
+      mockImportA1111.mockResolvedValue('not-a1111')
+
+      await app.handleFile(createTestFile('parameters.png', 'image/png'))
+
+      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'Unable to find workflow in parameters.png'
+      )
+      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+    })
+
+    it('runs A1111 lifecycle in order and awaits persistence', async () => {
       const graph = new LGraph()
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
       Reflect.set(app, 'rootGraphInternal', graph)
@@ -1283,7 +1294,7 @@ describe('ComfyApp', () => {
       mockImportA1111.mockImplementation(
         async (_graph, _parameters, beforeGraphClear) => {
           beforeGraphClear?.()
-          return true
+          return 'imported'
         }
       )
       let resolveAfterLoad: (() => void) | undefined
@@ -1304,6 +1315,9 @@ describe('ComfyApp', () => {
 
       expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
       expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+      expect(
+        mockWorkflowService.beforeLoadNewGraph.mock.invocationCallOrder[0]
+      ).toBeLessThan(vi.mocked(mockCanvas.setGraph).mock.invocationCallOrder[0])
       expect(settled).toBe(false)
 
       resolveAfterLoad?.()

@@ -249,24 +249,32 @@ describe('importA1111', () => {
   const parameters =
     'positive\nNegative prompt: negative\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
 
-  it('returns false without clearing the graph when core nodes are unavailable', async () => {
+  it.each([
+    ['has no steps', 'positive'],
+    ['has no options', 'positive\nNegative prompt: negative\nSteps:'],
+    ['has no negative prompt', 'positive\nSteps: 20']
+  ])('returns not-a1111 when parameters %s', async (_case, input) => {
+    const graph = new LGraph()
+    const beforeGraphClear = vi.fn()
+    vi.mocked(api.getEmbeddings).mockResolvedValue([])
+
+    const imported = await importA1111(graph, input, beforeGraphClear)
+
+    expect(imported).toBe('not-a1111')
+    expect(beforeGraphClear).not.toHaveBeenCalled()
+  })
+
+  it('returns core-nodes-unavailable without clearing the graph', async () => {
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
     const beforeGraphClear = vi.fn()
-    const onCoreNodesUnavailable = vi.fn()
     vi.mocked(api.getEmbeddings).mockResolvedValue([])
     vi.spyOn(LiteGraph, 'createNode').mockReturnValue(null)
 
-    const imported = await importA1111(
-      graph,
-      parameters,
-      beforeGraphClear,
-      onCoreNodesUnavailable
-    )
+    const imported = await importA1111(graph, parameters, beforeGraphClear)
 
-    expect(imported).toBe(false)
+    expect(imported).toBe('core-nodes-unavailable')
     expect(beforeGraphClear).not.toHaveBeenCalled()
-    expect(onCoreNodesUnavailable).toHaveBeenCalledOnce()
     expect(clear).not.toHaveBeenCalled()
   })
 
@@ -285,7 +293,7 @@ describe('importA1111', () => {
 
     const imported = await importA1111(graph, parameters, beforeGraphClear)
 
-    expect(imported).toBe(true)
+    expect(imported).toBe('imported')
     expect(beforeGraphClear).toHaveBeenCalledOnce()
     expect(beforeGraphClear.mock.invocationCallOrder[0]).toBeLessThan(
       clear.mock.invocationCallOrder[0]

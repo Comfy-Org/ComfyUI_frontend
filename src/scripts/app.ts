@@ -2056,17 +2056,18 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      const imported = await importA1111(
-        this.rootGraph,
-        parameters,
-        () => {
-          this.canvas.setGraph(this.rootGraph)
-          useWorkflowService().beforeLoadNewGraph()
-        },
-        () =>
-          useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
-      )
-      if (!imported) return
+      const outcome = await importA1111(this.rootGraph, parameters, () => {
+        useWorkflowService().beforeLoadNewGraph()
+        this.canvas.setGraph(this.rootGraph)
+      })
+      if (outcome === 'core-nodes-unavailable') {
+        useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
+        return
+      }
+      if (outcome === 'not-a1111') {
+        this.showErrorOnFileLoad(file)
+        return
+      }
       await useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON

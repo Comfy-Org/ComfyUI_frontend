@@ -69,6 +69,7 @@ describe('ComfyUI file input', () => {
       files: { value: [file], configurable: true },
       value: { value: 'a1111.png', writable: true, configurable: true }
     })
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     fileInput.dispatchEvent(new Event('change'))
 
@@ -76,6 +77,10 @@ describe('ComfyUI file input', () => {
       expect(mockApp.showErrorOnFileLoad).toHaveBeenCalledWith(file)
     )
     expect(mockApp.handleFile).toHaveBeenCalledWith(file, 'file_button')
+    expect(consoleError).toHaveBeenCalledWith('Failed to load file:', error)
+    expect(consoleError.mock.invocationCallOrder[0]).toBeLessThan(
+      mockApp.showErrorOnFileLoad.mock.invocationCallOrder[0]
+    )
     expect(fileInput.value).toBe('')
   })
 })

@@ -409,7 +409,8 @@ export class ComfyUI {
         if (file) {
           try {
             await app.handleFile(file, 'file_button')
-          } catch {
+          } catch (error) {
+            console.error('Failed to load file:', error)
             app.showErrorOnFileLoad(file)
           } finally {
             fileInput.value = ''
