@@ -4,7 +4,7 @@
       <div
         ref="workflowTabRef"
         data-testid="workflow-tab"
-        class="workflow-tab group flex h-9 w-34 gap-2 p-2"
+        class="workflow-tab group flex h-9 w-34 items-center justify-center gap-2 px-4 py-2"
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
@@ -17,16 +17,21 @@
           class="icon-[lucide--panels-top-left] bg-primary-background"
         />
         <span
-          class="workflow-label inline-block max-w-[150px] truncate text-sm"
+          :class="
+            cn(
+              'workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal',
+              isActiveTab ? 'text-base-foreground' : 'text-smoke-800'
+            )
+          "
         >
           {{ workflowOption.workflow.filename }}
         </span>
-        <div class="relative">
+        <div class="relative size-4 shrink-0">
           <i
             v-if="isAgentEditing"
             role="img"
             :aria-label="t('g.agentWorking')"
-            class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-base-foreground motion-safe:animate-spin"
+            class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 motion-safe:animate-spin"
           />
           <span
             v-else-if="showUnseenAgentDot"
@@ -53,16 +58,16 @@
           />
           <Button
             v-else
-            class="close-button w-auto p-0"
+            class="close-button size-4 rounded-none p-0 text-smoke-800 hover:bg-transparent"
             variant="muted-textonly"
-            size="icon-sm"
+            size="unset"
             :aria-label="t('g.close')"
             data-testid="close-workflow-button"
             @click.stop="onCloseWorkflow(workflowOption)"
           >
             <i
               data-testid="close-workflow-icon"
-              class="pi pi-times text-base"
+              class="icon-[lucide--x] size-4"
             />
           </Button>
         </div>

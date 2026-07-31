@@ -52,17 +52,17 @@
       <div
         v-if="tabActivity.creatingTab"
         data-testid="creating-tab-skeleton"
-        class="relative flex h-9 w-39 shrink-0 items-center gap-2 self-center bg-comfy-menu-bg px-4 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-interface-stroke after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-interface-stroke"
+        class="relative flex h-9 w-39 shrink-0 items-center justify-center gap-2 self-center bg-comfy-menu-bg px-4 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-border-default after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border-default"
       >
         <Skeleton
           aria-hidden="true"
           data-testid="creating-tab-skeleton-shimmer"
-          class="h-4 w-25"
+          class="h-4 w-25 animate-none bg-[linear-gradient(90deg,rgba(0,0,0,0.2)_0%,rgba(102,102,102,0.2)_50.481%,rgba(0,0,0,0.2)_100%),linear-gradient(90deg,#404040_0%,#404040_100%)]"
         />
         <i
           role="img"
           :aria-label="$t('g.agentWorking')"
-          class="icon-[lucide--loader-circle] size-4 text-base-foreground motion-safe:animate-spin"
+          class="icon-[lucide--loader-circle] size-4 text-smoke-800 motion-safe:animate-spin"
         />
       </div>
     </ScrollPanel>
@@ -385,7 +385,7 @@ onUpdated(() => {
   border-radius: 0;
   background-color: transparent;
   padding: 0;
-  border-right-color: var(--border-color);
+  border-right-color: var(--border-default);
   min-width: 90px;
 }
 
@@ -413,7 +413,11 @@ onUpdated(() => {
 :deep(.p-togglebutton:first-child) {
   border-left-style: solid;
   border-left-width: 1px;
-  border-left-color: var(--border-color);
+  border-left-color: var(--border-default);
+}
+
+:deep(.p-togglebutton:hover) {
+  background-color: var(--color-charcoal-500);
 }
 
 :deep(.p-togglebutton:not(:first-child)) {
@@ -425,10 +429,6 @@ onUpdated(() => {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: var(--p-button-text-primary-color);
-}
-
-:deep(.p-togglebutton:not(.p-togglebutton-checked)) {
-  opacity: 0.75;
 }
 
 :deep(.p-scrollpanel-content) {

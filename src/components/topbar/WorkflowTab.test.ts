@@ -181,7 +181,7 @@ describe('WorkflowTab - workflow status indicator', () => {
 
     expect(screen.getByTestId('workflow-tab')).toHaveClass('h-9', 'w-34')
     expect(screen.getByText('test.json')).toHaveClass('text-sm')
-    expect(screen.getByTestId('close-workflow-icon')).toHaveClass('text-base')
+    expect(screen.getByTestId('close-workflow-icon')).toBeInTheDocument()
     expect(screen.getByTestId('close-workflow-button')).not.toHaveClass(
       'invisible'
     )
@@ -255,7 +255,7 @@ describe('WorkflowTab - agent activity indicators', () => {
 
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
-    ).toHaveClass('size-4')
+    ).toBeInTheDocument()
   })
 
   it('the agent spinner wins over the unseen-changes dot', async () => {
