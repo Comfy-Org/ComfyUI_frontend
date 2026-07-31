@@ -29,26 +29,57 @@
         class="overflow-hidden rounded-lg border border-secondary-background"
       >
         <!-- Errors summary hero -->
-        <div
-          data-testid="errors-summary-hero"
-          class="flex items-center gap-2 bg-base-foreground/5 p-2"
-        >
-          <span
-            class="flex h-12 min-w-9 shrink-0 items-center justify-center px-1 text-[2rem]/none font-extrabold text-destructive-background-hover tabular-nums"
+        <div data-testid="errors-summary-hero" class="bg-base-foreground/5">
+          <div
+            v-if="errorCount > 0"
+            data-testid="errors-summary-hero-error"
+            class="flex items-center gap-2 p-2"
           >
-            {{ totalErrorCount }}
-          </span>
-          <span
-            aria-hidden="true"
-            class="h-9 w-px shrink-0 bg-interface-stroke"
-          />
-          <div class="flex min-w-0 flex-1 flex-col gap-1 px-2">
-            <span class="text-xs/tight font-semibold text-base-foreground">
-              {{ t('rightSidePanel.errorsDetected', totalErrorCount) }}
+            <span
+              class="flex h-12 min-w-9 shrink-0 items-center justify-center px-1 text-[2rem]/none font-extrabold text-destructive-background-hover tabular-nums"
+            >
+              {{ errorCount }}
             </span>
-            <span class="text-xs/tight text-muted-foreground">
-              {{ t('rightSidePanel.resolveBeforeRun') }}
+            <span
+              aria-hidden="true"
+              class="h-9 w-px shrink-0 bg-interface-stroke"
+            />
+            <div class="flex min-w-0 flex-1 flex-col gap-1 px-2">
+              <span class="text-xs/tight font-semibold text-base-foreground">
+                {{ t('rightSidePanel.errorsDetected', errorCount) }}
+              </span>
+              <span class="text-xs/tight text-muted-foreground">
+                {{ t('rightSidePanel.resolveBeforeRun') }}
+              </span>
+            </div>
+          </div>
+          <div
+            v-if="missingCount > 0"
+            data-testid="errors-summary-hero-missing"
+            :class="
+              cn(
+                'flex items-center gap-2 p-2',
+                errorCount > 0 && 'border-t border-secondary-background'
+              )
+            "
+          >
+            <span
+              class="flex h-12 min-w-9 shrink-0 items-center justify-center px-1 text-[2rem]/none font-extrabold text-warning-background tabular-nums"
+            >
+              {{ missingCount }}
             </span>
+            <span
+              aria-hidden="true"
+              class="h-9 w-px shrink-0 bg-interface-stroke"
+            />
+            <div class="flex min-w-0 flex-1 flex-col gap-1 px-2">
+              <span class="text-xs/tight font-semibold text-base-foreground">
+                {{ t('rightSidePanel.setupPending') }}
+              </span>
+              <span class="text-xs/tight text-muted-foreground">
+                {{ t('rightSidePanel.setupPendingDesc') }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -85,6 +116,7 @@
             :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
             :title="group.displayTitle"
             :count="group.count"
+            :severity="group.severity"
             :collapse="isSectionCollapsed(group.groupKey) && !isSearching"
             class="border-t border-secondary-background first:border-t-0"
             @update:collapse="setSectionCollapsed(group.groupKey, $event)"
@@ -362,6 +394,26 @@ interface ExecutionItemListEntry {
   displayDetails?: string
 }
 
+interface ContextStrip {
+  keypath: string
+  count: number
+  nodes: number
+}
+
+/** Count-only `none` keys keep node-less errors from reading as "0 nodes". */
+const SUMMARY_KEYPATHS = {
+  error: {
+    none: 'rightSidePanel.errorsSummary',
+    single: 'rightSidePanel.errorNodeSummary',
+    multiple: 'rightSidePanel.errorNodesSummary'
+  },
+  setup: {
+    none: 'rightSidePanel.setupSummary',
+    single: 'rightSidePanel.setupNodeSummary',
+    multiple: 'rightSidePanel.setupNodesSummary'
+  }
+} as const
+
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
 const { focusNode } = useFocusNode()
@@ -452,8 +504,15 @@ const {
   errorNodeCount
 } = useErrorGroups(searchQuery)
 
-const totalErrorCount = computed(() =>
-  filteredGroups.value.reduce((sum, group) => sum + group.count, 0)
+const errorCount = computed(() =>
+  filteredGroups.value
+    .filter((group) => group.severity === 'error')
+    .reduce((sum, group) => sum + group.count, 0)
+)
+const missingCount = computed(() =>
+  filteredGroups.value
+    .filter((group) => group.severity === 'missing')
+    .reduce((sum, group) => sum + group.count, 0)
 )
 
 const hasSelectionEmphasis = computed(
@@ -468,8 +527,19 @@ const selectionStripNodeLabel = computed(
 const workflowErrorCount = computed(() =>
   allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
 )
+const workflowBlockingErrorCount = computed(() =>
+  allErrorGroups.value
+    .filter((group) => group.severity === 'error')
+    .reduce((sum, group) => sum + group.count, 0)
+)
+const hasErrorSeverity = computed(() =>
+  allErrorGroups.value.some((group) => group.severity === 'error')
+)
+const hasMissingSeverity = computed(() =>
+  allErrorGroups.value.some((group) => group.severity === 'missing')
+)
 
-const strip = computed(() => {
+const strip = computed<ContextStrip>(() => {
   if (hasSelectionEmphasis.value) {
     return {
       keypath:
@@ -480,14 +550,31 @@ const strip = computed(() => {
       count: selectionErrorCount.value
     }
   }
+  if (hasErrorSeverity.value && hasMissingSeverity.value) {
+    return {
+      keypath:
+        errorNodeCount.value === 0
+          ? 'rightSidePanel.errorsSummary'
+          : 'rightSidePanel.nodesAffected',
+      nodes: errorNodeCount.value,
+      count:
+        errorNodeCount.value === 0
+          ? workflowBlockingErrorCount.value
+          : errorNodeCount.value
+    }
+  }
+  const keypaths = hasErrorSeverity.value
+    ? SUMMARY_KEYPATHS.error
+    : SUMMARY_KEYPATHS.setup
+  const nodeCountKey =
+    errorNodeCount.value === 0
+      ? 'none'
+      : errorNodeCount.value === 1
+        ? 'single'
+        : 'multiple'
+
   return {
-    keypath:
-      errorNodeCount.value === 0
-        ? // Node-less errors (e.g. prompt-level) would read as "0 nodes"
-          'rightSidePanel.errorsSummary'
-        : errorNodeCount.value === 1
-          ? 'rightSidePanel.errorNodeSummary'
-          : 'rightSidePanel.errorNodesSummary',
+    keypath: keypaths[nodeCountKey],
     nodes: errorNodeCount.value,
     count: workflowErrorCount.value
   }
