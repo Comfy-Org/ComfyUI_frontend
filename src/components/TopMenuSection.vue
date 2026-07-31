@@ -35,7 +35,7 @@
           </div>
 
           <div
-            class="pointer-events-auto z-1 flex flex-col rounded-lg bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
+            class="pointer-events-auto z-1 flex flex-col rounded-lg bg-comfy-menu-bg px-2 py-1 shadow-interface"
           >
             <div
               ref="actionbarContainerRef"
