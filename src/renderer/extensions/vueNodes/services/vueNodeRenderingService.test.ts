@@ -221,7 +221,9 @@ describe('vueNodeRenderingService', () => {
     expect(listener).not.toHaveBeenCalled()
     await Promise.resolve()
     expect(listener).toHaveBeenCalledOnce()
-    expect(service.getSnapshot().mountedNodeIds).toEqual(['3'])
+    expect(listener).toHaveBeenLastCalledWith(
+      expect.objectContaining({ mountedNodeIds: ['3'] })
+    )
   })
 
   it('keeps frontend-required nodes rendered and freezes suppression changes', () => {
