@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import WatchAuthorCard from './WatchAuthorCard.vue'
-import WatchChapterStrip from './WatchChapterStrip.vue'
+import WatchRelatedStrip from './WatchRelatedStrip.vue'
 import WatchPageLayout from './WatchPageLayout.vue'
 import WatchRecommendedCard from './WatchRecommendedCard.vue'
 
@@ -37,7 +37,7 @@ export const Default: Story = {
     components: {
       WatchPageLayout,
       WatchAuthorCard,
-      WatchChapterStrip,
+      WatchRelatedStrip,
       WatchRecommendedCard
     },
     setup: () => ({ args, poster }),
@@ -48,7 +48,7 @@ export const Default: Story = {
           <WatchAuthorCard name="Author / Studio name" detail="Studio · 1.2M subscribers" />
         </template>
         <template #chapters>
-          <WatchChapterStrip
+          <WatchRelatedStrip
             heading="Chapter"
             :items="[
               { id: 'e2', label: 'Episode 2', href: '#', poster },

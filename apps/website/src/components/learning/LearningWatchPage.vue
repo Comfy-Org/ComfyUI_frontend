@@ -13,7 +13,7 @@ import {
 } from '../../data/learningTutorials'
 import { t } from '../../i18n/translations'
 import WatchAuthorCard from '../blocks/WatchAuthorCard.vue'
-import WatchChapterStrip from '../blocks/WatchChapterStrip.vue'
+import WatchRelatedStrip from '../blocks/WatchRelatedStrip.vue'
 import WatchPageLayout from '../blocks/WatchPageLayout.vue'
 import WatchRecommendedCard from '../blocks/WatchRecommendedCard.vue'
 import Button from '../ui/button/Button.vue'
@@ -99,7 +99,7 @@ const recommended = recommendedFor(tutorial).map((item) => ({
     </template>
 
     <template v-if="chapters.length" #chapters>
-      <WatchChapterStrip
+      <WatchRelatedStrip
         :heading="t('learning.watch.watchMore', locale)"
         :items="chapters"
       />

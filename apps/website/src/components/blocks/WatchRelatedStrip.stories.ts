@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import WatchChapterStrip from './WatchChapterStrip.vue'
+import WatchRelatedStrip from './WatchRelatedStrip.vue'
 
 const poster =
   'https://media.comfy.org/website/learning/cleanplate_walkthrough_v03_thumbnail.jpg'
 
-const meta: Meta<typeof WatchChapterStrip> = {
-  title: 'Website/Blocks/WatchChapterStrip',
-  component: WatchChapterStrip,
+const meta: Meta<typeof WatchRelatedStrip> = {
+  title: 'Website/Blocks/WatchRelatedStrip',
+  component: WatchRelatedStrip,
   tags: ['autodocs'],
   args: {
     heading: 'Chapter',

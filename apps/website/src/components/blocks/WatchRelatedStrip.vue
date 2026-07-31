@@ -5,7 +5,7 @@ import type { HTMLAttributes } from 'vue'
 
 import PlayOverlay from './PlayOverlay.vue'
 
-type WatchChapterItem = {
+type WatchRelatedItem = {
   id: string
   label: string
   href: string
@@ -20,7 +20,7 @@ const {
   class: className
 } = defineProps<{
   heading: string
-  items: readonly WatchChapterItem[]
+  items: readonly WatchRelatedItem[]
   class?: HTMLAttributes['class']
 }>()
 </script>
