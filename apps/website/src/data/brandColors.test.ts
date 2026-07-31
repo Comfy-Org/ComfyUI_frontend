@@ -149,42 +149,6 @@ describe('brand colours that cannot reference a token', () => {
       )
     }
   })
-})
-
-describe('yellowsIn', () => {
-  const yellow = '#f2ff59'
-
-  it('catches a stale yellow written as shorthand hex', () => {
-    expect(yellowsIn(`<path fill="${yellow}"/><path fill="#ff0"/>`)).toEqual([
-      '#f2ff59',
-      '#ffff00'
-    ])
-  })
-
-  it('catches a stale yellow written as rgb()', () => {
-    expect(
-      yellowsIn(`<path fill="${yellow}"/><path fill="rgb(240, 255, 65)"/>`)
-    ).toEqual(['#f0ff41', '#f2ff59'])
-  })
-
-  it('catches a stale yellow written as 8-digit hex', () => {
-    expect(
-      yellowsIn(`<path fill="${yellow}"/><path fill="#f0ff41ff"/>`)
-    ).toEqual(['#f0ff41', '#f2ff59'])
-  })
-
-  it('ignores colours outside the yellow family', () => {
-    expect(
-      yellowsIn(`<path fill="${yellow}"/><path fill="#211927" stroke="none"/>`)
-    ).toEqual([yellow])
-  })
-
-  it('reports a colour syntax it cannot read rather than ignoring it', () => {
-    expect(unreadableColoursIn('<path fill="hsl(65 100% 67%)"/>')).toEqual([
-      'hsl(65 100% 67%)'
-    ])
-    expect(unreadableColoursIn(`<path fill="${yellow}"/>`)).toEqual([])
-  })
 
   it('standalone brand SVGs use comfy-ink where they are two-tone', () => {
     const ink = token('color-primary-comfy-ink')
@@ -199,5 +163,43 @@ describe('yellowsIn', () => {
       const svg = read(file).toLowerCase()
       expect(svg, `${file} should use ${ink}`).toContain(ink)
     }
+  })
+})
+
+describe('yellowsIn', () => {
+  const yellow = token('color-electric-400')
+  const ink = token('color-primary-comfy-ink')
+  const retiredYellow = '#f0ff41'
+  const someOtherYellow = '#ffff00'
+
+  it('catches a second yellow written as shorthand hex', () => {
+    expect(yellowsIn(`<path fill="${yellow}"/><path fill="#ff0"/>`)).toEqual(
+      [yellow, someOtherYellow].sort()
+    )
+  })
+
+  it('catches a retired yellow written as rgb()', () => {
+    expect(
+      yellowsIn(`<path fill="${yellow}"/><path fill="rgb(240, 255, 65)"/>`)
+    ).toEqual([yellow, retiredYellow].sort())
+  })
+
+  it('catches a retired yellow written as 8-digit hex', () => {
+    expect(
+      yellowsIn(`<path fill="${yellow}"/><path fill="${retiredYellow}ff"/>`)
+    ).toEqual([yellow, retiredYellow].sort())
+  })
+
+  it('ignores colours outside the yellow family', () => {
+    expect(
+      yellowsIn(`<path fill="${yellow}"/><path fill="${ink}" stroke="none"/>`)
+    ).toEqual([yellow])
+  })
+
+  it('reports a colour syntax it cannot read rather than ignoring it', () => {
+    expect(unreadableColoursIn('<path fill="hsl(65 100% 67%)"/>')).toEqual([
+      'hsl(65 100% 67%)'
+    ])
+    expect(unreadableColoursIn(`<path fill="${yellow}"/>`)).toEqual([])
   })
 })
