@@ -346,6 +346,7 @@ const {
   isFreeTier: isFreeTierPlan,
   subscription,
   billingStatus,
+  subscriptionStatus,
   isLoading,
   error,
   showSubscriptionDialog,
@@ -370,6 +371,7 @@ const isTerminalPersonalSubscription = computed(
 // stays active until its end date, so it keeps the subscribed treatment.
 const showSubscribePrompt = computed(() => {
   if (!permissions.value.canManageSubscription) return false
+  if (subscriptionStatus.value === 'ended') return true
   if (isTerminalPersonalSubscription.value) return true
   if (isTeamPlanCancelled.value) return false
   if (isInPersonalWorkspace.value) {
