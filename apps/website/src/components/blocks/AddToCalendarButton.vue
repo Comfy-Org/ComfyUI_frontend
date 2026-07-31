@@ -10,6 +10,8 @@ import {
 import { computed } from 'vue'
 
 import type { ButtonVariants } from '../ui/button'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import type { CalendarEvent } from '../../utils/calendar'
 import {
   toGoogleCalendarUrl,
@@ -21,17 +23,24 @@ import Button from '../ui/button/Button.vue'
 
 const {
   event,
-  labels,
+  locale = 'en',
   size = 'lg',
   portalDisabled = false
 } = defineProps<{
   event: CalendarEvent
-  labels: { trigger: string; google: string; apple: string; outlook: string }
+  locale?: Locale
   size?: ButtonVariants['size']
   /** Render the menu in place, e.g. inside a top-layer `<dialog>` that would
    * cover a body teleport. */
   portalDisabled?: boolean
 }>()
+
+const labels = computed(() => ({
+  trigger: t('events.upcoming.addToCalendar', locale),
+  google: t('events.upcoming.calendarGoogle', locale),
+  apple: t('events.upcoming.calendarApple', locale),
+  outlook: t('events.upcoming.calendarOutlook', locale)
+}))
 
 const externalRel = resolveRel({ target: '_blank' })
 

@@ -81,12 +81,7 @@ const events = computed(() =>
                 <AddToCalendarButton
                   size="sm"
                   :event="event.calendarEvent"
-                  :labels="{
-                    trigger: t('events.upcoming.addToCalendar', locale),
-                    google: t('events.upcoming.calendarGoogle', locale),
-                    apple: t('events.upcoming.calendarApple', locale),
-                    outlook: t('events.upcoming.calendarOutlook', locale)
-                  }"
+                  :locale
                 />
               </div>
             </div>
