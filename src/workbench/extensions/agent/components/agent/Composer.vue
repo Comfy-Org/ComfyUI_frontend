@@ -271,166 +271,170 @@ defineExpose({
       <slot name="header" />
     </div>
 
-    <div v-if="selectionTags.length" class="flex flex-wrap gap-2 p-3">
-      <span
-        v-for="tag in selectionTags"
-        :key="tag.id"
-        class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-xs/4 font-medium"
-      >
-        <span class="icon-[comfy--node] size-3.5" />
-        <span class="max-w-40 truncate">{{ tag.title }}</span>
-        <span
-          v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
-          :class="duplicateIdClass"
-          >#{{ tag.id }}</span
-        >
-        <button
-          type="button"
-          :aria-label="t('agent.remove')"
-          class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
-          @click="emit('removeTag', tag.id)"
-        >
-          <span class="icon-[lucide--x] size-3.5" />
-        </button>
-      </span>
-    </div>
-
     <div
-      v-if="composer.attachments.value.length"
-      class="flex flex-wrap gap-2 px-3 pt-3"
+      class="border-agent-border-strong bg-agent-surface-raised flex flex-col rounded-[10px] border"
     >
-      <AttachmentChip
-        v-for="item in composer.attachments.value"
-        :key="item.id"
-        :name="item.name"
-        :preview-url="item.previewUrl"
-        :uploading="item.uploading"
-        @remove="composer.removeAttachment(item.id)"
-      />
-    </div>
-
-    <div class="relative min-h-16">
-      <Textarea
-        ref="textareaRef"
-        v-model="composer.draft.value"
-        :aria-label="t('agent.placeholder')"
-        rows="1"
-        class="field-sizing-content max-h-50 min-h-16 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-none bg-transparent px-3 py-2 text-sm/5 wrap-break-word whitespace-pre-wrap focus-visible:ring-0"
-        :aria-expanded="mentionVisible"
-        aria-controls="agent-mention-listbox"
-        :aria-activedescendant="
-          mentionVisible ? `agent-mention-opt-${mentionActive}` : undefined
-        "
-        @keydown="onComposerKeydown"
-        @keyup="onComposerKeyup"
-        @input="syncMention"
-        @click="syncMention"
-        @blur="closeMention"
-      />
-
-      <div
-        v-if="!composer.draft.value"
-        class="text-agent-fg-muted pointer-events-none absolute inset-x-[12px] top-[8px] z-10 text-[14px]/[20px]"
-      >
-        <span class="block h-[20px]">{{ placeholderHint.firstLine }}</span>
-        <div class="-mt-px flex h-[20px] items-center">
+      <div v-if="selectionTags.length" class="flex flex-wrap gap-2 p-3">
+        <span
+          v-for="tag in selectionTags"
+          :key="tag.id"
+          class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-xs/4 font-medium"
+        >
+          <span class="icon-[comfy--node] size-3.5" />
+          <span class="max-w-40 truncate">{{ tag.title }}</span>
+          <span
+            v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
+            :class="duplicateIdClass"
+            >#{{ tag.id }}</span
+          >
           <button
             type="button"
-            aria-controls="agent-mention-listbox"
-            :aria-expanded="mentionVisible"
-            class="hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto mr-[4px] ml-[-5px] inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] text-[14px]/[20px] transition-colors focus-visible:outline-1"
-            @click="openPlaceholderNodePicker"
+            :aria-label="t('agent.remove')"
+            class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
+            @click="emit('removeTag', tag.id)"
           >
-            <span
-              class="icon-[lucide--square-mouse-pointer] size-[14px] shrink-0"
-            />
-            <span>{{ placeholderHint.addNodes }},</span>
+            <span class="icon-[lucide--x] size-3.5" />
           </button>
-          <span>{{ placeholderHint.dragAssets }}</span>
-        </div>
+        </span>
       </div>
-    </div>
 
-    <div class="flex items-center justify-between px-3 py-2">
-      <DropdownMenuRoot>
-        <DropdownMenuTrigger
-          v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
-          :aria-label="t('agent.addToPrompt')"
-          class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
+      <div
+        v-if="composer.attachments.value.length"
+        class="flex flex-wrap gap-2 px-3 pt-3"
+      >
+        <AttachmentChip
+          v-for="item in composer.attachments.value"
+          :key="item.id"
+          :name="item.name"
+          :preview-url="item.previewUrl"
+          :uploading="item.uploading"
+          @remove="composer.removeAttachment(item.id)"
+        />
+      </div>
+
+      <div class="relative min-h-16">
+        <Textarea
+          ref="textareaRef"
+          v-model="composer.draft.value"
+          :aria-label="t('agent.placeholder')"
+          rows="1"
+          class="text-agent-fg field-sizing-content max-h-50 min-h-16 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-none bg-transparent px-3 py-2 font-inter text-[14px]/5 font-normal wrap-break-word whitespace-pre-wrap focus-visible:ring-0"
+          :aria-expanded="mentionVisible"
+          aria-controls="agent-mention-listbox"
+          :aria-activedescendant="
+            mentionVisible ? `agent-mention-opt-${mentionActive}` : undefined
+          "
+          @keydown="onComposerKeydown"
+          @keyup="onComposerKeyup"
+          @input="syncMention"
+          @click="syncMention"
+          @blur="closeMention"
+        />
+
+        <div
+          v-if="!composer.draft.value"
+          class="text-agent-fg-muted pointer-events-none absolute inset-x-[12px] top-[8px] z-10 font-inter text-[14px]/[20px] font-normal"
         >
-          <span class="icon-[lucide--plus] size-4" />
-        </DropdownMenuTrigger>
-        <DropdownMenuPortal>
-          <DropdownMenuContent
-            side="top"
-            align="start"
-            :side-offset="4"
-            class="agent-scope bg-agent-surface-raised z-1100 box-border w-[186px] rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
-          >
-            <DropdownMenuItem
-              class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
-              @select="emit('selectNodes')"
+          <span class="block h-[20px]">{{ placeholderHint.firstLine }}</span>
+          <div class="-mt-px flex h-[20px] items-center">
+            <button
+              type="button"
+              aria-controls="agent-mention-listbox"
+              :aria-expanded="mentionVisible"
+              class="hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto mr-[4px] ml-[-5px] inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] text-[14px]/[20px] transition-colors focus-visible:outline-1"
+              @click="openPlaceholderNodePicker"
             >
               <span
-                class="icon-[lucide--mouse-pointer-click] size-4 shrink-0"
+                class="icon-[lucide--square-mouse-pointer] size-[14px] shrink-0"
               />
-              <span class="whitespace-nowrap">
-                {{ t('agent.addNodesFromGraph') }}
-              </span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              v-if="canOpenAssets"
-              class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
-              @select="emit('openAssets')"
-            >
-              <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
-              <span class="whitespace-nowrap">
-                {{ t('agent.addFromAssets') }}
-              </span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator
-              v-if="canAttach && canOpenAssets"
-              class="mt-0 mb-px h-px bg-white/10"
-            />
-            <DropdownMenuItem
-              v-if="canAttach"
-              class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
-              @select="emit('attach')"
-            >
-              <span class="icon-[lucide--paperclip] size-4 shrink-0" />
-              <span class="whitespace-nowrap">{{
-                t('agent.attachFiles')
-              }}</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenuPortal>
-      </DropdownMenuRoot>
+              <span>{{ placeholderHint.addNodes }},</span>
+            </button>
+            <span>{{ placeholderHint.dragAssets }}</span>
+          </div>
+        </div>
+      </div>
 
-      <div class="flex items-center gap-1">
-        <RunModePopover />
-        <button
-          type="button"
-          :aria-label="running ? t('agent.stop') : t('agent.send')"
-          :disabled="!running && !composer.canSend.value"
-          :class="
-            cn(
-              'flex size-8 items-center justify-center rounded-xl transition-colors',
-              running
-                ? 'bg-agent-surface-hover text-agent-fg hover:bg-agent-border cursor-pointer'
-                : 'bg-agent-fg text-agent-surface hover:bg-agent-fg/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
-            )
-          "
-          @click="onPrimaryAction"
-        >
-          <span
+      <div class="flex items-center justify-between px-3 py-2">
+        <DropdownMenuRoot>
+          <DropdownMenuTrigger
+            v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
+            :aria-label="t('agent.addToPrompt')"
+            class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
+          >
+            <span class="icon-[lucide--plus] size-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuContent
+              side="top"
+              align="start"
+              :side-offset="4"
+              class="agent-scope bg-agent-surface-raised z-1100 box-border w-[186px] rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
+            >
+              <DropdownMenuItem
+                class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                @select="emit('selectNodes')"
+              >
+                <span
+                  class="icon-[lucide--mouse-pointer-click] size-4 shrink-0"
+                />
+                <span class="whitespace-nowrap">
+                  {{ t('agent.addNodesFromGraph') }}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                v-if="canOpenAssets"
+                class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                @select="emit('openAssets')"
+              >
+                <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
+                <span class="whitespace-nowrap">
+                  {{ t('agent.addFromAssets') }}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator
+                v-if="canAttach && canOpenAssets"
+                class="mt-0 mb-px h-px bg-white/10"
+              />
+              <DropdownMenuItem
+                v-if="canAttach"
+                class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                @select="emit('attach')"
+              >
+                <span class="icon-[lucide--paperclip] size-4 shrink-0" />
+                <span class="whitespace-nowrap">{{
+                  t('agent.attachFiles')
+                }}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenuPortal>
+        </DropdownMenuRoot>
+
+        <div class="flex items-center gap-1">
+          <RunModePopover />
+          <button
+            type="button"
+            :aria-label="running ? t('agent.stop') : t('agent.send')"
+            :disabled="!running && !composer.canSend.value"
             :class="
               cn(
-                'size-4',
-                running ? 'icon-[lucide--square]' : 'icon-[lucide--arrow-up]'
+                'flex size-8 items-center justify-center rounded-xl transition-colors',
+                running
+                  ? 'bg-agent-surface-hover text-agent-fg hover:bg-agent-border cursor-pointer'
+                  : 'bg-agent-fg text-agent-surface hover:bg-agent-fg/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
               )
             "
-          />
-        </button>
+            @click="onPrimaryAction"
+          >
+            <span
+              :class="
+                cn(
+                  'size-4',
+                  running ? 'icon-[lucide--square]' : 'icon-[lucide--arrow-up]'
+                )
+              "
+            />
+          </button>
+        </div>
       </div>
     </div>
   </div>
