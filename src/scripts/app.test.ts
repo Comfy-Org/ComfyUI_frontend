@@ -744,6 +744,10 @@ describe('ComfyApp', () => {
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
       Reflect.set(mockCanvas, 'graph', activeSubgraph)
       Reflect.set(mockCanvas, 'subgraph', activeSubgraph)
+      vi.mocked(mockCanvas.setGraph).mockImplementation((nextGraph) => {
+        Reflect.set(mockCanvas, 'graph', nextGraph)
+        Reflect.set(mockCanvas, 'subgraph', null)
+      })
       const missingNodesStore = useMissingNodesErrorStore()
       missingNodesStore.setMissingNodeTypes(['MissingGroupNode'])
       const nodeType = 'test/RegisteredApiNode'
@@ -764,6 +768,8 @@ describe('ComfyApp', () => {
 
         expect(missingNodesStore.missingNodesError).toBeNull()
         expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
+        expect(mockCanvas.graph).toBe(graph)
+        expect(mockCanvas.subgraph).toBeNull()
       } finally {
         LiteGraph.unregisterNodeType(nodeType)
       }
@@ -775,56 +781,97 @@ describe('ComfyApp', () => {
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
       const cleanupErrorHooks = installErrorClearingHooks(graph)
       const missingNodesStore = useMissingNodesErrorStore()
+      const missingNodeType = 'Uninstalled<&Node>'
       const replacement: NodeReplacement = {
         new_node_id: 'ReplacementNode',
-        old_node_id: 'Uninstalled_XYZ',
+        old_node_id: missingNodeType,
         old_widget_ids: null,
         input_mapping: null,
         output_mapping: null
       }
       const nodeReplacementStore = useNodeReplacementStore()
-      vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
-      vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(
-        replacement
-      )
+      const loadReplacements = vi
+        .spyOn(nodeReplacementStore, 'load')
+        .mockResolvedValue()
+      const getReplacement = vi
+        .spyOn(nodeReplacementStore, 'getReplacementFor')
+        .mockReturnValue(replacement)
+      const apiData: unknown = {
+        '-1': {
+          class_type: missingNodeType,
+          inputs: {}
+        }
+      }
+      if (!app.isApiJson(apiData)) throw new Error('Expected valid API JSON')
 
       try {
-        await app.loadApiJson(
-          {
-            '1': {
-              class_type: 'Uninstalled_XYZ',
-              inputs: {},
-              _meta: { title: 'Missing API node' }
-            }
-          },
-          'api-missing'
-        )
+        await app.loadApiJson(apiData, 'api-missing')
 
-        const placeholder = graph.getNodeById(toNodeId(1))
+        const placeholder = graph.nodes[0]
+        if (!placeholder) throw new Error('Expected missing-node placeholder')
         expect(placeholder).toMatchObject({
-          id: '1',
-          type: 'Uninstalled_XYZ',
+          type: 'UninstalledNode',
+          title: missingNodeType,
           has_errors: true
         })
-        expect(placeholder?.serialize()).toMatchObject({
-          title: 'Missing API node'
+        expect(placeholder.id).not.toBe(toNodeId(-1))
+        expect(placeholder.serialize()).toMatchObject({
+          id: placeholder.id,
+          type: missingNodeType,
+          title: missingNodeType
         })
         expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
           {
-            type: 'Uninstalled_XYZ',
-            nodeId: '1',
-            cnrId: undefined,
+            type: missingNodeType,
+            nodeId: String(placeholder.id),
             isReplaceable: true,
             replacement
           }
         ])
+        expect(loadReplacements).toHaveBeenCalledOnce()
+        expect(getReplacement).toHaveBeenCalled()
+        expect(loadReplacements.mock.invocationCallOrder[0]).toBeLessThan(
+          getReplacement.mock.invocationCallOrder[0]
+        )
 
-        if (!placeholder) throw new Error('Expected missing-node placeholder')
         graph.remove(placeholder)
         expect(missingNodesStore.missingNodesError).toBeNull()
       } finally {
         cleanupErrorHooks()
       }
+    })
+
+    it('defers API JSON missing node warnings when requested', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const nodeReplacementStore = useNodeReplacementStore()
+      vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+      vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(null)
+      const missingNodesStore = useMissingNodesErrorStore()
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        prompt: {
+          '1': {
+            class_type: 'UninstalledDeferredNode',
+            inputs: {},
+            _meta: { title: 'Deferred missing node' }
+          }
+        }
+      })
+
+      await app.handleFile(
+        createTestFile('deferred.json', 'application/json'),
+        'file_drop',
+        { deferWarnings: true }
+      )
+
+      expect(missingNodesStore.missingNodesError).toBeNull()
+
+      await app.handleFile(createTestFile('immediate.json', 'application/json'))
+
+      expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+        expect.objectContaining({ type: 'UninstalledDeferredNode' })
+      ])
     })
   })
   describe('refreshComboInNodes', () => {
