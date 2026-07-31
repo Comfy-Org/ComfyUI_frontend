@@ -41,6 +41,7 @@ import {
 } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from './errors/TabErrors.vue'
+import { useHasBlockingError } from './errors/useHasBlockingError'
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -124,7 +125,10 @@ function handleTabChange(newTab: RightSidePanelTab) {
 type RightSidePanelTabList = Array<{
   label: () => string
   value: RightSidePanelTab
-  icon?: string
+  icon?: {
+    className: string
+    label: () => string
+  }
 }>
 
 const hasDirectNodeError = computed(() =>
@@ -189,6 +193,8 @@ const hasPendingErrorScanSelected = computed(() => {
   })
 })
 
+const hasBlockingError = useHasBlockingError()
+
 const tabs = computed<RightSidePanelTabList>(() => {
   const list: RightSidePanelTabList = []
 
@@ -200,7 +206,20 @@ const tabs = computed<RightSidePanelTabList>(() => {
     list.push({
       label: () => t('rightSidePanel.errors'),
       value: 'errors',
-      icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
+      icon: {
+        className: cn(
+          'ml-1',
+          hasBlockingError.value
+            ? 'icon-[lucide--octagon-alert] bg-node-stroke-error'
+            : 'icon-[lucide--triangle-alert] bg-warning-background'
+        ),
+        label: () =>
+          t(
+            hasBlockingError.value
+              ? 'rightSidePanel.severityErrorLabel'
+              : 'rightSidePanel.severitySetupLabel'
+          )
+      }
     })
   }
 
@@ -382,8 +401,10 @@ function handleTitleCancel() {
             {{ tab.label() }}
             <i
               v-if="tab.icon"
-              aria-hidden="true"
-              :class="cn(tab.icon, 'size-4')"
+              role="img"
+              :aria-label="tab.icon.label()"
+              data-testid="panel-tab-icon"
+              :class="cn(tab.icon.className, 'size-4')"
             />
           </Tab>
         </TabList>
