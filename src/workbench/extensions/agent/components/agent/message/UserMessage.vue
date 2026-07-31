@@ -20,7 +20,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
 </script>
 
 <template>
-  <div class="group flex flex-col items-end gap-1.5">
+  <div class="group flex flex-col items-end gap-2 pl-16">
     <div v-if="tags.length" class="flex flex-wrap justify-end gap-1">
       <span
         v-for="(tag, index) in tags"
@@ -59,7 +59,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
     </div>
     <div
       v-if="text"
-      class="bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-lg px-3 py-1.5 text-sm whitespace-pre-wrap"
+      class="border-agent-border bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm whitespace-pre-wrap"
     >
       {{ text }}
     </div>
@@ -70,13 +70,13 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
       <button
         type="button"
         :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-        class="rounded-agent hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center transition-colors"
+        class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center rounded-lg p-2 transition-colors"
         @click="copy(text)"
       >
         <span
           :class="
             cn(
-              'size-3.5',
+              'size-4',
               copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
             )
           "

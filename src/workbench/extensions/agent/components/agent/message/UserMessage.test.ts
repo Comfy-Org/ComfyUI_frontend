@@ -54,10 +54,11 @@ describe('UserMessage', () => {
     expect(screen.getByText('use these')).toBeInTheDocument()
   })
 
-  it('copies the sent prompt so it can be reused', async () => {
+  it('reveals the copy action on hover and copies the exact prompt', async () => {
     const user = userEvent.setup()
     renderMessage({ text: 'make it cinematic' })
 
+    await user.hover(screen.getByText('make it cinematic'))
     await user.click(screen.getByRole('button', { name: t('agent.copy') }))
 
     expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
