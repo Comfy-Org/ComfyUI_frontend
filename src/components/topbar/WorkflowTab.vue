@@ -3,7 +3,8 @@
     <ContextMenuTrigger as-child>
       <div
         ref="workflowTabRef"
-        class="workflow-tab group flex gap-2 p-2"
+        data-testid="workflow-tab"
+        class="workflow-tab group flex h-9 w-34 gap-2 p-2"
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
@@ -25,14 +26,14 @@
             v-if="isAgentEditing"
             role="img"
             :aria-label="t('g.agentWorking')"
-            class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-base-foreground group-hover:hidden motion-safe:animate-spin"
+            class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-base-foreground motion-safe:animate-spin"
           />
           <span
             v-else-if="showUnseenAgentDot"
             role="img"
             :aria-label="t('g.agentModified')"
             data-testid="agent-modified-indicator"
-            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background group-hover:hidden"
+            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background"
           />
           <i
             v-else-if="workflowStatus"
@@ -40,7 +41,7 @@
             :aria-label="workflowStatusLabel"
             :class="
               cn(
-                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden',
+                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2',
                 workflowStatusIconClasses[workflowStatus]
               )
             "
@@ -48,18 +49,21 @@
           <span
             v-else-if="shouldShowUnsavedIndicator"
             data-testid="workflow-dirty-indicator"
-            class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
-            >•</span
-          >
+            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-base-foreground"
+          />
           <Button
-            class="close-button invisible w-auto p-0"
+            v-else
+            class="close-button w-auto p-0"
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="t('g.close')"
             data-testid="close-workflow-button"
             @click.stop="onCloseWorkflow(workflowOption)"
           >
-            <i class="pi pi-times" />
+            <i
+              data-testid="close-workflow-icon"
+              class="pi pi-times text-base"
+            />
           </Button>
         </div>
       </div>
