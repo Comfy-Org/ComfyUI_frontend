@@ -1629,6 +1629,21 @@ describe('node layout registration', () => {
 
     expect(zIndexOf(second)).toBeGreaterThan(zIndexOf(first)!)
   })
+
+  it('registers after node:added so deferred listener work is queued first', () => {
+    layoutStore.reset()
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+
+    graph.events.addEventListener('node:added', () => {
+      expect(layoutStore.getNodeLayoutRef(node.id).value).toBeNull()
+    })
+
+    graph.add(node)
+
+    expect.assertions(2)
+    expect(layoutStore.getNodeLayoutRef(node.id).value).not.toBeNull()
+  })
 })
 
 describe('graph teardown drops layout entries', () => {
