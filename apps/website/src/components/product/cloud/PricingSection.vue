@@ -12,7 +12,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
   <section class="max-w-9xl mx-auto mt-4 mb-24 px-4 lg:mt-8 lg:mb-40 lg:px-20">
     <div class="bg-transparency-white-t4 rounded-5xl p-2">
       <div
-        class="bg-primary-comfy-yellow flex flex-col gap-24 rounded-4xl p-8 lg:flex-row lg:items-end lg:justify-between"
+        class="bg-primary-comfy-yellow rounded-4.5xl flex flex-col gap-24 p-8 lg:flex-row lg:items-end lg:justify-between"
       >
         <div class="max-w-2xl">
           <h2
