@@ -402,6 +402,48 @@ describe('GlobalDialog Reka overlay scrim', () => {
       expect(store.isDialogOpen('reka-scrim-dismiss')).toBe(false)
     )
   })
+
+  it('keeps checkout open on the scrim while preserving explicit dismissal', async () => {
+    mountDialog()
+    const store = useDialogStore()
+    const user = userEvent.setup()
+    const key = 'subscription-required'
+    const CheckoutBody = defineComponent({
+      setup: () => () =>
+        h(
+          'button',
+          { onClick: () => store.closeDialog({ key }) },
+          'Close checkout'
+        )
+    })
+
+    function openDialog() {
+      store.showDialog({
+        key,
+        component: CheckoutBody,
+        dialogComponentProps: {
+          renderer: 'reka',
+          headless: true,
+          dismissableMask: false
+        }
+      })
+    }
+
+    openDialog()
+    await screen.findByRole('dialog')
+    await user.click(screen.getByTestId('dialog-overlay'))
+
+    expect(store.isDialogOpen(key)).toBe(true)
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(store.isDialogOpen(key)).toBe(false))
+
+    openDialog()
+    await screen.findByRole('dialog')
+    await user.click(screen.getByRole('button', { name: 'Close checkout' }))
+
+    await waitFor(() => expect(store.isDialogOpen(key)).toBe(false))
+  })
 })
 
 describe('shouldPreventRekaDismiss', () => {
