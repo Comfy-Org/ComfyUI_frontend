@@ -2640,6 +2640,7 @@
     "endsOnDate": "Ends on {date}",
     "changesToPlanOnDate": "Changes to {plan} on {date}",
     "manageSubscription": "Manage subscription",
+    "billingAndInvoices": "Billing & invoices",
     "manageBilling": "Manage billing",
     "changePlan": "Change plan",
     "cancelPlan": "Cancel plan",
@@ -2724,6 +2725,10 @@
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
+    "inactiveTeamTitle": "Inactive team subscription",
+    "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
+    "inactiveTeamPlanIncludes": "An active plan features everything in {plan}, plus:",
+    "reactivateToUseCredits": "Reactivate your plan to use these credits",
     "teamPerks": {
       "inviteMembers": "Invite members",
       "concurrentRuns": "Members can run workflows concurrently",

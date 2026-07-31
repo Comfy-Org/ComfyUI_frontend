@@ -107,6 +107,7 @@ const i18n = createI18n({
         additionalCredits: 'Additional credits',
         additionalCreditsInUse: 'In use',
         usedAfterMonthly: 'Used after monthly runs out',
+        reactivateToUseCredits: 'Reactivate your plan to use these credits',
         monthlyCreditsUsedUpTitle:
           'Monthly credits are used up. Refills {date}',
         monthlyCreditsUsedUpTitleNoDate: 'Monthly credits are used up',
@@ -280,6 +281,18 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('0')
     expect(container.textContent).not.toContain('left of')
     expect(container.textContent).not.toContain('Additional credits')
+    expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  it('shows disabled credit details for an inactive plan', () => {
+    activeProSubscription()
+    const { container } = renderTile({ zeroState: true, inactivePlan: true })
+
+    expect(container.textContent).toContain('0remaining')
+    expect(container.textContent).toContain('Additional credits')
+    expect(container.textContent).toContain(
+      'Reactivate your plan to use these credits'
+    )
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 

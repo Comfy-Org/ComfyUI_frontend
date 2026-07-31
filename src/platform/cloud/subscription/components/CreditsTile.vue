@@ -1,6 +1,11 @@
 <template>
   <div
-    class="@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5"
+    :class="
+      cn(
+        '@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5',
+        inactivePlan && 'text-muted'
+      )
+    "
   >
     <Button
       variant="muted-textonly"
@@ -19,7 +24,14 @@
       </div>
       <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
       <div v-else class="flex items-baseline gap-2">
-        <i class="icon-[lucide--component] size-4 self-center text-credit" />
+        <i
+          :class="
+            cn(
+              'icon-[lucide--component] size-4 self-center',
+              inactivePlan ? 'text-muted' : 'text-credit'
+            )
+          "
+        />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
@@ -144,6 +156,36 @@
       </div>
     </template>
 
+    <template v-else-if="inactivePlan">
+      <div class="h-px w-full bg-interface-stroke" />
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-2 text-sm">
+          <span class="flex items-center gap-1">
+            {{ $t('subscription.additionalCredits') }}
+            <Button
+              v-tooltip="{
+                value: $t('subscription.additionalCreditsTooltip'),
+                showDelay: 300
+              }"
+              variant="muted-textonly"
+              size="icon-sm"
+              :aria-label="$t('subscription.additionalCreditsInfo')"
+              class="text-muted"
+            >
+              <i class="icon-[lucide--info] size-4" />
+            </Button>
+          </span>
+          <span class="flex items-center gap-1 font-bold">
+            <i class="icon-[lucide--component] size-4" />
+            {{ displayPrepaid }}
+          </span>
+        </div>
+        <span class="text-sm">
+          {{ $t('subscription.reactivateToUseCredits') }}
+        </span>
+      </div>
+    </template>
+
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
         v-if="isFreeTier"
@@ -197,9 +239,10 @@ import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
-const { zeroState = false } = defineProps<{
+const { zeroState = false, inactivePlan = false } = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
   zeroState?: boolean
+  inactivePlan?: boolean
 }>()
 
 const { locale, t } = useI18n()
