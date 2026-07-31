@@ -3,6 +3,7 @@ import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 
 import type {
   Member,
+  Plan,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
@@ -148,11 +149,24 @@ export class CloudWorkspaceMockHelper {
         })
       )
     )
+    const currentPlan: Plan =
+      billingStatus.plan_slug && billingStatus.plan_slug !== TEAM_PRO_PLAN.slug
+        ? {
+            ...TEAM_PRO_PLAN,
+            slug: billingStatus.plan_slug,
+            tier:
+              billingStatus.subscription_tier === 'TEAM'
+                ? TEAM_PRO_PLAN.tier
+                : (billingStatus.subscription_tier ?? TEAM_PRO_PLAN.tier),
+            duration:
+              billingStatus.subscription_duration ?? TEAM_PRO_PLAN.duration
+          }
+        : TEAM_PRO_PLAN
     await page.route('**/api/billing/plans', (r) =>
       r.fulfill(
         jsonRoute({
-          current_plan_slug: billingStatus.plan_slug ?? TEAM_PRO_PLAN.slug,
-          plans: [TEAM_PRO_PLAN]
+          current_plan_slug: currentPlan.slug,
+          plans: [currentPlan]
         })
       )
     )

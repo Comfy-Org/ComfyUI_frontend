@@ -535,12 +535,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
   })
 
   it('shows subscribe prompt for an ended Standard plan in a Team workspace', () => {
-    mockIsActiveSubscription.value = false
     mockSubscriptionStatus.value = 'ended'
-    mockBillingStatus.value = 'inactive'
     mockSubscriptionTier.value = 'STANDARD'
     mockPlanSlug.value = 'standard-monthly'
-    mockHasTeamPlan.value = false
     renderComponent()
 
     expect(
