@@ -150,6 +150,9 @@ const i18n = createI18n({
           changePaymentMethod: 'Change',
           addNewPaymentMethod: 'Add new payment method',
           verifyTitle: 'Verify your payment',
+          waitingForBank: 'Waiting for your bank…',
+          verifyBodyOpened:
+            'Complete the verification in the new tab — this updates automatically.',
           verifyBody:
             'Your bank requires additional verification to complete this payment.',
           previousBalance: 'Previous balance',
@@ -333,6 +336,30 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockTrackTopUpPurchase).not.toHaveBeenCalled()
     expect(mockToastAdd).not.toHaveBeenCalled()
     expect(mockCloseDialog).not.toHaveBeenCalled()
+  })
+
+  it('acknowledges the opened challenge in the status tile', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+
+    renderDialog({ savedMethods: [VISA] })
+    await clickAddCredits()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    mockTopupActionOperation.value = {
+      actionUrl: 'https://verify.example/sensitive-token'
+    }
+    await nextTick()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Complete verification' })
+    )
+
+    expect(screen.getByText('Waiting for your bank…')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Pay $50.00' })
+    ).not.toBeInTheDocument()
+    open.mockRestore()
   })
 
   it('disables back while a charge awaits verification', async () => {

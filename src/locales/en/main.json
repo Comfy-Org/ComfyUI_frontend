@@ -2590,10 +2590,12 @@
       "updatePaymentMethod": "Update payment method",
       "usdAmount": "${amount}",
       "verifyBody": "Your bank requires additional verification to complete this payment.",
+      "verifyBodyOpened": "Complete the verification in the new tab — this updates automatically.",
       "verifyTitle": "Verify your payment",
       "videosEstimate": "~{count} videos*",
       "viewChargeNote": "View this charge anytime in {billing} in your workspace settings.",
       "viewPricing": "View pricing details",
+      "waitingForBank": "Waiting for your bank…",
       "youGet": "Credits",
       "youPay": "Amount (USD)"
     },

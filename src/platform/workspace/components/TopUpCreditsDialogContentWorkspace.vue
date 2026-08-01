@@ -218,7 +218,13 @@
           {{ $t('credits.topUp.verifyTitle') }}
         </h2>
         <p class="m-0 text-sm text-balance text-muted-foreground">
-          {{ $t('credits.topUp.verifyBody') }}
+          {{
+            $t(
+              verificationOpened
+                ? 'credits.topUp.verifyBodyOpened'
+                : 'credits.topUp.verifyBody'
+            )
+          }}
         </p>
       </div>
     </template>
@@ -361,7 +367,15 @@
         >
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
+        <div
+          v-if="topupActionUrl && verificationOpened"
+          class="flex h-10 items-center justify-center gap-2 rounded-lg bg-secondary-background text-sm text-muted-foreground"
+        >
+          <i class="icon-[lucide--loader-circle] size-4 animate-spin" />
+          {{ $t('credits.topUp.waitingForBank') }}
+        </div>
         <Button
+          v-else
           :disabled="!isValidAmount || loading || isPolling"
           :loading="loading || isPolling"
           :variant="topupActionUrl ? 'tertiary' : 'primary'"
@@ -447,6 +461,7 @@ const step = ref<'amount' | 'confirm' | 'success' | 'declined' | 'verifying'>(
 )
 const successSummary = ref<{ previous: number; added: number } | null>(null)
 const declineReason = ref<string | null>(null)
+const verificationOpened = ref(false)
 
 const selectedMethodId = ref(savedMethods?.[0]?.id ?? '')
 
@@ -645,7 +660,12 @@ async function handleBuy() {
 
 function openTopupVerification() {
   if (!topupActionUrl.value) return
-  window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
+  const opened = window.open(
+    topupActionUrl.value,
+    '_blank',
+    'noopener,noreferrer'
+  )
+  if (opened) verificationOpened.value = true
 }
 
 function handleSuccessClose() {
