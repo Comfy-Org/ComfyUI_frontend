@@ -55,13 +55,21 @@ export const useExtensionStore = defineStore('extension', () => {
     )
   }
 
+  /**
+   * Registers an extension by name. A name that is already registered keeps its
+   * first registration.
+   * @returns whether the extension was registered
+   */
   function registerExtension(extension: ComfyExtension) {
     if (!extension.name) {
       throw new Error("Extensions must have a 'name' property.")
     }
 
     if (extensionByName.value[extension.name]) {
-      throw new Error(`Extension named '${extension.name}' already registered.`)
+      console.warn(
+        `Extension named '${extension.name}' already registered - skipping`
+      )
+      return false
     }
 
     if (disabledExtensionNames.value.has(extension.name)) {
@@ -69,6 +77,7 @@ export const useExtensionStore = defineStore('extension', () => {
     }
 
     extensionByName.value[extension.name] = markRaw(extension)
+    return true
   }
 
   function loadDisabledExtensionNames(names: string[]) {

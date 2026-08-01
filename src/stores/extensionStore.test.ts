@@ -23,12 +23,21 @@ describe('extensionStore', () => {
       )
     })
 
-    it('throws for duplicate registration', () => {
+    it('warns and keeps the first registration for a duplicate name', () => {
       const store = useExtensionStore()
-      store.registerExtension({ name: 'dup' })
-      expect(() => store.registerExtension({ name: 'dup' })).toThrow(
-        "Extension named 'dup' already registered."
-      )
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const first = { name: 'dup' }
+        store.registerExtension(first)
+        expect(store.registerExtension({ name: 'dup' })).toBe(false)
+        expect(warnSpy).toHaveBeenCalledWith(
+          "Extension named 'dup' already registered - skipping"
+        )
+        expect(store.extensions).toHaveLength(1)
+        expect(store.extensions[0]).toBe(first)
+      } finally {
+        warnSpy.mockRestore()
+      }
     })
 
     it('warns when registering a disabled extension but still installs it', () => {
