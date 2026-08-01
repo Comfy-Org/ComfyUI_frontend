@@ -3,8 +3,8 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { httpSupportsModelTypeTags } from '@/platform/assets/composables/useModelTypeTagsRefresh'
 import { assetService } from '@/platform/assets/services/assetService'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import {
@@ -39,15 +39,6 @@ vi.mock('@/scripts/api', () => ({
     removeEventListener: vi.fn()
   }
 }))
-
-vi.mock('@/platform/assets/composables/useModelTypeTagsRefresh', async () => {
-  const { ref } = await import('vue')
-  return {
-    httpSupportsModelTypeTags: ref<boolean | undefined>(undefined),
-    refreshSupportsModelTypeTags: vi.fn(),
-    useSupportsModelTypeTagsRefresh: vi.fn()
-  }
-})
 
 // Mock the assetService
 vi.mock('@/platform/assets/services/assetService', () => ({
@@ -124,7 +115,7 @@ describe('useModelStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.resetAllMocks()
     isCloudRef.value = false
-    httpSupportsModelTypeTags.value = undefined
+    remoteConfig.value = {}
   })
 
   it('should load models', async () => {
@@ -623,7 +614,7 @@ describe('useModelStore', () => {
       expect(api.getModelFolders).toHaveBeenCalledTimes(1)
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
 
-      httpSupportsModelTypeTags.value = true
+      remoteConfig.value = { supports_model_type_tags: true }
 
       await vi.waitFor(() => {
         expect(api.getModelFolders).toHaveBeenCalledTimes(2)
@@ -635,14 +626,14 @@ describe('useModelStore', () => {
 
     it('rebuilds again when the capability rolls back', async () => {
       enableMocks(true)
-      httpSupportsModelTypeTags.value = true
+      remoteConfig.value = { supports_model_type_tags: true }
       store = useModelStore()
       await store.loadModelFolders()
       await store.getLoadedModelFolder('checkpoints')
       expect(api.getModelFolders).toHaveBeenCalledTimes(1)
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
 
-      httpSupportsModelTypeTags.value = false
+      remoteConfig.value = { supports_model_type_tags: false }
 
       await vi.waitFor(() => {
         expect(api.getModelFolders).toHaveBeenCalledTimes(2)
@@ -658,7 +649,7 @@ describe('useModelStore', () => {
       await store.getLoadedModelFolder('checkpoints')
       expect(api.getModelFolders).toHaveBeenCalledTimes(1)
 
-      httpSupportsModelTypeTags.value = true
+      remoteConfig.value = { supports_model_type_tags: true }
 
       await nextTick()
       await nextTick()

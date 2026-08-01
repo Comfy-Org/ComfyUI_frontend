@@ -5,7 +5,6 @@ import {
   ServerFeatureFlag,
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
-import { httpSupportsModelTypeTags } from '@/platform/assets/composables/useModelTypeTagsRefresh'
 import * as distributionTypes from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
@@ -386,57 +385,18 @@ describe('useFeatureFlags', () => {
 
   describe('supportsModelTypeTags', () => {
     afterEach(() => {
-      httpSupportsModelTypeTags.value = undefined
-      localStorage.clear()
+      remoteConfig.value = {}
     })
 
-    it('prefers the HTTP /features value over the websocket flag', () => {
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
-      httpSupportsModelTypeTags.value = false
-
-      const { flags } = useFeatureFlags()
-
-      expect(flags.supportsModelTypeTags).toBe(false)
-      expect(api.getServerFeature).not.toHaveBeenCalled()
-    })
-
-    it('lets a dev override beat the HTTP /features value', () => {
-      vi.mocked(api.getServerFeature).mockReturnValue(false)
-      httpSupportsModelTypeTags.value = false
-      localStorage.setItem(
-        `ff:${ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS}`,
-        'true'
-      )
+    it('uses the remote config value', () => {
+      remoteConfig.value = { supports_model_type_tags: true }
 
       const { flags } = useFeatureFlags()
 
       expect(flags.supportsModelTypeTags).toBe(true)
     })
 
-    it('ignores a non-boolean dev override and falls through to HTTP resolution', () => {
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
-      httpSupportsModelTypeTags.value = false
-      localStorage.setItem(
-        `ff:${ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS}`,
-        '"false"'
-      )
-
-      const { flags } = useFeatureFlags()
-
-      expect(flags.supportsModelTypeTags).toBe(false)
-      expect(api.getServerFeature).not.toHaveBeenCalled()
-    })
-
-    it('uses an HTTP-served true value', () => {
-      vi.mocked(api.getServerFeature).mockReturnValue(false)
-      httpSupportsModelTypeTags.value = true
-
-      const { flags } = useFeatureFlags()
-
-      expect(flags.supportsModelTypeTags).toBe(true)
-    })
-
-    it('falls back to the websocket flag when HTTP has not served the key', () => {
+    it('falls back to the server feature flag when remote config omits it', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
           if (path === ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS) return true
@@ -461,23 +421,6 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
 
       expect(flags.supportsModelTypeTags).toBe(false)
-    })
-
-    it('leaves other server flags on the websocket path', () => {
-      httpSupportsModelTypeTags.value = false
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) => {
-          if (path === ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA) return true
-          return defaultValue
-        }
-      )
-
-      const { flags } = useFeatureFlags()
-
-      expect(flags.supportsPreviewMetadata).toBe(true)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
-        ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA
-      )
     })
   })
 

@@ -1,7 +1,6 @@
 import { computed, reactive, readonly } from 'vue'
 import type { Ref } from 'vue'
 
-import { httpSupportsModelTypeTags } from '@/platform/assets/composables/useModelTypeTagsRefresh'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
@@ -248,23 +247,11 @@ export function useFeatureFlags() {
         'off'
       )
     },
-    /**
-     * Server capability, deliberately not resolved through remoteConfig:
-     * refreshRemoteConfig clears to {} on any fetch error (would flap this
-     * flag and trigger spurious model reloads), lacks reconnect/visibility
-     * triggers, and has no response-ordering guard (FE-1439 tracks
-     * consolidation). The HTTP `/features` value is preferred because it can
-     * refresh mid-session; the websocket copy only arrives once per
-     * connection and covers backends without the HTTP key.
-     */
     get supportsModelTypeTags() {
-      const override = getDevOverride<unknown>(
-        ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS
-      )
-      if (typeof override === 'boolean') return override
-      return (
-        httpSupportsModelTypeTags.value ??
-        api.getServerFeature(ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS, false)
+      return resolveFlag(
+        ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
+        remoteConfig.value.supports_model_type_tags,
+        false
       )
     }
   })
