@@ -6,6 +6,7 @@ import type { CoachId } from './onboardingTours'
 export interface RectTarget {
   getRect: () => DOMRect | null
   onMove: (notify: () => void) => () => void
+  dispose?: () => void
 }
 
 export type CoachTarget = HTMLElement | RectTarget

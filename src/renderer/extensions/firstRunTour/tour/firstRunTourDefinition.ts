@@ -6,7 +6,11 @@ import {
   unregisterCoachmark
 } from '@/platform/onboarding/coachmarkRegistry'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
-import type { CoachId, CoachStep } from '@/platform/onboarding/onboardingTours'
+import type {
+  CoachId,
+  CoachStep,
+  TourResolution
+} from '@/platform/onboarding/onboardingTours'
 import { app } from '@/scripts/app'
 
 import { resolveTourRoles } from '../roles/resolveTourRoles'
@@ -51,7 +55,10 @@ function registerCanvasTargets(sequence: TourStep[]) {
     registered.push([id, target])
   }
   releaseRegistered = () => {
-    for (const [id, target] of registered) unregisterCoachmark(id, target)
+    for (const [id, target] of registered) {
+      unregisterCoachmark(id, target)
+      target.dispose?.()
+    }
   }
 }
 
@@ -121,16 +128,19 @@ function toCoachStep(
 export async function firstRunTourSteps(
   templateId: string | undefined,
   runState: Readonly<Ref<RunState>>
-): Promise<CoachStep[]> {
+): Promise<TourResolution> {
   releaseFirstRunTargets()
   const graph = app.rootGraph
   const roles = graph ? resolveTourRoles(graph, templateId) : null
-  if (!roles) return []
+  if (!roles) return { steps: [], reason: 'no_roles' }
 
   const sequence = sequenceBuilder(roles)
-  if (sequence.every((step) => step.kind === 'run')) return []
+  if (sequence.every((step) => step.kind === 'run'))
+    return { steps: [], reason: 'run_only' }
 
   registerCanvasTargets(sequence)
   const context: StepContext = { shape: tourShape(roles), runState }
-  return sequence.map((step, index) => toCoachStep(step, index, context))
+  return {
+    steps: sequence.map((step, index) => toCoachStep(step, index, context))
+  }
 }

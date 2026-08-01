@@ -93,16 +93,19 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
     ).toContain('not_started')
   })
 
-  it('says nothing when the user has already had the tour', async () => {
+  it('tells a repeat user apart from a coverage failure', async () => {
     settings.store.set(TOUR_SEEN_SETTING, ['firstRun'])
     registerTour('firstRun', () => Promise.resolve([]))
     const store = mountStore()
 
     await expect(store.startTour('firstRun')).resolves.toBe(false)
     expect(
-      stages(),
-      'someone who has had their tour is not a coverage failure'
-    ).not.toContain('not_started')
+      telemetry.track,
+      'counted as a plain no-start, a repeat user reads as a tour that failed to open'
+    ).toHaveBeenCalledWith(
+      'not_started',
+      expect.objectContaining({ not_started_reason: 'already_seen' })
+    )
   })
 
   it('says nothing about a tour that did start', async () => {

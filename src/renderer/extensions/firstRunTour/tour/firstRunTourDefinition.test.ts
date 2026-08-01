@@ -15,6 +15,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import { TOUR_ROLE_PINS } from '../roles/tourRolePins'
 import type { RolePin } from '../roles/tourRolePins'
+import type * as CanvasCoachTarget from './canvasCoachTarget'
 import {
   firstRunTourSteps,
   releaseFirstRunTargets
@@ -29,6 +30,23 @@ const NO_PROMPT = 'gsc_advanced_3_2'
 const runState = ref<RunState>('idle')
 const framings: { glide?: boolean }[] = []
 
+const disposals = vi.hoisted(() => ({ spy: vi.fn() }))
+vi.mock('./canvasCoachTarget', async (importOriginal) => {
+  const actual = await importOriginal<typeof CanvasCoachTarget>()
+  return {
+    canvasNodeTarget: (...args: Parameters<typeof actual.canvasNodeTarget>) => {
+      const target = actual.canvasNodeTarget(...args)
+      return {
+        ...target,
+        dispose: () => {
+          disposals.spy()
+          target.dispose?.()
+        }
+      }
+    }
+  }
+})
+
 vi.mock('./cameraFraming', () => ({
   frameNode: (_id: unknown, _signal: AbortSignal, options = {}) => {
     framings.push(options)
@@ -36,7 +54,12 @@ vi.mock('./cameraFraming', () => ({
   }
 }))
 
-function buildSteps(templateId: keyof typeof TOUR_ROLE_PINS | string) {
+async function buildSteps(templateId: keyof typeof TOUR_ROLE_PINS | string) {
+  const { steps } = await firstRunTourSteps(templateId, runState)
+  return steps
+}
+
+function buildResolution(templateId: keyof typeof TOUR_ROLE_PINS | string) {
   return firstRunTourSteps(templateId, runState)
 }
 
@@ -80,6 +103,7 @@ function loadTemplate(templateId: keyof typeof TOUR_ROLE_PINS): LGraph {
 describe('firstRunTourSteps', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    disposals.spy.mockClear()
   })
 
   afterEach(() => {
@@ -94,16 +118,19 @@ describe('firstRunTourSteps', () => {
   it('gives a template the tour does not support no steps', async () => {
     loadTemplate(FROM_IMAGE)
 
-    await expect(buildSteps('some_shared_workflow')).resolves.toEqual([])
+    await expect(
+      buildResolution('some_shared_workflow'),
+      'an unsupported template needs pins, which is a different fix from drift'
+    ).resolves.toEqual({ steps: [], reason: 'no_roles' })
   })
 
   it('gives no steps when every pin has drifted and only Run is left', async () => {
     appState.graph = new LGraph()
 
     await expect(
-      buildSteps(FROM_IMAGE),
+      buildResolution(FROM_IMAGE),
       'a lone "click Run" step is not worth taking over the screen for'
-    ).resolves.toEqual([])
+    ).resolves.toEqual({ steps: [], reason: 'run_only' })
   })
 
   it.for<{ templateId: keyof typeof TOUR_ROLE_PINS; names: string[] }>([
@@ -181,5 +208,24 @@ describe('firstRunTourSteps', () => {
       targetMounted(FIRST_RUN_COACH_IDS.source),
       'a finished tour must not leave its targets behind'
     ).toBe(false)
+  })
+
+  it('releases what each target watches, not just its registration', async () => {
+    loadTemplate(FROM_IMAGE)
+    const steps = await buildSteps(FROM_IMAGE)
+    const onCanvas = steps.filter(
+      (s) =>
+        s.kind === 'spotlight' &&
+        s.coachId &&
+        s.coachId !== FIRST_RUN_COACH_IDS.runButton
+    )
+    expect(onCanvas.length).toBeGreaterThan(0)
+
+    releaseFirstRunTargets()
+
+    expect(
+      disposals.spy,
+      'unregistering only hides a target; its observers run until it is disposed'
+    ).toHaveBeenCalledTimes(onCanvas.length)
   })
 })

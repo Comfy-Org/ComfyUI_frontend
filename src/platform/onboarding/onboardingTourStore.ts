@@ -5,6 +5,7 @@ import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
+  OnboardingTourNotStartedReason,
   OnboardingTourSkipReason,
   OnboardingTourStage
 } from '@/platform/telemetry/types'
@@ -30,13 +31,14 @@ const DEFER_TIMEOUT_MS = 8000
 /** Empty when a runtime resolver fails, so one bad graph costs only its own tour. */
 async function resolveDefinition(
   definition: TourDefinition
-): Promise<CoachStep[]> {
-  if (Array.isArray(definition)) return definition
+): Promise<{ steps: CoachStep[]; reason?: OnboardingTourNotStartedReason }> {
+  if (Array.isArray(definition)) return { steps: definition }
   try {
-    return await definition()
+    const resolution = await definition()
+    return Array.isArray(resolution) ? { steps: resolution } : resolution
   } catch (error) {
     console.error('coachmark tour definition failed', error)
-    return []
+    return { steps: [] }
   }
 }
 
@@ -327,13 +329,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const run = nextRun()
     if (!dispatch({ type: 'requested', tour: entryPath, run })) return false
     const built = await resolveDefinition(definition)
-    const resolved = resolveSteps(built, targetMounted)
+    const resolved = resolveSteps(built.steps, targetMounted)
     if (!resolved.length) {
       dispatch({ type: 'resolvedEmpty', run })
-      telemetry?.trackOnboardingTour('not_started', {
-        tour: entryPath,
-        step_count: 0
-      })
+      reportNotStarted(entryPath, built.reason ?? 'no_steps')
       return false
     }
     // Refused when this run ended while its definition was still resolving.
@@ -343,9 +342,24 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     return true
   }
 
+  /** Says why a qualifying user got no tour, so coverage stays measurable. */
+  function reportNotStarted(
+    entryPath: EntryPath,
+    reason: OnboardingTourNotStartedReason
+  ) {
+    telemetry?.trackOnboardingTour('not_started', {
+      tour: entryPath,
+      step_count: 0,
+      not_started_reason: reason
+    })
+  }
+
   /** Starts an unseen tour; false when nothing started. */
   async function startTour(entryPath: EntryPath): Promise<boolean> {
-    if (hasSeenTour(entryPath)) return false
+    if (hasSeenTour(entryPath)) {
+      reportNotStarted(entryPath, 'already_seen')
+      return false
+    }
     return begin(entryPath)
   }
 

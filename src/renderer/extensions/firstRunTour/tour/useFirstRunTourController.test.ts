@@ -12,6 +12,7 @@ import type {
 const TOUR_WORKFLOW = { path: 'tour.json' }
 const OTHER_WORKFLOW = { path: 'other.json' }
 const INTRO_PREVIEW_MS = 500
+const OFFLINE_GRACE_MS = 20_000
 
 const mocks = vi.hoisted(() => ({
   canRunWorkflows: { value: true },
@@ -291,6 +292,54 @@ describe('useFirstRunTourController', () => {
         mocks.releaseFirstRunTargets,
         'resolving the steps registered them, and no tour will end to release them'
       ).toHaveBeenCalled()
+    })
+  })
+
+  describe('a run behind a dropped socket', () => {
+    /** The api the controller listens on — `freshController` resets modules. */
+    async function generatingRun() {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      expect(mocks.runState.value).toBe('generating')
+      const { api } = await import('@/scripts/api')
+      return api
+    }
+
+    it('stops promising a result once the socket stays gone', async () => {
+      const api = await generatingRun()
+
+      api.dispatchCustomEvent('reconnecting')
+      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS)
+
+      expect(
+        mocks.runState.value,
+        'nothing reports a run whose socket never came back, so the card waits forever'
+      ).toBe('failed')
+    })
+
+    it('keeps waiting when the socket comes back', async () => {
+      const api = await generatingRun()
+
+      api.dispatchCustomEvent('reconnecting')
+      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS / 2)
+      api.dispatchCustomEvent('reconnected')
+      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS)
+
+      expect(
+        mocks.runState.value,
+        'a blink of connection loss must not fail a run that is still going'
+      ).toBe('generating')
+    })
+
+    it('leaves a run that is still reporting alone', async () => {
+      await generatingRun()
+
+      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS * 3)
+
+      expect(
+        mocks.runState.value,
+        'video takes minutes; a timer that does not need the socket to drop fails healthy runs'
+      ).toBe('generating')
     })
   })
 
