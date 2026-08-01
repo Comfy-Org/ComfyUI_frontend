@@ -20,11 +20,14 @@ import { createTestingPinia } from '@pinia/testing'
 
 // Hoisted mocks for dynamic imports
 const { mockDistributionTypes } = vi.hoisted(() => ({
+  // A coherent cloud build: the real module derives isCloud/isDesktop from
+  // DISTRIBUTION, so these three must agree or the fixture describes a build
+  // that cannot exist. The suite depends on isCloud being true (the unified
+  // auth remint paths), so 'cloud' is the distribution that fits.
   mockDistributionTypes: {
     isCloud: true,
-    isDesktop: true,
-    // Matches the global __DISTRIBUTION__ stub in vitest.setup.ts.
-    DISTRIBUTION: 'localhost'
+    isDesktop: false,
+    DISTRIBUTION: 'cloud'
   }
 }))
 
@@ -52,7 +55,8 @@ vi.stubGlobal('fetch', mockFetch)
 
 /**
  * Parsed request body of the POST /customers call, or undefined if none was
- * made. `signup_source` is 'localhost' under test (see vitest.setup.ts).
+ * made. `signup_source` is 'cloud' under test — this suite mocks
+ * `@/platform/distribution/types` wholesale (see mockDistributionTypes).
  */
 const customerRequestBody = (): Record<string, unknown> | undefined => {
   const customerCall = mockFetch.mock.calls.find(([url]) =>
@@ -477,7 +481,7 @@ describe('useAuthStore', () => {
           method: 'POST',
           body: JSON.stringify({
             turnstile_token: 'turnstile-abc',
-            signup_source: 'localhost'
+            signup_source: 'cloud'
           })
         })
       )
@@ -492,7 +496,7 @@ describe('useAuthStore', () => {
 
       // The body is always sent now (it carries signup_source), so absence of
       // the token is what must be asserted -- not absence of the body.
-      expect(customerRequestBody()).toEqual({ signup_source: 'localhost' })
+      expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
     })
 
     it('rolls back the orphaned Firebase user when customer creation fails', async () => {
@@ -838,7 +842,7 @@ describe('useAuthStore', () => {
 
         await store.loginWithGoogle()
 
-        expect(customerRequestBody()).toEqual({ signup_source: 'localhost' })
+        expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
       })
 
       it('should handle Google sign in errors', async () => {
@@ -881,7 +885,7 @@ describe('useAuthStore', () => {
 
         await store.loginWithGithub()
 
-        expect(customerRequestBody()).toEqual({ signup_source: 'localhost' })
+        expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
       })
 
       it('should handle Github sign in errors', async () => {
@@ -1201,7 +1205,7 @@ describe('useAuthStore', () => {
       // Tagging every call (not just the signup call sites) is what makes the
       // attribution immune to a new call site forgetting to pass it; the
       // backend only emits account:created for the call that actually creates.
-      expect(customerRequestBody()).toEqual({ signup_source: 'localhost' })
+      expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
     })
 
     it('preserves caller payload alongside signup_source', async () => {
@@ -1209,7 +1213,7 @@ describe('useAuthStore', () => {
 
       expect(customerRequestBody()).toEqual({
         turnstile_token: 'token-xyz',
-        signup_source: 'localhost'
+        signup_source: 'cloud'
       })
     })
 
