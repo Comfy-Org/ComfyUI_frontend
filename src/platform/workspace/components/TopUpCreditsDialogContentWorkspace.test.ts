@@ -1,7 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
@@ -174,8 +173,17 @@ function topupResponse(
   }
 }
 
-function renderDialog() {
+const VISA = { id: 'pm_1', type: 'card', brand: 'Visa', last4: '4242' } as const
+const MASTERCARD = {
+  id: 'pm_2',
+  type: 'card',
+  brand: 'Mastercard',
+  last4: '5100'
+} as const
+
+function renderDialog(props: Record<string, unknown> = {}) {
   return render(TopUpCreditsDialogContentWorkspace, {
+    props,
     global: {
       plugins: [i18n],
       stubs: {
@@ -192,18 +200,6 @@ function renderDialog() {
 async function clickAddCredits() {
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Add credits' }))
-}
-
-async function armSavedMethod() {
-  await fireEvent(
-    window,
-    new KeyboardEvent('keydown', {
-      metaKey: true,
-      shiftKey: true,
-      code: 'Digit9'
-    })
-  )
-  await nextTick()
 }
 
 describe('TopUpCreditsDialogContentWorkspace', () => {
@@ -278,8 +274,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       errorMessage: null
     })
 
-    renderDialog()
-    await armSavedMethod()
+    renderDialog({ savedMethods: [VISA] })
     await clickAddCredits()
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Pay $50.00' }))
@@ -295,8 +290,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       errorMessage: 'Your card has insufficient funds.'
     })
 
-    renderDialog()
-    await armSavedMethod()
+    renderDialog({ savedMethods: [VISA] })
     await clickAddCredits()
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Pay $50.00' }))
@@ -373,8 +367,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('shows the confirm step instead of charging when a saved method exists', async () => {
-    renderDialog()
-    await armSavedMethod()
+    renderDialog({ savedMethods: [VISA] })
 
     await clickAddCredits()
 
@@ -390,8 +383,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   it('charges only after the confirm step pay button is clicked', async () => {
     mockTopup.mockResolvedValue(topupResponse('completed'))
 
-    renderDialog()
-    await armSavedMethod()
+    renderDialog({ savedMethods: [VISA] })
     await clickAddCredits()
 
     const user = userEvent.setup()
@@ -404,8 +396,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     mockTopup.mockResolvedValue(topupResponse('completed'))
     mockBalance.value = { amountMicros: 46_450 * 1_000_000 }
 
-    renderDialog()
-    await armSavedMethod()
+    renderDialog({ savedMethods: [VISA] })
     await clickAddCredits()
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Pay $50.00' }))
@@ -428,8 +419,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   it('routes the success Billing & invoices link to workspace settings', async () => {
     mockTopup.mockResolvedValue(topupResponse('completed'))
 
-    renderDialog()
-    await armSavedMethod()
+    renderDialog({ savedMethods: [VISA] })
     await clickAddCredits()
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Pay $50.00' }))
@@ -443,8 +433,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   it('shows the declined step with the failure reason after a rejected charge', async () => {
     mockTopup.mockRejectedValue(new Error('Insufficient funds'))
 
-    renderDialog()
-    await armSavedMethod()
+    renderDialog({ savedMethods: [VISA] })
     await clickAddCredits()
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Pay $50.00' }))
@@ -460,9 +449,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('shows a method picker instead of the Change row for multiple saved methods', async () => {
-    renderDialog()
-    await armSavedMethod()
-    await armSavedMethod()
+    renderDialog({ savedMethods: [VISA, MASTERCARD] })
     await clickAddCredits()
 
     expect(
@@ -472,8 +459,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('routes Change on the confirm step to the billing portal', async () => {
-    renderDialog()
-    await armSavedMethod()
+    renderDialog({ savedMethods: [VISA] })
     await clickAddCredits()
 
     const user = userEvent.setup()

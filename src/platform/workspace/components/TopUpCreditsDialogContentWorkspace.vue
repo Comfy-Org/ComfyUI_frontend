@@ -54,7 +54,7 @@
           {{ formatNumber(creditsModel) }}
         </span>
         <div
-          v-if="savedMethods.length === 1"
+          v-if="savedMethods?.length === 1"
           class="flex h-10 items-center gap-3 rounded-lg bg-secondary-background px-4"
         >
           <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
@@ -376,7 +376,6 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -394,8 +393,20 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { isInsufficientCredits = false } = defineProps<{
+// BE contract pending: the parent supplies the workspace's saved payment
+// methods once the billing status/preview response carries them; the charge
+// call will need the chosen method id. Null keeps the confirm step
+// unreachable, matching today's behavior.
+interface SavedPaymentMethod {
+  id: string
+  type: 'card' | 'alipay' | 'bank'
+  brand?: string
+  last4?: string
+}
+
+const { isInsufficientCredits = false, savedMethods = null } = defineProps<{
   isInsufficientCredits?: boolean
+  savedMethods?: SavedPaymentMethod[] | null
 }>()
 
 const { t } = useI18n()
@@ -432,47 +443,17 @@ const step = ref<'amount' | 'confirm' | 'success' | 'declined' | 'verifying'>(
 const successSummary = ref<{ previous: number; added: number } | null>(null)
 const declineReason = ref<string | null>(null)
 
-interface SavedPaymentMethod {
-  id: string
-  type: 'card' | 'alipay' | 'bank'
-  brand?: string
-  last4?: string
-}
-
-// BE contract pending: saved methods for the workspace's Stripe customer.
-// Stays empty (confirm step unreachable) until the billing status/preview
-// response carries them. Same contract as the subscription saved-method
-// confirm; the charge call will need the chosen method id.
-// TEMP-DEMO: ?topupdemo=1 arms one mock method, ?topupdemo=2 arms two
-// (picker variant); ⌘⇧9 cycles none → one → two. Strip before PR.
-const DEMO_METHODS: SavedPaymentMethod[] = [
-  { id: 'pm_1', type: 'card', brand: 'Visa', last4: '4242' },
-  { id: 'pm_2', type: 'card', brand: 'Mastercard', last4: '5100' }
-]
-const demoParam = new URLSearchParams(window.location.search).get('topupdemo')
-const savedMethods = ref<SavedPaymentMethod[]>(
-  demoParam ? DEMO_METHODS.slice(0, Number(demoParam) || 1) : []
-)
-const selectedMethodId = ref(savedMethods.value[0]?.id ?? '')
-
-useEventListener(window, 'keydown', (e: KeyboardEvent) => {
-  if (e.metaKey && e.shiftKey && e.code === 'Digit9') {
-    const next = (savedMethods.value.length + 1) % (DEMO_METHODS.length + 1)
-    savedMethods.value = DEMO_METHODS.slice(0, next)
-    selectedMethodId.value = savedMethods.value[0]?.id ?? ''
-    if (!savedMethods.value.length) step.value = 'amount'
-  }
-})
+const selectedMethodId = ref(savedMethods?.[0]?.id ?? '')
 
 const savedMethod = computed(
   () =>
-    savedMethods.value.find((m) => m.id === selectedMethodId.value) ??
-    savedMethods.value[0] ??
+    savedMethods?.find((m) => m.id === selectedMethodId.value) ??
+    savedMethods?.[0] ??
     null
 )
 
 const methodOptions = computed(() => [
-  ...savedMethods.value.map((m) => ({
+  ...(savedMethods ?? []).map((m) => ({
     name: m.type === 'card' ? `${m.brand} ·· ${m.last4}` : (m.brand ?? m.type),
     value: m.id
   })),
@@ -542,7 +523,7 @@ function handlePresetClick(amount: number) {
 }
 
 function handlePrimaryAction() {
-  if (step.value === 'amount' && savedMethods.value.length) {
+  if (step.value === 'amount' && savedMethods?.length) {
     step.value = 'confirm'
     return
   }
