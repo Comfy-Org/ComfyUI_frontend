@@ -1978,7 +1978,6 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
-    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
@@ -2304,6 +2303,7 @@
     "failedToCreateCustomer": "Failed to create customer: {error}",
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
+    "invalidBillingPortalUrl": "Invalid portal URL",
     "failedToPurchaseCredits": "Failed to purchase credits: {error}",
     "failedToFetchSubscription": "Failed to fetch subscription status: {error}",
     "failedToInitiateSubscription": "Failed to initiate subscription: {error}",
@@ -2665,7 +2665,9 @@
       "endOfBillingPeriod": "end of billing period",
       "keepSubscription": "Keep subscription",
       "confirmCancel": "Cancel subscription",
-      "failed": "Failed to cancel subscription"
+      "failed": "Failed to cancel subscription",
+      "workspaceChanged": "Your active workspace changed. Switch back and try again.",
+      "offerUnavailable": "This option isn't available. Please choose another option."
     },
     "downgrade": {
       "title": "Change to {plan} plan?",

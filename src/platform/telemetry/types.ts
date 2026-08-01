@@ -70,6 +70,20 @@ export interface AuthErrorMetadata {
   auth_action: AuthFlowAction
 }
 
+export type UnifiedAuthRetryFailureReason =
+  | 'missing_bearer'
+  | 'non_replayable_body'
+  | 'remint_failed'
+  | 'retry_rejected'
+  | 'retry_request_failed'
+
+export interface UnifiedAuthRetryMetadata {
+  transport: 'axios' | 'fetch'
+  outcome: 'succeeded' | 'failed'
+  final_status?: number
+  failure_reason?: UnifiedAuthRetryFailureReason
+}
+
 /**
  * Survey field ids mapped to answers. Fields are backend-overridable, so all
  * are optional.
@@ -791,6 +805,7 @@ export interface TelemetryProvider {
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
   trackAuthFailed?(metadata: AuthErrorMetadata): void
+  trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
   trackUserLoggedIn?(): void
 
   // Subscription flow events
@@ -918,6 +933,8 @@ export const TelemetryEvents = {
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
   USER_AUTH_FAILED: 'app:user_auth_failed',
   USER_LOGGED_IN: 'app:user_logged_in',
+  UNIFIED_AUTH_RETRY_SUCCEEDED: 'auth.unified.request_retry.succeeded',
+  UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
@@ -1076,6 +1093,7 @@ export type TelemetryEventProperties =
   | AuthMetadata
   | OnboardingTourMetadata
   | AuthErrorMetadata
+  | UnifiedAuthRetryMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext

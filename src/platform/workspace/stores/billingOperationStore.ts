@@ -25,7 +25,7 @@ const ACTION_REQUIRED_INTERVAL_MS = 30_000
 const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000
 const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
-const SUBSCRIPTION_AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
+const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
@@ -93,6 +93,16 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.status === 'pending' &&
         op.type === 'subscription' &&
+        op.workspaceId === workspaceStore.activeWorkspaceId &&
+        op.actionUrl !== null
+    )
+  )
+
+  const topupActionOperation = computed(() =>
+    [...operations.value.values()].find(
+      (op) =>
+        op.status === 'pending' &&
+        op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
         op.actionUrl !== null
     )
@@ -229,10 +239,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function hasTimedOut(operation: BillingOperation): boolean {
     const elapsed = Date.now() - operation.startedAt
-    if (operation.type !== 'subscription') return elapsed > TIMEOUT_MS
-    return operation.authenticationRequiredSeen
-      ? elapsed > SUBSCRIPTION_AUTHENTICATION_TIMEOUT_MS
-      : elapsed > SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS
+    if (operation.type !== 'cancel' && operation.authenticationRequiredSeen) {
+      return elapsed > AUTHENTICATION_TIMEOUT_MS
+    }
+    return operation.type === 'subscription'
+      ? elapsed > SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS
+      : elapsed > TIMEOUT_MS
   }
 
   function stopIfTimedOut(opId: string, operation: BillingOperation): boolean {
@@ -524,6 +536,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     isSettingUp,
     isAddingCredits,
     subscriptionActionOperation,
+    topupActionOperation,
     getOperation,
     startOperation,
     clearOperation
