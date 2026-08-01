@@ -1,6 +1,6 @@
 <template>
   <div
-    class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm"
+    class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
   >
     <div class="flex flex-col items-center gap-4 pt-8">
       <i class="pi pi-check-circle text-5xl text-success-background" />

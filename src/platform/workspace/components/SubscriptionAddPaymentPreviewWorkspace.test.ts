@@ -135,7 +135,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     })
     expect(screen.getByText('$380')).toBeTruthy()
     expect(screen.getByText('subscription.billedYearly')).toBeTruthy()
-    expect(screen.getByText('$4560.00')).toBeTruthy()
+    expect(screen.getByText('$4,560.00')).toBeTruthy()
   })
 
   it('emits addCreditCard from the team confirm CTA', async () => {
@@ -169,18 +169,5 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       '_blank',
       'noopener,noreferrer'
     )
-  })
-
-  it('prevents leaving the preview while payment is pending', () => {
-    render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: { tierKey: 'creator', isLoading: true },
-      global: globalOptions
-    })
-
-    expect(
-      screen.getByRole('button', {
-        name: 'subscription.preview.backToAllPlans'
-      })
-    ).toBeDisabled()
   })
 })

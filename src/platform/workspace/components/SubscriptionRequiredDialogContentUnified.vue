@@ -12,20 +12,30 @@
         // panel stays fixed; below xl the whole dialog scrolls as before.
         isEmbeddedPaymentStep &&
           'xl:h-[min(740px,90vh)] xl:gap-0 xl:overflow-hidden xl:rounded-2xl xl:p-0',
-        isEmbeddedSuccessStep &&
-          'overflow-hidden rounded-2xl bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px]',
-        (isEmbeddedPaymentStep || isEmbeddedSuccessStep) &&
+        (isEmbeddedSuccessStep || isEmbeddedConfirmStep || isDeclinedStep) &&
+          'h-[min(740px,85vh)] overflow-hidden rounded-2xl bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px]',
+        (isEmbeddedPaymentStep ||
+          isEmbeddedSuccessStep ||
+          isEmbeddedConfirmStep ||
+          isDeclinedStep) &&
           'motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out',
         // The w-fit shell hugs min-content on phones; give the embedded
         // steps a real width floor below xl.
-        (isEmbeddedPaymentStep || isEmbeddedSuccessStep) &&
+        (isEmbeddedPaymentStep ||
+          isEmbeddedSuccessStep ||
+          isEmbeddedConfirmStep ||
+          isDeclinedStep) &&
           'max-xl:w-[min(430px,92vw)]',
         isEmbeddedPaymentStep && 'max-xl:h-[85vh]'
       )
     "
   >
     <Button
-      v-if="checkoutStep === 'preview' && !isEmbeddedPaymentStep"
+      v-if="
+        checkoutStep === 'preview' &&
+        !isEmbeddedPaymentStep &&
+        !isEmbeddedConfirmStep
+      "
       size="icon"
       variant="muted-textonly"
       class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
@@ -39,12 +49,7 @@
     <Button
       size="icon"
       variant="muted-textonly"
-      :class="
-        cn(
-          'absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10',
-          isEmbeddedPaymentStep && 'max-xl:hidden'
-        )
-      "
+      class="absolute top-6 right-4 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
       :aria-label="$t('g.close')"
       @click="onClose"
     >
@@ -55,7 +60,12 @@
          stacking "Choose a Plan" above it doubled the header and made this
          step taller than the pricing table. -->
     <div
-      v-if="!isEmbeddedPaymentStep && !isEmbeddedSuccessStep"
+      v-if="
+        !isEmbeddedPaymentStep &&
+        !isEmbeddedSuccessStep &&
+        !isEmbeddedConfirmStep &&
+        !isDeclinedStep
+      "
       class="flex flex-col items-center gap-3"
     >
       <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
@@ -104,10 +114,11 @@
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :use-payment-element="stripePaymentElementEnabled"
+        :saved-methods="savedMethodsForConfirm"
         @add-credit-card="handleTeamSubscribe"
+        @change-payment-method="savedMethodsForConfirm = null"
         @confirm-payment="handleTeamSubscriptionPayment"
         @back="handleBackToPricing"
-        @close="onClose"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -118,10 +129,11 @@
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :use-payment-element="stripePaymentElementEnabled"
+        :saved-methods="savedMethodsForConfirm"
         @add-credit-card="handleAddCreditCard"
+        @change-payment-method="savedMethodsForConfirm = null"
         @confirm-payment="handleSubscriptionPayment"
         @back="handleBackToPricing"
-        @close="onClose"
       />
 
       <SubscriptionTransitionPreviewWorkspace
@@ -144,6 +156,13 @@
       :dark-surface="isEmbeddedSuccessStep"
       @close="handleSuccessClose"
     />
+
+    <SubscriptionPaymentDeclinedWorkspace
+      v-if="checkoutStep === 'declined'"
+      :reason="checkoutDeclineReason"
+      @back="handleDeclinedBack"
+      @update-payment="handleUpdatePayment"
+    />
   </div>
 </template>
 
@@ -158,6 +177,8 @@ import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composa
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
+import SubscriptionPaymentDeclinedWorkspace from './SubscriptionPaymentDeclinedWorkspace.vue'
+import type { SavedPaymentMethod } from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
@@ -180,12 +201,32 @@ const stripePaymentElementEnabled = Boolean(
 // The embedded-payment confirm step keeps the pricing table's dialog
 // dimensions so stepping between them reads as one dialog changing content,
 // not two dialogs. Transition previews (no payment form) stay narrow.
+// Default payment method for the confirming workspace. The backend does not
+// expose this pre-confirm yet; once it does, populate from the preview
+// response and the capture form becomes first-subscribe-only.
+const savedMethodsForConfirm = ref<SavedPaymentMethod[] | null>(null)
+
 const isEmbeddedPaymentStep = computed(
   () =>
     checkoutStep.value === 'preview' &&
     stripePaymentElementEnabled &&
+    !savedMethodsForConfirm.value?.length &&
     (previewVariant.value === 'team-new' ||
       previewVariant.value === 'personal-new')
+)
+
+// Narrow confirms share the success step's width and dark surface: a fresh
+// subscribe once a saved method exists, and every plan-change preview (those
+// always charge the saved method).
+const isEmbeddedConfirmStep = computed(
+  () =>
+    checkoutStep.value === 'preview' &&
+    stripePaymentElementEnabled &&
+    (previewVariant.value === 'team-change' ||
+      previewVariant.value === 'personal-change' ||
+      (!!savedMethodsForConfirm.value?.length &&
+        (previewVariant.value === 'team-new' ||
+          previewVariant.value === 'personal-new')))
 )
 
 // Success after an embedded checkout: same pinned height, narrow width, and
@@ -198,8 +239,13 @@ const isEmbeddedSuccessStep = computed(
       previewVariant.value === 'personal-new')
 )
 
+const isDeclinedStep = computed(() => checkoutStep.value === 'declined')
+
 const {
   checkoutStep,
+  checkoutDeclineReason,
+  handleDeclinedBack,
+  handleUpdatePayment,
   isLoadingPreview,
   loadingTier,
   isSubscribing,
@@ -239,22 +285,27 @@ onMounted(() => {
 // Web Animations API instead, outside the CSS transition machinery. On
 // desktop both steps pin the same height, so this no-ops.
 const contentRoot = ref<HTMLElement>()
-watch(checkoutStep, async (next, prev) => {
-  const el = contentRoot.value
-  if (!el || !stripePaymentElementEnabled) return
-  const between = (a: string, b: string) =>
-    (prev === a && next === b) || (prev === b && next === a)
-  if (!between('preview', 'success')) return
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  const from = el.getBoundingClientRect().height
-  await nextTick()
-  const to = el.getBoundingClientRect().height
-  if (Math.abs(from - to) < 2) return
-  el.animate([{ height: `${from}px` }, { height: `${to}px` }], {
-    duration: 300,
-    easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
-  })
-})
+watch(
+  [checkoutStep, () => !!savedMethodsForConfirm.value?.length] as const,
+  async ([next, nextSaved], [prev, prevSaved]) => {
+    const el = contentRoot.value
+    if (!el || !stripePaymentElementEnabled) return
+    const between = (a: string, b: string) =>
+      (prev === a && next === b) || (prev === b && next === a)
+    const savedFlip =
+      next === 'preview' && prev === 'preview' && nextSaved !== prevSaved
+    if (!between('preview', 'success') && !savedFlip) return
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const from = el.getBoundingClientRect().height
+    await nextTick()
+    const to = el.getBoundingClientRect().height
+    if (Math.abs(from - to) < 2) return
+    el.animate([{ height: `${from}px` }, { height: `${to}px` }], {
+      duration: 300,
+      easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+    })
+  }
+)
 
 // Backspace mirrors the back arrow on the confirm step, but never while an
 // editable element is focused (let it delete text there).
