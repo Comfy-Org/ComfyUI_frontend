@@ -593,7 +593,21 @@ async function handleBuy() {
       }
       step.value = 'success'
     } else if (response.status === 'pending') {
-      billingOperationStore.startOperation(response.billing_op_id, 'topup')
+      const operation = await billingOperationStore.startOperation(
+        response.billing_op_id,
+        'topup'
+      )
+      if (operation.status === 'succeeded') {
+        await Promise.allSettled([fetchBalance(), fetchStatus()])
+        successSummary.value = {
+          previous: previousCredits,
+          added: creditsModel.value
+        }
+        step.value = 'success'
+      } else if (operation.status === 'failed') {
+        declineReason.value = operation.errorMessage
+        step.value = 'declined'
+      }
     } else {
       telemetry?.trackBillingEvent({
         operation: 'topup',

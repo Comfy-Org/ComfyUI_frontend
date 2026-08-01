@@ -215,6 +215,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     mockShouldUseWorkspaceBilling.value = true
     mockFetchBalance.mockResolvedValue(undefined)
     mockFetchStatus.mockResolvedValue(undefined)
+    mockStartOperation.mockReturnValue(new Promise(() => {}))
   })
 
   it('allows a top-up while an unrelated billing operation is pending', () => {
@@ -268,6 +269,42 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockFetchBalance).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
     expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+  })
+
+  it('lands on the success step when a polled top-up succeeds', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+    mockStartOperation.mockResolvedValue({
+      status: 'succeeded',
+      errorMessage: null
+    })
+
+    renderDialog()
+    await armSavedMethod()
+    await clickAddCredits()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    expect(screen.getByText("You're all set")).toBeInTheDocument()
+    expect(mockFetchBalance).toHaveBeenCalledOnce()
+  })
+
+  it('lands on the declined step when a polled top-up fails', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+    mockStartOperation.mockResolvedValue({
+      status: 'failed',
+      errorMessage: 'Your card has insufficient funds.'
+    })
+
+    renderDialog()
+    await armSavedMethod()
+    await clickAddCredits()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    expect(screen.getByText('Payment declined')).toBeInTheDocument()
+    expect(
+      screen.getByText('Your card has insufficient funds.')
+    ).toBeInTheDocument()
   })
 
   it('does not refresh balance or status for a failed top-up', async () => {
