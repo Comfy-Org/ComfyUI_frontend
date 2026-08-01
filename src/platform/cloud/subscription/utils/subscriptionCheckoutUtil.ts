@@ -51,9 +51,7 @@ interface PerformSubscriptionCheckoutOptions {
  * - Calling the backend checkout endpoint
  * - Normalizing error responses
  * - Opening the checkout URL in a new tab when available
- * - Reporting checkout-initiation failures via `trackBillingEvent`, so both
- *   the in-app (PricingTable) and marketing-deep-link (SubscriptionRedirectView)
- *   entry points get failure telemetry
+ * - Reporting checkout-initiation failures via `trackBillingEvent`
  *
  * Callers are responsible for:
  * - Guarding on cloud-only behavior (isCloud)

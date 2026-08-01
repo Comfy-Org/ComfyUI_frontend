@@ -872,8 +872,6 @@ describe('useWorkspaceBilling', () => {
       await expect(billing.cancelSubscription()).rejects.toThrow(
         'processor rejected'
       )
-      // The billing-op poller (billingOperationStore) already fires failure
-      // telemetry for this case — the composable must not fire a duplicate.
       expect(mockTrackBillingEvent).not.toHaveBeenCalled()
     })
 
@@ -910,7 +908,6 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.tier).toBe('CREATOR')
       expect(mockStartOperation).not.toHaveBeenCalled()
       expect(billing.isLoading.value).toBe(false)
-      // Already being in the requested state is not a failure — no telemetry.
       expect(mockTrackBillingEvent).not.toHaveBeenCalled()
     })
 

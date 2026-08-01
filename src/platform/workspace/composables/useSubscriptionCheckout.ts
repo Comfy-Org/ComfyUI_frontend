@@ -751,9 +751,7 @@ export function useSubscriptionCheckout(
   ) {
     if (!shouldUseWorkspaceBilling.value) return
 
-    // A response that resolved but omitted a checkout_url is a
-    // malformed-response shape, not something the caught error (there isn't
-    // one) can categorize — 'unknown' is the honest answer there.
+    // No checkout_url is a malformed response, not a caught error — 'unknown' is honest here.
     const failureCategory = errorCode
       ? 'unknown'
       : categorizeBillingApiError(error)
@@ -793,9 +791,7 @@ export function useSubscriptionCheckout(
           payment_intent_source: paymentIntentSource,
           billing_op_id: response.billing_op_id
         })
-        // Also fires the pre-existing generic event for the two providers
-        // that implement trackMonthlySubscriptionSucceeded but not
-        // trackBillingEvent (Mixpanel, GTM). PostHog implements both.
+        // Also fires the legacy event for providers (Mixpanel, GTM) that don't implement trackBillingEvent.
         telemetry?.trackMonthlySubscriptionSucceeded({
           tier: context.tier,
           cycle: context.cycle,
@@ -967,9 +963,8 @@ export function useSubscriptionCheckout(
     isResubscribing.value = true
     try {
       await resubscribe()
-      // Workspace's resubscribe() call is itself terminal; legacy's only
-      // opens a Stripe tab, so it reports started/pending and lets the
-      // pending-checkout recovery in useSubscription.ts own the terminal.
+      // Workspace's resubscribe() is terminal; legacy only opens Stripe, so it reports
+      // started/pending and lets useSubscription.ts's pending-checkout recovery own the terminal.
       telemetry?.trackBillingEvent(
         shouldUseWorkspaceBilling.value
           ? {

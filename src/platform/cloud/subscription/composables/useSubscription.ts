@@ -206,12 +206,7 @@ function useSubscriptionInternal() {
     reportError
   )
 
-  /**
-   * Raw (unwrapped) checkout initiation. Exposed separately from `subscribe`
-   * so callers that need to observe a rejection directly (e.g. to fire
-   * outcome telemetry) aren't routed through `wrapWithErrorHandlingAsync`,
-   * which resolves instead of re-throwing on failure.
-   */
+  /** Unwrapped `subscribe`, for callers that need rejections to propagate (e.g. telemetry). */
   const subscribeDirect = async (): Promise<void> => {
     const response = await initiateSubscriptionCheckout()
 

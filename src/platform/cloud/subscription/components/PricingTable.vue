@@ -528,9 +528,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           }
         }
       } else {
-        // Failure telemetry now lives in performSubscriptionCheckout itself,
-        // so the marketing deep-link entry point (SubscriptionRedirectView)
-        // gets the same signal without duplicating it here.
+        // Failure telemetry now lives in performSubscriptionCheckout itself.
         await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
           paymentIntentSource: reason
         })
