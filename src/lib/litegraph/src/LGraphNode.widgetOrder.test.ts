@@ -189,6 +189,21 @@ describe('LGraphNode widget ordering', () => {
 
       expect(node.widgets!.map((w) => w.value)).toStrictEqual([5, 20])
     })
+
+    it('should treat invalid named values as absent for legacy fallback', () => {
+      node.addWidget('number', 'steps', 0, null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+      const nodeData = fromPartial({
+        fallbackWidgetsValuesNames: ['seed', 'steps']
+      })
+      node.constructor = Object.assign({}, node.constructor, { nodeData })
+      const info = mockNode([20, 5])
+      Object.assign(info, { widgets_values_named: [] })
+
+      node.configure(info)
+
+      expect(node.widgets!.map((w) => w.value)).toStrictEqual([5, 20])
+    })
   })
 })
 

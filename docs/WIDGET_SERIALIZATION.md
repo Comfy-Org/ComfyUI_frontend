@@ -23,6 +23,7 @@ These correspond to the two data formats in `ComfyMetadata` embedded in output f
 - `LGraphNode.serialize()` checks `widget.serialize === false` (line 967). It does **not** check `widget.options.serialize`. A widget with `options.serialize = false` is still included in `widgets_values`.
 - `LGraphNode.serialize()` only writes `widgets_values` if `this.widgets` is truthy. Nodes that create widgets dynamically (like `PrimitiveNode`) will have no `widgets_values` in serialized output if serialized before widget creation — even if `this.widgets_values` exists on the instance from a prior `configure()` call.
 - `widget.options.serialize` is typed as `IWidgetOptions.serialize` — both properties share the name `serialize` but live at different levels of the widget object.
+- Extensions that append widgets through `node.widgets` should set `widget.serialize = false` on UI-only widgets. Persisted `widgets_values` entries are dense and include only widgets whose `widget.serialize` is not `false`, so extensions must not treat a widget's `node.widgets` index as its workflow-value index. Use `widgets_values_named` when restoring values by widget name.
 
 ## PrimitiveNode and copy/paste
 

@@ -20,6 +20,16 @@ import type { LiteGraph } from '../litegraph'
 import type { RenderShape } from './globalEnums'
 import type { TWidgetValue } from './widgets'
 
+export function isNamedWidgetValues(
+  value: unknown
+): value is Record<string, TWidgetValue> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    return false
+
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 /**
  * An object that implements custom pre-serialization logic via {@link Serialisable.asSerialisable}.
  */

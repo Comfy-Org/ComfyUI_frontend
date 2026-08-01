@@ -90,6 +90,7 @@ import {
   TitleMode
 } from './types/globalEnums'
 import type { ISerialisedNode, SubgraphIO } from './types/serialisation'
+import { isNamedWidgetValues } from './types/serialisation'
 import type {
   IBaseWidget,
   IWidgetOptions,
@@ -988,8 +989,14 @@ export class LGraphNode
           )
       }
 
+      const serializedNamedValues = isNamedWidgetValues(
+        info.widgets_values_named
+      )
+        ? info.widgets_values_named
+        : undefined
+
       const getNamedValues = () => {
-        if (info.widgets_values_named) return info.widgets_values_named
+        if (serializedNamedValues) return serializedNamedValues
 
         const map = this.constructor.nodeData?.fallbackWidgetsValuesNames
         if (!info.widgets_values || !map) return
@@ -1008,7 +1015,7 @@ export class LGraphNode
         reportNamedValuesShadowDiff(
           this,
           diffNamedValuesShadow(namedValues, legacyShadow),
-          Boolean(info.widgets_values_named)
+          Boolean(serializedNamedValues)
         )
       }
 
@@ -1077,7 +1084,8 @@ export class LGraphNode
     if (widgets?.length && this.serialize_widgets) {
       o.widgets_values = []
       o.widgets_values_named = {}
-      for (const [i, widget] of widgets.entries()) {
+      let i = 0
+      for (const widget of widgets) {
         if (widget.serialize === false) continue
         const val = widget.value
         // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
@@ -1085,7 +1093,7 @@ export class LGraphNode
           val != null && typeof val === 'object'
             ? JSON.parse(JSON.stringify(val))
             : (val ?? null)
-        o.widgets_values[i] = serialisedVal
+        o.widgets_values[i++] = serialisedVal
         o.widgets_values_named[widget.name] = serialisedVal
       }
     }

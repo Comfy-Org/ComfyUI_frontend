@@ -383,6 +383,45 @@ describe('useNodeReplacement', () => {
       expect(setNodeId).toHaveBeenCalledWith(1)
     })
 
+    it('should transfer named widget values without positional metadata', () => {
+      const placeholder = createPlaceholderNode(1, 'ResizeImagesByLongerEdge')
+      placeholder.last_serialization!.widgets_values = undefined
+      placeholder.last_serialization!.widgets_values_named = {
+        longer_edge: 768
+      }
+
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode(
+        [
+          { name: 'image', link: null },
+          { name: 'largest_size', link: null }
+        ],
+        [{ name: 'IMAGE', links: null }],
+        [{ name: 'largest_size', value: 0 }]
+      )
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('ResizeImagesByLongerEdge', {
+          new_node_id: 'ImageScaleToMaxDimension',
+          old_node_id: 'ResizeImagesByLongerEdge',
+          old_widget_ids: null,
+          input_mapping: [
+            { new_id: 'image', old_id: 'images' },
+            { new_id: 'largest_size', old_id: 'longer_edge' }
+          ],
+          output_mapping: [{ new_idx: 0, old_idx: 0 }]
+        })
+      ])
+
+      expect(newNode.widgets![0].value).toBe(768)
+    })
+
     it('should skip replacement when new node type is not registered', () => {
       const placeholder = createPlaceholderNode(1, 'UnknownNode')
       const graph = createMockGraph([placeholder])

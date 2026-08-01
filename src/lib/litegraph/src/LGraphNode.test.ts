@@ -541,6 +541,45 @@ describe('LGraphNode', () => {
   })
 
   describe('widget serialization', () => {
+    test('serializes persistable widgets densely for legacy restoration', () => {
+      const source = new LGraphNode('Source')
+      source.serialize_widgets = true
+      source.addWidget('button', 'action', 'Click', null).serialize = false
+      source.addWidget('number', 'steps', 20, null)
+
+      const serialized = source.serialize()
+      expect(serialized.widgets_values).toEqual([20])
+      expect(serialized.widgets_values_named).toEqual({ steps: 20 })
+
+      const restored = new LGraphNode('Restored')
+      restored.addWidget('button', 'action', 'Click', null).serialize = false
+      restored.addWidget('number', 'steps', 0, null)
+      LiteGraph.namedValuesRestore = false
+      restored.configure(serialized)
+
+      expect(restored.widgets!.map((widget) => widget.value)).toEqual([
+        'Click',
+        20
+      ])
+    })
+
+    test('round-trips widget values by name', () => {
+      const source = new LGraphNode('Source')
+      source.serialize_widgets = true
+      source.addWidget('number', 'steps', 20, null)
+      source.addWidget('number', 'seed', 12345, null)
+
+      const restored = new LGraphNode('Restored')
+      restored.addWidget('number', 'seed', 0, null)
+      restored.addWidget('number', 'steps', 0, null)
+      LiteGraph.namedValuesRestore = true
+      restored.configure(source.serialize())
+
+      expect(restored.widgets!.map((widget) => widget.value)).toEqual([
+        12345, 20
+      ])
+    })
+
     test('should only serialize widgets with serialize flag not set to false', () => {
       const node = new LGraphNode('TestNode')
       node.serialize_widgets = true

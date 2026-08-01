@@ -1044,6 +1044,26 @@ describe('SubgraphWidgetPromotion', () => {
 
         expect(firstHost.serialize().widgets_values).toEqual([111])
         expect(secondHost.serialize().widgets_values).toEqual([222])
+        expect(firstHost.serialize().widgets_values_named).toEqual({
+          value: 111
+        })
+        expect(secondHost.serialize().widgets_values_named).toEqual({
+          value: 222
+        })
+      })
+
+      it('keeps named values aligned when a promoted widget is not persisted', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, NUMBER_PAIR)
+        const host = createTestSubgraphNode(subgraph)
+        writePromotedWidgetValue(host, 0, 111)
+        writePromotedWidgetValue(host, 1, 222)
+        host.widgets[0].serialize = false
+
+        const serialized = host.serialize()
+
+        expect(serialized.widgets_values).toEqual([222])
+        expect(serialized.widgets_values_named).toEqual({ second: 222 })
       })
 
       it('does not persist source widget store fallback values after reordering', () => {

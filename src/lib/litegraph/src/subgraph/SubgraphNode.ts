@@ -26,6 +26,7 @@ import type {
   ExportedSubgraphInstance,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { isNamedWidgetValues } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   IBaseWidget,
@@ -475,7 +476,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     super.configure(info)
-    if (!info.widgets_values_named || !LiteGraph.namedValuesRestore)
+    if (
+      !isNamedWidgetValues(info.widgets_values_named) ||
+      !LiteGraph.namedValuesRestore
+    )
       this._applyPromotedWidgetValues(info.widgets_values)
   }
 
@@ -487,6 +491,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     let valueIndex = 0
     for (const input of this.inputs) {
       if (!input.widgetId) continue
+      if (
+        this.widgets.find((widget) => widget.name === input.name)?.serialize ===
+        false
+      )
+        continue
       const value =
         quarantineValuesByInputName.get(input.name) ??
         widgetValues?.[valueIndex]
@@ -917,16 +926,30 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     serialized.properties = serializedProperties
 
-    const widgetValues = this.inputs.flatMap((input) => {
+    const promotedWidgetValues = this.inputs.flatMap((input) => {
       if (!input.widgetId) return []
+      if (
+        this.widgets.find((widget) => widget.name === input.name)?.serialize ===
+        false
+      )
+        return []
       const value = useWidgetValueStore().getWidget(input.widgetId)?.value
-      return [isWidgetValue(value) ? value : undefined]
+      return [
+        { name: input.name, value: isWidgetValue(value) ? value : undefined }
+      ]
     })
+    const widgetValues = promotedWidgetValues.map(({ value }) => value)
 
     if (widgetValues.some((value) => value !== undefined)) {
       serialized.widgets_values = widgetValues
+      serialized.widgets_values_named = Object.fromEntries(
+        promotedWidgetValues.flatMap(({ name, value }) =>
+          value === undefined ? [] : [[name, value] as const]
+        )
+      )
     } else {
       delete serialized.widgets_values
+      delete serialized.widgets_values_named
     }
 
     return serialized
