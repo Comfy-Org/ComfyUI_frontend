@@ -1,6 +1,6 @@
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { watch } from 'vue'
+import { onScopeDispose, watch } from 'vue'
 import type { Router } from 'vue-router'
 
 import { useExecutionStore } from '@/stores/executionStore'
@@ -101,6 +101,13 @@ export function useNewVersionReloadPrompt(
       if (ready) maybeShowPrompt()
     }
   )
+
+  // Don't leak the navigation guard if this consumer is torn down before a
+  // navigation happens.
+  onScopeDispose(() => {
+    removeNavGuard?.()
+    removeNavGuard = undefined
+  })
 
   return {
     accept,
