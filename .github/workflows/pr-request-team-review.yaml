@@ -8,6 +8,10 @@ on:
 permissions:
   pull-requests: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   request-review:
     if: >-
@@ -22,3 +26,4 @@ jobs:
           gh pr edit ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
             --add-reviewer Comfy-org/comfy_frontend_devs
+

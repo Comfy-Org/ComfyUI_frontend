@@ -13,6 +13,13 @@ on:
       - '**/*.yml'
       - '**/*.yaml'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   yaml-lint:
     runs-on: ubuntu-latest
@@ -31,3 +38,4 @@ jobs:
 
       - name: Validate YAML syntax and style
         run: ./scripts/cicd/check-yaml.sh
+

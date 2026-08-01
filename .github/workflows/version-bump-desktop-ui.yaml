@@ -20,6 +20,10 @@ on:
         default: 'main'
         type: string
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.branch }}
+  cancel-in-progress: false
+
 jobs:
   bump-version-desktop-ui:
     runs-on: ubuntu-latest

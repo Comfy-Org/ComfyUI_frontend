@@ -10,6 +10,14 @@ on:
         required: true
         default: 'main'
 
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   update-manager-types:
     runs-on: ubuntu-latest
@@ -104,3 +112,4 @@ jobs:
           delete-branch: true
           add-paths: |
             src/types/generatedManagerTypes.ts
+

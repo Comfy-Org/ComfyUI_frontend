@@ -7,6 +7,10 @@ on:
     paths:
       - 'package.json'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   create-release-branch:
     runs-on: ubuntu-latest
@@ -279,3 +283,4 @@ jobs:
           3. Create a PR targeting that branch
           4. Apply the matching \`core/x.y\` or \`cloud/x.y\` label
           EOF
+
