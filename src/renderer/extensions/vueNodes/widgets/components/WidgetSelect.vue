@@ -1,7 +1,7 @@
 <template>
   <WidgetSelectDropdown
     v-if="isDropdownUIWidget"
-    v-model="assetModelValue"
+    v-model="modelValue"
     :widget
     :node-type="widget.nodeType ?? nodeType"
     :asset-kind="assetKind"
@@ -46,13 +46,6 @@ const props = defineProps<{
 }>()
 
 const modelValue = defineModel<WidgetValue>()
-const assetModelValue = computed({
-  get: () =>
-    typeof modelValue.value === 'string' ? modelValue.value : undefined,
-  set: (value: string | undefined) => {
-    modelValue.value = value
-  }
-})
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {
   if (props.widget.spec && isComboInputSpec(props.widget.spec)) {

@@ -2,10 +2,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
-import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
@@ -27,27 +26,6 @@ const WidgetLayoutFieldStub = defineComponent({
   template: '<div class="relative"><slot /></div>'
 })
 
-const WidgetSelectDefaultHost = defineComponent({
-  components: { WidgetSelectDefault },
-  props: {
-    widget: {
-      type: Object as PropType<SimplifiedWidget<string | undefined>>,
-      required: true
-    },
-    modelValue: [String, Number]
-  },
-  emits: ['update:modelValue'],
-  template: `
-    <WidgetSelectDefault
-      :widget
-      :model-value="modelValue"
-      @update:model-value="$emit('update:modelValue', $event)"
-    >
-      <slot />
-    </WidgetSelectDefault>
-  `
-})
-
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
@@ -64,7 +42,7 @@ describe('WidgetSelectDefault', () => {
 
   function renderComponent(
     widget: SimplifiedWidget<string | undefined>,
-    modelValue?: string,
+    modelValue?: WidgetValue,
     slots?: Record<string, string>
   ) {
     const onUpdate = vi.fn()
@@ -227,26 +205,24 @@ describe('WidgetSelectDefault', () => {
     })
 
     it('keeps numeric values numeric when an option is selected', async () => {
-      const onUpdate = vi.fn()
-      const user = userEvent.setup()
-      render(WidgetSelectDefaultHost, {
-        props: {
-          widget: createWidget([5, 10]),
-          modelValue: 5,
-          'onUpdate:modelValue': onUpdate
-        },
-        global: {
-          plugins: [i18n],
-          stubs: {
-            WidgetLayoutField: WidgetLayoutFieldStub
-          }
-        }
-      })
+      const { onUpdate, user } = renderComponent(createWidget([5, 10]), 5)
 
       await openDropdown(user)
       await user.click(screen.getByRole('option', { name: '10' }))
 
       expect(onUpdate).toHaveBeenCalledWith(10)
+    })
+
+    it('keeps boolean values boolean when an option is selected', async () => {
+      const { onUpdate, user } = renderComponent(
+        createWidget([true, false]),
+        false
+      )
+
+      await openDropdown(user)
+      await user.click(screen.getByRole('option', { name: 'true' }))
+
+      expect(onUpdate).toHaveBeenCalledWith(true)
     })
 
     it('allows selecting an explicit empty string option', async () => {
@@ -392,18 +368,7 @@ describe('WidgetSelectDefault', () => {
     })
 
     it('does not mark a valid numeric option as invalid', () => {
-      render(WidgetSelectDefaultHost, {
-        props: {
-          widget: createWidget([5, 10]),
-          modelValue: 5
-        },
-        global: {
-          plugins: [i18n],
-          stubs: {
-            WidgetLayoutField: WidgetLayoutFieldStub
-          }
-        }
-      })
+      renderComponent(createWidget([5, 10]), 5)
 
       const trigger = screen.getByTestId('widget-select-default-trigger')
       expect(trigger).not.toHaveAttribute('aria-invalid')
