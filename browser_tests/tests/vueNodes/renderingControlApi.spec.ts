@@ -96,12 +96,12 @@ test.describe(
       await expect(
         comfyPage.vueNodes.getNodeLocator(linkedNodes.targetId)
       ).toBeVisible()
-      const remountedSlotBox = await targetSlot.boundingBox()
-      if (!remountedSlotBox) {
-        throw new Error('Remounted target slot geometry unavailable')
-      }
-      expect(remountedSlotBox.x).toBeCloseTo(initialSlotBox.x, 0)
-      expect(remountedSlotBox.y).toBeCloseTo(initialSlotBox.y, 0)
+      await expect
+        .poll(() => targetSlot.boundingBox())
+        .toMatchObject({
+          x: expect.closeTo(initialSlotBox.x, 0),
+          y: expect.closeTo(initialSlotBox.y, 0)
+        })
 
       await comfyPage.page.evaluate(() => {
         window.vueNodeRenderingTestControllers?.[1].clear()

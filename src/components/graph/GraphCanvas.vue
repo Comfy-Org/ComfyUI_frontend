@@ -299,6 +299,7 @@ const allNodes = computed((): VueNodeData[] =>
 const { onNodeMounted, onNodeUnmounted, renderedNodes } = useVueNodeRendering({
   allNodes,
   canvas: () => canvasStore.canvas,
+  enabled: shouldRenderVueNodes,
   nodeManager: () => vueNodeLifecycle.nodeManager.value
 })
 watch(

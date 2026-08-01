@@ -113,6 +113,7 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
   let graphRevision = 0
   let managerAvailable = false
   let nodes: readonly RenderingNode[] = []
+  let nodeIdSet = new Set<string>()
   let visibleCanvasArea: VueNodeRenderArea | null = null
   let frontendRequiredNodeIds: readonly string[] = []
   let renderFrozen = false
@@ -125,8 +126,8 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
   let mountRecomputeScheduled = false
   let snapshot = createSnapshot()
 
-  function knownNodeIds(): Set<string> {
-    return new Set(nodes.map((node) => node.id))
+  function knownNodeIds(): ReadonlySet<string> {
+    return nodeIdSet
   }
 
   function orderedSubset(ids: ReadonlySet<string>): string[] {
@@ -252,10 +253,17 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
     }
   }
 
+  function hasPolicyOwner(): boolean {
+    for (const owner of owners.values()) {
+      if (owner.kind === 'policy') return true
+    }
+    return false
+  }
+
   function recompute(): void {
     mountRecomputeScheduled = false
     pruneState()
-    snapshot = createSnapshot()
+    if (hasPolicyOwner()) snapshot = createSnapshot()
     evaluatePolicies()
     applyContributions()
     notify()
@@ -316,6 +324,7 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
     }
     managerAvailable = state.managerAvailable
     nodes = nextNodes
+    nodeIdSet = new Set(nodes.map((node) => node.id))
     visibleCanvasArea = state.visibleCanvasArea
       ? freezeArea(state.visibleCanvasArea)
       : null

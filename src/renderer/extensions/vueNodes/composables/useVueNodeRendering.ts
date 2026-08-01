@@ -23,7 +23,17 @@ import type {
 interface VueNodeRenderingOptions {
   allNodes: MaybeRefOrGetter<readonly VueNodeData[]>
   canvas: MaybeRefOrGetter<LGraphCanvas | null | undefined>
+  enabled?: MaybeRefOrGetter<boolean>
   nodeManager: MaybeRefOrGetter<GraphNodeManager | null | undefined>
+}
+
+interface FrameState {
+  scale: number | undefined
+  offsetX: number | undefined
+  offsetY: number | undefined
+  canvasWidth: number | undefined
+  canvasHeight: number | undefined
+  tail: readonly unknown[]
 }
 
 function nodeId(
@@ -50,6 +60,7 @@ function visibleArea(canvas: LGraphCanvas | null | undefined) {
 export function useVueNodeRendering({
   allNodes,
   canvas,
+  enabled = true,
   nodeManager
 }: VueNodeRenderingOptions) {
   const canvasStore = useCanvasStore()
@@ -63,7 +74,7 @@ export function useVueNodeRendering({
   const unsubscribe = vueNodeRenderingService.subscribe((nextSnapshot) => {
     snapshot.value = nextSnapshot
   })
-  let lastFrameState: readonly unknown[] = []
+  let lastFrameState: FrameState | undefined
 
   function getFrontendRequiredNodeIds(
     activeCanvas: LGraphCanvas | null | undefined,
@@ -103,36 +114,43 @@ export function useVueNodeRendering({
   }
 
   function refreshRuntime(): void {
+    if (!toValue(enabled)) return
     const activeCanvas = toValue(canvas)
     const manager = toValue(nodeManager)
     const nodes = toValue(allNodes)
     const focusedId = focusedNodeId()
+    const renderFrozen = Boolean(
+      layoutStore.isDraggingVueNodes.value ||
+      layoutStore.isResizingVueNodes.value ||
+      activeCanvas?.isDragging ||
+      activeCanvas?.resizingGroup
+    )
 
     vueNodeRenderingService.updateRuntime({
       graph: activeCanvas?.graph ?? null,
       managerAvailable: Boolean(manager),
-      nodes: manager
-        ? nodes.map((node) => {
-            const area = manager.getNode(node.id)?.renderArea
-            return {
-              id: String(node.id),
-              renderArea: area
-                ? [area[0], area[1], area[2], area[3]]
-                : [0, 0, 0, 0]
-            }
-          })
-        : [],
+      nodes: renderFrozen
+        ? snapshot.value.renderAreas.map(({ id, area }) => ({
+            id,
+            renderArea: area
+          }))
+        : manager
+          ? nodes.map((node) => {
+              const area = manager.getNode(node.id)?.renderArea
+              return {
+                id: String(node.id),
+                renderArea: area
+                  ? [area[0], area[1], area[2], area[3]]
+                  : [0, 0, 0, 0]
+              }
+            })
+          : [],
       visibleCanvasArea: visibleArea(activeCanvas),
       frontendRequiredNodeIds: getFrontendRequiredNodeIds(
         activeCanvas,
         focusedId
       ),
-      renderFrozen: Boolean(
-        layoutStore.isDraggingVueNodes.value ||
-        layoutStore.isResizingVueNodes.value ||
-        activeCanvas?.isDragging ||
-        activeCanvas?.resizingGroup
-      )
+      renderFrozen
     })
     lastFrameState = getFrameState(activeCanvas, focusedId)
   }
@@ -140,43 +158,47 @@ export function useVueNodeRendering({
   function getFrameState(
     activeCanvas: LGraphCanvas | null | undefined,
     focusedId: string | undefined
-  ): readonly unknown[] {
-    return [
-      activeCanvas?.ds.scale,
-      activeCanvas?.ds.offset[0],
-      activeCanvas?.ds.offset[1],
-      activeCanvas?.canvas.width,
-      activeCanvas?.canvas.height,
-      activeCanvas?.isDragging,
-      Boolean(activeCanvas?.resizingGroup),
-      nodeId(activeCanvas?.node_capturing_input),
-      nodeId(activeCanvas?.node_widget?.[0]),
-      nodeId(activeCanvas?.resizing_node),
-      focusedId,
-      isNodeOptionsOpen(),
-      ...Array.from(activeCanvas?.linkConnector.renderLinks ?? [], (link) =>
-        nodeId(link.node)
-      )
-    ]
+  ): FrameState {
+    return {
+      scale: activeCanvas?.ds.scale,
+      offsetX: activeCanvas?.ds.offset[0],
+      offsetY: activeCanvas?.ds.offset[1],
+      canvasWidth: activeCanvas?.canvas.width,
+      canvasHeight: activeCanvas?.canvas.height,
+      tail: [
+        activeCanvas?.isDragging,
+        Boolean(activeCanvas?.resizingGroup),
+        nodeId(activeCanvas?.node_capturing_input),
+        nodeId(activeCanvas?.node_widget?.[0]),
+        nodeId(activeCanvas?.resizing_node),
+        focusedId,
+        isNodeOptionsOpen(),
+        ...Array.from(activeCanvas?.linkConnector.renderLinks ?? [], (link) =>
+          nodeId(link.node)
+        )
+      ]
+    }
   }
 
   function frameStateChanged(
     activeCanvas: LGraphCanvas | null | undefined
   ): boolean {
+    const previousState = lastFrameState
     if (
-      activeCanvas?.ds.scale !== lastFrameState[0] ||
-      activeCanvas?.ds.offset[0] !== lastFrameState[1] ||
-      activeCanvas?.ds.offset[1] !== lastFrameState[2] ||
-      activeCanvas?.canvas.width !== lastFrameState[3] ||
-      activeCanvas?.canvas.height !== lastFrameState[4]
+      !previousState ||
+      activeCanvas?.ds.scale !== previousState.scale ||
+      activeCanvas?.ds.offset[0] !== previousState.offsetX ||
+      activeCanvas?.ds.offset[1] !== previousState.offsetY ||
+      activeCanvas?.canvas.width !== previousState.canvasWidth ||
+      activeCanvas?.canvas.height !== previousState.canvasHeight
     ) {
       return true
     }
 
     const nextState = getFrameState(activeCanvas, focusedNodeId())
     return (
-      nextState.length !== lastFrameState.length ||
-      nextState.some((value, index) => value !== lastFrameState[index])
+      nextState.tail.length !== previousState.tail.length ||
+      nextState.tail.some((value, index) => value !== previousState.tail[index])
     )
   }
 
@@ -216,7 +238,11 @@ export function useVueNodeRendering({
     [
       () => toValue(canvas)?.graph,
       () => toValue(nodeManager),
-      () => toValue(allNodes).map((node) => node.id),
+      () =>
+        toValue(allNodes)
+          .map((node) => node.id)
+          .join('\0'),
+      () => toValue(enabled),
       layoutStore.isDraggingVueNodes,
       layoutStore.isResizingVueNodes,
       () => canvasStore.selectedNodeIds,
@@ -231,6 +257,7 @@ export function useVueNodeRendering({
   )
 
   const runtimeTracker = useRafFn(() => {
+    if (!toValue(enabled)) return
     const activeCanvas = toValue(canvas)
     if (!shouldTrackRuntime(activeCanvas)) return
     if (frameStateChanged(activeCanvas)) refreshRuntime()

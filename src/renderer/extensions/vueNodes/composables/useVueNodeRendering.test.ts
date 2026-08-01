@@ -1,4 +1,4 @@
-import { effectScope } from 'vue'
+import { effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -19,15 +19,21 @@ const raf = vi.hoisted(() => ({
   callback: undefined as (() => void) | undefined
 }))
 const renderingService = vi.hoisted(() => ({
+  nodeMounted: vi.fn(),
+  nodeUnmounted: vi.fn(),
   updateRuntime: vi.fn(),
   unsubscribe: vi.fn()
 }))
 const nodeOptions = vi.hoisted(() => ({ open: false }))
-const layoutState = vi.hoisted(() => ({
-  isDraggingVueNodes: { __v_isRef: true, value: false },
-  isResizingVueNodes: { __v_isRef: true, value: false },
-  version: { __v_isRef: true, value: 0 }
-}))
+const layoutState = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  const { ref } = require('vue') as typeof import('vue')
+  return {
+    isDraggingVueNodes: ref(false),
+    isResizingVueNodes: ref(false),
+    version: ref(0)
+  }
+})
 const renderArea = Object.freeze([
   0, 0, 100, 100
 ] as const satisfies VueNodeRenderArea)
@@ -92,8 +98,8 @@ vi.mock(
         return renderingService.unsubscribe
       },
       updateRuntime: renderingService.updateRuntime,
-      nodeMounted: vi.fn(),
-      nodeUnmounted: vi.fn()
+      nodeMounted: renderingService.nodeMounted,
+      nodeUnmounted: renderingService.nodeUnmounted
     }
   })
 )
@@ -122,39 +128,46 @@ function createCanvas(): LGraphCanvas {
 
 function createNodeManager(): GraphNodeManager {
   return {
-    getNode: () => ({ renderArea }),
+    getNode: vi.fn(() => ({ renderArea })),
     vueNodeData: new Map(),
     cleanup: vi.fn()
   } as unknown as GraphNodeManager
 }
 
+function createNode(id: string): VueNodeData {
+  return {
+    executing: false,
+    id: toNodeId(id),
+    mode: 0,
+    selected: false,
+    title: `Test ${id}`,
+    type: 'Test'
+  }
+}
+
 describe('useVueNodeRendering', () => {
-  let scope: EffectScope
+  let scope: EffectScope | undefined
 
   beforeEach(() => {
     document.body.innerHTML = '<div data-node-id="1"><input /></div>'
     document.querySelector('input')?.focus()
     renderingService.updateRuntime.mockClear()
     renderingService.unsubscribe.mockClear()
+    renderingService.nodeMounted.mockClear()
+    renderingService.nodeUnmounted.mockClear()
     layoutState.isDraggingVueNodes.value = false
     layoutState.isResizingVueNodes.value = false
     nodeOptions.open = false
   })
 
   afterEach(() => {
-    scope.stop()
+    scope?.stop()
+    scope = undefined
   })
 
   it('skips idle frame work and checks numeric state before focused DOM state', () => {
     const canvas = createCanvas()
-    const node: VueNodeData = {
-      executing: false,
-      id: toNodeId('1'),
-      mode: 0,
-      selected: false,
-      title: 'Test',
-      type: 'Test'
-    }
+    const node = createNode('1')
     scope = effectScope()
     scope.run(() => {
       useVueNodeRendering({
@@ -177,5 +190,80 @@ describe('useVueNodeRendering', () => {
 
     expect(renderingService.updateRuntime).toHaveBeenCalledOnce()
     expect(closestSpy).toHaveBeenCalledOnce()
+  })
+
+  it('filters rendered nodes, forwards lifecycle, and disposes runtime state', () => {
+    scope = effectScope()
+    const rendering = scope.run(() =>
+      useVueNodeRendering({
+        allNodes: [createNode('1'), createNode('2')],
+        canvas: createCanvas(),
+        nodeManager: createNodeManager()
+      })
+    )
+    if (!rendering) throw new Error('Rendering scope did not start')
+
+    expect(rendering.renderedNodes.value.map((node) => node.id)).toEqual(['1'])
+
+    rendering.onNodeMounted(toNodeId('1'))
+    rendering.onNodeUnmounted(toNodeId('2'))
+    expect(renderingService.nodeMounted).toHaveBeenCalledWith('1')
+    expect(renderingService.nodeUnmounted).toHaveBeenCalledWith('2')
+
+    scope.stop()
+    scope = undefined
+
+    expect(renderingService.unsubscribe).toHaveBeenCalledOnce()
+    expect(renderingService.updateRuntime).toHaveBeenLastCalledWith({
+      graph: null,
+      managerAvailable: false,
+      nodes: [],
+      visibleCanvasArea: null,
+      frontendRequiredNodeIds: [],
+      renderFrozen: false
+    })
+  })
+
+  it('skips runtime updates while disabled', () => {
+    const enabled = ref(false)
+    const canvas = createCanvas()
+    canvas.dirty_canvas = true
+    scope = effectScope()
+    scope.run(() => {
+      useVueNodeRendering({
+        allNodes: [createNode('1')],
+        canvas,
+        enabled,
+        nodeManager: createNodeManager()
+      })
+    })
+
+    raf.callback?.()
+    expect(renderingService.updateRuntime).not.toHaveBeenCalled()
+
+    enabled.value = true
+    expect(renderingService.updateRuntime).toHaveBeenCalledOnce()
+  })
+
+  it('preserves render areas while rendering is frozen', () => {
+    const manager = createNodeManager()
+    scope = effectScope()
+    scope.run(() => {
+      useVueNodeRendering({
+        allNodes: [createNode('1')],
+        canvas: createCanvas(),
+        nodeManager: manager
+      })
+    })
+
+    layoutState.isDraggingVueNodes.value = true
+
+    expect(renderingService.updateRuntime).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        nodes: [{ id: '1', renderArea }],
+        renderFrozen: true
+      })
+    )
+    expect(manager.getNode).toHaveBeenCalledOnce()
   })
 })

@@ -151,7 +151,7 @@ describe('vueNodeRenderingService', () => {
     )
   })
 
-  it('publishes copied, deeply frozen snapshots and supports unsubscribe', () => {
+  it('publishes copied, deeply frozen snapshots and supports unsubscribe', async () => {
     const service = createVueNodeRenderingService()
     const sourceArea: VueNodeRenderArea = [10, 20, 100, 80]
     const listener = vi.fn()
@@ -173,6 +173,7 @@ describe('vueNodeRenderingService', () => {
 
     unsubscribe()
     service.nodeMounted('1')
+    await Promise.resolve()
     expect(listener).toHaveBeenCalledTimes(2)
   })
 
