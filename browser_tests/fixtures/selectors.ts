@@ -65,6 +65,8 @@ export const TestIds = {
     missingModelReferenceCount: 'missing-model-reference-count',
     missingModelUnsupportedSection:
       'missing-model-import-not-supported-section',
+    missingModelGatedAccess: 'missing-model-gated-access',
+    missingModelGatedHint: 'missing-model-gated-hint',
     missingModelDownload: 'missing-model-download',
     missingModelActions: 'missing-model-actions',
     missingModelDownloadAll: 'missing-model-download-all',
@@ -95,15 +97,18 @@ export const TestIds = {
   },
   topbar: {
     queueButton: 'queue-button',
+    queueButtonIcon: 'queue-button-icon',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
     subscribeButton: 'topbar-subscribe-button',
+    subscribeToRunButton: 'subscribe-to-run-button',
     loginButton: 'login-button',
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
     integratedTabBarActions: 'integrated-tab-bar-actions',
-    actionBarButtons: 'action-bar-buttons'
+    actionBarButtons: 'action-bar-buttons',
+    freeTierQuota: 'free-tier-quota'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
@@ -218,6 +223,7 @@ export const TestIds = {
   },
   appMode: {
     widgetItem: 'app-mode-widget-item',
+    widgetDescription: 'app-mode-widget-description',
     welcome: 'linear-welcome',
     emptyWorkflow: 'linear-welcome-empty-workflow',
     buildApp: 'linear-welcome-build-app',
@@ -239,12 +245,17 @@ export const TestIds = {
     renameInput: 'subgraph-breadcrumb-rename-input',
     menu: (key: string) => `subgraph-breadcrumb-menu-${key}`
   },
+  workflowActions: {
+    viewModeToggle: 'view-mode-toggle'
+  },
   templates: {
     content: 'template-workflows-content',
     workflowCard: (id: string) => `template-workflow-${id}`
   },
   user: {
-    currentUserIndicator: 'current-user-indicator'
+    currentUserButton: 'current-user-button',
+    currentUserIndicator: 'current-user-indicator',
+    currentUserPopover: 'current-user-popover'
   },
   queue: {
     jobHistorySidebar: 'job-history-sidebar',
@@ -276,6 +287,7 @@ export const TestIds = {
     overlay: 'loading-overlay'
   },
   load3d: {
+    categoryMenu: 'load3d-category-menu',
     recordingDuration: 'load3d-recording-duration'
   },
   load3dViewer: {

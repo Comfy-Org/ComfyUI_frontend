@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "套用 Anima LLLite",
+    "inputs": {
+      "end_percent": {
+        "name": "結束百分比"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_patch": {
+        "name": "模型補丁"
+      },
+      "start_percent": {
+        "name": "起始百分比"
+      },
+      "strength": {
+        "name": "強度"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "將音訊音量調整指定的分貝（dB）數值。",
     "display_name": "音訊調整音量",
@@ -1177,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "音量。0 = 正常，100 = 2.0 倍，-50 = 0.5 倍。"
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual：支援 20 種語言（英語、中文、日語、韓語、墨西哥西班牙語、卡斯提利亞西班牙語、印尼語、德語、巴西葡萄牙語、法語、泰語、越南語、馬來語、菲律賓語、義大利語、俄語、荷蘭語、波蘭語、土耳其語、瑞典語），並可透過「[5.5s:8.0s] ...」時間戳進行逐句時間控制。seed-audio-1.0：僅支援英語與中文，不支援時間控制。"
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "音高變化（半音，-12 至 12）。"
@@ -2010,9 +2040,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "temperature"
       },
       "prompt": {
         "name": "prompt",
@@ -5861,6 +5888,212 @@
       }
     }
   },
+  "HeyGenAvatarVideoNode": {
+    "description": "從 HeyGen 虛擬分身產生一段講話主持人影片。包含 HeyGen 最受歡迎的公開分身；可提供任何 look ID 來覆蓋預設分身。",
+    "display_name": "HeyGen 虛擬分身影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "輸出長寬比。'auto' 會依分身來源影片自動設定。"
+      },
+      "background_color": {
+        "name": "背景顏色",
+        "tooltip": "選填純色背景，請輸入十六進位色碼（如 '#00ff00'）。留空則使用分身原本背景。"
+      },
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "custom_avatar_id": {
+        "name": "自訂分身 ID",
+        "tooltip": "選填 HeyGen 分身 look ID。設定後會覆蓋上方選擇的分身。可使用 HeyGen 3000+ 公開 look（或您的私人分身）。"
+      },
+      "engine": {
+        "name": "引擎",
+        "tooltip": "渲染引擎；每個選項僅列出支援該引擎的分身。'auto' 提供所有分身並自動選擇最佳引擎（優先 Avatar IV）。Avatar V 最高畫質，Avatar III 最經濟。"
+      },
+      "engine_avatar": {
+        "name": "分身"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出影片解析度。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "不會傳送至 HeyGen；更改此值可強制重新產生。"
+      },
+      "speech": {
+        "name": "語音",
+        "tooltip": "用文字腳本（HeyGen 文字轉語音）或自訂音訊驅動分身。"
+      },
+      "speech_custom_voice_id": {
+        "name": "自訂語音 ID"
+      },
+      "speech_text": {
+        "name": "文字"
+      },
+      "speech_voice": {
+        "name": "語音"
+      },
+      "speech_voice_speed": {
+        "name": "語速"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "從人物照片或文字提示（生成角色）建立您自己的可重複使用 HeyGen 分身。將產生的 avatar_id 輸入至 HeyGen 虛擬分身影片的 custom_avatar_id，並將 ID 儲存以便未來工作流程重複使用。",
+    "display_name": "HeyGen 建立分身",
+    "inputs": {
+      "source": {
+        "name": "來源",
+        "tooltip": "可從文字提示生成新角色，或從連接的人物照片建立分身。"
+      },
+      "source_prompt": {
+        "name": "提示"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "avatar_id",
+        "tooltip": "分身 look ID。請傳遞至 HeyGen 虛擬分身影片的 custom_avatar_id；建議儲存以便日後重複使用。"
+      },
+      "1": {
+        "name": "預覽",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "將任何人物圖像動畫化為對嘴同步的說話影片（HeyGen Avatar IV）。可用文字腳本或自有音訊驅動。",
+    "display_name": "HeyGen 說話照片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "輸出長寬比。'auto' 會依照輸入圖像。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "expressiveness": {
+        "name": "expressiveness",
+        "tooltip": "動畫臉部與動作的表現力程度。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要動畫化的人物圖像。若大於 2K 會自動縮小。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "輸出影片解析度。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "不會傳送至 HeyGen；更改此值可強制重新執行。"
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "以文字腳本（HeyGen 文字轉語音）或自有音訊驅動 avatar。"
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "text"
+      },
+      "speech_voice": {
+        "name": "voice"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "使用 HeyGen 的 Starfish TTS 引擎將文字轉為語音音訊。包含 HeyGen 最受歡迎的 17 種語言語音。",
+    "display_name": "HeyGen 文字轉語音",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "custom_voice_id": {
+        "name": "custom_voice_id",
+        "tooltip": "可選的 HeyGen 語音 ID。設定後會覆蓋上方選擇的語音。該語音必須支援 Starfish 引擎。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "不會傳送至 HeyGen；更改此值可強制重新執行。"
+      },
+      "speed": {
+        "name": "speed",
+        "tooltip": "語音速度倍率。"
+      },
+      "ssml": {
+        "name": "ssml",
+        "tooltip": "將文字視為 SSML 標記（用於停頓、強調與發音控制）。"
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "要合成的文字（最多 5000 字元）。產生的語音必須至少 1 秒。"
+      },
+      "voice": {
+        "name": "voice",
+        "tooltip": "要使用的語音（精選自 HeyGen 最受歡迎且支援 Starfish 的語音）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "將語音影片翻譯成其他語言。會複製原說話者的聲音，並重新動畫化嘴型以配合翻譯後的語音。",
+    "display_name": "HeyGen 影片翻譯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "「speed」速度較快；「precision」可產生更高品質的唇形同步，但價格為兩倍。"
+      },
+      "output_language": {
+        "name": "目標語言",
+        "tooltip": "翻譯後影片的目標語言。"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "不會傳送給 HeyGen；更改此值可強制重新執行。"
+      },
+      "speaker_count": {
+        "name": "說話者數量",
+        "tooltip": "影片中的說話者數量。0 = 自動偵測。"
+      },
+      "translate_audio_only": {
+        "name": "僅翻譯音訊",
+        "tooltip": "只更換音訊軌道，保留原本的嘴型動作（不進行唇形同步）。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要翻譯語音的影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "在取樣後期，於多個偏移的區塊網格位置平均模型輸出。可消除接縫。",
     "display_name": "HiDream-O1 區塊接縫平滑",
@@ -6264,6 +6497,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "使用 P-Image（Ideogram 的快速文字轉圖像模型）生成圖像。具備強大的字體排版與寫實效果；支援 Ideogram 4.0 結構化 JSON 標註，可精確控制文字、顏色與版面配置。",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "圖像生成的長寬比。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "文字提示。亦可接受 Ideogram 4.0 結構化 JSON 標註（精確顏色以 #RRGGBB 十六進位表示，精確文字字串、邊界框版面）— 若需完全照用，請將 prompt_upsampling 設為 OFF。"
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "在生成前將簡短提示擴展為詳細結構化標註（重寫後的提示會以 final_prompt 返回）。如需自訂 JSON 標註或精確文字，請設為 OFF。"
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "速度／價格／品質等級。MEDIUM 為日常預設；HIGH 適用於複雜提示、細節與困難文字；VERY_LOW/LOW 適合大規模草稿。MEDIUM 以下難以正確渲染困難文字。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "輸出尺寸等級（實際像素依長寬比調整，例如 16:9 在 1K 為 1280x720，2K 為 2560x1440）。建議搭配 HIGH + 2K 以獲得清晰字體排版。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於可重現生成的種子值。當 prompt_upsampling 為 OFF 時，相同種子與設定會產生相同圖像；ON/AUTO 時，每次提示重寫皆不同—如需重現結果，請將 final_prompt 輸出搭配 prompt_upsampling OFF 與相同種子再次生成。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "實際用於生成圖像的提示（若啟用 prompt_upsampling 則為重寫後的結構化標註，否則為原始提示）。如需重現此圖像，請將其與 prompt_upsampling OFF 及相同種子再次輸入。"
       }
     }
   },
@@ -9496,6 +9771,42 @@
       }
     }
   },
+  "LoadVideoDataSetFromFolder": {
+    "description": "從指定資料夾載入影片資料集並回傳影片清單。支援格式：MP4、AVI、MOV、WEBM、MKV、FLV。",
+    "display_name": "載入影片（資料夾）",
+    "inputs": {
+      "folder": {
+        "name": "資料夾",
+        "tooltip": "包含影片檔案的資料夾。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影片",
+        "tooltip": "延遲載入的影片參考；僅在下游需要時才解碼影格。"
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "從指定資料夾載入影片與文字標題配對的資料集並回傳清單。支援格式：MP4、AVI、MOV、WEBM、MKV、FLV。",
+    "display_name": "載入影片-文字（資料夾）",
+    "inputs": {
+      "folder": {
+        "name": "資料夾",
+        "tooltip": "包含影片檔案與 .txt 標題的資料夾。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影片",
+        "tooltip": "延遲載入的影片參考；僅在下游需要時才解碼影格。"
+      },
+      "1": {
+        "name": "文字",
+        "tooltip": "文字標題清單。"
+      }
+    }
+  },
   "LoraLoader": {
     "description": "LoRA 用於修改 diffusion 和 CLIP 模型，改變 latent 的去噪方式，例如套用風格。多個 LoRA 節點可以串接在一起使用。",
     "display_name": "載入 LoRA",
@@ -11059,6 +11370,125 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "使用 MiniMax H3 模型，根據首幀圖像與（可選）末幀圖像生成影片。影片長寬比將依據所提供的圖像。",
+    "display_name": "MiniMax H3 首末幀生成影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "影片的首幀圖像。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "影片的可選末幀圖像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於影片生成的模型。"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "隨機種子。相同請求與種子會產生相似（但不保證完全相同）結果。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在影片中加入 AIGC 浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "使用 MiniMax H3 模型，根據參考圖片、影片與音訊生成影片。在提示詞中依照順序引用參考資料：'Image 1'、'Image 2'、'Video 1'、'Audio 1'，依此類推。",
+    "display_name": "MiniMax H3 參考生成影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於影片生成的模型。"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "隨機種子。相同請求與相同種子會產生相似但不保證完全相同的結果。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在影片中加入 AIGC 浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "使用 MiniMax H3 模型，根據文字提示詞生成影片。",
+    "display_name": "MiniMax H3 文生影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於影片生成的模型。"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "隨機種子。相同請求與相同種子會產生相似但不保證完全相同的結果。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在影片中加入 AIGC 浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18445,6 +18875,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "隨機打亂影片清單的順序。",
+    "display_name": "隨機排序影片清單",
+    "inputs": {
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "隨機種子。"
+      },
+      "videos": {
+        "name": "影片",
+        "tooltip": "要打亂順序的影片清單。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影片",
+        "tooltip": "已隨機排序的影片"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "隨機打亂影片-文字配對清單的順序。",
+    "display_name": "隨機排序影片-文字配對",
+    "inputs": {
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "隨機種子。"
+      },
+      "texts": {
+        "name": "文字",
+        "tooltip": "要打亂順序的文字清單。"
+      },
+      "videos": {
+        "name": "影片",
+        "tooltip": "要打亂順序的影片清單。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影片",
+        "tooltip": "已隨機排序的影片"
+      },
+      "1": {
+        "name": "文字",
+        "tooltip": "已隨機排序的文字"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "可用於所有 DiT 模型的通用 SkipLayerGuidance 節點版本。",
     "display_name": "跳過層引導 DiT",
@@ -19135,6 +19619,97 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "description": "使用 sync.so 重新同步影片中說話者的嘴型與新的語音音訊。可自動處理特寫、側臉及遮擋，同時保留說話者的表情。費用依輸出時長計算。",
+    "display_name": "sync.so 口型同步",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "要同步嘴型的語音音訊。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so 生成模型。"
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非決定性。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要重新同步的說話者影片。最高支援 4K (4096x2160)；建議使用恆定幀率 24/25/30 fps。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "使用 sync.so 的 sync-3 模型，將靜態肖像圖像動畫化為由語音音訊驅動的說話影片。輸出時長與音訊相同。費用依輸出時長計算。",
+    "display_name": "sync.so 說話肖像",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "驅動說話影片的語音音訊；輸出時長與其一致。可串接任意 TTS 節點，從文字驅動動畫。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "一張清晰可見臉部的單一圖像，最高支援 4K (4096x2160)。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so 生成模型。圖像輸入僅支援 sync-3。"
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "可選的肖像動畫指引，例如「讓主角微笑並看向鏡頭」。留空則呈現自然說話動作。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
     "display_name": "T5 分詞器選項",
     "inputs": {
@@ -19557,6 +20132,75 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "影像"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "為 Mage-Flow-Edit 編碼一個包含一張或多張參考圖像的編輯指令。參考 latent 會被調整為輸出解析度（寬度/高度，若為 0 則使用第一張圖像的尺寸）。請使用 latent 輸出進行取樣，以確保尺寸始終一致。",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "輸出高度。0 = 使用第一張參考圖像的尺寸。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "要編輯的參考圖像。所有參考圖像在編碼前都會被調整為輸出解析度。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "輸出寬度。0 = 使用第一張參考圖像的尺寸。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -21553,6 +22197,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "使用多種策略，從影片中取樣固定數量的影格。",
+    "display_name": "取樣影片影格",
+    "inputs": {
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "num_frames": {
+        "name": "影格數量",
+        "tooltip": "要取樣的影格數量。"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "隨機種子（僅用於「random」策略）。"
+      },
+      "strategy": {
+        "name": "策略",
+        "tooltip": "uniform：平均分布，head：前 N 張，tail：後 N 張，random：隨機排序。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "輸入影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影片",
+        "tooltip": "已取樣的影片。"
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "影片線性 CFG 引導",
     "inputs": {
@@ -21561,6 +22236,57 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "隨機裁切影片中連續的一段影格。",
+    "display_name": "裁切影片（隨機時間區段）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "length": {
+        "name": "保留長度",
+        "tooltip": "要保留的影格數量。"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "隨機種子。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "輸入影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影片",
+        "tooltip": "已裁切的影片（延遲處理）。"
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "裁切影片中連續的一段影格。",
+    "display_name": "裁切影片（時間區段）",
+    "inputs": {
+      "length": {
+        "name": "保留長度",
+        "tooltip": "要保留的影格數量。"
+      },
+      "start_frame": {
+        "name": "起始影格",
+        "tooltip": "起始影格索引。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "輸入影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影片",
+        "tooltip": "已裁切的影片（延遲處理）。"
       }
     }
   },
@@ -23795,6 +24521,33 @@
       "2": {
         "name": "潛在變數",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "套用 Wan Uni3C ControlNet",
+    "inputs": {
+      "end_percent": {
+        "name": "結束百分比"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_patch": {
+        "name": "模型補丁"
+      },
+      "render_video": {
+        "name": "渲染影片",
+        "tooltip": "由相機軌跡渲染的引導影片，最常見的是將輸入影像的點雲渲染進行扭曲。"
+      },
+      "start_percent": {
+        "name": "起始百分比"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },

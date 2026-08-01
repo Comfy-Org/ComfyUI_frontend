@@ -8,6 +8,14 @@ import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
 
+function hasOpenRekaDialog(): boolean {
+  return Array.from(
+    document.querySelectorAll('[role="dialog"][data-state="open"]')
+  ).some(
+    (dialog) => dialog.closest('[data-reka-popper-content-wrapper]') === null
+  )
+}
+
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
   const commandStore = useCommandStore()
@@ -45,26 +53,11 @@ export function useKeybindingService() {
         }
       }
       if (
-        event.key === 'Escape' &&
-        !event.ctrlKey &&
-        !event.altKey &&
-        !event.metaKey
+        dialogStore.dialogStack.length > 0 ||
+        document.querySelector('[role="dialog"][aria-modal="true"]') ||
+        hasOpenRekaDialog()
       ) {
-        if (dialogStore.dialogStack.length > 0) {
-          return
-        }
-      }
-
-      /**
-       * Block global keybindings from triggering background actions while a
-       * modal dialog is open. Keybindings whose event target lives inside an
-       * open dialog still fire, so dialog-scoped shortcuts keep working.
-       */
-      if (dialogStore.dialogStack.length > 0) {
-        const inDialog = target.closest?.('[role="dialog"]') != null
-        if (!inDialog) {
-          return
-        }
+        return
       }
 
       event.preventDefault()
@@ -121,6 +114,9 @@ export function useKeybindingService() {
   function registerUserKeybindings() {
     const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
     for (const keybinding of unsetBindings) {
+      if (!commandStore.isRegistered(keybinding.commandId)) {
+        continue
+      }
       keybindingStore.unsetKeybinding(new KeybindingImpl(keybinding))
     }
     const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')

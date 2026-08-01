@@ -138,7 +138,10 @@ describe('useSecrets', () => {
 
   describe('fetchProviders', () => {
     it('populates availableProviders from the API', async () => {
-      mockListSecretProviders.mockResolvedValue(['huggingface', 'civitai'])
+      mockListSecretProviders.mockResolvedValue([
+        { id: 'huggingface' },
+        { id: 'civitai' }
+      ])
 
       const { availableProviders, fetchProviders } = useSecrets()
 
@@ -146,7 +149,10 @@ describe('useSecrets', () => {
 
       await fetchProviders()
 
-      expect(availableProviders.value).toEqual(['huggingface', 'civitai'])
+      expect(availableProviders.value).toEqual([
+        { id: 'huggingface' },
+        { id: 'civitai' }
+      ])
     })
 
     it('distinguishes a server-returned empty allowlist from not-loaded', async () => {

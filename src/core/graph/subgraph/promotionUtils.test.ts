@@ -54,6 +54,7 @@ vi.mock('@/services/litegraphService', () => ({
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   autoExposeKnownPreviewNodes,
+  createPromotedHostWidgetIdLookup,
   demoteWidget,
   getPromotableWidgets,
   hasUnpromotedWidgets,
@@ -61,6 +62,7 @@ import {
   isPreviewPseudoWidget,
   promoteValueWidgetViaSubgraphInput,
   promoteRecommendedWidgets,
+  promoteWidget,
   pruneDisconnected,
   reorderSubgraphInputsByName,
   reorderSubgraphInputsByWidgetOrder
@@ -588,6 +590,68 @@ describe('isLinkedPromotion', () => {
   })
 })
 
+describe('createPromotedHostWidgetIdLookup', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  function promoteFreshSource(
+    host: SubgraphNode,
+    nodeTitle: string,
+    widgetName: string
+  ): LGraphNode {
+    const node = new LGraphNode(nodeTitle)
+    host.subgraph.add(node)
+    const input = node.addInput(widgetName, 'STRING')
+    const sourceWidget = node.addWidget('text', widgetName, 'v', () => {})
+    input.widget = { name: sourceWidget.name }
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, node, sourceWidget).ok
+    ).toBe(true)
+    return node
+  }
+
+  it('returns undefined (does not throw) when the interior source node is gone', () => {
+    const host = createTestSubgraphNode(createTestSubgraph())
+    const interiorNode = promoteFreshSource(host, 'Source', 'text')
+    const resolveBefore = createPromotedHostWidgetIdLookup(host)
+    expect(resolveBefore(String(interiorNode.id), 'text')).toBe(
+      host.inputs[0]?.widgetId
+    )
+
+    host.subgraph.remove(interiorNode)
+
+    let resolveAfter: ReturnType<typeof createPromotedHostWidgetIdLookup>
+    expect(() => {
+      resolveAfter = createPromotedHostWidgetIdLookup(host)
+    }).not.toThrow()
+    expect(resolveAfter!(String(interiorNode.id), 'text')).toBeUndefined()
+  })
+
+  it('resolves each host widgetId independently for two sources promoting different widgets', () => {
+    const host = createTestSubgraphNode(createTestSubgraph())
+    const nodeA = promoteFreshSource(host, 'GlslA', 'alpha')
+    const nodeB = promoteFreshSource(host, 'GlslB', 'beta')
+
+    const hostIdAlpha = host.inputs.find(
+      (input) => input.name === 'alpha'
+    )?.widgetId
+    const hostIdBeta = host.inputs.find(
+      (input) => input.name === 'beta'
+    )?.widgetId
+    expect(hostIdAlpha).toBeDefined()
+    expect(hostIdBeta).toBeDefined()
+    expect(hostIdAlpha).not.toBe(hostIdBeta)
+
+    const resolve = createPromotedHostWidgetIdLookup(host)
+
+    expect(resolve(String(nodeA.id), 'alpha')).toBe(hostIdAlpha)
+    expect(resolve(String(nodeB.id), 'beta')).toBe(hostIdBeta)
+    expect(resolve(String(nodeA.id), 'beta')).toBeUndefined()
+    expect(resolve(String(nodeB.id), 'alpha')).toBeUndefined()
+  })
+})
+
 describe('reorderSubgraphInputsByName', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -872,6 +936,128 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(isLinkedPromotion(outerHost, String(innerHost.id), 'text')).toBe(
       true
     )
+  })
+})
+
+describe('size preservation across promotion (FE-853)', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.restoreAllMocks()
+  })
+
+  function setupInteriorWidget(
+    subgraph: ReturnType<typeof createTestSubgraph>,
+    name = 'value'
+  ) {
+    const interiorNode = new LGraphNode('TestNode')
+    subgraph.add(interiorNode)
+    const interiorInput = interiorNode.addInput(name, 'STRING')
+    const interiorWidget = interiorNode.addWidget(
+      'text',
+      name,
+      'initial',
+      () => {}
+    )
+    interiorInput.widget = { name: interiorWidget.name }
+    return { interiorNode, interiorWidget }
+  }
+
+  it('promoteWidget does not shrink a host larger than the computed minimum', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph, { size: [600, 400] })
+    const { interiorNode, interiorWidget } = setupInteriorWidget(subgraph)
+
+    promoteWidget(interiorNode, interiorWidget, [host])
+
+    expect(Array.from(host.size)).toEqual([600, 400])
+  })
+
+  it('demoteWidget does not shrink a host larger than the computed minimum', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const { interiorNode, interiorWidget } = setupInteriorWidget(subgraph)
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, interiorNode, interiorWidget).ok
+    ).toBe(true)
+    host.size = [600, 400]
+
+    demoteWidget(interiorNode, interiorWidget, [host])
+
+    expect(Array.from(host.size)).toEqual([600, 400])
+  })
+
+  it('preserves a user-resized host across a promote-then-demote cycle', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph, { size: [500, 350] })
+    const { interiorNode, interiorWidget } = setupInteriorWidget(subgraph)
+
+    promoteWidget(interiorNode, interiorWidget, [host])
+    expect(Array.from(host.size)).toEqual([500, 350])
+
+    demoteWidget(interiorNode, interiorWidget, [host])
+    expect(Array.from(host.size)).toEqual([500, 350])
+  })
+
+  it('preserves a user-resized host across promoting and demoting multiple widgets', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph, { size: [700, 450] })
+    const first = setupInteriorWidget(subgraph, 'first')
+    const second = setupInteriorWidget(subgraph, 'second')
+    const third = setupInteriorWidget(subgraph, 'third')
+
+    promoteWidget(first.interiorNode, first.interiorWidget, [host])
+    promoteWidget(second.interiorNode, second.interiorWidget, [host])
+    promoteWidget(third.interiorNode, third.interiorWidget, [host])
+    expect(Array.from(host.size)).toEqual([700, 450])
+
+    demoteWidget(second.interiorNode, second.interiorWidget, [host])
+    expect(Array.from(host.size)).toEqual([700, 450])
+
+    demoteWidget(first.interiorNode, first.interiorWidget, [host])
+    demoteWidget(third.interiorNode, third.interiorWidget, [host])
+    expect(Array.from(host.size)).toEqual([700, 450])
+  })
+
+  it('preserves a user-resized outer host when promoting through a nested subgraph', () => {
+    const { host: innerHost } = buildDuplicateNamePromotion()
+    const outerSubgraph = createTestSubgraph()
+    const outerHost = createTestSubgraphNode(outerSubgraph, {
+      size: [800, 500]
+    })
+    outerSubgraph.add(innerHost)
+
+    for (const input of innerHost.inputs) {
+      promoteWidget(innerHost, promotedWidgetRef(innerHost, input.name), [
+        outerHost
+      ])
+    }
+
+    expect(Array.from(outerHost.size)).toEqual([800, 500])
+  })
+
+  it('pruneDisconnected (run on right-side-panel mount) does not shrink a user-resized host', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph, { size: [640, 480] })
+    const { interiorNode, interiorWidget } = setupInteriorWidget(subgraph)
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, interiorNode, interiorWidget).ok
+    ).toBe(true)
+
+    pruneDisconnected(host)
+
+    expect(Array.from(host.size)).toEqual([640, 480])
+  })
+
+  it('still grows a host smaller than the computed minimum to fit its widgets', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph, { size: [1, 1] })
+    const { interiorNode, interiorWidget } = setupInteriorWidget(subgraph)
+    const minimumSize = host.computeSize()
+
+    promoteWidget(interiorNode, interiorWidget, [host])
+
+    expect(host.size[0]).toBeGreaterThanOrEqual(minimumSize[0])
+    expect(host.size[1]).toBeGreaterThanOrEqual(minimumSize[1])
   })
 })
 

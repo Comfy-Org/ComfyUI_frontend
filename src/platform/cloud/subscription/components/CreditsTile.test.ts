@@ -107,6 +107,7 @@ const i18n = createI18n({
         additionalCredits: 'Additional credits',
         additionalCreditsInUse: 'In use',
         usedAfterMonthly: 'Used after monthly runs out',
+        reactivateToUseCredits: 'Reactivate your plan to use these credits',
         monthlyCreditsUsedUpTitle:
           'Monthly credits are used up. Refills {date}',
         monthlyCreditsUsedUpTitleNoDate: 'Monthly credits are used up',
@@ -194,7 +195,7 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('422 left of 21K')
   })
 
-  it('uses the team credit stop monthly grant for the monthly total', () => {
+  it('uses the full annual Team grant for the credit pool total', () => {
     state.isActiveSubscription = true
     state.subscription = {
       tier: 'TEAM',
@@ -202,29 +203,51 @@ describe('CreditsTile', () => {
       renewalDate: '2026-02-20T12:00:00Z'
     }
     state.currentTeamCreditStop = {
-      id: 'team_2500',
-      credits_monthly: 527500,
-      stop_usd: 2500
+      id: 'team_700',
+      credits_monthly: 147700,
+      stop_usd: 700
     }
-    state.balance = { amountMicros: 0, cloudCreditBalanceMicros: 200 }
+    state.balance = {
+      amountMicros: 840000,
+      cloudCreditBalanceMicros: 840000
+    }
     const { container } = renderTile()
-    // Monthly total is the stop's raw monthly grant, not the tier fallback,
-    // and is not multiplied by 12 for annual billing.
-    expect(container.textContent).toContain('422 left of 527,500')
+    expect(container.textContent).toContain('1,772,400 left of 1,772,400')
   })
 
-  it('uses the per-month nominal grant for an annual personal tier', () => {
+  it('keeps the monthly Team grant as the monthly credit pool total', () => {
+    state.isActiveSubscription = true
+    state.subscription = {
+      tier: 'TEAM',
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.currentTeamCreditStop = {
+      id: 'team_700',
+      credits_monthly: 147700,
+      stop_usd: 700
+    }
+    state.balance = {
+      amountMicros: 70000,
+      cloudCreditBalanceMicros: 70000
+    }
+    const { container } = renderTile()
+    expect(container.textContent).toContain('147,700 left of 147,700')
+  })
+
+  it('uses the full annual grant for a personal tier credit pool', () => {
     state.isActiveSubscription = true
     state.subscription = {
       tier: 'PRO',
       duration: 'ANNUAL',
       renewalDate: '2026-02-20T12:00:00Z'
     }
-    state.balance = { amountMicros: 0, cloudCreditBalanceMicros: 200 }
+    state.balance = {
+      amountMicros: 120000,
+      cloudCreditBalanceMicros: 120000
+    }
     const { container } = renderTile()
-    // Annual billing still grants the monthly nominal (21,100), not 12x.
-    expect(container.textContent).toContain('422 left of 21,100')
-    expect(container.textContent).not.toContain('253,200')
+    expect(container.textContent).toContain('253,200 left of 253,200')
   })
 
   it('falls back to a dateless refills label when renewal date is missing', () => {
@@ -258,6 +281,18 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('0')
     expect(container.textContent).not.toContain('left of')
     expect(container.textContent).not.toContain('Additional credits')
+    expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  it('shows disabled credit details for an inactive plan', () => {
+    activeProSubscription()
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).toContain('0remaining')
+    expect(container.textContent).toContain('Additional credits')
+    expect(container.textContent).toContain(
+      'Reactivate your plan to use these credits'
+    )
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 

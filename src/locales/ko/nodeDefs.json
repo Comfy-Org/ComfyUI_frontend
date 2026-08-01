@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "Anima LLLite 적용",
+    "inputs": {
+      "end_percent": {
+        "name": "종료 비율"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "시작 비율"
+      },
+      "strength": {
+        "name": "강도"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "오디오의 볼륨을 데시벨(dB) 단위로 지정한 만큼 조절합니다.",
     "display_name": "오디오 볼륨 조절",
@@ -1177,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "음량. 0 = 보통, 100 = 2.0배, -50 = 0.5배."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: 20개 언어(영어, 중국어, 일본어, 한국어, 멕시코 및 카스티야 스페인어, 인도네시아어, 독일어, 브라질 포르투갈어, 프랑스어, 태국어, 베트남어, 말레이어, 필리핀어, 이탈리아어, 러시아어, 네덜란드어, 폴란드어, 터키어, 스웨덴어) 및 문장별 타이밍 제어(\"[5.5s:8.0s] ...\" 타임스탬프 사용) 지원. seed-audio-1.0: 영어와 중국어만 지원, 타이밍 제어 없음."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "피치(음높이) 반음 단위 이동(-12 ~ 12)."
@@ -2010,9 +2040,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "온도"
       },
       "prompt": {
         "name": "프롬프트",
@@ -5861,6 +5888,212 @@
       }
     }
   },
+  "HeyGenAvatarVideoNode": {
+    "description": "HeyGen 아바타로부터 발표자 영상을 생성합니다. HeyGen의 가장 인기 있는 공개 아바타가 포함되어 있으며, look ID를 입력하여 원하는 아바타로 대체할 수 있습니다.",
+    "display_name": "HeyGen 아바타 비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "화면 비율",
+        "tooltip": "출력 화면 비율. 'auto'는 아바타의 원본 영상을 따릅니다."
+      },
+      "background_color": {
+        "name": "배경 색상",
+        "tooltip": "선택적 단색 배경(예: '#00ff00'). 비워두면 아바타의 원래 배경이 사용됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "custom_avatar_id": {
+        "name": "커스텀 아바타 ID",
+        "tooltip": "선택 사항인 HeyGen 아바타 look ID입니다. 설정 시 위에서 선택한 아바타를 대체합니다. HeyGen의 3000개 이상의 공개 look(또는 개인 아바타)을 사용할 수 있습니다."
+      },
+      "engine": {
+        "name": "엔진",
+        "tooltip": "렌더링 엔진; 각 선택지는 해당 엔진을 지원하는 아바타만 표시합니다. 'auto'는 모든 아바타를 제공하며 최적의 엔진(Avatar IV 우선)을 선택합니다. Avatar V는 가장 높은 품질, Avatar III는 가장 경제적입니다."
+      },
+      "engine_avatar": {
+        "name": "아바타"
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "출력 비디오 해상도."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "HeyGen에 전송되지 않습니다. 값을 변경하면 재실행됩니다."
+      },
+      "speech": {
+        "name": "음성",
+        "tooltip": "텍스트 스크립트(헤이젠 텍스트-투-스피치) 또는 직접 녹음한 오디오로 아바타를 구동합니다."
+      },
+      "speech_custom_voice_id": {
+        "name": "커스텀 음성 ID"
+      },
+      "speech_text": {
+        "name": "텍스트"
+      },
+      "speech_voice": {
+        "name": "음성"
+      },
+      "speech_voice_speed": {
+        "name": "음성 속도"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "사람의 사진이나 텍스트 프롬프트(생성된 캐릭터)로 나만의 HeyGen 아바타를 만듭니다. 생성된 avatar_id를 HeyGen 아바타 비디오의 custom_avatar_id에 입력하고, 나중에 재사용할 수 있도록 ID를 저장하세요.",
+    "display_name": "HeyGen 아바타 생성",
+    "inputs": {
+      "source": {
+        "name": "소스",
+        "tooltip": "텍스트 프롬프트로 새로운 캐릭터를 생성하거나, 연결된 인물 사진으로 아바타를 만듭니다."
+      },
+      "source_prompt": {
+        "name": "프롬프트"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "avatar_id",
+        "tooltip": "아바타 look ID. HeyGen 아바타 비디오의 custom_avatar_id에 전달하고, 나중에 아바타를 재사용하려면 저장하세요."
+      },
+      "1": {
+        "name": "미리보기",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "사람의 이미지를 입 모양이 동기화된 토킹 비디오(헤이젠 아바타 IV)로 애니메이션화합니다. 텍스트 스크립트나 직접 녹음한 오디오로 구동할 수 있습니다.",
+    "display_name": "HeyGen 토킹 포토",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "출력 종횡비입니다. 'auto'는 입력 이미지를 따릅니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "expressiveness": {
+        "name": "expressiveness",
+        "tooltip": "애니메이션 얼굴과 제스처의 표현력 정도입니다."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "애니메이션화할 인물 이미지입니다. 2K보다 크면 자동으로 축소됩니다."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "출력 비디오 해상도입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "HeyGen에 전송되지 않습니다. 값을 변경하면 다시 실행됩니다."
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "아바타를 텍스트 스크립트(HeyGen 텍스트-투-스피치) 또는 직접 녹음한 오디오로 구동합니다."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "text"
+      },
+      "speech_voice": {
+        "name": "voice"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "HeyGen의 Starfish TTS 엔진을 사용하여 텍스트로부터 음성 오디오를 생성합니다. 17개 언어의 HeyGen 인기 보이스가 포함되어 있습니다.",
+    "display_name": "HeyGen 텍스트-투-스피치",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "custom_voice_id": {
+        "name": "custom_voice_id",
+        "tooltip": "선택 사항인 HeyGen 보이스 ID입니다. 설정 시 위에서 선택한 보이스를 덮어씁니다. 해당 보이스는 Starfish 엔진을 지원해야 합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "HeyGen에 전송되지 않습니다. 값을 변경하면 다시 실행됩니다."
+      },
+      "speed": {
+        "name": "speed",
+        "tooltip": "음성 속도 배수입니다."
+      },
+      "ssml": {
+        "name": "ssml",
+        "tooltip": "텍스트를 SSML 마크업으로 처리합니다(일시정지, 강조, 발음 제어 등)."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "합성할 텍스트(최대 5000자). 생성된 음성은 최소 1초 이상이어야 합니다."
+      },
+      "voice": {
+        "name": "voice",
+        "tooltip": "사용할 보이스(HeyGen의 Starfish 호환 인기 보이스 중에서 선별됨)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "음성이 포함된 비디오를 다른 언어로 번역합니다. 원래 화자의 목소리를 복제하고, 번역된 음성에 맞게 입 모양을 다시 애니메이션합니다.",
+    "display_name": "HeyGen 비디오 번역",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "'speed'는 더 빠르며, 'precision'은 두 배의 비용으로 더 높은 품질의 입 모양 동기화를 제공합니다."
+      },
+      "output_language": {
+        "name": "출력 언어",
+        "tooltip": "번역된 비디오의 대상 언어입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "HeyGen에 전송되지 않습니다; 값을 변경하면 다시 실행됩니다."
+      },
+      "speaker_count": {
+        "name": "화자 수",
+        "tooltip": "비디오에 등장하는 화자 수입니다. 0 = 자동 감지."
+      },
+      "translate_audio_only": {
+        "name": "오디오만 번역",
+        "tooltip": "오디오 트랙만 교체하고 원래의 입 모양은 유지합니다 (입 모양 동기화 없음)."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "번역할 음성이 포함된 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "샘플링 후반부에 여러 번 이동된 패치 그리드 위치에서 모델 출력을 평균화합니다. 이음새를 제거합니다.",
     "display_name": "HiDream-O1 Patch Seam Smoothing",
@@ -6264,6 +6497,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "Ideogram의 빠른 텍스트-투-이미지 모델인 P-Image를 사용하여 이미지를 생성합니다. 강력한 타이포그래피와 포토리얼리즘을 제공하며, 정확한 텍스트, 색상 및 레이아웃을 위한 Ideogram 4.0 구조화 JSON 캡션을 지원합니다.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "이미지 생성에 사용할 종횡비입니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "텍스트 프롬프트입니다. Ideogram 4.0 구조화 JSON 캡션(정확한 색상은 #RRGGBB 헥스, 정확한 텍스트 문자열, 바운딩 박스 레이아웃)도 입력할 수 있습니다 — 이를 그대로 사용하려면 prompt_upsampling을 OFF로 설정하세요."
+      },
+      "prompt_upsampling": {
+        "name": "프롬프트 업샘플링",
+        "tooltip": "생성 전에 짧은 프롬프트를 자세한 구조화 캡션으로 확장합니다(재작성된 프롬프트는 final_prompt로 반환됨). 직접 JSON 캡션이나 정확한 문구를 제공할 때는 OFF로 설정하세요."
+      },
+      "quality": {
+        "name": "품질",
+        "tooltip": "속도/가격/품질 등급입니다. MEDIUM은 일상적인 기본값이며, HIGH는 복잡한 프롬프트, 세밀한 디테일 및 어려운 텍스트에 적합합니다. VERY_LOW/LOW는 대량 초안용입니다. MEDIUM 이하에서는 어려운 텍스트가 제대로 렌더링되지 않습니다."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "출력 크기 클래스(정확한 픽셀은 종횡비를 따릅니다. 예: 16:9는 1K에서 1280x720, 2K에서 2560x1440). 선명한 타이포그래피에는 HIGH + 2K를 권장합니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "재현 가능한 생성을 위한 시드입니다. prompt_upsampling이 OFF일 때 동일한 시드와 설정으로 동일한 이미지를 반환합니다. ON/AUTO일 때는 프롬프트 재작성 결과가 매번 달라집니다 — 결과를 재현하려면 해당 final_prompt와 동일한 시드, prompt_upsampling OFF로 다시 사용하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "실제로 이미지가 생성된 프롬프트(프롬프트 업샘플링이 실행된 경우 재작성된 구조화 캡션, 아니면 입력한 프롬프트). prompt_upsampling을 OFF로 하고 동일한 시드로 다시 입력하면 이 이미지를 재현할 수 있습니다."
       }
     }
   },
@@ -9496,6 +9771,42 @@
       }
     }
   },
+  "LoadVideoDataSetFromFolder": {
+    "description": "지정한 폴더에서 비디오 데이터셋을 불러와 비디오 목록을 반환합니다. 지원 형식: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "비디오 불러오기 (폴더에서)",
+    "inputs": {
+      "folder": {
+        "name": "폴더",
+        "tooltip": "비디오 파일이 포함된 폴더입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "비디오",
+        "tooltip": "지연 로딩 비디오 참조; 프레임은 필요할 때만 디코딩됩니다."
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "지정한 폴더에서 비디오와 텍스트 캡션 쌍의 데이터셋을 불러와 목록으로 반환합니다. 지원 형식: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "비디오-텍스트 불러오기 (폴더에서)",
+    "inputs": {
+      "folder": {
+        "name": "폴더",
+        "tooltip": "비디오 파일과 .txt 캡션이 포함된 폴더입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "비디오",
+        "tooltip": "지연 로딩 비디오 참조; 프레임은 필요할 때만 디코딩됩니다."
+      },
+      "1": {
+        "name": "텍스트",
+        "tooltip": "텍스트 캡션 목록입니다."
+      }
+    }
+  },
   "LoraLoader": {
     "description": "LoRA는 확산 모델과 CLIP 모델을 부분적으로 변경해서, 잠재 데이터의 노이즈 제거 방향을 바꿉니다. 여러 LoRA 노드를 연결할 수 있습니다.",
     "display_name": "LoRA 로드",
@@ -11059,6 +11370,125 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "MiniMax H3 모델을 사용하여 첫 프레임 이미지와 선택적 마지막 프레임 이미지로부터 영상을 생성합니다. 영상의 종횡비는 제공된 이미지를 따릅니다.",
+    "display_name": "MiniMax H3 첫-마지막 프레임 영상 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "first_frame": {
+        "name": "첫 프레임",
+        "tooltip": "영상의 첫 프레임 이미지입니다."
+      },
+      "last_frame": {
+        "name": "마지막 프레임",
+        "tooltip": "영상의 선택적 마지막 프레임 이미지입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "영상 생성을 위해 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "랜덤 시드입니다. 동일한 요청과 시드로 유사하지만 완전히 동일하지는 않은 결과를 얻을 수 있습니다."
+      },
+      "watermark": {
+        "name": "워터마크",
+        "tooltip": "영상에 AIGC 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "MiniMax H3 모델을 사용하여 참조 이미지, 비디오, 오디오를 기반으로 비디오를 생성합니다. 프롬프트에서 참조는 순서대로 지정하세요: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' 등.",
+    "display_name": "MiniMax H3 참조 기반 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "랜덤 시드. 동일한 요청과 동일한 시드를 사용하면 유사하지만 반드시 동일하지는 않은 결과가 생성됩니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "비디오에 AIGC 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "MiniMax H3 모델을 사용하여 텍스트 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "MiniMax H3 텍스트 기반 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "랜덤 시드. 동일한 요청과 동일한 시드를 사용하면 유사하지만 반드시 동일하지는 않은 결과가 생성됩니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "비디오에 AIGC 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18445,6 +18875,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "비디오 목록의 순서를 무작위로 섞습니다.",
+    "display_name": "비디오 목록 섞기",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "무작위 시드."
+      },
+      "videos": {
+        "name": "비디오",
+        "tooltip": "섞을 비디오 목록입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "비디오",
+        "tooltip": "섞인 비디오"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "비디오-텍스트 쌍의 순서를 무작위로 섞습니다.",
+    "display_name": "비디오-텍스트 쌍 섞기",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "무작위 시드."
+      },
+      "texts": {
+        "name": "텍스트",
+        "tooltip": "섞을 텍스트 목록입니다."
+      },
+      "videos": {
+        "name": "비디오",
+        "tooltip": "섞을 비디오 목록입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "비디오",
+        "tooltip": "섞인 비디오"
+      },
+      "1": {
+        "name": "텍스트",
+        "tooltip": "섞인 텍스트"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "모든 DiT 모델에서 사용할 수 있는 '레이어 건너뛰기 가이던스' 노드의 범용 버전입니다.",
     "display_name": "레이어 건너뛰기 가이던스 (DiT)",
@@ -19135,6 +19619,97 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "description": "sync.so를 사용하여 비디오에서 입 모양 움직임을 새로운 음성 오디오에 맞게 다시 동기화합니다. 클로즈업, 측면, 장애물 상황에서도 자동으로 처리하며, 화자의 표정을 그대로 유지합니다. 비용은 출력 길이에 따라 달라집니다.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "입 모양을 동기화할 음성 오디오입니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so 생성 모델입니다."
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed는 노드가 다시 실행될지 여부를 제어합니다. seed와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "동기화할 화자의 영상입니다. 최대 4K(4096x2160)까지 지원하며, 24/25/30 fps의 일정한 프레임 속도가 가장 적합합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "sync.so의 sync-3 모델을 사용하여 정지된 인물 사진을 음성 오디오에 맞춰 말하는 비디오로 애니메이션화합니다. 출력 길이는 오디오와 일치합니다. 비용은 출력 길이에 따라 달라집니다.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "말하는 비디오를 구동할 음성 오디오입니다. 출력 길이는 오디오와 일치합니다. 텍스트에서 애니메이션을 구동하려면 TTS 노드를 연결하세요."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "얼굴이 명확하게 보이는 단일 이미지입니다. 최대 4K(4096x2160)까지 지원합니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so 생성 모델입니다. 이미지 입력은 sync-3에서만 지원됩니다."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "인물 사진이 어떻게 살아 움직일지에 대한 선택적 안내입니다. 예: '피사체가 미소를 짓고 카메라를 바라보게 해주세요'. 비워두면 자연스러운 말하기 동작이 생성됩니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed는 노드가 다시 실행될지 여부를 제어합니다. seed와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
     "display_name": "T5 토큰생성기 옵션",
     "inputs": {
@@ -19557,6 +20132,75 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "이미지"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Mage-Flow-Edit를 위한 편집 지시문을 하나 이상의 참조 이미지와 함께 인코딩합니다. 참조 latent들은 출력 해상도(너비/높이, 또는 0일 경우 첫 번째 이미지의 크기)로 리사이즈됩니다. 항상 크기가 일치하도록 latent 출력을 샘플링에 사용하세요.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "출력 높이. 0 = 첫 번째 참조 이미지의 크기 사용."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "편집할 참조 이미지(들). 모든 참조 이미지는 인코딩 전에 출력 해상도로 리사이즈됩니다."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "출력 너비. 0 = 첫 번째 참조 이미지의 크기 사용."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -21553,6 +22197,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "다양한 전략을 사용하여 비디오에서 고정된 개수의 프레임을 샘플링합니다.",
+    "display_name": "비디오 프레임 샘플링",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "num_frames": {
+        "name": "프레임 수",
+        "tooltip": "샘플링할 프레임의 개수."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "무작위 시드('random' 전략에서만 사용)."
+      },
+      "strategy": {
+        "name": "전략",
+        "tooltip": "uniform: 균등 간격, head: 처음 N개, tail: 마지막 N개, random: 무작위 정렬."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "입력 비디오."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "비디오",
+        "tooltip": "샘플링된 비디오."
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "비디오 선형 CFG 가이드",
     "inputs": {
@@ -21561,6 +22236,57 @@
       },
       "model": {
         "name": "모델"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "비디오에서 연속된 프레임 범위를 무작위로 자릅니다.",
+    "display_name": "비디오 자르기 (임의 시간대)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "length": {
+        "name": "길이",
+        "tooltip": "유지할 프레임의 개수."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "무작위 시드."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "입력 비디오."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "비디오",
+        "tooltip": "잘린 비디오 (지연 처리)."
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "비디오에서 연속된 프레임 범위를 자릅니다.",
+    "display_name": "비디오 자르기 (시간대)",
+    "inputs": {
+      "length": {
+        "name": "길이",
+        "tooltip": "유지할 프레임의 개수."
+      },
+      "start_frame": {
+        "name": "시작 프레임",
+        "tooltip": "시작 프레임 인덱스."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "입력 비디오."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "비디오",
+        "tooltip": "잘린 비디오 (지연 처리)."
       }
     }
   },
@@ -23795,6 +24521,33 @@
       "2": {
         "name": "잠재",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "Wan Uni3C ControlNet 적용",
+    "inputs": {
+      "end_percent": {
+        "name": "종료 비율"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_patch": {
+        "name": "모델 패치"
+      },
+      "render_video": {
+        "name": "렌더 비디오",
+        "tooltip": "카메라 궤적에서 렌더링된 가이드 비디오로, 주로 입력 이미지의 왜곡된 포인트 클라우드 렌더가 사용됩니다."
+      },
+      "start_percent": {
+        "name": "시작 비율"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },

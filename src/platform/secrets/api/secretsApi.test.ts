@@ -25,7 +25,7 @@ describe('listSecretProviders', () => {
     vi.clearAllMocks()
   })
 
-  it('requests the providers endpoint and maps ids', async () => {
+  it('requests the providers endpoint and returns the provider list', async () => {
     mockFetchApi.mockResolvedValue(
       jsonResponse({ data: [{ id: 'huggingface' }, { id: 'civitai' }] })
     )
@@ -33,7 +33,43 @@ describe('listSecretProviders', () => {
     const providers = await listSecretProviders()
 
     expect(mockFetchApi).toHaveBeenCalledWith('/secrets/providers')
-    expect(providers).toEqual(['huggingface', 'civitai'])
+    expect(providers).toEqual([{ id: 'huggingface' }, { id: 'civitai' }])
+  })
+
+  it('passes through per-provider credential options and label metadata', async () => {
+    mockFetchApi.mockResolvedValue(
+      jsonResponse({
+        data: [
+          {
+            id: 'gemini',
+            label: 'Gemini',
+            credential_options: [
+              {
+                credential_type: 'gcp_service_account',
+                input_type: 'json_file',
+                label: 'Service account (Vertex AI)'
+              }
+            ]
+          }
+        ]
+      })
+    )
+
+    const providers = await listSecretProviders()
+
+    expect(providers).toEqual([
+      {
+        id: 'gemini',
+        label: 'Gemini',
+        credential_options: [
+          {
+            credential_type: 'gcp_service_account',
+            input_type: 'json_file',
+            label: 'Service account (Vertex AI)'
+          }
+        ]
+      }
+    ])
   })
 
   it('returns an empty list when data is missing', async () => {

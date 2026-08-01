@@ -214,9 +214,7 @@ describe('useLoad3d', () => {
       getModelInfo: vi.fn().mockReturnValue(null),
       captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,test'),
       setAnimationTime: vi.fn(),
-      renderer: {
-        domElement: mockCanvas
-      } as Partial<Load3d['renderer']> as Load3d['renderer']
+      domElement: mockCanvas
     }
 
     vi.mocked(Load3d).mockImplementation(function (this: Load3d) {
@@ -303,7 +301,7 @@ describe('useLoad3d', () => {
       mockNode.flags.collapsed = true
       mockNode.onDrawBackground?.({} as CanvasRenderingContext2D)
 
-      expect(mockLoad3d.renderer!.domElement.hidden).toBe(true)
+      expect(mockLoad3d.domElement!.hidden).toBe(true)
     })
 
     it('should initialize without loading model (model loading is handled by Load3DConfiguration)', async () => {
@@ -834,6 +832,44 @@ describe('useLoad3d', () => {
 
       expect(composable.sceneConfig.value.backgroundImage).toBe('')
       expect(mockLoad3d.setBackgroundImage).toHaveBeenCalledWith('')
+    })
+
+    it('should reset a leftover panorama mode to tiled when uploading a new image', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded-image.jpg')
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+      composable.sceneConfig.value.backgroundRenderMode = 'panorama'
+      await nextTick()
+
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      await composable.handleBackgroundImageUpdate(file)
+
+      expect(composable.sceneConfig.value.backgroundRenderMode).toBe('tiled')
+      await nextTick()
+      expect(mockLoad3d.setBackgroundRenderMode).toHaveBeenLastCalledWith(
+        'tiled'
+      )
+    })
+
+    it('should not clear the background or touch render mode when the upload fails', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue(undefined)
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+      composable.sceneConfig.value.backgroundImage = 'existing.jpg'
+      composable.sceneConfig.value.backgroundRenderMode = 'panorama'
+      await nextTick()
+
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      await composable.handleBackgroundImageUpdate(file)
+
+      expect(composable.sceneConfig.value.backgroundImage).toBe('existing.jpg')
+      expect(composable.sceneConfig.value.backgroundRenderMode).toBe('panorama')
     })
   })
 

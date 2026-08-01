@@ -306,13 +306,9 @@ export function useNodeFactory() {
     // Create node based on type and configuration
     switch (type) {
       case 'basic':
-        return {
-          /* basic node implementation */
-        }
+        return {/* basic node implementation */}
       case 'complex':
-        return {
-          /* complex node implementation */
-        }
+        return {/* complex node implementation */}
       default:
         throw new Error(`Unknown node type: ${type}`)
     }
@@ -347,9 +343,7 @@ Services in ComfyUI can be tested effectively using different approaches dependi
 
 ```typescript
 // Manual instantiation required
-const mockData = [
-  /* test data */
-]
+const mockData = [/* test data */]
 const service = new NodeSearchService(mockData)
 ```
 
@@ -455,7 +449,7 @@ describe('autoQueueService', () => {
     setupAutoQueueHandler()
 
     expect(mockApi.addEventListener).toHaveBeenCalledWith(
-      'graphChanged',
+      'autoQueueGraphChanged',
       expect.any(Function)
     )
   })
@@ -463,7 +457,7 @@ describe('autoQueueService', () => {
   test('should handle graph changes when auto-queue enabled', () => {
     setupAutoQueueHandler()
 
-    // Simulate graph change event
+    // Simulate execution graph change event
     const graphChangeHandler = mockApi.addEventListener.mock.calls[0][1]
     graphChangeHandler()
 

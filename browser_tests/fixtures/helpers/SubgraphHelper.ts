@@ -360,7 +360,7 @@ export class SubgraphHelper {
   ): Promise<void> {
     const widget = nodeLocator.getByLabel(widgetName, { exact: true })
     await this.comfyPage.contextMenu
-      .openFor(widget)
+      .openForDisabledElement(widget)
       .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
   }
 
@@ -469,6 +469,14 @@ export class SubgraphHelper {
     }
     await this.comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
     await this.comfyPage.contextMenu.waitForHidden()
+  }
+
+  /** Promoted-widget name order as the subgraph host node exposes it. */
+  async getPromotedWidgetOrder(subgraphNodeId: string): Promise<string[]> {
+    return this.page.evaluate((id) => {
+      const node = window.app!.graph.nodes.find((n) => String(n.id) === id)
+      return (node?.widgets ?? []).map((w) => w.name)
+    }, subgraphNodeId)
   }
 
   async findSubgraphNodeId(): Promise<string> {
