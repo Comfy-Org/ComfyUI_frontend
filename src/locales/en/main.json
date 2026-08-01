@@ -2032,6 +2032,12 @@
     "updateFrontend": "Update Frontend",
     "dismiss": "Dismiss"
   },
+  "newVersionReload": {
+    "title": "New version available",
+    "detail": "Reload to get the latest version of ComfyUI.",
+    "reload": "Reload",
+    "dismiss": "Dismiss"
+  },
   "loadWorkflowWarning": {
     "outdatedVersion": "This workflow was created with a newer version of ComfyUI ({version}). Some nodes may not work correctly.",
     "outdatedVersionGeneric": "This workflow was created with a newer version of ComfyUI. Some nodes may not work correctly.",

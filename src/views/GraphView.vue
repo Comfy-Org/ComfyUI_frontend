@@ -23,6 +23,7 @@
   <GlobalToast />
   <InviteAcceptedToast />
   <RerouteMigrationToast />
+  <NewVersionReloadToast v-if="isCloud" />
   <ModelImportProgressDialog />
   <AssetExportProgressDialog />
   <ManagerProgressToast />
@@ -71,6 +72,7 @@ import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
+import NewVersionReloadToast from '@/platform/updates/common/NewVersionReloadToast.vue'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

@@ -1,5 +1,7 @@
 import { datadogRum } from '@datadog/browser-rum'
 
+import { probeFrontendVersion } from '@/platform/updates/common/frontendVersionProbe'
+
 import { rumBeforeSend } from './datadogRumBeforeSend'
 import { trackUserManualRefresh } from './manualRefreshTracker'
 
@@ -8,24 +10,16 @@ const DATADOG_ENV_BY_HOSTNAME = new Map([
   ['stagingcloud.comfy.org', 'stg-v2'],
   ['testcloud.comfy.org', 'test-v2']
 ])
-const FRONTEND_CONTEXT_FETCH_TIMEOUT_MS = 1_000
 let initializationPromise: Promise<void> | undefined
 
 async function setFrontendContext(): Promise<void> {
-  const response = await fetch(window.location.origin, {
-    method: 'HEAD',
-    cache: 'no-store',
-    signal: AbortSignal.timeout(FRONTEND_CONTEXT_FETCH_TIMEOUT_MS)
-  })
-  if (!response.ok) return
+  const probe = await probeFrontendVersion()
+  if (!probe) return
 
-  const frontendVersion = response.headers.get('X-Frontend-Version')
+  const frontendVersion = probe.version
   if (frontendVersion !== __COMFYUI_FRONTEND_COMMIT__) return
 
-  datadogRum.setGlobalContextProperty(
-    'bucket',
-    response.headers.get('X-Frontend-Bucket') ?? 'stable'
-  )
+  datadogRum.setGlobalContextProperty('bucket', probe.bucket ?? 'stable')
   datadogRum.setGlobalContextProperty('version', frontendVersion)
 }
 
