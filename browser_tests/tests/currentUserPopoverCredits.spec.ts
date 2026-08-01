@@ -17,7 +17,7 @@ type CustomerBalanceResponse = NonNullable<
 const PERSONAL_WORKSPACE_NAME = 'Personal Workspace'
 const FUTURE_DATE = '2099-01-01T00:00:00Z'
 
-const mockRemoteConfig: RemoteConfig = { team_workspaces_enabled: true }
+const mockRemoteConfig: RemoteConfig = {}
 
 const mockListWorkspacesResponse: { workspaces: WorkspaceWithRole[] } = {
   workspaces: [
@@ -54,8 +54,8 @@ const mockSubscriptionStatus: CloudSubscriptionStatusResponse = {
   end_date: FUTURE_DATE
 }
 
-// With team workspaces enabled, the facade routes a personal workspace through
-// `/api/billing/*`. The cancelled-but-active state maps to `is_active: true`
+// The facade routes a Cloud personal workspace through `/api/billing/*`. The
+// cancelled-but-active state maps to `is_active: true`
 // with `subscription_status: 'canceled'`; a paid tier keeps "Add credits"
 // visible (free tier would swap it for "Upgrade to add credits").
 const mockBillingStatus: BillingStatusResponse = {
@@ -126,8 +126,7 @@ const test = comfyPageFixture.extend({
       })
     )
 
-    // Flag-on (team workspaces enabled) routes a personal workspace through the
-    // workspace billing endpoints, so the popover sources its data from here.
+    // The popover sources its data from the workspace billing endpoints.
     await page.route('**/api/billing/status', (route) =>
       route.fulfill({
         status: 200,

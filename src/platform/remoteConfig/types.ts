@@ -106,7 +106,6 @@ export type RemoteConfig = {
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
-  team_workspaces_enabled?: boolean
   partner_node_governance_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
@@ -121,7 +120,6 @@ export type RemoteConfig = {
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
-  consolidated_billing_enabled?: boolean
   billing_control_enabled?: boolean
   churnkey_app_id?: string
   sentry_dsn?: string

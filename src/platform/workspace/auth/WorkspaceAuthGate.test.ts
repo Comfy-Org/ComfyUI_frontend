@@ -40,14 +40,10 @@ vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
   remoteConfigState: mockRemoteConfigState
 }))
 
-const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: false }))
 const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
     flags: {
-      get teamWorkspacesEnabled() {
-        return mockTeamWorkspacesEnabled.value
-      },
       get unifiedCloudAuthEnabled() {
         return mockUnifiedCloudAuthEnabled.value
       }
@@ -110,7 +106,6 @@ describe('WorkspaceAuthGate', () => {
     mockIsCloud.value = true
     mockIsInitialized.value = false
     mockCurrentUser.value = null
-    mockTeamWorkspacesEnabled.value = false
     mockUnifiedCloudAuthEnabled.value = false
     mockRemoteConfigState.value = 'authenticated'
     mockWorkspaceStoreInitState.value = 'uninitialized'
@@ -182,16 +177,6 @@ describe('WorkspaceAuthGate', () => {
       expect(mockRefreshRemoteConfig).toHaveBeenCalledWith({ useAuth: true })
     })
 
-    it('renders slot when teamWorkspacesEnabled is false', async () => {
-      mockTeamWorkspacesEnabled.value = false
-
-      mountComponent()
-      await flushPromises()
-
-      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
-      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
-    })
-
     it('mints unified auth after refreshing authenticated flags', async () => {
       mockRefreshRemoteConfig.mockImplementation(async () => {
         mockUnifiedCloudAuthEnabled.value = true
@@ -204,9 +189,7 @@ describe('WorkspaceAuthGate', () => {
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
-    it('initializes workspace store when teamWorkspacesEnabled is true', async () => {
-      mockTeamWorkspacesEnabled.value = true
-
+    it('initializes the workspace store', async () => {
       mountComponent()
       await flushPromises()
 
@@ -215,7 +198,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('calls resumePendingPricingFlow after successful workspace init', async () => {
-      mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitState.value = 'ready'
 
       mountComponent()
@@ -225,7 +207,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('skips workspace init when store is already initialized', async () => {
-      mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitState.value = 'ready'
 
       mountComponent()
@@ -299,7 +280,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('keeps the app gated when workspace store initialization fails', async () => {
-      mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitialize.mockRejectedValue(
         new Error('Workspace init failed')
       )
@@ -312,7 +292,6 @@ describe('WorkspaceAuthGate', () => {
 
     it('keeps the app gated when workspace setup clears unified auth', async () => {
       mockUnifiedCloudAuthEnabled.value = true
-      mockTeamWorkspacesEnabled.value = true
       mockGetUnifiedToken.mockReturnValue(undefined)
 
       mountComponent()
@@ -322,7 +301,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('keeps the app gated without a ready workspace context', async () => {
-      mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitState.value = 'loading'
 
       mountComponent()

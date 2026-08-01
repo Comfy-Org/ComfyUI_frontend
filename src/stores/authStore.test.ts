@@ -28,7 +28,6 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 
 const { mockFeatureFlags } = vi.hoisted(() => ({
   mockFeatureFlags: {
-    teamWorkspacesEnabled: false,
     unifiedCloudAuthEnabled: false
   }
 }))
@@ -175,7 +174,6 @@ describe('useAuthStore', () => {
     sessionStorage.clear()
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
-    mockFeatureFlags.teamWorkspacesEnabled = false
     mockFeatureFlags.unifiedCloudAuthEnabled = false
 
     // Setup dialog service mock
@@ -688,10 +686,6 @@ describe('useAuthStore', () => {
   })
 
   describe('getAuthHeader workspace recovery', () => {
-    beforeEach(() => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
-    })
-
     it('uses the workspace header when a valid workspace token exists', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue({
@@ -750,10 +744,6 @@ describe('useAuthStore', () => {
   })
 
   describe('getAuthToken workspace recovery', () => {
-    beforeEach(() => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
-    })
-
     it('recovers the workspace token instead of downgrading to personal auth', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
       const teamStore = useTeamWorkspaceStore()
