@@ -72,6 +72,9 @@ const translations = {
     en: 'Copy',
     'zh-CN': '复制'
   },
+  'ui.breadcrumb': { en: 'Breadcrumb', 'zh-CN': '面包屑导航' },
+  'ui.readMore': { en: 'Read more', 'zh-CN': '展开' },
+  'ui.readLess': { en: 'Read less', 'zh-CN': '收起' },
   'ui.copied': {
     en: 'Copied',
     'zh-CN': '已复制'
@@ -208,8 +211,8 @@ const translations = {
     'zh-CN': '下载桌面版'
   },
   'getStarted.step1.launchCloud': {
-    en: 'Launch Cloud',
-    'zh-CN': '启动云端'
+    en: 'Try Cloud for free',
+    'zh-CN': '免费试用云端'
   },
   'getStarted.step1.or': {
     en: ' or ',
@@ -1575,7 +1578,6 @@ const translations = {
     'zh-CN': '按创作领域分类的 ComfyUI 实战教程与工作流。'
   },
   'learning.categoryNav': { en: 'Category filter', 'zh-CN': '分类筛选' },
-  'learning.detail.close': { en: 'Close', 'zh-CN': '关闭' },
   'learning.featuredBadge': { en: 'Featured', 'zh-CN': '精选' },
   'learning.categories.all': { en: 'All', 'zh-CN': '全部' },
   'learning.categories.all.blurb': {
@@ -1626,10 +1628,10 @@ const translations = {
     'zh-CN':
       '实战 ComfyUI 广告创意教程——情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
   },
-  'learning.tutorials.titlePrefix': {
-    en: 'Learn how to:',
-    'zh-CN': '学习如何：'
-  },
+  // LearningWatchPage
+  'learning.watch.nowWatching': { en: 'Now watching', 'zh-CN': '正在观看' },
+  'learning.watch.watchMore': { en: 'Watch more', 'zh-CN': '观看更多' },
+  'learning.watch.recommended': { en: 'Recommended', 'zh-CN': '推荐' },
 
   // LearningCallToActionSection
   'learning.cta.heading': {
@@ -1639,6 +1641,10 @@ const translations = {
   'learning.cta.contactSales': {
     en: 'Contact Sales',
     'zh-CN': '联系销售'
+  },
+  'learning.cta.runComfy': {
+    en: 'Run Comfy for free',
+    'zh-CN': '免费运行 Comfy'
   },
 
   // GalleryHeroSection
@@ -2432,12 +2438,11 @@ const translations = {
   'nav.brand': { en: 'Brand', 'zh-CN': '品牌' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
   'nav.launches': { en: 'Launches', 'zh-CN': '发布' },
+  'nav.events': { en: 'Events', 'zh-CN': '活动' },
   'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
-  'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
-  'nav.ctaDesktopPrefix': { en: 'DOWNLOAD', 'zh-CN': '下载' },
+  'nav.launchCloud': { en: 'TRY CLOUD FOR FREE', 'zh-CN': '免费试用云端' },
   'nav.ctaDesktopCore': { en: 'DESKTOP', 'zh-CN': '桌面版' },
-  'nav.ctaCloudPrefix': { en: 'LAUNCH', 'zh-CN': '启动' },
-  'nav.ctaCloudCore': { en: 'CLOUD', 'zh-CN': '云端' },
+  'nav.ctaCloudCore': { en: 'TRY FREE', 'zh-CN': '免费试用' },
   'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
   'breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
   'breadcrumb.about': { en: 'About Us', 'zh-CN': '关于我们' },
@@ -2446,6 +2451,7 @@ const translations = {
   'breadcrumb.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'breadcrumb.pricing': { en: 'Pricing', 'zh-CN': '定价' },
   'breadcrumb.supportedNodes': { en: 'Supported Nodes', 'zh-CN': '支持的节点' },
+  'breadcrumb.events': { en: 'Events', 'zh-CN': '活动' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
   'nav.close': { en: 'Close', 'zh-CN': '关闭' },
@@ -4606,9 +4612,9 @@ const translations = {
     en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
     'zh-CN': '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。'
   },
-  'affiliate.assets.downloadLabel': {
-    en: 'Download zip',
-    'zh-CN': '下载压缩包'
+  'affiliate.assets.ctaLabel': {
+    en: 'Go to brand portal',
+    'zh-CN': '前往品牌门户'
   },
 
   // AffiliateFAQSection
@@ -4665,8 +4671,8 @@ const translations = {
     'zh-CN': '下载桌面版'
   },
   'launches.hero.secondary': {
-    en: 'Launch Cloud',
-    'zh-CN': '启动云端'
+    en: 'Try Cloud for free',
+    'zh-CN': '免费试用云端'
   },
   'launches.hero.visualAlt': {
     en: 'Comfy',
@@ -4705,6 +4711,67 @@ const translations = {
     en: 'Latest Launches',
     'zh-CN': '最新发布'
   },
+
+  // Events page (/events)
+  // zh-CN strings pending native review
+  'events.page.title': {
+    en: 'Events - Livestreams, Hackathons & Community Meetups | Comfy',
+    'zh-CN': '活动 - 直播、黑客松与社区聚会 | Comfy'
+  },
+  'events.page.description': {
+    en: 'Upcoming livestreams, hackathons, and events worldwide. Join upcoming Comfy events or catch up on past livestreams, hackathons, and community meetups.',
+    'zh-CN':
+      '即将举行的直播、黑客松以及遍布全球的活动。参加即将举行的 Comfy 活动，或回看过往的直播、黑客松和社区聚会。'
+  },
+  'events.hero.eyebrow': { en: 'EVENTS', 'zh-CN': '活动' },
+  'events.hero.title': {
+    en: 'Creators, all in one place',
+    'zh-CN': '创作者，齐聚一堂'
+  },
+  'events.hero.subtitle': {
+    en: 'Upcoming livestreams, hackathons, and events worldwide',
+    'zh-CN': '即将举行的直播、黑客松以及遍布全球的活动'
+  },
+  'events.hero.prevSlide': {
+    en: 'Previous featured event',
+    'zh-CN': '上一个精选活动'
+  },
+  'events.hero.nextSlide': {
+    en: 'Next featured event',
+    'zh-CN': '下一个精选活动'
+  },
+  'events.upcoming.title': {
+    en: 'Upcoming events',
+    'zh-CN': '即将举行的活动'
+  },
+  'events.upcoming.livestream': { en: 'Livestream', 'zh-CN': '直播' },
+  'events.upcoming.addToCalendar': {
+    en: 'Add to calendar',
+    'zh-CN': '添加到日历'
+  },
+  'events.upcoming.calendarGoogle': {
+    en: 'Google Calendar',
+    'zh-CN': 'Google 日历'
+  },
+  'events.upcoming.calendarApple': {
+    en: 'Apple Calendar',
+    'zh-CN': 'Apple 日历'
+  },
+  'events.upcoming.calendarOutlook': {
+    en: 'Outlook',
+    'zh-CN': 'Outlook'
+  },
+  'events.past.title': {
+    en: 'See our past events',
+    'zh-CN': '回顾过往活动'
+  },
+  'events.past.filterAll': { en: 'ALL', 'zh-CN': '全部' },
+  'events.past.watchNow': { en: 'WATCH NOW', 'zh-CN': '立即观看' },
+  'events.past.loadMore': { en: 'LOAD MORE', 'zh-CN': '加载更多' },
+  'events.videoDialog.close': { en: 'Close', 'zh-CN': '关闭' },
+  'events.category.livestream': { en: 'Livestream', 'zh-CN': '直播' },
+  'events.category.hackathon': { en: 'Hackathon', 'zh-CN': '黑客松' },
+  'events.category.community': { en: 'Community', 'zh-CN': '社区' },
 
   // Brand Portal page (/brand)
   'brand.page.title': {

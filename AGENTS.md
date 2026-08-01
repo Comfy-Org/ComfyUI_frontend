@@ -1,6 +1,14 @@
 # Repository Guidelines
 
-See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob).
+See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob):
+
+- `docs/guidance/engineering.md` — general engineering guidelines, project philosophy, code-review checklist, external resource links
+- `docs/guidance/vue-components.md` — Vue 3 Composition API best practices
+- `docs/guidance/typescript.md` — TypeScript type-safety rules
+- `docs/guidance/vitest.md` — Vitest unit/component test conventions
+- `docs/guidance/playwright.md` — Playwright E2E conventions and API-mock typing table
+- `docs/guidance/storybook.md` — Storybook story patterns
+- `docs/guidance/design-standards.md` — Figma design-standards references
 
 ## Project Structure & Module Organization
 
@@ -98,6 +106,24 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
   - composables `useXyz.ts`
   - Pinia stores `*Store.ts`
 
+## Vue 3 Composition API
+
+- Use `<script setup lang="ts">` for component logic; Composition API only
+- Use the Vue 3.5 TypeScript style of default prop declaration — reactive props destructuring, never `withDefaults` or runtime props declaration:
+
+  ```typescript
+  const { nodes, showTotal = true } = defineProps<{
+    nodes: ApiNodeCost[]
+    showTotal?: boolean
+  }>()
+  ```
+
+- Prefer `defineModel` to separately defining a prop and emit for v-model bindings
+- Define slots via template usage, not `defineSlots`
+- Use `provide`/`inject` for dependency injection — but not when a Store or a shared composable would be simpler
+- Be judicious with new refs or other state: prefer a prop to a `ref`, the prop/`ref` directly to a `computed`, and a `computed` to a `watch`
+- See `docs/guidance/vue-components.md` for the full conventions
+
 ## Commit & Pull Request Guidelines
 
 - PRs:
@@ -120,68 +146,19 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 
 - Secrets: Use `.env` (see `.env_example`); do not commit secrets.
 
-## Vue 3 Composition API Best Practices
-
-- Use `<script setup lang="ts">` for component logic
-- Utilize `ref` for reactive state
-- Implement computed properties with computed()
-- Use watch and watchEffect for side effects
-  - Avoid using a `ref` and a `watch` if a `computed` would work instead
-- Implement lifecycle hooks with onMounted, onUpdated, etc.
-- Utilize provide/inject for dependency injection
-  - Do not use dependency injection if a Store or a shared composable would be simpler
-- Use Vue 3.5 TypeScript style of default prop declaration
-  - Example:
-
-    ```typescript
-    const { nodes, showTotal = true } = defineProps<{
-      nodes: ApiNodeCost[]
-      showTotal?: boolean
-    }>()
-    ```
-
-  - Prefer reactive props destructuring to `const props = defineProps<...>`
-  - Do not use `withDefaults` or runtime props declaration
-  - Do not import Vue macros unnecessarily
-  - Prefer `defineModel` to separately defining a prop and emit for v-model bindings
-  - Define slots via template usage, not `defineSlots`
-  - Use same-name shorthand for slot prop bindings: `:isExpanded` instead of `:is-expanded="isExpanded"`
-  - Derive component types using `vue-component-type-helpers` (`ComponentProps`, `ComponentSlots`) instead of separate type files
-  - Be judicious with addition of new refs or other state
-    - If it's possible to accomplish the design goals with just a prop, don't add a `ref`
-    - If it's possible to use the `ref` or prop directly, don't add a `computed`
-    - If it's possible to use a `computed` to name and reuse a derived value, don't use a `watch`
-
 ## Development Guidelines
 
 1. Leverage VueUse functions for performance-enhancing styles
 2. Use es-toolkit for utility functions
-3. Use TypeScript for type safety
-4. If a complex type definition is inlined in multiple related places, extract and name it for reuse
-5. In Vue Components, implement proper props and emits definitions
-6. Utilize Vue 3's Teleport component when needed
-7. Use Suspense for async components
-8. Implement proper error handling
-9. Follow Vue 3 style guide and naming conventions
-10. Use Vite for fast development and building
-11. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
-12. Avoid new usage of PrimeVue components
-13. Write tests for all changes, especially bug fixes to catch future regressions
-14. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
-15. Do not add or retain redundant comments, clean as you go
-16. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
-17. [Refactoring](https://refactoring.com/catalog/) should be used to make complex code simpler
-18. Try to minimize the surface area (exported values) of each module and composable
-19. Don't use barrel files, e.g. `/some/package/index.ts` to re-export within `/src`
-20. Keep functions short and functional
-21. Minimize [nesting](https://wiki.c2.com/?ArrowAntiPattern), e.g. `if () { ... }` or `for () { ... }`
-22. Avoid mutable state, prefer immutability and assignment at point of declaration
-23. Favor pure functions (especially testable ones)
-24. Do not use function expressions if it's possible to use function declarations instead
-25. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
-26. Do not add alias helpers whose implementation is just a single-line call to another function
-    - Bad: `function id(value) { return nodeId(value) }`
-    - Use the real function directly, or introduce a named helper only when it adds validation, branching, domain meaning, or shared behavior beyond renaming
+3. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
+4. Avoid new usage of PrimeVue components
+5. Write tests for all changes, especially bug fixes to catch future regressions
+6. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
+7. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
+8. Avoid mutable state, prefer immutability and assignment at point of declaration
+9. Favor pure functions (especially testable ones)
+
+See `docs/guidance/engineering.md` for the remaining engineering guidelines.
 
 ## Design Standards
 
@@ -189,58 +166,15 @@ Before implementing any user-facing feature, consult the [Comfy Design Standards
 
 See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, and component references.
 
-## Testing Guidelines
+## Testing
 
-See @docs/testing/\*.md for detailed patterns.
-
-- Frameworks:
-  - Vitest (unit/component, happy-dom)
-  - Playwright (E2E)
-- Test files:
-  - Unit/Component: `**/*.test.ts`
-  - E2E: `browser_tests/**/*.spec.ts`
-  - Litegraph Specific: `src/lib/litegraph/test/`
-
-### General
-
-1. Do not write change detector tests  
-   e.g. a test that just asserts that the defaults are certain values
-2. Do not write tests that are dependent on non-behavioral features like utility classes or styles
-3. Be parsimonious in testing, do not write redundant tests  
-   See <https://tidyfirst.substack.com/p/composable-tests>
-4. [Don’t Mock What You Don’t Own](https://hynek.me/articles/what-to-mock-in-5-mins/)
-
-### Vitest / Unit Tests
-
-1. Do not write tests that just test the mocks  
-   Ensure that the tests fail when the code itself would behave in a way that was not expected or desired
-2. For mocking, leverage [Vitest's utilities](https://vitest.dev/guide/mocking.html) where possible
-3. Keep your module mocks contained  
-   Do not use global mutable state within the test file  
-   Use `vi.hoisted()` if necessary to allow for per-test Arrange phase manipulation of deeper mock state
-4. For Component testing, prefer [@testing-library/vue](https://testing-library.com/docs/vue-testing-library/intro/) with `@testing-library/user-event` for user-centric, behavioral tests. [Vue Test Utils](https://test-utils.vuejs.org/) is also accepted, especially for tests that need direct access to the component wrapper (e.g., `findComponent`, `emitted()`). Follow the advice [about making components easy to test](https://test-utils.vuejs.org/guide/essentials/easy-to-test.html)
-5. Aim for behavioral coverage of critical and new features
-
-### Playwright / Browser / E2E Tests
-
-1. Follow the Best Practices described [in the Playwright documentation](https://playwright.dev/docs/best-practices)
-2. Do not use waitForTimeout, use Locator actions and [retrying assertions](https://playwright.dev/docs/test-assertions#auto-retrying-assertions)
-3. Tags like `@mobile`, `@2x` are respected by config and should be used for relevant tests
-4. Type all API mock responses in `route.fulfill()` using generated types or schemas from `packages/ingest-types`, `packages/registry-types`, `src/workbench/extensions/manager/types/generatedManagerTypes.ts`, or `src/schemas/` — see `docs/guidance/playwright.md` for the full source-of-truth table
-
-## External Resources
-
-- Vue: <https://vuejs.org/api/>
-- Tailwind: <https://tailwindcss.com/docs/styling-with-utility-classes>
-- VueUse: <https://vueuse.org/functions.html>
-- shadcn/vue: <https://www.shadcn-vue.com/>
-- Reka UI: <https://reka-ui.com/>
-- PrimeVue: <https://primevue.org>
-- Comfy Design Standards: <https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards>
-- ComfyUI: <https://docs.comfy.org>
-- Electron: <https://www.electronjs.org/docs/latest/>
-- Wiki: <https://deepwiki.com/Comfy-Org/ComfyUI_frontend/1-overview>
-- [Practical Test Pyramid](https://martinfowler.com/articles/practical-test-pyramid.html)
+- Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).
+- Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`.
+- Do not write change detector tests, e.g. a test that just asserts that the defaults are certain values
+- Do not write tests that are dependent on non-behavioral features like utility classes or styles
+- Be parsimonious in testing, do not write redundant tests (see [composable tests](https://tidyfirst.substack.com/p/composable-tests))
+- [Don't Mock What You Don't Own](https://hynek.me/articles/what-to-mock-in-5-mins/)
+- Conventions: `docs/guidance/vitest.md` (unit/component), `docs/guidance/playwright.md` (E2E), and `docs/testing/*.md` for detailed patterns.
 
 ## Architecture Decision Records
 
@@ -253,55 +187,6 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
 3. **No god-object growth**: Do not add methods to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph`. Extract to systems, stores, or composables.
 4. **Plain data components**: ECS components are plain data objects — no methods, no back-references to parent entities. Behavior belongs in systems (pure functions).
 5. **Extension ecosystem impact**: Changes to entity callbacks (`onConnectionsChange`, `onRemoved`, `onAdded`, `onConnectInput/Output`, `onConfigure`, `onWidgetChanged`), `node.widgets` access, `node.serialize`, or `graph._version++` affect 40+ custom node repos and require migration guidance.
-
-## Project Philosophy
-
-- Follow good software engineering principles
-  - YAGNI
-  - AHA
-  - DRY
-  - SOLID
-- Clean, stable public APIs
-- Domain-driven design
-- Thousands of users and extensions
-- Prioritize clean interfaces that restrict extension access
-
-### Code Review
-
-In doing a code review, you should make sure that:
-
-- The code is well-designed.
-- The functionality is good for the users of the code.
-- Any UI changes are sensible and look good.
-- Any parallel programming is done safely.
-- The code isn’t more complex than it needs to be.
-- The developer isn’t implementing things they might need in the future but don’t know they need now.
-- Code has appropriate unit tests.
-- Tests are well-designed.
-- The developer used clear names for everything.
-- Comments are clear and useful, and mostly explain why instead of what.
-- Code is appropriately documented (generally in g3doc).
-- The code conforms to our style guides.
-
-#### [Complexity](https://google.github.io/eng-practices/review/reviewer/looking-for.html#complexity)
-
-Is the CL more complex than it should be? Check this at every level of the CL—are individual lines too complex? Are functions too complex? Are classes too complex? “Too complex” usually means “can’t be understood quickly by code readers.” It can also mean “developers are likely to introduce bugs when they try to call or modify this code.”
-
-A particular type of complexity is over-engineering, where developers have made the code more generic than it needs to be, or added functionality that isn’t presently needed by the system. Reviewers should be especially vigilant about over-engineering. Encourage developers to solve the problem they know needs to be solved now, not the problem that the developer speculates might need to be solved in the future. The future problem should be solved once it arrives and you can see its actual shape and requirements in the physical universe.
-
-## Repository Navigation
-
-- Check README files in key folders (browser_tests, composables, etc.)
-- Prefer running single tests for performance
-- Use --help for unfamiliar CLI tools
-
-## GitHub Integration
-
-When referencing Comfy-Org repos:
-
-1. Check for local copy
-2. Use GitHub API for branches/PRs/metadata
-3. Curl GitHub website if needed
 
 ## Common Pitfalls
 

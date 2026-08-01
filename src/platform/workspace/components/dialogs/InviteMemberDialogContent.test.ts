@@ -7,13 +7,19 @@ import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
 
 import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const { mockCreateInvite, mockCloseDialog, mockToastAdd, mockTrackInviteSent } =
-  vi.hoisted(() => ({
-    mockCreateInvite: vi.fn(),
-    mockCloseDialog: vi.fn(),
-    mockToastAdd: vi.fn(),
-    mockTrackInviteSent: vi.fn()
-  }))
+const {
+  mockCreateInvite,
+  mockCloseDialog,
+  mockToastAdd,
+  mockTrackInviteSent,
+  mockTrackInviteFailed
+} = vi.hoisted(() => ({
+  mockCreateInvite: vi.fn(),
+  mockCloseDialog: vi.fn(),
+  mockToastAdd: vi.fn(),
+  mockTrackInviteSent: vi.fn(),
+  mockTrackInviteFailed: vi.fn()
+}))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   MAX_WORKSPACE_MEMBERS: 30,
@@ -25,7 +31,8 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackWorkspaceInviteSent: mockTrackInviteSent
+    trackWorkspaceInviteSent: mockTrackInviteSent,
+    trackWorkspaceInviteFailed: mockTrackInviteFailed
   })
 }))
 
