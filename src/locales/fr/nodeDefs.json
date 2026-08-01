@@ -6500,6 +6500,48 @@
       }
     }
   },
+  "IdeogramPImage": {
+    "description": "Génère des images à l'aide de P-Image, le modèle texte-vers-image rapide d'Ideogram. Excellente typographie et photoréalisme ; prend en charge les légendes JSON structurées Ideogram 4.0 pour un texte, des couleurs et une mise en page exacts.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Le ratio d'aspect pour la génération d'image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt textuel. Accepte également une légende JSON structurée Ideogram 4.0 (couleurs exactes en hexadécimal #RRGGBB, chaînes de texte exactes, mise en page par boîte englobante) — réglez prompt_upsampling sur OFF pour l'utiliser tel quel."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Développe les prompts courts en une légende structurée détaillée avant la génération (le prompt réécrit est renvoyé comme final_prompt). Réglez sur OFF lorsque vous fournissez votre propre légende JSON ou un texte exact."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Niveau de vitesse/prix/qualité. MEDIUM est le choix par défaut quotidien ; HIGH pour des prompts complexes, des détails fins et du texte difficile ; VERY_LOW/LOW pour des brouillons à grande échelle. Le texte difficile est mal rendu en dessous de MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Classe de taille de sortie (les pixels exacts suivent le ratio d'aspect, par exemple 16:9 donne 1280x720 en 1K et 2560x1440 en 2K). Préférez HIGH + 2K pour une typographie nette."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour une génération reproductible. Avec prompt_upsampling sur OFF, la même graine et les mêmes paramètres donnent la même image ; avec ON/AUTO, la réécriture du prompt varie à chaque exécution — reproduisez un résultat en réutilisant la sortie final_prompt avec prompt_upsampling sur OFF et la même graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "Le prompt à partir duquel l'image a réellement été générée (la légende structurée réécrite si prompt_upsampling a été utilisé, sinon votre prompt). Réutilisez-le avec prompt_upsampling sur OFF et la même graine pour reproduire cette image."
+      }
+    }
+  },
   "IdeogramV3": {
     "description": "Génère des images de façon synchrone avec le modèle Ideogram V3.\n\nPrend en charge la génération d’images à partir de prompts textuels ainsi que l’édition d’images avec mask.\nLes liens des images sont disponibles pour une durée limitée ; si vous souhaitez conserver l’image, vous devez la télécharger.",
     "display_name": "Ideogram V3",
@@ -11328,6 +11370,125 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "Générez une vidéo à partir d'une image de première image et, éventuellement, d'une image de dernière image à l'aide du modèle MiniMax H3. Le ratio d'aspect de la vidéo suit celui des images fournies.",
+    "display_name": "MiniMax H3 Première-Dernière-Image vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Image de la première image pour la vidéo."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Image de la dernière image pour la vidéo (optionnelle)."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modèle à utiliser pour la génération vidéo."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine aléatoire. La même requête avec la même graine donne des résultats similaires, mais pas garantis identiques."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Ajouter ou non un filigrane AIGC à la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "Générez une vidéo à partir d’images, de vidéos et d’audio de référence en utilisant le modèle MiniMax H3. Référez-vous aux références dans le prompt selon leur ordre : « Image 1 », « Image 2 », « Vidéo 1 », « Audio 1 », etc.",
+    "display_name": "MiniMax H3 Référence vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération vidéo."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine aléatoire. La même requête avec la même graine donne des résultats similaires, mais pas garantis identiques."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane AIGC à la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "Générez une vidéo à partir d’un prompt texte en utilisant le modèle MiniMax H3.",
+    "display_name": "MiniMax H3 Texte vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération vidéo."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine aléatoire. La même requête avec la même graine donne des résultats similaires, mais pas garantis identiques."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane AIGC à la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
