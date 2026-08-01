@@ -1,72 +1,125 @@
-<!--
-TODO: Extract checkbox pattern into reusable Checkbox component
-- Create src/components/input/Checkbox.vue with:
-  - Hidden native <input type="checkbox"> for accessibility
-  - Custom visual styling matching this implementation
-  - Semantic tokens (--primary-background, --input-surface, etc.)
-- Use this Checkbox component in:
-  - MediaAssetFilterMenu.vue (this file)
-  - MultiSelect.vue option template
-  - SingleSelect.vue if needed
-- Benefits: Consistent checkbox UI, better maintainability, reusable design system component
--->
 <template>
-  <div class="m-0 flex flex-col gap-0 p-0">
-    <div
-      v-for="filter in filters"
-      :key="filter.type"
-      class="flex h-10 min-w-32 cursor-pointer items-center gap-2 rounded-lg px-2 hover:bg-secondary-background-hover"
-      tabindex="0"
-      role="checkbox"
-      :aria-checked="mediaTypeFilters.includes(filter.type)"
-      @click="toggleMediaType(filter.type)"
-      @keydown.enter.prevent="toggleMediaType(filter.type)"
-      @keydown.space.prevent="toggleMediaType(filter.type)"
-    >
-      <div
-        class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
-        :class="
-          mediaTypeFilters.includes(filter.type)
-            ? 'border-primary-background bg-primary-background'
-            : 'bg-secondary-background'
-        "
+  <DropdownMenuLabel
+    class="px-2 pt-1 pb-1.5 text-xs font-semibold text-muted-foreground uppercase"
+  >
+    {{ $t('sideToolbar.mediaAssets.filterGroupAttribute') }}
+  </DropdownMenuLabel>
+
+  <DropdownMenuSub>
+    <DropdownMenuSubTrigger :class="menuItemClass">
+      <i class="icon-[lucide--image] size-4 shrink-0 text-muted-foreground" />
+      <span class="flex-1 text-left">
+        {{ $t('sideToolbar.mediaAssets.filterMediaType') }}
+      </span>
+      <i
+        class="icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground"
+      />
+    </DropdownMenuSubTrigger>
+
+    <DropdownMenuPortal>
+      <DropdownMenuSubContent
+        :side-offset="8"
+        :align-offset="-9"
+        :collision-padding="10"
+        :prioritize-position="false"
+        :class="submenuClass"
       >
-        <i
-          v-if="mediaTypeFilters.includes(filter.type)"
-          class="icon-[lucide--check] text-xs font-bold text-white"
-        />
-      </div>
-      <span class="text-sm">{{ $t(filter.label) }}</span>
-    </div>
-  </div>
+        <DropdownMenuCheckboxItem
+          v-for="filter in mediaTypeFilterOptions"
+          :key="filter.value"
+          :model-value="mediaTypeFilters.includes(filter.value)"
+          :class="menuItemClass"
+          @click="toggleMediaType(filter.value)"
+          @select.prevent
+        >
+          <span class="flex-1">{{ $t(filter.label) }}</span>
+          <DropdownMenuItemIndicator class="size-4 shrink-0">
+            <i class="icon-[lucide--check]" />
+          </DropdownMenuItemIndicator>
+        </DropdownMenuCheckboxItem>
+      </DropdownMenuSubContent>
+    </DropdownMenuPortal>
+  </DropdownMenuSub>
+
+  <DropdownMenuSub>
+    <DropdownMenuSubTrigger :class="menuItemClass">
+      <i
+        class="icon-[lucide--calendar] size-4 shrink-0 text-muted-foreground"
+      />
+      <span class="flex-1 text-left">
+        {{ $t('sideToolbar.mediaAssets.filterDate') }}
+      </span>
+      <i
+        class="icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground"
+      />
+    </DropdownMenuSubTrigger>
+
+    <DropdownMenuPortal>
+      <DropdownMenuSubContent
+        :side-offset="8"
+        :align-offset="-9"
+        :collision-padding="10"
+        :prioritize-position="false"
+        :class="submenuClass"
+      >
+        <DropdownMenuRadioGroup :model-value="dateFilter">
+          <DropdownMenuRadioItem
+            v-for="filter in dateFilterOptions"
+            :key="filter.value"
+            :value="filter.value"
+            :class="menuItemClass"
+            @click="dateFilter = filter.value"
+            @select.prevent
+          >
+            <span class="flex-1">{{ $t(filter.label) }}</span>
+            <DropdownMenuItemIndicator class="size-4 shrink-0">
+              <i class="icon-[lucide--check]" />
+            </DropdownMenuItemIndicator>
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuSubContent>
+    </DropdownMenuPortal>
+  </DropdownMenuSub>
 </template>
 
 <script setup lang="ts">
-const { mediaTypeFilters } = defineProps<{
-  mediaTypeFilters: string[]
-}>()
+import {
+  DropdownMenuCheckboxItem,
+  DropdownMenuItemIndicator,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger
+} from 'reka-ui'
 
-const emit = defineEmits<{
-  'update:mediaTypeFilters': [value: string[]]
-}>()
+import {
+  dateFilterOptions,
+  mediaTypeFilterOptions
+} from '@/platform/assets/mediaAssetFilterOptions'
+import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
 
-const filters = [
-  { type: 'image', label: 'sideToolbar.mediaAssets.filterImage' },
-  { type: 'video', label: 'sideToolbar.mediaAssets.filterVideo' },
-  { type: 'audio', label: 'sideToolbar.mediaAssets.filterAudio' },
-  { type: '3d', label: 'sideToolbar.mediaAssets.filter3D' },
-  { type: 'text', label: 'sideToolbar.mediaAssets.filterText' }
-]
+const dateFilter = defineModel<MediaAssetDateFilter>('dateFilter', {
+  required: true
+})
+const mediaTypeFilters = defineModel<string[]>('mediaTypeFilters', {
+  required: true
+})
 
-const toggleMediaType = (type: string) => {
-  const isCurrentlySelected = mediaTypeFilters.includes(type)
-  if (isCurrentlySelected) {
-    emit(
-      'update:mediaTypeFilters',
-      mediaTypeFilters.filter((t) => t !== type)
+const menuItemClass =
+  'flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-highlighted:bg-secondary-background-hover'
+const submenuClass =
+  'z-1700 min-w-40 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm'
+
+function toggleMediaType(type: string) {
+  if (mediaTypeFilters.value.includes(type)) {
+    mediaTypeFilters.value = mediaTypeFilters.value.filter(
+      (filter) => filter !== type
     )
   } else {
-    emit('update:mediaTypeFilters', [...mediaTypeFilters, type])
+    mediaTypeFilters.value = [...mediaTypeFilters.value, type]
   }
 }
 </script>
