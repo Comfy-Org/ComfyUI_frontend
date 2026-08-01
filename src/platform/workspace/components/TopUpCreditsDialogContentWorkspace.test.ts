@@ -24,6 +24,7 @@ const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: true }))
 const mockTopupActionOperation = ref<{ actionUrl: string } | undefined>(
   undefined
 )
+const mockIsAddingCredits = ref(false)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -38,7 +39,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
     hasPendingOperations: true,
-    isAddingCredits: false,
+    get isAddingCredits() {
+      return mockIsAddingCredits.value
+    },
     get topupActionOperation() {
       return mockTopupActionOperation.value
     },
@@ -208,6 +211,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     vi.clearAllMocks()
     mockBalance.value = null
     mockTopupActionOperation.value = undefined
+    mockIsAddingCredits.value = false
     mockCanTopUp.value = true
     mockShouldUseWorkspaceBilling.value = true
     mockFetchBalance.mockResolvedValue(undefined)
@@ -344,6 +348,37 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await nextTick()
 
     await user.click(screen.getByRole('button', { name: 'Back' }))
+
+    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
+    expect(screen.queryByText('Select an amount')).not.toBeInTheDocument()
+  })
+
+  it('routes back to verifying even before the bank link arrives', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+
+    renderDialog({ savedMethods: [VISA] })
+    await clickAddCredits()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    mockIsAddingCredits.value = true
+    await nextTick()
+
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+
+    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Select an amount')).not.toBeInTheDocument()
+  })
+
+  it('jumps from amount to verifying when the bank link arrives', async () => {
+    renderDialog()
+
+    mockTopupActionOperation.value = {
+      actionUrl: 'https://verify.example/sensitive-token'
+    }
+    await nextTick()
 
     expect(screen.getByText('Verify your payment')).toBeInTheDocument()
     expect(screen.queryByText('Select an amount')).not.toBeInTheDocument()

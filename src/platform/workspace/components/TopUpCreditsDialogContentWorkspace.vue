@@ -342,6 +342,8 @@
         variant="primary"
         size="lg"
         class="h-10 justify-center"
+        :disabled="!topupActionUrl"
+        :loading="!topupActionUrl"
         @click="openTopupVerification"
       >
         {{ $t('subscription.preview.completeVerification') }}
@@ -445,6 +447,10 @@ const declineReason = ref<string | null>(null)
 
 const selectedMethodId = ref(savedMethods?.[0]?.id ?? '')
 
+watch(topupActionUrl, (url) => {
+  if (url && step.value === 'amount') step.value = 'verifying'
+})
+
 const savedMethod = computed(
   () =>
     savedMethods?.find((m) => m.id === selectedMethodId.value) ??
@@ -536,7 +542,7 @@ function handleBack() {
     step.value = 'confirm'
     return
   }
-  if (topupActionUrl.value) {
+  if (topupActionUrl.value || isPolling.value) {
     step.value = 'verifying'
     return
   }
