@@ -51,7 +51,10 @@ function registerCanvasTargets(sequence: TourStep[]) {
     registered.push([id, target])
   }
   releaseRegistered = () => {
-    for (const [id, target] of registered) unregisterCoachmark(id, target)
+    for (const [id, target] of registered) {
+      unregisterCoachmark(id, target)
+      target.dispose?.()
+    }
   }
 }
 

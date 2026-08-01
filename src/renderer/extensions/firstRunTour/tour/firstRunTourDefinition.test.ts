@@ -15,6 +15,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import { TOUR_ROLE_PINS } from '../roles/tourRolePins'
 import type { RolePin } from '../roles/tourRolePins'
+import type * as CanvasCoachTarget from './canvasCoachTarget'
 import {
   firstRunTourSteps,
   releaseFirstRunTargets
@@ -28,6 +29,23 @@ const NO_PROMPT = 'gsc_advanced_3_2'
 
 const runState = ref<RunState>('idle')
 const framings: { glide?: boolean }[] = []
+
+const disposals = vi.hoisted(() => ({ spy: vi.fn() }))
+vi.mock('./canvasCoachTarget', async (importOriginal) => {
+  const actual = await importOriginal<typeof CanvasCoachTarget>()
+  return {
+    canvasNodeTarget: (...args: Parameters<typeof actual.canvasNodeTarget>) => {
+      const target = actual.canvasNodeTarget(...args)
+      return {
+        ...target,
+        dispose: () => {
+          disposals.spy()
+          target.dispose?.()
+        }
+      }
+    }
+  }
+})
 
 vi.mock('./cameraFraming', () => ({
   frameNode: (_id: unknown, _signal: AbortSignal, options = {}) => {
@@ -80,6 +98,7 @@ function loadTemplate(templateId: keyof typeof TOUR_ROLE_PINS): LGraph {
 describe('firstRunTourSteps', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    disposals.spy.mockClear()
   })
 
   afterEach(() => {
@@ -181,5 +200,24 @@ describe('firstRunTourSteps', () => {
       targetMounted(FIRST_RUN_COACH_IDS.source),
       'a finished tour must not leave its targets behind'
     ).toBe(false)
+  })
+
+  it('releases what each target watches, not just its registration', async () => {
+    loadTemplate(FROM_IMAGE)
+    const steps = await buildSteps(FROM_IMAGE)
+    const onCanvas = steps.filter(
+      (s) =>
+        s.kind === 'spotlight' &&
+        s.coachId &&
+        s.coachId !== FIRST_RUN_COACH_IDS.runButton
+    )
+    expect(onCanvas.length).toBeGreaterThan(0)
+
+    releaseFirstRunTargets()
+
+    expect(
+      disposals.spy,
+      'unregistering only hides a target; its observers run until it is disposed'
+    ).toHaveBeenCalledTimes(onCanvas.length)
   })
 })
