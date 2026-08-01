@@ -17,6 +17,10 @@
 export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   readonly [string, string, string]
 > = [
+  // Intentionally unmapped (widget values are model ids / HF repo ids, not
+  // asset filenames): rmbg, florence2, LLM/Qwen-VL/*, qwen-tts, diffusers
+  // (Kolors), BiRefNet, EVF-SAM, smol. onnx/human-parts has no assets.
+
   // ---- ComfyUI core loaders ----
   ['checkpoints', 'CheckpointLoaderSimple', 'ckpt_name'],
   ['checkpoints', 'ImageOnlyCheckpointLoader', 'ckpt_name'],
@@ -74,37 +78,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // ---- SEEDVR2 video upscaling (comfyui-seedvr2) ----
   ['SEEDVR2', 'SeedVR2LoadDiTModel', 'model'],
 
-  // ---- Qwen VL vision-language (comfyui-qwen-vl) ----
-  ['LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-2B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-2B-Thinking', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-4B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-4B-Thinking', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-8B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-8B-Thinking', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-32B-Instruct', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-32B-Thinking', 'AILab_QwenVL', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-0.6B', 'AILab_QwenVL_PromptEnhancer', 'model_name'],
-  [
-    'LLM/Qwen-VL/Qwen3-4B-Instruct-2507',
-    'AILab_QwenVL_PromptEnhancer',
-    'model_name'
-  ],
-  ['LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-2B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-2B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-4B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-4B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-8B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-8B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-32B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
-  ['LLM/Qwen-VL/Qwen3-VL-32B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
+  // ---- ChatGLM3 text encoder ----
   ['LLM/checkpoints', 'LoadChatGLM3', 'chatglm3_checkpoint'],
-
-  // ---- Qwen3 TTS (ComfyUI-FunBox) ----
-  ['qwen-tts', 'FB_Qwen3TTSVoiceClone', 'model_choice'],
 
   // ---- LivePortrait (comfyui-liveportrait) ----
   ['liveportrait', 'DownloadAndLoadLivePortraitModels', ''],
@@ -115,9 +90,6 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
 
   // ---- Face parsing (comfyui_face_parsing) ----
   ['face_parsing', 'FaceParsingModelLoader(FaceParsing)', ''],
-
-  // ---- Kolors (ComfyUI-KolorsWrapper) ----
-  ['diffusers', 'DownloadAndLoadKolorsModel', 'model'],
 
   // ---- RIFE video frame interpolation (ComfyUI-RIFE) ----
   ['rife', 'RIFE VFI', 'ckpt_name'],
@@ -164,7 +136,6 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // ---- LayerStyle (ComfyUI_LayerStyle_Advance) ----
   ['BEN', 'LS_LoadBenModel', 'model'],
   ['BiRefNet/pth', 'LS_LoadBiRefNetModel', 'model'],
-  ['onnx/human-parts', 'LS_HumanPartsUltra', ''],
   ['lama', 'LaMa', 'lama_model'],
 
   // ---- Inpaint (comfyui-inpaint-nodes) ----
@@ -183,23 +154,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
     'image_captioner_name'
   ],
 
-  // ---- BiRefNet background removal (comfyui_layerstyle) ----
-  ['BiRefNet', 'LayerMask: LoadBiRefNetModelV2', 'version'],
-
-  // ---- EVF-SAM segmentation (comfyui_layerstyle) ----
-  ['EVF-SAM', 'LayerMask: EVFSAMUltra', 'model'],
-
-  // ---- Florence2 vision-language (comfyui-florence2) ----
-  ['florence2', 'DownloadAndLoadFlorence2Model', 'model'],
-
   // ---- GIMM-VFI frame interpolation (ComfyUI-GIMM-VFI) ----
   ['interpolation', 'DownloadAndLoadGIMMVFIModel', 'model'],
-
-  // ---- RMBG background removal (comfyui-rmbg) ----
-  ['rmbg', 'RMBG', 'model'],
-
-  // ---- SmolLM2/SmolVLM language models (comfyui_layerstyle) ----
-  ['smol', 'LayerUtility: LoadSmolLM2Model', 'model'],
 
   // ---- Transparent background removal (comfyui_layerstyle) ----
   ['transparent-background', 'LayerMask: TransparentBackgroundUltra', 'model'],
