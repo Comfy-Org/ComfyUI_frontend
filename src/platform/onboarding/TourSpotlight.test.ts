@@ -116,6 +116,37 @@ describe('TourSpotlight', () => {
     expect(ZIndex.set).toHaveBeenCalled()
   })
 
+  it('leaves focus and z-order alone when only the step copy changes', async () => {
+    vi.mocked(ZIndex.set).mockClear()
+    const step = spotlightStep()
+    const { rerender } = renderSpotlight({
+      step,
+      title: 'Hang tight',
+      body: 'Your result lands here'
+    })
+    await nextTick()
+    await nextTick()
+
+    const skip = screen.getByRole('button', { name: 'Skip' })
+    skip.focus()
+    const raises = vi.mocked(ZIndex.set).mock.calls.length
+
+    // The same step object reporting new copy — what a `get name()` does when
+    // the run it describes finishes.
+    await rerender({ step, title: 'Your image is ready', body: 'Here it is' })
+    await nextTick()
+    await nextTick()
+
+    expect(
+      skip,
+      'copy changing mid-run must not pull focus off what the user selected'
+    ).toHaveFocus()
+    expect(
+      vi.mocked(ZIndex.set).mock.calls.length,
+      'a re-raise per copy change leaks a z-index entry every time'
+    ).toBe(raises)
+  })
+
   it('emits advance on the primary button and skip on the secondary', async () => {
     const user = userEvent.setup()
     const { emitted } = renderSpotlight()
