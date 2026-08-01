@@ -8,6 +8,14 @@
     "displayName": "Kling AI"
   },
   {
+    "slug": "seedance-bytedance",
+    "name": "Seedance (ByteDance)",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 15,
+    "displayName": "Seedance (ByteDance)"
+  },
+  {
     "slug": "openai-dall-e",
     "name": "OpenAI DALL-E",
     "huggingFaceUrl": "",
@@ -30,14 +38,6 @@
     "directory": "partner_nodes",
     "workflowCount": 11,
     "displayName": "Vidu"
-  },
-  {
-    "slug": "seedance-bytedance",
-    "name": "Seedance (ByteDance)",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 23,
-    "displayName": "Seedance (ByteDance)"
   },
   {
     "slug": "wan-api",
@@ -112,6 +112,14 @@
     "displayName": "Runway"
   },
   {
+    "slug": "seedream-bytedance",
+    "name": "Seedream (ByteDance)",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 5,
+    "displayName": "Seedream (ByteDance)"
+  },
+  {
     "slug": "topaz-labs",
     "name": "Topaz Labs",
     "huggingFaceUrl": "",
@@ -166,6 +174,14 @@
     "directory": "partner_nodes",
     "workflowCount": 3,
     "displayName": "Wavespeed"
+  },
+  {
+    "slug": "seed-audio-bytedance",
+    "name": "Seed Audio (ByteDance)",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 3,
+    "displayName": "Seed Audio (ByteDance)"
   },
   {
     "slug": "bria-ai",
