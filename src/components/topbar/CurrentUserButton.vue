@@ -49,11 +49,12 @@
       @show="onPopoverShow"
     >
       <CurrentUserPopoverWorkspace
-        v-if="isCloud && initState === 'ready'"
+        v-if="isCloud"
         ref="workspacePopoverContent"
+        :account-actions-only="initState !== 'ready'"
         @close="closePopover"
       />
-      <CurrentUserPopoverLegacy v-else-if="!isCloud" @close="closePopover" />
+      <CurrentUserPopoverLegacy v-else @close="closePopover" />
     </Popover>
   </div>
 </template>

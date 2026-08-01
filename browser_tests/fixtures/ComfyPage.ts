@@ -13,6 +13,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
+import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
@@ -561,6 +562,7 @@ export const comfyPageFixture = base.extend<{
     }
 
     if (testInfo.tags.includes('@cloud')) {
+      await mockWorkspace(page.context(), workspace('personal', 'owner'), [])
       await comfyPage.cloudAuth.mockAuth()
     }
 

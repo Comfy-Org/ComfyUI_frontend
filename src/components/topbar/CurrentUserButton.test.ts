@@ -77,6 +77,20 @@ vi.mock('@/platform/workspace/components/WorkspaceProfilePic.vue', () => ({
   }
 }))
 
+const CurrentUserPopoverWorkspaceStub = defineComponent({
+  name: 'CurrentUserPopoverWorkspace',
+  props: {
+    accountActionsOnly: Boolean
+  },
+  setup(props) {
+    return () =>
+      h('div', [
+        h('span', 'Workspace Popover Content'),
+        props.accountActionsOnly ? h('span', 'Account Actions Only') : ''
+      ])
+  }
+})
+
 // Mock the CurrentUserPopoverLegacy component
 vi.mock('./CurrentUserPopoverLegacy.vue', () => ({
   default: defineComponent({
@@ -85,7 +99,7 @@ vi.mock('./CurrentUserPopoverLegacy.vue', () => ({
     setup(_, { emit }) {
       return () =>
         h('div', [
-          'Popover Content',
+          h('span', 'Popover Content'),
           h(
             'button',
             {
@@ -120,6 +134,7 @@ describe('CurrentUserButton', () => {
       global: {
         plugins: [i18n],
         stubs: {
+          CurrentUserPopoverWorkspace: CurrentUserPopoverWorkspaceStub,
           Popover: defineComponent({
             setup(_, { slots, expose }) {
               const shown = ref(false)
@@ -157,6 +172,20 @@ describe('CurrentUserButton', () => {
 
     expect(screen.getByText('Popover Content')).toBeInTheDocument()
   })
+
+  it.for(['loading', 'error'])(
+    'shows account actions while Cloud workspace initialization is %s',
+    async (initState) => {
+      mockIsCloud.value = true
+      mockTeamWorkspaceStore.initState.value = initState
+      const { user } = renderComponent()
+
+      await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+      expect(screen.getByText('Workspace Popover Content')).toBeInTheDocument()
+      expect(screen.getByText('Account Actions Only')).toBeInTheDocument()
+    }
+  )
 
   it('hides popover when closePopover is called', async () => {
     const { user } = renderComponent()

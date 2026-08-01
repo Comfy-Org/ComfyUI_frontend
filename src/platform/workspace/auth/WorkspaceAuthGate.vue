@@ -1,5 +1,27 @@
 <template>
-  <slot v-if="isReady" />
+  <slot v-if="initializationState === 'ready'" />
+  <div
+    v-else-if="initializationState !== 'initializing'"
+    class="flex size-full items-center justify-center bg-base-background p-8"
+  >
+    <div class="flex max-w-md flex-col items-center gap-4 text-center">
+      <i class="icon-[lucide--triangle-alert] size-8 text-error" />
+      <div>
+        <h1 class="m-0 text-lg font-semibold text-base-foreground">
+          {{ $t('workspaceAuth.initializationFailed') }}
+        </h1>
+        <p class="mt-2 mb-0 text-muted-foreground">
+          {{ $t('workspaceAuth.initializationFailedDetail') }}
+        </p>
+      </div>
+      <Button
+        :loading="initializationState === 'retrying'"
+        @click="retryInitialization"
+      >
+        {{ $t('workspaceAuth.retry') }}
+      </Button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -22,6 +44,7 @@ import { promiseTimeout, until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -34,7 +57,9 @@ import { useAuthStore } from '@/stores/authStore'
 const FIREBASE_INIT_TIMEOUT_MS = 16_000
 const CONFIG_REFRESH_TIMEOUT_MS = 10_000
 
-const isReady = ref(!isCloud)
+const initializationState = ref<
+  'initializing' | 'retrying' | 'ready' | 'error'
+>(isCloud ? 'initializing' : 'ready')
 const subscriptionDialog = useSubscriptionDialog()
 
 async function initialize(): Promise<void> {
@@ -56,7 +81,7 @@ async function initialize(): Promise<void> {
     // Step 2: If not authenticated, nothing more to do
     // Unauthenticated users don't have workspace context
     if (!currentUser.value) {
-      isReady.value = true
+      initializationState.value = 'ready'
       return
     }
 
@@ -96,7 +121,7 @@ async function initialize(): Promise<void> {
       subscriptionDialog.resumePendingPricingFlow()
     }
 
-    isReady.value = true
+    initializationState.value = 'ready'
   } catch (error) {
     console.error('[WorkspaceAuthGate] Initialization failed:', error)
     captureException(error, {
@@ -104,7 +129,14 @@ async function initialize(): Promise<void> {
         error_type: 'workspace_auth_gate_initialization_failure'
       }
     })
+    initializationState.value = 'error'
+    document.getElementById('splash-loader')?.remove()
   }
+}
+
+async function retryInitialization(): Promise<void> {
+  initializationState.value = 'retrying'
+  await initialize()
 }
 
 async function initializeWorkspaceMode(): Promise<void> {
@@ -114,7 +146,10 @@ async function initializeWorkspaceMode(): Promise<void> {
   // - Switching to last used workspace if needed
   // - Setting active workspace
   const workspaceStore = useTeamWorkspaceStore()
-  if (workspaceStore.initState === 'uninitialized') {
+  if (
+    workspaceStore.initState === 'uninitialized' ||
+    workspaceStore.initState === 'error'
+  ) {
     await workspaceStore.initialize()
   }
   if (

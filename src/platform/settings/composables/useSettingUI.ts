@@ -430,23 +430,25 @@ export function useSettingUI(
   )
 
   const navGroups = computed<NavGroupData[]>(() =>
-    groupedMenuTreeNodes.value.map((group) => ({
-      title:
-        (group as SettingTreeNode & { translatedLabel?: string })
-          .translatedLabel ?? group.label,
-      items: (group.children ?? []).map((child) => ({
-        id: child.key,
-        label:
-          (child as SettingTreeNode & { translatedLabel?: string })
-            .translatedLabel ?? child.label,
-        icon:
-          child.key === 'workspace' && billingControlsEnabled.value
-            ? CATEGORY_ICONS.PlanCredits
-            : (CATEGORY_ICONS[child.key] ??
-              CATEGORY_ICONS[child.label] ??
-              'icon-[lucide--plug]')
+    groupedMenuTreeNodes.value
+      .filter((group) => group.children?.length)
+      .map((group) => ({
+        title:
+          (group as SettingTreeNode & { translatedLabel?: string })
+            .translatedLabel ?? group.label,
+        items: (group.children ?? []).map((child) => ({
+          id: child.key,
+          label:
+            (child as SettingTreeNode & { translatedLabel?: string })
+              .translatedLabel ?? child.label,
+          icon:
+            child.key === 'workspace' && billingControlsEnabled.value
+              ? CATEGORY_ICONS.PlanCredits
+              : (CATEGORY_ICONS[child.key] ??
+                CATEGORY_ICONS[child.label] ??
+                'icon-[lucide--plug]')
+        }))
       }))
-    }))
   )
 
   function findCategoryByKey(key: string): SettingTreeNode | null {
