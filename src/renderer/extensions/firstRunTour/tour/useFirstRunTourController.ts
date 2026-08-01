@@ -13,6 +13,7 @@ import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 
 import {
@@ -26,6 +27,13 @@ const RUN_BUTTON_SELECTOR =
 
 /** An undimmed look at the workflow the user chose, before the tour dims it. */
 const INTRO_PREVIEW_MS = 500
+
+/**
+ * How long a run may sit behind a dropped socket before the card stops
+ * promising a result. Armed only while disconnected, so a slow run that is
+ * still reporting is never cut short.
+ */
+const OFFLINE_GRACE_MS = 20_000
 
 function useFirstRunTourControllerInternal() {
   const engine = useOnboardingTourStore()
@@ -60,6 +68,22 @@ function useFirstRunTourControllerInternal() {
     }
   )
 
+  // A reconnect reconciles the queue and resolves the run; a socket that never
+  // comes back reports nothing, so the card would promise a result forever.
+  let offlineTimer: ReturnType<typeof setTimeout> | undefined
+  function stopOfflineGrace() {
+    clearTimeout(offlineTimer)
+    offlineTimer = undefined
+  }
+  useEventListener(api, 'reconnecting', () => {
+    if (runState.value !== 'generating' || offlineTimer) return
+    offlineTimer = setTimeout(() => {
+      stopOfflineGrace()
+      if (runState.value === 'generating') runState.value = 'failed'
+    }, OFFLINE_GRACE_MS)
+  })
+  useEventListener(api, 'reconnected', stopOfflineGrace)
+
   /**
    * A run outlives the step that starts it, so the click moves the tour on. One
    * the paywall will refuse never queues, so it is consumed and the tour parked.
@@ -90,6 +114,7 @@ function useFirstRunTourControllerInternal() {
     () => engine.activeTour === 'firstRun',
     (active) => {
       if (active) return
+      stopOfflineGrace()
       releaseFirstRunTargets()
       tourWorkflow.value = null
       runState.value = 'idle'

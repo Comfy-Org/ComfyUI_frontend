@@ -54,7 +54,12 @@ vi.mock('./cameraFraming', () => ({
   }
 }))
 
-function buildSteps(templateId: keyof typeof TOUR_ROLE_PINS | string) {
+async function buildSteps(templateId: keyof typeof TOUR_ROLE_PINS | string) {
+  const { steps } = await firstRunTourSteps(templateId, runState)
+  return steps
+}
+
+function buildResolution(templateId: keyof typeof TOUR_ROLE_PINS | string) {
   return firstRunTourSteps(templateId, runState)
 }
 
@@ -113,16 +118,19 @@ describe('firstRunTourSteps', () => {
   it('gives a template the tour does not support no steps', async () => {
     loadTemplate(FROM_IMAGE)
 
-    await expect(buildSteps('some_shared_workflow')).resolves.toEqual([])
+    await expect(
+      buildResolution('some_shared_workflow'),
+      'an unsupported template needs pins, which is a different fix from drift'
+    ).resolves.toEqual({ steps: [], reason: 'no_roles' })
   })
 
   it('gives no steps when every pin has drifted and only Run is left', async () => {
     appState.graph = new LGraph()
 
     await expect(
-      buildSteps(FROM_IMAGE),
+      buildResolution(FROM_IMAGE),
       'a lone "click Run" step is not worth taking over the screen for'
-    ).resolves.toEqual([])
+    ).resolves.toEqual({ steps: [], reason: 'run_only' })
   })
 
   it.for<{ templateId: keyof typeof TOUR_ROLE_PINS; names: string[] }>([

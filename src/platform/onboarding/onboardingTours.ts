@@ -1,6 +1,8 @@
 import { shallowReactive } from 'vue'
 import type { Ref } from 'vue'
 
+import type { OnboardingTourNotStartedReason } from '@/platform/telemetry/types'
+
 /** Every tour, including ones whose steps a consumer registers at runtime. */
 export const ENTRY_PATHS = ['appMode', 'firstRun'] as const
 
@@ -85,8 +87,16 @@ export interface SpotlightStep extends StepBase {
 
 export type CoachStep = LandingStep | SpotlightStep
 
+/** Steps, plus the reason when there were none worth opening a tour for. */
+export interface TourResolution {
+  steps: CoachStep[]
+  reason?: OnboardingTourNotStartedReason
+}
+
 /** A tour's steps: a fixed list, or a resolver that builds them at start. */
-export type TourDefinition = CoachStep[] | (() => Promise<CoachStep[]>)
+export type TourDefinition =
+  | CoachStep[]
+  | (() => Promise<CoachStep[] | TourResolution>)
 
 /**
  * Fixes the running step set (and so the step count) at tour start: drops steps
