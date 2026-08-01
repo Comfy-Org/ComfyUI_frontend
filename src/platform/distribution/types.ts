@@ -10,14 +10,6 @@ declare global {
   const __IS_NIGHTLY__: boolean
 }
 
-/**
- * Current distribution - replaced at compile time.
- *
- * Exported for the rare consumer that needs the distribution as a value rather
- * than one of the `isDesktop` / `isCloud` booleans (e.g. signup attribution,
- * which reports which build an account was created from). Prefer the booleans
- * for branching so dead-code elimination can strip the untaken branch.
- */
 export const DISTRIBUTION: Distribution = __DISTRIBUTION__
 
 export const isDesktop = DISTRIBUTION === 'desktop'

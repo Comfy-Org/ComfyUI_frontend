@@ -59,16 +59,6 @@ type CreateCustomerResponse =
  */
 type CreateCustomerPayload = {
   turnstile_token?: string
-  /**
-   * Which build the account is being created from, sent on every call and
-   * emitted by the backend as the `signup_source` property on the
-   * `account:created` analytics event.
-   *
-   * Attribution only — never used to gate or authorize anything, since a
-   * client can claim any value. It exists because PostHog's `$initial_host`
-   * only covers browser sessions, so desktop signups are otherwise
-   * indistinguishable from web signups that never sent a browser event.
-   */
   signup_source?: Distribution
 }
 type GetCustomerBalanceResponse =

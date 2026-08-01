@@ -20,10 +20,6 @@ import { createTestingPinia } from '@pinia/testing'
 
 // Hoisted mocks for dynamic imports
 const { mockDistributionTypes } = vi.hoisted(() => ({
-  // A coherent cloud build: the real module derives isCloud/isDesktop from
-  // DISTRIBUTION, so these three must agree or the fixture describes a build
-  // that cannot exist. The suite depends on isCloud being true (the unified
-  // auth remint paths), so 'cloud' is the distribution that fits.
   mockDistributionTypes: {
     isCloud: true,
     isDesktop: false,
@@ -53,11 +49,6 @@ type MockAuth = Record<string, unknown>
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
 
-/**
- * Parsed request body of the POST /customers call, or undefined if none was
- * made. `signup_source` is 'cloud' under test — this suite mocks
- * `@/platform/distribution/types` wholesale (see mockDistributionTypes).
- */
 const customerRequestBody = (): Record<string, unknown> | undefined => {
   const customerCall = mockFetch.mock.calls.find(([url]) =>
     String(url).endsWith('/customers')
@@ -494,8 +485,6 @@ describe('useAuthStore', () => {
 
       await store.register('new@example.com', 'password')
 
-      // The body is always sent now (it carries signup_source), so absence of
-      // the token is what must be asserted -- not absence of the body.
       expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
     })
 
@@ -1202,9 +1191,6 @@ describe('useAuthStore', () => {
     it('sends signup_source on every call, even with no payload', async () => {
       await store.createCustomer()
 
-      // Tagging every call (not just the signup call sites) is what makes the
-      // attribution immune to a new call site forgetting to pass it; the
-      // backend only emits account:created for the call that actually creates.
       expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
     })
 
