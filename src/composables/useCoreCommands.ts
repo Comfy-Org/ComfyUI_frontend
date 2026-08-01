@@ -45,11 +45,8 @@ import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import {
-  useQueueSettingsStore,
-  useQueueStore,
-  useQueueUIStore
-} from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -517,7 +514,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         useTelemetry()?.trackWorkflowExecution()
 
-        await app.queuePrompt(0, batchCount)
+        await app.queuePrompt(0, batchCount, { intent: metadata })
       }
     },
     {
@@ -540,7 +537,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         useTelemetry()?.trackWorkflowExecution()
 
-        await app.queuePrompt(-1, batchCount)
+        await app.queuePrompt(-1, batchCount, { intent: metadata })
       }
     },
     {
@@ -584,7 +581,10 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
         useTelemetry()?.trackWorkflowExecution()
-        await app.queuePrompt(0, batchCount, executionIds)
+        await app.queuePrompt(0, batchCount, {
+          queueNodeIds: executionIds,
+          intent: metadata
+        })
       }
     },
     {

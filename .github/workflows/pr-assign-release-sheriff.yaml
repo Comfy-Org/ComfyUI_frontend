@@ -1,0 +1,51 @@
+# Assigns the on-call release sheriff to backport and release version-bump PRs
+# so they are never left unowned. Details: docs/release-process.md.
+name: 'PR: Assign Release Sheriff'
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, labeled]
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialize runs so two sweeps cannot race on the same PR.
+concurrency:
+  group: assign-release-sheriff
+  cancel-in-progress: false
+
+jobs:
+  assign:
+    name: Assign release sheriff
+    # Cheap runner-spinup gate only; release-sheriff.ts is the authoritative filter.
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      (github.event_name != 'pull_request_target' ||
+       contains(github.event.pull_request.labels.*.name, 'backport') ||
+       contains(github.event.pull_request.labels.*.name, 'Release') ||
+       contains(github.event.pull_request.title, 'backport') ||
+       startsWith(github.event.pull_request.head.ref, 'version-bump-'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      # pull_request_target checks out the base branch, never PR head code.
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Assign release sheriff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
+        run: pnpm exec tsx scripts/release-sheriff/release-sheriff.ts

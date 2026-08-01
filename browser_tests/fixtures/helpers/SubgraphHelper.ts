@@ -360,7 +360,7 @@ export class SubgraphHelper {
   ): Promise<void> {
     const widget = nodeLocator.getByLabel(widgetName, { exact: true })
     await this.comfyPage.contextMenu
-      .openFor(widget)
+      .openForDisabledElement(widget)
       .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
   }
 

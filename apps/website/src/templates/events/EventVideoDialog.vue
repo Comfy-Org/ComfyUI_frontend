@@ -1,29 +1,41 @@
 <script setup lang="ts">
-// Trello-style tutorial card: the tutorial page renders the directory behind
-// this dialog, which is SSR'd open (the `open` attribute, no teleport) so the
-// tutorial's heading stays in the static HTML. On mount it is upgraded to a
-// modal (focus trap, top layer). Closing removes the tutorial from the URL:
-// back to the directory the visitor came from, or over to the category page
-// on a direct visit.
-import { onMounted, onUnmounted, useTemplateRef } from 'vue'
+// Trello-style event card: an /events/[slug] page renders the events
+// directory behind this dialog, which is SSR'd open (the `open` attribute, no
+// teleport) so the event's heading stays in the static HTML. On mount it is
+// upgraded to a modal (focus trap, top layer). Closing removes the event from
+// the URL: back to /events when the visitor came from there, or over to
+// /events on a direct visit.
+import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
 
+import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue'
 import { lockScroll, unlockScroll } from '../../composables/scrollLock'
 import { localizeHref } from '../../config/routes'
-import type { LearningTutorial } from '../../data/learningTutorials'
 import type { Locale } from '../../i18n/translations'
+import type { CalendarEvent } from '../../utils/calendar'
 
-import { categoryPath, tutorialDescription } from '../../data/learningTutorials'
 import { t } from '../../i18n/translations'
-import VideoPlayer from '../common/VideoPlayer.vue'
 
-const { tutorial, locale = 'en' } = defineProps<{
-  tutorial: LearningTutorial
+const {
+  title,
+  description,
+  youtubeVideoId,
+  calendarEvent,
+  locale = 'en'
+} = defineProps<{
+  title: string
+  description: string
+  youtubeVideoId: string
+  /** Future events: offer adding the stream to the visitor's calendar. */
+  calendarEvent?: CalendarEvent
   locale?: Locale
 }>()
 
 const dialogEl = useTemplateRef<HTMLDialogElement>('dialogEl')
 
-const description = tutorialDescription(tutorial, locale)
+const embedUrl = computed(
+  () =>
+    `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1&rel=0`
+)
 
 // Prefer the Navigation API's previous same-origin entry; referrer is a
 // fallback for browsers without it and is often stripped.
@@ -40,7 +52,7 @@ const cameFromDirectory = () => {
     const url = new URL(previous)
     return (
       url.origin === location.origin &&
-      url.pathname.startsWith(localizeHref('/learning', locale))
+      url.pathname.startsWith(localizeHref('/events', locale))
     )
   } catch {
     return false
@@ -53,12 +65,12 @@ const closeDialog = () => {
   if (cameFromDirectory() && history.length > 1) {
     history.back()
   } else {
-    location.assign(localizeHref(categoryPath(tutorial.category), locale))
+    location.assign(localizeHref('/events', locale))
   }
 }
 
-const onBackdropClick = (event: MouseEvent) => {
-  if (event.target === event.currentTarget) closeDialog()
+const onBackdropClick = (mouseEvent: MouseEvent) => {
+  if (mouseEvent.target === mouseEvent.currentTarget) closeDialog()
 }
 
 onMounted(() => {
@@ -80,13 +92,13 @@ onUnmounted(() => {
   <dialog
     ref="dialogEl"
     open
-    :aria-label="tutorial.title[locale]"
+    :aria-label="title"
     class="fixed inset-0 z-50 flex size-full max-h-none max-w-none flex-col items-center justify-center border-0 bg-transparent px-4 py-8 backdrop-blur-xl backdrop:bg-transparent lg:px-20 lg:py-8"
     @click="onBackdropClick"
     @cancel.prevent="closeDialog"
   >
     <button
-      :aria-label="t('learning.detail.close', locale)"
+      :aria-label="t('events.videoDialog.close', locale)"
       class="border-primary-comfy-yellow hover:bg-primary-comfy-yellow group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 bg-primary-comfy-ink transition-colors lg:right-26"
       @click="closeDialog"
     >
@@ -97,26 +109,32 @@ onUnmounted(() => {
     </button>
 
     <div
-      class="border-primary-comfy-yellow rounded-5xl flex w-full max-w-7xl items-center justify-center overflow-hidden border-2 bg-primary-comfy-ink p-3 lg:p-4"
+      class="border-primary-comfy-yellow rounded-5xl w-full max-w-7xl overflow-hidden border-2 bg-primary-comfy-ink p-3 lg:p-4"
     >
-      <VideoPlayer
-        :key="tutorial.id"
-        :locale
-        :src="tutorial.videoSrc"
-        :poster="tutorial.poster"
-        :tracks="tutorial.caption"
-        autoplay
-        autoplay-unmuted
-        class="w-full"
-      />
+      <div class="aspect-video w-full overflow-hidden rounded-3xl">
+        <iframe
+          :src="embedUrl"
+          :title
+          class="size-full"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowfullscreen
+        />
+      </div>
     </div>
 
     <h1
       class="mt-6 text-center text-lg font-medium text-primary-comfy-canvas lg:text-xl"
     >
-      {{ t('learning.tutorials.titlePrefix', locale) }}
-      {{ tutorial.title[locale] }}
+      {{ title }}
     </h1>
+    <div v-if="calendarEvent" class="mt-4">
+      <AddToCalendarButton
+        size="default"
+        portal-disabled
+        :event="calendarEvent"
+        :locale
+      />
+    </div>
     <p class="sr-only">{{ description }}</p>
   </dialog>
 </template>

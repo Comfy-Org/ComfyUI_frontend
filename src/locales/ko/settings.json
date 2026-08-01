@@ -426,10 +426,6 @@
   "Comfy_Validation_Workflows": {
     "name": "워크플로 유효성 검사"
   },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "자동 스케일 레이아웃 (Vue 노드)",
-    "tooltip": "Vue 렌더링으로 전환 시 노드 위치를 자동으로 조정하여 겹침 방지"
-  },
   "Comfy_VueNodes_Enabled": {
     "name": "모던 노드 디자인 (Vue 노드)",
     "tooltip": "모던: 향상된 상호작용, 기본 브라우저 기능, 업데이트된 시각적 디자인을 갖춘 DOM 기반 렌더링. 클래식: 전통적인 캔버스 렌더링."
@@ -458,6 +454,9 @@
   },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "워크플로 삭제 시 확인 표시"
+  },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "위젯 값을 이름으로 복원"
   },
   "Comfy_Workflow_Persist": {
     "name": "페이지 (재)로드시 워크플로우 상태를 유지하고 복원"
