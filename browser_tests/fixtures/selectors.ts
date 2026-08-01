@@ -288,6 +288,7 @@ export const TestIds = {
   },
   load3d: {
     categoryMenu: 'load3d-category-menu',
+    gizmoModeMenu: 'gizmo-mode-menu',
     recordingDuration: 'load3d-recording-duration'
   },
   load3dViewer: {
