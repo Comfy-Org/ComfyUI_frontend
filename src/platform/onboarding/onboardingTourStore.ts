@@ -342,7 +342,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     return true
   }
 
-  /** Says why a qualifying user got no tour, so coverage stays measurable. */
   function reportNotStarted(
     entryPath: EntryPath,
     reason: OnboardingTourNotStartedReason
