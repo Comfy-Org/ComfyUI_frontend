@@ -385,12 +385,6 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    // signup_source rides every call rather than being threaded through the
-    // individual signup call sites: the backend only emits account:created on
-    // the request that actually creates the customer, so tagging them all is
-    // both harmless and immune to a new call site forgetting to pass it. This
-    // makes the body unconditional, which the endpoint accepts (the whole body
-    // is optional server-side).
     const body: CreateCustomerPayload = {
       ...payload,
       signup_source: DISTRIBUTION
