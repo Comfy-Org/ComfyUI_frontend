@@ -25,7 +25,7 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
-type CheckoutStep = 'pricing' | 'preview' | 'success'
+type CheckoutStep = 'pricing' | 'preview' | 'success' | 'declined'
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
 export type SubscriptionCheckoutSelection =
@@ -96,6 +96,7 @@ export function useSubscriptionCheckout(
     plans,
     fetchPlans,
     fetchStatus,
+    manageSubscription,
     isTeamPlan,
     resubscribe,
     subscription
@@ -107,6 +108,7 @@ export function useSubscriptionCheckout(
   const workspaceStore = useTeamWorkspaceStore()
 
   const checkoutStep = ref<CheckoutStep>('pricing')
+  const checkoutDeclineReason = ref<string | null>(null)
   const isLoadingPreview = ref(false)
   const loadingTier = ref<CheckoutTierKey | null>(null)
   const isSubscribing = ref(false)
@@ -591,12 +593,26 @@ export function useSubscriptionCheckout(
       }
     )
     if (
-      operation.status === 'succeeded' &&
-      activeCheckoutOperationId.value === opId &&
-      operation.workspaceId === workspaceStore.activeWorkspaceId
+      activeCheckoutOperationId.value !== opId ||
+      operation.workspaceId !== workspaceStore.activeWorkspaceId
     ) {
-      checkoutStep.value = 'success'
+      return
     }
+    if (operation.status === 'succeeded') {
+      checkoutStep.value = 'success'
+    } else if (operation.status === 'failed') {
+      checkoutDeclineReason.value = operation.errorMessage
+      checkoutStep.value = 'declined'
+    }
+  }
+
+  async function handleUpdatePayment() {
+    await manageSubscription()
+  }
+
+  function handleDeclinedBack() {
+    checkoutDeclineReason.value = null
+    checkoutStep.value = 'preview'
   }
 
   async function handleTeamSubscription(
@@ -736,6 +752,9 @@ export function useSubscriptionCheckout(
 
   return {
     checkoutStep,
+    checkoutDeclineReason,
+    handleDeclinedBack,
+    handleUpdatePayment,
     isLoadingPreview,
     loadingTier,
     isSubscribing,

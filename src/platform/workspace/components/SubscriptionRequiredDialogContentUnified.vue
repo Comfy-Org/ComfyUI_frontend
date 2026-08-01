@@ -12,17 +12,19 @@
         // panel stays fixed; below xl the whole dialog scrolls as before.
         isEmbeddedPaymentStep &&
           'xl:h-[min(740px,90vh)] xl:gap-0 xl:overflow-hidden xl:rounded-2xl xl:p-0',
-        (isEmbeddedSuccessStep || isEmbeddedConfirmStep) &&
+        (isEmbeddedSuccessStep || isEmbeddedConfirmStep || isDeclinedStep) &&
           'h-[min(740px,85vh)] overflow-hidden rounded-2xl bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px]',
         (isEmbeddedPaymentStep ||
           isEmbeddedSuccessStep ||
-          isEmbeddedConfirmStep) &&
+          isEmbeddedConfirmStep ||
+          isDeclinedStep) &&
           'motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out',
         // The w-fit shell hugs min-content on phones; give the embedded
         // steps a real width floor below xl.
         (isEmbeddedPaymentStep ||
           isEmbeddedSuccessStep ||
-          isEmbeddedConfirmStep) &&
+          isEmbeddedConfirmStep ||
+          isDeclinedStep) &&
           'max-xl:w-[min(430px,92vw)]',
         isEmbeddedPaymentStep && 'max-xl:h-[85vh]'
       )
@@ -61,7 +63,8 @@
       v-if="
         !isEmbeddedPaymentStep &&
         !isEmbeddedSuccessStep &&
-        !isEmbeddedConfirmStep
+        !isEmbeddedConfirmStep &&
+        !isDeclinedStep
       "
       class="flex flex-col items-center gap-3"
     >
@@ -153,6 +156,13 @@
       :dark-surface="isEmbeddedSuccessStep"
       @close="handleSuccessClose"
     />
+
+    <SubscriptionPaymentDeclinedWorkspace
+      v-if="checkoutStep === 'declined'"
+      :reason="checkoutDeclineReason"
+      @back="handleDeclinedBack"
+      @update-payment="handleUpdatePayment"
+    />
   </div>
 </template>
 
@@ -167,6 +177,7 @@ import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composa
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
+import SubscriptionPaymentDeclinedWorkspace from './SubscriptionPaymentDeclinedWorkspace.vue'
 import type { SavedPaymentMethod } from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
@@ -228,8 +239,13 @@ const isEmbeddedSuccessStep = computed(
       previewVariant.value === 'personal-new')
 )
 
+const isDeclinedStep = computed(() => checkoutStep.value === 'declined')
+
 const {
   checkoutStep,
+  checkoutDeclineReason,
+  handleDeclinedBack,
+  handleUpdatePayment,
   isLoadingPreview,
   loadingTier,
   isSubscribing,

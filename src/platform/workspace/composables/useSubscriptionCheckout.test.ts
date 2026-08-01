@@ -1541,6 +1541,30 @@ describe('useSubscriptionCheckout', () => {
       openSpy.mockRestore()
     })
 
+    it('lands on the declined step with the reason when the async payment fails', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-declined-1'
+      })
+      mockStartOperation.mockResolvedValueOnce({
+        status: 'failed',
+        errorMessage: 'Insufficient funds',
+        workspaceId: 'workspace-1'
+      })
+
+      await checkout.handleAddCreditCard()
+
+      expect(checkout.checkoutStep.value).toBe('declined')
+      expect(checkout.checkoutDeclineReason.value).toBe('Insufficient funds')
+
+      checkout.handleDeclinedBack()
+      expect(checkout.checkoutStep.value).toBe('preview')
+      expect(checkout.checkoutDeclineReason.value).toBeNull()
+    })
+
     it('advances to success once the async payment operation succeeds', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
