@@ -23,7 +23,8 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
-import { isCloud } from '@/platform/distribution/types'
+import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
+import type { Distribution } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
   getPreservedQueryParam
@@ -58,6 +59,17 @@ type CreateCustomerResponse =
  */
 type CreateCustomerPayload = {
   turnstile_token?: string
+  /**
+   * Which build the account is being created from, sent on every call and
+   * emitted by the backend as the `signup_source` property on the
+   * `account:created` analytics event.
+   *
+   * Attribution only — never used to gate or authorize anything, since a
+   * client can claim any value. It exists because PostHog's `$initial_host`
+   * only covers browser sessions, so desktop signups are otherwise
+   * indistinguishable from web signups that never sent a browser event.
+   */
+  signup_source?: Distribution
 }
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -383,6 +395,17 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
+    // signup_source rides every call rather than being threaded through the
+    // individual signup call sites: the backend only emits account:created on
+    // the request that actually creates the customer, so tagging them all is
+    // both harmless and immune to a new call site forgetting to pass it. This
+    // makes the body unconditional, which the endpoint accepts (the whole body
+    // is optional server-side).
+    const body: CreateCustomerPayload = {
+      ...payload,
+      signup_source: DISTRIBUTION
+    }
+
     const createCustomerRes = await fetchWithUnifiedRemint(
       buildApiUrl('/customers'),
       {
@@ -391,8 +414,7 @@ export const useAuthStore = defineStore('auth', () => {
           ...authHeader,
           'Content-Type': 'application/json'
         },
-        ...(payload &&
-          Object.keys(payload).length > 0 && { body: JSON.stringify(payload) })
+        body: JSON.stringify(body)
       },
       isCloud && flags.unifiedCloudAuthEnabled
     )

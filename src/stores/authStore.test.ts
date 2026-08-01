@@ -22,7 +22,9 @@ import { createTestingPinia } from '@pinia/testing'
 const { mockDistributionTypes } = vi.hoisted(() => ({
   mockDistributionTypes: {
     isCloud: true,
-    isDesktop: true
+    isDesktop: true,
+    // Matches the global __DISTRIBUTION__ stub in vitest.setup.ts.
+    DISTRIBUTION: 'localhost'
   }
 }))
 
@@ -47,6 +49,20 @@ type MockAuth = Record<string, unknown>
 // Mock fetch
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
+
+/**
+ * Parsed request body of the POST /customers call, or undefined if none was
+ * made. `signup_source` is 'localhost' under test (see vitest.setup.ts).
+ */
+const customerRequestBody = (): Record<string, unknown> | undefined => {
+  const customerCall = mockFetch.mock.calls.find(([url]) =>
+    String(url).endsWith('/customers')
+  )
+  const body = customerCall?.[1]?.body
+  return typeof body === 'string'
+    ? (JSON.parse(body) as Record<string, unknown>)
+    : undefined
+}
 
 // Mock successful API responses
 const mockCreateCustomerResponse = {
@@ -459,22 +475,24 @@ describe('useAuthStore', () => {
         expect.stringContaining('/customers'),
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ turnstile_token: 'turnstile-abc' })
+          body: JSON.stringify({
+            turnstile_token: 'turnstile-abc',
+            signup_source: 'localhost'
+          })
         })
       )
     })
 
-    it('omits the request body when no turnstile token is provided', async () => {
+    it('omits turnstile_token when no turnstile token is provided', async () => {
       vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
         user: mockUser
       } as Partial<UserCredential> as UserCredential)
 
       await store.register('new@example.com', 'password')
 
-      const customerCall = mockFetch.mock.calls.find(([url]) =>
-        String(url).endsWith('/customers')
-      )
-      expect(customerCall?.[1]).not.toHaveProperty('body')
+      // The body is always sent now (it carries signup_source), so absence of
+      // the token is what must be asserted -- not absence of the body.
+      expect(customerRequestBody()).toEqual({ signup_source: 'localhost' })
     })
 
     it('rolls back the orphaned Firebase user when customer creation fails', async () => {
@@ -820,11 +838,7 @@ describe('useAuthStore', () => {
 
         await store.loginWithGoogle()
 
-        const customerCall = mockFetch.mock.calls.find(([url]) =>
-          String(url).endsWith('/customers')
-        )
-        expect(customerCall).toBeDefined()
-        expect(customerCall?.[1]).not.toHaveProperty('body')
+        expect(customerRequestBody()).toEqual({ signup_source: 'localhost' })
       })
 
       it('should handle Google sign in errors', async () => {
@@ -867,11 +881,7 @@ describe('useAuthStore', () => {
 
         await store.loginWithGithub()
 
-        const customerCall = mockFetch.mock.calls.find(([url]) =>
-          String(url).endsWith('/customers')
-        )
-        expect(customerCall).toBeDefined()
-        expect(customerCall?.[1]).not.toHaveProperty('body')
+        expect(customerRequestBody()).toEqual({ signup_source: 'localhost' })
       })
 
       it('should handle Github sign in errors', async () => {
@@ -1185,6 +1195,24 @@ describe('useAuthStore', () => {
   })
 
   describe('createCustomer', () => {
+    it('sends signup_source on every call, even with no payload', async () => {
+      await store.createCustomer()
+
+      // Tagging every call (not just the signup call sites) is what makes the
+      // attribution immune to a new call site forgetting to pass it; the
+      // backend only emits account:created for the call that actually creates.
+      expect(customerRequestBody()).toEqual({ signup_source: 'localhost' })
+    })
+
+    it('preserves caller payload alongside signup_source', async () => {
+      await store.createCustomer({ turnstile_token: 'token-xyz' })
+
+      expect(customerRequestBody()).toEqual({
+        turnstile_token: 'token-xyz',
+        signup_source: 'localhost'
+      })
+    })
+
     it('should succeed with API key auth when no Firebase user is present', async () => {
       authStateCallback(null)
       mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
