@@ -29,7 +29,7 @@
 import { useToast } from 'primevue'
 import type { ToastMessageOptions } from 'primevue/toast'
 import Toast from 'primevue/toast'
-import { onUnmounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -48,7 +48,7 @@ const router = useRouter()
 
 const removeToast = () => toast.removeGroup(NEW_VERSION_TOAST_GROUP)
 
-const { accept, dismiss } = useNewVersionReloadPrompt({
+const { accept, dismiss, checkNow } = useNewVersionReloadPrompt({
   router,
   showPrompt: () => {
     // Route through the toast store so the message survives even if this
@@ -74,6 +74,12 @@ const onDismiss = (_message: ToastMessageOptions) => {
   dismiss()
   removeToast()
 }
+
+// Initial drift check on mount: a tab that never loses/regains focus would
+// otherwise never learn about a version that was already promoted.
+onMounted(() => {
+  void checkNow()
+})
 
 onUnmounted(removeToast)
 </script>
