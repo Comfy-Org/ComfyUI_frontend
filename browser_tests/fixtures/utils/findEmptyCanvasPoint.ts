@@ -8,8 +8,8 @@ export async function findEmptyCanvasPoint(
   canvas: Locator,
   scanOrigin: CanvasScanOrigin = 'top-left'
 ): Promise<Position> {
-  return await canvas.evaluate((canvas, scanOrigin) => {
-    const bounds = canvas.getBoundingClientRect()
+  return await canvas.evaluate((canvasElement, scanOrigin) => {
+    const bounds = canvasElement.getBoundingClientRect()
     const xCoordinates: number[] = []
     const yCoordinates: number[] = []
 
@@ -27,7 +27,12 @@ export async function findEmptyCanvasPoint(
 
     for (const y of ys) {
       for (const x of xs) {
-        if (!document.elementFromPoint(x, y)?.closest('[data-node-id]')) {
+        const element = document.elementFromPoint(x, y)
+        if (
+          element &&
+          canvasElement.contains(element) &&
+          !element.closest('[data-node-id]')
+        ) {
           return { x, y }
         }
       }

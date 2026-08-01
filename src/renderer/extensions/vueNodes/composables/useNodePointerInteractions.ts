@@ -108,7 +108,7 @@ export function useNodePointerInteractions(
     }
 
     if (layoutStore.isDraggingVueNodes.value) {
-      handleDrag(event, nodeId)
+      handleDrag(event)
     }
   }
 
@@ -126,8 +126,7 @@ export function useNodePointerInteractions(
 
   function safeDragEnd(event: PointerEvent) {
     try {
-      const nodeId = toValue(nodeIdRef)
-      endDrag(event, nodeId)
+      endDrag(event)
     } catch (error) {
       console.error('Error during endDrag:', error)
     } finally {

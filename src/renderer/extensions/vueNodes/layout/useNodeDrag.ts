@@ -205,7 +205,7 @@ function useNodeDragIndividual() {
     lastCanvasDelta = canvasDelta
   }
 
-  function handleDrag(event: PointerEvent, _nodeId: NodeId) {
+  function handleDrag(event: PointerEvent) {
     if (
       !activeDragNodeId ||
       activePointerId !== event.pointerId ||
@@ -237,7 +237,7 @@ function useNodeDragIndividual() {
 
   function handleActiveDrag(event: PointerEvent) {
     if (!layoutStore.isDraggingVueNodes.value || !activeDragNodeId) return
-    handleDrag(event, activeDragNodeId)
+    handleDrag(event)
   }
 
   function capturePointer(event: PointerEvent) {
@@ -268,7 +268,7 @@ function useNodeDragIndividual() {
     }
   }
 
-  function endDrag(event: PointerEvent, _nodeId: NodeId | undefined) {
+  function endDrag(event: PointerEvent) {
     const activeNodeId = activeDragNodeId
     if (!activeNodeId || activePointerId !== event.pointerId) return
 
@@ -375,7 +375,7 @@ function useNodeDragIndividual() {
     if (!activeDragNodeId || activePointerId !== event.pointerId) return
 
     try {
-      endDrag(event, undefined)
+      endDrag(event)
     } finally {
       layoutStore.isDraggingVueNodes.value = false
     }

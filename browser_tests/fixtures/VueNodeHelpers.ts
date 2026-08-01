@@ -1,6 +1,7 @@
 /**
  * Vue Node Test Helpers
  */
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -79,6 +80,21 @@ export class VueNodeHelpers {
         const paintOrder = Number.parseInt(getComputedStyle(node).zIndex, 10)
         return Number.isNaN(paintOrder) ? -1 : paintOrder
       })
+  }
+
+  async expectPaintsAbove(
+    aboveTitle: string,
+    belowTitle: string
+  ): Promise<void> {
+    await expect
+      .poll(async () => {
+        const [aboveOrder, belowOrder] = await Promise.all([
+          this.getNodePaintOrder(aboveTitle),
+          this.getNodePaintOrder(belowTitle)
+        ])
+        return aboveOrder - belowOrder
+      })
+      .toBeGreaterThan(0)
   }
 
   /**

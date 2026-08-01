@@ -60,15 +60,7 @@ test.describe('Collapsed Vue node stacking', { tag: '@vue-nodes' }, () => {
 
     await collapsed.header.click({ modifiers: ['Control'] })
     await expect.poll(() => comfyPage.nodeOps.getSelectedNodeIds()).toEqual([])
-    await expect
-      .poll(async () => {
-        const [collapsedOrder, expandedOrder] = await Promise.all([
-          comfyPage.vueNodes.getNodePaintOrder('CLIP Text Encode'),
-          comfyPage.vueNodes.getNodePaintOrder('VAE Decode')
-        ])
-        return collapsedOrder < expandedOrder
-      })
-      .toBe(true)
+    await comfyPage.vueNodes.expectPaintsAbove('VAE Decode', 'CLIP Text Encode')
     await comfyPage.page.mouse.click(overlap.x, overlap.y)
     await expect
       .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
@@ -95,15 +87,7 @@ test.describe('Collapsed Vue node stacking', { tag: '@vue-nodes' }, () => {
     await expect(collapsed.root).toHaveAttribute('data-collapsed', 'true')
     await collapsed.header.click({ modifiers: ['Control'] })
     await expect.poll(() => comfyPage.nodeOps.getSelectedNodeIds()).toEqual([])
-    await expect
-      .poll(async () => {
-        const [collapsedOrder, expandedOrder] = await Promise.all([
-          comfyPage.vueNodes.getNodePaintOrder('CLIP Text Encode'),
-          comfyPage.vueNodes.getNodePaintOrder('VAE Decode')
-        ])
-        return collapsedOrder < expandedOrder
-      })
-      .toBe(true)
+    await comfyPage.vueNodes.expectPaintsAbove('VAE Decode', 'CLIP Text Encode')
     await comfyPage.page.mouse.click(overlap.x, overlap.y)
     await expect
       .poll(() => comfyPage.nodeOps.getSelectedNodeIds())

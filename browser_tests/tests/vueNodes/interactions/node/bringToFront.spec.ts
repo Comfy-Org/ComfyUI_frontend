@@ -38,15 +38,7 @@ test.describe(
       )
 
       // KSampler should be on top after being dragged
-      await expect
-        .poll(async () => {
-          const ksamplerOrder =
-            await comfyPage.vueNodes.getNodePaintOrder('KSampler')
-          const clipOrder =
-            await comfyPage.vueNodes.getNodePaintOrder('CLIP Text Encode')
-          return ksamplerOrder - clipOrder
-        })
-        .toBeGreaterThan(0)
+      await comfyPage.vueNodes.expectPaintsAbove('KSampler', 'CLIP Text Encode')
 
       // Click on CLIP Text Encode (underneath) - need to click on a visible part
       // Since KSampler is on top, we click on the edge of CLIP that should still be visible
@@ -59,15 +51,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       // CLIP should now be on top
-      await expect
-        .poll(async () => {
-          const clipOrder =
-            await comfyPage.vueNodes.getNodePaintOrder('CLIP Text Encode')
-          const ksamplerOrder =
-            await comfyPage.vueNodes.getNodePaintOrder('KSampler')
-          return clipOrder - ksamplerOrder
-        })
-        .toBeGreaterThan(0)
+      await comfyPage.vueNodes.expectPaintsAbove('CLIP Text Encode', 'KSampler')
 
       // Screenshot showing CLIP now on top
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -95,15 +79,10 @@ test.describe(
       await comfyPage.nextFrame()
 
       // VAE should be on top after drag
-      await expect
-        .poll(async () => {
-          const vaeOrder =
-            await comfyPage.vueNodes.getNodePaintOrder('VAE Decode')
-          const clipOrder =
-            await comfyPage.vueNodes.getNodePaintOrder('CLIP Text Encode')
-          return vaeOrder - clipOrder
-        })
-        .toBeGreaterThan(0)
+      await comfyPage.vueNodes.expectPaintsAbove(
+        'VAE Decode',
+        'CLIP Text Encode'
+      )
 
       // Screenshot showing VAE on top
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -118,15 +97,10 @@ test.describe(
       await comfyPage.nextFrame()
 
       // CLIP should now be on top
-      await expect
-        .poll(async () => {
-          const clipOrder =
-            await comfyPage.vueNodes.getNodePaintOrder('CLIP Text Encode')
-          const vaeOrder =
-            await comfyPage.vueNodes.getNodePaintOrder('VAE Decode')
-          return clipOrder - vaeOrder
-        })
-        .toBeGreaterThan(0)
+      await comfyPage.vueNodes.expectPaintsAbove(
+        'CLIP Text Encode',
+        'VAE Decode'
+      )
 
       // Screenshot showing CLIP now on top after widget click
       await expect(comfyPage.canvas).toHaveScreenshot(
