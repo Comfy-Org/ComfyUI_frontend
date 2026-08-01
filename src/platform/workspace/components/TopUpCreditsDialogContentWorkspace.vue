@@ -536,6 +536,10 @@ function handleBack() {
     step.value = 'confirm'
     return
   }
+  if (topupActionUrl.value) {
+    step.value = 'verifying'
+    return
+  }
   step.value = 'amount'
 }
 

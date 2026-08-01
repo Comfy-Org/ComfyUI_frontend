@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
@@ -20,9 +21,9 @@ const mockManageSubscription = vi.fn()
 const mockBalance = { value: null as { amountMicros: number } | null }
 const mockCanTopUp = vi.hoisted(() => ({ value: true }))
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: true }))
-const mockTopupActionOperation = vi.hoisted(() => ({
-  value: undefined as { actionUrl: string } | undefined
-}))
+const mockTopupActionOperation = ref<{ actionUrl: string } | undefined>(
+  undefined
+)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -328,6 +329,24 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockTrackTopUpPurchase).not.toHaveBeenCalled()
     expect(mockToastAdd).not.toHaveBeenCalled()
     expect(mockCloseDialog).not.toHaveBeenCalled()
+  })
+
+  it('routes back to the verifying step while a charge awaits verification', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+
+    renderDialog({ savedMethods: [VISA] })
+    await clickAddCredits()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    mockTopupActionOperation.value = {
+      actionUrl: 'https://verify.example/sensitive-token'
+    }
+    await nextTick()
+
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+
+    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
+    expect(screen.queryByText('Select an amount')).not.toBeInTheDocument()
   })
 
   it('reopens onto the verifying step and opens verification without exposing its URL', async () => {
