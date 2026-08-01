@@ -28,11 +28,6 @@ const RUN_BUTTON_SELECTOR =
 /** An undimmed look at the workflow the user chose, before the tour dims it. */
 const INTRO_PREVIEW_MS = 500
 
-/**
- * How long a run may sit behind a dropped socket before the card stops
- * promising a result. Armed only while disconnected, so a slow run that is
- * still reporting is never cut short.
- */
 const OFFLINE_GRACE_MS = 20_000
 
 function useFirstRunTourControllerInternal() {
@@ -68,8 +63,6 @@ function useFirstRunTourControllerInternal() {
     }
   )
 
-  // A reconnect reconciles the queue and resolves the run; a socket that never
-  // comes back reports nothing, so the card would promise a result forever.
   let offlineTimer: ReturnType<typeof setTimeout> | undefined
   function stopOfflineGrace() {
     clearTimeout(offlineTimer)

@@ -121,7 +121,6 @@ export type OnboardingTourSkipReason =
   | 'trigger_lost'
   | 'postponed'
 
-/** Why a tour the user qualified for never opened. */
 export type OnboardingTourNotStartedReason =
   | 'already_seen'
   | 'no_roles'
@@ -140,7 +139,6 @@ export interface OnboardingTourMetadata {
   step_number?: number
   coach_id?: string
   skip_reason?: OnboardingTourSkipReason
-  /** Present only on the `not_started` stage. */
   not_started_reason?: OnboardingTourNotStartedReason
 }
 
