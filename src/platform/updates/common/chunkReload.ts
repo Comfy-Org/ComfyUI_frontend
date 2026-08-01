@@ -71,16 +71,33 @@ function isReloadSafe(): boolean {
   }
 }
 
+/**
+ * Narrow an `unknown` error/rejection reason to its message string, without
+ * `as` assertions: a raw string reason is itself the message; an object with a
+ * string `message` yields that. Anything else has no usable message.
+ */
+function getErrorMessage(reason: unknown): string | undefined {
+  if (typeof reason === 'string') return reason
+  if (
+    typeof reason === 'object' &&
+    reason !== null &&
+    'message' in reason &&
+    typeof reason.message === 'string'
+  ) {
+    return reason.message
+  }
+  return undefined
+}
+
 /** Extract the failing module URL from a preload/chunk error. */
 function extractModuleUrl(reason: unknown): string | undefined {
   if (!reason) return undefined
-  const direct = (reason as { url?: unknown }).url
-  if (typeof direct === 'string' && direct) return direct
-  const message =
-    typeof reason === 'string'
-      ? reason
-      : ((reason as { message?: unknown }).message ?? '')
-  if (typeof message !== 'string') return undefined
+  if (typeof reason === 'object' && 'url' in reason) {
+    const direct = reason.url
+    if (typeof direct === 'string' && direct) return direct
+  }
+  const message = getErrorMessage(reason)
+  if (message === undefined) return undefined
   return message.match(/https?:\/\/[^\s"')]+|\/[^\s"')]+/)?.[0]
 }
 
@@ -106,8 +123,14 @@ function isRecoverableChunkUrl(url: string | undefined): boolean {
 function performReload(chunkUrl?: string): void {
   // First-class, aggregatable telemetry: a RUM custom action fired only on a
   // genuine app-chunk staleness recovery (at most once per session). This is how
-  // we measure real-world reload frequency and alert if it ever spikes.
-  datadogRum.addAction('stale-chunk-reload', { chunkUrl })
+  // we measure real-world reload frequency and alert if it ever spikes. Wrapped
+  // so a throwing/uninitialized RUM SDK can never block the reload — recovery is
+  // the whole point of this path and must always proceed.
+  try {
+    datadogRum.addAction('stale-chunk-reload', { chunkUrl })
+  } catch {
+    // Telemetry must never prevent the recovery reload.
+  }
   window.location.reload()
 }
 
@@ -163,13 +186,15 @@ function armDeferredReload(router?: Router, chunkUrl?: string): void {
 /** Whether a rejection looks like a stale-chunk dynamic-import failure. */
 function isChunkLoadError(reason: unknown): boolean {
   if (!reason) return false
-  const name = (reason as { name?: unknown }).name
-  if (name === 'ChunkLoadError') return true
-  const message =
-    typeof reason === 'string'
-      ? reason
-      : ((reason as { message?: unknown }).message ?? '')
-  if (typeof message !== 'string') return false
+  if (
+    typeof reason === 'object' &&
+    'name' in reason &&
+    reason.name === 'ChunkLoadError'
+  ) {
+    return true
+  }
+  const message = getErrorMessage(reason)
+  if (message === undefined) return false
   return (
     /Failed to fetch dynamically imported module/i.test(message) ||
     /Unable to preload CSS/i.test(message) ||
