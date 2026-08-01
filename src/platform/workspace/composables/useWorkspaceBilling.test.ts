@@ -930,13 +930,11 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.tier).toBe('CREATOR')
       expect(mockStartOperation).not.toHaveBeenCalled()
       expect(billing.isLoading.value).toBe(false)
-      // Already being in the requested state is not a failure — no failure telemetry.
+      // Already being in the requested state is not a failure — no
+      // failure telemetry, but the funnel opened by 'started' still closes.
       expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'failed' })
       )
-      // The idempotent short-circuit still closes the funnel this composable
-      // opened with its own 'started' event — no billing_op_id exists here
-      // since no pollable operation was ever created.
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         stage: 'started',

@@ -702,12 +702,7 @@ type SubscriptionCheckoutBillingEvent = {
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
   payment_intent_source?: PaymentIntentSource
-  /**
-   * Present only when reported off the workspace billing-op poller.
-   * Measured from when the poller started watching `billing_op_id`, not
-   * from this event's own `started` stage — the initiating request (which
-   * runs before there is a `billing_op_id` to poll) is excluded.
-   */
+  /** Present when reported off the workspace billing-op poller. */
   duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
@@ -716,11 +711,7 @@ type BillingOperationBillingEvent = {
   /**
    * Absent when the operation failed before the backend ever returned one
    * (e.g. the initiating API call itself threw), so there is nothing yet to
-   * poll. Also absent on a `succeeded` event when `cancelSubscription`'s
-   * `ALREADY_CANCELED` idempotent early-exit fires: the request never
-   * created a billing operation, so a retried cancel adds to
-   * `cancel`/`succeeded` volume without a corresponding `billing_op_id` —
-   * a `billing_op_id`-keyed dedupe or monitor will undercount these.
+   * poll.
    */
   billing_op_id?: string
   operation_type: 'subscription' | 'topup' | 'cancel'
@@ -729,14 +720,9 @@ type BillingOperationBillingEvent = {
   checkout_type?: SubscriptionCheckoutType
   payment_intent_source?: PaymentIntentSource
   /**
-   * Present only when reported off the workspace billing-op poller.
-   * Measured from when the poller started watching `billing_op_id`, not
-   * from this event's own `started` stage — the initiating request (which
-   * runs before there is a `billing_op_id` to poll) is excluded. On
-   * `timeout` this is how long the client watched rather than a fixed
-   * window — 2 min for topup/cancel, 5 min or up to 23 h for subscription
-   * actions (see `billingOperationStore.ts`'s `*_TIMEOUT_MS` constants) —
-   * so exclude `timeout` events from latency aggregates.
+   * Present when reported off the workspace billing-op poller. On
+   * `timeout` this is how long the client watched, not the operation's
+   * true duration.
    */
   duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
@@ -750,12 +736,7 @@ type ResubscribeBillingEvent = {
 type TopupBillingEvent = {
   operation: 'topup'
   billing_op_id?: string
-  /**
-   * Present only when reported off the workspace billing-op poller.
-   * Measured from when the poller started watching `billing_op_id`, not
-   * from this event's own `started` stage — the initiating request (which
-   * runs before there is a `billing_op_id` to poll) is excluded.
-   */
+  /** Present when reported off the workspace billing-op poller. */
   duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
@@ -764,12 +745,7 @@ type DowngradeToPersonalBillingEvent = {
   member_removal_count: number
   member_removal_failures: number
   target_tier?: TierKey
-  /**
-   * Present only when reported off the workspace billing-op poller.
-   * Measured from when the poller started watching `billing_op_id`, not
-   * from this event's own `started` stage — the initiating request (which
-   * runs before there is a `billing_op_id` to poll) is excluded.
-   */
+  /** Present when reported off the workspace billing-op poller. */
   duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
