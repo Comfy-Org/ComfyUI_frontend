@@ -19,6 +19,11 @@ const media = {
 
 export const minimaxH3HeroVideo = media.hero
 
+// Gates both locale pages until the OSS weights are public. Clearing it also
+// starts emitting their FAQ structured data, and must be paired with dropping
+// /minimax-h3 from SITEMAP_EXCLUDED_PATHNAMES in astro.config.ts.
+export const minimaxH3NoindexUntilLaunch = true
+
 // CTA destinations. `runModel` is a stand-in for the launch workflow deep link
 // — Rob owns picking which of Lin's workflows the CTA points at, so it lands
 // on Comfy Cloud until that URL exists.

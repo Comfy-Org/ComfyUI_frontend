@@ -17,7 +17,8 @@ const SITEMAP_EXCLUDED_PATHNAMES = new Set([
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/individual-submission`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/booking-confirmation`),
   // Embargoed until the MiniMax H3 OSS weights are public. Drop these two
-  // entries in the same PR that clears `noindexUntilLaunch` on the pages.
+  // entries in the same PR that clears `minimaxH3NoindexUntilLaunch` in
+  // src/data/minimaxH3.ts.
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/minimax-h3`)
 ])
 

@@ -6,7 +6,7 @@ import MinimaxH3HeroSection from '../templates/minimax-h3/MinimaxH3HeroSection.v
 import MinimaxH3HighlightsSection from '../templates/minimax-h3/MinimaxH3HighlightsSection.vue'
 import MinimaxH3RunOptionsSection from '../templates/minimax-h3/MinimaxH3RunOptionsSection.vue'
 import MinimaxH3WorkflowsSection from '../templates/minimax-h3/MinimaxH3WorkflowsSection.vue'
-import { minimaxH3Faqs } from '../data/minimaxH3'
+import { minimaxH3Faqs, minimaxH3NoindexUntilLaunch } from '../data/minimaxH3'
 import { t } from '../i18n/translations'
 import type { JsonLdNode } from '../utils/jsonLd'
 import { jsonLdId, pageContext } from '../utils/jsonLd'
@@ -16,11 +16,6 @@ const { locale, url } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 )
-
-// The OSS weights are not public until launch morning, so the page ships
-// unlisted: noindex, and no nav or footer entry. Flip this to false in the
-// launch PR and the FAQ structured data below starts emitting with it.
-const noindexUntilLaunch = true
 
 const faqPage: JsonLdNode = {
   '@type': 'FAQPage',
@@ -36,7 +31,7 @@ const faqPage: JsonLdNode = {
 <BaseLayout
   title={t('minimaxH3.meta.title', locale)}
   description={t('minimaxH3.meta.description', locale)}
-  noindex={noindexUntilLaunch}
+  noindex={minimaxH3NoindexUntilLaunch}
   extraJsonLd={[faqPage]}
 >
   <MinimaxH3HeroSection locale={locale} client:load />
