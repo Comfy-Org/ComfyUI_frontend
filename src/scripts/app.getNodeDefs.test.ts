@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import { st } from '@/i18n'
+import { mergeBackendNodeDisplayNames, st } from '@/i18n'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -16,6 +16,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 vi.mock('@/i18n', () => ({
+  mergeBackendNodeDisplayNames: vi.fn(),
   st: vi.fn((_key: string, fallback: string) => fallback),
   t: vi.fn((key: string) => key),
   te: vi.fn(() => false)
@@ -45,6 +46,9 @@ describe('ComfyApp.getNodeDefs', () => {
     const result = await comfyApp.getNodeDefs()
 
     expect(result.TestNode.display_name).toBe('Custom Display Name')
+    expect(mergeBackendNodeDisplayNames).toHaveBeenCalledWith(
+      Object.values(mockNodeDefs)
+    )
   })
 
   test('should fall back to name when display_name is missing', async () => {
@@ -66,6 +70,31 @@ describe('ComfyApp.getNodeDefs', () => {
     const result = await comfyApp.getNodeDefs()
 
     expect(result.TestNode.display_name).toBe('TestNode')
+  })
+
+  test('looks up translations with normalized keys for dotted node names', async () => {
+    const mockNodeDefs: Record<string, ComfyNodeDefV1> = {
+      'my.node': {
+        name: 'my.node',
+        display_name: 'My Node',
+        category: 'test',
+        description: 'Dotted description',
+        input: {},
+        output: [],
+        output_node: false,
+        python_module: 'test.module'
+      }
+    }
+
+    vi.mocked(api.getNodeDefs).mockResolvedValue(mockNodeDefs)
+
+    await comfyApp.getNodeDefs()
+
+    expect(st).toHaveBeenCalledWith('nodeDefs.my_node.display_name', 'My Node')
+    expect(st).toHaveBeenCalledWith(
+      'nodeDefs.my_node.description',
+      'Dotted description'
+    )
   })
 
   test('should prioritize translation over object info display_name', async () => {

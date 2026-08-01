@@ -178,6 +178,16 @@ export function normalizeI18nKey(key: string) {
   return typeof key === 'string' ? key.replace(/\./g, '_') : ''
 }
 
+const VUE_I18N_SYNTAX_CHARS = /[@${}|%]/g
+
+/**
+ * Escapes vue-i18n message syntax characters so arbitrary text can be stored
+ * as a locale message and rendered verbatim by `t()`.
+ */
+export function escapeI18nMessage(text: string): string {
+  return text.replace(VUE_I18N_SYNTAX_CHARS, (char) => `{'${char}'}`)
+}
+
 /**
  * Takes a dynamic prompt in the format {opt1|opt2|{optA|optB}|} and randomly replaces groups. Supports C style comments.
  * @param input The dynamic prompt to process

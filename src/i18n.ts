@@ -6,6 +6,7 @@ import {
   resolveSupportedLocale
 } from '@/locales/localeConfig'
 import type { SupportedLocale } from '@/locales/localeConfig'
+import { escapeI18nMessage, normalizeI18nKey } from '@/utils/formatUtil'
 
 // Import only English locale eagerly as the default/fallback
 import enCommands from './locales/en/commands.json' with { type: 'json' }
@@ -129,6 +130,31 @@ export function mergeCustomNodesI18n(i18nData: Record<string, unknown>): void {
     if (loadedLocales.has(locale)) {
       i18n.global.mergeLocaleMessage(locale, message)
     }
+  }
+}
+
+/**
+ * Overrides the bundled English node display names with the ones the backend
+ * submitted in `object_info`, so core-node renames take effect without
+ * waiting for a frontend locale regeneration. Custom-node `en` translations
+ * from `/api/i18n` are reapplied afterwards to keep their precedence. Other
+ * locales keep their translations; missing keys there already fall back to
+ * backend values.
+ */
+export function mergeBackendNodeDisplayNames(
+  defs: Iterable<{ name: string; display_name?: string }>
+): void {
+  const nodeDefs: Record<string, { display_name: string }> = {}
+  for (const { name, display_name } of defs) {
+    if (!display_name) continue
+    nodeDefs[normalizeI18nKey(name)] = {
+      display_name: escapeI18nMessage(display_name)
+    }
+  }
+  i18n.global.mergeLocaleMessage('en', { nodeDefs })
+
+  if (customNodesI18nData['en']) {
+    i18n.global.mergeLocaleMessage('en', customNodesI18nData['en'])
   }
 }
 

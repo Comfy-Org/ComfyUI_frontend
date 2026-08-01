@@ -4,18 +4,22 @@ import type * as I18nModule from './i18n'
 
 let i18n: typeof I18nModule.i18n
 let loadLocale: typeof I18nModule.loadLocale
+let mergeBackendNodeDisplayNames: typeof I18nModule.mergeBackendNodeDisplayNames
 let mergeCustomNodesI18n: typeof I18nModule.mergeCustomNodesI18n
 let resolveSupportedLocale: typeof I18nModule.resolveSupportedLocale
 let setActiveLocale: typeof I18nModule.setActiveLocale
+let st: typeof I18nModule.st
 let te: typeof I18nModule.te
 
 async function importI18nModule() {
   const i18nModule = await import('./i18n')
   i18n = i18nModule.i18n
   loadLocale = i18nModule.loadLocale
+  mergeBackendNodeDisplayNames = i18nModule.mergeBackendNodeDisplayNames
   mergeCustomNodesI18n = i18nModule.mergeCustomNodesI18n
   resolveSupportedLocale = i18nModule.resolveSupportedLocale
   setActiveLocale = i18nModule.setActiveLocale
+  st = i18nModule.st
   te = i18nModule.te
 }
 
@@ -23,8 +27,22 @@ async function importI18nModule() {
 vi.mock('./locales/en/main.json', () => ({
   default: { welcome: 'Welcome', enOnly: 'English only' }
 }))
+// vue-i18n merges mutate the message tree built from this object, and mocked
+// modules survive vi.resetModules(), so restore it before each test.
+const enNodeDefsMock = vi.hoisted(() => ({}) as Record<string, unknown>)
+
+function restoreEnNodeDefsMock() {
+  for (const key of Object.keys(enNodeDefsMock)) {
+    delete enNodeDefsMock[key]
+  }
+  Object.assign(enNodeDefsMock, {
+    testNode: 'Test Node',
+    KSampler: { display_name: 'KSampler (bundled)' }
+  })
+}
+
 vi.mock('./locales/en/nodeDefs.json', () => ({
-  default: { testNode: 'Test Node' }
+  default: enNodeDefsMock
 }))
 vi.mock('./locales/en/commands.json', () => ({
   default: { save: 'Save' }
@@ -43,6 +61,7 @@ vi.mock('./locales/zh/settings.json', () => ({ default: { theme: '主题' } }))
 
 describe('i18n', () => {
   beforeEach(async () => {
+    restoreEnNodeDefsMock()
     vi.resetModules()
     await importI18nModule()
   })
@@ -187,6 +206,83 @@ describe('i18n', () => {
       expect(zhMessages.plugin2).toEqual({ name: '插件2' })
       // First call's data is overwritten
       expect(zhMessages.plugin1).toBeUndefined()
+    })
+  })
+
+  describe('mergeBackendNodeDisplayNames', () => {
+    it('overrides bundled English display names with backend values', () => {
+      expect(st('nodeDefs.KSampler.display_name', 'fallback')).toBe(
+        'KSampler (bundled)'
+      )
+
+      mergeBackendNodeDisplayNames([
+        { name: 'KSampler', display_name: 'KSampler (renamed)' }
+      ])
+
+      expect(st('nodeDefs.KSampler.display_name', 'fallback')).toBe(
+        'KSampler (renamed)'
+      )
+    })
+
+    it('adds display names for nodes missing from the bundle', () => {
+      mergeBackendNodeDisplayNames([
+        { name: 'BrandNewNode', display_name: 'Brand New Node' }
+      ])
+
+      expect(st('nodeDefs.BrandNewNode.display_name', 'fallback')).toBe(
+        'Brand New Node'
+      )
+    })
+
+    it('normalizes node names and renders i18n syntax characters verbatim', () => {
+      mergeBackendNodeDisplayNames([
+        { name: 'my.node', display_name: "Weird {name} @ 100% | $x '" }
+      ])
+
+      expect(st('nodeDefs.my_node.display_name', 'fallback')).toBe(
+        "Weird {name} @ 100% | $x '"
+      )
+    })
+
+    it('skips defs without a display name', () => {
+      mergeBackendNodeDisplayNames([{ name: 'KSampler' }])
+
+      expect(st('nodeDefs.KSampler.display_name', 'fallback')).toBe(
+        'KSampler (bundled)'
+      )
+    })
+
+    it('keeps custom-node English translations over backend names', () => {
+      mergeCustomNodesI18n({
+        en: {
+          nodeDefs: { MyCustomNode: { display_name: 'Custom EN Name' } }
+        }
+      })
+
+      mergeBackendNodeDisplayNames([
+        { name: 'MyCustomNode', display_name: 'Backend Name' },
+        { name: 'KSampler', display_name: 'KSampler (renamed)' }
+      ])
+
+      expect(st('nodeDefs.MyCustomNode.display_name', 'fallback')).toBe(
+        'Custom EN Name'
+      )
+      expect(st('nodeDefs.KSampler.display_name', 'fallback')).toBe(
+        'KSampler (renamed)'
+      )
+    })
+
+    it('does not affect other locales', async () => {
+      mergeBackendNodeDisplayNames([
+        { name: 'KSampler', display_name: 'KSampler (renamed)' }
+      ])
+
+      await setActiveLocale('zh')
+      const zhMessages = i18n.global.getLocaleMessage('zh') as Record<
+        string,
+        unknown
+      >
+      expect(zhMessages.nodeDefs).toEqual({ testNode: '测试节点' })
     })
   })
 

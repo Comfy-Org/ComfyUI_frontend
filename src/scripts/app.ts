@@ -11,7 +11,8 @@ import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/com
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { st, t } from '@/i18n'
+import { mergeBackendNodeDisplayNames, st, t } from '@/i18n'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
@@ -1101,15 +1102,13 @@ export class ComfyApp {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
       // Use object info display_name as fallback before using name
       const objectInfoDisplayName = def.display_name || def.name
+      const nodeKey = `nodeDefs.${normalizeI18nKey(def.name)}`
 
       return {
         ...def,
-        display_name: st(
-          `nodeDefs.${def.name}.display_name`,
-          objectInfoDisplayName
-        ),
+        display_name: st(`${nodeKey}.display_name`, objectInfoDisplayName),
         description: def.description
-          ? st(`nodeDefs.${def.name}.description`, def.description)
+          ? st(`${nodeKey}.description`, def.description)
           : '',
         category: def.category
           .split('/')
@@ -1118,7 +1117,9 @@ export class ComfyApp {
       }
     }
 
-    return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
+    const defs = await api.getNodeDefs()
+    mergeBackendNodeDisplayNames(Object.values(defs))
+    return _.mapValues(defs, (def) => translateNodeDef(def))
   }
 
   /**
