@@ -6500,6 +6500,48 @@
       }
     }
   },
+  "IdeogramPImage": {
+    "description": "使用 P-Image（Ideogram 的快速文字轉圖像模型）生成圖像。具備強大的字體排版與寫實效果；支援 Ideogram 4.0 結構化 JSON 標註，可精確控制文字、顏色與版面配置。",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "圖像生成的長寬比。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "文字提示。亦可接受 Ideogram 4.0 結構化 JSON 標註（精確顏色以 #RRGGBB 十六進位表示，精確文字字串、邊界框版面）— 若需完全照用，請將 prompt_upsampling 設為 OFF。"
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "在生成前將簡短提示擴展為詳細結構化標註（重寫後的提示會以 final_prompt 返回）。如需自訂 JSON 標註或精確文字，請設為 OFF。"
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "速度／價格／品質等級。MEDIUM 為日常預設；HIGH 適用於複雜提示、細節與困難文字；VERY_LOW/LOW 適合大規模草稿。MEDIUM 以下難以正確渲染困難文字。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "輸出尺寸等級（實際像素依長寬比調整，例如 16:9 在 1K 為 1280x720，2K 為 2560x1440）。建議搭配 HIGH + 2K 以獲得清晰字體排版。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於可重現生成的種子值。當 prompt_upsampling 為 OFF 時，相同種子與設定會產生相同圖像；ON/AUTO 時，每次提示重寫皆不同—如需重現結果，請將 final_prompt 輸出搭配 prompt_upsampling OFF 與相同種子再次生成。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "實際用於生成圖像的提示（若啟用 prompt_upsampling 則為重寫後的結構化標註，否則為原始提示）。如需重現此圖像，請將其與 prompt_upsampling OFF 及相同種子再次輸入。"
+      }
+    }
+  },
   "IdeogramV3": {
     "description": "使用 Ideogram V3 模型同步產生影像。\n\n支援從文字提示產生一般影像，以及結合 mask 進行影像編輯。\n影像連結僅限時有效；如需保留影像，請務必下載。",
     "display_name": "Ideogram V3",
@@ -11328,6 +11370,125 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "使用 MiniMax H3 模型，根據首幀圖像與（可選）末幀圖像生成影片。影片長寬比將依據所提供的圖像。",
+    "display_name": "MiniMax H3 首末幀生成影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "影片的首幀圖像。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "影片的可選末幀圖像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於影片生成的模型。"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "隨機種子。相同請求與種子會產生相似（但不保證完全相同）結果。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在影片中加入 AIGC 浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "使用 MiniMax H3 模型，根據參考圖片、影片與音訊生成影片。在提示詞中依照順序引用參考資料：'Image 1'、'Image 2'、'Video 1'、'Audio 1'，依此類推。",
+    "display_name": "MiniMax H3 參考生成影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於影片生成的模型。"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "隨機種子。相同請求與相同種子會產生相似但不保證完全相同的結果。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在影片中加入 AIGC 浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "使用 MiniMax H3 模型，根據文字提示詞生成影片。",
+    "display_name": "MiniMax H3 文生影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於影片生成的模型。"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "隨機種子。相同請求與相同種子會產生相似但不保證完全相同的結果。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在影片中加入 AIGC 浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

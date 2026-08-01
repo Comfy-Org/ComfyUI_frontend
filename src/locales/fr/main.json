@@ -3875,7 +3875,9 @@
       "endOfBillingPeriod": "fin de la période de facturation",
       "failed": "Échec de l'annulation de l'abonnement",
       "keepSubscription": "Conserver l'abonnement",
-      "title": "Annuler l'abonnement"
+      "offerUnavailable": "Cette option n’est pas disponible. Veuillez en choisir une autre.",
+      "title": "Annuler l'abonnement",
+      "workspaceChanged": "Votre espace de travail actif a changé. Revenez à l’espace précédent et réessayez."
     },
     "cancelPlan": "Annuler l’abonnement",
     "cancelSuccess": "Abonnement annulé avec succès",
@@ -4314,6 +4316,7 @@
     "fileTooLarge": "Fichier trop volumineux ({size} Mo). La taille maximale prise en charge est de {maxSize} Mo",
     "fileUploadFailed": "Échec du téléchargement du fichier",
     "interrupted": "L'exécution a été interrompue",
+    "invalidBillingPortalUrl": "URL du portail invalide",
     "invalidTemplateData": "Échec du chargement du modèle de nœud : données invalides",
     "legacyMaskEditorDeprecated": "L’éditeur de masque hérité est obsolète et sera bientôt supprimé.",
     "migrateToLitegraphReroute": "Les nœuds de reroute seront supprimés dans les futures versions. Cliquez pour migrer vers le reroute natif de litegraph.",

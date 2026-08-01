@@ -3875,7 +3875,9 @@
       "endOfBillingPeriod": "請求期間の終了",
       "failed": "サブスクリプションのキャンセルに失敗しました",
       "keepSubscription": "サブスクリプションを維持する",
-      "title": "サブスクリプションのキャンセル"
+      "offerUnavailable": "このオプションは利用できません。別のオプションを選択してください。",
+      "title": "サブスクリプションのキャンセル",
+      "workspaceChanged": "アクティブなワークスペースが変更されました。元に戻して再度お試しください。"
     },
     "cancelPlan": "プランをキャンセル",
     "cancelSuccess": "サブスクリプションが正常にキャンセルされました",
@@ -4314,6 +4316,7 @@
     "fileTooLarge": "ファイルが大きすぎます（{size} MB）。サポートされている最大サイズは{maxSize} MBです",
     "fileUploadFailed": "ファイルのアップロードに失敗しました",
     "interrupted": "実行が中断されました",
+    "invalidBillingPortalUrl": "無効なポータルURLです",
     "invalidTemplateData": "ノードテンプレートの読み込みに失敗しました：無効なデータです",
     "legacyMaskEditorDeprecated": "従来のマスクエディタは非推奨となり、まもなく削除されます。",
     "migrateToLitegraphReroute": "将来のバージョンではRerouteノードが削除されます。litegraph-native rerouteに移行するにはクリックしてください。",
