@@ -110,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { until, useEventListener, whenever } from '@vueuse/core'
+import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -254,22 +254,8 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-// Layout↔LiteGraph sync. Node geometry registers itself in LGraph.add, so all
-// that is needed here is dropping view-scoped geometry when the viewed graph
-// changes and running the sync for as long as Vue nodes are rendering.
 const { startSync, stopSync } = useLayoutSync()
-
-const startVueNodeLayout = () => {
-  layoutStore.clearViewGeometry()
-  // Start sync AFTER the reset so bootstrap operations don't trigger the
-  // Layout→LiteGraph writeback loop redundantly.
-  startSync(canvasStore.canvas)
-}
-
-const stopVueNodeLayout = () => {
-  stopSync()
-  layoutStore.clearViewGeometry()
-}
+let wasRenderingVueNodes = false
 
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
@@ -281,43 +267,38 @@ watch(
   }
 )
 
-const handleVueNodeLifecycleReset = async () => {
-  if (!shouldRenderVueNodes.value) return
-
-  stopSync()
-  layoutStore.clearViewGeometry()
-  await nextTick()
-  startSync(canvasStore.canvas)
-}
-
 watch(
-  () => shouldRenderVueNodes.value && Boolean(comfyApp.canvas?.graph),
-  (enabled) => {
-    if (enabled) startVueNodeLayout()
+  [shouldRenderVueNodes, () => canvasStore.currentGraph],
+  async ([enabled, graph]) => {
+    if (!enabled) {
+      if (!wasRenderingVueNodes) return
+
+      wasRenderingVueNodes = false
+      stopSync()
+      layoutStore.clearViewGeometry()
+      if (graph) arrangeForLegacyRender(graph)
+      comfyApp.canvas?.setDirty(true, true)
+      return
+    }
+
+    wasRenderingVueNodes = true
+    stopSync()
+    layoutStore.clearViewGeometry()
+    await nextTick()
+
+    if (!shouldRenderVueNodes.value || canvasStore.currentGraph !== graph)
+      return
+    startSync(canvasStore.canvas)
   },
   { immediate: true }
 )
 
-whenever(
-  () => !shouldRenderVueNodes.value,
-  () => {
-    stopVueNodeLayout()
-
-    const graph = comfyApp.canvas?.graph
-    if (graph) arrangeForLegacyRender(graph)
-    comfyApp.canvas?.setDirty(true, true)
-  }
-)
-
-watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
-
 watch(
   () => canvasStore.isInSubgraph,
-  async (newValue, oldValue) => {
+  (newValue, oldValue) => {
     if (oldValue && !newValue) {
       useWorkflowStore().updateActiveGraph()
     }
-    await handleVueNodeLifecycleReset()
   }
 )
 
