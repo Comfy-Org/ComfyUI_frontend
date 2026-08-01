@@ -1,5 +1,6 @@
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -18,6 +19,7 @@ import type {
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
@@ -41,6 +43,16 @@ type PreviewVariant =
   | 'personal-change'
   | 'personal-new'
   | null
+
+function parseBillingPortalUrl(url: unknown): URL | null {
+  if (typeof url !== 'string') return null
+  try {
+    const portalUrl = new URL(url)
+    return portalUrl.origin === 'https://billing.stripe.com' ? portalUrl : null
+  } catch {
+    return null
+  }
+}
 
 export function findPlanSlug(
   plans: Plan[],
@@ -82,6 +94,13 @@ export function useSubscriptionCheckout(
   const previewData = ref<PreviewSubscribeResponse | null>(null)
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
+  let teamPreviewRequestId = 0
+  let refreshStatusOnFocus = false
+  useEventListener(window, 'focus', () => {
+    if (!refreshStatusOnFocus) return
+    refreshStatusOnFocus = false
+    void fetchStatus()
+  })
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const isPolling = computed(() => billingOperationStore.hasPendingOperations)
   const selectedTeamStop = computed(
@@ -106,6 +125,62 @@ export function useSubscriptionCheckout(
     billingCycle: BillingCycle
   ): string | null {
     return findPlanSlug(plans.value, tierKey, billingCycle)
+  }
+
+  function hasErrorCode(error: unknown, code: string): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === code
+    )
+  }
+
+  async function recoverOutstandingPayment(
+    error: unknown,
+    isCurrent: () => boolean = () => true
+  ) {
+    let requiresRecovery = hasErrorCode(error, 'SUBSCRIPTION_PAYMENT_REQUIRED')
+    if (!requiresRecovery && hasErrorCode(error, 'TRANSITION_NOT_ALLOWED')) {
+      try {
+        requiresRecovery =
+          (await workspaceApi.getBillingStatus()).billing_status ===
+          'payment_failed'
+      } catch {
+        return null
+      }
+    }
+    if (!requiresRecovery || !isCurrent()) return null
+
+    try {
+      const returnUrl = `${globalThis.location.origin}${globalThis.location.pathname}`
+      const portalUrl = parseBillingPortalUrl(
+        (await workspaceApi.getPaymentPortalUrl(returnUrl)).url
+      )
+      if (!isCurrent()) return null
+      if (!portalUrl) {
+        throw new Error(
+          t('toastMessages.failedToAccessBillingPortal', {
+            error: t('toastMessages.invalidBillingPortalUrl')
+          })
+        )
+      }
+      const paymentWindow = window.open(portalUrl.href, '_blank')
+      if (!paymentWindow) {
+        toast.add({
+          severity: 'warn',
+          summary: t('g.warning'),
+          detail: t('subscription.preview.paymentPopupBlocked')
+        })
+        return 'blocked'
+      }
+      refreshStatusOnFocus = true
+      return 'opened'
+    } catch (portalError) {
+      if (!isCurrent()) return null
+      showSubscribeError(portalError)
+      return 'failed'
+    }
   }
 
   async function handleSubscribeClick(payload: {
@@ -143,6 +218,7 @@ export function useSubscriptionCheckout(
       previewData.value = response
       checkoutStep.value = 'preview'
     } catch (error) {
+      if (await recoverOutstandingPayment(error)) return
       const message =
         error instanceof Error
           ? error.message
@@ -170,6 +246,7 @@ export function useSubscriptionCheckout(
     billingCycle: BillingCycle
     isChange?: boolean
   }) {
+    const previewRequestId = ++teamPreviewRequestId
     selectedTeamCheckout.value = {
       stop: payload.stop,
       checkoutType: payload.isChange ? 'change' : 'new'
@@ -186,6 +263,7 @@ export function useSubscriptionCheckout(
         teamCreditStopId: payload.stop.id,
         billingCycle: payload.billingCycle
       })
+      if (previewRequestId !== teamPreviewRequestId) return
       if (
         response?.allowed &&
         response.is_immediate &&
@@ -193,12 +271,17 @@ export function useSubscriptionCheckout(
       ) {
         previewData.value = response
       }
-    } catch {
-      // Preview is best-effort; keep the display-only confirm on any failure.
+    } catch (error) {
+      const recovery = await recoverOutstandingPayment(
+        error,
+        () => previewRequestId === teamPreviewRequestId
+      )
+      if (recovery === 'failed') handleBackToPricing()
     }
   }
 
   function handleBackToPricing() {
+    teamPreviewRequestId += 1
     checkoutStep.value = 'pricing'
     previewData.value = null
     selectedTeamCheckout.value = null
@@ -239,6 +322,7 @@ export function useSubscriptionCheckout(
       }
       await handleSubscribeResponse(response)
     } catch (error) {
+      if (await recoverOutstandingPayment(error)) return
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
@@ -336,6 +420,7 @@ export function useSubscriptionCheckout(
       }
       await handleSubscribeResponse(response)
     } catch (error) {
+      if (await recoverOutstandingPayment(error)) return
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false

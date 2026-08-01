@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, effectScope, reactive } from 'vue'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
@@ -46,6 +46,10 @@ function allPlans(): Plan[] {
   return [makeStandardYearly(), makeCreatorMonthly()]
 }
 
+function errorWithCode(code: string, message = 'error') {
+  return Object.assign(new Error(message), { code })
+}
+
 describe('findPlanSlug', () => {
   it('finds an annual plan by tier key and yearly billing cycle', () => {
     expect(findPlanSlug(allPlans(), 'standard', 'yearly')).toBe(
@@ -73,6 +77,9 @@ const {
   mockPreviewSubscribe,
   mockFetchStatus,
   mockFetchBalance,
+  mockOpen,
+  mockGetBillingStatus,
+  mockGetPaymentPortalUrl,
   mockPlans,
   mockResubscribe,
   mockToastAdd,
@@ -84,6 +91,9 @@ const {
   mockPreviewSubscribe: vi.fn(),
   mockFetchStatus: vi.fn(),
   mockFetchBalance: vi.fn(),
+  mockOpen: vi.fn(),
+  mockGetBillingStatus: vi.fn(),
+  mockGetPaymentPortalUrl: vi.fn(),
   mockPlans: { value: [] as Plan[] },
   mockResubscribe: vi.fn(),
   mockToastAdd: vi.fn(),
@@ -105,7 +115,11 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 // Shields the test from the real workspaceApi → @/scripts/api → app.ts import chain
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
-  workspaceApi: { resubscribe: mockResubscribe }
+  workspaceApi: {
+    resubscribe: mockResubscribe,
+    getBillingStatus: mockGetBillingStatus,
+    getPaymentPortalUrl: mockGetPaymentPortalUrl
+  }
 }))
 
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
@@ -149,11 +163,26 @@ vi.mock('vue-i18n', async (importOriginal) => {
 
 describe('useSubscriptionCheckout', () => {
   let emit: ReturnType<typeof vi.fn>
+  const scopes: ReturnType<typeof effectScope>[] = []
 
   async function setup(paymentIntentSource?: PaymentIntentSource) {
     const { useSubscriptionCheckout } =
       await import('./useSubscriptionCheckout')
-    return useSubscriptionCheckout(emit as never, paymentIntentSource)
+    const scope = effectScope()
+    scopes.push(scope)
+    return scope.run(() =>
+      useSubscriptionCheckout(emit as never, paymentIntentSource)
+    )!
+  }
+
+  async function submitRejectedPreview(code: string, message = 'error') {
+    const checkout = await setup()
+    mockPreviewSubscribe.mockRejectedValueOnce(errorWithCode(code, message))
+    await checkout.handleSubscribeClick({
+      tierKey: 'standard',
+      billingCycle: 'yearly'
+    })
+    return checkout
   }
 
   beforeEach(() => {
@@ -162,7 +191,22 @@ describe('useSubscriptionCheckout', () => {
     mockPlans.value = allPlans()
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
     mockUserId.value = 'user-1'
+    mockOpen.mockReturnValue({} as Window)
+    mockGetBillingStatus.mockResolvedValue({ billing_status: 'paid' })
+    mockGetPaymentPortalUrl.mockResolvedValue({
+      url: 'https://billing.stripe.com/portal'
+    })
+    vi.stubGlobal('location', {
+      href: 'https://app.test/subscribe?invite=secret#token',
+      origin: 'https://app.test',
+      pathname: '/subscribe'
+    })
+    vi.stubGlobal('open', mockOpen)
     emit = vi.fn()
+  })
+
+  afterEach(() => {
+    for (const scope of scopes.splice(0)) scope.stop()
   })
 
   describe('handleSubscribeClick', () => {
@@ -242,6 +286,81 @@ describe('useSubscriptionCheckout', () => {
           severity: 'error',
           detail: 'Network error'
         })
+      )
+    })
+
+    it.for([
+      ['SUBSCRIPTION_PAYMENT_REQUIRED', null],
+      ['TRANSITION_NOT_ALLOWED', 'payment_failed']
+    ] as const)(
+      'routes %s previews to the billing portal',
+      async ([code, status]) => {
+        if (status) {
+          mockGetBillingStatus.mockResolvedValueOnce({ billing_status: status })
+        }
+        await submitRejectedPreview(code)
+
+        expect(mockGetBillingStatus).toHaveBeenCalledTimes(status ? 1 : 0)
+        expect(mockGetPaymentPortalUrl).toHaveBeenCalledWith(
+          'https://app.test/subscribe'
+        )
+        expect(mockOpen).toHaveBeenCalledWith(
+          'https://billing.stripe.com/portal',
+          '_blank'
+        )
+        expect(globalThis.location.href).toBe(
+          'https://app.test/subscribe?invite=secret#token'
+        )
+        expect(mockFetchStatus).not.toHaveBeenCalled()
+
+        window.dispatchEvent(new Event('focus'))
+        await vi.waitFor(() => expect(mockFetchStatus).toHaveBeenCalledOnce())
+        window.dispatchEvent(new Event('focus'))
+        expect(mockFetchStatus).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('preserves checkout when the billing portal popup is blocked', async () => {
+      mockOpen.mockReturnValueOnce(null)
+      const checkout = await submitRejectedPreview(
+        'SUBSCRIPTION_PAYMENT_REQUIRED'
+      )
+
+      expect(checkout.selectedTierKey.value).toBe('standard')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: 'subscription.preview.paymentPopupBlocked'
+        })
+      )
+    })
+
+    it.for([
+      undefined,
+      '',
+      'javascript:alert(1)',
+      'https://billing.stripe.com.evil.test/portal'
+    ])('rejects an unsafe billing portal URL: %s', async (url) => {
+      mockGetPaymentPortalUrl.mockResolvedValueOnce({ url })
+      await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+
+      expect(mockOpen).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'toastMessages.failedToAccessBillingPortal'
+        })
+      )
+    })
+
+    it('keeps the original error for a non-payment transition failure', async () => {
+      await submitRejectedPreview(
+        'TRANSITION_NOT_ALLOWED',
+        'Plan change unavailable'
+      )
+
+      expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'Plan change unavailable' })
       )
     })
 
@@ -349,6 +468,90 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.previewData.value).toBeNull()
       expect(checkout.checkoutStep.value).toBe('preview')
+    })
+
+    it('routes a Team preview payment failure to the billing portal', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED')
+      )
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(mockOpen).toHaveBeenCalledWith(
+        'https://billing.stripe.com/portal',
+        '_blank'
+      )
+      expect(checkout.checkoutStep.value).toBe('preview')
+    })
+
+    it('ignores stale Team recovery after returning to pricing', async () => {
+      let resolvePortal!: (portal: { url: string }) => void
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED')
+      )
+      mockGetPaymentPortalUrl.mockImplementationOnce(
+        () =>
+          new Promise<{ url: string }>((resolve) => {
+            resolvePortal = resolve
+          })
+      )
+      const checkout = await setup()
+      const selection = checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      await vi.waitFor(() => expect(mockGetPaymentPortalUrl).toHaveBeenCalled())
+
+      checkout.handleBackToPricing()
+      resolvePortal({ url: 'https://billing.stripe.com/portal' })
+      await selection
+
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(mockOpen).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('returns to pricing when Team payment recovery fails', async () => {
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED')
+      )
+      mockGetPaymentPortalUrl.mockRejectedValueOnce(
+        new Error('Portal unavailable')
+      )
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(checkout.selectedTeamStop.value).toBeNull()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'Portal unavailable' })
+      )
     })
 
     it('does not preview a fresh team subscribe (nothing to prorate)', async () => {
@@ -852,6 +1055,23 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Transition error'
         })
       )
+    })
+
+    it('routes a payment-required submission to the billing portal', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED')
+      )
+
+      await checkout.handleConfirmTransition()
+
+      expect(mockOpen).toHaveBeenCalledWith(
+        'https://billing.stripe.com/portal',
+        '_blank'
+      )
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })
 
