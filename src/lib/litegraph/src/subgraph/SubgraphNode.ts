@@ -935,7 +935,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         return []
       const value = useWidgetValueStore().getWidget(input.widgetId)?.value
       return [
-        { name: input.name, value: isWidgetValue(value) ? value : undefined }
+        {
+          name: input.name,
+          value: isWidgetValue(value) ? (value ?? null) : undefined
+        }
       ]
     })
     const widgetValues = promotedWidgetValues.map(({ value }) => value)

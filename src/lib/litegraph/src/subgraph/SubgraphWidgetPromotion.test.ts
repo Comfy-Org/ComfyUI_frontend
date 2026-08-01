@@ -1066,6 +1066,22 @@ describe('SubgraphWidgetPromotion', () => {
         expect(serialized.widgets_values_named).toEqual({ second: 222 })
       })
 
+      it('serializes undefined promoted values as null', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, NUMBER_PAIR)
+        const host = createTestSubgraphNode(subgraph)
+        writePromotedWidgetValue(host, 0, undefined)
+        writePromotedWidgetValue(host, 1, undefined)
+
+        const serialized = host.serialize()
+
+        expect(serialized.widgets_values).toEqual([null, null])
+        expect(serialized.widgets_values_named).toEqual({
+          first: null,
+          second: null
+        })
+      })
+
       it('does not persist source widget store fallback values after reordering', () => {
         const subgraph = createTestSubgraph()
         const sources = buildSources(subgraph, TEXT_PAIR)

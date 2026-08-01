@@ -1021,17 +1021,20 @@ export class LGraphNode
 
       if (namedValues && LiteGraph.namedValuesRestore) {
         for (const widget of this.widgets) {
-          if (widget.serialize === false || !(widget.name in namedValues))
+          if (
+            widget.serialize === false ||
+            !Object.prototype.hasOwnProperty.call(namedValues, widget.name)
+          )
             continue
 
-          widget.value = namedValues[widget.name]
+          widget.value = namedValues[widget.name] ?? undefined
         }
       } else if (info.widgets_values) {
         let i = 0
         for (const widget of this.widgets ?? []) {
           if (widget.serialize === false) continue
           if (i >= info.widgets_values.length) break
-          widget.value = info.widgets_values[i++]
+          widget.value = info.widgets_values[i++] ?? undefined
         }
       }
     }

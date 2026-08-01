@@ -154,6 +154,20 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets!.map((w) => w.value)).toStrictEqual(expected)
     })
 
+    it('should ignore inherited named widget values', () => {
+      node.addWidget('text', 'constructor', 'constructor value', null, {})
+      node.addWidget('text', 'toString', 'toString value', null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+
+      node.configure(mockNode(undefined, { seed: 54321 }))
+
+      expect(node.widgets!.map((w) => w.value)).toStrictEqual([
+        'constructor value',
+        'toString value',
+        54321
+      ])
+    })
+
     it('should restore widgets which are dynamically added', () => {
       addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
 

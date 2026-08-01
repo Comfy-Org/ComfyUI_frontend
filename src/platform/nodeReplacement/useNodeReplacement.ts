@@ -95,7 +95,7 @@ function transferWidgetValue(
     : oldWidgetIdx === -1
       ? undefined
       : serialized.widgets_values?.[oldWidgetIdx]
-  if (oldValue === undefined) return
+  if (oldValue == null) return
 
   const newWidget = newNode.widgets?.find((w) => w.name === newInputName)
   if (newWidget) {

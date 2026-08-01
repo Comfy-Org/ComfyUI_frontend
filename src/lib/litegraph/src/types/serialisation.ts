@@ -20,9 +20,11 @@ import type { LiteGraph } from '../litegraph'
 import type { RenderShape } from './globalEnums'
 import type { TWidgetValue } from './widgets'
 
+export type TSerializedWidgetValue = TWidgetValue | null
+
 export function isNamedWidgetValues(
   value: unknown
-): value is Record<string, TWidgetValue> {
+): value is Record<string, TSerializedWidgetValue> {
   if (value === null || typeof value !== 'object' || Array.isArray(value))
     return false
 
@@ -115,8 +117,8 @@ export interface ISerialisedNode {
    * any array methods on it.
    * See example in https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/8629188458dc6cb832f871ece3bd273507e8a766/web/js/VHS.core.js#L59-L84
    */
-  widgets_values?: TWidgetValue[]
-  widgets_values_named?: Record<string, TWidgetValue>
+  widgets_values?: TSerializedWidgetValue[]
+  widgets_values_named?: Record<string, TSerializedWidgetValue>
 }
 
 /** Properties of nodes that are used by subgraph instances. */
