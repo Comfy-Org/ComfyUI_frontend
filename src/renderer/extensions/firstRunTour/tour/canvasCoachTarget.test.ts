@@ -12,7 +12,8 @@ const state = vi.hoisted(() => ({
   currentGraph: null as { getNodeById: (id: unknown) => unknown } | null,
   collapsed: new Set<string>(),
   layout: null as { value: unknown } | null,
-  canvasOffset: { left: 0, top: 0 }
+  canvasOffset: { left: 0, top: 0 },
+  releaseBounds: vi.fn()
 }))
 
 function graph(id: string) {
@@ -47,13 +48,16 @@ vi.mock('@/renderer/core/layout/store/layoutStore', async () => {
 })
 vi.mock('@vueuse/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
-  const { computed } = await import('vue')
+  const { computed, onScopeDispose } = await import('vue')
   return {
     ...actual,
-    useElementBounding: () => ({
-      left: computed(() => state.canvasOffset.left),
-      top: computed(() => state.canvasOffset.top)
-    })
+    useElementBounding: () => {
+      onScopeDispose(state.releaseBounds)
+      return {
+        left: computed(() => state.canvasOffset.left),
+        top: computed(() => state.canvasOffset.top)
+      }
+    }
   }
 })
 
@@ -68,6 +72,19 @@ describe('canvasNodeTarget', () => {
     state.canvasOffset = { left: 0, top: 0 }
     if (state.camera) Object.assign(state.camera, { x: 0, y: 0, z: 1 })
     if (state.layout) state.layout.value = null
+    state.releaseBounds.mockClear()
+  })
+
+  it('releases what it watches when the tour drops it', () => {
+    const target = canvasNodeTarget(toNodeId(1))
+    expect(state.releaseBounds).not.toHaveBeenCalled()
+
+    target.dispose?.()
+
+    expect(
+      state.releaseBounds,
+      'nothing here runs from a component, so unreleased observers outlive every tour'
+    ).toHaveBeenCalledTimes(1)
   })
 
   it('places the rect over the node, title bar included', () => {
