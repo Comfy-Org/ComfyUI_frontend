@@ -8,7 +8,7 @@ import { test } from './__fixtures__/testExtensions'
 
 vi.mock('@/utils/colorUtil', async (importOriginal) => {
   const actual = await importOriginal<typeof colorUtil>()
-  return { ...actual, textOnColor: vi.fn(actual.textOnColor) }
+  return { ...actual, readableTextColor: vi.fn(actual.readableTextColor) }
 })
 
 function createMockContext() {
@@ -106,49 +106,62 @@ describe('LGraphGroup', () => {
   })
 
   describe('draw', () => {
-    test('uses a light contrasting fillStyle for a dark background', () => {
+    test('lightens the title text for a very dark background', () => {
       const group = new LGraphGroup('Group')
       group.color = '#000000'
       const ctx = createMockContext()
 
       group.draw(graphCanvas, ctx)
 
-      expect(ctx.fillStyle).toBe('#fff')
+      expect(ctx.fillStyle).toBe(colorUtil.readableTextColor('#000000'))
+      expect(ctx.fillStyle).not.toBe('#fff')
+      expect(ctx.fillStyle).not.toBe('#000000')
     })
 
-    test('uses a dark contrasting fillStyle for a light background', () => {
+    test('leaves the title text unchanged for a light background', () => {
       const group = new LGraphGroup('Group')
       group.color = '#ffffff'
       const ctx = createMockContext()
 
       group.draw(graphCanvas, ctx)
 
-      expect(ctx.fillStyle).toBe('#000')
+      expect(ctx.fillStyle).toBe('#ffffff')
     })
 
-    test('does not recompute the contrast color when the background is unchanged', () => {
+    test('leaves the title text unchanged for a moderately dark, non-black background', () => {
+      const group = new LGraphGroup('Group')
+      // "purple" preset groupcolor - dark but well above the black-ish threshold
+      group.color = '#a1309b'
+      const ctx = createMockContext()
+
+      group.draw(graphCanvas, ctx)
+
+      expect(ctx.fillStyle).toBe('#a1309b')
+    })
+
+    test('does not recompute the title text color when the background is unchanged', () => {
       const group = new LGraphGroup('Group')
       group.color = '#000000'
       const ctx = createMockContext()
-      vi.mocked(colorUtil.textOnColor).mockClear()
+      vi.mocked(colorUtil.readableTextColor).mockClear()
 
       group.draw(graphCanvas, ctx)
       group.draw(graphCanvas, ctx)
 
-      expect(colorUtil.textOnColor).toHaveBeenCalledTimes(1)
+      expect(colorUtil.readableTextColor).toHaveBeenCalledTimes(1)
     })
 
-    test('recomputes the contrast color when the background changes', () => {
+    test('recomputes the title text color when the background changes', () => {
       const group = new LGraphGroup('Group')
       group.color = '#000000'
       const ctx = createMockContext()
-      vi.mocked(colorUtil.textOnColor).mockClear()
+      vi.mocked(colorUtil.readableTextColor).mockClear()
 
       group.draw(graphCanvas, ctx)
-      group.color = '#ffffff'
+      group.color = '#111111'
       group.draw(graphCanvas, ctx)
 
-      expect(colorUtil.textOnColor).toHaveBeenCalledTimes(2)
+      expect(colorUtil.readableTextColor).toHaveBeenCalledTimes(2)
     })
   })
 })

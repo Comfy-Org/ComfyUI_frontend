@@ -1,5 +1,5 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
-import { textOnColor } from '@/utils/colorUtil'
+import { hexToRgb, luminance, readableTextColor } from '@/utils/colorUtil'
 
 import type { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -38,6 +38,13 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   static resizeLength = 10
   static padding = 4
   static defaultColour = '#335'
+  /**
+   * Background luminance (0-255) below which the title text is lightened for
+   * readability. Most colours keep title text in the same family as the
+   * background even at low contrast; only very dark/black-ish backgrounds
+   * are adjusted.
+   */
+  static darkBgLuminanceThreshold = 80
 
   id: GroupId
   color?: string
@@ -57,8 +64,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
   /** Background colour last used to compute {@link _titleTextColor} */
   _lastTitleBgColor?: string
-  /** Contrast colour for the title text, cached until the background colour changes */
-  _titleTextColor: string = '#fff'
+  /** Title text colour, cached until the background colour changes */
+  _titleTextColor: string = LGraphGroup.defaultColour
 
   constructor(title?: string, id?: GroupId) {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
@@ -175,7 +182,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
    * @param ctx
    */
   draw(graphCanvas: LGraphCanvas, ctx: CanvasRenderingContext2D): void {
-    const { padding, resizeLength, defaultColour } = LGraphGroup
+    const { padding, resizeLength, defaultColour, darkBgLuminanceThreshold } =
+      LGraphGroup
     const font_size = LiteGraph.GROUP_TEXT_SIZE
 
     const [x, y] = this._pos
@@ -184,7 +192,10 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
     if (this._lastTitleBgColor !== color) {
       this._lastTitleBgColor = color
-      this._titleTextColor = textOnColor(color)
+      this._titleTextColor =
+        luminance(hexToRgb(color)) < darkBgLuminanceThreshold
+          ? readableTextColor(color)
+          : color
     }
 
     // Titlebar
