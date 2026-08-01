@@ -562,7 +562,11 @@ export const comfyPageFixture = base.extend<{
     }
 
     if (testInfo.tags.includes('@cloud')) {
-      await mockWorkspace(page.context(), workspace('personal', 'owner'), [])
+      const context = page.context()
+      await context.route('**/api/auth/session', (route) =>
+        route.fulfill({ status: 204 })
+      )
+      await mockWorkspace(context, workspace('personal', 'owner'), [])
       await comfyPage.cloudAuth.mockAuth()
     }
 
