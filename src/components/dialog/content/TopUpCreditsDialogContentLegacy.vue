@@ -4,7 +4,7 @@
   >
     <!-- Header -->
     <div class="flex items-center justify-between p-8">
-      <h2 class="m-0 text-lg font-bold text-base-foreground">
+      <h2 class="m-0 text-base font-bold text-base-foreground">
         {{
           isInsufficientCredits
             ? $t('credits.topUp.addMoreCreditsToRun')

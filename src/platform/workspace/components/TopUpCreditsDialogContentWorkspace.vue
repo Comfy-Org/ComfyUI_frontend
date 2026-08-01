@@ -15,7 +15,7 @@
         </button>
         <h2
           v-if="step === 'amount' || step === 'confirm'"
-          class="m-0 text-lg font-bold text-base-foreground"
+          class="m-0 text-base font-bold text-base-foreground"
         >
           {{
             step === 'confirm'
