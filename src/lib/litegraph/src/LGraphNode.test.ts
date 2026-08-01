@@ -590,6 +590,31 @@ describe('LGraphNode', () => {
       expect(node.widgets![0].value).toBe(1)
       expect(node.widgets![1].value).toBe(100)
     })
+
+    test('serializes and restores widgets sequentially when skipped widgets come first', () => {
+      const sourceNode = new LGraphNode('TestNode')
+      sourceNode.serialize_widgets = true
+      sourceNode.addWidget('number', 'non-serializable', 1, null)
+      sourceNode.addWidget('number', 'serializable', 2, null)
+      sourceNode.widgets![0].serialize = false
+      sourceNode.widgets![1].value = 20
+
+      const serialized = sourceNode.serialize()
+      expect(serialized.widgets_values).toEqual([20])
+      expect(serialized.widgets_values_named).toEqual({ serializable: 20 })
+
+      const restoredNode = new LGraphNode('TestNode')
+      restoredNode.addWidget('number', 'non-serializable', 1, null)
+      restoredNode.addWidget('number', 'serializable', 2, null)
+      restoredNode.widgets![0].serialize = false
+      restoredNode.configure(
+        getMockISerialisedNode({ widgets_values: serialized.widgets_values })
+      )
+
+      expect(restoredNode.widgets!.map((widget) => widget.value)).toEqual([
+        1, 20
+      ])
+    })
   })
 
   describe('getInputSlotPos', () => {
