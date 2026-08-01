@@ -1,5 +1,6 @@
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -21,6 +22,7 @@ import type {
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -61,6 +63,16 @@ type PreviewVariant =
   | 'personal-change'
   | 'personal-new'
   | null
+
+function parseBillingPortalUrl(url: unknown): URL | null {
+  if (typeof url !== 'string') return null
+  try {
+    const portalUrl = new URL(url)
+    return portalUrl.origin === 'https://billing.stripe.com' ? portalUrl : null
+  } catch {
+    return null
+  }
+}
 
 /** Thrown by `assertReactivationAmountUnchanged` when a fresh preview no
  *  longer matches the billing state the reactivation banner showed and the
@@ -115,6 +127,12 @@ export function useSubscriptionCheckout(
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   let teamPreviewRequestId = 0
+  let refreshStatusOnFocus = false
+  useEventListener(window, 'focus', () => {
+    if (!refreshStatusOnFocus) return
+    refreshStatusOnFocus = false
+    void fetchStatus()
+  })
   // Some legacy-rail status reads cannot expose a scheduled cancellation even
   // though the subscribe authority can see it in Stripe. Once that authority
   // rejects an unconfirmed change, keep the consent screen in reactivation
@@ -277,6 +295,53 @@ export function useSubscriptionCheckout(
     )
   }
 
+  async function recoverOutstandingPayment(
+    error: unknown,
+    isCurrent: () => boolean = () => true
+  ) {
+    let requiresRecovery = hasErrorCode(error, 'SUBSCRIPTION_PAYMENT_REQUIRED')
+    if (!requiresRecovery && hasErrorCode(error, 'TRANSITION_NOT_ALLOWED')) {
+      try {
+        requiresRecovery =
+          (await workspaceApi.getBillingStatus()).billing_status ===
+          'payment_failed'
+      } catch {
+        return null
+      }
+    }
+    if (!requiresRecovery || !isCurrent()) return null
+
+    try {
+      const returnUrl = `${globalThis.location.origin}${globalThis.location.pathname}`
+      const portalUrl = parseBillingPortalUrl(
+        (await workspaceApi.getPaymentPortalUrl(returnUrl)).url
+      )
+      if (!isCurrent()) return null
+      if (!portalUrl) {
+        throw new Error(
+          t('toastMessages.failedToAccessBillingPortal', {
+            error: t('toastMessages.invalidBillingPortalUrl')
+          })
+        )
+      }
+      const paymentWindow = window.open(portalUrl.href, '_blank')
+      if (!paymentWindow) {
+        toast.add({
+          severity: 'warn',
+          summary: t('g.warning'),
+          detail: t('subscription.preview.paymentPopupBlocked')
+        })
+        return 'blocked'
+      }
+      refreshStatusOnFocus = true
+      return 'opened'
+    } catch (portalError) {
+      if (!isCurrent()) return null
+      showSubscribeError(portalError)
+      return 'failed'
+    }
+  }
+
   async function refreshExpiredProrationQuote(
     error: unknown,
     planSlug: string,
@@ -288,7 +353,9 @@ export function useSubscriptionCheckout(
     try {
       freshPreview = await previewSubscribe(planSlug, options)
     } catch (previewError) {
-      showSubscribeError(previewError)
+      if (!(await recoverOutstandingPayment(previewError))) {
+        showSubscribeError(previewError)
+      }
       return true
     }
     if (!isReactivationCapablePreview(freshPreview)) {
@@ -333,7 +400,10 @@ export function useSubscriptionCheckout(
     let freshPreview: PreviewSubscribeResponse | null = null
     try {
       freshPreview = await previewSubscribe(planSlug, options)
-    } catch {
+    } catch (error) {
+      const recovery = await recoverOutstandingPayment(error)
+      if (recovery === 'failed') resetToPricing()
+      if (recovery) return
       // Treated the same as an incapable preview below.
     }
     if (isReactivationCapablePreview(freshPreview)) {
@@ -460,6 +530,7 @@ export function useSubscriptionCheckout(
       previewData.value = response
       checkoutStep.value = 'preview'
     } catch (error) {
+      if (await recoverOutstandingPayment(error)) return
       const message =
         error instanceof Error
           ? error.message
@@ -519,6 +590,15 @@ export function useSubscriptionCheckout(
       })
     } catch (error) {
       previewError = error
+      const recovery = await recoverOutstandingPayment(
+        error,
+        () => previewRequestId === teamPreviewRequestId
+      )
+      if (recovery === 'failed') {
+        resetToPricing()
+        return
+      }
+      if (recovery) return
     } finally {
       if (previewRequestId === teamPreviewRequestId) {
         isLoadingPreview.value = false
@@ -632,29 +712,6 @@ export function useSubscriptionCheckout(
         checkoutType
       })
     } catch (error) {
-      if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
-        trackSubscriptionFailure(
-          {
-            tier: tierKey,
-            cycle: billingCycle,
-            checkoutType
-          },
-          error
-        )
-        await refreshPreviewOnReactivationBlock(planSlug)
-        return
-      }
-      if (await refreshExpiredProrationQuote(error, planSlug)) {
-        trackSubscriptionFailure(
-          {
-            tier: tierKey,
-            cycle: billingCycle,
-            checkoutType
-          },
-          error
-        )
-        return
-      }
       trackSubscriptionFailure(
         {
           tier: tierKey,
@@ -663,6 +720,12 @@ export function useSubscriptionCheckout(
         },
         error
       )
+      if (await recoverOutstandingPayment(error)) return
+      if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
+        await refreshPreviewOnReactivationBlock(planSlug)
+        return
+      }
+      if (await refreshExpiredProrationQuote(error, planSlug)) return
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
@@ -889,15 +952,16 @@ export function useSubscriptionCheckout(
         checkoutType
       })
     } catch (error) {
+      trackSubscriptionFailure(
+        {
+          tier: 'team',
+          cycle: billingCycle,
+          checkoutType
+        },
+        error
+      )
+      if (await recoverOutstandingPayment(error)) return
       if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
-        trackSubscriptionFailure(
-          {
-            tier: 'team',
-            cycle: billingCycle,
-            checkoutType
-          },
-          error
-        )
         await refreshPreviewOnReactivationBlock(planSlug, {
           teamCreditStopId: stop.id,
           billingCycle
@@ -909,25 +973,8 @@ export function useSubscriptionCheckout(
           teamCreditStopId: stop.id,
           billingCycle
         })
-      ) {
-        trackSubscriptionFailure(
-          {
-            tier: 'team',
-            cycle: billingCycle,
-            checkoutType
-          },
-          error
-        )
-        return
-      }
-      trackSubscriptionFailure(
-        {
-          tier: 'team',
-          cycle: billingCycle,
-          checkoutType
-        },
-        error
       )
+        return
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false

@@ -12,6 +12,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import type { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class NodeOperationsHelper {
   public readonly promptDialogInput: Locator
@@ -214,6 +215,36 @@ export class NodeOperationsHelper {
         bottomRight
       )
     }
+  }
+
+  /**
+   * Enlarges the node titled `title` by dragging its bottom-right Vue resize
+   * handle. The returned size is read from the graph model, not a DOM bounding
+   * box, so it stays comparable across zoom and side-panel layout changes.
+   */
+  async growNodeByDrag(
+    title: string,
+    delta: { x: number; y: number }
+  ): Promise<{ nodeRef: NodeReference; node: VueNodeFixture; size: Size }> {
+    const [nodeRef] = await this.getNodeRefsByTitle(title)
+    if (!nodeRef) throw new Error(`No node titled "${title}" on the canvas`)
+
+    // Saved pans can leave the node too low for a downward drag to stay onscreen.
+    await nodeRef.centerOnNode()
+
+    const node = await this.comfyPage.vueNodes.getFixtureByTitle(title)
+    const sizeBefore = await nodeRef.getSize()
+    await node.resizeFromCorner('SE', delta.x, delta.y)
+    await this.comfyPage.nextFrame()
+
+    const size = await nodeRef.getSize()
+    if (size.width <= sizeBefore.width || size.height <= sizeBefore.height) {
+      throw new Error(
+        `Resize drag did not enlarge "${title}": ${sizeBefore.width}x${sizeBefore.height} -> ${size.width}x${size.height}`
+      )
+    }
+
+    return { nodeRef, node, size }
   }
 
   async fillPromptDialog(value: string): Promise<void> {

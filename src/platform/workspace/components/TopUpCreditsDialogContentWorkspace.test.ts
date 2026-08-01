@@ -20,6 +20,9 @@ const mockTrackTopUpPurchase = vi.fn()
 const mockTrackBillingEvent = vi.fn()
 const mockCanTopUp = vi.hoisted(() => ({ value: true }))
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: true }))
+const mockTopupActionOperation = vi.hoisted(() => ({
+  value: undefined as { actionUrl: string } | undefined
+}))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -33,6 +36,9 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
     hasPendingOperations: true,
     isAddingCredits: false,
+    get topupActionOperation() {
+      return mockTopupActionOperation.value
+    },
     startOperation: mockStartOperation
   })
 }))
@@ -40,6 +46,7 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: {
+      __v_isRef: true,
       get value() {
         return { canTopUp: mockCanTopUp.value }
       }
@@ -98,7 +105,10 @@ const i18n = createI18n({
   messages: {
     en: {
       g: { close: 'Close' },
-      subscription: { addCredits: 'Add credits' },
+      subscription: {
+        addCredits: 'Add credits',
+        preview: { completeVerification: 'Complete verification' }
+      },
       credits: {
         topUp: {
           addMoreCredits: 'Add more credits',
@@ -158,6 +168,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     vi.clearAllMocks()
     mockCanTopUp.value = true
     mockShouldUseWorkspaceBilling.value = true
+    mockTopupActionOperation.value = undefined
     mockFetchBalance.mockResolvedValue(undefined)
     mockFetchStatus.mockResolvedValue(undefined)
   })
@@ -193,6 +204,38 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     renderDialog()
 
     expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+  })
+
+  it('opens topup verification without exposing its URL', async () => {
+    const actionUrl = 'https://verify.example/sensitive-token'
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    mockTopupActionOperation.value = { actionUrl }
+
+    const { container } = renderDialog()
+
+    expect(container.innerHTML).not.toContain(actionUrl)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Complete verification' })
+    )
+    expect(open).toHaveBeenCalledWith(
+      actionUrl,
+      '_blank',
+      'noopener,noreferrer'
+    )
+    open.mockRestore()
+  })
+
+  it('hides topup verification after permission is revoked', () => {
+    mockCanTopUp.value = false
+    mockTopupActionOperation.value = {
+      actionUrl: 'https://verify.example/sensitive-token'
+    }
+
+    renderDialog()
+
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).not.toBeInTheDocument()
   })
 
   it('refreshes both balance and status after a completed top-up', async () => {
