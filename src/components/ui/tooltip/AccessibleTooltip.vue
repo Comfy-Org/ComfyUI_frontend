@@ -75,7 +75,7 @@ const contentClass = cn(
           :style="contentStyle"
           :class="contentClass"
         >
-          {{ labelText }}
+          <slot name="content">{{ labelText }}</slot>
           <TooltipArrow :width="10" :height="5" class="fill-charcoal-300" />
         </TooltipContent>
       </TooltipPortal>
