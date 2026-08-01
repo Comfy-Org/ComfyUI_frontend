@@ -10,7 +10,7 @@ const {
   yearlyTotal
 } = defineProps<{
   price: string
-  period: string
+  period?: string
   originalPrice?: string
   discount?: string
   billingPeriod?: 'monthly' | 'yearly'
@@ -46,7 +46,7 @@ const billingNote = computed(() => {
           >
             {{ originalPrice }}
           </span>
-          <span class="text-primary-warm-white text-sm">
+          <span v-if="period" class="text-primary-warm-white text-sm">
             {{ period }}
           </span>
         </div>

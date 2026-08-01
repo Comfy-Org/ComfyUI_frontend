@@ -33,6 +33,7 @@ export interface PricingPlan {
   ctaHref: (cycle: BillingCycle) => string
   features: PlanFeature[]
   isPopular?: boolean
+  isOneTime?: boolean
 }
 
 export function subscribeUrl(
@@ -53,6 +54,7 @@ const freePlan: PricingPlan = {
   priceKey: 'pricing.plan.free.price',
   ctaKey: 'pricing.plan.free.cta',
   ctaHref: () => externalLinks.cloud,
+  isOneTime: true,
   features: [
     { text: 'pricing.plan.free.runs' },
     { text: 'pricing.feature.shortRuntime' },

@@ -1486,9 +1486,9 @@ const translations = {
     'zh-CN': '积分余额'
   },
   'pricing.included.feature4.description': {
-    en: 'All plans will include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro.',
+    en: 'Paid plans include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro.',
     'zh-CN':
-      '所有计划均包含每月积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）。'
+      '付费计划均包含每月积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）。'
   },
   'pricing.included.feature5.title': {
     en: 'Add more credits anytime',
