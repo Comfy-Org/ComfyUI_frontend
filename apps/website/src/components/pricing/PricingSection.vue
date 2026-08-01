@@ -148,6 +148,7 @@ const planCards = computed(() =>
           :estimate-key="plan.estimateKey"
           :locale
         />
+        <div v-else aria-hidden="true" />
 
         <div class="mt-8 flex self-end">
           <Button
