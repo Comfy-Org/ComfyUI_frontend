@@ -15,6 +15,7 @@ import { st, t } from '@/i18n'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
+  inputAsSerialisable,
   LGraph,
   LGraphCanvas,
   LGraphNode,
@@ -22,7 +23,10 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
@@ -2220,6 +2224,16 @@ export class ComfyApp {
         node = new LGraphNode(data._meta?.title ?? data.class_type)
         node.type = sanitizeNodeName(data.class_type)
         node.has_errors = true
+        const widgetValues: TWidgetValue[] = []
+        const widgetValuesNamed: Record<string, TWidgetValue> = {}
+        for (const [input, value] of Object.entries(data.inputs)) {
+          if (value instanceof Array) {
+            node.addInput(input, '*')
+          } else {
+            widgetValues.push(value)
+            widgetValuesNamed[input] = value
+          }
+        }
         node.last_serialization = {
           id: nodeId,
           type: data.class_type,
@@ -2228,7 +2242,10 @@ export class ComfyApp {
           flags: {},
           order: 0,
           mode: node.mode,
-          title: data._meta?.title ?? data.class_type
+          title: data._meta?.title ?? data.class_type,
+          inputs: node.inputs.map(inputAsSerialisable),
+          widgets_values: widgetValues,
+          widgets_values_named: widgetValuesNamed
         }
         const replacement = nodeReplacementStore.getReplacementFor(
           data.class_type
@@ -2290,6 +2307,9 @@ export class ComfyApp {
             widget.callback?.(value)
           }
         }
+      }
+      if (node.last_serialization) {
+        node.last_serialization.inputs = node.inputs.map(inputAsSerialisable)
       }
     }
 
