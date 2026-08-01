@@ -1318,12 +1318,16 @@ const translations = {
 
   'pricing.plan.free.label': { en: 'FREE', 'zh-CN': '免费版' },
   'pricing.plan.free.price': { en: '$0', 'zh-CN': '$0' },
-  'pricing.plan.free.credits': { en: '400', 'zh-CN': '400' },
-  'pricing.plan.free.estimate': {
-    en: 'Generates ~35 5s videos*',
-    'zh-CN': '约可生成 35 个 5 秒视频*'
+  'pricing.plan.free.credits': { en: '5', 'zh-CN': '5' },
+  'pricing.plan.free.creditsLabel': {
+    en: 'runs to try out Cloud',
+    'zh-CN': '次运行，体验 Cloud'
   },
-  'pricing.plan.free.cta': { en: 'START FREE', 'zh-CN': '免费开始' },
+  'pricing.plan.free.estimate': {
+    en: 'One time. No credit card required.',
+    'zh-CN': '一次性体验，无需信用卡。'
+  },
+  'pricing.plan.free.cta': { en: 'TRY NOW', 'zh-CN': '立即试用' },
   'pricing.plan.free.feature1': {
     en: '10-minute max runtime per workflow',
     'zh-CN': '单个工作流最长运行 10 分钟'
@@ -1331,6 +1335,10 @@ const translations = {
   'pricing.plan.free.feature2': {
     en: 'Runs on RTX 6000 Pro GPUs (96GB VRAM)',
     'zh-CN': '运行于 RTX 6000 Pro GPU（96GB 显存）'
+  },
+  'pricing.plan.free.featureNoPartnerNodes': {
+    en: 'No Partner Nodes',
+    'zh-CN': '不含合作伙伴节点'
   },
 
   'pricing.plan.standard.label': { en: 'STANDARD', 'zh-CN': '标准版' },

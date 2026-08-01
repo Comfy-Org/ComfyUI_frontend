@@ -130,9 +130,9 @@ const planCards = computed(() =>
         <PricingPrice
           v-if="priceKey"
           :price="t(priceKey, locale)"
-          :period="t('pricing.plan.period', locale)"
+          :period="plan.id === 'free' ? '' : t('pricing.plan.period', locale)"
           :original-price="originalPrice"
-          :billing-period="billingPeriod"
+          :billing-period="plan.id === 'free' ? undefined : billingPeriod"
           :yearly-total="yearlyTotal"
           :locale
         />
@@ -144,7 +144,14 @@ const planCards = computed(() =>
         <PricingCredits
           v-if="plan.creditsKey"
           :credits="t(plan.creditsKey, locale)"
-          :label="t('pricing.creditsLabel', locale)"
+          :label="
+            t(
+              plan.id === 'free'
+                ? 'pricing.plan.free.creditsLabel'
+                : 'pricing.creditsLabel',
+              locale
+            )
+          "
           :estimate-key="plan.estimateKey"
           :locale
         />

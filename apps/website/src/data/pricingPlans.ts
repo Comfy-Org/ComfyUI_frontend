@@ -1,6 +1,5 @@
 import type { TranslationKey } from '../i18n/translations'
 
-import { SHOW_FREE_TIER } from '../config/features'
 import { externalLinks } from '../config/routes'
 
 export type BillingCycle = 'monthly' | 'yearly'
@@ -57,7 +56,8 @@ const freePlan: PricingPlan = {
   ctaHref: () => externalLinks.cloud,
   features: [
     { text: 'pricing.plan.free.feature1' },
-    { text: 'pricing.plan.free.feature2' }
+    { text: 'pricing.plan.free.feature2' },
+    { text: 'pricing.plan.free.featureNoPartnerNodes', status: 'excluded' }
   ]
 }
 
@@ -125,6 +125,4 @@ const standardPricingPlans: PricingPlan[] = [
   }
 ]
 
-export const pricingPlans: PricingPlan[] = SHOW_FREE_TIER
-  ? [freePlan, ...standardPricingPlans]
-  : standardPricingPlans
+export const pricingPlans: PricingPlan[] = [freePlan, ...standardPricingPlans]
