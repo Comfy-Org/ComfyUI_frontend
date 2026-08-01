@@ -24,11 +24,11 @@ vi.mock('@datadog/browser-rum', () => ({
   datadogRum: { addAction: vi.fn() }
 }))
 
-// performReload emits the RUM action immediately before window.location.reload(),
-// so `addAction` is the reliable "recovery was triggered" signal (a clean module
-// mock, unlike stubbing location.reload which the test DOM doesn't cooperate with
-// for calls made from callbacks/listeners). We still override reload on the live
-// location object so the direct-call path can also assert the reload itself.
+// Recovery is asserted two ways: `datadogRum.addAction` (emitted immediately
+// before the reload — a clean module mock) and `window.location.reload` itself,
+// overridden here on the live location object. Both fire in every path, including
+// event-listener and router-callback contexts, once per-test isolation is kept
+// tight (see the beforeEach/afterEach listener + sessionStorage handling below).
 const mockReload = vi.fn()
 
 const APP_CHUNK = 'http://localhost/assets/settingStore-CUtU9ycZ.js'
@@ -46,12 +46,28 @@ function preloadErrorEvent(url: string): Event {
 describe('chunkReload', () => {
   const addAction = vi.mocked(datadogRum.addAction)
 
+  // `installChunkReload` registers global `window` listeners with no exposed
+  // handle to remove them. Track every listener each test installs and tear them
+  // down in `afterEach`, so listeners never accumulate across tests on the shared
+  // `window` (which would let a later dispatch re-enter a previous test's handler).
+  const installedListeners: Array<
+    [string, EventListenerOrEventListenerObject]
+  > = []
+  const realAddEventListener = window.addEventListener.bind(window)
+
   beforeEach(() => {
     window.sessionStorage.clear()
     workflowState.modifiedWorkflows = []
     executionState.runningJobIds = []
     mockReload.mockClear()
     addAction.mockClear()
+    installedListeners.length = 0
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (type, listener, options) => {
+        installedListeners.push([type, listener])
+        return realAddEventListener(type, listener, options)
+      }
+    )
     Object.defineProperty(window.location, 'reload', {
       configurable: true,
       writable: true,
@@ -60,6 +76,10 @@ describe('chunkReload', () => {
   })
 
   afterEach(() => {
+    for (const [type, listener] of installedListeners) {
+      window.removeEventListener(type, listener)
+    }
+    installedListeners.length = 0
     vi.restoreAllMocks()
   })
 
@@ -98,12 +118,33 @@ describe('chunkReload', () => {
   it('does not recover if the loop guard cannot be persisted', () => {
     // Storage is readable (getItem -> null) but writes fail (e.g. quota). Without
     // a stored guard a reload could loop, so we must not reload.
-    vi.spyOn(window.sessionStorage, 'setItem').mockImplementation(() => {
-      throw new Error('quota exceeded')
+    //
+    // happy-dom's `sessionStorage` is a Proxy that caches the real `setItem`
+    // after the first call, so neither `vi.spyOn(window.sessionStorage, ...)`
+    // (which the proxy blocks from being un-installed, leaking the stub into
+    // later tests) nor `vi.spyOn(Storage.prototype, ...)` (silently ignored once
+    // any earlier test has written the guard) works here. Instead we install a
+    // throwing override as an own property on the instance and restore the
+    // original explicitly in `finally` — the only combination that both takes
+    // effect and stays isolated (a plain `delete` is rejected by the proxy).
+    const originalSetItem = window.sessionStorage.setItem
+    Object.defineProperty(window.sessionStorage, 'setItem', {
+      configurable: true,
+      writable: true,
+      value: () => {
+        throw new Error('quota exceeded')
+      }
     })
-
-    expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
-    expect(addAction).not.toHaveBeenCalled()
+    try {
+      expect(attemptChunkReload(undefined, APP_CHUNK)).toBe(false)
+      expect(addAction).not.toHaveBeenCalled()
+    } finally {
+      Object.defineProperty(window.sessionStorage, 'setItem', {
+        configurable: true,
+        writable: true,
+        value: originalSetItem
+      })
+    }
   })
 
   it('defers recovery when a generation is running', () => {
@@ -132,10 +173,11 @@ describe('chunkReload', () => {
     afterEachCb?.()
     expect(addAction).not.toHaveBeenCalled()
 
-    // Now safe -> recovery fires once.
+    // Now safe -> recovery fires once (RUM signal + the actual reload).
     workflowState.modifiedWorkflows = []
     afterEachCb?.()
     expect(addAction).toHaveBeenCalledTimes(1)
+    expect(mockReload).toHaveBeenCalledTimes(1)
     expect(window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY)).not.toBeNull()
   })
 
@@ -146,6 +188,8 @@ describe('chunkReload', () => {
     expect(addAction).toHaveBeenCalledWith('stale-chunk-reload', {
       chunkUrl: APP_CHUNK
     })
+    // Exactly one reload lands the user on the current version.
+    expect(mockReload).toHaveBeenCalledTimes(1)
   })
 
   it('does NOT recover on a vite:preloadError for an /extensions/ asset', () => {
@@ -169,6 +213,7 @@ describe('chunkReload', () => {
     window.dispatchEvent(event)
 
     expect(addAction).toHaveBeenCalledTimes(1)
+    expect(mockReload).toHaveBeenCalledTimes(1)
   })
 
   it('ignores an unhandledrejection for an /extensions/ asset', () => {
