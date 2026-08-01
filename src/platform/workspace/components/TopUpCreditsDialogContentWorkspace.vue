@@ -6,10 +6,10 @@
     <div class="flex items-center justify-between p-8">
       <div class="flex items-center gap-2">
         <button
-          v-if="step === 'confirm'"
+          v-if="step === 'confirm' || step === 'declined'"
           class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground"
           :aria-label="$t('g.back')"
-          @click="step = 'amount'"
+          @click="handleBack"
         >
           <i class="icon-[lucide--arrow-left] size-5" />
         </button>
@@ -182,7 +182,9 @@
         <i
           class="icon-[lucide--circle-alert] size-10 text-warning-background"
         />
-        <h2 class="m-0 text-lg font-bold text-base-foreground">
+        <h2
+          class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+        >
           {{ $t('credits.topUp.declinedTitle') }}
         </h2>
         <p class="m-0 text-sm text-muted-foreground">
@@ -545,6 +547,15 @@ function handlePrimaryAction() {
     return
   }
   void handleBuy()
+}
+
+function handleBack() {
+  if (step.value === 'declined') {
+    declineReason.value = null
+    step.value = 'confirm'
+    return
+  }
+  step.value = 'amount'
 }
 
 async function handleChangePaymentMethod() {
