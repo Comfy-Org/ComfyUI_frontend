@@ -7,33 +7,45 @@ export interface NamedValuesShadowDiffResult {
   checkedWidgetCount: number
 }
 
+export interface LegacyWidgetShadowEntry {
+  widgetIndex: number
+  name: string
+  value: unknown
+}
+
 export function computeLegacyWidgetShadow(
   widgets: readonly IBaseWidget[],
   widgetsValues: unknown[] | undefined
-): Map<string, unknown> {
-  const shadow = new Map<string, unknown>()
+): LegacyWidgetShadowEntry[] {
+  const shadow: LegacyWidgetShadowEntry[] = []
   if (!widgetsValues) return shadow
 
   let i = 0
-  for (const widget of widgets) {
+  for (const [widgetIndex, widget] of widgets.entries()) {
     if (widget.serialize === false) continue
     if (i >= widgetsValues.length) break
-    shadow.set(widget.name, widgetsValues[i++])
+    shadow.push({ widgetIndex, name: widget.name, value: widgetsValues[i++] })
   }
   return shadow
 }
 
 export function diffNamedValuesShadow(
   named: Record<string, unknown>,
-  legacy: Map<string, unknown>
+  legacy: readonly LegacyWidgetShadowEntry[]
 ): NamedValuesShadowDiffResult | null {
-  if (legacy.size === 0) return null
+  if (legacy.length === 0) return null
 
-  const widgetNames = new Set([...legacy.keys(), ...Object.keys(named)])
-  let mismatchWidgetCount = 0
-  for (const name of widgetNames) {
-    if (!isEqual(named[name], legacy.get(name))) mismatchWidgetCount++
+  const legacyNames = new Set(legacy.map((entry) => entry.name))
+  const namedOnlyCount = Object.keys(named).filter(
+    (name) => !legacyNames.has(name)
+  ).length
+
+  const mismatchWidgetCount =
+    legacy.filter((entry) => !isEqual(named[entry.name], entry.value)).length +
+    namedOnlyCount
+
+  return {
+    mismatchWidgetCount,
+    checkedWidgetCount: legacy.length + namedOnlyCount
   }
-
-  return { mismatchWidgetCount, checkedWidgetCount: widgetNames.size }
 }
