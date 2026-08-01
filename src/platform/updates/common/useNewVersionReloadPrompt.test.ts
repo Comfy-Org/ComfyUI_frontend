@@ -42,6 +42,9 @@ function withScope<T>(fn: () => T): { result: T; stop: () => void } {
   return { result, stop: () => scope.stop() }
 }
 
+// Flush the microtask queue so awaited `refresh().then(...)` chains settle.
+const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
+
 describe('useNewVersionReloadPrompt', () => {
   let showPrompt: ReturnType<typeof vi.fn<() => void>>
   let hidePrompt: ReturnType<typeof vi.fn<() => void>>
@@ -87,19 +90,43 @@ describe('useNewVersionReloadPrompt', () => {
   it('does not interrupt an active generation, then prompts once idle', async () => {
     driftProbe()
     isIdleRef.value = false
-    const { stop } = withScope(() =>
+    const { result, stop } = withScope(() =>
       useNewVersionReloadPrompt({ showPrompt, hidePrompt, reload })
     )
 
     // Learn about the drift while a generation is running.
-    const { useDesiredVersionStore } = await import('./desiredVersionStore')
-    await useDesiredVersionStore().refresh()
+    await result.checkNow()
     await nextTick()
     expect(showPrompt).not.toHaveBeenCalled()
 
-    // Generation finishes → tab goes idle → prompt surfaces.
+    // Generation finishes → tab goes idle → re-probe + prompt surfaces.
     isIdleRef.value = true
     await nextTick()
+    await flushPromises()
+    expect(showPrompt).toHaveBeenCalledTimes(1)
+    stop()
+  })
+
+  it('re-probes the edge when a generation finishes (drift promoted while busy)', async () => {
+    // Versions match at first, then a promote lands while a generation runs.
+    matchingProbe()
+    isIdleRef.value = false
+    const { result, stop } = withScope(() =>
+      useNewVersionReloadPrompt({ showPrompt, hidePrompt, reload })
+    )
+
+    await result.checkNow()
+    expect(showPrompt).not.toHaveBeenCalled()
+
+    // Promote happens mid-generation; the tab never regained focus.
+    driftProbe()
+    expect(showPrompt).not.toHaveBeenCalled()
+
+    // Generation finishes → idle transition re-probes the edge and detects drift.
+    isIdleRef.value = true
+    await nextTick()
+    await flushPromises()
+    expect(probeMock).toHaveBeenCalledTimes(2)
     expect(showPrompt).toHaveBeenCalledTimes(1)
     stop()
   })
@@ -155,12 +182,18 @@ describe('useNewVersionReloadPrompt', () => {
 
     window.dispatchEvent(new Event('focus'))
     await nextTick()
-    await Promise.resolve()
-    await nextTick()
+    await flushPromises()
 
     expect(probeMock).toHaveBeenCalled()
     expect(showPrompt).toHaveBeenCalledTimes(1)
+
+    // After teardown the focus listener must stop re-probing.
+    const probeCallsBeforeStop = probeMock.mock.calls.length
     stop()
+    window.dispatchEvent(new Event('focus'))
+    await nextTick()
+    await flushPromises()
+    expect(probeMock).toHaveBeenCalledTimes(probeCallsBeforeStop)
   })
 
   it('installs a one-shot navigation guard that reloads on next nav', async () => {

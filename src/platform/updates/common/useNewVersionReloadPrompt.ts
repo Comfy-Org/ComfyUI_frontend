@@ -93,12 +93,19 @@ export function useNewVersionReloadPrompt(
     void desiredVersionStore.refresh().then(maybeShowPrompt)
   })
 
-  // React to drift becoming known (via any refresh) and to the tab going idle
-  // after a generation finishes.
+  // React to drift becoming known via any refresh.
+  watch(hasNewVersion, (drifted) => {
+    if (drifted) maybeShowPrompt()
+  })
+
+  // Re-probe the edge once a generation finishes, so a version that was promoted
+  // while the tab was busy is detected promptly instead of waiting for the next
+  // window-focus event. (While busy we never interrupt; this fires on the
+  // idle transition.)
   watch(
-    () => canPrompt(),
-    (ready) => {
-      if (ready) maybeShowPrompt()
+    () => executionStore.isIdle,
+    (isIdle) => {
+      if (isIdle) void desiredVersionStore.refresh().then(maybeShowPrompt)
     }
   )
 
