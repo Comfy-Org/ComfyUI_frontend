@@ -325,10 +325,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       outcome: 'pending',
       operation_type: 'cancel'
     })
-    // Set once the initiating call returns a billing_op_id: the poller then
-    // owns failure telemetry for this operation (see billingOperationStore's
-    // handleFailure). While it is still undefined, nothing is polling this
-    // cancellation, so a thrown error here would otherwise go untelemetered.
+    // Once set, the poller (billingOperationStore) owns failure telemetry; until then, this must report it.
     let billingOpId: string | undefined
     try {
       const response = await workspaceApi.cancelSubscription()

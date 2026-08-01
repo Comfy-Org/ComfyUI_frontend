@@ -447,9 +447,6 @@ describe('useSubscription', () => {
       const { subscribeDirect } = useSubscriptionWithScope()
 
       await expect(subscribeDirect()).rejects.toThrow()
-      // subscribe() (wrapped) reports through reportError on failure;
-      // subscribeDirect bypasses that wrapper entirely, so a caller catching
-      // its own rejection is the only place the failure is observed.
       expect(mockReportError).not.toHaveBeenCalled()
     })
   })

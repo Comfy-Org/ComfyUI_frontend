@@ -24,9 +24,6 @@ interface PerformTeamSubscriptionCheckoutOptions {
  * included — subscribe to it. The slug encodes the cadence; the stop id is
  * validated and priced server-side.
  *
- * Reports checkout-initiation failures via `trackBillingEvent` before
- * rethrowing, mirroring `performSubscriptionCheckout`.
- *
  * Caller guards on `isCloud`, owns loading state, and wraps error handling. A
  * `needs_payment_method` response is a full-page redirect to Stripe; the other
  * statuses land back in the app, which polls the billing op to completion.

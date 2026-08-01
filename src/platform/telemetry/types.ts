@@ -708,11 +708,7 @@ type SubscriptionCheckoutBillingEvent = {
 
 type BillingOperationBillingEvent = {
   operation: 'operation'
-  /**
-   * Absent when the operation failed before the backend ever returned one
-   * (e.g. the initiating API call itself threw), so there is nothing yet to
-   * poll.
-   */
+  /** Absent when the initiating call itself failed, before the backend returned one to poll. */
   billing_op_id?: string
   operation_type: 'subscription' | 'topup' | 'cancel'
   tier?: SubscriptionCheckoutTier

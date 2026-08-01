@@ -41,9 +41,8 @@ export function useResubscribe() {
     isResubscribing.value = true
     try {
       await resubscribe()
-      // Workspace's resubscribe() call is itself terminal; legacy's only
-      // opens a Stripe tab, so it reports started/pending and lets the
-      // pending-checkout recovery in useSubscription.ts own the terminal.
+      // Workspace's resubscribe() is terminal; legacy only opens Stripe, so it reports
+      // started/pending and lets useSubscription.ts's pending-checkout recovery own the terminal.
       useTelemetry()?.trackBillingEvent(
         shouldUseWorkspaceBilling.value
           ? {

@@ -285,9 +285,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         billing_op_id: opId,
         duration_ms: durationMs
       })
-      // Also fires the pre-existing generic event for the two providers that
-      // implement trackMonthlySubscriptionSucceeded but not trackBillingEvent
-      // (Mixpanel, GTM). PostHog implements both.
+      // Also fires the legacy event for providers (Mixpanel, GTM) that don't implement trackBillingEvent.
       telemetry?.trackMonthlySubscriptionSucceeded({
         tier: operation.tier,
         cycle: operation.cycle,
@@ -467,14 +465,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     resolveTerminal(opId)
   }
 
-  /**
-   * The poller only learns of a `failed` terminal status from the backend, so
-   * there's no caught error to inspect — categorize by what the operation
-   * type implies instead. `subscription`/`topup` reach this terminal state
-   * after a payment attempt, so a failure here is most plausibly the payment
-   * provider declining it. `cancel` involves no charge, so a failure there
-   * reflects the backend rejecting the cancellation itself.
-   */
+  /** No caught error here — subscription/topup failures imply a provider decline, cancel implies an api rejection. */
   function categorizePollFailure(
     type: OperationType
   ): BillingFailure['failure_category'] {

@@ -320,8 +320,7 @@ async function handleBuy() {
     } else if (response.status === 'pending') {
       billingOperationStore.startOperation(response.billing_op_id, 'topup')
     } else {
-      // A synchronous 'failed' status from topup creation means the charge
-      // attempt itself was declined, not merely rejected before an attempt.
+      // Synchronous 'failed' here means the charge was declined, not rejected pre-attempt.
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'failed',
