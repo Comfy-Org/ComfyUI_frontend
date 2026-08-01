@@ -180,6 +180,7 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
       continue
     }
     if (!nodeEl || entry.el.closest('[data-node-id]') !== nodeEl) {
+      node.slots.delete(slotKey)
       layoutStore.deleteSlotLayout(slotKey)
       continue
     }

@@ -71,9 +71,12 @@ function createTestSetup(type: 'input' | 'output') {
   return { el, TestComponent }
 }
 
-function createSlotElement(collapsed = false): HTMLElement {
+function createSlotElement(
+  collapsed = false,
+  nodeId: string = NODE_ID
+): HTMLElement {
   const container = document.createElement('div')
-  container.dataset.nodeId = NODE_ID
+  container.dataset.nodeId = nodeId
   if (collapsed) container.dataset.collapsed = ''
   container.getBoundingClientRect = () =>
     ({
@@ -326,6 +329,20 @@ describe('useSlotElementTracking', () => {
     syncNodeSlotLayoutsFromDOM(NODE_ID)
 
     expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+  })
+
+  it('removes slot entries reattached under a different node', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const node = useNodeSlotRegistryStore().ensureNode(NODE_ID)
+    node.slots.set(slotKey, {
+      el: createSlotElement(false, 'different-node'),
+      index: SLOT_INDEX,
+      type: 'input'
+    })
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(node.slots.has(slotKey)).toBe(false)
   })
 
   it('skips slot layout writeback when measured slot geometry is unchanged', () => {
