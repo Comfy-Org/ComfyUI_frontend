@@ -541,30 +541,29 @@ describe('LGraphNode', () => {
   })
 
   describe('widget serialization', () => {
-    test('should only serialize widgets with serialize flag not set to false', () => {
+    test('should serialize persistable widgets densely', () => {
       const node = new LGraphNode('TestNode')
       node.serialize_widgets = true
 
-      // Add widgets with different serialization settings
+      node.addWidget('number', 'non-serializable', 3, null)
       node.addWidget('number', 'serializable1', 1, null)
       node.addWidget('number', 'serializable2', 2, null)
-      node.addWidget('number', 'non-serializable', 3, null)
       expect(node.widgets?.length).toBe(3)
 
-      // Set serialize flag to false for the last widget
-      node.widgets![2].serialize = false
+      node.widgets![0].serialize = false
 
-      // Set some widget values
-      node.widgets![0].value = 10
-      node.widgets![1].value = 20
-      node.widgets![2].value = 30
+      node.widgets![0].value = 30
+      node.widgets![1].value = 10
+      node.widgets![2].value = 20
 
-      // Serialize the node
       const serialized = node.serialize()
 
-      // Check that only serializable widgets' values are included
       expect(serialized.widgets_values).toEqual([10, 20])
       expect(serialized.widgets_values).toHaveLength(2)
+      expect(serialized.widgets_values_named).toEqual({
+        serializable1: 10,
+        serializable2: 20
+      })
     })
 
     test('should only configure widgets with serialize flag not set to false', () => {

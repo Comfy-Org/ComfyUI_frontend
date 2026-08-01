@@ -87,7 +87,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       ).not.toBeNull()
       expect(Math.abs(positions!.link.x - positions!.slot.x)).toBeLessThan(2)
       expect(Math.abs(positions!.link.y - positions!.slot.y)).toBeLessThan(2)
-    }).toPass()
+    }).toPass({ timeout: 5000 })
   }
 
   const dragFromTabButton = async (comfyPage: ComfyPage, button: Locator) => {
