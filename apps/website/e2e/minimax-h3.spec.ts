@@ -7,6 +7,8 @@ import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/minimax-h3'
 const PATH_ZH = '/zh-CN/minimax-h3'
+const LAUNCH_WORKFLOW_COUNT = 3
+const FAQ_COUNT = 4
 
 const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
   [PATH_EN, 'en'],
@@ -53,6 +55,15 @@ test.describe('MiniMax H3 page — desktop @smoke', () => {
     await heading.scrollIntoViewIfNeeded()
     await expect(heading).toBeVisible()
 
+    // Rob committed to three launch workflows; pin the count so emptying the
+    // data file fails here rather than silently shipping an empty section.
+    const workflows = page
+      .locator('section')
+      .filter({ has: heading })
+      .getByRole('listitem')
+    await expect(workflows).toHaveCount(LAUNCH_WORKFLOW_COUNT)
+    expect(minimaxH3Workflows).toHaveLength(LAUNCH_WORKFLOW_COUNT)
+
     for (const workflow of minimaxH3Workflows) {
       await expect(
         page.getByRole('heading', { level: 3, name: workflow.title.en })
@@ -92,6 +103,8 @@ test.describe('MiniMax H3 page — desktop @smoke', () => {
     })
     await heading.scrollIntoViewIfNeeded()
     await expect(heading).toBeVisible()
+
+    expect(minimaxH3Faqs).toHaveLength(FAQ_COUNT)
 
     for (const faq of minimaxH3Faqs) {
       await expect(

@@ -15,7 +15,10 @@ const SITEMAP_EXCLUDED_PATHNAMES = new Set([
     PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
   ),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/individual-submission`),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/booking-confirmation`)
+  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/booking-confirmation`),
+  // Embargoed until the MiniMax H3 OSS weights are public. Drop these two
+  // entries in the same PR that clears `noindexUntilLaunch` on the pages.
+  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/minimax-h3`)
 ])
 
 function isExcludedFromSitemap(page: string): boolean {
