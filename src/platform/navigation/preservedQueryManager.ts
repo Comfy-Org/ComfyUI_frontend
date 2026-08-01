@@ -28,7 +28,7 @@ const readFromStorage = (namespace: string): Record<string, string> | null => {
     const raw = sessionStorage.getItem(getStorageKey(namespace))
     if (!raw) return null
 
-    const parsed = JSON.parse(raw)
+    const parsed: unknown = JSON.parse(raw)
     if (!isValidQueryRecord(parsed)) {
       console.warn('[preservedQuery] invalid storage format')
       sessionStorage.removeItem(getStorageKey(namespace))
@@ -157,6 +157,11 @@ export const mergePreservedQueryIntoQuery = (
   }
 
   return changed ? nextQuery : undefined
+}
+
+export const hasPreservedQuery = (namespace: string): boolean => {
+  if (preservedQueries.has(namespace)) return true
+  return readFromStorage(namespace) !== null
 }
 
 export const clearPreservedQuery = (namespace: string) => {
