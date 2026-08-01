@@ -87,7 +87,6 @@ export interface SpotlightStep extends StepBase {
 
 export type CoachStep = LandingStep | SpotlightStep
 
-/** Steps, plus the reason when there were none worth opening a tour for. */
 export interface TourResolution {
   steps: CoachStep[]
   reason?: OnboardingTourNotStartedReason
