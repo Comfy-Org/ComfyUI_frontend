@@ -62,6 +62,7 @@ const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> = {
   stability: { name: 'Stability AI', slug: 'stability-ai' },
   bytedance: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
   bytedace: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
+  seedance2: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
   google: { name: 'Gemini Image', slug: 'gemini-image' },
   hailuo: { name: 'Hailuo MiniMax', slug: 'hailuo-minimax' },
   ideogram: { name: 'Ideogram', slug: 'ideogram' },

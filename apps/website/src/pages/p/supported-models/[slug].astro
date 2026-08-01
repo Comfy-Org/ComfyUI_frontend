@@ -43,11 +43,18 @@ const dirDescriptions: Record<string, string> = {
   partner_nodes: 'a cloud API model accessible through ComfyUI partner nodes without local hardware requirements'
 }
 
+const isPartnerNode = model.directory === 'partner_nodes'
+
 const dirDesc = dirDescriptions[model.directory] ?? 'an AI model'
-const whatIsDescription = `${displayName} is ${dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect ${displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${displayName} on Comfy Workflows, ready to load and customize.`
+const accessSentence = isPartnerNode
+  ? `There are no weights to download. Its Partner Node calls the provider's API and spends Comfy credits, and it works from both local ComfyUI and Comfy Cloud.`
+  : `You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud.`
+const whatIsDescription = `${displayName} is ${dirDesc}. ${accessSentence} ComfyUI's node-based workflow editor lets you connect ${displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${displayName} on Comfy Workflows, ready to load and customize.`
 
 const pageTitle = `${displayName} in ComfyUI`
-const pageDescription = `Run ${displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
+const pageDescription = isPartnerNode
+  ? `Run ${displayName} in ComfyUI through its Partner Node. ${model.workflowCount} community workflow templates, step-by-step tutorials, and no local GPU required.`
+  : `Run ${displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
@@ -95,7 +102,9 @@ const faqPage: JsonLdNode = {
       name: `Is ${displayName} free to use in ComfyUI?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`,
+        text: isPartnerNode
+          ? `ComfyUI is free and open source. ${displayName} is reached through a Partner Node, which spends Comfy credits on every generation because the work runs on the provider's API rather than on your hardware.`
+          : `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`,
       },
     },
   ],
