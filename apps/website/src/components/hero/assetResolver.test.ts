@@ -1,14 +1,37 @@
 import { describe, expect, it } from 'vitest'
 
+import type { DistanceLabel } from './cameraVocabulary'
 import { ANGLE_ASSETS, resolveAsset } from './assetResolver'
+
+const ZOOM_FOR_DISTANCE: Record<DistanceLabel, number> = {
+  'wide shot': 1,
+  'medium shot': 5,
+  'close-up': 8
+}
 
 describe('resolveAsset', () => {
   it('resolves every turntable azimuth to its exact frame', () => {
     for (const asset of ANGLE_ASSETS) {
       expect(
-        resolveAsset({ azimuth: asset.azimuthDegrees, elevation: 0, zoom: 5 })
+        resolveAsset({
+          azimuth: asset.azimuthDegrees,
+          elevation: 0,
+          zoom: ZOOM_FOR_DISTANCE[asset.distance]
+        })
       ).toBe(asset)
     }
+  })
+
+  it('swaps distance ring with zoom at the same azimuth', () => {
+    expect(resolveAsset({ azimuth: 90, elevation: 0, zoom: 0 }).src).toContain(
+      'az090-0__eye-level-shot__wide-shot'
+    )
+    expect(resolveAsset({ azimuth: 90, elevation: 0, zoom: 5 }).src).toContain(
+      'az090-0__eye-level-shot__medium-shot'
+    )
+    expect(resolveAsset({ azimuth: 90, elevation: 0, zoom: 10 }).src).toContain(
+      'az090-0__eye-level-shot__close-up'
+    )
   })
 
   it('snaps an off-bucket azimuth to the nearest frame', () => {
@@ -32,7 +55,7 @@ describe('resolveAsset', () => {
     )
   })
 
-  it('degrades unshipped elevation and distance within the same azimuth', () => {
+  it('degrades unshipped elevation within the same azimuth', () => {
     for (const elevation of [-30, 0, 30, 60]) {
       for (const zoom of [0, 5, 10]) {
         const asset = resolveAsset({ azimuth: 90, elevation, zoom })
