@@ -239,7 +239,7 @@ import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
-const { zeroState = false } = defineProps<{
+const { zeroState = false, inactivePlan } = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
   zeroState?: boolean
   inactivePlan?: boolean
@@ -335,8 +335,12 @@ const creditPoolTotalCompact = computed(() => {
   return total === null ? '—' : compactNumber.value.format(total)
 })
 
-const displayTotal = computed(() => (zeroState ? '0' : totalCredits.value))
-const displayPrepaid = computed(() => (zeroState ? '0' : prepaidCredits.value))
+const displayTotal = computed(() =>
+  zeroState || inactivePlan ? '0' : totalCredits.value
+)
+const displayPrepaid = computed(() =>
+  zeroState || inactivePlan ? '0' : prepaidCredits.value
+)
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
 )
@@ -347,7 +351,9 @@ const monthlyUsageLabel = computed(() =>
   })
 )
 
-const showBreakdown = computed(() => isActiveSubscription.value && !zeroState)
+const showBreakdown = computed(
+  () => isActiveSubscription.value && !zeroState && !inactivePlan
+)
 const showBar = computed(
   () =>
     showBreakdown.value &&
@@ -355,7 +361,11 @@ const showBar = computed(
     creditPoolTotalCredits.value > 0
 )
 const showActionButton = computed(
-  () => isActiveSubscription.value && !zeroState && permissions.value.canTopUp
+  () =>
+    isActiveSubscription.value &&
+    !zeroState &&
+    !inactivePlan &&
+    permissions.value.canTopUp
 )
 
 const isMonthlyDepleted = computed(

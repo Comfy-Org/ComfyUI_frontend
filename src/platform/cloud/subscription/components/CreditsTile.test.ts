@@ -286,7 +286,7 @@ describe('CreditsTile', () => {
 
   it('shows disabled credit details for an inactive plan', () => {
     activeProSubscription()
-    const { container } = renderTile({ zeroState: true, inactivePlan: true })
+    const { container } = renderTile({ inactivePlan: true })
 
     expect(container.textContent).toContain('0remaining')
     expect(container.textContent).toContain('Additional credits')
