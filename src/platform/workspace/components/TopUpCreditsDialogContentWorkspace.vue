@@ -7,7 +7,10 @@
       <div class="flex items-center gap-2">
         <button
           v-if="step === 'confirm' || step === 'declined'"
-          class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground"
+          class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground disabled:pointer-events-none disabled:opacity-40"
+          :disabled="
+            step === 'confirm' && (loading || isPolling || !!topupActionUrl)
+          "
           :aria-label="$t('g.back')"
           @click="handleBack"
         >

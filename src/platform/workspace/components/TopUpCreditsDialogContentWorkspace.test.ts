@@ -335,7 +335,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockCloseDialog).not.toHaveBeenCalled()
   })
 
-  it('routes back to the verifying step while a charge awaits verification', async () => {
+  it('disables back while a charge awaits verification', async () => {
     mockTopup.mockResolvedValue(topupResponse('pending'))
 
     renderDialog({ savedMethods: [VISA] })
@@ -347,13 +347,13 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     }
     await nextTick()
 
-    await user.click(screen.getByRole('button', { name: 'Back' }))
-
-    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
-    expect(screen.queryByText('Select an amount')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Complete verification' })
+    ).toBeInTheDocument()
   })
 
-  it('routes back to verifying even before the bank link arrives', async () => {
+  it('disables back even before the bank link arrives', async () => {
     mockTopup.mockResolvedValue(topupResponse('pending'))
 
     renderDialog({ savedMethods: [VISA] })
@@ -363,13 +363,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     mockIsAddingCredits.value = true
     await nextTick()
 
-    await user.click(screen.getByRole('button', { name: 'Back' }))
-
-    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Complete verification' })
-    ).not.toBeInTheDocument()
-    expect(screen.queryByText('Select an amount')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
   })
 
   it('jumps from amount to verifying when the bank link arrives', async () => {
