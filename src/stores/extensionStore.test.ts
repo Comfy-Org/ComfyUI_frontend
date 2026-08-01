@@ -40,6 +40,15 @@ describe('extensionStore', () => {
       }
     })
 
+    it('registers names that collide with Object.prototype keys', () => {
+      const store = useExtensionStore()
+      store.registerExtension({ name: 'constructor' })
+      store.registerExtension({ name: '__proto__' })
+      expect(store.isExtensionInstalled('constructor')).toBe(true)
+      expect(store.isExtensionInstalled('__proto__')).toBe(true)
+      expect(store.extensions).toHaveLength(2)
+    })
+
     it('warns when registering a disabled extension but still installs it', () => {
       const store = useExtensionStore()
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -61,6 +70,7 @@ describe('extensionStore', () => {
     it('returns false for uninstalled extension', () => {
       const store = useExtensionStore()
       expect(store.isExtensionInstalled('missing')).toBe(false)
+      expect(store.isExtensionInstalled('toString')).toBe(false)
     })
   })
 

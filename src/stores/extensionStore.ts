@@ -24,23 +24,27 @@ const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
 ]
 
 export const useExtensionStore = defineStore('extension', () => {
-  // For legacy reasons, the name uniquely identifies an extension
-  const extensionByName = ref<Record<string, ComfyExtension>>({})
+  // For legacy reasons, the name uniquely identifies an extension.
+  // Null-prototype so extension names cannot collide with Object.prototype keys.
+  const extensionByName = ref<Record<string, ComfyExtension>>(
+    Object.create(null)
+  )
   const extensions = computed(() => Object.values(extensionByName.value))
   // Not using computed because disable extension requires reloading of the page.
   // Dynamically update this list won't affect extensions that are already loaded.
   const disabledExtensionNames = ref<Set<string>>(new Set())
+
+  const isExtensionInstalled = (name: string) =>
+    Object.hasOwn(extensionByName.value, name)
 
   // Disabled extension names that are currently not in the extension list.
   // If a node pack is disabled in the backend, we shouldn't remove the configuration
   // of the frontend extension disable list, in case the node pack is re-enabled.
   const inactiveDisabledExtensionNames = computed(() => {
     return Array.from(disabledExtensionNames.value).filter(
-      (name) => !(name in extensionByName.value)
+      (name) => !isExtensionInstalled(name)
     )
   })
-
-  const isExtensionInstalled = (name: string) => name in extensionByName.value
 
   const isExtensionEnabled = (name: string) =>
     !disabledExtensionNames.value.has(name)
@@ -65,7 +69,7 @@ export const useExtensionStore = defineStore('extension', () => {
       throw new Error("Extensions must have a 'name' property.")
     }
 
-    if (extensionByName.value[extension.name]) {
+    if (Object.hasOwn(extensionByName.value, extension.name)) {
       console.warn(
         `Extension named '${extension.name}' already registered - skipping`
       )
