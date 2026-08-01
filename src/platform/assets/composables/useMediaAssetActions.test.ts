@@ -148,14 +148,14 @@ vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
 })
 
 const mockDeleteAsset = vi.hoisted(() => vi.fn())
-const mockGetJobAssetIds = vi.hoisted(() => vi.fn())
+const mockGetJobAssetId = vi.hoisted(() => vi.fn())
 const mockCreateAssetExport = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ task_id: 'test-task-id', status: 'pending' })
 )
 vi.mock('../services/assetService', () => ({
   assetService: {
     deleteAsset: mockDeleteAsset,
-    getJobAssetIds: mockGetJobAssetIds,
+    getJobAssetId: mockGetJobAssetId,
     createAssetExport: mockCreateAssetExport
   }
 }))
@@ -169,7 +169,7 @@ vi.mock('@/stores/assetExportStore', () => ({
 
 vi.mock('@/scripts/api', () => ({
   api: {
-    fetchApi: vi.fn(),
+    deleteItem: vi.fn(),
     apiURL: vi.fn((path: string) => `http://localhost:8188/api${path}`),
     internalURL: vi.fn((path: string) => `http://localhost:8188${path}`),
     addEventListener: vi.fn(),
@@ -305,10 +305,7 @@ describe('useMediaAssetActions', () => {
     mockGetAssetType.mockReturnValue('input')
     mockResolveOutputAssetItems.mockReset()
     mockResolveOutputAssetItems.mockResolvedValue([])
-    mockGetJobAssetIds.mockResolvedValue([])
-    vi.mocked(api.fetchApi).mockResolvedValue(
-      fromAny({ ok: true, status: 200 })
-    )
+    mockGetJobAssetId.mockResolvedValue('output-asset-id')
   })
 
   describe('addWorkflow', () => {
@@ -1265,15 +1262,12 @@ describe('useMediaAssetActions', () => {
       await actions.deleteAssets(asset)
 
       await vi.waitFor(() => {
-        expect(vi.mocked(api.fetchApi)).toHaveBeenCalledWith(
-          '/history',
-          expect.objectContaining({
-            method: 'POST',
-            body: JSON.stringify({ delete: ['job-temp'] })
-          })
+        expect(vi.mocked(api.deleteItem)).toHaveBeenCalledWith(
+          'history',
+          'job-temp'
         )
       })
-      expect(mockGetJobAssetIds).not.toHaveBeenCalled()
+      expect(mockGetJobAssetId).not.toHaveBeenCalled()
       expect(mockDeleteAsset).not.toHaveBeenCalled()
       expect(mockUpdateHistory).toHaveBeenCalled()
       expect(mockUpdateFlatOutputs).toHaveBeenCalled()
@@ -1290,94 +1284,72 @@ describe('useMediaAssetActions', () => {
       )
     })
 
-    it.for([false, true])(
-      'deletes the history job and exact linked asset records when isCloud=%s',
-      async (cloud) => {
-        mockIsCloud.value = cloud
-        mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-1' })
-        mockGetJobAssetIds.mockResolvedValue(['output-uuid-1', 'output-uuid-2'])
-        mockDeleteAsset.mockResolvedValue(undefined)
-        const actions = useMediaAssetActions()
-        const asset = createMockAsset({
-          id: 'job-1-node-1--generated.png',
-          name: 'generated.png',
-          hash: 'generated-content-hash',
-          tags: ['output'],
-          user_metadata: { jobId: 'job-1' }
-        })
-
-        await actions.deleteAssets(asset)
-
-        expect(vi.mocked(api.fetchApi)).toHaveBeenCalledWith(
-          '/history',
-          expect.objectContaining({
-            body: JSON.stringify({ delete: ['job-1'] })
-          })
-        )
-        expect(mockGetJobAssetIds).toHaveBeenCalledTimes(cloud ? 1 : 0)
-        expect(mockDeleteAsset).toHaveBeenCalledTimes(cloud ? 2 : 0)
-        if (cloud) {
-          expect(mockDeleteAsset).toHaveBeenCalledWith('output-uuid-1')
-          expect(mockDeleteAsset).toHaveBeenCalledWith('output-uuid-2')
-          expect(mockDeleteAsset.mock.invocationCallOrder[0]).toBeLessThan(
-            vi.mocked(api.fetchApi).mock.invocationCallOrder[0]
-          )
-        }
-        expect(mockUpdateFlatOutputs).toHaveBeenCalledOnce()
-      }
-    )
-
-    it('falls back to deleting history when linked asset lookup is unavailable', async () => {
+    it('deletes only the selected cloud asset and preserves its history job', async () => {
       mockIsCloud.value = true
-      mockGetJobAssetIds.mockResolvedValue([])
+      mockGetOutputAssetMetadata.mockReturnValue({
+        jobId: 'job-1',
+        nodeId: 'node-1'
+      })
+      mockGetJobAssetId.mockResolvedValue('selected-output-uuid')
+      mockDeleteAsset.mockResolvedValue(undefined)
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
-        id: 'job-1-node-1--missing.png',
-        name: 'missing.png',
-        tags: ['output']
+        id: 'job-1-node-1--generated.png',
+        name: 'generated-content-hash',
+        display_name: 'ComfyUI_generated.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'job-1' }
       })
 
       await actions.deleteAssets(asset)
 
-      expect(mockDeleteAsset).not.toHaveBeenCalled()
-      expect(vi.mocked(api.fetchApi)).toHaveBeenCalledWith(
-        '/history',
-        expect.objectContaining({
-          body: JSON.stringify({ delete: ['job-1-node-1--missing.png'] })
-        })
+      expect(mockGetJobAssetId).toHaveBeenCalledWith(
+        'job-1',
+        'generated-content-hash',
+        'ComfyUI_generated.png'
       )
+      expect(mockDeleteAsset).toHaveBeenCalledWith('selected-output-uuid')
+      expect(vi.mocked(api.deleteItem)).not.toHaveBeenCalled()
       expect(mockUpdateHistory).toHaveBeenCalled()
       expect(mockUpdateFlatOutputs).toHaveBeenCalled()
     })
 
-    it('cleans up a selected output job only once', async () => {
+    it('keeps the job when the selected cloud asset cannot be resolved', async () => {
       mockIsCloud.value = true
-      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-1' })
-      mockGetJobAssetIds.mockResolvedValue(['output-uuid-1', 'output-uuid-2'])
-      mockDeleteAsset.mockResolvedValue(undefined)
+      mockGetOutputAssetMetadata.mockReturnValue({
+        jobId: 'job-1',
+        nodeId: 'node-1'
+      })
+      mockGetJobAssetId.mockResolvedValue(null)
       const actions = useMediaAssetActions()
 
-      await actions.deleteAssets([
+      await actions.deleteAssets(
         createMockAsset({
-          id: 'generated-card-1',
-          name: 'generated-1.png',
-          tags: ['output']
-        }),
-        createMockAsset({
-          id: 'generated-card-2',
-          name: 'generated-2.png',
+          id: 'generated-card-id',
+          name: 'missing.png',
+          hash: 'missing-content-hash',
           tags: ['output']
         })
-      ])
+      )
 
-      expect(mockGetJobAssetIds).toHaveBeenCalledOnce()
-      expect(mockDeleteAsset).toHaveBeenCalledTimes(2)
-      expect(vi.mocked(api.fetchApi)).toHaveBeenCalledOnce()
+      expect(mockGetJobAssetId).toHaveBeenCalledWith(
+        'job-1',
+        'missing-content-hash',
+        undefined
+      )
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+      expect(vi.mocked(api.deleteItem)).not.toHaveBeenCalled()
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'mediaAsset.failedToDeleteAsset'
+        })
+      )
     })
 
-    it('keeps history when linked asset lookup fails', async () => {
-      mockIsCloud.value = true
-      mockGetJobAssetIds.mockRejectedValue(new Error('lookup failed'))
+    it('uses history deletion for OSS outputs', async () => {
+      mockIsCloud.value = false
+      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-1' })
       const actions = useMediaAssetActions()
 
       await actions.deleteAssets(
@@ -1388,64 +1360,50 @@ describe('useMediaAssetActions', () => {
         })
       )
 
-      expect(vi.mocked(api.fetchApi)).not.toHaveBeenCalled()
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(vi.mocked(api.deleteItem)).toHaveBeenCalledWith('history', 'job-1')
+      expect(mockGetJobAssetId).not.toHaveBeenCalled()
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
     })
 
-    it('reports asset-record deletion failures and refreshes output stores', async () => {
+    it('deletes cloud temp assets individually', async () => {
       mockIsCloud.value = true
-      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-1' })
-      mockGetJobAssetIds.mockResolvedValue(['output-uuid'])
-      mockDeleteAsset.mockRejectedValue(new Error('delete failed'))
-      const actions = useMediaAssetActions()
-      const asset = createMockAsset({
-        id: 'generated-card-id',
-        name: 'generated.png',
-        tags: ['output']
+      mockGetAssetType.mockReturnValue('temp')
+      mockGetOutputAssetMetadata.mockReturnValue({
+        jobId: 'job-1',
+        nodeId: 'node-1'
       })
-
-      await actions.deleteAssets(asset)
-
-      expect(vi.mocked(api.fetchApi)).not.toHaveBeenCalled()
-      expect(mockUpdateHistory).toHaveBeenCalled()
-      expect(mockUpdateFlatOutputs).toHaveBeenCalled()
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'mediaAsset.failedToDeleteAsset'
-        })
-      )
-    })
-
-    it('reports a history deletion failure after deleting linked assets', async () => {
-      mockIsCloud.value = true
-      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-1' })
-      mockGetJobAssetIds.mockResolvedValue(['output-uuid'])
-      mockDeleteAsset.mockResolvedValue(undefined)
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        fromAny({ ok: false, status: 500 })
-      )
+      mockGetJobAssetId.mockResolvedValue('temp-asset-uuid')
       const actions = useMediaAssetActions()
 
       await actions.deleteAssets(
         createMockAsset({
-          id: 'generated-card-id',
+          id: 'temp-card-id',
+          name: 'preview.png',
+          hash: 'preview-content-hash',
+          tags: ['output']
+        })
+      )
+
+      expect(mockDeleteAsset).toHaveBeenCalledWith('temp-asset-uuid')
+      expect(vi.mocked(api.deleteItem)).not.toHaveBeenCalled()
+    })
+
+    it('deletes a cloud asset API output directly by its asset ID', async () => {
+      mockIsCloud.value = true
+      mockGetOutputAssetMetadata.mockReturnValue(null)
+      const actions = useMediaAssetActions()
+
+      await actions.deleteAssets(
+        createMockAsset({
+          id: 'flat-output-uuid',
           name: 'generated.png',
           tags: ['output']
         })
       )
 
-      expect(mockDeleteAsset).toHaveBeenCalledWith('output-uuid')
-      expect(mockUpdateHistory).toHaveBeenCalled()
-      expect(mockUpdateFlatOutputs).toHaveBeenCalled()
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'mediaAsset.failedToDeleteAsset'
-        })
-      )
+      expect(mockDeleteAsset).toHaveBeenCalledWith('flat-output-uuid')
+      expect(mockGetJobAssetId).not.toHaveBeenCalled()
+      expect(vi.mocked(api.deleteItem)).not.toHaveBeenCalled()
     })
   })
 
@@ -1524,12 +1482,15 @@ describe('useMediaAssetActions', () => {
       mockDeleteAsset.mockResolvedValue(undefined)
       mockGetAssetType.mockReturnValue('output')
       mockGetOutputAssetMetadata.mockReturnValue({
+        jobId: 'job-output',
+        nodeId: 'node-output',
         subfolder: 'outputs/2025'
       })
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
         id: 'asset-output',
         name: 'gen.png',
+        hash: 'generated-content-hash',
         tags: ['output']
       })
 
@@ -1539,7 +1500,9 @@ describe('useMediaAssetActions', () => {
         expect(mockClearNodePreviewCache).toHaveBeenCalledTimes(1)
       })
       const [, valuesArg] = mockClearNodePreviewCache.mock.calls[0]
-      expect(valuesArg).toEqual(new Set(['outputs/2025/gen.png [output]']))
+      expect(valuesArg).toEqual(
+        new Set(['outputs/2025/gen.png [output]', 'generated-content-hash'])
+      )
       expect(valuesArg.has('gen.png')).toBe(false)
       expect(valuesArg.has('gen.png [input]')).toBe(false)
     })

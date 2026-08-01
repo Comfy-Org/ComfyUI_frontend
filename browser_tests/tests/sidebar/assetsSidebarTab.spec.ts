@@ -117,6 +117,20 @@ const alphaOutputAsset: Asset = {
   updated_at: '2026-01-01T12:00:00Z'
 }
 
+const multiOutputAAsset: Asset = {
+  ...alphaOutputAsset,
+  id: 'multi-output-a-asset-id',
+  name: 'ComfyUI_multi-output-a.png',
+  hash: 'multi-output-a.png'
+}
+
+const multiOutputBAsset: Asset = {
+  ...alphaOutputAsset,
+  id: 'multi-output-b-asset-id',
+  name: 'ComfyUI_multi-output-b.png',
+  hash: 'multi-output-b.png'
+}
+
 const outputAssetsByPage = new WeakMap<Page, Asset[]>()
 const generatedJobsByPage = new WeakMap<Page, RawJobListItem[]>()
 
@@ -208,8 +222,8 @@ const loadImageNodeDef: ComfyNodeDef = {
 
 const cloudAssetDeletionTest = test.extend({
   page: async ({ page }, use) => {
-    outputAssetsByPage.set(page, [alphaOutputAsset])
-    generatedJobsByPage.set(page, [alphaJob])
+    outputAssetsByPage.set(page, [multiOutputAAsset, multiOutputBAsset])
+    generatedJobsByPage.set(page, [multiOutputJob])
     await mockCloudBoot(page, {
       features: {},
       settings: {
@@ -419,27 +433,54 @@ cloudAssetDeletionTest.describe(
     })
 
     cloudAssetDeletionTest(
-      'removes a deleted generated output from Load Image options',
+      'deletes only the selected generated output',
       async ({ comfyPage, page }) => {
         const deletedAssetIds: string[] = []
-        await page.route('**/api/jobs/alpha/assets?*', async (route) => {
+        await page.route('**/api/jobs/multi-output/assets?*', async (route) => {
           await route.fulfill({
             json: {
-              assets: [{ id: 'alpha-asset-id' }],
+              assets: [
+                {
+                  id: 'multi-output-a-asset-id',
+                  name: 'ComfyUI_multi-output-a.png',
+                  hash: 'multi-output-a.png',
+                  node_id: '3',
+                  output_key: 'images',
+                  output_index: 0
+                },
+                {
+                  id: 'multi-output-b-asset-id',
+                  name: 'ComfyUI_multi-output-b.png',
+                  hash: 'multi-output-b.png',
+                  node_id: '3',
+                  output_key: 'images',
+                  output_index: 1
+                }
+              ],
               pagination: {
                 offset: 0,
                 limit: 500,
-                total: 1,
+                total: 2,
                 has_more: false
               }
             }
           })
         })
-        await page.route('**/api/assets/alpha-asset-id', async (route) => {
-          deletedAssetIds.push('alpha-asset-id')
-          outputAssetsByPage.set(page, [])
-          await route.fulfill({ status: 204, body: '' })
-        })
+        await page.route(
+          '**/api/assets/multi-output-a-asset-id',
+          async (route) => {
+            deletedAssetIds.push('multi-output-a-asset-id')
+            outputAssetsByPage.set(page, [multiOutputBAsset])
+            await route.fulfill({ status: 204, body: '' })
+          }
+        )
+        await page.route(
+          '**/api/assets/multi-output-b-asset-id',
+          async (route) => {
+            deletedAssetIds.push('multi-output-b-asset-id')
+            await route.fulfill({ status: 204, body: '' })
+          }
+        )
 
         await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
         await comfyPage.vueNodes.waitForNodes(1)
@@ -449,34 +490,49 @@ cloudAssetDeletionTest.describe(
         await imageWidgetButton.click()
         const imagePicker = page.getByRole('dialog')
         await expect(
-          imagePicker.getByText('ComfyUI_alpha.png [output]', { exact: true })
+          imagePicker.getByText('ComfyUI_multi-output-a.png [output]', {
+            exact: true
+          })
+        ).toBeVisible()
+        await expect(
+          imagePicker.getByText('ComfyUI_multi-output-b.png [output]', {
+            exact: true
+          })
         ).toBeVisible()
         await page.keyboard.press('Escape')
 
         const tab = comfyPage.menu.assetsTab
         await tab.open()
-        await expect(tab.getAssetCardByName('alpha')).toBeVisible()
+        await expect(tab.getAssetCardByName('multi-output-a')).toBeVisible()
         const historyDeleteRequests: { delete: string[] }[] = []
         await page.route('**/api/history', async (route) => {
           historyDeleteRequests.push(route.request().postDataJSON())
-          generatedJobsByPage.set(page, [])
           await route.fulfill({ json: {} })
         })
-        await tab.getAssetCardByName('alpha').click({ button: 'right' })
+        await tab
+          .getAssetCardByName('multi-output-a')
+          .click({ button: 'right' })
         await tab.contextMenuItem('Delete').click()
         await comfyPage.confirmDialog.delete.click()
 
-        await expect.poll(() => deletedAssetIds).toEqual(['alpha-asset-id'])
         await expect
-          .poll(() => historyDeleteRequests)
-          .toEqual([{ delete: ['alpha'] }])
-        await expect(tab.getAssetCardByName('alpha')).toHaveCount(0)
+          .poll(() => deletedAssetIds)
+          .toEqual(['multi-output-a-asset-id'])
+        expect(historyDeleteRequests).toEqual([])
+        await expect(tab.getAssetCardByName('multi-output-a')).toBeVisible()
         await tab.dismissToasts()
         await tab.close()
         await imageWidgetButton.click()
         await expect(
-          imagePicker.getByText('ComfyUI_alpha.png [output]', { exact: true })
+          imagePicker.getByText('ComfyUI_multi-output-a.png [output]', {
+            exact: true
+          })
         ).toHaveCount(0)
+        await expect(
+          imagePicker.getByText('ComfyUI_multi-output-b.png [output]', {
+            exact: true
+          })
+        ).toBeVisible()
       }
     )
   }

@@ -43,17 +43,6 @@ import { assetService } from '../services/assetService'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
-async function deleteHistoryJob(jobId: string): Promise<void> {
-  const response = await api.fetchApi('/history', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ delete: [jobId] })
-  })
-  if (!response.ok) {
-    throw new Error(`Unable to delete history job: ${response.status}`)
-  }
-}
-
 function createAssetWidgetPath(asset: AssetItem): string {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   const assetType = getAssetType(asset, 'input')
@@ -107,31 +96,30 @@ export function useMediaAssetActions() {
 
   const deleteAssetApi = async (
     asset: AssetItem,
-    assetType: string,
-    outputDeletionByJob: Map<string, Promise<void>>
+    assetType: string
   ): Promise<void> => {
     if (assetType === 'output' || assetType === 'temp') {
-      const jobId =
-        getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
-      if (!jobId) {
-        throw new Error('Unable to extract job ID from asset')
+      if (!isCloud) {
+        const jobId =
+          getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
+        await api.deleteItem('history', jobId)
+        return
       }
 
-      const pendingDeletion =
-        outputDeletionByJob.get(jobId) ??
-        (async () => {
-          const assetIds = isCloud
-            ? await assetService.getJobAssetIds(jobId)
-            : []
-          const results = await Promise.allSettled(
-            assetIds.map((id) => assetService.deleteAsset(id))
-          )
-          const failure = results.find((result) => result.status === 'rejected')
-          if (failure?.status === 'rejected') throw failure.reason
-          await deleteHistoryJob(jobId)
-        })()
-      outputDeletionByJob.set(jobId, pendingDeletion)
-      await pendingDeletion
+      const metadata = getOutputAssetMetadata(asset.user_metadata)
+      if (!metadata) {
+        await assetService.deleteAsset(asset.id)
+        return
+      }
+
+      const assetHash = asset.hash ?? asset.name
+      const assetId = await assetService.getJobAssetId(
+        metadata.jobId,
+        assetHash,
+        asset.display_name
+      )
+      if (!assetId) throw new Error(t('mediaAsset.failedToDeleteAsset'))
+      await assetService.deleteAsset(assetId)
     } else {
       // Input assets can only be deleted in cloud environment
       if (!isCloud) {
@@ -712,17 +700,15 @@ export function useMediaAssetActions() {
             )
 
             try {
-              const outputDeletionByJob = new Map<string, Promise<void>>()
-              // Delete all assets using Promise.allSettled to track individual results
-              const results = await Promise.allSettled(
-                assetArray.map((asset) =>
-                  deleteAssetApi(
-                    asset,
-                    getAssetType(asset),
-                    outputDeletionByJob
-                  )
-                )
-              )
+              const results: PromiseSettledResult<void>[] = []
+              for (const asset of assetArray) {
+                try {
+                  await deleteAssetApi(asset, getAssetType(asset))
+                  results.push({ status: 'fulfilled', value: undefined })
+                } catch (reason) {
+                  results.push({ status: 'rejected', reason })
+                }
+              }
 
               // Count successes and failures
               const succeeded = results.filter(
