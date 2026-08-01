@@ -109,6 +109,13 @@ export type OnboardingTourSkipReason =
   | 'trigger_lost'
   | 'postponed'
 
+/** Why a tour the user qualified for never opened. */
+export type OnboardingTourNotStartedReason =
+  | 'already_seen'
+  | 'no_roles'
+  | 'run_only'
+  | 'no_steps'
+
 /**
  * `step_number` is 1-based and matches the "Step N of M" indicator the user
  * sees, with `step_count` as M. Both `step_number` and `coach_id` are absent
@@ -122,6 +129,8 @@ export interface OnboardingTourMetadata {
   step_number?: number
   coach_id?: string
   skip_reason?: OnboardingTourSkipReason
+  /** Present only on the `not_started` stage. */
+  not_started_reason?: OnboardingTourNotStartedReason
 }
 
 export interface SurveyResponsesNormalized extends SurveyResponses {

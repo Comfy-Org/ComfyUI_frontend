@@ -1,5 +1,5 @@
 import { useElementBounding, useEventListener } from '@vueuse/core'
-import { watch } from 'vue'
+import { effectScope, watch } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { RectTarget } from '@/platform/onboarding/coachmarkRegistry'
@@ -14,7 +14,10 @@ export function canvasNodeTarget(nodeId: NodeId): RectTarget {
   const canvasStore = useCanvasStore()
   const layout = layoutStore.getNodeLayoutRef(nodeId)
   const resolvedGraph = canvasStore.currentGraph
-  const canvasBounds = useElementBounding(() => canvasStore.canvas?.canvas)
+  const scope = effectScope(true)
+  const canvasBounds = scope.run(() =>
+    useElementBounding(() => canvasStore.canvas?.canvas)
+  )!
 
   return {
     getRect: () => {
@@ -47,6 +50,7 @@ export function canvasNodeTarget(nodeId: NodeId): RectTarget {
         stopWatch()
         stopResize()
       }
-    }
+    },
+    dispose: () => scope.stop()
   }
 }
