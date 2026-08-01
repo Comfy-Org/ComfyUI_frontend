@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -114,6 +114,53 @@ describe('TourSpotlight', () => {
       vi.mocked(ZIndex.set).mock.calls.length + 1
     )
     expect(ZIndex.set).toHaveBeenCalled()
+  })
+
+  it('leaves focus, z-order and travel alone when a step renames itself', async () => {
+    vi.mocked(ZIndex.set).mockClear()
+    const runState = ref('generating')
+    const step: SpotlightStep = {
+      kind: 'spotlight',
+      placement: 'right',
+      get name() {
+        return runState.value === 'generating'
+          ? 'result.generating'
+          : 'result.image'
+      }
+    }
+    const { rerender } = renderSpotlight({
+      step,
+      title: 'Hang tight',
+      body: 'Your result lands here'
+    })
+    await nextTick()
+    await nextTick()
+
+    const skip = screen.getByRole('button', { name: 'Skip' })
+    skip.focus()
+    const raises = vi.mocked(ZIndex.set).mock.calls.length
+    const travel = screen.getByTestId('coach-card').className
+
+    runState.value = 'succeeded'
+    await nextTick()
+    await nextTick()
+    await rerender({ step, title: 'Your image is ready', body: 'Here it is' })
+    await nextTick()
+    await nextTick()
+
+    expect(step.name, 'the step really did rename itself').toBe('result.image')
+    expect(
+      skip,
+      'a step renaming itself mid-run must not pull focus off what the user selected'
+    ).toHaveFocus()
+    expect(
+      vi.mocked(ZIndex.set).mock.calls.length,
+      'a re-raise per rename leaks a z-index entry every time'
+    ).toBe(raises)
+    expect(
+      screen.getByTestId('coach-card').className,
+      'a rename is not a move, so the card must not re-arm its travel'
+    ).toBe(travel)
   })
 
   it('emits advance on the primary button and skip on the secondary', async () => {
