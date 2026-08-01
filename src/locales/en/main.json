@@ -2261,6 +2261,7 @@
     "failedToCreateCustomer": "Failed to create customer: {error}",
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
+    "invalidBillingPortalUrl": "Invalid portal URL",
     "failedToPurchaseCredits": "Failed to purchase credits: {error}",
     "failedToFetchSubscription": "Failed to fetch subscription status: {error}",
     "failedToInitiateSubscription": "Failed to initiate subscription: {error}",
