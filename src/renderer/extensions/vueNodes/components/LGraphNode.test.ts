@@ -247,7 +247,7 @@ describe('LGraphNode', () => {
     expect(overlay).toHaveClass('border-node-stroke-executing')
   })
 
-  it('should initialize height CSS vars for collapsed nodes', () => {
+  it('should render the collapsed node layout', () => {
     const { container } = renderLGraphNode({
       nodeData: {
         ...mockNodeData,
@@ -256,10 +256,10 @@ describe('LGraphNode', () => {
     })
     const root = getNodeRoot(container)
 
-    expect(root.style.getPropertyValue('--node-width')).toBe('')
-    expect(root.style.getPropertyValue('--node-width-x')).toBe('200px')
-    expect(root.style.getPropertyValue('--node-height')).toBe('')
-    expect(root.style.getPropertyValue('--node-height-x')).toBe('130px')
+    expect(root).toHaveAttribute('data-collapsed', 'true')
+    expect(
+      screen.queryByTestId(`node-body-${mockNodeData.id}`)
+    ).not.toBeInTheDocument()
   })
 
   it('should initialize height CSS vars for expanded nodes', () => {

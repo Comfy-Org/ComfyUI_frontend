@@ -487,20 +487,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     widgetValues: ExportedSubgraphInstance['widgets_values']
   ): void {
     const quarantineValuesByInputName = this._readQuarantineHostValuesByName()
+    const widgetStore = useWidgetValueStore()
 
     let valueIndex = 0
     for (const input of this.inputs) {
       if (!input.widgetId) continue
-      if (
-        this.widgets.find((widget) => widget.name === input.name)?.serialize ===
-        false
-      )
-        continue
+      if (widgetStore.getWidget(input.widgetId)?.serialize === false) continue
       const value =
         quarantineValuesByInputName.get(input.name) ??
         widgetValues?.[valueIndex]
       if (value !== undefined) {
-        useWidgetValueStore().setValue(input.widgetId, value)
+        widgetStore.setValue(input.widgetId, value)
       }
       valueIndex += 1
     }
@@ -926,14 +923,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     serialized.properties = serializedProperties
 
+    const widgetStore = useWidgetValueStore()
     const promotedWidgetValues = this.inputs.flatMap((input) => {
       if (!input.widgetId) return []
-      if (
-        this.widgets.find((widget) => widget.name === input.name)?.serialize ===
-        false
-      )
-        return []
-      const value = useWidgetValueStore().getWidget(input.widgetId)?.value
+      const widgetState = widgetStore.getWidget(input.widgetId)
+      if (widgetState?.serialize === false) return []
+      const value = widgetState?.value
       return [
         {
           name: input.name,
