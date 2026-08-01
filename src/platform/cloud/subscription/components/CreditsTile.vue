@@ -336,10 +336,10 @@ const creditPoolTotalCompact = computed(() => {
 })
 
 const displayTotal = computed(() =>
-  zeroState || inactivePlan ? '0' : totalCredits.value
+  zeroState || inactivePlan ? formatCreditCount(0) : totalCredits.value
 )
 const displayPrepaid = computed(() =>
-  zeroState || inactivePlan ? '0' : prepaidCredits.value
+  zeroState || inactivePlan ? formatCreditCount(0) : prepaidCredits.value
 )
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
