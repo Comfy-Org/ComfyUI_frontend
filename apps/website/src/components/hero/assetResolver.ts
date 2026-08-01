@@ -23,28 +23,33 @@ export interface AngleAsset {
   height: number
 }
 
-/** The shipped set is a uniform 360° turntable at eye level, medium shot.
- * Elevation and distance variants (top/bottom views, close-ups, wide shots)
- * land later and slot into the same scoring. */
+/** The shipped set is three uniform 360° turntables at eye level, one per
+ * distance (wide shot, medium shot, close-up). Elevation variants (top/bottom
+ * views) land later and slot into the same scoring. */
 const RING_STEP_DEGREES = 22.5
 
-function ringAsset(azimuthDegrees: number): AngleAsset {
+function ringAsset(
+  azimuthDegrees: number,
+  distance: DistanceLabel
+): AngleAsset {
   const whole = String(Math.floor(azimuthDegrees)).padStart(3, '0')
   const slug = `az${whole}-${azimuthDegrees % 1 ? '5' : '0'}`
+  const distanceSlug = distance.replaceAll(' ', '-')
   return {
     azimuthDegrees,
     azimuth: azimuthLabel(azimuthDegrees),
     elevation: 'eye-level shot',
-    distance: 'medium shot',
-    src: `/hero/angles/${slug}__eye-level-shot__medium-shot.webp`,
+    distance,
+    src: `/hero/angles/${slug}__eye-level-shot__${distanceSlug}.webp`,
     width: 1280,
     height: 960
   }
 }
 
-export const ANGLE_ASSETS: AngleAsset[] = Array.from(
-  { length: 360 / RING_STEP_DEGREES },
-  (_, index) => ringAsset(index * RING_STEP_DEGREES)
+export const ANGLE_ASSETS: AngleAsset[] = DISTANCE_LABELS.flatMap((distance) =>
+  Array.from({ length: 360 / RING_STEP_DEGREES }, (_, index) =>
+    ringAsset(index * RING_STEP_DEGREES, distance)
+  )
 )
 
 function circularDegreeDistance(a: number, b: number): number {

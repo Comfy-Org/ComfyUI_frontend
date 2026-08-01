@@ -37,21 +37,21 @@ return an empty state — see `assetResolver.ts` and its tests.
 
 ## Adding angle assets
 
-The shipped set is a uniform 16-frame 360° turntable (22.5° steps) rendered at
-eye level as medium shots, extracted from a single orbit video. Frames are
-named by turntable azimuth plus the label vocabulary from
-`cameraVocabulary.ts`: `az{degrees}__{elevation}__{distance}.webp`, e.g.
-`az022-5__eye-level-shot__medium-shot.webp` (degrees use `-5` for half steps).
-The source frames are 4:3; each WebP is composed onto the cards' 1392×752
-canvas by mirror-extending and blurring the frame's own background, with the
-sharp centre feathered over it.
+The shipped set is three uniform 16-frame 360° turntables (22.5° steps)
+rendered at eye level — one per distance (wide shot, medium shot, close-up),
+each extracted from a single orbit video of the same scene. Zooming the camera
+swaps between the rings. Frames are named by turntable azimuth plus the label
+vocabulary from `cameraVocabulary.ts`: `az{degrees}__{elevation}__{distance}.webp`,
+e.g. `az022-5__eye-level-shot__medium-shot.webp` (degrees use `-5` for half
+steps). The source frames are 4:3; each WebP is composed onto the cards'
+1392×752 canvas by mirror-extending and blurring the frame's own background,
+with the sharp centre feathered over it.
 
-To add elevation or distance variants (top/bottom views, close-ups, wide
-shots) later: convert to WebP under `public/hero/angles/` at the matching
-slug and add the pose to `ANGLE_ASSETS` in `assetResolver.ts`. The resolver
-scores azimuth first (circular, in degrees), then elevation, then distance, so
-new variants slot in with no other change; poses without an exact asset snap
-to the nearest shipped frame.
+To add elevation variants (top/bottom views) later: convert to WebP under
+`public/hero/angles/` at the matching slug and add the pose to `ANGLE_ASSETS`
+in `assetResolver.ts`. The resolver scores azimuth first (circular, in
+degrees), then elevation, then distance, so new variants slot in with no other
+change; poses without an exact asset snap to the nearest shipped frame.
 
 ## Vendored code
 
