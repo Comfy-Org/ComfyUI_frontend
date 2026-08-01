@@ -333,8 +333,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     if (!targetAfterRelease) throw new Error('Target node header not found')
 
     await expectPosChanged(sourceBefore, sourceAfterRelease)
-    expect(targetAfterRelease.x).toBeCloseTo(targetBefore.x, 0)
-    expect(targetAfterRelease.y).toBeCloseTo(targetBefore.y, 0)
+    expectSameDelta(targetAfterRelease, targetBefore)
 
     await comfyPage.page.mouse.move(targetCenter.x + 20, targetCenter.y + 20, {
       steps: 5
