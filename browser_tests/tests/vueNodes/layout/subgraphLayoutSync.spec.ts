@@ -4,34 +4,36 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { toNodeId } from '@/types/nodeId'
 
-test.describe('Subgraph layout sync', { tag: '@vue-nodes' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
+test(
+  'extension resize updates an internal node after entering its subgraph',
+  { tag: '@vue-nodes' },
+  async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
     await comfyPage.vueNodes.enterSubgraph('2')
-    await expect(comfyPage.vueNodes.nodes).toHaveCount(2)
-  })
 
-  test('extension resize updates a Vue node after entering a subgraph', async ({
-    comfyPage
-  }) => {
     const node = comfyPage.vueNodes.getNodeLocator('1')
     await expect(node).toBeVisible()
 
-    const modelWidth = await comfyPage.page.evaluate((nodeId) => {
+    const initialBounds = await node.evaluate((element) => [
+      element instanceof HTMLElement ? element.offsetWidth : 0,
+      element instanceof HTMLElement ? element.offsetHeight : 0
+    ])
+
+    await comfyPage.page.evaluate((nodeId) => {
       const node = window.app!.canvas.graph!.getNodeById(nodeId)!
-      node.setSize([360, 200])
-      return node.size[0]
+      node.setSize([node.size[0] + 90, node.size[1] + 100])
     }, toNodeId('1'))
 
-    expect(modelWidth).toBe(360)
     await expect
       .poll(
-        () =>
-          node.evaluate((element) =>
-            element instanceof HTMLElement ? element.offsetWidth : 0
-          ),
-        { message: 'extension resize updates the rendered node width' }
+        async () => {
+          return await node.evaluate((element) => [
+            element instanceof HTMLElement ? element.offsetWidth : 0,
+            element instanceof HTMLElement ? element.offsetHeight : 0
+          ])
+        },
+        { message: 'extension resize updates the rendered node bounds' }
       )
-      .toBe(360)
-  })
-})
+      .toEqual([initialBounds[0] + 90, initialBounds[1] + 100])
+  }
+)
