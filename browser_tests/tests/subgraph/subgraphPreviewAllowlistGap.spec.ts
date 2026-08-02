@@ -10,9 +10,14 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const SUBGRAPH_NODE_ID = '1'
-const INTERIOR_SAMPLER_NODE_ID = '1'
-// Composite execution id for the interior SamplerCustomAdvanced node (local
-// id 1), nested one level inside the outer SubgraphNode (id 1) — matches the
+// The interior node can't reuse id 1: LiteGraph's subgraph-node-ID
+// deduplication treats the outer SubgraphNode's own id as reserved and
+// silently remaps any colliding interior node id (see
+// `deduplicateSubgraphNodeIds`), which would desync this id from the one
+// the app actually assigns.
+const INTERIOR_SAMPLER_NODE_ID = '2'
+// Composite execution id for the interior SamplerCustomAdvanced node,
+// nested one level inside the outer SubgraphNode (id 1) — matches the
 // `host:local` format the backend uses for nodes inside a subgraph.
 const SAMPLER_EXECUTION_ID = `${SUBGRAPH_NODE_ID}:${INTERIOR_SAMPLER_NODE_ID}`
 
