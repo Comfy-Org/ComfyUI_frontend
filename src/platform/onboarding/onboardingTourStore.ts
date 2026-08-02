@@ -164,6 +164,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const { signal } = controller
 
     const run = current.run
+    const superseded = () =>
+      run !== currentRun() || stepController !== controller
     const fromIdx = shownIdx(current)
     if (nextStep.kind === 'spotlight' && nextStep.openSidebarTab)
       openSidebarTab(nextStep.openSidebarTab)
@@ -180,8 +182,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
         signal,
         DEFER_TIMEOUT_MS
       )
-      // The run moved on without us; only a timeout ends it here.
-      if (run !== currentRun()) return
+      // The step moved on without us; only a timeout ends it here.
+      if (superseded()) return
       if (!found) {
         abandonStep(nextStep)
         return
@@ -193,12 +195,12 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       try {
         await nextStep.onEnter(signal)
       } catch (error) {
-        if (run !== currentRun()) return
+        if (superseded()) return
         console.error('coachmark onEnter failed', error)
         abandonStep(nextStep)
         return
       }
-      if (run !== currentRun()) return
+      if (superseded()) return
     }
     if (!dispatch({ type: 'stepShown', run, idx })) return
     trackTour('step_shown')

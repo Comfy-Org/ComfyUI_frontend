@@ -28,7 +28,7 @@
       <path
         v-if="step.interactive"
         data-testid="coach-hit-region"
-        :d="hitRegionPath"
+        :d="hitRegion"
         fill="transparent"
         fill-rule="evenodd"
         class="pointer-events-auto"
@@ -67,7 +67,7 @@
         ref="cardRef"
         data-testid="coach-card"
         role="dialog"
-        aria-modal="true"
+        :aria-modal="!step.interactive"
         :aria-labelledby="titleId"
         :aria-describedby="`${subtitleId} ${bodyId}`"
         :class="
@@ -171,6 +171,7 @@ import {
   VIEWPORT_MARGIN,
   CARD_GLIDE_MS,
   clampSpotlightRect,
+  hitRegionPath,
   noTargetCardLeft
 } from './coachmarkLayout'
 import type { SpotlightStep } from './onboardingTours'
@@ -304,14 +305,7 @@ const spotlightStyle = computed(() => {
   }
 })
 
-// Evenodd viewport path whose hole lets pointer events through to the page.
-const hitRegionPath = computed(() => {
-  const { width, height } = viewport()
-  const hole = scrimHole.value
-  const viewportPath = `M0 0H${width}V${height}H0Z`
-  if (!hole) return viewportPath
-  return `${viewportPath}M${hole.x} ${hole.y}h${hole.width}v${hole.height}h${-hole.width}Z`
-})
+const hitRegion = computed(() => hitRegionPath(viewport(), scrimHole.value))
 
 /**
  * The card travels to a new target, then rides it — a transition lags a target

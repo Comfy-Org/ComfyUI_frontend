@@ -63,6 +63,17 @@ export function clampSpotlight(
   }
 }
 
+/** Under `fill-rule="evenodd"`, the hole subpath is what lets input through. */
+export function hitRegionPath(
+  viewport: Viewport,
+  hole: SpotlightRect | null
+): string {
+  const outer = `M0 0H${viewport.width}V${viewport.height}H0Z`
+  if (!hole) return outer
+  const { x, y, width, height } = hole
+  return `${outer}M${x} ${y}h${width}v${height}h${-width}Z`
+}
+
 export function noTargetCardLeft(viewportWidth: number): number {
   return Math.max(VIEWPORT_MARGIN, (viewportWidth - CARD_WIDTH) / 2)
 }
