@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  clearJobsAuthBackoff,
   extractWorkflow,
   fetchHistory,
   fetchHistoryPage,
@@ -46,6 +47,99 @@ function createMockResponse(
 }
 
 describe('fetchJobs', () => {
+  beforeEach(() => {
+    clearJobsAuthBackoff()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  describe('auth failure backoff', () => {
+    it.for([401, 403] as const)(
+      'logs an auth %i once with detail and backs off further polls',
+      async (status) => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const mockFetch = vi.fn().mockResolvedValue({
+          ok: false,
+          status,
+          text: () =>
+            Promise.resolve(
+              JSON.stringify({ message: 'workspace membership not found' })
+            )
+        })
+
+        // Four consecutive poll-driven fetches while auth keeps failing.
+        for (let i = 0; i < 4; i++) await fetchHistory(mockFetch)
+
+        // Two of the four actually hit the network; the rest are suppressed.
+        expect(mockFetch).toHaveBeenCalledTimes(2)
+        // A failing episode logs exactly once, with the status and backend detail.
+        expect(errorSpy).toHaveBeenCalledTimes(1)
+        expect(errorSpy).toHaveBeenCalledWith(
+          expect.stringContaining(String(status))
+        )
+        expect(errorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('workspace membership not found')
+        )
+      }
+    )
+
+    it('recovers and polls normally once auth succeeds', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const failing = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: () => Promise.resolve('')
+      })
+      await fetchHistory(failing)
+      clearJobsAuthBackoff() // e.g. token refresh / sign-in resolves auth
+
+      const ok = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createMockResponse([createMockJob('job1')]))
+      })
+      const result = await fetchHistory(ok)
+
+      expect(ok).toHaveBeenCalledTimes(1)
+      expect(result).toHaveLength(1)
+    })
+  })
+
+  describe('non-auth failures', () => {
+    it('logs a server error with status and detail, without backing off', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve('internal error')
+      })
+
+      const first = await fetchHistory(mockFetch)
+      const second = await fetchHistory(mockFetch)
+
+      expect(first).toEqual([])
+      expect(second).toEqual([])
+      expect(mockFetch).toHaveBeenCalledTimes(2) // no suppression for 5xx
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('500'))
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('internal error')
+      )
+    })
+
+    it('logs a network error and returns empty', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi
+        .fn()
+        .mockRejectedValue(new TypeError('Failed to fetch'))
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toEqual([])
+      expect(errorSpy).toHaveBeenCalled()
+    })
+  })
+
   describe('fetchHistory', () => {
     it('fetches completed jobs', async () => {
       const mockFetch = vi.fn().mockResolvedValue({

@@ -18,12 +18,57 @@ import type {
   JobStatus,
   RawJobListItem
 } from './jobTypes'
+import { createJobsAuthBackoff } from './jobsAuthBackoff'
 import {
   zJobAssetsResponse,
   zJobDetail,
   zJobsListResponse,
   zWorkflowContainer
 } from './jobTypes'
+
+/** Backend statuses that mean "not authorized right now", not "server error". */
+const AUTH_FAILURE_STATUSES = new Set([401, 403])
+
+/**
+ * Shared across queue + history fetches, which poll the same `/jobs` endpoint
+ * under the same auth. A permanent auth failure on either backs off both.
+ */
+const authBackoff = createJobsAuthBackoff()
+
+/** Clears jobs-poller auth backoff (e.g. on sign-in/out, or between tests). */
+export function clearJobsAuthBackoff(): void {
+  authBackoff.recordSuccess()
+}
+
+const EMPTY_RESULT = (
+  offset: number,
+  maxItems: number
+): FetchJobsRawResult => ({
+  jobs: [],
+  total: 0,
+  offset,
+  limit: maxItems,
+  hasMore: false
+})
+
+async function readErrorDetail(res: Response): Promise<string> {
+  try {
+    const text = await res.text()
+    if (!text) return res.statusText
+    try {
+      const body = JSON.parse(text) as {
+        message?: string
+        error?: string
+        code?: string
+      }
+      return body.message ?? body.error ?? body.code ?? text.slice(0, 200)
+    } catch {
+      return text.slice(0, 200)
+    }
+  } catch {
+    return res.statusText
+  }
+}
 
 interface FetchJobsRawResult {
   jobs: RawJobListItem[]
@@ -51,20 +96,27 @@ async function fetchJobsRaw(
   maxItems: number = 200,
   offset: number = 0
 ): Promise<FetchJobsRawResult> {
+  if (authBackoff.shouldSkip()) return EMPTY_RESULT(offset, maxItems)
+
   const statusParam = statuses.join(',')
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
   try {
     const res = await fetchApi(url)
     if (!res.ok) {
-      console.error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
-      return {
-        jobs: [],
-        total: 0,
-        offset,
-        limit: maxItems,
-        hasMore: false
+      if (AUTH_FAILURE_STATUSES.has(res.status)) {
+        if (authBackoff.recordAuthFailure()) {
+          console.error(
+            `[Jobs API] Auth failure fetching jobs (${res.status}); backing off polling: ${await readErrorDetail(res)}`
+          )
+        }
+      } else {
+        console.error(
+          `[Jobs API] Failed to fetch jobs (${res.status}): ${await readErrorDetail(res)}`
+        )
       }
+      return EMPTY_RESULT(offset, maxItems)
     }
+    authBackoff.recordSuccess()
     const data = zJobsListResponse.parse(await res.json())
     return {
       jobs: data.jobs,
@@ -75,7 +127,7 @@ async function fetchJobsRaw(
     }
   } catch (error) {
     console.error('[Jobs API] Error fetching jobs:', error)
-    return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
+    return EMPTY_RESULT(offset, maxItems)
   }
 }
 
