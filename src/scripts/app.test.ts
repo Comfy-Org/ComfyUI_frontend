@@ -1031,6 +1031,50 @@ describe('ComfyApp', () => {
         }
       }
     })
+
+    it('spaces a single image dropped after another file away from the earlier node', async () => {
+      // The single-image path in handleFileList (no batch node) must also
+      // respect nodes already placed earlier in the same drop batch.
+      const dropPos: [number, number] = [500, 500]
+      const audioNode = createMockNode({
+        id: 1,
+        type: 'LoadAudio',
+        pos: [...dropPos],
+        size: [210, 100],
+        getBounding: vi.fn(() => new Float64Array([...dropPos, 210, 100]))
+      })
+      const imageNode = createMockNode({
+        id: 2,
+        type: 'LoadImage',
+        pos: [...dropPos],
+        size: [210, 344],
+        getBounding: vi.fn(() => new Float64Array([...dropPos, 210, 344]))
+      })
+
+      vi.mocked(pasteAudioNodes).mockResolvedValue([audioNode])
+      vi.mocked(pasteImageNodes).mockResolvedValue([imageNode])
+
+      await app.handleAudioFileList([createTestFile('a.mp3', 'audio/mpeg')])
+      await app.handleFileList([createTestFile('b.png', 'image/png')])
+
+      expect(createNode).not.toHaveBeenCalled()
+      expect(boxesOverlap(imageNode, audioNode)).toBe(false)
+    })
+
+    it('leaves the first node of a drop batch untouched when nothing precedes it', async () => {
+      const soloNode = createMockNode({
+        id: 1,
+        type: 'LoadAudio',
+        pos: [500, 500],
+        getBounding: vi.fn(() => new Float64Array([500, 500, 210, 100]))
+      })
+      vi.mocked(pasteAudioNodes).mockResolvedValue([soloNode])
+
+      await app.handleAudioFileList([createTestFile('a.mp3', 'audio/mpeg')])
+
+      expect(soloNode.pos).toEqual([500, 500])
+      expect(mockCanvas.graph?.change).not.toHaveBeenCalled()
+    })
   })
 
   describe('positionBatchNodes', () => {
