@@ -12,16 +12,20 @@ interface TestResult {
   attachments?: Attachment[]
 }
 
-interface TestCase {
-  title: string
+interface Test {
   results: TestResult[]
+}
+
+interface Spec {
+  title: string
+  tests: Test[]
 }
 
 interface Suite {
   title: string
   file: string
   suites?: Suite[]
-  tests?: TestCase[]
+  specs?: Spec[]
 }
 
 interface Report {
@@ -47,18 +51,20 @@ function collectVideos(report: Report, testResultsDir: string): VideoEntry[] {
   function processSuite(suite: Suite, parentPath: string[] = []) {
     const suitePath = suite.title ? [...parentPath, suite.title] : parentPath
 
-    for (const test of suite.tests ?? []) {
-      for (const result of test.results) {
-        for (const attachment of result.attachments ?? []) {
-          if (attachment.name !== 'video' || !attachment.path) continue
+    for (const spec of suite.specs ?? []) {
+      for (const test of spec.tests) {
+        for (const result of test.results) {
+          for (const attachment of result.attachments ?? []) {
+            if (attachment.name !== 'video' || !attachment.path) continue
 
-          videos.push({
-            name: [...suitePath, test.title].filter(Boolean).join(' › '),
-            file: suite.file,
-            relativePath: path
-              .relative(testResultsDir, attachment.path)
-              .replace(/\\/g, '/')
-          })
+            videos.push({
+              name: [...suitePath, spec.title].filter(Boolean).join(' › '),
+              file: suite.file,
+              relativePath: path
+                .relative(testResultsDir, attachment.path)
+                .replace(/\\/g, '/')
+            })
+          }
         }
       }
     }
