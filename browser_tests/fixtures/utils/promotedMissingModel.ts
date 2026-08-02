@@ -132,6 +132,13 @@ export async function selectVueComboPromotedModelByTitle(
   )
 }
 
+/**
+ * Selects a promoted model from a Vue asset form dropdown.
+ *
+ * @param workflow - Workflow metadata identifying the host node
+ * @param currentModelName - Name of the model currently selected
+ * @param modelName - Name of the model to select
+ */
 export async function selectVueAssetPromotedModel(
   comfyPage: ComfyPage,
   workflow: PromotedMissingModelWorkflow,
@@ -161,6 +168,13 @@ export async function selectSectionComboPromotedModel(
     .click()
 }
 
+/**
+ * Selects a promoted model from the host node's section parameter dropdown.
+ *
+ * @param workflow - Workflow metadata identifying the host node whose parameters are opened.
+ * @param currentModelName - Name of the model currently selected in the dropdown.
+ * @param modelName - Name of the model to select.
+ */
 export async function selectSectionAssetPromotedModel(
   comfyPage: ComfyPage,
   workflow: PromotedMissingModelWorkflow,
@@ -175,6 +189,13 @@ export async function selectSectionAssetPromotedModel(
   )
 }
 
+/**
+ * Sets the promoted model value on a legacy host-node combo widget.
+ *
+ * @param comfyPage - The ComfyUI page containing the workflow
+ * @param workflow - Workflow metadata identifying the host node
+ * @param modelName - Model name to select
+ */
 export async function setLegacyPromotedComboModel(
   comfyPage: ComfyPage,
   workflow: PromotedMissingModelWorkflow,
@@ -206,6 +227,14 @@ export async function selectLegacyPromotedAssetModel(
   await expect(modal).toBeHidden()
 }
 
+/**
+ * Verifies that resolving a promoted model suppresses stale interior missing-model errors while preserving disabled interior widgets and their stale values.
+ *
+ * @param workflow - The workflow containing the promoted model host node
+ * @param expectedStaleInteriorWidgets - The interior nodes whose linked widgets must retain stale values
+ * @param resolvedModelName - The model name assigned to the promoted host widget
+ * @param staleModelName - The stale model name expected in interior widgets
+ */
 export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
   comfyPage: ComfyPage,
   workflow: PromotedMissingModelWorkflow,
@@ -283,6 +312,14 @@ function readPromotedMissingModelWorkflow(workflowName: string) {
   ) as RootWorkflowData
 }
 
+/**
+ * Updates the promoted model value for a root workflow host node.
+ *
+ * @param graphData - Root workflow data containing the host node
+ * @param hostNodeId - Identifier of the host node to update
+ * @param value - Promoted model value to assign
+ * @throws If the host node cannot be found
+ */
 function setRootHostWidgetValue(
   graphData: RootWorkflowData,
   hostNodeId: number,
@@ -304,6 +341,13 @@ function setRootHostWidgetValue(
   }
 }
 
+/**
+ * Selects a model from a form dropdown.
+ *
+ * @param root - The locator containing the model dropdown
+ * @param currentModelName - The model currently displayed by the dropdown
+ * @param nextModelName - The model to select
+ */
 async function selectModelFromFormDropdown(
   root: Locator,
   currentModelName: string,
@@ -318,6 +362,12 @@ async function selectModelFromFormDropdown(
   )
 }
 
+/**
+ * Selects the promoted model widget on the workflow's host node.
+ *
+ * @param comfyPage - The ComfyUI page containing the workflow
+ * @param workflow - Workflow metadata identifying the host node
+ */
 async function clickLegacyHostPromotedWidget(
   comfyPage: ComfyPage,
   workflow: PromotedMissingModelWorkflow

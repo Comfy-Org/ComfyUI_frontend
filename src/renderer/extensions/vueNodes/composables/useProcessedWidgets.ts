@@ -124,6 +124,14 @@ function createWidgetUpdateHandler(
   }
 }
 
+/**
+ * Determines whether a widget has an associated execution, missing-model, or missing-media error.
+ *
+ * @param widget - The widget to check
+ * @param nodeExecId - The execution identifier for the widget's node
+ * @param nodeErrors - Errors associated with the current node
+ * @returns `true` if the widget has an associated error, `false` otherwise.
+ */
 export function hasWidgetError(
   widget: SafeWidgetData,
   nodeExecId: NodeExecutionId,
@@ -220,6 +228,20 @@ export function isWidgetVisible(
   return !hidden && (!advanced || showAdvanced || linked)
 }
 
+/**
+ * Converts node widget definitions into render-ready widget descriptors.
+ *
+ * Widgets that cannot be rendered or whose execution identity cannot be resolved are omitted.
+ * Duplicate widgets are consolidated, preferring visible instances.
+ *
+ * @param nodeData - The node data containing widget definitions
+ * @param graphId - The graph identifier used to resolve widget state
+ * @param showAdvanced - Whether advanced widgets should be visible
+ * @param isGraphReady - Whether the graph is ready for execution identity resolution
+ * @param rootGraph - The root graph containing the node
+ * @param ui - UI services used to configure tooltips and context-menu actions
+ * @returns The processed widgets ready for rendering
+ */
 export function computeProcessedWidgets({
   nodeData,
   graphId,

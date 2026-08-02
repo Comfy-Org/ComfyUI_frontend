@@ -9,19 +9,13 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { findNodesReferencingValues } from './clearNodePreviewCacheForValues'
 
 /**
- * After a successful asset deletion, surface the affected Load Image / Load
- * Video / Load Audio nodes through the missing-media store. Without this, UI
- * surfaces that filter against `missingMediaCandidates` (e.g. the Vue node
- * widget dropdown) keep listing the deleted asset because the verification
- * pipeline only runs on workflow load — there is no signal that the live
- * deletion just invalidated some references.
+ * Marks media candidates referencing deleted asset values as missing.
  *
- * Walks the full graph hierarchy (including subgraphs) and skips bypassed /
- * never-execute nodes, mirroring `scanAllMediaCandidates` so the live-delete
- * path stays in lockstep with the workflow-load verification.
+ * Traverses the graph hierarchy, including subgraph nodes, and ignores bypassed
+ * or never-execute nodes.
  *
- * Comparison is full-string against the widget value, so two distinct assets
- * that share a basename across input/output sources do not cross-match.
+ * @param rootGraph - The root graph containing the affected nodes
+ * @param deletedValues - The deleted asset values to match exactly
  */
 export function markDeletedAssetsAsMissingMedia(
   rootGraph: LGraph,

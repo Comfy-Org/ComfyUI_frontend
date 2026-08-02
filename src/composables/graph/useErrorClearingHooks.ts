@@ -260,10 +260,10 @@ function scanSingleNodeMedia(node: LGraphNode): void {
 }
 
 /**
- * True when the candidate's node still exists in the current root graph
- * and is active. Filters out late verification results for nodes that
- * have been bypassed, deleted, or belong to a workflow that is no
- * longer current — any of which would reintroduce stale errors.
+ * Determines whether a model candidate still belongs to an active node in the current root graph.
+ *
+ * @param candidate - The model candidate to evaluate
+ * @returns `true` if the candidate remains active, `false` otherwise
  */
 function isModelCandidateStillActive(
   candidate: MissingModelCandidate
@@ -271,6 +271,11 @@ function isModelCandidateStillActive(
   return isMissingCandidateActive(app.rootGraph, candidate)
 }
 
+/**
+ * Verifies pending model candidates and records those confirmed as missing and still active.
+ *
+ * @param pending - Model candidates awaiting support and availability verification
+ */
 async function verifyAndAddPendingModels(
   pending: MissingModelCandidate[]
 ): Promise<void> {
@@ -290,6 +295,11 @@ async function verifyAndAddPendingModels(
   }
 }
 
+/**
+ * Verifies pending media candidates and adds the currently active missing media to the store.
+ *
+ * @param pending - Media candidates awaiting verification
+ */
 async function verifyAndAddPendingMedia(
   pending: MissingMediaCandidate[]
 ): Promise<void> {
@@ -370,8 +380,12 @@ function scanAncestorSubgraphHosts(execId: string): void {
   }
 }
 
-/** Remove all missing asset errors for a node and, if it's a subgraph
- *  container, for all interior nodes (prefix match on execution ID). */
+/**
+ * Removes missing-resource errors associated with a node and its subgraph descendants.
+ *
+ * @param node - The node whose errors should be removed
+ * @param execId - The execution ID used to identify the node and its descendants
+ */
 function removeNodeErrors(node: LGraphNode, execId: string): void {
   const modelStore = useMissingModelStore()
   const mediaStore = useMissingMediaStore()
@@ -402,6 +416,12 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
   }
 }
 
+/**
+ * Installs graph-wide hooks that clear execution errors and detect missing resources and node types.
+ *
+ * @param graph - The graph whose nodes and lifecycle events should be monitored
+ * @returns A function that removes the installed hooks and listeners
+ */
 export function installErrorClearingHooks(graph: LGraph): () => void {
   const demotionListeners = new Map<
     Subgraph,

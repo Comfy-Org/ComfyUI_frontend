@@ -68,10 +68,23 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     missingMediaCandidates.value = media.length ? media : null
   }
 
+  /**
+   * Determines whether a graph node has missing media.
+   *
+   * @param node - The graph node to check
+   * @returns `true` if the node has missing media, `false` otherwise.
+   */
   function isContainerWithMissingMedia(node: LGraphNode): boolean {
     return activeMissingMediaGraphIds.value.has(String(node.id))
   }
 
+  /**
+   * Determines whether a widget has missing media.
+   *
+   * @param nodeId - The execution ID of the widget's node
+   * @param widgetName - The widget name
+   * @returns `true` if a matching missing-media candidate exists, `false` otherwise
+   */
   function isWidgetMissingMedia(
     nodeId: NodeExecutionId,
     widgetName: string
@@ -85,6 +98,12 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     )
   }
 
+  /**
+   * Removes missing-media candidates for a specific node and widget.
+   *
+   * @param nodeId - The node identifier associated with the candidates
+   * @param widgetName - The widget name associated with the candidates
+   */
   function removeMissingMediaByWidget(nodeId: string, widgetName: string) {
     if (!missingMediaCandidates.value) return
     missingMediaCandidates.value = missingMediaCandidates.value.filter(

@@ -21,12 +21,26 @@ type PromotedWidgetResolutionResult =
 
 const MAX_PROMOTED_WIDGET_CHAIN_DEPTH = 100
 
+/**
+ * Determines whether a node is active.
+ *
+ * @returns `true` if the node's mode allows execution, `false` otherwise.
+ */
 function isNodeActive(node: LGraphNode): boolean {
   return (
     node.mode !== LGraphEventMode.NEVER && node.mode !== LGraphEventMode.BYPASS
   )
 }
 
+/**
+ * Determines whether an active widget consumer can be reached from a subgraph input.
+ *
+ * @param hostNode - The subgraph node containing the input
+ * @param inputName - The name of the input to inspect
+ * @param depth - The current traversal depth
+ * @param visitedByHost - The inputs already visited for each subgraph node
+ * @returns `true` if an active widget consumer is reachable, `false` otherwise
+ */
 function hasActiveConsumer(
   hostNode: SubgraphNode,
   inputName: string,
@@ -70,6 +84,13 @@ function hasActiveConsumer(
   return false
 }
 
+/**
+ * Determines whether a subgraph input reaches an active widget consumer.
+ *
+ * @param hostNode - The node containing the input
+ * @param inputName - The name of the input to inspect
+ * @returns `true` if the input reaches an active widget consumer, `false` otherwise
+ */
 export function hasActivePromotedWidgetConsumer(
   hostNode: LGraphNode,
   inputName: string
@@ -80,6 +101,14 @@ export function hasActivePromotedWidgetConsumer(
   )
 }
 
+/**
+ * Resolves a promoted widget through nested subgraphs to its concrete widget.
+ *
+ * @param hostNode - The subgraph node containing the promoted widget reference
+ * @param nodeId - The identifier of the node containing the widget
+ * @param widgetName - The widget name to resolve
+ * @returns The resolved widget and node path, or a failure status when resolution cannot be completed
+ */
 function traversePromotedWidgetChain(
   hostNode: SubgraphNode,
   nodeId: NodeId,

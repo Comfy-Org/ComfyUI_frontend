@@ -5,6 +5,13 @@ import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSele
 import { setPromotedHostWidgetValue } from '@e2e/fixtures/utils/promotedWidgets'
 import type { NodeId } from '@/types/nodeId'
 
+/**
+ * Selects an option in a promoted media widget identified by its node title and widget label.
+ *
+ * @param nodeTitle - The title of the Vue node containing the widget
+ * @param widgetName - The widget label
+ * @param optionName - The option to select
+ */
 export async function selectVuePromotedMediaByTitle(
   comfyPage: ComfyPage,
   nodeTitle: string,
@@ -22,6 +29,16 @@ export async function selectVuePromotedMediaByTitle(
   await expect(dropdown.selection).toHaveText(optionName)
 }
 
+/**
+ * Sets a promoted media host widget value and checks whether the value is available in the corresponding leaf widget options.
+ *
+ * @param hostNodeId - The identifier of the subgraph host node
+ * @param leafNodeId - The identifier of the leaf node within the host subgraph
+ * @param hostWidgetName - The host widget name
+ * @param leafWidgetName - The leaf widget name
+ * @param value - The media value to add and select
+ * @returns An object containing the resulting host value and whether the leaf widget options include the value
+ */
 export async function setPromotedMediaHostOptionsAndValue(
   comfyPage: ComfyPage,
   hostNodeId: NodeId,

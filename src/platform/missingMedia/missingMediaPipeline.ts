@@ -20,6 +20,12 @@ interface RunMissingMediaPipelineOptions {
   silent?: boolean
 }
 
+/**
+ * Caches confirmed missing-media candidates in a workflow's pending warnings.
+ *
+ * @param wf - The workflow whose pending warnings should be updated
+ * @param confirmed - The confirmed missing-media candidates to cache
+ */
 function cacheMediaCandidates(
   wf: Pick<ComfyWorkflow, 'pendingWarnings'> | null | undefined,
   confirmed: MissingMediaCandidate[]
@@ -30,6 +36,13 @@ function cacheMediaCandidates(
   })
 }
 
+/**
+ * Scans the workflow graph for missing media and reports confirmed candidates.
+ *
+ * @param options - Pipeline configuration.
+ * @param options.graph - The workflow graph to scan.
+ * @param options.silent - Whether to suppress surfaced execution errors.
+ */
 export async function runMissingMediaPipeline({
   graph,
   silent = false
