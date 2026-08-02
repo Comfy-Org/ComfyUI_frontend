@@ -7,6 +7,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 const SCRIPT = path.join(import.meta.dirname, 'check-binary-size.sh')
 const LIMIT = 1024
 
+// The script leans on git's binary classification and rename detection, both of
+// which a developer's global config can change. Keep fixtures hermetic.
+const GIT_ENV = {
+  GIT_CONFIG_GLOBAL: '/dev/null',
+  GIT_CONFIG_SYSTEM: '/dev/null'
+}
+
 describe('check-binary-size.sh', () => {
   let repo: string
 
@@ -25,7 +32,11 @@ describe('check-binary-size.sh', () => {
   })
 
   function git(...args: string[]): string {
-    return execFileSync('git', args, { cwd: repo, encoding: 'utf8' })
+    return execFileSync('git', args, {
+      cwd: repo,
+      encoding: 'utf8',
+      env: { ...process.env, ...GIT_ENV }
+    })
   }
 
   function commit(message: string): void {
@@ -59,6 +70,7 @@ describe('check-binary-size.sh', () => {
       encoding: 'utf8',
       env: {
         ...process.env,
+        ...GIT_ENV,
         MAX_BINARY_BYTES: String(LIMIT),
         ...options.env
       }
@@ -173,9 +185,31 @@ describe('check-binary-size.sh', () => {
     )
   })
 
+  it('prefers --max-bytes over MAX_BINARY_BYTES', () => {
+    writeBinary('src/assets/clip.mp4', LIMIT * 2)
+    commit('add clip')
+
+    expect(
+      check({
+        maxBytes: String(LIMIT * 4),
+        env: { MAX_BINARY_BYTES: String(LIMIT) }
+      }).status
+    ).toBe(0)
+  })
+
   it('rejects a non-numeric limit', () => {
     const { status, output } = check({ maxBytes: 'lots' })
     expect(status).toBe(2)
     expect(output).toContain('must be a non-negative integer')
+  })
+
+  it('rejects an option with no value', () => {
+    const result = spawnSync('bash', [SCRIPT, '--base'], {
+      cwd: repo,
+      encoding: 'utf8',
+      env: { ...process.env, ...GIT_ENV }
+    })
+    expect(result.status).toBe(2)
+    expect(result.stderr).toContain('--base requires a value')
   })
 })

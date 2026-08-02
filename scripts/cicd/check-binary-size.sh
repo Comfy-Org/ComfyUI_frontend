@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# mapfile -d landed in bash 4.4; macOS still ships 3.2 as /bin/bash
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
+  echo "Error: bash 4.4 or newer is required, found ${BASH_VERSION}" >&2
+  exit 2
+fi
+
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 cd "$ROOT_DIR"
 
@@ -25,18 +31,28 @@ base="${BASE_REF:-origin/main}"
 head="${HEAD_REF:-HEAD}"
 max_bytes="${MAX_BINARY_BYTES:-$DEFAULT_MAX_BYTES}"
 
+require_value() {
+  if [ "$#" -lt 2 ]; then
+    echo "Error: $1 requires a value" >&2
+    exit 2
+  fi
+}
+
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --base)
-      base="${2:-}"
+      require_value "$@"
+      base="$2"
       shift
       ;;
     --head)
-      head="${2:-}"
+      require_value "$@"
+      head="$2"
       shift
       ;;
     --max-bytes)
-      max_bytes="${2:-}"
+      require_value "$@"
+      max_bytes="$2"
       shift
       ;;
     -h|--help)
