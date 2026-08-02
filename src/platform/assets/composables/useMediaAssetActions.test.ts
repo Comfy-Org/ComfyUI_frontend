@@ -7,6 +7,7 @@ import { createApp, defineComponent, h, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -16,9 +17,6 @@ import { useMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
-
-// Track the filename passed to createAnnotatedPath
-const capturedFilenames = vi.hoisted(() => ({ values: [] as string[] }))
 
 const mockDownloadFile = vi.hoisted(() => vi.fn())
 vi.mock('@/base/common/downloadUtil', () => ({
@@ -94,16 +92,12 @@ vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
   extractWorkflowFromAsset: mockExtractWorkflowFromAsset
 }))
 
+const litegraphServiceMock = vi.hoisted(() => ({
+  addNodeOnGraph: vi.fn<(nodeDef: unknown, options?: unknown) => LGraphNode>(),
+  getCanvasCenter: vi.fn<() => [number, number]>()
+}))
 vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({
-    addNodeOnGraph: vi.fn().mockReturnValue(
-      fromAny<LGraphNode, unknown>({
-        widgets: [{ name: 'image', value: '', callback: vi.fn() }],
-        graph: { setDirtyCanvas: vi.fn() }
-      })
-    ),
-    getCanvasCenter: vi.fn().mockReturnValue([100, 100])
-  })
+  useLitegraphService: () => litegraphServiceMock
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
@@ -114,13 +108,6 @@ vi.mock('@/stores/nodeDefStore', () => ({
         display_name: 'Load Image'
       }
     }
-  })
-}))
-
-vi.mock('@/utils/createAnnotatedPath', () => ({
-  createAnnotatedPath: vi.fn((item: { filename: string }) => {
-    capturedFilenames.values.push(item.filename)
-    return item.filename
   })
 }))
 
@@ -253,6 +240,20 @@ function createMockMediaAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
   }
 }
 
+function createLoadImageNode(): LGraphNode {
+  return fromAny<LGraphNode, unknown>({
+    widgets: [{ name: 'image', value: '', callback: vi.fn() }],
+    graph: { setDirtyCanvas: vi.fn() }
+  })
+}
+
+function getAddedImageWidgetValues() {
+  return litegraphServiceMock.addNodeOnGraph.mock.results.map(
+    ({ value }) =>
+      value.widgets?.find((widget: IWidget) => widget.name === 'image')?.value
+  )
+}
+
 function mountMediaActions(asset?: AssetMeta) {
   let actions: ReturnType<typeof useMediaAssetActions> | undefined
 
@@ -291,11 +292,13 @@ describe('useMediaAssetActions', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
-    capturedFilenames.values = []
     mockIsCloud.value = false
+    litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
+    litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
     mockGetOutputAssetMetadata.mockReset()
     mockGetOutputAssetMetadata.mockReturnValue(null)
     mockGetAssetType.mockReset()
+    mockGetAssetType.mockReturnValue('input')
     mockResolveOutputAssetItems.mockReset()
     mockResolveOutputAssetItems.mockResolvedValue([])
   })
@@ -316,7 +319,7 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(capturedFilenames.values).toContain('my-image.jpeg')
+        expect(getAddedImageWidgetValues()).toEqual(['my-image.jpeg'])
       })
     })
 
@@ -335,7 +338,25 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(capturedFilenames.values).toContain('abc123hash.jpeg')
+        expect(getAddedImageWidgetValues()).toEqual(['abc123hash.jpeg'])
+      })
+
+      it('annotates a single output asset with its metadata subfolder', async () => {
+        mockGetAssetType.mockReturnValue('output')
+        mockGetOutputAssetMetadata.mockReturnValue({
+          subfolder: 'runs/2026'
+        })
+        const actions = useMediaAssetActions()
+
+        await actions.addWorkflow(
+          createMockAsset({
+            name: 'generated.png'
+          })
+        )
+
+        expect(getAddedImageWidgetValues()).toEqual([
+          'runs/2026/generated.png [output]'
+        ])
       })
 
       it('should fall back to asset.name when hash is not available', async () => {
@@ -348,7 +369,7 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(capturedFilenames.values).toContain('fallback-name.jpeg')
+        expect(getAddedImageWidgetValues()).toEqual(['fallback-name.jpeg'])
       })
 
       it('should fall back to asset.name when hash is null', async () => {
@@ -361,7 +382,7 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(capturedFilenames.values).toContain('fallback-null.jpeg')
+        expect(getAddedImageWidgetValues()).toEqual(['fallback-null.jpeg'])
       })
     })
   })
@@ -372,8 +393,16 @@ describe('useMediaAssetActions', () => {
         mockIsCloud.value = true
       })
 
-      it('should use hash for each asset', async () => {
-        const actions = useMediaAssetActions()
+      it('assigns hashes with annotations derived from each asset type', async () => {
+        const typeByAssetId = new Map([
+          ['1', 'input'],
+          ['2', 'temp'],
+          ['3', 'output']
+        ])
+        mockGetAssetType.mockImplementation((asset: AssetItem) =>
+          typeByAssetId.get(asset.id)
+        )
+        const { actions, unmount } = mountMediaActions()
 
         const assets = [
           createMockAsset({
@@ -385,15 +414,23 @@ describe('useMediaAssetActions', () => {
             id: '2',
             name: 'file2.jpeg',
             hash: 'hash2.jpeg'
+          }),
+          createMockAsset({
+            id: '3',
+            name: 'file3.jpeg',
+            hash: 'hash3.jpeg'
           })
         ]
 
         await actions.addMultipleToWorkflow(assets)
+        const widgetValues = getAddedImageWidgetValues()
+        unmount()
 
-        expect(capturedFilenames.values).toContain('hash1.jpeg')
-        expect(capturedFilenames.values).toContain('hash2.jpeg')
-        expect(capturedFilenames.values).not.toContain('file1.jpeg')
-        expect(capturedFilenames.values).not.toContain('file2.jpeg')
+        expect(widgetValues).toEqual([
+          'hash1.jpeg',
+          'hash2.jpeg [temp]',
+          'hash3.jpeg [output]'
+        ])
       })
     })
   })
