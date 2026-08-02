@@ -49,6 +49,7 @@ function toBillingStatus(
   return {
     is_active: status.is_active ?? false,
     has_funds: status.has_fund ?? false,
+    billing_rail: 'legacy_stripe',
     ...(status.subscription_tier
       ? { subscription_tier: status.subscription_tier }
       : {}),
