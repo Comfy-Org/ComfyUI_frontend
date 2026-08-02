@@ -85,6 +85,38 @@ describe('fetchJobs', () => {
       }
     )
 
+    it('logs the raw text when an auth-failure body is not JSON', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        text: () => Promise.resolve('upstream: email not verified')
+      })
+
+      await fetchHistory(mockFetch)
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('upstream: email not verified')
+      )
+    })
+
+    it('falls back to statusText when an auth-failure body is empty', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        text: () => Promise.resolve('')
+      })
+
+      await fetchHistory(mockFetch)
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Unauthorized')
+      )
+    })
+
     it('recovers and polls normally once auth succeeds', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       const failing = vi.fn().mockResolvedValue({
