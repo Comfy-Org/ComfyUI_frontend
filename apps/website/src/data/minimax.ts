@@ -13,6 +13,8 @@ const media = {
   sunkenTemple: 'https://media.comfy.org/website/minimax/sunken-temple.webm',
   nightAscent: 'https://media.comfy.org/website/minimax/night-ascent.webm',
   fluid: 'https://media.comfy.org/website/minimax/fluid.webm',
+  superhero: 'https://media.comfy.org/website/minimax/superhero.webm',
+  comfyCan: 'https://media.comfy.org/website/minimax/comfy-can.webm',
   example1:
     'https://media.comfy.org/website/cloud/ai-models/nano-banana-pro.webp',
   example2:
@@ -129,6 +131,35 @@ export const minimaxModels: readonly MiniMaxModel[] = [
         '青与琥珀光下的液态铬面泛起涟漪，是对反射与微观细节的一次压力测试。'
     },
     imageSrc: media.fluid,
+    logoSrc: '',
+    logoAlt: 'MiniMax H3',
+    href: externalLinks.workflows
+  },
+  {
+    id: 'backyard-hero',
+    name: 'Backyard hero',
+    tier: 'premium',
+    note: { en: 'Reference to video', 'zh-CN': '参考生成视频' },
+    description: {
+      en: 'A pint-size superhero calls out a towering city monster, character held consistent from a single reference image.',
+      'zh-CN':
+        '小小超级英雄向巨型城市怪兽宣战，仅凭一张参考图便保持角色始终如一。'
+    },
+    imageSrc: media.superhero,
+    logoSrc: '',
+    logoAlt: 'MiniMax H3',
+    href: externalLinks.workflows
+  },
+  {
+    id: 'stay-comfy-can',
+    name: 'Stay Comfy can',
+    tier: 'premium',
+    note: { en: 'Reference to video', 'zh-CN': '参考生成视频' },
+    description: {
+      en: 'One product shot becomes a full scene — the label stays crisp as the can pours out beside a waterfall.',
+      'zh-CN': '一张产品图生成完整场景 — 瀑布旁倾倒的罐身上，标签始终清晰锐利。'
+    },
+    imageSrc: media.comfyCan,
     logoSrc: '',
     logoAlt: 'MiniMax H3',
     href: externalLinks.workflows
