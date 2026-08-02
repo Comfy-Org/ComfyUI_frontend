@@ -105,7 +105,7 @@ interface TypedYMap<T> {
 // The interface has no consumers other than this `implements` clause — it
 // duplicates every signature to express visibility that `private` already
 // expresses on the class.
-class LayoutStoreImpl implements LayoutStore {
+export class LayoutStoreImpl implements LayoutStore {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
     position: { x: 0, y: 0 }

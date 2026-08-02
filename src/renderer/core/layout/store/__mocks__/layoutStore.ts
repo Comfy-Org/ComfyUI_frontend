@@ -1,10 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 
-import type * as layoutStoreModule from '../layoutStore'
-
-/** The real singleton's type, so the stub tracks the store's own surface. */
-type RealLayoutStore = typeof layoutStoreModule.layoutStore
+import type { LayoutStoreImpl } from '../layoutStore'
 
 /**
  * Inert stand-in for the layout store, for suites that exercise canvas code
@@ -16,7 +13,7 @@ type RealLayoutStore = typeof layoutStoreModule.layoutStore
  * "this suite needs these three calls" right up until production adds a
  * fourth, and then it fails as a missing function rather than a clear signal.
  */
-export const layoutStore = fromPartial<RealLayoutStore>({
+export const layoutStore = fromPartial<LayoutStoreImpl>({
   allocateZIndex: vi.fn(() => 1),
   applyOperation: vi.fn(),
   batchUpdateNodeBounds: vi.fn(),
