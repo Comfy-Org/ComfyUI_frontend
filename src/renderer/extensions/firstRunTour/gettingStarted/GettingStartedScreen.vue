@@ -80,7 +80,7 @@
                     v-for="id in CURATED_TEMPLATE_IDS"
                     :key="id"
                     skeleton
-                    testid="getting-started-card-skeleton"
+                    :testid="`getting-started-card-skeleton-${id}`"
                     class="min-w-0"
                   />
                 </template>
@@ -120,6 +120,7 @@
 </template>
 
 <script setup lang="ts">
+import { take, uniqBy } from 'es-toolkit'
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -181,15 +182,20 @@ function resolveTemplates(ids: readonly string[]) {
     .filter((template) => template !== undefined)
 }
 
-/** Tops the grid back up to its skeleton count when curated data is incomplete. */
-const cards = computed(() => {
-  const curated = resolveTemplates(CURATED_TEMPLATE_IDS)
-  const chosen = new Set(curated.map((template) => template.name))
-  const backfill = resolveTemplates(FALLBACK_TEMPLATE_IDS).filter(
-    (template) => !chosen.has(template.name)
+/** Backfills past the pinned ids so a template-package skew cannot empty the grid. */
+const cards = computed(() =>
+  take(
+    uniqBy(
+      [
+        ...resolveTemplates(CURATED_TEMPLATE_IDS),
+        ...resolveTemplates(FALLBACK_TEMPLATE_IDS),
+        ...templatesStore.enhancedTemplates
+      ],
+      (template) => template.name
+    ),
+    CURATED_TEMPLATE_IDS.length
   )
-  return [...curated, ...backfill].slice(0, CURATED_TEMPLATE_IDS.length)
-})
+)
 
 async function loadCatalog() {
   catalogFailed.value = false
