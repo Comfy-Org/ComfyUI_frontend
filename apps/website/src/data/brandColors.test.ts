@@ -20,8 +20,32 @@ function token(name: string): string {
 }
 
 const websiteRoot = join(import.meta.dirname, '..', '..')
+const repoRoot = join(websiteRoot, '..', '..')
 const read = (relative: string) =>
   readFileSync(join(websiteRoot, relative), 'utf-8')
+const readRepo = (relative: string) =>
+  readFileSync(join(repoRoot, relative), 'utf-8')
+
+const yellowSvgs = [
+  'apps/website/public/favicon.svg',
+  'apps/website/public/icons/logo.svg',
+  'apps/website/public/icons/logomark.svg',
+  'apps/website/public/icons/comfyicon.svg',
+  'apps/website/public/affiliates/brand/comfy-full-logo-yellow.svg',
+  'apps/website/public/affiliates/brand/comfy-color-combo-yellow.svg',
+  'apps/website/public/affiliates/brand/comfy-amplified-logo-mark.svg',
+  'apps/desktop-ui/public/assets/images/comfy-brand-mark.svg',
+  'public/assets/images/comfy-cloud-logo.svg'
+]
+
+const inkSvgs = [
+  'apps/website/public/favicon.svg',
+  'apps/website/public/icons/comfyicon.svg',
+  'apps/website/public/affiliates/brand/comfy-color-combo-ink.svg',
+  'apps/website/public/affiliates/brand/comfy-full-logo-ink.svg'
+]
+
+const brandSvgs = [...new Set([...yellowSvgs, ...inkSvgs])]
 
 interface Rgb {
   r: number
@@ -116,50 +140,26 @@ describe('brand colors that cannot reference a token', () => {
 
   it('standalone brand SVGs use the brand yellow', () => {
     const yellow = token('color-electric-400')
-    const files = [
-      'public/favicon.svg',
-      'public/icons/logo.svg',
-      'public/icons/logomark.svg',
-      'public/icons/comfyicon.svg',
-      'public/affiliates/brand/comfy-full-logo-yellow.svg',
-      'public/affiliates/brand/comfy-color-combo-yellow.svg',
-      'public/affiliates/brand/comfy-amplified-logo-mark.svg'
-    ]
 
-    for (const file of files) {
-      expect(yellowsIn(read(file)), `${file} yellows`).toEqual([yellow])
+    for (const file of yellowSvgs) {
+      expect(yellowsIn(readRepo(file)), `${file} yellows`).toEqual([yellow])
     }
   })
 
   it('every color in a brand SVG is one the yellow check can read', () => {
-    const files = [
-      'public/favicon.svg',
-      'public/icons/logo.svg',
-      'public/icons/logomark.svg',
-      'public/icons/comfyicon.svg',
-      'public/affiliates/brand/comfy-full-logo-yellow.svg',
-      'public/affiliates/brand/comfy-color-combo-yellow.svg',
-      'public/affiliates/brand/comfy-amplified-logo-mark.svg',
-      'public/affiliates/brand/comfy-color-combo-ink.svg',
-      'public/affiliates/brand/comfy-full-logo-ink.svg'
-    ]
-
-    for (const file of files) {
-      expect(unreadableColorsIn(read(file)), `${file} color syntax`).toEqual([])
+    for (const file of brandSvgs) {
+      expect(
+        unreadableColorsIn(readRepo(file)),
+        `${file} color syntax`
+      ).toEqual([])
     }
   })
 
   it('standalone brand SVGs use comfy-ink where they are two-tone', () => {
     const ink = token('color-primary-comfy-ink')
-    const files = [
-      'public/favicon.svg',
-      'public/icons/comfyicon.svg',
-      'public/affiliates/brand/comfy-color-combo-ink.svg',
-      'public/affiliates/brand/comfy-full-logo-ink.svg'
-    ]
 
-    for (const file of files) {
-      const svg = read(file).toLowerCase()
+    for (const file of inkSvgs) {
+      const svg = readRepo(file).toLowerCase()
       expect(svg, `${file} should use ${ink}`).toContain(ink)
     }
   })
