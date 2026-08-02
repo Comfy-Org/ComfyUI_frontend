@@ -3,7 +3,7 @@ import type { PlanFeatureGroup } from './pricingPlans'
 
 import { externalLinks } from '../config/routes'
 
-// MiniMax H3 (Hailuo 3) media, served from media.comfy.org.
+// MiniMax H3 media, served from media.comfy.org.
 // hero + the four scene clips are real H3 renders under website/minimax/. The
 // two `example` stills reuse existing shared assets for the steps/showcase
 // sections, which stay gated off (showPlaceholderMediaSections) until final art.
@@ -298,16 +298,12 @@ export interface MiniMaxFaq {
   answer: LocalizedText
 }
 
-// TODO: confirm FAQ copy — the Figma FAQ was lorem ipsum. These answers are
-// drafted to stay factual to the hero copy (open weights, multi-modal I/O,
-// native stereo audio, up to 2K, 5–15s per generation, conditions on input
-// audio, the open release of Hailuo 3.0).
 export const minimaxFaqs: readonly MiniMaxFaq[] = [
   {
     id: 'what-is-minimax',
     question: {
-      en: 'What is MiniMax H3 (Hailuo 3)?',
-      'zh-CN': 'MiniMax H3（Hailuo 3）是什么？'
+      en: 'What is MiniMax H3?',
+      'zh-CN': 'MiniMax H3 是什么？'
     },
     answer: {
       en: "MiniMax's video model, available as open weights and through partner nodes. It takes text, image, or audio in and renders a clip with native stereo audio. On Comfy you direct it on the canvas alongside every other model.",
