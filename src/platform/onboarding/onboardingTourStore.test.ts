@@ -106,14 +106,14 @@ function shownCount(coachId?: CoachId) {
 describe('onboardingTourStore', () => {
   // Removed in teardown even when a test throws before its own cleanup.
   const appendedTargets: HTMLElement[] = []
-  let restoreOnEnter: (() => void) | null = null
+  const restoreOnEnter: (() => void)[] = []
 
   afterEach(() => {
     if (pinia) disposePinia(pinia)
     pinia = undefined
     clearCoachmarks()
-    restoreOnEnter?.()
-    restoreOnEnter = null
+    restoreOnEnter.forEach((restore) => restore())
+    restoreOnEnter.length = 0
     appendedTargets.forEach((el) => el.remove())
     appendedTargets.length = 0
     settings.store.clear()
@@ -564,19 +564,22 @@ describe('onboardingTourStore', () => {
       if (!target) throw new Error(`no ${stepName} step to suspend`)
 
       const original = target.onEnter
-      restoreOnEnter = () => {
+      restoreOnEnter.push(() => {
         target.onEnter = original
-      }
+      })
 
+      const attempts: { settle: () => void; fail: (error: Error) => void }[] =
+        []
       let settle = () => {}
       const entered = new Promise<AbortSignal>((resolveEntered) => {
-        target.onEnter = (signal) =>
-          new Promise<void>((done) => {
+        target.onEnter = (signal: AbortSignal) =>
+          new Promise<void>((done, reject) => {
             settle = done
+            attempts.push({ settle: done, fail: reject })
             resolveEntered(signal)
           })
       })
-      return { entered, settle: () => settle() }
+      return { entered, attempts, settle: () => settle() }
     }
 
     it('keeps the card on its step while the next one enters', async () => {
@@ -626,9 +629,9 @@ describe('onboardingTourStore', () => {
       const target = steps.find((s) => s.name === 'inputs')
       if (!target) throw new Error('no inputs step')
       const original = target.onEnter
-      restoreOnEnter = () => {
+      restoreOnEnter.push(() => {
         target.onEnter = original
-      }
+      })
       target.onEnter = () => Promise.reject(new Error('framing blew up'))
       vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -666,6 +669,85 @@ describe('onboardingTourStore', () => {
       await nextTick()
 
       expect(shownCount('inputs-list')).toBe(1)
+    })
+
+    it('aborts the signal of the step it was superseded on', async () => {
+      registerAppModeTargets()
+      const { entered, settle } = suspendOnEnter('inputs')
+      const store = mountStore()
+      store.replayTour('appMode')
+      await nextTick()
+      store.next()
+      const signal = await entered
+      expect(signal.aborted).toBe(false)
+
+      store.next()
+      await nextTick()
+
+      expect(
+        signal.aborted,
+        'a superseded step keeps working on a card the user has already left'
+      ).toBe(true)
+      settle()
+      await nextTick()
+    })
+
+    it('ignores a rejection from an attempt the same run superseded', async () => {
+      registerAppModeTargets()
+      const { entered, attempts } = suspendOnEnter('inputs')
+      const store = mountStore()
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      store.replayTour('appMode')
+      await nextTick()
+      store.next()
+      await entered
+
+      store.next()
+      await nextTick()
+      const superseded = attempts[0]
+      if (!superseded) throw new Error('no attempt to supersede')
+
+      superseded.fail(new Error('the superseded attempt blew up'))
+      await nextTick()
+      await nextTick()
+
+      expect(
+        store.step,
+        'a superseded attempt must not end the tour that replaced it'
+      ).not.toBeNull()
+      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      attempts.forEach((attempt) => attempt.settle())
+      await nextTick()
+    })
+
+    it('keeps the tour on its step when Back lands during a deferred wait', async () => {
+      registerAppModeTargets(['inputs-list', 'app-run-button'])
+      const store = mountStore()
+      store.replayTour('appMode')
+      await nextTick()
+      store.next()
+      await nextTick()
+      store.next()
+      await nextTick()
+      expect(store.step?.name).toBe('run')
+
+      store.next()
+      await nextTick()
+      expect(store.waitingForTarget).toBe(true)
+      expect(store.canGoBack).toBe(true)
+
+      store.back()
+      await nextTick()
+      await nextTick()
+
+      expect(
+        store.step,
+        'Back is a plain navigation, not a reason to end the tour'
+      ).not.toBeNull()
+      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(
+        telemetry.track.mock.calls.filter(([stage]) => stage === 'skipped')
+      ).toHaveLength(0)
     })
   })
 })

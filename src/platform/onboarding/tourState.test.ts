@@ -9,7 +9,9 @@ const OTHER_RUN = 2 as RunId
 
 const STEPS: CoachStep[] = [
   { kind: 'spotlight', name: 'one', placement: 'center' },
-  { kind: 'spotlight', name: 'two', placement: 'center' }
+  { kind: 'spotlight', name: 'two', placement: 'center' },
+  { kind: 'spotlight', name: 'three', placement: 'center' },
+  { kind: 'spotlight', name: 'four', placement: 'center' }
 ]
 const LATE_STEPS: CoachStep[] = [
   { kind: 'spotlight', name: 'late', placement: 'center' }
@@ -30,18 +32,18 @@ const STATES = {
     tour: 'appMode',
     run: RUN,
     steps: STEPS,
-    fromIdx: 0,
-    toIdx: 1
+    fromIdx: 1,
+    toIdx: 2
   },
-  showing: { phase: 'showing', tour: 'appMode', run: RUN, steps: STEPS, idx: 1 }
+  showing: { phase: 'showing', tour: 'appMode', run: RUN, steps: STEPS, idx: 3 }
 } as const satisfies Record<string, TourState>
 
 const EVENTS = {
   requested: { type: 'requested', tour: 'appMode', run: OTHER_RUN },
   resolved: { type: 'resolved', run: RUN, steps: LATE_STEPS },
   resolvedEmpty: { type: 'resolvedEmpty', run: RUN },
-  targetAwaited: { type: 'targetAwaited', run: RUN, fromIdx: 1 },
-  stepEntering: { type: 'stepEntering', run: RUN, toIdx: 1 },
+  targetAwaited: { type: 'targetAwaited', run: RUN, fromIdx: 3 },
+  stepEntering: { type: 'stepEntering', run: RUN, toIdx: 2 },
   stepShown: { type: 'stepShown', run: RUN, idx: 1 },
   ended: { type: 'ended', run: RUN }
 } as const satisfies Record<string, TourEvent>
@@ -136,8 +138,29 @@ describe('reduceTour', () => {
     expect(after.phase === 'entering' && after.fromIdx).toBeNull()
   })
 
-  it('travels from the step already shown', () => {
+  it('records both ends of the journey it is entering on', () => {
     const after = reduceTour(STATES.showing, EVENTS.stepEntering)
-    expect(after.phase === 'entering' && after.fromIdx).toBe(1)
+    if (after.phase !== 'entering') throw new Error(`entered ${after.phase}`)
+    expect(after.fromIdx).toBe(STATES.showing.idx)
+    expect(after.toIdx).toBe(EVENTS.stepEntering.toIdx)
+  })
+
+  it('opens its first journey at the first step', () => {
+    const after = reduceTour(STATES.resolving, EVENTS.resolved)
+    expect(after.phase === 'entering' && after.toIdx).toBe(0)
+  })
+
+  it('holds the awaited step on the one already shown', () => {
+    const after = reduceTour(STATES.showing, EVENTS.targetAwaited)
+    if (after.phase !== 'waiting') throw new Error(`entered ${after.phase}`)
+    expect(
+      after.fromIdx,
+      'blanking the card while a target is awaited reads as the tour dying'
+    ).toBe(EVENTS.targetAwaited.fromIdx)
+  })
+
+  it('shows the step it was told entered, not the one it travelled from', () => {
+    const after = reduceTour(STATES.entering, EVENTS.stepShown)
+    expect(after.phase === 'showing' && after.idx).toBe(EVENTS.stepShown.idx)
   })
 })

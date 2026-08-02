@@ -92,8 +92,12 @@ describe('TourSpotlight', () => {
     await nextTick()
     expect(ZIndex.set).toHaveBeenCalled()
 
+    const clearedWhileMounted = vi.mocked(ZIndex.clear).mock.calls.length
     unmount()
-    expect(ZIndex.clear).toHaveBeenCalled()
+    expect(
+      vi.mocked(ZIndex.clear).mock.calls.length,
+      'an overlay that never releases its entry leaves the modal stack raised'
+    ).toBe(clearedWhileMounted + 1)
   })
 
   it('re-claims the modal stack per step without leaking entries', async () => {
