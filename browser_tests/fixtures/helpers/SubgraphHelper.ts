@@ -366,7 +366,7 @@ export class SubgraphHelper {
 
   async enterSubgraphWithFallback(nodeId: string): Promise<void> {
     const numericNodeId = Number(nodeId)
-    if (Number.isNaN(numericNodeId)) {
+    if (nodeId === '' || Number.isNaN(numericNodeId)) {
       throw new Error(`Expected numeric subgraph node id, got ${nodeId}`)
     }
 
