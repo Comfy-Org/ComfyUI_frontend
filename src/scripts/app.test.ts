@@ -201,6 +201,32 @@ describe('ComfyApp', () => {
     )
   })
 
+  describe('rootGraph access before initialization', () => {
+    it('warns instead of erroring so RUM does not record an error', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      expect(app.isGraphReady).toBe(false)
+      expect(app.rootGraph).toBeUndefined()
+
+      expect(errorSpy).not.toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalledWith(
+        'ComfyApp graph accessed before initialization'
+      )
+    })
+
+    it('does not warn once the graph is initialized', () => {
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      expect(app.isGraphReady).toBe(true)
+      expect(app.rootGraph).toBeInstanceOf(LGraph)
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        'ComfyApp graph accessed before initialization'
+      )
+    })
+  })
+
   describe('queuePrompt', () => {
     function prepareEmptyPromptQueue() {
       const workflow = new ComfyWorkflow({
