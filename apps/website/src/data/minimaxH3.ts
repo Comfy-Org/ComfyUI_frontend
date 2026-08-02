@@ -47,7 +47,7 @@ export const minimaxH3Highlights: readonly MinimaxH3Highlight[] = [
     label: { en: 'Open weights', 'zh-CN': '开放权重' },
     detail: {
       en: 'The open release of Hailuo 3.0, runnable locally.',
-      'zh-CN': 'Hailuo 3.0 的开源版本，可在本地运行。'
+      'zh-CN': 'Hailuo 3.0 的开放权重版本，可在本地运行。'
     }
   },
   {
@@ -174,9 +174,9 @@ export const minimaxH3Faqs: readonly MinimaxH3Faq[] = [
       'zh-CN': 'MiniMax H3 能生成什么？'
     },
     answer: {
-      en: 'MiniMax H3 supports text to video, image to video with first and last frame control, reference to video, and edits to an existing shot in place. Every clip includes stereo sound, generated in the same pass as the frames.',
+      en: 'MiniMax H3 supports text to video, image to video with first and last frame control, and reference to video. Every clip includes stereo sound, generated in the same pass as the frames.',
       'zh-CN':
-        'MiniMax H3 支持文本生成视频、带首末帧控制的图像生成视频、参考生成视频，以及对现有镜头的原位编辑。每段片段都带立体声，与画面在同一次生成中输出。'
+        'MiniMax H3 支持文本生成视频、带首末帧控制的图像生成视频，以及参考生成视频。每段片段都带立体声，与画面在同一次生成中输出。'
     }
   },
   {
@@ -188,7 +188,7 @@ export const minimaxH3Faqs: readonly MinimaxH3Faq[] = [
     answer: {
       en: 'MiniMax H3 is the open release of Hailuo 3.0. The generations come from the same model family; the difference is that H3 ships weights you can download, inspect, and run yourself.',
       'zh-CN':
-        'MiniMax H3 就是 Hailuo 3.0 的开源版本。生成能力来自同一模型家族，区别在于 H3 提供可下载、可检查、可自行运行的权重。'
+        'MiniMax H3 就是 Hailuo 3.0 的开放权重版本。生成能力来自同一模型家族，区别在于 H3 提供可下载、可检查、可自行运行的权重。'
     }
   },
   {
@@ -198,9 +198,9 @@ export const minimaxH3Faqs: readonly MinimaxH3Faq[] = [
       'zh-CN': '如何在 ComfyUI 中运行 MiniMax H3？'
     },
     answer: {
-      en: 'Update ComfyUI to the latest version, open a MiniMax H3 workflow template, and press Run. The same workflow runs locally on your GPU or on Comfy Cloud with no local install.',
+      en: 'Update ComfyUI to the latest version, load a MiniMax H3 workflow, and press Run. The same workflow runs locally on your GPU or on Comfy Cloud with no local install.',
       'zh-CN':
-        '将 ComfyUI 更新到最新版本，打开 MiniMax H3 工作流模板，点击运行即可。同一个工作流既可在本地 GPU 上运行，也可在无需本地安装的 Comfy Cloud 上运行。'
+        '将 ComfyUI 更新到最新版本，载入 MiniMax H3 工作流，点击运行即可。同一个工作流既可在本地 GPU 上运行，也可在无需本地安装的 Comfy Cloud 上运行。'
     }
   }
 ] as const

@@ -4947,7 +4947,7 @@ const translations = {
   'minimaxH3.hero.description': {
     en: 'The open release of Hailuo 3.0. Feed it text or images and it generates video with real stereo sound, up to 2K and 15 seconds a clip. On ComfyUI, H3 runs comfortably on a regular RTX 3060.',
     'zh-CN':
-      'Hailuo 3.0 的开源版本。输入文本或图像，即可生成带真实立体声的视频，最高 2K，每段最长 15 秒。在 ComfyUI 中，一张普通的 RTX 3060 就能流畅运行 H3。'
+      'Hailuo 3.0 的开放权重版本。输入文本或图像，即可生成带真实立体声的视频，最高 2K，每段最长 15 秒。在 ComfyUI 中，一张普通的 RTX 3060 就能流畅运行 H3。'
   },
   'minimaxH3.hero.primaryCta': { en: 'TRY FOR FREE', 'zh-CN': '免费试用' },
   'minimaxH3.hero.secondaryCta': {
