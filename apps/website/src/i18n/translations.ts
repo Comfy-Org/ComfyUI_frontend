@@ -4936,11 +4936,12 @@ const translations = {
     'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重的 Hailuo 3 视频模型'
   },
   'minimax.meta.description': {
-    en: 'Run MiniMax H3 (Hailuo 3) on Comfy: open weights, multi-modal in/out, native stereo audio on every clip, up to 2K and 5–15s per generation. Draft free on Wan 2.2 and spend credits only on the final render.',
+    en: 'Run MiniMax H3 (Hailuo 3) on Comfy: available as open weights and through partner nodes, multi-modal in/out, native stereo audio on every clip, up to 2K and 5–15s per generation. Draft free on Wan 2.2 and spend credits only on the final render.',
     'zh-CN':
-      '在 Comfy 上运行 MiniMax H3（Hailuo 3）：开源权重、多模态输入/输出，每个片段都带原生立体声音频，最高 2K，每次生成 5–15 秒。先用 Wan 2.2 免费打样，只在最终渲染时消耗积分。'
+      '在 Comfy 上运行 MiniMax H3（Hailuo 3）：以开源权重形式提供，也可通过合作伙伴节点使用，多模态输入/输出，每个片段都带原生立体声音频，最高 2K，每次生成 5–15 秒。先用 Wan 2.2 免费打样，只在最终渲染时消耗积分。'
   },
   'minimax.breadcrumb.model': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
+  'minimax.breadcrumb.aria': { en: 'Breadcrumb', 'zh-CN': '面包屑导航' },
   'minimax.breadcrumb.updated': {
     en: 'Updated August 2026',
     'zh-CN': '更新于 2026 年 8 月'
@@ -4950,15 +4951,20 @@ const translations = {
     'zh-CN': 'MiniMax H3 已上线'
   },
   'minimax.hero.description': {
-    en: 'Open weights, full multi-modal I/O, native stereo on every clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it. The open release of Hailuo 3.0.',
+    en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it. H3 is available as open weights and through partner nodes.',
     'zh-CN':
-      '开源权重、完整的多模态输入/输出，每个片段都带原生立体声。最高 2K，每次生成 5 到 15 秒。H3 会真正以输入音频为条件进行生成，而其他模型往往覆盖或丢弃它。这是 Hailuo 3.0 的开源发布版本。'
+      '完整的多模态输入/输出，每个片段都带原生立体声。最高 2K，每次生成 5 到 15 秒。H3 会真正以输入音频为条件进行生成，而其他模型往往覆盖或丢弃它。H3 以开源权重形式提供，也可通过合作伙伴节点使用。'
   },
   'minimax.hero.primaryCta': {
     en: 'RUN MINIMAX H3',
     'zh-CN': '运行 MiniMax H3'
   },
   'minimax.hero.secondaryCta': { en: 'TRY WORKFLOWS', 'zh-CN': '试用工作流' },
+  'minimax.hero.tagOpenWeights': { en: 'Open weights', 'zh-CN': '开源权重' },
+  'minimax.hero.tagPartnerNodes': {
+    en: 'Partner nodes',
+    'zh-CN': '合作伙伴节点'
+  },
   'minimax.hero.footnote': {
     en: 'Pay-as-you-go credits · No watermark · Commercial use included',
     'zh-CN': '按量付费积分 · 无水印 · 包含商业使用授权'
@@ -4969,11 +4975,6 @@ const translations = {
   },
   'minimax.showcase.promptLabel': { en: 'Prompt', 'zh-CN': '提示词' },
   'minimax.showcase.cta': { en: 'RUN MINIMAX', 'zh-CN': '运行 MiniMax' },
-  'minimax.showcase.prev': {
-    en: 'Previous example',
-    'zh-CN': '上一个示例'
-  },
-  'minimax.showcase.next': { en: 'Next example', 'zh-CN': '下一个示例' },
   'minimax.steps.heading': {
     en: 'Direct your first MiniMax shot',
     'zh-CN': '执导你的第一个 MiniMax 镜头'
@@ -5034,8 +5035,6 @@ const translations = {
       '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
   'minimax.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
-  'minimax.reviews.prev': { en: 'Previous', 'zh-CN': '上一条' },
-  'minimax.reviews.next': { en: 'Next', 'zh-CN': '下一条' },
   'minimax.pricing.heading': { en: 'Pricing', 'zh-CN': '价格' },
   'minimax.pricing.banner.title': {
     en: "Start free. Upgrade when you're ready.",

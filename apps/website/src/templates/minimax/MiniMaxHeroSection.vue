@@ -4,6 +4,7 @@ import type { Locale } from '../../i18n/translations'
 import { externalLinks } from '../../config/routes'
 import BrandButton from '../../components/common/BrandButton.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
+import Badge from '../../components/ui/badge/Badge.vue'
 import { minimaxHeroVideo } from '../../data/minimax'
 import { t } from '../../i18n/translations'
 
@@ -29,7 +30,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
       <div class="mt-8 flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
         <BrandButton
-          :href="externalLinks.workflows"
+          :href="externalLinks.cloud"
           target="_blank"
           variant="solid"
           size="lg"
@@ -46,6 +47,15 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         >
           {{ t('minimax.hero.secondaryCta', locale) }}
         </BrandButton>
+      </div>
+
+      <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <Badge variant="accent">{{
+          t('minimax.hero.tagOpenWeights', locale)
+        }}</Badge>
+        <Badge variant="callout">{{
+          t('minimax.hero.tagPartnerNodes', locale)
+        }}</Badge>
       </div>
 
       <p class="text-primary-warm-gray mt-6 text-xs">

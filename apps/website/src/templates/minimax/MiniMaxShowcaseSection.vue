@@ -3,7 +3,7 @@ import type { Locale } from '../../i18n/translations'
 
 import { externalLinks } from '../../config/routes'
 import BrandButton from '../../components/common/BrandButton.vue'
-import MediaCarousel from '../../components/common/MediaCarousel.vue'
+import ScrollCarousel from '../../components/ui/scroll-carousel/ScrollCarousel.vue'
 import { minimaxExamples } from '../../data/minimax'
 import { t } from '../../i18n/translations'
 
@@ -18,10 +18,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       {{ t('minimax.showcase.heading', locale) }}
     </h2>
 
-    <MediaCarousel
-      class="mt-12"
-      :prev-label="t('minimax.showcase.prev', locale)"
-      :next-label="t('minimax.showcase.next', locale)"
+    <ScrollCarousel
+      :locale
+      gap-class="gap-6"
+      class="mt-12 max-w-none p-0 lg:mt-16 lg:p-0"
     >
       <div
         v-for="example in minimaxExamples"
@@ -84,6 +84,6 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           </div>
         </div>
       </div>
-    </MediaCarousel>
+    </ScrollCarousel>
   </section>
 </template>

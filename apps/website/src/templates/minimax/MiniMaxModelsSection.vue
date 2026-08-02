@@ -5,7 +5,7 @@ import { ref, useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 
-import NodeTag from '../../components/common/NodeTag.vue'
+import Badge from '../../components/ui/badge/Badge.vue'
 import { minimaxModels } from '../../data/minimax'
 import { t } from '../../i18n/translations'
 
@@ -51,8 +51,8 @@ const { stop } = useIntersectionObserver(
           class="group rounded-4.5xl relative block aspect-19/10 overflow-hidden bg-black/40"
         >
           <video
-            v-if="model.imageSrc.endsWith('.webm')"
-            :src="shouldLoadVideos ? model.imageSrc : undefined"
+            v-if="model.mediaSrc.endsWith('.webm')"
+            :src="shouldLoadVideos ? model.mediaSrc : undefined"
             :aria-label="model.name"
             class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             autoplay
@@ -63,7 +63,7 @@ const { stop } = useIntersectionObserver(
           />
           <img
             v-else
-            :src="model.imageSrc"
+            :src="model.mediaSrc"
             :alt="model.name"
             class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
@@ -73,42 +73,17 @@ const { stop } = useIntersectionObserver(
           <div
             class="absolute inset-0 bg-linear-to-b from-black/25 to-transparent"
           />
-
-          <div
-            v-if="model.logoSrc"
-            class="absolute inset-x-8 top-8 flex items-start justify-end"
-          >
-            <div
-              class="group-hover:bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur-sm transition-colors group-hover:text-primary-comfy-ink"
-            >
-              <span
-                class="inline-block size-6 bg-current"
-                :style="{
-                  maskImage: `url(${model.logoSrc})`,
-                  maskSize: 'contain',
-                  maskRepeat: 'no-repeat',
-                  maskPosition: 'center'
-                }"
-              />
-            </div>
-          </div>
         </div>
 
         <div class="mt-5 flex items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <NodeTag
-              :class="
-                model.tier === 'free'
-                  ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                  : 'bg-primary-comfy-plum text-primary-warm-white'
-              "
-            >
+            <Badge :variant="model.tier === 'free' ? 'accent' : 'callout'">
               {{
                 model.tier === 'free'
                   ? t('minimax.models.tagFree', locale)
                   : t('minimax.models.tagPremium', locale)
               }}
-            </NodeTag>
+            </Badge>
             <span class="text-primary-warm-gray text-xs">
               {{ model.note[locale] }}
             </span>

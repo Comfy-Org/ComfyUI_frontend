@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { useScroll } from '@vueuse/core'
-import { computed, ref } from 'vue'
-
 import type { Locale } from '../../i18n/translations'
 
 import BrandButton from '../../components/common/BrandButton.vue'
+import ScrollCarousel from '../../components/ui/scroll-carousel/ScrollCarousel.vue'
 import { getRoutes } from '../../config/routes'
 import { minimaxReviews } from '../../data/minimax'
 import { t } from '../../i18n/translations'
@@ -19,24 +17,6 @@ const reviews = minimaxReviews.map((review) => ({
   name: review.name,
   role: review.role?.[locale]
 }))
-
-const trackRef = ref<HTMLElement>()
-const { x } = useScroll(trackRef)
-
-const progress = computed(() => {
-  const el = trackRef.value
-  if (!el) return 0
-  const max = el.scrollWidth - el.clientWidth
-  return max > 0 ? x.value / max : 0
-})
-
-const progressPercent = computed(() => `${progress.value * 100}%`)
-
-function scroll(direction: -1 | 1) {
-  const el = trackRef.value
-  if (!el) return
-  el.scrollBy({ left: direction * el.clientWidth, behavior: 'smooth' })
-}
 </script>
 
 <template>
@@ -71,9 +51,10 @@ function scroll(direction: -1 | 1) {
       {{ t('minimax.reviews.heading', locale) }}
     </h2>
 
-    <div
-      ref="trackRef"
-      class="mt-12 flex snap-x snap-mandatory scrollbar-none gap-8 overflow-x-auto lg:mt-16"
+    <ScrollCarousel
+      :locale
+      gap-class="gap-8"
+      class="mt-12 max-w-none p-0 lg:mt-16 lg:p-0"
     >
       <article
         v-for="review in reviews"
@@ -91,35 +72,6 @@ function scroll(direction: -1 | 1) {
           ><template v-if="review.role">,<br />{{ review.role }}</template>
         </p>
       </article>
-    </div>
-
-    <div class="mt-10 flex items-center gap-4">
-      <div class="h-1 flex-1 rounded-full bg-white/20">
-        <div
-          class="bg-primary-comfy-yellow h-full rounded-full"
-          :style="{ width: progressPercent }"
-        />
-      </div>
-
-      <button
-        class="flex size-10 items-center justify-center rounded-full border border-white/20 text-white/60 transition-colors hover:border-white/40"
-        :aria-label="t('minimax.reviews.prev', locale)"
-        @click="scroll(-1)"
-      >
-        <img
-          src="/icons/arrow-right.svg"
-          alt=""
-          class="size-3 rotate-180 opacity-60 invert"
-        />
-      </button>
-
-      <button
-        class="bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-full transition-opacity hover:opacity-90"
-        :aria-label="t('minimax.reviews.next', locale)"
-        @click="scroll(1)"
-      >
-        <img src="/icons/arrow-right.svg" alt="" class="size-3" />
-      </button>
-    </div>
+    </ScrollCarousel>
   </section>
 </template>

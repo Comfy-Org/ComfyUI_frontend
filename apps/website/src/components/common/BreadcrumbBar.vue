@@ -1,15 +1,20 @@
 <script setup lang="ts">
 type Crumb = { label: string; href?: string }
 
-const { crumbs, updated } = defineProps<{
+const {
+  crumbs,
+  updated,
+  label = 'Breadcrumb'
+} = defineProps<{
   crumbs: readonly Crumb[]
   updated?: string
+  label?: string
 }>()
 </script>
 
 <template>
   <nav
-    aria-label="Breadcrumb"
+    :aria-label="label"
     class="max-w-9xl mx-auto flex items-center justify-between gap-4 px-6 py-3 lg:px-20"
   >
     <ol

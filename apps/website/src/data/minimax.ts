@@ -68,15 +68,10 @@ export interface MiniMaxModel {
   tier: MiniMaxModelTier
   note: LocalizedText
   description: LocalizedText
-  imageSrc: string
-  logoSrc: string
-  logoAlt: string
+  mediaSrc: string
   href: string
 }
 
-// Four real MiniMax H3 renders shown as a showcase grid. They are all one model,
-// so the cards carry no per-model logo (logoSrc is empty, chip hidden) and the
-// tier tag simply marks H3 as a premium model.
 export const minimaxModels: readonly MiniMaxModel[] = [
   {
     id: 'liquid-chrome',
@@ -88,9 +83,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
       'zh-CN':
         '青与琥珀光下的液态铬面泛起涟漪，是对反射与微观细节的一次压力测试。'
     },
-    imageSrc: media.fluid,
-    logoSrc: '',
-    logoAlt: 'MiniMax H3',
+    mediaSrc: media.fluid,
     href: externalLinks.workflows
   },
   {
@@ -102,9 +95,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
       en: 'God-rays drift through a flooded temple of carved gold, holding light and depth steady across the whole shot.',
       'zh-CN': '光束穿过被水淹没的黄金浮雕神殿，全程保持光影与景深的稳定。'
     },
-    imageSrc: media.sunkenTemple,
-    logoSrc: '',
-    logoAlt: 'MiniMax H3',
+    mediaSrc: media.sunkenTemple,
     href: externalLinks.workflows
   },
   {
@@ -116,9 +107,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
       en: 'A headlamped climber pushes up a moonlit dune, fine grain and motion kept clean in near-dark.',
       'zh-CN': '头灯登山者攀上月光沙丘，近乎全黑的画面中颗粒与运动依旧干净。'
     },
-    imageSrc: media.nightAscent,
-    logoSrc: '',
-    logoAlt: 'MiniMax H3',
+    mediaSrc: media.nightAscent,
     href: externalLinks.workflows
   },
   {
@@ -130,9 +119,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
       en: 'A lone rider crosses a glacial canyon in one continuous move, camera and native audio straight out of H3.',
       'zh-CN': '骑手一镜到底穿越冰川峡谷，运镜与原生音频均由 H3 直接生成。'
     },
-    imageSrc: media.iceRider,
-    logoSrc: '',
-    logoAlt: 'MiniMax H3',
+    mediaSrc: media.iceRider,
     href: externalLinks.workflows
   },
   {
@@ -145,9 +132,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
       'zh-CN':
         '小小超级英雄向巨型城市怪兽宣战，仅凭一张参考图便保持角色始终如一。'
     },
-    imageSrc: media.superhero,
-    logoSrc: '',
-    logoAlt: 'MiniMax H3',
+    mediaSrc: media.superhero,
     href: externalLinks.workflows
   },
   {
@@ -159,9 +144,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
       en: 'One product shot becomes a full scene — the label stays crisp as the can pours out beside a waterfall.',
       'zh-CN': '一张产品图生成完整场景 — 瀑布旁倾倒的罐身上，标签始终清晰锐利。'
     },
-    imageSrc: media.comfyCan,
-    logoSrc: '',
-    logoAlt: 'MiniMax H3',
+    mediaSrc: media.comfyCan,
     href: externalLinks.workflows
   }
 ] as const
@@ -327,9 +310,9 @@ export const minimaxFaqs: readonly MiniMaxFaq[] = [
       'zh-CN': 'MiniMax H3（Hailuo 3）是什么？'
     },
     answer: {
-      en: "MiniMax's video model, released as the open weights of Hailuo 3.0. It takes text, image, or audio in and renders a clip with native stereo audio. On Comfy you direct it on the canvas alongside every other model.",
+      en: "MiniMax's video model, available as open weights and through partner nodes. It takes text, image, or audio in and renders a clip with native stereo audio. On Comfy you direct it on the canvas alongside every other model.",
       'zh-CN':
-        'MiniMax 的视频模型，以 Hailuo 3.0 的开源权重形式发布。它支持文本、图像或音频输入，并渲染出带原生立体声音频的片段。在 Comfy 上，你可以在画布上与其他模型一起执导它。'
+        'MiniMax 的视频模型，以开源权重形式提供，也可通过合作伙伴节点使用。它支持文本、图像或音频输入，并渲染出带原生立体声音频的片段。在 Comfy 上，你可以在画布上与其他模型一起执导它。'
     }
   },
   {
@@ -374,9 +357,9 @@ export const minimaxFaqs: readonly MiniMaxFaq[] = [
       'zh-CN': 'MiniMax H3 是开源权重吗？'
     },
     answer: {
-      en: 'Yes. H3 is the open release of Hailuo 3.0, so you can run the weights yourself.',
+      en: 'Yes. H3 is available as open weights, so you can run it yourself, and through partner nodes on Comfy Cloud.',
       'zh-CN':
-        '是的。H3 是 Hailuo 3.0 的开源发布版本，因此你可以自行运行其权重。'
+        '是的。H3 以开源权重形式提供，你可以自行运行；也可以通过 Comfy Cloud 上的合作伙伴节点使用。'
     }
   },
   {
