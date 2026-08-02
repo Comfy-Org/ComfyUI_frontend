@@ -203,8 +203,17 @@ describe('check-binary-size.sh', () => {
     expect(output).toContain('must be a non-negative integer')
   })
 
-  it('rejects an option with no value', () => {
-    const result = spawnSync('bash', [SCRIPT, '--base'], {
+  it('rejects a negative limit', () => {
+    const { status, output } = check({ maxBytes: '-1' })
+    expect(status).toBe(2)
+    expect(output).toContain('must be a non-negative integer')
+  })
+
+  it.for([
+    { label: 'at the end of the arguments', args: ['--base'] },
+    { label: 'followed by another flag', args: ['--base', '--head'] }
+  ])('rejects an option with no value $label', ({ args }) => {
+    const result = spawnSync('bash', [SCRIPT, ...args], {
       cwd: repo,
       encoding: 'utf8',
       env: { ...process.env, ...GIT_ENV }

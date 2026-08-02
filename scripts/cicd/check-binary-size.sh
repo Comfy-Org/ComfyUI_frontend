@@ -32,7 +32,8 @@ head="${HEAD_REF:-HEAD}"
 max_bytes="${MAX_BINARY_BYTES:-$DEFAULT_MAX_BYTES}"
 
 require_value() {
-  if [ "$#" -lt 2 ]; then
+  # git refs cannot start with a dash, so a --flag here means the value was omitted
+  if [ "$#" -lt 2 ] || [[ $2 == --* ]]; then
     echo "Error: $1 requires a value" >&2
     exit 2
   fi
