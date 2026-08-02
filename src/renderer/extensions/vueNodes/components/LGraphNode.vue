@@ -162,7 +162,7 @@
               :media="nodeMedia"
             />
             <NodeContent
-              v-for="preview in promotedPreviews"
+              v-for="preview in subgraphPreviews"
               :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
               :node-data="nodeData"
               :media="preview"
@@ -274,6 +274,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
+import { useAmbientSubgraphPreviews } from '@/composables/node/useAmbientSubgraphPreviews'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -560,7 +561,7 @@ watch(isCollapsed, (collapsed) => {
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
-  if (promotedPreviews.value.length > 0) return true
+  if (subgraphPreviews.value.length > 0) return true
   return !!nodeMedia.value && nodeMedia.value.urls.length > 0
 })
 
@@ -716,6 +717,22 @@ const lgraphNode = computed(() => {
 // TODO: Surface subgraph info more cleanly in VueNodeData instead of
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
+const { ambientPreviews } = useAmbientSubgraphPreviews(lgraphNode)
+
+// Ambient previews fill in interior nodes with live output but no explicit
+// exposure; an exposure for the same node always wins so it keeps its
+// promoted name/ordering.
+const subgraphPreviews = computed(() => {
+  if (!ambientPreviews.value.length) return promotedPreviews.value
+
+  const exposedNodeIds = new Set(
+    promotedPreviews.value.map((preview) => String(preview.sourceNodeId))
+  )
+  const unexposed = ambientPreviews.value.filter(
+    (preview) => !exposedNodeIds.has(String(preview.sourceNodeId))
+  )
+  return [...promotedPreviews.value, ...unexposed]
+})
 
 const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 
