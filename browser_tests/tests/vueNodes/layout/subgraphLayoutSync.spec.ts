@@ -35,14 +35,11 @@ async function expectGrowthRenders(
   expect(before[1], `${label}: node has a rendered height`).toBeGreaterThan(0)
 
   await comfyPage.page.evaluate(
-    ([id, dw, dh]) => {
-      const node = window.app!.canvas.graph!.getNodeById(id as never)!
-      node.setSize([
-        node.size[0] + (dw as number),
-        node.size[1] + (dh as number)
-      ])
+    ({ id, growWidth, growHeight }) => {
+      const node = window.app!.canvas.graph!.getNodeById(id)!
+      node.setSize([node.size[0] + growWidth, node.size[1] + growHeight])
     },
-    [toNodeId(nodeId), GROWTH[0], GROWTH[1]] as const
+    { id: toNodeId(nodeId), growWidth: GROWTH[0], growHeight: GROWTH[1] }
   )
 
   await expect
