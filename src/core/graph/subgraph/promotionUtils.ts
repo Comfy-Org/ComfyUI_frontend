@@ -1,4 +1,5 @@
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
+import { watch } from 'vue'
 import * as Sentry from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
@@ -16,9 +17,10 @@ import {
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLitegraphService } from '@/services/litegraphService'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
@@ -583,7 +585,6 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
 
 export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
   if (subgraphNode.properties.previewExposures !== undefined) return
-  const { updatePreviews } = useLitegraphService()
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
@@ -605,7 +606,24 @@ export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
       continue
     }
 
-    requestAnimationFrame(() => updatePreviews(node, promotePreviewWidget))
+    // Not on the known-type allowlist: wait for a real preview to arrive
+    // (e.g. mid-execution) rather than never exposing one.
+    const locatorId = createNodeLocatorId(subgraphNode.subgraph.id, node.id)
+    if (!locatorId) continue
+
+    const nodeOutputStore = useNodeOutputStore()
+    const stopWatchingPreviews = watch(
+      () => nodeOutputStore.nodePreviewImages[locatorId],
+      (previews) => {
+        if (!previews?.length) return
+        promotePreviewViaExposure(
+          subgraphNode,
+          node,
+          CANVAS_IMAGE_PREVIEW_WIDGET
+        )
+        stopWatchingPreviews()
+      }
+    )
   }
 }
 
