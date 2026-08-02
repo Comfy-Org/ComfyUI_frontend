@@ -321,7 +321,6 @@ jobs:
     if: >-
       ${{
         !cancelled() &&
-        needs.playwright-video-new-tests.outputs.has-new-tests == 'true' &&
         github.event_name == 'pull_request' &&
         github.event.pull_request.head.repo.fork == false
       }}
@@ -333,6 +332,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download video artifacts
+        if: needs.playwright-video-new-tests.outputs.has-new-tests == 'true'
         uses: actions/download-artifact@v7
         with:
           name: playwright-new-test-videos

@@ -97,7 +97,7 @@ jobs:
           if_no_artifact_found: warn
 
       - name: Deploy new-test video(s) and generate section
-        if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed' && hashFiles('video-artifacts/video-manifest.json') != ''
+        if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
