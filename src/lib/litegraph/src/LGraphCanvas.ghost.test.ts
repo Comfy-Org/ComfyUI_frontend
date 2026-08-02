@@ -6,19 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    getCurrentSource: vi.fn(),
-    getCurrentActor: vi.fn(),
-    applyOperation: vi.fn(),
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    setActor: vi.fn()
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
 
 beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 

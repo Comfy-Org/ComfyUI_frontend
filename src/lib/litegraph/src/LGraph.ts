@@ -1137,7 +1137,6 @@ export class LGraph
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
-    const zIndex = this._nodes.length - 1
 
     node.onAdded?.(this)
 
@@ -1149,7 +1148,7 @@ export class LGraph
     this.events.dispatch('node:added', { node })
 
     // Must follow onNodeAdded: its microtask-deferred hooks must run before the Vue flush these writes schedule
-    registerNodeLayout(node, zIndex)
+    registerNodeLayout(node)
     this.incrementVersion()
 
     this.setDirtyCanvas(true)

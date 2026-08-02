@@ -4372,14 +4372,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     layoutStore.batchUpdateNodeBounds(newPositions)
 
     // Bring cloned/pasted nodes to front so they render above the originals
-    const allNodes = layoutStore.getAllNodes().value
-    let maxZIndex = 0
-    for (const [, layout] of allNodes) {
-      if (layout.zIndex > maxZIndex) maxZIndex = layout.zIndex
-    }
     const { setNodeZIndex } = useLayoutMutations()
-    for (let i = 0; i < newPositions.length; i++) {
-      setNodeZIndex(newPositions[i].nodeId, maxZIndex + i + 1)
+    for (const { nodeId } of newPositions) {
+      setNodeZIndex(nodeId, layoutStore.allocateZIndex())
     }
 
     this.selectItems(created)

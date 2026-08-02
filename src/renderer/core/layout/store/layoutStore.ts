@@ -150,6 +150,8 @@ class LayoutStoreImpl implements LayoutStore {
   private slotSpatialIndex: SpatialIndexManager<SlotId> // For slots
   private rerouteSpatialIndex: SpatialIndexManager<ScopedLayoutKey> // For reroutes
 
+  private highestZIndex = 0
+
   // Vue dragging state for selection toolbox (public ref for direct mutation)
   public isDraggingVueNodes = ref(false)
   // Vue resizing state to prevent drag from activating during resize
@@ -969,6 +971,15 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
+   * Claims a stacking order above every node the store has seen. Stacking is
+   * the store's own sequence, independent of a node's position in
+   * {@link LGraph._nodes}.
+   */
+  allocateZIndex(): number {
+    return ++this.highestZIndex
+  }
+
+  /**
    * Clean up refs and triggers for a node when its Vue component unmounts.
    * This should be called from the component's onUnmounted hook.
    */
@@ -983,6 +994,7 @@ class LayoutStoreImpl implements LayoutStore {
    * graph attached desyncs the store from every entity in it.
    */
   resetForTests(): void {
+    this.highestZIndex = 0
     this.ydoc.transact(() => {
       this.ynodes.clear()
       this.ygroups.clear()
@@ -993,16 +1005,15 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Drops the geometry that belongs to the graph being left: slot and link
-   * layouts, and the spatial indexes over them. Node, group and reroute
-   * entries are not touched — those live with the entity itself.
+   * Drops the geometry scoped to the graph being left: slot and link layouts,
+   * the spatial indexes over them, and the listeners and queues bound to them.
+   * Entity geometry lives with the entity, and leaves through
+   * `unregisterAllGraphLayout`.
    */
   clearViewGeometry(): void {
     this.ydoc.transact(() => {
-      // Note: We intentionally do NOT clear nodeRefs and nodeTriggers here.
-      // Vue components may already hold references to these refs, and clearing
-      // them would break the reactivity chain. The refs will be reused when
-      // nodes are recreated, and stale refs will be cleaned up over time.
+      // nodeRefs and nodeTriggers outlive the view: components already hold
+      // these refs, and reusing them keeps the reactivity chain intact.
       this.nodeChangeListeners.clear()
       this.linkSegmentSpatialIndex.clear()
       this.slotSpatialIndex.clear()
@@ -1100,6 +1111,7 @@ class LayoutStoreImpl implements LayoutStore {
     if (!ynode) return
 
     ynode.set('zIndex', operation.zIndex)
+    this.highestZIndex = Math.max(this.highestZIndex, operation.zIndex)
     change.nodeIds.push(nodeId)
   }
 
@@ -1110,6 +1122,7 @@ class LayoutStoreImpl implements LayoutStore {
     const { nodeId } = operation
     const ynode = layoutToYNode(operation.layout)
     this.ynodes.set(String(nodeId), ynode)
+    this.highestZIndex = Math.max(this.highestZIndex, operation.layout.zIndex)
 
     // Add to spatial index
     this.spatialIndex.insert(nodeId, operation.layout.bounds)

@@ -12,20 +12,7 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    batchUpdateNodeBounds: vi.fn(),
-    getCurrentSource: vi.fn(() => 'test'),
-    getCurrentActor: vi.fn(() => 'test'),
-    applyOperation: vi.fn(),
-    pendingSlotSync: false
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
 
 function createMockCtx(): CanvasRenderingContext2D {
   return createMockCanvas2DContext({

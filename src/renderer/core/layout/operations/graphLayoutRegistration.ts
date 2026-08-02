@@ -8,6 +8,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 /** Layout mutations attributed to the canvas, for direct delete calls. */
@@ -17,18 +18,12 @@ export function canvasLayoutMutations() {
   return mutations
 }
 
-/**
- * @param zIndex Stacking order at attach — the node's index in
- * {@link LGraph._nodes} at the moment it was added. Never re-derived, so
- * removals and `bringToFront` leave it stale and values can repeat; treat it as
- * a starting position, not a live index. Not {@link LGraphNode.order}, which is
- * execution order and unrelated to stacking.
- */
-export function registerNodeLayout(node: LGraphNode, zIndex: number): void {
+/** A newly attached node stacks above those already registered. */
+export function registerNodeLayout(node: LGraphNode): void {
   canvasLayoutMutations().createNode(node.id, {
     position: { x: node.pos[0], y: node.pos[1] },
     size: { width: node.size[0], height: node.size[1] },
-    zIndex,
+    zIndex: layoutStore.allocateZIndex(),
     visible: true
   })
 }

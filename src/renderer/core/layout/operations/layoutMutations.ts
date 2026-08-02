@@ -201,15 +201,7 @@ export function useLayoutMutations(): LayoutMutations {
    * Bring a node to the front (highest z-index)
    */
   const bringNodeToFront = (nodeId: NodeId): void => {
-    const allNodes = layoutStore.getAllNodes().value
-    let maxZIndex = 0
-
-    for (const [, layout] of allNodes) {
-      if (layout.zIndex > maxZIndex) {
-        maxZIndex = layout.zIndex
-      }
-    }
-    setNodeZIndex(nodeId, maxZIndex + 1)
+    setNodeZIndex(nodeId, layoutStore.allocateZIndex())
   }
 
   /**

@@ -1629,18 +1629,32 @@ describe('node layout registration', () => {
     expect(layoutStore.getNodeLayoutRef(node.id).value).toBeNull()
   })
 
-  it('stacks later nodes above earlier ones, ignoring execution order', () => {
+  const zIndexOf = (node: LGraphNode) =>
+    layoutStore.getNodeLayoutRef(node.id).value?.zIndex
+
+  it('stacks later nodes above earlier ones', () => {
     const graph = new LGraph()
     const first = new LGraphNode('first')
     const second = new LGraphNode('second')
     graph.add(first)
     graph.add(second)
 
-    const zIndexOf = (node: LGraphNode) =>
-      layoutStore.getNodeLayoutRef(node.id).value?.zIndex
+    expect(zIndexOf(second)).toBeGreaterThan(zIndexOf(first)!)
+  })
 
-    expect(zIndexOf(first)).toBe(0)
-    expect(zIndexOf(second)).toBe(1)
+  it('keeps stacking order distinct from position in the graph', () => {
+    const graph = new LGraph()
+    const first = new LGraphNode('first')
+    const second = new LGraphNode('second')
+    graph.add(first)
+    graph.add(second)
+    graph.remove(first)
+
+    // `second` is now at index 0, so an index-derived zIndex would collide.
+    const third = new LGraphNode('third')
+    graph.add(third)
+
+    expect(zIndexOf(third)).toBeGreaterThan(zIndexOf(second)!)
   })
 
   it('registers after node:added so deferred listener work is queued first', () => {

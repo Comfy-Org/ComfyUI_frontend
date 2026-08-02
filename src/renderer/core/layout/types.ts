@@ -359,6 +359,9 @@ export interface LayoutStore {
   /** @see {@link LayoutStoreImpl.clearViewGeometry} */
   clearViewGeometry(): void
 
+  /** @see {@link LayoutStoreImpl.allocateZIndex} */
+  allocateZIndex(): number
+
   // Source and actor management
   setSource(source: LayoutSource): void
   setActor(actor: string): void
