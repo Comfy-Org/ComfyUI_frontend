@@ -157,6 +157,50 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
+  test('large graph legacy node drag', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    // Dragging a node writes through layoutStore on every frame, in both
+    // renderers, since layout registration stopped being Vue-gated.
+    const nodePos = await comfyPage.page.evaluate(() => {
+      const { canvas } = window.app!
+      const node = window.app!.graph.nodes[0]
+      canvas.ds.scale = 1
+      canvas.centerOnNode(node)
+      canvas.setDirty(true, true)
+      const [x, y] = window.app!.canvasPosToClientPos(node.pos)
+      return { id: node.id, x, y, graphX: node.pos[0] }
+    })
+    await comfyPage.nextFrame()
+
+    await comfyPage.perf.startMeasuring()
+
+    await comfyPage.page.mouse.move(nodePos.x + 40, nodePos.y + 10)
+    await comfyPage.page.mouse.down()
+    for (let i = 0; i < 60; i++) {
+      await comfyPage.page.mouse.move(
+        nodePos.x + 40 + i * 4,
+        nodePos.y + 10 + i * 2
+      )
+      await comfyPage.nextFrame()
+    }
+    await comfyPage.page.mouse.up()
+
+    const m = await comfyPage.perf.stopMeasuring('legacy-node-drag')
+    recordMeasurement(m)
+
+    // Without this the measurement silently degrades into a canvas pan.
+    const movedX = await comfyPage.page.evaluate(
+      (id) => window.app!.graph.getNodeById(id)!.pos[0],
+      nodePos.id
+    )
+    expect(movedX).not.toBeCloseTo(nodePos.graphX, 0)
+
+    console.log(
+      `Legacy node drag: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.taskDurationMs.toFixed(1)}ms task`
+    )
+  })
+
   test('large graph zoom interaction', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
 

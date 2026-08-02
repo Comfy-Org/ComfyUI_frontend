@@ -22,6 +22,12 @@ interface DeduplicationResult {
  * store key collisions, and patches any root-level legacy proxyWidgets that
  * reference the remapped inner IDs. Returns deep clones; inputs are not
  * mutated. `state.lastNodeId` is advanced.
+ *
+ * Two renderer-side consumers also depend on the uniqueness this establishes:
+ * `layoutStore.ynodes` keys node layout by bare `NodeId` (groups and reroutes
+ * are graph-scoped, nodes are not), and `GraphCanvas.vue` keys its node
+ * `v-for` the same way, so colliding IDs would share a layout entry and let
+ * Vue patch a component across a graph change instead of remounting it.
  */
 export function deduplicateSubgraphNodeIds(
   subgraphs: ExportedSubgraph[],

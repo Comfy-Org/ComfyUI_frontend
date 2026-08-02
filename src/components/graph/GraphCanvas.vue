@@ -310,7 +310,21 @@ const allNodes = computed((): NodeState[] => {
   const { rootGraphId } = canvasStore
   const graphId = canvasStore.currentGraph?.id
   if (!rootGraphId || graphId === undefined) return []
-  return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
+  const nodes = nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
+
+  // The `:key` below is a bare node id. Duplicates make Vue reuse a component
+  // across graphs, which silently strands its layout subscription.
+  if (import.meta.env.DEV) {
+    const ids = nodes.map((node) => node.id)
+    if (new Set(ids).size !== ids.length) {
+      console.error(
+        '[GraphCanvas] duplicate node ids in one graph:',
+        ids.filter((id, index) => ids.indexOf(id) !== index)
+      )
+    }
+  }
+
+  return nodes
 })
 watch(
   () => linearMode.value,

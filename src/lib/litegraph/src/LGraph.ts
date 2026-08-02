@@ -2793,50 +2793,6 @@ export class LGraph
     }
   }
 
-  /**
-   * Ensures all node IDs are globally unique across the root graph and all
-   * subgraphs. Reassigns any colliding IDs found in subgraphs, preserving
-   * root graph IDs as canonical. Updates link references (`origin_id`,
-   * `target_id`) within the affected graph to match the new node IDs.
-   */
-  ensureGlobalIdUniqueness(reservedNodeIds?: Iterable<number>): void {
-    const { state } = this
-
-    const allGraphs: LGraph[] = [this, ...this._subgraphs.values()]
-
-    const usedNodeIds = new Set<number>(reservedNodeIds)
-    for (const graph of allGraphs) {
-      const remappedIds = new Map<NodeId, NodeId>()
-
-      for (const node of graph._nodes) {
-        const currentId = numericNodeId(node.id)
-        if (currentId === null) continue
-
-        if (usedNodeIds.has(currentId)) {
-          const oldId = node.id
-          while (usedNodeIds.has(++state.lastNodeId));
-          const newId = toNodeId(state.lastNodeId)
-          delete graph._nodes_by_id[oldId]
-          node.id = newId
-          graph._nodes_by_id[newId] = node
-          usedNodeIds.add(state.lastNodeId)
-          remappedIds.set(oldId, newId)
-          console.warn(
-            `LiteGraph: duplicate node ID ${oldId} reassigned to ${newId} in graph ${graph.id}`
-          )
-        } else {
-          usedNodeIds.add(currentId)
-          if (currentId > state.lastNodeId) state.lastNodeId = currentId
-        }
-      }
-
-      if (remappedIds.size > 0) {
-        patchLinkNodeIds(graph._links, remappedIds)
-        patchLinkNodeIds(graph.floatingLinksInternal, remappedIds)
-      }
-    }
-  }
-
   private _canvas?: LGraphCanvas
   get primaryCanvas(): LGraphCanvas | undefined {
     return this.rootGraph._canvas
@@ -3229,24 +3185,5 @@ export class Subgraph
         : undefined,
       extra: this.extra
     }
-  }
-}
-
-function patchLinkNodeIds(
-  links: Map<LinkId, LLink>,
-  remappedIds: Map<NodeId, NodeId>
-): void {
-  for (const link of links.values()) {
-    const newOrigin =
-      link.origin_id === UNASSIGNED_NODE_ID
-        ? undefined
-        : remappedIds.get(link.origin_id)
-    if (newOrigin !== undefined) link.origin_id = newOrigin
-
-    const newTarget =
-      link.target_id === UNASSIGNED_NODE_ID
-        ? undefined
-        : remappedIds.get(link.target_id)
-    if (newTarget !== undefined) link.target_id = newTarget
   }
 }

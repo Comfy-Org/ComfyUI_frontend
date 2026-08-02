@@ -20,7 +20,6 @@ import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   BatchUpdateBoundsOperation,
-  Bounds,
   CreateNodeOperation,
   CreateRerouteOperation,
   DeleteNodeOperation,
@@ -144,7 +143,6 @@ export class LayoutStoreImpl implements LayoutStore {
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
   // Spatial index managers
-  private spatialIndex: SpatialIndexManager<NodeId> // For nodes
   private linkSegmentSpatialIndex: SpatialIndexManager<string> // For link segments (single index for all link geometry)
   private slotSpatialIndex: SpatialIndexManager<SlotId> // For slots
   private rerouteSpatialIndex: SpatialIndexManager<ScopedLayoutKey> // For reroutes
@@ -181,7 +179,6 @@ export class LayoutStoreImpl implements LayoutStore {
     this.ygroups = this.ydoc.getMap('groups')
 
     // Initialize spatial index managers
-    this.spatialIndex = new SpatialIndexManager<NodeId>()
     this.linkSegmentSpatialIndex = new SpatialIndexManager<string>() // Single index for all link geometry
     this.slotSpatialIndex = new SpatialIndexManager<SlotId>()
     this.rerouteSpatialIndex = new SpatialIndexManager<ScopedLayoutKey>()
@@ -896,7 +893,6 @@ export class LayoutStoreImpl implements LayoutStore {
       this.ygroups.clear()
       this.yreroutes.clear()
       this.rerouteLayouts.clear()
-      this.spatialIndex.clear()
       this.rerouteSpatialIndex.clear()
     }, 'initialization')
     this.clearViewGeometry()
@@ -938,18 +934,7 @@ export class LayoutStoreImpl implements LayoutStore {
     }
 
     const size = yNodeToLayout(ynode).size
-    const newBounds = {
-      x: operation.position.x,
-      y: operation.position.y,
-      width: size.width,
-      height: size.height
-    }
 
-    // Update spatial index FIRST, synchronously to prevent race conditions
-    // Hit detection queries can run before CRDT updates complete
-    this.spatialIndex.update(nodeId, newBounds)
-
-    // Then update CRDT
     ynode.set('rect', [
       operation.position.x,
       operation.position.y,
@@ -969,18 +954,7 @@ export class LayoutStoreImpl implements LayoutStore {
     if (!ynode) return
 
     const position = yNodeToLayout(ynode).position
-    const newBounds = {
-      x: position.x,
-      y: position.y,
-      width: operation.size.width,
-      height: operation.size.height
-    }
 
-    // Update spatial index FIRST, synchronously to prevent race conditions
-    // Hit detection queries can run before CRDT updates complete
-    this.spatialIndex.update(nodeId, newBounds)
-
-    // Then update CRDT
     ynode.set('rect', [
       position.x,
       position.y,
@@ -1022,9 +996,6 @@ export class LayoutStoreImpl implements LayoutStore {
     this.ynodes.set(String(nodeId), ynode)
     this.highestZIndex = Math.max(this.highestZIndex, operation.layout.zIndex)
 
-    // Add to spatial index
-    this.spatialIndex.insert(nodeId, operation.layout.bounds)
-
     change.type = 'create'
     change.nodeIds.push(nodeId)
   }
@@ -1044,8 +1015,6 @@ export class LayoutStoreImpl implements LayoutStore {
     // The trigger will be called in finalizeOperation to notify Vue of the change.
     // We also intentionally do NOT delete slot layouts here for the same reason,
     // and cleanup is handled by onUnmounted in useSlotElementTracking.
-    // Remove from spatial index
-    this.spatialIndex.remove(nodeId)
     // Link geometry is cleaned up per-link by LLink.disconnect as the node's
     // connections are severed, so nothing to do here.
 
@@ -1057,8 +1026,6 @@ export class LayoutStoreImpl implements LayoutStore {
     operation: BatchUpdateBoundsOperation,
     change: LayoutChange
   ): void {
-    const spatialUpdates: Array<{ nodeId: NodeId; bounds: Bounds }> = []
-
     for (const nodeId of operation.nodeIds) {
       const bounds = operation.bounds[nodeId]
       const ynode = this.ynodes.get(String(nodeId))
@@ -1066,13 +1033,7 @@ export class LayoutStoreImpl implements LayoutStore {
 
       ynode.set('rect', [bounds.x, bounds.y, bounds.width, bounds.height])
 
-      spatialUpdates.push({ nodeId, bounds })
       change.nodeIds.push(nodeId)
-    }
-
-    // Batch update spatial index for better performance
-    if (spatialUpdates.length > 0) {
-      this.spatialIndex.batchUpdate(spatialUpdates)
     }
 
     if (change.nodeIds.length) {
