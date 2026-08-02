@@ -2344,3 +2344,103 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     expect(store.flatOutputAssets.map((x) => x.id)).toEqual(['shared-1'])
   })
 })
+
+describe('assetsStore - reset() on identity change', () => {
+  const makeAsset = (id: string, name: string): AssetItem => ({
+    id,
+    name,
+    size: 0,
+    tags: ['output']
+  })
+
+  const makePage = (assets: AssetItem[]): AssetResponse => ({
+    assets,
+    total: assets.length,
+    has_more: false
+  })
+
+  const makeJobItem = (index: number): JobListItem => ({
+    id: `prompt_${index}`,
+    status: 'completed',
+    create_time: 1000 + index,
+    update_time: 1000 + index,
+    last_state_update: 1000 + index,
+    priority: 1000 + index,
+    preview_output: {
+      filename: `output_${index}.png`,
+      subfolder: '',
+      type: 'output',
+      nodeId: 'node_1',
+      mediaType: 'images'
+    }
+  })
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.resetAllMocks()
+  })
+
+  it('clears cached history and flat outputs and restarts paging', async () => {
+    vi.mocked(api.getHistory).mockResolvedValue([makeJobItem(0)])
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+      makePage([makeAsset('a1', 'f1.png')])
+    )
+
+    const store = useAssetsStore()
+    await store.updateHistory()
+    await store.updateFlatOutputs()
+    expect(store.historyAssets).toHaveLength(1)
+    expect(store.flatOutputAssets).toHaveLength(1)
+    expect(store.hasMoreHistory).toBe(false)
+    expect(store.flatOutputHasMore).toBe(false)
+
+    store.reset()
+
+    expect(store.historyAssets).toEqual([])
+    expect(store.flatOutputAssets).toEqual([])
+    expect(store.hasMoreHistory).toBe(true)
+    expect(store.flatOutputHasMore).toBe(true)
+
+    await store.loadMoreHistory()
+    expect(api.getHistory).toHaveBeenLastCalledWith(200, { offset: 0 })
+  })
+
+  it('does not commit a history fetch that resolves after the reset', async () => {
+    let resolveHistory!: (jobs: JobListItem[]) => void
+    vi.mocked(api.getHistory).mockReturnValueOnce(
+      new Promise<JobListItem[]>((resolve) => {
+        resolveHistory = resolve
+      })
+    )
+
+    const store = useAssetsStore()
+    const inFlightUpdate = store.updateHistory()
+
+    store.reset()
+    resolveHistory([makeJobItem(0)])
+    await inFlightUpdate
+
+    expect(store.historyAssets).toEqual([])
+    expect(store.historyLoading).toBe(false)
+  })
+
+  it('does not commit a flat-output page that resolves after the reset', async () => {
+    let resolvePage!: (page: AssetResponse) => void
+    vi.mocked(assetService.getAssetsPageByTag).mockReturnValueOnce(
+      new Promise<AssetResponse>((resolve) => {
+        resolvePage = resolve
+      })
+    )
+
+    const store = useAssetsStore()
+    const inFlightUpdate = store.updateFlatOutputs()
+
+    store.reset()
+    resolvePage(makePage([makeAsset('a1', 'f1.png')]))
+    await inFlightUpdate
+
+    expect(store.flatOutputAssets).toEqual([])
+    expect(store.flatOutputHasMore).toBe(true)
+    expect(store.flatOutputLoading).toBe(false)
+  })
+})

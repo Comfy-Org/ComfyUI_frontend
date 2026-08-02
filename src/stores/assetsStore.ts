@@ -115,6 +115,10 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
+  // Bumped by reset(); a fetch whose response arrives after a bump belongs to
+  // the previous identity and must not commit.
+  let identityGeneration = 0
+
   // Pagination state
   const historyOffset = ref(0)
   const hasMoreHistory = ref(true)
@@ -152,6 +156,8 @@ export const useAssetsStore = defineStore('assets', () => {
    * @param loadMore - true for pagination (append), false for initial load (replace)
    */
   const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
+    const generation = identityGeneration
+
     // Reset state for initial load
     if (!loadMore) {
       historyOffset.value = 0
@@ -164,6 +170,8 @@ export const useAssetsStore = defineStore('assets', () => {
     const history = await api.getHistory(BATCH_SIZE, {
       offset: historyOffset.value
     })
+
+    if (generation !== identityGeneration) return allHistoryItems.value
 
     // Convert JobListItems to AssetItems
     const newAssets = mapHistoryToAssets(history)
@@ -287,6 +295,7 @@ export const useAssetsStore = defineStore('assets', () => {
     flatOutputError.value = null
 
     flatOutputInFlight = (async () => {
+      const generation = identityGeneration
       const requestedAfter = loadMore ? flatOutputNextCursor : undefined
       try {
         const page = await assetService.getAssetsPageByTag(OUTPUT_TAG, true, {
@@ -295,6 +304,7 @@ export const useAssetsStore = defineStore('assets', () => {
             ? { after: requestedAfter }
             : { offset: flatOutputOffset.value })
         })
+        if (generation !== identityGeneration) return flatOutputAssets.value
         const batch = page.assets
         const fresh = loadMore
           ? batch.filter((asset) => !flatOutputSeenIds.has(asset.id))
@@ -312,8 +322,9 @@ export const useAssetsStore = defineStore('assets', () => {
           fresh.length > 0 && page.has_more && !cursorStuck
         return flatOutputAssets.value
       } catch (err) {
-        flatOutputError.value = err
         console.error('Failed to fetch output assets:', err)
+        if (generation !== identityGeneration) return flatOutputAssets.value
+        flatOutputError.value = err
         return loadMore ? flatOutputAssets.value : []
       } finally {
         if (loadMore) flatOutputIsLoadingMore.value = false
@@ -323,6 +334,27 @@ export const useAssetsStore = defineStore('assets', () => {
     })()
 
     return flatOutputInFlight
+  }
+
+  /**
+   * Drop every locally cached output/history asset so the previous account's
+   * outputs stop rendering after an in-session identity change. Loading flags
+   * are left alone: an in-flight fetch still owns them and clears them itself.
+   */
+  const reset = () => {
+    identityGeneration++
+    historyOffset.value = 0
+    hasMoreHistory.value = true
+    allHistoryItems.value = []
+    loadedIds.clear()
+    historyAssets.value = []
+    historyError.value = null
+    flatOutputAssets.value = []
+    flatOutputError.value = null
+    flatOutputOffset.value = 0
+    flatOutputHasMore.value = true
+    flatOutputSeenIds.clear()
+    flatOutputNextCursor = undefined
   }
 
   const updateFlatOutputs = () => fetchFlatOutputs(false)
@@ -980,6 +1012,7 @@ export const useAssetsStore = defineStore('assets', () => {
     updateHistory,
     loadMoreHistory,
     setAssetPreview,
+    reset,
 
     // Flat output assets (cloud-only, tag-based)
     flatOutputAssets,

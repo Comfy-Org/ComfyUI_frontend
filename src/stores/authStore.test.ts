@@ -16,6 +16,8 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type * as ApiModule from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { createTestingPinia } from '@pinia/testing'
 
 // Hoisted mocks for dynamic imports
@@ -1305,6 +1307,49 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
 
       expect(mockResetSocket).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('queue and asset state on identity change', () => {
+    const accountB: MockUser = {
+      ...mockUser,
+      uid: 'account-b-id',
+      email: 'b@example.com'
+    } as MockUser
+
+    it('clears the queue and asset stores on a direct A -> B account switch', () => {
+      const queueReset = vi.spyOn(useQueueStore(), 'reset')
+      const assetsReset = vi.spyOn(useAssetsStore(), 'reset')
+
+      authStateCallback(accountB)
+
+      expect(queueReset).toHaveBeenCalledTimes(1)
+      expect(assetsReset).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears the queue and asset stores on sign-out', () => {
+      const queueReset = vi.spyOn(useQueueStore(), 'reset')
+      const assetsReset = vi.spyOn(useAssetsStore(), 'reset')
+
+      authStateCallback(null)
+
+      expect(queueReset).toHaveBeenCalledTimes(1)
+      expect(assetsReset).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not clear them when transitioning from signed-out to signed-in', () => {
+      const queueReset = vi.spyOn(useQueueStore(), 'reset')
+      const assetsReset = vi.spyOn(useAssetsStore(), 'reset')
+
+      // Signing in records the first identity of the session; there is no
+      // previous account's state to clear.
+      authStateCallback(null)
+      queueReset.mockClear()
+      assetsReset.mockClear()
+      authStateCallback(accountB)
+
+      expect(queueReset).not.toHaveBeenCalled()
+      expect(assetsReset).not.toHaveBeenCalled()
     })
   })
 })

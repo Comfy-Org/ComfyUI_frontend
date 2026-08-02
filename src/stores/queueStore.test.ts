@@ -962,6 +962,60 @@ describe('useQueueStore', () => {
     })
   })
 
+  describe('reset()', () => {
+    it('should drop cached tasks and the history snapshot flag', async () => {
+      mockGetQueue.mockResolvedValue({
+        Running: [createRunningJob(1, 'run-1')],
+        Pending: [createPendingJob(2, 'pend-1')]
+      })
+      mockGetHistory.mockResolvedValue([createHistoryJob(3, 'hist-1')])
+
+      await store.update()
+      expect(store.tasks).toHaveLength(3)
+      expect(store.hasFetchedHistorySnapshot).toBe(true)
+
+      store.reset()
+
+      expect(store.runningTasks).toEqual([])
+      expect(store.pendingTasks).toEqual([])
+      expect(store.historyTasks).toEqual([])
+      expect(store.hasFetchedHistorySnapshot).toBe(false)
+    })
+
+    it('should not commit an update() that resolves after the reset', async () => {
+      let resolveQueue!: QueueResolver
+      let resolveHistory!: (value: JobListItem[]) => void
+
+      mockGetQueue.mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolveQueue = resolve
+          })
+      )
+      mockGetHistory.mockImplementation(
+        () =>
+          new Promise<JobListItem[]>((resolve) => {
+            resolveHistory = resolve
+          })
+      )
+
+      const inFlightUpdate = store.update()
+
+      store.reset()
+
+      resolveQueue({
+        Running: [createRunningJob(1, 'run-1')],
+        Pending: [createPendingJob(2, 'pend-1')]
+      })
+      resolveHistory([createHistoryJob(3, 'hist-1')])
+      await inFlightUpdate
+
+      expect(store.tasks).toEqual([])
+      expect(store.hasFetchedHistorySnapshot).toBe(false)
+      expect(store.isLoading).toBe(false)
+    })
+  })
+
   describe('update deduplication (coalescing)', () => {
     it('should coalesce concurrent calls — second call does not fire its own request', async () => {
       let resolveQueue!: QueueResolver
