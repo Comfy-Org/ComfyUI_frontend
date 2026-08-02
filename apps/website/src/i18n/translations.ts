@@ -4982,8 +4982,8 @@ const translations = {
   },
   'minimax.steps.step': { en: 'Step', 'zh-CN': '步骤' },
   'minimax.models.heading': {
-    en: 'MiniMax H3, in motion',
-    'zh-CN': 'MiniMax H3 动态演示'
+    en: 'Made with MiniMax H3',
+    'zh-CN': '用 MiniMax H3 制作'
   },
   'minimax.models.tagFree': { en: 'Free', 'zh-CN': '免费' },
   'minimax.models.cardCta': { en: 'Try now', 'zh-CN': '立即试用' },
