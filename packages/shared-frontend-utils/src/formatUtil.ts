@@ -1,4 +1,3 @@
-import { default as DOMPurify } from 'dompurify'
 import type { operations } from '@comfyorg/registry-types'
 
 export function formatCamelCase(str: string): string {
@@ -64,18 +63,16 @@ export function ensureWorkflowSuffix(
   return name + '.' + suffix
 }
 
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (character) => {
-    return `&#${character.charCodeAt(0)};`
-  })
+interface HighlightQueryPart {
+  text: string
+  highlighted: boolean
 }
 
 export function highlightQuery(
   text: string,
-  query: string,
-  sanitize: boolean = true
-) {
-  if (!query) return sanitize ? escapeHtml(text) : text
+  query: string
+): HighlightQueryPart[] {
+  if (!query) return [{ text, highlighted: false }]
 
   // Escape special regex characters, then join with an optional single
   // space so cross-word matches (e.g. "geto" → "imaGE TO") are
@@ -84,24 +81,26 @@ export function highlightQuery(
     .map((ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     .join('[ ]?')
 
-  const regex = new RegExp(`(${pattern})`, 'gi')
-  if (!sanitize) {
-    return text.replace(regex, '<span class="highlight">$1</span>')
-  }
-
-  const parts: string[] = []
+  const regex = new RegExp(pattern, 'gi')
+  const parts: HighlightQueryPart[] = []
   let lastIndex = 0
+
   for (const match of text.matchAll(regex)) {
-    parts.push(escapeHtml(text.slice(lastIndex, match.index)))
-    parts.push(`<span class="highlight">${escapeHtml(match[0])}</span>`)
+    if (match.index > lastIndex) {
+      parts.push({
+        text: text.slice(lastIndex, match.index),
+        highlighted: false
+      })
+    }
+    parts.push({ text: match[0], highlighted: true })
     lastIndex = match.index + match[0].length
   }
-  parts.push(escapeHtml(text.slice(lastIndex)))
 
-  return DOMPurify.sanitize(parts.join(''), {
-    ALLOWED_TAGS: ['span'],
-    ALLOWED_ATTR: ['class']
-  })
+  if (lastIndex < text.length || parts.length === 0) {
+    parts.push({ text: text.slice(lastIndex), highlighted: false })
+  }
+
+  return parts
 }
 
 export function formatNumberWithSuffix(
@@ -195,33 +194,6 @@ export function getPathDetails(path: string) {
  */
 export function normalizeI18nKey(key: string) {
   return typeof key === 'string' ? key.replace(/\./g, '_') : ''
-}
-
-const VUE_I18N_BACKSLASH = /\\/g
-const VUE_I18N_SYNTAX_CHARS = /[@${}|%]/g
-
-/**
- * Escapes vue-i18n message syntax so arbitrary text can be stored as a locale
- * message and rendered verbatim by `t()`.
- *
- * Backslash is doubled rather than wrapped in a literal interpolation: since
- * vue-i18n 11 the message compiler reads `\` as an escape introducer, so a
- * backslash before an escaped character would swallow the `{` this emits, and
- * `{'\'}` would escape its own closing quote. Doubling must therefore run
- * first; the literal interpolations it emits contain no backslashes.
- *
- * Apply exactly once. This is NOT idempotent, because the escape output itself
- * contains `{`/`}`.
- *
- * Apply only to values read back through `t()`/`st()`. Values read through
- * `tm()`/`stRaw()` are never compiled, so escaping them renders the escape
- * syntax literally.
- */
-export function escapeI18nMessage(text: string): string {
-  if (typeof text !== 'string') return ''
-  return text
-    .replace(VUE_I18N_BACKSLASH, '\\\\')
-    .replace(VUE_I18N_SYNTAX_CHARS, (char) => `{'${char}'}`)
 }
 
 /**
