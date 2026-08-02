@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/scripts/app', () => ({
@@ -11,6 +12,8 @@ import { app } from '@/scripts/app'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 describe('useLitegraphService().getCanvasCenter', () => {
   beforeEach(() => {
@@ -49,7 +52,9 @@ describe('useLitegraphService().registerNodeDef', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('hides disabled nodes from LiteGraph discovery', async () => {
+  it('keeps disabled nodes hidden when developer mode changes', async () => {
+    useNodeDefStore()
+    const settingStore = useSettingStore()
     const nodeDef: ComfyNodeDef = {
       name: 'DisabledTestNode',
       display_name: 'Disabled Test Node',
@@ -59,6 +64,7 @@ describe('useLitegraphService().registerNodeDef', () => {
       input: {},
       output: [],
       output_node: false,
+      dev_only: true,
       disabled: {
         reasons: [{ type: 'workspace_provider_disabled' }]
       }
@@ -66,7 +72,12 @@ describe('useLitegraphService().registerNodeDef', () => {
 
     await useLitegraphService().registerNodeDef(nodeDef.name, nodeDef)
 
-    expect(LiteGraph.registered_node_types[nodeDef.name].skip_list).toBe(true)
-    LiteGraph.unregisterNodeType(nodeDef.name)
+    try {
+      settingStore.settingValues['Comfy.DevMode'] = true
+      await nextTick()
+      expect(LiteGraph.registered_node_types[nodeDef.name].skip_list).toBe(true)
+    } finally {
+      LiteGraph.unregisterNodeType(nodeDef.name)
+    }
   })
 })

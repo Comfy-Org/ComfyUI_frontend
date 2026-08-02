@@ -341,7 +341,14 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   watchEffect(() => {
     const devModeEnabled = showDevOnly.value
     for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
-      if (nodeType.nodeData?.dev_only) {
+      const nodeData = nodeType.nodeData
+      if (
+        nodeData &&
+        'disabled' in nodeData &&
+        nodeData.disabled !== undefined
+      ) {
+        nodeType.skip_list = true
+      } else if (nodeData?.dev_only) {
         nodeType.skip_list = !devModeEnabled
       }
     }
