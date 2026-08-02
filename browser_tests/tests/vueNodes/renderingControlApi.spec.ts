@@ -58,6 +58,7 @@ test.describe(
         linkedNodes.targetId,
         linkedNodes.targetSlot
       )
+      await expect(targetSlot).toBeVisible()
       const initialSlotBox = await targetSlot.boundingBox()
       if (!initialSlotBox) throw new Error('Target slot geometry unavailable')
 

@@ -39,6 +39,8 @@ interface FrameState {
 
 type FrameStateChange = 'runtime' | 'viewport' | false
 
+let activeInstance: object | undefined
+
 function nodeId(
   node: { id: string | number } | null | undefined
 ): string | undefined {
@@ -73,6 +75,8 @@ export function useVueNodeRendering({
   enabled = true,
   nodeManager
 }: VueNodeRenderingOptions) {
+  const instance = {}
+  activeInstance = instance
   const canvasStore = useCanvasStore()
   const titleEditorStore = useTitleEditorStore()
   const { state: linkDragState } = useSlotLinkDragUIState()
@@ -309,6 +313,8 @@ export function useVueNodeRendering({
   })
 
   onScopeDispose(() => {
+    if (activeInstance !== instance) return
+    activeInstance = undefined
     runtimeTracker.pause()
     unsubscribe()
     vueNodeRenderingService.updateRuntime({

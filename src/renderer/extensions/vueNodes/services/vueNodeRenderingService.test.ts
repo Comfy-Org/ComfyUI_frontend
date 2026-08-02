@@ -64,6 +64,28 @@ describe('vueNodeRenderingService', () => {
     ])
   })
 
+  it('clears graph state when the runtime is removed', async () => {
+    const service = createVueNodeRenderingService()
+    service.updateRuntime(runtime())
+    service.nodeMounted('1')
+    await Promise.resolve()
+    service.createPushController('viewport').update({ suppress: ['1'] })
+    expect(service.getSnapshot()).toMatchObject({
+      nodeIds: ['1', '2', '3'],
+      renderedNodeIds: ['2', '3'],
+      mountedNodeIds: ['1']
+    })
+
+    service.updateRuntime(runtime(null))
+
+    expect(service.getSnapshot()).toMatchObject({
+      nodeIds: [],
+      renderedNodeIds: [],
+      mountedNodeIds: []
+    })
+    expect(service.getNodeRenderState('1')).toBe('unknown')
+  })
+
   it('renders every node by default and protects nodes until first mount', async () => {
     const service = createVueNodeRenderingService()
     service.updateRuntime(runtime())

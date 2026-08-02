@@ -16,7 +16,8 @@ import type {
 import { useVueNodeRendering } from './useVueNodeRendering'
 
 const raf = vi.hoisted(() => ({
-  callback: undefined as (() => void) | undefined
+  callback: undefined as (() => void) | undefined,
+  pauses: [] as Array<ReturnType<typeof vi.fn>>
 }))
 const renderingService = vi.hoisted(() => ({
   listener: undefined as
@@ -64,8 +65,10 @@ const snapshot: VueNodeRenderingSnapshot = Object.freeze({
 
 vi.mock('@vueuse/core', () => ({
   useRafFn: (callback: () => void) => {
+    const pause = vi.fn()
     raf.callback = callback
-    return { pause: vi.fn() }
+    raf.pauses.push(pause)
+    return { pause }
   }
 }))
 
@@ -166,6 +169,7 @@ describe('useVueNodeRendering', () => {
     layoutState.isDraggingVueNodes.value = false
     layoutState.isResizingVueNodes.value = false
     nodeOptions.open = false
+    raf.pauses.length = 0
   })
 
   afterEach(() => {
@@ -173,7 +177,7 @@ describe('useVueNodeRendering', () => {
     scope = undefined
   })
 
-  it('fast-paths viewport frames without checking focused DOM state', () => {
+  it('distinguishes viewport frames from runtime-only tail changes', () => {
     const canvas = createCanvas()
     const node = createNode('1')
     scope = effectScope()
@@ -199,6 +203,15 @@ describe('useVueNodeRendering', () => {
     expect(renderingService.updateRuntime).not.toHaveBeenCalled()
     expect(renderingService.updateViewport).toHaveBeenCalledOnce()
     expect(closestSpy).not.toHaveBeenCalled()
+
+    renderingService.updateRuntime.mockClear()
+    renderingService.updateViewport.mockClear()
+    nodeOptions.open = true
+    canvas.dirty_canvas = true
+    raf.callback?.()
+
+    expect(renderingService.updateRuntime).toHaveBeenCalledOnce()
+    expect(renderingService.updateViewport).not.toHaveBeenCalled()
   })
 
   it('freezes rendering for the full canvas pan interaction', () => {
@@ -257,6 +270,46 @@ describe('useVueNodeRendering', () => {
     scope.stop()
     scope = undefined
 
+    expect(renderingService.unsubscribe).toHaveBeenCalledOnce()
+    expect(renderingService.updateRuntime).toHaveBeenLastCalledWith({
+      graph: null,
+      managerAvailable: false,
+      nodes: [],
+      visibleCanvasArea: null,
+      frontendRequiredNodeIds: [],
+      renderFrozen: false
+    })
+  })
+
+  it('only lets the active instance clear shared runtime state', () => {
+    const firstScope = effectScope()
+    firstScope.run(() => {
+      useVueNodeRendering({
+        allNodes: [createNode('1')],
+        canvas: createCanvas(),
+        nodeManager: createNodeManager()
+      })
+    })
+    const secondScope = effectScope()
+    secondScope.run(() => {
+      useVueNodeRendering({
+        allNodes: [createNode('1')],
+        canvas: createCanvas(),
+        nodeManager: createNodeManager()
+      })
+    })
+    renderingService.unsubscribe.mockClear()
+    renderingService.updateRuntime.mockClear()
+
+    firstScope.stop()
+
+    expect(raf.pauses[0]).not.toHaveBeenCalled()
+    expect(renderingService.unsubscribe).not.toHaveBeenCalled()
+    expect(renderingService.updateRuntime).not.toHaveBeenCalled()
+
+    secondScope.stop()
+
+    expect(raf.pauses[1]).toHaveBeenCalledOnce()
     expect(renderingService.unsubscribe).toHaveBeenCalledOnce()
     expect(renderingService.updateRuntime).toHaveBeenLastCalledWith({
       graph: null,
