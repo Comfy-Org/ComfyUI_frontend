@@ -16,14 +16,26 @@ import { useAmbientSubgraphPreviews } from './useAmbientSubgraphPreviews'
 
 type MockNodeOutputStore = Pick<
   ReturnType<typeof useNodeOutputStore>,
-  'nodeOutputs' | 'nodePreviewImages' | 'getNodeImageUrls'
+  | 'nodeOutputs'
+  | 'nodePreviewImages'
+  | 'getNodeImageUrls'
+  | 'isInputPreviewOutput'
 >
 
 vi.mock('@/stores/nodeOutputStore', () => {
   const store: MockNodeOutputStore = {
     nodeOutputs: reactive<MockNodeOutputStore['nodeOutputs']>({}),
     nodePreviewImages: reactive<MockNodeOutputStore['nodePreviewImages']>({}),
-    getNodeImageUrls: vi.fn()
+    getNodeImageUrls: vi.fn(),
+    isInputPreviewOutput: (output) => {
+      const images = (output as { images?: { type?: string }[] } | undefined)
+        ?.images
+      return (
+        Array.isArray(images) &&
+        images.length > 0 &&
+        images.every((i) => i?.type === 'input')
+      )
+    }
   }
   return { useNodeOutputStore: () => store }
 })
@@ -165,6 +177,28 @@ describe(useAmbientSubgraphPreviews, () => {
   it('skips interior nodes with no image output', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10 })
+
+    const { ambientPreviews } = useAmbientSubgraphPreviews(
+      () => setup.subgraphNode
+    )
+    expect(ambientPreviews.value).toEqual([])
+  })
+
+  // Regression case: an unpromoted LoadImage-style node's own selected file
+  // is an "input" preview, not a live execution result. Surfacing it
+  // ambiently would make every such node's thumbnail always visible on the
+  // host regardless of promotion, breaking exclusivity of the promotion UI.
+  it('skips interior nodes whose only output is an input-type preview (e.g. LoadImage)', () => {
+    const setup = createSetup()
+    const node = addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    const store = useNodeOutputStore()
+    const locatorId = createNodeLocatorId(setup.subgraph.id, toNodeId(10))!
+    store.nodeOutputs[locatorId] = {
+      images: [{ filename: 'input.png', type: 'input' }]
+    }
+    vi.mocked(store.getNodeImageUrls).mockImplementation((n) =>
+      n === node ? ['/view?filename=input.png'] : undefined
+    )
 
     const { ambientPreviews } = useAmbientSubgraphPreviews(
       () => setup.subgraphNode
