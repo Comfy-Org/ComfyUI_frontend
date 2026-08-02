@@ -4997,11 +4997,6 @@ const translations = {
     en: 'Open weights.\nFull control.',
     'zh-CN': '开源权重，\n完全掌控。'
   },
-  'minimax.cta.subtitle': {
-    en: 'Text, image, or audio in — a stereo clip out. Draft free on other models, then finish on MiniMax H3.',
-    'zh-CN':
-      '输入文本、图像或音频，输出带立体声的片段。先用其他模型免费打样，再用 MiniMax H3 出片。'
-  },
   'minimax.cta.primaryCta': {
     en: 'SIGN UP FOR FREE',
     'zh-CN': '免费注册'

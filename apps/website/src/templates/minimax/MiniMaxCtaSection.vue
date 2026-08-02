@@ -11,7 +11,6 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 <template>
   <CtaCenter01
     :heading="t('minimax.cta.heading', locale)"
-    :subtitle="t('minimax.cta.subtitle', locale)"
     :primary-cta="{
       label: t('minimax.cta.primaryCta', locale),
       href: externalLinks.cloud,
