@@ -142,13 +142,6 @@ async function routeCloudBootstrapApis(page: Page) {
       body: JSON.stringify({})
     })
   })
-  await page.route('**/customers/cloud-subscription-status', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ is_active: true })
-    })
-  })
 }
 
 const cloudOutputTest = createCloudAssetsFixture([

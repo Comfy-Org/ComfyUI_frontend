@@ -17,6 +17,8 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -40,6 +42,19 @@ export type CloudSubscriptionStatusResponse = NonNullable<
 >
 
 const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
+
+function toLegacySubscriptionStatus(
+  status: BillingStatusResponse
+): CloudSubscriptionStatusResponse {
+  return {
+    is_active: status.is_active,
+    has_fund: status.has_funds,
+    subscription_tier: status.subscription_tier,
+    subscription_duration: status.subscription_duration,
+    renewal_date: status.renewal_date,
+    end_date: status.cancel_at
+  }
+}
 
 function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
@@ -326,6 +341,15 @@ function useSubscriptionInternal() {
   }
 
   async function performFetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
+    if (isCloud) {
+      const statusData = toLegacySubscriptionStatus(
+        await workspaceApi.getBillingStatus()
+      )
+      subscriptionStatus.value = statusData
+      syncPendingSubscriptionSuccess(statusData)
+      return statusData
+    }
+
     const headers = await buildAuthHeaders()
 
     const response = await fetchWithUnifiedRemint(

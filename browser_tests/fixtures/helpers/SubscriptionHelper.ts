@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import {
   createBalance,
   createSubscriptionStatus,
@@ -37,6 +38,23 @@ function withSubscriptionStatus(
     ...config,
     status: { ...config.status, ...overrides }
   })
+}
+
+function toBillingStatus(
+  status: SubscriptionStatusResponse
+): BillingStatusResponse {
+  return {
+    is_active: status.is_active ?? false,
+    has_funds: status.has_fund ?? false,
+    ...(status.subscription_tier
+      ? { subscription_tier: status.subscription_tier }
+      : {}),
+    ...(status.subscription_duration
+      ? { subscription_duration: status.subscription_duration }
+      : {}),
+    ...(status.renewal_date ? { renewal_date: status.renewal_date } : {}),
+    ...(status.end_date ? { cancel_at: status.end_date } : {})
+  }
 }
 
 export function withActiveSubscription(
@@ -104,9 +122,9 @@ export class SubscriptionHelper {
     })
     await this.page.route(featuresPattern, featuresHandler)
 
-    const statusPattern = '**/customers/cloud-subscription-status'
+    const statusPattern = '**/api/billing/status'
     const statusHandler = async (route: Route) => {
-      await route.fulfill({ json: this.statusResponse })
+      await route.fulfill({ json: toBillingStatus(this.statusResponse) })
     }
     this.routeHandlers.push({ pattern: statusPattern, handler: statusHandler })
     await this.page.route(statusPattern, statusHandler)

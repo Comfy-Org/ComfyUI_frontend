@@ -115,7 +115,8 @@ async function mockCloudBoot(
     )
   )
 
-  // Legacy endpoints remain mocked for consumers that explicitly use them.
+  // Keep the legacy status route observable so Cloud regressions cannot
+  // silently bypass the workspace-scoped billing authority.
   await page.route('**/customers/cloud-subscription-status', (r) => {
     billingRequests.legacyStatus++
     return r.fulfill(jsonRoute(subscriptionStatus))
@@ -186,7 +187,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     await expect(popover.getByText('12,660')).toBeVisible()
     await expect(popover.getByTestId('add-credits-button')).toBeVisible()
     expect(billingRequests.workspaceStatus).toBeGreaterThan(0)
-    expect(billingRequests.legacyStatus).toBeGreaterThan(0)
+    expect(billingRequests.legacyStatus).toBe(0)
     expect(billingRequests.legacyBalance).toBeGreaterThan(0)
   })
 

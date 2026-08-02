@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test'
 
-import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   BillingStatusResponse,
@@ -42,16 +41,6 @@ const mockTokenResponse: WorkspaceTokenResponse = {
   },
   role: 'owner',
   permissions: []
-}
-
-// Cancelled but still active: `end_date` set (cancelled) while `is_active` is
-// true. A personal owner in this state sees BOTH "Add credits" and "Resubscribe"
-// in the credits row.
-const mockSubscriptionStatus: CloudSubscriptionStatusResponse = {
-  is_active: true,
-  subscription_id: 'sub_e2e',
-  renewal_date: FUTURE_DATE,
-  end_date: FUTURE_DATE
 }
 
 // The facade routes a Cloud personal workspace through `/api/billing/*`. The
@@ -108,14 +97,6 @@ const test = comfyPageFixture.extend({
 
     await page.route('**/api/auth/session', (route) =>
       route.fulfill({ status: 204 })
-    )
-
-    await page.route('**/customers/cloud-subscription-status', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockSubscriptionStatus)
-      })
     )
 
     await page.route('**/customers/balance', (route) =>
