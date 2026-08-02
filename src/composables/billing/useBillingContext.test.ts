@@ -95,7 +95,11 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
     subscriptionTier: { value: 'PRO' },
     subscriptionDuration: { value: 'MONTHLY' },
     subscriptionStatus: {
-      value: { renewal_date: '2025-01-01T00:00:00Z', end_date: null }
+      value: {
+        is_active: true,
+        has_funds: true,
+        renewal_date: '2025-01-01T00:00:00Z'
+      }
     },
     isCancelled: { value: false },
     fetchStatus: mockLegacyFetchStatus,

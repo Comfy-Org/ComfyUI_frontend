@@ -12,14 +12,11 @@ import {
   UNSUBSCRIBED,
   ZERO_BALANCE
 } from '@e2e/fixtures/data/subscriptionFixtures'
-import type {
-  BalanceResponse,
-  SubscriptionStatusResponse
-} from '@e2e/fixtures/data/subscriptionFixtures'
+import type { BalanceResponse } from '@e2e/fixtures/data/subscriptionFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export interface SubscriptionConfig {
-  status: SubscriptionStatusResponse
+  status: BillingStatusResponse
   balance: BalanceResponse
 }
 
@@ -35,7 +32,7 @@ export type SubscriptionOperator = (
 ) => SubscriptionConfig
 
 function withSubscriptionStatus(
-  overrides: Partial<SubscriptionStatusResponse>
+  overrides: Partial<BillingStatusResponse>
 ): SubscriptionOperator {
   return (config) => ({
     ...config,
@@ -43,54 +40,32 @@ function withSubscriptionStatus(
   })
 }
 
-function toBillingStatus(
-  status: SubscriptionStatusResponse
-): BillingStatusResponse {
-  return {
-    is_active: status.is_active ?? false,
-    has_funds: status.has_fund ?? false,
-    billing_rail: 'legacy_stripe',
-    ...(status.subscription_tier
-      ? { subscription_tier: status.subscription_tier }
-      : {}),
-    ...(status.subscription_duration
-      ? { subscription_duration: status.subscription_duration }
-      : {}),
-    ...(status.renewal_date ? { renewal_date: status.renewal_date } : {}),
-    ...(status.end_date ? { cancel_at: status.end_date } : {})
-  }
-}
-
 export function withActiveSubscription(
-  tier: NonNullable<SubscriptionStatusResponse['subscription_tier']> = 'CREATOR'
+  tier: NonNullable<BillingStatusResponse['subscription_tier']> = 'CREATOR'
 ): SubscriptionOperator {
   return withSubscriptionStatus({
     is_active: true,
     subscription_tier: tier,
-    renewal_date: '2099-12-31T00:00:00.000Z',
-    end_date: null
+    renewal_date: '2099-12-31T00:00:00.000Z'
   })
 }
 
 export function withFreeTier(): SubscriptionOperator {
   return withSubscriptionStatus({
     is_active: true,
-    subscription_tier: 'FREE',
-    end_date: null
+    subscription_tier: 'FREE'
   })
 }
 
 export function withUnsubscribed(): SubscriptionOperator {
   return withSubscriptionStatus({
     is_active: false,
-    subscription_tier: 'FREE',
-    end_date: null,
-    renewal_date: null
+    subscription_tier: 'FREE'
   })
 }
 
 export class SubscriptionHelper {
-  private statusResponse: SubscriptionStatusResponse
+  private statusResponse: BillingStatusResponse
   private balanceResponse: BalanceResponse
   private routeHandlers: Array<{
     pattern: string
@@ -128,7 +103,7 @@ export class SubscriptionHelper {
 
     const statusPattern = '**/api/billing/status'
     const statusHandler = async (route: Route) => {
-      await route.fulfill({ json: toBillingStatus(this.statusResponse) })
+      await route.fulfill({ json: this.statusResponse })
     }
     this.routeHandlers.push({ pattern: statusPattern, handler: statusHandler })
     await this.page.route(statusPattern, statusHandler)
@@ -165,7 +140,7 @@ export class SubscriptionHelper {
     this.balanceResponse = { ...config.balance }
   }
 
-  setStatus(overrides: Partial<SubscriptionStatusResponse>): void {
+  setStatus(overrides: Partial<BillingStatusResponse>): void {
     this.statusResponse = { ...this.statusResponse, ...overrides }
   }
 

@@ -614,21 +614,14 @@ describe('useSubscription', () => {
       expect(isActiveSubscription.value).toBe(true)
     })
 
-    it('keeps explicit local status reads on the Comfy API', async () => {
+    it('does not perform explicit subscription status reads outside Cloud', async () => {
       mockIsCloud.value = false
       const { fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
 
       expect(mockGetBillingStatus).not.toHaveBeenCalled()
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers/cloud-subscription-status'),
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            Authorization: 'Bearer test-token'
-          })
-        })
-      )
+      expect(global.fetch).not.toHaveBeenCalled()
     })
   })
 

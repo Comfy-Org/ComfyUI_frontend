@@ -59,7 +59,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
       duration: subscriptionDuration.value,
       planSlug: null, // Legacy doesn't use plan slugs
       renewalDate: legacySubscriptionStatus.value?.renewal_date ?? null,
-      endDate: legacySubscriptionStatus.value?.end_date ?? null,
+      endDate: legacySubscriptionStatus.value?.cancel_at ?? null,
       isCancelled: isCancelled.value,
       hasFunds: (authStore.balance?.amount_micros ?? 0) > 0
     }

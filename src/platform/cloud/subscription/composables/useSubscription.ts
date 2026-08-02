@@ -37,27 +37,10 @@ type CloudSubscriptionCheckoutResponse = NonNullable<
   operations['createCloudSubscriptionCheckout']['responses']['201']['content']['application/json']
 >
 
-export type CloudSubscriptionStatusResponse = NonNullable<
-  operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']
->
-
 const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
 
-function toLegacySubscriptionStatus(
-  status: BillingStatusResponse
-): CloudSubscriptionStatusResponse {
-  return {
-    is_active: status.is_active,
-    has_fund: status.has_funds,
-    subscription_tier: status.subscription_tier,
-    subscription_duration: status.subscription_duration,
-    renewal_date: status.renewal_date,
-    end_date: status.cancel_at
-  }
-}
-
 function useSubscriptionInternal() {
-  const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
+  const subscriptionStatus = ref<BillingStatusResponse | null>(null)
   const telemetry = useTelemetry()
   const isInitialized = ref(false)
 
@@ -77,7 +60,7 @@ function useSubscriptionInternal() {
   const { isLoggedIn } = useCurrentUser()
 
   const isCancelled = computed(() => {
-    return !!subscriptionStatus.value?.end_date
+    return !!subscriptionStatus.value?.cancel_at
   })
 
   const formattedRenewalDate = computed(() => {
@@ -93,9 +76,9 @@ function useSubscriptionInternal() {
   })
 
   const formattedEndDate = computed(() => {
-    if (!subscriptionStatus.value?.end_date) return ''
+    if (!subscriptionStatus.value?.cancel_at) return ''
 
-    const endDate = new Date(subscriptionStatus.value.end_date)
+    const endDate = new Date(subscriptionStatus.value.cancel_at)
 
     return endDate.toLocaleDateString('en-US', {
       month: 'short',
@@ -184,7 +167,7 @@ function useSubscriptionInternal() {
   }
 
   const syncPendingSubscriptionSuccess = (
-    statusData: CloudSubscriptionStatusResponse
+    statusData: BillingStatusResponse
   ) => {
     const metadata = consumePendingSubscriptionCheckoutSuccess(statusData)
 
@@ -329,10 +312,9 @@ function useSubscriptionInternal() {
   }
 
   // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
-  let inFlightStatusFetch: Promise<CloudSubscriptionStatusResponse | null> | null =
-    null
+  let inFlightStatusFetch: Promise<BillingStatusResponse | null> | null = null
 
-  async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
+  async function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
     if (inFlightStatusFetch) return inFlightStatusFetch
     inFlightStatusFetch = performFetchSubscriptionStatus().finally(() => {
       inFlightStatusFetch = null
@@ -340,36 +322,10 @@ function useSubscriptionInternal() {
     return inFlightStatusFetch
   }
 
-  async function performFetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
-    if (isCloud) {
-      const statusData = toLegacySubscriptionStatus(
-        await workspaceApi.getBillingStatus()
-      )
-      subscriptionStatus.value = statusData
-      syncPendingSubscriptionSuccess(statusData)
-      return statusData
-    }
+  async function performFetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
+    if (!isCloud) return null
 
-    const headers = await buildAuthHeaders()
-
-    const response = await fetchWithUnifiedRemint(
-      buildApiUrl('/customers/cloud-subscription-status'),
-      {
-        headers
-      },
-      isCloud && flags.unifiedCloudAuthEnabled
-    )
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new AuthStoreError(
-        t('toastMessages.failedToFetchSubscription', {
-          error: errorData.message
-        })
-      )
-    }
-
-    const statusData = await response.json()
+    const statusData = await workspaceApi.getBillingStatus()
     subscriptionStatus.value = statusData
     syncPendingSubscriptionSuccess(statusData)
 
