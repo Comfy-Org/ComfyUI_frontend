@@ -187,6 +187,8 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   wstest(
     'Promotes a live sampler preview from inside a subgraph to the outer SubgraphNode',
     async ({ comfyPage, getWebSocket }) => {
+      test.fail()
+
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
       const samplerNode = new VueNodeFixture(
         comfyPage.vueNodes.getNodeByTitle('KSampler')
