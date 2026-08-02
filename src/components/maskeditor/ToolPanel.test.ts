@@ -11,16 +11,6 @@ import { Tools, allTools } from '@/extensions/core/maskeditor/types'
 
 type ToolManager = ReturnType<typeof useToolManager>
 
-vi.mock('@/extensions/core/maskeditor/constants', () => ({
-  iconsHtml: {
-    pen: '<svg data-testid="icon-pen" />',
-    rgbPaint: '<svg data-testid="icon-rgbPaint" />',
-    eraser: '<svg data-testid="icon-eraser" />',
-    paintBucket: '<svg data-testid="icon-paintBucket" />',
-    colorSelect: '<svg data-testid="icon-colorSelect" />'
-  }
-}))
-
 const initialMock = () =>
   reactive({
     currentTool: Tools.MaskPen as Tools,
@@ -76,7 +66,7 @@ describe('ToolPanel', () => {
       expect(screen.getAllByTestId('tool-button')).toHaveLength(allTools.length)
     })
 
-    it('should render the icon HTML for each tool', () => {
+    it('should render an SVG icon for each tool', () => {
       renderPanel()
       for (const tool of allTools) {
         expect(screen.getByTestId(`icon-${tool}`)).toBeInTheDocument()
