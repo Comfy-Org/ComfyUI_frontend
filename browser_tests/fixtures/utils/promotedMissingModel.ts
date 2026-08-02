@@ -8,6 +8,7 @@ import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSele
 import { TestIds } from '@e2e/fixtures/selectors'
 import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { setPromotedHostWidgetValue } from '@e2e/fixtures/utils/promotedWidgets'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -179,72 +180,12 @@ export async function setLegacyPromotedComboModel(
   workflow: PromotedMissingModelWorkflow,
   modelName: string
 ) {
-  await comfyPage.page.evaluate(
-    ({ hostNodeId, widgetName, value }) => {
-      type LegacyPromotedWidget = {
-        name?: string
-        value?: unknown
-        callback?: (value: string) => void
-        setValue?: (
-          value: string,
-          options: {
-            e: PointerEvent
-            node: unknown
-            canvas: unknown
-          }
-        ) => void
-      }
-      type LegacyPromotedNode = {
-        onWidgetChanged?: (
-          name: string,
-          newValue: string,
-          oldValue: unknown,
-          widget: LegacyPromotedWidget
-        ) => void
-        widgets?: LegacyPromotedWidget[]
-      }
-      type LegacyPromotedGraph = {
-        getNodeById: (nodeId: number) => LegacyPromotedNode | undefined
-      }
-
-      const currentGraph = window.app?.graph as LegacyPromotedGraph | undefined
-      const hostNode: LegacyPromotedNode | undefined =
-        currentGraph?.getNodeById(hostNodeId)
-      if (!hostNode) {
-        throw new Error(`Expected subgraph host node ${hostNodeId}`)
-      }
-
-      const widget = hostNode.widgets?.find(
-        (entry) => entry.name === widgetName
-      ) as LegacyPromotedWidget | undefined
-      if (!widget) {
-        throw new Error(`Expected host ${widgetName} widget`)
-      }
-
-      const oldValue = widget.value
-      if (widget.setValue) {
-        widget.setValue(value, {
-          e: new PointerEvent('pointerup'),
-          node: hostNode,
-          canvas: window.app!.canvas
-        })
-        return
-      }
-
-      widget.value = value
-      widget.callback?.(value)
-      hostNode.onWidgetChanged?.(
-        widget.name ?? widgetName,
-        value,
-        oldValue,
-        widget
-      )
-    },
-    {
-      hostNodeId: workflow.hostNodeId,
-      widgetName: PROMOTED_MODEL_WIDGET_NAME,
-      value: modelName
-    }
+  await setPromotedHostWidgetValue(
+    comfyPage,
+    workflow.hostNodeId,
+    PROMOTED_MODEL_WIDGET_NAME,
+    modelName,
+    { useSetValue: true }
   )
 }
 
@@ -289,7 +230,6 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
     await comfyPage.subgraph.enterSubgraphWithFallback(
       step.subgraphNodeIdToEnter
     )
-    await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
     await comfyPage.nextFrame()
 
     const node = comfyPage.vueNodes.getNodeByTitle(step.nodeTitle)

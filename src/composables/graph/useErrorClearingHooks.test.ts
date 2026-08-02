@@ -19,7 +19,8 @@ import {
 } from '@/lib/litegraph/src/types/globalEnums'
 import {
   createPromotedMediaRuntime,
-  createPromotedMissingMediaCandidate
+  createPromotedMissingMediaCandidate,
+  deferMediaVerification
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -105,22 +106,12 @@ async function startPendingPromotedMediaVerification() {
   vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockImplementation(
     (_rootGraph, node) => (node === outerHost ? [pendingCandidate] : [])
   )
-  let resolveVerification: (() => void) | undefined
-  const verification = new Promise<void>((resolve) => {
-    resolveVerification = resolve
-  })
-  const verifySpy = vi
-    .spyOn(missingMediaScan, 'verifyMediaCandidates')
-    .mockImplementation(async (candidates) => {
-      await verification
-      for (const candidate of candidates) candidate.isMissing = true
-    })
+  const { verifySpy, resolveVerification } = deferMediaVerification()
 
   installErrorClearingHooks(rootGraph)
   setNodeMode(rootGraph, outerHost, LGraphEventMode.ALWAYS)
   await vi.waitFor(() => expect(verifySpy).toHaveBeenCalled())
 
-  if (!resolveVerification) throw new Error('Expected pending verification')
   return {
     rootGraph,
     outerHost,
@@ -1253,14 +1244,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     installErrorClearingHooks(innerSubgraph)
 
     const mediaStore = useMissingMediaStore()
-    const affectedCandidate = fromAny<MissingMediaCandidate, unknown>({
-      nodeId: createNodeExecutionId([outerHost.id]),
-      nodeType: 'LoadImage',
-      widgetName: 'outer_image',
-      mediaType: 'image',
-      name: 'missing.png',
-      isMissing: true
-    })
+    const affectedCandidate = createPromotedMissingMediaCandidate(outerHost)
     const unaffectedCandidate = fromAny<MissingMediaCandidate, unknown>({
       nodeId: createNodeExecutionId([unaffectedNode.id]),
       nodeType: 'LoadImage',
@@ -1271,14 +1255,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     })
     mediaStore.setMissingMedia([affectedCandidate, unaffectedCandidate])
 
-    leafNode.mode = LGraphEventMode.BYPASS
-    innerSubgraph.onTrigger?.({
-      type: 'node:property:changed',
-      nodeId: leafNode.id,
-      property: 'mode',
-      oldValue: LGraphEventMode.ALWAYS,
-      newValue: LGraphEventMode.BYPASS
-    })
+    setNodeMode(innerSubgraph, leafNode, LGraphEventMode.BYPASS)
 
     expect(mediaStore.missingMediaCandidates).toEqual([unaffectedCandidate])
   })

@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
-import { TestIds } from '@e2e/fixtures/selectors'
+import { setPromotedHostWidgetValue } from '@e2e/fixtures/utils/promotedWidgets'
 import type { NodeId } from '@/types/nodeId'
 
 export async function selectVuePromotedMediaByTitle(
@@ -11,14 +11,10 @@ export async function selectVuePromotedMediaByTitle(
   widgetName: string,
   optionName: string
 ) {
-  const node = comfyPage.vueNodes.getNodeByTitle(nodeTitle)
-  const widgetLabel = comfyPage.page
-    .getByTestId(TestIds.widgets.layoutFieldLabel)
-    .and(comfyPage.page.getByText(widgetName, { exact: true }))
-
-  const widgetRow = node
-    .getByTestId(TestIds.widgets.widget)
-    .filter({ has: widgetLabel })
+  const widgetRow = comfyPage.vueNodes.getWidgetRowByLabel(
+    nodeTitle,
+    widgetName
+  )
   await expect(widgetRow).toHaveCount(1)
 
   const dropdown = new WidgetSelectDropdownFixture(widgetRow)
@@ -34,7 +30,7 @@ export async function setPromotedMediaHostOptionsAndValue(
   leafWidgetName: string,
   value: string
 ) {
-  return await comfyPage.page.evaluate(
+  await comfyPage.page.evaluate(
     ({ hostNodeId, leafNodeId, hostWidgetName, leafWidgetName, value }) => {
       const host = window.app!.graph.getNodeById(hostNodeId)
       if (!host?.isSubgraphNode()) {
@@ -55,24 +51,31 @@ export async function setPromotedMediaHostOptionsAndValue(
         throw new Error('Expected promoted host combo options')
       }
       hostWidget.options.values = [...hostValues, value]
-      const oldValue = hostWidget.value
-      hostWidget.value = value
-      hostWidget.callback?.(value)
-      host.onWidgetChanged?.call(
-        host,
-        hostWidget.name,
-        value,
-        oldValue,
-        hostWidget
-      )
-
-      const leafValues = leafWidget.options.values
-      return {
-        hostValue: hostWidget.value,
-        leafIncludesValue:
-          Array.isArray(leafValues) && leafValues.includes(value)
-      }
     },
     { hostNodeId, leafNodeId, hostWidgetName, leafWidgetName, value }
   )
+  const hostValue = await setPromotedHostWidgetValue(
+    comfyPage,
+    hostNodeId,
+    hostWidgetName,
+    value
+  )
+  const leafIncludesValue = await comfyPage.page.evaluate(
+    ({ hostNodeId, leafNodeId, leafWidgetName, value }) => {
+      const host = window.app!.graph.getNodeById(hostNodeId)
+      if (!host?.isSubgraphNode()) {
+        throw new Error(`Expected subgraph host ${hostNodeId}`)
+      }
+      const leafWidget = host.subgraph
+        .getNodeById(leafNodeId)
+        ?.widgets?.find((widget) => widget.name === leafWidgetName)
+      if (!leafWidget) {
+        throw new Error('Expected promoted host and leaf image widgets')
+      }
+      const leafValues = leafWidget.options.values
+      return Array.isArray(leafValues) && leafValues.includes(value)
+    },
+    { hostNodeId, leafNodeId, leafWidgetName, value }
+  )
+  return { hostValue, leafIncludesValue }
 }

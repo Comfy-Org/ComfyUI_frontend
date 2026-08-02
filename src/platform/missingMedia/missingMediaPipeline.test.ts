@@ -6,7 +6,8 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import {
   createPromotedMediaRuntime,
-  createPromotedMissingMediaCandidate
+  createPromotedMissingMediaCandidate,
+  deferMediaVerification
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
 import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
@@ -29,21 +30,11 @@ async function startPendingWorkflowLoadMediaVerification(
   vi.spyOn(missingMediaScan, 'scanAllMediaCandidates').mockReturnValue([
     pendingCandidate
   ])
-  let resolveVerification: (() => void) | undefined
-  const verification = new Promise<void>((resolve) => {
-    resolveVerification = resolve
-  })
-  const verifySpy = vi
-    .spyOn(missingMediaScan, 'verifyMediaCandidates')
-    .mockImplementation(async (candidates) => {
-      await verification
-      for (const candidate of candidates) candidate.isMissing = true
-    })
+  const { verifySpy, resolveVerification } = deferMediaVerification()
 
   await runMissingMediaPipeline({ graph: rootGraph, silent: true })
   await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
 
-  if (!resolveVerification) throw new Error('Expected pending verification')
   return resolveVerification
 }
 

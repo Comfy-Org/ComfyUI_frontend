@@ -539,7 +539,6 @@ comfyPageFixture.describe(
         await comfyPage.subgraph.enterSubgraphWithFallback(
           String(promotedMediaHostNodeId)
         )
-        await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
         await panel.open(comfyPage.actionbar.propertiesButton)
         await expect(missingMediaRow).toHaveCount(1)
         await expect(missingMediaRow).toContainText(
@@ -572,7 +571,6 @@ comfyPageFixture.describe(
         await comfyPage.subgraph.enterSubgraphWithFallback(
           String(promotedMediaHostNodeId)
         )
-        await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
         await expectNoErrorsTab(comfyPage)
         await expect(missingMediaRow).toHaveCount(0)
       }

@@ -1,3 +1,5 @@
+import { vi } from 'vitest'
+
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   LGraph,
@@ -8,6 +10,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -39,6 +42,22 @@ export interface PromotedMediaRuntime {
   sourceGraphs: [Subgraph, ...Subgraph[]]
   sourceNodes: [LGraphNode, ...LGraphNode[]]
   intermediateHosts: SubgraphNode[]
+}
+
+export function deferMediaVerification() {
+  let resolveVerification: (() => void) | undefined
+  const verification = new Promise<void>((resolve) => {
+    resolveVerification = resolve
+  })
+  const verifySpy = vi
+    .spyOn(missingMediaScan, 'verifyMediaCandidates')
+    .mockImplementation(async (candidates) => {
+      await verification
+      for (const candidate of candidates) candidate.isMissing = true
+    })
+
+  if (!resolveVerification) throw new Error('Expected pending verification')
+  return { verifySpy, resolveVerification }
 }
 
 export function createPromotedMissingMediaCandidate(
