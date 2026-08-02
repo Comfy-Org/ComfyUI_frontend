@@ -2,7 +2,6 @@
 import type { Locale } from '../../../i18n/translations'
 
 import { SHOW_FREE_TIER } from '../../../config/features'
-
 import { getRoutes } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 
