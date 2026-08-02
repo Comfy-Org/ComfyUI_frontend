@@ -4926,7 +4926,120 @@ const translations = {
   'brand.questions.contact': {
     en: 'Contact Us',
     'zh-CN': '联系我们'
-  }
+  },
+
+  // MiniMax H3 (Hailuo 3) SEO page (/minimax). Mirrors the Seedance block.
+  // zh-CN is a first-pass hand translation; some body copy carries placeholder
+  // intent from Figma. TODO: confirm final copy + zh-CN translations.
+  'minimax.meta.title': {
+    en: 'MiniMax H3 on Comfy — Open-Weight Hailuo 3 Video Model',
+    'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重的 Hailuo 3 视频模型'
+  },
+  'minimax.meta.description': {
+    en: 'Run MiniMax H3 (Hailuo 3) on Comfy: open weights, multi-modal in/out, native stereo audio on every clip, up to 2K and 5–15s per generation. Draft free on Wan 2.2 and spend credits only on the final render.',
+    'zh-CN':
+      '在 Comfy 上运行 MiniMax H3（Hailuo 3）：开源权重、多模态输入/输出，每个片段都带原生立体声音频，最高 2K，每次生成 5–15 秒。先用 Wan 2.2 免费打样，只在最终渲染时消耗积分。'
+  },
+  'minimax.breadcrumb.model': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
+  'minimax.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'minimax.hero.title': {
+    en: 'MiniMax H3 is here',
+    'zh-CN': 'MiniMax H3 已上线'
+  },
+  'minimax.hero.description': {
+    en: 'Open weights, full multi-modal I/O, native stereo on every clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it. The open release of Hailuo 3.0.',
+    'zh-CN':
+      '开源权重、完整的多模态输入/输出，每个片段都带原生立体声。最高 2K，每次生成 5 到 15 秒。H3 会真正以输入音频为条件进行生成，而其他模型往往覆盖或丢弃它。这是 Hailuo 3.0 的开源发布版本。'
+  },
+  'minimax.hero.primaryCta': {
+    en: 'RUN MINIMAX H3',
+    'zh-CN': '运行 MiniMax H3'
+  },
+  'minimax.hero.secondaryCta': { en: 'TRY WORKFLOWS', 'zh-CN': '试用工作流' },
+  'minimax.hero.footnote': {
+    en: 'Pay-as-you-go credits · No watermark · Commercial use included',
+    'zh-CN': '按量付费积分 · 无水印 · 包含商业使用授权'
+  },
+  'minimax.showcase.heading': {
+    en: 'Native stereo, up to 2K',
+    'zh-CN': '原生立体声，最高 2K'
+  },
+  'minimax.showcase.promptLabel': { en: 'Prompt', 'zh-CN': '提示词' },
+  'minimax.showcase.cta': { en: 'RUN MINIMAX', 'zh-CN': '运行 MiniMax' },
+  'minimax.showcase.prev': {
+    en: 'Previous example',
+    'zh-CN': '上一个示例'
+  },
+  'minimax.showcase.next': { en: 'Next example', 'zh-CN': '下一个示例' },
+  'minimax.steps.heading': {
+    en: 'Direct your first MiniMax shot',
+    'zh-CN': '执导你的第一个 MiniMax 镜头'
+  },
+  'minimax.steps.leadIn': {
+    en: 'The model is the artist. You write the brief.',
+    'zh-CN': '模型即艺术家，你只需写下创意简报。'
+  },
+  'minimax.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'minimax.models.heading': {
+    en: 'MiniMax H3, in motion',
+    'zh-CN': 'MiniMax H3 动态演示'
+  },
+  'minimax.models.tagFree': { en: 'Free', 'zh-CN': '免费' },
+  'minimax.models.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
+  'minimax.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
+  'minimax.cta.heading': {
+    en: 'Open weights. Full control.',
+    'zh-CN': '开源权重，完全掌控。'
+  },
+  'minimax.cta.subtitle': {
+    en: 'Text, image, or audio in — a stereo clip out. Draft free on other models, then finish on MiniMax H3.',
+    'zh-CN':
+      '输入文本、图像或音频，输出带立体声的片段。先用其他模型免费打样，再用 MiniMax H3 出片。'
+  },
+  'minimax.cta.primaryCta': {
+    en: 'SIGN UP FOR FREE',
+    'zh-CN': '免费注册'
+  },
+  'minimax.cta.secondaryCta': {
+    en: 'RUN MINIMAX H3',
+    'zh-CN': '运行 MiniMax H3'
+  },
+  'minimax.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'minimax.runOptions.subtitle': {
+    en: 'Run MiniMax in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中运行 MiniMax。用 API 批量制作，或部署到自有环境。'
+  },
+  // shared across all four run-option cards; the per-product `products.*.cta`
+  // labels overflow on mobile
+  'minimax.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'minimax.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'minimax.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'minimax.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'minimax.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'minimax.reviews.prev': { en: 'Previous', 'zh-CN': '上一条' },
+  'minimax.reviews.next': { en: 'Next', 'zh-CN': '下一条' }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations
