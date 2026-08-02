@@ -177,11 +177,13 @@ describe('isWidgetVisible', () => {
 describe('hasWidgetError', () => {
   let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
   let missingModelStore: ReturnType<typeof useMissingModelStore>
+  let missingMediaStore: ReturnType<typeof useMissingMediaStore>
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     executionErrorStore = useExecutionErrorStore()
     missingModelStore = useMissingModelStore()
+    missingMediaStore = useMissingMediaStore()
   })
 
   it('returns false when no errors', () => {
@@ -192,7 +194,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         undefined,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(false)
   })
@@ -208,7 +211,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         nodeErrors,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
   })
@@ -238,7 +242,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         undefined,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
   })
@@ -252,7 +257,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         undefined,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
   })
@@ -271,7 +277,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         nodeErrors,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
   })
@@ -291,7 +298,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         undefined,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
     expect(spy).toHaveBeenCalledWith('1', 'display_slot')
@@ -327,7 +335,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         undefined,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
   })
@@ -857,6 +866,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
 
     const executionErrorStore = useExecutionErrorStore()
     const missingModelStore = useMissingModelStore()
+    const missingMediaStore = useMissingMediaStore()
 
     executionErrorStore.recordNodeErrors({
       [NODE_ID]: {
@@ -881,7 +891,8 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
         createNodeExecutionId([NODE_ID]),
         executionErrorStore.lastNodeErrors?.[NODE_ID],
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
 
@@ -893,7 +904,8 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
         createNodeExecutionId([NODE_ID]),
         executionErrorStore.lastNodeErrors?.[NODE_ID],
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(false)
   })

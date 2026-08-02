@@ -1,7 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 import { useMissingMediaStore } from './missingMediaStore'
@@ -37,12 +36,6 @@ function makeCandidate(
     name,
     isMissing: true
   }
-}
-
-type MissingMediaStoreWithPromotedHostIdentity = ReturnType<
-  typeof useMissingMediaStore
-> & {
-  isWidgetMissingMedia: (nodeId: NodeExecutionId, widgetName: string) => boolean
 }
 
 describe('useMissingMediaStore', () => {
@@ -339,8 +332,7 @@ describe('useMissingMediaStore', () => {
     })
 
     it('finds missing media by the promoted host widget identity', () => {
-      const store =
-        useMissingMediaStore() as MissingMediaStoreWithPromotedHostIdentity
+      const store = useMissingMediaStore()
       const hostExecutionId = createNodeExecutionId([65])
       store.setMissingMedia([
         {

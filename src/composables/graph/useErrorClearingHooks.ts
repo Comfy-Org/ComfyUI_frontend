@@ -461,8 +461,10 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // "parentId:...:nodeId" path that matches how missing asset errors
     // are keyed; without this, removal falls back to the local ID and
     // misses subgraph entries.
-    const execId = getRemovedNodeExecutionId(graph, node.id)
-    removeNodeErrors(node, execId)
+    if (app.rootGraph === graph.rootGraph) {
+      const execId = getRemovedNodeExecutionId(graph, node.id)
+      removeNodeErrors(node, execId)
+    }
     restoreNodeHooksRecursive(node)
     originalOnNodeRemoved?.call(this, node)
   }
