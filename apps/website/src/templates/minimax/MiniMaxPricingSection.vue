@@ -87,20 +87,20 @@ const planCards = computed(() =>
     </div>
 
     <div
-      class="bg-primary-comfy-yellow mb-4 flex flex-col gap-4 rounded-3xl px-8 py-6 sm:flex-row sm:items-center sm:justify-between"
+      class="mb-4 flex flex-col gap-4 rounded-3xl bg-[#29222F] px-8 py-6 sm:flex-row sm:items-center sm:justify-between"
     >
       <div>
-        <p class="text-lg font-bold text-primary-comfy-ink">
+        <p class="text-lg font-bold text-primary-comfy-canvas">
           {{ t('minimax.pricing.banner.title', locale) }}
         </p>
-        <p class="mt-1 text-sm text-primary-comfy-ink">
+        <p class="mt-1 text-sm text-primary-comfy-canvas">
           {{ t('minimax.pricing.banner.subtitle', locale) }}
         </p>
       </div>
       <BrandButton
         :href="externalLinks.cloud"
         target="_blank"
-        variant="inverse"
+        variant="outline"
         size="xs"
         class="shrink-0 self-start sm:self-auto"
       >
