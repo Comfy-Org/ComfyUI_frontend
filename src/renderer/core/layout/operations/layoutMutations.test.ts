@@ -1,9 +1,12 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { canvasLayoutMutations } from './graphLayoutRegistration'
 import { useLayoutMutations } from './layoutMutations'
@@ -15,13 +18,14 @@ const NEW_NODE = toNodeId('99')
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-  canvasLayoutMutations().createNode(NODE_1, {
+  const mutations = canvasLayoutMutations()
+  mutations.createNode(NODE_1, {
     position: { x: 10, y: 20 },
     size: { width: 200, height: 100 },
     zIndex: 0,
     visible: true
   })
-  canvasLayoutMutations().createNode(NODE_2, {
+  mutations.createNode(NODE_2, {
     position: { x: 300, y: 400 },
     size: { width: 150, height: 80 },
     zIndex: 1,
@@ -197,5 +201,42 @@ describe('bringNodeToFront', () => {
     const z1 = layoutStore.getNodeLayoutRef(NODE_1).value?.zIndex ?? 0
     const z2 = layoutStore.getNodeLayoutRef(NODE_2).value?.zIndex ?? 0
     expect(z1).toBeGreaterThan(z2)
+  })
+})
+
+describe('deleting an entity that is already gone', () => {
+  it('emits nothing for a group', () => {
+    const rootGraphId = createUuidv4()
+    const groupId = toGroupId(1)
+    const { createGroup, deleteGroup } = useLayoutMutations()
+    createGroup(rootGraphId, groupId, {
+      position: { x: 0, y: 0 },
+      size: { width: 100, height: 50 }
+    })
+    deleteGroup(rootGraphId, groupId)
+    expect(layoutStore.getGroupLayout(rootGraphId, groupId)).toBeNull()
+
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+    onTestFinished(() => applyOperation.mockRestore())
+
+    deleteGroup(rootGraphId, groupId)
+
+    expect(applyOperation).not.toHaveBeenCalled()
+  })
+
+  it('emits nothing for a reroute', () => {
+    const rootGraphId = createUuidv4()
+    const rerouteId = toRerouteId(1)
+    const { createReroute, deleteReroute } = useLayoutMutations()
+    createReroute(rootGraphId, rerouteId, { x: 10, y: 10 })
+    deleteReroute(rootGraphId, rerouteId)
+    expect(layoutStore.getRerouteLayout(rootGraphId, rerouteId)).toBeNull()
+
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+    onTestFinished(() => applyOperation.mockRestore())
+
+    deleteReroute(rootGraphId, rerouteId)
+
+    expect(applyOperation).not.toHaveBeenCalled()
   })
 })

@@ -8,10 +8,6 @@ import type { LayoutStoreImpl } from '../layoutStore'
  * incidentally touching layout. Enable with a bare
  * `vi.mock('@/renderer/core/layout/store/layoutStore')`, then set per-test
  * behaviour through `vi.mocked(layoutStore.someMethod)`.
- *
- * Keep every method the store exposes here. A partial stub reads as
- * "this suite needs these three calls" right up until production adds a
- * fourth, and then it fails as a missing function rather than a clear signal.
  */
 export const layoutStore = fromPartial<LayoutStoreImpl>({
   allocateZIndex: vi.fn(() => 1),

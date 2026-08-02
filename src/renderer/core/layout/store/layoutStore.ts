@@ -999,7 +999,9 @@ export class LayoutStoreImpl implements LayoutStore {
       this.ynodes.clear()
       this.ygroups.clear()
       this.yreroutes.clear()
+      this.rerouteLayouts.clear()
       this.spatialIndex.clear()
+      this.rerouteSpatialIndex.clear()
     }, 'initialization')
     this.clearViewGeometry()
   }

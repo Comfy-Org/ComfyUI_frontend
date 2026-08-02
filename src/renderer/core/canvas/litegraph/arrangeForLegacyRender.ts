@@ -1,4 +1,8 @@
+import log from 'loglevel'
+
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+
+const logger = log.getLogger('arrangeForLegacyRender')
 
 /**
  * Computes slot positions for every node so the legacy canvas has them before
@@ -13,8 +17,8 @@ export function arrangeForLegacyRender(graph: LGraph): void {
     if (node.flags.collapsed) continue
     try {
       node.arrange()
-    } catch {
-      /* skip nodes not fully initialized */
+    } catch (error) {
+      logger.warn('Skipping node that could not be arranged:', node.id, error)
     }
   }
 }

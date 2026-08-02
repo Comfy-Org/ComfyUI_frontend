@@ -4,6 +4,11 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { toNodeId } from '@/types/nodeId'
 
+/**
+ * Deliberately an integration test, not a user-action test: the `setSize` call
+ * below emulates how a legacy custom node mutates the graph directly, which is
+ * the path under test. There is no click or keystroke equivalent for it.
+ */
 test(
   'extension resize updates an internal node after entering its subgraph',
   { tag: '@vue-nodes' },
@@ -18,6 +23,8 @@ test(
       element instanceof HTMLElement ? element.offsetWidth : 0,
       element instanceof HTMLElement ? element.offsetHeight : 0
     ])
+    expect(initialBounds[0]).toBeGreaterThan(0)
+    expect(initialBounds[1]).toBeGreaterThan(0)
 
     await comfyPage.page.evaluate((nodeId) => {
       const node = window.app!.canvas.graph!.getNodeById(nodeId)!
