@@ -315,6 +315,9 @@ jobs:
   deploy-and-comment-video:
     needs: [playwright-video-new-tests]
     runs-on: ubuntu-latest
+    concurrency:
+      group: pr-comment-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     if: >-
       ${{
         !cancelled() &&
@@ -347,21 +350,13 @@ jobs:
         run: |
           bash ./scripts/cicd/pr-video-deploy-and-comment.sh "$BRANCH_NAME"
 
-      - name: Read video section
-        id: section
-        if: ${{ !cancelled() && hashFiles('video-section.md') != '' }}
-        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
-        with:
-          path: video-section.md
-
-      - name: Upsert video section into unified report
-        if: ${{ !cancelled() && steps.section.outputs.content != '' }}
-        uses: ./.github/actions/upsert-comment-section
+      - name: Read and upsert video section
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/read-and-upsert-comment-section
         with:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: video
-          section-content: ${{ steps.section.outputs.content }}
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          section-file: video-section.md
           token: ${{ github.token }}
 
   #### BEGIN Deployment and commenting (non-forked PRs only)
@@ -372,6 +367,9 @@ jobs:
   comment-on-pr-start:
     needs: changes
     runs-on: ubuntu-latest
+    concurrency:
+      group: pr-comment-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     if: >-
       ${{
         needs.changes.outputs.should-run == 'true' &&
@@ -390,13 +388,15 @@ jobs:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: playwright
           section-content: '## 🎭 Playwright: ⏳ Running...'
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ github.token }}
 
   # Deploy and upsert final playwright section for non-forked PRs only
   deploy-and-comment:
     needs: [changes, playwright-tests, merge-reports]
     runs-on: ubuntu-latest
+    concurrency:
+      group: pr-comment-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     if: >-
       ${{
         always() &&
@@ -431,20 +431,12 @@ jobs:
             "$BRANCH_NAME" \
             "completed"
 
-      - name: Read playwright section
-        id: section
-        if: ${{ !cancelled() && hashFiles('playwright-section.md') != '' }}
-        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
-        with:
-          path: playwright-section.md
-
-      - name: Upsert playwright section into unified report
-        if: ${{ !cancelled() && steps.section.outputs.content != '' }}
-        uses: ./.github/actions/upsert-comment-section
+      - name: Read and upsert playwright section
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/read-and-upsert-comment-section
         with:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: playwright
-          section-content: ${{ steps.section.outputs.content }}
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          section-file: playwright-section.md
           token: ${{ github.token }}
   #### END Deployment and commenting (non-forked PRs only)

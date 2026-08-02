@@ -28,15 +28,6 @@ if [ "$video_count" -eq 0 ]; then
     exit 0
 fi
 
-if ! command -v wrangler > /dev/null 2>&1; then
-    echo "Installing wrangler v4..." >&2
-    npm install -g wrangler@^4.0.0 >&2 || {
-        echo "Failed to install wrangler" >&2
-        printf '%s\n' "## 🎬 New-test video: ❌ deployment tooling unavailable" > "$SUMMARY_FILE"
-        exit 0
-    }
-fi
-
 # Reuses the already-provisioned "comfyui-playwright-chromium" project; a new "-videos" project isn't provisioned.
 cloudflare_branch=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | \
     sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
@@ -49,7 +40,7 @@ url=""
 i=1
 while [ $i -le 3 ]; do
     echo "Deployment attempt $i of 3..." >&2
-    if output=$(wrangler pages deploy "$TEST_RESULTS_DIR" \
+    if output=$(pnpm dlx wrangler@^4.0.0 pages deploy "$TEST_RESULTS_DIR" \
         --project-name="$project" \
         --branch="$cloudflare_branch" 2>&1); then
         url=$(echo "$output" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
@@ -73,6 +64,8 @@ comment="## 🎬 New-test video walkthrough available
 <summary>🎬 New-test video walkthrough</summary>
 
 This PR adds new test spec file(s) — here's a video walkthrough of just the new test(s) (existing suite runs without video to keep CI cost down):
+
+_Note: this only detects brand-new spec files — new tests added to an existing spec file won't get a video yet._
 "
 
 while IFS= read -r entry; do

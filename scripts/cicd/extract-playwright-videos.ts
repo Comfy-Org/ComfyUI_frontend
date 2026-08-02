@@ -3,9 +3,9 @@ import fs from 'fs'
 import path from 'path'
 
 interface Attachment {
+  contentType: string
   name: string
   path?: string
-  contentType: string
 }
 
 interface TestResult {
@@ -38,41 +38,84 @@ interface VideoEntry {
   relativePath: string
 }
 
+function isVideoAttachment(
+  attachment: Attachment
+): attachment is Attachment & { path: string } {
+  return attachment.name === 'video' && !!attachment.path
+}
+
+function toVideoEntry(
+  attachment: Attachment & { path: string },
+  name: string,
+  file: string,
+  testResultsDir: string
+): VideoEntry {
+  return {
+    name,
+    file,
+    relativePath: path
+      .relative(testResultsDir, attachment.path)
+      .replace(/\\/g, '/')
+  }
+}
+
+function collectResultVideos(
+  result: TestResult,
+  name: string,
+  file: string,
+  testResultsDir: string
+): VideoEntry[] {
+  return (result.attachments ?? [])
+    .filter(isVideoAttachment)
+    .map((attachment) => toVideoEntry(attachment, name, file, testResultsDir))
+}
+
+function collectSpecVideos(
+  spec: Spec,
+  suitePath: string[],
+  file: string,
+  testResultsDir: string
+): VideoEntry[] {
+  const name = [...suitePath, spec.title].filter(Boolean).join(' › ')
+  return spec.tests.flatMap((test) =>
+    test.results.flatMap((result) =>
+      collectResultVideos(result, name, file, testResultsDir)
+    )
+  )
+}
+
 // Must run in the same job/filesystem that produced the report (attachment paths are absolute to that run).
+function collectSuiteVideos(
+  suite: Suite,
+  testResultsDir: string,
+  parentPath: string[] = []
+): VideoEntry[] {
+  const suitePath = suite.title ? [...parentPath, suite.title] : parentPath
+
+  const specVideos = (suite.specs ?? []).flatMap((spec) =>
+    collectSpecVideos(spec, suitePath, suite.file, testResultsDir)
+  )
+  const childVideos = (suite.suites ?? []).flatMap((childSuite) =>
+    collectSuiteVideos(childSuite, testResultsDir, suitePath)
+  )
+
+  return [...specVideos, ...childVideos]
+}
+
 function collectVideos(report: Report, testResultsDir: string): VideoEntry[] {
-  const videos: VideoEntry[] = []
+  return (report.suites ?? []).flatMap((suite) =>
+    collectSuiteVideos(suite, testResultsDir)
+  )
+}
 
-  function processSuite(suite: Suite, parentPath: string[] = []) {
-    const suitePath = suite.title ? [...parentPath, suite.title] : parentPath
-
-    for (const spec of suite.specs ?? []) {
-      for (const test of spec.tests) {
-        for (const result of test.results) {
-          for (const attachment of result.attachments ?? []) {
-            if (attachment.name !== 'video' || !attachment.path) continue
-
-            videos.push({
-              name: [...suitePath, spec.title].filter(Boolean).join(' › '),
-              file: suite.file,
-              relativePath: path
-                .relative(testResultsDir, attachment.path)
-                .replace(/\\/g, '/')
-            })
-          }
-        }
-      }
-    }
-
-    for (const childSuite of suite.suites ?? []) {
-      processSuite(childSuite, suitePath)
-    }
+function readVideos(reportPath: string, testResultsDir: string): VideoEntry[] {
+  try {
+    const report: Report = JSON.parse(fs.readFileSync(reportPath, 'utf-8'))
+    return collectVideos(report, path.resolve(testResultsDir))
+  } catch (error) {
+    console.error(`Error reading report from ${reportPath}:`, error)
+    return []
   }
-
-  for (const suite of report.suites ?? []) {
-    processSuite(suite)
-  }
-
-  return videos
 }
 
 const reportPath = process.argv[2]
@@ -85,14 +128,7 @@ if (!reportPath || !testResultsDir) {
   process.exit(1)
 }
 
-let videos: VideoEntry[] = []
-try {
-  const report: Report = JSON.parse(fs.readFileSync(reportPath, 'utf-8'))
-  videos = collectVideos(report, path.resolve(testResultsDir))
-} catch (error) {
-  console.error(`Error reading report from ${reportPath}:`, error)
-}
-
+const videos = readVideos(reportPath, testResultsDir)
 process.stdout.write(JSON.stringify(videos) + '\n')
 
 export { collectVideos }
