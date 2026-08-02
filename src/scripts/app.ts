@@ -171,12 +171,15 @@ import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   pasteAudioNode,
-  pasteAudioNodes,
   pasteImageNode,
-  pasteImageNodes,
-  pasteVideoNode,
-  pasteVideoNodes
+  pasteVideoNode
 } from '@/composables/usePaste'
+import {
+  handleAudioFileList,
+  handleFileList,
+  handleVideoFileList,
+  positionNodes
+} from '@/composables/useDrop'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -698,17 +701,29 @@ export class ComfyApp {
           if (hasMultipleMedia) {
             if (imageFiles.length > 0) {
               dropBatchNodes.push(
-                ...(await this.handleFileList(imageFiles, dropBatchNodes))
+                ...(await handleFileList(
+                  this.canvas,
+                  imageFiles,
+                  dropBatchNodes
+                ))
               )
             }
             if (audioFiles.length > 0) {
               dropBatchNodes.push(
-                ...(await this.handleAudioFileList(audioFiles, dropBatchNodes))
+                ...(await handleAudioFileList(
+                  this.canvas,
+                  audioFiles,
+                  dropBatchNodes
+                ))
               )
             }
             if (videoFiles.length > 0) {
               dropBatchNodes.push(
-                ...(await this.handleVideoFileList(videoFiles, dropBatchNodes))
+                ...(await handleVideoFileList(
+                  this.canvas,
+                  videoFiles,
+                  dropBatchNodes
+                ))
               )
             }
             for (const file of files.filter((f) => !isMediaFile(f))) {
@@ -720,7 +735,7 @@ export class ComfyApp {
             }
           }
 
-          this.positionNodes(createdNodes, dropBatchNodes)
+          positionNodes(this.canvas, createdNodes, dropBatchNodes)
         } finally {
           workspace.spinner = false
         }
@@ -2098,124 +2113,6 @@ export class ComfyApp {
     }
     modelWidget.value = uploadedPath
     return node
-  }
-
-  /**
-   * Loads multiple files, connects to a batch node, and selects them
-   * @param {FileList} fileList
-   */
-  async handleFileList(
-    fileList: File[],
-    precedingNodes: LGraphNode[] = []
-  ): Promise<LGraphNode[]> {
-    if (fileList.length === 0) return []
-    if (!fileList[0].type.startsWith('image')) return []
-
-    const imageNodes = await pasteImageNodes(this.canvas, fileList)
-    if (imageNodes.length === 0) return []
-
-    if (imageNodes.length > 1) {
-      const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
-      if (!batchImagesNode) return []
-
-      this.positionBatchNodes(imageNodes, batchImagesNode, precedingNodes)
-      this.canvas.selectItems([...imageNodes, batchImagesNode])
-
-      imageNodes.forEach((imageNode, index) => {
-        imageNode.connect(0, batchImagesNode, index)
-      })
-      return [...imageNodes, batchImagesNode]
-    }
-
-    if (precedingNodes.length > 0) {
-      this.positionNodes(imageNodes, precedingNodes)
-    }
-    this.canvas.selectItems(imageNodes)
-    return imageNodes
-  }
-
-  async handleAudioFileList(
-    fileList: File[],
-    precedingNodes: LGraphNode[] = []
-  ): Promise<LGraphNode[]> {
-    const audioNodes = await pasteAudioNodes(this.canvas, fileList)
-    if (audioNodes.length === 0) return []
-
-    this.positionNodes(audioNodes, precedingNodes)
-    this.canvas.selectItems(audioNodes)
-    return audioNodes
-  }
-
-  async handleVideoFileList(
-    fileList: File[],
-    precedingNodes: LGraphNode[] = []
-  ): Promise<LGraphNode[]> {
-    const videoNodes = await pasteVideoNodes(this.canvas, fileList)
-    if (videoNodes.length === 0) return []
-
-    this.positionNodes(videoNodes, precedingNodes)
-    this.canvas.selectItems(videoNodes)
-    return videoNodes
-  }
-
-  /**
-   * Positions batched nodes in drag and drop
-   * @param nodes Nodes to position relative to `nodes[0]`'s current spot
-   * @param precedingNodes Nodes already placed earlier in the same drop
-   * batch (of any type) that `nodes` must not overlap
-   */
-  positionNodes(nodes: LGraphNode[], precedingNodes: LGraphNode[] = []): void {
-    if (nodes.length === 0) return
-    if (nodes.length <= 1 && precedingNodes.length === 0) return
-
-    const [x, boundY] = nodes[0].getBounding()
-    const y = Math.max(boundY, this.clearanceBelow(precedingNodes))
-    const nodeHeight = 150
-
-    nodes.forEach((node, index) => {
-      if (index > 0 || y !== boundY) {
-        node.pos = [x, y + nodeHeight * index + 25 * (index + 1)]
-      }
-    })
-
-    this.canvas.graph?.change()
-  }
-
-  positionBatchNodes(
-    nodes: LGraphNode[],
-    batchNode: LGraphNode,
-    precedingNodes: LGraphNode[] = []
-  ): void {
-    const [x, boundY, width] = nodes[0].getBounding()
-    const y = Math.max(boundY, this.clearanceBelow(precedingNodes))
-    batchNode.pos = [x + width + 100, y + 30]
-
-    // Retrieving Node Height is inconsistent
-    let height = 0
-    if (nodes[0].type === 'LoadImage') {
-      height = 344
-    }
-
-    nodes.forEach((node, index) => {
-      if (index > 0 || y !== boundY) {
-        node.pos = [x, y + height * index + 25 * (index + 1)]
-      }
-    })
-
-    this.canvas.graph?.change()
-  }
-
-  /**
-   * Lowest y coordinate a new node must start below to clear every node
-   * already placed in this drop batch.
-   */
-  private clearanceBelow(precedingNodes: LGraphNode[]): number {
-    if (precedingNodes.length === 0) return -Infinity
-
-    const lowestPoint = Math.max(
-      ...precedingNodes.map((node) => node.pos[1] + node.size[1])
-    )
-    return lowestPoint + 25
   }
 
   // @deprecated
