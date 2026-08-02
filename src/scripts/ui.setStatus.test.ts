@@ -46,21 +46,22 @@ describe('ComfyUI.setStatus', () => {
     expect(host.lastQueueSize).toBe(3)
   })
 
-  it('does not throw and shows ERR when exec_info is missing', () => {
+  it('does not throw or update when exec_info is missing', () => {
     const host = createHost({ lastQueueSize: 5 })
 
     expect(() => host.setStatus({} as StatusWsMessageStatus)).not.toThrow()
-    expect(host.queueSize.textContent).toBe('Queue size: ERR')
+    expect(host.queueSize.textContent).toBe('')
     expect(host.lastQueueSize).toBe(5)
     expect(app.queuePrompt).not.toHaveBeenCalled()
   })
 
-  it('shows ERR for a null status', () => {
-    const host = createHost({ lastQueueSize: 5 })
+  it('does not update or auto-queue on a null status (disconnect)', () => {
+    const host = createHost({ lastQueueSize: 2, autoQueueEnabled: true })
     host.setStatus(null)
 
-    expect(host.queueSize.textContent).toBe('Queue size: ERR')
-    expect(host.lastQueueSize).toBe(5)
+    expect(host.queueSize.textContent).toBe('')
+    expect(host.lastQueueSize).toBe(2)
+    expect(app.queuePrompt).not.toHaveBeenCalled()
   })
 
   it('auto-queues when the queue drains to zero', () => {

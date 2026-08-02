@@ -710,23 +710,23 @@ export class ComfyUI {
 
   setStatus(status: StatusWsMessageStatus | null) {
     const queueRemaining = status?.exec_info?.queue_remaining
-    this.queueSize.textContent = 'Queue size: ' + (queueRemaining ?? 'ERR')
-    if (queueRemaining != null) {
-      if (
-        this.lastQueueSize != 0 &&
-        queueRemaining == 0 &&
-        this.autoQueueEnabled &&
-        (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
-        !app.lastExecutionError
-      ) {
-        app.queuePrompt(0, this.batchCount, {
-          intent: { trigger_source: 'auto_queue' }
-        })
-        this.graphHasChanged = false
-        this.lastQueueSize = queueRemaining + this.batchCount
-      } else {
-        this.lastQueueSize = queueRemaining
-      }
+    if (queueRemaining == null) return
+
+    this.queueSize.textContent = 'Queue size: ' + queueRemaining
+    if (
+      this.lastQueueSize != 0 &&
+      queueRemaining == 0 &&
+      this.autoQueueEnabled &&
+      (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
+      !app.lastExecutionError
+    ) {
+      app.queuePrompt(0, this.batchCount, {
+        intent: { trigger_source: 'auto_queue' }
+      })
+      this.graphHasChanged = false
+      this.lastQueueSize = queueRemaining + this.batchCount
+    } else {
+      this.lastQueueSize = queueRemaining
     }
   }
 }
