@@ -20,6 +20,7 @@ import type { AssetPaginationOptions } from '@/platform/assets/services/assetSer
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 import { TaskItemImpl } from './queueStore'
 import { useAssetDownloadStore } from './assetDownloadStore'
@@ -162,7 +163,8 @@ export const useAssetsStore = defineStore('assets', () => {
 
     // Fetch from server with offset
     const history = await api.getHistory(BATCH_SIZE, {
-      offset: historyOffset.value
+      offset: historyOffset.value,
+      throwOnError: true
     })
 
     // Convert JobListItems to AssetItems
@@ -225,7 +227,9 @@ export const useAssetsStore = defineStore('assets', () => {
       await fetchHistoryAssets(false)
       historyAssets.value = allHistoryItems.value
     } catch (err) {
-      console.error('Error fetching history assets:', err)
+      if (!isAbortError(err)) {
+        console.error('Error fetching history assets:', err)
+      }
       historyError.value = err
       // Keep existing data when error occurs
       if (!historyAssets.value.length) {
@@ -250,7 +254,9 @@ export const useAssetsStore = defineStore('assets', () => {
       await fetchHistoryAssets(true)
       historyAssets.value = allHistoryItems.value
     } catch (err) {
-      console.error('Error loading more history:', err)
+      if (!isAbortError(err)) {
+        console.error('Error loading more history:', err)
+      }
       historyError.value = err
       // Keep existing data when error occurs (consistent with updateHistory)
       if (!historyAssets.value.length) {

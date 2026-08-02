@@ -135,23 +135,38 @@ describe('fetchJobs', () => {
       expect(result[0].priority).toBe(999)
     })
 
-    it('returns empty array on error', async () => {
+    it('rejects on error', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-      const result = await fetchHistory(mockFetch)
-
-      expect(result).toEqual([])
+      await expect(fetchHistory(mockFetch)).rejects.toThrow('Network error')
+      errorSpy.mockRestore()
     })
 
-    it('returns empty array on non-ok response', async () => {
+    it('rejects on non-ok response', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 500
       })
 
-      const result = await fetchHistory(mockFetch)
+      await expect(fetchHistory(mockFetch)).rejects.toThrow(
+        '[Jobs API] Failed to fetch jobs: 500'
+      )
+      expect(errorSpy).toHaveBeenCalledExactlyOnceWith(
+        '[Jobs API] Failed to fetch jobs: 500'
+      )
+      errorSpy.mockRestore()
+    })
 
-      expect(result).toEqual([])
+    it('rejects without logging when the request is aborted', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const abortError = new DOMException('Aborted', 'AbortError')
+      const mockFetch = vi.fn().mockRejectedValue(abortError)
+
+      await expect(fetchHistory(mockFetch)).rejects.toBe(abortError)
+      expect(errorSpy).not.toHaveBeenCalled()
+      errorSpy.mockRestore()
     })
 
     it('parses batch containing text-only preview outputs', async () => {
@@ -268,12 +283,22 @@ describe('fetchJobs', () => {
       )
     })
 
-    it('returns empty arrays on error', async () => {
+    it('rejects on error', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-      const result = await fetchQueue(mockFetch)
+      await expect(fetchQueue(mockFetch)).rejects.toThrow('Network error')
+      errorSpy.mockRestore()
+    })
 
-      expect(result).toEqual({ Running: [], Pending: [] })
+    it('rejects on non-ok response', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 503 })
+
+      await expect(fetchQueue(mockFetch)).rejects.toThrow(
+        '[Jobs API] Failed to fetch jobs: 503'
+      )
+      errorSpy.mockRestore()
     })
   })
 

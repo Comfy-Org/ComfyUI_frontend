@@ -373,6 +373,71 @@ describe('useQueueStore', () => {
     })
   })
 
+  describe('update() - failed fetches', () => {
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    it('should keep the existing queue when the queue fetch fails', async () => {
+      mockGetQueue.mockResolvedValue({
+        Running: [createRunningJob(1, 'run-1')],
+        Pending: [createPendingJob(2, 'pend-1')]
+      })
+      mockGetHistory.mockResolvedValue([])
+      await store.update()
+
+      mockGetQueue.mockRejectedValue(new Error('API error'))
+      await store.update()
+
+      expect(store.runningTasks).toHaveLength(1)
+      expect(store.pendingTasks).toHaveLength(1)
+      expect(store.activeJobsCount).toBe(2)
+    })
+
+    it('should keep the existing history when the history fetch fails', async () => {
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([createHistoryJob(5, 'hist-1')])
+      await store.update()
+
+      mockGetHistory.mockRejectedValue(new Error('API error'))
+      await store.update()
+
+      expect(store.historyTasks).toHaveLength(1)
+      expect(store.historyTasks[0].jobId).toBe('hist-1')
+    })
+
+    it('should ask both fetches to surface failures', async () => {
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([])
+
+      await store.update()
+
+      expect(mockGetQueue).toHaveBeenCalledWith({ throwOnError: true })
+      expect(mockGetHistory).toHaveBeenCalledWith(store.maxHistoryItems, {
+        throwOnError: true
+      })
+    })
+
+    it('should not mark the history snapshot as fetched when the history fetch fails', async () => {
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockRejectedValue(new Error('API error'))
+
+      await store.update()
+
+      expect(store.hasFetchedHistorySnapshot).toBe(false)
+    })
+
+    it('should stay silent when a fetch is aborted', async () => {
+      const abortError = new DOMException('Aborted', 'AbortError')
+      mockGetQueue.mockRejectedValue(abortError)
+      mockGetHistory.mockRejectedValue(abortError)
+
+      await store.update()
+
+      expect(console.error).not.toHaveBeenCalled()
+    })
+  })
+
   describe('update() - single-flight coalescing', () => {
     it('should coalesce concurrent calls into one re-fetch', async () => {
       let resolveQueue!: QueueResolver

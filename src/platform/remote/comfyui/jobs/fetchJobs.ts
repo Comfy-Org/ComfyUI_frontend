@@ -9,6 +9,7 @@
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { JobId } from '@/schemas/apiSchema'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 import type {
   JobDetail,
@@ -34,8 +35,15 @@ export interface FetchHistoryPageResult {
   hasMore: boolean
 }
 
+/** A failure already logged where it was detected. */
+class LoggedJobsFetchError extends Error {}
+
 /**
  * Fetches raw jobs from /jobs endpoint
+ *
+ * Rejects on any failure (network fault, non-ok response, parse error) so
+ * callers can preserve their last-known-good snapshot instead of treating a
+ * transient failure as an authoritative empty result.
  * @internal
  */
 async function fetchJobsRaw(
@@ -49,14 +57,9 @@ async function fetchJobsRaw(
   try {
     const res = await fetchApi(url)
     if (!res.ok) {
-      console.error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
-      return {
-        jobs: [],
-        total: 0,
-        offset,
-        limit: maxItems,
-        hasMore: false
-      }
+      const message = `[Jobs API] Failed to fetch jobs: ${res.status}`
+      console.error(message)
+      throw new LoggedJobsFetchError(message)
     }
     const data = zJobsListResponse.parse(await res.json())
     return {
@@ -67,8 +70,10 @@ async function fetchJobsRaw(
       hasMore: data.pagination.has_more
     }
   } catch (error) {
-    console.error('[Jobs API] Error fetching jobs:', error)
-    return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
+    if (!(error instanceof LoggedJobsFetchError) && !isAbortError(error)) {
+      console.error('[Jobs API] Error fetching jobs:', error)
+    }
+    throw error
   }
 }
 

@@ -217,7 +217,10 @@ describe('assetsStore - Refactored (Option A)', () => {
 
       await store.updateHistory()
 
-      expect(api.getHistory).toHaveBeenCalledWith(200, { offset: 0 })
+      expect(api.getHistory).toHaveBeenCalledWith(200, {
+        offset: 0,
+        throwOnError: true
+      })
       expect(store.historyAssets).toHaveLength(10)
       expect(store.hasMoreHistory).toBe(false) // Less than BATCH_SIZE
       expect(store.historyLoading).toBe(false)
@@ -295,7 +298,10 @@ describe('assetsStore - Refactored (Option A)', () => {
 
       await store.loadMoreHistory()
 
-      expect(api.getHistory).toHaveBeenCalledWith(200, { offset: 200 })
+      expect(api.getHistory).toHaveBeenCalledWith(200, {
+        offset: 200,
+        throwOnError: true
+      })
       expect(store.historyAssets).toHaveLength(400) // Accumulated
       expect(store.hasMoreHistory).toBe(true)
     })
@@ -455,6 +461,32 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(store.historyAssets).toHaveLength(200)
       expect(store.historyError).toBe(error)
       expect(store.isLoadingMore).toBe(false)
+    })
+
+    it('should re-request the same page after loadMore fails', async () => {
+      const firstBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+      await store.updateHistory()
+
+      vi.mocked(api.getHistory).mockRejectedValueOnce(new Error('Network'))
+      await store.loadMoreHistory()
+
+      expect(store.hasMoreHistory).toBe(true)
+      expect(store.historyAssets).toHaveLength(200)
+
+      const retriedBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(200 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(retriedBatch)
+      await store.loadMoreHistory()
+
+      expect(api.getHistory).toHaveBeenLastCalledWith(200, {
+        offset: 200,
+        throwOnError: true
+      })
+      expect(store.historyAssets).toHaveLength(400)
     })
 
     it('should clear error state on successful retry', async () => {
