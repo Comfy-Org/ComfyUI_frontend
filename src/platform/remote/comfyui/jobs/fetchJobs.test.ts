@@ -154,6 +154,33 @@ describe('fetchJobs', () => {
       expect(result).toEqual([])
     })
 
+    it.for([401, 403])(
+      'does not log expected auth status %i as an error',
+      async (status) => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const mockFetch = vi.fn().mockResolvedValue({ ok: false, status })
+
+        const result = await fetchHistory(mockFetch)
+
+        expect(result).toEqual([])
+        expect(errorSpy).not.toHaveBeenCalled()
+        errorSpy.mockRestore()
+      }
+    )
+
+    it('does not log a network failure as an error', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi
+        .fn()
+        .mockRejectedValue(new TypeError('Failed to fetch'))
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toEqual([])
+      expect(errorSpy).not.toHaveBeenCalled()
+      errorSpy.mockRestore()
+    })
+
     it('parses batch containing text-only preview outputs', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,

@@ -49,7 +49,10 @@ async function fetchJobsRaw(
   try {
     const res = await fetchApi(url)
     if (!res.ok) {
-      console.error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
+      const isExpectedAuthStatus = res.status === 401 || res.status === 403
+      if (!isExpectedAuthStatus) {
+        console.warn(`[Jobs API] Failed to fetch jobs: ${res.status}`)
+      }
       return {
         jobs: [],
         total: 0,
@@ -67,7 +70,7 @@ async function fetchJobsRaw(
       hasMore: data.pagination.has_more
     }
   } catch (error) {
-    console.error('[Jobs API] Error fetching jobs:', error)
+    console.warn('[Jobs API] Error fetching jobs:', error)
     return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
   }
 }
