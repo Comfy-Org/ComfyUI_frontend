@@ -223,13 +223,7 @@ jobs:
           [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
-  # Records a video walkthrough of newly-added test spec files only. Scoped
-  # to added files (git diff --diff-filter=A against the PR base) so the cost
-  # stays bounded — this intentionally does not enable video for the rest of
-  # the suite. Runs for both fork and non-fork PRs (no secrets needed); the
-  # Cloudflare deploy + PR comment happens downstream, split by fork status
-  # the same way the trace/report comment is (see deploy-and-comment-video
-  # below and ci-tests-e2e-forks.yaml).
+  # Records video only for spec files newly added in this PR, to keep cost bounded.
   playwright-video-new-tests:
     needs: setup
     if: ${{ github.event_name == 'pull_request' }}
@@ -292,9 +286,6 @@ jobs:
         if: steps.detect.outputs.has-new-tests == 'true'
         env:
           RECORD_VIDEO: 'true'
-          # Slowed well beyond the local default (SLOW_MO=250) so the
-          # recording is legible for reviewers instead of blazing through
-          # actions.
           SLOW_MO: '1000'
           NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: video-report.json
@@ -320,8 +311,7 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-  # Deploy new-test video(s) and post/extend the unified PR comment
-  # (non-forked PRs only — see ci-tests-e2e-forks.yaml for the fork path).
+  # Non-forked PRs only — see ci-tests-e2e-forks.yaml for the fork path.
   deploy-and-comment-video:
     needs: [playwright-video-new-tests]
     runs-on: ubuntu-latest

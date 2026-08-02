@@ -19,8 +19,6 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
       workers: process.env.CI ? 2 : undefined,
       use: {
         trace: 'on-first-retry',
-        // Video is off by default (cost/time) — CI opts in only for the
-        // narrow "record newly-added test specs" job, never the full suite.
         video: process.env.RECORD_VIDEO === 'true' ? 'on' : undefined,
         launchOptions: {
           slowMo: Number(process.env.SLOW_MO) || 0

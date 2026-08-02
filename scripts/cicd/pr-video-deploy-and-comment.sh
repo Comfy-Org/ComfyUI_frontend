@@ -1,20 +1,8 @@
 #!/bin/bash
 set -e
 
-# Deploy video walkthrough(s) of newly-added Playwright spec files to
-# Cloudflare Pages and write section markdown for the unified PR report
-# comment. Companion to pr-playwright-deploy-and-comment.sh, following the
-# same deploy-then-write-SUMMARY_FILE contract so the caller can upsert the
-# result via the upsert-comment-section action.
-#
 # Usage: ./pr-video-deploy-and-comment.sh <branch_name>
-#
-# Required env vars:
-#   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID - Cloudflare Pages deploy creds
-#   TEST_RESULTS_DIR - directory containing the recorded video.webm files
-#   VIDEO_MANIFEST   - JSON file from extract-playwright-videos.ts
-#                      ([{name, file, relativePath}, ...])
-#   SUMMARY_FILE     - where to write the generated markdown section
+# Required env: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, TEST_RESULTS_DIR, VIDEO_MANIFEST, SUMMARY_FILE
 
 BRANCH_NAME=$(echo "$1" | sed 's/[^a-zA-Z0-9._/-]//g')
 if [ -z "$BRANCH_NAME" ]; then
@@ -49,12 +37,7 @@ if ! command -v wrangler > /dev/null 2>&1; then
     }
 fi
 
-# Cloudflare-compatible branch name (lowercase, only alphanumeric and dashes).
-# Reuse the existing, already-provisioned "comfyui-playwright-chromium"
-# Pages project (proven to work for trace report deploys) rather than a new
-# "comfyui-playwright-videos" project, which isn't provisioned in Cloudflare
-# and fails to deploy. A "-videos" branch suffix keeps this deployment
-# distinct from the report deploy that runs for the same PR branch.
+# Reuses the already-provisioned "comfyui-playwright-chromium" project; a new "-videos" project isn't provisioned.
 cloudflare_branch=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | \
     sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
 project="comfyui-playwright-chromium"

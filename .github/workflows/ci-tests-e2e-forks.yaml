@@ -95,10 +95,7 @@ jobs:
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ github.token }}
 
-      # Same fork-safe deploy-and-comment split as above, for the optional
-      # new-test video walkthrough. The artifact only exists when the PR
-      # added new spec file(s) (see playwright-video-new-tests in
-      # ci-tests-e2e.yaml), so this is a no-op otherwise.
+      # No-op unless the PR added new spec files (see playwright-video-new-tests in ci-tests-e2e.yaml)
       - name: Download new-test video artifacts (if any)
         if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed'
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12

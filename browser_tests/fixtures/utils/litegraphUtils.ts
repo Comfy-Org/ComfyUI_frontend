@@ -484,9 +484,8 @@ export class NodeReference {
   ) {
     const originSlot = await this.getOutput(originSlotIndex)
     const targetWidget = await targetNode.getWidget(targetWidgetIndex)
-    // getPosition() is canvas-relative; dragAndDrop needs page-absolute.
     await this.comfyPage.canvasOps.dragAndDrop(
-      await this.comfyPage.canvasOps.toAbsolute(await originSlot.getPosition()),
+      await originSlot.getPosition(),
       await targetWidget.getSocketPosition()
     )
     return originSlot
@@ -498,10 +497,9 @@ export class NodeReference {
   ) {
     const originSlot = await this.getOutput(originSlotIndex)
     const targetSlot = await targetNode.getInput(targetSlotIndex)
-    // getPosition() is canvas-relative; dragAndDrop needs page-absolute.
     await this.comfyPage.canvasOps.dragAndDrop(
-      await this.comfyPage.canvasOps.toAbsolute(await originSlot.getPosition()),
-      await this.comfyPage.canvasOps.toAbsolute(await targetSlot.getPosition())
+      await originSlot.getPosition(),
+      await targetSlot.getPosition()
     )
     return originSlot
   }

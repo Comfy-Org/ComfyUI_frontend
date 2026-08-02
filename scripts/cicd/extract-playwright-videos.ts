@@ -38,13 +38,7 @@ interface VideoEntry {
   relativePath: string
 }
 
-/**
- * Walk a Playwright JSON report and collect every video attachment, recorded
- * as a path relative to the test-results directory. This must run in the
- * same job/filesystem that produced the report (attachment paths are
- * absolute to that run) — a later job deploying the directory elsewhere only
- * needs to join this relative path onto its own deployed base URL.
- */
+// Must run in the same job/filesystem that produced the report (attachment paths are absolute to that run).
 function collectVideos(report: Report, testResultsDir: string): VideoEntry[] {
   const videos: VideoEntry[] = []
 
