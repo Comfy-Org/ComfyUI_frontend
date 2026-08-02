@@ -243,7 +243,7 @@ Two consequences worth recording:
   unregisters at detach instead, so no bootstrap pass re-seeds a graph on entry.
 
 `useVueNodeLifecycle` is gone. `GraphCanvas` owns the Layout↔LiteGraph sync
-lifecycle and patches nothing — see 2g.
+lifecycle and no longer patches `onNodeAdded` — see 2g.
 
 ### 2e. Slot reactivity ✅ Shipped
 

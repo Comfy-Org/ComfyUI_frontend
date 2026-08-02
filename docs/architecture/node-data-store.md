@@ -166,11 +166,15 @@ already set by `LGraph.createReroute`.
 
 Geometry now leaves the store the same way: `LGraph.remove` unregisters one
 entry, and bulk teardown (`clear`, reconfigure, orphaned subgraph release)
-calls `unregisterAllGraphLayout` alongside `unregisterAllNodeStates`. Both
-live in dedicated modules so no teardown path has to re-derive the store
-writes by hand. `useVueNodeLifecycle` is gone; `GraphCanvas` owns only the
-Layout↔LiteGraph sync lifecycle and drops view-scoped slot and link
-geometry when the viewed graph changes.
+calls `unregisterAllGraphLayout`. It lives in a dedicated module so no
+teardown path has to re-derive the store writes by hand. Only the orphaned
+subgraph release pairs it with `unregisterAllNodeStates`: `clear` sweeps node
+state through `useNodeDataStore().clearGraph()` instead, and a `keep_old`
+reconfigure drops layout entries without sweeping node state at all.
+
+`useVueNodeLifecycle` is gone; `GraphCanvas` owns only the Layout↔LiteGraph
+sync lifecycle, and while the Vue renderer is on it drops view-scoped slot and
+link geometry when the viewed graph changes.
 
 ## Decision 7: Enumerability & extension migration (implemented 2026-07-22)
 

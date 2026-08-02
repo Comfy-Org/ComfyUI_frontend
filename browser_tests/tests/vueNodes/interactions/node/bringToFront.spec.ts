@@ -91,6 +91,15 @@ test.describe(
         })
         .toBeGreaterThan(0)
 
+      // Front means above every node, not just the one it was overlapping.
+      // Nothing re-derives z-index from graph order, so the click is the only
+      // thing that can put CLIP on top.
+      const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
+      const allZIndexes = await comfyPage.vueNodes.nodes.evaluateAll((nodes) =>
+        nodes.map((node) => Number((node as HTMLElement).style.zIndex))
+      )
+      expect(clipZ).toBe(Math.max(...allZIndexes))
+
       // Screenshot showing CLIP now on top
       await expect(comfyPage.canvas).toHaveScreenshot(
         'bring-to-front-overlapped-after.png'
