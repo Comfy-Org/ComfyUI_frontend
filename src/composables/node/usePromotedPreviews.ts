@@ -1,6 +1,8 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
 
+import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/composables/node/canvasImagePreviewTypes'
+import { isPreviewPseudoWidget } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { UUID } from '@/utils/uuid'
@@ -83,7 +85,6 @@ export function usePromotedPreviews(
       rootGraphId,
       hostLocator
     )
-    if (!exposures.length) return []
 
     const hostNodesByLocator = new Map<string, SubgraphNode>([
       [hostLocator, node]
@@ -109,7 +110,7 @@ export function usePromotedPreviews(
       return { rootGraphId, hostNodeLocator: nestedHostLocator }
     }
 
-    return exposures.flatMap((exposure): PromotedPreview[] => {
+    const explicit = exposures.flatMap((exposure): PromotedPreview[] => {
       const resolved = previewExposureStore.resolveChain(
         rootGraphId,
         hostLocator,
@@ -149,6 +150,42 @@ export function usePromotedPreviews(
         }
       ]
     })
+
+    const exposedSourceIds = new Set(
+      exposures.map((exposure) => exposure.sourceNodeId)
+    )
+    const unexposed = node.subgraph.nodes.filter(
+      (interiorNode) =>
+        !exposedSourceIds.has(interiorNode.id) &&
+        !interiorNode.isSubgraphNode() &&
+        !interiorNode.widgets?.some(isPreviewPseudoWidget)
+    )
+    const implicit = unexposed.flatMap((interiorNode): PromotedPreview[] => {
+      const leafExecutionId = appendNodeExecutionId(
+        hostLocator,
+        interiorNode.id
+      )
+      if (!leafExecutionId) return []
+
+      const urls = readReactivePreviewUrls(
+        node,
+        interiorNode.id,
+        leafExecutionId,
+        interiorNode
+      )
+      if (!urls?.length) return []
+
+      return [
+        {
+          sourceNodeId: interiorNode.id,
+          sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
+          type: getPreviewMediaType(interiorNode),
+          urls
+        }
+      ]
+    })
+
+    return [...explicit, ...implicit]
   })
 
   return { promotedPreviews }

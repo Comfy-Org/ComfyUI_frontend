@@ -592,7 +592,9 @@ export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
       continue
     }
 
-    promotePreviewViaExposure(subgraphNode, node, CANVAS_IMAGE_PREVIEW_WIDGET)
+    if (supportsVirtualCanvasImagePreview(node)) {
+      promotePreviewViaExposure(subgraphNode, node, CANVAS_IMAGE_PREVIEW_WIDGET)
+    }
   }
 }
 

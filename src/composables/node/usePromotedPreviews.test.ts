@@ -412,4 +412,51 @@ describe(usePromotedPreviews, () => {
       }
     ])
   })
+
+  it('renders a live preview for an unexposed interior node once output arrives', () => {
+    const setup = createSetup()
+    const samplerNode = addInteriorNode(setup, { id: 10 })
+    samplerNode.type = 'SamplerCustomAdvanced'
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([])
+
+    const blobUrl = 'blob:http://localhost/sampler-preview'
+    seedPreviewImages(setup.subgraph.id, [
+      { nodeId: toNodeId(10), urls: [blobUrl] }
+    ])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
+
+    expect(promotedPreviews.value).toEqual([
+      {
+        sourceNodeId: '10',
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
+        type: 'image',
+        urls: [blobUrl]
+      }
+    ])
+  })
+
+  it('does not render a live preview for an interior node with no output', () => {
+    const setup = createSetup()
+    const otherNode = addInteriorNode(setup, { id: 10 })
+    otherNode.type = 'ImageInvert'
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([])
+  })
+
+  it('does not duplicate a live preview for a node that is already explicitly exposed', () => {
+    const { setup, urls } = arrangePromotedPreview({ id: 10 })
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([
+      {
+        sourceNodeId: '10',
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
+        type: 'image',
+        urls
+      }
+    ])
+  })
 })

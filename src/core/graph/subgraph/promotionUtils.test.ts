@@ -486,13 +486,13 @@ describe('autoExposeKnownPreviewNodes', () => {
   })
 })
 
-describe('autoExposeKnownPreviewNodes — allowlist gap for unlisted node types (regression)', () => {
+describe('autoExposeKnownPreviewNodes — unlisted node types', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     updatePreviewsMock.mockReset()
   })
 
-  it('exposes a preview for an unlisted node type without waiting for output to arrive', () => {
+  it('does not eagerly persist an exposure for an unlisted node type', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const samplerNode = new LGraphNode('SamplerCustomAdvanced')
@@ -506,13 +506,7 @@ describe('autoExposeKnownPreviewNodes — allowlist gap for unlisted node types 
         subgraphNode.rootGraph.id,
         String(subgraphNode.id)
       )
-    ).toEqual([
-      {
-        name: CANVAS_IMAGE_PREVIEW_WIDGET,
-        sourceNodeId: String(samplerNode.id),
-        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-      }
-    ])
+    ).toEqual([])
   })
 })
 
