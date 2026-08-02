@@ -52,7 +52,6 @@ import {
 } from '@/renderer/core/layout/utils/geometry'
 import {
   REROUTE_RADIUS,
-  boundsIntersect,
   pointInBounds
 } from '@/renderer/core/layout/utils/layoutMath'
 import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
@@ -315,44 +314,6 @@ export class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Get nodes within bounds (reactive)
-   */
-  getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]> {
-    return computed(() => {
-      // Touch version for reactivity
-      void this.version.value
-
-      const result: NodeId[] = []
-      for (const [rawNodeId, ynode] of this.ynodes) {
-        const nodeId = toNodeId(rawNodeId)
-        const layout = yNodeToLayout(ynode)
-        if (boundsIntersect(layout.bounds, bounds)) {
-          result.push(nodeId)
-        }
-      }
-      return result
-    })
-  }
-
-  /**
-   * Get all nodes as a reactive map
-   */
-  getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>> {
-    return computed(() => {
-      // Touch version for reactivity
-      void this.version.value
-
-      const result = new Map<NodeId, NodeLayout>()
-      for (const [rawNodeId, ynode] of this.ynodes) {
-        const nodeId = toNodeId(rawNodeId)
-        const layout = yNodeToLayout(ynode)
-        result.set(nodeId, layout)
-      }
-      return result
-    })
-  }
-
-  /**
    * Get all groups as a reactive map
    */
   getAllGroups(
@@ -382,37 +343,6 @@ export class LayoutStoreImpl implements LayoutStore {
    */
   getVersion(): ComputedRef<number> {
     return computed(() => this.version.value)
-  }
-
-  /**
-   * Query node at point (non-reactive for performance)
-   */
-  queryNodeAtPoint(point: Point): NodeId | null {
-    const nodes: Array<[NodeId, NodeLayout]> = []
-
-    for (const [rawNodeId, ynode] of this.ynodes) {
-      const nodeId = toNodeId(rawNodeId)
-      const layout = yNodeToLayout(ynode)
-      nodes.push([nodeId, layout])
-    }
-
-    // Sort by zIndex (top to bottom)
-    nodes.sort(([, a], [, b]) => b.zIndex - a.zIndex)
-
-    for (const [nodeId, layout] of nodes) {
-      if (pointInBounds(point, layout.bounds)) {
-        return nodeId
-      }
-    }
-
-    return null
-  }
-
-  /**
-   * Query nodes in bounds (non-reactive for performance)
-   */
-  queryNodesInBounds(bounds: Bounds): NodeId[] {
-    return this.spatialIndex.query(bounds)
   }
 
   /**
@@ -781,40 +711,6 @@ export class LayoutStoreImpl implements LayoutStore {
       }
     }
     return null
-  }
-
-  /**
-   * Query all items in bounds
-   */
-  queryItemsInBounds(
-    rootGraphId: UUID,
-    bounds: Bounds
-  ): {
-    nodes: NodeId[]
-    links: LinkId[]
-    slots: SlotId[]
-    reroutes: RerouteId[]
-  } {
-    // Query segments and union their linkIds
-    const segmentKeys = this.linkSegmentSpatialIndex.query(bounds)
-    const linkIds = new Set<LinkId>()
-    for (const key of segmentKeys) {
-      const segment = this.linkSegmentLayouts.get(key)
-      if (segment) {
-        linkIds.add(segment.linkId)
-      }
-    }
-
-    return {
-      nodes: this.queryNodesInBounds(bounds),
-      links: Array.from(linkIds),
-      slots: this.slotSpatialIndex.query(bounds),
-      reroutes: this.rerouteSpatialIndex
-        .query(bounds)
-        .map(parseLayoutKey)
-        .filter((key) => key.graphId === rootGraphId)
-        .map((key) => toRerouteId(key.localId))
-    }
   }
 
   /**

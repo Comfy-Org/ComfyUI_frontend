@@ -685,6 +685,32 @@ event listeners instead of callbacks.
 - Callback order remains: output validation -> input validation -> commit ->
   output change notification -> input change notification.
 
+### Removed layoutStore queries (custom-node audit pending)
+
+These `layoutStore` methods were deleted once their last in-repo caller went
+away. They were never advertised as extension API, but `layoutStore` is
+reachable from custom nodes, so Hyrum's law applies: someone may depend on
+them.
+
+| Removed method         | Was                                             |
+| ---------------------- | ----------------------------------------------- |
+| `getAllNodes()`        | Reactive map of every node layout, unscoped     |
+| `getNodesInBounds()`   | Reactive node ids intersecting bounds           |
+| `queryNodeAtPoint()`   | Top-zIndex node containing a point              |
+| `queryNodesInBounds()` | Node ids intersecting bounds, via spatial index |
+| `queryItemsInBounds()` | Nodes, links, slots and reroutes in bounds      |
+
+**Action required:** grep the custom-node ecosystem for these names before the
+next release. If any have external dependents, restore them as deprecated
+shims per [Extension API preservation](#extension-api-preservation) rather
+than reintroducing the call sites.
+
+Note that the node-facing ones were also _wrong_ by the time they were
+removed: node layout is keyed by bare `NodeId` with no root-graph scope, and
+registration now happens for every graph including unopened subgraph
+definitions, so any of these would have returned nodes the user cannot see. A
+restored shim must take a `rootGraphId` and filter by it.
+
 ### Extension Migration Examples (old -> new)
 
 The bridge keeps legacy callbacks working, but extension authors can migrate

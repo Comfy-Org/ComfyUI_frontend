@@ -285,17 +285,11 @@ export interface LayoutChange {
 export interface LayoutStore {
   // CustomRef accessors for shared write access
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
-  getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
-  getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
   getAllGroups(
     rootGraphId: UUID
   ): ComputedRef<ReadonlyMap<GroupId, GroupLayout>>
   getGroupLayout(rootGraphId: UUID, groupId: GroupId): GroupLayout | null
   getVersion(): ComputedRef<number>
-
-  // Spatial queries (non-reactive)
-  queryNodeAtPoint(point: Point): NodeId | null
-  queryNodesInBounds(bounds: Bounds): NodeId[]
 
   // Hit testing queries for links, slots, and reroutes
   queryLinkAtPoint(point: Point, ctx?: CanvasRenderingContext2D): LinkId | null
@@ -305,15 +299,6 @@ export interface LayoutStore {
   ): { linkId: LinkId; rerouteId: RerouteId | null } | null
   querySlotAtPoint(point: Point): SlotLayout | null
   queryRerouteAtPoint(rootGraphId: UUID, point: Point): RerouteLayout | null
-  queryItemsInBounds(
-    rootGraphId: UUID,
-    bounds: Bounds
-  ): {
-    nodes: NodeId[]
-    links: LinkId[]
-    slots: SlotId[]
-    reroutes: RerouteId[]
-  }
 
   // Update methods for link, slot, and reroute layouts
   updateLinkLayout(linkId: LinkId, layout: LinkLayout): void

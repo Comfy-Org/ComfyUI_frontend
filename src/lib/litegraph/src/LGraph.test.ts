@@ -1684,24 +1684,32 @@ describe('graph teardown drops layout entries', () => {
     const graph = new LGraph()
     graph.id = createUuidv4()
 
-    graph.add(new LGraphNode('root'))
-    graph.add(new LGraphGroup('group'))
+    const root = new LGraphNode('root')
+    const group = new LGraphGroup('group')
+    graph.add(root)
+    graph.add(group)
     graph._addReroute(new Reroute(REROUTE, graph, [10, 10]))
 
     const subgraph = graph.createSubgraph(createTestSubgraphData())
     const interior = new LGraphNode('interior')
     subgraph.add(interior)
 
-    return { graph, subgraph, interior }
+    return { graph, subgraph, root, group, interior }
   }
 
-  function layoutEntryCount(graph: LGraph) {
+  function survivingEntries({
+    graph,
+    root,
+    group,
+    interior
+  }: ReturnType<typeof populatedGraph>) {
     const rootGraphId = graph.rootGraph.id
-    return (
-      layoutStore.getAllNodes().value.size +
-      layoutStore.getAllGroups(rootGraphId).value.size +
-      (layoutStore.getRerouteLayout(rootGraphId, REROUTE) ? 1 : 0)
-    )
+    return [
+      layoutStore.getNodeLayoutRef(root.id).value,
+      layoutStore.getNodeLayoutRef(interior.id).value,
+      layoutStore.getGroupLayout(rootGraphId, group.id),
+      layoutStore.getRerouteLayout(rootGraphId, REROUTE)
+    ].filter((entry) => entry !== null).length
   }
 
   it.for([
@@ -1711,12 +1719,12 @@ describe('graph teardown drops layout entries', () => {
       (graph: LGraph) => graph.configure(new LGraph().serialize())
     ]
   ] as const)('drops every entry on %s', ([, teardown]) => {
-    const { graph } = populatedGraph()
-    expect(layoutEntryCount(graph)).toBeGreaterThan(0)
+    const populated = populatedGraph()
+    expect(survivingEntries(populated)).toBe(4)
 
-    teardown(graph)
+    teardown(populated.graph)
 
-    expect(layoutEntryCount(graph)).toBe(0)
+    expect(survivingEntries(populated)).toBe(0)
   })
 
   it('drops interior entries when the last SubgraphNode is removed', () => {

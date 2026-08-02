@@ -436,52 +436,6 @@ describe('layoutStore CRDT operations', () => {
     unsubscribe()
   })
 
-  it('should query nodes by spatial bounds', () => {
-    const nodes = [
-      { id: toNodeId('node-a'), position: { x: 0, y: 0 } },
-      { id: toNodeId('node-b'), position: { x: 100, y: 100 } },
-      { id: toNodeId('node-c'), position: { x: 250, y: 250 } }
-    ]
-
-    // Create nodes with proper bounds
-    nodes.forEach(({ id, position }) => {
-      const layout: NodeLayout = {
-        ...createTestNode(id),
-        position,
-        bounds: {
-          x: position.x,
-          y: position.y,
-          width: 200,
-          height: 100
-        }
-      }
-      layoutStore.applyOperation({
-        type: 'createNode',
-        entity: 'node',
-        nodeId: id,
-        layout,
-        timestamp: Date.now(),
-        source: LayoutSource.External,
-        actor: 'test'
-      })
-    })
-
-    // Query nodes in bounds
-    const nodesInBounds = layoutStore.queryNodesInBounds({
-      x: 50,
-      y: 50,
-      width: 200,
-      height: 200
-    })
-
-    // node-a: (0,0) to (200,100) - overlaps with query bounds (50,50) to (250,250)
-    // node-b: (100,100) to (300,200) - overlaps with query bounds
-    // node-c: (250,250) to (450,350) - touches corner of query bounds
-    expect(nodesInBounds).toContain('node-a')
-    expect(nodesInBounds).toContain('node-b')
-    expect(nodesInBounds).toContain('node-c')
-  })
-
   it('normalizes DOM-sourced heights before storing', () => {
     const nodeId = toNodeId('dom-node')
     const layout = createTestNode(nodeId)
@@ -777,22 +731,6 @@ describe('root-scoped group and reroute layouts', () => {
     expect(
       layoutStore.queryRerouteAtPoint(SECOND_GRAPH, { x: 25, y: 35 })
     ).toBeNull()
-    expect(
-      layoutStore.queryItemsInBounds(FIRST_GRAPH, {
-        x: 0,
-        y: 0,
-        width: 50,
-        height: 50
-      }).reroutes
-    ).toEqual([REROUTE_ID])
-    expect(
-      layoutStore.queryItemsInBounds(SECOND_GRAPH, {
-        x: 0,
-        y: 0,
-        width: 50,
-        height: 50
-      }).reroutes
-    ).toEqual([])
 
     apply({
       ...metadata(),
@@ -917,64 +855,6 @@ describe('layoutStore getNodeLayoutRef setter', () => {
 
     expect(operations).toEqual([])
     expect(ref.value).toEqual(layout)
-  })
-})
-
-describe('layoutStore queries', () => {
-  beforeEach(() => {
-    layoutStore.resetForTests()
-  })
-
-  const seedNode = (id: NodeId, x: number, y: number, z = 0) => {
-    const layout: NodeLayout = {
-      id,
-      position: { x, y },
-      size: { width: 100, height: 50 },
-      zIndex: z,
-      visible: true,
-      bounds: { x, y, width: 100, height: 50 }
-    }
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      nodeId: id,
-      layout,
-      timestamp: Date.now(),
-      source: LayoutSource.External,
-      actor: 'test'
-    })
-  }
-
-  it('getNodesInBounds returns reactive node IDs that intersect bounds', () => {
-    seedNode(toNodeId('inside'), 0, 0)
-    seedNode(toNodeId('outside'), 1000, 1000)
-
-    const inBounds = layoutStore.getNodesInBounds({
-      x: 0,
-      y: 0,
-      width: 200,
-      height: 200
-    })
-
-    expect(inBounds.value).toContain('inside')
-    expect(inBounds.value).not.toContain('outside')
-  })
-
-  it('queryNodeAtPoint returns the top-zIndex node containing the point', () => {
-    seedNode(toNodeId('low'), 0, 0, 0)
-    seedNode(toNodeId('high'), 0, 0, 10)
-
-    const hit = layoutStore.queryNodeAtPoint({ x: 25, y: 25 })
-
-    expect(hit).toBe('high')
-  })
-
-  it('queryNodeAtPoint returns null when no node contains the point', () => {
-    seedNode(toNodeId('only'), 0, 0)
-
-    const hit = layoutStore.queryNodeAtPoint({ x: 999, y: 999 })
-
-    expect(hit).toBeNull()
   })
 })
 
