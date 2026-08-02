@@ -42,10 +42,7 @@ function makeCandidate(
 type MissingMediaStoreWithPromotedHostIdentity = ReturnType<
   typeof useMissingMediaStore
 > & {
-  isWidgetMissingMedia?: (
-    nodeId: NodeExecutionId,
-    widgetName: string
-  ) => boolean
+  isWidgetMissingMedia: (nodeId: NodeExecutionId, widgetName: string) => boolean
 }
 
 describe('useMissingMediaStore', () => {
@@ -353,10 +350,10 @@ describe('useMissingMediaStore', () => {
       ])
 
       expect(store.isWidgetMissingMedia).toBeTypeOf('function')
-      expect(store.isWidgetMissingMedia?.(hostExecutionId, 'outer_image')).toBe(
+      expect(store.isWidgetMissingMedia(hostExecutionId, 'outer_image')).toBe(
         true
       )
-      expect(store.isWidgetMissingMedia?.(hostExecutionId, 'other')).toBe(false)
+      expect(store.isWidgetMissingMedia(hostExecutionId, 'other')).toBe(false)
     })
   })
 })

@@ -30,6 +30,7 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   createNodeExecutionId,
@@ -139,7 +140,8 @@ export function hasWidgetError(
     : widget.name
   return (
     (!!errors && hasErrorForSlot(errors, errorInputName)) ||
-    missingModelStore.isWidgetMissingModel(nodeExecId, widget.name)
+    missingModelStore.isWidgetMissingModel(nodeExecId, widget.name) ||
+    useMissingMediaStore().isWidgetMissingMedia(nodeExecId, widget.name)
   )
 }
 

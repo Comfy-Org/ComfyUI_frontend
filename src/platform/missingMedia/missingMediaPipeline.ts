@@ -2,6 +2,8 @@ import { st } from '@/i18n'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import {
+  isMissingMediaCandidateActive,
+  isMissingMediaCandidateScopeActive,
   scanAllMediaCandidates,
   verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
@@ -12,10 +14,6 @@ import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWar
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import {
-  isAncestorPathActive,
-  isMissingCandidateActive
-} from '@/utils/graphTraversalUtil'
 
 interface RunMissingMediaPipelineOptions {
   graph: LGraph
@@ -40,8 +38,8 @@ export async function runMissingMediaPipeline({
   const activeWf = useWorkspaceStore().workflow.activeWorkflow
   const allCandidates = scanAllMediaCandidates(graph, isCloud)
   // Drop candidates whose enclosing subgraph is muted/bypassed.
-  const candidates = allCandidates.filter((c) =>
-    isAncestorPathActive(graph, String(c.nodeId))
+  const candidates = allCandidates.filter((candidate) =>
+    isMissingMediaCandidateScopeActive(graph, candidate)
   )
 
   if (!candidates.length) {
@@ -59,8 +57,8 @@ export async function runMissingMediaPipeline({
       .then(() => {
         if (controller.signal.aborted) return
         // Re-check ancestor after async verification (see model pipeline).
-        const confirmed = candidates.filter((c) =>
-          isMissingCandidateActive(graph, c)
+        const confirmed = candidates.filter((candidate) =>
+          isMissingMediaCandidateActive(graph, candidate)
         )
         if (confirmed.length) {
           useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })

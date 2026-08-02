@@ -7,8 +7,12 @@
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  SubgraphEventMap
+} from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
   NodeSlotType
@@ -25,6 +29,8 @@ import {
 } from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import {
+  isMissingMediaCandidateActive,
+  isMissingMediaCandidateScopeActive,
   scanNodeMediaCandidates,
   verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
@@ -265,14 +271,6 @@ function isModelCandidateStillActive(
   return isMissingCandidateActive(app.rootGraph, candidate)
 }
 
-function isNodeCandidateStillActive(nodeId: unknown): boolean {
-  return (
-    app.rootGraph != null &&
-    nodeId != null &&
-    isExecutionPathActive(app.rootGraph, String(nodeId))
-  )
-}
-
 async function verifyAndAddPendingModels(
   pending: MissingModelCandidate[]
 ): Promise<void> {
@@ -299,8 +297,8 @@ async function verifyAndAddPendingMedia(
   try {
     await verifyMediaCandidates(pending, { isCloud })
     if (app.rootGraph !== rootGraphAtScan) return
-    const verified = pending.filter(
-      (c) => c.isMissing === true && isNodeCandidateStillActive(c.nodeId)
+    const verified = pending.filter((candidate) =>
+      isMissingMediaCandidateActive(rootGraphAtScan, candidate)
     )
     if (verified.length) useMissingMediaStore().addMissingMedia(verified)
   } catch (error: unknown) {
@@ -393,16 +391,53 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
     mediaStore.removeMissingMediaByPrefix(prefix)
     nodesStore.removeMissingNodesByPrefix(prefix)
   }
+
+  const candidates = mediaStore.missingMediaCandidates
+  if (candidates) {
+    mediaStore.setMissingMedia(
+      candidates.filter((candidate) =>
+        isMissingMediaCandidateScopeActive(app.rootGraph, candidate)
+      )
+    )
+  }
 }
 
 export function installErrorClearingHooks(graph: LGraph): () => void {
+  const demotionListeners = new Map<
+    Subgraph,
+    (event: CustomEvent<SubgraphEventMap['widget-demoted']>) => void
+  >()
+  const installDemotionListeners = (subgraph: Subgraph): void => {
+    if (demotionListeners.has(subgraph)) return
+    const listener = (
+      event: CustomEvent<SubgraphEventMap['widget-demoted']>
+    ) => {
+      if (!app.rootGraph) return
+      const { subgraphNode, widget } = event.detail
+      const executionId = getExecutionIdByNode(app.rootGraph, subgraphNode)
+      if (!executionId) return
+      useMissingMediaStore().removeMissingMediaByWidget(
+        executionId,
+        widget.name
+      )
+    }
+    subgraph.events.addEventListener('widget-demoted', listener)
+    demotionListeners.set(subgraph, listener)
+    for (const node of subgraph.nodes) {
+      if (node.isSubgraphNode()) installDemotionListeners(node.subgraph)
+    }
+  }
+
+  if (graph instanceof Subgraph) installDemotionListeners(graph)
   for (const node of graph._nodes ?? []) {
     installNodeHooksRecursive(node)
+    if (node.isSubgraphNode()) installDemotionListeners(node.subgraph)
   }
 
   const originalOnNodeAdded = graph.onNodeAdded
   graph.onNodeAdded = function (node: LGraphNode) {
     installNodeHooksRecursive(node)
+    if (node.isSubgraphNode()) installDemotionListeners(node.subgraph)
 
     // Scan pasted/duplicated nodes for missing models/media.
     // Skip during loadGraphData (undo/redo/tab switch) — those are
@@ -452,5 +487,8 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     graph.onNodeAdded = originalOnNodeAdded || undefined
     graph.onNodeRemoved = originalOnNodeRemoved || undefined
     graph.onTrigger = originalOnTrigger || undefined
+    for (const [subgraph, listener] of demotionListeners) {
+      subgraph.events.removeEventListener('widget-demoted', listener)
+    }
   }
 }

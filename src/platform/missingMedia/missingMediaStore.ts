@@ -72,6 +72,19 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     return activeMissingMediaGraphIds.value.has(String(node.id))
   }
 
+  function isWidgetMissingMedia(
+    nodeId: NodeExecutionId,
+    widgetName: string
+  ): boolean {
+    return (
+      missingMediaCandidates.value?.some(
+        (candidate) =>
+          String(candidate.nodeId) === String(nodeId) &&
+          candidate.widgetName === widgetName
+      ) ?? false
+    )
+  }
+
   function removeMissingMediaByWidget(nodeId: string, widgetName: string) {
     if (!missingMediaCandidates.value) return
     missingMediaCandidates.value = missingMediaCandidates.value.filter(
@@ -153,6 +166,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     clearMissingMedia,
     createVerificationAbortController,
 
-    isContainerWithMissingMedia
+    isContainerWithMissingMedia,
+    isWidgetMissingMedia
   }
 })
