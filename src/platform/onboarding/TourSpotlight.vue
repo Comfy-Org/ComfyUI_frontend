@@ -28,7 +28,7 @@
       <path
         v-if="step.interactive"
         data-testid="coach-hit-region"
-        :d="hitRegionPath"
+        :d="hitRegion"
         fill="transparent"
         fill-rule="evenodd"
         class="pointer-events-auto"
@@ -66,7 +66,7 @@
       <div
         ref="cardRef"
         role="dialog"
-        aria-modal="true"
+        :aria-modal="!step.interactive"
         :aria-labelledby="titleId"
         :aria-describedby="`${subtitleId} ${bodyId}`"
         class="pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
@@ -149,6 +149,7 @@ import {
   VIEWPORT_MARGIN,
   clampSpotlight,
   clampSpotlightRect,
+  hitRegionPath,
   noTargetCardLeft
 } from './coachmarkLayout'
 import type { SpotlightStep } from './onboardingTours'
@@ -270,14 +271,7 @@ const scrimHole = computed(() =>
     : null
 )
 
-// Evenodd viewport path whose hole lets pointer events through to the page.
-const hitRegionPath = computed(() => {
-  const { width, height } = viewport()
-  const hole = scrimHole.value
-  const viewportPath = `M0 0H${width}V${height}H0Z`
-  if (!hole) return viewportPath
-  return `${viewportPath}M${hole.x} ${hole.y}h${hole.width}v${hole.height}h${-hole.width}Z`
-})
+const hitRegion = computed(() => hitRegionPath(viewport(), scrimHole.value))
 
 const cardStyle = computed(() => {
   const width = `${CARD_WIDTH}px`
