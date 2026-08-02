@@ -1,7 +1,8 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
-import { nextTick } from 'vue'
+import { nextTick, shallowRef } from 'vue'
+import type { ShallowRef } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -56,12 +57,14 @@ vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
   resolveNode: mockResolveNode
 }))
 
-const mockCanvas = vi.hoisted(() => ({ current: {} as unknown }))
+const mockCanvas = vi.hoisted(
+  () => ({ ref: { value: null } }) as { ref: ShallowRef<unknown> }
+)
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
     getCanvas: () => ({ read_only: false }),
     get canvas() {
-      return mockCanvas.current
+      return mockCanvas.ref.value
     }
   })
 }))
@@ -161,7 +164,7 @@ describe('appModeStore', () => {
   let store: ReturnType<typeof useAppModeStore>
 
   beforeEach(() => {
-    mockCanvas.current = {}
+    mockCanvas.ref = shallowRef<unknown>({})
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.mocked(app.rootGraph).extra = {}
     ChangeTracker.isLoadingGraph = false
@@ -440,26 +443,42 @@ describe('appModeStore', () => {
       expect(store.selectedOutputs).toEqual([toNodeId(1)])
     })
 
-    it('does not bind the configured listener until the canvas is ready', async () => {
-      mockCanvas.current = null
+    it('binds the configured listener only once the canvas becomes ready', async () => {
+      mockCanvas.ref = shallowRef<unknown>(null)
       setActivePinia(createTestingPinia({ stubActions: false }))
+
+      const node1 = nodeWithWidgets(1, ['seed'])
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node1 : null
+      )
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(1) ? node1 : undefined
+      )
+
       const inputs: [number, string][] = [[1, 'seed']]
       useWorkflowStore().activeWorkflow = createWorkflowWithLinearData(
         'app',
         inputs,
         [1]
       )
-      const notReadyStore = useAppModeStore()
-      mockResolveNode.mockImplementation((id) =>
-        id === toNodeId(1) ? nodeWithWidgets(1, ['seed']) : undefined
-      )
+      const store = useAppModeStore()
 
+      // Canvas not ready → listener unbound → configured event is a no-op.
       ;(app.rootGraph.events as EventTarget).dispatchEvent(
         new Event('configured')
       )
       await nextTick()
+      expect(store.selectedInputs).toEqual([])
 
-      expect(notReadyStore.selectedInputs).toEqual([])
+      // Canvas becomes ready → VueUse reactively rebinds to the graph events.
+      mockCanvas.ref.value = {}
+      await nextTick()
+      ;(app.rootGraph.events as EventTarget).dispatchEvent(
+        new Event('configured')
+      )
+      await nextTick()
+      expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
     })
 
     it('hasOutputs is false when all output nodes are deleted', () => {
