@@ -6500,6 +6500,48 @@
       }
     }
   },
+  "IdeogramPImage": {
+    "description": "Genera imágenes usando P-Image, el modelo rápido de texto a imagen de Ideogram. Tipografía fuerte y fotorrealismo; admite subtítulos estructurados en JSON de Ideogram 4.0 para texto, colores y diseño exactos.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "La relación de aspecto para la generación de imágenes."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto. También acepta un subtítulo estructurado en JSON de Ideogram 4.0 (colores exactos como hexadecimales #RRGGBB, cadenas de texto exactas, diseño de caja delimitadora) — establece prompt_upsampling en OFF para usarlo literalmente."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Expande prompts cortos en un subtítulo estructurado detallado antes de la generación (el prompt reescrito se devuelve como final_prompt). Establece en OFF cuando proporciones tu propio subtítulo JSON o texto exacto."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Nivel de velocidad/precio/calidad. MEDIUM es el valor predeterminado diario; HIGH para prompts complejos, detalles finos y texto difícil; VERY_LOW/LOW para borradores a gran escala. El texto difícil se representa mal por debajo de MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Clase de tamaño de salida (los píxeles exactos siguen la relación de aspecto, por ejemplo, 16:9 da 1280x720 en 1K y 2560x1440 en 2K). Prefiere HIGH + 2K para tipografía nítida."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semilla para generación reproducible. Con prompt_upsampling en OFF, la misma semilla y configuración devuelven la misma imagen; con ON/AUTO la reescritura del prompt varía en cada ejecución — reproduce un resultado reutilizando su salida final_prompt con prompt_upsampling en OFF y la misma semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "El prompt desde el que realmente se generó la imagen (el subtítulo estructurado reescrito cuando se ejecutó prompt_upsampling, de lo contrario tu prompt). Vuelve a usarlo con prompt_upsampling en OFF y la misma semilla para reproducir esta imagen."
+      }
+    }
+  },
   "IdeogramV3": {
     "description": "Genera imágenes de forma síncrona usando el modelo Ideogram V3.\n\nAdmite tanto la generación regular de imágenes a partir de indicaciones de texto como la edición de imágenes con mask.\nLos enlaces de las imágenes están disponibles por un período limitado; si deseas conservar la imagen, debes descargarla.",
     "display_name": "Ideogram V3",
@@ -11328,6 +11370,125 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "Genera video a partir de una imagen de primer fotograma y una imagen opcional de último fotograma usando el modelo MiniMax H3. La relación de aspecto del video sigue las imágenes proporcionadas.",
+    "display_name": "MiniMax H3 Primer-Último Fotograma a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Imagen del primer fotograma para el video."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Imagen opcional de último fotograma para el video."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a utilizar para la generación de video."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semilla aleatoria. La misma solicitud con la misma semilla da resultados similares, pero no idénticos garantizados."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Si se debe añadir una marca de agua AIGC al video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "Genera un video condicionado por imágenes de referencia, videos y audio usando el modelo MiniMax H3. Haz referencia a los elementos en el prompt según su orden: 'Imagen 1', 'Imagen 2', 'Video 1', 'Audio 1', y así sucesivamente.",
+    "display_name": "MiniMax H3 Referencia a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de video."
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "relación de aspecto"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla aleatoria. La misma solicitud con la misma semilla da resultados similares, pero no idénticos garantizados."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se debe añadir una marca de agua AIGC al video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "Genera un video a partir de un prompt de texto usando el modelo MiniMax H3.",
+    "display_name": "MiniMax H3 Texto a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de video."
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "relación de aspecto"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla aleatoria. La misma solicitud con la misma semilla da resultados similares, pero no idénticos garantizados."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se debe añadir una marca de agua AIGC al video."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
