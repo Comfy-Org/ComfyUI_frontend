@@ -11,6 +11,10 @@ import { STABLE_CHECKPOINT } from '@e2e/fixtures/data/assetFixtures'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
+import type {
+  AssetMetadata,
+  AsyncUploadResponse
+} from '@/platform/assets/schemas/assetSchema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT]
@@ -75,8 +79,11 @@ cloudAppFixture.describe(
   { tag: '@cloud' },
   () => {
     cloudAppFixture(
-      'uses one scroll region on a short viewport',
+      'uses one scroll region throughout import on a short viewport',
       async ({ page }) => {
+        const filename =
+          'Alissonerdx__CharacterSheet__QuadView_krea2_v1.safetensors'
+        const sourceUrl = `https://huggingface.co/comfy/test/resolve/main/${filename}`
         const features = {
           model_upload_button_enabled: true,
           private_models_enabled: true
@@ -93,6 +100,18 @@ cloudAppFixture.describe(
         const modelFolders = [
           { name: 'checkpoints', folders: [] }
         ] satisfies GetModelFoldersResponse
+        const metadata = {
+          content_length: 1024,
+          final_url: sourceUrl,
+          content_type: 'application/octet-stream',
+          filename,
+          tags: ['checkpoints']
+        } satisfies AssetMetadata
+        const downloadTask = {
+          task_id: 'download-task-001',
+          status: 'created',
+          message: 'Download started'
+        } satisfies Extract<AsyncUploadResponse, { type: 'async' }>['task']
 
         await page.setViewportSize({ width: 1280, height: 420 })
         await mockCloudBoot(page, { features, settings })
@@ -102,6 +121,12 @@ cloudAppFixture.describe(
         )
         await page.route('**/api/experiment/models', (route) =>
           route.fulfill(jsonRoute(modelFolders))
+        )
+        await page.route('**/assets/remote-metadata?**', (route) =>
+          route.fulfill(jsonRoute(metadata))
+        )
+        await page.route('**/assets/download', (route) =>
+          route.fulfill({ ...jsonRoute(downloadTask), status: 202 })
         )
 
         await page.goto(APP_URL)
@@ -146,6 +171,30 @@ cloudAppFixture.describe(
         expect(
           cancelButtonRect!.y + cancelButtonRect!.height
         ).toBeLessThanOrEqual(metrics.viewportHeight)
+
+        await dialog
+          .locator('[data-attr="upload-model-step1-url-input"]')
+          .fill(sourceUrl)
+        await dialog
+          .locator('[data-attr="upload-model-step1-continue-button"]')
+          .click()
+        await dialog
+          .locator('[data-attr="upload-model-step2-confirm-button"]')
+          .click()
+        await expect(dialog.getByText('Download started')).toBeVisible()
+        await expect(dialog.getByText(filename)).toBeVisible()
+
+        const processingScrollRegions = await dialog.locator('*').evaluateAll(
+          (elements) =>
+            elements.filter((element) => {
+              const style = getComputedStyle(element)
+              return [style.overflowX, style.overflowY].some(
+                (overflow) => overflow === 'auto' || overflow === 'scroll'
+              )
+            }).length
+        )
+
+        expect(processingScrollRegions).toBe(1)
       }
     )
   }
