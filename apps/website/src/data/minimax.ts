@@ -349,8 +349,8 @@ export const minimaxFaqs: readonly MiniMaxFaq[] = [
   {
     id: 'open-weights',
     question: {
-      en: 'Is MiniMax H3 open weights?',
-      'zh-CN': 'MiniMax H3 是开源权重吗？'
+      en: 'Is MiniMax H3 available as Open Weights?',
+      'zh-CN': 'MiniMax H3 提供开源权重吗？'
     },
     answer: {
       en: 'Yes. H3 is available as Open Weights, so you can run it yourself, and through Partner Nodes on Comfy Cloud.',
