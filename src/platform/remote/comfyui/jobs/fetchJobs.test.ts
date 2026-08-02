@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   extractWorkflow,
@@ -45,6 +45,10 @@ function createMockResponse(
 }
 
 describe('fetchJobs', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   describe('fetchHistory', () => {
     it('fetches completed jobs', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
@@ -136,14 +140,12 @@ describe('fetchJobs', () => {
     })
 
     it('rejects on error', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
       await expect(fetchHistory(mockFetch)).rejects.toThrow('Network error')
-      errorSpy.mockRestore()
     })
 
-    it('rejects on non-ok response', async () => {
+    it('rejects on non-ok response without logging', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
@@ -153,20 +155,7 @@ describe('fetchJobs', () => {
       await expect(fetchHistory(mockFetch)).rejects.toThrow(
         '[Jobs API] Failed to fetch jobs: 500'
       )
-      expect(errorSpy).toHaveBeenCalledExactlyOnceWith(
-        '[Jobs API] Failed to fetch jobs: 500'
-      )
-      errorSpy.mockRestore()
-    })
-
-    it('rejects without logging when the request is aborted', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const abortError = new DOMException('Aborted', 'AbortError')
-      const mockFetch = vi.fn().mockRejectedValue(abortError)
-
-      await expect(fetchHistory(mockFetch)).rejects.toBe(abortError)
       expect(errorSpy).not.toHaveBeenCalled()
-      errorSpy.mockRestore()
     })
 
     it('parses batch containing text-only preview outputs', async () => {
@@ -284,21 +273,17 @@ describe('fetchJobs', () => {
     })
 
     it('rejects on error', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
       await expect(fetchQueue(mockFetch)).rejects.toThrow('Network error')
-      errorSpy.mockRestore()
     })
 
     it('rejects on non-ok response', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 503 })
 
       await expect(fetchQueue(mockFetch)).rejects.toThrow(
         '[Jobs API] Failed to fetch jobs: 503'
       )
-      errorSpy.mockRestore()
     })
   })
 

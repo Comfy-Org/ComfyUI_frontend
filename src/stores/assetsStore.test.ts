@@ -489,6 +489,53 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(store.historyAssets).toHaveLength(400)
     })
 
+    it('should keep loaded pages when a refresh fails mid-pagination', async () => {
+      const firstBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+      await store.updateHistory()
+
+      const secondBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(200 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(secondBatch)
+      await store.loadMoreHistory()
+      expect(store.historyAssets).toHaveLength(400)
+
+      vi.mocked(api.getHistory).mockRejectedValueOnce(new Error('Network'))
+      await store.updateHistory()
+      expect(store.historyAssets).toHaveLength(400)
+
+      const thirdBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(400 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(thirdBatch)
+      await store.loadMoreHistory()
+
+      expect(api.getHistory).toHaveBeenLastCalledWith(200, {
+        offset: 400,
+        throwOnError: true
+      })
+      expect(store.historyAssets).toHaveLength(600)
+    })
+
+    it('should not surface an error state when a fetch is aborted', async () => {
+      const firstBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+      await store.updateHistory()
+
+      vi.mocked(api.getHistory).mockRejectedValueOnce(
+        new DOMException('Aborted', 'AbortError')
+      )
+      await store.updateHistory()
+
+      expect(store.historyError).toBeNull()
+      expect(store.historyAssets).toHaveLength(200)
+    })
+
     it('should clear error state on successful retry', async () => {
       // First load succeeds
       const firstBatch = Array.from({ length: 200 }, (_, i) =>

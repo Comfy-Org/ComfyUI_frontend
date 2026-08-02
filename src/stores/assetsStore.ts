@@ -153,19 +153,19 @@ export const useAssetsStore = defineStore('assets', () => {
    * @param loadMore - true for pagination (append), false for initial load (replace)
    */
   const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
-    // Reset state for initial load
+    const offset = loadMore ? historyOffset.value : 0
+
+    // Fetch before touching accumulated state so a failed refresh leaves the
+    // last known good page set intact for the next load-more.
+    const history = await api.getHistory(BATCH_SIZE, {
+      offset,
+      throwOnError: true
+    })
+
     if (!loadMore) {
-      historyOffset.value = 0
-      hasMoreHistory.value = true
       allHistoryItems.value = []
       loadedIds.clear()
     }
-
-    // Fetch from server with offset
-    const history = await api.getHistory(BATCH_SIZE, {
-      offset: historyOffset.value,
-      throwOnError: true
-    })
 
     // Convert JobListItems to AssetItems
     const newAssets = mapHistoryToAssets(history)
@@ -199,7 +199,7 @@ export const useAssetsStore = defineStore('assets', () => {
     }
 
     // Update pagination state
-    historyOffset.value += BATCH_SIZE
+    historyOffset.value = offset + BATCH_SIZE
     hasMoreHistory.value = history.length === BATCH_SIZE
 
     if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
@@ -227,9 +227,8 @@ export const useAssetsStore = defineStore('assets', () => {
       await fetchHistoryAssets(false)
       historyAssets.value = allHistoryItems.value
     } catch (err) {
-      if (!isAbortError(err)) {
-        console.error('Error fetching history assets:', err)
-      }
+      if (isAbortError(err)) return
+      console.error('Error fetching history assets:', err)
       historyError.value = err
       // Keep existing data when error occurs
       if (!historyAssets.value.length) {
@@ -254,9 +253,8 @@ export const useAssetsStore = defineStore('assets', () => {
       await fetchHistoryAssets(true)
       historyAssets.value = allHistoryItems.value
     } catch (err) {
-      if (!isAbortError(err)) {
-        console.error('Error loading more history:', err)
-      }
+      if (isAbortError(err)) return
+      console.error('Error loading more history:', err)
       historyError.value = err
       // Keep existing data when error occurs (consistent with updateHistory)
       if (!historyAssets.value.length) {

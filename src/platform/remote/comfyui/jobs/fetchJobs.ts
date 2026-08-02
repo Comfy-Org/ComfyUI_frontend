@@ -9,7 +9,6 @@
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { JobId } from '@/schemas/apiSchema'
-import { isAbortError } from '@/utils/typeGuardUtil'
 
 import type {
   JobDetail,
@@ -35,15 +34,13 @@ export interface FetchHistoryPageResult {
   hasMore: boolean
 }
 
-/** A failure already logged where it was detected. */
-class LoggedJobsFetchError extends Error {}
-
 /**
  * Fetches raw jobs from /jobs endpoint
  *
  * Rejects on any failure (network fault, non-ok response, parse error) so
  * callers can preserve their last-known-good snapshot instead of treating a
- * transient failure as an authoritative empty result.
+ * transient failure as an authoritative empty result. Logging is left to the
+ * caller, which knows whether the failure is user-visible.
  * @internal
  */
 async function fetchJobsRaw(
@@ -54,26 +51,17 @@ async function fetchJobsRaw(
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
-  try {
-    const res = await fetchApi(url)
-    if (!res.ok) {
-      const message = `[Jobs API] Failed to fetch jobs: ${res.status}`
-      console.error(message)
-      throw new LoggedJobsFetchError(message)
-    }
-    const data = zJobsListResponse.parse(await res.json())
-    return {
-      jobs: data.jobs,
-      total: data.pagination.total,
-      offset: data.pagination.offset,
-      limit: data.pagination.limit,
-      hasMore: data.pagination.has_more
-    }
-  } catch (error) {
-    if (!(error instanceof LoggedJobsFetchError) && !isAbortError(error)) {
-      console.error('[Jobs API] Error fetching jobs:', error)
-    }
-    throw error
+  const res = await fetchApi(url)
+  if (!res.ok) {
+    throw new Error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
+  }
+  const data = zJobsListResponse.parse(await res.json())
+  return {
+    jobs: data.jobs,
+    total: data.pagination.total,
+    offset: data.pagination.offset,
+    limit: data.pagination.limit,
+    hasMore: data.pagination.has_more
   }
 }
 
