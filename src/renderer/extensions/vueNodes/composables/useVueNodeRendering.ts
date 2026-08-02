@@ -33,6 +33,7 @@ interface FrameState {
   offsetY: number | undefined
   canvasWidth: number | undefined
   canvasHeight: number | undefined
+  dirtyCanvas: boolean | undefined
   draggingCanvas: boolean | undefined
   tail: readonly unknown[]
 }
@@ -187,7 +188,8 @@ export function useVueNodeRendering({
       offsetX: activeCanvas?.ds.offset[0],
       offsetY: activeCanvas?.ds.offset[1],
       canvasWidth: activeCanvas?.canvas.width,
-      canvasHeight: activeCanvas?.canvas.height
+      canvasHeight: activeCanvas?.canvas.height,
+      dirtyCanvas: activeCanvas?.dirty_canvas
     }
   }
 
@@ -201,6 +203,7 @@ export function useVueNodeRendering({
       offsetY: activeCanvas?.ds.offset[1],
       canvasWidth: activeCanvas?.canvas.width,
       canvasHeight: activeCanvas?.canvas.height,
+      dirtyCanvas: activeCanvas?.dirty_canvas,
       draggingCanvas: activeCanvas?.dragging_canvas,
       tail: [
         activeCanvas?.isDragging,
@@ -236,6 +239,9 @@ export function useVueNodeRendering({
     ) {
       return 'viewport'
     }
+    if (activeCanvas?.dirty_canvas !== previousState.dirtyCanvas) {
+      return 'runtime'
+    }
 
     const nextState = getFrameState(activeCanvas, focusedNodeId())
     return nextState.tail.length !== previousState.tail.length ||
@@ -250,6 +256,7 @@ export function useVueNodeRendering({
     return Boolean(
       activeCanvas?.dirty_canvas ||
       activeCanvas?.dirty_bgcanvas ||
+      activeCanvas?.dirty_canvas !== lastFrameState?.dirtyCanvas ||
       activeCanvas?.dragging_canvas ||
       activeCanvas?.dragging_canvas !== lastFrameState?.draggingCanvas ||
       layoutStore.isDraggingVueNodes.value ||

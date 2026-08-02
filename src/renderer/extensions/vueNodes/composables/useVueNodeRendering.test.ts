@@ -214,6 +214,38 @@ describe('useVueNodeRendering', () => {
     expect(renderingService.updateViewport).not.toHaveBeenCalled()
   })
 
+  it('publishes geometry computed by the first canvas draw', () => {
+    const canvas = createCanvas()
+    canvas.dirty_canvas = true
+    let currentRenderArea: VueNodeRenderArea = Object.freeze([
+      0, 0, 0, 0
+    ] as const satisfies VueNodeRenderArea)
+    const manager = {
+      getNode: vi.fn(() => ({ renderArea: currentRenderArea })),
+      vueNodeData: new Map(),
+      cleanup: vi.fn()
+    } as unknown as GraphNodeManager
+    scope = effectScope()
+    scope.run(() => {
+      useVueNodeRendering({
+        allNodes: [createNode('1')],
+        canvas,
+        nodeManager: manager
+      })
+    })
+    renderingService.updateRuntime.mockClear()
+
+    currentRenderArea = renderArea
+    canvas.dirty_canvas = false
+    raf.callback?.()
+
+    expect(renderingService.updateRuntime).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        nodes: [{ id: '1', renderArea }]
+      })
+    )
+  })
+
   it('freezes rendering for the full canvas pan interaction', () => {
     const canvas = createCanvas()
     scope = effectScope()

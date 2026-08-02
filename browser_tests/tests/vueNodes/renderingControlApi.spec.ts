@@ -7,6 +7,7 @@ import {
 declare global {
   interface Window {
     vueNodeRenderingTestControllers?: readonly VueNodeRenderingPushController[]
+    vueNodeRenderingTestUnsubscribers?: readonly (() => void)[]
   }
 }
 
@@ -32,10 +33,15 @@ test.describe(
 
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
+        for (const unsubscribe of window.vueNodeRenderingTestUnsubscribers ??
+          []) {
+          unsubscribe()
+        }
         for (const controller of window.vueNodeRenderingTestControllers ?? []) {
           controller.dispose()
         }
         delete window.vueNodeRenderingTestControllers
+        delete window.vueNodeRenderingTestUnsubscribers
       })
     })
 
@@ -116,6 +122,56 @@ test.describe(
       expect(
         await comfyPage.page.evaluate(() => window.app!.graph.nodes.length)
       ).toBe(graphNodeCount)
+    })
+
+    test('virtualizes a populated graph before viewport movement', async ({
+      comfyPage
+    }) => {
+      test.setTimeout(120_000)
+
+      await comfyPage.page.evaluate(() => {
+        const rendering = window.app!.extensionManager.vueNodes.rendering
+        const controller = rendering.createPushController(
+          'browser-test:viewport'
+        )
+        const unsubscribe = rendering.subscribe((snapshot) => {
+          const visibleArea = snapshot.visibleCanvasArea
+          if (!visibleArea || snapshot.renderFrozen) return
+          const [visibleX, visibleY, visibleWidth, visibleHeight] = visibleArea
+          controller.update({
+            suppress: snapshot.renderAreas.flatMap(({ id, area }) => {
+              const [x, y, width, height] = area
+              const isValid = width > 0 && height > 0
+              const isVisible =
+                x + width >= visibleX &&
+                x <= visibleX + visibleWidth &&
+                y + height >= visibleY &&
+                y <= visibleY + visibleHeight
+              return isValid && !isVisible ? [id] : []
+            })
+          })
+        })
+        window.vueNodeRenderingTestControllers = [controller]
+        window.vueNodeRenderingTestUnsubscribers = [unsubscribe]
+      })
+
+      await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+      await expect
+        .poll(
+          () =>
+            comfyPage.page.evaluate(() => {
+              const snapshot =
+                window.app!.extensionManager.vueNodes.rendering.getSnapshot()
+              return (
+                snapshot.nodeIds.length > 100 &&
+                snapshot.renderedNodeIds.length < snapshot.nodeIds.length &&
+                snapshot.mountedNodeIds.length < snapshot.nodeIds.length
+              )
+            }),
+          { timeout: 30_000 }
+        )
+        .toBe(true)
     })
   }
 )
