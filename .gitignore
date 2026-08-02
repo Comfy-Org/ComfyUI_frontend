@@ -32,6 +32,9 @@ dist-ssr
 .claude/worktrees
 CLAUDE.local.md
 
+# Local git worktrees nested under the repo root (contaminate knip/lint scans)
+.worktrees
+
 # Editor directories and files
 .vscode/*
 *.code-workspace
