@@ -224,7 +224,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   useEventListener(
-    () => (canvasStore.canvas ? app.rootGraph.events : undefined),
+    () => (canvasStore.canvas ? app.rootGraph?.events : undefined),
     'configured',
     resetSelectedToWorkflow
   )
