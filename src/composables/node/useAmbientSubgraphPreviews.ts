@@ -48,8 +48,16 @@ export function useAmbientSubgraphPreviews(
 
       // Touch reactive sources for Vue tracking; getNodeImageUrls reads
       // non-reactive app state.
+      const reactiveOutput = nodeOutputStore.nodeOutputs[locatorId]
+      // An input-only output (e.g. a LoadImage node's own selected file) is
+      // static reference data, not a live execution result — surfacing it
+      // ambiently would make every unpromoted input node's thumbnail always
+      // visible on the host, defeating explicit promotion for those nodes.
+      const hasLiveOutputImages =
+        reactiveOutput?.images?.length &&
+        !nodeOutputStore.isInputPreviewOutput(reactiveOutput)
       const hasReactiveOutputs =
-        nodeOutputStore.nodeOutputs[locatorId]?.images?.length ||
+        hasLiveOutputImages ||
         nodeOutputStore.nodePreviewImages[locatorId]?.length
       if (!hasReactiveOutputs) return []
 
