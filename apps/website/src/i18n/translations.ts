@@ -4994,8 +4994,8 @@ const translations = {
     'zh-CN': '问答'
   },
   'minimax.cta.heading': {
-    en: 'Open weights. Full control.',
-    'zh-CN': '开源权重，完全掌控。'
+    en: 'Open weights.\nFull control.',
+    'zh-CN': '开源权重，\n完全掌控。'
   },
   'minimax.cta.subtitle': {
     en: 'Text, image, or audio in — a stereo clip out. Draft free on other models, then finish on MiniMax H3.',
@@ -5039,7 +5039,73 @@ const translations = {
   },
   'minimax.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'minimax.reviews.prev': { en: 'Previous', 'zh-CN': '上一条' },
-  'minimax.reviews.next': { en: 'Next', 'zh-CN': '下一条' }
+  'minimax.reviews.next': { en: 'Next', 'zh-CN': '下一条' },
+  'minimax.pricing.heading': { en: 'Pricing', 'zh-CN': '价格' },
+  'minimax.pricing.banner.title': {
+    en: "Start free. Upgrade when you're ready.",
+    'zh-CN': '免费开始，准备好了再升级。'
+  },
+  'minimax.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'minimax.pricing.plan.standard.description': {
+    en: 'For individuals creating workflows',
+    'zh-CN': '适合创建工作流的个人用户'
+  },
+  'minimax.pricing.plan.creator.description': {
+    en: 'Small teams building fine-tuned, repeatable workflows',
+    'zh-CN': '适合构建精调、可复用工作流的小型团队'
+  },
+  'minimax.pricing.plan.pro.description': {
+    en: 'For growing teams running Comfy in production',
+    'zh-CN': '适合在生产环境中运行 Comfy 的成长型团队'
+  },
+  'minimax.pricing.credits': {
+    en: 'Includes {credits} monthly credits with top-ups available',
+    'zh-CN': '包含每月 {credits} 积分，支持随时充值'
+  },
+  'minimax.pricing.plan.standard.estimate': {
+    en: '~380 5s videos*',
+    'zh-CN': '约 380 个 5 秒视频*'
+  },
+  'minimax.pricing.plan.creator.estimate': {
+    en: '~670 5s videos*',
+    'zh-CN': '约 670 个 5 秒视频*'
+  },
+  'minimax.pricing.plan.pro.estimate': {
+    en: '~1,915 5s videos*',
+    'zh-CN': '约 1,915 个 5 秒视频*'
+  },
+  'minimax.pricing.everythingInStandard': {
+    en: 'Everything in Standard, plus:',
+    'zh-CN': '包含标准版全部功能，另有：'
+  },
+  'minimax.pricing.everythingInCreator': {
+    en: 'Everything in Creator, plus:',
+    'zh-CN': '包含创作者版全部功能，另有：'
+  },
+  'minimax.pricing.feature.runtime30': {
+    en: '30-minute max runtime per workflow',
+    'zh-CN': '单个工作流最长运行 30 分钟'
+  },
+  'minimax.pricing.feature.loras': {
+    en: 'Import your own LoRAs',
+    'zh-CN': '导入你自己的 LoRA'
+  },
+  'minimax.pricing.feature.apiJobs3': {
+    en: '3 concurrent API jobs',
+    'zh-CN': '3 个并发 API 任务'
+  },
+  'minimax.pricing.feature.longRuntime': {
+    en: 'Longer workflow runtime (up to 1 hour)',
+    'zh-CN': '更长工作流运行时长（最长 1 小时）'
+  },
+  'minimax.pricing.feature.apiJobs5': {
+    en: '5 concurrent API jobs',
+    'zh-CN': '5 个并发 API 任务'
+  }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations

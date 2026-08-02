@@ -1,11 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
 import BreadcrumbBar from '../components/common/BreadcrumbBar.vue'
-import PricingSection from '../components/pricing/PricingSection.vue'
 import MiniMaxCtaSection from '../templates/minimax/MiniMaxCtaSection.vue'
 import MiniMaxFaqSection from '../templates/minimax/MiniMaxFaqSection.vue'
 import MiniMaxHeroSection from '../templates/minimax/MiniMaxHeroSection.vue'
 import MiniMaxModelsSection from '../templates/minimax/MiniMaxModelsSection.vue'
+import MiniMaxPricingSection from '../templates/minimax/MiniMaxPricingSection.vue'
 import MiniMaxReviewsSection from '../templates/minimax/MiniMaxReviewsSection.vue'
 import MiniMaxRunOptionsSection from '../templates/minimax/MiniMaxRunOptionsSection.vue'
 import MiniMaxShowcaseSection from '../templates/minimax/MiniMaxShowcaseSection.vue'
@@ -68,7 +68,7 @@ const faqPage: JsonLdNode = {
   {showPlaceholderMediaSections && <MiniMaxShowcaseSection client:visible />}
   {showPlaceholderMediaSections && <MiniMaxStepsSection />}
   <MiniMaxModelsSection client:visible />
-  <PricingSection client:load headingLevel="h2" />
+  <MiniMaxPricingSection client:load />
   <MiniMaxFaqSection client:visible />
   <MiniMaxCtaSection />
   <MiniMaxRunOptionsSection />

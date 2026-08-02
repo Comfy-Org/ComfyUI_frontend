@@ -1,4 +1,5 @@
-import type { LocalizedText } from '../i18n/translations'
+import type { LocalizedText, TranslationKey } from '../i18n/translations'
+import type { PlanFeatureGroup } from './pricingPlans'
 
 import { externalLinks } from '../config/routes'
 
@@ -194,6 +195,86 @@ export const minimaxExamples: readonly MiniMaxExample[] = [
       en: 'MiniMax render of a runner in a neon night market',
       'zh-CN': 'MiniMax 渲染的霓虹夜市跑者画面'
     }
+  }
+] as const
+
+export interface MiniMaxPricingPlan {
+  id: 'standard' | 'creator' | 'pro'
+  labelKey: TranslationKey
+  descriptionKey: TranslationKey
+  priceKey: TranslationKey
+  yearlyPriceKey: TranslationKey
+  yearlyTotalKey: TranslationKey
+  creditsKey: TranslationKey
+  estimateKey: TranslationKey
+  ctaKey: TranslationKey
+  featureGroups: PlanFeatureGroup[]
+  isPopular?: boolean
+}
+
+// Minimax-specific pricing presentation: same plans, prices, and subscribe
+// URLs as the shared PricingSection, with per-plan descriptions and
+// "Everything in X, plus:" feature groups.
+export const minimaxPricingPlans: readonly MiniMaxPricingPlan[] = [
+  {
+    id: 'standard',
+    labelKey: 'pricing.plan.standard.label',
+    descriptionKey: 'minimax.pricing.plan.standard.description',
+    priceKey: 'pricing.plan.standard.price',
+    yearlyPriceKey: 'pricing.plan.standard.yearlyPrice',
+    yearlyTotalKey: 'pricing.plan.standard.yearlyTotal',
+    creditsKey: 'pricing.plan.standard.credits',
+    estimateKey: 'minimax.pricing.plan.standard.estimate',
+    ctaKey: 'pricing.plan.standard.cta',
+    featureGroups: [
+      {
+        features: [
+          { text: 'minimax.pricing.feature.runtime30' },
+          { text: 'pricing.feature.addCredits' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'creator',
+    labelKey: 'pricing.plan.creator.label',
+    descriptionKey: 'minimax.pricing.plan.creator.description',
+    priceKey: 'pricing.plan.creator.price',
+    yearlyPriceKey: 'pricing.plan.creator.yearlyPrice',
+    yearlyTotalKey: 'pricing.plan.creator.yearlyTotal',
+    creditsKey: 'pricing.plan.creator.credits',
+    estimateKey: 'minimax.pricing.plan.creator.estimate',
+    ctaKey: 'pricing.plan.creator.cta',
+    featureGroups: [
+      {
+        titleKey: 'minimax.pricing.everythingInStandard',
+        features: [
+          { text: 'minimax.pricing.feature.loras' },
+          { text: 'minimax.pricing.feature.apiJobs3' }
+        ]
+      }
+    ],
+    isPopular: true
+  },
+  {
+    id: 'pro',
+    labelKey: 'pricing.plan.pro.label',
+    descriptionKey: 'minimax.pricing.plan.pro.description',
+    priceKey: 'pricing.plan.pro.price',
+    yearlyPriceKey: 'pricing.plan.pro.yearlyPrice',
+    yearlyTotalKey: 'pricing.plan.pro.yearlyTotal',
+    creditsKey: 'pricing.plan.pro.credits',
+    estimateKey: 'minimax.pricing.plan.pro.estimate',
+    ctaKey: 'pricing.plan.pro.cta',
+    featureGroups: [
+      {
+        titleKey: 'minimax.pricing.everythingInCreator',
+        features: [
+          { text: 'minimax.pricing.feature.longRuntime' },
+          { text: 'minimax.pricing.feature.apiJobs5' }
+        ]
+      }
+    ]
   }
 ] as const
 

@@ -87,6 +87,39 @@ test.describe('MiniMax H3 page — link targets', () => {
   })
 })
 
+test.describe('MiniMax H3 page — pricing section', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PATH)
+  })
+
+  test('renders the free banner with a cloud signup CTA', async ({ page }) => {
+    const banner = page.getByText(t('minimax.pricing.banner.title', 'en'))
+    await banner.scrollIntoViewIfNeeded()
+    await expect(banner).toBeVisible()
+
+    const tryFree = page.getByRole('link', {
+      name: t('minimax.pricing.banner.cta', 'en')
+    })
+    await expect(tryFree).toHaveAttribute('href', CLOUD_URL)
+  })
+
+  test('shows per-plan descriptions and cumulative feature groups', async ({
+    page
+  }) => {
+    const standardDescription = page.getByText(
+      t('minimax.pricing.plan.standard.description', 'en')
+    )
+    await standardDescription.scrollIntoViewIfNeeded()
+    await expect(standardDescription).toBeVisible()
+    await expect(
+      page.getByText(t('minimax.pricing.everythingInStandard', 'en'))
+    ).toBeVisible()
+    await expect(
+      page.getByText(t('minimax.pricing.everythingInCreator', 'en'))
+    ).toBeVisible()
+  })
+})
+
 test.describe('MiniMax H3 page — interactions', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(PATH)
