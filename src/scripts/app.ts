@@ -304,6 +304,12 @@ export class ComfyApp {
 
   canvas!: LGraphCanvas
   dragOverNode: Pick<LGraphNode, 'onDragDrop' | 'id'> | null = null
+  /**
+   * Nodes already placed by this drag-and-drop batch, tracked across every
+   * file type so later groups (e.g. audio) are spaced apart from earlier
+   * ones (e.g. images) instead of only from nodes of their own type.
+   */
+  private dropBatchNodes: LGraphNode[] = []
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
     // TODO: Fix possibly undefined reference
@@ -681,6 +687,7 @@ export class ComfyApp {
         const workspace = useWorkspaceStore()
         try {
           workspace.spinner = true
+          this.dropBatchNodes = []
           const imageFiles = files.filter(hasImageType)
           const audioFiles = files.filter(hasAudioType)
           const videoFiles = files.filter(hasVideoType)
@@ -713,7 +720,7 @@ export class ComfyApp {
             }
           }
 
-          this.positionNodes(createdNodes)
+          this.positionNodes(createdNodes, this.dropBatchNodes)
         } finally {
           workspace.spinner = false
         }
@@ -2108,14 +2115,19 @@ export class ComfyApp {
       const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
       if (!batchImagesNode) return
 
-      this.positionBatchNodes(imageNodes, batchImagesNode)
+      this.positionBatchNodes(imageNodes, batchImagesNode, this.dropBatchNodes)
       this.canvas.selectItems([...imageNodes, batchImagesNode])
 
       imageNodes.forEach((imageNode, index) => {
         imageNode.connect(0, batchImagesNode, index)
       })
+      this.dropBatchNodes.push(...imageNodes, batchImagesNode)
     } else {
+      if (this.dropBatchNodes.length > 0) {
+        this.positionNodes(imageNodes, this.dropBatchNodes)
+      }
       this.canvas.selectItems(imageNodes)
+      this.dropBatchNodes.push(...imageNodes)
     }
   }
 
@@ -2123,31 +2135,36 @@ export class ComfyApp {
     const audioNodes = await pasteAudioNodes(this.canvas, fileList)
     if (audioNodes.length === 0) return
 
-    this.positionNodes(audioNodes)
+    this.positionNodes(audioNodes, this.dropBatchNodes)
     this.canvas.selectItems(audioNodes)
+    this.dropBatchNodes.push(...audioNodes)
   }
 
   async handleVideoFileList(fileList: File[]) {
     const videoNodes = await pasteVideoNodes(this.canvas, fileList)
     if (videoNodes.length === 0) return
 
-    this.positionNodes(videoNodes)
+    this.positionNodes(videoNodes, this.dropBatchNodes)
     this.canvas.selectItems(videoNodes)
+    this.dropBatchNodes.push(...videoNodes)
   }
 
   /**
    * Positions batched nodes in drag and drop
-   * @param nodes
-   * @param batchNode
+   * @param nodes Nodes to position relative to `nodes[0]`'s current spot
+   * @param precedingNodes Nodes already placed earlier in the same drop
+   * batch (of any type) that `nodes` must not overlap
    */
-  positionNodes(nodes: LGraphNode[]): void {
-    if (nodes.length <= 1) return
+  positionNodes(nodes: LGraphNode[], precedingNodes: LGraphNode[] = []): void {
+    if (nodes.length === 0) return
+    if (nodes.length <= 1 && precedingNodes.length === 0) return
 
-    const [x, y] = nodes[0].getBounding()
+    const [x, boundY] = nodes[0].getBounding()
+    const y = Math.max(boundY, this.clearanceBelow(precedingNodes))
     const nodeHeight = 150
 
     nodes.forEach((node, index) => {
-      if (index > 0) {
+      if (index > 0 || y !== boundY) {
         node.pos = [x, y + nodeHeight * index + 25 * (index + 1)]
       }
     })
@@ -2155,8 +2172,13 @@ export class ComfyApp {
     this.canvas.graph?.change()
   }
 
-  positionBatchNodes(nodes: LGraphNode[], batchNode: LGraphNode): void {
-    const [x, y, width] = nodes[0].getBounding()
+  positionBatchNodes(
+    nodes: LGraphNode[],
+    batchNode: LGraphNode,
+    precedingNodes: LGraphNode[] = []
+  ): void {
+    const [x, boundY, width] = nodes[0].getBounding()
+    const y = Math.max(boundY, this.clearanceBelow(precedingNodes))
     batchNode.pos = [x + width + 100, y + 30]
 
     // Retrieving Node Height is inconsistent
@@ -2166,12 +2188,25 @@ export class ComfyApp {
     }
 
     nodes.forEach((node, index) => {
-      if (index > 0) {
+      if (index > 0 || y !== boundY) {
         node.pos = [x, y + height * index + 25 * (index + 1)]
       }
     })
 
     this.canvas.graph?.change()
+  }
+
+  /**
+   * Lowest y coordinate a new node must start below to clear every node
+   * already placed in this drop batch.
+   */
+  private clearanceBelow(precedingNodes: LGraphNode[]): number {
+    if (precedingNodes.length === 0) return -Infinity
+
+    const lowestPoint = Math.max(
+      ...precedingNodes.map((node) => node.pos[1] + node.size[1])
+    )
+    return lowestPoint + 25
   }
 
   // @deprecated
